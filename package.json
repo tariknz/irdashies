@@ -81,6 +81,7 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^7.0.1",
-    "stream-json": "^1.9.1"
+    "stream-json": "^1.9.1",
+    "zustand": "^5.0.2"
   }
 }
