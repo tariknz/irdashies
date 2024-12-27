@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { driverListCompare } from './driverCompare';
-import { Driver } from '@irdashies/types';
+import type { Driver } from '@irdashies/types';
 
 describe('driverListCompare', () => {
   it('compares telemetry value arrays for equality to avoid unnecessary re-renders', () => {

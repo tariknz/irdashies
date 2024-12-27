@@ -1,4 +1,4 @@
-import { IrSdkBridge } from '@irdashies/types';
+import type { IrSdkBridge } from '@irdashies/types';
 import { useTelemetryStore } from './TelemetryStore';
 import { useEffect } from 'react';
 

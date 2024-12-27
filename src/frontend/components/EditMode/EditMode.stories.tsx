@@ -1,7 +1,7 @@
 import { Meta } from '@storybook/react';
 import { EditMode } from './EditMode';
 import { DashboardProvider } from '@irdashies/context';
-import { DashboardBridge } from '@irdashies/types';
+import type { DashboardBridge } from '@irdashies/types';
 
 const meta: Meta<typeof EditMode> = {
   component: EditMode,

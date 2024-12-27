@@ -1,4 +1,4 @@
-import { Session } from '@irdashies/types';
+import type { Session } from '@irdashies/types';
 import { create } from 'zustand';
 import { useStoreWithEqualityFn } from 'zustand/traditional';
 import { driverListCompare } from './driverCompare';
