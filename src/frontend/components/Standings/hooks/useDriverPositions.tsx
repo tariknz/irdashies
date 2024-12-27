@@ -1,8 +1,9 @@
 import { useMemo } from 'react';
 import {
-  useSession,
   useTelemetryValue,
   useTelemetry,
+  useSessionDrivers,
+  useSessionStore,
 } from '@irdashies/context';
 import { Standings } from '../createStandings';
 import { useCurrentSession } from './useCurrentSession';
@@ -29,11 +30,9 @@ export const useDriverPositions = () => {
 };
 
 export const useDrivers = () => {
-  const { session } = useSession();
-
-  const drivers = useMemo(() => {
-    const driverInfo = session?.DriverInfo?.Drivers ?? [];
-    return driverInfo.map((driver) => ({
+  const sessionDrivers = useSessionDrivers();
+  const drivers =
+    sessionDrivers?.map((driver) => ({
       carIdx: driver.CarIdx,
       name: driver.UserName,
       carNum: driver.CarNumber,
@@ -47,9 +46,7 @@ export const useDrivers = () => {
         relativeSpeed: driver.CarClassRelSpeed,
         estLapTime: driver.CarClassEstLapTime,
       },
-    }));
-  }, [session]);
-
+    })) ?? [];
   return drivers;
 };
 
@@ -74,12 +71,9 @@ export const useCarState = () => {
 };
 
 export const usePlayerCarIndex = () => {
-  const { session } = useSession();
-
-  const playerCarIdx = useMemo(() => {
-    return session?.DriverInfo?.DriverCarIdx;
-  }, [session?.DriverInfo?.DriverCarIdx]);
-
+  const playerCarIdx = useSessionStore(
+    (state) => state.session?.DriverInfo?.DriverCarIdx
+  );
   return playerCarIdx;
 };
 

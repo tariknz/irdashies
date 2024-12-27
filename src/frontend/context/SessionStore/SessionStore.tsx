@@ -1,6 +1,7 @@
 import { Session } from '@irdashies/types';
 import { create } from 'zustand';
-import { useShallow } from 'zustand/react/shallow';
+import { useStoreWithEqualityFn } from 'zustand/traditional';
+import { driverListCompare } from './driverCompare';
 
 interface SessionState {
   session: Session | null;
@@ -12,8 +13,9 @@ export const useSessionStore = create<SessionState>((set) => ({
   setSession: (session: Session) => set({ session }),
 }));
 
-export const useSession = () =>
-  useSessionStore(useShallow((state) => state.session));
-
-export const useDrivers = () =>
-  useSessionStore(useShallow((state) => state.session?.DriverInfo?.Drivers));
+export const useSessionDrivers = () =>
+  useStoreWithEqualityFn(
+    useSessionStore,
+    (state) => state.session?.DriverInfo?.Drivers,
+    driverListCompare
+  );

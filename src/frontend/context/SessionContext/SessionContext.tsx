@@ -6,7 +6,7 @@ import React, {
   useEffect,
 } from 'react';
 import type { Session, IrSdkBridge } from '@irdashies/types';
-import { useSessionStore } from './SessionStore';
+import { useSessionStore } from '../SessionStore/SessionStore';
 
 interface SessionContextProps {
   session?: Session;
