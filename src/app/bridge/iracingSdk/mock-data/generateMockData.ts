@@ -34,6 +34,8 @@ export function generateMockData(sessionData?: {
   let telemetryIdx = 0;
   let sessionIdx = 0;
 
+  let prevTelemetry = mockTelemetry as unknown as Telemetry;
+
   return {
     onTelemetry: (callback: (value: Telemetry) => void) => {
       telemetryInterval = setInterval(() => {
@@ -41,14 +43,28 @@ export function generateMockData(sessionData?: {
           ? telemetry[telemetryIdx % telemetry.length]
           : telemetry;
         if (!t) {
-          t = mockTelemetry as unknown as Telemetry;
-          t.CarIdxPosition.value = randomCarPositionSwap(
-            t.CarIdxPosition.value
-          );
-          t.Brake.value[0] = jitterValue(t['Brake'].value[0]);
-          t.Throttle.value[0] = jitterValue(t.Throttle.value[0]);
-          t.Gear.value[0] = 3;
-          t.Speed.value[0] = 44;
+          const throttleValue = prevTelemetry.Throttle.value[0];
+          const brakeValue = prevTelemetry.Brake.value[0];
+          t = {
+            ...prevTelemetry,
+            Brake: {
+              ...prevTelemetry.Brake,
+              value: [jitterValue(brakeValue)],
+            },
+            Throttle: {
+              ...prevTelemetry.Throttle,
+              value: [jitterValue(throttleValue)],
+            },
+            Gear: {
+              ...prevTelemetry.Gear,
+              value: [3],
+            },
+            Speed: {
+              ...prevTelemetry.Speed,
+              value: [44],
+            },
+          };
+          prevTelemetry = t;
         }
 
         telemetryIdx = telemetryIdx + 1;
@@ -86,23 +102,3 @@ export function generateMockData(sessionData?: {
 const jitterValue = (value: number): number => {
   return Math.max(0, Math.min(1, value + Math.random() * 0.1 - 0.05));
 };
-
-function randomCarPositionSwap<T>(arr: T[]) {
-  if (arr.length < 2) {
-    console.log('Array is too short to swap adjacent elements.');
-    return arr;
-  }
-
-  // Only swap elements 10% of the time
-  if (!(Date.now() % 1000 < 100)) {
-    return arr;
-  }
-
-  // Generate a random index between 0 and the second-to-last element
-  const index = Math.floor(Math.random() * (arr.length - 1));
-
-  // Swap the element at the random index with the next element
-  [arr[index], arr[index + 1]] = [arr[index + 1], arr[index]];
-
-  return arr;
-}

@@ -24,8 +24,8 @@ export const InputTrace = ({ input }: InputTraceProps) => {
 
   useEffect(() => {
     // slice first value and append new value
-    setThrottleArray((v) => [...v.slice(1), input.throttle]);
-    setBrakeArray((v) => [...v.slice(1), input.brake]);
+    setThrottleArray((v) => [...v.slice(1), input.throttle ?? 0]);
+    setBrakeArray((v) => [...v.slice(1), input.brake ?? 0]);
   }, [input]);
 
   useEffect(() => {

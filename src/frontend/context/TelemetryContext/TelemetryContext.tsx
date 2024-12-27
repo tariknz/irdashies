@@ -6,6 +6,7 @@ import React, {
   useEffect,
 } from 'react';
 import type { Telemetry, IrSdkBridge } from '@irdashies/types';
+import { useTelemetryStore } from '../TelemetryStore/TelemetryStore';
 
 interface TelemetryContextProps {
   telemetry?: Telemetry;
@@ -20,18 +21,25 @@ export const TelemetryProvider: React.FC<{
   children: ReactNode;
 }> = ({ bridge, children }) => {
   const [telemetry, setTelemetry] = useState<Telemetry | undefined>(undefined);
+  const setTelem = useTelemetryStore((s) => s.setTelemetry);
 
   useEffect(() => {
     if (bridge instanceof Promise) {
       bridge.then((bridge) => {
-        bridge.onTelemetry((telemetry) => setTelemetry(telemetry));
+        bridge.onTelemetry((telemetry) => {
+          setTelemetry(telemetry);
+          setTelem(telemetry);
+        });
       });
       return () => bridge.then((bridge) => bridge.stop());
     }
 
-    bridge.onTelemetry((telemetry) => setTelemetry(telemetry));
+    bridge.onTelemetry((telemetry) => {
+      setTelemetry(telemetry);
+      setTelem(telemetry);
+    });
     return () => bridge.stop();
-  }, [bridge]);
+  }, [bridge, setTelem]);
 
   return (
     <TelemetryContext.Provider value={{ telemetry }}>
