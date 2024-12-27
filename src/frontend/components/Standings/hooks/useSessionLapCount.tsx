@@ -1,14 +1,12 @@
-import { useTelemetry } from '@irdashies/context';
+import { useSingleTelemetryValue } from '@irdashies/context';
 import { useCurrentSession } from './useCurrentSession';
 import { useMemo } from 'react';
 
 export const useSessionLapCount = () => {
-  const { telemetry } = useTelemetry();
   const currentSession = useCurrentSession();
-
-  const current = telemetry?.RaceLaps?.value?.[0] || 0;
-  const timeRemaining = telemetry?.SessionTimeTotal?.value?.[0] || 0;
-  const timeElapsed = telemetry?.SessionTimeRemain?.value?.[0] || 0;
+  const current = useSingleTelemetryValue('RaceLaps');
+  const timeRemaining = useSingleTelemetryValue('SessionTimeTotal');
+  const timeElapsed = useSingleTelemetryValue('SessionTimeRemain');
 
   const result = useMemo(() => {
     const result = {
@@ -26,9 +24,9 @@ export const useSessionLapCount = () => {
       result.total = currentSession.SessionLaps;
     }
 
-    result.current = current;
-    result.timeRemaining = timeRemaining;
-    result.timeElapsed = timeElapsed;
+    result.current = current ?? 0;
+    result.timeRemaining = timeRemaining ?? 0;
+    result.timeElapsed = timeElapsed ?? 0;
 
     return result;
   }, [currentSession?.SessionLaps, current, timeRemaining, timeElapsed]);
