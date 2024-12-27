@@ -1,32 +1,14 @@
 import { useMemo } from 'react';
-import { useTelemetry } from '@irdashies/context';
+import { useTelemetryValue } from '@irdashies/context';
 import {
   useDrivers,
   useDriverStandings,
   usePlayerCarIndex,
 } from './useDriverPositions';
 
-const useCarIdxEstTime = () => {
-  const { telemetry } = useTelemetry();
-  const carIdxEstTime = useMemo(
-    () => telemetry?.CarIdxEstTime?.value ?? [],
-    [telemetry?.CarIdxEstTime?.value]
-  );
-  return carIdxEstTime;
-};
-
-const useCarIdxLapDistPct = () => {
-  const { telemetry } = useTelemetry();
-  const carIdxLapDistPct = useMemo(
-    () => telemetry?.CarIdxLapDistPct?.value ?? [],
-    [telemetry?.CarIdxLapDistPct?.value]
-  );
-  return carIdxLapDistPct;
-};
-
 export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
-  const carIdxEstTime = useCarIdxEstTime();
-  const carIdxLapDistPct = useCarIdxLapDistPct();
+  const carIdxEstTime = useTelemetryValue('CarIdxEstTime');
+  const carIdxLapDistPct = useTelemetryValue('CarIdxLapDistPct');
   const drivers = useDrivers();
   const driverStandings = useDriverStandings();
   const playerIndex = usePlayerCarIndex();
@@ -41,14 +23,14 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
 
         let delta = 0.0;
         const driverLapTimeEst = lapTimeEst ?? 0;
-        const relativeCarTime = carIdxEstTime[result.carIdx];
-        const playerCarTime = carIdxEstTime[player?.carIdx ?? 0];
+        const relativeCarTime = carIdxEstTime?.value?.[result.carIdx];
+        const playerCarTime = carIdxEstTime?.value?.[player?.carIdx ?? 0];
 
         // Determine if the delta between player and relative car spans across the start/finish line
         const crossesStartFinishLine =
           Math.abs(
-            carIdxLapDistPct[result.carIdx] -
-              carIdxLapDistPct[player?.carIdx ?? 0]
+            carIdxLapDistPct?.value?.[result.carIdx] -
+              carIdxLapDistPct?.value?.[player?.carIdx ?? 0]
           ) > 0.5;
 
         if (crossesStartFinishLine) {
