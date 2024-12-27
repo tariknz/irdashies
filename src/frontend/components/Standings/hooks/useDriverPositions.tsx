@@ -1,19 +1,19 @@
 import { useMemo } from 'react';
 import {
   useSession,
-  useSingleTelemetryValue,
   useTelemetryValue,
+  useTelemetry,
 } from '@irdashies/context';
 import { Standings } from '../createStandings';
 import { useCurrentSession } from './useCurrentSession';
 
 export const useDriverPositions = () => {
-  const carIdxPosition = useTelemetryValue('CarIdxPosition');
-  const carIdxClassPosition = useTelemetryValue('CarIdxClassPosition');
-  const carIdxBestLap = useTelemetryValue('CarIdxBestLapTime');
-  const carIdxLastLap = useTelemetryValue('CarIdxLastLapTime');
-  const carIdxF2Time = useTelemetryValue('CarIdxF2Time');
-  const carIdxLapNum = useTelemetryValue('CarIdxLap');
+  const carIdxPosition = useTelemetry('CarIdxPosition');
+  const carIdxClassPosition = useTelemetry('CarIdxClassPosition');
+  const carIdxBestLap = useTelemetry('CarIdxBestLapTime');
+  const carIdxLastLap = useTelemetry('CarIdxLastLapTime');
+  const carIdxF2Time = useTelemetry('CarIdxF2Time');
+  const carIdxLapNum = useTelemetry('CarIdxLap');
 
   const positions = carIdxPosition?.value?.map((position, carIdx) => ({
     carIdx,
@@ -55,13 +55,13 @@ export const useDrivers = () => {
 
 // Which car is currently active on radio
 export const useRadioTransmitCarIndex = () => {
-  const radioTransmitCarIdx = useSingleTelemetryValue('RadioTransmitCarIdx');
+  const radioTransmitCarIdx = useTelemetryValue('RadioTransmitCarIdx');
   return radioTransmitCarIdx;
 };
 
 export const useCarState = () => {
-  const carIdxTrackSurface = useTelemetryValue('CarIdxTrackSurface');
-  const carIdxOnPitRoad = useTelemetryValue<boolean[]>('CarIdxOnPitRoad');
+  const carIdxTrackSurface = useTelemetry('CarIdxTrackSurface');
+  const carIdxOnPitRoad = useTelemetry<boolean[]>('CarIdxOnPitRoad');
 
   // turn two arrays to one array with object of index and boolean values
   return (

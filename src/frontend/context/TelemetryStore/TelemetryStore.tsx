@@ -13,7 +13,7 @@ export const useTelemetryStore = create<TelemetryState>((set) => ({
   setTelemetry: (telemetry: Telemetry) => set({ telemetry }),
 }));
 
-export const useTelemetryValue = <T extends number[] | boolean[] = number[]>(
+export const useTelemetry = <T extends number[] | boolean[] = number[]>(
   key: keyof Telemetry
 ) =>
   useStoreWithEqualityFn(
@@ -22,9 +22,14 @@ export const useTelemetryValue = <T extends number[] | boolean[] = number[]>(
     telemetryCompare
   );
 
-export const useSingleTelemetryValue = <T extends number | boolean = number>(
+/**
+ * Returns the first telemetry value for a given key.
+ * @param key the key of the telemetry value to retrieve
+ * @returns the first telemetry value
+ */
+export const useTelemetryValue = <T extends number | boolean = number>(
   key: keyof Telemetry
 ): T | undefined => {
-  const val = useTelemetryValue(key);
+  const val = useTelemetry(key);
   return val?.value?.[0] as T;
 };

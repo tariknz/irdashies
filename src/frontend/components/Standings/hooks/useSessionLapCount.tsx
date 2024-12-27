@@ -1,12 +1,12 @@
-import { useSingleTelemetryValue } from '@irdashies/context';
+import { useTelemetryValue } from '@irdashies/context';
 import { useCurrentSession } from './useCurrentSession';
 import { useMemo } from 'react';
 
 export const useSessionLapCount = () => {
   const currentSession = useCurrentSession();
-  const current = useSingleTelemetryValue('RaceLaps');
-  const timeRemaining = useSingleTelemetryValue('SessionTimeTotal');
-  const timeElapsed = useSingleTelemetryValue('SessionTimeRemain');
+  const current = useTelemetryValue('RaceLaps');
+  const timeRemaining = useTelemetryValue('SessionTimeTotal');
+  const timeElapsed = useTelemetryValue('SessionTimeRemain');
 
   const result = useMemo(() => {
     const result = {

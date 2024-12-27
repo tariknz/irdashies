@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { useTelemetryValue } from '@irdashies/context';
+import { useTelemetry } from '@irdashies/context';
 import {
   useDrivers,
   useDriverStandings,
@@ -7,8 +7,8 @@ import {
 } from './useDriverPositions';
 
 export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
-  const carIdxEstTime = useTelemetryValue('CarIdxEstTime');
-  const carIdxLapDistPct = useTelemetryValue('CarIdxLapDistPct');
+  const carIdxEstTime = useTelemetry('CarIdxEstTime');
+  const carIdxLapDistPct = useTelemetry('CarIdxLapDistPct');
   const drivers = useDrivers();
   const driverStandings = useDriverStandings();
   const playerIndex = usePlayerCarIndex();

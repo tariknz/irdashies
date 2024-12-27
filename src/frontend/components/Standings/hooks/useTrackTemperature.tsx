@@ -1,9 +1,9 @@
 import { useMemo } from 'react';
-import { useTelemetryValue } from '@irdashies/context';
+import { useTelemetry } from '@irdashies/context';
 
 export const useTrackTemperature = () => {
-  const trackTempVal = useTelemetryValue('TrackTempCrew');
-  const airTempVal = useTelemetryValue('AirTemp');
+  const trackTempVal = useTelemetry('TrackTempCrew');
+  const airTempVal = useTelemetry('AirTemp');
 
   const trackTemp = useMemo(() => {
     const trackTemp = trackTempVal?.value[0] ?? 0;

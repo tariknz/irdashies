@@ -1,8 +1,8 @@
 import { useMemo } from 'react';
-import { useSession, useSingleTelemetryValue } from '@irdashies/context';
+import { useSession, useTelemetryValue } from '@irdashies/context';
 
 export const useDriverIncidents = () => {
-  const incidents = useSingleTelemetryValue('PlayerCarTeamIncidentCount') || 0;
+  const incidents = useTelemetryValue('PlayerCarTeamIncidentCount') || 0;
   const { session } = useSession();
   const incidentLimit = useMemo(() => {
     let limit = session?.WeekendInfo?.WeekendOptions?.IncidentLimit || 0;

@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { useTelemetryValue } from '@irdashies/context';
+import { useTelemetry } from '@irdashies/context';
 
 const wetnessLevels: Record<number, string> = {
   0: '',
@@ -13,7 +13,7 @@ const wetnessLevels: Record<number, string> = {
 };
 
 export const useTrackWetness = () => {
-  const trackWetnessVal = useTelemetryValue('TrackWetness');
+  const trackWetnessVal = useTelemetry('TrackWetness');
   const trackWetness = useMemo(() => {
     const wetnessLevel = trackWetnessVal?.value[0] ?? 0;
     return wetnessLevels[wetnessLevel] ?? '';

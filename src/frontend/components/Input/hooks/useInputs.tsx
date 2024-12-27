@@ -1,11 +1,11 @@
-import { useSingleTelemetryValue } from '@irdashies/context';
+import { useTelemetryValue } from '@irdashies/context';
 
 export const useInputs = () => {
-  const brake = useSingleTelemetryValue('Brake');
-  const throttle = useSingleTelemetryValue('Throttle');
-  const clutch = useSingleTelemetryValue('Clutch');
-  const gear = useSingleTelemetryValue('Gear');
-  const speed = useSingleTelemetryValue('Speed');
+  const brake = useTelemetryValue('Brake');
+  const throttle = useTelemetryValue('Throttle');
+  const clutch = useTelemetryValue('Clutch');
+  const gear = useTelemetryValue('Gear');
+  const speed = useTelemetryValue('Speed');
 
   return { brake, throttle, clutch, gear, speed };
 };

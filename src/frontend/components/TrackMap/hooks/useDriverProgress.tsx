@@ -1,9 +1,9 @@
 import { useMemo } from 'react';
-import { useSession, useTelemetryValue } from '@irdashies/context';
+import { useSession, useTelemetry } from '@irdashies/context';
 
 export const useDriverProgress = () => {
   const { session } = useSession();
-  const carIdxLapDistPct = useTelemetryValue('CarIdxLapDistPct');
+  const carIdxLapDistPct = useTelemetry('CarIdxLapDistPct');
 
   const driverIdx = useMemo(() => {
     return session?.DriverInfo?.DriverCarIdx;

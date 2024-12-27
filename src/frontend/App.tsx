@@ -57,13 +57,12 @@ const App = () => (
   <DashboardProvider bridge={window.dashboardBridge}>
     <RunningStateProvider bridge={window.irsdkBridge}>
       <SessionProvider bridge={window.irsdkBridge}>
-        <TelemetryProvider bridge={window.irsdkBridge}>
-          <HashRouter>
-            <EditMode>
-              <AppRoutes />
-            </EditMode>
-          </HashRouter>
-        </TelemetryProvider>
+        <TelemetryProvider bridge={window.irsdkBridge} />
+        <HashRouter>
+          <EditMode>
+            <AppRoutes />
+          </EditMode>
+        </HashRouter>
       </SessionProvider>
     </RunningStateProvider>
   </DashboardProvider>

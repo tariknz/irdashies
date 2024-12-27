@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { useSession, useTelemetryValue } from '@irdashies/context';
+import { useSession, useTelemetry } from '@irdashies/context';
 import {
   createDriverStandings,
   groupStandingsByClass,
@@ -10,10 +10,10 @@ import { useCurrentSession } from './useCurrentSession';
 export const useDriverStandings = ({ buffer }: { buffer: number }) => {
   const { session } = useSession();
   const currentSession = useCurrentSession();
-  const carIdxF2Time = useTelemetryValue('CarIdxF2Time');
-  const carIdxOnPitRoad = useTelemetryValue<boolean[]>('CarIdxOnPitRoad');
-  const carIdxTrackSurface = useTelemetryValue('CarIdxTrackSurface');
-  const radioTransmitCarIdx = useTelemetryValue('RadioTransmitCarIdx');
+  const carIdxF2Time = useTelemetry('CarIdxF2Time');
+  const carIdxOnPitRoad = useTelemetry<boolean[]>('CarIdxOnPitRoad');
+  const carIdxTrackSurface = useTelemetry('CarIdxTrackSurface');
+  const radioTransmitCarIdx = useTelemetry('RadioTransmitCarIdx');
 
   const standings = useMemo(() => {
     const standings = createDriverStandings(

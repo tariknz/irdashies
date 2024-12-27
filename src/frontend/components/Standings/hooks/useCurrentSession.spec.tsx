@@ -1,14 +1,14 @@
 import { renderHook } from '@testing-library/react';
 import { useCurrentSession } from './useCurrentSession';
 import { describe, expect, it, vi } from 'vitest';
-import { useSession, useSingleTelemetryValue } from '@irdashies/context';
+import { useSession, useTelemetryValue } from '@irdashies/context';
 import type { Session } from '@irdashies/types';
 
 vi.mock('@irdashies/context');
 
 describe('useCurrentSession', () => {
   it('returns undefined if session is not available', () => {
-    vi.mocked(useSingleTelemetryValue).mockReturnValue(undefined);
+    vi.mocked(useTelemetryValue).mockReturnValue(undefined);
     vi.mocked(useSession).mockReturnValue({
       session: {} as Session,
     });
@@ -26,7 +26,7 @@ describe('useCurrentSession', () => {
         ],
       },
     } as unknown as Session;
-    vi.mocked(useSingleTelemetryValue).mockReturnValue(2);
+    vi.mocked(useTelemetryValue).mockReturnValue(2);
     vi.mocked(useSession).mockReturnValue({
       session: mockSession,
     });
@@ -46,7 +46,7 @@ describe('useCurrentSession', () => {
       },
     } as unknown as Session;
 
-    vi.mocked(useSingleTelemetryValue).mockReturnValue(3);
+    vi.mocked(useTelemetryValue).mockReturnValue(3);
     vi.mocked(useSession).mockReturnValue({
       session: mockSession,
     });
@@ -65,7 +65,7 @@ describe('useCurrentSession', () => {
         ],
       },
     } as unknown as Session;
-    vi.mocked(useSingleTelemetryValue).mockReturnValue(undefined);
+    vi.mocked(useTelemetryValue).mockReturnValue(undefined);
     vi.mocked(useSession).mockReturnValue({
       session: mockSession,
     });
