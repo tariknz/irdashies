@@ -1,11 +1,8 @@
-import { useMemo } from 'react';
-import { useSession } from '@irdashies/context';
+import { useSessionStore } from '@irdashies/context';
 
 export const useTrackId = () => {
-  const { session } = useSession();
-  const trackId = useMemo(
-    () => session?.WeekendInfo.TrackID,
-    [session?.WeekendInfo.TrackID]
+  const trackId = useSessionStore(
+    (state) => state.session?.WeekendInfo.TrackID
   );
   return trackId;
 };

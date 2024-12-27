@@ -4,9 +4,9 @@ import {
   useTelemetry,
   useSessionDrivers,
   useSessionStore,
+  useSessionType,
 } from '@irdashies/context';
 import { Standings } from '../createStandings';
-import { useCurrentSession } from './useCurrentSession';
 
 export const useDriverPositions = () => {
   const carIdxPosition = useTelemetry('CarIdxPosition');
@@ -85,7 +85,8 @@ export const useDriverStandings = () => {
   const radioTransmitCarIdx = useRadioTransmitCarIndex();
   const carStates = useCarState();
   const playerCarIdx = usePlayerCarIndex();
-  const currentSession = useCurrentSession();
+  const sessionNum = useTelemetryValue('SessionNum');
+  const sessionType = useSessionType(sessionNum);
 
   const driverStandings: Standings[] = useMemo(() => {
     const standings = drivers.map((driver) => {
@@ -100,7 +101,7 @@ export const useDriverStandings = () => {
         driverPositions.find((pos) => pos.carIdx === playerCarIdx)?.lapNum ?? 0;
 
       let lappedState: 'ahead' | 'behind' | 'same' | undefined = undefined;
-      if (currentSession?.SessionType === 'Race') {
+      if (sessionType === 'Race') {
         if (driverPos.lapNum > playerLap) lappedState = 'ahead';
         if (driverPos.lapNum < playerLap) lappedState = 'behind';
         if (driverPos.lapNum === playerLap) lappedState = 'same';
@@ -139,11 +140,11 @@ export const useDriverStandings = () => {
     return standings.filter((s) => !!s).sort((a, b) => a.position - b.position);
   }, [
     carStates,
-    currentSession?.SessionType,
     driverPositions,
     drivers,
     playerCarIdx,
     radioTransmitCarIdx,
+    sessionType,
   ]);
 
   return driverStandings;

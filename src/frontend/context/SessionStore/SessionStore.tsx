@@ -40,6 +40,15 @@ export const useSessionType = (sessionNum: number | undefined) =>
       )?.SessionType
   );
 
+export const useSessionName = (sessionNum: number | undefined) =>
+  useStore(
+    useSessionStore,
+    (state) =>
+      state.session?.SessionInfo?.Sessions?.find(
+        (state) => state.SessionNum === sessionNum
+      )?.SessionName
+  );
+
 export const useSessionLaps = (sessionNum: number | undefined) =>
   useStore(
     useSessionStore,
