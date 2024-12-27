@@ -4,9 +4,10 @@ import { SessionProvider, TelemetryProvider } from '@irdashies/context';
 
 export const TelemetryDecorator = (path?: string) => (Story: StoryFn) => {
   return (
-    <SessionProvider bridge={generateMockDataFromPath(path)}>
+    <>
+      <SessionProvider bridge={generateMockDataFromPath(path)} />
       <TelemetryProvider bridge={generateMockDataFromPath(path)} />
       <Story />
-    </SessionProvider>
+    </>
   );
 };
