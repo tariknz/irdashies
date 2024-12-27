@@ -1,33 +1,31 @@
 import { useMemo } from 'react';
-import { useSession, useTelemetry } from '@irdashies/context';
+import {
+  useSession,
+  useSingleTelemetryValue,
+  useTelemetryValue,
+} from '@irdashies/context';
 import { Standings } from '../createStandings';
 import { useCurrentSession } from './useCurrentSession';
 
 export const useDriverPositions = () => {
-  const { telemetry } = useTelemetry();
+  const carIdxPosition = useTelemetryValue('CarIdxPosition');
+  const carIdxClassPosition = useTelemetryValue('CarIdxClassPosition');
+  const carIdxBestLap = useTelemetryValue('CarIdxBestLapTime');
+  const carIdxLastLap = useTelemetryValue('CarIdxLastLapTime');
+  const carIdxF2Time = useTelemetryValue('CarIdxF2Time');
+  const carIdxLapNum = useTelemetryValue('CarIdxLap');
 
-  const driverPositions = useMemo(() => {
-    const carIdxPosition = telemetry?.CarIdxPosition?.value ?? [];
-    const carIdxClassPosition = telemetry?.CarIdxClassPosition?.value ?? [];
-    const carIdxBestLap = telemetry?.CarIdxBestLapTime?.value ?? [];
-    const carIdxLastLap = telemetry?.CarIdxLastLapTime?.value ?? [];
-    const carIdxF2Time = telemetry?.CarIdxF2Time?.value ?? [];
-    const carIdxLapNum = telemetry?.CarIdxLap?.value ?? [];
+  const positions = carIdxPosition?.value?.map((position, carIdx) => ({
+    carIdx,
+    position,
+    classPosition: carIdxClassPosition?.value?.[carIdx],
+    delta: carIdxF2Time?.value?.[carIdx], // only to leader currently, need to handle non-race sessions
+    bestLap: carIdxBestLap?.value?.[carIdx],
+    lastLap: carIdxLastLap?.value?.[carIdx],
+    lapNum: carIdxLapNum?.value?.[carIdx],
+  }));
 
-    const positions = carIdxPosition.map((position, carIdx) => ({
-      carIdx,
-      position,
-      classPosition: carIdxClassPosition[carIdx],
-      delta: carIdxF2Time[carIdx], // only to leader currently, need to handle non-race sessions
-      bestLap: carIdxBestLap[carIdx],
-      lastLap: carIdxLastLap[carIdx],
-      lapNum: carIdxLapNum[carIdx],
-    }));
-
-    return positions;
-  }, [telemetry]);
-
-  return driverPositions;
+  return positions ?? [];
 };
 
 export const useDrivers = () => {
@@ -57,37 +55,22 @@ export const useDrivers = () => {
 
 // Which car is currently active on radio
 export const useRadioTransmitCarIndex = () => {
-  const { telemetry } = useTelemetry();
-
-  const radioTransmitCarIdx = useMemo(() => {
-    const radioTransmitCarIdx = telemetry?.RadioTransmitCarIdx?.value ?? [];
-    if (!radioTransmitCarIdx.length) return undefined;
-
-    return radioTransmitCarIdx[0];
-  }, [telemetry?.RadioTransmitCarIdx?.value]);
-
+  const radioTransmitCarIdx = useSingleTelemetryValue('RadioTransmitCarIdx');
   return radioTransmitCarIdx;
 };
 
 export const useCarState = () => {
-  const { telemetry } = useTelemetry();
-
-  const trackSurfacesCarIndexes = useMemo(() => {
-    const carIndexes = telemetry?.CarIdxTrackSurface?.value ?? [];
-    return carIndexes.map((value) => value > -1);
-  }, [telemetry?.CarIdxTrackSurface?.value]);
-
-  const pitRoadCarIndexes = useMemo(() => {
-    const carIndexes = telemetry?.CarIdxOnPitRoad?.value ?? [];
-    return carIndexes;
-  }, [telemetry?.CarIdxOnPitRoad?.value]);
+  const carIdxTrackSurface = useTelemetryValue('CarIdxTrackSurface');
+  const carIdxOnPitRoad = useTelemetryValue<boolean[]>('CarIdxOnPitRoad');
 
   // turn two arrays to one array with object of index and boolean values
-  return trackSurfacesCarIndexes.map((onTrack, index) => ({
-    carIdx: index,
-    onTrack,
-    onPitRoad: pitRoadCarIndexes[index],
-  }));
+  return (
+    carIdxTrackSurface?.value?.map((onTrack, index) => ({
+      carIdx: index,
+      onTrack: onTrack > -1,
+      onPitRoad: carIdxOnPitRoad?.value?.[index],
+    })) ?? []
+  );
 };
 
 export const usePlayerCarIndex = () => {
