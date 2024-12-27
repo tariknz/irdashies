@@ -9,16 +9,16 @@ const COLORS = [
 ];
 
 export interface InputTraceProps {
-  brake: number;
-  throttle: number;
-  clutch: number;
+  brake?: number;
+  throttle?: number;
+  clutch?: number;
 }
 
 export const InputBar = ({ brake, throttle, clutch }: InputTraceProps) => {
   const svgRef = useRef<SVGSVGElement>(null);
 
   useEffect(() => {
-    drawBars(svgRef.current, [clutch, brake, throttle]);
+    drawBars(svgRef.current, [clutch ?? 0, brake ?? 0, throttle ?? 0]);
   }, [brake, throttle, clutch]);
 
   return <svg ref={svgRef} width="120"></svg>;

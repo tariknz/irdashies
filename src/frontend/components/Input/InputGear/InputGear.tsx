@@ -1,10 +1,10 @@
 export interface InputGearProps {
-  gear: number;
-  speedMs: number;
+  gear?: number;
+  speedMs?: number;
 }
 
 export const InputGear = ({ gear, speedMs }: InputGearProps) => {
-  const speed = speedMs * 3.6;
+  const speed = (speedMs ?? 0) * 3.6;
   let gearText = '';
   switch (gear) {
     case -1:

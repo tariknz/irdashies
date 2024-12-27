@@ -6,8 +6,8 @@ const COLORS = [tailwindColors.red['500'], tailwindColors.green['500']];
 
 export interface InputTraceProps {
   input: {
-    brake: number;
-    throttle: number;
+    brake?: number;
+    throttle?: number;
   };
 }
 

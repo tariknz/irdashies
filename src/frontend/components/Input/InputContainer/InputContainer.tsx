@@ -3,11 +3,11 @@ import { InputGear } from '../InputGear/InputGear';
 import { InputTrace } from '../InputTrace/InputTrace';
 
 export interface InputProps {
-  brake: number;
-  throttle: number;
-  clutch: number;
-  gear: number;
-  speed: number;
+  brake?: number;
+  throttle?: number;
+  clutch?: number;
+  gear?: number;
+  speed?: number;
 }
 
 export const InputContainer = ({
