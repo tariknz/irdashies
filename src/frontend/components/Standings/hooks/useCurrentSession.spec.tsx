@@ -1,16 +1,14 @@
 import { renderHook } from '@testing-library/react';
 import { useCurrentSession } from './useCurrentSession';
 import { describe, expect, it, vi } from 'vitest';
-import { useSession, useTelemetry } from '@irdashies/context';
-import type { Session, Telemetry } from '@irdashies/types';
+import { useSession, useSingleTelemetryValue } from '@irdashies/context';
+import type { Session } from '@irdashies/types';
 
 vi.mock('@irdashies/context');
 
 describe('useCurrentSession', () => {
   it('returns undefined if session is not available', () => {
-    vi.mocked(useTelemetry).mockReturnValue({
-      telemetry: {} as Telemetry,
-    });
+    vi.mocked(useSingleTelemetryValue).mockReturnValue(undefined);
     vi.mocked(useSession).mockReturnValue({
       session: {} as Session,
     });
@@ -28,13 +26,7 @@ describe('useCurrentSession', () => {
         ],
       },
     } as unknown as Session;
-    const mockTelemetry = {
-      SessionNum: { value: [2] },
-    } as Telemetry;
-
-    vi.mocked(useTelemetry).mockReturnValue({
-      telemetry: mockTelemetry,
-    });
+    vi.mocked(useSingleTelemetryValue).mockReturnValue(2);
     vi.mocked(useSession).mockReturnValue({
       session: mockSession,
     });
@@ -53,13 +45,8 @@ describe('useCurrentSession', () => {
         ],
       },
     } as unknown as Session;
-    const mockTelemetry = {
-      SessionNum: { value: [3] },
-    } as Telemetry;
 
-    vi.mocked(useTelemetry).mockReturnValue({
-      telemetry: mockTelemetry,
-    });
+    vi.mocked(useSingleTelemetryValue).mockReturnValue(3);
     vi.mocked(useSession).mockReturnValue({
       session: mockSession,
     });
@@ -78,13 +65,7 @@ describe('useCurrentSession', () => {
         ],
       },
     } as unknown as Session;
-    const mockTelemetry = {
-      SessionNum: { value: [] as number[] },
-    } as Telemetry;
-
-    vi.mocked(useTelemetry).mockReturnValue({
-      telemetry: mockTelemetry,
-    });
+    vi.mocked(useSingleTelemetryValue).mockReturnValue(undefined);
     vi.mocked(useSession).mockReturnValue({
       session: mockSession,
     });

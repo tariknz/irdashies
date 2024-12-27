@@ -12,7 +12,7 @@ export const useCurrentSession = () => {
     const sessions = session.SessionInfo.Sessions;
 
     return sessions.find((s) => s.SessionNum === sessionNum) || undefined;
-  }, [session?.SessionInfo.Sessions, sessionNum]);
+  }, [session?.SessionInfo?.Sessions, sessionNum]);
 
   return currentSession;
 };
