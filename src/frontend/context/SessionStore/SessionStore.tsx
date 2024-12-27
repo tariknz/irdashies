@@ -1,7 +1,8 @@
 import type { Session } from '@irdashies/types';
-import { create } from 'zustand';
+import { create, useStore } from 'zustand';
 import { useStoreWithEqualityFn } from 'zustand/traditional';
-import { driverListCompare } from './driverCompare';
+import { arrayShallowCompare } from './arrayShallowCompare';
+import { shallow } from 'zustand/shallow';
 
 interface SessionState {
   session: Session | null;
@@ -17,5 +18,63 @@ export const useSessionDrivers = () =>
   useStoreWithEqualityFn(
     useSessionStore,
     (state) => state.session?.DriverInfo?.Drivers,
-    driverListCompare
+    arrayShallowCompare
+  );
+
+export const useSingleSession = (sessionNum: number | undefined) =>
+  useStoreWithEqualityFn(
+    useSessionStore,
+    (state) =>
+      state.session?.SessionInfo?.Sessions?.find(
+        (state) => state.SessionNum === sessionNum
+      ),
+    shallow
+  );
+
+export const useSessionType = (sessionNum: number | undefined) =>
+  useStore(
+    useSessionStore,
+    (state) =>
+      state.session?.SessionInfo?.Sessions?.find(
+        (state) => state.SessionNum === sessionNum
+      )?.SessionType
+  );
+
+export const useSessionLaps = (sessionNum: number | undefined) =>
+  useStore(
+    useSessionStore,
+    (state) =>
+      state.session?.SessionInfo?.Sessions?.find(
+        (state) => state.SessionNum === sessionNum
+      )?.SessionLaps
+  );
+
+export const useDriverCarIdx = () =>
+  useStore(useSessionStore, (state) => state.session?.DriverInfo?.DriverCarIdx);
+
+export const useSessionPositions = (sessionNum: number | undefined) =>
+  useStoreWithEqualityFn(
+    useSessionStore,
+    (state) =>
+      state.session?.SessionInfo?.Sessions?.find(
+        (state) => state.SessionNum === sessionNum
+      )?.ResultsPositions,
+    arrayShallowCompare
+  );
+
+export const useSessionFastestLaps = (sessionNum: number | undefined) =>
+  useStoreWithEqualityFn(
+    useSessionStore,
+    (state) =>
+      state.session?.SessionInfo?.Sessions?.find(
+        (state) => state.SessionNum === sessionNum
+      )?.ResultsFastestLap,
+    arrayShallowCompare
+  );
+
+export const useSessionQualifyingResults = () =>
+  useStoreWithEqualityFn(
+    useSessionStore,
+    (state) => state.session?.QualifyResultsInfo?.Results,
+    arrayShallowCompare
   );

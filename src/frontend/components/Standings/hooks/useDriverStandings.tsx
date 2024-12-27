@@ -1,15 +1,28 @@
 import { useMemo } from 'react';
-import { useSession, useTelemetry } from '@irdashies/context';
+import {
+  useDriverCarIdx,
+  useSessionDrivers,
+  useSessionFastestLaps,
+  useSessionPositions,
+  useSessionQualifyingResults,
+  useSessionType,
+  useTelemetry,
+  useTelemetryValue,
+} from '@irdashies/context';
 import {
   createDriverStandings,
   groupStandingsByClass,
   sliceRelevantDrivers,
 } from '../createStandings';
-import { useCurrentSession } from './useCurrentSession';
 
 export const useDriverStandings = ({ buffer }: { buffer: number }) => {
-  const { session } = useSession();
-  const currentSession = useCurrentSession();
+  const sessionDrivers = useSessionDrivers();
+  const driverCarIdx = useDriverCarIdx();
+  const qualifyingResults = useSessionQualifyingResults();
+  const sessionNum = useTelemetryValue('SessionNum');
+  const sessionType = useSessionType(sessionNum);
+  const positions = useSessionPositions(sessionNum);
+  const fastestLaps = useSessionFastestLaps(sessionNum);
   const carIdxF2Time = useTelemetry('CarIdxF2Time');
   const carIdxOnPitRoad = useTelemetry<boolean[]>('CarIdxOnPitRoad');
   const carIdxTrackSurface = useTelemetry('CarIdxTrackSurface');
@@ -18,9 +31,9 @@ export const useDriverStandings = ({ buffer }: { buffer: number }) => {
   const standings = useMemo(() => {
     const standings = createDriverStandings(
       {
-        playerIdx: session?.DriverInfo?.DriverCarIdx,
-        drivers: session?.DriverInfo?.Drivers,
-        qualifyingResults: session?.QualifyResultsInfo?.Results,
+        playerIdx: driverCarIdx,
+        drivers: sessionDrivers,
+        qualifyingResults: qualifyingResults,
       },
       {
         carIdxF2TimeValue: carIdxF2Time?.value,
@@ -29,24 +42,24 @@ export const useDriverStandings = ({ buffer }: { buffer: number }) => {
         radioTransmitCarIdx: radioTransmitCarIdx?.value,
       },
       {
-        resultsPositions: currentSession?.ResultsPositions,
-        resultsFastestLap: currentSession?.ResultsFastestLap,
-        sessionType: currentSession?.SessionType,
+        resultsPositions: positions,
+        resultsFastestLap: fastestLaps,
+        sessionType,
       }
     );
     const grouped = groupStandingsByClass(standings);
     return sliceRelevantDrivers(grouped, { buffer });
   }, [
-    session?.DriverInfo?.DriverCarIdx,
-    session?.DriverInfo?.Drivers,
-    session?.QualifyResultsInfo?.Results,
+    driverCarIdx,
+    sessionDrivers,
+    qualifyingResults,
     carIdxF2Time?.value,
     carIdxOnPitRoad?.value,
     carIdxTrackSurface?.value,
     radioTransmitCarIdx?.value,
-    currentSession?.ResultsPositions,
-    currentSession?.ResultsFastestLap,
-    currentSession?.SessionType,
+    positions,
+    fastestLaps,
+    sessionType,
     buffer,
   ]);
 

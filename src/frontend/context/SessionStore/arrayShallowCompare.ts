@@ -1,7 +1,6 @@
-import type { Driver } from '@irdashies/types';
 import { shallow } from 'zustand/shallow';
 
-export const driverListCompare = (a?: Driver[], b?: Driver[]) => {
+export const arrayShallowCompare = (a?: unknown[], b?: unknown[]) => {
   if (!a && !b) return true;
   if (!a || !b || a.length !== b.length) {
     return false;
