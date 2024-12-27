@@ -1,5 +1,5 @@
 import type { Telemetry, TelemetryVar } from '@irdashies/types';
-import { create } from 'zustand';
+import { create, useStore } from 'zustand';
 import { useStoreWithEqualityFn } from 'zustand/traditional';
 import { telemetryCompare } from './telemetryCompare';
 
@@ -29,7 +29,8 @@ export const useTelemetry = <T extends number[] | boolean[] = number[]>(
  */
 export const useTelemetryValue = <T extends number | boolean = number>(
   key: keyof Telemetry
-): T | undefined => {
-  const val = useTelemetry(key);
-  return val?.value?.[0] as T;
-};
+): T | undefined =>
+  useStore(
+    useTelemetryStore,
+    (state) => state.telemetry?.[key]?.value?.[0] as T
+  );
