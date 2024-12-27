@@ -8,7 +8,9 @@ export default {
 
 type Story = StoryObj<typeof Standings>;
 
-export const Primary: Story = {};
+export const Primary: Story = {
+  decorators: [TelemetryDecorator()],
+};
 
 export const MultiClassPCC: Story = {
   decorators: [TelemetryDecorator('/test-data/1731391056221')],

@@ -1,19 +1,18 @@
 import { useMemo } from 'react';
-import { useSession, useTelemetry } from '@irdashies/context';
+import { useSession, useSingleTelemetryValue } from '@irdashies/context';
 
 export const useCurrentSession = () => {
-  const { telemetry } = useTelemetry();
+  const sessionNum = useSingleTelemetryValue('SessionNum');
   const { session } = useSession();
   const currentSession = useMemo(() => {
-    if (!session?.SessionInfo?.Sessions || !telemetry?.SessionNum?.value) {
+    if (!session?.SessionInfo?.Sessions) {
       return undefined;
     }
 
-    const sessionValue = telemetry.SessionNum.value?.[0] || 0;
     const sessions = session.SessionInfo.Sessions;
 
-    return sessions.find((s) => s.SessionNum === sessionValue) || undefined;
-  }, [session?.SessionInfo?.Sessions, telemetry?.SessionNum?.value]);
+    return sessions.find((s) => s.SessionNum === sessionNum) || undefined;
+  }, [session?.SessionInfo.Sessions, sessionNum]);
 
   return currentSession;
 };

@@ -14,6 +14,7 @@ export const telemetryCompare = (
   if (a.value.length !== b.value.length) return false; // Array lengths differ
 
   // Compare array values
+  console.log(a, b);
   for (let i = 0; i < a.value.length; i++) {
     if (a.value[i] !== b.value[i]) {
       return false;

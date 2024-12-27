@@ -1,6 +1,5 @@
 import type { Preview } from '@storybook/react';
 import '../src/frontend/theme.css';
-import { TelemetryDecorator } from './telemetryDecorator';
 
 const preview: Preview = {
   parameters: {
@@ -8,7 +7,6 @@ const preview: Preview = {
       default: 'dark',
     },
   },
-  decorators: [TelemetryDecorator()],
 };
 
 export default preview;
