@@ -1,17 +1,13 @@
 import { useMemo } from 'react';
-import { useTelemetry } from '@irdashies/context';
-import {
-  useDrivers,
-  useDriverStandings,
-  usePlayerCarIndex,
-} from './useDriverPositions';
+import { useDriverCarIdx, useTelemetry } from '@irdashies/context';
+import { useDrivers, useDriverStandings } from './useDriverPositions';
 
 export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
   const carIdxEstTime = useTelemetry('CarIdxEstTime');
   const carIdxLapDistPct = useTelemetry('CarIdxLapDistPct');
   const drivers = useDrivers();
   const driverStandings = useDriverStandings();
-  const playerIndex = usePlayerCarIndex();
+  const playerIndex = useDriverCarIdx();
 
   const standings = useMemo(() => {
     const player = drivers.find((result) => result.carIdx === playerIndex);

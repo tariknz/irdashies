@@ -3,8 +3,8 @@ import {
   useTelemetryValue,
   useTelemetry,
   useSessionDrivers,
-  useSessionStore,
   useSessionType,
+  useDriverCarIdx,
 } from '@irdashies/context';
 import { Standings } from '../createStandings';
 
@@ -50,12 +50,6 @@ export const useDrivers = () => {
   return drivers;
 };
 
-// Which car is currently active on radio
-export const useRadioTransmitCarIndex = () => {
-  const radioTransmitCarIdx = useTelemetryValue('RadioTransmitCarIdx');
-  return radioTransmitCarIdx;
-};
-
 export const useCarState = () => {
   const carIdxTrackSurface = useTelemetry('CarIdxTrackSurface');
   const carIdxOnPitRoad = useTelemetry<boolean[]>('CarIdxOnPitRoad');
@@ -70,21 +64,14 @@ export const useCarState = () => {
   );
 };
 
-export const usePlayerCarIndex = () => {
-  const playerCarIdx = useSessionStore(
-    (state) => state.session?.DriverInfo?.DriverCarIdx
-  );
-  return playerCarIdx;
-};
-
 // TODO: this should eventually replace the useDriverStandings hook
 // currently there's still a few bugs to handle but is only used in relative right now
 export const useDriverStandings = () => {
   const driverPositions = useDriverPositions();
   const drivers = useDrivers();
-  const radioTransmitCarIdx = useRadioTransmitCarIndex();
+  const radioTransmitCarIdx = useTelemetryValue('RadioTransmitCarIdx');
   const carStates = useCarState();
-  const playerCarIdx = usePlayerCarIndex();
+  const playerCarIdx = useDriverCarIdx();
   const sessionNum = useTelemetryValue('SessionNum');
   const sessionType = useSessionType(sessionNum);
 
