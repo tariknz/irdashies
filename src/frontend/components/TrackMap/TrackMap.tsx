@@ -1,6 +1,6 @@
 import { useTrackId } from './hooks/useTrackId';
-import { Track } from './Track';
 import { useDriverProgress } from './hooks/useDriverProgress';
+import { TrackCanvas } from './TrackCanvas';
 
 export const TrackMap = () => {
   const trackId = useTrackId();
@@ -8,5 +8,5 @@ export const TrackMap = () => {
 
   if (!trackId) return <></>;
 
-  return <Track trackId={trackId} drivers={driversTrackData} />;
+  return <TrackCanvas trackId={trackId} drivers={driversTrackData} />;
 };

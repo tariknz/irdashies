@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { Driver } from '@irdashies/types';
 import tracks from './tracks/tracks.json';
+import colors from 'tailwindcss/colors';
+import { getTailwindColor } from '../../utils/colors';
 
 export type TrackProps = {
   trackId: number;
@@ -41,7 +43,7 @@ export const TrackCanvas = ({ trackId, drivers }: TrackProps) => {
 
   // creating an svg path so we can use getPointAtLength
   const line = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-  line.setAttribute('d', trackDrawing.active.inside || '');
+  line.setAttribute('d', trackDrawing?.active?.inside || '');
 
   useEffect(() => {
     if (trackDrawing?.startFinish?.point?.length === undefined) return;
@@ -77,8 +79,8 @@ export const TrackCanvas = ({ trackId, drivers }: TrackProps) => {
   }, [
     drivers,
     line,
-    trackDrawing.startFinish?.direction,
-    trackDrawing.startFinish?.point?.length,
+    trackDrawing?.startFinish?.direction,
+    trackDrawing?.startFinish?.point?.length,
   ]);
 
   useEffect(() => {
@@ -109,7 +111,7 @@ export const TrackCanvas = ({ trackId, drivers }: TrackProps) => {
 
       const startFinish = new Path2D(trackDrawing.startFinish.line);
       ctx.lineWidth = 10;
-      ctx.strokeStyle = 'red';
+      ctx.strokeStyle = colors.red['500'];
       ctx.stroke(startFinish);
 
       trackDrawing.turns?.forEach((turn) => {
@@ -124,7 +126,9 @@ export const TrackCanvas = ({ trackId, drivers }: TrackProps) => {
       Object.values(positions)
         .sort((a, b) => Number(a.isPlayer) - Number(b.isPlayer))
         .forEach(({ driver, position, isPlayer }) => {
-          ctx.fillStyle = isPlayer ? 'blue' : 'green';
+          ctx.fillStyle = isPlayer
+            ? colors.yellow['500']
+            : getTailwindColor(driver.CarClassColor).canvasFill;
           ctx.beginPath();
           ctx.arc(position.x, position.y, 40, 0, 2 * Math.PI);
           ctx.fill();
@@ -152,9 +156,9 @@ export const TrackCanvas = ({ trackId, drivers }: TrackProps) => {
     };
   }, [
     positions,
-    trackDrawing.active.inside,
-    trackDrawing.startFinish.line,
-    trackDrawing.turns,
+    trackDrawing?.active?.inside,
+    trackDrawing?.startFinish?.line,
+    trackDrawing?.turns,
   ]);
 
   if (!trackDrawing?.active?.inside) {
