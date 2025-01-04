@@ -1,29 +1,12 @@
 import fs from 'fs';
 import { JSDOM } from 'jsdom';
 import { findDirection, findIntersectionPoint } from './svg-utils';
+import { TrackDrawing } from '../src/frontend/components/TrackMap/Track';
 
 interface TrackInfo {
   track_id: number;
   track_name: string;
   config_name: string;
-}
-
-interface TrackDrawing {
-  active: {
-    inside: string;
-    outside: string;
-  };
-  startFinish: {
-    line?: string;
-    arrow?: string;
-    point?: { x?: number; y?: number; length?: number } | null;
-    direction?: 'clockwise' | 'anticlockwise' | null;
-  };
-  turns?: {
-    x?: number;
-    y?: number;
-    content?: string;
-  }[];
 }
 
 export const generateTrackJson = () => {
