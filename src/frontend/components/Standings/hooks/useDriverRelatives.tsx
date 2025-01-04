@@ -35,6 +35,7 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
 
     const filterAndMapDrivers = (isAhead: boolean) => {
       return drivers
+        .filter((driver) => driver.onTrack || driver.carIdx === playerIndex)
         .filter((result) => {
           const playerDistPct = carIdxLapDistPct?.[playerIndex ?? 0];
           const carDistPct = carIdxLapDistPct?.[result.carIdx];
@@ -60,7 +61,7 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
       return [];
     }
 
-    const relatives = [...carsAhead, player, ...carsBehind];
+    const relatives = [...carsAhead, { ...player, delta: 0 }, ...carsBehind];
 
     // TODO: remove pace car if not under caution or pacing
 
