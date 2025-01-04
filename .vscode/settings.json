@@ -3,5 +3,6 @@
   "javascript.preferences.quoteStyle": "single",
   "cSpell.words": [
     "irdashies"
-  ]
+  ],
+  "svg.preview.background": "black"
 }

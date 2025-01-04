@@ -1,72 +1,41 @@
 import { Meta, StoryObj } from '@storybook/react';
 import { TrackMap } from './TrackMap';
-import { useEffect, useState } from 'react';
+import { TelemetryDecorator } from '../../../../.storybook/telemetryDecorator';
 
 export default {
   component: TrackMap,
-  argTypes: {
-    trackId: {
-      control: { type: 'number' },
-    },
-  },
 } as Meta;
 
 type Story = StoryObj<typeof TrackMap>;
 
-export const Primary: Story = {
-  args: {
-    trackId: 1,
-    driver: {
-      progress: 0,
-      carIdx: 1,
-    },
-  },
+export const SupercarsRace: Story = {
+  decorators: [TelemetryDecorator('/test-data/1732274253573')],
 };
 
-export const AllTracks: Story = {
-  render: (args) => {
-    return (
-      <div className="grid grid-cols-3 gap-2">
-        {Array.from({ length: 531 }).map((_, i) => {
-          return (
-            <div key={i}>
-              <div className="my-2">Track ID: {i + 1}</div>
-              <TrackMap trackId={i + 1} driver={args.driver} />
-            </div>
-          );
-        })}
-      </div>
-    );
-  },
-  args: {
-    driver: {
-      progress: 0,
-      carIdx: 1,
-    },
-  },
+export const AdvancedMX5: Story = {
+  decorators: [TelemetryDecorator('/test-data/1732260478001')],
 };
 
-export const CirclingAround: Story = {
-  render: (args) => {
-    const [progress, setProgress] = useState(0);
+export const GT3Practice: Story = {
+  decorators: [TelemetryDecorator('/test-data/1732355190142')],
+};
 
-    useEffect(() => {
-      const interval = setInterval(() => {
-        setProgress((prev) => (prev + 0.005) % 1);
-      }, 20);
+export const GT3Race: Story = {
+  decorators: [TelemetryDecorator('/test-data/1732359661942')],
+};
 
-      return () => clearInterval(interval);
-    });
+export const LegendsQualifying: Story = {
+  decorators: [TelemetryDecorator('/test-data/1731732047131')],
+};
 
-    return (
-      <TrackMap trackId={args.trackId} driver={{ ...args.driver, progress }} />
-    );
-  },
-  args: {
-    trackId: 1,
-    driver: {
-      progress: 0,
-      carIdx: 1,
-    },
-  },
+export const TestingCustomSessionData: Story = {
+  decorators: [TelemetryDecorator('/test-data/GT3 Sprint Arrays')],
+};
+
+export const PCCRaceWithMicUse: Story = {
+  decorators: [TelemetryDecorator('/test-data/1733030013074')],
+};
+
+export const PCCPacing: Story = {
+  decorators: [TelemetryDecorator('/test-data/1735296198162')],
 };

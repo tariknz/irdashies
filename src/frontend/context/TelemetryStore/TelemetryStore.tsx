@@ -48,3 +48,21 @@ export const useTelemetryValues = <T extends number[] | boolean[] = number[]>(
     (state) => (state.telemetry?.[key]?.value ?? []) as T,
     arrayCompare
   );
+
+/**
+ * Returns the first telemetry value for a given key plus a mapping function.
+ * @param key the key of the telemetry value to retrieve
+ * @param mapFn the mapping function to apply to the value
+ * @returns the first telemetry value
+ */
+export const useTelemetryValuesMapped = <
+  T extends number[] | boolean[], // Ensure T is an array of numbers or booleans
+>(
+  key: keyof Telemetry,
+  mapFn: (val: T[number]) => T[number]
+): T =>
+  useStoreWithEqualityFn(
+    useTelemetryStore,
+    (state) => (state.telemetry?.[key]?.value ?? []).map(mapFn) as T,
+    arrayCompare
+  );

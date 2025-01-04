@@ -1,21 +1,5 @@
 import { svgPathProperties } from 'svg-path-properties';
 
-// Function to parse the `d` attribute into path commands
-export const parsePathData = (d: string): string[] => {
-  const commands = d.match(/([MLCZHVTA][^MLCZHVTA]*)/gi); // Matches path commands
-  return commands ? commands.map((cmd) => cmd.trim()) : [];
-};
-
-// Function to split the path into inside and outside parts
-export const splitPathData = (
-  commands: string[]
-): { inside: string; outside: string } => {
-  const halfwayIndex = Math.ceil(commands.length / 2);
-  const insideCommands = commands.slice(0, halfwayIndex).join(' ');
-  const outsideCommands = commands.slice(halfwayIndex).join(' ');
-  return { inside: insideCommands, outside: outsideCommands };
-};
-
 // Function to find the intersection of two lines
 export const lineIntersection = (
   p1: { x: number; y: number },
@@ -44,15 +28,13 @@ export const lineIntersection = (
 
 // Find the intersection point using a more efficient approach
 export const findIntersectionPoint = (
-  path1: SVGPathElement, // Inside path
-  path2: SVGPathElement // Start/Finish path
+  path1: string, // Inside path
+  path2: string // Start/Finish path
 ) => {
-  const path1attr = path1?.getAttribute('d');
-  const path2attr = path2?.getAttribute('d');
-  if (!path1attr || !path2attr) return null;
+  if (!path1 || !path2) return null;
 
-  const p1 = new svgPathProperties(path1attr);
-  const p2 = new svgPathProperties(path2attr);
+  const p1 = new svgPathProperties(path1);
+  const p2 = new svgPathProperties(path2);
 
   const path1Length = p1.getTotalLength();
   const path2Length = p2.getTotalLength();
@@ -101,31 +83,6 @@ export const findIntersectionPoint = (
   }
 
   return null;
-};
-
-// Function to find the direction of the track based on the order of turns
-// looks at the position of the first two turns to determine the direction
-export const findDirection2 = (turnsSvgGroup: SVGGElement) => {
-  // get text position of turn 1
-  const turn1 = turnsSvgGroup?.querySelector('text') as SVGTextElement;
-  const turn1Position = turn1?.getBoundingClientRect();
-
-  // get text position of turn 2
-  const turn2 = turnsSvgGroup?.querySelector(
-    'text:nth-child(2)'
-  ) as SVGTextElement;
-  const turn2Position = turn2?.getBBox();
-
-  if (turn1Position && turn2Position) {
-    const direction = {
-      x: turn2Position.x - turn1Position.x,
-      y: turn2Position.y - turn1Position.y,
-    };
-
-    return direction.x > 0 ? 'clockwise' : 'anticlockwise';
-  }
-
-  return 'clockwise';
 };
 
 // Function to find the direction of the track based on the order of turns

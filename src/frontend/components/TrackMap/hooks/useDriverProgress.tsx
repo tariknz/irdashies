@@ -1,11 +1,26 @@
-import { useDriverCarIdx, useTelemetryStore } from '@irdashies/context';
+import {
+  useDriverCarIdx,
+  useSessionDrivers,
+  useTelemetryValuesMapped,
+} from '@irdashies/context';
 
 export const useDriverProgress = () => {
   const driverIdx = useDriverCarIdx();
-  const driverTrackPctValue = useTelemetryStore((s) => {
-    const val = s.telemetry?.CarIdxLapDistPct?.value[driverIdx ?? 0];
-    // round to nearest 0.01
-    return val ? Math.round(val * 100) / 100 : 0;
-  });
-  return driverTrackPctValue ?? 0;
+  const drivers = useSessionDrivers();
+  const driversLapDist = useTelemetryValuesMapped<number[]>(
+    'CarIdxLapDistPct',
+    (val) => Math.round(val * 100) / 100
+  );
+
+  const driversTrackData =
+    drivers
+      ?.map((driver) => ({
+        driver: driver,
+        progress: driversLapDist[driver.CarIdx],
+        isPlayer: driver.CarIdx === driverIdx,
+      }))
+      .filter((d) => d.progress > -1) // ignore drivers not on track
+      .filter((d) => d.driver.CarIdx > 0) ?? []; // ignore pace car for now
+
+  return driversTrackData;
 };

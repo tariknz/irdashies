@@ -14,6 +14,7 @@ describe('colors', () => {
       expect(getTailwindColor(0x123456)).toEqual({
         driverIcon: 'bg-sky-800 border-sky-500',
         classHeader: 'bg-sky-500 border-sky-500',
+        fill: 'fill-sky-500',
       });
     });
   });

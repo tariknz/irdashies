@@ -96,3 +96,6 @@ test-data/*.png
 test-data/unused
 src/**/tracks/*.svg
 asset-data
+
+# should be generated with script
+src/**/tracks/tracks.json

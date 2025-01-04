@@ -12,7 +12,7 @@ import { Input } from './components/Input';
 import { Standings } from './components/Standings/Standings';
 import { Settings } from './components/Settings/Settings';
 import { Relative } from './components/Standings/Relative';
-import { TrackOverlay } from './components/TrackMap/TrackOverlay';
+import { TrackMap } from './components/TrackMap/TrackMap';
 import { EditMode } from './components/EditMode/EditMode';
 
 // TODO: type this better, right now the config comes from settings
@@ -22,7 +22,7 @@ const WIDGET_MAP: Record<string, (config: any) => JSX.Element> = {
   input: Input,
   relative: Relative,
   settings: Settings,
-  map: TrackOverlay,
+  map: TrackMap,
 };
 
 const AppRoutes = () => {
