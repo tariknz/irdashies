@@ -128,7 +128,7 @@ export const generateTrackJson = () => {
           acc[prop] = {
             line: flipLineArrow ? arrow : line,
             arrow: flipLineArrow ? line : arrow,
-            point: findIntersectionPoint(acc['active'].inside, line || ''),
+            point: intersection,
             direction: findDirection(trackId),
           };
         }

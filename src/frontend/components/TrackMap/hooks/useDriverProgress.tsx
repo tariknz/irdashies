@@ -9,7 +9,7 @@ export const useDriverProgress = () => {
   const drivers = useSessionDrivers();
   const driversLapDist = useTelemetryValuesMapped<number[]>(
     'CarIdxLapDistPct',
-    (val) => Math.round(val * 100) / 100
+    (val) => Math.round(val * 1000) / 1000
   );
 
   const driversTrackData =
