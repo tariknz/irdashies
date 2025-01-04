@@ -77,6 +77,7 @@ export class OverlayManager {
       window.setMovable(!this.isLocked);
       window.setIgnoreMouseEvents(this.isLocked);
       window.blur();
+      window.setAlwaysOnTop(true, 'floating', 1);
       window.webContents.send('editModeToggled', !this.isLocked);
     });
 

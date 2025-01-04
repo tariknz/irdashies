@@ -43,7 +43,7 @@ export const Track = ({ trackId, drivers }: TrackProps) => {
     const ref = insideRef?.current;
 
     if (!ref) return;
-    if (!trackDrawing?.startFinish?.point) return;
+    if (trackDrawing?.startFinish?.point?.length === undefined) return;
     if (!drivers?.length) return;
 
     const direction = trackDrawing.startFinish?.direction;
