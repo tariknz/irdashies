@@ -283,26 +283,6 @@ export const Primary: Story = {
   },
 };
 
-export const AllTracks: Story = {
-  render: (args) => {
-    return (
-      <div className="grid grid-cols-3 gap-2">
-        {Array.from({ length: 531 }).map((_, i) => {
-          return (
-            <div key={i}>
-              <div className="my-2">Track ID: {i + 1}</div>
-              <TrackCanvas trackId={i + 1} drivers={args.drivers} />
-            </div>
-          );
-        })}
-      </div>
-    );
-  },
-  args: {
-    drivers: sampleData,
-  },
-};
-
 export const CirclingAround: Story = {
   render: (args) => {
     const [drivers, setDrivers] = useState(args.drivers);
