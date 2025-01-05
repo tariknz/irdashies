@@ -83,16 +83,30 @@ export const TrackCanvas = ({ trackId, drivers }: TrackProps) => {
   }, [
     drivers,
     line,
-    trackDrawing.active.inside,
-    trackDrawing.startFinish?.direction,
-    trackDrawing.startFinish?.point?.length,
+    trackDrawing?.active.inside,
+    trackDrawing?.startFinish?.direction,
+    trackDrawing?.startFinish?.point?.length,
   ]);
 
   useEffect(() => {
     const ctx = canvasRef.current?.getContext('2d');
     if (!ctx) return;
-    const scale = window.innerWidth / 1920;
-    ctx.scale(scale, scale);
+
+    const resize = () => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const scale = window.innerWidth / 1920;
+      canvas.width = window.innerWidth;
+      canvas.height = 1080 * scale;
+      ctx.scale(scale, scale);
+    };
+
+    resize();
+    window.addEventListener('resize', resize);
+
+    return () => {
+      window.removeEventListener('resize', resize);
+    };
   }, []);
 
   useEffect(() => {
@@ -101,7 +115,7 @@ export const TrackCanvas = ({ trackId, drivers }: TrackProps) => {
     if (!canvas || !ctx) return;
 
     const draw = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.clearRect(0, 0, 1920, 1080);
 
       // Shadow
       ctx.shadowColor = 'black';
