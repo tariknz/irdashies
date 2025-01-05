@@ -17,6 +17,15 @@ export class OverlayManager {
   private currentSettingsWindow: BrowserWindow | undefined;
   private isLocked = true;
 
+  constructor() {
+    setInterval(() => {
+      this.getOverlays().forEach(({ window }) => {
+        if (window.isDestroyed()) return;
+        window.setAlwaysOnTop(true, 'screen-saver', 1);
+      });
+    }, 5000);
+  }
+
   public getOverlays(): { widget: DashboardWidget; window: BrowserWindow }[] {
     return Object.values(this.overlayWindows);
   }
@@ -52,9 +61,11 @@ export class OverlayManager {
       },
     });
 
-    browserWindow.setAlwaysOnTop(true, 'floating', 1);
     browserWindow.setIgnoreMouseEvents(true);
-
+    browserWindow.setVisibleOnAllWorkspaces(true, {
+      visibleOnFullScreen: true,
+    });
+    browserWindow.setAlwaysOnTop(true, 'screen-saver', 1);
     // and load the index.html of the app.
     if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
       browserWindow.loadURL(`${MAIN_WINDOW_VITE_DEV_SERVER_URL}#/${id}`);
@@ -77,7 +88,6 @@ export class OverlayManager {
       window.setMovable(!this.isLocked);
       window.setIgnoreMouseEvents(this.isLocked);
       window.blur();
-      window.setAlwaysOnTop(true, 'floating', 1);
       window.webContents.send('editModeToggled', !this.isLocked);
     });
 

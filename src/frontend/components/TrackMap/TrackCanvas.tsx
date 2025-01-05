@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Driver } from '@irdashies/types';
 import tracks from './tracks/tracks.json';
 import colors from 'tailwindcss/colors';
@@ -40,10 +40,14 @@ export const TrackCanvas = ({ trackId, drivers }: TrackProps) => {
   const trackDrawing = (tracks as unknown as TrackDrawing[])[trackId];
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationFrameIdRef = useRef<number | null>(null);
-
-  // creating an svg path so we can use getPointAtLength
-  const line = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-  line.setAttribute('d', trackDrawing?.active?.inside || '');
+  const line = useMemo(() => {
+    const svgPath = document.createElementNS(
+      'http://www.w3.org/2000/svg',
+      'path'
+    );
+    svgPath.setAttribute('d', trackDrawing?.active?.inside || '');
+    return svgPath;
+  }, [trackDrawing?.active?.inside]);
 
   useEffect(() => {
     if (trackDrawing?.startFinish?.point?.length === undefined) return;
@@ -79,8 +83,9 @@ export const TrackCanvas = ({ trackId, drivers }: TrackProps) => {
   }, [
     drivers,
     line,
-    trackDrawing?.startFinish?.direction,
-    trackDrawing?.startFinish?.point?.length,
+    trackDrawing.active.inside,
+    trackDrawing.startFinish?.direction,
+    trackDrawing.startFinish?.point?.length,
   ]);
 
   useEffect(() => {
@@ -170,7 +175,7 @@ export const TrackCanvas = ({ trackId, drivers }: TrackProps) => {
       {!trackDrawing?.startFinish?.point && (
         <p className="text-sm">Track start point unavailable</p>
       )}
-      <div className="overflow-hidden">
+      <div className="overflow-hidden w-full h-full">
         <canvas
           className="will-change-transform"
           width={1920}
