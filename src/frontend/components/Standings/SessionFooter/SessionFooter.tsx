@@ -1,11 +1,11 @@
 import { Clock, Drop, RoadHorizon, Thermometer } from '@phosphor-icons/react';
 import { useCurrentTime } from '../hooks/useCurrentTime';
-import { useTrackWetness } from '../hooks/useTrackWetness';
+import { useTrackWeather } from '../hooks/useTrackWetness';
 import { useTrackTemperature } from '../hooks/useTrackTemperature';
 
 export const SessionFooter = () => {
   const time = useCurrentTime();
-  const { trackWetness } = useTrackWetness();
+  const { trackState } = useTrackWeather();
   const { trackTemp, airTemp } = useTrackTemperature();
   return (
     <div className="bg-slate-900/70 text-sm px-3 py-1 flex justify-between">
@@ -15,7 +15,7 @@ export const SessionFooter = () => {
       </div>
       <div className="flex flex-1 flex-grow gap-1 items-center justify-center text-nowrap">
         <Drop />
-        <span>{trackWetness}</span>
+        <span>{trackState}</span>
       </div>
       <div className="flex flex-1 flex-grow gap-1 items-center justify-center">
         <Thermometer />
