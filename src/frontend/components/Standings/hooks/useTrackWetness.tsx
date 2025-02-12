@@ -14,6 +14,7 @@ const wetnessLevels: Record<number, string> = {
 
 export const useTrackWeather = () => {
   const trackMoisture = useTelemetry('TrackWetness');
+  const windYaw = useTelemetry('YawNorth');
   const windDirection = useTelemetry('WindDir');
   const windVelo = useTelemetry('WindVel');
   const trackState = useMemo(() => {
@@ -21,5 +22,5 @@ export const useTrackWeather = () => {
     return wetnessLevels[wetnessLevel] ?? '';
   }, [trackMoisture?.value]);
 
-  return { trackState, trackMoisture, windDirection, windVelo };
+  return { trackState, trackMoisture, windDirection, windVelo, windYaw };
 };
