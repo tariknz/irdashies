@@ -1,0 +1,14 @@
+{
+  "usesTypeScript": true,
+  "usesStyledComponents": true,
+  "component": {
+    "default": {
+      "path": "src/frontend/components",
+      "withStyle": false,
+      "withTest": true,
+      "withStory": true,
+      "withLazy": false
+    }
+  },
+  "testLibrary": "None"
+}
