@@ -36,12 +36,13 @@ export const WeatherContainer = () => {
             <div className={HEADER_STYLE}>TRACK WETNESS
                <div className='font-bold text-lg text-center'>
                   <div className='flex flex-row gap-x-1'>
-                     <Drop />
+                     <Sun />
                      <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700 align-center">
 
                         <div className={METER_STYLE}></div>
                      </div>
-                     <Sun />
+                     <Drop />
+
                   </div>
                   <div className='font-normal'>{weather.trackState}</div>
                </div>
