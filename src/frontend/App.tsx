@@ -12,8 +12,10 @@ import { Input } from './components/Input';
 import { Standings } from './components/Standings/Standings';
 import { Settings } from './components/Settings/Settings';
 import { Relative } from './components/Standings/Relative';
+import { Weather } from './components/Weather';
 import { TrackMap } from './components/TrackMap/TrackMap';
 import { EditMode } from './components/EditMode/EditMode';
+
 
 // TODO: type this better, right now the config comes from settings
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -23,6 +25,7 @@ const WIDGET_MAP: Record<string, (config: any) => JSX.Element> = {
   relative: Relative,
   settings: Settings,
   map: TrackMap,
+  weather: Weather
 };
 
 const AppRoutes = () => {

@@ -42,5 +42,15 @@ export const defaultDashboard: DashboardLayout = {
         height: 600,
       },
     },
+    {
+      id: 'weather',
+      enabled: true,
+      layout: {
+        x: 1000,
+        y: 1000,
+        width: 400,
+        height: 700
+      }
+    }
   ],
 };
