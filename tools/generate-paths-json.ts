@@ -1,7 +1,7 @@
 import fs from 'fs';
 import { JSDOM } from 'jsdom';
 import { findDirection, findIntersectionPoint } from './svg-utils';
-import { TrackDrawing } from '../src/frontend/components/TrackMap/Track';
+import { TrackDrawing } from '../src/frontend/components/TrackMap/TrackCanvas';
 
 interface TrackInfo {
   track_id: number;

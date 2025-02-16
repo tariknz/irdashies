@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { DashboardLayout } from '../../../app/storage/dashboards';
+import { DashboardLayout } from '@irdashies/types';
 
 export const SettingsForm = ({
   currentDashboard,
