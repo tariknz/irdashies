@@ -35,7 +35,7 @@ export const SettingsForm = ({
     <div className="bg-slate-700 w-full h-full p-2 flex flex-col gap-2">
       <h1 className="py-2">Settings</h1>
       <textarea
-        className="w-full h-full bg-slate-800 p-2 text-monospace text-sm"
+        className="w-full h-full bg-slate-800 p-2 text-monospace text-sm min-h-60"
         value={dashboardInput}
         onChange={(e) => onInputUpdated(e)}
       />
