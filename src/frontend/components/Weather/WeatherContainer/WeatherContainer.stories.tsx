@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { WeatherContainer } from './WeatherContainer';
-import { TelemetryDecorator } from '../../../../../../.storybook/telemetryDecorator';
+import { TelemetryDecorator } from '../../../../../.storybook/telemetryDecorator';
 
 export default {
   component: WeatherContainer,
