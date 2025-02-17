@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { WeatherContainer } from './WeatherContainer';
-import { TelemetryDecorator } from '../../../../../../.storybook/telemetryDecorator'
+import { TelemetryDecorator } from '../../../../../../.storybook/telemetryDecorator';
 
 export default {
   component: WeatherContainer,
@@ -9,5 +9,5 @@ export default {
 type Story = StoryObj<typeof WeatherContainer>;
 
 export const Primary: Story = {
-  decorators: [TelemetryDecorator(('/test-data/1731637331038'))],
+  decorators: [TelemetryDecorator('/test-data/1731637331038')],
 };
