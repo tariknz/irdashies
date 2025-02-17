@@ -1,5 +1,5 @@
 import { defineConfig } from 'vite';
-import tailwindcss from 'tailwindcss';
+import tailwindcss from '@tailwindcss/postcss';
 import path from 'node:path';
 import tsconfig from './tsconfig.json';
 

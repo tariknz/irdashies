@@ -43,7 +43,7 @@ export const SettingsForm = ({
         <button
           type="button"
           onClick={save}
-          className="bg-blue-700 hover:bg-blue-800 rounded-sm text-sm px-2 py-1 w-20"
+          className="bg-blue-700 hover:bg-blue-800 rounded-xs text-sm px-2 py-1 w-20"
         >
           Save
         </button>

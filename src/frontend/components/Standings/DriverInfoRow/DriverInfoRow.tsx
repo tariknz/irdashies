@@ -64,7 +64,7 @@ export const DriverInfoRow = ({
       >
         #{carNumber}
       </td>
-      <td className={`px-2 w-full`}>
+      <td className={`px-2 py-0.5 w-full`}>
         <div className="flex justify-between align-center">
           <div className="flex">
             <span
