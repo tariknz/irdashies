@@ -17,7 +17,8 @@ export const WeatherTrackWetness = ({
           <Sun />
           <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700 align-center">
             <div
-              className={`bg-blue-600 h-2.5 rounded-full w-[${trackWetnessPct}%]`}
+              style={{ width: `${trackWetnessPct}%` }}
+              className={`bg-blue-600 h-2.5 rounded-full`}
             ></div>
           </div>
           <Drop />

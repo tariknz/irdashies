@@ -1,6 +1,6 @@
 import { useAutoAnimate } from '@formkit/auto-animate/react';
-import { useTrackTemperature } from '../../Standings/hooks/useTrackTemperature';
-import { useTrackWeather } from '../../Standings/hooks/useTrackWetness';
+import { useTrackTemperature } from '../hooks/useTrackTemperature';
+import { useTrackWeather } from '../hooks/useWeather';
 import { WindDirection } from '../WindDirection/WindDirection';
 import { WeatherTemp } from '../WeatherTemp/WeatherTemp';
 import { WeatherTrackWetness } from '../WeatherTrackWetness/WeatherTrackWetness';
@@ -9,8 +9,9 @@ export const WeatherContainer = () => {
   const [parent] = useAutoAnimate();
   const weather = useTrackWeather();
   const trackWetnessPct = Math.floor(
-    (Number(weather.trackMoisture?.value) / 7) * 100
+    (Number(weather.trackMoisture?.value?.[0] ?? 0) / 7) * 100
   );
+
   const trackTemp = useTrackTemperature();
   const windSpeed = weather.windVelo?.value[0] * (18 / 5);
   const windDirectionValue =
