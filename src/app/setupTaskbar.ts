@@ -65,10 +65,11 @@ class Taskbar {
   }
 
   private saveTelemetry(): void {
-    if (process.platform === 'darwin') return;
-    import('./bridge/iracingSdk/dumpTelemetry').then(
-      async ({ dumpCurrentTelemetry }) => await dumpCurrentTelemetry()
-    );
+    throw new Error('Not implemented');
+    // if (process.platform === 'darwin') return;
+    // import('./bridge/iracingSdk/dumpTelemetry').then(
+    //   async ({ dumpCurrentTelemetry }) => await dumpCurrentTelemetry()
+    // );
   }
 
   private registerShortcuts(): void {
