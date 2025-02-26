@@ -74,7 +74,7 @@
   "license": "MIT",
   "dependencies": {
     "@formkit/auto-animate": "^0.8.2",
-    "@iracing-data/api": "^0.0.1",
+    "@iracing-data/download-track-assets": "file:../iracing-data-api/packages/helpers/download-track-assets",
     "@iracing-data/sdk": "^0.0.1-alpha.0",
     "@phosphor-icons/react": "^2.1.7",
     "d3": "^7.9.0",
