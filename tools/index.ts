@@ -1,11 +1,11 @@
-import { downloadTrackAssets } from '@iracing-data/download-track-assets';
+import { syncTrackAssets } from '@iracing-data/sync-track-assets';
 import { generateTrackJson } from './generate-paths-json';
 
 import * as dotenv from 'dotenv';
 dotenv.config();
 
 const main = async () => {
-  await downloadTrackAssets({
+  await syncTrackAssets({
     outputDir: './asset-data',
     writeFullAssets: true,
     writeFullInfo: true,
@@ -14,7 +14,6 @@ const main = async () => {
 
   console.log('Generating track JSON.');
   generateTrackJson();
-
   console.log('Done!');
 };
 
