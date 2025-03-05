@@ -28,6 +28,7 @@
     "@electron-forge/plugin-vite": "^7.5.0",
     "@electron-forge/publisher-github": "^7.5.0",
     "@electron/fuses": "^1.8.0",
+    "@iracing-data/sync-track-assets": "^0.0.2-alpha.2",
     "@storybook/addon-essentials": "^8.4.7",
     "@storybook/addon-interactions": "^8.4.7",
     "@storybook/blocks": "^8.4.7",
@@ -74,7 +75,6 @@
   "license": "MIT",
   "dependencies": {
     "@formkit/auto-animate": "^0.8.2",
-    "@iracing-data/sync-track-assets": "^0.0.2-alpha.2",
     "@phosphor-icons/react": "^2.1.7",
     "d3": "^7.9.0",
     "electron-squirrel-startup": "^1.0.1",
