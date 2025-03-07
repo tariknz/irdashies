@@ -33,6 +33,7 @@ export class OverlayManager {
   public createOverlays(dashboardLayout: DashboardLayout): void {
     const { widgets } = dashboardLayout;
     widgets.forEach((widget) => {
+      if (!widget.enabled) return; // skip disabled widgets
       const window = this.createOverlayWindow(widget);
       trackWindowMovement(widget, window);
     });
@@ -97,9 +98,36 @@ export class OverlayManager {
   public publishMessage(key: string, value: unknown): void {
     this.getOverlays().forEach(({ window }) => {
       if (window.isDestroyed()) return;
+      // notifies the overlay windows that there's a dashboard settings/layout update
       window.webContents.send(key, value);
     });
     this.currentSettingsWindow?.webContents.send(key, value);
+  }
+
+  public closeOrCreateWindows(dashboardLayout: DashboardLayout): void {
+    const { widgets } = dashboardLayout;
+    const widgetsById = widgets.reduce(
+      (acc, widget) => {
+        acc[widget.id] = widget;
+        return acc;
+      },
+      {} as Record<string, DashboardWidget>
+    );
+
+    const openWidgets = this.getOverlays();
+    openWidgets.forEach(({ widget, window }) => {
+      if (!widgetsById[widget.id]?.enabled) {
+        window.close();
+        delete this.overlayWindows[widget.id];
+      }
+    });
+
+    widgets.forEach((widget) => {
+      if (!widget.enabled) return; // skip disabled widgets
+      if (!this.overlayWindows[widget.id]) {
+        this.createOverlayWindow(widget);
+      }
+    });
   }
 
   public createSettingsWindow(): BrowserWindow {

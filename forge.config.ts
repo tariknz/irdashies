@@ -8,7 +8,9 @@ const config: ForgeConfig = {
   packagerConfig: {
     asar: true,
   },
-  rebuildConfig: {},
+  rebuildConfig: {
+    force: true,
+  },
   makers: [new MakerSquirrel({})],
   publishers: [
     {

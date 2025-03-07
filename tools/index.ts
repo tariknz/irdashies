@@ -1,15 +1,20 @@
-import { downloadTrackSvgs } from './download-track-svgs';
+import { syncTrackAssets } from '@iracing-data/sync-track-assets';
 import { generateTrackJson } from './generate-paths-json';
-import { getTracks } from './get-tracks';
-import { getTracksInfo } from './get-tracks-info';
-import { login } from './login';
+
+import * as dotenv from 'dotenv';
+dotenv.config();
 
 const main = async () => {
-  await login();
-  await getTracks();
-  await getTracksInfo();
-  await downloadTrackSvgs();
+  await syncTrackAssets({
+    outputDir: './asset-data',
+    writeFullAssets: true,
+    writeFullInfo: true,
+    includeSVGs: true,
+  });
+
+  console.log('Generating track JSON.');
   generateTrackJson();
+  console.log('Done!');
 };
 
 main();

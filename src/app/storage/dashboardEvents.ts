@@ -1,5 +1,5 @@
 import { EventEmitter } from 'node:events';
-import { DashboardLayout } from './dashboards';
+import { DashboardLayout } from '@irdashies/types';
 
 const dashboardEvents = new EventEmitter();
 
