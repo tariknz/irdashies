@@ -10,7 +10,7 @@ export const WeatherTrackWetness = ({
   trackState,
 }: WeatherTrackWetnessProps) => {
   return (
-    <div className="font-extrabold text-xl uppercase text-center bg-opacity-100 bg-slate-800 p-2 rounded items-center">
+    <div className="font-extrabold text-xl uppercase text-center bg-slate-800 p-2 rounded-sm items-center">
       TRACK WETNESS
       <div className="font-bold text-lg text-center">
         <div className="flex flex-row gap-x-1">

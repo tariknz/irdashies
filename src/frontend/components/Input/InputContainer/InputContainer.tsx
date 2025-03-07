@@ -20,7 +20,7 @@ export const InputContainer = ({
   unit,
 }: InputProps) => {
   return (
-    <div className="w-full h-full inline-flex gap-1 p-2 flex-row border-1 bg-slate-800 bg-opacity-50">
+    <div className="w-full h-full inline-flex gap-1 p-2 flex-row bg-slate-800/50">
       <InputTrace input={{ brake, throttle }} />
       <InputBar brake={brake} throttle={throttle} clutch={clutch} />
       <InputGear gear={gear} speedMs={speed} unit={unit} />

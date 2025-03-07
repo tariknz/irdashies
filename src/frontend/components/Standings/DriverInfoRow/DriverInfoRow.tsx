@@ -48,7 +48,7 @@ export const DriverInfoRow = ({
       key={carIdx}
       className={[
         `odd:bg-slate-800/70 even:bg-slate-900/70 text-sm`,
-        !onTrack ? 'text-white text-opacity-60' : '',
+        !onTrack ? 'text-white/60' : '',
         isPlayer ? 'text-amber-300' : '',
         !isPlayer && isLapped ? 'text-blue-400' : '',
         !isPlayer && isLappingAhead ? 'text-red-400' : '',
@@ -60,7 +60,7 @@ export const DriverInfoRow = ({
         {position}
       </td>
       <td
-        className={`${getTailwindColor(classColor).driverIcon} text-white bg-opacity-90 border-l-4 text-right px-1 w-10`}
+        className={`${getTailwindColor(classColor).driverIcon} text-white border-l-4 text-right px-1 w-10`}
       >
         #{carNumber}
       </td>

@@ -19,10 +19,10 @@ export const Weather = () => {
 
   return (
     <div
-      className="h-full inline-flex flex-row border-1 bg-slate-800 bg-opacity-25 rounded"
+      className="h-full inline-flex flex-row bg-slate-800/25 rounded-sm"
       ref={parent}
     >
-      <div className="flex flex-col p-2 basis-full rounded gap-2">
+      <div className="flex flex-col p-2 basis-full rounded-sm gap-2">
         <WeatherTemp title="Track Temp" value={trackTemp.trackTemp} />
         <WeatherTemp title="Air Temp" value={trackTemp.airTemp} />
         <WeatherTrackWetness

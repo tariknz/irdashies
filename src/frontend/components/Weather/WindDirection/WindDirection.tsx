@@ -8,7 +8,7 @@ export interface WindDirectionProps {
 export const WindDirection = ({ speed, direction }: WindDirectionProps) => {
   const [parent] = useAutoAnimate();
   return (
-    <div className="font-extrabold text-xl uppercase text-center bg-opacity-100 bg-slate-800 p-2 rounded items-center">
+    <div className="font-extrabold text-xl uppercase text-center bg-slate-800 p-2 rounded-sm items-center">
       <div
         id="wind"
         ref={parent}
