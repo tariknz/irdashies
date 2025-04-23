@@ -49,7 +49,7 @@ export const AdvancedSettings = () => {
         <button
           type="button"
           onClick={handleSave}
-          className="bg-blue-700 hover:bg-blue-800 rounded-xs text-sm px-4 py-2 w-20"
+          className="w-full bg-slate-700 hover:bg-slate-600 rounded px-4 py-2 transition-colors cursor-pointer"
         >
           Save
         </button>
