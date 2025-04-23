@@ -65,11 +65,11 @@ export const SettingsLayout = () => {
         {/* Right Column - Widget Settings */}
         <div className="w-2/3 bg-slate-800 p-4 rounded-md">
           <Routes>
-            <Route path="/settings/standings" element={<StandingsSettings />} />
-            <Route path="/settings/relative" element={<RelativeSettings />} />
-            <Route path="/settings/weather" element={<WeatherSettings />} />
-            <Route path="/settings/track-map" element={<TrackMapSettings />} />
-            <Route path="/settings/advanced" element={<AdvancedSettings />} />
+            <Route path="standings" element={<StandingsSettings />} />
+            <Route path="relative" element={<RelativeSettings />} />
+            <Route path="weather" element={<WeatherSettings />} />
+            <Route path="track-map" element={<TrackMapSettings />} />
+            <Route path="advanced" element={<AdvancedSettings />} />
             <Route
               path="*"
               element={
