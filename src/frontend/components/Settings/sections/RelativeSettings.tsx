@@ -17,7 +17,7 @@ export const RelativeSettings = () => {
     >
       {/* Add specific settings controls here */}
       <div className="text-slate-300">
-        Additional settings will appear here when enabled
+        Additional settings will appear here
       </div>
     </BaseSettingsSection>
   );

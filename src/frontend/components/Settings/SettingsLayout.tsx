@@ -5,6 +5,7 @@ import { RelativeSettings } from './sections/RelativeSettings';
 import { WeatherSettings } from './sections/WeatherSettings';
 import { TrackMapSettings } from './sections/TrackMapSettings';
 import { AdvancedSettings } from './sections/AdvancedSettings';
+import { InputSettings } from './sections/InputSettings';
 
 export const SettingsLayout = () => {
   const location = useLocation();
@@ -29,22 +30,36 @@ export const SettingsLayout = () => {
         <div className="w-1/3 bg-slate-800 p-4 rounded-md flex flex-col">
           <ul className="flex flex-col gap-2 flex-1">
             <li>
-              <Link to="/settings/standings" className={menuItemClass('/standings')}>
+              <Link to="/settings/input" className={menuItemClass('/input')}>
+                Input Traces
+              </Link>
+            </li>
+            <li>
+              <Link
+                to="/settings/standings"
+                className={menuItemClass('/standings')}
+              >
                 Standings
               </Link>
             </li>
             <li>
-              <Link to="/settings/relative" className={menuItemClass('/relative')}>
+              <Link
+                to="/settings/relative"
+                className={menuItemClass('/relative')}
+              >
                 Relative
               </Link>
             </li>
             <li>
-              <Link to="/settings/weather" className={menuItemClass('/weather')}>
+              <Link
+                to="/settings/weather"
+                className={menuItemClass('/weather')}
+              >
                 Weather
               </Link>
             </li>
             <li>
-              <Link to="/settings/track-map" className={menuItemClass('/track-map')}>
+              <Link to="/settings/map" className={menuItemClass('/track-map')}>
                 <div className="flex flex-row gap-2 items-center">
                   Track Map
                   <span className="text-xs bg-yellow-600 text-yellow-100 px-2 py-0.5 rounded-full flex flex-row gap-1 items-center">
@@ -56,7 +71,10 @@ export const SettingsLayout = () => {
           </ul>
           {/* Advanced settings pushed to bottom */}
           <div className="mt-auto pt-4 border-t border-slate-700">
-            <Link to="/settings/advanced" className={menuItemClass('/advanced')}>
+            <Link
+              to="/settings/advanced"
+              className={menuItemClass('/advanced')}
+            >
               Advanced
             </Link>
           </div>
@@ -68,7 +86,8 @@ export const SettingsLayout = () => {
             <Route path="standings" element={<StandingsSettings />} />
             <Route path="relative" element={<RelativeSettings />} />
             <Route path="weather" element={<WeatherSettings />} />
-            <Route path="track-map" element={<TrackMapSettings />} />
+            <Route path="map" element={<TrackMapSettings />} />
+            <Route path="input" element={<InputSettings />} />
             <Route path="advanced" element={<AdvancedSettings />} />
             <Route
               path="*"

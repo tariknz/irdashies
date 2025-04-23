@@ -18,6 +18,13 @@ export interface TrackMapWidgetSettings extends BaseWidgetSettings {
   // Add specific track map settings here
 }
 
+export interface InputWidgetSettings extends BaseWidgetSettings {
+  showThrottle: boolean;
+  showBrake: boolean;
+  showClutch: boolean;
+  opacity: number;
+}
+
 export interface AdvancedSettings extends BaseWidgetSettings {
   // Add specific advanced settings here
 } 
