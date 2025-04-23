@@ -16,7 +16,7 @@ export const Primary: Story = {
 
 export const DynamicTelemetry: Story = {
   decorators: [(Story, context) => {
-    const [selectedPath, setSelectedPath] = useState('/test-data/1735296198162');
+    const [selectedPath, setSelectedPath] = useState('/test-data/1745291694179');
     
     return (
       <>

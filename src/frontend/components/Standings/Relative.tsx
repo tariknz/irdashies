@@ -6,7 +6,7 @@ import { SessionBar } from './SessionBar/SessionBar';
 import { SessionFooter } from './SessionFooter/SessionFooter';
 
 export const Relative = () => {
-  const standings = useDriverRelatives({ buffer: 3 });
+  const standings = useDriverRelatives({ buffer: 5 });
   const [parent] = useAutoAnimate();
 
   return (

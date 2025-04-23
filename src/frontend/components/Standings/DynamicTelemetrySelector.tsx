@@ -2,6 +2,7 @@ import React from 'react';
 
 // Predefined list of test data directories
 export const TEST_DATA_DIRS = [
+  '1745282969339',
   '1731637331038', // MultiClassPCCWithClio
   '1732274253573', // SupercarsRace
   '1732260478001', // AdvancedMX5
@@ -11,6 +12,8 @@ export const TEST_DATA_DIRS = [
   '1732359661942', // GT3Race
   '1731732047131', // LegendsQualifying
   '1733030013074', // PCCRaceWithMicUse
+  '1745282979879',
+  '1745291694179',
 ];
 
 interface DynamicTelemetrySelectorProps {
