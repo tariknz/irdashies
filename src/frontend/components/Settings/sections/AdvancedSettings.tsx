@@ -32,14 +32,14 @@ export const AdvancedSettings = () => {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col h-full space-y-4">
       <div>
         <h2 className="text-xl mb-4">Advanced Settings</h2>
         <p className="text-slate-400 mb-4">Configure advanced system settings and preferences.</p>
       </div>
       
       <textarea
-        className="w-full bg-slate-800 p-4 font-mono text-sm min-h-60 rounded"
+        className="flex-1 w-full bg-slate-800 p-4 font-mono text-sm rounded border border-slate-600 focus:border-slate-500 focus:outline-none"
         value={dashboardInput}
         onChange={onInputUpdated}
         placeholder="Dashboard configuration JSON..."
