@@ -3,6 +3,10 @@
   "productName": "irdashies",
   "version": "0.0.7",
   "description": "iRacing Dashboards & Overlays",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tariknz/irdashies"
+  },
   "main": ".vite/build/main.js",
   "scripts": {
     "start": "electron-forge start --enable-logging",
