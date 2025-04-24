@@ -1,4 +1,4 @@
-import { Gear } from '@phosphor-icons/react';
+import { Gear, Lock, LockOpen } from '@phosphor-icons/react';
 import { Link, Route, Routes, useLocation } from 'react-router-dom';
 import { StandingsSettings } from './sections/StandingsSettings';
 import { RelativeSettings } from './sections/RelativeSettings';
@@ -6,9 +6,13 @@ import { WeatherSettings } from './sections/WeatherSettings';
 import { TrackMapSettings } from './sections/TrackMapSettings';
 import { AdvancedSettings } from './sections/AdvancedSettings';
 import { InputSettings } from './sections/InputSettings';
+import { useDashboard } from '@irdashies/context';
+import { useState } from 'react';
 
 export const SettingsLayout = () => {
   const location = useLocation();
+  const { bridge, editMode } = useDashboard();
+  const [isLocked, setIsLocked] = useState(!editMode);
 
   const isActive = (path: string) => {
     return location.pathname === `/settings${path}`;
@@ -19,11 +23,34 @@ export const SettingsLayout = () => {
       isActive(path) ? 'bg-slate-700' : 'hover:bg-slate-700'
     }`;
 
+  const handleToggleLock = async () => {
+    const locked = await bridge.toggleLockOverlays();
+    setIsLocked(locked);
+  };
+
   return (
     <div className="flex flex-col gap-4 bg-slate-700 p-4 rounded-md w-full h-full">
-      <div className="flex flex-row gap-4 items-center">
-        <Gear size={32} weight="bold" />
-        <h1 className="text-2xl font-bold">Overlay Setup</h1>
+      <div className="flex flex-row gap-4 items-center justify-between">
+        <div className="flex flex-row gap-4 items-center">
+          <Gear size={32} weight="bold" />
+          <h1 className="text-2xl font-bold">Overlay Setup</h1>
+        </div>
+        <button
+          onClick={handleToggleLock}
+          className="flex flex-row gap-2 items-center px-3 py-2 rounded bg-slate-800 hover:bg-slate-600 transition-colors"
+        >
+          {isLocked ? (
+            <>
+              <Lock size={20} weight="bold" />
+              <span>Edit Layout</span>
+            </>
+          ) : (
+            <>
+              <LockOpen size={20} weight="bold" />
+              <span>Editing Layout</span>
+            </>
+          )}
+        </button>
       </div>
       <div className="flex flex-row gap-4 flex-1">
         {/* Left Column - Widget Menu */}

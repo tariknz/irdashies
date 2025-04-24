@@ -11,6 +11,7 @@ interface DashboardContextProps {
   editMode: boolean;
   currentDashboard: DashboardLayout | undefined;
   onDashboardUpdated?: (dashboard: DashboardLayout) => void;
+  bridge: DashboardBridge;
 }
 
 const DashboardContext = createContext<DashboardContextProps | undefined>(
@@ -40,6 +41,7 @@ export const DashboardProvider: React.FC<{
         editMode: editMode,
         currentDashboard: dashboard,
         onDashboardUpdated: saveDashboard,
+        bridge,
       }}
     >
       {children}
