@@ -1,7 +1,5 @@
 import { useState } from 'react';
-import { SettingsForm } from '../SettingsForm';
 import { useDashboard } from '@irdashies/context';
-import { DashboardLayout } from '@irdashies/types';
 
 export const AdvancedSettings = () => {
   const { currentDashboard, onDashboardUpdated } = useDashboard();

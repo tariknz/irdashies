@@ -2,15 +2,23 @@ import type { DashboardBridge } from '@irdashies/types';
 import { defaultDashboard } from '../../../../app/storage/defaultDashboard';
 
 export const mockDashboardBridge: DashboardBridge = {
-  reloadDashboard: () => {},
-  saveDashboard: () => {},
+  reloadDashboard: () => {
+    // noop
+  },
+  saveDashboard: () => {
+    // noop
+  },
   dashboardUpdated: (callback) => {
     callback(defaultDashboard);
-    return () => {};
+    return () => {
+      // noop
+    };
   },
   onEditModeToggled: (callback) => {
     callback(false);
-    return () => {};
+    return () => {
+      // noop
+    };
   },
   toggleLockOverlays: () => Promise.resolve(true),
 }; 

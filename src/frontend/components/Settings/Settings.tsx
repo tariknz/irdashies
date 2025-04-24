@@ -1,5 +1,4 @@
 import { useDashboard } from '@irdashies/context';
-import { SettingsForm } from './SettingsForm';
 import { SettingsLayout } from './SettingsLayout';
 
 export const Settings = () => {
