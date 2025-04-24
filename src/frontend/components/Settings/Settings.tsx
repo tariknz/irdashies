@@ -9,9 +9,5 @@ export const Settings = () => {
 
   return (
     <SettingsLayout />
-    // <SettingsForm
-    //   currentDashboard={currentDashboard}
-    //   onDashboardUpdated={onDashboardUpdated}
-    // />
   );
 };
