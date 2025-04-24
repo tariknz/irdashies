@@ -6,6 +6,7 @@ import { WeatherSettings } from './sections/WeatherSettings';
 import { TrackMapSettings } from './sections/TrackMapSettings';
 import { AdvancedSettings } from './sections/AdvancedSettings';
 import { InputSettings } from './sections/InputSettings';
+import { AboutSettings } from './sections/AboutSettings';
 import { useDashboard } from '@irdashies/context';
 import { useState } from 'react';
 
@@ -97,12 +98,18 @@ export const SettingsLayout = () => {
             </li>
           </ul>
           {/* Advanced settings pushed to bottom */}
-          <div className="mt-auto pt-4 border-t border-slate-700">
+          <div className="mt-auto pt-4 border-t border-slate-700 flex flex-col gap-2">
             <Link
               to="/settings/advanced"
               className={menuItemClass('/advanced')}
             >
               Advanced
+            </Link>
+            <Link
+              to="/settings/about"
+              className={menuItemClass('/about')}
+            >
+              About
             </Link>
           </div>
         </div>
@@ -116,6 +123,7 @@ export const SettingsLayout = () => {
             <Route path="map" element={<TrackMapSettings />} />
             <Route path="input" element={<InputSettings />} />
             <Route path="advanced" element={<AdvancedSettings />} />
+            <Route path="about" element={<AboutSettings />} />
             <Route
               path="*"
               element={
