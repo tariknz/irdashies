@@ -152,7 +152,7 @@ Displays a track map with the current position of the cars on track and the trac
 
 We welcome contributions to the IRDashies project! If you have any ideas, suggestions, or bug reports, please open an issue or submit a pull request.
 
-Join our discord here: https://discord.gg/E3KKB6W4
+Join our discord here: https://discord.gg/YMAqduF2Ft
 
 ## License
 
