@@ -25,6 +25,7 @@ const mockBridge: (editMode: boolean) => DashboardBridge = (editMode) => ({
   onEditModeToggled: (callback) => {
     callback(editMode);
   },
+  toggleLockOverlays: () => Promise.resolve(true),
 });
 
 export const Primary = {

@@ -12,4 +12,5 @@ export const mockDashboardBridge: DashboardBridge = {
     callback(false);
     return () => {};
   },
+  toggleLockOverlays: () => Promise.resolve(true),
 }; 

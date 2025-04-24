@@ -17,4 +17,8 @@ export async function publishDashboardUpdates(overlayManager: OverlayManager) {
     overlayManager.closeOrCreateWindows(dashboard);
     overlayManager.publishMessage('dashboardUpdated', dashboard);
   });
+
+  ipcMain.handle('toggleLockOverlays', () => {
+    return overlayManager.toggleLockOverlays();
+  });
 }

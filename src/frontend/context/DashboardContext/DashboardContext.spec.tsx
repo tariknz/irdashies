@@ -9,6 +9,7 @@ const mockBridge: DashboardBridge = {
   dashboardUpdated: vi.fn(),
   saveDashboard: vi.fn(),
   onEditModeToggled: vi.fn(),
+  toggleLockOverlays: vi.fn().mockResolvedValue(true),
 };
 
 const TestComponent: React.FC = () => {

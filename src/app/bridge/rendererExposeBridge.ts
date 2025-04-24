@@ -45,5 +45,8 @@ export function exposeBridge() {
     saveDashboard: (value: DashboardLayout) => {
       ipcRenderer.send('saveDashboard', value);
     },
+    toggleLockOverlays: () => {
+      return ipcRenderer.invoke('toggleLockOverlays');
+    },
   } as DashboardBridge);
 }
