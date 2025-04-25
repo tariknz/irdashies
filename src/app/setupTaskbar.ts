@@ -43,12 +43,13 @@ class Taskbar {
           this.saveTelemetry();
         },
       },
-      {
-        label: 'Record Telemetry',
-        click: async () => {
-          await this.telemetrySink.startRecording();
-        },
-      },
+      // WIP
+      // {
+      //   label: 'Record Telemetry',
+      //   click: async () => {
+      //     await this.telemetrySink.startRecording();
+      //   },
+      // },
       {
         label: 'Quit',
         click: () => {
