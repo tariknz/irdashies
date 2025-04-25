@@ -42,9 +42,10 @@ export const DashboardProvider: React.FC<{
   };
 
   const toggleDemoMode = () => {
-    setIsDemoMode(!isDemoMode);
+    const newDemoMode = !isDemoMode;
+    setIsDemoMode(newDemoMode);
     // Notify the bridge about demo mode change
-    bridge.toggleDemoMode?.(isDemoMode);
+    bridge.toggleDemoMode?.(newDemoMode);
   };
 
   return (
