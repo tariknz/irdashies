@@ -30,7 +30,7 @@ export const defaultDashboard: DashboardLayout = {
         bar: {
           enabled: true,
           includeClutch: true,
-          includeGear: true,
+          includeBrake: true,
           includeThrottle: true,
         },
         gear: {
