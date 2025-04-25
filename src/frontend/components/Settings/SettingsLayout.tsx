@@ -12,9 +12,8 @@ import { useState } from 'react';
 
 export const SettingsLayout = () => {
   const location = useLocation();
-  const { bridge, editMode } = useDashboard();
+  const { bridge, editMode, isDemoMode, toggleDemoMode } = useDashboard();
   const [isLocked, setIsLocked] = useState(!editMode);
-  const [isDemoMode, setIsDemoMode] = useState(false);
 
   const isActive = (path: string) => {
     return location.pathname === `/settings${path}`;
@@ -39,7 +38,7 @@ export const SettingsLayout = () => {
         </div>
         <div className="flex flex-row gap-2">
           <button
-            onClick={() => setIsDemoMode(!isDemoMode)}
+            onClick={toggleDemoMode}
             className="flex flex-row gap-2 items-center px-3 py-2 rounded bg-slate-800 hover:bg-slate-600 transition-colors"
           >
             {isDemoMode ? (

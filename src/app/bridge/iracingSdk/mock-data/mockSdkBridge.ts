@@ -18,4 +18,5 @@ export async function publishIRacingSDKEvents(
   bridge.onRunningState((running) => {
     overlayManager.publishMessage('runningState', running);
   });
+  return bridge;
 }

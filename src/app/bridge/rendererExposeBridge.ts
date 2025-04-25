@@ -51,5 +51,8 @@ export function exposeBridge() {
     getAppVersion: () => {
       return ipcRenderer.invoke('getAppVersion');
     },
+    toggleDemoMode: (value: boolean) => {
+      ipcRenderer.send('toggleDemoMode', value);
+    },
   } as DashboardBridge);
 }

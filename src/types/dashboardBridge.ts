@@ -7,4 +7,5 @@ export interface DashboardBridge {
   saveDashboard: (dashboard: DashboardLayout) => void;
   toggleLockOverlays: () => Promise<boolean>;
   getAppVersion: () => Promise<string>;
+  toggleDemoMode?: (value: boolean) => void;
 }
