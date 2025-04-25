@@ -1,4 +1,4 @@
-import { Gear, Lock, LockOpen } from '@phosphor-icons/react';
+import { Gear, Lock, LockOpen, PresentationChart } from '@phosphor-icons/react';
 import { Link, Route, Routes, useLocation } from 'react-router-dom';
 import { StandingsSettings } from './sections/StandingsSettings';
 import { RelativeSettings } from './sections/RelativeSettings';
@@ -14,6 +14,7 @@ export const SettingsLayout = () => {
   const location = useLocation();
   const { bridge, editMode } = useDashboard();
   const [isLocked, setIsLocked] = useState(!editMode);
+  const [isDemoMode, setIsDemoMode] = useState(false);
 
   const isActive = (path: string) => {
     return location.pathname === `/settings${path}`;
@@ -36,22 +37,40 @@ export const SettingsLayout = () => {
           <Gear size={32} weight="bold" />
           <h1 className="text-2xl font-bold">Overlay Setup</h1>
         </div>
-        <button
-          onClick={handleToggleLock}
-          className="flex flex-row gap-2 items-center px-3 py-2 rounded bg-slate-800 hover:bg-slate-600 transition-colors"
-        >
-          {isLocked ? (
-            <>
-              <Lock size={20} weight="bold" />
-              <span>Edit Layout</span>
-            </>
-          ) : (
-            <>
-              <LockOpen size={20} weight="bold" />
-              <span>Editing Layout</span>
-            </>
-          )}
-        </button>
+        <div className="flex flex-row gap-2">
+          <button
+            onClick={() => setIsDemoMode(!isDemoMode)}
+            className="flex flex-row gap-2 items-center px-3 py-2 rounded bg-slate-800 hover:bg-slate-600 transition-colors"
+          >
+            {isDemoMode ? (
+              <>
+                <PresentationChart size={20} weight="bold" />
+                <span>Exit Demo</span>
+              </>
+            ) : (
+              <>
+                <PresentationChart size={20} weight="bold" />
+                <span>Demo Mode</span>
+              </>
+            )}
+          </button>
+          <button
+            onClick={handleToggleLock}
+            className="flex flex-row gap-2 items-center px-3 py-2 rounded bg-slate-800 hover:bg-slate-600 transition-colors"
+          >
+            {isLocked ? (
+              <>
+                <Lock size={20} weight="bold" />
+                <span>Edit Layout</span>
+              </>
+            ) : (
+              <>
+                <LockOpen size={20} weight="bold" />
+                <span>Editing Layout</span>
+              </>
+            )}
+          </button>
+        </div>
       </div>
       <div className="flex flex-row gap-4 flex-1 min-h-0">
         {/* Left Column - Widget Menu */}
