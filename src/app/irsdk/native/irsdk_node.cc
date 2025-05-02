@@ -1,5 +1,5 @@
 #include "./irsdk_node.h"
-#include "../lib/yaml_parser.h"
+#include "./lib/yaml_parser.h"
 
 /*
 Nan::SetPrototypeMethod(tmpl, "getSessionData", GetSessionData);

@@ -99,3 +99,7 @@ asset-data
 
 # should be generated with script
 src/**/tracks/tracks.json
+
+# native build
+build/
+bin/

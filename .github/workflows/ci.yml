@@ -41,14 +41,7 @@ jobs:
 
     - name: Install dependencies
       if: steps.cache-deps.outputs.cache-hit != 'true'
-      run: |
-        npm ci --ignore-scripts
-        npm run prepare
-        npm rebuild
-
-    - name: Apply patches and rebuild
-      if: steps.cache-deps.outputs.cache-hit == 'true'
-      run: npm run prepare
+      run: npm ci
 
     - name: Run linting
       run: npm run lint

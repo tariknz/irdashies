@@ -18,8 +18,7 @@
     "lint": "eslint --ext .ts,.tsx .",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
-    "test": "vitest --coverage",
-    "prepare": "patch-package"
+    "test": "vitest --coverage"
   },
   "devDependencies": {
     "@chromatic-com/storybook": "^3.2.2",
@@ -62,7 +61,7 @@
     "eslint-plugin-storybook": "^0.12.0",
     "globals": "^16.0.0",
     "jsdom": "^26.0.0",
-    "patch-package": "^8.0.0",
+    "node-addon-api": "^8.3.1",
     "postcss": "^8.5.3",
     "prettier": "^3.5.3",
     "storybook": "^8.4.7",

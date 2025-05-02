@@ -16,8 +16,8 @@ const getGitHash = () => {
 export default defineConfig({
   plugins: [
     irsdkNativeModule(
-      ['node_modules/@irsdk-node/native/build/Release/irsdk_node.node'],
-      '.vite/build/node_modules/@irsdk-node/native/build/Release/'
+      ['build/Release/irsdk_node.node'],
+      '.vite/build/Release/'
     ),
   ],
   resolve: {

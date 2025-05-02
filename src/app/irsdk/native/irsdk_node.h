@@ -2,8 +2,8 @@
 #define IRSDK_NODE_H
 
 #include <napi.h>
-#include "../lib/irsdk_defines.h"
-#include "../lib/irsdk_client.h"
+#include "./lib/irsdk_defines.h"
+#include "./lib/irsdk_client.h"
 
 class iRacingSdkNode : public Napi::ObjectWrap<iRacingSdkNode>
 {
