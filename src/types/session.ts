@@ -3,7 +3,7 @@ import type {
   SessionResultsPosition,
   SessionInfo as SdkSessionInfo,
   Driver as SdkDriver,
-} from '@irsdk-node/types';
+} from '../app/irsdk/types';
 
 export type Session = SessionData & {
   QualifyResultsInfo?: { Results: SessionResultsPosition[] };

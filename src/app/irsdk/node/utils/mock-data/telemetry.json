@@ -1,0 +1,4986 @@
+{
+  "SessionTime": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "SessionTime",
+    "description": "Seconds since session start",
+    "unit": "s",
+    "varType": 5,
+    "value": [
+      2128.8999593106078
+    ]
+  },
+  "SessionTick": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "SessionTick",
+    "description": "Current update number",
+    "unit": "",
+    "varType": 2,
+    "value": [
+      85735
+    ]
+  },
+  "SessionNum": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "SessionNum",
+    "description": "Session number",
+    "unit": "",
+    "varType": 2,
+    "value": [
+      0
+    ]
+  },
+  "SessionState": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "SessionState",
+    "description": "Session state",
+    "unit": "irsdk_SessionState",
+    "varType": 2,
+    "value": [
+      4
+    ]
+  },
+  "SessionUniqueID": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "SessionUniqueID",
+    "description": "Session ID",
+    "unit": "",
+    "varType": 2,
+    "value": [
+      1
+    ]
+  },
+  "SessionFlags": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "SessionFlags",
+    "description": "Session flags",
+    "unit": "irsdk_Flags",
+    "varType": 3,
+    "value": [
+      268697600
+    ]
+  },
+  "SessionTimeRemain": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "SessionTimeRemain",
+    "description": "Seconds left till session ends",
+    "unit": "s",
+    "varType": 5,
+    "value": [
+      1471.1167073560591
+    ]
+  },
+  "SessionLapsRemain": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "SessionLapsRemain",
+    "description": "Old laps left till session ends use SessionLapsRemainEx",
+    "unit": "",
+    "varType": 2,
+    "value": [
+      32767
+    ]
+  },
+  "SessionLapsRemainEx": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "SessionLapsRemainEx",
+    "description": "New improved laps left till session ends",
+    "unit": "",
+    "varType": 2,
+    "value": [
+      32767
+    ]
+  },
+  "SessionTimeTotal": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "SessionTimeTotal",
+    "description": "Total number of seconds in session",
+    "unit": "s",
+    "varType": 5,
+    "value": [
+      3600
+    ]
+  },
+  "SessionLapsTotal": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "SessionLapsTotal",
+    "description": "Total number of laps in session",
+    "unit": "",
+    "varType": 2,
+    "value": [
+      32767
+    ]
+  },
+  "SessionJokerLapsRemain": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "SessionJokerLapsRemain",
+    "description": "Joker laps remaining to be taken",
+    "unit": "",
+    "varType": 2,
+    "value": [
+      0
+    ]
+  },
+  "SessionOnJokerLap": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "SessionOnJokerLap",
+    "description": "Player is currently completing a joker lap",
+    "unit": "",
+    "varType": 1,
+    "value": [
+      false
+    ]
+  },
+  "SessionTimeOfDay": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "SessionTimeOfDay",
+    "description": "Time of day in seconds",
+    "unit": "s",
+    "varType": 4,
+    "value": [
+      48928
+    ]
+  },
+  "RadioTransmitCarIdx": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "RadioTransmitCarIdx",
+    "description": "The car index of the current person speaking on the radio",
+    "unit": "",
+    "varType": 2,
+    "value": [
+      -1
+    ]
+  },
+  "RadioTransmitRadioIdx": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "RadioTransmitRadioIdx",
+    "description": "The radio index of the current person speaking on the radio",
+    "unit": "",
+    "varType": 2,
+    "value": [
+      0
+    ]
+  },
+  "RadioTransmitFrequencyIdx": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "RadioTransmitFrequencyIdx",
+    "description": "The frequency index of the current person speaking on the radio",
+    "unit": "",
+    "varType": 2,
+    "value": [
+      0
+    ]
+  },
+  "DisplayUnits": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "DisplayUnits",
+    "description": "Default units for the user interface 0 = english 1 = metric",
+    "unit": "",
+    "varType": 2,
+    "value": [
+      1
+    ]
+  },
+  "DriverMarker": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "DriverMarker",
+    "description": "Driver activated flag",
+    "unit": "",
+    "varType": 1,
+    "value": [
+      false
+    ]
+  },
+  "PushToPass": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "PushToPass",
+    "description": "Push to pass button state",
+    "unit": "",
+    "varType": 1,
+    "value": [
+      false
+    ]
+  },
+  "ManualBoost": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "ManualBoost",
+    "description": "Hybrid manual boost state",
+    "unit": "",
+    "varType": 1,
+    "value": [
+      false
+    ]
+  },
+  "ManualNoBoost": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "ManualNoBoost",
+    "description": "Hybrid manual no boost state",
+    "unit": "",
+    "varType": 1,
+    "value": [
+      false
+    ]
+  },
+  "IsOnTrack": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "IsOnTrack",
+    "description": "1=Car on track physics running with player in car",
+    "unit": "",
+    "varType": 1,
+    "value": [
+      true
+    ]
+  },
+  "IsReplayPlaying": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "IsReplayPlaying",
+    "description": "0=replay not playing  1=replay playing",
+    "unit": "",
+    "varType": 1,
+    "value": [
+      false
+    ]
+  },
+  "ReplayFrameNum": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "ReplayFrameNum",
+    "description": "Integer replay frame number (60 per second)",
+    "unit": "",
+    "varType": 2,
+    "value": [
+      0
+    ]
+  },
+  "ReplayFrameNumEnd": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "ReplayFrameNumEnd",
+    "description": "Integer replay frame number from end of tape",
+    "unit": "",
+    "varType": 2,
+    "value": [
+      26465
+    ]
+  },
+  "IsDiskLoggingEnabled": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "IsDiskLoggingEnabled",
+    "description": "0=disk based telemetry turned off  1=turned on",
+    "unit": "",
+    "varType": 1,
+    "value": [
+      false
+    ]
+  },
+  "IsDiskLoggingActive": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "IsDiskLoggingActive",
+    "description": "0=disk based telemetry file not being written  1=being written",
+    "unit": "",
+    "varType": 1,
+    "value": [
+      false
+    ]
+  },
+  "FrameRate": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "FrameRate",
+    "description": "Average frames per second",
+    "unit": "fps",
+    "varType": 4,
+    "value": [
+      111.19877624511719
+    ]
+  },
+  "CpuUsageFG": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "CpuUsageFG",
+    "description": "Percent of available tim fg thread took with a 1 sec avg",
+    "unit": "%",
+    "varType": 4,
+    "value": [
+      0.5374245643615723
+    ]
+  },
+  "GpuUsage": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "GpuUsage",
+    "description": "Percent of available tim gpu took with a 1 sec avg",
+    "unit": "%",
+    "varType": 4,
+    "value": [
+      0.3938755691051483
+    ]
+  },
+  "ChanAvgLatency": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "ChanAvgLatency",
+    "description": "Communications average latency",
+    "unit": "s",
+    "varType": 4,
+    "value": [
+      0
+    ]
+  },
+  "ChanLatency": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "ChanLatency",
+    "description": "Communications latency",
+    "unit": "s",
+    "varType": 4,
+    "value": [
+      0
+    ]
+  },
+  "ChanQuality": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "ChanQuality",
+    "description": "Communications quality",
+    "unit": "%",
+    "varType": 4,
+    "value": [
+      0
+    ]
+  },
+  "ChanPartnerQuality": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "ChanPartnerQuality",
+    "description": "Partner communications quality",
+    "unit": "%",
+    "varType": 4,
+    "value": [
+      0
+    ]
+  },
+  "CpuUsageBG": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "CpuUsageBG",
+    "description": "Percent of available tim bg thread took with a 1 sec avg",
+    "unit": "%",
+    "varType": 4,
+    "value": [
+      0.2590002417564392
+    ]
+  },
+  "ChanClockSkew": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "ChanClockSkew",
+    "description": "Communications server clock skew",
+    "unit": "s",
+    "varType": 4,
+    "value": [
+      0
+    ]
+  },
+  "MemPageFaultSec": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "MemPageFaultSec",
+    "description": "Memory page faults per second",
+    "unit": "",
+    "varType": 4,
+    "value": [
+      0
+    ]
+  },
+  "PlayerCarPosition": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "PlayerCarPosition",
+    "description": "Players position in race",
+    "unit": "",
+    "varType": 2,
+    "value": [
+      40
+    ]
+  },
+  "PlayerCarClassPosition": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "PlayerCarClassPosition",
+    "description": "Players class position in race",
+    "unit": "",
+    "varType": 2,
+    "value": [
+      40
+    ]
+  },
+  "PlayerCarClass": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "PlayerCarClass",
+    "description": "Player car class id",
+    "unit": "",
+    "varType": 2,
+    "value": [
+      74
+    ]
+  },
+  "PlayerTrackSurface": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "PlayerTrackSurface",
+    "description": "Players car track surface type",
+    "unit": "irsdk_TrkLoc",
+    "varType": 2,
+    "value": [
+      3
+    ]
+  },
+  "PlayerTrackSurfaceMaterial": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "PlayerTrackSurfaceMaterial",
+    "description": "Players car track surface material type",
+    "unit": "irsdk_TrkSurf",
+    "varType": 2,
+    "value": [
+      1
+    ]
+  },
+  "PlayerCarIdx": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "PlayerCarIdx",
+    "description": "Players carIdx",
+    "unit": "",
+    "varType": 2,
+    "value": [
+      51
+    ]
+  },
+  "PlayerCarTeamIncidentCount": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "PlayerCarTeamIncidentCount",
+    "description": "Players team incident count for this session",
+    "unit": "",
+    "varType": 2,
+    "value": [
+      2
+    ]
+  },
+  "PlayerCarMyIncidentCount": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "PlayerCarMyIncidentCount",
+    "description": "Players own incident count for this session",
+    "unit": "",
+    "varType": 2,
+    "value": [
+      2
+    ]
+  },
+  "PlayerCarDriverIncidentCount": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "PlayerCarDriverIncidentCount",
+    "description": "Teams current drivers incident count for this session",
+    "unit": "",
+    "varType": 2,
+    "value": [
+      2
+    ]
+  },
+  "PlayerCarWeightPenalty": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "PlayerCarWeightPenalty",
+    "description": "Players weight penalty",
+    "unit": "kg",
+    "varType": 4,
+    "value": [
+      0
+    ]
+  },
+  "PlayerCarPowerAdjust": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "PlayerCarPowerAdjust",
+    "description": "Players power adjust",
+    "unit": "%",
+    "varType": 4,
+    "value": [
+      0
+    ]
+  },
+  "PlayerCarDryTireSetLimit": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "PlayerCarDryTireSetLimit",
+    "description": "Players dry tire set limit",
+    "unit": "",
+    "varType": 2,
+    "value": [
+      0
+    ]
+  },
+  "PlayerCarTowTime": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "PlayerCarTowTime",
+    "description": "Players car is being towed if time is greater than zero",
+    "unit": "s",
+    "varType": 4,
+    "value": [
+      0
+    ]
+  },
+  "PlayerCarInPitStall": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "PlayerCarInPitStall",
+    "description": "Players car is properly in there pitstall",
+    "unit": "",
+    "varType": 1,
+    "value": [
+      false
+    ]
+  },
+  "PlayerCarPitSvStatus": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "PlayerCarPitSvStatus",
+    "description": "Players car pit service status bits",
+    "unit": "irsdk_PitSvStatus",
+    "varType": 2,
+    "value": [
+      0
+    ]
+  },
+  "PlayerTireCompound": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "PlayerTireCompound",
+    "description": "Players car current tire compound",
+    "unit": "",
+    "varType": 2,
+    "value": [
+      0
+    ]
+  },
+  "PlayerFastRepairsUsed": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "PlayerFastRepairsUsed",
+    "description": "Players car number of fast repairs used",
+    "unit": "",
+    "varType": 2,
+    "value": [
+      0
+    ]
+  },
+  "CarIdxLap": {
+    "countAsTime": false,
+    "length": 64,
+    "name": "CarIdxLap",
+    "description": "Laps started by car index",
+    "unit": "",
+    "varType": 2,
+    "value": [
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      2,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      5,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1
+    ]
+  },
+  "CarIdxLapCompleted": {
+    "countAsTime": false,
+    "length": 64,
+    "name": "CarIdxLapCompleted",
+    "description": "Laps completed by car index",
+    "unit": "",
+    "varType": 2,
+    "value": [
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      4,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1
+    ]
+  },
+  "CarIdxLapDistPct": {
+    "countAsTime": false,
+    "length": 64,
+    "name": "CarIdxLapDistPct",
+    "description": "Percentage distance around lap by car index",
+    "unit": "%",
+    "varType": 4,
+    "value": [
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      0.6695664525032043,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      0.5726780295372009,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1
+    ]
+  },
+  "CarIdxTrackSurface": {
+    "countAsTime": false,
+    "length": 64,
+    "name": "CarIdxTrackSurface",
+    "description": "Track surface type by car index",
+    "unit": "irsdk_TrkLoc",
+    "varType": 2,
+    "value": [
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      3,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      0,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1
+    ]
+  },
+  "CarIdxTrackSurfaceMaterial": {
+    "countAsTime": false,
+    "length": 64,
+    "name": "CarIdxTrackSurfaceMaterial",
+    "description": "Track surface material type by car index",
+    "unit": "irsdk_TrkSurf",
+    "varType": 2,
+    "value": [
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      19,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1
+    ]
+  },
+  "CarIdxOnPitRoad": {
+    "countAsTime": false,
+    "length": 64,
+    "name": "CarIdxOnPitRoad",
+    "description": "On pit road between the cones by car index",
+    "unit": "",
+    "varType": 1,
+    "value": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "CarIdxPosition": {
+    "countAsTime": false,
+    "length": 64,
+    "name": "CarIdxPosition",
+    "description": "Cars position in race by car index",
+    "unit": "",
+    "varType": 2,
+    "value": [
+      37,
+      7,
+      18,
+      0,
+      0,
+      6,
+      0,
+      16,
+      0,
+      3,
+      36,
+      22,
+      0,
+      0,
+      32,
+      26,
+      41,
+      0,
+      0,
+      20,
+      30,
+      29,
+      8,
+      33,
+      24,
+      5,
+      0,
+      31,
+      12,
+      23,
+      35,
+      27,
+      1,
+      0,
+      11,
+      14,
+      42,
+      28,
+      17,
+      2,
+      21,
+      19,
+      34,
+      4,
+      13,
+      0,
+      0,
+      0,
+      15,
+      9,
+      25,
+      40,
+      0,
+      0,
+      0,
+      0,
+      39,
+      38,
+      10,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  "CarIdxClassPosition": {
+    "countAsTime": false,
+    "length": 64,
+    "name": "CarIdxClassPosition",
+    "description": "Cars class position in race by car index",
+    "unit": "",
+    "varType": 2,
+    "value": [
+      37,
+      7,
+      18,
+      0,
+      0,
+      6,
+      0,
+      16,
+      0,
+      3,
+      36,
+      22,
+      0,
+      0,
+      32,
+      26,
+      41,
+      0,
+      0,
+      20,
+      30,
+      29,
+      8,
+      33,
+      24,
+      5,
+      0,
+      31,
+      12,
+      23,
+      35,
+      27,
+      1,
+      0,
+      11,
+      14,
+      42,
+      28,
+      17,
+      2,
+      21,
+      19,
+      34,
+      4,
+      13,
+      0,
+      0,
+      0,
+      15,
+      9,
+      25,
+      40,
+      0,
+      0,
+      0,
+      0,
+      39,
+      38,
+      10,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  "CarIdxClass": {
+    "countAsTime": false,
+    "length": 64,
+    "name": "CarIdxClass",
+    "description": "Cars class id by car index",
+    "unit": "",
+    "varType": 2,
+    "value": [
+      74,
+      74,
+      74,
+      74,
+      74,
+      74,
+      74,
+      74,
+      74,
+      74,
+      74,
+      74,
+      74,
+      74,
+      74,
+      74,
+      74,
+      74,
+      74,
+      74,
+      74,
+      74,
+      74,
+      74,
+      74,
+      74,
+      74,
+      74,
+      74,
+      74,
+      74,
+      74,
+      74,
+      74,
+      74,
+      74,
+      74,
+      74,
+      74,
+      74,
+      74,
+      74,
+      74,
+      74,
+      74,
+      74,
+      74,
+      74,
+      74,
+      74,
+      74,
+      74,
+      74,
+      74,
+      74,
+      74,
+      74,
+      74,
+      74,
+      -1,
+      -1,
+      -1,
+      -1,
+      74
+    ]
+  },
+  "CarIdxF2Time": {
+    "countAsTime": false,
+    "length": 64,
+    "name": "CarIdxF2Time",
+    "description": "Race time behind leader or fastest lap time otherwise",
+    "unit": "s",
+    "varType": 4,
+    "value": [
+      86.4833984375,
+      82.497802734375,
+      83.3490982055664,
+      0,
+      0,
+      82.42320251464844,
+      0,
+      83.08360290527344,
+      0,
+      82.2968978881836,
+      85.6686019897461,
+      83.66280364990234,
+      0,
+      0,
+      85.07499694824219,
+      84.23870086669922,
+      92.76280212402344,
+      0,
+      0,
+      83.57440185546875,
+      84.78410339355469,
+      84.55619812011719,
+      82.5083999633789,
+      85.18309783935547,
+      83.77349853515625,
+      82.39969635009766,
+      0,
+      84.90249633789062,
+      82.85639953613281,
+      83.69080352783203,
+      85.4542007446289,
+      84.39900207519531,
+      82.10890197753906,
+      0,
+      82.847900390625,
+      82.91069793701172,
+      94.45010375976562,
+      84.44499969482422,
+      83.34809875488281,
+      82.1781005859375,
+      83.57440185546875,
+      83.51679992675781,
+      85.25180053710938,
+      82.35549926757812,
+      82.90080261230469,
+      0,
+      0,
+      0,
+      83.0072021484375,
+      82.63580322265625,
+      83.78379821777344,
+      92.43419647216797,
+      0,
+      0,
+      0,
+      0,
+      89.39869689941406,
+      86.91739654541016,
+      82.84500122070312,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  "CarIdxEstTime": {
+    "countAsTime": false,
+    "length": 64,
+    "name": "CarIdxEstTime",
+    "description": "Estimated time to reach current location on track",
+    "unit": "s",
+    "varType": 4,
+    "value": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      54.892845153808594,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      45.19312286376953,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  "CarIdxLastLapTime": {
+    "countAsTime": false,
+    "length": 64,
+    "name": "CarIdxLastLapTime",
+    "description": "Cars last lap time",
+    "unit": "s",
+    "varType": 4,
+    "value": [
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      92.43419647216797,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      83.69439697265625,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1
+    ]
+  },
+  "CarIdxBestLapTime": {
+    "countAsTime": false,
+    "length": 64,
+    "name": "CarIdxBestLapTime",
+    "description": "Cars best lap time",
+    "unit": "s",
+    "varType": 4,
+    "value": [
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      92.43419647216797,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      82.84500122070312,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1
+    ]
+  },
+  "CarIdxBestLapNum": {
+    "countAsTime": false,
+    "length": 64,
+    "name": "CarIdxBestLapNum",
+    "description": "Cars best lap number",
+    "unit": "",
+    "varType": 2,
+    "value": [
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      2,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1
+    ]
+  },
+  "CarIdxTireCompound": {
+    "countAsTime": false,
+    "length": 64,
+    "name": "CarIdxTireCompound",
+    "description": "Cars current tire compound",
+    "unit": "",
+    "varType": 2,
+    "value": [
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      0,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      0,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1
+    ]
+  },
+  "CarIdxQualTireCompound": {
+    "countAsTime": false,
+    "length": 64,
+    "name": "CarIdxQualTireCompound",
+    "description": "Cars Qual tire compound",
+    "unit": "",
+    "varType": 2,
+    "value": [
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1
+    ]
+  },
+  "CarIdxQualTireCompoundLocked": {
+    "countAsTime": false,
+    "length": 64,
+    "name": "CarIdxQualTireCompoundLocked",
+    "description": "Cars Qual tire compound is locked-in",
+    "unit": "",
+    "varType": 1,
+    "value": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "CarIdxFastRepairsUsed": {
+    "countAsTime": false,
+    "length": 64,
+    "name": "CarIdxFastRepairsUsed",
+    "description": "How many fast repairs each car has used",
+    "unit": "",
+    "varType": 2,
+    "value": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  "PaceMode": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "PaceMode",
+    "description": "Are we pacing or not",
+    "unit": "irsdk_PaceMode",
+    "varType": 2,
+    "value": [
+      4
+    ]
+  },
+  "CarIdxPaceLine": {
+    "countAsTime": false,
+    "length": 64,
+    "name": "CarIdxPaceLine",
+    "description": "What line cars are pacing in  or -1 if not pacing",
+    "unit": "",
+    "varType": 2,
+    "value": [
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1
+    ]
+  },
+  "CarIdxPaceRow": {
+    "countAsTime": false,
+    "length": 64,
+    "name": "CarIdxPaceRow",
+    "description": "What row cars are pacing in  or -1 if not pacing",
+    "unit": "",
+    "varType": 2,
+    "value": [
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1
+    ]
+  },
+  "CarIdxPaceFlags": {
+    "countAsTime": false,
+    "length": 64,
+    "name": "CarIdxPaceFlags",
+    "description": "Pacing status flags for each car",
+    "unit": "irsdk_PaceFlags",
+    "varType": 2,
+    "value": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  "OnPitRoad": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "OnPitRoad",
+    "description": "Is the player car on pit road between the cones",
+    "unit": "",
+    "varType": 1,
+    "value": [
+      false
+    ]
+  },
+  "CarIdxSteer": {
+    "countAsTime": false,
+    "length": 64,
+    "name": "CarIdxSteer",
+    "description": "Steering wheel angle by car index",
+    "unit": "rad",
+    "varType": 4,
+    "value": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      -0.9681287407875061,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      -2.016707181930542,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  "CarIdxRPM": {
+    "countAsTime": false,
+    "length": 64,
+    "name": "CarIdxRPM",
+    "description": "Engine rpm by car index",
+    "unit": "revs/min",
+    "varType": 4,
+    "value": [
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      6705.1787109375,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      6399.41455078125,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1
+    ]
+  },
+  "CarIdxGear": {
+    "countAsTime": false,
+    "length": 64,
+    "name": "CarIdxGear",
+    "description": "-1=reverse  0=neutral  1..n=current gear by car index",
+    "unit": "",
+    "varType": 2,
+    "value": [
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      2,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      2,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1
+    ]
+  },
+  "SteeringWheelAngle": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "SteeringWheelAngle",
+    "description": "Steering wheel angle",
+    "unit": "rad",
+    "varType": 4,
+    "value": [
+      -0.9681287407875061
+    ]
+  },
+  "Throttle": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "Throttle",
+    "description": "0=off throttle to 1=full throttle",
+    "unit": "%",
+    "varType": 4,
+    "value": [
+      1
+    ]
+  },
+  "Brake": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "Brake",
+    "description": "0=brake released to 1=max pedal force",
+    "unit": "%",
+    "varType": 4,
+    "value": [
+      0
+    ]
+  },
+  "Clutch": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "Clutch",
+    "description": "0=disengaged to 1=fully engaged",
+    "unit": "%",
+    "varType": 4,
+    "value": [
+      1
+    ]
+  },
+  "Gear": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "Gear",
+    "description": "-1=reverse  0=neutral  1..n=current gear",
+    "unit": "",
+    "varType": 2,
+    "value": [
+      2
+    ]
+  },
+  "RPM": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "RPM",
+    "description": "Engine rpm",
+    "unit": "revs/min",
+    "varType": 4,
+    "value": [
+      6705.1787109375
+    ]
+  },
+  "Lap": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "Lap",
+    "description": "Laps started count",
+    "unit": "",
+    "varType": 2,
+    "value": [
+      2
+    ]
+  },
+  "LapCompleted": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "LapCompleted",
+    "description": "Laps completed count",
+    "unit": "",
+    "varType": 2,
+    "value": [
+      1
+    ]
+  },
+  "LapDist": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "LapDist",
+    "description": "Meters traveled from S/F this lap",
+    "unit": "m",
+    "varType": 4,
+    "value": [
+      2140.6865234375
+    ]
+  },
+  "LapDistPct": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "LapDistPct",
+    "description": "Percentage distance around lap",
+    "unit": "%",
+    "varType": 4,
+    "value": [
+      0.6695664525032043
+    ]
+  },
+  "RaceLaps": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "RaceLaps",
+    "description": "Laps completed in race",
+    "unit": "",
+    "varType": 2,
+    "value": [
+      21
+    ]
+  },
+  "LapBestLap": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "LapBestLap",
+    "description": "Players best lap number",
+    "unit": "",
+    "varType": 2,
+    "value": [
+      1
+    ]
+  },
+  "LapBestLapTime": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "LapBestLapTime",
+    "description": "Players best lap time",
+    "unit": "s",
+    "varType": 4,
+    "value": [
+      92.43419647216797
+    ]
+  },
+  "LapLastLapTime": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "LapLastLapTime",
+    "description": "Players last lap time",
+    "unit": "s",
+    "varType": 4,
+    "value": [
+      92.43419647216797
+    ]
+  },
+  "LapCurrentLapTime": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "LapCurrentLapTime",
+    "description": "Estimate of players current lap time as shown in F3 box",
+    "unit": "s",
+    "varType": 4,
+    "value": [
+      63.324058532714844
+    ]
+  },
+  "LapLasNLapSeq": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "LapLasNLapSeq",
+    "description": "Player num consecutive clean laps completed for N average",
+    "unit": "",
+    "varType": 2,
+    "value": [
+      0
+    ]
+  },
+  "LapLastNLapTime": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "LapLastNLapTime",
+    "description": "Player last N average lap time",
+    "unit": "s",
+    "varType": 4,
+    "value": [
+      0
+    ]
+  },
+  "LapBestNLapLap": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "LapBestNLapLap",
+    "description": "Player last lap in best N average lap time",
+    "unit": "",
+    "varType": 2,
+    "value": [
+      0
+    ]
+  },
+  "LapBestNLapTime": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "LapBestNLapTime",
+    "description": "Player best N average lap time",
+    "unit": "s",
+    "varType": 4,
+    "value": [
+      0
+    ]
+  },
+  "LapDeltaToBestLap": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "LapDeltaToBestLap",
+    "description": "Delta time for best lap",
+    "unit": "s",
+    "varType": 4,
+    "value": [
+      4.627002239227295
+    ]
+  },
+  "LapDeltaToBestLap_DD": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "LapDeltaToBestLap_DD",
+    "description": "Rate of change of delta time for best lap",
+    "unit": "s/s",
+    "varType": 4,
+    "value": [
+      0.12807655334472656
+    ]
+  },
+  "LapDeltaToBestLap_OK": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "LapDeltaToBestLap_OK",
+    "description": "Delta time for best lap is valid",
+    "unit": "",
+    "varType": 1,
+    "value": [
+      true
+    ]
+  },
+  "LapDeltaToOptimalLap": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "LapDeltaToOptimalLap",
+    "description": "Delta time for optimal lap",
+    "unit": "s",
+    "varType": 4,
+    "value": [
+      5.176210880279541
+    ]
+  },
+  "LapDeltaToOptimalLap_DD": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "LapDeltaToOptimalLap_DD",
+    "description": "Rate of change of delta time for optimal lap",
+    "unit": "s/s",
+    "varType": 4,
+    "value": [
+      0.14091801643371582
+    ]
+  },
+  "LapDeltaToOptimalLap_OK": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "LapDeltaToOptimalLap_OK",
+    "description": "Delta time for optimal lap is valid",
+    "unit": "",
+    "varType": 1,
+    "value": [
+      true
+    ]
+  },
+  "LapDeltaToSessionBestLap": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "LapDeltaToSessionBestLap",
+    "description": "Delta time for session best lap",
+    "unit": "s",
+    "varType": 4,
+    "value": [
+      0
+    ]
+  },
+  "LapDeltaToSessionBestLap_DD": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "LapDeltaToSessionBestLap_DD",
+    "description": "Rate of change of delta time for session best lap",
+    "unit": "s/s",
+    "varType": 4,
+    "value": [
+      0
+    ]
+  },
+  "LapDeltaToSessionBestLap_OK": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "LapDeltaToSessionBestLap_OK",
+    "description": "Delta time for session best lap is valid",
+    "unit": "",
+    "varType": 1,
+    "value": [
+      false
+    ]
+  },
+  "LapDeltaToSessionOptimalLap": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "LapDeltaToSessionOptimalLap",
+    "description": "Delta time for session optimal lap",
+    "unit": "s",
+    "varType": 4,
+    "value": [
+      0
+    ]
+  },
+  "LapDeltaToSessionOptimalLap_DD": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "LapDeltaToSessionOptimalLap_DD",
+    "description": "Rate of change of delta time for session optimal lap",
+    "unit": "s/s",
+    "varType": 4,
+    "value": [
+      0
+    ]
+  },
+  "LapDeltaToSessionOptimalLap_OK": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "LapDeltaToSessionOptimalLap_OK",
+    "description": "Delta time for session optimal lap is valid",
+    "unit": "",
+    "varType": 1,
+    "value": [
+      false
+    ]
+  },
+  "LapDeltaToSessionLastlLap": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "LapDeltaToSessionLastlLap",
+    "description": "Delta time for session last lap",
+    "unit": "s",
+    "varType": 4,
+    "value": [
+      0
+    ]
+  },
+  "LapDeltaToSessionLastlLap_DD": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "LapDeltaToSessionLastlLap_DD",
+    "description": "Rate of change of delta time for session last lap",
+    "unit": "s/s",
+    "varType": 4,
+    "value": [
+      0
+    ]
+  },
+  "LapDeltaToSessionLastlLap_OK": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "LapDeltaToSessionLastlLap_OK",
+    "description": "Delta time for session last lap is valid",
+    "unit": "",
+    "varType": 1,
+    "value": [
+      false
+    ]
+  },
+  "Speed": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "Speed",
+    "description": "GPS vehicle speed",
+    "unit": "m/s",
+    "varType": 4,
+    "value": [
+      32.81691360473633
+    ]
+  },
+  "Yaw": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "Yaw",
+    "description": "Yaw orientation",
+    "unit": "rad",
+    "varType": 4,
+    "value": [
+      -0.22976428270339966
+    ]
+  },
+  "YawNorth": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "YawNorth",
+    "description": "Yaw orientation relative to north",
+    "unit": "rad",
+    "varType": 4,
+    "value": [
+      0.4926230311393738
+    ]
+  },
+  "Pitch": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "Pitch",
+    "description": "Pitch orientation",
+    "unit": "rad",
+    "varType": 4,
+    "value": [
+      -0.012292647734284401
+    ]
+  },
+  "Roll": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "Roll",
+    "description": "Roll orientation",
+    "unit": "rad",
+    "varType": 4,
+    "value": [
+      0.010911899618804455
+    ]
+  },
+  "EnterExitReset": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "EnterExitReset",
+    "description": "Indicate action the reset key will take 0 enter 1 exit 2 reset",
+    "unit": "",
+    "varType": 2,
+    "value": [
+      2
+    ]
+  },
+  "TrackTemp": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "TrackTemp",
+    "description": "Deprecated  set to TrackTempCrew",
+    "unit": "C",
+    "varType": 4,
+    "value": [
+      35
+    ]
+  },
+  "TrackTempCrew": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "TrackTempCrew",
+    "description": "Temperature of track measured by crew around track",
+    "unit": "C",
+    "varType": 4,
+    "value": [
+      35
+    ]
+  },
+  "AirTemp": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "AirTemp",
+    "description": "Temperature of air at start/finish line",
+    "unit": "C",
+    "varType": 4,
+    "value": [
+      25.5975284576416
+    ]
+  },
+  "WeatherType": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "WeatherType",
+    "description": "Weather type (0=constant  1=dynamic)",
+    "unit": "",
+    "varType": 2,
+    "value": [
+      3
+    ]
+  },
+  "Skies": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "Skies",
+    "description": "Skies (0=clear/1=p cloudy/2=m cloudy/3=overcast)",
+    "unit": "",
+    "varType": 2,
+    "value": [
+      1
+    ]
+  },
+  "AirDensity": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "AirDensity",
+    "description": "Density of air at start/finish line",
+    "unit": "kg/m^3",
+    "varType": 4,
+    "value": [
+      1.202965259552002
+    ]
+  },
+  "AirPressure": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "AirPressure",
+    "description": "Pressure of air at start/finish line",
+    "unit": "Hg",
+    "varType": 4,
+    "value": [
+      29.24552345275879
+    ]
+  },
+  "WindVel": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "WindVel",
+    "description": "Wind velocity at start/finish line",
+    "unit": "m/s",
+    "varType": 4,
+    "value": [
+      0.8940799832344055
+    ]
+  },
+  "WindDir": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "WindDir",
+    "description": "Wind direction at start/finish line",
+    "unit": "rad",
+    "varType": 4,
+    "value": [
+      2.9802322387695312e-8
+    ]
+  },
+  "RelativeHumidity": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "RelativeHumidity",
+    "description": "Relative Humidity",
+    "unit": "%",
+    "varType": 4,
+    "value": [
+      0.548566460609436
+    ]
+  },
+  "FogLevel": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "FogLevel",
+    "description": "Fog level",
+    "unit": "%",
+    "varType": 4,
+    "value": [
+      0
+    ]
+  },
+  "DCLapStatus": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "DCLapStatus",
+    "description": "Status of driver change lap requirements",
+    "unit": "",
+    "varType": 2,
+    "value": [
+      2
+    ]
+  },
+  "DCDriversSoFar": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "DCDriversSoFar",
+    "description": "Number of team drivers who have run a stint",
+    "unit": "",
+    "varType": 2,
+    "value": [
+      1
+    ]
+  },
+  "OkToReloadTextures": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "OkToReloadTextures",
+    "description": "True if it is ok to reload car textures at this time",
+    "unit": "",
+    "varType": 1,
+    "value": [
+      true
+    ]
+  },
+  "LoadNumTextures": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "LoadNumTextures",
+    "description": "True if the car_num texture will be loaded",
+    "unit": "",
+    "varType": 1,
+    "value": [
+      false
+    ]
+  },
+  "CarLeftRight": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "CarLeftRight",
+    "description": "Notify if car is to the left or right of driver",
+    "unit": "irsdk_CarLeftRight",
+    "varType": 3,
+    "value": [
+      1
+    ]
+  },
+  "PitsOpen": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "PitsOpen",
+    "description": "True if pit stop is allowed for the current player",
+    "unit": "",
+    "varType": 1,
+    "value": [
+      true
+    ]
+  },
+  "VidCapEnabled": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "VidCapEnabled",
+    "description": "True if video capture system is enabled",
+    "unit": "",
+    "varType": 1,
+    "value": [
+      false
+    ]
+  },
+  "VidCapActive": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "VidCapActive",
+    "description": "True if video currently being captured",
+    "unit": "",
+    "varType": 1,
+    "value": [
+      false
+    ]
+  },
+  "PitRepairLeft": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "PitRepairLeft",
+    "description": "Time left for mandatory pit repairs if repairs are active",
+    "unit": "s",
+    "varType": 4,
+    "value": [
+      0
+    ]
+  },
+  "PitOptRepairLeft": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "PitOptRepairLeft",
+    "description": "Time left for optional repairs if repairs are active",
+    "unit": "s",
+    "varType": 4,
+    "value": [
+      0
+    ]
+  },
+  "PitstopActive": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "PitstopActive",
+    "description": "Is the player getting pit stop service",
+    "unit": "",
+    "varType": 1,
+    "value": [
+      false
+    ]
+  },
+  "FastRepairUsed": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "FastRepairUsed",
+    "description": "How many fast repairs used so far",
+    "unit": "",
+    "varType": 2,
+    "value": [
+      0
+    ]
+  },
+  "FastRepairAvailable": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "FastRepairAvailable",
+    "description": "How many fast repairs left  255 is unlimited",
+    "unit": "",
+    "varType": 2,
+    "value": [
+      0
+    ]
+  },
+  "LFTiresUsed": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "LFTiresUsed",
+    "description": "How many left front tires used so far",
+    "unit": "",
+    "varType": 2,
+    "value": [
+      1
+    ]
+  },
+  "RFTiresUsed": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "RFTiresUsed",
+    "description": "How many right front tires used so far",
+    "unit": "",
+    "varType": 2,
+    "value": [
+      1
+    ]
+  },
+  "LRTiresUsed": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "LRTiresUsed",
+    "description": "How many left rear tires used so far",
+    "unit": "",
+    "varType": 2,
+    "value": [
+      1
+    ]
+  },
+  "RRTiresUsed": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "RRTiresUsed",
+    "description": "How many right rear tires used so far",
+    "unit": "",
+    "varType": 2,
+    "value": [
+      1
+    ]
+  },
+  "LeftTireSetsUsed": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "LeftTireSetsUsed",
+    "description": "How many left tire sets used so far",
+    "unit": "",
+    "varType": 2,
+    "value": [
+      1
+    ]
+  },
+  "RightTireSetsUsed": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "RightTireSetsUsed",
+    "description": "How many right tire sets used so far",
+    "unit": "",
+    "varType": 2,
+    "value": [
+      1
+    ]
+  },
+  "FrontTireSetsUsed": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "FrontTireSetsUsed",
+    "description": "How many front tire sets used so far",
+    "unit": "",
+    "varType": 2,
+    "value": [
+      1
+    ]
+  },
+  "RearTireSetsUsed": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "RearTireSetsUsed",
+    "description": "How many rear tire sets used so far",
+    "unit": "",
+    "varType": 2,
+    "value": [
+      1
+    ]
+  },
+  "TireSetsUsed": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "TireSetsUsed",
+    "description": "How many tire sets used so far",
+    "unit": "",
+    "varType": 2,
+    "value": [
+      1
+    ]
+  },
+  "LFTiresAvailable": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "LFTiresAvailable",
+    "description": "How many left front tires are remaining  255 is unlimited",
+    "unit": "",
+    "varType": 2,
+    "value": [
+      1
+    ]
+  },
+  "RFTiresAvailable": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "RFTiresAvailable",
+    "description": "How many right front tires are remaining  255 is unlimited",
+    "unit": "",
+    "varType": 2,
+    "value": [
+      1
+    ]
+  },
+  "LRTiresAvailable": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "LRTiresAvailable",
+    "description": "How many left rear tires are remaining  255 is unlimited",
+    "unit": "",
+    "varType": 2,
+    "value": [
+      1
+    ]
+  },
+  "RRTiresAvailable": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "RRTiresAvailable",
+    "description": "How many right rear tires are remaining  255 is unlimited",
+    "unit": "",
+    "varType": 2,
+    "value": [
+      1
+    ]
+  },
+  "LeftTireSetsAvailable": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "LeftTireSetsAvailable",
+    "description": "How many left tire sets are remaining  255 is unlimited",
+    "unit": "",
+    "varType": 2,
+    "value": [
+      1
+    ]
+  },
+  "RightTireSetsAvailable": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "RightTireSetsAvailable",
+    "description": "How many right tire sets are remaining  255 is unlimited",
+    "unit": "",
+    "varType": 2,
+    "value": [
+      1
+    ]
+  },
+  "FrontTireSetsAvailable": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "FrontTireSetsAvailable",
+    "description": "How many front tire sets are remaining  255 is unlimited",
+    "unit": "",
+    "varType": 2,
+    "value": [
+      1
+    ]
+  },
+  "RearTireSetsAvailable": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "RearTireSetsAvailable",
+    "description": "How many rear tire sets are remaining  255 is unlimited",
+    "unit": "",
+    "varType": 2,
+    "value": [
+      1
+    ]
+  },
+  "TireSetsAvailable": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "TireSetsAvailable",
+    "description": "How many tire sets are remaining  255 is unlimited",
+    "unit": "",
+    "varType": 2,
+    "value": [
+      1
+    ]
+  },
+  "CamCarIdx": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "CamCarIdx",
+    "description": "Active camera's focus car index",
+    "unit": "",
+    "varType": 2,
+    "value": [
+      51
+    ]
+  },
+  "CamCameraNumber": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "CamCameraNumber",
+    "description": "Active camera number",
+    "unit": "",
+    "varType": 2,
+    "value": [
+      1
+    ]
+  },
+  "CamGroupNumber": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "CamGroupNumber",
+    "description": "Active camera group number",
+    "unit": "",
+    "varType": 2,
+    "value": [
+      9
+    ]
+  },
+  "CamCameraState": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "CamCameraState",
+    "description": "State of camera system",
+    "unit": "irsdk_CameraState",
+    "varType": 3,
+    "value": [
+      80
+    ]
+  },
+  "IsOnTrackCar": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "IsOnTrackCar",
+    "description": "1=Car on track physics running",
+    "unit": "",
+    "varType": 1,
+    "value": [
+      true
+    ]
+  },
+  "IsInGarage": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "IsInGarage",
+    "description": "1=Car in garage physics running",
+    "unit": "",
+    "varType": 1,
+    "value": [
+      false
+    ]
+  },
+  "SteeringWheelPctTorque": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "SteeringWheelPctTorque",
+    "description": "Force feedback % max torque on steering shaft unsigned",
+    "unit": "%",
+    "varType": 4,
+    "value": [
+      0.6664298176765442
+    ]
+  },
+  "SteeringWheelPctTorqueSign": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "SteeringWheelPctTorqueSign",
+    "description": "Force feedback % max torque on steering shaft signed",
+    "unit": "%",
+    "varType": 4,
+    "value": [
+      0.6664298176765442
+    ]
+  },
+  "SteeringWheelPctTorqueSignStops": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "SteeringWheelPctTorqueSignStops",
+    "description": "Force feedback % max torque on steering shaft signed stops",
+    "unit": "%",
+    "varType": 4,
+    "value": [
+      0.6677641272544861
+    ]
+  },
+  "SteeringWheelPctDamper": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "SteeringWheelPctDamper",
+    "description": "Force feedback % max damping",
+    "unit": "%",
+    "varType": 4,
+    "value": [
+      0
+    ]
+  },
+  "SteeringWheelAngleMax": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "SteeringWheelAngleMax",
+    "description": "Steering wheel max angle",
+    "unit": "rad",
+    "varType": 4,
+    "value": [
+      17.278644561767578
+    ]
+  },
+  "SteeringWheelLimiter": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "SteeringWheelLimiter",
+    "description": "Force feedback limiter strength limits impacts and oscillation",
+    "unit": "%",
+    "varType": 4,
+    "value": [
+      0
+    ]
+  },
+  "ShiftIndicatorPct": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "ShiftIndicatorPct",
+    "description": "DEPRECATED use DriverCarSLBlinkRPM instead",
+    "unit": "%",
+    "varType": 4,
+    "value": [
+      0.5262767672538757
+    ]
+  },
+  "ShiftPowerPct": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "ShiftPowerPct",
+    "description": "Friction torque applied to gears when shifting or grinding",
+    "unit": "%",
+    "varType": 4,
+    "value": [
+      0
+    ]
+  },
+  "ShiftGrindRPM": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "ShiftGrindRPM",
+    "description": "RPM of shifter grinding noise",
+    "unit": "RPM",
+    "varType": 4,
+    "value": [
+      0
+    ]
+  },
+  "ThrottleRaw": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "ThrottleRaw",
+    "description": "Raw throttle input 0=off throttle to 1=full throttle",
+    "unit": "%",
+    "varType": 4,
+    "value": [
+      1
+    ]
+  },
+  "BrakeRaw": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "BrakeRaw",
+    "description": "Raw brake input 0=brake released to 1=max pedal force",
+    "unit": "%",
+    "varType": 4,
+    "value": [
+      0
+    ]
+  },
+  "HandbrakeRaw": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "HandbrakeRaw",
+    "description": "Raw handbrake input 0=handbrake released to 1=max force",
+    "unit": "%",
+    "varType": 4,
+    "value": [
+      0
+    ]
+  },
+  "SteeringWheelPeakForceNm": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "SteeringWheelPeakForceNm",
+    "description": "Peak torque mapping to direct input units for FFB",
+    "unit": "N*m",
+    "varType": 4,
+    "value": [
+      -1
+    ]
+  },
+  "SteeringWheelMaxForceNm": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "SteeringWheelMaxForceNm",
+    "description": "Value of strength or max force slider in Nm for FFB",
+    "unit": "N*m",
+    "varType": 4,
+    "value": [
+      19
+    ]
+  },
+  "SteeringWheelUseLinear": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "SteeringWheelUseLinear",
+    "description": "True if steering wheel force is using linear mode",
+    "unit": "",
+    "varType": 1,
+    "value": [
+      false
+    ]
+  },
+  "BrakeABSactive": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "BrakeABSactive",
+    "description": "true if abs is currently reducing brake force pressure",
+    "unit": "",
+    "varType": 1,
+    "value": [
+      false
+    ]
+  },
+  "EngineWarnings": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "EngineWarnings",
+    "description": "Bitfield for warning lights",
+    "unit": "irsdk_EngineWarnings",
+    "varType": 3,
+    "value": [
+      0
+    ]
+  },
+  "FuelLevel": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "FuelLevel",
+    "description": "Liters of fuel remaining",
+    "unit": "l",
+    "varType": 4,
+    "value": [
+      29.833730697631836
+    ]
+  },
+  "FuelLevelPct": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "FuelLevelPct",
+    "description": "Percent fuel remaining",
+    "unit": "%",
+    "varType": 4,
+    "value": [
+      0.6631683111190796
+    ]
+  },
+  "PitSvFlags": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "PitSvFlags",
+    "description": "Bitfield of pit service checkboxes",
+    "unit": "irsdk_PitSvFlags",
+    "varType": 3,
+    "value": [
+      63
+    ]
+  },
+  "PitSvLFP": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "PitSvLFP",
+    "description": "Pit service left front tire pressure",
+    "unit": "kPa",
+    "varType": 4,
+    "value": [
+      206.8427276611328
+    ]
+  },
+  "PitSvRFP": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "PitSvRFP",
+    "description": "Pit service right front tire pressure",
+    "unit": "kPa",
+    "varType": 4,
+    "value": [
+      206.8427276611328
+    ]
+  },
+  "PitSvLRP": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "PitSvLRP",
+    "description": "Pit service left rear tire pressure",
+    "unit": "kPa",
+    "varType": 4,
+    "value": [
+      206.8427276611328
+    ]
+  },
+  "PitSvRRP": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "PitSvRRP",
+    "description": "Pit service right rear tire pressure",
+    "unit": "kPa",
+    "varType": 4,
+    "value": [
+      206.8427276611328
+    ]
+  },
+  "PitSvFuel": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "PitSvFuel",
+    "description": "Pit service fuel add amount",
+    "unit": "l",
+    "varType": 4,
+    "value": [
+      44.986663818359375
+    ]
+  },
+  "PitSvTireCompound": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "PitSvTireCompound",
+    "description": "Pit service pending tire compound",
+    "unit": "",
+    "varType": 2,
+    "value": [
+      0
+    ]
+  },
+  "CarIdxP2P_Status": {
+    "countAsTime": false,
+    "length": 64,
+    "name": "CarIdxP2P_Status",
+    "description": "Push2Pass active or not",
+    "unit": "",
+    "varType": 1,
+    "value": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "CarIdxP2P_Count": {
+    "countAsTime": false,
+    "length": 64,
+    "name": "CarIdxP2P_Count",
+    "description": "Push2Pass count of usage (or remaining in Race)",
+    "unit": "",
+    "varType": 2,
+    "value": [
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1
+    ]
+  },
+  "ReplayPlaySpeed": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "ReplayPlaySpeed",
+    "description": "Replay playback speed",
+    "unit": "",
+    "varType": 2,
+    "value": [
+      1
+    ]
+  },
+  "ReplayPlaySlowMotion": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "ReplayPlaySlowMotion",
+    "description": "0=not slow motion  1=replay is in slow motion",
+    "unit": "",
+    "varType": 1,
+    "value": [
+      false
+    ]
+  },
+  "ReplaySessionTime": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "ReplaySessionTime",
+    "description": "Seconds since replay session start",
+    "unit": "s",
+    "varType": 5,
+    "value": [
+      0
+    ]
+  },
+  "ReplaySessionNum": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "ReplaySessionNum",
+    "description": "Replay session number",
+    "unit": "",
+    "varType": 2,
+    "value": [
+      -1
+    ]
+  },
+  "TireLF_RumblePitch": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "TireLF_RumblePitch",
+    "description": "Players LF Tire Sound rumblestrip pitch",
+    "unit": "Hz",
+    "varType": 4,
+    "value": [
+      0
+    ]
+  },
+  "TireRF_RumblePitch": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "TireRF_RumblePitch",
+    "description": "Players RF Tire Sound rumblestrip pitch",
+    "unit": "Hz",
+    "varType": 4,
+    "value": [
+      0
+    ]
+  },
+  "TireLR_RumblePitch": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "TireLR_RumblePitch",
+    "description": "Players LR Tire Sound rumblestrip pitch",
+    "unit": "Hz",
+    "varType": 4,
+    "value": [
+      0
+    ]
+  },
+  "TireRR_RumblePitch": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "TireRR_RumblePitch",
+    "description": "Players RR Tire Sound rumblestrip pitch",
+    "unit": "Hz",
+    "varType": 4,
+    "value": [
+      0
+    ]
+  },
+  "SteeringWheelTorque_ST": {
+    "countAsTime": true,
+    "length": 6,
+    "name": "SteeringWheelTorque_ST",
+    "description": "Output torque on steering shaft at 360 Hz",
+    "unit": "N*m",
+    "varType": 4,
+    "value": [
+      10.717019081115723,
+      10.853043556213379,
+      11.153368949890137,
+      11.37777328491211,
+      11.468843460083008,
+      11.510481834411621
+    ]
+  },
+  "SteeringWheelTorque": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "SteeringWheelTorque",
+    "description": "Output torque on steering shaft",
+    "unit": "N*m",
+    "varType": 4,
+    "value": [
+      11.510481834411621
+    ]
+  },
+  "VelocityZ_ST": {
+    "countAsTime": true,
+    "length": 6,
+    "name": "VelocityZ_ST",
+    "description": "Z velocity",
+    "unit": "m/s at 360 Hz",
+    "varType": 4,
+    "value": [
+      -0.10196784138679504,
+      -0.10358759760856628,
+      -0.10523685812950134,
+      -0.10701584815979004,
+      -0.1088140606880188,
+      -0.11056402325630188
+    ]
+  },
+  "VelocityY_ST": {
+    "countAsTime": true,
+    "length": 6,
+    "name": "VelocityY_ST",
+    "description": "Y velocity",
+    "unit": "m/s at 360 Hz",
+    "varType": 4,
+    "value": [
+      -0.4015786349773407,
+      -0.38359901309013367,
+      -0.3653615415096283,
+      -0.3468185365200043,
+      -0.3280704617500305,
+      -0.30929315090179443
+    ]
+  },
+  "VelocityX_ST": {
+    "countAsTime": true,
+    "length": 6,
+    "name": "VelocityX_ST",
+    "description": "X velocity",
+    "unit": "m/s at 360 Hz",
+    "varType": 4,
+    "value": [
+      32.78310775756836,
+      32.78990936279297,
+      32.796573638916016,
+      32.803016662597656,
+      32.80925369262695,
+      32.81545639038086
+    ]
+  },
+  "VelocityZ": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "VelocityZ",
+    "description": "Z velocity",
+    "unit": "m/s",
+    "varType": 4,
+    "value": [
+      -0.11056402325630188
+    ]
+  },
+  "VelocityY": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "VelocityY",
+    "description": "Y velocity",
+    "unit": "m/s",
+    "varType": 4,
+    "value": [
+      -0.30929315090179443
+    ]
+  },
+  "VelocityX": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "VelocityX",
+    "description": "X velocity",
+    "unit": "m/s",
+    "varType": 4,
+    "value": [
+      32.81545639038086
+    ]
+  },
+  "YawRate_ST": {
+    "countAsTime": true,
+    "length": 6,
+    "name": "YawRate_ST",
+    "description": "Yaw rate at 360 Hz",
+    "unit": "rad/s",
+    "varType": 4,
+    "value": [
+      -0.2951936423778534,
+      -0.3020528554916382,
+      -0.30879589915275574,
+      -0.3153848648071289,
+      -0.321804940700531,
+      -0.32802334427833557
+    ]
+  },
+  "PitchRate_ST": {
+    "countAsTime": true,
+    "length": 6,
+    "name": "PitchRate_ST",
+    "description": "Pitch rate at 360 Hz",
+    "unit": "rad/s",
+    "varType": 4,
+    "value": [
+      -0.024382177740335464,
+      -0.026231329888105392,
+      -0.027911784127354622,
+      -0.029414216056466103,
+      -0.030834611505270004,
+      -0.03212951496243477
+    ]
+  },
+  "RollRate_ST": {
+    "countAsTime": true,
+    "length": 6,
+    "name": "RollRate_ST",
+    "description": "Roll rate at 360 Hz",
+    "unit": "rad/s",
+    "varType": 4,
+    "value": [
+      -0.17961275577545166,
+      -0.1837361603975296,
+      -0.18821895122528076,
+      -0.19301989674568176,
+      -0.19865694642066956,
+      -0.20528380572795868
+    ]
+  },
+  "YawRate": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "YawRate",
+    "description": "Yaw rate",
+    "unit": "rad/s",
+    "varType": 4,
+    "value": [
+      -0.32802334427833557
+    ]
+  },
+  "PitchRate": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "PitchRate",
+    "description": "Pitch rate",
+    "unit": "rad/s",
+    "varType": 4,
+    "value": [
+      -0.03212951496243477
+    ]
+  },
+  "RollRate": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "RollRate",
+    "description": "Roll rate",
+    "unit": "rad/s",
+    "varType": 4,
+    "value": [
+      -0.20528380572795868
+    ]
+  },
+  "VertAccel_ST": {
+    "countAsTime": true,
+    "length": 6,
+    "name": "VertAccel_ST",
+    "description": "Vertical acceleration (including gravity) at 360 Hz",
+    "unit": "m/s^2",
+    "varType": 4,
+    "value": [
+      10.055245399475098,
+      10.123611450195312,
+      10.169025421142578,
+      10.17286205291748,
+      10.211880683898926,
+      10.272781372070312
+    ]
+  },
+  "LatAccel_ST": {
+    "countAsTime": true,
+    "length": 6,
+    "name": "LatAccel_ST",
+    "description": "Lateral acceleration (including gravity) at 360 Hz",
+    "unit": "m/s^2",
+    "varType": 4,
+    "value": [
+      -3.050381898880005,
+      -3.208136796951294,
+      -3.346548080444336,
+      -3.463557243347168,
+      -3.611429452896118,
+      -3.8170790672302246
+    ]
+  },
+  "LongAccel_ST": {
+    "countAsTime": true,
+    "length": 6,
+    "name": "LongAccel_ST",
+    "description": "Longitudinal acceleration (including gravity) at 360 Hz",
+    "unit": "m/s^2",
+    "varType": 4,
+    "value": [
+      2.4552206993103027,
+      2.4528238773345947,
+      2.4064993858337402,
+      2.333040714263916,
+      2.2633140087127686,
+      2.2542667388916016
+    ]
+  },
+  "VertAccel": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "VertAccel",
+    "description": "Vertical acceleration (including gravity)",
+    "unit": "m/s^2",
+    "varType": 4,
+    "value": [
+      10.272781372070312
+    ]
+  },
+  "LatAccel": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "LatAccel",
+    "description": "Lateral acceleration (including gravity)",
+    "unit": "m/s^2",
+    "varType": 4,
+    "value": [
+      -3.8170790672302246
+    ]
+  },
+  "LongAccel": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "LongAccel",
+    "description": "Longitudinal acceleration (including gravity)",
+    "unit": "m/s^2",
+    "varType": 4,
+    "value": [
+      2.2542667388916016
+    ]
+  },
+  "dcStarter": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "dcStarter",
+    "description": "In car trigger car starter",
+    "unit": "",
+    "varType": 1,
+    "value": [
+      false
+    ]
+  },
+  "dcPitSpeedLimiterToggle": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "dcPitSpeedLimiterToggle",
+    "description": "In car traction control active",
+    "unit": "",
+    "varType": 1,
+    "value": [
+      false
+    ]
+  },
+  "dpRFTireChange": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "dpRFTireChange",
+    "description": "Pitstop rf tire change request",
+    "unit": "",
+    "varType": 4,
+    "value": [
+      1
+    ]
+  },
+  "dpLFTireChange": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "dpLFTireChange",
+    "description": "Pitstop lf tire change request",
+    "unit": "",
+    "varType": 4,
+    "value": [
+      1
+    ]
+  },
+  "dpRRTireChange": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "dpRRTireChange",
+    "description": "Pitstop rr tire change request",
+    "unit": "",
+    "varType": 4,
+    "value": [
+      1
+    ]
+  },
+  "dpLRTireChange": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "dpLRTireChange",
+    "description": "Pitstop lr tire change request",
+    "unit": "",
+    "varType": 4,
+    "value": [
+      1
+    ]
+  },
+  "dpFuelFill": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "dpFuelFill",
+    "description": "Pitstop fuel fill flag",
+    "unit": "",
+    "varType": 4,
+    "value": [
+      1
+    ]
+  },
+  "dpWindshieldTearoff": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "dpWindshieldTearoff",
+    "description": "Pitstop windshield tearoff",
+    "unit": "",
+    "varType": 4,
+    "value": [
+      1
+    ]
+  },
+  "dpFuelAddKg": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "dpFuelAddKg",
+    "description": "Pitstop fuel add ammount",
+    "unit": "kg",
+    "varType": 4,
+    "value": [
+      44.986663818359375
+    ]
+  },
+  "dpFastRepair": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "dpFastRepair",
+    "description": "Pitstop fast repair set",
+    "unit": "",
+    "varType": 4,
+    "value": [
+      0
+    ]
+  },
+  "dpLFTireColdPress": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "dpLFTireColdPress",
+    "description": "Pitstop lf tire cold pressure adjustment",
+    "unit": "Pa",
+    "varType": 4,
+    "value": [
+      206.84271240234375
+    ]
+  },
+  "dpRFTireColdPress": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "dpRFTireColdPress",
+    "description": "Pitstop rf cold tire pressure adjustment",
+    "unit": "Pa",
+    "varType": 4,
+    "value": [
+      206.84271240234375
+    ]
+  },
+  "dpLRTireColdPress": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "dpLRTireColdPress",
+    "description": "Pitstop lr tire cold pressure adjustment",
+    "unit": "Pa",
+    "varType": 4,
+    "value": [
+      206.84271240234375
+    ]
+  },
+  "dpRRTireColdPress": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "dpRRTireColdPress",
+    "description": "Pitstop rr cold tire pressure adjustment",
+    "unit": "Pa",
+    "varType": 4,
+    "value": [
+      206.84271240234375
+    ]
+  },
+  "WaterTemp": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "WaterTemp",
+    "description": "Engine coolant temp",
+    "unit": "C",
+    "varType": 4,
+    "value": [
+      77.2289047241211
+    ]
+  },
+  "WaterLevel": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "WaterLevel",
+    "description": "Engine coolant level",
+    "unit": "l",
+    "varType": 4,
+    "value": [
+      5
+    ]
+  },
+  "FuelPress": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "FuelPress",
+    "description": "Engine fuel pressure",
+    "unit": "bar",
+    "varType": 4,
+    "value": [
+      4
+    ]
+  },
+  "FuelUsePerHour": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "FuelUsePerHour",
+    "description": "Engine fuel used instantaneous",
+    "unit": "kg/h",
+    "varType": 4,
+    "value": [
+      31.441360473632812
+    ]
+  },
+  "OilTemp": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "OilTemp",
+    "description": "Engine oil temperature",
+    "unit": "C",
+    "varType": 4,
+    "value": [
+      72.12635803222656
+    ]
+  },
+  "OilPress": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "OilPress",
+    "description": "Engine oil pressure",
+    "unit": "bar",
+    "varType": 4,
+    "value": [
+      4.081998825073242
+    ]
+  },
+  "OilLevel": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "OilLevel",
+    "description": "Engine oil level",
+    "unit": "l",
+    "varType": 4,
+    "value": [
+      6.400000095367432
+    ]
+  },
+  "Voltage": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "Voltage",
+    "description": "Engine voltage",
+    "unit": "V",
+    "varType": 4,
+    "value": [
+      12.40000057220459
+    ]
+  },
+  "ManifoldPress": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "ManifoldPress",
+    "description": "Engine manifold pressure",
+    "unit": "bar",
+    "varType": 4,
+    "value": [
+      0.9784109592437744
+    ]
+  },
+  "RFbrakeLinePress": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "RFbrakeLinePress",
+    "description": "RF brake line pressure",
+    "unit": "bar",
+    "varType": 4,
+    "value": [
+      0
+    ]
+  },
+  "RFcoldPressure": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "RFcoldPressure",
+    "description": "RF tire cold pressure  as set in the garage",
+    "unit": "kPa",
+    "varType": 4,
+    "value": [
+      206.8427276611328
+    ]
+  },
+  "RFtempCL": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "RFtempCL",
+    "description": "RF tire left carcass temperature",
+    "unit": "C",
+    "varType": 4,
+    "value": [
+      39.107696533203125
+    ]
+  },
+  "RFtempCM": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "RFtempCM",
+    "description": "RF tire middle carcass temperature",
+    "unit": "C",
+    "varType": 4,
+    "value": [
+      39.107696533203125
+    ]
+  },
+  "RFtempCR": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "RFtempCR",
+    "description": "RF tire right carcass temperature",
+    "unit": "C",
+    "varType": 4,
+    "value": [
+      39.107696533203125
+    ]
+  },
+  "RFwearL": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "RFwearL",
+    "description": "RF tire left percent tread remaining",
+    "unit": "%",
+    "varType": 4,
+    "value": [
+      1
+    ]
+  },
+  "RFwearM": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "RFwearM",
+    "description": "RF tire middle percent tread remaining",
+    "unit": "%",
+    "varType": 4,
+    "value": [
+      1
+    ]
+  },
+  "RFwearR": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "RFwearR",
+    "description": "RF tire right percent tread remaining",
+    "unit": "%",
+    "varType": 4,
+    "value": [
+      1
+    ]
+  },
+  "LFbrakeLinePress": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "LFbrakeLinePress",
+    "description": "LF brake line pressure",
+    "unit": "bar",
+    "varType": 4,
+    "value": [
+      0
+    ]
+  },
+  "LFcoldPressure": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "LFcoldPressure",
+    "description": "LF tire cold pressure  as set in the garage",
+    "unit": "kPa",
+    "varType": 4,
+    "value": [
+      206.8427276611328
+    ]
+  },
+  "LFtempCL": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "LFtempCL",
+    "description": "LF tire left carcass temperature",
+    "unit": "C",
+    "varType": 4,
+    "value": [
+      39.107696533203125
+    ]
+  },
+  "LFtempCM": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "LFtempCM",
+    "description": "LF tire middle carcass temperature",
+    "unit": "C",
+    "varType": 4,
+    "value": [
+      39.107696533203125
+    ]
+  },
+  "LFtempCR": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "LFtempCR",
+    "description": "LF tire right carcass temperature",
+    "unit": "C",
+    "varType": 4,
+    "value": [
+      39.107696533203125
+    ]
+  },
+  "LFwearL": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "LFwearL",
+    "description": "LF tire left percent tread remaining",
+    "unit": "%",
+    "varType": 4,
+    "value": [
+      1
+    ]
+  },
+  "LFwearM": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "LFwearM",
+    "description": "LF tire middle percent tread remaining",
+    "unit": "%",
+    "varType": 4,
+    "value": [
+      1
+    ]
+  },
+  "LFwearR": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "LFwearR",
+    "description": "LF tire right percent tread remaining",
+    "unit": "%",
+    "varType": 4,
+    "value": [
+      1
+    ]
+  },
+  "RRbrakeLinePress": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "RRbrakeLinePress",
+    "description": "RR brake line pressure",
+    "unit": "bar",
+    "varType": 4,
+    "value": [
+      0
+    ]
+  },
+  "RRcoldPressure": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "RRcoldPressure",
+    "description": "RR tire cold pressure  as set in the garage",
+    "unit": "kPa",
+    "varType": 4,
+    "value": [
+      206.8427276611328
+    ]
+  },
+  "RRtempCL": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "RRtempCL",
+    "description": "RR tire left carcass temperature",
+    "unit": "C",
+    "varType": 4,
+    "value": [
+      39.107696533203125
+    ]
+  },
+  "RRtempCM": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "RRtempCM",
+    "description": "RR tire middle carcass temperature",
+    "unit": "C",
+    "varType": 4,
+    "value": [
+      39.107696533203125
+    ]
+  },
+  "RRtempCR": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "RRtempCR",
+    "description": "RR tire right carcass temperature",
+    "unit": "C",
+    "varType": 4,
+    "value": [
+      39.107696533203125
+    ]
+  },
+  "RRwearL": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "RRwearL",
+    "description": "RR tire left percent tread remaining",
+    "unit": "%",
+    "varType": 4,
+    "value": [
+      1
+    ]
+  },
+  "RRwearM": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "RRwearM",
+    "description": "RR tire middle percent tread remaining",
+    "unit": "%",
+    "varType": 4,
+    "value": [
+      1
+    ]
+  },
+  "RRwearR": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "RRwearR",
+    "description": "RR tire right percent tread remaining",
+    "unit": "%",
+    "varType": 4,
+    "value": [
+      1
+    ]
+  },
+  "LRbrakeLinePress": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "LRbrakeLinePress",
+    "description": "LR brake line pressure",
+    "unit": "bar",
+    "varType": 4,
+    "value": [
+      0
+    ]
+  },
+  "LRcoldPressure": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "LRcoldPressure",
+    "description": "LR tire cold pressure  as set in the garage",
+    "unit": "kPa",
+    "varType": 4,
+    "value": [
+      206.8427276611328
+    ]
+  },
+  "LRtempCL": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "LRtempCL",
+    "description": "LR tire left carcass temperature",
+    "unit": "C",
+    "varType": 4,
+    "value": [
+      39.107696533203125
+    ]
+  },
+  "LRtempCM": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "LRtempCM",
+    "description": "LR tire middle carcass temperature",
+    "unit": "C",
+    "varType": 4,
+    "value": [
+      39.107696533203125
+    ]
+  },
+  "LRtempCR": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "LRtempCR",
+    "description": "LR tire right carcass temperature",
+    "unit": "C",
+    "varType": 4,
+    "value": [
+      39.107696533203125
+    ]
+  },
+  "LRwearL": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "LRwearL",
+    "description": "LR tire left percent tread remaining",
+    "unit": "%",
+    "varType": 4,
+    "value": [
+      1
+    ]
+  },
+  "LRwearM": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "LRwearM",
+    "description": "LR tire middle percent tread remaining",
+    "unit": "%",
+    "varType": 4,
+    "value": [
+      1
+    ]
+  },
+  "LRwearR": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "LRwearR",
+    "description": "LR tire right percent tread remaining",
+    "unit": "%",
+    "varType": 4,
+    "value": [
+      1
+    ]
+  },
+  "RRshockDefl": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "RRshockDefl",
+    "description": "RR shock deflection",
+    "unit": "m",
+    "varType": 4,
+    "value": [
+      0.13256175816059113
+    ]
+  },
+  "RRshockDefl_ST": {
+    "countAsTime": true,
+    "length": 6,
+    "name": "RRshockDefl_ST",
+    "description": "RR shock deflection at 360 Hz",
+    "unit": "m",
+    "varType": 4,
+    "value": [
+      0.13414719700813293,
+      0.13370655477046967,
+      0.1333489567041397,
+      0.13304783403873444,
+      0.13278646767139435,
+      0.13256175816059113
+    ]
+  },
+  "RRshockVel": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "RRshockVel",
+    "description": "RR shock velocity",
+    "unit": "m/s",
+    "varType": 4,
+    "value": [
+      -0.062119144946336746
+    ]
+  },
+  "RRshockVel_ST": {
+    "countAsTime": true,
+    "length": 6,
+    "name": "RRshockVel_ST",
+    "description": "RR shock velocity at 360 Hz",
+    "unit": "m/s",
+    "varType": 4,
+    "value": [
+      -0.17344529926776886,
+      -0.14326635003089905,
+      -0.11861429363489151,
+      -0.10118775814771652,
+      -0.08736566454172134,
+      -0.062119144946336746
+    ]
+  },
+  "LRshockDefl": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "LRshockDefl",
+    "description": "LR shock deflection",
+    "unit": "m",
+    "varType": 4,
+    "value": [
+      0.1400333195924759
+    ]
+  },
+  "LRshockDefl_ST": {
+    "countAsTime": true,
+    "length": 6,
+    "name": "LRshockDefl_ST",
+    "description": "LR shock deflection at 360 Hz",
+    "unit": "m",
+    "varType": 4,
+    "value": [
+      0.1369251310825348,
+      0.1374407559633255,
+      0.13803276419639587,
+      0.13867461681365967,
+      0.1393466293811798,
+      0.1400333195924759
+    ]
+  },
+  "LRshockVel": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "LRshockVel",
+    "description": "LR shock velocity",
+    "unit": "m/s",
+    "varType": 4,
+    "value": [
+      0.24768400192260742
+    ]
+  },
+  "LRshockVel_ST": {
+    "countAsTime": true,
+    "length": 6,
+    "name": "LRshockVel_ST",
+    "description": "LR shock velocity at 360 Hz",
+    "unit": "m/s",
+    "varType": 4,
+    "value": [
+      0.16846153140068054,
+      0.1995287388563156,
+      0.22184349596500397,
+      0.23632672429084778,
+      0.2444070726633072,
+      0.24768400192260742
+    ]
+  },
+  "RFshockDefl": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "RFshockDefl",
+    "description": "RF shock deflection",
+    "unit": "m",
+    "varType": 4,
+    "value": [
+      0.12979234755039215
+    ]
+  },
+  "RFshockDefl_ST": {
+    "countAsTime": true,
+    "length": 6,
+    "name": "RFshockDefl_ST",
+    "description": "RF shock deflection at 360 Hz",
+    "unit": "m",
+    "varType": 4,
+    "value": [
+      0.1296401023864746,
+      0.12968841195106506,
+      0.1297299563884735,
+      0.12975946068763733,
+      0.1297806054353714,
+      0.12979234755039215
+    ]
+  },
+  "RFshockVel": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "RFshockVel",
+    "description": "RF shock velocity",
+    "unit": "m/s",
+    "varType": 4,
+    "value": [
+      0.0025738750118762255
+    ]
+  },
+  "RFshockVel_ST": {
+    "countAsTime": true,
+    "length": 6,
+    "name": "RFshockVel_ST",
+    "description": "RF shock velocity at 360 Hz",
+    "unit": "m/s",
+    "varType": 4,
+    "value": [
+      0.018689986318349838,
+      0.01615993306040764,
+      0.01239792350679636,
+      0.00911686196923256,
+      0.005779380444437265,
+      0.0025738750118762255
+    ]
+  },
+  "LFshockDefl": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "LFshockDefl",
+    "description": "LF shock deflection",
+    "unit": "m",
+    "varType": 4,
+    "value": [
+      0.1289639174938202
+    ]
+  },
+  "LFshockDefl_ST": {
+    "countAsTime": true,
+    "length": 6,
+    "name": "LFshockDefl_ST",
+    "description": "LF shock deflection at 360 Hz",
+    "unit": "m",
+    "varType": 4,
+    "value": [
+      0.12828616797924042,
+      0.12840300798416138,
+      0.12852510809898376,
+      0.1286485344171524,
+      0.1287897527217865,
+      0.1289639174938202
+    ]
+  },
+  "LFshockVel": {
+    "countAsTime": false,
+    "length": 1,
+    "name": "LFshockVel",
+    "description": "LF shock velocity",
+    "unit": "m/s",
+    "varType": 4,
+    "value": [
+      0.07035093754529953
+    ]
+  },
+  "LFshockVel_ST": {
+    "countAsTime": true,
+    "length": 6,
+    "name": "LFshockVel_ST",
+    "description": "LF shock velocity at 360 Hz",
+    "unit": "m/s",
+    "varType": 4,
+    "value": [
+      0.04001539200544357,
+      0.043020956218242645,
+      0.04424048587679863,
+      0.04798208177089691,
+      0.057085443288087845,
+      0.07035093754529953
+    ]
+  }
+}

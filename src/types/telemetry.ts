@@ -1,4 +1,4 @@
-import type { TelemetryVariable, TelemetryVarList } from '@irsdk-node/types';
+import type { TelemetryVariable, TelemetryVarList } from '../app/irsdk/types';
 
 export type Telemetry = TelemetryVarList & {
   TrackWetness?: TelemetryVariable<number[]>;

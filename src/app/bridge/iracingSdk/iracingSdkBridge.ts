@@ -1,4 +1,4 @@
-import { IRacingSDK } from 'irsdk-node';
+import { IRacingSDK } from '../../irsdk';
 import { TelemetrySink } from './telemetrySink';
 import { OverlayManager } from 'src/app/overlayManager';
 import type { IrSdkBridge, Session, Telemetry } from '@irdashies/types';

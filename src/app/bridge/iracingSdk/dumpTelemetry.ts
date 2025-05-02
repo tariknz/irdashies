@@ -1,7 +1,7 @@
 import path from 'node:path';
 import { writeFile, mkdir } from 'node:fs/promises';
 import { app } from 'electron';
-import { IRacingSDK } from 'irsdk-node';
+import { IRacingSDK } from '../../irsdk';
 
 export async function dumpCurrentTelemetry() {
   console.log('Starting...');
