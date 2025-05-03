@@ -1,4 +1,3 @@
-/* eslint-disable no-param-reassign */
 import yaml from 'js-yaml';
 import {
   BroadcastMessages,
@@ -166,7 +165,9 @@ export class IRacingSDK {
 
     try {
       const seshString = this._sdk?.getSessionData();
-      this._sessionData = yaml.load(seshString) as SessionData;
+      // Ensure proper UTF-8 decoding
+      const decodedString = Buffer.from(seshString, 'utf8').toString('utf8');
+      this._sessionData = yaml.load(decodedString) as SessionData;
       return this._sessionData;
     } catch (err) {
       console.error('There was an error getting session data:', err);
@@ -268,6 +269,7 @@ export class IRacingSDK {
    * Request the value of the given telemetry variable.
    * @param varName The name of the variable to retrieve.
    */
+  // eslint-disable-next-line @typescript-eslint/unified-signatures
   public getTelemetryVariable<T extends boolean | number | string>(varName: keyof TelemetryVarList): TelemetryVariable<T[]> | null;
 
   public getTelemetryVariable<T extends boolean | number | string>(telemVar: number | keyof TelemetryVarList): TelemetryVariable<T[]> | null {
