@@ -1,6 +1,7 @@
 import http from 'http';
 
 import { SIM_STATUS_URI } from '../constants';
+import { platform } from 'os';
 
 /**
  * Makes an http localhost request to check whether or not the iRacing sim is running.
@@ -10,6 +11,11 @@ import { SIM_STATUS_URI } from '../constants';
  * @throws {Error} A generic NodeJS.ErrnoException / Error if something goes wrong.
  */
 export const getSimStatus = (): Promise<boolean> => new Promise((resolve, reject) => {
+  if (platform() !== 'win32') {
+    resolve(true);
+    return;
+  }
+
   http.get(SIM_STATUS_URI, (res) => {
     let data = '';
 

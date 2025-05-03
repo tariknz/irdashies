@@ -37,7 +37,7 @@ async function setupBridge(
     }
 
     const module =
-      isDemoMode || process.platform === 'darwin'
+      isDemoMode
         ? await import('./mock-data/mockSdkBridge')
         : await import('./iracingSdkBridge');
 

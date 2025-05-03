@@ -1,6 +1,6 @@
 import { IRacingSDK } from '../../irsdk';
 import { TelemetrySink } from './telemetrySink';
-import { OverlayManager } from 'src/app/overlayManager';
+import { OverlayManager } from '../../overlayManager';
 import type { IrSdkBridge, Session, Telemetry } from '@irdashies/types';
 
 const TIMEOUT = 1000;

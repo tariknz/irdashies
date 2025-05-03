@@ -14,9 +14,7 @@ import {
   TelemetryVarList,
 } from '../types';
 
-type TelemetryTypesDict = {
-  [variableName: string]: number;
-};
+type TelemetryTypesDict = Record<string, number>;
 
 export interface INativeSDK {
   readonly currDataVersion: number;
@@ -34,11 +32,13 @@ export interface INativeSDK {
   getTelemetryData(): TelemetryVarList;
 
   getTelemetryVariable<T>(index: number): TelemetryVariable<T>;
+  // eslint-disable-next-line @typescript-eslint/unified-signatures
   getTelemetryVariable<T>(name: string): TelemetryVariable<T>;
 
   // Broadcast command overloads
   // This is handled in the cpp side so no need to mess with it in js
   broadcast(message: BroadcastMessages.CameraSwitchPos, pos: number, group: number, camera: number): void;
+  // eslint-disable-next-line @typescript-eslint/unified-signatures
   broadcast(message: BroadcastMessages.CameraSwitchNum, driver: number, group: number, camera: number): void;
   broadcast(message: BroadcastMessages.CameraSetState, state: CameraState): void;
   broadcast(message: BroadcastMessages.ReplaySetPlaySpeed, speed: number, slowMotion: number): void;
@@ -50,6 +50,7 @@ export interface INativeSDK {
   broadcast(message: BroadcastMessages.PitCommand, command: PitCommand, param?: number): void;
   broadcast(message: BroadcastMessages.TelemCommand, command: TelemetryCommand): void;
   broadcast(message: BroadcastMessages.FFBCommand, command: FFBCommand, value: number): void;
+  // eslint-disable-next-line @typescript-eslint/unified-signatures
   broadcast(message: BroadcastMessages.ReplaySearchSessionTime, session: number, time: number): void;
   broadcast(message: BroadcastMessages.VideoCapture, command: VideoCaptureCommand): void;
 }
@@ -78,6 +79,7 @@ export class NativeSDK implements INativeSDK {
 
   public getTelemetryVariable<T extends number | boolean | string>(index: number): TelemetryVariable<T[]>;
 
+  // eslint-disable-next-line @typescript-eslint/unified-signatures
   public getTelemetryVariable<T extends number | boolean | string>(name: string): TelemetryVariable<T[]>;
 
   // Private helpers
@@ -87,6 +89,7 @@ export class NativeSDK implements INativeSDK {
   // This is handled in the cpp side so no need to mess with it in js
   public broadcast(message: BroadcastMessages.CameraSwitchPos, pos: number, group: number, camera: number): void;
 
+  // eslint-disable-next-line @typescript-eslint/unified-signatures
   public broadcast(message: BroadcastMessages.CameraSwitchNum, driver: number, group: number, camera: number): void;
 
   public broadcast(message: BroadcastMessages.CameraSetState, state: CameraState): void;
@@ -109,6 +112,7 @@ export class NativeSDK implements INativeSDK {
 
   public broadcast(message: BroadcastMessages.FFBCommand, command: FFBCommand, value: number): void;
 
+  // eslint-disable-next-line @typescript-eslint/unified-signatures
   public broadcast(message: BroadcastMessages.ReplaySearchSessionTime, session: number, time: number): void;
 
   public broadcast(message: BroadcastMessages.VideoCapture, command: VideoCaptureCommand): void;

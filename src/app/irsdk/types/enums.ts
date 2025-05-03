@@ -106,14 +106,14 @@ export enum TrackLocation {
 }
 
 // Enums
-export type VarTypes = {
+export interface VarTypes {
   0: string;
   1: boolean;
   2: number;
   3: number;
   4: number;
   5: number;
-};
+}
 
 export enum BroadcastMessages {
   /** Switch the camera position. */
