@@ -165,9 +165,7 @@ export class IRacingSDK {
 
     try {
       const seshString = this._sdk?.getSessionData();
-      // Ensure proper UTF-8 decoding
-      const decodedString = Buffer.from(seshString, 'utf8').toString('utf8');
-      this._sessionData = yaml.load(decodedString) as SessionData;
+      this._sessionData = yaml.load(seshString) as SessionData;
       return this._sessionData;
     } catch (err) {
       console.error('There was an error getting session data:', err);
