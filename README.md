@@ -18,7 +18,7 @@ This project is still in the early stages of development, so there may be bugs a
 
 ## Introduction
 
-This project is built with React and Electron and uses ths iRacing SDK via [irsdk-node](https://github.com/bengsfort/irsdk-node) library to retrieve data from the iRacing live telemetry memory-map.
+This project is built with React and Electron and uses the iRacing SDK to retrieve data from the iRacing live telemetry memory-map.
 
 ## Installation
 
@@ -87,6 +87,7 @@ irdashies/
 ```
 
 - `src/app/` contains the main Electron application code.
+- `src/app/irsdk/` contains the iRacing SDK code including the native C++ bindings.
 - `src/frontend/` contains the React components for the overlays.
 - `src/types/` contains TypeScript type definitions shared between the frontend and backend (e.g. telemetry types).
 

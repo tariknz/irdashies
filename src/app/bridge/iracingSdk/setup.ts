@@ -37,7 +37,7 @@ async function setupBridge(
     }
 
     const module =
-      isDemoMode
+      isDemoMode || process.platform !== 'win32'
         ? await import('./mock-data/mockSdkBridge')
         : await import('./iracingSdkBridge');
 
