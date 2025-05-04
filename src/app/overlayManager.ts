@@ -72,6 +72,9 @@ export class OverlayManager {
       },
     });
 
+    browserWindow.on('page-title-updated', (evt) => {
+      evt.preventDefault();
+    });
     browserWindow.setIgnoreMouseEvents(true);
     browserWindow.setVisibleOnAllWorkspaces(true, {
       visibleOnFullScreen: true,
