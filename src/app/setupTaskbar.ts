@@ -68,8 +68,6 @@ class Taskbar {
   }
 
   private async saveTelemetry(): Promise<void> {
-    if (process.platform === 'darwin') return;
-    
     try {
       // First, import and call dumpTelemetry to get the directory path
       const { dumpCurrentTelemetry } = await import('./bridge/iracingSdk/dumpTelemetry');
