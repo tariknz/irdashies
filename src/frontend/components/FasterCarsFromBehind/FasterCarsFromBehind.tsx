@@ -5,8 +5,7 @@ export const FasterCarsFromBehind = () => {
   const carBehind = useCarBehind();
   const [parent] = useAutoAnimate();
   
-  //const hidden = carBehind.name === null ? 'hidden' : '';
-  const hidden = '';
+  const hidden = carBehind.name === null ? 'hidden' : '';
   const distanceMarkerWidth = (400-400*carBehind.percent).toFixed(0);
   const dist = typeof carBehind.distance === 'string' ? parseFloat(carBehind.distance) : carBehind.distance;
   const animate = dist > -0.3 ? 'animate-pulse' : '';
