@@ -8,6 +8,12 @@ This is built with the intention of being easily approachable by developers who 
 
 This project is still in the early stages of development, so there may be bugs and many missing features. If you are interested in contributing please reach out and we can discuss how we can collaborate.
 
+## Try it out
+
+You can try it out by downloading the latest release from the [releases page](https://github.com/tariknz/irdashies/releases).
+
+Install the .exe and run it. The application will automatically update when a new version is available.
+
 ## Table of Contents
 
 - [Introduction](#introduction)
@@ -37,7 +43,7 @@ This project is built with React and Electron and uses the iRacing SDK to retrie
 
 > Note: Developing on MacOS is fully supported and does not require iRacing or any additional tools to be installed as it uses a mocked SDK.
 
-## Installation
+## Installation (for development)
 
 To install IRDashies, follow these steps:
 
@@ -56,7 +62,7 @@ To install IRDashies, follow these steps:
   npm run storybook
   ```
 
-## Usage
+## Usage (for development)
 
 To start using IRDashies, run the following command:
 ```bash
