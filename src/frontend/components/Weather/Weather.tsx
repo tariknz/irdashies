@@ -3,7 +3,9 @@ import { useTrackTemperature } from './hooks/useTrackTemperature';
 import { useTrackWeather } from './hooks/useTrackWeather';
 import { WeatherTemp } from './WeatherTemp/WeatherTemp';
 import { WeatherTrackWetness } from './WeatherTrackWetness/WeatherTrackWetness';
+import { WeatherTrackRubbered } from './WeatherTrackRubbered/WeatherTrackRubbered';
 import { WindDirection } from './WindDirection/WindDirection';
+import { useTrackRubberedState } from './hooks/useTrackRubberedState';
 
 export const Weather = () => {
   const [parent] = useAutoAnimate();
@@ -11,6 +13,7 @@ export const Weather = () => {
   const trackTemp = useTrackTemperature();
   const windSpeed = weather.windVelocity;
   const relativeWindDirection =  (weather.windDirection ?? 0) - (weather.windYaw ?? 0);
+  const trackRubbered = useTrackRubberedState();
 
   return (
     <div
@@ -22,6 +25,7 @@ export const Weather = () => {
         <WeatherTemp title="Air" value={trackTemp.airTemp} />
         <WindDirection speedMs={windSpeed} direction={relativeWindDirection} />
         <WeatherTrackWetness trackMoisture={weather.trackMoisture} />
+        <WeatherTrackRubbered trackRubbered={trackRubbered} />
       </div>
     </div>
   );
