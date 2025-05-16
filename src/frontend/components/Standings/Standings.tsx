@@ -4,6 +4,7 @@ import { useAutoAnimate } from '@formkit/auto-animate/react';
 import { DriverClassHeader } from './DriverClassHeader/DriverClassHeader';
 import { SessionBar } from './SessionBar/SessionBar';
 import { Fragment } from 'react/jsx-runtime';
+import { StandingsWithIRatingGain } from './hooks';
 import { useCarClassStats, useDriverStandings } from './hooks';
 import { SessionFooter } from './SessionFooter/SessionFooter';
 
@@ -37,6 +38,7 @@ export const Standings = () => {
                   hasFastestTime={result.hasFastestTime}
                   delta={result.delta}
                   position={result.classPosition}
+                  iratingChange={(result as StandingsWithIRatingGain).iratingChange}
                   lastTime={result.lastTime}
                   fastestTime={result.fastestTime}
                   onPitRoad={result.onPitRoad}

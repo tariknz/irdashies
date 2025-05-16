@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { SpeakerHigh } from '@phosphor-icons/react';
 import { getTailwindStyle } from '../../../utils/colors';
 import { formatTime } from '../../../utils/time';
@@ -12,6 +13,7 @@ interface DriverRowInfoProps {
   delta?: number;
   position: number;
   badge: React.ReactNode;
+  iratingChange?: number;
   lastTime?: number;
   fastestTime?: number;
   onPitRoad?: boolean;
@@ -38,10 +40,31 @@ export const DriverInfoRow = ({
   radioActive,
   isLapped,
   isLappingAhead,
+  iratingChange,
 }: DriverRowInfoProps) => {
   // convert seconds to mm:ss:ms
   const lastTimeString = formatTime(lastTime);
   const fastestTimeString = formatTime(fastestTime);
+
+  const iratingChangeDisplay = useMemo(() => {
+    if (iratingChange === undefined || iratingChange === null) {
+      return { text: '-', color: 'text-gray-400' };
+    }
+    const roundedChange = Math.round(iratingChange);
+    let text: string;
+    let color = 'text-gray-400';
+
+    if (roundedChange > 0) {
+      text = `▲${roundedChange}`;
+      color = 'text-green-400';
+    } else if (roundedChange < 0) {
+      text = `▼${Math.abs(roundedChange)}`;
+      color = 'text-red-400';
+    } else {
+      text = `${roundedChange}`;
+    }
+    return { text, color };
+  }, [iratingChange]);
 
   return (
     <tr
@@ -82,6 +105,9 @@ export const DriverInfoRow = ({
         </div>
       </td>
       <td>{badge}</td>
+      <td className={`px-2 text-left ${iratingChangeDisplay.color}`}>
+        {iratingChangeDisplay.text}
+      </td>
       <td className={`px-2`}>{delta?.toFixed(1)}</td>
       <td className={`px-2 ${hasFastestTime ? 'text-purple-400' : ''}`}>
         {fastestTimeString}
