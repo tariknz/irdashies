@@ -63,7 +63,7 @@ export class OverlayManager {
       title: `iRacing Dashies - ${title}`,
       transparent: true,
       frame: false,
-      focusable: false,
+      focusable: true, //for OpenKneeeboard/VR
       resizable: false,
       movable: false,
       roundedCorners: false,
