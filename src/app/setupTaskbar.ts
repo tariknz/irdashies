@@ -1,6 +1,8 @@
-import { nativeImage, Tray, Menu, app, globalShortcut } from 'electron';
+import { nativeImage, Tray, Menu, app, globalShortcut, desktopCapturer } from 'electron';
 import { TelemetrySink } from './bridge/iracingSdk/telemetrySink';
 import { OverlayManager } from './overlayManager';
+import { writeFile } from 'node:fs/promises';
+import path from 'node:path';
 
 class Taskbar {
   private tray: Tray;
@@ -65,11 +67,34 @@ class Taskbar {
     this.overlayManager.toggleLockOverlays();
   }
 
-  private saveTelemetry(): void {
-    if (process.platform === 'darwin') return;
-    import('./bridge/iracingSdk/dumpTelemetry').then(
-      async ({ dumpCurrentTelemetry }) => await dumpCurrentTelemetry()
-    );
+  private async saveTelemetry(): Promise<void> {
+    try {
+      // First, import and call dumpTelemetry to get the directory path
+      const { dumpCurrentTelemetry } = await import('./bridge/iracingSdk/dumpTelemetry');
+      const telemetryResult = await dumpCurrentTelemetry();
+      
+      // Check if dirPath exists and is not null
+      const dirPath = telemetryResult && 'dirPath' in telemetryResult ? telemetryResult.dirPath : null;
+      if (dirPath) {
+        // Capture all screens
+        const sources = await desktopCapturer.getSources({
+          types: ['screen'],
+          thumbnailSize: { width: 1920, height: 1080 } // Use a standard resolution
+        });
+        
+        // Save each screen as a separate file
+        await Promise.all(sources.map(async (source, index) => {
+          if (source.thumbnail) {
+            const screenshotPath = path.join(dirPath, `screenshot_${index + 1}.png`);
+            const pngData = source.thumbnail.toPNG();
+            await writeFile(screenshotPath, pngData);
+            console.log(`Screenshot ${index + 1} saved to: ${screenshotPath}`);
+          }
+        }));
+      }
+    } catch (error) {
+      console.error('Error capturing screenshots:', error);
+    }
   }
 
   private registerShortcuts(): void {

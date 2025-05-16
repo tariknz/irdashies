@@ -24,8 +24,11 @@ export async function dumpCurrentTelemetry() {
         await writeFile(`${dirPath}/session.json`, session, 'utf-8'),
       ]);
       console.log(`Saved to: ${dirPath}`);
+      return { dirPath };
     } else {
       console.warn('No telemetry data received');
     }
   }
+  
+  return { dirPath: null };
 }
