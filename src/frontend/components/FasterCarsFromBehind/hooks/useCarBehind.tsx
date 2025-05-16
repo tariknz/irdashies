@@ -10,11 +10,11 @@ export const useCarBehind = () => {
   const background = getTailwindStyle(carBehind?.carClass?.color).classHeader;
   
   const FasterCarFromBehind = useMemo(() => {
-    const percent = Math.abs(carBehind?.delta) / 3;
-
-    return { name: carBehind?.driver?.name, distance: carBehind?.delta.toFixed(1), background: background, percent : percent };
+    const percent = parseInt((100 - (Math.abs(carBehind?.delta) / 3 * 100)).toFixed(0));
+    
+    return { name: carBehind?.driver?.name, distance: parseFloat(carBehind?.delta.toFixed(1)), background: background, percent : percent };
   }, [carBehind?.delta, carBehind?.driver?.name, background]);
   
-  if(carBehind?.carClass?.relativeSpeed > myCar?.carClass?.relativeSpeed || carBehind?.delta < -3) return {name: null, distance: 0, background: null, percent: 0};
+  if(carBehind?.carClass?.relativeSpeed <= myCar?.carClass?.relativeSpeed || carBehind?.delta < -3) return {name: null, distance: 0, background: null, percent: 0};
   return FasterCarFromBehind;
 };
