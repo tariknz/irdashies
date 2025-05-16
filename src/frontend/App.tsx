@@ -14,6 +14,7 @@ import { Settings } from './components/Settings/Settings';
 import { Relative } from './components/Standings/Relative';
 import { Weather } from './components/Weather';
 import { TrackMap } from './components/TrackMap/TrackMap';
+import { FasterCarsFromBehind } from './components/FasterCarsFromBehind/FasterCarsFromBehind';
 import { EditMode } from './components/EditMode/EditMode';
 
 // TODO: type this better, right now the config comes from settings
@@ -25,6 +26,7 @@ const WIDGET_MAP: Record<string, (config: any) => React.JSX.Element> = {
   settings: Settings,
   map: TrackMap,
   weather: Weather,
+  fastercarsfrombehind: FasterCarsFromBehind,
 };
 
 const AppRoutes = () => {
