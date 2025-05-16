@@ -28,18 +28,16 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
         return 0;
       }
 
-      // Initial time difference
       let delta = (oppositionEstTime - playerEstTime);
 
-      // First normalize to within half a lap time (this is what iRacing does first)
-      while (delta < -0.5 * driverEstLapTime) delta += driverEstLapTime;
-      while (delta > 0.5 * driverEstLapTime) delta -= driverEstLapTime;
-
-      // Then ensure positive for ahead, negative for behind
       if (isAhead) {
+        // For cars ahead, use their lap time since they determine the full lap duration
         while (delta < 0) delta += driverEstLapTime;
+        while (delta > 0.5 * driverEstLapTime) delta -= driverEstLapTime;
       } else {
+        // For cars behind, use player's lap time since we're measuring against our lap
         while (delta > 0) delta -= driverEstLapTime;
+        while (delta < -0.5 * driverEstLapTime) delta += driverEstLapTime;
       }
 
       return delta;
