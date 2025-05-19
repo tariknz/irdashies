@@ -5,8 +5,8 @@ export const useTrackRubberedState = () => {
   return useStore(
     useSessionStore,
     (state) =>
-      state.session?.SessionInfo?.Sessions?.find(
-        (session) => session.SessionNum === 0
+      state.session?.SessionInfo?.Sessions?.findLast(
+        (session) => session.SessionTrackRubberState != 'carry over'
       )?.SessionTrackRubberState
   );
 };
