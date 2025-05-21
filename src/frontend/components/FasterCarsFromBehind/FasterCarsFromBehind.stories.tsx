@@ -1,7 +1,7 @@
 import { Meta, StoryObj } from '@storybook/react';
 import { FasterCarsFromBehind } from './FasterCarsFromBehind';
 import { TelemetryDecorator } from '../../../../.storybook/telemetryDecorator';
-import { DynamicTelemetrySelector, TEST_DATA_DIRS } from '../Standings/DynamicTelemetrySelector';
+import { DynamicTelemetrySelector } from '../Standings/DynamicTelemetrySelector';
 import { useState } from 'react';
 
 export default {
