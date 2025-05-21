@@ -1,50 +1,56 @@
 import { useMemo } from 'react';
 import {
   useDriverCarIdx,
+  useSessionStore,
   useTelemetryValues,
 } from '@irdashies/context';
 import { useDriverStandings } from './useDriverPositions';
 
 export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
-  const carIdxEstTime = useTelemetryValues('CarIdxEstTime');
   const drivers = useDriverStandings();
   const carIdxLapDistPct = useTelemetryValues('CarIdxLapDistPct');
+  const carIdxLap = useTelemetryValues('CarIdxLap');
+
   const playerIndex = useDriverCarIdx();
+  const driverCarEstLapTime = useSessionStore(
+    (s) => s.session?.DriverInfo?.DriverCarEstLapTime ?? 0
+  );
 
   const standings = useMemo(() => {
-    const player = drivers.find((d) => d.carIdx === playerIndex);
-    if (!player) {
-      return [];
-    }
+    const calculateDelta = (otherCarIdx: number) => {
+      const playerCarIdx = playerIndex ?? 0;
 
-    const driverEstLapTime = player.carClass.estLapTime ?? 0;
+      const playerLapNum = carIdxLap?.[playerCarIdx];
+      const playerDistPct = carIdxLapDistPct?.[playerCarIdx];
 
-    const calculateDelta = (carIdx: number, isAhead: boolean) => {
-      const playerEstTime = carIdxEstTime?.[playerIndex ?? 0];
-      const oppositionEstTime = carIdxEstTime?.[carIdx];
-      const opposition = drivers.find((d) => d.carIdx === carIdx);
+      const otherLapNum = carIdxLap?.[otherCarIdx];
+      const otherDistPct = carIdxLapDistPct?.[otherCarIdx];
       
-      if (!opposition) {
-        return 0;
+      if (
+        playerLapNum === undefined || playerLapNum < 0 ||
+        playerDistPct === undefined || playerDistPct < 0 || playerDistPct > 1 ||
+        otherLapNum === undefined || otherLapNum < 0 ||
+        otherDistPct === undefined || otherDistPct < 0 || otherDistPct > 1 ||
+        driverCarEstLapTime <= 0
+      ) {
+        return NaN;
       }
 
-      let delta = (oppositionEstTime - playerEstTime);
+      let distPctDifference = otherDistPct - playerDistPct;
 
-      if (isAhead) {
-        // For cars ahead, use their lap time since they determine the full lap duration
-        while (delta < 0) delta += driverEstLapTime;
-        while (delta > 0.5 * driverEstLapTime) delta -= driverEstLapTime;
-      } else {
-        // For cars behind, use player's lap time since we're measuring against our lap
-        while (delta > 0) delta -= driverEstLapTime;
-        while (delta < -0.5 * driverEstLapTime) delta += driverEstLapTime;
+      if (distPctDifference > 0.5) {
+        distPctDifference -= 1.0;
+      } else if (distPctDifference < -0.5) {
+        distPctDifference += 1.0;
       }
+      
+      const timeDelta = distPctDifference * driverCarEstLapTime;
 
-      return delta;
+      return timeDelta;
     };
 
     const isHalfLapDifference = (car1: number, car2: number) => {
-      const diff = (car1 - car2 + 1) % 1; // Normalize the difference to [0, 1)
+      const diff = (car1 - car2 + 1) % 1;
       return diff <= 0.5;
     };
 
@@ -60,7 +66,7 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
         })
         .map((result) => ({
           ...result,
-          delta: calculateDelta(result.carIdx, isAhead),
+          delta: calculateDelta(result.carIdx),
         }))
         .filter((result) => (isAhead ? result.delta > 0 : result.delta < 0))
         .sort((a, b) => (isAhead ? a.delta - b.delta : b.delta - a.delta))
@@ -69,14 +75,24 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
     };
 
     const carsAhead = filterAndMapDrivers(true);
+    const player = drivers.find((result) => result.carIdx === playerIndex);
     const carsBehind = filterAndMapDrivers(false);
+
+    if (!player) {
+      return [];
+    }
 
     const relatives = [...carsAhead, { ...player, delta: 0 }, ...carsBehind];
 
-    // TODO: remove pace car if not under caution or pacing
-
     return relatives;
-  }, [drivers, buffer, carIdxEstTime, playerIndex, carIdxLapDistPct]);
+  }, [
+    drivers,
+    buffer,
+    playerIndex,
+    driverCarEstLapTime,
+    carIdxLapDistPct,
+    carIdxLap,
+  ]);
 
   return standings;
 };
