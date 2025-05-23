@@ -26,7 +26,7 @@ export const Primary: Story = {
 
 export const DynamicTelemetry: Story = {
   decorators: [(Story, context) => {
-    const [selectedPath, setSelectedPath] = useState('/test-data/1745291694179');
+    const [selectedPath, setSelectedPath] = useState('/test-data/1747384273173');
     
     return (
       <>
@@ -58,4 +58,8 @@ export const GT3Practice: Story = {
 
 export const PCCPacing: Story = {
   decorators: [TelemetryDecorator('/test-data/1735296198162')],
+};
+
+export const MultiClass: Story = {
+  decorators: [TelemetryDecorator('/test-data/1747384033336')],
 };
