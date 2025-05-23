@@ -1,5 +1,5 @@
 import { useAutoAnimate } from '@formkit/auto-animate/react';
-import { Wind } from '@phosphor-icons/react';
+import { WindIcon } from '@phosphor-icons/react';
 
 export interface WindDirectionProps {
   speedMs?: number;
@@ -12,7 +12,7 @@ export const WindDirection = ({ speedMs, direction }: WindDirectionProps) => {
   return (
     <div className="bg-slate-800/70 p-2 rounded-sm">
       <div className="flex flex-row gap-x-2 items-center text-sm mb-3">
-        <Wind />
+        <WindIcon />
         <span className="grow">Wind</span>
       </div>
       <div

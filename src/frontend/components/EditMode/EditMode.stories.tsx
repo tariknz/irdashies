@@ -3,7 +3,7 @@ import { EditMode } from './EditMode';
 import { DashboardProvider } from '@irdashies/context';
 import type { DashboardBridge } from '@irdashies/types';
 import { Input } from '../Input';
-import { TelemetryDecorator } from '../../../../.storybook/telemetryDecorator';
+import { TelemetryDecorator } from '@irdashies/storybook';
 import { Standings } from '../Standings/Standings';
 
 const meta: Meta<typeof EditMode> = {
@@ -26,6 +26,7 @@ const mockBridge: (editMode: boolean) => DashboardBridge = (editMode) => ({
     callback(editMode);
   },
   toggleLockOverlays: () => Promise.resolve(true),
+  getAppVersion: () => Promise.resolve('1.0.0'),
 });
 
 export const Primary = {

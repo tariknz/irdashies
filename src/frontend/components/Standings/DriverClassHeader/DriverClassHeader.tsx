@@ -1,5 +1,5 @@
-import { Barbell, Users } from '@phosphor-icons/react';
-import { getTailwindStyle } from '../../../utils/colors';
+import { BarbellIcon, UsersIcon } from '@phosphor-icons/react';
+import { getTailwindStyle } from '@irdashies/utils/colors';
 
 interface DriverClassHeaderProps {
   className: string | undefined;
@@ -37,12 +37,12 @@ export const DriverClassHeader = ({
           >
             {sof ? (
               <>
-                <Barbell /> <span>{sof?.toFixed(0)}</span>
+                <BarbellIcon /> <span>{sof?.toFixed(0)}</span>
               </>
             ) : (
               ''
             )}{' '}
-            <Users />
+            <UsersIcon />
             <span>{totalDrivers}</span>
           </span>
         </div>

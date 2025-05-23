@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Driver } from '@irdashies/types';
 import tracks from './tracks/tracks.json';
-import { getColor, getTailwindStyle } from '../../utils/colors';
+import { getColor, getTailwindStyle } from '@irdashies/utils/colors';
 
 export interface TrackProps {
   trackId: number;

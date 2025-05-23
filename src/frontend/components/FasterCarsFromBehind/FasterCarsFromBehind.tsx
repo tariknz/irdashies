@@ -1,11 +1,13 @@
 import { useMemo } from 'react';
 import { useAutoAnimate } from '@formkit/auto-animate/react';
 import { useCarBehind } from './hooks/useCarBehind';
+import { useFasterCarsSettings } from './hooks/useFasterCarsSettings';
 
 export const FasterCarsFromBehind = () => {
-  const carBehind = useCarBehind();
+  const settings = useFasterCarsSettings();
+  const carBehind = useCarBehind({distanceThreshold: settings?.distanceThreshold });
   const [parent] = useAutoAnimate();
-  
+
   const layout = useMemo(() => {
     const hidden = carBehind.name === null || carBehind.name == undefined ? 'hidden' : '';  
     const animate = carBehind.distance > -0.3 ? 'animate-pulse' : '';
@@ -18,7 +20,7 @@ export const FasterCarsFromBehind = () => {
     carBehind.distance,
     carBehind.percent
   ]);
-  
+
   return (
     <div className={`w-full flex justify-between rounded-sm p-1 pb-2 font-bold relative ${layout.hidden} ${layout.animate} ${carBehind.background}`}
 		     ref={parent}>

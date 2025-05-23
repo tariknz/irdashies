@@ -1,5 +1,5 @@
 import { useSessionName, useTelemetryValue } from '@irdashies/context';
-import { formatTimeShort } from '../../../utils/time';
+import { formatTimeShort } from '@irdashies/utils/time';
 import { useDriverIncidents, useSessionLapCount } from '../hooks';
 
 export const SessionBar = () => {

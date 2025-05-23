@@ -1,6 +1,6 @@
 import { Meta, StoryObj } from '@storybook/react';
 import { Standings } from './Standings';
-import { TelemetryDecorator } from '../../../../.storybook/telemetryDecorator';
+import { TelemetryDecorator } from '@irdashies/storybook';
 import { DynamicTelemetrySelector } from './DynamicTelemetrySelector';
 import { useState } from 'react';
 

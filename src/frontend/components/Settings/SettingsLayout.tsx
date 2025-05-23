@@ -1,4 +1,4 @@
-import { Gear, Lock, LockOpen, PresentationChart } from '@phosphor-icons/react';
+import { GearIcon, LockIcon, LockOpenIcon, PresentationChartIcon } from '@phosphor-icons/react';
 import { Link, Route, Routes, useLocation } from 'react-router-dom';
 import { StandingsSettings } from './sections/StandingsSettings';
 import { RelativeSettings } from './sections/RelativeSettings';
@@ -7,6 +7,7 @@ import { TrackMapSettings } from './sections/TrackMapSettings';
 import { AdvancedSettings } from './sections/AdvancedSettings';
 import { InputSettings } from './sections/InputSettings';
 import { AboutSettings } from './sections/AboutSettings';
+import { FasterCarsFromBehindSettings } from './sections/FasterCarsFromBehindSettings';
 import { useDashboard } from '@irdashies/context';
 import { useState } from 'react';
 
@@ -33,7 +34,7 @@ export const SettingsLayout = () => {
     <div className="flex flex-col gap-4 bg-slate-700 p-4 rounded-md w-full h-full">
       <div className="flex flex-row gap-4 items-center justify-between">
         <div className="flex flex-row gap-4 items-center">
-          <Gear size={32} weight="bold" />
+          <GearIcon size={32} weight="bold" />
           <h1 className="text-2xl font-bold">Overlay Setup</h1>
         </div>
         <div className="flex flex-row gap-2">
@@ -43,12 +44,12 @@ export const SettingsLayout = () => {
           >
             {isDemoMode ? (
               <>
-                <PresentationChart size={20} weight="bold" />
+                <PresentationChartIcon size={20} weight="bold" />
                 <span>Exit Demo</span>
               </>
             ) : (
               <>
-                <PresentationChart size={20} weight="bold" />
+                <PresentationChartIcon size={20} weight="bold" />
                 <span>Demo Mode</span>
               </>
             )}
@@ -59,12 +60,12 @@ export const SettingsLayout = () => {
           >
             {isLocked ? (
               <>
-                <Lock size={20} weight="bold" />
+                <LockIcon size={20} weight="bold" />
                 <span>Edit Layout (F6)</span>
               </>
             ) : (
               <>
-                <LockOpen size={20} weight="bold" />
+                <LockOpenIcon size={20} weight="bold" />
                 <span>Editing Layout (F6)</span>
               </>
             )}
@@ -105,6 +106,14 @@ export const SettingsLayout = () => {
               </Link>
             </li>
             <li>
+              <Link
+                to="/settings/faster-cars"
+                className={menuItemClass('/faster-cars')}
+              >
+                Faster Cars
+              </Link>
+            </li>
+            <li>
               <Link to="/settings/map" className={menuItemClass('/track-map')}>
                 <div className="flex flex-row gap-2 items-center">
                   Track Map
@@ -140,6 +149,7 @@ export const SettingsLayout = () => {
             <Route path="weather" element={<WeatherSettings />} />
             <Route path="map" element={<TrackMapSettings />} />
             <Route path="input" element={<InputSettings />} />
+            <Route path="faster-cars" element={<FasterCarsFromBehindSettings />} />
             <Route path="advanced" element={<AdvancedSettings />} />
             <Route path="about" element={<AboutSettings />} />
             <Route

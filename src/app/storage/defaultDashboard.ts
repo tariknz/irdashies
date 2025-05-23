@@ -65,8 +65,8 @@ export const defaultDashboard: DashboardLayout = {
       layout: {
         x: 1000,
         y: 1000,
-        width: 150,
-        height: 330,
+        width: 160,
+        height: 380,
       },
     },
     {

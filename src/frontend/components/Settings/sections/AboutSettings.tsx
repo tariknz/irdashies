@@ -1,4 +1,4 @@
-import { GithubLogo, DiscordLogo } from '@phosphor-icons/react';
+import { GithubLogoIcon, DiscordLogoIcon } from '@phosphor-icons/react';
 import { useDashboard } from '@irdashies/context';
 
 export const AboutSettings = () => {
@@ -27,7 +27,7 @@ export const AboutSettings = () => {
           rel="noopener noreferrer"
           className="flex items-center gap-2 text-slate-300 hover:text-white transition-colors w-fit"
         >
-          <GithubLogo size={24} weight="bold" />
+          <GithubLogoIcon size={24} weight="bold" />
           <span>GitHub Repository</span>
         </a>
 
@@ -37,7 +37,7 @@ export const AboutSettings = () => {
           rel="noopener noreferrer"
           className="flex items-center gap-2 text-slate-300 hover:text-white transition-colors w-fit"
         >
-          <DiscordLogo size={24} weight="bold" />
+          <DiscordLogoIcon size={24} weight="bold" />
           <span>Join our Discord Community</span>
         </a>
       </div>

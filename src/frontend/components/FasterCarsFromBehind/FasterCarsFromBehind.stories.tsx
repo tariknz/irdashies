@@ -1,6 +1,6 @@
 import { Meta, StoryObj } from '@storybook/react';
 import { FasterCarsFromBehind } from './FasterCarsFromBehind';
-import { TelemetryDecorator } from '../../../../.storybook/telemetryDecorator';
+import { TelemetryDecorator } from '@irdashies/storybook';
 
 export default {
   component: FasterCarsFromBehind,

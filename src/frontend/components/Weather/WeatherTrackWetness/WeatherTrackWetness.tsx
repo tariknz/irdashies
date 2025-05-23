@@ -1,4 +1,4 @@
-import { Drop, Sun } from '@phosphor-icons/react';
+import { DropIcon, SunIcon } from '@phosphor-icons/react';
 
 // Track wetness constants
 const MIN_WETNESS = 1;
@@ -35,7 +35,7 @@ export const WeatherTrackWetness = ({
   return (
     <div className="bg-slate-800/70 p-2 rounded-sm">
       <div className="flex items-center flex-row gap-x-1 mt-1">
-        <Sun />
+        <SunIcon />
         <div className="w-full bg-gray-700 rounded-full h-2.5">
           <div
             role="progressbar"
@@ -46,7 +46,7 @@ export const WeatherTrackWetness = ({
             className="bg-blue-600 h-2.5 rounded-full transition-all duration-1000 ease-in-out"
           ></div>
         </div>
-        <Drop />
+        <DropIcon />
       </div>
       <div className="text-center text-sm mt-1">{trackState}</div>
     </div>

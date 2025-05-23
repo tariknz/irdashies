@@ -1,6 +1,6 @@
 import { Meta, StoryObj } from '@storybook/react';
 import { Input } from './Input';
-import { TelemetryDecorator } from '../../../../.storybook/telemetryDecorator';
+import { TelemetryDecorator } from '@irdashies/storybook';
 
 const meta: Meta<typeof Input> = {
   component: Input,

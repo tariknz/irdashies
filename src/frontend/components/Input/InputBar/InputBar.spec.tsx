@@ -1,7 +1,7 @@
 import { render } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
 import { InputBar } from './InputBar';
-import { getColor } from '../../../utils/colors';
+import { getColor } from '@irdashies/utils/colors';
 
 const settings = {
   includeBrake: true,

@@ -1,6 +1,6 @@
 import { Meta, StoryObj } from '@storybook/react';
 import { TrackMap } from './TrackMap';
-import { TelemetryDecorator } from '../../../../.storybook/telemetryDecorator';
+import { TelemetryDecorator } from '@irdashies/storybook';
 
 export default {
   component: TrackMap,

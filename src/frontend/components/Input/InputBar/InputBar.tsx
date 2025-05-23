@@ -1,6 +1,6 @@
 import * as d3 from 'd3';
 import { useEffect, useRef } from 'react';
-import { getColor } from '../../../utils/colors';
+import { getColor } from '@irdashies/utils/colors';
 
 const INPUT_CONFIG = [
   { key: 'clutch', color: getColor('blue') },
