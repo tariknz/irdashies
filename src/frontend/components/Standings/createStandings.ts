@@ -5,6 +5,11 @@ import type {
   Session,
   Telemetry,
 } from '@irdashies/types';
+import {
+  calculateIRatingGain,
+  RaceResult,
+  CalculationResult,
+} from '@irdashies/utils/iratingGain';
 
 export interface Standings {
   carIdx: number;
@@ -33,6 +38,7 @@ export interface Standings {
     estLapTime: number;
   };
   radioActive?: boolean;
+  iratingChange?: number;
 }
 
 const calculateDelta = (
@@ -156,6 +162,43 @@ export const groupStandingsByClass = (standings: Standings[]) => {
     ([, a], [, b]) => b[0].carClass.relativeSpeed - a[0].carClass.relativeSpeed
   );
   return sorted;
+};
+
+/**
+ * This method will augment the standings with iRating changes
+ */
+export const augmentStandingsWithIRating = (
+  groupedStandings: [string, Standings[]][]
+): [string, Standings[]][] => {
+  return groupedStandings.map(([classId, classStandings]) => {
+    const raceResultsInput: RaceResult<number>[] = classStandings.map(
+      (driverStanding) => ({
+        driver: driverStanding.carIdx,
+        finishRank: driverStanding.classPosition,
+        startIRating: driverStanding.driver.rating,
+        started: true, // This is a critical assumption.
+      })
+    );
+
+    if (raceResultsInput.length === 0) {
+      return [classId, classStandings];
+    }
+
+    const iratingCalculationResults = calculateIRatingGain(raceResultsInput);
+
+    const iratingChangeMap = new Map<number, number>();
+    iratingCalculationResults.forEach((calcResult: CalculationResult<number>) => {
+      iratingChangeMap.set(calcResult.raceResult.driver, calcResult.iratingChange);
+    });
+
+    const augmentedClassStandings = classStandings.map(
+      (driverStanding) => ({
+        ...driverStanding,
+        iratingChange: iratingChangeMap.get(driverStanding.carIdx),
+      })
+    );
+    return [classId, augmentedClassStandings];
+  });
 };
 
 /**

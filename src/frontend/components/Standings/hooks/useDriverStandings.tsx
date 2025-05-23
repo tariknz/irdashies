@@ -13,17 +13,8 @@ import {
   createDriverStandings,
   groupStandingsByClass,
   sliceRelevantDrivers,
-  Standings as DriverStandingInfo, // Renaming to avoid conflict if needed locally
+  augmentStandingsWithIRating,
 } from '../createStandings';
-import {
-  calculateIRatingGain,
-  RaceResult,
-  CalculationResult,
-} from '../../../utils/iratingGain';
-
-export interface StandingsWithIRatingGain extends DriverStandingInfo {
-  iratingChange?: number;
-}
 
 export const useDriverStandings = ({ buffer }: { buffer: number }) => {
   const sessionDrivers = useSessionDrivers();
@@ -58,41 +49,11 @@ export const useDriverStandings = ({ buffer }: { buffer: number }) => {
       }
     );
     const groupedByClass = groupStandingsByClass(initialStandings);
-
-    const augmentedGroupedByClass: [string, StandingsWithIRatingGain[]][] = groupedByClass.map(
-      ([classId, classStandings]) => {
-        const raceResultsInput: RaceResult<number>[] = classStandings.map(
-          (driverStanding) => ({
-            driver: driverStanding.carIdx,
-            finishRank: driverStanding.classPosition,
-            startIRating: driverStanding.driver.rating,
-            started: true, // This is a critical assumption.
-          }),
-        );
-
-        if (raceResultsInput.length === 0) {
-          return [classId, classStandings as StandingsWithIRatingGain[]];
-        }
-
-        const iratingCalculationResults = calculateIRatingGain(raceResultsInput);
-
-        const iratingChangeMap = new Map<number, number>();
-        iratingCalculationResults.forEach((calcResult: CalculationResult<number>) => {
-          iratingChangeMap.set(
-            calcResult.raceResult.driver,
-            calcResult.iratingChange,
-          );
-        });
-
-        const augmentedClassStandings: StandingsWithIRatingGain[] = classStandings.map(
-          (driverStanding) => ({
-            ...driverStanding,
-            iratingChange: iratingChangeMap.get(driverStanding.carIdx),
-          }),
-        );
-        return [classId, augmentedClassStandings];
-      },
-    );
+    
+    // Calculate iRating changes for race sessions
+    const augmentedGroupedByClass = sessionType === 'Race' 
+      ? augmentStandingsWithIRating(groupedByClass)
+      : groupedByClass;
 
     return sliceRelevantDrivers(augmentedGroupedByClass, { buffer });
   }, [
