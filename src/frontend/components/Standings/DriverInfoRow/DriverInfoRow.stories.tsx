@@ -104,6 +104,30 @@ export const IsLappingAhead: Story = {
   },
 };
 
+export const IRatingChange: Story = {
+  name: 'iRating Positive Change',
+  args: {
+    ...Primary.args,
+    iratingChange: 10,
+  },
+};
+
+export const IRatingChangeNegative: Story = {
+  name: 'iRating Negative Change',
+  args: {
+    ...Primary.args,
+    iratingChange: -58,
+  },
+};
+
+export const IRatingNoChange: Story = {
+  name: 'iRating No Change',
+  args: {
+    ...Primary.args,
+    iratingChange: 0,
+  },
+};
+
 export const Relative = () => {
   const getRandomRating = () =>
     Math.floor(Math.random() * (1300 - 700 + 1)) + 700;

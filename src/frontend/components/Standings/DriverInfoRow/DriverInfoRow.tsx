@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { SpeakerHighIcon } from '@phosphor-icons/react';
+import { SpeakerHighIcon, CaretUpIcon, CaretDownIcon } from '@phosphor-icons/react';
 import { getTailwindStyle } from '@irdashies/utils/colors';
 import { formatTime } from '@irdashies/utils/time';
 
@@ -53,17 +53,21 @@ export const DriverInfoRow = ({
     const roundedChange = Math.round(iratingChange);
     let text: string;
     let color = 'text-gray-400';
+    let icon: React.ReactNode;
 
     if (roundedChange > 0) {
-      text = `▲${roundedChange}`;
+      text = `${roundedChange}`;
       color = 'text-green-400';
-    } else if (roundedChange < 0) {
-      text = `▼${Math.abs(roundedChange)}`;
-      color = 'text-red-400';
+        icon = <CaretUpIcon size={10} />;
+      } else if (roundedChange < 0) {
+        text = `${Math.abs(roundedChange)}`;
+        color = 'text-red-400';
+        icon = <CaretDownIcon size={10} />;
     } else {
       text = `${roundedChange}`;
+      icon = null;
     }
-    return { text, color };
+    return { text, color, icon };
   }, [iratingChange]);
 
   return (
@@ -105,9 +109,12 @@ export const DriverInfoRow = ({
         </div>
       </td>
       <td>{badge}</td>
-      <td className={`px-2 text-left ${iratingChangeDisplay.color}`}>
-        {iratingChangeDisplay.text}
-      </td>
+      {iratingChange !== undefined && <td className={`px-2 text-left ${iratingChangeDisplay.color}`}>
+        <span className="flex items-center gap-0.5">
+          {iratingChangeDisplay.icon}
+          {iratingChangeDisplay.text}
+        </span>
+      </td>}
       <td className={`px-2`}>{delta?.toFixed(1)}</td>
       <td className={`px-2 ${hasFastestTime ? 'text-purple-400' : ''}`}>
         {fastestTimeString}
