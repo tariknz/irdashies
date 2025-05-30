@@ -23,6 +23,11 @@ export interface DashboardWidget {
   config?: Record<string, unknown>;
 }
 
+export interface GeneralSettings {
+  fontSize: number;
+}
+
 export interface DashboardLayout {
   widgets: DashboardWidget[];
+  generalSettings?: GeneralSettings;
 }
