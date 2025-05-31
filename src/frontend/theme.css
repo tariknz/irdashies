@@ -25,31 +25,39 @@ layer(base);
   }
 }
 
+html {
+  color-scheme: dark;
+}
+
 /* Theme classes for different font sizes */
 .overlay-window.overlay-theme-xs {
   --text-xs: 8px;
   --text-sm: 10px;
   --text-base: 12px;
+  --text-lg: 14px;
+  --text-xl: 16px;
 }
 
 .overlay-window.overlay-theme-sm {
   --text-xs: 10px;
   --text-sm: 12px;
   --text-base: 14px;
+  --text-lg: 16px;
+  --text-xl: 18px;
 }
 
 .overlay-window.overlay-theme-lg {
   --text-xs: 12px;
   --text-sm: 14px;
   --text-base: 16px;
+  --text-lg: 18px;
+  --text-xl: 20px;
 }
 
 .overlay-window.overlay-theme-xl {
   --text-xs: 14px;
   --text-sm: 16px;
   --text-base: 18px;
-}
-
-html {
-  color-scheme: dark;
+  --text-lg: 20px;
+  --text-xl: 22px;
 }

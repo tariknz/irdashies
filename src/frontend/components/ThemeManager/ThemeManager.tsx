@@ -10,5 +10,5 @@ export const ThemeManager = ({ children }: PropsWithChildren) => {
     return <>{children}</>;
   }
 
-  return <div className={`relative w-full h-full overlay-window overlay-theme-${fontSize}`}>{children}</div>;
+  return <div className={`relative w-full h-full overlay-window overlay-theme-${fontSize ?? 'sm'}`}>{children}</div>;
 };
