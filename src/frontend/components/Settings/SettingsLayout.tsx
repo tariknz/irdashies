@@ -1,5 +1,5 @@
 import { GearIcon, LockIcon, LockOpenIcon, PresentationChartIcon } from '@phosphor-icons/react';
-import { Link, Route, Routes, useLocation } from 'react-router-dom';
+import { Link, Route, Routes, useLocation, Navigate } from 'react-router-dom';
 import { StandingsSettings } from './sections/StandingsSettings';
 import { RelativeSettings } from './sections/RelativeSettings';
 import { WeatherSettings } from './sections/WeatherSettings';
@@ -154,6 +154,7 @@ export const SettingsLayout = () => {
         {/* Right Column - Widget Settings */}
         <div className="w-2/3 bg-slate-800 p-4 rounded-md flex flex-col overflow-hidden">
           <Routes>
+            <Route path="/" element={<Navigate to="/settings/general" replace />} />
             <Route path="general" element={<GeneralSettings />} />
             <Route path="standings" element={<StandingsSettings />} />
             <Route path="relative" element={<RelativeSettings />} />
