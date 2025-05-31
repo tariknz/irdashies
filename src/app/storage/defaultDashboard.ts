@@ -81,6 +81,6 @@ export const defaultDashboard: DashboardLayout = {
     }
   ],
   generalSettings: {
-    fontSize: 16,
+    fontSize: 'sm',
   },
 };

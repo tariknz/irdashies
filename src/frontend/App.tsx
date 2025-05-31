@@ -7,6 +7,7 @@ import {
   RunningStateProvider,
   useRunningState,
   SessionProvider,
+  useThemeManager,
 } from '@irdashies/context';
 import { Input } from './components/Input';
 import { Standings } from './components/Standings/Standings';
@@ -32,6 +33,8 @@ const WIDGET_MAP: Record<string, (config: any) => React.JSX.Element> = {
 const AppRoutes = () => {
   const { currentDashboard } = useDashboard();
   const { running } = useRunningState();
+  useThemeManager();
+
   return (
     <Routes>
       {currentDashboard?.widgets.map((widget) => {

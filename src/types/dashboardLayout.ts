@@ -24,7 +24,7 @@ export interface DashboardWidget {
 }
 
 export interface GeneralSettings {
-  fontSize: number;
+  fontSize?: 'xs' | 'sm' | 'lg' | 'xl';
 }
 
 export interface DashboardLayout {

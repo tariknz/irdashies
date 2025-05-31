@@ -4,11 +4,10 @@ layer(base);
 
 @theme {
   --font-sans: 'Lato', sans-serif;
-
+  --animate-pulse-border: pulse-border 1s infinite;
   --text-xs: 10px;
   --text-sm: 12px;
-
-  --animate-pulse-border: pulse-border 1s infinite;
+  --text-base: 14px;
 
   @keyframes pulse-border {
     0% {
@@ -26,22 +25,29 @@ layer(base);
   }
 }
 
-/*
-  The default border color has changed to `currentColor` in Tailwind CSS v4,
-  so we've added these compatibility styles to make sure everything still
-  looks the same as it did with Tailwind CSS v3.
+/* Theme classes for different font sizes */
+.overlay-window.overlay-theme-xs {
+  --text-xs: 8px;
+  --text-sm: 10px;
+  --text-base: 12px;
+}
 
-  If we ever want to remove these styles, we need to add an explicit border
-  color utility to any element that depends on these defaults.
-*/
-@layer base {
-  *,
-  ::after,
-  ::before,
-  ::backdrop,
-  ::file-selector-button {
-    border-color: var(--color-gray-200, currentColor);
-  }
+.overlay-window.overlay-theme-sm {
+  --text-xs: 10px;
+  --text-sm: 12px;
+  --text-base: 14px;
+}
+
+.overlay-window.overlay-theme-lg {
+  --text-xs: 12px;
+  --text-sm: 14px;
+  --text-base: 16px;
+}
+
+.overlay-window.overlay-theme-xl {
+  --text-xs: 14px;
+  --text-sm: 16px;
+  --text-base: 18px;
 }
 
 html {

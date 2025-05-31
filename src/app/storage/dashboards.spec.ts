@@ -7,6 +7,7 @@ import {
   updateDashboardWidget,
 } from './dashboards';
 import { defaultDashboard } from './defaultDashboard';
+import { DashboardLayout } from '@irdashies/types';
 
 const mockReadData = vi.hoisted(() => vi.fn());
 const mockWriteData = vi.hoisted(() => vi.fn());
@@ -84,7 +85,7 @@ describe('dashboards', () => {
 
   describe('saveDashboard', () => {
     it('should save a new dashboard', () => {
-      const newDashboard = { widgets: [] };
+      const newDashboard: DashboardLayout = { widgets: [], generalSettings: { fontSize: 'sm' }};
       mockReadData.mockReturnValue(null);
 
       saveDashboard('newDashboard', newDashboard);
@@ -96,7 +97,7 @@ describe('dashboards', () => {
 
     it('should update an existing dashboard', () => {
       const existingDashboards = { default: defaultDashboard };
-      const updatedDashboard = { widgets: [] };
+      const updatedDashboard: DashboardLayout = { widgets: [], generalSettings: { fontSize: 'lg' }};
       mockReadData.mockReturnValue(existingDashboards);
 
       saveDashboard('default', updatedDashboard);
@@ -133,7 +134,7 @@ describe('dashboards', () => {
         enabled: false,
         layout: { x: 100, y: 100, width: 600, height: 120 },
       };
-      const existingDashboard = { widgets: [existingWidget] };
+      const existingDashboard: DashboardLayout = { widgets: [existingWidget], generalSettings: { fontSize: 'sm' } };
       mockReadData.mockReturnValue({
         default: existingDashboard,
       });
@@ -141,7 +142,7 @@ describe('dashboards', () => {
       updateDashboardWidget(updatedWidget);
 
       expect(mockWriteData).toHaveBeenCalledWith('dashboards', {
-        default: { widgets: [updatedWidget] },
+        default: { widgets: [updatedWidget], generalSettings: { fontSize: 'sm' } },
       });
     });
 
@@ -156,7 +157,7 @@ describe('dashboards', () => {
         enabled: true,
         layout: { x: 100, y: 100, width: 600, height: 120 },
       };
-      const existingDashboard = { widgets: [existingWidget] };
+      const existingDashboard: DashboardLayout = { widgets: [existingWidget], generalSettings: { fontSize: 'sm' } };
       mockReadData.mockReturnValue({
         custom: existingDashboard,
       });
@@ -164,7 +165,7 @@ describe('dashboards', () => {
       updateDashboardWidget(updatedWidget, 'custom');
 
       expect(mockWriteData).toHaveBeenCalledWith('dashboards', {
-        custom: { widgets: [updatedWidget] },
+        custom: { widgets: [updatedWidget], generalSettings: { fontSize: 'sm' } },
       });
     });
 
@@ -174,7 +175,7 @@ describe('dashboards', () => {
         enabled: true,
         layout: { x: 100, y: 100, width: 600, height: 120 },
       };
-      const existingDashboard = { widgets: [] };
+      const existingDashboard: DashboardLayout = { widgets: [], generalSettings: { fontSize: 'sm' } };
       mockReadData.mockReturnValue({
         default: existingDashboard,
       });
@@ -209,6 +210,7 @@ describe('dashboards', () => {
 
     it('should add missing widgets to the default dashboard if some widgets are missing', () => {
       const incompleteDashboard = {
+        generalSettings: { fontSize: 'sm' },
         widgets: defaultDashboard.widgets.slice(0, 1),
       };
       mockReadData.mockReturnValue({
@@ -233,6 +235,30 @@ describe('dashboards', () => {
 
       expect(dashboard).toEqual(completeDashboard);
       expect(mockWriteData).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('generalSettings', () => {
+    it('should add general settings from the default dashboard if none exist', () => {
+      const dashboard: DashboardLayout = { widgets: [] };
+      mockReadData.mockReturnValue({
+        default: dashboard,
+      });
+
+      const updatedDashboard = getOrCreateDefaultDashboard();
+
+      expect(updatedDashboard.generalSettings).toEqual({ fontSize: 'sm' });
+    });
+
+    it('should preserve general settings from the existing dashboard', () => {
+      const dashboard: DashboardLayout = { widgets: [], generalSettings: { fontSize: 'lg' } };
+      mockReadData.mockReturnValue({
+        default: dashboard,
+      });
+      
+      const updatedDashboard = getOrCreateDefaultDashboard();
+
+      expect(updatedDashboard.generalSettings).toEqual({ fontSize: 'lg' });
     });
   });
 });

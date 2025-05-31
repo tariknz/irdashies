@@ -10,6 +10,7 @@ const mockBridge: DashboardBridge = {
   saveDashboard: vi.fn(),
   onEditModeToggled: vi.fn(),
   toggleLockOverlays: vi.fn().mockResolvedValue(true),
+  getAppVersion: vi.fn().mockResolvedValue('0.0.7+mock'),
 };
 
 const TestComponent: React.FC = () => {
