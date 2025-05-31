@@ -1,9 +1,6 @@
 import { useState } from 'react';
 import { useDashboard } from '@irdashies/context';
-
-interface GeneralSettings {
-  fontSize: 'xs' | 'sm' | 'lg' | 'xl';
-}
+import { GeneralSettingsType } from '@irdashies/types';
 
 const FONT_SIZE_PRESETS = {
   xs: 'Extra Small',
@@ -14,7 +11,7 @@ const FONT_SIZE_PRESETS = {
 
 export const GeneralSettings = () => {
   const { currentDashboard, onDashboardUpdated } = useDashboard();
-  const [settings, setSettings] = useState<GeneralSettings>({
+  const [settings, setSettings] = useState<GeneralSettingsType>({
     fontSize: currentDashboard?.generalSettings?.fontSize ?? 'sm',
   });
 
@@ -22,7 +19,7 @@ export const GeneralSettings = () => {
     return <>Loading...</>;
   }
 
-  const updateDashboard = (newSettings: GeneralSettings) => {
+  const updateDashboard = (newSettings: GeneralSettingsType) => {
     const updatedDashboard = {
       ...currentDashboard,
       generalSettings: newSettings,
@@ -48,7 +45,7 @@ export const GeneralSettings = () => {
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-medium text-slate-200">Font Size</h3>
           <div className="flex items-center gap-2">
-            <span className="text-sm text-slate-300">{FONT_SIZE_PRESETS[settings.fontSize]}</span>
+            <span className="text-sm text-slate-300">{FONT_SIZE_PRESETS[settings.fontSize ?? 'sm']}</span>
           </div>
         </div>
 

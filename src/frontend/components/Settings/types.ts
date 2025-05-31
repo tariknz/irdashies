@@ -6,10 +6,6 @@ export interface BaseWidgetSettings<T = Record<string, unknown>> {
   config: T;
 }
 
-export interface GeneralSettings {
-  fontSize: number;
-}
-
 export interface StandingsWidgetSettings extends BaseWidgetSettings {
   // Add specific standings settings here
 }

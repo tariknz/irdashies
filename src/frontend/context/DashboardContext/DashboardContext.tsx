@@ -5,7 +5,7 @@ import React, {
   ReactNode,
   useEffect,
 } from 'react';
-import type { DashboardBridge, DashboardLayout, GeneralSettings } from '@irdashies/types';
+import type { DashboardBridge, DashboardLayout, GeneralSettingsType } from '@irdashies/types';
 
 interface DashboardContextProps {
   editMode: boolean;
@@ -73,7 +73,7 @@ export const useDashboard = (): DashboardContextProps => {
   return context;
 };
 
-export const useGeneralSettings = (): GeneralSettings | undefined => {
+export const useGeneralSettings = (): GeneralSettingsType | undefined => {
   const { currentDashboard } = useDashboard();
   return currentDashboard?.generalSettings;
 };
