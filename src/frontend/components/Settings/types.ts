@@ -26,13 +26,7 @@ export interface TrackMapWidgetSettings extends BaseWidgetSettings {
   // Add specific track map settings here
 }
 
-export interface InputWidgetSettings extends BaseWidgetSettings<InputSettings> {
-  // Add specific input settings here
-}
-
-export interface FasterCarsFromBehindWidgetSettings extends BaseWidgetSettings {
-  // Add specific faster cars settings here
-}
+export type InputWidgetSettings = BaseWidgetSettings<InputSettings>;
 
 export interface AdvancedSettings extends BaseWidgetSettings {
   // Add specific advanced settings here

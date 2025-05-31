@@ -6,6 +6,8 @@ export const ThemeManager = ({ children }: PropsWithChildren) => {
   const { fontSize } = useGeneralSettings() || {};
   const location = useLocation();
 
+  // Don't apply theme changes to the settings page since 
+  // they share the same theme as the rest of the overlays
   if (location.pathname.startsWith('/settings')) {
     return <>{children}</>;
   }
