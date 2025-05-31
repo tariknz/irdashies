@@ -5,7 +5,6 @@ import React, {
   ReactNode,
   useEffect,
 } from 'react';
-import { useLocation } from 'react-router-dom';
 import type { DashboardBridge, DashboardLayout, GeneralSettings } from '@irdashies/types';
 
 interface DashboardContextProps {
@@ -77,28 +76,4 @@ export const useDashboard = (): DashboardContextProps => {
 export const useGeneralSettings = (): GeneralSettings | undefined => {
   const { currentDashboard } = useDashboard();
   return currentDashboard?.generalSettings;
-};
-
-export const useThemeManager = () => {
-  const { currentDashboard } = useDashboard();
-  const location = useLocation();
-
-  useEffect(() => {
-    if (!location.pathname.startsWith('/settings')) {
-      applyThemeClass(currentDashboard?.generalSettings?.fontSize);
-    }
-  }, [location.pathname, currentDashboard?.generalSettings?.fontSize]);
-};
-
-const applyThemeClass = (fontSize: string | undefined) => {
-  if (!fontSize) return;
-  
-  // Add overlay class to root
-  document.documentElement.classList.add('overlay-window');
-  
-  // Remove all theme classes
-  document.documentElement.classList.remove('overlay-theme-xs', 'overlay-theme-sm', 'overlay-theme-lg', 'overlay-theme-xl');
-  
-  // Add the new theme class
-  document.documentElement.classList.add(`overlay-theme-${fontSize}`);
 };

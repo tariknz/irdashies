@@ -23,17 +23,14 @@ export const GeneralSettings = () => {
   }
 
   const updateDashboard = (newSettings: GeneralSettings) => {
-    console.log('GeneralSettings: updateDashboard', newSettings);
     const updatedDashboard = {
       ...currentDashboard,
       generalSettings: newSettings,
     };
-    console.log('GeneralSettings: calling onDashboardUpdated', updatedDashboard);
     onDashboardUpdated(updatedDashboard);
   };
 
   const handleFontSizeChange = (newSize: 'xs' | 'sm' | 'lg' | 'xl') => {
-    console.log('GeneralSettings: handleFontSizeChange', newSize);
     const newSettings = { ...settings, fontSize: newSize };
     setSettings(newSettings);
     updateDashboard(newSettings);

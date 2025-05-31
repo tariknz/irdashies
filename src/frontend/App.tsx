@@ -7,7 +7,6 @@ import {
   RunningStateProvider,
   useRunningState,
   SessionProvider,
-  useThemeManager,
 } from '@irdashies/context';
 import { Input } from './components/Input';
 import { Standings } from './components/Standings/Standings';
@@ -17,6 +16,7 @@ import { Weather } from './components/Weather';
 import { TrackMap } from './components/TrackMap/TrackMap';
 import { FasterCarsFromBehind } from './components/FasterCarsFromBehind/FasterCarsFromBehind';
 import { EditMode } from './components/EditMode/EditMode';
+import { ThemeManager } from './components/ThemeManager/ThemeManager';
 
 // TODO: type this better, right now the config comes from settings
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -33,7 +33,6 @@ const WIDGET_MAP: Record<string, (config: any) => React.JSX.Element> = {
 const AppRoutes = () => {
   const { currentDashboard } = useDashboard();
   const { running } = useRunningState();
-  useThemeManager();
 
   return (
     <Routes>
@@ -63,7 +62,9 @@ const App = () => (
       <TelemetryProvider bridge={window.irsdkBridge} />
       <HashRouter>
         <EditMode>
-          <AppRoutes />
+          <ThemeManager>
+            <AppRoutes />
+          </ThemeManager>
         </EditMode>
       </HashRouter>
     </RunningStateProvider>

@@ -155,6 +155,8 @@ export class OverlayManager {
     const browserWindow = new BrowserWindow({
       title: `iRacing Dashies - Settings`,
       frame: true,
+      width: 800,
+      height: 700,
       autoHideMenuBar: true,
       webPreferences: {
         preload: path.join(__dirname, 'preload.js'),
