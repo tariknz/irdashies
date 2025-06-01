@@ -165,7 +165,9 @@ export class IRacingSDK {
 
     try {
       const seshString = this._sdk?.getSessionData();
-      this._sessionData = yaml.load(seshString) as SessionData;
+      // Remove trailing commas
+      const fixedYaml = seshString?.replace(/(\w+):\s*,\s*\n/g, '$1: \n');
+      this._sessionData = yaml.load(fixedYaml) as SessionData;
       return this._sessionData;
     } catch (err) {
       console.error('There was an error getting session data:', err);
