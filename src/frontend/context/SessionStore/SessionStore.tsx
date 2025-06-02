@@ -58,6 +58,13 @@ export const useSessionLaps = (sessionNum: number | undefined) =>
       )?.SessionLaps
   );
 
+export const useSessionIsOfficial = () =>
+  useStore(
+    useSessionStore,
+    (state) =>
+      !!state.session?.WeekendInfo?.Official
+  );
+
 export const useDriverCarIdx = () =>
   useStore(useSessionStore, (state) => state.session?.DriverInfo?.DriverCarIdx);
 
