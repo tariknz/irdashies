@@ -43,14 +43,14 @@ export const useCarSpeedsStore = create<CarSpeedsState>((set, get) => ({
         let distancePercent = pct - prevPct;
         if (distancePercent < 0) distancePercent += 1.0; // wrap-around
         const distance = trackLength * distancePercent; // meters
-        const speed = deltaTime > 0 ? Math.round((distance / deltaTime) * 3.6) : 0; // m/s to km/h
+        const speed = deltaTime > 0 ? (distance / deltaTime) * 3.6 : 0; // m/s to km/h
         if (!newHistory[idx]) newHistory[idx] = [];
         newHistory[idx].push(speed);
         if (newHistory[idx].length > SPEED_AVG_WINDOW) newHistory[idx].shift();
       });
     }
     // Calculate moving average for each car
-    const avgSpeeds = newHistory.map(arr => arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0);
+    const avgSpeeds = newHistory.map(arr => arr.length ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length) : 0);
     set({
       carSpeedBuffer: {
         lastLapDistPct: [...carIdxLapDistPct],
