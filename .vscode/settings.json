@@ -6,5 +6,6 @@
     "irating",
     "irdashies"
   ],
-  "svg.preview.background": "black"
+  "svg.preview.background": "black",
+  "eslint.useFlatConfig": true
 }

@@ -5,12 +5,12 @@ import { arrayCompare, telemetryCompare } from './telemetryCompare';
 
 interface TelemetryState {
   telemetry: Telemetry | null;
-  setTelemetry: (session: Telemetry) => void;
+  setTelemetry: (telemetry: Telemetry | null) => void;
 }
 
 export const useTelemetryStore = create<TelemetryState>((set) => ({
-  telemetry: null as Telemetry | null,
-  setTelemetry: (telemetry: Telemetry) => set({ telemetry }),
+  telemetry: null,
+  setTelemetry: (telemetry: Telemetry | null) => set({ telemetry }),
 }));
 
 export const useTelemetry = <T extends number[] | boolean[] = number[]>(
