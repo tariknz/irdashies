@@ -15,16 +15,22 @@ interface CarSpeedsState {
 }
 
 const SPEED_AVG_WINDOW = 5;
+export const SPEED_UPDATE_INTERVAL = 0.25; // Update interval in seconds
 
 export const useCarSpeedsStore = create<CarSpeedsState>((set, get) => ({
   carSpeedBuffer: null,
   lastSpeedUpdate: 0,
   carSpeeds: [],
   updateCarSpeeds: (telemetry, trackLength) => {
-    const { carSpeedBuffer } = get();
-    const carIdxLapDistPct = telemetry?.CarIdxLapDistPct?.value ?? [];
+    const { carSpeedBuffer, lastSpeedUpdate } = get();
     const sessionTime = telemetry?.SessionTime?.value?.[0] ?? 0;
-    const now = Date.now();
+    
+    // Check if enough simulation time has passed since last update
+    if (sessionTime - lastSpeedUpdate < SPEED_UPDATE_INTERVAL) {
+      return;
+    }
+
+    const carIdxLapDistPct = telemetry?.CarIdxLapDistPct?.value ?? [];
     if (!carIdxLapDistPct.length || !trackLength) {
       set({ carSpeeds: carIdxLapDistPct.map(() => 0) });
       return;
@@ -57,7 +63,7 @@ export const useCarSpeedsStore = create<CarSpeedsState>((set, get) => ({
         lastSessionTime: sessionTime,
         speedHistory: newHistory,
       },
-      lastSpeedUpdate: now,
+      lastSpeedUpdate: sessionTime,
       carSpeeds: avgSpeeds,
     });
   },
