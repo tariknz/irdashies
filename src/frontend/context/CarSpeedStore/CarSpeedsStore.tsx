@@ -15,7 +15,7 @@ interface CarSpeedsState {
 }
 
 const SPEED_AVG_WINDOW = 5;
-export const SPEED_UPDATE_INTERVAL = 0.25; // Update interval in seconds
+export const SPEED_UPDATE_INTERVAL = 0.1; // Update interval in seconds
 
 export const useCarSpeedsStore = create<CarSpeedsState>((set, get) => ({
   carSpeedBuffer: null,

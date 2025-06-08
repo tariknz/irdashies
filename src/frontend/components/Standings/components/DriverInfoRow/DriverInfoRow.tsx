@@ -108,7 +108,7 @@ export const DriverInfoRow = ({
       >
         {lastTimeString}
       </td>
-      <td className="px-2 text-right">{speed} km/h</td>
+      <td className="px-2 text-right">{speed}</td>
     </tr>
   );
 };
