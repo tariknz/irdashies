@@ -4,12 +4,9 @@ import { useDriverRelatives } from './hooks/useDriverRelatives';
 import { DriverRatingBadge } from './components/DriverRatingBadge/DriverRatingBadge';
 import { SessionBar } from './components/SessionBar/SessionBar';
 import { SessionFooter } from './components/SessionFooter/SessionFooter';
-import { useCarSpeeds, useCarSpeedsWithSession } from '@irdashies/context';
 
 export const Relative = () => {
   const standings = useDriverRelatives({ buffer: 3 });
-  useCarSpeedsWithSession();
-  const speeds = useCarSpeeds();
   const [parent] = useAutoAnimate();
 
   return (
@@ -33,7 +30,6 @@ export const Relative = () => {
               radioActive={result.radioActive}
               isLapped={result.lappedState === 'behind'}
               isLappingAhead={result.lappedState === 'ahead'}
-              speed={speeds[result.carIdx]?.toFixed(1) || '0.0'}
               badge={
                 <DriverRatingBadge
                   license={result.driver?.license}

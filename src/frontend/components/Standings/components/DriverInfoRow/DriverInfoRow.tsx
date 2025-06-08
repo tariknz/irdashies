@@ -22,7 +22,6 @@ interface DriverRowInfoProps {
   radioActive?: boolean;
   isLapped?: boolean;
   isLappingAhead?: boolean;
-  speed?: string;
 }
 
 export const DriverInfoRow = ({
@@ -43,7 +42,6 @@ export const DriverInfoRow = ({
   isLapped,
   isLappingAhead,
   iratingChange,
-  speed,
 }: DriverRowInfoProps) => {
   // convert seconds to mm:ss:ms
   const lastTimeString = formatTime(lastTime);
@@ -108,7 +106,6 @@ export const DriverInfoRow = ({
       >
         {lastTimeString}
       </td>
-      <td className="px-2 text-right">{speed}</td>
     </tr>
   );
 };
