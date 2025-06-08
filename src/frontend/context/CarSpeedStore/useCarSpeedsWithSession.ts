@@ -7,7 +7,7 @@ import { useCarSpeedsStore } from './CarSpeedsStore';
  * Custom hook to update car speeds using both telemetry and session (track length) state.
  * Keeps TelemetryStore decoupled from SessionStore.
  */
-export function useCarSpeeds() {
+export function useCarSpeedsWithSession() {
   const telemetry = useTelemetryStore(state => state.telemetry);
   const updateCarSpeeds = useCarSpeedsStore(state => state.updateCarSpeeds);
   const session = useSessionStore(state => state.session);

@@ -5,4 +5,4 @@ export * from './SessionStore/SessionStore';
 export * from './TelemetryStore/TelemetryProvider';
 export * from './TelemetryStore/TelemetryStore';
 export * from './CarSpeedStore/CarSpeedsStore';
-export * from './CarSpeedStore/useCarSpeeds';
+export * from './CarSpeedStore/useCarSpeedsWithSession';
