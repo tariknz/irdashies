@@ -10,7 +10,7 @@ describe('SessionStore', () => {
         WeekendInfo: {
           Official: 1,
         },
-      } as unknown as Session;
+      } as Session;
 
       useSessionStore.getState().setSession(mockSession);
 
@@ -23,7 +23,7 @@ describe('SessionStore', () => {
         WeekendInfo: {
           Official: 0,
         },
-      } as unknown as Session;
+      } as Session;
 
       useSessionStore.getState().setSession(mockSession);
 
@@ -46,7 +46,7 @@ describe('SessionStore', () => {
         DriverInfo: {},
         SplitTimeInfo: {},
         QualifyResultsInfo: {},
-      } as unknown as Session;
+      } as Session;
       useSessionStore.getState().setSession(mockSession);
 
       const { result } = renderHook(() => useSessionIsOfficial());

@@ -1,0 +1,21 @@
+{
+  "name": "Test Patterns",
+  "description": "Enforces Vitest usage and consistent test patterns",
+  "rules": [
+    {
+      "name": "Use Vitest",
+      "description": "Tests should use Vitest instead of Jest",
+      "pattern": {
+        "include": ["**/*.spec.ts", "**/*.spec.tsx"],
+        "exclude": ["node_modules/**"]
+      },
+      "checks": [
+        {
+          "type": "import",
+          "required": ["vitest"],
+          "forbidden": ["jest"]
+        }
+      ]
+    }
+  ]
+} 
