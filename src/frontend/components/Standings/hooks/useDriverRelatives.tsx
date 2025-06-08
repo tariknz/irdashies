@@ -11,6 +11,16 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
   const drivers = useDriverStandings();
   const carIdxLapDistPct = useTelemetryValues('CarIdxLapDistPct');
   const carIdxLap = useTelemetryValues('CarIdxLap');
+  const trackLength = useSessionStore((s) => {
+    const lengthStr = s.session?.WeekendInfo?.TrackLength;
+    let trackLength = 0;
+    if (lengthStr) {
+      const [value, unit] = lengthStr.split(' ');
+      trackLength =
+        unit === 'km' ? parseFloat(value) * 1000 : parseFloat(value);
+    }
+    return trackLength;
+  });
   const speeds = useCarSpeeds();
 
   const playerIndex = useDriverCarIdx();
@@ -31,12 +41,20 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
       const otherSpeed = speeds?.[otherCarIdx];
 
       if (
-        playerLapNum === undefined || playerLapNum < 0 ||
-        playerDistPct === undefined || playerDistPct < 0 || playerDistPct > 1 ||
-        otherLapNum === undefined || otherLapNum < 0 ||
-        otherDistPct === undefined || otherDistPct < 0 || otherDistPct > 1 ||
-        playerSpeed === undefined || playerSpeed <= 0 ||
-        otherSpeed === undefined || otherSpeed <= 0
+        playerLapNum === undefined ||
+        playerLapNum < 0 ||
+        playerDistPct === undefined ||
+        playerDistPct < 0 ||
+        playerDistPct > 1 ||
+        otherLapNum === undefined ||
+        otherLapNum < 0 ||
+        otherDistPct === undefined ||
+        otherDistPct < 0 ||
+        otherDistPct > 1 ||
+        playerSpeed === undefined ||
+        playerSpeed <= 0 ||
+        otherSpeed === undefined ||
+        otherSpeed <= 0
       ) {
         return NaN;
       }
@@ -60,9 +78,8 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
 
       // Calculate time to close the gap based on speed difference
       // Convert distance percentage to meters (assuming average track length of 5000m)
-      const trackLength = 5000; // meters
       const distanceMeters = distPctDifference * trackLength;
-      
+
       // Time = Distance / Speed
       // Speed difference is in m/s
       return distanceMeters / speedDifference;
@@ -76,7 +93,7 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
 
     //   const otherLapNum = carIdxLap?.[otherCarIdx];
     //   const otherDistPct = carIdxLapDistPct?.[otherCarIdx];
-      
+
     //   if (
     //     playerLapNum === undefined || playerLapNum < 0 ||
     //     playerDistPct === undefined || playerDistPct < 0 || playerDistPct > 1 ||
@@ -94,7 +111,7 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
     //   } else if (distPctDifference < -0.5) {
     //     distPctDifference += 1.0;
     //   }
-      
+
     //   const timeDelta = distPctDifference * driverCarEstLapTime;
 
     //   return timeDelta;
@@ -138,11 +155,13 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
     return relatives;
   }, [
     drivers,
-    buffer,
     playerIndex,
-    driverCarEstLapTime,
-    carIdxLapDistPct,
     carIdxLap,
+    carIdxLapDistPct,
+    speeds,
+    trackLength,
+    driverCarEstLapTime,
+    buffer,
   ]);
 
   return standings;
