@@ -9,6 +9,8 @@ import { useDriverStandings } from './useDriverPositions';
 export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
   const drivers = useDriverStandings();
   const carIdxLapDistPct = useTelemetryValues('CarIdxLapDistPct');
+  const carIdxClass = useTelemetryValues('CarIdxClass');
+  const carIdxEstTime = useTelemetryValues('CarIdxEstTime');
 
   const playerIndex = useDriverCarIdx();
   const driverCarEstLapTime = useSessionStore(
@@ -29,7 +31,19 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
         distPctDifference += 1.0;
       }
 
-      const timeDelta = distPctDifference * driverCarEstLapTime;
+      // Class ratio handling
+      const playerClass = carIdxClass?.[playerCarIdx];
+      const otherClass = carIdxClass?.[otherCarIdx];
+      const playerEstLap = carIdxEstTime?.[playerCarIdx] || driverCarEstLapTime;
+      const otherEstLap = carIdxEstTime?.[otherCarIdx] || driverCarEstLapTime;
+
+      let timeDelta = distPctDifference * playerEstLap;
+
+      if (playerClass !== otherClass) {
+        // Adjust for class difference using est lap time ratio
+        const classRatio = playerEstLap / otherEstLap;
+        timeDelta = distPctDifference * playerEstLap * classRatio;
+      }
 
       return timeDelta;
     };
@@ -70,7 +84,15 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
     const relatives = [...carsAhead, { ...player, delta: 0 }, ...carsBehind];
 
     return relatives;
-  }, [drivers, playerIndex, carIdxLapDistPct, driverCarEstLapTime, buffer]);
+  }, [
+    drivers,
+    playerIndex,
+    carIdxLapDistPct,
+    carIdxClass,
+    carIdxEstTime,
+    driverCarEstLapTime,
+    buffer,
+  ]);
 
   return standings;
 };
