@@ -27,33 +27,26 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
       const otherDistPct = carIdxLapDistPct?.[otherCarIdx];
 
       if (
-        playerLapNum === undefined ||
-        playerLapNum < 0 ||
-        playerDistPct === undefined ||
-        playerDistPct < 0 ||
-        playerDistPct > 1 ||
-        otherLapNum === undefined ||
-        otherLapNum < 0 ||
-        otherDistPct === undefined ||
-        otherDistPct < 0 ||
-        otherDistPct > 1 ||
+        playerLapNum === undefined || playerLapNum < 0 ||
+        playerDistPct === undefined || playerDistPct < 0 || playerDistPct > 1 ||
+        otherLapNum === undefined || otherLapNum < 0 ||
+        otherDistPct === undefined || otherDistPct < 0 || otherDistPct > 1 ||
         driverCarEstLapTime <= 0
       ) {
         return NaN;
       }
 
-      // Calculate distance between cars as a percentage of the track
-      let distanceBetween = 0.0;
-      if (otherDistPct > playerDistPct) {
-        distanceBetween = -(otherDistPct - playerDistPct);
-      } else {
-        distanceBetween = playerDistPct - otherDistPct;
+      let distPctDifference = otherDistPct - playerDistPct;
+
+      if (distPctDifference > 0.5) {
+        distPctDifference -= 1.0;
+      } else if (distPctDifference < -0.5) {
+        distPctDifference += 1.0;
       }
 
-      // Use the projected lap time to calculate the time delta
-      const timeDelta = distanceBetween * driverCarEstLapTime;
+      const timeDelta = distPctDifference * driverCarEstLapTime;
 
-      return timeDelta * -1;
+      return timeDelta;
     };
 
     const isHalfLapDifference = (car1: number, car2: number) => {
