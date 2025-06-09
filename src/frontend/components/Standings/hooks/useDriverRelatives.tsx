@@ -35,12 +35,12 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
       const playerClass = carIdxClass?.[playerCarIdx];
       const otherClass = carIdxClass?.[otherCarIdx];
       const playerEstLap = carIdxEstTime?.[playerCarIdx] || driverCarEstLapTime;
-      const otherEstLap = carIdxEstTime?.[otherCarIdx] || driverCarEstLapTime;
 
       let timeDelta = distPctDifference * playerEstLap;
 
       if (playerClass !== otherClass) {
         // Adjust for class difference using class ratio
+        const otherEstLap = carIdxEstTime?.[otherCarIdx] || driverCarEstLapTime;
         const classRatio = otherEstLap / playerEstLap;
         const adjustedOtherEstLap = otherEstLap / classRatio;
         timeDelta = distPctDifference * adjustedOtherEstLap;
