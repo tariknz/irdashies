@@ -40,9 +40,10 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
       let timeDelta = distPctDifference * playerEstLap;
 
       if (playerClass !== otherClass) {
-        // Adjust for class difference using est lap time ratio
-        const classRatio = playerEstLap / otherEstLap;
-        timeDelta = distPctDifference * playerEstLap * classRatio;
+        // Adjust for class difference using class ratio
+        const classRatio = otherEstLap / playerEstLap;
+        const adjustedOtherEstLap = otherEstLap / classRatio;
+        timeDelta = distPctDifference * adjustedOtherEstLap;
       }
 
       return timeDelta;
