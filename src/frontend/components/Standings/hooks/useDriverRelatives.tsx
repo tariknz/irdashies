@@ -9,7 +9,6 @@ import { useDriverStandings } from './useDriverPositions';
 export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
   const drivers = useDriverStandings();
   const carIdxLapDistPct = useTelemetryValues('CarIdxLapDistPct');
-  const carIdxLap = useTelemetryValues('CarIdxLap');
 
   const playerIndex = useDriverCarIdx();
   const driverCarEstLapTime = useSessionStore(
@@ -19,22 +18,8 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
   const standings = useMemo(() => {
     const calculateDelta = (otherCarIdx: number) => {
       const playerCarIdx = playerIndex ?? 0;
-
-      const playerLapNum = carIdxLap?.[playerCarIdx];
       const playerDistPct = carIdxLapDistPct?.[playerCarIdx];
-
-      const otherLapNum = carIdxLap?.[otherCarIdx];
       const otherDistPct = carIdxLapDistPct?.[otherCarIdx];
-
-      if (
-        playerLapNum === undefined || playerLapNum < 0 ||
-        playerDistPct === undefined || playerDistPct < 0 || playerDistPct > 1 ||
-        otherLapNum === undefined || otherLapNum < 0 ||
-        otherDistPct === undefined || otherDistPct < 0 || otherDistPct > 1 ||
-        driverCarEstLapTime <= 0
-      ) {
-        return NaN;
-      }
 
       let distPctDifference = otherDistPct - playerDistPct;
 
@@ -85,14 +70,7 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
     const relatives = [...carsAhead, { ...player, delta: 0 }, ...carsBehind];
 
     return relatives;
-  }, [
-    drivers,
-    playerIndex,
-    carIdxLap,
-    carIdxLapDistPct,
-    driverCarEstLapTime,
-    buffer,
-  ]);
+  }, [drivers, playerIndex, carIdxLapDistPct, driverCarEstLapTime, buffer]);
 
   return standings;
 };
