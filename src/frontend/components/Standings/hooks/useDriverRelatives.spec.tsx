@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
 import { useDriverRelatives } from './useDriverRelatives';
-import { useDriverCarIdx, useTelemetryValues } from '@irdashies/context';
+import { useDriverCarIdx, useSessionStore, useTelemetryValues } from '@irdashies/context';
 import { useDriverStandings } from './useDriverPositions';
 import type { Standings } from '../createStandings';
 
@@ -9,6 +9,7 @@ import type { Standings } from '../createStandings';
 vi.mock('@irdashies/context', () => ({
   useDriverCarIdx: vi.fn(),
   useTelemetryValues: vi.fn(),
+  useSessionStore: vi.fn(),
 }));
 
 vi.mock('./useDriverPositions', () => ({
@@ -100,6 +101,13 @@ describe('useDriverRelatives', () => {
       return [];
     });
     vi.mocked(useDriverStandings).mockReturnValue(mockDrivers);
+    vi.mocked(useSessionStore).mockReturnValue({
+      session: {
+        DriverInfo: {
+          PaceCarIdx: 0,
+        },
+      },
+    });
   });
 
   it('should return empty array when no player is found', () => {
