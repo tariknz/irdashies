@@ -1,5 +1,9 @@
 import { useMemo } from 'react';
-import { useDriverCarIdx, useTelemetryValues } from '@irdashies/context';
+import {
+  useDriverCarIdx,
+  useSessionStore,
+  useTelemetryValues,
+} from '@irdashies/context';
 import { useDriverStandings } from './useDriverPositions';
 
 export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
@@ -8,6 +12,8 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
   const carIdxEstTime = useTelemetryValues('CarIdxEstTime');
 
   const playerIndex = useDriverCarIdx();
+  const paceCarIdx =
+    useSessionStore((s) => s.session?.DriverInfo?.PaceCarIdx) ?? -1;
 
   const standings = useMemo(() => {
     const calculateRelativePct = (carIdx: number) => {
@@ -31,29 +37,32 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
       }
 
       return relativePct;
-    }
+    };
 
     const calculateDelta = (otherCarIdx: number) => {
       if (playerIndex === undefined) {
         return NaN;
       }
 
-      const playerClassEstLap = drivers.find((driver) => driver.carIdx === playerIndex)?.carClass?.estLapTime || 1;
-      const otherEstLap = drivers.find((driver) => driver.carIdx === otherCarIdx)?.carClass?.estLapTime || 1;
-      const classRatio = otherEstLap / playerClassEstLap;
+      const player = drivers.find((driver) => driver.carIdx === playerIndex);
+      const playerEstLapTime =
+        player?.fastestTime || player?.carClass?.estLapTime || 0;
+      const playerEstTime = carIdxEstTime?.[playerIndex];
+      const otherEstTime = carIdxEstTime?.[otherCarIdx];
 
-      const carEstTime = carIdxEstTime?.[otherCarIdx] / classRatio;
-      const playerEstLap = carIdxEstTime?.[playerIndex];
-      let timeDelta = carEstTime - playerEstLap;
+      let timeDelta = otherEstTime - playerEstTime;
 
       // handle crossing the start/finish line
       const playerDistPct = carIdxLapDistPct?.[playerIndex];
       const otherDistPct = carIdxLapDistPct?.[otherCarIdx];
-      const distPctDifference = otherDistPct - playerDistPct;
-      if (distPctDifference > 0.5) {
-        timeDelta += -playerClassEstLap;
-      } else if (distPctDifference < -0.5) {
-        timeDelta += playerClassEstLap;
+
+      // handle crossing the start/finish line
+      const wrap = playerDistPct - otherDistPct > 0.5;
+      if (wrap) {
+        timeDelta =
+          playerEstTime > otherEstTime
+            ? otherEstTime - playerEstTime + playerEstLapTime
+            : otherEstTime - playerEstTime - playerEstLapTime;
       }
 
       return timeDelta;
@@ -61,13 +70,14 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
 
     const filterAndMapDrivers = () => {
       return drivers
-        .filter((driver) => driver.onTrack || driver.carIdx === playerIndex)
+        .filter((driver) => driver.onTrack || driver.carIdx === playerIndex) // filter out drivers not on track
+        .filter((driver) => driver.carIdx > -1 && driver.carIdx !== paceCarIdx) // filter out pace car
         .map((result) => ({
           ...result,
           relativePct: calculateRelativePct(result.carIdx),
         }))
         .filter((result) => !isNaN(result.relativePct))
-        .sort((a, b) => b.relativePct - a.relativePct)
+        .sort((a, b) => b.relativePct - a.relativePct) // sort by relative pct
         .map((result) => ({
           ...result,
           delta: calculateDelta(result.carIdx),
@@ -76,18 +86,28 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
     };
 
     const allRelatives = filterAndMapDrivers();
-    const playerArrIndex = allRelatives.findIndex((result) => result.carIdx === playerIndex);
+    const playerArrIndex = allRelatives.findIndex(
+      (result) => result.carIdx === playerIndex
+    );
 
+    // if the player is not in the list, return an empty array
     if (playerArrIndex === -1) {
       return [];
     }
 
-    // buffered slice
+    // buffered slice to get only the drivers around the player
     const start = Math.max(0, playerArrIndex - buffer);
     const end = Math.min(allRelatives.length, playerArrIndex + buffer + 1);
 
     return allRelatives.slice(start, end);
-  }, [drivers, playerIndex, carIdxLapDistPct, carIdxEstTime, buffer]);
+  }, [
+    buffer,
+    playerIndex,
+    carIdxLapDistPct,
+    drivers,
+    carIdxEstTime,
+    paceCarIdx,
+  ]);
 
   return standings;
 };
