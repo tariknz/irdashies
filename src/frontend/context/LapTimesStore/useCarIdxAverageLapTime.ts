@@ -21,8 +21,6 @@ export function useCarIdxAverageLapTime() {
 
   return lapTimes.map((lapTime, index) => {
     const classLapTime = session?.find(driver => driver.CarIdx === index)?.CarClassEstLapTime ?? 0;
-    return [
-      lapTime || classLapTime || -1, // use class lap time if last lap time is not known
-    ];
+    return lapTime || classLapTime || -1; // use class lap time if last lap time is not known
   });
 }

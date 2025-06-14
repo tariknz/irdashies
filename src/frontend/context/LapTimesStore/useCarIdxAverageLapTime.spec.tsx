@@ -68,7 +68,7 @@ describe('useCarIdxAverageLapTime', () => {
     vi.mocked(useLapTimes).mockReturnValue([0, 0]);
 
     const { result } = renderHook(() => useCarIdxAverageLapTime());
-    expect(result.current).toEqual([[90.5], [91.2]]);
+    expect(result.current).toEqual([90.5, 91.2]);
   });
 
   it('should use actual lap times when available', () => {
@@ -88,7 +88,7 @@ describe('useCarIdxAverageLapTime', () => {
     vi.mocked(useLapTimes).mockReturnValue([89.8, 90.1]);
 
     const { result } = renderHook(() => useCarIdxAverageLapTime());
-    expect(result.current).toEqual([[89.8], [90.1]]);
+    expect(result.current).toEqual([89.8, 90.1]);
   });
 
   it('should update lap times when telemetry changes', () => {
@@ -122,7 +122,7 @@ describe('useCarIdxAverageLapTime', () => {
     vi.mocked(useLapTimes).mockReturnValue([89.8, 0]);
 
     const { result } = renderHook(() => useCarIdxAverageLapTime());
-    expect(result.current).toEqual([[89.8], [91.2]]);
+    expect(result.current).toEqual([89.8, 91.2]);
   });
 
   it('should handle missing car indices in session data', () => {
@@ -139,6 +139,6 @@ describe('useCarIdxAverageLapTime', () => {
     vi.mocked(useLapTimes).mockReturnValue([0, 0]);
 
     const { result } = renderHook(() => useCarIdxAverageLapTime());
-    expect(result.current).toEqual([[-1], [91.2]]);
+    expect(result.current).toEqual([-1, 91.2]);
   });
 }); 
