@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useTelemetryStore } from '../TelemetryStore/TelemetryStore';
 import { useLapTimes, useLapTimesStore } from './LapTimesStore';
-import { useSessionStore } from '../SessionStore/SessionStore';
+import { useCarIdxClassEstLapTime } from '../SessionStore/SessionStore';
 
 /**
  * Custom hook to update lap times using telemetry state.
@@ -9,9 +9,9 @@ import { useSessionStore } from '../SessionStore/SessionStore';
  */
 export function useCarIdxAverageLapTime() {
   const telemetry = useTelemetryStore(state => state.telemetry);
-  const session = useSessionStore(state => state.session?.DriverInfo?.Drivers);
   const updateLapTimes = useLapTimesStore(state => state.updateLapTimes);
   const lapTimes = useLapTimes();
+  const classTimesByCarIdx = useCarIdxClassEstLapTime();
 
   useEffect(() => {
     if (telemetry) {
@@ -20,7 +20,7 @@ export function useCarIdxAverageLapTime() {
   }, [telemetry, updateLapTimes]);
 
   return lapTimes.map((lapTime, index) => {
-    const classLapTime = session?.find(driver => driver.CarIdx === index)?.CarClassEstLapTime ?? 0;
+    const classLapTime = classTimesByCarIdx?.[index] || 0;
     return lapTime || classLapTime || -1; // use class lap time if last lap time is not known
   });
 }

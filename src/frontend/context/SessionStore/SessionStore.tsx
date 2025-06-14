@@ -96,7 +96,7 @@ export const useSessionQualifyingResults = () =>
   );
 
 /**
- * @returns {number} The track length in meters
+ * @returns The track length in meters
  */
 export const useTrackLength = () =>
   useStore(useSessionStore, (state) => {
@@ -107,4 +107,16 @@ export const useTrackLength = () =>
     }
 
     return parseFloat(value);
+  });
+
+
+/**
+ * @returns The car index and car class estimated lap time for each driver
+ */
+export const useCarIdxClassEstLapTime = () =>
+  useStore(useSessionStore, (state) => {
+    return state.session?.DriverInfo?.Drivers?.reduce((acc, driver) => {
+      acc[driver.CarIdx] = driver.CarClassEstLapTime;
+      return acc;
+    }, {} as Record<number, number>);
   });

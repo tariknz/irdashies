@@ -3,7 +3,7 @@ import { renderHook } from '@testing-library/react';
 import { useCarIdxAverageLapTime } from './useCarIdxAverageLapTime';
 import { useTelemetryStore } from '../TelemetryStore/TelemetryStore';
 import { useLapTimesStore, useLapTimes } from './LapTimesStore';
-import { useSessionStore } from '../SessionStore/SessionStore';
+import { useCarIdxClassEstLapTime } from '../SessionStore/SessionStore';
 import type { Telemetry } from '@irdashies/types';
 
 // Mock the stores
@@ -17,7 +17,7 @@ vi.mock('./LapTimesStore', () => ({
 }));
 
 vi.mock('../SessionStore/SessionStore', () => ({
-  useSessionStore: vi.fn(),
+  useCarIdxClassEstLapTime: vi.fn(),
 }));
 
 function makeTelemetry(lapTimes: number[], sessionTime: number): Telemetry {
@@ -43,7 +43,6 @@ describe('useCarIdxAverageLapTime', () => {
   it('should return empty array when no session data', () => {
     // Mock store values
     vi.mocked(useTelemetryStore).mockReturnValue({ telemetry: null });
-    vi.mocked(useSessionStore).mockReturnValue(null);
     vi.mocked(useLapTimesStore).mockImplementation((selector) => 
       selector(mockLapTimesState)
     );
@@ -55,13 +54,13 @@ describe('useCarIdxAverageLapTime', () => {
 
   it('should use class lap time as fallback when no lap time available', () => {
     const mockDrivers = [
-      { CarIdx: 0, CarClassEstLapTime: 90.5 },
-      { CarIdx: 1, CarClassEstLapTime: 91.2 },
+      90.5, 
+      91.2,
     ];
 
     // Mock store values
     vi.mocked(useTelemetryStore).mockReturnValue({ telemetry: null });
-    vi.mocked(useSessionStore).mockReturnValue(mockDrivers);
+    vi.mocked(useCarIdxClassEstLapTime).mockReturnValue(mockDrivers);
     vi.mocked(useLapTimesStore).mockImplementation((selector) => 
       selector(mockLapTimesState)
     );
@@ -72,16 +71,13 @@ describe('useCarIdxAverageLapTime', () => {
   });
 
   it('should use actual lap times when available', () => {
-    const mockDrivers = [
-      { CarIdx: 0, CarClassEstLapTime: 90.5 },
-      { CarIdx: 1, CarClassEstLapTime: 91.2 },
-    ];
+    const mockDrivers = {0: 90.5, 1: 91.2};
 
     const telemetry = makeTelemetry([89.8, 90.1], 1);
 
     // Mock store values
     vi.mocked(useTelemetryStore).mockReturnValue({ telemetry });
-    vi.mocked(useSessionStore).mockReturnValue(mockDrivers);
+    vi.mocked(useCarIdxClassEstLapTime).mockReturnValue(mockDrivers);
     vi.mocked(useLapTimesStore).mockImplementation((selector) => 
       selector(mockLapTimesState)
     );
@@ -97,7 +93,7 @@ describe('useCarIdxAverageLapTime', () => {
 
     // Mock store values
     vi.mocked(useTelemetryStore).mockReturnValue(telemetry);
-    vi.mocked(useSessionStore).mockReturnValue([]);
+    vi.mocked(useCarIdxClassEstLapTime).mockReturnValue([]);
     vi.mocked(useLapTimesStore).mockImplementation((selector) => 
       selector({ ...mockLapTimesState, updateLapTimes })
     );
@@ -108,14 +104,11 @@ describe('useCarIdxAverageLapTime', () => {
   });
 
   it('should handle mixed known and unknown lap times', () => {
-    const mockDrivers = [
-      { CarIdx: 0, CarClassEstLapTime: 90.5 },
-      { CarIdx: 1, CarClassEstLapTime: 91.2 },
-    ];
+    const mockDrivers = {0: 90.5, 1: 91.2};
 
     // Mock store values with one known and one unknown lap time
     vi.mocked(useTelemetryStore).mockReturnValue({ telemetry: null });
-    vi.mocked(useSessionStore).mockReturnValue(mockDrivers);
+    vi.mocked(useCarIdxClassEstLapTime).mockReturnValue(mockDrivers);
     vi.mocked(useLapTimesStore).mockImplementation((selector) => 
       selector(mockLapTimesState)
     );
@@ -126,13 +119,11 @@ describe('useCarIdxAverageLapTime', () => {
   });
 
   it('should handle missing car indices in session data', () => {
-    const mockDrivers = [
-      { CarIdx: 1, CarClassEstLapTime: 91.2 }, // Missing CarIdx 0
-    ];
+    const mockDrivers = {1: 91.2};
 
     // Mock store values
     vi.mocked(useTelemetryStore).mockReturnValue({ telemetry: null });
-    vi.mocked(useSessionStore).mockReturnValue(mockDrivers);
+    vi.mocked(useCarIdxClassEstLapTime).mockReturnValue(mockDrivers);
     vi.mocked(useLapTimesStore).mockImplementation((selector) => 
       selector(mockLapTimesState)
     );
