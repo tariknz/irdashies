@@ -145,7 +145,7 @@ export interface TelemetryVarList {
   EnterExitReset: TelemetryVariable<number[]>;
   TrackTemp: TelemetryVariable<number[]>;
   TrackTempCrew: TelemetryVariable<number[]>;
-  TrackWetness?: TelemetryVariable<number[]>;
+  TrackWetness: TelemetryVariable<number[]>;
   AirTemp: TelemetryVariable<number[]>;
   WeatherType: TelemetryVariable<number[]>;
   Skies: TelemetryVariable<number[]>;
