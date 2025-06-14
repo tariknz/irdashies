@@ -69,5 +69,7 @@ export const useCarSpeedsStore = create<CarSpeedsState>((set, get) => ({
   },
 }));
 
-// Pure selector for car speeds
+/**
+ * @returns {number[]} An array of speeds for each car in the session by index. Speed value in km/h
+ */
 export const useCarSpeeds = () => useStore(useCarSpeedsStore, (state) => state.carSpeeds); 
