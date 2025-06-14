@@ -46,7 +46,7 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
       const player = drivers.find((driver) => driver.carIdx === playerIndex);
       const other = drivers.find((driver) => driver.carIdx === otherCarIdx);
       
-      // Use the slower car's lap time for more accurate deltas in multiclass
+      // Use the slower car's lap time for more conservative deltas in multiclass
       const playerEstLapTime = player?.carClass?.estLapTime ?? 0;
       const otherEstLapTime = other?.carClass?.estLapTime ?? 0;
       const baseLapTime = Math.max(playerEstLapTime, otherEstLapTime);
