@@ -6,16 +6,13 @@ import { DriverRatingBadge } from './components/DriverRatingBadge/DriverRatingBa
 import { RatingChange } from './components/RatingChange/RatingChange';
 import { SessionBar } from './components/SessionBar/SessionBar';
 import { SessionFooter } from './components/SessionFooter/SessionFooter';
-import { useCarClassStats, useDriverStandings } from './hooks';
-import { useDashboard } from '@irdashies/context';
-import { StandingsWidgetSettings } from '../Settings/types';
+import { useCarClassStats, useDriverStandings, useStandingsSettings } from './hooks';
 
 export const Standings = () => {
   const [parent] = useAutoAnimate();
   const standings = useDriverStandings({ buffer: 3 });
   const classStats = useCarClassStats();
-  const { currentDashboard } = useDashboard();
-  const settings = currentDashboard?.widgets.find(w => w.id === 'standings')?.config as StandingsWidgetSettings['config'];
+  const settings = useStandingsSettings();
 
   return (
     <div className="w-full h-full">

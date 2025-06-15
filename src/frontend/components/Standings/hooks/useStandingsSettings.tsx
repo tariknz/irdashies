@@ -1,11 +1,12 @@
 import { useDashboard } from '@irdashies/context';
-import { StandingsWidgetSettings } from '../sections/StandingsSettings';
+import { StandingsWidgetSettings } from '../../Settings/types';
 
 export const useStandingsSettings = () => {
   const { currentDashboard } = useDashboard();
-  const settings = currentDashboard?.widgets.find((w) => w.id === 'standings')?.config as StandingsWidgetSettings['config'];
 
-  return {
-    showIRatingChange: settings?.showIRatingChange ?? true,
-  };
+  const standingsSettings = currentDashboard?.widgets.find(
+    (widget) => widget.id === 'standings',
+  )?.config;
+  
+  return standingsSettings as StandingsWidgetSettings['config'];
 }; 
