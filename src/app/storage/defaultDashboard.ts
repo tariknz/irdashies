@@ -11,6 +11,13 @@ export const defaultDashboard: DashboardLayout = {
         width: 400,
         height: 600,
       },
+      config: {
+        showIRatingChange: true,
+        showBadge: true,
+        showDelta: true,
+        showLastTime: true,
+        showFastestTime: true,
+      },
     },
     {
       id: 'input',

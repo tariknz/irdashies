@@ -4,8 +4,7 @@ import { useLapTimes, useLapTimesStore } from '../LapTimesStore/LapTimesStore';
 import { useCarIdxClassEstLapTime } from '../SessionStore/SessionStore';
 
 /**
- * Custom hook to update lap times using telemetry state.
- * @returns An array of average lap times for each car in the session by index. Time value in seconds. -1 if not known.
+ * @returns An array of average lap times in seconds for each car in the session by index. Uses estimated class lap time if lap time is not known.
  */
 export function useCarIdxAverageLapTime() {
   const telemetry = useTelemetryStore(state => state.telemetry);

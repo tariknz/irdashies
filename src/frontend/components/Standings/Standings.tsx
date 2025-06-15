@@ -7,11 +7,15 @@ import { RatingChange } from './components/RatingChange/RatingChange';
 import { SessionBar } from './components/SessionBar/SessionBar';
 import { SessionFooter } from './components/SessionFooter/SessionFooter';
 import { useCarClassStats, useDriverStandings } from './hooks';
+import { useDashboard } from '@irdashies/context';
+import { StandingsWidgetSettings } from '../Settings/types';
 
 export const Standings = () => {
   const [parent] = useAutoAnimate();
   const standings = useDriverStandings({ buffer: 3 });
   const classStats = useCarClassStats();
+  const { currentDashboard } = useDashboard();
+  const settings = currentDashboard?.widgets.find(w => w.id === 'standings')?.config as StandingsWidgetSettings['config'];
 
   return (
     <div className="w-full h-full">
@@ -36,20 +40,20 @@ export const Standings = () => {
                   name={result.driver?.name || ''}
                   isPlayer={result.isPlayer}
                   hasFastestTime={result.hasFastestTime}
-                  delta={result.delta}
+                  delta={settings?.showDelta ? result.delta : undefined}
                   position={result.classPosition}
-                  iratingChange={<RatingChange value={result.iratingChange} />}
-                  lastTime={result.lastTime}
-                  fastestTime={result.fastestTime}
+                  iratingChange={settings?.showIRatingChange ? <RatingChange value={result.iratingChange} /> : undefined}
+                  lastTime={settings?.showLastTime ? result.lastTime : undefined}
+                  fastestTime={settings?.showFastestTime ? result.fastestTime : undefined}
                   onPitRoad={result.onPitRoad}
                   onTrack={result.onTrack}
                   radioActive={result.radioActive}
-                  badge={
+                  badge={settings?.showBadge ? (
                     <DriverRatingBadge
                       license={result.driver?.license}
                       rating={result.driver?.rating}
                     />
-                  }
+                  ) : undefined}
                 />
               ))}
             </Fragment>

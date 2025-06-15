@@ -13,7 +13,7 @@ interface DriverRowInfoProps {
   hasFastestTime: boolean;
   delta?: number;
   position: number;
-  badge: React.ReactNode;
+  badge?: React.ReactNode;
   iratingChange?: React.ReactNode;
   lastTime?: number;
   fastestTime?: number;
@@ -52,14 +52,14 @@ export const DriverInfoRow = ({
       key={carIdx}
       className={[
         `odd:bg-slate-800/70 even:bg-slate-900/70 text-sm`,
-        !onTrack ? 'text-white/60' : '',
+        !onTrack || onPitRoad ? 'text-white/60' : '',
         isPlayer ? 'text-amber-300' : '',
         !isPlayer && isLapped ? 'text-blue-400' : '',
         !isPlayer && isLappingAhead ? 'text-red-400' : '',
       ].join(' ')}
     >
       <td
-        className={`text-center  text-white px-2 ${isPlayer ? `${getTailwindStyle(classColor).classHeader}` : ''}`}
+        className={`text-center text-white px-2 ${isPlayer ? `${getTailwindStyle(classColor).classHeader}` : ''}`}
       >
         {position}
       </td>
@@ -85,27 +85,33 @@ export const DriverInfoRow = ({
           )}
         </div>
       </td>
-      <td>{badge}</td>
-      {iratingChange !== undefined && (
+      {badge && <td>{badge}</td>}
+      {iratingChange && (
         <td className="px-2 text-left">
           {iratingChange}
         </td>
       )}
-      <td className={`px-2`}>{delta?.toFixed(1)}</td>
-      <td className={`px-2 ${hasFastestTime ? 'text-purple-400' : ''}`}>
-        {fastestTimeString}
-      </td>
-      <td
-        className={`px-2 ${
-          lastTimeString === fastestTimeString
-            ? hasFastestTime
-              ? 'text-purple-400'
-              : 'text-green-400'
-            : ''
-        }`}
-      >
-        {lastTimeString}
-      </td>
+      {delta !== undefined && (
+        <td className="px-2">{delta.toFixed(1)}</td>
+      )}
+      {fastestTime !== undefined && (
+        <td className={`px-2 ${hasFastestTime ? 'text-purple-400' : ''}`}>
+          {fastestTimeString}
+        </td>
+      )}
+      {lastTime !== undefined && (
+        <td
+          className={`px-2 ${
+            lastTimeString === fastestTimeString
+              ? hasFastestTime
+                ? 'text-purple-400'
+                : 'text-green-400'
+              : ''
+          }`}
+        >
+          {lastTimeString}
+        </td>
+      )}
     </tr>
   );
 };
