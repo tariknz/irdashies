@@ -96,15 +96,12 @@ export const useDriverStandings = () => {
       }
 
       // If the driver is not in the standings, use the qualifying position
-      // else fallback to the car number, shitty workaround for now
-      let classPosition = driverPos.classPosition;
+      let classPosition: number | undefined = driverPos.classPosition;
       if (classPosition <= 0) {
         const qualifyingPosition = qualifyingPositions?.find(
           (q) => q.CarIdx === driver.carIdx
         );
-        classPosition = qualifyingPosition
-          ? qualifyingPosition.Position + 1
-          : driver.carNumRaw;
+        classPosition = qualifyingPosition ? qualifyingPosition.Position + 1 : undefined;
       }
 
       return {

@@ -12,7 +12,7 @@ interface DriverRowInfoProps {
   isPlayer: boolean;
   hasFastestTime: boolean;
   delta?: number;
-  position: number;
+  position?: number;
   badge?: React.ReactNode;
   iratingChange?: React.ReactNode;
   lastTime?: number;

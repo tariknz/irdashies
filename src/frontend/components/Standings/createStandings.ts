@@ -14,7 +14,7 @@ import {
 export interface Standings {
   carIdx: number;
   position?: number;
-  classPosition: number;
+  classPosition?: number;
   lap?: number;
   lappedState?: 'ahead' | 'behind' | 'same';
   delta?: number;
@@ -171,14 +171,16 @@ export const augmentStandingsWithIRating = (
   groupedStandings: [string, Standings[]][]
 ): [string, Standings[]][] => {
   return groupedStandings.map(([classId, classStandings]) => {
-    const raceResultsInput: RaceResult<number>[] = classStandings.map(
-      (driverStanding) => ({
-        driver: driverStanding.carIdx,
-        finishRank: driverStanding.classPosition,
-        startIRating: driverStanding.driver.rating,
-        started: true, // This is a critical assumption.
-      })
-    );
+    const raceResultsInput: RaceResult<number>[] = classStandings
+      .filter(s => !!s.classPosition)  // Only include drivers with a class position, should not happen in races
+      .map(
+        (driverStanding) => ({
+          driver: driverStanding.carIdx,
+          finishRank: driverStanding.classPosition ?? 0,
+          startIRating: driverStanding.driver.rating,
+          started: true, // This is a critical assumption.
+        })
+      );
 
     if (raceResultsInput.length === 0) {
       return [classId, classStandings];
