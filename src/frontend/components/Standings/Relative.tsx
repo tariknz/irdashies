@@ -1,8 +1,6 @@
 import { useAutoAnimate } from '@formkit/auto-animate/react';
-import { useRef } from 'react';
 import { DriverInfoRow } from './components/DriverInfoRow/DriverInfoRow';
-import { useDriverRelatives } from './hooks/useDriverRelatives';
-import { useRowHeight, useRelativeSettings } from './hooks';
+import { useRelativeSettings, useDriverRelatives } from './hooks';
 import { DriverRatingBadge } from './components/DriverRatingBadge/DriverRatingBadge';
 import { SessionBar } from './components/SessionBar/SessionBar';
 import { SessionFooter } from './components/SessionFooter/SessionFooter';
@@ -12,8 +10,6 @@ export const Relative = () => {
   const buffer = config?.buffer ?? 3;
   const standings = useDriverRelatives({ buffer });
   const [parent] = useAutoAnimate();
-  const tableRef = useRef<HTMLTableElement>(null);
-  const rowHeight = useRowHeight(tableRef, standings.length > 0);
 
   // Always render 2 * buffer + 1 rows (buffer above + player + buffer below)
   const totalRows = 2 * buffer + 1;
@@ -22,16 +18,13 @@ export const Relative = () => {
   // If no player found, render empty table with consistent height
   if (playerIndex === -1) {
     const emptyRows = Array.from({ length: totalRows }, (_, index) => (
-      <EmptyRow key={`empty-${index}`} rowHeight={rowHeight} />
+      <DummyDriverRow key={`empty-${index}`} />
     ));
 
     return (
       <div className="w-full h-full">
         <SessionBar />
-        <table
-          ref={tableRef}
-          className="w-full table-auto text-sm border-separate border-spacing-y-0.5 mb-3 mt-3"
-        >
+        <table className="w-full table-auto text-sm border-separate border-spacing-y-0.5 mb-3 mt-3">
           <tbody ref={parent}>{emptyRows}</tbody>
         </table>
         <SessionFooter />
@@ -48,10 +41,8 @@ export const Relative = () => {
     const result = standings[actualIndex];
 
     if (!result) {
-      // If no result, render an empty row with the correct height
-      return (
-        <EmptyRow key={`placeholder-${index}`} rowHeight={rowHeight} />
-      );
+      // If no result, render a dummy row with visibility hidden
+      return <DummyDriverRow key={`placeholder-${index}`} />;
     }
 
     return (
@@ -83,10 +74,7 @@ export const Relative = () => {
   return (
     <div className="w-full h-full">
       <SessionBar />
-      <table
-        ref={tableRef}
-        className="w-full table-auto text-sm border-separate border-spacing-y-0.5 mb-3 mt-3"
-      >
+      <table className="w-full table-auto text-sm border-separate border-spacing-y-0.5 mb-3 mt-3">
         <tbody ref={parent}>{rows}</tbody>
       </table>
       <SessionFooter />
@@ -94,12 +82,15 @@ export const Relative = () => {
   );
 };
 
-// Reusable empty row component
-const EmptyRow = ({ rowHeight }: { rowHeight: number }) => (
-  <tr
-    style={{ height: `${rowHeight}px` }}
-    className="opacity-0 pointer-events-none"
-  >
-    <td colSpan={4}></td>
-  </tr>
+// Dummy driver row component with visibility hidden to maintain consistent height
+const DummyDriverRow = () => (
+  <DriverInfoRow
+    carIdx={0}
+    classColor={0}
+    carNumber="33"
+    name="Franz Hermann"
+    isPlayer={false}
+    hasFastestTime={false}
+    hidden={true}
+  />
 );

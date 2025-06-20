@@ -25,7 +25,7 @@ export const DriverRatingBadge = ({
   
   return (
     <div
-      className={`text-center text-white text-nowrap border-solid rounded-md text-xs m-0 px-1 border-2 ${color}`}
+      className={`text-center text-white text-nowrap border-solid rounded-md text-xs m-0 px-1 border-2 leading-tight ${color}`}
     >
       {formattedLicense} {simplifiedRating}k
     </div>
