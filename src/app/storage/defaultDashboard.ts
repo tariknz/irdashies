@@ -55,6 +55,9 @@ export const defaultDashboard: DashboardLayout = {
         width: 400,
         height: 296,
       },
+      config: {
+        buffer: 3,
+      },
     },
     {
       id: 'map',

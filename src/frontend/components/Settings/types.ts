@@ -17,7 +17,9 @@ export interface StandingsWidgetSettings extends BaseWidgetSettings {
 }
 
 export interface RelativeWidgetSettings extends BaseWidgetSettings {
-  // Add specific relative settings here
+  config: {
+    buffer: number;
+  };
 }
 
 export interface WeatherWidgetSettings extends BaseWidgetSettings {

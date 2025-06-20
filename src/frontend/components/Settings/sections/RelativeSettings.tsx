@@ -1,13 +1,26 @@
 import { useState } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
-import { RelativeWidgetSettings } from '../types';
 import { useDashboard } from '@irdashies/context';
+
+const SETTING_ID = 'relative';
+
+interface RelativeWidgetSettings {
+  enabled: boolean;
+  config: {
+    buffer: number;
+  };
+}
+
+const defaultConfig: RelativeWidgetSettings['config'] = {
+  buffer: 3,
+};
 
 export const RelativeSettings = () => {
   const { currentDashboard } = useDashboard();
+  const savedSettings = currentDashboard?.widgets.find(w => w.id === SETTING_ID) as RelativeWidgetSettings | undefined;
   const [settings, setSettings] = useState<RelativeWidgetSettings>({
-    enabled: currentDashboard?.widgets.find(w => w.id === 'relative')?.enabled ?? false,
-    config: currentDashboard?.widgets.find(w => w.id === 'relative')?.config ?? {},
+    enabled: savedSettings?.enabled ?? true,
+    config: savedSettings?.config ?? defaultConfig,
   });
 
   if (!currentDashboard) {
@@ -22,10 +35,29 @@ export const RelativeSettings = () => {
       onSettingsChange={setSettings}
       widgetId="relative"
     >
-      {/* Add specific settings controls here */}
-      <div className="text-slate-300">
-        Additional settings will appear here
-      </div>
+      {(handleConfigChange) => (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <span className="text-sm text-slate-300">Buffer Size</span>
+              <p className="text-xs text-slate-400">
+                Number of drivers to show above and below the player
+              </p>
+            </div>
+            <select
+              value={settings.config.buffer}
+              onChange={(e) => handleConfigChange({ buffer: parseInt(e.target.value) })}
+              className="bg-slate-700 text-slate-200 px-3 py-1 rounded border border-slate-600 focus:border-blue-500 focus:outline-none"
+            >
+              {Array.from({ length: 10 }, (_, i) => (
+                <option key={i} value={i + 1}>
+                  {i + 1}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      )}
     </BaseSettingsSection>
   );
 }; 
