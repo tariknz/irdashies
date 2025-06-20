@@ -37,15 +37,15 @@ export const Standings = () => {
                   name={result.driver?.name || ''}
                   isPlayer={result.isPlayer}
                   hasFastestTime={result.hasFastestTime}
-                  delta={settings?.showDelta ? result.delta : undefined}
+                  delta={settings?.delta?.enabled ? result.delta : undefined}
                   position={result.classPosition}
-                  iratingChange={settings?.showIRatingChange ? <RatingChange value={result.iratingChange} /> : undefined}
-                  lastTime={settings?.showLastTime ? result.lastTime : undefined}
-                  fastestTime={settings?.showFastestTime ? result.fastestTime : undefined}
+                  iratingChange={settings?.iRatingChange?.enabled ? <RatingChange value={result.iratingChange} /> : undefined}
+                  lastTime={settings?.lastTime?.enabled ? result.lastTime : undefined}
+                  fastestTime={settings?.fastestTime?.enabled ? result.fastestTime : undefined}
                   onPitRoad={result.onPitRoad}
                   onTrack={result.onTrack}
                   radioActive={result.radioActive}
-                  badge={settings?.showBadge ? (
+                  badge={settings?.badge?.enabled ? (
                     <DriverRatingBadge
                       license={result.driver?.license}
                       rating={result.driver?.rating}

@@ -12,11 +12,11 @@ export const defaultDashboard: DashboardLayout = {
         height: 600,
       },
       config: {
-        showIRatingChange: true,
-        showBadge: true,
-        showDelta: true,
-        showLastTime: true,
-        showFastestTime: true,
+        iRatingChange: { enabled: true },
+        badge: { enabled: true },
+        delta: { enabled: true },
+        lastTime: { enabled: true },
+        fastestTime: { enabled: true },
       },
     },
     {

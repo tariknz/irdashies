@@ -7,18 +7,35 @@ import { ToggleSwitch } from '../components/ToggleSwitch';
 const SETTING_ID = 'standings';
 
 const defaultConfig: StandingsWidgetSettings['config'] = {
-  showIRatingChange: true,
-  showBadge: true,
-  showDelta: true,
-  showLastTime: true,
-  showFastestTime: true,
+  iRatingChange: { enabled: true },
+  badge: { enabled: true },
+  delta: { enabled: true },
+  lastTime: { enabled: true },
+  fastestTime: { enabled: true },
+};
+
+// Migration function to handle missing properties in the new config format
+const migrateConfig = (savedConfig: unknown): StandingsWidgetSettings['config'] => {
+  if (!savedConfig || typeof savedConfig !== 'object') return defaultConfig;
+
+  const config = savedConfig as Record<string, unknown>;
+
+  // Handle new format with missing properties
+  return {
+    iRatingChange: { enabled: (config.iRatingChange as { enabled?: boolean })?.enabled ?? true },
+    badge: { enabled: (config.badge as { enabled?: boolean })?.enabled ?? true },
+    delta: { enabled: (config.delta as { enabled?: boolean })?.enabled ?? true },
+    lastTime: { enabled: (config.lastTime as { enabled?: boolean })?.enabled ?? true },
+    fastestTime: { enabled: (config.fastestTime as { enabled?: boolean })?.enabled ?? true },
+  };
 };
 
 export const StandingsSettings = () => {
   const { currentDashboard } = useDashboard();
+  const savedSettings = currentDashboard?.widgets.find(w => w.id === SETTING_ID) as StandingsWidgetSettings | undefined;
   const [settings, setSettings] = useState<StandingsWidgetSettings>({
-    enabled: currentDashboard?.widgets.find(w => w.id === SETTING_ID)?.enabled ?? false,
-    config: currentDashboard?.widgets.find(w => w.id === SETTING_ID)?.config as StandingsWidgetSettings['config'] ?? defaultConfig,
+    enabled: savedSettings?.enabled ?? false,
+    config: migrateConfig(savedSettings?.config),
   });
 
   if (!currentDashboard) {
@@ -44,45 +61,45 @@ export const StandingsSettings = () => {
               <div className="flex items-center justify-between">
                 <span className="text-sm text-slate-300">Show iRating Changes</span>
                 <ToggleSwitch
-                  enabled={settings.config.showIRatingChange}
+                  enabled={settings.config.iRatingChange.enabled}
                   onToggle={(enabled) =>
-                    handleConfigChange({ showIRatingChange: enabled })
+                    handleConfigChange({ iRatingChange: { enabled } })
                   }
                 />
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-slate-300">Show Driver Badge</span>
                 <ToggleSwitch
-                  enabled={settings.config.showBadge}
+                  enabled={settings.config.badge.enabled}
                   onToggle={(enabled) =>
-                    handleConfigChange({ showBadge: enabled })
+                    handleConfigChange({ badge: { enabled } })
                   }
                 />
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-slate-300">Show Delta</span>
                 <ToggleSwitch
-                  enabled={settings.config.showDelta}
+                  enabled={settings.config.delta.enabled}
                   onToggle={(enabled) =>
-                    handleConfigChange({ showDelta: enabled })
+                    handleConfigChange({ delta: { enabled } })
                   }
                 />
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-slate-300">Show Last Time</span>
                 <ToggleSwitch
-                  enabled={settings.config.showLastTime}
+                  enabled={settings.config.lastTime.enabled}
                   onToggle={(enabled) =>
-                    handleConfigChange({ showLastTime: enabled })
+                    handleConfigChange({ lastTime: { enabled } })
                   }
                 />
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-slate-300">Show Fastest Time</span>
                 <ToggleSwitch
-                  enabled={settings.config.showFastestTime}
+                  enabled={settings.config.fastestTime.enabled}
                   onToggle={(enabled) =>
-                    handleConfigChange({ showFastestTime: enabled })
+                    handleConfigChange({ fastestTime: { enabled } })
                   }
                 />
               </div>

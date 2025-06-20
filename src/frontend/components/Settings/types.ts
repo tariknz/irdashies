@@ -8,11 +8,11 @@ export interface BaseWidgetSettings<T = Record<string, unknown>> {
 
 export interface StandingsWidgetSettings extends BaseWidgetSettings {
   config: {
-    showIRatingChange: boolean;
-    showBadge: boolean;
-    showDelta: boolean;
-    showLastTime: boolean;
-    showFastestTime: boolean;
+    iRatingChange: { enabled: boolean };
+    badge: { enabled: boolean };
+    delta: { enabled: boolean };
+    lastTime: { enabled: boolean };
+    fastestTime: { enabled: boolean };
   };
 }
 
