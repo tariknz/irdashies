@@ -45,6 +45,9 @@ export function exposeBridge() {
     saveDashboard: (value: DashboardLayout) => {
       ipcRenderer.send('saveDashboard', value);
     },
+    resetDashboard: (resetEverything: boolean) => {
+      return ipcRenderer.invoke('resetDashboard', resetEverything);
+    },
     toggleLockOverlays: () => {
       return ipcRenderer.invoke('toggleLockOverlays');
     },

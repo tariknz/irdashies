@@ -8,6 +8,10 @@ export const mockDashboardBridge: DashboardBridge = {
   saveDashboard: () => {
     // noop
   },
+  resetDashboard: async () => {
+    // For mock, just return the default dashboard
+    return defaultDashboard;
+  },
   dashboardUpdated: (callback) => {
     callback(defaultDashboard);
     return () => {

@@ -115,3 +115,34 @@ export const saveDashboard = (
     emitDashboardUpdated(mergedDashboard);
   }
 };
+
+export const resetDashboard = (resetEverything = false, dashboardId = 'default') => {
+  const dashboard = getDashboard(dashboardId);
+  if (!dashboard) {
+    throw new Error('Dashboard not found');
+  }
+
+  if (resetEverything) {
+    // Completely reset to default dashboard
+    saveDashboard(dashboardId, defaultDashboard);
+    return defaultDashboard;
+  } else {
+    // Reset only widget configurations while preserving positions and enabled states
+    const resetDashboard: DashboardLayout = {
+      ...dashboard,
+      widgets: dashboard.widgets.map((widget) => {
+        const defaultWidget = defaultDashboard.widgets.find((w) => w.id === widget.id);
+        return {
+          ...widget,
+          config: defaultWidget?.config || widget.config,
+        };
+      }),
+      generalSettings: {
+        ...defaultDashboard.generalSettings,
+      },
+    };
+
+    saveDashboard(dashboardId, resetDashboard);
+    return resetDashboard;
+  }
+};

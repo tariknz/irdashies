@@ -1,6 +1,6 @@
 import { ipcMain } from 'electron';
 import { onDashboardUpdated } from '../../storage/dashboardEvents';
-import { getDashboard, saveDashboard } from '../../storage/dashboards';
+import { getDashboard, saveDashboard, resetDashboard } from '../../storage/dashboards';
 import { OverlayManager } from 'src/app/overlayManager';
 
 export async function publishDashboardUpdates(overlayManager: OverlayManager) {
@@ -16,6 +16,10 @@ export async function publishDashboardUpdates(overlayManager: OverlayManager) {
     if (!dashboard) return;
     overlayManager.closeOrCreateWindows(dashboard);
     overlayManager.publishMessage('dashboardUpdated', dashboard);
+  });
+
+  ipcMain.handle('resetDashboard', (_, resetEverything: boolean) => {
+    return resetDashboard(resetEverything, 'default');
   });
 
   ipcMain.handle('toggleLockOverlays', () => {

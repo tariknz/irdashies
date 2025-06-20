@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useDashboard } from '@irdashies/context';
 
 export const AdvancedSettings = () => {
-  const { currentDashboard, onDashboardUpdated } = useDashboard();
+  const { currentDashboard, onDashboardUpdated, resetDashboard } = useDashboard();
   const [dashboardInput, setDashboardInput] = useState<string | undefined>(
     JSON.stringify(currentDashboard, undefined, 2)
   );
@@ -29,11 +29,56 @@ export const AdvancedSettings = () => {
     }
   };
 
+  const handleResetConfigs = async () => {
+    if (!confirm('Reset all widget configurations to defaults? This will preserve widget positions and enabled states.')) {
+      return;
+    }
+
+    try {
+      const result = await resetDashboard(false);
+      setDashboardInput(JSON.stringify(result, undefined, 2));
+    } catch (e) {
+      console.error('Failed to reset configurations:', e);
+      alert('Failed to reset configurations');
+    }
+  };
+
+  const handleResetCompletely = async () => {
+    if (!confirm('Reset everything to defaults? This will reset all widget positions, enabled states, and configurations.')) {
+      return;
+    }
+
+    try {
+      const result = await resetDashboard(true);
+      setDashboardInput(JSON.stringify(result, undefined, 2));
+    } catch (e) {
+      console.error('Failed to reset dashboard:', e);
+      alert('Failed to reset dashboard');
+    }
+  };
+
   return (
     <div className="flex flex-col h-full space-y-4">
       <div>
         <h2 className="text-xl mb-4">Advanced Settings</h2>
         <p className="text-slate-400 mb-4">Configure advanced system settings and preferences.</p>
+      </div>
+      
+      <div className="flex space-x-2">
+        <button
+          type="button"
+          onClick={handleResetConfigs}
+          className="flex-1 bg-amber-700 hover:bg-amber-600 rounded px-4 py-2 transition-colors cursor-pointer"
+        >
+          Reset Configurations
+        </button>
+        <button
+          type="button"
+          onClick={handleResetCompletely}
+          className="flex-1 bg-red-700 hover:bg-red-600 rounded px-4 py-2 transition-colors cursor-pointer"
+        >
+          Reset Everything
+        </button>
       </div>
       
       <textarea

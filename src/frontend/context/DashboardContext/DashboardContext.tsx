@@ -11,6 +11,7 @@ interface DashboardContextProps {
   editMode: boolean;
   currentDashboard: DashboardLayout | undefined;
   onDashboardUpdated?: (dashboard: DashboardLayout) => void;
+  resetDashboard: (resetEverything: boolean) => Promise<DashboardLayout>;
   bridge: DashboardBridge;
   version: string;
   isDemoMode: boolean;
@@ -41,6 +42,12 @@ export const DashboardProvider: React.FC<{
     bridge.saveDashboard(dashboard);
   };
 
+  const resetDashboard = async (resetEverything: boolean) => {
+    const result = await bridge.resetDashboard(resetEverything);
+    setDashboard(result);
+    return result;
+  };
+
   const toggleDemoMode = () => {
     const newDemoMode = !isDemoMode;
     setIsDemoMode(newDemoMode);
@@ -54,6 +61,7 @@ export const DashboardProvider: React.FC<{
         editMode: editMode,
         currentDashboard: dashboard,
         onDashboardUpdated: saveDashboard,
+        resetDashboard,
         bridge,
         version,
         isDemoMode,
