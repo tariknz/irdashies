@@ -4,7 +4,7 @@ export interface DriverRatingBadgeProps {
 }
 
 export const DriverRatingBadge = ({
-  license = 'R',
+  license = 'R 0.0',
   rating = 0,
 }: DriverRatingBadgeProps) => {
   const licenseLevel = license?.charAt(0) || 'R';
@@ -20,8 +20,11 @@ export const DriverRatingBadge = ({
   if (rating >= 10000) fixed = 0;
   const simplifiedRating = (rating / 1000).toFixed(fixed);
   
-  // Format the license string to remove leading zeros only when they're before a non-zero digit
-  const formattedLicense = license?.replace(/([A-Z]) 0+([1-9]\d*\.\d+)/, '$1 $2') || 'R';
+  // Format the license string to show license level and single decimal rating
+  const formattedLicense = license?.replace(/([A-Z])\s*(\d+)\.(\d+)/, (_, level, whole, decimal) => {
+    const rating = parseFloat(`${whole}.${decimal}`);
+    return `${level} ${rating.toFixed(1)}`;
+  }) || 'R 0.0';
   
   return (
     <div
