@@ -1,15 +1,9 @@
 import { useState } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import { useDashboard } from '@irdashies/context';
+import { RelativeWidgetSettings } from '../types';
 
 const SETTING_ID = 'relative';
-
-interface RelativeWidgetSettings {
-  enabled: boolean;
-  config: {
-    buffer: number;
-  };
-}
 
 const defaultConfig: RelativeWidgetSettings['config'] = {
   buffer: 3,
