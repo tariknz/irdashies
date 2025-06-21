@@ -1,4 +1,4 @@
-import { Meta } from '@storybook/react';
+import { Meta } from '@storybook/react-vite';
 import { EditMode } from './EditMode';
 import { DashboardProvider } from '@irdashies/context';
 import type { DashboardBridge } from '@irdashies/types';

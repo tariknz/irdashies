@@ -1,4 +1,4 @@
-import { Meta } from '@storybook/react';
+import { Meta } from '@storybook/react-vite';
 import { useTelemetry } from '@irdashies/context';
 
 export default {} as Meta;

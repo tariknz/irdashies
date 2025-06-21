@@ -1,4 +1,4 @@
-import { Meta, StoryObj } from '@storybook/react';
+import { Meta, StoryObj } from '@storybook/react-vite';
 import { DriverInfoRow } from './DriverInfoRow';
 import { DriverRatingBadge } from '../DriverRatingBadge/DriverRatingBadge';
 import { useAutoAnimate } from '@formkit/auto-animate/react';

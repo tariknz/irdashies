@@ -1,4 +1,4 @@
-import { Meta, StoryObj } from '@storybook/react';
+import { Meta, StoryObj } from '@storybook/react-vite';
 import { FasterCarsFromBehind } from './FasterCarsFromBehind';
 import { TelemetryDecorator } from '@irdashies/storybook';
 

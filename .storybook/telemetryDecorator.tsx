@@ -1,4 +1,4 @@
-import { Decorator } from '@storybook/react';
+import { Decorator } from '@storybook/react-vite';
 import { DashboardProvider, SessionProvider, TelemetryProvider } from '@irdashies/context';
 import { generateMockDataFromPath } from '../src/app/bridge/iracingSdk/mock-data/generateMockData';
 import { mockDashboardBridge } from './mockDashboardBridge';

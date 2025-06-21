@@ -1,4 +1,4 @@
-import { Meta, StoryObj } from '@storybook/react';
+import { Meta, StoryObj } from '@storybook/react-vite';
 import { SessionBar } from './SessionBar';
 import { TelemetryDecorator } from '../../../../../../.storybook/telemetryDecorator';
 

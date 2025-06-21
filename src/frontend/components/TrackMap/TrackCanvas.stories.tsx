@@ -1,4 +1,4 @@
-import { Meta, StoryObj } from '@storybook/react';
+import { Meta, StoryObj } from '@storybook/react-vite';
 import { TrackCanvas, TrackDriver } from './TrackCanvas';
 import { useEffect, useState } from 'react';
 

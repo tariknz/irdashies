@@ -1,4 +1,4 @@
-import { Meta } from '@storybook/react';
+import { Meta } from '@storybook/react-vite';
 import { ThemeManager } from './ThemeManager';
 import { TelemetryDecorator } from '@irdashies/storybook';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
