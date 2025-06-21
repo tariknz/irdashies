@@ -22,8 +22,8 @@ export const DriverRatingBadge = ({
   
   // Format the license string to show license level and single decimal rating
   const formattedLicense = license?.replace(/([A-Z])\s*(\d+)\.(\d+)/, (_, level, whole, decimal) => {
-    const rating = parseFloat(`${whole}.${decimal}`);
-    return `${level} ${rating.toFixed(1)}`;
+    const parsedRating = parseFloat(`${whole}.${decimal}`);
+    return `${level} ${parsedRating.toFixed(1)}`;
   }) || 'R 0.0';
   
   return (
