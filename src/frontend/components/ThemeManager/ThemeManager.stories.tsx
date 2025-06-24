@@ -19,20 +19,23 @@ export default meta;
 const createMockBridge = (
   fontSize: 'xs' | 'sm' | 'lg' | 'xl',
   setFontSize: (size: 'xs' | 'sm' | 'lg' | 'xl') => void,
+  colorPalette: 'default' | 'black',
+  setColorPalette: (palette: 'default' | 'black') => void,
   widgets: DashboardLayout['widgets'] = []
 ): DashboardBridge => ({
   reloadDashboard: () => {
     // noop
   },
   saveDashboard: (dashboard: DashboardLayout) => {
-    // Update the font size in the dashboard
+    // Update the font size and color palette in the dashboard
     setFontSize(dashboard.generalSettings?.fontSize || 'sm');
+    setColorPalette((dashboard.generalSettings?.colorPalette as 'default' | 'black') || 'default');
   },
   dashboardUpdated: (callback) => {
-    // Initialize with current font size
+    // Initialize with current font size and color palette
     callback({
       widgets,
-      generalSettings: { fontSize },
+      generalSettings: { fontSize, colorPalette },
     });
     return () => {
       // noop
@@ -49,13 +52,14 @@ const createMockBridge = (
   resetDashboard: () =>
     Promise.resolve({
       widgets: [],
-      generalSettings: { fontSize },
+      generalSettings: { fontSize, colorPalette },
     }),
 });
 
-// Helper function to create font size buttons
-const createFontSizeButtons = (
+// Helper function to create theme controls (font size buttons and color palette dropdown)
+const createThemeControls = (
   fontSize: 'xs' | 'sm' | 'lg' | 'xl',
+  colorPalette: 'default' | 'black',
   mockBridge: DashboardBridge
 ) => {
   const getButtonClass = (size: 'xs' | 'sm' | 'lg' | 'xl') => {
@@ -66,51 +70,72 @@ const createFontSizeButtons = (
   };
 
   return (
-    <div className="flex gap-2">
-      <button
-        className={getButtonClass('xs')}
-        onClick={() =>
-          mockBridge.saveDashboard({
-            widgets: [],
-            generalSettings: { fontSize: 'xs' },
-          })
-        }
-      >
-        Extra Small
-      </button>
-      <button
-        className={getButtonClass('sm')}
-        onClick={() =>
-          mockBridge.saveDashboard({
-            widgets: [],
-            generalSettings: { fontSize: 'sm' },
-          })
-        }
-      >
-        Small
-      </button>
-      <button
-        className={getButtonClass('lg')}
-        onClick={() =>
-          mockBridge.saveDashboard({
-            widgets: [],
-            generalSettings: { fontSize: 'lg' },
-          })
-        }
-      >
-        Large
-      </button>
-      <button
-        className={getButtonClass('xl')}
-        onClick={() =>
-          mockBridge.saveDashboard({
-            widgets: [],
-            generalSettings: { fontSize: 'xl' },
-          })
-        }
-      >
-        Extra Large
-      </button>
+    <div className="flex flex-col gap-4">
+      <div className="flex gap-2">
+        <button
+          className={getButtonClass('xs')}
+          onClick={() =>
+            mockBridge.saveDashboard({
+              widgets: [],
+              generalSettings: { fontSize: 'xs', colorPalette },
+            })
+          }
+        >
+          Extra Small
+        </button>
+        <button
+          className={getButtonClass('sm')}
+          onClick={() =>
+            mockBridge.saveDashboard({
+              widgets: [],
+              generalSettings: { fontSize: 'sm', colorPalette },
+            })
+          }
+        >
+          Small
+        </button>
+        <button
+          className={getButtonClass('lg')}
+          onClick={() =>
+            mockBridge.saveDashboard({
+              widgets: [],
+              generalSettings: { fontSize: 'lg', colorPalette },
+            })
+          }
+        >
+          Large
+        </button>
+        <button
+          className={getButtonClass('xl')}
+          onClick={() =>
+            mockBridge.saveDashboard({
+              widgets: [],
+              generalSettings: { fontSize: 'xl', colorPalette },
+            })
+          }
+        >
+          Extra Large
+        </button>
+      </div>
+      <div className="flex items-center gap-2">
+        <label htmlFor="colorPalette" className="text-[12px]">
+          Color Palette:
+        </label>
+        <select
+          id="colorPalette"
+          value={colorPalette}
+          onChange={(e) =>
+            mockBridge.saveDashboard({
+              widgets: [],
+              generalSettings: { fontSize, colorPalette: e.target.value as 'default' | 'black' },
+            })
+          }
+          className="px-2 py-1 rounded border text-[12px]"
+        >
+          <option value="default">Default</option>
+          <option value="black">Black</option>
+        </select>
+      </div>
     </div>
   );
 };
@@ -143,15 +168,16 @@ export const Primary = {
 export const WithFontSizeControls = {
   render: () => {
     const [fontSize, setFontSize] = useState<'xs' | 'sm' | 'lg' | 'xl'>('sm');
-    const mockBridge = createMockBridge(fontSize, setFontSize);
+    const [colorPalette, setColorPalette] = useState<'default' | 'black'>('default');
+    const mockBridge = createMockBridge(fontSize, setFontSize, colorPalette, setColorPalette);
 
     return (
       <DashboardProvider bridge={mockBridge}>
         <MemoryRouter initialEntries={['/']}>
           <ThemeManager>
             <div className="p-4 space-y-4">
-              {createFontSizeButtons(fontSize, mockBridge)}
-              <div className="space-y-2">
+              {createThemeControls(fontSize, colorPalette, mockBridge)}
+              <div className="space-y-2 bg-slate-800/25 rounded-sm p-2">
                 <div className="text-xs">This is extra small text</div>
                 <div className="text-sm">This is small text</div>
                 <div className="text-base">This is base text</div>
@@ -169,14 +195,15 @@ export const WithFontSizeControls = {
 export const WithAllAvailableWidgets = {
   render: () => {
     const [fontSize, setFontSize] = useState<'xs' | 'sm' | 'lg' | 'xl'>('sm');
-    const mockBridge = createMockBridge(fontSize, setFontSize, defaultDashboard.widgets);
+    const [colorPalette, setColorPalette] = useState<'default' | 'black'>('default');
+    const mockBridge = createMockBridge(fontSize, setFontSize, colorPalette, setColorPalette, defaultDashboard.widgets);
 
     return (
       <DashboardProvider bridge={mockBridge}>
         <MemoryRouter initialEntries={['/']}>
           <ThemeManager>
             <div className="p-4 space-y-4">
-              {createFontSizeButtons(fontSize, mockBridge)}
+              {createThemeControls(fontSize, colorPalette, mockBridge)}
             </div>
             <hr className="my-4" />
             <Routes>

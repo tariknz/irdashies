@@ -61,3 +61,17 @@ html {
   --text-lg: 20px;
   --text-xl: 22px;
 }
+
+.overlay-window.overlay-theme-color-black {
+  --color-slate-50: oklch(0.98 0 0);
+  --color-slate-100: oklch(0.95 0 0);
+  --color-slate-200: oklch(0.9 0 0);
+  --color-slate-300: oklch(0.8 0 0);
+  --color-slate-400: oklch(0.65 0 0);
+  --color-slate-500: oklch(0.5 0 0);
+  --color-slate-600: oklch(0.4 0 0);
+  --color-slate-700: oklch(0.3 0 0);
+  --color-slate-800: oklch(0.2 0 0);
+  --color-slate-900: oklch(0.1 0 0);
+  --color-slate-950: oklch(0.05 0 0);
+}
