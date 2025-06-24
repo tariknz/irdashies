@@ -19,8 +19,8 @@ export default meta;
 const createMockBridge = (
   fontSize: 'xs' | 'sm' | 'lg' | 'xl',
   setFontSize: (size: 'xs' | 'sm' | 'lg' | 'xl') => void,
-  colorPalette: 'default' | 'black',
-  setColorPalette: (palette: 'default' | 'black') => void,
+  colorPalette: 'default' | string,
+  setColorPalette: (palette: 'default' | string) => void,
   widgets: DashboardLayout['widgets'] = []
 ): DashboardBridge => ({
   reloadDashboard: () => {
@@ -29,7 +29,7 @@ const createMockBridge = (
   saveDashboard: (dashboard: DashboardLayout) => {
     // Update the font size and color palette in the dashboard
     setFontSize(dashboard.generalSettings?.fontSize || 'sm');
-    setColorPalette((dashboard.generalSettings?.colorPalette as 'default' | 'black') || 'default');
+    setColorPalette(dashboard.generalSettings?.colorPalette  || 'default');
   },
   dashboardUpdated: (callback) => {
     // Initialize with current font size and color palette
@@ -59,7 +59,7 @@ const createMockBridge = (
 // Helper function to create theme controls (font size buttons and color palette dropdown)
 const createThemeControls = (
   fontSize: 'xs' | 'sm' | 'lg' | 'xl',
-  colorPalette: 'default' | 'black',
+  colorPalette: 'default' | string,
   mockBridge: DashboardBridge
 ) => {
   const getButtonClass = (size: 'xs' | 'sm' | 'lg' | 'xl') => {
@@ -127,7 +127,7 @@ const createThemeControls = (
           onChange={(e) =>
             mockBridge.saveDashboard({
               widgets: [],
-              generalSettings: { fontSize, colorPalette: e.target.value as 'default' | 'black' },
+              generalSettings: { fontSize, colorPalette: e.target.value as 'default' | string },
             })
           }
           className="px-2 py-1 rounded border text-[12px]"
@@ -168,7 +168,7 @@ export const Primary = {
 export const WithFontSizeControls = {
   render: () => {
     const [fontSize, setFontSize] = useState<'xs' | 'sm' | 'lg' | 'xl'>('sm');
-    const [colorPalette, setColorPalette] = useState<'default' | 'black'>('default');
+    const [colorPalette, setColorPalette] = useState<'default' | string>('default');
     const mockBridge = createMockBridge(fontSize, setFontSize, colorPalette, setColorPalette);
 
     return (
@@ -195,7 +195,7 @@ export const WithFontSizeControls = {
 export const WithAllAvailableWidgets = {
   render: () => {
     const [fontSize, setFontSize] = useState<'xs' | 'sm' | 'lg' | 'xl'>('sm');
-    const [colorPalette, setColorPalette] = useState<'default' | 'black'>('default');
+    const [colorPalette, setColorPalette] = useState<'default' | string>('default');
     const mockBridge = createMockBridge(fontSize, setFontSize, colorPalette, setColorPalette, defaultDashboard.widgets);
 
     return (

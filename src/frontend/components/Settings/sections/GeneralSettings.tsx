@@ -9,10 +9,16 @@ const FONT_SIZE_PRESETS = {
   xl: 'Extra Large',
 };
 
+const COLOR_THEME_PRESETS = {
+  default: 'Slate (default)',
+  black: 'Black',
+};
+
 export const GeneralSettings = () => {
   const { currentDashboard, onDashboardUpdated } = useDashboard();
   const [settings, setSettings] = useState<GeneralSettingsType>({
     fontSize: currentDashboard?.generalSettings?.fontSize ?? 'sm',
+    colorPalette: currentDashboard?.generalSettings?.colorPalette ?? 'default',
   });
 
   if (!currentDashboard || !onDashboardUpdated) {
@@ -29,6 +35,12 @@ export const GeneralSettings = () => {
 
   const handleFontSizeChange = (newSize: 'xs' | 'sm' | 'lg' | 'xl') => {
     const newSettings = { ...settings, fontSize: newSize };
+    setSettings(newSettings);
+    updateDashboard(newSettings);
+  };
+
+  const handleColorThemeChange = (newTheme: 'default' | 'black') => {
+    const newSettings = { ...settings, colorPalette: newTheme };
     setSettings(newSettings);
     updateDashboard(newSettings);
   };
@@ -91,6 +103,28 @@ export const GeneralSettings = () => {
           >
             {FONT_SIZE_PRESETS.xl}
           </button>
+        </div>
+      </div>
+
+      {/* Color Theme Settings */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-medium text-slate-200">Color Theme</h3>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-slate-300">{COLOR_THEME_PRESETS[settings.colorPalette as keyof typeof COLOR_THEME_PRESETS ?? 'default']}</span>
+          </div>
+        </div>
+
+        {/* Color Theme Dropdown */}
+        <div className="mt-4">
+          <select
+            value={settings.colorPalette ?? 'default'}
+            onChange={(e) => handleColorThemeChange(e.target.value as 'default' | 'black')}
+            className="w-full px-3 py-2 bg-slate-700 text-slate-300 rounded border border-slate-600 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          >
+            <option value="default">{COLOR_THEME_PRESETS.default}</option>
+            <option value="black">{COLOR_THEME_PRESETS.black}</option>
+          </select>
         </div>
       </div>
     </div>
