@@ -9,7 +9,7 @@ const FONT_SIZE_PRESETS = {
   xl: 'Extra Large',
 };
 
-const COLOR_THEME_PRESETS = {
+const COLOR_THEME_PRESETS: Record<string, string> = {
   default: 'Slate (default)',
   black: 'Black',
 };
@@ -111,7 +111,7 @@ export const GeneralSettings = () => {
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-medium text-slate-200">Color Theme</h3>
           <div className="flex items-center gap-2">
-            <span className="text-sm text-slate-300">{COLOR_THEME_PRESETS[settings.colorPalette as keyof typeof COLOR_THEME_PRESETS ?? 'default']}</span>
+            <span className="text-sm text-slate-300">{COLOR_THEME_PRESETS[settings.colorPalette ?? 'default']}</span>
           </div>
         </div>
 

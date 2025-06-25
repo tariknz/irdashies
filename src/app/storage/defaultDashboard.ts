@@ -92,5 +92,6 @@ export const defaultDashboard: DashboardLayout = {
   ],
   generalSettings: {
     fontSize: 'sm',
+    colorPalette: 'default',
   },
 };
