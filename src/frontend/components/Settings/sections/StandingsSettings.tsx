@@ -12,6 +12,7 @@ const defaultConfig: StandingsWidgetSettings['config'] = {
   delta: { enabled: true },
   lastTime: { enabled: true },
   fastestTime: { enabled: true },
+  background: { opacity: 0 },
 };
 
 // Migration function to handle missing properties in the new config format
@@ -27,6 +28,7 @@ const migrateConfig = (savedConfig: unknown): StandingsWidgetSettings['config'] 
     delta: { enabled: (config.delta as { enabled?: boolean })?.enabled ?? true },
     lastTime: { enabled: (config.lastTime as { enabled?: boolean })?.enabled ?? true },
     fastestTime: { enabled: (config.fastestTime as { enabled?: boolean })?.enabled ?? true },
+    background: { opacity: (config.background as { opacity?: number })?.opacity ?? 25 },
   };
 };
 
@@ -102,6 +104,24 @@ export const StandingsSettings = () => {
                     handleConfigChange({ fastestTime: { enabled } })
                   }
                 />
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-slate-300">Background Opacity</span>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={settings.config.background.opacity}
+                    onChange={(e) =>
+                      handleConfigChange({ background: { opacity: parseInt(e.target.value) } })
+                    }
+                    className="w-20 h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer"
+                  />
+                  <span className="text-xs text-slate-400 w-8">
+                    {settings.config.background.opacity}%
+                  </span>
+                </div>
               </div>
             </div>
           </div>

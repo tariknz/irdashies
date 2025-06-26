@@ -72,7 +72,12 @@ export const Relative = () => {
   });
 
   return (
-    <div className="w-full h-full">
+    <div 
+      className="w-full h-full bg-slate-800/[var(--bg-opacity)] rounded-sm p-2"
+      style={{
+        ['--bg-opacity' as string]: `${config?.background?.opacity ?? 0}%`,
+      }}
+    >
       <SessionBar />
       <table className="w-full table-auto text-sm border-separate border-spacing-y-0.5 mb-3 mt-3">
         <tbody ref={parent}>{rows}</tbody>

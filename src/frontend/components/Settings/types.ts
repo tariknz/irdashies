@@ -13,12 +13,14 @@ export interface StandingsWidgetSettings extends BaseWidgetSettings {
     delta: { enabled: boolean };
     lastTime: { enabled: boolean };
     fastestTime: { enabled: boolean };
+    background: { opacity: number };
   };
 }
 
 export interface RelativeWidgetSettings extends BaseWidgetSettings {
   config: {
     buffer: number;
+    background: { opacity: number };
   };
 }
 

@@ -17,6 +17,7 @@ export const defaultDashboard: DashboardLayout = {
         delta: { enabled: true },
         lastTime: { enabled: true },
         fastestTime: { enabled: true },
+        backgroundOpacity: { value: 0 },
       },
     },
     {
@@ -57,6 +58,7 @@ export const defaultDashboard: DashboardLayout = {
       },
       config: {
         buffer: 3,
+        backgroundOpacity: { value: 0 },
       },
     },
     {
@@ -77,6 +79,9 @@ export const defaultDashboard: DashboardLayout = {
         y: 1000,
         width: 160,
         height: 380,
+      },
+      config: {
+        backgroundOpacity: { value: 25 },
       },
     },
     {
