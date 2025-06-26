@@ -25,7 +25,9 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
 }
 
 export interface WeatherWidgetSettings extends BaseWidgetSettings {
-  // Add specific weather settings here
+  config: {
+    background: { opacity: number };
+  };
 }
 
 export interface TrackMapWidgetSettings extends BaseWidgetSettings {

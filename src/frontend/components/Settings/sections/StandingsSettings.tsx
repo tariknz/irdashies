@@ -28,7 +28,7 @@ const migrateConfig = (savedConfig: unknown): StandingsWidgetSettings['config'] 
     delta: { enabled: (config.delta as { enabled?: boolean })?.enabled ?? true },
     lastTime: { enabled: (config.lastTime as { enabled?: boolean })?.enabled ?? true },
     fastestTime: { enabled: (config.fastestTime as { enabled?: boolean })?.enabled ?? true },
-    background: { opacity: (config.background as { opacity?: number })?.opacity ?? 25 },
+    background: { opacity: (config.background as { opacity?: number })?.opacity ?? 0 },
   };
 };
 
