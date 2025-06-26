@@ -15,7 +15,7 @@ export const ThemeManager = ({ children }: PropsWithChildren) => {
   return (
     <div
       className={`
-        relative w-full h-full overlay-window 
+        relative w-full h-full overflow-hidden overlay-window 
         overlay-theme-${fontSize ?? 'sm'} 
         overlay-theme-color-${colorPalette ?? 'default'}
       `}
