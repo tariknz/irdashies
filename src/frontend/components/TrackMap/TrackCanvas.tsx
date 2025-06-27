@@ -144,10 +144,21 @@ export const TrackCanvas = ({ trackId, drivers }: TrackProps) => {
     const resize = () => {
       const canvas = canvasRef.current;
       if (!canvas) return;
-      const scale = window.innerWidth / 1920;
-      canvas.width = window.innerWidth;
-      canvas.height = 1080 * scale;
-      ctx.scale(scale, scale);
+      
+      // Get device pixel ratio for high-DPI displays
+      const dpr = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect();
+      
+      // Set the actual canvas size in memory (scaled up for high-DPI)
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      
+      // Scale the drawing context so everything draws at the correct size
+      ctx.scale(dpr, dpr);
+      
+      // Set the CSS size to maintain the same visual size
+      canvas.style.width = rect.width + 'px';
+      canvas.style.height = rect.height + 'px';
     };
 
     resize();
@@ -164,7 +175,26 @@ export const TrackCanvas = ({ trackId, drivers }: TrackProps) => {
     if (!canvas || !ctx || !path2DObjects) return;
 
     const draw = () => {
-      ctx.clearRect(0, 0, 1920, 1080);
+      const rect = canvas.getBoundingClientRect();
+      
+      // Clear the entire canvas
+      ctx.clearRect(0, 0, rect.width, rect.height);
+      
+      // Calculate scale to fit the 1920x1080 track into the current canvas size
+      const scaleX = rect.width / 1920;
+      const scaleY = rect.height / 1080;
+      const scale = Math.min(scaleX, scaleY); // Maintain aspect ratio
+      
+      // Calculate centering offset
+      const offsetX = (rect.width - 1920 * scale) / 2;
+      const offsetY = (rect.height - 1080 * scale) / 2;
+      
+      // Save context state
+      ctx.save();
+      
+      // Apply scaling and centering
+      ctx.translate(offsetX, offsetY);
+      ctx.scale(scale, scale);
 
       // Shadow
       ctx.shadowColor = 'black';
@@ -213,6 +243,9 @@ export const TrackCanvas = ({ trackId, drivers }: TrackProps) => {
           ctx.font = '2rem sans-serif';
           ctx.fillText(driver.CarNumber, position.x, position.y);
         });
+      
+      // Restore context state
+      ctx.restore();
     };
 
     // Only animate if positions have changed
@@ -251,9 +284,7 @@ export const TrackCanvas = ({ trackId, drivers }: TrackProps) => {
       )}
       <div className="overflow-hidden w-full h-full">
         <canvas
-          className="will-change-transform"
-          width={1920}
-          height={1080}
+          className="will-change-transform w-full h-full"
           ref={canvasRef}
         ></canvas>
       </div>
