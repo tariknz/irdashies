@@ -32,6 +32,9 @@ export interface TrackDrawing {
   }[];
 }
 
+// currently its a bit messy with the turns, so we disable them for now
+const ENABLE_TURNS = false;
+
 export const TrackCanvas = ({ trackId, drivers }: TrackProps) => {
   const [positions, setPositions] = useState<
     Record<number, TrackDriver & { position: { x: number; y: number } }>
@@ -40,7 +43,9 @@ export const TrackCanvas = ({ trackId, drivers }: TrackProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationFrameIdRef = useRef<number | null>(null);
   const lastDriversRef = useRef<TrackDriver[]>([]);
-  const lastPositionsRef = useRef<Record<number, TrackDriver & { position: { x: number; y: number } }>>({});
+  const lastPositionsRef = useRef<
+    Record<number, TrackDriver & { position: { x: number; y: number } }>
+  >({});
 
   // Memoize the SVG path element
   const line = useMemo(() => {
@@ -55,18 +60,23 @@ export const TrackCanvas = ({ trackId, drivers }: TrackProps) => {
 
   // Memoize Path2D objects
   const path2DObjects = useMemo(() => {
-    if (!trackDrawing?.active?.inside || !trackDrawing?.startFinish?.line) return null;
-    
+    if (!trackDrawing?.active?.inside || !trackDrawing?.startFinish?.line)
+      return null;
+
     return {
-      inside: trackDrawing.active.inside ? new Path2D(trackDrawing.active.inside) : null,
-      startFinish: trackDrawing.startFinish.line ? new Path2D(trackDrawing.startFinish.line) : null,
+      inside: trackDrawing.active.inside
+        ? new Path2D(trackDrawing.active.inside)
+        : null,
+      startFinish: trackDrawing.startFinish.line
+        ? new Path2D(trackDrawing.startFinish.line)
+        : null,
     };
   }, [trackDrawing?.active?.inside, trackDrawing?.startFinish?.line]);
 
   // Memoize color calculations
   const driverColors = useMemo(() => {
     const colors: Record<number, { fill: string; text: string }> = {};
-    
+
     drivers?.forEach(({ driver, isPlayer }) => {
       if (isPlayer) {
         colors[driver.CarIdx] = { fill: getColor('yellow'), text: 'white' };
@@ -75,46 +85,55 @@ export const TrackCanvas = ({ trackId, drivers }: TrackProps) => {
         colors[driver.CarIdx] = { fill: style.canvasFill, text: 'white' };
       }
     });
-    
+
     return colors;
   }, [drivers]);
 
   // Memoize track constants
   const trackConstants = useMemo(() => {
     if (!line || !trackDrawing?.startFinish?.point?.length) return null;
-    
+
     const direction = trackDrawing.startFinish.direction;
     const intersectionLength = trackDrawing.startFinish.point.length;
     const totalLength = line.getTotalLength();
-    
+
     return { direction, intersectionLength, totalLength };
-  }, [line, trackDrawing?.startFinish?.direction, trackDrawing?.startFinish?.point?.length]);
+  }, [
+    line,
+    trackDrawing?.startFinish?.direction,
+    trackDrawing?.startFinish?.point?.length,
+  ]);
 
   // Optimized position calculation
-  const updateCarPosition = useCallback((percent: number) => {
-    if (!trackConstants) return { x: 0, y: 0 };
-    
-    const { direction, intersectionLength, totalLength } = trackConstants;
-    const adjustedLength = (totalLength * percent) % totalLength;
-    const length =
-      direction === 'anticlockwise'
-        ? (intersectionLength + adjustedLength) % totalLength
-        : (intersectionLength - adjustedLength + totalLength) % totalLength;
-    const point = line?.getPointAtLength(length);
+  const updateCarPosition = useCallback(
+    (percent: number) => {
+      if (!trackConstants) return { x: 0, y: 0 };
 
-    return { x: point?.x || 0, y: point?.y || 0 };
-  }, [trackConstants, line]);
+      const { direction, intersectionLength, totalLength } = trackConstants;
+      const adjustedLength = (totalLength * percent) % totalLength;
+      const length =
+        direction === 'anticlockwise'
+          ? (intersectionLength + adjustedLength) % totalLength
+          : (intersectionLength - adjustedLength + totalLength) % totalLength;
+      const point = line?.getPointAtLength(length);
+
+      return { x: point?.x || 0, y: point?.y || 0 };
+    },
+    [trackConstants, line]
+  );
 
   // Check if drivers have actually changed
   const driversChanged = useMemo(() => {
     if (drivers.length !== lastDriversRef.current.length) return true;
-    
+
     return drivers.some((driver, index) => {
       const lastDriver = lastDriversRef.current[index];
-      return !lastDriver || 
-             driver.driver.CarIdx !== lastDriver.driver.CarIdx ||
-             Math.abs(driver.progress - lastDriver.progress) > 0.001 ||
-             driver.isPlayer !== lastDriver.isPlayer;
+      return (
+        !lastDriver ||
+        driver.driver.CarIdx !== lastDriver.driver.CarIdx ||
+        Math.abs(driver.progress - lastDriver.progress) > 0.001 ||
+        driver.isPlayer !== lastDriver.isPlayer
+      );
     });
   }, [drivers]);
 
@@ -144,18 +163,18 @@ export const TrackCanvas = ({ trackId, drivers }: TrackProps) => {
     const resize = () => {
       const canvas = canvasRef.current;
       if (!canvas) return;
-      
+
       // Get device pixel ratio for high-DPI displays
       const dpr = window.devicePixelRatio || 1;
       const rect = canvas.getBoundingClientRect();
-      
+
       // Set the actual canvas size in memory (scaled up for high-DPI)
       canvas.width = rect.width * dpr;
       canvas.height = rect.height * dpr;
-      
+
       // Scale the drawing context so everything draws at the correct size
       ctx.scale(dpr, dpr);
-      
+
       // Set the CSS size to maintain the same visual size
       canvas.style.width = rect.width + 'px';
       canvas.style.height = rect.height + 'px';
@@ -176,22 +195,22 @@ export const TrackCanvas = ({ trackId, drivers }: TrackProps) => {
 
     const draw = () => {
       const rect = canvas.getBoundingClientRect();
-      
+
       // Clear the entire canvas
       ctx.clearRect(0, 0, rect.width, rect.height);
-      
+
       // Calculate scale to fit the 1920x1080 track into the current canvas size
       const scaleX = rect.width / 1920;
       const scaleY = rect.height / 1080;
       const scale = Math.min(scaleX, scaleY); // Maintain aspect ratio
-      
+
       // Calculate centering offset
       const offsetX = (rect.width - 1920 * scale) / 2;
       const offsetY = (rect.height - 1080 * scale) / 2;
-      
+
       // Save context state
       ctx.save();
-      
+
       // Apply scaling and centering
       ctx.translate(offsetX, offsetY);
       ctx.scale(scale, scale);
@@ -217,14 +236,16 @@ export const TrackCanvas = ({ trackId, drivers }: TrackProps) => {
       }
 
       // Draw turn numbers
-      trackDrawing.turns?.forEach((turn) => {
-        if (!turn.content || !turn.x || !turn.y) return;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillStyle = 'white';
-        ctx.font = '2rem sans-serif';
-        ctx.fillText(turn.content, turn.x, turn.y);
-      });
+      if (ENABLE_TURNS) {
+        trackDrawing.turns?.forEach((turn) => {
+          if (!turn.content || !turn.x || !turn.y) return;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillStyle = 'white';
+          ctx.font = '2rem sans-serif';
+          ctx.fillText(turn.content, turn.x, turn.y);
+        });
+      }
 
       // Draw drivers
       Object.values(positions)
@@ -232,7 +253,7 @@ export const TrackCanvas = ({ trackId, drivers }: TrackProps) => {
         .forEach(({ driver, position }) => {
           const color = driverColors[driver.CarIdx];
           if (!color) return;
-          
+
           ctx.fillStyle = color.fill;
           ctx.beginPath();
           ctx.arc(position.x, position.y, 40, 0, 2 * Math.PI);
@@ -243,17 +264,15 @@ export const TrackCanvas = ({ trackId, drivers }: TrackProps) => {
           ctx.font = '2rem sans-serif';
           ctx.fillText(driver.CarNumber, position.x, position.y);
         });
-      
+
       // Restore context state
       ctx.restore();
     };
 
     // Only animate if positions have changed
     const animate = () => {
-      if (JSON.stringify(positions) !== JSON.stringify(lastPositionsRef.current)) {
-        draw();
-        lastPositionsRef.current = { ...positions };
-      }
+      draw();
+      lastPositionsRef.current = { ...positions };
       animationFrameIdRef.current = requestAnimationFrame(animate);
     };
 
@@ -266,21 +285,16 @@ export const TrackCanvas = ({ trackId, drivers }: TrackProps) => {
         cancelAnimationFrame(animationFrameIdRef.current);
       }
     };
-  }, [
-    positions,
-    path2DObjects,
-    trackDrawing?.turns,
-    driverColors,
-  ]);
+  }, [positions, path2DObjects, trackDrawing?.turns, driverColors]);
 
   if (!trackDrawing?.active?.inside) {
-    return <>Track map unavailable</>;
+    return <div className="text-sm text-center p-4">Track map unavailable</div>;
   }
 
   return (
     <>
       {!trackDrawing?.startFinish?.point && (
-        <p className="text-sm">Track start point unavailable</p>
+        <p className="text-sm text-center p-8">Track start point unavailable</p>
       )}
       <div className="overflow-hidden w-full h-full">
         <canvas

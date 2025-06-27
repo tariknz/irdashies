@@ -1,6 +1,7 @@
 import { Meta, StoryObj } from '@storybook/react-vite';
 import { TrackCanvas, TrackDriver } from './TrackCanvas';
 import { useEffect, useState } from 'react';
+import tracks from './tracks/tracks.json';
 
 export default {
   component: TrackCanvas,
@@ -304,5 +305,65 @@ export const CirclingAround: Story = {
   args: {
     trackId: 1,
     drivers: sampleData,
+  },
+};
+
+// All available track IDs from tracks.json
+const allTrackIds = Object.keys(tracks)
+  .map(Number)
+  .filter(trackId => !isNaN(trackId) && tracks[trackId.toString() as keyof typeof tracks])
+  .sort((a, b) => a - b);
+
+// Single driver data for each track
+const singleDriver = [
+  {
+    driver: {
+      CarIdx: 1,
+      CarNumber: '1',
+      CarClassColor: 16767577,
+      CarClassEstLapTime: 120.0,
+    },
+    progress: 0.5,
+    isPlayer: true,
+  },
+] as TrackDriver[];
+
+export const AllTracksGrid: Story = {
+  render: () => {
+    const trackSize = 150;
+
+    return (
+      <div className="p-4 bg-gray-900 min-h-screen font-sans">
+        <h1 className="text-white text-center mb-6 text-2xl">
+          All Available Tracks ({allTrackIds.length} total)
+        </h1>
+        <div 
+          className="grid gap-4 justify-center mx-auto"
+          style={{
+            gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+            maxWidth: '100%',
+            width: '100%'
+          }}
+        >
+          {allTrackIds.map((trackId) => (
+            <div 
+              key={trackId} 
+              className="border border-gray-600 rounded-lg overflow-hidden bg-gray-800 relative aspect-square"
+              style={{ maxWidth: trackSize, maxHeight: trackSize }}
+            >
+              <div className="absolute top-1 left-1 bg-black bg-opacity-70 text-white px-2 py-1 rounded text-xs z-10">
+                Track {trackId}
+              </div>
+              <div className="w-full h-full">
+                <TrackCanvas 
+                  trackId={trackId} 
+                  drivers={singleDriver} 
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
   },
 };
