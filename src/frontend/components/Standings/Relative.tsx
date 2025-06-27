@@ -73,7 +73,7 @@ export const Relative = () => {
 
   return (
     <div 
-      className="w-full h-full bg-slate-800/[var(--bg-opacity)] rounded-sm p-2"
+      className="w-full bg-slate-800/[var(--bg-opacity)] rounded-sm p-2"
       style={{
         ['--bg-opacity' as string]: `${config?.background?.opacity ?? 0}%`,
       }}
