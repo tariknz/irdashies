@@ -35,6 +35,9 @@ export interface TrackDrawing {
 // currently its a bit messy with the turns, so we disable them for now
 const ENABLE_TURNS = false;
 
+// Throttle position updates to 2fps (500ms interval)
+const POSITION_UPDATE_INTERVAL = 500;
+
 export const TrackCanvas = ({ trackId, drivers }: TrackProps) => {
   const [positions, setPositions] = useState<
     Record<number, TrackDriver & { position: { x: number; y: number } }>
@@ -46,6 +49,8 @@ export const TrackCanvas = ({ trackId, drivers }: TrackProps) => {
   const lastPositionsRef = useRef<
     Record<number, TrackDriver & { position: { x: number; y: number } }>
   >({});
+  const lastUpdateTimeRef = useRef<number>(0);
+  const pendingDriversRef = useRef<TrackDriver[]>([]);
 
   // Memoize the SVG path element
   const line = useMemo(() => {
@@ -137,24 +142,61 @@ export const TrackCanvas = ({ trackId, drivers }: TrackProps) => {
     });
   }, [drivers]);
 
+  // Throttled position update effect
   useEffect(() => {
-    if (!trackConstants || !drivers?.length || !driversChanged) return;
+    if (!trackConstants || !drivers?.length) return;
 
-    const updatedPositions = drivers.reduce(
-      (acc, { driver, progress, isPlayer }) => {
-        const position = updateCarPosition(progress);
-        return {
-          ...acc,
-          [driver.CarIdx]: { position, driver, isPlayer, progress },
-        };
-      },
-      {} as Record<number, TrackDriver & { position: { x: number; y: number } }>
-    );
+    // Store the latest drivers data
+    pendingDriversRef.current = drivers;
 
-    setPositions(updatedPositions);
-    lastDriversRef.current = drivers;
-    lastPositionsRef.current = updatedPositions;
+    const now = Date.now();
+    const timeSinceLastUpdate = now - lastUpdateTimeRef.current;
+
+    // Only update positions if enough time has passed or if drivers have changed significantly
+    if (timeSinceLastUpdate >= POSITION_UPDATE_INTERVAL || driversChanged) {
+      const updatedPositions = drivers.reduce(
+        (acc, { driver, progress, isPlayer }) => {
+          const position = updateCarPosition(progress);
+          return {
+            ...acc,
+            [driver.CarIdx]: { position, driver, isPlayer, progress },
+          };
+        },
+        {} as Record<number, TrackDriver & { position: { x: number; y: number } }>
+      );
+
+      setPositions(updatedPositions);
+      lastDriversRef.current = drivers;
+      lastPositionsRef.current = updatedPositions;
+      lastUpdateTimeRef.current = now;
+    }
   }, [drivers, trackConstants, updateCarPosition, driversChanged]);
+
+  // Set up a timer for periodic position updates
+  useEffect(() => {
+    if (!trackConstants) return;
+
+    const intervalId = setInterval(() => {
+      const pendingDrivers = pendingDriversRef.current;
+      if (!pendingDrivers?.length) return;
+
+      const updatedPositions = pendingDrivers.reduce(
+        (acc, { driver, progress, isPlayer }) => {
+          const position = updateCarPosition(progress);
+          return {
+            ...acc,
+            [driver.CarIdx]: { position, driver, isPlayer, progress },
+          };
+        },
+        {} as Record<number, TrackDriver & { position: { x: number; y: number } }>
+      );
+
+      setPositions(updatedPositions);
+      lastPositionsRef.current = updatedPositions;
+    }, POSITION_UPDATE_INTERVAL);
+
+    return () => clearInterval(intervalId);
+  }, [trackConstants, updateCarPosition]);
 
   useEffect(() => {
     const ctx = canvasRef.current?.getContext('2d');
@@ -269,10 +311,35 @@ export const TrackCanvas = ({ trackId, drivers }: TrackProps) => {
       ctx.restore();
     };
 
+    // Check if positions have actually changed
+    const positionsChanged = () => {
+      const currentPositions = Object.keys(positions);
+      const lastPositions = Object.keys(lastPositionsRef.current);
+      
+      if (currentPositions.length !== lastPositions.length) return true;
+      
+      return currentPositions.some(key => {
+        const carIdx = parseInt(key);
+        const current = positions[carIdx];
+        const last = lastPositionsRef.current[carIdx];
+        
+        if (!current || !last) return true;
+        
+        return (
+          Math.abs(current.position.x - last.position.x) > 0.1 ||
+          Math.abs(current.position.y - last.position.y) > 0.1 ||
+          current.isPlayer !== last.isPlayer ||
+          current.driver.CarNumber !== last.driver.CarNumber
+        );
+      });
+    };
+
     // Only animate if positions have changed
     const animate = () => {
-      draw();
-      lastPositionsRef.current = { ...positions };
+      if (positionsChanged()) {
+        draw();
+        lastPositionsRef.current = { ...positions };
+      }
       animationFrameIdRef.current = requestAnimationFrame(animate);
     };
 
