@@ -38,6 +38,9 @@ const ENABLE_TURNS = false;
 // Throttle position updates to 2fps (500ms interval)
 const POSITION_UPDATE_INTERVAL = 500;
 
+const TRACK_DRAWING_WIDTH = 1920;
+const TRACK_DRAWING_HEIGHT = 1080;
+
 export const TrackCanvas = ({ trackId, drivers }: TrackProps) => {
   const [positions, setPositions] = useState<
     Record<number, TrackDriver & { position: { x: number; y: number } }>
@@ -242,13 +245,13 @@ export const TrackCanvas = ({ trackId, drivers }: TrackProps) => {
       ctx.clearRect(0, 0, rect.width, rect.height);
 
       // Calculate scale to fit the 1920x1080 track into the current canvas size
-      const scaleX = rect.width / 1920;
-      const scaleY = rect.height / 1080;
+      const scaleX = rect.width / TRACK_DRAWING_WIDTH;
+      const scaleY = rect.height / TRACK_DRAWING_HEIGHT;
       const scale = Math.min(scaleX, scaleY); // Maintain aspect ratio
 
       // Calculate centering offset
-      const offsetX = (rect.width - 1920 * scale) / 2;
-      const offsetY = (rect.height - 1080 * scale) / 2;
+      const offsetX = (rect.width - TRACK_DRAWING_WIDTH * scale) / 2;
+      const offsetY = (rect.height - TRACK_DRAWING_HEIGHT * scale) / 2;
 
       // Save context state
       ctx.save();
