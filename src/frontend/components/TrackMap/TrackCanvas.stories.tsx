@@ -314,20 +314,6 @@ const allTrackIds = Object.keys(tracks)
   .filter(trackId => !isNaN(trackId) && tracks[trackId.toString() as keyof typeof tracks])
   .sort((a, b) => a - b);
 
-// Single driver data for each track
-const singleDriver = [
-  {
-    driver: {
-      CarIdx: 1,
-      CarNumber: '1',
-      CarClassColor: 16767577,
-      CarClassEstLapTime: 120.0,
-    },
-    progress: 0.5,
-    isPlayer: true,
-  },
-] as TrackDriver[];
-
 export const AllTracksGrid: Story = {
   render: () => {
     const trackSize = 150;
@@ -357,7 +343,7 @@ export const AllTracksGrid: Story = {
               <div className="w-full h-full">
                 <TrackCanvas 
                   trackId={trackId} 
-                  drivers={singleDriver} 
+                  drivers={sampleData} 
                 />
               </div>
             </div>
