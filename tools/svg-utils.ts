@@ -109,3 +109,22 @@ export const findDirection = (trackId: number) => {
 
   return 'clockwise';
 };
+
+// Number of pre calculated points (matches the quantization in TrackCanvas)
+const PRE_CALCULATED_POINTS = 1000;
+
+// Pre calculate pointAtLength values for a given SVG path
+// this is used to find the position of the car based on the percentage of the track completed
+export const preCalculatePoints = (pathData: string): { x: number; y: number }[] => {
+  const path = new svgPathProperties(pathData);
+  const totalLength = path.getTotalLength();
+  const points: { x: number; y: number }[] = [];
+
+  for (let i = 0; i <= PRE_CALCULATED_POINTS; i++) {
+    const length = (totalLength * i) / PRE_CALCULATED_POINTS;
+    const point = path.getPointAtLength(length);
+    points.push({ x: point.x, y: point.y });
+  }
+
+  return points;
+}

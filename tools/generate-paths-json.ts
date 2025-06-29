@@ -1,6 +1,6 @@
 import fs from 'fs';
 import { JSDOM } from 'jsdom';
-import { findDirection, findIntersectionPoint } from './svg-utils';
+import { findDirection, findIntersectionPoint, preCalculatePoints } from './svg-utils';
 import { TrackDrawing } from '../src/frontend/components/TrackMap/TrackCanvas';
 
 interface TrackInfo {
@@ -85,9 +85,15 @@ export const generateTrackJson = () => {
           const firstZ = pathData.toLocaleLowerCase().indexOf('z') + 1;
           const inside = pathData.slice(0, firstZ);
           const outside = pathData.slice(firstZ);
+          
+          // Pre calculate points for the inside path to be able to find the position 
+          // based on the percentage of the track completed
+          const trackPathPoints = preCalculatePoints(inside);
+          
           acc[prop] = {
             inside,
             outside,
+            trackPathPoints,
           };
         }
 
