@@ -284,6 +284,47 @@ export const Primary: Story = {
   },
 };
 
+export const SingleDriver: Story = {
+  argTypes: {
+    progress: {
+      control: { type: 'range', min: 0, max: 1, step: 0.01 },
+      description: 'Driver progress around the track (0-1)',
+    },
+    carNumber: {
+      control: { type: 'text' },
+      description: 'Driver car number',
+    },
+    isPlayer: {
+      control: { type: 'boolean' },
+    },
+    carClassColor: {
+      control: { type: 'number' },
+      description: 'Driver car class color',
+    },
+  },
+  render: (args: any) => {
+    const drivers = [{
+      driver: {
+        CarIdx: 39,
+        CarNumber: args.carNumber || '29',
+        CarClassColor: args.carClassColor || 11430911,
+        CarClassEstLapTime: 126.2284,
+      },
+      progress: args.progress || 0,
+      isPlayer: args.isPlayer || false,
+    }] as TrackDriver[];
+
+    return <TrackCanvas trackId={args.trackId} drivers={drivers} />;
+  },
+  args: {
+    trackId: 1,
+    progress: 0,
+    carNumber: '29',
+    isPlayer: true,
+    carClassColor: 11430911,
+  },
+} as Story;
+
 export const CirclingAround: Story = {
   render: (args) => {
     const [drivers, setDrivers] = useState(args.drivers);

@@ -123,7 +123,7 @@ export const preCalculatePoints = (pathData: string): { x: number; y: number }[]
   for (let i = 0; i <= PRE_CALCULATED_POINTS; i++) {
     const length = (totalLength * i) / PRE_CALCULATED_POINTS;
     const point = path.getPointAtLength(length);
-    points.push({ x: point.x, y: point.y });
+    points.push({ x: Math.round(point.x), y: Math.round(point.y) });
   }
 
   return points;

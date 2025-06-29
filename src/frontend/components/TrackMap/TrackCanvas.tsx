@@ -19,6 +19,7 @@ export interface TrackDrawing {
     inside: string;
     outside: string;
     trackPathPoints?: { x: number; y: number }[];
+    totalLength?: number;
   };
   startFinish: {
     line?: string;
@@ -34,7 +35,7 @@ export interface TrackDrawing {
 }
 
 // currently its a bit messy with the turns, so we disable them for now
-const ENABLE_TURNS = false;
+const ENABLE_TURNS = true;
 
 const TRACK_DRAWING_WIDTH = 1920;
 const TRACK_DRAWING_HEIGHT = 1080;
@@ -78,14 +79,14 @@ export const TrackCanvas = ({ trackId, drivers }: TrackProps) => {
 
   // Position calculation based on the percentage of the track completed
   const calculatePositions = useMemo(() => {
-    if (!trackDrawing?.active?.trackPathPoints || !trackDrawing?.startFinish?.point?.length) {
+    if (!trackDrawing?.active?.trackPathPoints || !trackDrawing?.startFinish?.point?.length || !trackDrawing?.active?.totalLength) {
       return {};
     }
 
     const trackPathPoints = trackDrawing.active.trackPathPoints;
     const direction = trackDrawing.startFinish.direction;
     const intersectionLength = trackDrawing.startFinish.point.length;
-    const totalLength = trackPathPoints.length;
+    const totalLength = trackDrawing.active.totalLength;
 
     return drivers.reduce((acc, { driver, progress, isPlayer }) => {
       // Calculate position based on progress
@@ -105,7 +106,7 @@ export const TrackCanvas = ({ trackId, drivers }: TrackProps) => {
         [driver.CarIdx]: { position, driver, isPlayer, progress },
       };
     }, {} as Record<number, TrackDriver & { position: { x: number; y: number } }>);
-  }, [drivers, trackDrawing?.active?.trackPathPoints, trackDrawing?.startFinish?.point?.length, trackDrawing?.startFinish?.direction]);
+  }, [drivers, trackDrawing?.active?.trackPathPoints, trackDrawing?.startFinish?.point?.length, trackDrawing?.startFinish?.direction, trackDrawing?.active?.totalLength]);
 
   // Canvas setup effect
   // this is used to set the canvas size to the correct size
