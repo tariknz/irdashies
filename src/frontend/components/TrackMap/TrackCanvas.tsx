@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef } from 'react';
 import { Driver } from '@irdashies/types';
 import tracks from './tracks/tracks.json';
 import { getColor, getTailwindStyle } from '@irdashies/utils/colors';
+import { shouldShowTrack } from './tracks/broken-tracks';
+import { TrackDebug } from './TrackDebug';
 
 export interface TrackProps {
   trackId: number;
@@ -43,6 +45,9 @@ const TRACK_DRAWING_HEIGHT = 1080;
 export const TrackCanvas = ({ trackId, drivers }: TrackProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationFrameIdRef = useRef<number | null>(null);
+
+  // Check if this track should be shown based on environment and broken status
+  const shouldShow = shouldShowTrack(trackId);
   const trackDrawing = (tracks as unknown as TrackDrawing[])[trackId];
 
   // Memoize Path2D objects to avoid re-creating them on every render
@@ -79,7 +84,11 @@ export const TrackCanvas = ({ trackId, drivers }: TrackProps) => {
 
   // Position calculation based on the percentage of the track completed
   const calculatePositions = useMemo(() => {
-    if (!trackDrawing?.active?.trackPathPoints || !trackDrawing?.startFinish?.point?.length || !trackDrawing?.active?.totalLength) {
+    if (
+      !trackDrawing?.active?.trackPathPoints ||
+      !trackDrawing?.startFinish?.point?.length ||
+      !trackDrawing?.active?.totalLength
+    ) {
       return {};
     }
 
@@ -88,25 +97,39 @@ export const TrackCanvas = ({ trackId, drivers }: TrackProps) => {
     const intersectionLength = trackDrawing.startFinish.point.length;
     const totalLength = trackDrawing.active.totalLength;
 
-    return drivers.reduce((acc, { driver, progress, isPlayer }) => {
-      // Calculate position based on progress
-      const adjustedLength = (totalLength * progress) % totalLength;
-      const length =
-        direction === 'anticlockwise'
-          ? (intersectionLength + adjustedLength) % totalLength
-          : (intersectionLength - adjustedLength + totalLength) % totalLength;
-      
-      // Find the closest trackPath point
-      const pointIndex = Math.round((length / totalLength) * (trackPathPoints.length - 1));
-      const clampedIndex = Math.max(0, Math.min(pointIndex, trackPathPoints.length - 1));
-      const position = trackPathPoints[clampedIndex];
+    return drivers.reduce(
+      (acc, { driver, progress, isPlayer }) => {
+        // Calculate position based on progress
+        const adjustedLength = (totalLength * progress) % totalLength;
+        const length =
+          direction === 'anticlockwise'
+            ? (intersectionLength + adjustedLength) % totalLength
+            : (intersectionLength - adjustedLength + totalLength) % totalLength;
 
-      return {
-        ...acc,
-        [driver.CarIdx]: { position, driver, isPlayer, progress },
-      };
-    }, {} as Record<number, TrackDriver & { position: { x: number; y: number } }>);
-  }, [drivers, trackDrawing?.active?.trackPathPoints, trackDrawing?.startFinish?.point?.length, trackDrawing?.startFinish?.direction, trackDrawing?.active?.totalLength]);
+        // Find the closest trackPath point
+        const pointIndex = Math.round(
+          (length / totalLength) * (trackPathPoints.length - 1)
+        );
+        const clampedIndex = Math.max(
+          0,
+          Math.min(pointIndex, trackPathPoints.length - 1)
+        );
+        const position = trackPathPoints[clampedIndex];
+
+        return {
+          ...acc,
+          [driver.CarIdx]: { position, driver, isPlayer, progress },
+        };
+      },
+      {} as Record<number, TrackDriver & { position: { x: number; y: number } }>
+    );
+  }, [
+    drivers,
+    trackDrawing?.active?.trackPathPoints,
+    trackDrawing?.startFinish?.point?.length,
+    trackDrawing?.startFinish?.direction,
+    trackDrawing?.active?.totalLength,
+  ]);
 
   // Canvas setup effect
   // this is used to set the canvas size to the correct size
@@ -257,17 +280,32 @@ export const TrackCanvas = ({ trackId, drivers }: TrackProps) => {
     return <div className="text-sm text-center p-4">Track map unavailable</div>;
   }
 
-  return (
-    <>
-      {!trackDrawing?.startFinish?.point && (
-        <p className="text-sm text-center p-8">Track start point unavailable</p>
-      )}
-      <div className="overflow-hidden w-full h-full">
-        <canvas
-          className="w-full h-full"
-          ref={canvasRef}
-        ></canvas>
+  // Show broken track warning in development/storybook
+  if (import.meta.env?.DEV || import.meta.env?.MODE === 'storybook') {
+    return (
+      <div className="overflow-hidden w-full p-4">
+        <TrackDebug trackId={trackId} />
+        <canvas className="w-full h-full" ref={canvasRef}></canvas>
       </div>
-    </>
+    );
+  }
+
+  // Hide broken tracks in production
+  if (!shouldShow) {
+    return <div className="text-sm text-center p-4">Track map unusable</div>;
+  }
+
+  if (!trackDrawing?.startFinish?.point) {
+    return (
+      <div className="text-sm text-center p-4">
+        Track start point unavailable
+      </div>
+    );
+  }
+
+  return (
+    <div className="overflow-hidden w-full h-full">
+      <canvas className="w-full h-full" ref={canvasRef}></canvas>
+    </div>
   );
 };
