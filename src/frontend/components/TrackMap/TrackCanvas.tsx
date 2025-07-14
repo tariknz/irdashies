@@ -46,9 +46,8 @@ export const TrackCanvas = ({ trackId, drivers }: TrackProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationFrameIdRef = useRef<number | null>(null);
 
-  // Check if this track should be shown based on environment and broken status
-  const shouldShow = shouldShowTrack(trackId);
   const trackDrawing = (tracks as unknown as TrackDrawing[])[trackId];
+  const shouldShow = shouldShowTrack(trackId, trackDrawing);
 
   // Memoize Path2D objects to avoid re-creating them on every render
   // this is used to draw the track and start/finish line
@@ -276,36 +275,22 @@ export const TrackCanvas = ({ trackId, drivers }: TrackProps) => {
     };
   }, [calculatePositions, path2DObjects, trackDrawing?.turns, driverColors]);
 
-  if (!trackDrawing?.active?.inside) {
-    return <div className="text-sm text-center p-4">Track map unavailable</div>;
-  }
-
-  // Show broken track warning in development/storybook
+  // Development/Storybook mode - show debug info and canvas
   if (import.meta.env?.DEV || import.meta.env?.MODE === 'storybook') {
     return (
-      <div className="overflow-hidden w-full p-4">
-        <TrackDebug trackId={trackId} />
-        <canvas className="w-full h-full" ref={canvasRef}></canvas>
+      <div className="overflow-hidden w-full h-full">
+        <TrackDebug trackId={trackId} trackDrawing={trackDrawing} />
+        <canvas className="will-change-transform w-full h-full" ref={canvasRef}></canvas>
       </div>
     );
   }
 
   // Hide broken tracks in production
-  if (!shouldShow) {
-    return <div className="text-sm text-center p-4">Track map unusable</div>;
-  }
-
-  if (!trackDrawing?.startFinish?.point) {
-    return (
-      <div className="text-sm text-center p-4">
-        Track start point unavailable
-      </div>
-    );
-  }
+  if (!shouldShow) return <></>
 
   return (
     <div className="overflow-hidden w-full h-full">
-      <canvas className="w-full h-full" ref={canvasRef}></canvas>
+      <canvas className="will-change-transform w-full h-full" ref={canvasRef}></canvas>
     </div>
   );
 };

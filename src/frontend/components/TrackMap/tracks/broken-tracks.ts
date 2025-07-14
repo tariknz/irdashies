@@ -1,3 +1,5 @@
+import { TrackDrawing } from '../TrackCanvas';
+
 export interface BrokenTrack {
   id: number;
   name: string;
@@ -65,19 +67,14 @@ export const getBrokenTrackInfo = (trackId: number): BrokenTrack | undefined => 
  * In production, broken tracks are hidden
  * In development/storybook, all tracks are available
  */
-export const shouldShowTrack = (trackId: number): boolean => {
+export const shouldShowTrack = (trackId: number, trackDrawing: TrackDrawing): boolean => {
   // In development or storybook, show all tracks (including broken ones)
   if (import.meta.env?.DEV || import.meta.env?.MODE === 'storybook') {
     return true;
   }
-  
-  // In production, hide broken tracks
+
+  if (!trackDrawing?.startFinish?.point) return false;
+  if (!trackDrawing?.active?.inside) return false;
+
   return !isBrokenTrack(trackId);
 };
-
-/**
- * Get all available track IDs (filtered based on environment)
- */
-export const getAvailableTrackIds = (allTrackIds: number[]): number[] => {
-  return allTrackIds.filter(shouldShowTrack);
-}; 
