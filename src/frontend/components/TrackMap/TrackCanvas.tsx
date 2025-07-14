@@ -110,13 +110,12 @@ export const TrackCanvas = ({ trackId, drivers }: TrackProps) => {
 
   // Canvas setup effect
   // this is used to set the canvas size to the correct size
-  // and handles resizing the canvas when the window is resized
+  // and handles resizing the canvas when the container is resized
   useEffect(() => {
-    const ctx = canvasRef.current?.getContext('2d');
-    if (!ctx) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
 
     const resize = () => {
-      const canvas = canvasRef.current;
       if (!canvas) return;
 
       // Get device pixel ratio for high-DPI displays
@@ -127,19 +126,31 @@ export const TrackCanvas = ({ trackId, drivers }: TrackProps) => {
       canvas.width = rect.width * dpr;
       canvas.height = rect.height * dpr;
 
-      // Scale the drawing context so everything draws at the correct size
-      ctx.scale(dpr, dpr);
-
       // Set the CSS size to maintain the same visual size
       canvas.style.width = rect.width + 'px';
       canvas.style.height = rect.height + 'px';
+
+      // Apply device pixel ratio scaling to the context
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset transform
+        ctx.scale(dpr, dpr); // Apply DPR scaling
+      }
     };
 
+    // Initial resize
     resize();
-    window.addEventListener('resize', resize);
+
+    // Use ResizeObserver to watch the canvas container
+    const resizeObserver = new ResizeObserver(() => {
+      resize();
+    });
+
+    // Observe the canvas element itself
+    resizeObserver.observe(canvas);
 
     return () => {
-      window.removeEventListener('resize', resize);
+      resizeObserver.disconnect();
     };
   }, [trackId]);
 
@@ -153,7 +164,7 @@ export const TrackCanvas = ({ trackId, drivers }: TrackProps) => {
       const rect = canvas.getBoundingClientRect();
 
       // Clear the entire canvas
-      ctx.clearRect(0, 0, rect.width, rect.height);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
 
       // Calculate scale to fit the 1920x1080 track into the current canvas size
       const scaleX = rect.width / TRACK_DRAWING_WIDTH;
