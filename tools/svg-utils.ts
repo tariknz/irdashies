@@ -88,40 +88,39 @@ export const findIntersectionPoint = (
 // Function to find the direction of the track based on the order of turns
 // looks at the position of the first two turns to determine the direction
 export const findDirection = (trackId: number) => {
-  if (
-    [
-      3, 8, 11, 12, 14, 15, 16, 17, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29,
-      37, 39, 40, 47, 51, 52, 53, 94, 101, 103, 104, 105, 110, 113, 114, 115,
-      116, 120, 121, 122, 123, 124, 129, 130, 131, 132, 133, 135, 136, 137, 138,
-      143, 152, 158, 161, 162, 169, 170, 171, 175, 176, 178, 188, 189, 190, 191,
-      192, 193, 198, 201, 202, 203, 204, 208, 211, 212, 213, 214, 215, 217, 225,
-      226, 227, 229, 230, 231, 232, 235, 236, 237, 238, 245, 248, 256, 256, 256,
-      266, 267, 271, 273, 274, 275, 276, 277, 279, 286, 287, 288, 295, 299, 303,
-      304, 305, 314, 320, 330, 331, 334, 335, 339, 340, 344, 350, 351, 357, 362,
-      364, 365, 366, 371, 373, 374, 380, 381, 382, 383, 384, 386, 387, 388, 398,
-      400, 414, 418, 419, 424, 426, 428, 429, 430, 431, 437, 438, 442, 443, 446,
-      447, 452, 453, 462, 475, 476, 477, 478, 479, 480, 481, 482, 488, 489, 493,
-      494, 496, 497, 500, 506, 513, 514, 518, 519, 520, 522,
-    ].includes(trackId)
-  ) {
-    return 'anticlockwise';
-  }
+  // Track IDs that run anticlockwise
+  const anticlockwiseTracks = [
+    3, 11, 12, 14, 16, 17, 18, 19, 23, 26, 27, 28, 30, 31, 33, 37, 39, 40,
+    46, 47, 49, 50, 94, 99, 100, 103, 104, 105, 110, 113, 114, 116, 120, 121,
+    122, 123, 124, 129, 130, 131, 132, 133, 135, 136, 137, 138, 143, 145, 146,
+    152, 158, 161, 169, 170, 171, 172, 178, 179, 188, 189, 190, 191, 192, 195,
+    196, 198, 201, 203, 204, 205, 212, 213, 216, 218, 219, 222, 223, 228, 235,
+    236, 245, 249, 250, 252, 253, 255, 256, 257, 262, 263, 264, 266, 267, 274,
+    275, 276, 277, 279, 286, 288, 295, 297, 298, 299, 304, 305, 320, 322, 323,
+    332, 333, 336, 337, 338, 343, 350, 351, 357, 364, 365, 366, 371, 381, 386,
+    397, 398, 404, 405, 407, 413, 414, 418, 424, 426, 427, 429, 431, 436, 438,
+    443, 444, 445, 448, 449, 451, 453, 454, 455, 456, 463, 469, 473, 474, 481,
+    483, 498, 514, 522, 526, 559, 561,
+  ];
 
-  return 'clockwise';
+  return anticlockwiseTracks.includes(trackId) ? 'anticlockwise' : 'clockwise';
 };
-
-// Number of pre calculated points (matches the quantization in TrackCanvas)
-const PRE_CALCULATED_POINTS = 1000;
 
 // Pre calculate pointAtLength values for a given SVG path
 // this is used to find the position of the car based on the percentage of the track completed
 export const preCalculatePoints = (pathData: string): { x: number; y: number }[] => {
   const path = new svgPathProperties(pathData);
   const totalLength = path.getTotalLength();
+  
+  // Calculate number of points based on path length
+  // Aim for roughly 1 point per 2-3 pixels of path length for good resolution
+  const pointsPerPixel = 0.4; // Adjust this value to control density
+  const calculatedPoints = Math.max(500, Math.min(2000, Math.round(totalLength * pointsPerPixel)));
+  
   const points: { x: number; y: number }[] = [];
 
-  for (let i = 0; i <= PRE_CALCULATED_POINTS; i++) {
-    const length = (totalLength * i) / PRE_CALCULATED_POINTS;
+  for (let i = 0; i <= calculatedPoints; i++) {
+    const length = (totalLength * i) / calculatedPoints;
     const point = path.getPointAtLength(length);
     points.push({ x: Math.round(point.x), y: Math.round(point.y) });
   }
