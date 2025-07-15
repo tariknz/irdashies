@@ -3,6 +3,7 @@ import {
   useDriverCarIdx,
   useSessionDrivers,
   useTelemetryValuesMapped,
+  useSessionStore,
 } from '@irdashies/context';
 
 // Throttle updates to reduce processing load
@@ -15,6 +16,7 @@ export const useDriverProgress = () => {
     'CarIdxLapDistPct',
     (val) => Math.round(val * 1000) / 1000 // Reduce precision to 2 decimal places to minimize unnecessary updates
   );
+  const paceCarIdx = useSessionStore((s) => s.session?.DriverInfo?.PaceCarIdx) ?? -1;
 
   // Throttled state to reduce update frequency
   const [throttledLapDist, setThrottledLapDist] = useState<number[]>([]);
@@ -39,8 +41,8 @@ export const useDriverProgress = () => {
         isPlayer: driver.CarIdx === driverIdx,
       }))
       .filter((d) => d.progress > -1) // ignore drivers not on track
-      .filter((d) => d.driver.CarIdx > 0); // ignore pace car for now
-  }, [drivers, throttledLapDist, driverIdx]);
+      .filter((d) => d.driver.CarIdx > -1 && d.driver.CarIdx !== paceCarIdx); // ignore pace car
+  }, [drivers, throttledLapDist, driverIdx, paceCarIdx]);
 
   return driversTrackData;
 };
