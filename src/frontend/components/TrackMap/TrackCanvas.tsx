@@ -270,7 +270,7 @@ export const TrackCanvas = ({ trackId, drivers }: TrackProps) => {
   }
 
   // Hide broken tracks in production
-  if (!shouldShow) return <></>
+  if (!shouldShow) return null;
 
   return (
     <div className="overflow-hidden w-full h-full">
