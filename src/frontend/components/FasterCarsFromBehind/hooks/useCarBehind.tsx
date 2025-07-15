@@ -14,7 +14,7 @@ export const useCarBehind = ({
 
   const fasterCarFromBehind = useMemo(() => {
     const percent = parseInt(
-      (100 - (Math.abs(carBehind?.delta) / 3) * 100).toFixed(0)
+      (100 - (Math.abs(carBehind?.delta ?? 0) / 3) * 100).toFixed(0)
     );
 
     return {
