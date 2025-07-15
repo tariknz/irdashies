@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Driver } from '@irdashies/types';
 import tracks from './tracks/tracks.json';
 import { getColor, getTailwindStyle } from '@irdashies/utils/colors';
@@ -44,7 +44,7 @@ const TRACK_DRAWING_HEIGHT = 1080;
 
 export const TrackCanvas = ({ trackId, drivers }: TrackProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const animationFrameIdRef = useRef<number | null>(null);
+  const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
 
   const trackDrawing = (tracks as unknown as TrackDrawing[])[trackId];
   const shouldShow = shouldShowTrack(trackId, trackDrawing);
@@ -158,6 +158,8 @@ export const TrackCanvas = ({ trackId, drivers }: TrackProps) => {
         ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset transform
         ctx.scale(dpr, dpr); // Apply DPR scaling
       }
+      // Update state to trigger redraw
+      setCanvasSize({ width: rect.width, height: rect.height });
     };
 
     // Initial resize
@@ -182,98 +184,80 @@ export const TrackCanvas = ({ trackId, drivers }: TrackProps) => {
     const ctx = canvas?.getContext('2d');
     if (!canvas || !ctx || !path2DObjects) return;
 
-    const draw = () => {
-      const rect = canvas.getBoundingClientRect();
+    const rect = canvas.getBoundingClientRect();
 
-      // Clear the entire canvas
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    // Clear the entire canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Calculate scale to fit the 1920x1080 track into the current canvas size
-      const scaleX = rect.width / TRACK_DRAWING_WIDTH;
-      const scaleY = rect.height / TRACK_DRAWING_HEIGHT;
-      const scale = Math.min(scaleX, scaleY); // Maintain aspect ratio
+    // Calculate scale to fit the 1920x1080 track into the current canvas size
+    const scaleX = rect.width / TRACK_DRAWING_WIDTH;
+    const scaleY = rect.height / TRACK_DRAWING_HEIGHT;
+    const scale = Math.min(scaleX, scaleY); // Maintain aspect ratio
 
-      // Calculate centering offset
-      const offsetX = (rect.width - TRACK_DRAWING_WIDTH * scale) / 2;
-      const offsetY = (rect.height - TRACK_DRAWING_HEIGHT * scale) / 2;
+    // Calculate centering offset
+    const offsetX = (rect.width - TRACK_DRAWING_WIDTH * scale) / 2;
+    const offsetY = (rect.height - TRACK_DRAWING_HEIGHT * scale) / 2;
 
-      // Save context state
-      ctx.save();
+    // Save context state
+    ctx.save();
 
-      // Apply scaling and centering
-      ctx.translate(offsetX, offsetY);
-      ctx.scale(scale, scale);
+    // Apply scaling and centering
+    ctx.translate(offsetX, offsetY);
+    ctx.scale(scale, scale);
 
-      // Shadow
-      ctx.shadowColor = 'black';
-      ctx.shadowBlur = 2;
-      ctx.shadowOffsetX = 1;
-      ctx.shadowOffsetY = 1;
+    // Shadow
+    ctx.shadowColor = 'black';
+    ctx.shadowBlur = 2;
+    ctx.shadowOffsetX = 1;
+    ctx.shadowOffsetY = 1;
 
-      // Draw track
-      if (path2DObjects.inside) {
-        ctx.strokeStyle = 'white';
-        ctx.lineWidth = 20;
-        ctx.stroke(path2DObjects.inside);
-      }
+    // Draw track
+    if (path2DObjects.inside) {
+      ctx.strokeStyle = 'white';
+      ctx.lineWidth = 20;
+      ctx.stroke(path2DObjects.inside);
+    }
 
-      // Draw start/finish line
-      if (path2DObjects.startFinish) {
-        ctx.lineWidth = 10;
-        ctx.strokeStyle = getColor('red');
-        ctx.stroke(path2DObjects.startFinish);
-      }
+    // Draw start/finish line
+    if (path2DObjects.startFinish) {
+      ctx.lineWidth = 10;
+      ctx.strokeStyle = getColor('red');
+      ctx.stroke(path2DObjects.startFinish);
+    }
 
-      // Draw turn numbers
-      if (ENABLE_TURNS) {
-        trackDrawing.turns?.forEach((turn) => {
-          if (!turn.content || !turn.x || !turn.y) return;
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.fillStyle = 'white';
-          ctx.font = '2rem sans-serif';
-          ctx.fillText(turn.content, turn.x, turn.y);
-        });
-      }
+    // Draw turn numbers
+    if (ENABLE_TURNS) {
+      trackDrawing.turns?.forEach((turn) => {
+        if (!turn.content || !turn.x || !turn.y) return;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = 'white';
+        ctx.font = '2rem sans-serif';
+        ctx.fillText(turn.content, turn.x, turn.y);
+      });
+    }
 
-      // Draw drivers
-      Object.values(calculatePositions)
-        .sort((a, b) => Number(a.isPlayer) - Number(b.isPlayer)) // draws player last to be on top
-        .forEach(({ driver, position }) => {
-          const color = driverColors[driver.CarIdx];
-          if (!color) return;
+    // Draw drivers
+    Object.values(calculatePositions)
+      .sort((a, b) => Number(a.isPlayer) - Number(b.isPlayer)) // draws player last to be on top
+      .forEach(({ driver, position }) => {
+        const color = driverColors[driver.CarIdx];
+        if (!color) return;
 
-          ctx.fillStyle = color.fill;
-          ctx.beginPath();
-          ctx.arc(position.x, position.y, 40, 0, 2 * Math.PI);
-          ctx.fill();
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.fillStyle = color.text;
-          ctx.font = '2rem sans-serif';
-          ctx.fillText(driver.CarNumber, position.x, position.y);
-        });
+        ctx.fillStyle = color.fill;
+        ctx.beginPath();
+        ctx.arc(position.x, position.y, 40, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = color.text;
+        ctx.font = '2rem sans-serif';
+        ctx.fillText(driver.CarNumber, position.x, position.y);
+      });
 
-      // Restore context state
-      ctx.restore();
-    };
-
-    // Simple animation loop - just redraw when needed
-    const animate = () => {
-      draw();
-      animationFrameIdRef.current = requestAnimationFrame(animate);
-    };
-
-    // Start animation
-    animate();
-
-    // Cleanup on component unmount
-    return () => {
-      if (animationFrameIdRef.current) {
-        cancelAnimationFrame(animationFrameIdRef.current);
-      }
-    };
-  }, [calculatePositions, path2DObjects, trackDrawing?.turns, driverColors]);
+    // Restore context state
+    ctx.restore();
+  }, [calculatePositions, path2DObjects, trackDrawing?.turns, driverColors, canvasSize]);
 
   // Development/Storybook mode - show debug info and canvas
   if (import.meta.env?.DEV || import.meta.env?.MODE === 'storybook') {
