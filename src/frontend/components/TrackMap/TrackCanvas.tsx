@@ -5,6 +5,13 @@ import { getColor, getTailwindStyle } from '@irdashies/utils/colors';
 import { shouldShowTrack } from './tracks/broken-tracks';
 import { TrackDebug } from './TrackDebug';
 import { useStartFinishLine } from './hooks/useStartFinishLine';
+import {
+  setupCanvasContext,
+  drawTrack,
+  drawStartFinishLine,
+  drawTurnNames,
+  drawDrivers,
+} from './trackDrawingUtils';
 
 export interface TrackProps {
   trackId: number;
@@ -209,83 +216,14 @@ export const TrackCanvas = ({
     const offsetX = (rect.width - TRACK_DRAWING_WIDTH * scale) / 2;
     const offsetY = (rect.height - TRACK_DRAWING_HEIGHT * scale) / 2;
 
-    // Save context state
-    ctx.save();
+    // Setup canvas context with scaling and shadow
+    setupCanvasContext(ctx, scale, offsetX, offsetY);
 
-    // Apply scaling and centering
-    ctx.translate(offsetX, offsetY);
-    ctx.scale(scale, scale);
-
-    // Shadow
-    ctx.shadowColor = 'black';
-    ctx.shadowBlur = 2;
-    ctx.shadowOffsetX = 1;
-    ctx.shadowOffsetY = 1;
-
-    // Draw track
-    if (path2DObjects.inside) {
-      // Draw black outline first
-      ctx.strokeStyle = 'black';
-      ctx.lineWidth = 40;
-      ctx.stroke(path2DObjects.inside);
-
-      // Draw white track on top
-      ctx.strokeStyle = 'white';
-      ctx.lineWidth = 20;
-      ctx.stroke(path2DObjects.inside);
-    }
-
-    // Draw start/finish line
-    if (startFinishLine) {
-      const lineLength = 60; // Length of the start/finish line
-      const { point: sfPoint, perpendicular } = startFinishLine;
-
-      // Calculate the start and end points of the line
-      const startX = sfPoint.x - (perpendicular.x * lineLength) / 2;
-      const startY = sfPoint.y - (perpendicular.y * lineLength) / 2;
-      const endX = sfPoint.x + (perpendicular.x * lineLength) / 2;
-      const endY = sfPoint.y + (perpendicular.y * lineLength) / 2;
-
-      ctx.lineWidth = 20;
-      ctx.strokeStyle = getColor('red');
-      ctx.lineCap = 'square';
-
-      // Draw the perpendicular line
-      ctx.beginPath();
-      ctx.moveTo(startX, startY);
-      ctx.lineTo(endX, endY);
-      ctx.stroke();
-    }
-
-    // Draw turn numbers
-    if (enableTurnNames) {
-      trackDrawing.turns?.forEach((turn) => {
-        if (!turn.content || !turn.x || !turn.y) return;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillStyle = 'white';
-        ctx.font = '2rem sans-serif';
-        ctx.fillText(turn.content, turn.x, turn.y);
-      });
-    }
-
-    // Draw drivers
-    Object.values(calculatePositions)
-      .sort((a, b) => Number(a.isPlayer) - Number(b.isPlayer)) // draws player last to be on top
-      .forEach(({ driver, position }) => {
-        const color = driverColors[driver.CarIdx];
-        if (!color) return;
-
-        ctx.fillStyle = color.fill;
-        ctx.beginPath();
-        ctx.arc(position.x, position.y, 40, 0, 2 * Math.PI);
-        ctx.fill();
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillStyle = color.text;
-        ctx.font = '2rem sans-serif';
-        ctx.fillText(driver.CarNumber, position.x, position.y);
-      });
+    // Draw all elements
+    drawTrack(ctx, path2DObjects);
+    drawStartFinishLine(ctx, startFinishLine);
+    drawTurnNames(ctx, trackDrawing.turns, enableTurnNames);
+    drawDrivers(ctx, calculatePositions, driverColors);
 
     // Restore context state
     ctx.restore();
