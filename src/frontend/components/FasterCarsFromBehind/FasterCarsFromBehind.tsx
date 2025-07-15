@@ -1,32 +1,56 @@
-import { useMemo } from 'react';
-import { useAutoAnimate } from '@formkit/auto-animate/react';
+import { useCurrentSessionType } from '@irdashies/context';
 import { useCarBehind } from './hooks/useCarBehind';
 import { useFasterCarsSettings } from './hooks/useFasterCarsSettings';
+import { getTailwindStyle } from '@irdashies/utils/colors';
+
+export interface FasterCarsFromBehindProps {
+  name?: string | null;
+  distance?: number;
+  percent?: number;
+  classColor?: number;
+}
 
 export const FasterCarsFromBehind = () => {
   const settings = useFasterCarsSettings();
-  const carBehind = useCarBehind({distanceThreshold: settings?.distanceThreshold });
-  const [parent] = useAutoAnimate();
+  const sessionType = useCurrentSessionType();
+  const carBehind = useCarBehind({
+    distanceThreshold: settings?.distanceThreshold,
+  });
 
-  const layout = useMemo(() => {
-    const hidden = carBehind.name === null || carBehind.name == undefined ? 'hidden' : '';  
-    const animate = carBehind.distance > -0.3 ? 'animate-pulse' : '';
-    const red = carBehind.percent;
-    const green = 100 - carBehind.percent;
+  if (sessionType === 'Lone Qualify') {
+    return null;
+  }
 
-    return { hidden, animate, red, green };
-  }, [
-    carBehind.name,
-    carBehind.distance,
-    carBehind.percent
-  ]);
+  return <FasterCarsFromBehindDisplay {...carBehind} />;
+};
+
+export const FasterCarsFromBehindDisplay = ({
+  name,
+  distance,
+  percent,
+  classColor,
+}: FasterCarsFromBehindProps) => {
+  const hidden = name === null || name == undefined ? 'hidden' : '';
+  const animate = distance && distance > -0.3 ? 'animate-pulse' : '';
+  const red = percent || 0;
+  const green = 100 - (percent || 0);
+  const background = getTailwindStyle(classColor).classHeader;
 
   return (
-    <div className={`w-full flex justify-between rounded-sm p-1 pb-2 font-bold relative ${layout.hidden} ${layout.animate} ${carBehind.background}`}
-		     ref={parent}>
-      <div className="rounded-sm bg-gray-700 p-1">{carBehind.name}</div>
-	    <div className="rounded-sm bg-gray-700 p-1">{carBehind.distance}</div>
-	    <div className={`absolute bottom-0 left-0 rounded-b-sm bg-white h-1 flex-none`} style={{width: carBehind.percent+'%', backgroundColor: `rgb(${layout.red}%, ${layout.green}%, 0%)`}}></div>
+    <div className={`w-full flex justify-between rounded-sm p-1 pb-2 font-bold relative ${hidden}`}>
+      <div className="rounded-sm bg-gray-700 p-1">{name}</div>
+      <div className="rounded-sm bg-gray-700 p-1">{distance}</div>
+      <div
+        className={`absolute inset-0 rounded-sm ${background} ${animate}`}
+        style={{ zIndex: -1 }}
+      ></div>
+      <div
+        className={`absolute bottom-0 left-0 rounded-b-sm bg-white h-1 flex-none transition-all`}
+        style={{
+          width: `${percent}%`,
+          backgroundColor: `rgb(${red}%, ${green}%, 0%)`,
+        }}
+      ></div>
     </div>
   );
 };
