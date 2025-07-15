@@ -217,6 +217,12 @@ export const TrackCanvas = ({
 
     // Draw track
     if (path2DObjects.inside) {
+      // Draw black outline first
+      ctx.strokeStyle = 'black';
+      ctx.lineWidth = 40;
+      ctx.stroke(path2DObjects.inside);
+      
+      // Draw white track on top
       ctx.strokeStyle = 'white';
       ctx.lineWidth = 20;
       ctx.stroke(path2DObjects.inside);

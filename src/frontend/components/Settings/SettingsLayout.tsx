@@ -127,9 +127,6 @@ export const SettingsLayout = () => {
               <Link to="/settings/map" className={menuItemClass('/map')}>
                 <div className="flex flex-row gap-2 items-center">
                   Track Map
-                  <span className="text-xs bg-yellow-600 text-yellow-100 px-2 py-0.5 rounded-full flex flex-row gap-1 items-center">
-                    Experimental
-                  </span>
                 </div>
               </Link>
             </li>
