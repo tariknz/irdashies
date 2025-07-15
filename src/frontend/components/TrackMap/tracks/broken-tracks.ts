@@ -46,13 +46,13 @@ export const BROKEN_TRACKS: BrokenTrack[] = [
   { id: 506, name: 'Slinger', issue: 'figure 8' },
 ];
 
-export const BROKEN_TRACK_IDS = BROKEN_TRACKS.map(track => track.id);
+export const BROKEN_TRACK_IDS_SET = new Set(BROKEN_TRACKS.map(track => track.id));
 
 /**
  * Check if a track ID is broken
  */
 export const isBrokenTrack = (trackId: number): boolean => {
-  return BROKEN_TRACK_IDS.includes(trackId);
+  return BROKEN_TRACK_IDS_SET.has(trackId);
 };
 
 /**
