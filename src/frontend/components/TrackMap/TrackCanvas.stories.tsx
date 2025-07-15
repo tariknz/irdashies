@@ -2,7 +2,7 @@ import { Meta, StoryObj } from '@storybook/react-vite';
 import { TrackCanvas, TrackDriver } from './TrackCanvas';
 import { useEffect, useState } from 'react';
 import tracks from './tracks/tracks.json';
-import { BROKEN_TRACKS } from './tracks/broken-tracks';
+import { BROKEN_TRACKS } from './tracks/brokenTracks';
 
 export default {
   component: TrackCanvas,

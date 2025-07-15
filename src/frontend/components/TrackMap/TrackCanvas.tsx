@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Driver } from '@irdashies/types';
 import tracks from './tracks/tracks.json';
 import { getColor, getTailwindStyle } from '@irdashies/utils/colors';
-import { shouldShowTrack } from './tracks/broken-tracks';
+import { shouldShowTrack } from './tracks/brokenTracks';
 import { TrackDebug } from './TrackDebug';
 import { useStartFinishLine } from './hooks/useStartFinishLine';
 import {

@@ -1,5 +1,3 @@
-import { TrackDrawing } from '../TrackCanvas';
-
 export interface BrokenTrack {
   id: number;
   name: string;
@@ -67,7 +65,10 @@ export const getBrokenTrackInfo = (trackId: number): BrokenTrack | undefined => 
  * In production, broken tracks are hidden
  * In development/storybook, all tracks are available
  */
-export const shouldShowTrack = (trackId: number, trackDrawing: TrackDrawing): boolean => {
+export const shouldShowTrack = (
+  trackId: number, 
+  trackDrawing: { startFinish?: { point?: unknown }; active?: { inside?: unknown } } | null | undefined
+): boolean => {
   // In development or storybook, show all tracks (including broken ones)
   if (import.meta.env?.DEV || import.meta.env?.MODE === 'storybook') {
     return true;
