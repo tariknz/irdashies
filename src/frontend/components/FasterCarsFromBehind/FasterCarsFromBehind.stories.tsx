@@ -8,8 +8,10 @@ export default {
     classColor: {
       options: [undefined, 0xffda59, 0x33ceff, 0xff5888, 0xae6bff, 0xffffff],
       control: { type: 'select' },
-      description: 'Background color for the component'
-    }
+    },
+    percent: {
+      control: { type: 'range', min: 0, max: 100 },
+    },
   }
 } as Meta<typeof FasterCarsFromBehindDisplay>;
 
