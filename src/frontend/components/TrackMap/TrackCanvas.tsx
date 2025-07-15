@@ -4,6 +4,7 @@ import tracks from './tracks/tracks.json';
 import { getColor, getTailwindStyle } from '@irdashies/utils/colors';
 import { shouldShowTrack } from './tracks/broken-tracks';
 import { TrackDebug } from './TrackDebug';
+import { useStartFinishLine } from './hooks/useStartFinishLine';
 
 export interface TrackProps {
   trackId: number;
@@ -84,6 +85,12 @@ export const TrackCanvas = ({
 
     return colors;
   }, [drivers]);
+
+  // Get start/finish line calculations
+  const startFinishLine = useStartFinishLine({
+    startFinishPoint: trackDrawing?.startFinish?.point,
+    trackPathPoints: trackDrawing?.active?.trackPathPoints,
+  });
 
   // Position calculation based on the percentage of the track completed
   const calculatePositions = useMemo(() => {
@@ -221,7 +228,7 @@ export const TrackCanvas = ({
       ctx.strokeStyle = 'black';
       ctx.lineWidth = 40;
       ctx.stroke(path2DObjects.inside);
-      
+
       // Draw white track on top
       ctx.strokeStyle = 'white';
       ctx.lineWidth = 20;
@@ -229,10 +236,25 @@ export const TrackCanvas = ({
     }
 
     // Draw start/finish line
-    if (path2DObjects.startFinish) {
-      ctx.lineWidth = 10;
+    if (startFinishLine) {
+      const lineLength = 60; // Length of the start/finish line
+      const { point: sfPoint, perpendicular } = startFinishLine;
+
+      // Calculate the start and end points of the line
+      const startX = sfPoint.x - (perpendicular.x * lineLength) / 2;
+      const startY = sfPoint.y - (perpendicular.y * lineLength) / 2;
+      const endX = sfPoint.x + (perpendicular.x * lineLength) / 2;
+      const endY = sfPoint.y + (perpendicular.y * lineLength) / 2;
+
+      ctx.lineWidth = 20;
       ctx.strokeStyle = getColor('red');
-      ctx.stroke(path2DObjects.startFinish);
+      ctx.lineCap = 'square';
+
+      // Draw the perpendicular line
+      ctx.beginPath();
+      ctx.moveTo(startX, startY);
+      ctx.lineTo(endX, endY);
+      ctx.stroke();
     }
 
     // Draw turn numbers
@@ -274,6 +296,9 @@ export const TrackCanvas = ({
     driverColors,
     canvasSize,
     enableTurnNames,
+    trackDrawing?.startFinish?.point,
+    trackDrawing?.active?.trackPathPoints,
+    startFinishLine,
   ]);
 
   // Development/Storybook mode - show debug info and canvas
