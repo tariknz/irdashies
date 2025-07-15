@@ -70,6 +70,9 @@ export const defaultDashboard: DashboardLayout = {
         width: 400,
         height: 600,
       },
+      config: {
+        enableTurnNames: false,
+      },
     },
     {
       id: 'weather',

@@ -6,9 +6,19 @@ import { BROKEN_TRACKS } from './tracks/broken-tracks';
 
 export default {
   component: TrackCanvas,
+  args: {
+    enableTurnNames: false,
+    debug: true,
+  },
   argTypes: {
     trackId: {
       control: { type: 'number' },
+    },
+    enableTurnNames: {
+      control: { type: 'boolean' },
+    },
+    debug: {
+      control: { type: 'boolean' },
     },
   },
 } as Meta;
@@ -358,7 +368,7 @@ const allTrackIds = Object.keys(tracks)
   .sort((a, b) => a - b);
 
 export const AllTracksGrid: Story = {
-  render: () => {
+  render: (args) => {
     const trackSize = 150;
 
     return (
@@ -387,6 +397,8 @@ export const AllTracksGrid: Story = {
                 <TrackCanvas 
                   trackId={trackId} 
                   drivers={sampleData} 
+                  enableTurnNames={args.enableTurnNames}
+                  debug={args.debug}
                 />
               </div>
             </div>
@@ -398,7 +410,7 @@ export const AllTracksGrid: Story = {
 };
 
 export const BrokenTracksGrid: Story = {
-  render: () => {
+  render: (args) => {
     const trackSize = 200;
 
     return (
@@ -427,6 +439,8 @@ export const BrokenTracksGrid: Story = {
                 <TrackCanvas 
                   trackId={brokenTrack.id} 
                   drivers={sampleData} 
+                  enableTurnNames={args.enableTurnNames}
+                  debug={args.debug}
                 />
               </div>
             </div>

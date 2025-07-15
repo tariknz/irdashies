@@ -8,6 +8,8 @@ import { TrackDebug } from './TrackDebug';
 export interface TrackProps {
   trackId: number;
   drivers: TrackDriver[];
+  enableTurnNames?: boolean;
+  debug?: boolean;
 }
 
 export interface TrackDriver {
@@ -36,13 +38,15 @@ export interface TrackDrawing {
   }[];
 }
 
-// currently its a bit messy with the turns, so we disable them for now
-const ENABLE_TURNS = true;
-
 const TRACK_DRAWING_WIDTH = 1920;
 const TRACK_DRAWING_HEIGHT = 1080;
 
-export const TrackCanvas = ({ trackId, drivers }: TrackProps) => {
+export const TrackCanvas = ({
+  trackId,
+  drivers,
+  enableTurnNames,
+  debug,
+}: TrackProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
 
@@ -226,7 +230,7 @@ export const TrackCanvas = ({ trackId, drivers }: TrackProps) => {
     }
 
     // Draw turn numbers
-    if (ENABLE_TURNS) {
+    if (enableTurnNames) {
       trackDrawing.turns?.forEach((turn) => {
         if (!turn.content || !turn.x || !turn.y) return;
         ctx.textAlign = 'center';
@@ -257,14 +261,24 @@ export const TrackCanvas = ({ trackId, drivers }: TrackProps) => {
 
     // Restore context state
     ctx.restore();
-  }, [calculatePositions, path2DObjects, trackDrawing?.turns, driverColors, canvasSize]);
+  }, [
+    calculatePositions,
+    path2DObjects,
+    trackDrawing?.turns,
+    driverColors,
+    canvasSize,
+    enableTurnNames,
+  ]);
 
   // Development/Storybook mode - show debug info and canvas
-  if (import.meta.env?.DEV || import.meta.env?.MODE === 'storybook') {
+  if (debug) {
     return (
       <div className="overflow-hidden w-full h-full">
         <TrackDebug trackId={trackId} trackDrawing={trackDrawing} />
-        <canvas className="will-change-transform w-full h-full" ref={canvasRef}></canvas>
+        <canvas
+          className="will-change-transform w-full h-full"
+          ref={canvasRef}
+        ></canvas>
       </div>
     );
   }
@@ -274,7 +288,10 @@ export const TrackCanvas = ({ trackId, drivers }: TrackProps) => {
 
   return (
     <div className="overflow-hidden w-full h-full">
-      <canvas className="will-change-transform w-full h-full" ref={canvasRef}></canvas>
+      <canvas
+        className="will-change-transform w-full h-full"
+        ref={canvasRef}
+      ></canvas>
     </div>
   );
 };

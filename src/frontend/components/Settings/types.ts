@@ -31,7 +31,9 @@ export interface WeatherWidgetSettings extends BaseWidgetSettings {
 }
 
 export interface TrackMapWidgetSettings extends BaseWidgetSettings {
-  // Add specific track map settings here
+  config: {
+    enableTurnNames: boolean;
+  };
 }
 
 export type InputWidgetSettings = BaseWidgetSettings<InputSettings>;
