@@ -19,7 +19,7 @@ export const useCarBehind = ({
 
     return {
       name: carBehind?.driver?.name,
-      distance: parseFloat(carBehind?.delta.toFixed(1)),
+      distance: parseFloat(carBehind?.delta?.toFixed(1) ?? '0'),
       classColor,
       percent: percent,
     };
