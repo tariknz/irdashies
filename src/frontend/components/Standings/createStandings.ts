@@ -213,7 +213,7 @@ export const sliceRelevantDrivers = <T extends { isPlayer?: boolean }>(
   // probably simplify it so its a bit more readable
   return groupedStandings.map(([classIdx, standings]) => {
     const playerIndex = standings.findIndex((driver) => driver.isPlayer);
-    if (`${driverClass}` !== classIdx) {
+    if (String(driverClass) !== classIdx) {
       // if player is not in this class, return only top 3 drivers in that class
       return [classIdx, standings.slice(0, numNonClassDrivers)];
     }
