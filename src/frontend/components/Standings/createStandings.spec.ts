@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { createStandings, sliceRelevantDrivers } from './createStandings';
+import { createDriverStandings, groupStandingsByClass, sliceRelevantDrivers } from './createStandings';
 import type { Session, Telemetry, SessionInfo } from '@irdashies/types';
 
 describe('createStandings', () => {
@@ -150,7 +150,7 @@ describe('createStandings', () => {
 
   describe('sliceRelevantDrivers', () => {
     interface DummyStanding { name: string; isPlayer?: boolean }
-    it('should return only top 3 drivers for class without player', () => {
+    it('should return only top 3 drivers for classes outside of player\'s class', () => {
       const results: [string, DummyStanding[]][] = [
         [
           'GT3',
@@ -174,7 +174,7 @@ describe('createStandings', () => {
         ],
       ];
 
-      const filteredDrivers = sliceRelevantDrivers(results);
+      const filteredDrivers = sliceRelevantDrivers(results, 'GT4');
 
       expect(filteredDrivers).toEqual([
         [
@@ -194,12 +194,58 @@ describe('createStandings', () => {
       ]);
     });
 
+    it('should return all player\'s class even when player is not in standings', () => {
+      const results: [string, DummyStanding[]][] = [
+        [
+          'GT3',
+          [
+            { name: '1. Bob' },
+            { name: '2. Alice' },
+            { name: '3. Charlie' },
+            { name: '4. David' },
+            { name: '5. Eve' },
+          ],
+        ],
+        [
+          'GT4',
+          [
+            { name: '1. Clark' },
+            { name: '2. Richard' },
+            { name: '3. Sam' },
+            { name: '4. Bingo' },
+            { name: '5. Tod' },
+            { name: '6. Wallace' },
+          ],
+        ],
+      ];
+
+      const filteredDrivers = sliceRelevantDrivers(results, 'GT4');
+
+      expect(filteredDrivers).toEqual([
+        [
+          'GT3',
+          [{ name: '1. Bob' }, { name: '2. Alice' }, { name: '3. Charlie' }],
+        ],
+        [
+          'GT4',
+          [
+            { name: '1. Clark' },
+            { name: '2. Richard' },
+            { name: '3. Sam' },
+            { name: '4. Bingo' },
+            { name: '5. Tod' },
+            { name: '6. Wallace' },
+          ],
+        ],
+      ]);
+    });
+
     it('should return all drivers when less than 3 available for class without player', () => {
       const results: [string, DummyStanding[]][] = [
         ['GT3', [{ name: 'Bob' }, { name: 'Alice' }]],
       ];
 
-      const filteredDrivers = sliceRelevantDrivers(results);
+      const filteredDrivers = sliceRelevantDrivers(results, 'GT3');
 
       expect(filteredDrivers).toEqual([
         ['GT3', [{ name: 'Bob' }, { name: 'Alice' }]],
@@ -227,7 +273,7 @@ describe('createStandings', () => {
         ],
       ];
 
-      const filteredDrivers = sliceRelevantDrivers(results);
+      const filteredDrivers = sliceRelevantDrivers(results, 'GT3');
 
       expect(filteredDrivers).toEqual([
         [
@@ -267,7 +313,7 @@ describe('createStandings', () => {
         ],
       ];
 
-      const filteredDrivers = sliceRelevantDrivers(results);
+      const filteredDrivers = sliceRelevantDrivers(results, 'GT3');
 
       expect(filteredDrivers).toEqual([
         [
@@ -286,3 +332,44 @@ describe('createStandings', () => {
     });
   });
 });
+
+
+/**
+ * This method will create the standings for the current session
+ * It will group the standings by class and slice the relevant drivers
+ * 
+ * Only used to simplify testing
+ */
+function createStandings(
+  session?: Session,
+  telemetry?: Telemetry,
+  currentSession?: SessionInfo,
+  options?: {
+    buffer?: number;
+    numNonClassDrivers?: number;
+  }
+) {
+  const standings = createDriverStandings(
+    {
+      playerIdx: session?.DriverInfo?.DriverCarIdx,
+      drivers: session?.DriverInfo?.Drivers,
+      qualifyingResults: session?.QualifyResultsInfo?.Results,
+    },
+    {
+      carIdxF2TimeValue: telemetry?.CarIdxF2Time?.value,
+      carIdxOnPitRoadValue: telemetry?.CarIdxOnPitRoad?.value,
+      carIdxTrackSurfaceValue: telemetry?.CarIdxTrackSurface?.value,
+      radioTransmitCarIdx: telemetry?.RadioTransmitCarIdx?.value,
+    },
+    {
+      resultsPositions: currentSession?.ResultsPositions,
+      resultsFastestLap: currentSession?.ResultsFastestLap,
+      sessionType: currentSession?.SessionType,
+    }
+  );
+  const driverClass = session?.DriverInfo?.Drivers?.find(
+    (driver) => driver.CarIdx === session?.DriverInfo?.DriverCarIdx
+  )?.CarClassID;
+  const grouped = groupStandingsByClass(standings);
+  return sliceRelevantDrivers(grouped, driverClass, options);
+};

@@ -51,6 +51,9 @@ export const useDriverStandings = ({ buffer }: { buffer: number }) => {
       }
     );
     const groupedByClass = groupStandingsByClass(initialStandings);
+    const driverClass = sessionDrivers?.find(
+      (driver) => driver.CarIdx === driverCarIdx
+    )?.CarClassID;
 
     // Calculate iRating changes for race sessions
     const augmentedGroupedByClass =
@@ -58,7 +61,7 @@ export const useDriverStandings = ({ buffer }: { buffer: number }) => {
         ? augmentStandingsWithIRating(groupedByClass)
         : groupedByClass;
 
-    return sliceRelevantDrivers(augmentedGroupedByClass, { buffer });
+    return sliceRelevantDrivers(augmentedGroupedByClass, driverClass, { buffer });
   }, [
     driverCarIdx,
     sessionDrivers,

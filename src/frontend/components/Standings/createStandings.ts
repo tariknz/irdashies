@@ -1,15 +1,5 @@
-import type {
-  SessionInfo,
-  SessionResults,
-  Driver,
-  Session,
-  Telemetry,
-} from '@irdashies/types';
-import {
-  calculateIRatingGain,
-  RaceResult,
-  CalculationResult,
-} from '@irdashies/utils/iratingGain';
+import type { SessionResults, Driver } from '@irdashies/types';
+import { calculateIRatingGain, RaceResult, CalculationResult } from '@irdashies/utils/iratingGain';
 
 export interface Standings {
   carIdx: number;
@@ -207,18 +197,25 @@ export const augmentStandingsWithIRating = (
  * This method will slice up the standings and return only the relevant drivers
  * Top 3 drivers are always included for each class
  * Within the player's class it will include the player and 5 drivers before and after
+ *
+ * @param groupedStandings - The grouped standings to slice
+ * @param driverClass - The class of the player
+ * @param options.buffer - The number of drivers to include before and after the player
+ * @param options.numNonClassDrivers - The number of drivers to include in classes outside of the player's class
+ * @returns The sliced standings
  */
 export const sliceRelevantDrivers = <T extends { isPlayer?: boolean }>(
   groupedStandings: [string, T[]][],
-  { buffer = 3 } = {}
+  driverClass: string | number | undefined,
+  { buffer = 3, numNonClassDrivers = 3 } = {}
 ): [string, T[]][] => {
   // this is honestly a bit too complicated to maintain so after some testing will
   // probably simplify it so its a bit more readable
   return groupedStandings.map(([classIdx, standings]) => {
     const playerIndex = standings.findIndex((driver) => driver.isPlayer);
-    if (playerIndex < 0) {
+    if (`${driverClass}` !== classIdx) {
       // if player is not in this class, return only top 3 drivers in that class
-      return [classIdx, standings.slice(0, 3)];
+      return [classIdx, standings.slice(0, numNonClassDrivers)];
     }
 
     // if there are less than 10 drivers, return all
@@ -251,41 +248,4 @@ export const sliceRelevantDrivers = <T extends { isPlayer?: boolean }>(
 
     return [classIdx, sliced];
   });
-};
-
-/**
- * This method will create the standings for the current session
- * It will group the standings by class and slice the relevant drivers
- */
-export const createStandings = (
-  session?: Session,
-  telemetry?: Telemetry,
-  currentSession?: SessionInfo,
-  options?: {
-    sliceRelevantDrivers?: {
-      buffer?: number;
-    };
-  }
-) => {
-  const standings = createDriverStandings(
-    {
-      playerIdx: session?.DriverInfo?.DriverCarIdx,
-      drivers: session?.DriverInfo?.Drivers,
-      qualifyingResults: session?.QualifyResultsInfo?.Results,
-    },
-    {
-      carIdxF2TimeValue: telemetry?.CarIdxF2Time?.value,
-      carIdxOnPitRoadValue: telemetry?.CarIdxOnPitRoad?.value,
-      carIdxTrackSurfaceValue: telemetry?.CarIdxTrackSurface?.value,
-      radioTransmitCarIdx: telemetry?.RadioTransmitCarIdx?.value,
-    },
-    {
-      resultsPositions: currentSession?.ResultsPositions,
-      resultsFastestLap: currentSession?.ResultsFastestLap,
-      sessionType: currentSession?.SessionType,
-    }
-  );
-
-  const grouped = groupStandingsByClass(standings);
-  return sliceRelevantDrivers(grouped, options?.sliceRelevantDrivers);
 };
