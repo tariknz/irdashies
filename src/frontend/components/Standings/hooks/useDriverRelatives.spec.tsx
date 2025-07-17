@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
 import { useDriverRelatives } from './useDriverRelatives';
-import { useDriverCarIdx, useSessionStore, useTelemetryValues } from '@irdashies/context';
+import { useCarIdxAverageLapTime, useDriverCarIdx, useSessionStore, useTelemetryValues } from '@irdashies/context';
 import { useDriverStandings } from './useDriverPositions';
 import type { Standings } from '../createStandings';
 
@@ -10,6 +10,7 @@ vi.mock('@irdashies/context', () => ({
   useDriverCarIdx: vi.fn(),
   useTelemetryValues: vi.fn(),
   useSessionStore: vi.fn(),
+  useCarIdxAverageLapTime: vi.fn(),
 }));
 
 vi.mock('./useDriverPositions', () => ({
@@ -90,16 +91,16 @@ describe('useDriverRelatives', () => {
   ];
 
   const mockCarIdxLapDistPct = [0.5, 0.6, 0.4]; // Player, Ahead, Behind
-  const mockCarIdxEstTime = [99, 100, 90]; // Player, Same class, Faster class
+  const mockCarIdxEstTime = [100, 100, 100]; // Player, Same class, Faster class
 
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(useDriverCarIdx).mockReturnValue(0);
     vi.mocked(useTelemetryValues).mockImplementation((key: string) => {
       if (key === 'CarIdxLapDistPct') return mockCarIdxLapDistPct;
-      if (key === 'CarIdxEstTime') return mockCarIdxEstTime;
       return [];
     });
+    vi.mocked(useCarIdxAverageLapTime).mockReturnValue(mockCarIdxEstTime);
     vi.mocked(useDriverStandings).mockReturnValue(mockDrivers);
     vi.mocked(useSessionStore).mockReturnValue({
       session: {
@@ -156,7 +157,6 @@ describe('useDriverRelatives', () => {
 
       vi.mocked(useTelemetryValues).mockImplementation((key: string) => {
         if (key === 'CarIdxLapDistPct') return mockCarIdxLapDistPctWithCrossing;
-        if (key === 'CarIdxEstTime') return mockCarIdxEstTime;
         return [];
       });
 

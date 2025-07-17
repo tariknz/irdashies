@@ -4,6 +4,7 @@ import { useRelativeSettings, useDriverRelatives } from './hooks';
 import { DriverRatingBadge } from './components/DriverRatingBadge/DriverRatingBadge';
 import { SessionBar } from './components/SessionBar/SessionBar';
 import { SessionFooter } from './components/SessionFooter/SessionFooter';
+import { LapTimesUpdater } from '@irdashies/context';
 
 export const Relative = () => {
   const config = useRelativeSettings();
@@ -22,13 +23,16 @@ export const Relative = () => {
     ));
 
     return (
-      <div className="w-full h-full">
-        <SessionBar />
-        <table className="w-full table-auto text-sm border-separate border-spacing-y-0.5 mb-3 mt-3">
-          <tbody ref={parent}>{emptyRows}</tbody>
-        </table>
-        <SessionFooter />
-      </div>
+      <>
+        <LapTimesUpdater />
+        <div className="w-full h-full">
+          <SessionBar />
+          <table className="w-full table-auto text-sm border-separate border-spacing-y-0.5 mb-3 mt-3">
+            <tbody ref={parent}>{emptyRows}</tbody>
+          </table>
+          <SessionFooter />
+        </div>
+      </>
     );
   }
 
@@ -72,7 +76,7 @@ export const Relative = () => {
   });
 
   return (
-    <div 
+    <div
       className="w-full bg-slate-800/[var(--bg-opacity)] rounded-sm p-2"
       style={{
         ['--bg-opacity' as string]: `${config?.background?.opacity ?? 0}%`,

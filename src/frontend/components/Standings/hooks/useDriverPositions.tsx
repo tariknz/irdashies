@@ -17,38 +17,49 @@ export const useDriverPositions = () => {
   const carIdxF2Time = useTelemetry('CarIdxF2Time');
   const carIdxLapNum = useTelemetry('CarIdxLap');
 
-  const positions = carIdxPosition?.value?.map((position, carIdx) => ({
-    carIdx,
-    position,
-    classPosition: carIdxClassPosition?.value?.[carIdx],
-    delta: carIdxF2Time?.value?.[carIdx], // only to leader currently, need to handle non-race sessions
-    bestLap: carIdxBestLap?.value?.[carIdx],
-    lastLap: carIdxLastLap?.value?.[carIdx],
-    lapNum: carIdxLapNum?.value?.[carIdx],
-  }));
+  return useMemo(() => {
+    const positions = carIdxPosition?.value?.map((position, carIdx) => ({
+      carIdx,
+      position,
+      classPosition: carIdxClassPosition?.value?.[carIdx],
+      delta: carIdxF2Time?.value?.[carIdx], // only to leader currently, need to handle non-race sessions
+      bestLap: carIdxBestLap?.value?.[carIdx],
+      lastLap: carIdxLastLap?.value?.[carIdx],
+      lapNum: carIdxLapNum?.value?.[carIdx],
+    }));
 
-  return positions ?? [];
+    return positions ?? [];
+  }, [
+    carIdxPosition,
+    carIdxClassPosition,
+    carIdxBestLap,
+    carIdxLastLap,
+    carIdxF2Time,
+    carIdxLapNum,
+  ]);
 };
 
 export const useDrivers = () => {
   const sessionDrivers = useSessionDrivers();
-  const drivers =
-    sessionDrivers?.map((driver) => ({
-      carIdx: driver.CarIdx,
-      name: driver.UserName,
-      carNum: driver.CarNumber,
-      carNumRaw: driver.CarNumberRaw,
-      license: driver.LicString,
-      rating: driver.IRating,
-      carClass: {
-        id: driver.CarClassID,
-        color: driver.CarClassColor,
-        name: driver.CarClassShortName,
-        relativeSpeed: driver.CarClassRelSpeed,
-        estLapTime: driver.CarClassEstLapTime,
-      },
-    })) ?? [];
-  return drivers;
+  return useMemo(
+    () =>
+      sessionDrivers?.map((driver) => ({
+        carIdx: driver.CarIdx,
+        name: driver.UserName,
+        carNum: driver.CarNumber,
+        carNumRaw: driver.CarNumberRaw,
+        license: driver.LicString,
+        rating: driver.IRating,
+        carClass: {
+          id: driver.CarClassID,
+          color: driver.CarClassColor,
+          name: driver.CarClassShortName,
+          relativeSpeed: driver.CarClassRelSpeed,
+          estLapTime: driver.CarClassEstLapTime,
+        },
+      })) ?? [],
+    [sessionDrivers],
+  );
 };
 
 export const useCarState = () => {
@@ -56,12 +67,14 @@ export const useCarState = () => {
   const carIdxOnPitRoad = useTelemetry<boolean[]>('CarIdxOnPitRoad');
 
   // turn two arrays to one array with object of index and boolean values
-  return (
-    carIdxTrackSurface?.value?.map((onTrack, index) => ({
-      carIdx: index,
-      onTrack: onTrack > -1,
-      onPitRoad: carIdxOnPitRoad?.value?.[index],
-    })) ?? []
+  return useMemo(
+    () =>
+      carIdxTrackSurface?.value?.map((onTrack, index) => ({
+        carIdx: index,
+        onTrack: onTrack > -1,
+        onPitRoad: carIdxOnPitRoad?.value?.[index],
+      })) ?? [],
+    [carIdxTrackSurface, carIdxOnPitRoad],
   );
 };
 

@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import {
+  useCarIdxAverageLapTime,
   useDriverCarIdx,
   useSessionStore,
   useTelemetryValues,
@@ -12,6 +13,7 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
   const playerIndex = useDriverCarIdx();
   const paceCarIdx =
     useSessionStore((s) => s.session?.DriverInfo?.PaceCarIdx) ?? -1;
+  const carIdxAverageLapTime = useCarIdxAverageLapTime();
 
   const standings = useMemo(() => {
     const calculateRelativePct = (carIdx: number) => {
@@ -43,12 +45,9 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
       const playerDistPct = carIdxLapDistPct?.[playerCarIdx];
       const otherDistPct = carIdxLapDistPct?.[otherCarIdx];
 
-      const player = drivers.find((driver) => driver.carIdx === playerIndex);
-      const other = drivers.find((driver) => driver.carIdx === otherCarIdx);
-      
       // Use the slower car's lap time for more conservative deltas in multiclass
-      const playerEstLapTime = player?.carClass?.estLapTime ?? 0;
-      const otherEstLapTime = other?.carClass?.estLapTime ?? 0;
+      const playerEstLapTime = carIdxAverageLapTime[playerCarIdx] ?? 0;
+      const otherEstLapTime = carIdxAverageLapTime[otherCarIdx] ?? 0;
       const baseLapTime = Math.max(playerEstLapTime, otherEstLapTime);
 
       let distPctDifference = otherDistPct - playerDistPct;
@@ -83,7 +82,7 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
 
     const allRelatives = filterAndMapDrivers();
     const playerArrIndex = allRelatives.findIndex(
-      (result) => result.carIdx === playerIndex
+      (result) => result.carIdx === playerIndex,
     );
 
     // if the player is not in the list, return an empty array
@@ -96,7 +95,14 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
     const end = Math.min(allRelatives.length, playerArrIndex + buffer + 1);
 
     return allRelatives.slice(start, end);
-  }, [buffer, playerIndex, carIdxLapDistPct, drivers, paceCarIdx]);
+  }, [
+    buffer,
+    playerIndex,
+    carIdxLapDistPct,
+    drivers,
+    paceCarIdx,
+    carIdxAverageLapTime,
+  ]);
 
   return standings;
 };
