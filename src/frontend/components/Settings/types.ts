@@ -21,6 +21,7 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
   config: {
     buffer: number;
     background: { opacity: number };
+    experimentalDynamicLapTimes?: boolean;
   };
 }
 

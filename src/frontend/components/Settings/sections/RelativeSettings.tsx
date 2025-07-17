@@ -2,20 +2,28 @@ import { useState } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import { useDashboard } from '@irdashies/context';
 import { RelativeWidgetSettings } from '../types';
+import { ToggleSwitch } from '../components/ToggleSwitch';
 
 const SETTING_ID = 'relative';
 
 const defaultConfig: RelativeWidgetSettings['config'] = {
   buffer: 3,
   background: { opacity: 0 },
+  experimentalDynamicLapTimes: false,
 };
 
-const migrateConfig = (savedConfig: unknown): RelativeWidgetSettings['config'] => {
+const migrateConfig = (
+  savedConfig: unknown,
+): RelativeWidgetSettings['config'] => {
   if (!savedConfig || typeof savedConfig !== 'object') return defaultConfig;
   const config = savedConfig as Record<string, unknown>;
   return {
     buffer: (config.buffer as { value?: number })?.value ?? 3,
-    background: { opacity: (config.background as { opacity?: number })?.opacity ?? 0 },
+    background: {
+      opacity: (config.background as { opacity?: number })?.opacity ?? 0,
+    },
+    experimentalDynamicLapTimes:
+      (config.experimentalDynamicLapTimes as boolean) ?? false,
   };
 };
 
@@ -79,10 +87,26 @@ export const RelativeSettings = () => {
                 }
                 className="w-20 h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer"
               />
-              <span className="text-xs text-slate-400 w-8">
+              <span className="text-xs text-slate-400 w-7 text-right">
                 {settings.config.background.opacity}%
               </span>
             </div>
+          </div>
+          <div className="flex items-center justify-between">
+            <div>
+              <span className="text-sm text-slate-300">
+                Use Experimental Lap Times
+              </span>
+              <p className="text-xs text-slate-400">
+                Use dynamic lap times for delta calculations.
+              </p>
+            </div>
+            <ToggleSwitch
+              enabled={!!settings.config.experimentalDynamicLapTimes}
+              onToggle={(enabled) => {
+                handleConfigChange({ experimentalDynamicLapTimes: enabled });
+              }}
+            />
           </div>
         </div>
       )}

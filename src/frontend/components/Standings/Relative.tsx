@@ -16,64 +16,53 @@ export const Relative = () => {
   const totalRows = 2 * buffer + 1;
   const playerIndex = standings.findIndex((result) => result.isPlayer);
 
-  // If no player found, render empty table with consistent height
-  if (playerIndex === -1) {
-    const emptyRows = Array.from({ length: totalRows }, (_, index) => (
-      <DummyDriverRow key={`empty-${index}`} />
-    ));
-
-    return (
-      <>
-        <LapTimesUpdater />
-        <div className="w-full h-full">
-          <SessionBar />
-          <table className="w-full table-auto text-sm border-separate border-spacing-y-0.5 mb-3 mt-3">
-            <tbody ref={parent}>{emptyRows}</tbody>
-          </table>
-          <SessionFooter />
-        </div>
-      </>
-    );
-  }
-
-  // Create an array of fixed size with placeholder rows
-  const rows = Array.from({ length: totalRows }, (_, index) => {
-    // Calculate the actual index in the standings array
-    // Center the player in the middle of the display
-    const centerIndex = Math.floor(totalRows / 2); // buffer
-    const actualIndex = index - centerIndex + playerIndex;
-    const result = standings[actualIndex];
-
-    if (!result) {
-      // If no result, render a dummy row with visibility hidden
-      return <DummyDriverRow key={`placeholder-${index}`} />;
+  const renderTableBody = () => {
+    // If no player found, render empty table with consistent height
+    if (playerIndex === -1) {
+      return Array.from({ length: totalRows }, (_, index) => (
+        <DummyDriverRow key={`empty-${index}`} />
+      ));
     }
 
-    return (
-      <DriverInfoRow
-        key={result.carIdx}
-        carIdx={result.carIdx}
-        classColor={result.carClass.color}
-        carNumber={result.driver?.carNum || ''}
-        name={result.driver?.name || ''}
-        isPlayer={result.isPlayer}
-        hasFastestTime={result.hasFastestTime}
-        delta={result.delta}
-        position={result.classPosition}
-        onPitRoad={result.onPitRoad}
-        onTrack={result.onTrack}
-        radioActive={result.radioActive}
-        isLapped={result.lappedState === 'behind'}
-        isLappingAhead={result.lappedState === 'ahead'}
-        badge={
-          <DriverRatingBadge
-            license={result.driver?.license}
-            rating={result.driver?.rating}
-          />
-        }
-      />
-    );
-  });
+    // Create an array of fixed size with placeholder rows
+    return Array.from({ length: totalRows }, (_, index) => {
+      // Calculate the actual index in the standings array
+      // Center the player in the middle of the display
+      const centerIndex = Math.floor(totalRows / 2); // buffer
+      const actualIndex = index - centerIndex + playerIndex;
+      const result = standings[actualIndex];
+
+      if (!result) {
+        // If no result, render a dummy row with visibility hidden
+        return <DummyDriverRow key={`placeholder-${index}`} />;
+      }
+
+      return (
+        <DriverInfoRow
+          key={result.carIdx}
+          carIdx={result.carIdx}
+          classColor={result.carClass.color}
+          carNumber={result.driver?.carNum || ''}
+          name={result.driver?.name || ''}
+          isPlayer={result.isPlayer}
+          hasFastestTime={result.hasFastestTime}
+          delta={result.delta}
+          position={result.classPosition}
+          onPitRoad={result.onPitRoad}
+          onTrack={result.onTrack}
+          radioActive={result.radioActive}
+          isLapped={result.lappedState === 'behind'}
+          isLappingAhead={result.lappedState === 'ahead'}
+          badge={
+            <DriverRatingBadge
+              license={result.driver?.license}
+              rating={result.driver?.rating}
+            />
+          }
+        />
+      );
+    });
+  };
 
   return (
     <div
@@ -82,9 +71,10 @@ export const Relative = () => {
         ['--bg-opacity' as string]: `${config?.background?.opacity ?? 0}%`,
       }}
     >
+      {config?.experimentalDynamicLapTimes && <LapTimesUpdater />}
       <SessionBar />
       <table className="w-full table-auto text-sm border-separate border-spacing-y-0.5 mb-3 mt-3">
-        <tbody ref={parent}>{rows}</tbody>
+        <tbody ref={parent}>{renderTableBody()}</tbody>
       </table>
       <SessionFooter />
     </div>
