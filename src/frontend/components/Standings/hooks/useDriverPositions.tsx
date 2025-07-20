@@ -79,7 +79,7 @@ export const useDriverStandings = () => {
   const driverStandings: Standings[] = useMemo(() => {
     const standings = drivers.map((driver) => {
       const driverPos = driverPositions.find(
-        (driverPos) => driverPos.carIdx === driver.carIdx
+        (driverPos) => driverPos.carIdx === driver.carIdx,
       );
 
       if (!driverPos) return undefined;
@@ -99,7 +99,7 @@ export const useDriverStandings = () => {
       let classPosition: number | undefined = driverPos.classPosition;
       if (classPosition <= 0) {
         const qualifyingPosition = qualifyingPositions?.find(
-          (q) => q.CarIdx === driver.carIdx
+          (q) => q.CarIdx === driver.carIdx,
         );
         classPosition = qualifyingPosition ? qualifyingPosition.Position + 1 : undefined;
       }
