@@ -17,7 +17,17 @@ import {
   augmentStandingsWithIRating,
 } from '../createStandings';
 
-export const useDriverStandings = ({ buffer }: { buffer: number }) => {
+export const useDriverStandings = ({
+  buffer,
+  numNonClassDrivers,
+  minPlayerClassDrivers,
+  numTopDrivers,
+}: {
+  buffer?: number;
+  numNonClassDrivers?: number;
+  minPlayerClassDrivers?: number;
+  numTopDrivers?: number;
+} = {}) => {
   const sessionDrivers = useSessionDrivers();
   const driverCarIdx = useDriverCarIdx();
   const qualifyingResults = useSessionQualifyingResults();
@@ -61,7 +71,12 @@ export const useDriverStandings = ({ buffer }: { buffer: number }) => {
         ? augmentStandingsWithIRating(groupedByClass)
         : groupedByClass;
 
-    return sliceRelevantDrivers(augmentedGroupedByClass, driverClass, { buffer });
+    return sliceRelevantDrivers(augmentedGroupedByClass, driverClass, {
+      buffer,
+      numNonClassDrivers,
+      minPlayerClassDrivers,
+      numTopDrivers,
+    });
   }, [
     driverCarIdx,
     sessionDrivers,
@@ -75,6 +90,9 @@ export const useDriverStandings = ({ buffer }: { buffer: number }) => {
     sessionType,
     isOfficial,
     buffer,
+    numNonClassDrivers,
+    minPlayerClassDrivers,
+    numTopDrivers,
   ]);
 
   return standingsWithGain;

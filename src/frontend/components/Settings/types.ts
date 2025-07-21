@@ -14,6 +14,12 @@ export interface StandingsWidgetSettings extends BaseWidgetSettings {
     lastTime: { enabled: boolean };
     fastestTime: { enabled: boolean };
     background: { opacity: number };
+    driverStandings: {
+      buffer: number;
+      numNonClassDrivers: number;
+      minPlayerClassDrivers: number;
+      numTopDrivers: number;
+    };
   };
 }
 

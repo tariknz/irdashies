@@ -13,22 +13,55 @@ const defaultConfig: StandingsWidgetSettings['config'] = {
   lastTime: { enabled: true },
   fastestTime: { enabled: true },
   background: { opacity: 0 },
+  driverStandings: {
+    buffer: 3,
+    numNonClassDrivers: 3,
+    minPlayerClassDrivers: 10,
+    numTopDrivers: 3,
+  },
 };
 
 // Migration function to handle missing properties in the new config format
-const migrateConfig = (savedConfig: unknown): StandingsWidgetSettings['config'] => {
+const migrateConfig = (
+  savedConfig: unknown
+): StandingsWidgetSettings['config'] => {
   if (!savedConfig || typeof savedConfig !== 'object') return defaultConfig;
 
   const config = savedConfig as Record<string, unknown>;
 
   // Handle new format with missing properties
   return {
-    iRatingChange: { enabled: (config.iRatingChange as { enabled?: boolean })?.enabled ?? true },
+    iRatingChange: {
+      enabled:
+        (config.iRatingChange as { enabled?: boolean })?.enabled ?? true,
+    },
     badge: { enabled: (config.badge as { enabled?: boolean })?.enabled ?? true },
     delta: { enabled: (config.delta as { enabled?: boolean })?.enabled ?? true },
-    lastTime: { enabled: (config.lastTime as { enabled?: boolean })?.enabled ?? true },
-    fastestTime: { enabled: (config.fastestTime as { enabled?: boolean })?.enabled ?? true },
-    background: { opacity: (config.background as { opacity?: number })?.opacity ?? 0 },
+    lastTime: {
+      enabled: (config.lastTime as { enabled?: boolean })?.enabled ?? true,
+    },
+    fastestTime: {
+      enabled: (config.fastestTime as { enabled?: boolean })?.enabled ?? true,
+    },
+    background: {
+      opacity: (config.background as { opacity?: number })?.opacity ?? 0,
+    },
+    driverStandings: {
+      buffer:
+        (config.driverStandings as { buffer?: number })?.buffer ??
+        defaultConfig.driverStandings.buffer,
+      numNonClassDrivers:
+        (config.driverStandings as { numNonClassDrivers?: number })
+          ?.numNonClassDrivers ??
+        defaultConfig.driverStandings.numNonClassDrivers,
+      minPlayerClassDrivers:
+        (config.driverStandings as { minPlayerClassDrivers?: number })
+          ?.minPlayerClassDrivers ??
+        defaultConfig.driverStandings.minPlayerClassDrivers,
+      numTopDrivers:
+        (config.driverStandings as { numTopDrivers?: number })?.numTopDrivers ??
+        defaultConfig.driverStandings.numTopDrivers,
+    },
   };
 };
 
@@ -105,8 +138,103 @@ export const StandingsSettings = () => {
                   }
                 />
               </div>
+            </div>
+          </div>
+          {/* Driver Standings Settings */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-medium text-slate-200">
+                Driver Standings
+              </h3>
+            </div>
+            <div className="space-y-3 pl-4">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-300">Background Opacity</span>
+                <span className="text-sm text-slate-300">
+                  Drivers to show around player
+                </span>
+                <input
+                  type="number"
+                  value={settings.config.driverStandings.buffer}
+                  onChange={(e) =>
+                    handleConfigChange({
+                      driverStandings: {
+                        ...settings.config.driverStandings,
+                        buffer: parseInt(e.target.value),
+                      },
+                    })
+                  }
+                  className="w-20 bg-slate-700 text-white rounded-md px-2 py-1"
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-slate-300">
+                  Drivers to show in other classes
+                </span>
+                <input
+                  type="number"
+                  value={settings.config.driverStandings.numNonClassDrivers}
+                  onChange={(e) =>
+                    handleConfigChange({
+                      driverStandings: {
+                        ...settings.config.driverStandings,
+                        numNonClassDrivers: parseInt(e.target.value),
+                      },
+                    })
+                  }
+                  className="w-20 bg-slate-700 text-white rounded-md px-2 py-1"
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-slate-300">
+                  Minimum drivers in player&apos;s class
+                </span>
+                <input
+                  type="number"
+                  value={settings.config.driverStandings.minPlayerClassDrivers}
+                  onChange={(e) =>
+                    handleConfigChange({
+                      driverStandings: {
+                        ...settings.config.driverStandings,
+                        minPlayerClassDrivers: parseInt(e.target.value),
+                      },
+                    })
+                  }
+                  className="w-20 bg-slate-700 text-white rounded-md px-2 py-1"
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-slate-300">
+                  Top drivers to always show in player&apos;s class
+                </span>
+                <input
+                  type="number"
+                  value={settings.config.driverStandings.numTopDrivers}
+                  onChange={(e) =>
+                    handleConfigChange({
+                      driverStandings: {
+                        ...settings.config.driverStandings,
+                        numTopDrivers: parseInt(e.target.value),
+                      },
+                    })
+                  }
+                  className="w-20 bg-slate-700 text-white rounded-md px-2 py-1"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Background Settings */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-medium text-slate-200">
+                Background
+              </h3>
+            </div>
+            <div className="space-y-3 pl-4">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-slate-300">
+                  Background Opacity
+                </span>
                 <div className="flex items-center gap-2">
                   <input
                     type="range"
@@ -114,7 +242,9 @@ export const StandingsSettings = () => {
                     max="100"
                     value={settings.config.background.opacity}
                     onChange={(e) =>
-                      handleConfigChange({ background: { opacity: parseInt(e.target.value) } })
+                      handleConfigChange({
+                        background: { opacity: parseInt(e.target.value) },
+                      })
                     }
                     className="w-20 h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer"
                   />

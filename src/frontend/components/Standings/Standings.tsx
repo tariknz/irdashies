@@ -14,9 +14,9 @@ import {
 
 export const Standings = () => {
   const [parent] = useAutoAnimate();
-  const standings = useDriverStandings({ buffer: 3 });
-  const classStats = useCarClassStats();
   const settings = useStandingsSettings();
+  const standings = useDriverStandings(settings?.driverStandings);
+  const classStats = useCarClassStats();
   return (
     <div
       className={`w-full bg-slate-800/[var(--bg-opacity)] rounded-sm p-2 text-white overflow-hidden`}
