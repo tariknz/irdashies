@@ -315,6 +315,8 @@ describe('createStandings', () => {
 
       const filteredDrivers = sliceRelevantDrivers(results, 'GT3');
 
+      expect(filteredDrivers[0][1]).toHaveLength(10);
+
       expect(filteredDrivers).toEqual([
         [
           'GT3',
@@ -326,9 +328,87 @@ describe('createStandings', () => {
             { name: '5. David' },
             { name: '6. Sebastian' },
             { name: '7. Nico' },
+            { name: '8. Eve' },
+            { name: '9. Frank' },
+            { name: '10. Max' },
           ],
         ],
       ]);
+    });
+
+    it('should return at least 10 drivers if available', () => {
+      const results: [string, DummyStanding[]][] = [
+        [
+          'GT3',
+          [
+            { name: '1. Bob' },
+            { name: '2. Alice' },
+            { name: '3. Charlie' },
+            { name: '4. David' },
+            { name: '5. Eve' },
+            { name: '6. Frank' },
+            { name: '7. Player', isPlayer: true },
+            { name: '8. Hannah' },
+            { name: '9. Irene' },
+            { name: '10. Jack' },
+            { name: '11. Kevin' },
+          ],
+        ],
+      ];
+      const filteredDrivers = sliceRelevantDrivers(results, 'GT3');
+      expect(filteredDrivers[0][1].length).toBe(10);
+    });
+
+    it('should allow minPlayerClassDrivers to be configured', () => {
+      const results: [string, DummyStanding[]][] = [
+        [
+          'GT3',
+          [
+            { name: '1. Bob' },
+            { name: '2. Alice' },
+            { name: '3. Charlie' },
+            { name: '4. David' },
+            { name: '5. Eve' },
+            { name: '6. Frank' },
+            { name: '7. Player', isPlayer: true },
+            { name: '8. Hannah' },
+            { name: '9. Irene' },
+            { name: '10. Jack' },
+            { name: '11. Kevin' },
+          ],
+        ],
+      ];
+      const filteredDrivers = sliceRelevantDrivers(results, 'GT3', {
+        minPlayerClassDrivers: 5,
+      });
+      expect(filteredDrivers[0][1].length).toBe(10);
+    });
+
+    it('should allow numTopDrivers to be configured', () => {
+      const results: [string, DummyStanding[]][] = [
+        [
+          'GT3',
+          [
+            { name: '1. Bob' },
+            { name: '2. Alice' },
+            { name: '3. Charlie' },
+            { name: '4. David' },
+            { name: '5. Eve' },
+            { name: '6. Frank' },
+            { name: '7. Player', isPlayer: true },
+            { name: '8. Hannah' },
+            { name: '9. Irene' },
+            { name: '10. Jack' },
+            { name: '11. Kevin' },
+          ],
+        ],
+      ];
+      const filteredDrivers = sliceRelevantDrivers(results, 'GT3', {
+        numTopDrivers: 1,
+      });
+      expect(filteredDrivers[0][1].length).toBe(9);
+      expect(filteredDrivers[0][1][0].name).toBe('1. Bob');
+      expect(filteredDrivers[0][1][1].name).toBe('4. David');
     });
   });
 });
@@ -347,6 +427,8 @@ function createStandings(
   options?: {
     buffer?: number;
     numNonClassDrivers?: number;
+    minPlayerClassDrivers?: number;
+    numTopDrivers?: number;
   }
 ) {
   const standings = createDriverStandings(

@@ -202,50 +202,69 @@ export const augmentStandingsWithIRating = (
  * @param driverClass - The class of the player
  * @param options.buffer - The number of drivers to include before and after the player
  * @param options.numNonClassDrivers - The number of drivers to include in classes outside of the player's class
+ * @param options.minPlayerClassDrivers - The minimum number of drivers to include in the player's class
+ * @param options.numTopDrivers - The number of top drivers to always include in the player's class
  * @returns The sliced standings
  */
 export const sliceRelevantDrivers = <T extends { isPlayer?: boolean }>(
   groupedStandings: [string, T[]][],
   driverClass: string | number | undefined,
-  { buffer = 3, numNonClassDrivers = 3 } = {}
+  {
+    buffer = 3,
+    numNonClassDrivers = 3,
+    minPlayerClassDrivers = 10,
+    numTopDrivers = 3,
+  } = {}
 ): [string, T[]][] => {
-  // this is honestly a bit too complicated to maintain so after some testing will
-  // probably simplify it so its a bit more readable
   return groupedStandings.map(([classIdx, standings]) => {
     const playerIndex = standings.findIndex((driver) => driver.isPlayer);
     if (String(driverClass) !== classIdx) {
-      // if player is not in this class, return only top 3 drivers in that class
+      // if player is not in this class, return only top N drivers in that class
       return [classIdx, standings.slice(0, numNonClassDrivers)];
     }
 
-    // if there are less than 10 drivers, return all
-    if (standings.length <= 10) return [classIdx, standings];
-
-    // take the player and a buffer of drivers before and after the player
-    const start = Math.max(playerIndex - buffer, 0);
-    let end = Math.min(playerIndex + buffer + 1, standings.length);
-
-    if (playerIndex <= 3) {
-      // if player is in top 3, include more drivers at the end
-      end = Math.min(
-        playerIndex + buffer + 3 - playerIndex + 1,
-        standings.length
-      );
+    // if there are less than minPlayerClassDrivers drivers, return all of them
+    if (standings.length <= minPlayerClassDrivers) {
+      return [classIdx, standings];
     }
 
-    const sliced = standings.slice(start, end);
-
-    if (playerIndex > 3) {
-      // add back top 3 but don't include overlapping indexes
-      // reverse to add in correct order when doing array unshift
-      standings
-        .slice(0, 3)
-        .reverse()
-        .forEach((driver) => {
-          if (!sliced.includes(driver)) sliced.unshift(driver);
-        });
+    // when no player is found, just return the top `minPlayerClassDrivers`
+    if (playerIndex === -1) {
+      return [classIdx, standings.slice(0, minPlayerClassDrivers)];
     }
 
-    return [classIdx, sliced];
+    const relevantDrivers = new Set<T>();
+
+    // Add top drivers
+    for (let i = 0; i < numTopDrivers; i++) {
+      if (standings[i]) {
+        relevantDrivers.add(standings[i]);
+      }
+    }
+
+    // Add drivers around the player
+    const start = Math.max(0, playerIndex - buffer);
+    const end = Math.min(standings.length, playerIndex + buffer + 1);
+    for (let i = start; i < end; i++) {
+      if (standings[i]) {
+        relevantDrivers.add(standings[i]);
+      }
+    }
+
+    // Ensure we have at least `minPlayerClassDrivers`
+    let lastIndex = end;
+    while (
+      relevantDrivers.size < minPlayerClassDrivers &&
+      lastIndex < standings.length
+    ) {
+      relevantDrivers.add(standings[lastIndex]);
+      lastIndex++;
+    }
+
+    const sortedDrivers = [...relevantDrivers].sort(
+      (a, b) => standings.indexOf(a) - standings.indexOf(b)
+    );
+
+    return [classIdx, sortedDrivers];
   });
 };
