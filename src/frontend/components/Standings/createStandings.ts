@@ -261,8 +261,8 @@ export const sliceRelevantDrivers = <T extends { isPlayer?: boolean }>(
       lastIndex++;
     }
 
-    const sortedDrivers = [...relevantDrivers].sort(
-      (a, b) => standings.indexOf(a) - standings.indexOf(b)
+    const sortedDrivers = standings.filter((driver) =>
+      relevantDrivers.has(driver),
     );
 
     return [classIdx, sortedDrivers];

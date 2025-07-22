@@ -154,6 +154,7 @@ export const StandingsSettings = () => {
                 </span>
                 <input
                   type="number"
+                  min={0}
                   value={settings.config.driverStandings.buffer}
                   onChange={(e) =>
                     handleConfigChange({
@@ -172,6 +173,7 @@ export const StandingsSettings = () => {
                 </span>
                 <input
                   type="number"
+                  min={0}
                   value={settings.config.driverStandings.numNonClassDrivers}
                   onChange={(e) =>
                     handleConfigChange({
@@ -190,6 +192,7 @@ export const StandingsSettings = () => {
                 </span>
                 <input
                   type="number"
+                  min={0}
                   value={settings.config.driverStandings.minPlayerClassDrivers}
                   onChange={(e) =>
                     handleConfigChange({
@@ -208,6 +211,7 @@ export const StandingsSettings = () => {
                 </span>
                 <input
                   type="number"
+                  min={0}
                   value={settings.config.driverStandings.numTopDrivers}
                   onChange={(e) =>
                     handleConfigChange({
