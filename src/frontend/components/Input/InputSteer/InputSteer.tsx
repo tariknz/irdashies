@@ -14,7 +14,7 @@ export const InputSteer = ({ angleRad = 0 }: InputSteerProps) => {
       >
         <g
           style={{
-            transform: `rotate(${angleRad}rad)`,
+            transform: `rotate(${angleRad * -1}rad)`,
             transformBox: 'fill-box',
             transformOrigin: 'center',
           }}
