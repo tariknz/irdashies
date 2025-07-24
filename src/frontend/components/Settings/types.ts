@@ -1,6 +1,3 @@
-import { InputSettings } from '../Input/InputContainer/InputContainer';
-
-/* eslint-disable @typescript-eslint/no-empty-object-type */
 export interface BaseWidgetSettings<T = Record<string, unknown>> {
   enabled: boolean;
   config: T;
@@ -42,8 +39,30 @@ export interface TrackMapWidgetSettings extends BaseWidgetSettings {
   };
 }
 
-export type InputWidgetSettings = BaseWidgetSettings<InputSettings>;
+export interface InputWidgetSettings extends BaseWidgetSettings {
+  config: {
+    trace: {
+      enabled: boolean;
+      includeThrottle: boolean;
+      includeBrake: boolean;
+    };
+    bar: {
+      enabled: boolean;
+      includeClutch: boolean;
+      includeBrake: boolean;
+      includeThrottle: boolean;
+    };
+    gear: {
+      enabled: boolean;
+      unit: 'mph' | 'km/h' | 'auto';
+    };
+    steer: {
+      enabled: boolean;
+    };
+  };
+}
 
+/* eslint-disable @typescript-eslint/no-empty-object-type */
 export interface AdvancedSettings extends BaseWidgetSettings {
   // Add specific advanced settings here
 }

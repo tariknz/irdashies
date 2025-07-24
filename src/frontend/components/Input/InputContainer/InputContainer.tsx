@@ -1,5 +1,7 @@
+import { InputWidgetSettings } from '../../Settings/types';
 import { InputBar } from '../InputBar/InputBar';
 import { InputGear } from '../InputGear/InputGear';
+import { InputSteer } from '../InputSteer/InputSteer';
 import { InputTrace } from '../InputTrace/InputTrace';
 
 export interface InputProps {
@@ -9,25 +11,8 @@ export interface InputProps {
   gear?: number;
   speed?: number;
   unit?: number;
-  settings?: InputSettings;
-}
-
-export interface InputSettings {
-  trace: {
-    enabled: boolean;
-    includeThrottle: boolean;
-    includeBrake: boolean;
-  };
-  bar: {
-    enabled: boolean;
-    includeClutch: boolean;
-    includeBrake: boolean;
-    includeThrottle: boolean;
-  };
-  gear: {
-    enabled: boolean;
-    unit: 'mph' | 'km/h' | 'auto';
-  };
+  steer?: number;
+  settings?: InputWidgetSettings['config'];
 }
 
 export const InputContainer = ({
@@ -36,6 +21,7 @@ export const InputContainer = ({
   clutch,
   gear,
   speed,
+  steer,
   unit,
   settings,
 }: InputProps) => {
@@ -44,7 +30,7 @@ export const InputContainer = ({
       {settings?.trace.enabled && <InputTrace input={{ brake, throttle }} settings={settings.trace} />}
       {settings?.bar.enabled && <InputBar brake={brake} throttle={throttle} clutch={clutch} settings={settings.bar} />}
       {settings?.gear.enabled && <InputGear gear={gear} speedMs={speed} unit={unit} settings={settings.gear} />}
-      {/* <InputSteer /> */} {/* WIP */}
+      {settings?.steer?.enabled && <InputSteer angleRad={steer} />}
     </div>
   );
 };

@@ -3,15 +3,87 @@ import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import { InputWidgetSettings } from '../types';
 import { useDashboard } from '@irdashies/context';
 import { ToggleSwitch } from '../components/ToggleSwitch';
-import { InputSettings as InputSettingsType } from '../../Input/InputContainer/InputContainer';
+
+const SETTING_ID = 'input';
+
+const defaultConfig: InputWidgetSettings['config'] = {
+  trace: {
+    enabled: true,
+    includeThrottle: true,
+    includeBrake: true,
+  },
+  bar: {
+    enabled: true,
+    includeClutch: true,
+    includeBrake: true,
+    includeThrottle: true,
+  },
+  gear: {
+    enabled: true,
+    unit: 'auto',
+  },
+  steer: {
+    enabled: true,
+  },
+};
+
+// Migration function to handle missing properties in the new config format
+const migrateConfig = (
+  savedConfig: unknown,
+): InputWidgetSettings['config'] => {
+  if (!savedConfig || typeof savedConfig !== 'object') return defaultConfig;
+
+  const config = savedConfig as Record<string, unknown>;
+
+  return {
+    trace: {
+      enabled:
+        (config.trace as { enabled?: boolean })?.enabled ??
+        defaultConfig.trace.enabled,
+      includeThrottle:
+        (config.trace as { includeThrottle?: boolean })?.includeThrottle ??
+        defaultConfig.trace.includeThrottle,
+      includeBrake:
+        (config.trace as { includeBrake?: boolean })?.includeBrake ??
+        defaultConfig.trace.includeBrake,
+    },
+    bar: {
+      enabled:
+        (config.bar as { enabled?: boolean })?.enabled ?? defaultConfig.bar.enabled,
+      includeClutch:
+        (config.bar as { includeClutch?: boolean })?.includeClutch ??
+        defaultConfig.bar.includeClutch,
+      includeBrake:
+        (config.bar as { includeBrake?: boolean })?.includeBrake ??
+        defaultConfig.bar.includeBrake,
+      includeThrottle:
+        (config.bar as { includeThrottle?: boolean })?.includeThrottle ??
+        defaultConfig.bar.includeThrottle,
+    },
+    gear: {
+      enabled:
+        (config.gear as { enabled?: boolean })?.enabled ??
+        defaultConfig.gear.enabled,
+      unit:
+        (config.gear as { unit?: 'mph' | 'km/h' | 'auto' })?.unit ??
+        defaultConfig.gear.unit,
+    },
+    steer: {
+      enabled:
+        (config.steer as { enabled?: boolean })?.enabled ??
+        defaultConfig.steer.enabled,
+    },
+  };
+};
 
 export const InputSettings = () => {
   const { currentDashboard } = useDashboard();
+  const savedSettings = currentDashboard?.widgets.find(
+    (w) => w.id === SETTING_ID,
+  );
   const [settings, setSettings] = useState<InputWidgetSettings>({
-    enabled:
-      currentDashboard?.widgets.find((w) => w.id === 'input')?.enabled ?? false,
-    config: ((currentDashboard?.widgets.find((w) => w.id === 'input')
-      ?.config as unknown) as InputSettingsType),
+    enabled: savedSettings?.enabled ?? false,
+    config: migrateConfig(savedSettings?.config),
   });
 
   if (!currentDashboard) {
@@ -21,7 +93,7 @@ export const InputSettings = () => {
   const config = settings.config;
 
   return (
-    <BaseSettingsSection<InputSettingsType>
+    <BaseSettingsSection
       title="Input Traces Settings"
       description="Configure the input traces display settings for throttle, brake, and clutch."
       settings={settings}
@@ -133,6 +205,26 @@ export const InputSettings = () => {
                 </label>
               </div>
             )}
+          </div>
+
+          {/* Steer Settings */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-medium text-slate-200">
+                Steer Settings
+              </h3>
+              <div className="flex items-center gap-3">
+                <span className="text-sm text-slate-300">
+                  Enable Steer Display
+                </span>
+                <ToggleSwitch
+                  enabled={config.steer.enabled}
+                  onToggle={(enabled) =>
+                    handleConfigChange({ steer: { ...config.steer, enabled } })
+                  }
+                />
+              </div>
+            </div>
           </div>
 
           {/* Gear Settings */}

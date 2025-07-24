@@ -15,6 +15,7 @@ const RandomTraces = () => {
   const [clutch, setClutch] = useState(0);
   const [gear] = useState(2);
   const [speed] = useState(122);
+  const [steer, setSteer] = useState(0);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -29,6 +30,13 @@ const RandomTraces = () => {
       setClutch((value) =>
         Math.max(0, Math.min(1, value + Math.random() * 0.1 - 0.05))
       );
+
+      setSteer((value) =>
+        Math.max(
+          -Math.PI,
+          Math.min(Math.PI, value + Math.random() * 0.2 - 0.1),
+        )
+      );
     }, 1000 / 60);
     return () => clearInterval(interval);
   }, []);
@@ -39,6 +47,7 @@ const RandomTraces = () => {
       clutch={clutch}
       gear={gear}
       speed={speed}
+      steer={steer}
       settings={{
         trace: {
           enabled: true,
@@ -54,6 +63,9 @@ const RandomTraces = () => {
         gear: {
           enabled: true,
           unit: 'auto',
+        },
+        steer: {
+          enabled: true,
         },
       }}
     />

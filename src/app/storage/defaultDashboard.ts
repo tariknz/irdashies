@@ -45,6 +45,9 @@ export const defaultDashboard: DashboardLayout = {
           enabled: true,
           unit: 'auto',
         },
+        steer: {
+          enabled: true,
+        },
       },
     },
     {

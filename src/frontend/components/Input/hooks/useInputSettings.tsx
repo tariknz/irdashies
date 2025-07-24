@@ -1,5 +1,5 @@
 import { useDashboard } from '@irdashies/context'
-import { InputSettings } from '../InputContainer/InputContainer';
+import { InputWidgetSettings } from '../../Settings/types';
 
 export const useInputSettings = () => {
   const { currentDashboard } = useDashboard();
@@ -18,7 +18,7 @@ export const useInputSettings = () => {
     typeof inputSettings.bar === 'object' &&
     typeof inputSettings.gear === 'object'
   ) {
-    return inputSettings as unknown as InputSettings;
+    return inputSettings as unknown as InputWidgetSettings['config'];
   }
 
   return undefined;
