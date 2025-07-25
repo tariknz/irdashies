@@ -27,10 +27,26 @@ export const InputContainer = ({
 }: InputProps) => {
   return (
     <div className="w-full h-full inline-flex gap-1 p-2 flex-row bg-slate-800/50">
-      {settings?.trace.enabled && <InputTrace input={{ brake, throttle }} settings={settings.trace} />}
-      {settings?.bar.enabled && <InputBar brake={brake} throttle={throttle} clutch={clutch} settings={settings.bar} />}
-      {settings?.gear.enabled && <InputGear gear={gear} speedMs={speed} unit={unit} settings={settings.gear} />}
-      {settings?.steer?.enabled && <InputSteer angleRad={steer} />}
+      {(settings?.trace?.enabled ?? true) && (
+        <InputTrace input={{ brake, throttle }} settings={settings?.trace} />
+      )}
+      {(settings?.bar?.enabled ?? true) && (
+        <InputBar
+          brake={brake}
+          throttle={throttle}
+          clutch={clutch}
+          settings={settings?.bar}
+        />
+      )}
+      {(settings?.gear?.enabled ?? true) && (
+        <InputGear
+          gear={gear}
+          speedMs={speed}
+          unit={unit}
+          settings={settings?.gear}
+        />
+      )}
+      {(settings?.steer?.enabled ?? true) && <InputSteer angleRad={steer} />}
     </div>
   );
 };

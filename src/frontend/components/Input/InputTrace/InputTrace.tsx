@@ -1,22 +1,25 @@
 import * as d3 from 'd3';
 import { useEffect, useRef, useState } from 'react';
-import tailwindColors from 'tailwindcss/colors';
+import { getColor } from '@irdashies/utils/colors';
 
-const BRAKE_COLOR = tailwindColors.red['500'];
-const THROTTLE_COLOR = tailwindColors.green['500'];
+const BRAKE_COLOR = getColor('red');
+const THROTTLE_COLOR = getColor('green');
 
 export interface InputTraceProps {
   input: {
     brake?: number;
     throttle?: number;
   };
-  settings: {
+  settings?: {
     includeThrottle?: boolean;
     includeBrake?: boolean;
   };
 }
 
-export const InputTrace = ({ input, settings }: InputTraceProps) => {
+export const InputTrace = ({
+  input,
+  settings = { includeThrottle: true, includeBrake: true },
+}: InputTraceProps) => {
   const { includeThrottle, includeBrake } = settings;
   const svgRef = useRef<SVGSVGElement>(null);
   const { width, height } = { width: 400, height: 100 };

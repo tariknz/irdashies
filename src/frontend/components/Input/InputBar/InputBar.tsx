@@ -8,18 +8,27 @@ const INPUT_CONFIG = [
   { key: 'throttle', color: getColor('green') }
 ] as const;
 
-export interface InputTraceProps {
+export interface InputBarProps {
   brake?: number;
   throttle?: number;
   clutch?: number;
-  settings: {
+  settings?: {
     includeClutch: boolean;
     includeBrake: boolean;
     includeThrottle: boolean;
   };
 }
 
-export const InputBar = ({ brake, throttle, clutch, settings }: InputTraceProps) => {
+export const InputBar = ({
+  brake,
+  throttle,
+  clutch,
+  settings = {
+    includeClutch: true,
+    includeBrake: true,
+    includeThrottle: true,
+  },
+}: InputBarProps) => {
   const svgRef = useRef<SVGSVGElement>(null);
 
   useEffect(() => {

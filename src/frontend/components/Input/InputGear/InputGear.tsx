@@ -2,13 +2,19 @@ export interface InputGearProps {
   gear?: number;
   speedMs?: number;
   unit?: number;
-  settings: {
+  settings?: {
     unit: 'mph' | 'km/h' | 'auto';
   };
 }
 
-export const InputGear = ({ gear, speedMs, unit, settings }: InputGearProps) => {
-  const isMetric = (unit === 1 && settings.unit === 'auto') || settings.unit === 'km/h';
+export const InputGear = ({
+  gear,
+  speedMs,
+  unit,
+  settings = { unit: 'auto' },
+}: InputGearProps) => {
+  const isMetric =
+    (unit === 1 && settings.unit === 'auto') || settings.unit === 'km/h';
   const speed = (speedMs ?? 0) * (isMetric ? 3.6 : 2.23694);
   const displayUnit = isMetric ? 'km/h' : 'mph';
   let gearText = '';
