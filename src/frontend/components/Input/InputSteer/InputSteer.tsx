@@ -51,7 +51,7 @@ export interface InputSteerProps {
 export const InputSteer = ({
   angleRad = 0,
   wheelStyle = "default",
-  wheelColor = "dark",
+  wheelColor = "light",
 }: InputSteerProps) => {
   const WheelComponent =
     wheelStyle in wheelComponentMap
@@ -59,15 +59,55 @@ export const InputSteer = ({
       : undefined;
 
   return (
-    <div className="w-[120px] fill-white">
+    <div className="w-[120px] fill-white relative">
       {WheelComponent ? (
-        <WheelComponent
-          style={{
-            transform: `rotate(${angleRad * -1}rad)`,
-            transformBox: "fill-box",
-            transformOrigin: "center",
-          }}
-        />
+        <>
+          <WheelComponent
+            style={{
+              width: "100%",
+              height: "100%",
+              transform: `rotate(${angleRad * -1}rad)`,
+              transformBox: "fill-box",
+              transformOrigin: "center",
+            }}
+          />
+          {/* Crosshair for debugging */}
+          <svg
+            className="absolute inset-0 pointer-events-none"
+            width="100%"
+            height="100%"
+            viewBox="0 0 120 120"
+          >
+            {/* Horizontal line */}
+            <line
+              x1="0"
+              y1="60"
+              x2="120"
+              y2="60"
+              stroke="red"
+              strokeWidth="1"
+              opacity="0.7"
+            />
+            {/* Vertical line */}
+            <line
+              x1="60"
+              y1="0"
+              x2="60"
+              y2="120"
+              stroke="red"
+              strokeWidth="1"
+              opacity="0.7"
+            />
+            {/* Center dot */}
+            <circle
+              cx="60"
+              cy="60"
+              r="2"
+              fill="red"
+              opacity="0.8"
+            />
+          </svg>
+        </>
       ) : (
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -87,6 +127,37 @@ export const InputSteer = ({
             <path
               d="M 0 33.25 A 72 72 0 0 1 12 33.25 L 12 45.8 A 60 60 0 0 0 0 45.8 Z"
               className="fill-yellow-500"
+            />
+          </g>
+          {/* Crosshair for debugging */}
+          <g>
+            {/* Horizontal line */}
+            <line
+              x1="-66"
+              y1="103"
+              x2="79"
+              y2="103"
+              stroke="red"
+              strokeWidth="1"
+              opacity="0.7"
+            />
+            {/* Vertical line */}
+            <line
+              x1="6.5"
+              y1="33"
+              x2="6.5"
+              y2="178"
+              stroke="red"
+              strokeWidth="1"
+              opacity="0.7"
+            />
+            {/* Center dot */}
+            <circle
+              cx="6.5"
+              cy="103"
+              r="2"
+              fill="red"
+              opacity="0.8"
             />
           </g>
         </svg>
