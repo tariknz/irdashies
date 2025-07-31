@@ -3,7 +3,7 @@ import { SVGProps } from "react";
 export const NascarB = (props: SVGProps<SVGSVGElement>) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
-    viewBox="0 0 210 297"
+    viewBox="17 14 160 160"
     {...props}
   >
     <g style={{ display: "inline", fill: "#280b0b" }}>
