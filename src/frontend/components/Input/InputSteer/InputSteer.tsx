@@ -1,25 +1,23 @@
 import {
+  DefaultB,
+  DefaultW,
   FormulaB,
   FormulaW,
   LmpB,
   LmpW,
   NascarB,
   NascarW,
-  RoundB,
-  RoundW,
   UshapeB,
   UshapeW,
-} from "./wheels";
+} from './wheels';
 
-export type WheelStyle =
-  | "formula"
-  | "lmp"
-  | "nascar"
-  | "round"
-  | "ushape"
-  | "default";
+export type WheelStyle = 'formula' | 'lmp' | 'nascar' | 'ushape' | 'default';
 
 const wheelComponentMap = {
+  default: {
+    dark: DefaultB,
+    light: DefaultW,
+  },
   formula: {
     dark: FormulaB,
     light: FormulaW,
@@ -31,10 +29,6 @@ const wheelComponentMap = {
   nascar: {
     dark: NascarB,
     light: NascarW,
-  },
-  round: {
-    dark: RoundB,
-    light: RoundW,
   },
   ushape: {
     dark: UshapeB,
@@ -50,118 +44,25 @@ export interface InputSteerProps {
 
 export const InputSteer = ({
   angleRad = 0,
-  wheelStyle = "default",
-  wheelColor = "light",
+  wheelStyle = 'default',
+  wheelColor = 'light',
 }: InputSteerProps) => {
   const WheelComponent =
     wheelStyle in wheelComponentMap
       ? wheelComponentMap[wheelStyle][wheelColor]
-      : undefined;
+      : wheelComponentMap.default[wheelColor];
 
   return (
     <div className="w-[120px] fill-white relative">
-      {WheelComponent ? (
-        <>
-          <WheelComponent
-            style={{
-              width: "100%",
-              height: "100%",
-              transform: `rotate(${angleRad * -1}rad)`,
-              transformBox: "fill-box",
-              transformOrigin: "center",
-            }}
-          />
-          {/* Crosshair for debugging */}
-          <svg
-            className="absolute inset-0 pointer-events-none border-solid border-0 border-red-500"
-            width="100%"
-            height="100%"
-            viewBox="0 0 120 120"
-          >
-            {/* Horizontal line */}
-            <line
-              x1="0"
-              y1="60"
-              x2="120"
-              y2="60"
-              stroke="red"
-              strokeWidth="1"
-              opacity="0.7"
-            />
-            {/* Vertical line */}
-            <line
-              x1="60"
-              y1="0"
-              x2="60"
-              y2="120"
-              stroke="red"
-              strokeWidth="1"
-              opacity="0.7"
-            />
-            {/* Center dot */}
-            <circle
-              cx="60"
-              cy="60"
-              r="2"
-              fill="red"
-              opacity="0.8"
-            />
-          </svg>
-        </>
-      ) : (
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          xmlSpace="preserve"
-          width="100%"
-          height="100%"
-          viewBox="-66 33 145 145"
-        >
-          <g
-            style={{
-              transform: `rotate(${angleRad * -1}rad)`,
-              transformBox: "fill-box",
-              transformOrigin: "center",
-            }}
-          >
-            <path d="M6.033 32.908a72.196 72.196 0 0 0-72.196 72.196A72.196 72.196 0 0 0 6.033 177.3a72.196 72.196 0 0 0 72.196-72.196A72.196 72.196 0 0 0 6.033 32.908Zm0 12.657A59.538 59.538 0 0 1 64.298 93.54C48.864 89.147 33.41 84.76 6.42 84.51v-.013c-.133 0-.256.005-.388.006-.133 0-.255-.005-.388-.006v.013c-26.99.25-42.444 4.637-57.877 9.03A59.538 59.538 0 0 1 6.033 45.565Zm-28.908 58.126c9.141 2.38 16.78 12.14 22.875 29.501-.808 17.98-1.985 28.342-3.55 30.653a59.538 59.538 0 0 1-49.561-53.73c8.89-2.973 16.97-6.514 30.236-6.424zm57.816 0c13.345-.09 21.44 3.494 30.393 6.477a59.538 59.538 0 0 1-49.708 53.695c-1.57-2.281-2.75-12.651-3.56-30.671 6.093-17.36 13.733-27.122 22.875-29.501z" />
-            <path
-              d="M 0 33.25 A 72 72 0 0 1 12 33.25 L 12 45.8 A 60 60 0 0 0 0 45.8 Z"
-              className="fill-yellow-500"
-            />
-          </g>
-          {/* Crosshair for debugging */}
-          <g>
-            {/* Horizontal line */}
-            <line
-              x1="-66"
-              y1="103"
-              x2="79"
-              y2="103"
-              stroke="red"
-              strokeWidth="1"
-              opacity="0.7"
-            />
-            {/* Vertical line */}
-            <line
-              x1="6.5"
-              y1="33"
-              x2="6.5"
-              y2="178"
-              stroke="red"
-              strokeWidth="1"
-              opacity="0.7"
-            />
-            {/* Center dot */}
-            <circle
-              cx="6.5"
-              cy="103"
-              r="2"
-              fill="red"
-              opacity="0.8"
-            />
-          </g>
-        </svg>
-      )}
+      <WheelComponent
+        style={{
+          width: '100%',
+          height: '100%',
+          transform: `rotate(${angleRad * -1}rad)`,
+          transformBox: 'fill-box',
+          transformOrigin: 'center',
+        }}
+      />
     </div>
   );
 };
