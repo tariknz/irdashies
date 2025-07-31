@@ -260,7 +260,6 @@ export const InputSettings = () => {
                     <option value="formula">Formula</option>
                     <option value="lmp">LMP</option>
                     <option value="nascar">NASCAR</option>
-                    <option value="round">Round</option>
                     <option value="ushape">U-Shape</option>
                   </select>
                 </div>
@@ -281,8 +280,8 @@ export const InputSettings = () => {
                     }
                     className="bg-slate-700 text-slate-200 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
-                    <option value="dark">Dark</option>
                     <option value="light">Light</option>
+                    <option value="dark">Dark</option>
                   </select>
                 </div>
               </div>
