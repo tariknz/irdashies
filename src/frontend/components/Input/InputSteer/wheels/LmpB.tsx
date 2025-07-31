@@ -3,7 +3,7 @@ import { SVGProps } from "react";
 export const LmpB = (props: SVGProps<SVGSVGElement>) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
-    viewBox="0 0 297 210"
+    viewBox="14 -27 237 237" 
     {...props}
   >
     <g style={{ display: "inline" }}>
