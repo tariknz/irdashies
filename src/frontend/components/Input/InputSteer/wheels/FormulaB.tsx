@@ -3,7 +3,7 @@ import { SVGProps } from "react";
 export const FormulaB = (props: SVGProps<SVGSVGElement>) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
-    viewBox="14 -26 250 250" 
+    viewBox="23.5 -17 232 232"
     {...props}
   >
     <g>

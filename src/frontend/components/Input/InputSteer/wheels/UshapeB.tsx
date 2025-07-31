@@ -3,7 +3,7 @@ import { SVGProps } from "react";
 export const UshapeB = (props: SVGProps<SVGSVGElement>) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
-    viewBox="8 -8 190 190"
+    viewBox="14 -2 178 178"
     {...props}
   >
     <g style={{ display: "inline", fill: "#280b0b" }}>
