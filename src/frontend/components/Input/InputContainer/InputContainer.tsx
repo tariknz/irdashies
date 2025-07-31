@@ -46,7 +46,13 @@ export const InputContainer = ({
           settings={settings?.gear}
         />
       )}
-      {(settings?.steer?.enabled ?? true) && <InputSteer angleRad={steer} />}
+      {(settings?.steer?.enabled ?? true) && (
+        <InputSteer
+          angleRad={steer}
+          wheelStyle={settings?.steer?.config?.style}
+          wheelColor={settings?.steer?.config?.color}
+        />
+      )}
     </div>
   );
 };

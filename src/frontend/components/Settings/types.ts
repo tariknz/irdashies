@@ -39,6 +39,13 @@ export interface TrackMapWidgetSettings extends BaseWidgetSettings {
   };
 }
 
+export interface SteerWidgetSettings extends BaseWidgetSettings {
+  config: {
+    style: 'formula' | 'lmp' | 'nascar' | 'round' | 'ushape' | 'default';
+    color: 'dark' | 'light';
+  };
+}
+
 export interface InputWidgetSettings extends BaseWidgetSettings {
   config: {
     trace: {
@@ -56,9 +63,7 @@ export interface InputWidgetSettings extends BaseWidgetSettings {
       enabled: boolean;
       unit: 'mph' | 'km/h' | 'auto';
     };
-    steer: {
-      enabled: boolean;
-    };
+    steer: SteerWidgetSettings;
   };
 }
 

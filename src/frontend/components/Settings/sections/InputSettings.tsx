@@ -24,6 +24,10 @@ const defaultConfig: InputWidgetSettings['config'] = {
   },
   steer: {
     enabled: true,
+    config: {
+      style: 'default',
+      color: 'dark',
+    },
   },
 };
 
@@ -72,6 +76,14 @@ const migrateConfig = (
       enabled:
         (config.steer as { enabled?: boolean })?.enabled ??
         defaultConfig.steer.enabled,
+      config: {
+        style:
+          ((config.steer as { config?: { style?: 'formula' | 'lmp' | 'nascar' | 'round' | 'ushape' | 'default' } })?.config?.style) ??
+          defaultConfig.steer.config.style,
+        color:
+          ((config.steer as { config?: { color?: 'dark' | 'light' } })?.config?.color) ??
+          defaultConfig.steer.config.color,
+      },
     },
   };
 };
@@ -225,6 +237,56 @@ export const InputSettings = () => {
                 />
               </div>
             </div>
+            {config.steer.enabled && (
+              <div className="space-y-3 pl-4 pt-2">
+                <div className="flex items-center gap-3">
+                  <label className="text-sm text-slate-200">Wheel Style:</label>
+                  <select
+                    value={config.steer.config.style}
+                    onChange={(e) =>
+                      handleConfigChange({
+                        steer: {
+                          ...config.steer,
+                          config: {
+                            ...config.steer.config,
+                            style: e.target.value as 'formula' | 'lmp' | 'nascar' | 'round' | 'ushape' | 'default',
+                          },
+                        },
+                      })
+                    }
+                    className="bg-slate-700 text-slate-200 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="default">Default</option>
+                    <option value="formula">Formula</option>
+                    <option value="lmp">LMP</option>
+                    <option value="nascar">NASCAR</option>
+                    <option value="round">Round</option>
+                    <option value="ushape">U-Shape</option>
+                  </select>
+                </div>
+                <div className="flex items-center gap-3">
+                  <label className="text-sm text-slate-200">Wheel Color:</label>
+                  <select
+                    value={config.steer.config.color}
+                    onChange={(e) =>
+                      handleConfigChange({
+                        steer: {
+                          ...config.steer,
+                          config: {
+                            ...config.steer.config,
+                            color: e.target.value as 'dark' | 'light',
+                          },
+                        },
+                      })
+                    }
+                    className="bg-slate-700 text-slate-200 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="dark">Dark</option>
+                    <option value="light">Light</option>
+                  </select>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Gear Settings */}
