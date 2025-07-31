@@ -73,7 +73,7 @@ export const InputSteer = ({
           />
           {/* Crosshair for debugging */}
           <svg
-            className="absolute inset-0 pointer-events-none"
+            className="absolute inset-0 pointer-events-none border-solid border-1 border-red-500"
             width="100%"
             height="100%"
             viewBox="0 0 120 120"

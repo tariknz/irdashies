@@ -66,6 +66,10 @@ const RandomTraces = () => {
         },
         steer: {
           enabled: true,
+          config: {
+            style: 'formula',
+            color: 'light',
+          },
         },
       }}
     />
