@@ -24,7 +24,10 @@ export const Primary: Story = {
 };
 
 export const AllWheels: Story = {
-  render: () => {
+  args: {
+    angleRad: 0,
+  },
+  render: ({ angleRad }) => {
     const wheelStyles = ['default', 'formula', 'lmp', 'nascar', 'ushape'] as const;
     const colors = ['light', 'dark'] as const;
     
@@ -41,7 +44,7 @@ export const AllWheels: Story = {
                   <div className="capitalize text-sm font-medium">{style}</div>
                   <div className="flex justify-center">
                     <InputSteer
-                      angleRad={0}
+                      angleRad={angleRad}
                       wheelStyle={style}
                       wheelColor={color}
                     />
