@@ -26,7 +26,7 @@ const defaultConfig: InputWidgetSettings['config'] = {
     enabled: true,
     config: {
       style: 'default',
-      color: 'dark',
+      color: 'light',
     },
   },
 };
