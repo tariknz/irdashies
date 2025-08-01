@@ -78,7 +78,7 @@ const migrateConfig = (
         defaultConfig.steer.enabled,
       config: {
         style:
-          ((config.steer as { config?: { style?: 'formula' | 'lmp' | 'nascar' | 'round' | 'ushape' | 'default' } })?.config?.style) ??
+          ((config.steer as { config?: { style?: 'formula' | 'lmp' | 'nascar' | 'ushape' | 'default' } })?.config?.style) ??
           defaultConfig.steer.config.style,
         color:
           ((config.steer as { config?: { color?: 'dark' | 'light' } })?.config?.color) ??
