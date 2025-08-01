@@ -7,8 +7,8 @@ export default {
     angleRad: {
       control: {
         type: 'range',
-        min: -3.14,
-        max: 3.14,
+        min: -2*3.14,
+        max: 2*3.14,
         step: 0.01,
       },
     },
