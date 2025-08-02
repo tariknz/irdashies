@@ -66,8 +66,3 @@ export interface InputWidgetSettings extends BaseWidgetSettings {
     steer: SteerWidgetSettings;
   };
 }
-
-/* eslint-disable @typescript-eslint/no-empty-object-type */
-export interface AdvancedSettings extends BaseWidgetSettings {
-  // Add specific advanced settings here
-}
