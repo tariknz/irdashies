@@ -66,12 +66,11 @@ export function InputSteer({
   }, [angleRad]);
 
   return (
-    <div className="w-[120px] fill-white relative flex flex-col items-center">
+    <div className="w-[120px] h-full flex fill-white relative">
       <div
         ref={wheelRef}
+        className='w-full h-full flex'
         style={{
-          width: '100%',
-          height: '100%',
           transform: 'rotate(var(--wheel-rotation, 0rad))',
           transformBox: 'fill-box',
           transformOrigin: 'center',
