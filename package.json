@@ -37,7 +37,6 @@
     "@electron-forge/publisher-github": "^7.8.0",
     "@electron/fuses": "^1.8.0",
     "@eslint/js": "^9.23.0",
-    "@iracing-data/sync-track-assets": "^0.0.2-alpha.2",
     "@storybook/addon-docs": "^9.0.12",
     "@storybook/react-vite": "^9.0.12",
     "@tailwindcss/postcss": "^4.0.0",
