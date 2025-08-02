@@ -3,29 +3,33 @@ import { describe, it, expect } from 'vitest';
 import { RotationIndicator } from './RotationIndicator';
 
 describe('RotationIndicator', () => {
-  it('should render with zero degrees', () => {
-    render(<RotationIndicator currentAngleRad={0} />);
+  it('should not render when angle is within normal range', () => {
+    const { container } = render(<RotationIndicator currentAngleRad={0} />);
     
-    expect(screen.getByText('0°')).toBeInTheDocument();
+    expect(container.firstChild).toBeNull();
   });
 
-  it('should show correct angle in degrees', () => {
-    render(<RotationIndicator currentAngleRad={Math.PI / 2} />);
+  it('should not render when angle is at threshold', () => {
+    const { container } = render(<RotationIndicator currentAngleRad={270 * (Math.PI / 180)} />);
     
-    expect(screen.getByText('-90°')).toBeInTheDocument();
+    expect(container.firstChild).toBeNull();
   });
 
-  it('should show negative angle in degrees', () => {
-    render(<RotationIndicator currentAngleRad={-Math.PI / 4} />);
+  it('should render when angle exceeds threshold clockwise', () => {
+    render(<RotationIndicator currentAngleRad={280 * (Math.PI / 180)} />);
     
-    expect(screen.getByText('45°')).toBeInTheDocument();
+    expect(screen.getByText('280°')).toBeInTheDocument();
   });
 
-  it('should apply custom className', () => {
-    const { container } = render(
-      <RotationIndicator currentAngleRad={0} className="custom-class" />
-    );
+  it('should render when angle exceeds threshold counterclockwise', () => {
+    render(<RotationIndicator currentAngleRad={-280 * (Math.PI / 180)} />);
     
-    expect(container.firstChild).toHaveClass('custom-class');
+    expect(screen.getByText('280°')).toBeInTheDocument();
+  });
+
+  it('should render with extreme angle', () => {
+    render(<RotationIndicator currentAngleRad={350 * (Math.PI / 180)} />);
+    
+    expect(screen.getByText('350°')).toBeInTheDocument();
   });
 }); 

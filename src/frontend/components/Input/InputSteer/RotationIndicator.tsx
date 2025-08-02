@@ -17,8 +17,8 @@ export function RotationIndicator({
       // Convert radians to degrees
       const angleDegrees = (currentAngleRad * -1 * 180) / Math.PI;
 
-      // Only show when beyond ±180 degrees
-      const shouldShow = Math.abs(angleDegrees) > 180;
+      // Only show when beyond ±270 degrees
+      const shouldShow = Math.abs(angleDegrees) > 270;
 
       if (!shouldShow) {
         return {
