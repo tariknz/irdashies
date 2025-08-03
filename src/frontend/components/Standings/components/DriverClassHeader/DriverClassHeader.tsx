@@ -33,7 +33,7 @@ export const DriverClassHeader = ({
             {className}
           </span>
           <span
-            className={`${getTailwindStyle(classColor).driverIcon} px-2 py-1  font-light flex items-center gap-1`}
+            className={`${getTailwindStyle(classColor).driverIcon} px-2 py-1 flex items-center gap-1`}
           >
             {sof ? (
               <>
@@ -42,7 +42,7 @@ export const DriverClassHeader = ({
             ) : (
               ''
             )}{' '}
-            <UsersIcon />
+            <UsersIcon className={sof ? "ml-3" : ""} />
             <span>{totalDrivers}</span>
           </span>
         </div>
