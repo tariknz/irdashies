@@ -61,6 +61,7 @@ export const Relative = () => {
         radioActive={result.radioActive}
         isLapped={result.lappedState === 'behind'}
         isLappingAhead={result.lappedState === 'ahead'}
+        flairId={config?.countryFlags?.enabled ?? true ? result.driver?.flairId : undefined}
         badge={
           <DriverRatingBadge
             license={result.driver?.license}

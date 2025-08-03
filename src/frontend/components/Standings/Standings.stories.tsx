@@ -64,3 +64,7 @@ export const TestingCustomSessionData: Story = {
 export const PCCRaceWithMicUse: Story = {
   decorators: [TelemetryDecorator('/test-data/1733030013074')],
 };
+
+export const WithFlairs: Story = {
+  decorators: [TelemetryDecorator('/test-data/1752616787255')],
+};

@@ -84,6 +84,7 @@
     "@phosphor-icons/react": "^2.1.7",
     "d3": "^7.9.0",
     "electron-squirrel-startup": "^1.0.1",
+    "flag-icons": "^7.5.0",
     "js-yaml": "^4.1.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",

@@ -14,6 +14,7 @@ export interface Standings {
     carNum: string;
     license: string;
     rating: number;
+    flairId?: number;
   };
   fastestTime: number;
   hasFastestTime: boolean;
@@ -110,6 +111,7 @@ export const createDriverStandings = (
           carNum: driver.CarNumber,
           license: driver.LicString,
           rating: driver.IRating,
+          flairId: driver.FlairID,
         },
         fastestTime: result.FastestTime,
         hasFastestTime: result.CarIdx === fastestDriverIdx,

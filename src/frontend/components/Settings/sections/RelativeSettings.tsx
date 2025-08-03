@@ -2,12 +2,14 @@ import { useState } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import { useDashboard } from '@irdashies/context';
 import { RelativeWidgetSettings } from '../types';
+import { ToggleSwitch } from '../components/ToggleSwitch';
 
 const SETTING_ID = 'relative';
 
 const defaultConfig: RelativeWidgetSettings['config'] = {
   buffer: 3,
   background: { opacity: 0 },
+  countryFlags: { enabled: true },
 };
 
 const migrateConfig = (savedConfig: unknown): RelativeWidgetSettings['config'] => {
@@ -16,6 +18,7 @@ const migrateConfig = (savedConfig: unknown): RelativeWidgetSettings['config'] =
   return {
     buffer: (config.buffer as { value?: number })?.value ?? 3,
     background: { opacity: (config.background as { opacity?: number })?.opacity ?? 0 },
+    countryFlags: { enabled: (config.countryFlags as { enabled?: boolean })?.enabled ?? true },
   };
 };
 
@@ -83,6 +86,15 @@ export const RelativeSettings = () => {
                 {settings.config.background.opacity}%
               </span>
             </div>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-slate-300">Show Country Flags</span>
+            <ToggleSwitch
+              enabled={settings.config.countryFlags.enabled}
+              onToggle={(enabled) =>
+                handleConfigChange({ countryFlags: { enabled } })
+              }
+            />
           </div>
         </div>
       )}
