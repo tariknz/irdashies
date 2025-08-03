@@ -3,7 +3,7 @@ import { readFileSync, existsSync, mkdirSync, writeFileSync } from 'fs';
 interface TrackAsset {
   track_id: string;
   track_map: string;
-  track_map_layers: { [key: string]: string };
+  track_map_layers: Record<string, string>;
 }
 
 export const downloadTrackSvgs = async () => {
