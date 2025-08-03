@@ -14,11 +14,34 @@ const COLOR_THEME_PRESETS: Record<string, string> = {
   black: 'Black',
 };
 
+const HIGHLIGHT_COLOR_PRESETS = new Map([
+  [15680580, 'Red'],
+  [16347926, 'Orange'],
+  [16096779, 'Amber'],
+  [15381256, 'Yellow'],
+  [8702998,  'Lime'],
+  [2278750,  'Green'],
+  [1096065,  'Emerald'],
+  [1357990,  'Teal'],
+  [440020,   'Cyan'],
+  [959977,   'Sky'],
+  [3395327,  'Blue'],
+  [6514417,  'Indigo'],
+  [9133302,  'Violet'],
+  [11430911, 'Purple'],
+  [14239471, 'Fuchsia'],
+  [16734344, 'Pink'],
+  [16007006, 'Rose'],
+  [7434618,  'Zinc'],
+  [7893356,  'Stone']
+]);
+
 export const GeneralSettings = () => {
   const { currentDashboard, onDashboardUpdated } = useDashboard();
   const [settings, setSettings] = useState<GeneralSettingsType>({
     fontSize: currentDashboard?.generalSettings?.fontSize ?? 'sm',
     colorPalette: currentDashboard?.generalSettings?.colorPalette ?? 'default',
+    highlightColor: currentDashboard?.generalSettings?.highlightColor ?? 959977
   });
 
   if (!currentDashboard || !onDashboardUpdated) {
@@ -44,6 +67,13 @@ export const GeneralSettings = () => {
     setSettings(newSettings);
     updateDashboard(newSettings);
   };
+
+  const handleHighlightColorChange = (newColor: number) => {
+    const newSettings = { ...settings, highlightColor: newColor };
+    setSettings(newSettings);
+    updateDashboard(newSettings);
+  };
+
 
   return (
     <div className="flex flex-col h-full space-y-6">
@@ -127,6 +157,34 @@ export const GeneralSettings = () => {
           </select>
         </div>
       </div>
+
+      {/* Highlight Color Settings */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-medium text-slate-200">Highlight Color</h3>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-slate-300">{HIGHLIGHT_COLOR_PRESETS.get(settings.highlightColor ?? 959977)}</span>
+            <span 
+              className={`bg-${HIGHLIGHT_COLOR_PRESETS.get(settings.highlightColor ?? 959977)?.toLowerCase()}-800 rounded border-2 border-${HIGHLIGHT_COLOR_PRESETS.get(settings.highlightColor ?? 959977)?.toLowerCase()}-500`} 
+              style={{ width: '20px', height: '20px' }}>
+            </span>
+          </div>
+        </div>
+
+        {/* Highlight Color Dropdown */}
+        <div className="mt-4">
+          <select
+            value={settings.highlightColor ?? 959977}
+            onChange={(e) => handleHighlightColorChange(parseInt(e.target.value))}
+            className="w-full px-3 py-2 bg-slate-700 text-slate-300 rounded border border-slate-600 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          >
+            {Array.from(HIGHLIGHT_COLOR_PRESETS.entries()).map(([key, value]) => (
+              <option key={key} value={key}>{value}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
     </div>
   );
-}; 
+};
