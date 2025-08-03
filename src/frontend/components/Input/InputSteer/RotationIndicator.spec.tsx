@@ -18,7 +18,7 @@ describe('RotationIndicator', () => {
   it('should render when angle exceeds threshold clockwise', () => {
     render(<RotationIndicator currentAngleRad={280 * (Math.PI / 180)} />);
     
-    expect(screen.getByText('280°')).toBeInTheDocument();
+    expect(screen.getByText('-280°')).toBeInTheDocument();
   });
 
   it('should render when angle exceeds threshold counterclockwise', () => {
@@ -30,6 +30,6 @@ describe('RotationIndicator', () => {
   it('should render with extreme angle', () => {
     render(<RotationIndicator currentAngleRad={350 * (Math.PI / 180)} />);
     
-    expect(screen.getByText('350°')).toBeInTheDocument();
+    expect(screen.getByText('-350°')).toBeInTheDocument();
   });
 }); 
