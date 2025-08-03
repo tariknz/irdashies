@@ -78,7 +78,7 @@ export function RotationIndicator({
 
       {/* Centered text */}
       <div className="absolute top-1/8 text-xs text-white min-w-[2.5rem] text-center font-medium bg-black/40 rounded-md">
-        {shouldShow ? `${Math.abs(angleDegrees).toFixed(0)}°` : ''}
+        {shouldShow ? `${angleDegrees.toFixed(0)}°` : ''}
       </div>
     </div>
   );
