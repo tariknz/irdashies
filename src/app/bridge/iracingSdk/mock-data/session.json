@@ -3300,7 +3300,8 @@
         "DivisionName": "Division 4",
         "DivisionID": 3,
         "CurDriverIncidentCount": -1,
-        "TeamIncidentCount": -1
+        "TeamIncidentCount": -1,
+        "FlairID": 77
       },
       {
         "CarIdx": 2,
@@ -3349,7 +3350,8 @@
         "DivisionName": "Division 4",
         "DivisionID": 3,
         "CurDriverIncidentCount": -1,
-        "TeamIncidentCount": -1
+        "TeamIncidentCount": -1,
+        "FlairID": 223
       },
       {
         "CarIdx": 3,
@@ -3398,7 +3400,8 @@
         "DivisionName": "Division 7",
         "DivisionID": 6,
         "CurDriverIncidentCount": -1,
-        "TeamIncidentCount": -1
+        "TeamIncidentCount": -1,
+        "FlairID": 223
       },
       {
         "CarIdx": 4,
@@ -3447,7 +3450,8 @@
         "DivisionName": "Division 5",
         "DivisionID": 4,
         "CurDriverIncidentCount": 4,
-        "TeamIncidentCount": 4
+        "TeamIncidentCount": 4,
+        "FlairID": 149
       },
       {
         "CarIdx": 5,
@@ -3496,7 +3500,8 @@
         "DivisionName": "Division 5",
         "DivisionID": 4,
         "CurDriverIncidentCount": -1,
-        "TeamIncidentCount": -1
+        "TeamIncidentCount": -1,
+        "FlairID": 223
       },
       {
         "CarIdx": 6,
@@ -3545,7 +3550,8 @@
         "DivisionName": "Division 9",
         "DivisionID": 8,
         "CurDriverIncidentCount": -1,
-        "TeamIncidentCount": -1
+        "TeamIncidentCount": -1,
+        "FlairID": 223
       },
       {
         "CarIdx": 7,
@@ -3594,7 +3600,8 @@
         "DivisionName": "Division 5",
         "DivisionID": 4,
         "CurDriverIncidentCount": -1,
-        "TeamIncidentCount": -1
+        "TeamIncidentCount": -1,
+        "FlairID": 223
       },
       {
         "CarIdx": 8,
@@ -3643,7 +3650,8 @@
         "DivisionName": "Division 5",
         "DivisionID": 4,
         "CurDriverIncidentCount": -1,
-        "TeamIncidentCount": -1
+        "TeamIncidentCount": -1,
+        "FlairID": 104
       },
       {
         "CarIdx": 9,
@@ -3692,7 +3700,8 @@
         "DivisionName": "Division 5",
         "DivisionID": 4,
         "CurDriverIncidentCount": -1,
-        "TeamIncidentCount": -1
+        "TeamIncidentCount": -1,
+        "FlairID": 223
       },
       {
         "CarIdx": 10,
@@ -3741,7 +3750,8 @@
         "DivisionName": "Division 8",
         "DivisionID": 7,
         "CurDriverIncidentCount": -1,
-        "TeamIncidentCount": -1
+        "TeamIncidentCount": -1,
+        "FlairID": 223
       },
       {
         "CarIdx": 11,
@@ -3790,7 +3800,8 @@
         "DivisionName": "Division 6",
         "DivisionID": 5,
         "CurDriverIncidentCount": -1,
-        "TeamIncidentCount": -1
+        "TeamIncidentCount": -1,
+        "FlairID": 223
       },
       {
         "CarIdx": 12,
@@ -3839,7 +3850,8 @@
         "DivisionName": "Division 6",
         "DivisionID": 5,
         "CurDriverIncidentCount": -1,
-        "TeamIncidentCount": -1
+        "TeamIncidentCount": -1,
+        "FlairID": 31
       },
       {
         "CarIdx": 13,
@@ -3888,7 +3900,8 @@
         "DivisionName": "Division 6",
         "DivisionID": 5,
         "CurDriverIncidentCount": -1,
-        "TeamIncidentCount": -1
+        "TeamIncidentCount": -1,
+        "FlairID": 222
       },
       {
         "CarIdx": 14,
@@ -3937,7 +3950,8 @@
         "DivisionName": "Division 6",
         "DivisionID": 5,
         "CurDriverIncidentCount": -1,
-        "TeamIncidentCount": -1
+        "TeamIncidentCount": -1,
+        "FlairID": 223
       },
       {
         "CarIdx": 15,
@@ -3986,7 +4000,8 @@
         "DivisionName": "Division 4",
         "DivisionID": 3,
         "CurDriverIncidentCount": -1,
-        "TeamIncidentCount": -1
+        "TeamIncidentCount": -1,
+        "FlairID": 39
       },
       {
         "CarIdx": 16,
@@ -4035,7 +4050,8 @@
         "DivisionName": "Division 4",
         "DivisionID": 3,
         "CurDriverIncidentCount": -1,
-        "TeamIncidentCount": -1
+        "TeamIncidentCount": -1,
+        "FlairID": 223
       },
       {
         "CarIdx": 17,
@@ -4084,7 +4100,8 @@
         "DivisionName": "Division 4",
         "DivisionID": 3,
         "CurDriverIncidentCount": -1,
-        "TeamIncidentCount": -1
+        "TeamIncidentCount": -1,
+        "FlairID": 223
       },
       {
         "CarIdx": 18,
@@ -4133,7 +4150,8 @@
         "DivisionName": "Division 3",
         "DivisionID": 2,
         "CurDriverIncidentCount": -1,
-        "TeamIncidentCount": -1
+        "TeamIncidentCount": -1,
+        "FlairID": 223
       },
       {
         "CarIdx": 19,
@@ -4182,7 +4200,8 @@
         "DivisionName": "Division 6",
         "DivisionID": 5,
         "CurDriverIncidentCount": -1,
-        "TeamIncidentCount": -1
+        "TeamIncidentCount": -1,
+        "FlairID": 223
       },
       {
         "CarIdx": 20,
@@ -4231,7 +4250,8 @@
         "DivisionName": "Division 7",
         "DivisionID": 6,
         "CurDriverIncidentCount": -1,
-        "TeamIncidentCount": -1
+        "TeamIncidentCount": -1,
+        "FlairID": 223
       },
       {
         "CarIdx": 21,
@@ -4280,7 +4300,8 @@
         "DivisionName": "Division 7",
         "DivisionID": 6,
         "CurDriverIncidentCount": -1,
-        "TeamIncidentCount": -1
+        "TeamIncidentCount": -1,
+        "FlairID": 223
       },
       {
         "CarIdx": 22,
@@ -4574,7 +4595,8 @@
         "DivisionName": "Division 4",
         "DivisionID": 3,
         "CurDriverIncidentCount": -1,
-        "TeamIncidentCount": -1
+        "TeamIncidentCount": -1,
+        "FlairID": 16
       },
       {
         "CarIdx": 28,
@@ -4623,7 +4645,8 @@
         "DivisionName": "Division 3",
         "DivisionID": 2,
         "CurDriverIncidentCount": -1,
-        "TeamIncidentCount": -1
+        "TeamIncidentCount": -1,
+        "FlairID": 223
       },
       {
         "CarIdx": 29,
@@ -4672,7 +4695,8 @@
         "DivisionName": "Division 3",
         "DivisionID": 2,
         "CurDriverIncidentCount": -1,
-        "TeamIncidentCount": -1
+        "TeamIncidentCount": -1,
+        "FlairID": 16
       },
       {
         "CarIdx": 30,
@@ -4721,7 +4745,8 @@
         "DivisionName": "Division 4",
         "DivisionID": 3,
         "CurDriverIncidentCount": -1,
-        "TeamIncidentCount": -1
+        "TeamIncidentCount": -1,
+        "FlairID": 223
       },
       {
         "CarIdx": 31,
@@ -4868,7 +4893,8 @@
         "DivisionName": "Division 5",
         "DivisionID": 4,
         "CurDriverIncidentCount": -1,
-        "TeamIncidentCount": -1
+        "TeamIncidentCount": -1,
+        "FlairID": 71
       },
       {
         "CarIdx": 34,
@@ -4917,7 +4943,8 @@
         "DivisionName": "Division 5",
         "DivisionID": 4,
         "CurDriverIncidentCount": -1,
-        "TeamIncidentCount": -1
+        "TeamIncidentCount": -1,
+        "FlairID": 223
       },
       {
         "CarIdx": 35,
@@ -5015,7 +5042,8 @@
         "DivisionName": "Division 5",
         "DivisionID": 4,
         "CurDriverIncidentCount": -1,
-        "TeamIncidentCount": -1
+        "TeamIncidentCount": -1,
+        "FlairID": 1
       },
       {
         "CarIdx": 37,
@@ -5064,7 +5092,8 @@
         "DivisionName": "Division 4",
         "DivisionID": 3,
         "CurDriverIncidentCount": -1,
-        "TeamIncidentCount": -1
+        "TeamIncidentCount": -1,
+        "FlairID": 223
       },
       {
         "CarIdx": 38,
@@ -5113,7 +5142,8 @@
         "DivisionName": "Division 7",
         "DivisionID": 6,
         "CurDriverIncidentCount": -1,
-        "TeamIncidentCount": -1
+        "TeamIncidentCount": -1,
+        "FlairID": 223
       },
       {
         "CarIdx": 39,
@@ -5162,7 +5192,8 @@
         "DivisionName": "Division 7",
         "DivisionID": 6,
         "CurDriverIncidentCount": -1,
-        "TeamIncidentCount": -1
+        "TeamIncidentCount": -1,
+        "FlairID": 223
       },
       {
         "CarIdx": 40,
@@ -5211,7 +5242,8 @@
         "DivisionName": "Division 4",
         "DivisionID": 3,
         "CurDriverIncidentCount": -1,
-        "TeamIncidentCount": -1
+        "TeamIncidentCount": -1,
+        "FlairID": 31
       }
     ]
   },

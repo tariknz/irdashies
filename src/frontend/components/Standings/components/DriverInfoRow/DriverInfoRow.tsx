@@ -3,6 +3,7 @@ import {
 } from '@phosphor-icons/react';
 import { getTailwindStyle } from '@irdashies/utils/colors';
 import { formatTime } from '@irdashies/utils/time';
+import { CountryFlag } from '../CountryFlag/CountryFlag';
 
 interface DriverRowInfoProps {
   carIdx: number;
@@ -23,6 +24,7 @@ interface DriverRowInfoProps {
   isLapped?: boolean;
   isLappingAhead?: boolean;
   hidden?: boolean;
+  flairId?: number;
 }
 
 export const DriverInfoRow = ({
@@ -44,6 +46,7 @@ export const DriverInfoRow = ({
   isLappingAhead,
   iratingChange,
   hidden,
+  flairId,
 }: DriverRowInfoProps) => {
   // convert seconds to mm:ss:ms
   const lastTimeString = formatTime(lastTime);
@@ -73,7 +76,8 @@ export const DriverInfoRow = ({
       </td>
       <td className={`px-2 py-0.5 w-full`}>
         <div className="flex justify-between align-center items-center">
-          <div className="flex">
+          <div className="flex items-center">
+            {flairId && <CountryFlag flairId={flairId} size="sm" className="mr-2" />}
             <span
               className={`animate-pulse transition-[width] duration-300 ${radioActive ? 'w-4 mr-1' : 'w-0 overflow-hidden'}`}
             >
