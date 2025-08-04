@@ -5,7 +5,7 @@ import { DriverRatingBadge } from './DriverRatingBadge';
 describe('DriverRatingBadge', () => {
   it('renders with default props', () => {
     const { container } = render(<DriverRatingBadge />);
-    expect(container.textContent).toBe('R 0.0 0.0k');
+    expect(container.textContent).toBe('R 0.00.0k');
   });
 
   it('renders with license A and rating 5000', () => {
@@ -54,35 +54,35 @@ describe('DriverRatingBadge', () => {
     const { container } = render(
       <DriverRatingBadge license={undefined} rating={undefined} />
     );
-    expect(container.textContent).toBe('R 0.0 0.0k');
+    expect(container.textContent).toBe('R 0.00.0k');
   });
 
   it('rounds rating to 1 decimal place', () => {
     const { container } = render(
       <DriverRatingBadge license="C 3.141592654" rating={5000.123} />
     );
-    expect(container.textContent).toBe('C 3.1 5.0k');
+    expect(container.textContent).toBe('C 3.15.0k');
   });
 
   it('removes leading zeros from license number when before non-zero digit', () => {
     const { container } = render(
       <DriverRatingBadge license="A 02.99" rating={5000} />
     );
-    expect(container.textContent).toBe('A 3.0 5.0k');
+    expect(container.textContent).toBe('A 3.05.0k');
   });
 
   it('keeps single zero before decimal point', () => {
     const { container } = render(
       <DriverRatingBadge license="A 0.99" rating={5000} />
     );
-    expect(container.textContent).toBe('A 1.0 5.0k');
+    expect(container.textContent).toBe('A 1.05.0k');
   });
 
   it('handles multiple leading zeros', () => {
     const { container } = render(
       <DriverRatingBadge license="B 0003.45" rating={5000} />
     );
-    expect(container.textContent).toBe('B 3.5 5.0k');
+    expect(container.textContent).toBe('B 3.55.0k');
   });
 
   it('should handle invalid license strings', () => {
