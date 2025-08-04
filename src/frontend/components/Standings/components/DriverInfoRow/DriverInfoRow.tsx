@@ -3,6 +3,7 @@ import {
 } from '@phosphor-icons/react';
 import { getTailwindStyle } from '@irdashies/utils/colors';
 import { formatTime } from '@irdashies/utils/time';
+import { useDashboard } from '@irdashies/context';
 
 interface DriverRowInfoProps {
   carIdx: number;
@@ -48,6 +49,11 @@ export const DriverInfoRow = ({
   // convert seconds to mm:ss:ms
   const lastTimeString = formatTime(lastTime);
   const fastestTimeString = formatTime(fastestTime);
+  const { currentDashboard } = useDashboard();
+  const settings = currentDashboard?.generalSettings;
+
+  // Now you can access settings.highlightColor
+  const highlightColor = settings?.highlightColor;
 
   return (
     <tr
@@ -62,12 +68,12 @@ export const DriverInfoRow = ({
       ].join(' ')}
     >
       <td
-        className={`text-center text-white px-2 ${isPlayer ? `${getTailwindStyle(classColor).classHeader}` : ''}`}
+        className={`text-center text-white px-2 ${isPlayer ? `${getTailwindStyle(classColor, highlightColor).classHeader}` : ''}`}
       >
         {position}
       </td>
       <td
-        className={`${getTailwindStyle(classColor).driverIcon} text-white border-l-4 text-right px-1 w-10`}
+        className={`${getTailwindStyle(classColor, highlightColor).driverIcon} text-white border-l-4 text-right px-1 w-10`}
       >
         #{carNumber}
       </td>
