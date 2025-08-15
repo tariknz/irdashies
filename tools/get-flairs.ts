@@ -14,7 +14,7 @@ export const getFlairs = async () => {
 
     if (!response.ok) {
       console.log(await response.text());
-      throw new Error('Failed to get tracks');
+      throw new Error('Failed to get flairs');
     }
 
     const data = await response.json();
