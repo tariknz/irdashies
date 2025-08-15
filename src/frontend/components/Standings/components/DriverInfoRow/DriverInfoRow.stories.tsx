@@ -204,6 +204,7 @@ export const Relative = () => {
         name: getRandomFullName(),
         license: getRandomLicense(),
         rating: getRandomRating(),
+        flairId: 223, // United States
       },
       isPlayer: false,
       delta: 12,
@@ -224,6 +225,7 @@ export const Relative = () => {
         name: getRandomFullName(),
         license: getRandomLicense(),
         rating: getRandomRating(),
+        flairId: 222, // United Kingdom
       },
       isPlayer: false,
       delta: 2.7,
@@ -244,6 +246,7 @@ export const Relative = () => {
         name: getRandomFullName(),
         license: getRandomLicense(),
         rating: getRandomRating(),
+        flairId: 77, // Germany
       },
       isPlayer: false,
       delta: 0.7,
@@ -264,6 +267,7 @@ export const Relative = () => {
         name: getRandomFullName(),
         license: getRandomLicense(),
         rating: getRandomRating(),
+        flairId: 71, // France
       },
       isPlayer: true,
       delta: 0,
@@ -282,6 +286,7 @@ export const Relative = () => {
         name: getRandomFullName(),
         license: getRandomLicense(),
         rating: getRandomRating(),
+        flairId: 101, // Italy
       },
       isPlayer: false,
       delta: -0.3,
@@ -300,6 +305,7 @@ export const Relative = () => {
         name: getRandomFullName(),
         license: getRandomLicense(),
         rating: getRandomRating(),
+        flairId: 198, // Spain
       },
       isPlayer: false,
       delta: -3.9,
@@ -318,6 +324,7 @@ export const Relative = () => {
         name: getRandomFullName(),
         license: getRandomLicense(),
         rating: getRandomRating(),
+        flairId: 39, // Canada
       },
       isPlayer: false,
       delta: -33.2,
@@ -356,6 +363,7 @@ export const Relative = () => {
               radioActive={result.radioActive}
               isLapped={result.lappedState === 'behind'}
               isLappingAhead={result.lappedState === 'ahead'}
+              flairId={result.driver?.flairId}
               badge={
                 <DriverRatingBadge
                   license={result.driver?.license}

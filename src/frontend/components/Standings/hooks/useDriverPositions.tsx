@@ -40,6 +40,7 @@ export const useDrivers = () => {
       carNumRaw: driver.CarNumberRaw,
       license: driver.LicString,
       rating: driver.IRating,
+      flairId: driver.FlairID,
       carClass: {
         id: driver.CarClassID,
         color: driver.CarClassColor,
@@ -117,6 +118,7 @@ export const useDriverStandings = () => {
           carNum: driver.carNum,
           license: driver.license,
           rating: driver.rating,
+          flairId: driver.flairId,
         },
         fastestTime: driverPos.bestLap,
         hasFastestTime: false, // TODO

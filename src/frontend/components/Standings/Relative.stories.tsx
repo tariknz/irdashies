@@ -64,3 +64,7 @@ export const PCCPacing: Story = {
 export const MultiClass: Story = {
   decorators: [TelemetryDecorator('/test-data/1747384033336')],
 };
+
+export const WithFlairs: Story = {
+  decorators: [TelemetryDecorator('/test-data/1752616787255')],
+};

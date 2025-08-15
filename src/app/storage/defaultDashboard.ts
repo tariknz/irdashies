@@ -18,6 +18,7 @@ export const defaultDashboard: DashboardLayout = {
         lastTime: { enabled: true },
         fastestTime: { enabled: true },
         backgroundOpacity: { value: 0 },
+        countryFlags: { enabled: true },
       },
     },
     {
@@ -62,6 +63,7 @@ export const defaultDashboard: DashboardLayout = {
       config: {
         buffer: 3,
         backgroundOpacity: { value: 0 },
+        countryFlags: { enabled: true },
       },
     },
     {
