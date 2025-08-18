@@ -48,9 +48,9 @@ export const Relative = () => {
     return (
       <DriverInfoRow
         key={result.carIdx}
-        carIdx={result.carIdx}
+        carIdx={ result.carIdx}
         classColor={result.carClass.color}
-        carNumber={result.driver?.carNum || ''}
+        carNumber={config?.carNumber?.enabled ?? true ? result.driver?.carNum || '' : undefined}
         name={result.driver?.name || ''}
         isPlayer={result.isPlayer}
         hasFastestTime={result.hasFastestTime}

@@ -8,7 +8,7 @@ import { CountryFlag } from '../CountryFlag/CountryFlag';
 interface DriverRowInfoProps {
   carIdx: number;
   classColor: number;
-  carNumber: string;
+  carNumber?: string;
   name: string;
   isPlayer: boolean;
   hasFastestTime: boolean;
@@ -69,11 +69,11 @@ export const DriverInfoRow = ({
       >
         {position}
       </td>
-      <td
-        className={`${getTailwindStyle(classColor).driverIcon} text-white border-l-4 text-right px-1 w-10`}
-      >
-        #{carNumber}
-      </td>
+      {carNumber && (
+        <td className={`${getTailwindStyle(classColor).driverIcon} text-white border-l-4 text-right px-1 w-10`}>
+          #{carNumber}
+        </td>
+      )}
       <td className={`px-2 py-0.5 w-full`}>
         <div className="flex justify-between align-center items-center">
           <div className="flex items-center">
