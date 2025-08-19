@@ -154,7 +154,7 @@ export const StandingsSettings = () => {
                     handleConfigChange({ carNumber: { enabled } })
                   }
                 />
-              </div>    
+              </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-slate-300">Show Country Flags</span>
                 <ToggleSwitch
