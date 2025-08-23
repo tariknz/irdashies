@@ -14,6 +14,7 @@ const defaultConfig: StandingsWidgetSettings['config'] = {
   fastestTime: { enabled: true },
   background: { opacity: 0 },
   countryFlags: { enabled: true },
+  carNumber: { enabled: true },
   driverStandings: {
     buffer: 3,
     numNonClassDrivers: 3,
@@ -49,6 +50,9 @@ const migrateConfig = (
     },
     countryFlags: {
       enabled: (config.countryFlags as { enabled?: boolean })?.enabled ?? true,
+    },
+    carNumber: {
+      enabled: (config.carNumber as { enabled?: boolean })?.enabled ?? true,
     },
     driverStandings: {
       buffer:
@@ -139,6 +143,15 @@ export const StandingsSettings = () => {
                   enabled={settings.config.fastestTime.enabled}
                   onToggle={(enabled) =>
                     handleConfigChange({ fastestTime: { enabled } })
+                  }
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-slate-300">Show Car Number</span>
+                <ToggleSwitch
+                  enabled={settings.config.carNumber.enabled}
+                  onToggle={(enabled) =>
+                    handleConfigChange({ carNumber: { enabled } })
                   }
                 />
               </div>

@@ -19,6 +19,7 @@ export const defaultDashboard: DashboardLayout = {
         fastestTime: { enabled: true },
         backgroundOpacity: { value: 0 },
         countryFlags: { enabled: true },
+        carNumber: { enabled: true },
       },
     },
     {
@@ -64,6 +65,7 @@ export const defaultDashboard: DashboardLayout = {
         buffer: 3,
         backgroundOpacity: { value: 0 },
         countryFlags: { enabled: true },
+        carNumber: { enabled: true },
       },
     },
     {

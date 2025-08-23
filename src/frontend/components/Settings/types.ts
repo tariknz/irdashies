@@ -12,6 +12,7 @@ export interface StandingsWidgetSettings extends BaseWidgetSettings {
     fastestTime: { enabled: boolean };
     background: { opacity: number };
     countryFlags: { enabled: boolean };
+    carNumber: { enabled: boolean };
     driverStandings: {
       buffer: number;
       numNonClassDrivers: number;
@@ -26,6 +27,7 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
     buffer: number;
     background: { opacity: number };
     countryFlags: { enabled: boolean };
+    carNumber: { enabled: boolean };
   };
 }
 
