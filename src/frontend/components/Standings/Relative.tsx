@@ -93,7 +93,7 @@ const DummyDriverRow = () => (
   <DriverInfoRow
     carIdx={0}
     classColor={0}
-    carNumber="33"
+    carNumber=""
     name="Franz Hermann"
     isPlayer={false}
     hasFastestTime={false}
