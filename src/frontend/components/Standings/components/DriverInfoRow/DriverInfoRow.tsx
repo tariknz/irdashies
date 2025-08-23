@@ -86,7 +86,7 @@ export const DriverInfoRow = ({
               <SpeakerHighIcon className="mt-[1px]" size={16} />
             </span>
             <div className="flex-1 overflow-hidden [mask-image:linear-gradient(90deg,#000_90%,transparent)]">
-              <span className="truncate_ whitespace-nowrap">{name}</span>
+              <span className="truncate">{name}</span>
             </div>
           </div>
           {onPitRoad && (
