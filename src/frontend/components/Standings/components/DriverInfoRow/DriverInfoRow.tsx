@@ -74,16 +74,20 @@ export const DriverInfoRow = ({
       >
         #{carNumber}
       </td>
-      <td className={`px-2 py-0.5 w-full`}>
+      <td
+        className="px-2 py-0.5 w-full max-w-0 overflow-hidden"
+      >
         <div className="flex justify-between align-center items-center">
-          <div className="flex items-center">
-            {flairId && <CountryFlag flairId={flairId} size="sm" className="mr-2" />}
+          <div className="flex-1 flex items-center overflow-hidden">
+            {flairId && <CountryFlag flairId={flairId} size="sm" className="mr-2 flex-shrink-0" />}
             <span
               className={`animate-pulse transition-[width] duration-300 ${radioActive ? 'w-4 mr-1' : 'w-0 overflow-hidden'}`}
             >
               <SpeakerHighIcon className="mt-[1px]" size={16} />
             </span>
-            <span className="truncate">{name}</span>
+            <div className="flex-1 overflow-hidden [mask-image:linear-gradient(90deg,#000_90%,transparent)]">
+              <span className="truncate_ whitespace-nowrap">{name}</span>
+            </div>
           </div>
           {onPitRoad && (
             <span className="text-white animate-pulse text-xs border-yellow-500 border-2 rounded-md text-center text-nowrap px-2 m-0 leading-tight">
