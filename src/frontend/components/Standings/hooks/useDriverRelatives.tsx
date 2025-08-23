@@ -3,6 +3,7 @@ import {
   useDriverCarIdx,
   useSessionStore,
   useTelemetryValues,
+  useTimingInterpolation,
 } from '@irdashies/context';
 import { useDriverStandings } from './useDriverPositions';
 
@@ -12,6 +13,7 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
   const playerIndex = useDriverCarIdx();
   const paceCarIdx =
     useSessionStore((s) => s.session?.DriverInfo?.PaceCarIdx) ?? -1;
+  const timingInterpolation = useTimingInterpolation();
 
   const standings = useMemo(() => {
     const calculateRelativePct = (carIdx: number) => {
@@ -43,13 +45,39 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
       const playerDistPct = carIdxLapDistPct?.[playerCarIdx];
       const otherDistPct = carIdxLapDistPct?.[otherCarIdx];
 
+      if (playerDistPct === undefined || otherDistPct === undefined) {
+        return NaN;
+      }
+
+      // Try to use timing interpolation first
+      const timeDelta = timingInterpolation.getTimeDelta(
+        playerCarIdx,
+        otherCarIdx,
+        playerDistPct,
+        otherDistPct,
+        drivers
+      );
+
+      if (timeDelta !== null) {
+        return timeDelta;
+      }
+
+      // Fallback to original estimation method if no interpolation data
       const player = drivers.find((driver) => driver.carIdx === playerIndex);
       const other = drivers.find((driver) => driver.carIdx === otherCarIdx);
+
+      if (!player || !other) {
+        return NaN;
+      }
 
       // Use the slower car's lap time for more conservative deltas in multiclass
       const playerEstLapTime = player?.carClass?.estLapTime ?? 0;
       const otherEstLapTime = other?.carClass?.estLapTime ?? 0;
       const baseLapTime = Math.max(playerEstLapTime, otherEstLapTime);
+
+      if (baseLapTime === 0) {
+        return NaN;
+      }
 
       let distPctDifference = otherDistPct - playerDistPct;
 
@@ -59,9 +87,7 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
         distPctDifference += 1.0;
       }
 
-      const timeDelta = distPctDifference * baseLapTime;
-
-      return timeDelta;
+      return distPctDifference * baseLapTime;
     };
 
     const sortedDrivers = drivers
@@ -100,7 +126,7 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
       .slice(0, buffer);
 
     return [...driversAhead, player, ...driversBehind];
-  }, [buffer, playerIndex, carIdxLapDistPct, drivers, paceCarIdx]);
+  }, [buffer, playerIndex, carIdxLapDistPct, drivers, paceCarIdx, timingInterpolation]);
 
   return standings;
 };

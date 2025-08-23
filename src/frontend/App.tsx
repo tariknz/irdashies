@@ -7,6 +7,7 @@ import {
   RunningStateProvider,
   useRunningState,
   SessionProvider,
+  TimingInterpolationProvider,
 } from '@irdashies/context';
 import { Settings } from './components/Settings/Settings';
 import { EditMode } from './components/EditMode/EditMode';
@@ -43,13 +44,15 @@ const App = () => (
     <RunningStateProvider bridge={window.irsdkBridge}>
       <SessionProvider bridge={window.irsdkBridge} />
       <TelemetryProvider bridge={window.irsdkBridge} />
-      <HashRouter>
-        <EditMode>
-          <ThemeManager>
-            <AppRoutes />
-          </ThemeManager>
-        </EditMode>
-      </HashRouter>
+      <TimingInterpolationProvider>
+        <HashRouter>
+          <EditMode>
+            <ThemeManager>
+              <AppRoutes />
+            </ThemeManager>
+          </EditMode>
+        </HashRouter>
+      </TimingInterpolationProvider>
     </RunningStateProvider>
   </DashboardProvider>
 );
