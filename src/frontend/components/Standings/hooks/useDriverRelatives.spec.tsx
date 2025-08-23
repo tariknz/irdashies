@@ -425,5 +425,40 @@ describe('useDriverRelatives', () => {
       expect(result.current).toHaveLength(2); // Only player and car2
       expect(result.current.some((driver) => driver.carIdx === 1)).toBe(false);
     });
+
+    it('should not record timing data during pace laps to prevent corrupted interpolation', () => {
+      // Mock SessionState.ParadeLaps (pace lap phase)
+      const mockTimingInterpolationPaceLap = {
+        bestLapByCarClass: new Map(),
+        getTimeByDistance: vi.fn().mockReturnValue(null),
+        getTimeDelta: vi.fn().mockReturnValue(null),
+        clearTimingData: vi.fn(),
+        isRecording: false, // Should not be recording during pace laps
+        getStats: vi.fn().mockReturnValue({
+          totalCarClasses: 0,
+          bestLapTimes: {},
+          dataPoints: {},
+        }),
+      };
+
+      vi.mocked(useTimingInterpolation).mockReturnValue(mockTimingInterpolationPaceLap);
+
+      const { result } = renderHook(() => useDriverRelatives({ buffer: 2 }));
+
+      // Should fall back to original estimation since no interpolation data is available
+      expect(result.current).toHaveLength(3);
+      
+      const carAhead = result.current.find(car => car.carIdx === 1);
+      const player = result.current.find(car => car.carIdx === 0);
+      const carBehind = result.current.find(car => car.carIdx === 2);
+      
+      // Should use fallback calculations (distance * lapTime) during pace laps
+      expect(carAhead?.delta).toBeCloseTo(10); // 0.1 * 100 (fallback)
+      expect(player?.delta).toBe(0);
+      expect(carBehind?.delta).toBeCloseTo(-10); // -0.1 * 100 (fallback)
+      
+      // Verify interpolation was not recording (isRecording: false)
+      expect(mockTimingInterpolationPaceLap.isRecording).toBe(false);
+    });
   });
 });

@@ -3,6 +3,7 @@ import {
   useSessionStore,
   useTelemetryValues,
 } from '@irdashies/context';
+import { SessionState } from '@irdashies/types';
 import { 
   TimingInterpolationStore,
   CarClassTimingData,
@@ -47,18 +48,26 @@ export const TimingInterpolationProvider: React.FC<TimingInterpolationProviderPr
   const minTimeGap = 0.2; // 200ms minimum between records
   const maxTimeGap = 1.0; // 1 second maximum between records
 
-  // Clear data when session changes
+  // Clear data when session changes and update recording state
   useEffect(() => {
     if (sessionNum !== undefined) {
       bestLapByCarClass.current.clear();
       recordingState.current.clear();
-      setIsRecording(true);
     }
-  }, [sessionNum, trackId]);
+    
+    // Only mark as recording during actual racing
+    setIsRecording(sessionState === SessionState.Racing);
+  }, [sessionNum, trackId, sessionState]);
 
   // Main recording loop
   useEffect(() => {
     if (!carIdxLapDistPct || !sessionTime || !drivers || !carIdxLap) {
+      return;
+    }
+
+    // Only record timing data during actual racing, not pace laps or other states
+    // This prevents corrupted interpolation from pace lap speeds being mixed with racing speeds
+    if (sessionState !== SessionState.Racing) {
       return;
     }
 
