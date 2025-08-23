@@ -59,7 +59,17 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
       );
 
       if (timeDelta !== null) {
+        // Debug: Log when interpolation is used
+        console.log(`🎯 Interpolation: Player ${playerCarIdx} vs ${otherCarIdx} = ${timeDelta.toFixed(3)}s`);
         return timeDelta;
+      }
+
+      // Get debug info to understand why fallback was used
+      const debugInfo = timingInterpolation.getStats();
+      const lastUsage = debugInfo.lastInterpolationUsage;
+      
+      if (lastUsage && !lastUsage.usedInterpolation) {
+        console.log(`⚠️ Fallback: Player ${playerCarIdx} vs ${otherCarIdx} - ${lastUsage.fallbackReason}`);
       }
 
       // Fallback to original estimation method if no interpolation data
@@ -87,7 +97,9 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
         distPctDifference += 1.0;
       }
 
-      return distPctDifference * baseLapTime;
+      const fallbackResult = distPctDifference * baseLapTime;
+      console.log(`📐 Fallback: Player ${playerCarIdx} vs ${otherCarIdx} = ${fallbackResult.toFixed(3)}s (est)`);
+      return fallbackResult;
     };
 
     const sortedDrivers = drivers

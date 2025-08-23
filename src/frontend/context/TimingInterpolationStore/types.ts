@@ -44,10 +44,19 @@ export interface TimingInterpolationStore {
   // Get current recording state
   isRecording: boolean;
   
-  // Statistics
+  // Statistics and debugging
   getStats: () => {
     totalCarClasses: number;
     bestLapTimes: Record<number, number>;
     dataPoints: Record<number, number>;
+    isRecording: boolean;
+    sessionState: string;
+    lastInterpolationUsage: {
+      playerCarIdx: number;
+      otherCarIdx: number;
+      usedInterpolation: boolean;
+      fallbackReason?: string;
+      timestamp: number;
+    } | null;
   };
 }

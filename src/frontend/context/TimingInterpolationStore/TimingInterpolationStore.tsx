@@ -42,6 +42,15 @@ export const TimingInterpolationProvider: React.FC<TimingInterpolationProviderPr
   const bestLapByCarClass = useRef(new Map<number, CarClassTimingData>());
   const recordingState = useRef(new Map<number, CarRecordingState>());
   const [isRecording, setIsRecording] = useState(false);
+  
+  // Debugging state
+  const lastInterpolationUsage = useRef<{
+    playerCarIdx: number;
+    otherCarIdx: number;
+    usedInterpolation: boolean;
+    fallbackReason?: string;
+    timestamp: number;
+  } | null>(null);
 
   // Hybrid sampling configuration
   const minDistanceGap = 0.005; // 0.5% of track
@@ -196,7 +205,7 @@ export const TimingInterpolationProvider: React.FC<TimingInterpolationProviderPr
       otherDist: number,
       driversData: { carIdx: number; carClass?: { id?: number; estLapTime?: number } }[]
     ) => {
-      return calculateTimeDelta(
+      const result = calculateTimeDelta(
         bestLapByCarClass.current,
         playerCarIdx,
         otherCarIdx,
@@ -204,6 +213,36 @@ export const TimingInterpolationProvider: React.FC<TimingInterpolationProviderPr
         otherDist,
         driversData
       );
+      
+      // Track usage for debugging
+      const usedInterpolation = result !== null;
+      let fallbackReason: string | undefined;
+      
+      if (!usedInterpolation) {
+        // Determine why interpolation wasn't used
+        const playerDriver = driversData.find(d => d.carIdx === playerCarIdx);
+        const otherDriver = driversData.find(d => d.carIdx === otherCarIdx);
+        
+        if (!playerDriver?.carClass?.id && !otherDriver?.carClass?.id) {
+          fallbackReason = 'Missing car class data';
+        } else if (playerDriver?.carClass?.id !== otherDriver?.carClass?.id) {
+          fallbackReason = 'Different car classes';
+        } else if (!bestLapByCarClass.current.get(playerDriver?.carClass?.id || 0)) {
+          fallbackReason = 'No timing data available for car class';
+        } else {
+          fallbackReason = 'Interpolation calculation returned null';
+        }
+      }
+      
+      lastInterpolationUsage.current = {
+        playerCarIdx,
+        otherCarIdx,
+        usedInterpolation,
+        fallbackReason,
+        timestamp: Date.now(),
+      };
+      
+      return result;
     },
     
     clearTimingData: () => {
@@ -222,10 +261,24 @@ export const TimingInterpolationProvider: React.FC<TimingInterpolationProviderPr
         dataPoints[carClassId] = record.items.length;
       });
       
+      // Convert SessionState enum to readable string
+      const sessionStateNames = {
+        0: 'Invalid',
+        1: 'GetInCar', 
+        2: 'Warmup',
+        3: 'ParadeLaps',
+        4: 'Racing',
+        5: 'Checkered',
+        6: 'CoolDown'
+      };
+      
       return {
         totalCarClasses: bestLapByCarClass.current.size,
         bestLapTimes,
         dataPoints,
+        isRecording,
+        sessionState: sessionStateNames[sessionState as keyof typeof sessionStateNames] || `Unknown(${sessionState})`,
+        lastInterpolationUsage: lastInterpolationUsage.current,
       };
     },
   };

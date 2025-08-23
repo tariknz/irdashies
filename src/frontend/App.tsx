@@ -12,6 +12,7 @@ import {
 import { Settings } from './components/Settings/Settings';
 import { EditMode } from './components/EditMode/EditMode';
 import { ThemeManager } from './components/ThemeManager/ThemeManager';
+import { TimingDebugInfo } from './components/Standings/components/TimingDebugInfo';
 import { WIDGET_MAP } from './WidgetIndex';
 
 const AppRoutes = () => {
@@ -49,6 +50,8 @@ const App = () => (
           <EditMode>
             <ThemeManager>
               <AppRoutes />
+              {/* Debug component - enable by setting localStorage.timingDebug = 'true' */}
+              {localStorage.getItem('timingDebug') === 'true' && <TimingDebugInfo />}
             </ThemeManager>
           </EditMode>
         </HashRouter>
