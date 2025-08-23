@@ -12,9 +12,7 @@ export const downloadTrackSvgs = async () => {
 
   const allTracks: Record<string, TrackAsset> = JSON.parse(tracks);
 
-  Object.values(allTracks).forEach(async (track) => {
-    await downloadTrackSvgs(track);
-  });
+  await Promise.all(Object.values(allTracks).map(downloadTrackSvgs));
 
   async function downloadTrackSvgs(track: TrackAsset) {
     for (const [, layer] of Object.entries(track.track_map_layers)) {
