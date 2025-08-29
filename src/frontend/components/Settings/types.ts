@@ -56,6 +56,7 @@ export interface InputWidgetSettings extends BaseWidgetSettings {
       enabled: boolean;
       includeThrottle: boolean;
       includeBrake: boolean;
+      timeWindowSeconds: number;
     };
     bar: {
       enabled: boolean;

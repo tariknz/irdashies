@@ -13,40 +13,59 @@ export interface InputTraceProps {
   settings?: {
     includeThrottle?: boolean;
     includeBrake?: boolean;
+    timeWindowSeconds?: number;
   };
 }
 
 export const InputTrace = ({
   input,
-  settings = { includeThrottle: true, includeBrake: true },
+  settings = { includeThrottle: true, includeBrake: true, timeWindowSeconds: 10 },
 }: InputTraceProps) => {
-  const { includeThrottle, includeBrake } = settings;
+  const { includeThrottle, includeBrake, timeWindowSeconds = 10 } = settings;
   const svgRef = useRef<SVGSVGElement>(null);
   const { width, height } = { width: 400, height: 100 };
 
+  // Calculate buffer size based on time window
+  // Assume ~60 Hz updates, but cap the visual resolution to width pixels for performance
+  const samplesPerSecond = 60;
+  const totalSamples = Math.floor(timeWindowSeconds * samplesPerSecond);
+  const bufferSize = Math.min(totalSamples, width * 2); // Allow up to 2x width for smoother curves
+
   const [brakeArray, setBrakeArray] = useState<number[]>(
-    Array.from({ length: width }, () => 0)
+    Array.from({ length: bufferSize }, () => 0)
   );
   const [throttleArray, setThrottleArray] = useState<number[]>(
-    Array.from({ length: width }, () => 0)
+    Array.from({ length: bufferSize }, () => 0)
   );
+
+  // Reset arrays when buffer size changes
+  useEffect(() => {
+    setBrakeArray(Array.from({ length: bufferSize }, () => 0));
+    setThrottleArray(Array.from({ length: bufferSize }, () => 0));
+  }, [bufferSize]);
 
   useEffect(() => {
     // slice first value and append new value
     if (includeThrottle) {  
-      setThrottleArray((v) => [...v.slice(1), input.throttle ?? 0]);
+      setThrottleArray((v) => {
+        if (v.length !== bufferSize) return Array.from({ length: bufferSize }, () => 0);
+        return [...v.slice(1), input.throttle ?? 0];
+      });
     }
     if (includeBrake) {
-      setBrakeArray((v) => [...v.slice(1), input.brake ?? 0]);
+      setBrakeArray((v) => {
+        if (v.length !== bufferSize) return Array.from({ length: bufferSize }, () => 0);
+        return [...v.slice(1), input.brake ?? 0];
+      });
     }
-  }, [input, includeThrottle, includeBrake]);
+  }, [input, includeThrottle, includeBrake, bufferSize]);
 
   useEffect(() => {
     const valueArrayWithColors = [];
     if (includeThrottle) valueArrayWithColors.push({ values: throttleArray, color: THROTTLE_COLOR });
     if (includeBrake) valueArrayWithColors.push({ values: brakeArray, color: BRAKE_COLOR });
-    drawGraph(svgRef.current, valueArrayWithColors, width, height);
-  }, [brakeArray, height, throttleArray, width, includeThrottle, includeBrake]);
+    drawGraph(svgRef.current, valueArrayWithColors, width, height, bufferSize);
+  }, [brakeArray, height, throttleArray, width, includeThrottle, includeBrake, bufferSize]);
 
   return (
     <svg
@@ -62,16 +81,18 @@ function drawGraph(
   svgElement: SVGSVGElement | null,
   valueArrayWithColors: { values: number[]; color: string }[],
   width: number,
-  height: number
+  height: number,
+  bufferSize: number
 ) {
-  if (!svgElement) return;
+  if (!svgElement || valueArrayWithColors.length === 0) return;
 
   const svg = d3.select(svgElement);
 
   svg.selectAll('*').remove();
 
   const scaleMargin = 0.05;
-  const xScale = d3.scaleLinear().domain([0, width]).range([0, width]);
+  // Map data points to the visual width
+  const xScale = d3.scaleLinear().domain([0, bufferSize - 1]).range([0, width]);
   const yScale = d3
     .scaleLinear()
     .domain([0 - scaleMargin, 1 + scaleMargin])

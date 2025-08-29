@@ -11,6 +11,7 @@ const defaultConfig: InputWidgetSettings['config'] = {
     enabled: true,
     includeThrottle: true,
     includeBrake: true,
+    timeWindowSeconds: 10,
   },
   bar: {
     enabled: true,
@@ -50,6 +51,9 @@ const migrateConfig = (
       includeBrake:
         (config.trace as { includeBrake?: boolean })?.includeBrake ??
         defaultConfig.trace.includeBrake,
+      timeWindowSeconds:
+        (config.trace as { timeWindowSeconds?: number })?.timeWindowSeconds ??
+        defaultConfig.trace.timeWindowSeconds,
     },
     bar: {
       enabled:
@@ -156,6 +160,34 @@ export const InputSettings = () => {
                   />
                   <span className="text-sm text-slate-200">Show Brake Trace</span>
                 </label>
+                <div className="flex items-center gap-3">
+                  <label className="text-sm text-slate-200">Time Window (seconds):</label>
+                  <input
+                    type="range"
+                    min="5"
+                    max="30"
+                    step="1"
+                    value={config.trace.timeWindowSeconds}
+                    onChange={(e) =>
+                      handleConfigChange({
+                        trace: { ...config.trace, timeWindowSeconds: parseInt(e.target.value) },
+                      })
+                    }
+                    className="flex-1 h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer slider"
+                  />
+                  <input
+                    type="number"
+                    min="5"
+                    max="30"
+                    value={config.trace.timeWindowSeconds}
+                    onChange={(e) =>
+                      handleConfigChange({
+                        trace: { ...config.trace, timeWindowSeconds: parseInt(e.target.value) },
+                      })
+                    }
+                    className="w-16 bg-slate-700 text-slate-200 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
               </div>
             )}
           </div>
@@ -249,7 +281,7 @@ export const InputSettings = () => {
                           ...config.steer,
                           config: {
                             ...config.steer.config,
-                            style: e.target.value as 'formula' | 'lmp' | 'nascar' | 'round' | 'ushape' | 'default',
+                            style: e.target.value as 'formula' | 'lmp' | 'nascar' | 'ushape' | 'default',
                           },
                         },
                       })
