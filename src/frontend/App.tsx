@@ -20,7 +20,7 @@ const AppRoutes = () => {
   const { isDriving } = useDrivingState();
 
   const shouldShowOverlays =
-    currentDashboard?.generalSettings?.showOnlyWhenOnTrack === false ||
+    currentDashboard?.generalSettings?.showOnlyWhenOnTrack !== true ||
     isDriving;
 
   return (
