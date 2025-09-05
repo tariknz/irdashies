@@ -11,12 +11,14 @@ const defaultConfig: InputWidgetSettings['config'] = {
     enabled: true,
     includeThrottle: true,
     includeBrake: true,
+    includeAbs: true,
   },
   bar: {
     enabled: true,
     includeClutch: true,
     includeBrake: true,
     includeThrottle: true,
+    includeAbs: true,
   },
   gear: {
     enabled: true,
@@ -50,6 +52,9 @@ const migrateConfig = (
       includeBrake:
         (config.trace as { includeBrake?: boolean })?.includeBrake ??
         defaultConfig.trace.includeBrake,
+      includeAbs:
+        (config.trace as { includeAbs?: boolean })?.includeAbs ??
+        defaultConfig.trace.includeAbs,
     },
     bar: {
       enabled:
@@ -63,6 +68,9 @@ const migrateConfig = (
       includeThrottle:
         (config.bar as { includeThrottle?: boolean })?.includeThrottle ??
         defaultConfig.bar.includeThrottle,
+      includeAbs:
+        (config.bar as { includeAbs?: boolean })?.includeAbs ??
+        defaultConfig.bar.includeAbs,
     },
     gear: {
       enabled:
@@ -156,6 +164,19 @@ export const InputSettings = () => {
                   />
                   <span className="text-sm text-slate-200">Show Brake Trace</span>
                 </label>
+                <label className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    checked={config.trace.includeAbs}
+                    onChange={(e) =>
+                      handleConfigChange({
+                        trace: { ...config.trace, includeAbs: e.target.checked },
+                      })
+                    }
+                    className="form-checkbox h-4 w-4 text-blue-500 rounded border-slate-500 bg-slate-700"
+                  />
+                  <span className="text-sm text-slate-200">Show ABS Visual Indicator</span>
+                </label>
               </div>
             )}
           </div>
@@ -215,6 +236,19 @@ export const InputSettings = () => {
                   />
                   <span className="text-sm text-slate-200">Show Throttle Bar</span>
                 </label>
+                <label className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    checked={config.bar.includeAbs}
+                    onChange={(e) =>
+                      handleConfigChange({
+                        bar: { ...config.bar, includeAbs: e.target.checked },
+                      })
+                    }
+                    className="form-checkbox h-4 w-4 text-blue-500 rounded border-slate-500 bg-slate-700"
+                  />
+                  <span className="text-sm text-slate-200">Show ABS Visual Indicator</span>
+                </label>
               </div>
             )}
           </div>
@@ -249,7 +283,7 @@ export const InputSettings = () => {
                           ...config.steer,
                           config: {
                             ...config.steer.config,
-                            style: e.target.value as 'formula' | 'lmp' | 'nascar' | 'round' | 'ushape' | 'default',
+                            style: e.target.value as 'formula' | 'lmp' | 'nascar' | 'ushape' | 'default',
                           },
                         },
                       })

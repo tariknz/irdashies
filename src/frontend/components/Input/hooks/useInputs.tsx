@@ -8,6 +8,7 @@ export const useInputs = () => {
   const speed = useTelemetryValue('Speed');
   const unit = useTelemetryValue('DisplayUnits');
   const steer = useTelemetryValue('SteeringWheelAngle');
+  const brakeAbsActive = useTelemetryValue<boolean>('BrakeABSactive');
 
-  return { brake, throttle, clutch, gear, speed, unit, steer };
+  return { brake, throttle, clutch, gear, speed, unit, steer, brakeAbsActive };
 };

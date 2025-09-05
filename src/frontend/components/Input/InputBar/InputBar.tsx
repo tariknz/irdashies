@@ -12,10 +12,12 @@ export interface InputBarProps {
   brake?: number;
   throttle?: number;
   clutch?: number;
+  brakeAbsActive?: boolean;
   settings?: {
     includeClutch: boolean;
     includeBrake: boolean;
     includeThrottle: boolean;
+    includeAbs: boolean;
   };
 }
 
@@ -23,10 +25,12 @@ export const InputBar = ({
   brake,
   throttle,
   clutch,
+  brakeAbsActive,
   settings = {
     includeClutch: true,
     includeBrake: true,
     includeThrottle: true,
+    includeAbs: true,
   },
 }: InputBarProps) => {
   const svgRef = useRef<SVGSVGElement>(null);
@@ -40,11 +44,11 @@ export const InputBar = ({
       return false;
     }).map(({ key, color }) => ({
       value: key === 'clutch' ? clutch ?? 0 : key === 'brake' ? brake ?? 0 : throttle ?? 0,
-      color
+      color: key === 'brake' && brakeAbsActive && settings.includeAbs ? getColor('orange', 500) : color
     }));
 
     drawBars(svgRef.current, activeInputs);
-  }, [brake, throttle, clutch, settings]);
+  }, [brake, throttle, clutch, brakeAbsActive, settings]);
 
   return <svg ref={svgRef} width="120"></svg>;
 };
