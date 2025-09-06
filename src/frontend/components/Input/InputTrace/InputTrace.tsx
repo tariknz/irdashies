@@ -204,7 +204,7 @@ function drawABSAwareLine(
         .datum(segment.values)
         .attr('fill', 'none')
         .attr('stroke', segment.isABS ? absColor : normalColor)
-        .attr('stroke-width', 3)
+        .attr('stroke-width', segment.isABS ? 5 : 3)
         .attr('d', line);
     }
   });
