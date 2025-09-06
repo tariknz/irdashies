@@ -40,10 +40,12 @@ export const Primary: Story = {
     brake: 0.5,
     throttle: 0.5,
     clutch: 0.5,
+    brakeAbsActive: false,
     settings: {
       includeBrake: true,
       includeThrottle: true,
       includeClutch: true,
+      includeAbs: true,
     },
   },
 };
