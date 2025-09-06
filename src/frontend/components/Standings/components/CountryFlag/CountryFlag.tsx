@@ -1,5 +1,6 @@
 import React from 'react';
 import 'flag-icons/css/flag-icons.min.css';
+import { IRacingFlag } from './IRacingFlag';
 
 interface CountryFlagProps {
   flairId: number;
@@ -9,8 +10,6 @@ interface CountryFlagProps {
 
 // Hardcoded FlairID to country code mapping
 export const FLAIR_ID_TO_COUNTRY_CODE: Record<number, string> = {
-  1: 'un', // Unaffiliated
-  2: 'un', // iRacing
   3: 'AF', // Afghanistan
   4: 'AX', // Åland Islands
   5: 'AL', // Albania
@@ -254,7 +253,7 @@ export const FLAIR_ID_TO_COUNTRY_CODE: Record<number, string> = {
 
 // Map FlairID to country code
 const getCountryCodeFromFlairId = (flairId: number): string => {
-  return FLAIR_ID_TO_COUNTRY_CODE[flairId] || 'un'; // UN flag for unaffiliated/unknown
+  return FLAIR_ID_TO_COUNTRY_CODE[flairId];
 };
 
 // Size classes for the flag
@@ -270,6 +269,10 @@ export const CountryFlag: React.FC<CountryFlagProps> = ({
   size = 'md',
 }) => {
   const countryCode = getCountryCodeFromFlairId(flairId);
+
+  if (!countryCode) {
+    return <IRacingFlag size={size} className={className} />;
+  }
 
   return (
     <span
