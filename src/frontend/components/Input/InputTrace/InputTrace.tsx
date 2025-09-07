@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { getColor } from '@irdashies/utils/colors';
 
 const BRAKE_COLOR = getColor('red');
-const BRAKE_ABS_COLOR = getColor('orange', 500);
+const BRAKE_ABS_COLOR = getColor('yellow', 500);
 const THROTTLE_COLOR = getColor('green');
 
 export interface InputTraceProps {

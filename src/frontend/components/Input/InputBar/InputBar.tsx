@@ -45,7 +45,7 @@ export const InputBar = ({
       return false;
     }).map(({ key, color }) => ({
       value: key === 'clutch' ? clutch ?? 0 : key === 'brake' ? brake ?? 0 : throttle ?? 0,
-      color: key === 'brake' && brakeAbsActive && includeAbs ? getColor('orange', 500) : color
+      color: key === 'brake' && brakeAbsActive && includeAbs ? getColor('yellow', 500) : color
     }));
 
     drawBars(svgRef.current, activeInputs, brakeAbsActive, includeAbs);
