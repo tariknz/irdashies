@@ -34,7 +34,8 @@ export async function publishIRacingSDKEvents(
           await new Promise((resolve) => setTimeout(resolve, 1000 / 60));
 
           if (telemetry) {
-            overlayManager.publishMessage('telemetry', telemetry);
+            // Use new subscription-based publishing for telemetry
+            overlayManager.publishTelemetryFields(telemetry);
             telemetrySink.addTelemetry(telemetry);
           }
 
