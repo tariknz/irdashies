@@ -20,12 +20,16 @@ const telemetrySink = new TelemetrySink();
 const telemetryBridge = new TelemetryBridge(overlayManager);
 
 app.on('ready', () => {
+  console.log('iRacing Dashies starting up...');
+
   const dashboard = getOrCreateDefaultDashboard();
   overlayManager.createOverlays(dashboard);
   telemetryBridge.setupIpcHandlers();
   setupTaskbar(telemetrySink, overlayManager);
   iRacingSDKSetup(telemetrySink, overlayManager);
   publishDashboardUpdates(overlayManager);
+
+  console.log('iRacing Dashies ready! Telemetry subscription system active.');
 });
 
 app.on('window-all-closed', () => app.quit());

@@ -4,6 +4,7 @@ import path from 'node:path';
 import { trackWindowMovement } from './trackWindowMovement';
 import { Notification } from 'electron';
 import { readData, writeData } from './storage/storage';
+import { printSubscriptionStatus, printSubscriptionChange, printSystemReady } from './utils/telemetryDebug';
 
 // used for Hot Module Replacement
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string;
@@ -33,7 +34,25 @@ export class OverlayManager {
         if (window.isDestroyed()) return;
         window.setAlwaysOnTop(true, 'screen-saver', 1);
       });
+      this.printSubscriptionStatus();
     }, 5000);
+
+    // Initialize telemetry debug logging (development only)
+    if (process.env.NODE_ENV === 'development') {
+      // Show initial status after startup
+      setTimeout(() => {
+        printSystemReady(this.fieldSubscriptions);
+      }, 2000);
+
+      // Periodic detailed status updates
+      setInterval(() => {
+        const totalSubscriptions = Array.from(this.fieldSubscriptions.values())
+          .reduce((sum, fields) => sum + fields.size, 0);
+        if (totalSubscriptions > 0) {
+          printSubscriptionStatus(this.fieldSubscriptions, 'Telemetry Status Update');
+        }
+      }, 30000); // Check every minute
+    }
   }
 
   public getVersion(): string {
@@ -117,24 +136,33 @@ export class OverlayManager {
 
   // Telemetry subscription management methods
   public subscribeToTelemetryFields(overlayId: string, fields: (keyof Telemetry)[]): void {
-    // Remove existing subscriptions for this overlay
-    this.unsubscribeFromTelemetryFields(overlayId);
-
-    // Add new subscriptions
-    const fieldSet = new Set(fields);
-    this.fieldSubscriptions.set(overlayId, fieldSet);
-
-    // Update reverse mapping (field -> overlays)
-    for (const field of fields) {
-      let overlays = this.fieldToOverlays.get(field);
-      if (!overlays) {
-        overlays = new Set();
-        this.fieldToOverlays.set(field, overlays);
-      }
-      overlays.add(overlayId);
+    // Get existing subscriptions for this overlay
+    let existingFields = this.fieldSubscriptions.get(overlayId);
+    if (!existingFields) {
+      existingFields = new Set();
+      this.fieldSubscriptions.set(overlayId, existingFields);
     }
 
-    console.log(`Overlay ${overlayId} subscribed to ${fields.length} telemetry fields`);
+    // Add new fields to existing subscriptions
+    const newFieldsAdded = new Set<keyof Telemetry>();
+    for (const field of fields) {
+      if (!existingFields.has(field)) {
+        existingFields.add(field);
+        newFieldsAdded.add(field);
+
+        // Update reverse mapping (field -> overlays)
+        let overlays = this.fieldToOverlays.get(field);
+        if (!overlays) {
+          overlays = new Set();
+          this.fieldToOverlays.set(field, overlays);
+        }
+        overlays.add(overlayId);
+      }
+    }
+
+    if (process.env.NODE_ENV === 'development' && newFieldsAdded.size > 0) {
+      printSubscriptionChange(overlayId, 'added', Array.from(newFieldsAdded));
+    }
   }
 
   public unsubscribeFromTelemetryFields(overlayId: string, fields?: (keyof Telemetry)[]): void {
@@ -157,18 +185,27 @@ export class OverlayManager {
     // Update or remove subscription
     if (fields) {
       // Remove specific fields
+      const removedFields = new Set<keyof Telemetry>();
       for (const field of fields) {
-        subscribedFields.delete(field);
+        if (subscribedFields.has(field)) {
+          subscribedFields.delete(field);
+          removedFields.add(field);
+        }
       }
       if (subscribedFields.size === 0) {
         this.fieldSubscriptions.delete(overlayId);
       }
+
+      if (process.env.NODE_ENV === 'development' && removedFields.size > 0) {
+        printSubscriptionChange(overlayId, 'removed', Array.from(removedFields));
+      }
     } else {
       // Remove all fields for this overlay
       this.fieldSubscriptions.delete(overlayId);
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`Overlay ${overlayId} unsubscribed from all telemetry fields`);
+      }
     }
-
-    console.log(`Overlay ${overlayId} unsubscribed from telemetry fields`);
   }
 
   public getSubscribedFields(): Set<keyof Telemetry> {
@@ -190,53 +227,83 @@ export class OverlayManager {
     return this.fieldSubscriptions.get(overlayId) || new Set();
   }
 
+  // Debug method to print current subscription status
+  public printSubscriptionStatus(): void {
+    printSubscriptionStatus(this.fieldSubscriptions);
+  }
+
   // New telemetry publishing method with field subscriptions
   public publishTelemetryFields(telemetry: Telemetry): void {
-    if (this.fieldSubscriptions.size === 0) {
-      // Fallback to legacy publishing if no subscriptions exist
-      this.publishMessage('telemetry', telemetry);
-      return;
-    }
+    try {
+      if (this.fieldSubscriptions.size === 0) {
+        // Fallback to legacy publishing if no subscriptions exist
+        this.publishMessage('telemetry', telemetry);
+        return;
+      }
 
-    // Group telemetry by overlay
-    const overlayTelemetry = new Map<string, TelemetryDelta>();
-    const timestamp = Date.now();
+      // Group telemetry by overlay
+      const overlayTelemetry = new Map<string, TelemetryDelta>();
+      const timestamp = Date.now();
 
-    // Build overlay-specific telemetry payloads
-    for (const [field, fieldValue] of Object.entries(telemetry)) {
-      const typedField = field as keyof Telemetry;
-      const overlays = this.fieldToOverlays.get(typedField);
+      // Build overlay-specific telemetry payloads
+      for (const [field, fieldValue] of Object.entries(telemetry)) {
+        const typedField = field as keyof Telemetry;
+        const overlays = this.fieldToOverlays.get(typedField);
 
-      if (overlays && fieldValue) {
-        for (const overlayId of overlays) {
-          let overlayPayload = overlayTelemetry.get(overlayId);
-          if (!overlayPayload) {
-            overlayPayload = {};
-            overlayTelemetry.set(overlayId, overlayPayload);
+        if (overlays && fieldValue) {
+          for (const overlayId of overlays) {
+            let overlayPayload = overlayTelemetry.get(overlayId);
+            if (!overlayPayload) {
+              overlayPayload = {};
+              overlayTelemetry.set(overlayId, overlayPayload);
+            }
+            (overlayPayload as Record<string, unknown>)[typedField] = fieldValue;
           }
-          (overlayPayload as Record<string, unknown>)[typedField] = fieldValue;
         }
       }
-    }
 
-    // Send targeted telemetry to each overlay
-    let totalMessages = 0;
-    for (const [overlayId, telemetrySubset] of overlayTelemetry) {
-      const window = this.overlayWindows[overlayId]?.window;
-      if (window && !window.isDestroyed()) {
-        const payload: OverlayTelemetryPayload = {
-          overlayId,
-          telemetry: telemetrySubset,
-          timestamp
-        };
-        window.webContents.send('telemetry', payload);
-        totalMessages++;
+      // Send targeted telemetry to each overlay
+      let totalMessages = 0;
+      let failedMessages = 0;
+
+      for (const [overlayId, telemetrySubset] of overlayTelemetry) {
+        try {
+          const window = this.overlayWindows[overlayId]?.window;
+          if (window && !window.isDestroyed()) {
+            const payload: OverlayTelemetryPayload = {
+              overlayId,
+              telemetry: telemetrySubset,
+              timestamp
+            };
+            window.webContents.send('telemetry', payload);
+            totalMessages++;
+          } else {
+            failedMessages++;
+          }
+        } catch (error) {
+          console.warn(`Failed to send telemetry to overlay ${overlayId}:`, error);
+          failedMessages++;
+        }
       }
-    }
 
-    // Performance logging (only in development)
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`Published targeted telemetry: ${totalMessages} messages to ${overlayTelemetry.size} overlays`);
+      // Log performance and issues
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`Published targeted telemetry: ${totalMessages} messages to ${overlayTelemetry.size} overlays`);
+        if (failedMessages > 0) {
+          console.warn(`Failed to send telemetry to ${failedMessages} overlays`);
+        }
+      }
+
+      // If all messages failed, fallback to legacy publishing
+      if (failedMessages > 0 && totalMessages === 0) {
+        console.warn('All targeted telemetry messages failed, falling back to legacy publishing');
+        this.publishMessage('telemetry', telemetry);
+      }
+
+    } catch (error) {
+      console.error('Error in publishTelemetryFields, falling back to legacy publishing:', error);
+      // Fallback to legacy publishing on any error
+      this.publishMessage('telemetry', telemetry);
     }
   }
 

@@ -18,9 +18,9 @@ declare global {
 interface TelemetryState {
   telemetry: Telemetry | null;
   setTelemetry: (telemetry: Telemetry | null | ((prevState: Telemetry | null) => Telemetry | null)) => void;
-  fieldSubscriptions: Set<keyof Telemetry>;
-  subscribeToFields: (fields: (keyof Telemetry)[]) => void;
-  unsubscribeFromFields: (fields: (keyof Telemetry)[]) => void;
+  fieldSubscriptions: Map<string, Set<keyof Telemetry>>;
+  subscribeToFields: (overlayId: string, fields: (keyof Telemetry)[]) => void;
+  unsubscribeFromFields: (overlayId: string, fields: (keyof Telemetry)[]) => void;
 }
 
 // Hook to get current overlay ID from route
@@ -29,12 +29,13 @@ export const useCurrentOverlayId = (): string | null => {
   // Extract overlay ID from path (e.g., "/speedometer" -> "speedometer")
   const pathParts = location.pathname.split('/');
   const overlayId = pathParts[1] || null;
+
   return overlayId;
 };
 
-export const useTelemetryStore = create<TelemetryState>((set, get) => ({
+export const useTelemetryStore = create<TelemetryState>((set) => ({
   telemetry: null,
-  fieldSubscriptions: new Set<keyof Telemetry>(),
+  fieldSubscriptions: new Map<string, Set<keyof Telemetry>>(),
   setTelemetry: (telemetry) => {
     if (typeof telemetry === 'function') {
       set((state) => ({ telemetry: telemetry(state.telemetry) }));
@@ -42,16 +43,30 @@ export const useTelemetryStore = create<TelemetryState>((set, get) => ({
       set({ telemetry });
     }
   },
-  subscribeToFields: (fields: (keyof Telemetry)[]) => {
-    const currentSubscriptions = get().fieldSubscriptions;
-    const newSubscriptions = new Set([...currentSubscriptions, ...fields]);
-    set({ fieldSubscriptions: newSubscriptions });
+  subscribeToFields: (overlayId: string, fields: (keyof Telemetry)[]) => {
+    set((state) => {
+      const newSubscriptions = new Map(state.fieldSubscriptions);
+      const overlayFields = newSubscriptions.get(overlayId) || new Set();
+      const updatedFields = new Set([...overlayFields, ...fields]);
+      newSubscriptions.set(overlayId, updatedFields);
+      return { fieldSubscriptions: newSubscriptions };
+    });
   },
-  unsubscribeFromFields: (fields: (keyof Telemetry)[]) => {
-    const currentSubscriptions = get().fieldSubscriptions;
-    const newSubscriptions = new Set(currentSubscriptions);
-    fields.forEach(field => newSubscriptions.delete(field));
-    set({ fieldSubscriptions: newSubscriptions });
+  unsubscribeFromFields: (overlayId: string, fields: (keyof Telemetry)[]) => {
+    set((state) => {
+      const newSubscriptions = new Map(state.fieldSubscriptions);
+      const overlayFields = newSubscriptions.get(overlayId);
+      if (overlayFields) {
+        const updatedFields = new Set(overlayFields);
+        fields.forEach(field => updatedFields.delete(field));
+        if (updatedFields.size === 0) {
+          newSubscriptions.delete(overlayId);
+        } else {
+          newSubscriptions.set(overlayId, updatedFields);
+        }
+      }
+      return { fieldSubscriptions: newSubscriptions };
+    });
   },
 }));
 
@@ -59,22 +74,42 @@ export const useTelemetryStore = create<TelemetryState>((set, get) => ({
 export const useTelemetryFieldTracker = (field: keyof Telemetry) => {
   const overlayId = useCurrentOverlayId();
   const subscribeToFields = useTelemetryStore(state => state.subscribeToFields);
+  const unsubscribeFromFields = useTelemetryStore(state => state.unsubscribeFromFields);
 
   useEffect(() => {
     if (overlayId) {
-      // Subscribe to this field
-      subscribeToFields([field]);
+      try {
+        // Subscribe to this field locally
+        subscribeToFields(overlayId, [field]);
 
-      // Send subscription to main process via IPC
-      window.telemetryBridge?.subscribeToTelemetryFields([field]);
+        // Send subscription to main process via IPC (only log errors)
+        window.telemetryBridge?.subscribeToTelemetryFields([field])
+          .catch(error => {
+            console.warn(`Failed to subscribe to telemetry field ${field}:`, error);
+            // Continue with local subscription even if IPC fails
+          });
+      } catch (error) {
+        console.error(`Error subscribing to telemetry field ${field}:`, error);
+      }
     }
 
     return () => {
       if (overlayId) {
-        window.telemetryBridge?.unsubscribeFromTelemetryFields([field]);
+        try {
+          // Unsubscribe locally
+          unsubscribeFromFields(overlayId, [field]);
+
+          // Unsubscribe from main process
+          window.telemetryBridge?.unsubscribeFromTelemetryFields([field])
+            .catch(error => {
+              console.warn(`Failed to unsubscribe from telemetry field ${field}:`, error);
+            });
+        } catch (error) {
+          console.error(`Error unsubscribing from telemetry field ${field}:`, error);
+        }
       }
     };
-  }, [field, overlayId, subscribeToFields]);
+  }, [field, overlayId, subscribeToFields, unsubscribeFromFields]);
 };
 
 export const useTelemetry = <T extends number[] | boolean[] = number[]>(
