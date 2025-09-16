@@ -8,6 +8,11 @@ import {
   useTelemetryValuesMapped,
 } from './TelemetryStore';
 import type { Telemetry } from '@irdashies/types';
+import { MemoryRouter } from 'react-router-dom';
+
+const TestProvider = ({ children }: { children: React.ReactNode }) => (
+  <MemoryRouter>{children}</MemoryRouter>
+);
 
 const mockTelemetry: Telemetry = {
   Speed: { value: [100, 101, 102] },
@@ -36,12 +41,12 @@ describe('TelemetryStore', () => {
   describe('useTelemetry', () => {
     it('should return the correct telemetry var', () => {
       useTelemetryStore.getState().setTelemetry(mockTelemetry);
-      const { result } = renderHook(() => useTelemetry('Speed'));
+      const { result } = renderHook(() => useTelemetry('Speed'), { wrapper: TestProvider });
       expect(result.current).toEqual({ value: [100, 101, 102] });
     });
     it('should return undefined if telemetry is null', () => {
       useTelemetryStore.getState().setTelemetry(null as unknown as Telemetry);
-      const { result } = renderHook(() => useTelemetry('Speed'));
+      const { result } = renderHook(() => useTelemetry('Speed'), { wrapper: TestProvider });
       expect(result.current).toBeUndefined();
     });
   });
@@ -49,12 +54,12 @@ describe('TelemetryStore', () => {
   describe('useTelemetryValue', () => {
     it('should return the first value for a key', () => {
       useTelemetryStore.getState().setTelemetry(mockTelemetry);
-      const { result } = renderHook(() => useTelemetryValue<number>('Speed'));
+      const { result } = renderHook(() => useTelemetryValue<number>('Speed'), { wrapper: TestProvider });
       expect(result.current).toBe(100);
     });
     it('should return undefined if value is empty', () => {
       useTelemetryStore.getState().setTelemetry(emptyTelemetry);
-      const { result } = renderHook(() => useTelemetryValue<number>('Speed'));
+      const { result } = renderHook(() => useTelemetryValue<number>('Speed'), { wrapper: TestProvider });
       expect(result.current).toBeUndefined();
     });
   });
@@ -62,12 +67,12 @@ describe('TelemetryStore', () => {
   describe('useTelemetryValues', () => {
     it('should return all values for a key', () => {
       useTelemetryStore.getState().setTelemetry(mockTelemetry);
-      const { result } = renderHook(() => useTelemetryValues('RPM'));
+      const { result } = renderHook(() => useTelemetryValues('RPM'), { wrapper: TestProvider });
       expect(result.current).toEqual([9000, 9100, 9200]);
     });
     it('should return empty array if value is empty', () => {
       useTelemetryStore.getState().setTelemetry(emptyTelemetry);
-      const { result } = renderHook(() => useTelemetryValues('RPM'));
+      const { result } = renderHook(() => useTelemetryValues('RPM'), { wrapper: TestProvider });
       expect(result.current).toEqual([]);
     });
   });
@@ -79,7 +84,7 @@ describe('TelemetryStore', () => {
         useTelemetryValuesMapped<number[]>(
           'RPM',
           (v: number) => v / 1000
-        )
+        ), { wrapper: TestProvider }
       );
       expect(result.current).toEqual([9, 9.1, 9.2]);
     });
@@ -89,7 +94,7 @@ describe('TelemetryStore', () => {
         useTelemetryValuesMapped<number[]>(
           'RPM',
           (v: number) => v / 1000
-        )
+        ), { wrapper: TestProvider }
       );
       expect(result.current).toEqual([]);
     });
