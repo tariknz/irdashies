@@ -235,12 +235,6 @@ export class OverlayManager {
   // New telemetry publishing method with field subscriptions
   public publishTelemetryFields(telemetry: Telemetry): void {
     try {
-      if (this.fieldSubscriptions.size === 0) {
-        // Fallback to legacy publishing if no subscriptions exist
-        this.publishMessage('telemetry', telemetry);
-        return;
-      }
-
       // Group telemetry by overlay
       const overlayTelemetry = new Map<string, TelemetryDelta>();
       const timestamp = Date.now();
@@ -294,16 +288,8 @@ export class OverlayManager {
         }
       }
 
-      // If all messages failed, fallback to legacy publishing
-      if (failedMessages > 0 && totalMessages === 0) {
-        console.warn('All targeted telemetry messages failed, falling back to legacy publishing');
-        this.publishMessage('telemetry', telemetry);
-      }
-
     } catch (error) {
-      console.error('Error in publishTelemetryFields, falling back to legacy publishing:', error);
-      // Fallback to legacy publishing on any error
-      this.publishMessage('telemetry', telemetry);
+      console.error('Error in publishTelemetryFields:', error);
     }
   }
 

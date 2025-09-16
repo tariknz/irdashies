@@ -1,7 +1,7 @@
 import { IRacingSDK } from '../../irsdk';
 import { TelemetrySink } from './telemetrySink';
 import { OverlayManager } from '../../overlayManager';
-import type { IrSdkBridge, Session, Telemetry } from '@irdashies/types';
+import type { IrSdkBridge, Session, OverlayTelemetryPayload } from '@irdashies/types';
 
 const TIMEOUT = 1000;
 
@@ -54,7 +54,7 @@ export async function publishIRacingSDKEvents(
   })();
 
   return {
-    onTelemetry: (callback: (value: Telemetry) => void) => callback({} as Telemetry),
+    onTelemetry: (callback: (value: OverlayTelemetryPayload) => void) => callback({ overlayId: '', telemetry: {}, timestamp: Date.now() }),
     onSessionData: (callback: (value: Session) => void) => callback({} as Session),
     onRunningState: (callback: (value: boolean) => void) => callback(false),
     stop: () => {
