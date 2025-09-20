@@ -257,7 +257,6 @@ export class OverlayManager {
       }
 
       // Send targeted telemetry to each overlay
-      let totalMessages = 0;
       let failedMessages = 0;
 
       for (const [overlayId, telemetrySubset] of overlayTelemetry) {
@@ -270,7 +269,6 @@ export class OverlayManager {
               timestamp
             };
             window.webContents.send('telemetry', payload);
-            totalMessages++;
           } else {
             failedMessages++;
           }
@@ -282,7 +280,6 @@ export class OverlayManager {
 
       // Log performance and issues
       if (process.env.NODE_ENV === 'development') {
-        console.log(`Published targeted telemetry: ${totalMessages} messages to ${overlayTelemetry.size} overlays`);
         if (failedMessages > 0) {
           console.warn(`Failed to send telemetry to ${failedMessages} overlays`);
         }
