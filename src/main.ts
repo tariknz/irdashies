@@ -5,6 +5,7 @@ import { setupTaskbar } from './app';
 import { publishDashboardUpdates } from './app/bridge/dashboard/dashboardBridge';
 import { TelemetrySink } from './app/bridge/iracingSdk/telemetrySink';
 import { OverlayManager } from './app/overlayManager';
+import { TelemetryBridge } from './app/bridge/telemetry/telemetryBridge';
 import { updateElectronApp } from 'update-electron-app';
 // @ts-expect-error no types for squirrel
 import started from 'electron-squirrel-startup';
@@ -16,14 +17,19 @@ updateElectronApp();
 
 const overlayManager = new OverlayManager();
 const telemetrySink = new TelemetrySink();
+const telemetryBridge = new TelemetryBridge(overlayManager);
 
 app.on('ready', () => {
+  console.log('iRacing Dashies starting up...');
+
   const dashboard = getOrCreateDefaultDashboard();
   overlayManager.createOverlays(dashboard);
-
+  telemetryBridge.setupIpcHandlers();
   setupTaskbar(telemetrySink, overlayManager);
   iRacingSDKSetup(telemetrySink, overlayManager);
   publishDashboardUpdates(overlayManager);
+
+  console.log('iRacing Dashies ready! Telemetry subscription system active.');
 });
 
 app.on('window-all-closed', () => app.quit());
