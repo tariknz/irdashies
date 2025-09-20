@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
-const NativeSDK = require("../build/Debug/irsdk_node.node").iRacingSdkNode;
+const NativeSDK = require("../../../../../build/Release/irsdk_node.node").iRacingSdkNode;
 const path = require("path");
 const fs = require("fs");
 
