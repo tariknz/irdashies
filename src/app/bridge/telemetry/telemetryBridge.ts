@@ -1,4 +1,4 @@
-import { ipcMain } from 'electron';
+import { ipcMain, WebContents } from 'electron';
 import { OverlayManager } from '../../overlayManager';
 
 /**
@@ -41,17 +41,14 @@ export class TelemetryBridge {
           return;
         }
 
-        // Get overlay ID from the webContents that sent the request
         const overlayId = this.getOverlayIdFromWebContents(event.sender);
         if (overlayId) {
           this.overlayManager.unsubscribeFromTelemetryFields(overlayId, fields);
-          // Logging is now handled by OverlayManager
         } else {
           console.warn('Could not determine overlay ID for unsubscription request');
         }
       } catch (error) {
         console.error('Error unsubscribing from telemetry fields:', error);
-        // Don't throw - IPC handlers should handle errors gracefully
       }
     });
   }
@@ -59,7 +56,7 @@ export class TelemetryBridge {
   /**
    * Get overlay ID from webContents
    */
-  private getOverlayIdFromWebContents(webContents: Electron.WebContents): string | null {
+  private getOverlayIdFromWebContents(webContents: WebContents): string | null {
     // Find the overlay that matches this webContents
     const overlays = this.overlayManager.getOverlays();
     for (const { widget, window } of overlays) {

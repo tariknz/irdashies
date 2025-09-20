@@ -2,8 +2,8 @@ import type { Telemetry, TelemetryVar } from '@irdashies/types';
 import { create, useStore } from 'zustand';
 import { useStoreWithEqualityFn } from 'zustand/traditional';
 import { useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
 import { arrayCompare, telemetryCompare } from './telemetryCompare';
+import { useCurrentOverlayId } from '../shared/useCurrentOverlayId';
 
 // Module augmentation for telemetryBridge
 declare global {
@@ -22,16 +22,6 @@ interface TelemetryState {
   subscribeToFields: (overlayId: string, fields: (keyof Telemetry)[]) => void;
   unsubscribeFromFields: (overlayId: string, fields: (keyof Telemetry)[]) => void;
 }
-
-// Hook to get current overlay ID from route
-export const useCurrentOverlayId = (): string | null => {
-  const location = useLocation();
-  // Extract overlay ID from path (e.g., "/speedometer" -> "speedometer")
-  const pathParts = location.pathname.split('/');
-  const overlayId = pathParts[1] || null;
-
-  return overlayId;
-};
 
 export const useTelemetryStore = create<TelemetryState>((set) => ({
   telemetry: null,
