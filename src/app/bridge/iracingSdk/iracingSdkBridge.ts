@@ -4,6 +4,7 @@ import { OverlayManager } from '../../overlayManager';
 import type { IrSdkBridge, Session, OverlayTelemetryPayload } from '@irdashies/types';
 
 const TIMEOUT = 1000;
+const LOW_TIMEOUT = 16; // ms, for 60Hz
 
 export async function publishIRacingSDKEvents(
   telemetrySink: TelemetrySink,
@@ -28,20 +29,21 @@ export async function publishIRacingSDKEvents(
 
         await sdk.ready();
 
-        while (!shouldStop && sdk.waitForData(TIMEOUT)) {
+        while (!shouldStop && sdk.waitForData(LOW_TIMEOUT)) {
           const telemetry = sdk.getTelemetry();
-          const session = sdk.getSessionData();
-          await new Promise((resolve) => setTimeout(resolve, 1000 / 60));
-
           if (telemetry) {
             overlayManager.publishTelemetryFields(telemetry);
             telemetrySink.addTelemetry(telemetry);
           }
 
+          const session = sdk.getSessionData();
           if (session) {
             overlayManager.publishMessage('sessionData', session);
             telemetrySink.addSession(session);
           }
+
+          // Yield to event loop instead of blocking sleep
+          await new Promise(resolve => setImmediate(resolve));
         }
 
         console.log('iRacing is no longer publishing telemetry');
