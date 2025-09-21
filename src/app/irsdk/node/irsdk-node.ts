@@ -155,16 +155,6 @@ export class IRacingSDK {
     return this._sdk?.waitForData(timeout) ?? false;
   }
 
-  // New async version
-  public async waitForDataAsync(timeout = 16): Promise<boolean> {
-    if (!this._sdk) return false;
-    return new Promise((resolve) => {
-      this._sdk?.waitForDataAsync(timeout, (result) => {
-        resolve(result);
-      });
-    });
-  }
-
   /**
    * Gets the current session data (from yaml format).
    * @returns {SessionData}

@@ -21,7 +21,7 @@ private:
     // Control
     Napi::Value StartSdk(const Napi::CallbackInfo &info);
     Napi::Value StopSdk(const Napi::CallbackInfo &info);
-    bool DoWaitForData(int timeout);
+    Napi::Value WaitForData(const Napi::CallbackInfo &info);
     Napi::Value BroadcastMessage(const Napi::CallbackInfo &info);
     // Getters
     Napi::Value IsRunning(const Napi::CallbackInfo &info);
@@ -45,29 +45,6 @@ private:
     int _sessionStatusID;
     int _lastSessionCt;
     const char* _sessionData;
-
-    Napi::Value WaitForDataAsync(const Napi::CallbackInfo& info);
-    class WaitForDataWorker; // Forward declare if needed
-};
-
-class WaitForDataWorker : public Napi::AsyncWorker {
-public:
-  WaitForDataWorker(Napi::Function& callback, iRacingSdkNode* sdk, int timeout)
-    : AsyncWorker(callback), sdk(sdk), timeout(timeout) {}
-
-  void Execute() override {
-    result = sdk->DoWaitForData(timeout);
-  }
-
-  void OnOK() override {
-    Napi::HandleScope scope(Env());
-    Callback().Call({Env().Null(), Napi::Boolean::New(Env(), result)});
-  }
-
-private:
-  iRacingSdkNode* sdk;
-  int timeout;
-  bool result;
 };
 
 #endif
