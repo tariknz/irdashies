@@ -1,6 +1,9 @@
 #include "./irsdk_node.h"
 #include "./lib/yaml_parser.h"
 
+// New includes for async
+#include <napi.h>
+
 /*
 Nan::SetPrototypeMethod(tmpl, "getSessionData", GetSessionData);
 Nan::SetPrototypeMethod(tmpl, "getSessionVersionNum", GetSessionVersionNum);
@@ -24,6 +27,8 @@ Napi::Object iRacingSdkNode::Init(Napi::Env env, Napi::Object exports)
     InstanceMethod("stopSDK", &iRacingSdkNode::StopSdk),
     InstanceMethod("waitForData", &iRacingSdkNode::WaitForData),
     InstanceMethod("broadcast", &iRacingSdkNode::BroadcastMessage),
+    // New async method
+    InstanceMethod<&iRacingSdkNode::WaitForDataAsync>("waitForDataAsync"),
     // Getters
     InstanceMethod("isRunning", &iRacingSdkNode::IsRunning),
     InstanceMethod("getSessionVersionNum", &iRacingSdkNode::GetSessionVersionNum),
@@ -102,19 +107,45 @@ Napi::Value iRacingSdkNode::StopSdk(const Napi::CallbackInfo &info)
   return Napi::Boolean::New(info.Env(), true);
 }
 
-Napi::Value iRacingSdkNode::WaitForData(const Napi::CallbackInfo &info)
+// New: AsyncWorker subclass
+class WaitForDataWorker : public Napi::AsyncWorker {
+public:
+  WaitForDataWorker(iRacingSdkNode* sdk, int timeout, Napi::Promise::Deferred deferred)
+    : AsyncWorker(sdk->Env()), sdk(sdk), timeout(timeout), deferred(deferred) {}
+
+  void Execute() override {
+    result = sdk->WaitForDataInternal(timeout); // Call a renamed sync version
+  }
+
+  void OnOK() override {
+    deferred.Resolve(Napi::Boolean::New(Env(), result));
+  }
+
+  void OnError(const Napi::Error& e) override {
+    deferred.Reject(e.Value());
+  }
+
+private:
+  iRacingSdkNode* sdk;
+  int timeout;
+  bool result;
+  Napi::Promise::Deferred deferred;
+};
+
+// Rename original WaitForData to WaitForDataInternal for reuse
+Napi::Value iRacingSdkNode::WaitForDataInternal(int timeout)
 {
   // Figure out the time to wait
   // This will default to the timeout set on the class
-  Napi::Number timeout;
-  if (info.Length() <= 0 || !info[0].IsNumber()) {
-    timeout = Napi::Number::New(info.Env(), 16);
-  } else {
-    timeout = info[0].As<Napi::Number>();
-  }
+  // Napi::Number timeout; // This line is removed as per the new_code
+  // if (info.Length() <= 0 || !info[0].IsNumber()) { // This line is removed as per the new_code
+  //   timeout = Napi::Number::New(info.Env(), 16); // This line is removed as per the new_code
+  // } else { // This line is removed as per the new_code
+  //   timeout = info[0].As<Napi::Number>(); // This line is removed as per the new_code
+  // } // This line is removed as per the new_code
 
   if (!irsdk_isConnected() && !irsdk_startup()) {
-    return Napi::Boolean::New(info.Env(), false);
+    return Napi::Boolean::New(Env(), false);
   }
 
   // @todo: try to do this async instead
@@ -142,11 +173,11 @@ Napi::Value iRacingSdkNode::WaitForData(const Napi::CallbackInfo &info)
 
       // Reset info str status
       this->_lastSessionCt = -1;
-      return Napi::Boolean::New(info.Env(), true);
+      return Napi::Boolean::New(Env(), true);
     } else if (this->_data) {
       if (this->_loggingEnabled) printf("Data initialized and ready to process.\n");
       // already initialized and ready to process
-      return Napi::Boolean::New(info.Env(), true);
+      return Napi::Boolean::New(Env(), true);
     }
   }
   else if (!(this->_data != NULL && irsdk_isConnected()))
@@ -160,7 +191,23 @@ Napi::Value iRacingSdkNode::WaitForData(const Napi::CallbackInfo &info)
     this->_lastSessionCt = -1;
   }
   printf("Session ended or something went wrong. Not successful.\n");
-  return Napi::Boolean::New(info.Env(), false);
+  return Napi::Boolean::New(Env(), false);
+}
+
+Napi::Value iRacingSdkNode::WaitForDataAsync(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+
+  // Parse timeout (default 16)
+  int timeout = 16;
+  if (info.Length() > 0 && info[0].IsNumber()) {
+    timeout = info[0].As<Napi::Number>().Int32Value();
+  }
+
+  Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(env);
+  WaitForDataWorker* worker = new WaitForDataWorker(this, timeout, deferred);
+  worker->Queue();
+
+  return deferred.Promise();
 }
 
 Napi::Value iRacingSdkNode::BroadcastMessage(const Napi::CallbackInfo &info)
