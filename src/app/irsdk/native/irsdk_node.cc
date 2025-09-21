@@ -118,11 +118,12 @@ public:
   }
 
   void OnOK() override {
-    callback.Call({Napi::Boolean::New(Env(), result)});
+    Napi::HandleScope scope(Env());
+    Callback().Call({Napi::Boolean::New(Env(), result)});
   }
 
   void OnError(const Napi::Error& e) override {
-    callback.Call({e.Value()});
+    Callback().Call({e.Value()});
   }
 
 private:
@@ -132,10 +133,39 @@ private:
   Napi::Function callback;
 };
 
-// Rename original WaitForData to WaitForDataInternal for reuse
+// Implement DoWaitForData
+bool iRacingSdkNode::DoWaitForData(int timeout) {
+  if (!irsdk_isConnected() && !irsdk_startup()) return false;
+  const irsdk_header* header = irsdk_getHeader();
+  if (!this->_data) this->_data = new char[header->bufLen];
+  bool dataReady = irsdk_waitForDataReady(timeout, this->_data);
+  if (dataReady && header) {
+    if (this->_loggingEnabled) printf("Session started or we have new data.\n");
+    if (this->_bufLineLen != header->bufLen) {
+      if (this->_loggingEnabled) printf("Connection started / data changed length.\n");
+      this->_bufLineLen = header->bufLen;
+      this->_sessionStatusID++;
+      this->_lastSessionCt = -1;
+      return true;
+    } else if (this->_data) {
+      if (this->_loggingEnabled) printf("Data initialized and ready to process.\n");
+      return true;
+    }
+  } else if (! (this->_data && irsdk_isConnected())) {
+    printf("Session ended. Cleaning up.\n");
+    if (this->_data) delete[] this->_data;
+    this->_data = NULL;
+    this->_lastSessionCt = -1;
+    return false;
+  }
+  printf("Session ended or something went wrong. Not successful.\n");
+  return false;
+}
+
+// Update WaitForData
 Napi::Value iRacingSdkNode::WaitForData(const Napi::CallbackInfo& info) {
-  Napi::Number timeout = (info.Length() <= 0 || !info[0].IsNumber()) ? Napi::Number::New(info.Env(), 16) : info[0].As<Napi::Number>();
-  bool result = DoWaitForData(timeout.Int32Value());
+  int timeout = (info.Length() <= 0 || !info[0].IsNumber()) ? 16 : info[0].As<Napi::Number>().Int32Value();
+  bool result = DoWaitForData(timeout);
   return Napi::Boolean::New(info.Env(), result);
 }
 
