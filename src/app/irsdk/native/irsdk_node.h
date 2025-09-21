@@ -45,6 +45,10 @@ private:
     int _sessionStatusID;
     int _lastSessionCt;
     const char* _sessionData;
+
+    Napi::Value WaitForDataInternal(int timeout);
+    Napi::Value WaitForDataAsync(const Napi::CallbackInfo& info);
+    class WaitForDataWorker; // Forward declare if needed
 };
 
 #endif
