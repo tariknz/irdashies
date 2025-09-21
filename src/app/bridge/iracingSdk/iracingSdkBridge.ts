@@ -29,21 +29,32 @@ export async function publishIRacingSDKEvents(
 
         await sdk.ready();
 
-        while (!shouldStop && sdk.waitForData(LOW_TIMEOUT)) {
-          const telemetry = sdk.getTelemetry();
-          if (telemetry) {
-            overlayManager.publishTelemetryFields(telemetry);
-            telemetrySink.addTelemetry(telemetry);
-          }
+        while (!shouldStop) {
+          try {
+            const hasData = await sdk.waitForDataAsync(LOW_TIMEOUT);
+            if (!hasData) {
+              // No data available, continue loop
+              continue;
+            }
 
-          const session = sdk.getSessionData();
-          if (session) {
-            overlayManager.publishMessage('sessionData', session);
-            telemetrySink.addSession(session);
-          }
+            const telemetry = sdk.getTelemetry();
+            if (telemetry) {
+              overlayManager.publishTelemetryFields(telemetry);
+              telemetrySink.addTelemetry(telemetry);
+            }
 
-          // Yield to event loop instead of blocking sleep
-          await new Promise(resolve => setImmediate(resolve));
+            const session = sdk.getSessionData();
+            if (session) {
+              overlayManager.publishMessage('sessionData', session);
+              telemetrySink.addSession(session);
+            }
+
+            // No need for setImmediate since waitForDataAsync is already non-blocking
+          } catch (error) {
+            console.error('Error in waitForDataAsync:', error);
+            // Brief pause before retrying
+            await new Promise(resolve => setTimeout(resolve, 100));
+          }
         }
 
         console.log('iRacing is no longer publishing telemetry');

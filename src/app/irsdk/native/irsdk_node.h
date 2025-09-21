@@ -5,6 +5,24 @@
 #include "./lib/irsdk_defines.h"
 #include "./lib/irsdk_client.h"
 
+// Forward declaration
+class iRacingSdkNode;
+
+// AsyncWorker for waitForData
+class WaitForDataWorker : public Napi::AsyncWorker {
+public:
+    WaitForDataWorker(const Napi::Function& callback, iRacingSdkNode* sdk, int timeout);
+    void Execute() override;
+    void OnOK() override;
+    void OnError(const Napi::Error& e) override;
+
+private:
+    iRacingSdkNode* _sdk;
+    int _timeout;
+    bool _result;
+    std::string _errorMessage;
+};
+
 class iRacingSdkNode : public Napi::ObjectWrap<iRacingSdkNode>
 {
 public:
@@ -22,7 +40,11 @@ private:
     Napi::Value StartSdk(const Napi::CallbackInfo &info);
     Napi::Value StopSdk(const Napi::CallbackInfo &info);
     Napi::Value WaitForData(const Napi::CallbackInfo &info);
+    Napi::Value WaitForDataAsync(const Napi::CallbackInfo &info);
     Napi::Value BroadcastMessage(const Napi::CallbackInfo &info);
+    
+    // Public method for AsyncWorker access
+    bool WaitForDataSync(int timeout);
     // Getters
     Napi::Value IsRunning(const Napi::CallbackInfo &info);
     Napi::Value GetSessionVersionNum(const Napi::CallbackInfo &info);
