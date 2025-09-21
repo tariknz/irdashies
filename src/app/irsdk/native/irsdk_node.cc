@@ -82,7 +82,7 @@ void iRacingSdkNode::SetEnableLogging(const Napi::CallbackInfo &info, const Napi
   } else {
     enable = info[0].As<Napi::Boolean>();
   }
-  printf("Setting logging enabled: %i\n", info[0]);
+  printf("Setting logging enabled: %i\n", static_cast<int>(enable));
   this->_loggingEnabled = enable;
 }
 
@@ -110,40 +110,32 @@ Napi::Value iRacingSdkNode::StopSdk(const Napi::CallbackInfo &info)
 // New: AsyncWorker subclass
 class WaitForDataWorker : public Napi::AsyncWorker {
 public:
-  WaitForDataWorker(iRacingSdkNode* sdk, int timeout, Napi::Promise::Deferred deferred)
-    : AsyncWorker(sdk->Env()), sdk(sdk), timeout(timeout), deferred(deferred) {}
+  WaitForDataWorker(Napi::Function callback, iRacingSdkNode* sdk, int timeout)
+    : AsyncWorker(sdk->Env()), sdk(sdk), timeout(timeout), callback(callback) {}
 
   void Execute() override {
     result = sdk->WaitForDataInternal(timeout); // Call a renamed sync version
   }
 
   void OnOK() override {
-    deferred.Resolve(Napi::Boolean::New(Env(), result));
+    callback.Call({Napi::Boolean::New(Env(), result)});
   }
 
   void OnError(const Napi::Error& e) override {
-    deferred.Reject(e.Value());
+    callback.Call({e.Value()});
   }
 
 private:
   iRacingSdkNode* sdk;
   int timeout;
   bool result;
-  Napi::Promise::Deferred deferred;
+  Napi::Function callback;
 };
 
 // Rename original WaitForData to WaitForDataInternal for reuse
 Napi::Value iRacingSdkNode::WaitForDataInternal(int timeout)
 {
-  // Figure out the time to wait
-  // This will default to the timeout set on the class
-  // Napi::Number timeout; // This line is removed as per the new_code
-  // if (info.Length() <= 0 || !info[0].IsNumber()) { // This line is removed as per the new_code
-  //   timeout = Napi::Number::New(info.Env(), 16); // This line is removed as per the new_code
-  // } else { // This line is removed as per the new_code
-  //   timeout = info[0].As<Napi::Number>(); // This line is removed as per the new_code
-  // } // This line is removed as per the new_code
-
+  // Original logic, adapted without info
   if (!irsdk_isConnected() && !irsdk_startup()) {
     return Napi::Boolean::New(Env(), false);
   }
@@ -195,19 +187,14 @@ Napi::Value iRacingSdkNode::WaitForDataInternal(int timeout)
 }
 
 Napi::Value iRacingSdkNode::WaitForDataAsync(const Napi::CallbackInfo& info) {
-  Napi::Env env = info.Env();
-
-  // Parse timeout (default 16)
   int timeout = 16;
   if (info.Length() > 0 && info[0].IsNumber()) {
     timeout = info[0].As<Napi::Number>().Int32Value();
   }
-
-  Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(env);
-  WaitForDataWorker* worker = new WaitForDataWorker(this, timeout, deferred);
+  Napi::Function callback = info[1].As<Napi::Function>();
+  WaitForDataWorker* worker = new WaitForDataWorker(callback, this, timeout);
   worker->Queue();
-
-  return deferred.Promise();
+  return info.Env().Undefined();
 }
 
 Napi::Value iRacingSdkNode::BroadcastMessage(const Napi::CallbackInfo &info)

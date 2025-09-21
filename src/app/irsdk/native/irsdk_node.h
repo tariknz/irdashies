@@ -46,9 +46,29 @@ private:
     int _lastSessionCt;
     const char* _sessionData;
 
-    Napi::Value WaitForDataInternal(int timeout);
+    Napi::Value WaitForDataInternal(const Napi::CallbackInfo& info);
     Napi::Value WaitForDataAsync(const Napi::CallbackInfo& info);
     class WaitForDataWorker; // Forward declare if needed
+};
+
+class WaitForDataWorker : public Napi::AsyncWorker {
+public:
+  WaitForDataWorker(Napi::Function& callback, iRacingSdkNode* sdk, int timeout)
+    : AsyncWorker(callback), sdk(sdk), timeout(timeout) {}
+
+  void Execute() override {
+    result = sdk->WaitForDataInternal(timeout);
+  }
+
+  void OnOK() override {
+    Napi::HandleScope scope(Env());
+    Callback().Call({Env().Null(), Napi::Boolean::New(Env(), result)});
+  }
+
+private:
+  iRacingSdkNode* sdk;
+  int timeout;
+  bool result;
 };
 
 #endif

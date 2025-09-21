@@ -158,7 +158,11 @@ export class IRacingSDK {
   // New async version
   public async waitForDataAsync(timeout = 16): Promise<boolean> {
     if (!this._sdk) return false;
-    return this._sdk.waitForDataAsync(timeout); // Native returns a Promise
+    return new Promise((resolve) => {
+      this._sdk?.waitForDataAsync(timeout, (result) => {
+        resolve(result);
+      });
+    });
   }
 
   /**

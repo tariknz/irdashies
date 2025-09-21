@@ -28,7 +28,7 @@ export interface INativeSDK {
   // State
   isRunning(): boolean;
   waitForData(timeout?: number): boolean;
-  waitForDataAsync(timeout?: number): Promise<boolean>;
+  waitForDataAsync(timeout: number, callback: (result: boolean) => void): void;
   getSessionData(): string; // full yaml
   getTelemetryData(): TelemetryVarList;
 
@@ -74,7 +74,7 @@ export class NativeSDK implements INativeSDK {
 
   public waitForData(timeout?: number): boolean;
 
-  public waitForDataAsync(timeout?: number): Promise<boolean>;
+  public waitForDataAsync(timeout: number, callback: (result: boolean) => void): void;
 
   public getSessionData(): string; // full yaml
 
