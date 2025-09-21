@@ -21,7 +21,7 @@ private:
     // Control
     Napi::Value StartSdk(const Napi::CallbackInfo &info);
     Napi::Value StopSdk(const Napi::CallbackInfo &info);
-    Napi::Value WaitForData(const Napi::CallbackInfo &info);
+    bool DoWaitForData(int timeout);
     Napi::Value BroadcastMessage(const Napi::CallbackInfo &info);
     // Getters
     Napi::Value IsRunning(const Napi::CallbackInfo &info);
@@ -46,7 +46,6 @@ private:
     int _lastSessionCt;
     const char* _sessionData;
 
-    Napi::Value WaitForDataInternal(const Napi::CallbackInfo& info);
     Napi::Value WaitForDataAsync(const Napi::CallbackInfo& info);
     class WaitForDataWorker; // Forward declare if needed
 };
@@ -57,7 +56,7 @@ public:
     : AsyncWorker(callback), sdk(sdk), timeout(timeout) {}
 
   void Execute() override {
-    result = sdk->WaitForDataInternal(timeout);
+    result = sdk->DoWaitForData(timeout);
   }
 
   void OnOK() override {

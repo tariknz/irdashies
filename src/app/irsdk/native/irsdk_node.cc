@@ -114,7 +114,7 @@ public:
     : AsyncWorker(sdk->Env()), sdk(sdk), timeout(timeout), callback(callback) {}
 
   void Execute() override {
-    result = sdk->WaitForDataInternal(timeout); // Call a renamed sync version
+    result = sdk->DoWaitForData(timeout); // Call a renamed sync version
   }
 
   void OnOK() override {
@@ -133,68 +133,10 @@ private:
 };
 
 // Rename original WaitForData to WaitForDataInternal for reuse
-Napi::Value iRacingSdkNode::WaitForDataInternal(int timeout)
-{
-  // Original logic, adapted without info
-  if (!irsdk_isConnected() && !irsdk_startup()) {
-    return Napi::Boolean::New(Env(), false);
-  }
-
-  // @todo: try to do this async instead
-  const irsdk_header* header = irsdk_getHeader();
-
-  // @todo: This isn't the best way of doing this. Need to improve, but this works for now
-  if (!this->_data) {
-    this->_data = new char[header->bufLen];
-  }
-
-  // wait for start of sesh or new data
-  bool dataReady = irsdk_waitForDataReady(timeout, this->_data);
-  if (dataReady && header)
-  {
-    if (this->_loggingEnabled) ("Session started or we have new data.\n");
-
-    // New connection or data changed length
-    if (this->_bufLineLen != header->bufLen) {
-      if (this->_loggingEnabled) printf("Connection started / data changed length.\n");
-
-      this->_bufLineLen = header->bufLen;
-
-      // Increment connection
-      this->_sessionStatusID++;
-
-      // Reset info str status
-      this->_lastSessionCt = -1;
-      return Napi::Boolean::New(Env(), true);
-    } else if (this->_data) {
-      if (this->_loggingEnabled) printf("Data initialized and ready to process.\n");
-      // already initialized and ready to process
-      return Napi::Boolean::New(Env(), true);
-    }
-  }
-  else if (!(this->_data != NULL && irsdk_isConnected()))
-  {
-    printf("Session ended. Cleaning up.\n");
-    // Session ended
-    if (this->_data) delete[] this->_data;
-    this->_data = NULL;
-
-    // Reset Info str
-    this->_lastSessionCt = -1;
-  }
-  printf("Session ended or something went wrong. Not successful.\n");
-  return Napi::Boolean::New(Env(), false);
-}
-
-Napi::Value iRacingSdkNode::WaitForDataAsync(const Napi::CallbackInfo& info) {
-  int timeout = 16;
-  if (info.Length() > 0 && info[0].IsNumber()) {
-    timeout = info[0].As<Napi::Number>().Int32Value();
-  }
-  Napi::Function callback = info[1].As<Napi::Function>();
-  WaitForDataWorker* worker = new WaitForDataWorker(callback, this, timeout);
-  worker->Queue();
-  return info.Env().Undefined();
+Napi::Value iRacingSdkNode::WaitForData(const Napi::CallbackInfo& info) {
+  Napi::Number timeout = (info.Length() <= 0 || !info[0].IsNumber()) ? Napi::Number::New(info.Env(), 16) : info[0].As<Napi::Number>();
+  bool result = DoWaitForData(timeout.Int32Value());
+  return Napi::Boolean::New(info.Env(), result);
 }
 
 Napi::Value iRacingSdkNode::BroadcastMessage(const Napi::CallbackInfo &info)
