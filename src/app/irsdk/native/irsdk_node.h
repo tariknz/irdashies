@@ -25,6 +25,7 @@ private:
 
 class iRacingSdkNode : public Napi::ObjectWrap<iRacingSdkNode>
 {
+    friend class WaitForDataWorker;  // Allow AsyncWorker access to private members
 public:
     static Napi::Object Init(Napi::Env env, Napi::Object exports);
     iRacingSdkNode(const Napi::CallbackInfo& info);
@@ -50,9 +51,6 @@ private:
     // Helpers
     Napi::Value __GetTelemetryTypes(const Napi::CallbackInfo &info);
     Napi::Value GetTelemetryVar(const Napi::CallbackInfo &info);
-    
-    // Public method for AsyncWorker access
-    bool WaitForDataSync(int timeout);
 
     bool GetTelemetryBool(int entry, int index);
     int GetTelemetryInt(int entry, int index);
@@ -60,6 +58,9 @@ private:
     double GetTelemetryDouble(int entry, int index);
     Napi::Object GetTelemetryVarByIndex(const Napi::Env env, int index);
     Napi::Object GetTelemetryVar(const Napi::Env env, const char *varName);
+
+    // Private method for AsyncWorker access (via friend declaration)
+    bool WaitForDataSync(int timeout);
 
     bool _loggingEnabled;
     char* _data;
