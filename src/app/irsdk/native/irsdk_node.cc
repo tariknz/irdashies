@@ -78,7 +78,7 @@ void iRacingSdkNode::SetEnableLogging(const Napi::CallbackInfo &info, const Napi
   } else {
     enable = info[0].As<Napi::Boolean>();
   }
-  printf("Setting logging enabled: %i\n", info[0]);
+  printf("Setting logging enabled: %s\n", enable ? "true" : "false");
   this->_loggingEnabled = enable;
 }
 

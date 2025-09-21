@@ -42,9 +42,6 @@ private:
     Napi::Value WaitForData(const Napi::CallbackInfo &info);
     Napi::Value WaitForDataAsync(const Napi::CallbackInfo &info);
     Napi::Value BroadcastMessage(const Napi::CallbackInfo &info);
-    
-    // Public method for AsyncWorker access
-    bool WaitForDataSync(int timeout);
     // Getters
     Napi::Value IsRunning(const Napi::CallbackInfo &info);
     Napi::Value GetSessionVersionNum(const Napi::CallbackInfo &info);
@@ -53,6 +50,9 @@ private:
     // Helpers
     Napi::Value __GetTelemetryTypes(const Napi::CallbackInfo &info);
     Napi::Value GetTelemetryVar(const Napi::CallbackInfo &info);
+    
+    // Public method for AsyncWorker access
+    bool WaitForDataSync(int timeout);
 
     bool GetTelemetryBool(int entry, int index);
     int GetTelemetryInt(int entry, int index);
