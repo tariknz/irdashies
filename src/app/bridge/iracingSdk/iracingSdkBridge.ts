@@ -4,7 +4,7 @@ import { OverlayManager } from '../../overlayManager';
 import type { IrSdkBridge, Session, OverlayTelemetryPayload } from '@irdashies/types';
 
 const TIMEOUT = 1000;
-const LOW_TIMEOUT = 16; // ms, for 60Hz
+const LOW_TIMEOUT = 40; // ms, for 25Hz
 
 export async function publishIRacingSDKEvents(
   telemetrySink: TelemetrySink,
