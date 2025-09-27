@@ -49,7 +49,6 @@ export async function publishIRacingSDKEvents(
               telemetrySink.addSession(session);
             }
 
-            // No need for setImmediate since waitForDataAsync is already non-blocking
           } catch (error) {
             console.error('Error in waitForDataAsync:', error);
             // Brief pause before retrying
