@@ -4,6 +4,7 @@ import { OverlayManager } from '../../overlayManager';
 import type { IrSdkBridge, Session, OverlayTelemetryPayload } from '@irdashies/types';
 
 const TIMEOUT = 1000;
+const LOW_TIMEOUT = 40; // ms, for 25Hz
 
 export async function publishIRacingSDKEvents(
   telemetrySink: TelemetrySink,
@@ -28,19 +29,30 @@ export async function publishIRacingSDKEvents(
 
         await sdk.ready();
 
-        while (!shouldStop && sdk.waitForData(TIMEOUT)) {
-          const telemetry = sdk.getTelemetry();
-          const session = sdk.getSessionData();
-          await new Promise((resolve) => setTimeout(resolve, 1000 / 60));
+        while (!shouldStop) {
+          try {
+            const hasData = await sdk.waitForDataAsync(LOW_TIMEOUT);
+            if (!hasData) {
+              // No data available, continue loop
+              continue;
+            }
 
-          if (telemetry) {
-            overlayManager.publishTelemetryFields(telemetry);
-            telemetrySink.addTelemetry(telemetry);
-          }
+            const telemetry = sdk.getTelemetry();
+            if (telemetry) {
+              overlayManager.publishTelemetryFields(telemetry);
+              telemetrySink.addTelemetry(telemetry);
+            }
 
-          if (session) {
-            overlayManager.publishMessage('sessionData', session);
-            telemetrySink.addSession(session);
+            const session = sdk.getSessionData();
+            if (session) {
+              overlayManager.publishMessage('sessionData', session);
+              telemetrySink.addSession(session);
+            }
+
+          } catch (error) {
+            console.error('Error in waitForDataAsync:', error);
+            // Brief pause before retrying
+            await new Promise(resolve => setTimeout(resolve, 100));
           }
         }
 

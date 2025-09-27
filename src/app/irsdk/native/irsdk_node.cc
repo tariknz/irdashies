@@ -23,6 +23,7 @@ Napi::Object iRacingSdkNode::Init(Napi::Env env, Napi::Object exports)
     InstanceMethod<&iRacingSdkNode::StartSdk>("startSDK"),
     InstanceMethod("stopSDK", &iRacingSdkNode::StopSdk),
     InstanceMethod("waitForData", &iRacingSdkNode::WaitForData),
+    InstanceMethod("waitForDataAsync", &iRacingSdkNode::WaitForDataAsync),
     InstanceMethod("broadcast", &iRacingSdkNode::BroadcastMessage),
     // Getters
     InstanceMethod("isRunning", &iRacingSdkNode::IsRunning),
@@ -77,7 +78,7 @@ void iRacingSdkNode::SetEnableLogging(const Napi::CallbackInfo &info, const Napi
   } else {
     enable = info[0].As<Napi::Boolean>();
   }
-  printf("Setting logging enabled: %i\n", info[0]);
+  printf("Setting logging enabled: %s\n", enable ? "true" : "false");
   this->_loggingEnabled = enable;
 }
 
@@ -518,6 +519,106 @@ Napi::Object InitAll(Napi::Env env, Napi::Object exports)
 {
   iRacingSdkNode::Init(env, exports);
   return exports;
+}
+
+// AsyncWorker Implementation
+WaitForDataWorker::WaitForDataWorker(const Napi::Function& callback, iRacingSdkNode* sdk, int timeout)
+    : Napi::AsyncWorker(callback), _sdk(sdk), _timeout(timeout), _result(false) {}
+
+void WaitForDataWorker::Execute() {
+    try {
+        _result = _sdk->WaitForDataSync(_timeout);
+    } catch (const std::exception& e) {
+        _errorMessage = e.what();
+        SetError(_errorMessage);
+    } catch (...) {
+        _errorMessage = "Unknown error occurred in WaitForDataWorker";
+        SetError(_errorMessage);
+    }
+}
+
+void WaitForDataWorker::OnOK() {
+    Napi::HandleScope scope(Env());
+    Callback().Call({Env().Null(), Napi::Boolean::New(Env(), _result)});
+}
+
+void WaitForDataWorker::OnError(const Napi::Error& e) {
+    Napi::HandleScope scope(Env());
+    Callback().Call({e.Value(), Env().Undefined()});
+}
+
+// WaitForDataSync - extracted logic from original WaitForData
+bool iRacingSdkNode::WaitForDataSync(int timeout) {
+    if (!irsdk_isConnected() && !irsdk_startup()) {
+        return false;
+    }
+
+    const irsdk_header* header = irsdk_getHeader();
+
+    if (!this->_data) {
+        this->_data = new char[header->bufLen];
+    }
+
+    // wait for start of session or new data
+    bool dataReady = irsdk_waitForDataReady(timeout, this->_data);
+    if (dataReady && header) {
+        if (this->_loggingEnabled) printf("Session started or we have new data.\n");
+
+        // New connection or data changed length
+        if (this->_bufLineLen != header->bufLen) {
+            if (this->_loggingEnabled) printf("Connection started / data changed length.\n");
+
+            this->_bufLineLen = header->bufLen;
+            this->_sessionStatusID++;
+            this->_lastSessionCt = -1;
+            return true;
+        } else if (this->_data) {
+            if (this->_loggingEnabled) printf("Data initialized and ready to process.\n");
+            return true;
+        }
+    } else if (!(this->_data != NULL && irsdk_isConnected())) {
+        printf("Session ended. Cleaning up.\n");
+        if (this->_data) delete[] this->_data;
+        this->_data = NULL;
+        this->_lastSessionCt = -1;
+    }
+    
+    return false;
+}
+
+// WaitForDataAsync - Promise-based version
+Napi::Value iRacingSdkNode::WaitForDataAsync(const Napi::CallbackInfo &info) {
+    Napi::Env env = info.Env();
+
+    // Figure out the timeout
+    int timeout = 16; // Default timeout
+    if (info.Length() > 0 && info[0].IsNumber()) {
+        timeout = info[0].As<Napi::Number>().Int32Value();
+    }
+
+    // Create and return a Promise
+    auto deferred = Napi::Promise::Deferred::New(env);
+    
+    // Create callback that resolves/rejects the promise
+    auto callback = Napi::Function::New(env, [deferred](const Napi::CallbackInfo& cbInfo) {
+        if (cbInfo.Length() > 0 && !cbInfo[0].IsNull()) {
+            // Error case
+            deferred.Reject(cbInfo[0]);
+        } else if (cbInfo.Length() > 1) {
+            // Success case
+            deferred.Resolve(cbInfo[1]);
+        } else {
+            // Fallback error
+            deferred.Reject(Napi::Error::New(cbInfo.Env(), "Invalid callback arguments").Value());
+        }
+        return cbInfo.Env().Undefined();
+    });
+
+    // Create and queue the worker
+    auto* worker = new WaitForDataWorker(callback, this, timeout);
+    worker->Queue();
+
+    return deferred.Promise();
 }
 
 NODE_API_MODULE(NODE_GYP_MODULE_NAME, InitAll);

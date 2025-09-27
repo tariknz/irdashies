@@ -5,8 +5,27 @@
 #include "./lib/irsdk_defines.h"
 #include "./lib/irsdk_client.h"
 
+// Forward declaration
+class iRacingSdkNode;
+
+// AsyncWorker for waitForData
+class WaitForDataWorker : public Napi::AsyncWorker {
+public:
+    WaitForDataWorker(const Napi::Function& callback, iRacingSdkNode* sdk, int timeout);
+    void Execute() override;
+    void OnOK() override;
+    void OnError(const Napi::Error& e) override;
+
+private:
+    iRacingSdkNode* _sdk;
+    int _timeout;
+    bool _result;
+    std::string _errorMessage;
+};
+
 class iRacingSdkNode : public Napi::ObjectWrap<iRacingSdkNode>
 {
+    friend class WaitForDataWorker;  // Allow AsyncWorker access to private members
 public:
     static Napi::Object Init(Napi::Env env, Napi::Object exports);
     iRacingSdkNode(const Napi::CallbackInfo& info);
@@ -22,6 +41,7 @@ private:
     Napi::Value StartSdk(const Napi::CallbackInfo &info);
     Napi::Value StopSdk(const Napi::CallbackInfo &info);
     Napi::Value WaitForData(const Napi::CallbackInfo &info);
+    Napi::Value WaitForDataAsync(const Napi::CallbackInfo &info);
     Napi::Value BroadcastMessage(const Napi::CallbackInfo &info);
     // Getters
     Napi::Value IsRunning(const Napi::CallbackInfo &info);
@@ -38,6 +58,9 @@ private:
     double GetTelemetryDouble(int entry, int index);
     Napi::Object GetTelemetryVarByIndex(const Napi::Env env, int index);
     Napi::Object GetTelemetryVar(const Napi::Env env, const char *varName);
+
+    // Private method for AsyncWorker access (via friend declaration)
+    bool WaitForDataSync(int timeout);
 
     bool _loggingEnabled;
     char* _data;

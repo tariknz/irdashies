@@ -155,6 +155,13 @@ export class IRacingSDK {
     return this._sdk?.waitForData(timeout) ?? false;
   }
 
+  public async waitForDataAsync(timeout?: number): Promise<boolean> {
+    if (!this._sdk) {
+      return false;
+    }
+    return this._sdk.waitForDataAsync(timeout);
+  }
+
   /**
    * Gets the current session data (from yaml format).
    * @returns {SessionData}
@@ -168,6 +175,7 @@ export class IRacingSDK {
       // Remove trailing commas
       const fixedYaml = seshString?.replace(/(\w+):\s*,\s*\n/g, '$1: \n');
       this._sessionData = yaml.load(fixedYaml, { json: true }) as SessionData;
+      this._dataVer = this.currDataVersion;
       return this._sessionData;
     } catch (err) {
       console.error('There was an error getting session data:', err);
