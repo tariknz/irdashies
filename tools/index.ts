@@ -1,3 +1,4 @@
+import { analyzeTracks } from './analyze-tracks';
 import { downloadTrackSvgs } from './download-track-svgs';
 import { generateTrackJson } from './generate-paths-json';
 import { getFlairs } from './get-flairs';
@@ -12,6 +13,7 @@ const main = async () => {
   await getTracksInfo();
   await downloadTrackSvgs();
   generateTrackJson();
+  analyzeTracks();
 };
 
 main();
