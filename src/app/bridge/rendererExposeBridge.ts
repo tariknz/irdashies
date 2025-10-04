@@ -5,20 +5,11 @@ import type {
   IrSdkBridge,
   DashboardBridge,
   DashboardLayout,
-  OverlayTelemetryPayload,
 } from '@irdashies/types';
-
-// Telemetry bridge for field subscriptions
-const telemetryBridge = {
-  subscribeToTelemetryFields: (fields: (keyof Telemetry)[]) =>
-    ipcRenderer.invoke('subscribe-telemetry-fields', fields),
-  unsubscribeFromTelemetryFields: (fields: (keyof Telemetry)[]) =>
-    ipcRenderer.invoke('unsubscribe-telemetry-fields', fields),
-} as const;
 
 export function exposeBridge() {
   contextBridge.exposeInMainWorld('irsdkBridge', {
-    onTelemetry: (callback: (value: OverlayTelemetryPayload) => void) =>
+    onTelemetry: (callback: (value: Telemetry) => void) =>
       ipcRenderer.on('telemetry', (_, value) => {
         callback(value);
       }),
@@ -67,7 +58,4 @@ export function exposeBridge() {
       ipcRenderer.send('toggleDemoMode', value);
     },
   } as DashboardBridge);
-
-  // Expose telemetry bridge for field subscriptions
-  contextBridge.exposeInMainWorld('telemetryBridge', telemetryBridge);
 }

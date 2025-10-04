@@ -216,7 +216,7 @@ Napi::Value iRacingSdkNode::BroadcastMessage(const Napi::CallbackInfo &info)
   case irsdk_BroadcastPitCommand: // arg1 == irsdk_PitCommandMode
   case irsdk_BroadcastFFBCommand: // arg1 == irsdk_FFBCommandMode
   case irsdk_BroadcastReplaySearchSessionTime:
-  case irsdk_BroadcastReplaySetPlayPosition:
+  case irskd_BroadcastReplaySetPlayPosition:
     printf("BroadcastMessage(msgType: %d, arg1: %d, arg2: %f)\n", msgType, arg1, (float)arg2.FloatValue());
     irsdk_broadcastMsg(msgType, arg1, (float)arg2.FloatValue());
     break;
@@ -399,7 +399,7 @@ Napi::Value iRacingSdkNode::GetSessionData(const Napi::CallbackInfo &info)
   if (session == NULL) {
     return Napi::String::New(info.Env(), "");
   }
-
+  
   // Convert Windows-1252 to UTF-8
   std::string utf8Session = ConvertToUTF8(session);
   return Napi::String::New(info.Env(), utf8Session.c_str());
