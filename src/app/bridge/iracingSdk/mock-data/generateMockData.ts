@@ -1,4 +1,4 @@
-import type { Session, Telemetry, IrSdkBridge, OverlayTelemetryPayload } from '@irdashies/types';
+import type { Session, Telemetry, IrSdkBridge } from '@irdashies/types';
 import mockTelemetry from './telemetry.json';
 import mockSessionInfo from './session.json';
 
@@ -37,7 +37,7 @@ export function generateMockData(sessionData?: {
   let prevTelemetry = mockTelemetry as unknown as Telemetry;
 
   return {
-    onTelemetry: (callback: (value: OverlayTelemetryPayload) => void) => {
+    onTelemetry: (callback: (value: Telemetry) => void) => {
       telemetryInterval = setInterval(() => {
         let t = Array.isArray(telemetry)
           ? telemetry[telemetryIdx % telemetry.length]
@@ -68,7 +68,7 @@ export function generateMockData(sessionData?: {
         }
 
         telemetryIdx = telemetryIdx + 1;
-        callback({ overlayId: 'mock', telemetry: { ...t }, timestamp: Date.now() });
+        callback({ ...t });
       }, 1000 / 60);
     },
     onSessionData: (callback: (value: Session) => void) => {
