@@ -70,7 +70,7 @@ export const defaultDashboard: DashboardLayout = {
     },
     {
       id: 'map',
-      enabled: false,
+      enabled: true,
       layout: {
         x: 1130,
         y: 51,
@@ -96,7 +96,7 @@ export const defaultDashboard: DashboardLayout = {
     },
     {
       id: 'fastercarsfrombehind',
-      enabled: false,
+      enabled: true,
       layout: {
         x: 700,
         y: 200,
