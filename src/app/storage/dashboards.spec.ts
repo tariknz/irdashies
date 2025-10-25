@@ -95,17 +95,29 @@ describe('dashboards', () => {
       });
     });
 
-    it('should update an existing dashboard', () => {
-      const existingDashboards = { default: defaultDashboard };
-      const updatedDashboard: DashboardLayout = { widgets: [], generalSettings: { fontSize: 'lg', colorPalette: 'black' }};
-      mockReadData.mockReturnValue(existingDashboards);
+  it('should update an existing dashboard and preserve other dashboards', () => {
+    const customDashboard: DashboardLayout = { widgets: [], generalSettings: { fontSize: 'xl' }};
+    const existingDashboards = { 
+      default: defaultDashboard,
+      custom: customDashboard,
+    };
+    const updatedDashboard: DashboardLayout = { widgets: [], generalSettings: { fontSize: 'lg', colorPalette: 'black' }};
+    mockReadData.mockReturnValue(existingDashboards);
 
-      saveDashboard('default', updatedDashboard);
+    saveDashboard('default', updatedDashboard);
 
-      expect(mockWriteData).toHaveBeenCalledWith('dashboards', {
-        default: updatedDashboard,
-      });
+    expect(mockWriteData).toHaveBeenCalledWith('dashboards', {
+      default: {
+        ...defaultDashboard,
+        ...updatedDashboard,
+        generalSettings: {
+          ...defaultDashboard.generalSettings,
+          ...updatedDashboard.generalSettings,
+        },
+      },
+      custom: customDashboard,
     });
+  });
   });
 
   describe('updateDashboardWidget', () => {
@@ -247,7 +259,7 @@ describe('dashboards', () => {
 
       const updatedDashboard = getOrCreateDefaultDashboard();
 
-      expect(updatedDashboard.generalSettings).toEqual({ fontSize: 'sm', colorPalette: 'default' });
+      expect(updatedDashboard.generalSettings).toEqual(defaultDashboard.generalSettings);
     });
 
     it('should preserve general settings from the existing dashboard', () => {
@@ -258,7 +270,7 @@ describe('dashboards', () => {
       
       const updatedDashboard = getOrCreateDefaultDashboard();
 
-      expect(updatedDashboard.generalSettings).toEqual({ fontSize: 'lg', colorPalette: 'default' });
+      expect(updatedDashboard.generalSettings).toEqual({ ...defaultDashboard.generalSettings, fontSize: 'lg' });
     });
   });
 });
