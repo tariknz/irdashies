@@ -21,6 +21,7 @@ const defaultConfig: StandingsWidgetSettings['config'] = {
     minPlayerClassDrivers: 10,
     numTopDrivers: 3,
   },
+  compound: { enabled: true }
 };
 
 // Migration function to handle missing properties in the new config format
@@ -70,6 +71,9 @@ const migrateConfig = (
         (config.driverStandings as { numTopDrivers?: number })?.numTopDrivers ??
         defaultConfig.driverStandings.numTopDrivers,
     },
+    compound: {
+      enabled: (config.compound as { enabled?: boolean })?.enabled ?? true,
+    } 
   };
 };
 
@@ -161,6 +165,15 @@ export const StandingsSettings = () => {
                   enabled={settings.config.countryFlags.enabled}
                   onToggle={(enabled) =>
                     handleConfigChange({ countryFlags: { enabled } })
+                  }
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-slate-300">Show Tire Compound</span>
+                <ToggleSwitch
+                  enabled={settings.config.compound.enabled}
+                  onToggle={(enabled) =>
+                    handleConfigChange({ compound: { enabled } })
                   }
                 />
               </div>

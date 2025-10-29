@@ -35,6 +35,7 @@ export const Primary: Story = {
     badge: <DriverRatingBadge license="A 4.99" rating={4999} />,
     onPitRoad: false,
     onTrack: true,
+    tireCompound: 1
   },
 };
 
@@ -237,6 +238,7 @@ export const Relative = () => {
       onTrack: true,
       radioActive: false,
       lappedState: 'ahead',
+      tireCompound: 1
     },
     {
       carIdx: 3,
@@ -258,6 +260,7 @@ export const Relative = () => {
       onTrack: true,
       radioActive: false,
       lappedState: 'same',
+      tireCompound: 1
     },
     {
       carIdx: 4,
@@ -277,6 +280,7 @@ export const Relative = () => {
       onTrack: true,
       radioActive: false,
       lappedState: 'same',
+      tireCompound: 1
     },
     {
       carIdx: 5,
@@ -296,6 +300,7 @@ export const Relative = () => {
       onTrack: true,
       radioActive: false,
       lappedState: 'behind',
+      tireCompound: 1
     },
     {
       carIdx: 6,
@@ -315,6 +320,7 @@ export const Relative = () => {
       onTrack: true,
       radioActive: false,
       lappedState: 'same',
+      tireCompound: 1
     },
     {
       carIdx: 7,
@@ -333,6 +339,7 @@ export const Relative = () => {
       onPitRoad: false,
       onTrack: true,
       radioActive: true,
+      tireCompound: 1
     },
   ];
   const getRandomCarNum = () => Math.floor(Math.random() * 35) + 1;
@@ -364,6 +371,7 @@ export const Relative = () => {
               isLapped={result.lappedState === 'behind'}
               isLappingAhead={result.lappedState === 'ahead'}
               flairId={result.driver?.flairId}
+              tireCompound={result.tireCompound}
               badge={
                 <DriverRatingBadge
                   license={result.driver?.license}

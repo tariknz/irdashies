@@ -39,6 +39,7 @@ export const useDriverStandings = ({
   const carIdxOnPitRoad = useTelemetry<boolean[]>('CarIdxOnPitRoad');
   const carIdxTrackSurface = useTelemetry('CarIdxTrackSurface');
   const radioTransmitCarIdx = useTelemetry('RadioTransmitCarIdx');
+  const carIdxTireCompound = useTelemetry<number[]>('CarIdxTireCompound');
   const isOfficial = useSessionIsOfficial();
 
   const standingsWithGain = useMemo(() => {
@@ -52,7 +53,10 @@ export const useDriverStandings = ({
         carIdxF2TimeValue: carIdxF2Time?.value,
         carIdxOnPitRoadValue: carIdxOnPitRoad?.value,
         carIdxTrackSurfaceValue: carIdxTrackSurface?.value,
+
         radioTransmitCarIdx: radioTransmitCarIdx?.value,
+
+        carIdxTireCompoundValue: carIdxTireCompound?.value,
       },
       {
         resultsPositions: positions,

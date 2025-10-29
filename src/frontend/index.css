@@ -8,3 +8,13 @@ html,body,#app {
   width: 100%;
   height: 100%;
 }
+
+.fi-tires-compound-0 {
+  background-image: url(tires_compound_0.svg);
+  height: auto;
+}
+
+.fi-tires-compound-1 {
+  background-image: url(tires_compound_1.svg);
+  height: auto;
+}

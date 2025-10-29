@@ -19,6 +19,7 @@ export interface StandingsWidgetSettings extends BaseWidgetSettings {
       minPlayerClassDrivers: number;
       numTopDrivers: number;
     };
+    compound: {enabled: boolean};
   };
 }
 

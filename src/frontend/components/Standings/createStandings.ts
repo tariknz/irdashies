@@ -20,6 +20,7 @@ export interface Standings {
   hasFastestTime: boolean;
   lastTime: number;
   onPitRoad: boolean;
+  tireCompound: number;
   onTrack: boolean;
   carClass: {
     id: number;
@@ -71,6 +72,7 @@ export const createDriverStandings = (
     carIdxOnPitRoadValue?: boolean[];
     carIdxTrackSurfaceValue?: number[];
     radioTransmitCarIdx?: number[];
+    carIdxTireCompoundValue?: number[];
   },
   currentSession: {
     resultsPositions?: SessionResults[];
@@ -119,6 +121,7 @@ export const createDriverStandings = (
         onPitRoad: telemetry?.carIdxOnPitRoadValue?.[result.CarIdx] ?? false,
         onTrack:
           (telemetry?.carIdxTrackSurfaceValue?.[result.CarIdx] ?? -1) > -1,
+        tireCompound: telemetry?.carIdxTireCompoundValue?.[result.CarIdx] ?? 0,
         carClass: {
           id: driver.CarClassID,
           color: driver.CarClassColor,

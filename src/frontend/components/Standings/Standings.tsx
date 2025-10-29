@@ -64,6 +64,7 @@ export const Standings = () => {
                   onTrack={result.onTrack}
                   radioActive={result.radioActive}
                   flairId={settings?.countryFlags?.enabled ?? true ? result.driver?.flairId : undefined}
+                  tireCompound={settings?.compound?.enabled ?? true ? result.tireCompound : undefined}
                   badge={
                     settings?.badge?.enabled ? (
                       <DriverRatingBadge
