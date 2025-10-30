@@ -9,12 +9,19 @@ html,body,#app {
   height: 100%;
 }
 
-.fi-tires-compound-0 {
-  background-image: url(tires_compound_0.svg);
-  height: auto;
+.fi-tire-compound {
+    width: 1em;
+    height: 1em;
+    display: inline-block;
+    background-repeat: no-repeat;
+    background-size: 100% auto;
+    background-image: url("assets/img/tire_compound.png");
 }
 
-.fi-tires-compound-1 {
-  background-image: url(tires_compound_1.svg);
-  height: auto;
+.fi-tire-compound-0 {
+    background-position: 0 0;
+}
+
+.fi-tire-compound-1 {
+    background-position: 0 25%;
 }

@@ -11,6 +11,7 @@ const defaultConfig: RelativeWidgetSettings['config'] = {
   background: { opacity: 0 },
   countryFlags: { enabled: true },
   carNumber: { enabled: true },
+  compound: { enabled: false },
 };
 
 const migrateConfig = (savedConfig: unknown): RelativeWidgetSettings['config'] => {
@@ -21,6 +22,7 @@ const migrateConfig = (savedConfig: unknown): RelativeWidgetSettings['config'] =
     background: { opacity: (config.background as { opacity?: number })?.opacity ?? 0 },
     countryFlags: { enabled: (config.countryFlags as { enabled?: boolean })?.enabled ?? true },
     carNumber: { enabled: (config.carNumber as { enabled?: boolean })?.enabled ?? true },
+    compound: { enabled: (config.compound as { enabled?: boolean })?.enabled ?? true },
   };
 };
 
@@ -104,6 +106,15 @@ export const RelativeSettings = () => {
               enabled={settings.config.countryFlags.enabled}
               onToggle={(enabled) =>
                 handleConfigChange({ countryFlags: { enabled } })
+              }
+            />
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-slate-300">Show Tire Compound</span>
+            <ToggleSwitch
+              enabled={settings.config.compound.enabled}
+              onToggle={(enabled) =>
+                handleConfigChange({ compound: { enabled } })
               }
             />
           </div>
