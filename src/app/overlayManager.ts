@@ -164,6 +164,16 @@ export class OverlayManager {
     });
   }
 
+  public focusSettingsWindow(): void {
+    if (this.currentSettingsWindow && !this.currentSettingsWindow.isDestroyed()) {
+      if (this.currentSettingsWindow.isMinimized()) {
+        this.currentSettingsWindow.restore();
+      }
+      this.currentSettingsWindow.show();
+      this.currentSettingsWindow.focus();
+    }
+  }
+
   public createSettingsWindow(): BrowserWindow {
     if (this.currentSettingsWindow) {
       this.currentSettingsWindow.show();

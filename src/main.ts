@@ -17,6 +17,16 @@ updateElectronApp();
 const overlayManager = new OverlayManager();
 const telemetrySink = new TelemetrySink();
 
+const gotTheLock = app.requestSingleInstanceLock();
+
+if (!gotTheLock) {
+  app.quit();
+} else {
+  app.on('second-instance', () => {
+    overlayManager.focusSettingsWindow();
+  });
+}
+
 app.on('ready', () => {
   const dashboard = getOrCreateDefaultDashboard();
   overlayManager.createOverlays(dashboard);
