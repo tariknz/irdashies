@@ -30,7 +30,7 @@ export const InputContainer = ({
   return (
     <div className="w-full h-full inline-flex gap-1 p-2 flex-row bg-slate-800/50">
       {(settings?.trace?.enabled ?? true) && (
-        <InputTrace input={{ brake, throttle, brakeAbsActive }} settings={settings?.trace} />
+        <InputTrace input={{ brake, throttle, brakeAbsActive, steer }} settings={settings?.trace} />
       )}
       {(settings?.bar?.enabled ?? true) && (
         <InputBar
