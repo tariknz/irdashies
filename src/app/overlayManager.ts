@@ -174,6 +174,22 @@ export class OverlayManager {
     }
   }
 
+  /**
+   * Setup a single instance lock for the application. If the application is already running, it will quit the new instance.
+   */
+  public setupSingleInstanceLock(): void {
+    const gotTheLock = app.requestSingleInstanceLock();
+
+    if (!gotTheLock) {
+      app.quit();
+      return;
+    }
+
+    app.on('second-instance', () => {
+      this.focusSettingsWindow();
+    });
+  }
+
   public createSettingsWindow(): BrowserWindow {
     if (this.currentSettingsWindow) {
       this.currentSettingsWindow.show();
