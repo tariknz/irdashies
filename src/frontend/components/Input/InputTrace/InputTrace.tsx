@@ -5,17 +5,20 @@ import { getColor } from '@irdashies/utils/colors';
 const BRAKE_COLOR = getColor('red');
 const BRAKE_ABS_COLOR = getColor('yellow', 500);
 const THROTTLE_COLOR = getColor('green');
+const STEER_COLOR = getColor('slate', 300);
 
 export interface InputTraceProps {
   input: {
     brake?: number;
     brakeAbsActive?: boolean;
     throttle?: number;
+    steer?: number;
   };
   settings?: {
     includeThrottle?: boolean;
     includeBrake?: boolean;
     includeAbs?: boolean;
+    includeSteer?: boolean;
   };
 }
 
@@ -23,7 +26,7 @@ export const InputTrace = ({
   input,
   settings = { includeThrottle: true, includeBrake: true, includeAbs: true },
 }: InputTraceProps) => {
-  const { includeThrottle, includeBrake, includeAbs = true } = settings;
+  const { includeThrottle, includeBrake, includeAbs = true, includeSteer = true } = settings;
   const svgRef = useRef<SVGSVGElement>(null);
   const { width, height } = { width: 400, height: 100 };
 
@@ -35,6 +38,9 @@ export const InputTrace = ({
   );
   const [throttleArray, setThrottleArray] = useState<number[]>(
     Array.from({ length: width }, () => 0)
+  );
+  const [steerArray, setSteerArray] = useState<number[]>(
+    Array.from({ length: width }, () => 0.5)
   );
 
   useEffect(() => {
@@ -48,10 +54,25 @@ export const InputTrace = ({
         setBrakeABSArray((v) => [...v.slice(1), input.brakeAbsActive ?? false]);
       }
     }
-  }, [input, includeThrottle, includeBrake, includeAbs]);
+    if (includeSteer) {
+      // Normalize steering angle: map ±2π radians to 0-1 range where 0.5 = center (0 radians)
+      // Negative angles (left) → values < 0.5 → go up (top)
+      // Positive angles (right) → values > 0.5 → go down (bottom)
+      const angleRad = input.steer ?? 0;
+      const normalizedValue = Math.max(0, Math.min(1, (angleRad / (2 * Math.PI)) + 0.5));
+      setSteerArray((v) => [...v.slice(1), normalizedValue]);
+    }
+  }, [input, includeThrottle, includeBrake, includeAbs, includeSteer]);
 
   useEffect(() => {
     const valueArrayWithColors = [];
+    if (includeSteer) {
+      valueArrayWithColors.push({ 
+        values: steerArray, 
+        color: STEER_COLOR,
+        isCentered: true
+      });
+    }
     if (includeThrottle) valueArrayWithColors.push({ values: throttleArray, color: THROTTLE_COLOR });
     if (includeBrake) {
       valueArrayWithColors.push({ 
@@ -62,7 +83,7 @@ export const InputTrace = ({
       });
     }
     drawGraph(svgRef.current, valueArrayWithColors, width, height);
-  }, [brakeArray, brakeABSArray, height, throttleArray, width, includeThrottle, includeBrake, includeAbs]);
+  }, [brakeArray, brakeABSArray, height, throttleArray, steerArray, width, includeThrottle, includeBrake, includeAbs, includeSteer]);
 
   return (
     <svg
@@ -81,6 +102,7 @@ function drawGraph(
     color: string;
     absStates?: boolean[];
     absColor?: string;
+    isCentered?: boolean;
   }[],
   width: number,
   height: number
@@ -100,9 +122,11 @@ function drawGraph(
 
   drawYAxis(svg, yScale, width);
 
-  valueArrayWithColors.forEach(({ values, color, absStates, absColor }) => {
+  valueArrayWithColors.forEach(({ values, color, absStates, absColor, isCentered }) => {
     if (absStates && absColor) {
       drawABSAwareLine(svg, values, absStates, xScale, yScale, color, absColor);
+    } else if (isCentered) {
+      drawCenteredLine(svg, values, xScale, yScale, color, height);
     } else {
       drawLine(svg, values, xScale, yScale, color);
     }
@@ -150,6 +174,40 @@ function drawLine(
     .attr('fill', 'none')
     .attr('stroke', color)
     .attr('stroke-width', 3)
+    .attr('d', line);
+}
+
+function drawCenteredLine(
+  svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
+  valueArray: number[],
+  xScale: d3.ScaleLinear<number, number>,
+  yScale: d3.ScaleLinear<number, number>,
+  color: string,
+  height: number
+) {
+  // For centered lines (steering), normalizedValue 0.5 = center (height/2)
+  // normalizedValue 0 = top (left turn), normalizedValue 1 = bottom (right turn)
+  const line = d3
+    .line<number>()
+    .x((_, i) => xScale(i))
+    .y((d) => {
+      // Map normalized value (0-1 where 0.5 = center) to y position
+      // When d = 0.5: y = height/2 (center)
+      // When d = 0: y = height (top)
+      // When d = 1: y = 0 (bottom)
+      const centerY = height / 2;
+      const offset = (d - 0.5) * height;
+      return centerY - offset;
+    })
+    .curve(d3.curveBasis);
+
+  svg
+    .append('g')
+    .append('path')
+    .datum(valueArray)
+    .attr('fill', 'none')
+    .attr('stroke', color)
+    .attr('stroke-width', 1)
     .attr('d', line);
 }
 
