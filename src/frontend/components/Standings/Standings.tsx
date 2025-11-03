@@ -22,8 +22,8 @@ export const Standings = () => {
   useLapTimesStoreUpdater();
 
   const standings = useDriverStandings(settings);
-  const classStats = useCarClassStats();const isMultiClass = standings.length > 1; 
-  const { currentDashboard } = useDashboard(); 
+  const classStats = useCarClassStats();const isMultiClass = standings.length > 1;
+  const { currentDashboard } = useDashboard();
   const highlightColor = currentDashboard?.generalSettings?.highlightColor ?? 960745;
 
   return (
