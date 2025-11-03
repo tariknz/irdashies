@@ -20,6 +20,7 @@ export interface StandingsWidgetSettings extends BaseWidgetSettings {
       numTopDrivers: number;
     };
     compound: { enabled: boolean };
+    carManufacturer: { enabled: boolean }
   };
 }
 

@@ -29,6 +29,7 @@ interface DriverRowInfoProps {
   hidden?: boolean;
   flairId?: number;
   tireCompound?: number;
+  carId?: number;
 }
 
 export const DriverInfoRow = ({
@@ -52,7 +53,8 @@ export const DriverInfoRow = ({
   iratingChange,
   hidden,
   flairId,
-  tireCompound
+  tireCompound,
+  carId
 }: DriverRowInfoProps) => {
   // convert seconds to mm:ss:ms
   const lastTimeString = formatTime(lastTime);
@@ -95,7 +97,8 @@ export const DriverInfoRow = ({
       >
         <div className="flex justify-between align-center items-center">
           <div className="flex-1 flex items-center overflow-hidden">
-            {flairId && <CountryFlag flairId={flairId} size="sm" className="mr-2 shrink-0" />}
+            {carId && <CarManufacturer carId={carId} size="sm" className="mr-2 flex-shrink-0" />}
+            {flairId && <CountryFlag flairId={flairId} size="sm" className="mr-2 flex-shrink-0" />}
             <span
               className={`animate-pulse transition-[width] duration-300 ${radioActive ? 'w-4 mr-1' : 'w-0 overflow-hidden'}`}
             >
