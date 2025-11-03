@@ -25,3 +25,32 @@ html,body,#app {
 .fi-tire-compound-1 {
     background-position: 0 25%;
 }
+
+.fi-car-manufacturer {
+    width: 1em;
+    height: 1em;
+    display: inline-block;
+    background-repeat: no-repeat;
+    background-size: 100% auto;
+    background-image: url("assets/img/car_manufacturer.png");
+}
+
+.fi-car-manufacturer-unknown {
+    background-position: 0 4.4%;
+}
+
+.fi-car-manufacturer-acura {
+    background-position: 0 8.8%;
+}
+
+.fi-car-manufacturer-porsche {
+    background-position: 0 4.4%;
+}
+
+.fi-car-manufacturer-ferrari {
+    background-position: 0 25%;
+}
+
+.fi-car-manufacturer-bmw {
+    background-position: 0 9.2%;
+}
