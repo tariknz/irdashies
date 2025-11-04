@@ -394,7 +394,6 @@ Napi::Value iRacingSdkNode::GetSessionData(const Napi::CallbackInfo &info)
     printf("Session data has been updated (prev: %d, new: %d)\n", this->_lastSessionCt, latestUpdate);
     this->_lastSessionCt = latestUpdate;
     this->_sessionData = irsdk_getSessionInfoStr();
-    printf(this->_sessionData);
   }
   const char *session = this->_sessionData;
   if (session == NULL) {
