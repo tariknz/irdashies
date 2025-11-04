@@ -59,6 +59,7 @@ export interface InputWidgetSettings extends BaseWidgetSettings {
       includeThrottle: boolean;
       includeBrake: boolean;
       includeAbs: boolean;
+      includeSteer?: boolean;
     };
     bar: {
       enabled: boolean;

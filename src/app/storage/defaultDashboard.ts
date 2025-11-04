@@ -57,7 +57,9 @@ export const defaultDashboard: DashboardLayout = {
         "trace": {
           "enabled": true,
           "includeThrottle": true,
-          "includeBrake": true
+          "includeBrake": true,
+          "includeAbs": true,
+          "includeSteer": true
         },
         "bar": {
           "enabled": true,

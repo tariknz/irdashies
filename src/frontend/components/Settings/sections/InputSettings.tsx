@@ -12,6 +12,7 @@ const defaultConfig: InputWidgetSettings['config'] = {
     includeThrottle: true,
     includeBrake: true,
     includeAbs: true,
+    includeSteer: true,
   },
   bar: {
     enabled: true,
@@ -55,6 +56,9 @@ const migrateConfig = (
       includeAbs:
         (config.trace as { includeAbs?: boolean })?.includeAbs ??
         defaultConfig.trace.includeAbs,
+      includeSteer:
+        (config.trace as { includeSteer?: boolean })?.includeSteer ??
+        defaultConfig.trace.includeSteer,
     },
     bar: {
       enabled:
@@ -176,6 +180,19 @@ export const InputSettings = () => {
                     className="form-checkbox h-4 w-4 text-blue-500 rounded border-slate-500 bg-slate-700"
                   />
                   <span className="text-sm text-slate-200">Show ABS Visual Indicator</span>
+                </label>
+                <label className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    checked={config.trace.includeSteer ?? true}
+                    onChange={(e) =>
+                      handleConfigChange({
+                        trace: { ...config.trace, includeSteer: e.target.checked },
+                      })
+                    }
+                    className="form-checkbox h-4 w-4 text-blue-500 rounded border-slate-500 bg-slate-700"
+                  />
+                  <span className="text-sm text-slate-200">Show Steering Trace</span>
                 </label>
               </div>
             )}
