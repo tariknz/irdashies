@@ -27,8 +27,8 @@ html,body,#app {
 }
 
 .fi-car-manufacturer {
-    width: 1em;
-    height: 1em;
+    width: 128px;
+    height: 128px;
     display: inline-block;
     background-repeat: no-repeat;
     background-size: 100% auto;
@@ -36,21 +36,57 @@ html,body,#app {
 }
 
 .fi-car-manufacturer-unknown {
-    background-position: 0 4.4%;
-}
-
-.fi-car-manufacturer-acura {
-    background-position: 0 8.8%;
+    background-position: 0 0;
 }
 
 .fi-car-manufacturer-porsche {
-    background-position: 0 4.4%;
+    background-position: 0 2.27%;
 }
 
 .fi-car-manufacturer-ferrari {
-    background-position: 0 25%;
+    background-position: 0 4.54%;
 }
 
-.fi-car-manufacturer-bmw {
-    background-position: 0 9.2%;
+.fi-car-manufacturer-bwm {
+    background-position: 0 6.83%;
+}
+
+.fi-car-manufacturer-audi {
+    background-position: 0 13%;
+}
+
+.fi-car-manufacturer-ford {
+    background-position: 0 11.22%;
+}
+
+.fi-car-manufacturer-acura {
+    background-position: 0 13.63%;
+}
+
+.fi-car-manufacturer-mclaren {
+    background-position: 0 15.9%;
+}
+
+.fi-car-manufacturer-chevrolet {
+    background-position: 0 18.22%;
+}
+
+.fi-car-manufacturer-aston {
+    background-position: 0 20.444%;
+}
+
+.fi-car-manufacturer-lamborghini {
+    background-position: 0 27.75%;
+}
+
+.fi-car-manufacturer-honda {
+    background-position: 0 22.222%;
+}
+
+.fi-car-manufacturer-cadillac {
+    background-position: 0 24.444%;
+}
+
+.fi-car-manufacturer-dallara {
+    background-position: 0 6.83%;
 }
