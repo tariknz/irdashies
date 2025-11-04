@@ -1,5 +1,5 @@
 import React from 'react';
-import '../../../../index.css'
+import tireCompoundImage from '../../../../assets/img/tire_compound.png';
 
 interface CompoundProps {
   tireCompound: number;
@@ -10,9 +10,14 @@ interface CompoundProps {
 
 // Size classes for the compound 
 const sizeClasses = {
-  sm: 'w-18 h-18',
-  md: 'w-24 h-24',
-  lg: 'w-48 h-48',
+  sm: 'text-[1em]',
+  md: 'text-[1.5em]',
+  lg: 'text-[2em]',
+};
+
+const compoundPositions: Record<number, { x: string; y: string }> = {
+  0: { x: '0', y: '0' },
+  1: { x: '0', y: '25%' },
 };
 
 export const Compound: React.FC<CompoundProps> = ({
@@ -21,13 +26,20 @@ export const Compound: React.FC<CompoundProps> = ({
   size = 'md',
 }) => {
 
-  if (tireCompound === -1) {
+  if (tireCompound < 0) {
     return null;
   }
 
+  const position = compoundPositions[tireCompound];
+
+
   return (
     <span
-      className={`fi-tire-compound fi-tire-compound-${tireCompound} ${sizeClasses[size]} ${className}`}
+      className={`inline-block w-[1em] h-[1em] bg-no-repeat bg-size-[100%_auto] ${sizeClasses[size]} ${className}`}
+      style={{
+        backgroundImage: `url(${tireCompoundImage})`,
+        backgroundPosition: position ? `${position.x} ${position.y}` : '0 0',
+      }}
     />
   );
 };

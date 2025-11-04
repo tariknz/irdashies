@@ -3302,7 +3302,7 @@
         "CurDriverIncidentCount": -1,
         "TeamIncidentCount": -1,
         "FlairID": 77,
-        "tireCompound": 1
+        "CompoundID": 1
       },
       {
         "CarIdx": 2,

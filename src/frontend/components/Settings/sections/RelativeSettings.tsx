@@ -22,7 +22,7 @@ const migrateConfig = (savedConfig: unknown): RelativeWidgetSettings['config'] =
     background: { opacity: (config.background as { opacity?: number })?.opacity ?? 0 },
     countryFlags: { enabled: (config.countryFlags as { enabled?: boolean })?.enabled ?? true },
     carNumber: { enabled: (config.carNumber as { enabled?: boolean })?.enabled ?? true },
-    compound: { enabled: (config.compound as { enabled?: boolean })?.enabled ?? true },
+    compound: { enabled: (config.compound as { enabled?: boolean })?.enabled ?? false },
   };
 };
 
