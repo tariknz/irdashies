@@ -89,7 +89,6 @@ export const DriverInfoRow = ({
       >
         <div className="flex justify-between align-center items-center">
           <div className="flex-1 flex items-center overflow-hidden">
-            {carId && <CarManufacturer carId={carId} size="sm" className="mr-2 flex-shrink-0" />}
             {flairId && <CountryFlag flairId={flairId} size="sm" className="mr-2 flex-shrink-0" />}
             <span
               className={`animate-pulse transition-[width] duration-300 ${radioActive ? 'w-4 mr-1' : 'w-0 overflow-hidden'}`}
@@ -107,6 +106,7 @@ export const DriverInfoRow = ({
           )}
         </div>
       </td>
+      {carId && <td><CarManufacturer carId={carId} size="sm" className="mr-2 flex-shrink-0" /></td>}
       {badge && <td>{badge}</td>}
       {iratingChange && (
         <td className="px-2 text-left">
