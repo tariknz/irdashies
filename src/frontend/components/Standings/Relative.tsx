@@ -12,11 +12,11 @@ export const Relative = () => {
   const buffer = settings?.buffer ?? 3;
   const standings = useDriverRelatives({ buffer });
   const [parent] = useAutoAnimate();
-  const isMultiClass = standings.length > 0 && new Set(standings.map(s => s.carClass.id)).size > 1; 
+  const isMultiClass = standings.length > 0 && new Set(standings.map(s => s.carClass.id)).size > 1;
 
   // Always render 2 * buffer + 1 rows (buffer above + player + buffer below)
   const totalRows = 2 * buffer + 1;
-  
+
   // Memoize findIndex to avoid recalculating on every render
   const playerIndex = useMemo(
     () => standings.findIndex((result) => result.isPlayer),
