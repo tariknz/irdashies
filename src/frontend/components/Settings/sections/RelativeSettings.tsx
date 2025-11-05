@@ -14,6 +14,7 @@ const defaultConfig: RelativeWidgetSettings['config'] = {
   lastTime: { enabled: false },
   fastestTime: { enabled: false },
   compound: { enabled: false },
+  carManufacturer: { enabled: false }
 };
 
 const migrateConfig = (savedConfig: unknown): RelativeWidgetSettings['config'] => {
@@ -27,6 +28,7 @@ const migrateConfig = (savedConfig: unknown): RelativeWidgetSettings['config'] =
     lastTime: { enabled: (config.lastTime as { enabled?: boolean })?.enabled ?? false },
     fastestTime: { enabled: (config.fastestTime as { enabled?: boolean })?.enabled ?? false },
     compound: { enabled: (config.compound as { enabled?: boolean })?.enabled ?? false },
+    carManufacturer: { enabled: (config.carManufacturer as { enabled?: boolean })?.enabled ?? false },
   };
 };
 
@@ -137,6 +139,15 @@ export const RelativeSettings = () => {
               enabled={settings.config.compound.enabled}
               onToggle={(enabled) =>
                 handleConfigChange({ compound: { enabled } })
+              }
+            />
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-slate-300">Show Car Manufacturer</span>
+            <ToggleSwitch
+              enabled={settings.config.carManufacturer.enabled}
+              onToggle={(enabled) =>
+                handleConfigChange({ carManufacturer: { enabled } })
               }
             />
           </div>

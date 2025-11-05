@@ -33,6 +33,7 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
     lastTime: { enabled: boolean };
     fastestTime: { enabled: boolean };
     compound: { enabled: boolean };
+    carManufacturer: { enabled: boolean };
   };
 }
 
