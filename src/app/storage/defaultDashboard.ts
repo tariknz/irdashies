@@ -9,7 +9,7 @@ export const defaultDashboard: DashboardLayout = {
         "x": 6,
         "y": 624,
         "width": 560,
-        "height": 574
+        "height": 774
       },
       "config": {
         "iRatingChange": {
