@@ -64,6 +64,7 @@ export const Relative = () => {
         flairId={config?.countryFlags?.enabled ?? true ? result.driver?.flairId : undefined}
         lastTime={config?.lastTime?.enabled ? result.lastTime : undefined}
         fastestTime={config?.fastestTime?.enabled ? result.fastestTime : undefined}
+        lastTimeState={config?.lastTime?.enabled ? result.lastTimeState : undefined}
         badge={
           <DriverRatingBadge
             license={result.driver?.license}

@@ -60,6 +60,9 @@ export const Standings = () => {
                       ? result.fastestTime
                       : undefined
                   }
+                  lastTimeState={
+                    settings?.lastTime?.enabled ? result.lastTimeState : undefined
+                  }
                   onPitRoad={result.onPitRoad}
                   onTrack={result.onTrack}
                   radioActive={result.radioActive}

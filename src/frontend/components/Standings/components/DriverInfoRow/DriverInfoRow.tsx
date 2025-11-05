@@ -4,6 +4,7 @@ import {
 import { getTailwindStyle } from '@irdashies/utils/colors';
 import { formatTime } from '@irdashies/utils/time';
 import { CountryFlag } from '../CountryFlag/CountryFlag';
+import type { LastTimeState } from '../../createStandings';
 
 interface DriverRowInfoProps {
   carIdx: number;
@@ -18,6 +19,7 @@ interface DriverRowInfoProps {
   iratingChange?: React.ReactNode;
   lastTime?: number;
   fastestTime?: number;
+  lastTimeState?: LastTimeState;
   onPitRoad?: boolean;
   onTrack?: boolean;
   radioActive?: boolean;
@@ -39,6 +41,7 @@ export const DriverInfoRow = ({
   badge,
   lastTime,
   fastestTime,
+  lastTimeState,
   onPitRoad,
   onTrack,
   radioActive,
@@ -51,6 +54,12 @@ export const DriverInfoRow = ({
   // convert seconds to mm:ss:ms
   const lastTimeString = formatTime(lastTime);
   const fastestTimeString = formatTime(fastestTime);
+
+  const getLastTimeColorClass = (state?: LastTimeState): string => {
+    if (state === 'session-fastest') return 'text-purple-400';
+    if (state === 'personal-best') return 'text-green-400';
+    return '';
+  };
 
   return (
     <tr
@@ -115,15 +124,7 @@ export const DriverInfoRow = ({
         </td>
       )}
       {lastTime !== undefined && (
-        <td
-          className={`px-2 ${
-            lastTimeString === fastestTimeString
-              ? hasFastestTime
-                ? 'text-purple-400'
-                : 'text-green-400'
-              : ''
-          }`}
-        >
+        <td className={`px-2 ${getLastTimeColorClass(lastTimeState)}`}>
           {lastTimeString}
         </td>
       )}
