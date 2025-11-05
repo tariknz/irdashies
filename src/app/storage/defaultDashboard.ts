@@ -95,6 +95,15 @@ export const defaultDashboard: DashboardLayout = {
         },
         "carNumber": {
           "enabled": true
+        },
+        "lastTime": {
+          "enabled": true
+        },
+        "fastestTime": {
+          "enabled": false
+        },
+        "compound": {
+          "enabled": false
         }
       }
     },

@@ -65,8 +65,7 @@ export const Relative = () => {
         lastTime={config?.lastTime?.enabled ? result.lastTime : undefined}
         fastestTime={config?.fastestTime?.enabled ? result.fastestTime : undefined}
         lastTimeState={config?.lastTime?.enabled ? result.lastTimeState : undefined}
-        tireCompound={config?.compound?.enabled ?? true ? result.tireCompound : undefined}
-
+        tireCompound={config?.compound?.enabled ? result.tireCompound : undefined}
         badge={
           <DriverRatingBadge
             license={result.driver?.license}

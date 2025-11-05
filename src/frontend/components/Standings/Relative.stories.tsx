@@ -72,7 +72,7 @@ export const WithFlairs: Story = {
 
 export const WithTimesEnabled: Story = {
   decorators: [
-    TelemetryDecoratorWithConfig('/test-data/1732355190142', {
+    TelemetryDecoratorWithConfig(undefined, {
       relative: {
         lastTime: { enabled: true },
         fastestTime: { enabled: true },
@@ -83,7 +83,7 @@ export const WithTimesEnabled: Story = {
 
 export const WithOnlyLastTimesEnabled: Story = {
   decorators: [
-    TelemetryDecoratorWithConfig('/test-data/1732355190142', {
+    TelemetryDecoratorWithConfig(undefined, {
       relative: {
         lastTime: { enabled: true },
       },
