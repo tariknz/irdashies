@@ -3,6 +3,12 @@ import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import { useDashboard } from '@irdashies/context';
 import { RelativeWidgetSettings } from '../types';
 import { ToggleSwitch } from '../components/ToggleSwitch';
+import { ColumnReorderList } from '../components/ColumnReorderList';
+import {
+  DEFAULT_RELATIVE_COLUMN_ORDER,
+  COLUMN_METADATA,
+  type ColumnId,
+} from '../../Standings/types/columns';
 
 const SETTING_ID = 'relative';
 
@@ -14,6 +20,7 @@ const defaultConfig: RelativeWidgetSettings['config'] = {
   lastTime: { enabled: false },
   fastestTime: { enabled: false },
   compound: { enabled: false },
+  columnOrder: DEFAULT_RELATIVE_COLUMN_ORDER,
 };
 
 const migrateConfig = (savedConfig: unknown): RelativeWidgetSettings['config'] => {
@@ -27,6 +34,7 @@ const migrateConfig = (savedConfig: unknown): RelativeWidgetSettings['config'] =
     lastTime: { enabled: (config.lastTime as { enabled?: boolean })?.enabled ?? false },
     fastestTime: { enabled: (config.fastestTime as { enabled?: boolean })?.enabled ?? false },
     compound: { enabled: (config.compound as { enabled?: boolean })?.enabled ?? false },
+    columnOrder: (config.columnOrder as string[]) ?? DEFAULT_RELATIVE_COLUMN_ORDER,
   };
 };
 
@@ -138,6 +146,19 @@ export const RelativeSettings = () => {
               onToggle={(enabled) =>
                 handleConfigChange({ compound: { enabled } })
               }
+            />
+          </div>
+          <div className="space-y-2">
+            <div>
+              <span className="text-sm text-slate-300">Column Order</span>
+              <p className="text-xs text-slate-400">
+                Drag and drop to reorder columns
+              </p>
+            </div>
+            <ColumnReorderList
+              columns={settings.config.columnOrder || DEFAULT_RELATIVE_COLUMN_ORDER}
+              onChange={(newOrder) => handleConfigChange({ columnOrder: newOrder })}
+              getDisplayName={(columnId) => COLUMN_METADATA[columnId as ColumnId]?.displayName || columnId}
             />
           </div>
         </div>

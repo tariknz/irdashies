@@ -76,6 +76,8 @@ export const Standings = () => {
                       />
                     ) : undefined
                   }
+                  columnOrder={settings?.columnOrder}
+                  isStandings={true}
                 />
               ))}
             </Fragment>

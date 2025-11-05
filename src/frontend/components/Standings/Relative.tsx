@@ -18,7 +18,7 @@ export const Relative = () => {
   // If no player found, render empty table with consistent height
   if (playerIndex === -1) {
     const emptyRows = Array.from({ length: totalRows }, (_, index) => (
-      <DummyDriverRow key={`empty-${index}`} />
+      <DummyDriverRow key={`empty-${index}`} columnOrder={config?.columnOrder} />
     ));
 
     return (
@@ -42,7 +42,7 @@ export const Relative = () => {
 
     if (!result) {
       // If no result, render a dummy row with visibility hidden
-      return <DummyDriverRow key={`placeholder-${index}`} />;
+      return <DummyDriverRow key={`placeholder-${index}`} columnOrder={config?.columnOrder} />;
     }
 
     return (
@@ -72,6 +72,8 @@ export const Relative = () => {
             rating={result.driver?.rating}
           />
         }
+        columnOrder={config?.columnOrder}
+        isStandings={false}
       />
     );
   });
@@ -93,7 +95,7 @@ export const Relative = () => {
 };
 
 // Dummy driver row component with visibility hidden to maintain consistent height
-const DummyDriverRow = () => (
+const DummyDriverRow = ({ columnOrder }: { columnOrder?: string[] }) => (
   <DriverInfoRow
     carIdx={0}
     classColor={0}
@@ -101,5 +103,7 @@ const DummyDriverRow = () => (
     isPlayer={false}
     hasFastestTime={false}
     hidden={true}
+    columnOrder={columnOrder}
+    isStandings={false}
   />
 );

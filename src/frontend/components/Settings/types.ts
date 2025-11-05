@@ -20,6 +20,7 @@ export interface StandingsWidgetSettings extends BaseWidgetSettings {
       numTopDrivers: number;
     };
     compound: { enabled: boolean };
+    columnOrder?: string[];
   };
 }
 
@@ -32,6 +33,7 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
     lastTime: { enabled: boolean };
     fastestTime: { enabled: boolean };
     compound: { enabled: boolean };
+    columnOrder?: string[];
   };
 }
 

@@ -3,6 +3,12 @@ import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import { StandingsWidgetSettings } from '../types';
 import { useDashboard } from '@irdashies/context';
 import { ToggleSwitch } from '../components/ToggleSwitch';
+import { ColumnReorderList } from '../components/ColumnReorderList';
+import {
+  DEFAULT_STANDINGS_COLUMN_ORDER,
+  COLUMN_METADATA,
+  type ColumnId,
+} from '../../Standings/types/columns';
 
 const SETTING_ID = 'standings';
 
@@ -21,7 +27,8 @@ const defaultConfig: StandingsWidgetSettings['config'] = {
     minPlayerClassDrivers: 10,
     numTopDrivers: 3,
   },
-  compound: { enabled: true }
+  compound: { enabled: true },
+  columnOrder: DEFAULT_STANDINGS_COLUMN_ORDER,
 };
 
 // Migration function to handle missing properties in the new config format
@@ -73,7 +80,8 @@ const migrateConfig = (
     },
     compound: {
       enabled: (config.compound as { enabled?: boolean })?.enabled ?? true,
-    } 
+    },
+    columnOrder: (config.columnOrder as string[]) ?? DEFAULT_STANDINGS_COLUMN_ORDER,
   };
 };
 
@@ -295,6 +303,27 @@ export const StandingsSettings = () => {
                     {settings.config.background.opacity}%
                   </span>
                 </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Column Order Settings */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-medium text-slate-200">
+                Column Order
+              </h3>
+            </div>
+            <div className="space-y-3 pl-4">
+              <div className="space-y-2">
+                <p className="text-xs text-slate-400">
+                  Drag and drop to reorder columns
+                </p>
+                <ColumnReorderList
+                  columns={settings.config.columnOrder || DEFAULT_STANDINGS_COLUMN_ORDER}
+                  onChange={(newOrder) => handleConfigChange({ columnOrder: newOrder })}
+                  getDisplayName={(columnId) => COLUMN_METADATA[columnId as ColumnId]?.displayName || columnId}
+                />
               </div>
             </div>
           </div>
