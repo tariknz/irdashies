@@ -441,6 +441,7 @@ function createStandings(
       carIdxF2TimeValue: telemetry?.CarIdxF2Time?.value,
       carIdxOnPitRoadValue: telemetry?.CarIdxOnPitRoad?.value,
       carIdxTrackSurfaceValue: telemetry?.CarIdxTrackSurface?.value,
+      carIdxTireCompoundValue: telemetry?.CarIdxTireCompound?.value,
       radioTransmitCarIdx: telemetry?.RadioTransmitCarIdx?.value,
     },
     {

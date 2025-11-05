@@ -19,6 +19,7 @@ export interface StandingsWidgetSettings extends BaseWidgetSettings {
       minPlayerClassDrivers: number;
       numTopDrivers: number;
     };
+    compound: { enabled: boolean };
   };
 }
 
@@ -28,6 +29,7 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
     background: { opacity: number };
     countryFlags: { enabled: boolean };
     carNumber: { enabled: boolean };
+    compound: { enabled: boolean };
   };
 }
 
