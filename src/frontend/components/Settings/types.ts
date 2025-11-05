@@ -31,6 +31,7 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
     countryFlags: { enabled: boolean };
     carNumber: { enabled: boolean };
     compound: { enabled: boolean };
+    carManufacturer: { enabled: boolean };
   };
 }
 

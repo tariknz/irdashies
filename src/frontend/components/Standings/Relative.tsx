@@ -63,6 +63,7 @@ export const Relative = () => {
         isLappingAhead={result.lappedState === 'ahead'}
         flairId={config?.countryFlags?.enabled ?? true ? result.driver?.flairId : undefined}
         tireCompound={config?.compound?.enabled ?? true ? result.tireCompound : undefined}
+        carId={config?.carManufacturer?.enabled ?? true ? result.carId : undefined}
 
         badge={
           <DriverRatingBadge

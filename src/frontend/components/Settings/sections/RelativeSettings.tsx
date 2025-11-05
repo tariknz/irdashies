@@ -12,6 +12,7 @@ const defaultConfig: RelativeWidgetSettings['config'] = {
   countryFlags: { enabled: true },
   carNumber: { enabled: true },
   compound: { enabled: false },
+  carManufacturer: { enabled: false }
 };
 
 const migrateConfig = (savedConfig: unknown): RelativeWidgetSettings['config'] => {
@@ -23,6 +24,7 @@ const migrateConfig = (savedConfig: unknown): RelativeWidgetSettings['config'] =
     countryFlags: { enabled: (config.countryFlags as { enabled?: boolean })?.enabled ?? true },
     carNumber: { enabled: (config.carNumber as { enabled?: boolean })?.enabled ?? true },
     compound: { enabled: (config.compound as { enabled?: boolean })?.enabled ?? false },
+    carManufacturer: { enabled: (config.carManufacturer as { enabled?: boolean })?.enabled ?? false },
   };
 };
 
@@ -115,6 +117,15 @@ export const RelativeSettings = () => {
               enabled={settings.config.compound.enabled}
               onToggle={(enabled) =>
                 handleConfigChange({ compound: { enabled } })
+              }
+            />
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-slate-300">Show Car Manufacturer</span>
+            <ToggleSwitch
+              enabled={settings.config.carManufacturer.enabled}
+              onToggle={(enabled) =>
+                handleConfigChange({ carManufacturer: { enabled } })
               }
             />
           </div>
