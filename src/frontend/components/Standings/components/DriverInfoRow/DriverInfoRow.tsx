@@ -133,7 +133,7 @@ export const DriverInfoRow = ({
       )}
      {tireCompound !== undefined && (
         <td>
-          <div className="flex items-center pr-1"> 
+          <div className="flex items-center pr-1">
            <Compound tireCompound={tireCompound} size="sm" />
           </div>
         </td>
