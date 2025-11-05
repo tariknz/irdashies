@@ -62,8 +62,10 @@ export const Relative = () => {
         isLapped={result.lappedState === 'behind'}
         isLappingAhead={result.lappedState === 'ahead'}
         flairId={config?.countryFlags?.enabled ?? true ? result.driver?.flairId : undefined}
-        tireCompound={config?.compound?.enabled ?? true ? result.tireCompound : undefined}
-
+        lastTime={config?.lastTime?.enabled ? result.lastTime : undefined}
+        fastestTime={config?.fastestTime?.enabled ? result.fastestTime : undefined}
+        lastTimeState={config?.lastTime?.enabled ? result.lastTimeState : undefined}
+        tireCompound={config?.compound?.enabled ? result.tireCompound : undefined}
         badge={
           <DriverRatingBadge
             license={result.driver?.license}
@@ -76,7 +78,7 @@ export const Relative = () => {
 
   return (
     <div 
-      className="w-full bg-slate-800/[var(--bg-opacity)] rounded-sm p-2"
+      className="w-full bg-slate-800/(--bg-opacity) rounded-sm p-2"
       style={{
         ['--bg-opacity' as string]: `${config?.background?.opacity ?? 0}%`,
       }}

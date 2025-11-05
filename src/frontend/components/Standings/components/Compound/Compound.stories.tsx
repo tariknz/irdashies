@@ -16,10 +16,6 @@ const meta: Meta<typeof Compound> = {
       options: ['sm', 'md', 'lg'],
       description: 'Size of the compound',
     },
-    className: {
-      control: { type: 'text' },
-      description: 'Additional CSS classes',
-    },
   },
 };
 
