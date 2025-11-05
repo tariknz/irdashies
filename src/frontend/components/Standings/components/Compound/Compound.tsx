@@ -22,7 +22,6 @@ const compoundPositions: Record<number, { x: string; y: string }> = {
 
 export const Compound: React.FC<CompoundProps> = ({
   tireCompound,
-  className = '',
   size = 'md',
 }) => {
 
@@ -35,7 +34,7 @@ export const Compound: React.FC<CompoundProps> = ({
 
   return (
     <span
-      className={`inline-block w-[1em] h-[1em] bg-no-repeat bg-size-[100%_auto] ${sizeClasses[size]} ${className}`}
+      className={`inline-block w-[1em] h-[1em] shrink-0 bg-no-repeat bg-size-[100%_auto] ${sizeClasses[size]}`}
       style={{
         backgroundImage: `url(${tireCompoundImage})`,
         backgroundPosition: position ? `${position.x} ${position.y}` : '0 0',
