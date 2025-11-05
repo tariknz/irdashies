@@ -90,3 +90,13 @@ export const WithOnlyLastTimesEnabled: Story = {
     }),
   ],
 };
+
+export const WithTyresEnabled: Story = {
+  decorators: [
+    TelemetryDecoratorWithConfig(undefined, {
+      relative: {
+        compound: { enabled: true },
+      },
+    }),
+  ],
+};

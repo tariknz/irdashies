@@ -217,6 +217,7 @@ export const Relative = () => {
       onTrack: true,
       radioActive: false,
       lappedState: undefined,
+      tireCompound: 0
     },
     {
       carIdx: 2,

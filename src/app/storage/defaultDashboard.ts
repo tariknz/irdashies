@@ -36,6 +36,9 @@ export const defaultDashboard: DashboardLayout = {
         "carNumber": {
           "enabled": true
         },
+        "compound": {
+          "enabled": true
+        },
         "driverStandings": {
           "buffer": 3,
           "numNonClassDrivers": 3,
@@ -97,7 +100,7 @@ export const defaultDashboard: DashboardLayout = {
           "enabled": true
         },
         "lastTime": {
-          "enabled": true
+          "enabled": false
         },
         "fastestTime": {
           "enabled": false

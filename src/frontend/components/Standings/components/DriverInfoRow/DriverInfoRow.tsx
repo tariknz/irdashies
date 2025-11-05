@@ -95,13 +95,13 @@ export const DriverInfoRow = ({
       >
         <div className="flex justify-between align-center items-center">
           <div className="flex-1 flex items-center overflow-hidden">
-            {flairId && <CountryFlag flairId={flairId} size="sm" className="mr-2 flex-shrink-0" />}
+            {flairId && <CountryFlag flairId={flairId} size="sm" className="mr-2 shrink-0" />}
             <span
               className={`animate-pulse transition-[width] duration-300 ${radioActive ? 'w-4 mr-1' : 'w-0 overflow-hidden'}`}
             >
-              <SpeakerHighIcon className="mt-[1px]" size={16} />
+              <SpeakerHighIcon className="mt-px" size={16} />
             </span>
-            <div className="flex-1 overflow-hidden [mask-image:linear-gradient(90deg,#000_90%,transparent)]">
+            <div className="flex-1 overflow-hidden mask-[linear-gradient(90deg,#000_90%,transparent)]">
               <span className="truncate">{name}</span>
             </div>
           </div>
@@ -133,7 +133,7 @@ export const DriverInfoRow = ({
       )}
      {tireCompound !== undefined && (
         <td className="px-2">
-           <Compound tireCompound={tireCompound} size="sm" className="mr-2 flex-shrink-0" />
+           <Compound tireCompound={tireCompound} size="sm" className="mr-2 shrink-0" />
         </td>
      )}
     </tr>
