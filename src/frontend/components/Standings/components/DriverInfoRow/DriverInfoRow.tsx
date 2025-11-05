@@ -5,6 +5,7 @@ import { getTailwindStyle } from '@irdashies/utils/colors';
 import { formatTime } from '@irdashies/utils/time';
 import { CountryFlag } from '../CountryFlag/CountryFlag';
 import type { LastTimeState } from '../../createStandings';
+import { Compound } from '../Compound/Compound';
 
 interface DriverRowInfoProps {
   carIdx: number;
@@ -27,6 +28,7 @@ interface DriverRowInfoProps {
   isLappingAhead?: boolean;
   hidden?: boolean;
   flairId?: number;
+  tireCompound?: number;
 }
 
 export const DriverInfoRow = ({
@@ -50,6 +52,7 @@ export const DriverInfoRow = ({
   iratingChange,
   hidden,
   flairId,
+  tireCompound
 }: DriverRowInfoProps) => {
   // convert seconds to mm:ss:ms
   const lastTimeString = formatTime(lastTime);
@@ -128,6 +131,11 @@ export const DriverInfoRow = ({
           {lastTimeString}
         </td>
       )}
+     {tireCompound !== undefined && (
+        <td className="px-2">
+           <Compound tireCompound={tireCompound} size="sm" className="mr-2 flex-shrink-0" />
+        </td>
+     )}
     </tr>
   );
 };

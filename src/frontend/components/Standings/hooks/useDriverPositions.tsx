@@ -55,6 +55,7 @@ export const useDrivers = () => {
 export const useCarState = () => {
   const carIdxTrackSurface = useTelemetry('CarIdxTrackSurface');
   const carIdxOnPitRoad = useTelemetry<boolean[]>('CarIdxOnPitRoad');
+  const carIdxTireCompound = useTelemetry<number[]>('CarIdxTireCompound');
 
   // turn two arrays to one array with object of index and boolean values
   return (
@@ -62,6 +63,7 @@ export const useCarState = () => {
       carIdx: index,
       onTrack: onTrack > -1,
       onPitRoad: carIdxOnPitRoad?.value?.[index],
+      tireCompound: carIdxTireCompound?.value?.[index]
     })) ?? []
   );
 };
@@ -125,6 +127,7 @@ export const useDriverStandings = () => {
         lastTime: driverPos.lastLap,
         onPitRoad: carState?.onPitRoad ?? false,
         onTrack: carState?.onTrack ?? false,
+        tireCompound: carState?.tireCompound ?? 0,
         carClass: driver.carClass,
         radioActive: driverPos.carIdx === radioTransmitCarIdx,
       };

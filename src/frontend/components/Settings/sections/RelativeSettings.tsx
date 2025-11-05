@@ -13,6 +13,7 @@ const defaultConfig: RelativeWidgetSettings['config'] = {
   carNumber: { enabled: true },
   lastTime: { enabled: false },
   fastestTime: { enabled: false },
+  compound: { enabled: false },
 };
 
 const migrateConfig = (savedConfig: unknown): RelativeWidgetSettings['config'] => {
@@ -25,6 +26,7 @@ const migrateConfig = (savedConfig: unknown): RelativeWidgetSettings['config'] =
     carNumber: { enabled: (config.carNumber as { enabled?: boolean })?.enabled ?? true },
     lastTime: { enabled: (config.lastTime as { enabled?: boolean })?.enabled ?? false },
     fastestTime: { enabled: (config.fastestTime as { enabled?: boolean })?.enabled ?? false },
+    compound: { enabled: (config.compound as { enabled?: boolean })?.enabled ?? false },
   };
 };
 
@@ -126,6 +128,15 @@ export const RelativeSettings = () => {
               enabled={settings.config.fastestTime.enabled}
               onToggle={(enabled) =>
                 handleConfigChange({ fastestTime: { enabled } })
+              }
+            />
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-slate-300">Show Tire Compound</span>
+            <ToggleSwitch
+              enabled={settings.config.compound.enabled}
+              onToggle={(enabled) =>
+                handleConfigChange({ compound: { enabled } })
               }
             />
           </div>

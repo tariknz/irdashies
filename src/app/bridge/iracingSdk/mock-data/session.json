@@ -3301,7 +3301,8 @@
         "DivisionID": 3,
         "CurDriverIncidentCount": -1,
         "TeamIncidentCount": -1,
-        "FlairID": 77
+        "FlairID": 77,
+        "CompoundID": 1
       },
       {
         "CarIdx": 2,
@@ -3351,7 +3352,8 @@
         "DivisionID": 3,
         "CurDriverIncidentCount": -1,
         "TeamIncidentCount": -1,
-        "FlairID": 223
+        "FlairID": 223,
+        "CompoundID": 1
       },
       {
         "CarIdx": 3,
@@ -3401,7 +3403,8 @@
         "DivisionID": 6,
         "CurDriverIncidentCount": -1,
         "TeamIncidentCount": -1,
-        "FlairID": 223
+        "FlairID": 223,
+        "CompoundID": 1
       },
       {
         "CarIdx": 4,
@@ -3451,7 +3454,8 @@
         "DivisionID": 4,
         "CurDriverIncidentCount": 4,
         "TeamIncidentCount": 4,
-        "FlairID": 149
+        "FlairID": 149,
+        "CompoundID": 1
       },
       {
         "CarIdx": 5,
@@ -3501,7 +3505,8 @@
         "DivisionID": 4,
         "CurDriverIncidentCount": -1,
         "TeamIncidentCount": -1,
-        "FlairID": 223
+        "FlairID": 223,
+        "CompoundID": 1
       },
       {
         "CarIdx": 6,
@@ -3601,7 +3606,8 @@
         "DivisionID": 4,
         "CurDriverIncidentCount": -1,
         "TeamIncidentCount": -1,
-        "FlairID": 223
+        "FlairID": 223,
+        "CompoundID": 1
       },
       {
         "CarIdx": 8,
@@ -3651,7 +3657,8 @@
         "DivisionID": 4,
         "CurDriverIncidentCount": -1,
         "TeamIncidentCount": -1,
-        "FlairID": 104
+        "FlairID": 104, 
+        "CompoundID": 2 
       },
       {
         "CarIdx": 9,
@@ -3701,7 +3708,8 @@
         "DivisionID": 4,
         "CurDriverIncidentCount": -1,
         "TeamIncidentCount": -1,
-        "FlairID": 223
+        "FlairID": 223,
+        "CompoundID": 1
       },
       {
         "CarIdx": 10,
@@ -3751,7 +3759,8 @@
         "DivisionID": 7,
         "CurDriverIncidentCount": -1,
         "TeamIncidentCount": -1,
-        "FlairID": 223
+        "FlairID": 223,
+        "CompoundID": 1
       },
       {
         "CarIdx": 11,
@@ -3801,7 +3810,8 @@
         "DivisionID": 5,
         "CurDriverIncidentCount": -1,
         "TeamIncidentCount": -1,
-        "FlairID": 198
+        "FlairID": 198,
+        "CompoundID": 1
       },
       {
         "CarIdx": 12,
@@ -3851,7 +3861,8 @@
         "DivisionID": 5,
         "CurDriverIncidentCount": -1,
         "TeamIncidentCount": -1,
-        "FlairID": 31
+        "FlairID": 31,
+        "CompoundID": 1
       },
       {
         "CarIdx": 13,
@@ -3901,7 +3912,8 @@
         "DivisionID": 5,
         "CurDriverIncidentCount": -1,
         "TeamIncidentCount": -1,
-        "FlairID": 222
+        "FlairID": 222,
+        "CompoundID": 1
       },
       {
         "CarIdx": 14,
@@ -3951,7 +3963,8 @@
         "DivisionID": 5,
         "CurDriverIncidentCount": -1,
         "TeamIncidentCount": -1,
-        "FlairID": 223
+        "FlairID": 223,
+        "CompoundID": 1
       },
       {
         "CarIdx": 15,
@@ -4001,7 +4014,8 @@
         "DivisionID": 3,
         "CurDriverIncidentCount": -1,
         "TeamIncidentCount": -1,
-        "FlairID": 39
+        "FlairID": 39,
+        "CompoundID": 1
       },
       {
         "CarIdx": 16,
@@ -4051,7 +4065,8 @@
         "DivisionID": 3,
         "CurDriverIncidentCount": -1,
         "TeamIncidentCount": -1,
-        "FlairID": 223
+        "FlairID": 223,
+        "CompoundID": 1
       },
       {
         "CarIdx": 17,
@@ -4101,7 +4116,8 @@
         "DivisionID": 3,
         "CurDriverIncidentCount": -1,
         "TeamIncidentCount": -1,
-        "FlairID": 223
+        "FlairID": 223,
+        "CompoundID": 1
       },
       {
         "CarIdx": 18,
@@ -4151,7 +4167,8 @@
         "DivisionID": 2,
         "CurDriverIncidentCount": -1,
         "TeamIncidentCount": -1,
-        "FlairID": 223
+        "FlairID": 223,
+        "CompoundID": 1
       },
       {
         "CarIdx": 19,
@@ -4201,7 +4218,8 @@
         "DivisionID": 5,
         "CurDriverIncidentCount": -1,
         "TeamIncidentCount": -1,
-        "FlairID": 223
+        "FlairID": 223,
+        "CompoundID": 1
       },
       {
         "CarIdx": 20,
@@ -4251,7 +4269,8 @@
         "DivisionID": 6,
         "CurDriverIncidentCount": -1,
         "TeamIncidentCount": -1,
-        "FlairID": 223
+        "FlairID": 223,
+        "CompoundID": 1
       },
       {
         "CarIdx": 21,
@@ -4301,7 +4320,8 @@
         "DivisionID": 6,
         "CurDriverIncidentCount": -1,
         "TeamIncidentCount": -1,
-        "FlairID": 223
+        "FlairID": 223,
+        "CompoundID": 1
       },
       {
         "CarIdx": 22,
@@ -4596,7 +4616,8 @@
         "DivisionID": 3,
         "CurDriverIncidentCount": -1,
         "TeamIncidentCount": -1,
-        "FlairID": 16
+        "FlairID": 16,
+        "CompoundID": 1
       },
       {
         "CarIdx": 28,
@@ -4646,7 +4667,8 @@
         "DivisionID": 2,
         "CurDriverIncidentCount": -1,
         "TeamIncidentCount": -1,
-        "FlairID": 223
+        "FlairID": 223,
+        "CompoundID": 1
       },
       {
         "CarIdx": 29,
@@ -4696,7 +4718,8 @@
         "DivisionID": 2,
         "CurDriverIncidentCount": -1,
         "TeamIncidentCount": -1,
-        "FlairID": 16
+        "FlairID": 16,
+        "CompoundID": 1
       },
       {
         "CarIdx": 30,
@@ -4746,7 +4769,8 @@
         "DivisionID": 3,
         "CurDriverIncidentCount": -1,
         "TeamIncidentCount": -1,
-        "FlairID": 223
+        "FlairID": 223,
+        "CompoundID": 1
       },
       {
         "CarIdx": 31,
@@ -4894,7 +4918,8 @@
         "DivisionID": 4,
         "CurDriverIncidentCount": -1,
         "TeamIncidentCount": -1,
-        "FlairID": 71
+        "FlairID": 71,
+        "CompoundID": 1
       },
       {
         "CarIdx": 34,
@@ -4944,7 +4969,8 @@
         "DivisionID": 4,
         "CurDriverIncidentCount": -1,
         "TeamIncidentCount": -1,
-        "FlairID": 223
+        "FlairID": 223,
+        "CompoundID": 1
       },
       {
         "CarIdx": 35,
@@ -5043,7 +5069,8 @@
         "DivisionID": 4,
         "CurDriverIncidentCount": -1,
         "TeamIncidentCount": -1,
-        "FlairID": 1
+        "FlairID": 1,
+        "CompoundID": 1
       },
       {
         "CarIdx": 37,
@@ -5093,7 +5120,8 @@
         "DivisionID": 3,
         "CurDriverIncidentCount": -1,
         "TeamIncidentCount": -1,
-        "FlairID": 223
+        "FlairID": 223,
+        "CompoundID": 1
       },
       {
         "CarIdx": 38,
@@ -5143,7 +5171,8 @@
         "DivisionID": 6,
         "CurDriverIncidentCount": -1,
         "TeamIncidentCount": -1,
-        "FlairID": 223
+        "FlairID": 223,
+        "CompoundID": 1
       },
       {
         "CarIdx": 39,
@@ -5193,7 +5222,8 @@
         "DivisionID": 6,
         "CurDriverIncidentCount": -1,
         "TeamIncidentCount": -1,
-        "FlairID": 223
+        "FlairID": 223,
+        "CompoundID": 1
       },
       {
         "CarIdx": 40,
@@ -5243,7 +5273,8 @@
         "DivisionID": 3,
         "CurDriverIncidentCount": -1,
         "TeamIncidentCount": -1,
-        "FlairID": 31
+        "FlairID": 31,
+        "CompoundID": 1
       }
     ]
   },

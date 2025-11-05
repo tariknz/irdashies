@@ -19,6 +19,7 @@ export interface StandingsWidgetSettings extends BaseWidgetSettings {
       minPlayerClassDrivers: number;
       numTopDrivers: number;
     };
+    compound: { enabled: boolean };
   };
 }
 
@@ -30,6 +31,7 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
     carNumber: { enabled: boolean };
     lastTime: { enabled: boolean };
     fastestTime: { enabled: boolean };
+    compound: { enabled: boolean };
   };
 }
 
