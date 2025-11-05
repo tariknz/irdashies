@@ -42,7 +42,7 @@ export const GeneralSettings = () => {
   const [settings, setSettings] = useState<GeneralSettingsType>({
     fontSize: currentDashboard?.generalSettings?.fontSize ?? 'sm',
     colorPalette: currentDashboard?.generalSettings?.colorPalette ?? 'default',
-    highlightColor: currentDashboard?.generalSettings?.highlightColor ?? 959977
+    highlightColor: currentDashboard?.generalSettings?.highlightColor ?? 959977,
     showOnlyWhenOnTrack:
       currentDashboard?.generalSettings?.showOnlyWhenOnTrack ?? false,
   });
@@ -73,6 +73,10 @@ export const GeneralSettings = () => {
 
   const handleHighlightColorChange = (newColor: number) => {
     const newSettings = { ...settings, highlightColor: newColor };
+    setSettings(newSettings);
+    updateDashboard(newSettings);
+  };
+
   const handleShowOnlyWhenOnTrackChange = (checked: boolean) => {
     const newSettings = { ...settings, showOnlyWhenOnTrack: checked };
     setSettings(newSettings);
