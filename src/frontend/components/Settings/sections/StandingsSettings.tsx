@@ -106,7 +106,7 @@ export const StandingsSettings = () => {
             </div>
             <div className="space-y-3 pl-4">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-300">Show iRating Changes</span>
+                <span className="text-sm text-slate-300">iRating Changes</span>
                 <ToggleSwitch
                   enabled={settings.config.iRatingChange.enabled}
                   onToggle={(enabled) =>
@@ -115,7 +115,7 @@ export const StandingsSettings = () => {
                 />
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-300">Show Driver Badge</span>
+                <span className="text-sm text-slate-300">Driver Badge</span>
                 <ToggleSwitch
                   enabled={settings.config.badge.enabled}
                   onToggle={(enabled) =>
@@ -124,7 +124,7 @@ export const StandingsSettings = () => {
                 />
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-300">Show Delta</span>
+                <span className="text-sm text-slate-300">Delta</span>
                 <ToggleSwitch
                   enabled={settings.config.delta.enabled}
                   onToggle={(enabled) =>
@@ -133,7 +133,7 @@ export const StandingsSettings = () => {
                 />
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-300">Show Last Time</span>
+                <span className="text-sm text-slate-300">Last Time</span>
                 <ToggleSwitch
                   enabled={settings.config.lastTime.enabled}
                   onToggle={(enabled) =>
@@ -142,7 +142,7 @@ export const StandingsSettings = () => {
                 />
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-300">Show Fastest Time</span>
+                <span className="text-sm text-slate-300">Fastest Time</span>
                 <ToggleSwitch
                   enabled={settings.config.fastestTime.enabled}
                   onToggle={(enabled) =>
@@ -151,7 +151,7 @@ export const StandingsSettings = () => {
                 />
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-300">Show Car Number</span>
+                <span className="text-sm text-slate-300">Car Number</span>
                 <ToggleSwitch
                   enabled={settings.config.carNumber.enabled}
                   onToggle={(enabled) =>
@@ -160,7 +160,7 @@ export const StandingsSettings = () => {
                 />
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-300">Show Country Flags</span>
+                <span className="text-sm text-slate-300">Country Flags</span>
                 <ToggleSwitch
                   enabled={settings.config.countryFlags.enabled}
                   onToggle={(enabled) =>
@@ -169,7 +169,7 @@ export const StandingsSettings = () => {
                 />
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-300">Show Tire Compound</span>
+                <span className="text-sm text-slate-300">Tire Compound</span>
                 <ToggleSwitch
                   enabled={settings.config.compound.enabled}
                   onToggle={(enabled) =>

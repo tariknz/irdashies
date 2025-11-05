@@ -153,7 +153,7 @@ export const InputSettings = () => {
                     }
                     className="form-checkbox h-4 w-4 text-blue-500 rounded border-slate-500 bg-slate-700"
                   />
-                  <span className="text-sm text-slate-200">Show Throttle Trace</span>
+                  <span className="text-sm text-slate-200">Throttle Trace</span>
                 </label>
                 <label className="flex items-center space-x-2">
                   <input
@@ -166,7 +166,7 @@ export const InputSettings = () => {
                     }
                     className="form-checkbox h-4 w-4 text-blue-500 rounded border-slate-500 bg-slate-700"
                   />
-                  <span className="text-sm text-slate-200">Show Brake Trace</span>
+                  <span className="text-sm text-slate-200">Brake Trace</span>
                 </label>
                 <label className="flex items-center space-x-2">
                   <input
@@ -179,7 +179,7 @@ export const InputSettings = () => {
                     }
                     className="form-checkbox h-4 w-4 text-blue-500 rounded border-slate-500 bg-slate-700"
                   />
-                  <span className="text-sm text-slate-200">Show ABS Visual Indicator</span>
+                  <span className="text-sm text-slate-200">ABS Visual Indicator</span>
                 </label>
                 <label className="flex items-center space-x-2">
                   <input
@@ -192,7 +192,7 @@ export const InputSettings = () => {
                     }
                     className="form-checkbox h-4 w-4 text-blue-500 rounded border-slate-500 bg-slate-700"
                   />
-                  <span className="text-sm text-slate-200">Show Steering Trace</span>
+                  <span className="text-sm text-slate-200">Steering Trace</span>
                 </label>
               </div>
             )}
@@ -225,7 +225,7 @@ export const InputSettings = () => {
                     }
                     className="form-checkbox h-4 w-4 text-blue-500 rounded border-slate-500 bg-slate-700"
                   />
-                  <span className="text-sm text-slate-200">Show Clutch Bar</span>
+                  <span className="text-sm text-slate-200">Clutch Bar</span>
                 </label>
                 <label className="flex items-center space-x-2">
                   <input
@@ -238,7 +238,7 @@ export const InputSettings = () => {
                     }
                     className="form-checkbox h-4 w-4 text-blue-500 rounded border-slate-500 bg-slate-700"
                   />
-                  <span className="text-sm text-slate-200">Show Brake Bar</span>
+                  <span className="text-sm text-slate-200">Brake Bar</span>
                 </label>
                 <label className="flex items-center space-x-2">
                   <input
@@ -251,7 +251,7 @@ export const InputSettings = () => {
                     }
                     className="form-checkbox h-4 w-4 text-blue-500 rounded border-slate-500 bg-slate-700"
                   />
-                  <span className="text-sm text-slate-200">Show Throttle Bar</span>
+                  <span className="text-sm text-slate-200">Throttle Bar</span>
                 </label>
                 <label className="flex items-center space-x-2">
                   <input
@@ -264,7 +264,7 @@ export const InputSettings = () => {
                     }
                     className="form-checkbox h-4 w-4 text-blue-500 rounded border-slate-500 bg-slate-700"
                   />
-                  <span className="text-sm text-slate-200">Show ABS Visual Indicator</span>
+                  <span className="text-sm text-slate-200">ABS Visual Indicator</span>
                 </label>
               </div>
             )}

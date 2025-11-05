@@ -96,7 +96,7 @@ export const RelativeSettings = () => {
             </div>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-sm text-slate-300">Show Car Number</span>
+            <span className="text-sm text-slate-300">Car Number</span>
             <ToggleSwitch
               enabled={settings.config.carNumber.enabled}
               onToggle={(enabled) =>
@@ -105,7 +105,7 @@ export const RelativeSettings = () => {
             />
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-sm text-slate-300">Show Country Flags</span>
+            <span className="text-sm text-slate-300">Country Flags</span>
             <ToggleSwitch
               enabled={settings.config.countryFlags.enabled}
               onToggle={(enabled) =>
@@ -114,7 +114,7 @@ export const RelativeSettings = () => {
             />
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-sm text-slate-300">Show Last Time</span>
+            <span className="text-sm text-slate-300">Last Time</span>
             <ToggleSwitch
               enabled={settings.config.lastTime.enabled}
               onToggle={(enabled) =>
@@ -123,7 +123,7 @@ export const RelativeSettings = () => {
             />
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-sm text-slate-300">Show Best Time</span>
+            <span className="text-sm text-slate-300">Best Time</span>
             <ToggleSwitch
               enabled={settings.config.fastestTime.enabled}
               onToggle={(enabled) =>
@@ -132,7 +132,7 @@ export const RelativeSettings = () => {
             />
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-sm text-slate-300">Show Tire Compound</span>
+            <span className="text-sm text-slate-300">Tire Compound</span>
             <ToggleSwitch
               enabled={settings.config.compound.enabled}
               onToggle={(enabled) =>
