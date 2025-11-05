@@ -11,6 +11,7 @@ const mockBridge: DashboardBridge = {
   onEditModeToggled: vi.fn(),
   toggleLockOverlays: vi.fn().mockResolvedValue(true),
   getAppVersion: vi.fn().mockResolvedValue('0.0.7+mock'),
+  resetDashboard: vi.fn().mockResolvedValue({}),
 };
 
 const TestComponent: React.FC = () => {
@@ -70,7 +71,7 @@ describe('DashboardContext', () => {
           layout: { x: 0, y: 0, width: 1, height: 1 },
         },
       ],
-    });
+    }, undefined);
   });
 
   it('reloads the dashboard on mount', () => {

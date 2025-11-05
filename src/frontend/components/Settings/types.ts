@@ -11,12 +11,15 @@ export interface StandingsWidgetSettings extends BaseWidgetSettings {
     lastTime: { enabled: boolean };
     fastestTime: { enabled: boolean };
     background: { opacity: number };
+    countryFlags: { enabled: boolean };
+    carNumber: { enabled: boolean };
     driverStandings: {
       buffer: number;
       numNonClassDrivers: number;
       minPlayerClassDrivers: number;
       numTopDrivers: number;
     };
+    compound: { enabled: boolean };
   };
 }
 
@@ -24,6 +27,11 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
   config: {
     buffer: number;
     background: { opacity: number };
+    countryFlags: { enabled: boolean };
+    carNumber: { enabled: boolean };
+    lastTime: { enabled: boolean };
+    fastestTime: { enabled: boolean };
+    compound: { enabled: boolean };
   };
 }
 
@@ -52,12 +60,15 @@ export interface InputWidgetSettings extends BaseWidgetSettings {
       enabled: boolean;
       includeThrottle: boolean;
       includeBrake: boolean;
+      includeAbs: boolean;
+      includeSteer?: boolean;
     };
     bar: {
       enabled: boolean;
       includeClutch: boolean;
       includeBrake: boolean;
       includeThrottle: boolean;
+      includeAbs: boolean;
     };
     gear: {
       enabled: boolean;

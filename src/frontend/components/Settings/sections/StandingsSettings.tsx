@@ -13,12 +13,15 @@ const defaultConfig: StandingsWidgetSettings['config'] = {
   lastTime: { enabled: true },
   fastestTime: { enabled: true },
   background: { opacity: 0 },
+  countryFlags: { enabled: true },
+  carNumber: { enabled: true },
   driverStandings: {
     buffer: 3,
     numNonClassDrivers: 3,
     minPlayerClassDrivers: 10,
     numTopDrivers: 3,
   },
+  compound: { enabled: true }
 };
 
 // Migration function to handle missing properties in the new config format
@@ -46,6 +49,12 @@ const migrateConfig = (
     background: {
       opacity: (config.background as { opacity?: number })?.opacity ?? 0,
     },
+    countryFlags: {
+      enabled: (config.countryFlags as { enabled?: boolean })?.enabled ?? true,
+    },
+    carNumber: {
+      enabled: (config.carNumber as { enabled?: boolean })?.enabled ?? true,
+    },
     driverStandings: {
       buffer:
         (config.driverStandings as { buffer?: number })?.buffer ??
@@ -62,6 +71,9 @@ const migrateConfig = (
         (config.driverStandings as { numTopDrivers?: number })?.numTopDrivers ??
         defaultConfig.driverStandings.numTopDrivers,
     },
+    compound: {
+      enabled: (config.compound as { enabled?: boolean })?.enabled ?? true,
+    } 
   };
 };
 
@@ -135,6 +147,33 @@ export const StandingsSettings = () => {
                   enabled={settings.config.fastestTime.enabled}
                   onToggle={(enabled) =>
                     handleConfigChange({ fastestTime: { enabled } })
+                  }
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-slate-300">Show Car Number</span>
+                <ToggleSwitch
+                  enabled={settings.config.carNumber.enabled}
+                  onToggle={(enabled) =>
+                    handleConfigChange({ carNumber: { enabled } })
+                  }
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-slate-300">Show Country Flags</span>
+                <ToggleSwitch
+                  enabled={settings.config.countryFlags.enabled}
+                  onToggle={(enabled) =>
+                    handleConfigChange({ countryFlags: { enabled } })
+                  }
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-slate-300">Show Tire Compound</span>
+                <ToggleSwitch
+                  enabled={settings.config.compound.enabled}
+                  onToggle={(enabled) =>
+                    handleConfigChange({ compound: { enabled } })
                   }
                 />
               </div>

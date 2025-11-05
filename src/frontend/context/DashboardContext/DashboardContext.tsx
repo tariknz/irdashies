@@ -5,12 +5,12 @@ import React, {
   ReactNode,
   useEffect,
 } from 'react';
-import type { DashboardBridge, DashboardLayout, GeneralSettingsType } from '@irdashies/types';
+import type { DashboardBridge, DashboardLayout, GeneralSettingsType, SaveDashboardOptions } from '@irdashies/types';
 
 interface DashboardContextProps {
   editMode: boolean;
   currentDashboard: DashboardLayout | undefined;
-  onDashboardUpdated?: (dashboard: DashboardLayout) => void;
+  onDashboardUpdated?: (dashboard: DashboardLayout, options?: SaveDashboardOptions) => void;
   resetDashboard: (resetEverything: boolean) => Promise<DashboardLayout>;
   bridge: DashboardBridge;
   version: string;
@@ -38,8 +38,8 @@ export const DashboardProvider: React.FC<{
     bridge.getAppVersion?.().then((version) => setVersion(version));
   }, [bridge]);
 
-  const saveDashboard = (dashboard: DashboardLayout) => {
-    bridge.saveDashboard(dashboard);
+  const saveDashboard = (dashboard: DashboardLayout, options?: SaveDashboardOptions) => {
+    bridge.saveDashboard(dashboard, options);
   };
 
   const resetDashboard = async (resetEverything: boolean) => {

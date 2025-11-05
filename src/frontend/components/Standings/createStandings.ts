@@ -1,6 +1,8 @@
 import type { SessionResults, Driver } from '@irdashies/types';
 import { calculateIRatingGain, RaceResult, CalculationResult } from '@irdashies/utils/iratingGain';
 
+export type LastTimeState = 'session-fastest' | 'personal-best' | undefined;
+
 export interface Standings {
   carIdx: number;
   position?: number;
@@ -14,11 +16,14 @@ export interface Standings {
     carNum: string;
     license: string;
     rating: number;
+    flairId?: number;
   };
   fastestTime: number;
   hasFastestTime: boolean;
   lastTime: number;
+  lastTimeState?: LastTimeState;
   onPitRoad: boolean;
+  tireCompound: number;
   onTrack: boolean;
   carClass: {
     id: number;
@@ -54,6 +59,17 @@ const calculateDelta = (
   return delta;
 };
 
+const getLastTimeState = (
+  lastTime: number | undefined,
+  fastestTime: number | undefined,
+  hasFastestTime: boolean
+): LastTimeState => {
+  if (lastTime !== undefined && fastestTime !== undefined && lastTime === fastestTime) {
+    return hasFastestTime ? 'session-fastest' : 'personal-best';
+  }
+  return undefined;
+};
+
 /**
  * This method will create the driver standings for the current session
  * It will calculate the delta to the leader
@@ -70,6 +86,7 @@ export const createDriverStandings = (
     carIdxOnPitRoadValue?: boolean[];
     carIdxTrackSurfaceValue?: number[];
     radioTransmitCarIdx?: number[];
+    carIdxTireCompoundValue?: number[];
   },
   currentSession: {
     resultsPositions?: SessionResults[];
@@ -110,13 +127,20 @@ export const createDriverStandings = (
           carNum: driver.CarNumber,
           license: driver.LicString,
           rating: driver.IRating,
+          flairId: driver.FlairID,
         },
         fastestTime: result.FastestTime,
         hasFastestTime: result.CarIdx === fastestDriverIdx,
         lastTime: result.LastTime,
+        lastTimeState: getLastTimeState(
+          result.LastTime,
+          result.FastestTime,
+          result.CarIdx === fastestDriverIdx
+        ),
         onPitRoad: telemetry?.carIdxOnPitRoadValue?.[result.CarIdx] ?? false,
         onTrack:
           (telemetry?.carIdxTrackSurfaceValue?.[result.CarIdx] ?? -1) > -1,
+        tireCompound: telemetry?.carIdxTireCompoundValue?.[result.CarIdx] ?? 0,
         carClass: {
           id: driver.CarClassID,
           color: driver.CarClassColor,

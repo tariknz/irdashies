@@ -2,12 +2,18 @@ import { useState } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import { useDashboard } from '@irdashies/context';
 import { RelativeWidgetSettings } from '../types';
+import { ToggleSwitch } from '../components/ToggleSwitch';
 
 const SETTING_ID = 'relative';
 
 const defaultConfig: RelativeWidgetSettings['config'] = {
   buffer: 3,
   background: { opacity: 0 },
+  countryFlags: { enabled: true },
+  carNumber: { enabled: true },
+  lastTime: { enabled: false },
+  fastestTime: { enabled: false },
+  compound: { enabled: false },
 };
 
 const migrateConfig = (savedConfig: unknown): RelativeWidgetSettings['config'] => {
@@ -16,6 +22,11 @@ const migrateConfig = (savedConfig: unknown): RelativeWidgetSettings['config'] =
   return {
     buffer: (config.buffer as { value?: number })?.value ?? 3,
     background: { opacity: (config.background as { opacity?: number })?.opacity ?? 0 },
+    countryFlags: { enabled: (config.countryFlags as { enabled?: boolean })?.enabled ?? true },
+    carNumber: { enabled: (config.carNumber as { enabled?: boolean })?.enabled ?? true },
+    lastTime: { enabled: (config.lastTime as { enabled?: boolean })?.enabled ?? false },
+    fastestTime: { enabled: (config.fastestTime as { enabled?: boolean })?.enabled ?? false },
+    compound: { enabled: (config.compound as { enabled?: boolean })?.enabled ?? false },
   };
 };
 
@@ -83,6 +94,51 @@ export const RelativeSettings = () => {
                 {settings.config.background.opacity}%
               </span>
             </div>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-slate-300">Show Car Number</span>
+            <ToggleSwitch
+              enabled={settings.config.carNumber.enabled}
+              onToggle={(enabled) =>
+                handleConfigChange({ carNumber: { enabled } })
+              }
+            />
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-slate-300">Show Country Flags</span>
+            <ToggleSwitch
+              enabled={settings.config.countryFlags.enabled}
+              onToggle={(enabled) =>
+                handleConfigChange({ countryFlags: { enabled } })
+              }
+            />
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-slate-300">Show Last Time</span>
+            <ToggleSwitch
+              enabled={settings.config.lastTime.enabled}
+              onToggle={(enabled) =>
+                handleConfigChange({ lastTime: { enabled } })
+              }
+            />
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-slate-300">Show Best Time</span>
+            <ToggleSwitch
+              enabled={settings.config.fastestTime.enabled}
+              onToggle={(enabled) =>
+                handleConfigChange({ fastestTime: { enabled } })
+              }
+            />
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-slate-300">Show Tire Compound</span>
+            <ToggleSwitch
+              enabled={settings.config.compound.enabled}
+              onToggle={(enabled) =>
+                handleConfigChange({ compound: { enabled } })
+              }
+            />
           </div>
         </div>
       )}

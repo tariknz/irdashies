@@ -4,11 +4,14 @@ import {
 import { getTailwindStyle } from '@irdashies/utils/colors';
 import { formatTime } from '@irdashies/utils/time';
 import { useDashboard } from '@irdashies/context';
+import { CountryFlag } from '../CountryFlag/CountryFlag';
+import type { LastTimeState } from '../../createStandings';
+import { Compound } from '../Compound/Compound';
 
 interface DriverRowInfoProps {
   carIdx: number;
   classColor: number;
-  carNumber: string;
+  carNumber?: string;
   name: string;
   isPlayer: boolean;
   hasFastestTime: boolean;
@@ -18,12 +21,15 @@ interface DriverRowInfoProps {
   iratingChange?: React.ReactNode;
   lastTime?: number;
   fastestTime?: number;
+  lastTimeState?: LastTimeState;
   onPitRoad?: boolean;
   onTrack?: boolean;
   radioActive?: boolean;
   isLapped?: boolean;
   isLappingAhead?: boolean;
   hidden?: boolean;
+  flairId?: number;
+  tireCompound?: number;
 }
 
 export const DriverInfoRow = ({
@@ -38,6 +44,7 @@ export const DriverInfoRow = ({
   badge,
   lastTime,
   fastestTime,
+  lastTimeState,
   onPitRoad,
   onTrack,
   radioActive,
@@ -45,6 +52,8 @@ export const DriverInfoRow = ({
   isLappingAhead,
   iratingChange,
   hidden,
+  flairId,
+  tireCompound
 }: DriverRowInfoProps) => {
   // convert seconds to mm:ss:ms
   const lastTimeString = formatTime(lastTime);
@@ -54,6 +63,12 @@ export const DriverInfoRow = ({
 
   // Now you can access settings.highlightColor
   const highlightColor = settings?.highlightColor;
+
+  const getLastTimeColorClass = (state?: LastTimeState): string => {
+    if (state === 'session-fastest') return 'text-purple-400';
+    if (state === 'personal-best') return 'text-green-400';
+    return '';
+  };
 
   return (
     <tr
@@ -72,20 +87,30 @@ export const DriverInfoRow = ({
       >
         {position}
       </td>
-      <td
-        className={`${getTailwindStyle(classColor, highlightColor).driverIcon} text-white border-l-4 text-right px-1 w-10`}
+
+      <td 
+        className={[
+          getTailwindStyle(classColor, highlightColor).driverIcon,
+          'border-l-4',
+          carNumber ? 'text-white text-right px-1 w-10' : 'w-0'
+        ].join(' ')}
       >
-        #{carNumber}
+        {carNumber && `#${carNumber}`}
       </td>
-      <td className={`px-2 py-0.5 w-full`}>
+      <td
+        className="px-2 py-0.5 w-full max-w-0 overflow-hidden"
+      >
         <div className="flex justify-between align-center items-center">
-          <div className="flex">
+          <div className="flex-1 flex items-center overflow-hidden">
+            {flairId && <CountryFlag flairId={flairId} size="sm" className="mr-2 shrink-0" />}
             <span
               className={`animate-pulse transition-[width] duration-300 ${radioActive ? 'w-4 mr-1' : 'w-0 overflow-hidden'}`}
             >
-              <SpeakerHighIcon className="mt-[1px]" size={16} />
+              <SpeakerHighIcon className="mt-px" size={16} />
             </span>
-            <span className="truncate">{name}</span>
+            <div className="flex-1 overflow-hidden mask-[linear-gradient(90deg,#000_90%,transparent)]">
+              <span className="truncate">{name}</span>
+            </div>
           </div>
           {onPitRoad && (
             <span className="text-white animate-pulse text-xs border-yellow-500 border-2 rounded-md text-center text-nowrap px-2 m-0 leading-tight">
@@ -109,18 +134,17 @@ export const DriverInfoRow = ({
         </td>
       )}
       {lastTime !== undefined && (
-        <td
-          className={`px-2 ${
-            lastTimeString === fastestTimeString
-              ? hasFastestTime
-                ? 'text-purple-400'
-                : 'text-green-400'
-              : ''
-          }`}
-        >
+        <td className={`px-2 ${getLastTimeColorClass(lastTimeState)}`}>
           {lastTimeString}
         </td>
       )}
+     {tireCompound !== undefined && (
+        <td>
+          <div className="flex items-center pr-1"> 
+           <Compound tireCompound={tireCompound} size="sm" />
+          </div>
+        </td>
+     )}
     </tr>
   );
 };

@@ -1,7 +1,7 @@
 import fs from 'fs';
 import { JSDOM } from 'jsdom';
 import { svgPathProperties } from 'svg-path-properties';
-import { findDirection, findIntersectionPoint, preCalculatePoints } from './svg-utils';
+import { findDirection, findIntersectionPoint, preCalculatePoints, extractStartFinishData } from './svg-utils';
 import { TrackDrawing } from '../src/frontend/components/TrackMap/TrackCanvas';
 
 interface TrackInfo {
@@ -104,20 +104,23 @@ export const generateTrackJson = () => {
         }
 
         if (prop === 'startFinish') {
-          const paths = svg.querySelectorAll('path');
-          const line = paths?.[0]?.getAttribute('d')?.replace(/\s/g, '');
-          const arrow = paths?.[1]?.getAttribute('d')?.replace(/\s/g, '');
+          const startFinishData = extractStartFinishData(svg);
+          if (!startFinishData) {
+            return acc;
+          }
+
+          const { line, arrow } = startFinishData;
           let flipLineArrow = false;
           let intersection = findIntersectionPoint(
             acc['active'].inside,
-            line || ''
+            line
           );
 
           if (!intersection) {
             flipLineArrow = true;
             intersection = findIntersectionPoint(
               acc['active'].inside,
-              arrow || ''
+              arrow
             );
           }
           acc[prop] = {

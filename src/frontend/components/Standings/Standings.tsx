@@ -41,7 +41,7 @@ export const Standings = () => {
                   key={result.carIdx}
                   carIdx={result.carIdx}
                   classColor={result.carClass.color}
-                  carNumber={result.driver?.carNum || ''}
+                  carNumber={settings?.carNumber?.enabled ?? true ? result.driver?.carNum || '' : undefined}
                   name={result.driver?.name || ''}
                   isPlayer={result.isPlayer}
                   hasFastestTime={result.hasFastestTime}
@@ -60,9 +60,14 @@ export const Standings = () => {
                       ? result.fastestTime
                       : undefined
                   }
+                  lastTimeState={
+                    settings?.lastTime?.enabled ? result.lastTimeState : undefined
+                  }
                   onPitRoad={result.onPitRoad}
                   onTrack={result.onTrack}
                   radioActive={result.radioActive}
+                  flairId={settings?.countryFlags?.enabled ?? true ? result.driver?.flairId : undefined}
+                  tireCompound={settings?.compound?.enabled ?? true ? result.tireCompound : undefined}
                   badge={
                     settings?.badge?.enabled ? (
                       <DriverRatingBadge

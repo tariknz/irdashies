@@ -100,7 +100,9 @@ export const findDirection = (trackId: number) => {
     332, 333, 336, 337, 338, 343, 350, 351, 357, 364, 365, 366, 371, 381, 386,
     397, 398, 404, 405, 407, 413, 414, 418, 424, 426, 427, 429, 431, 436, 438,
     443, 444, 445, 448, 449, 451, 453, 454, 455, 456, 463, 469, 473, 474, 481,
-    483, 498, 514, 522, 526, 559, 561,
+    483, 498, 511, 512, 514, 518, 519, 520, 522, 526, 527, 528, 529, 530, 532, 
+    540, 541, 542, 543, 544, 545, 546, 551, 559, 561, 562, 563, 564, 565, 567, 
+    568, 569, 570, 571, 572, 573, 574, 575, 576, 577
   ];
 
   return anticlockwiseTracks.includes(trackId) ? 'anticlockwise' : 'clockwise';
@@ -126,4 +128,180 @@ export const preCalculatePoints = (pathData: string): { x: number; y: number }[]
   }
 
   return points;
+}
+
+// Convert line element to path data
+export const lineToPath = (line: SVGLineElement): string => {
+  const x1 = parseFloat(line.getAttribute('x1') || '0');
+  const y1 = parseFloat(line.getAttribute('y1') || '0');
+  const x2 = parseFloat(line.getAttribute('x2') || '0');
+  const y2 = parseFloat(line.getAttribute('y2') || '0');
+  return `M${x1},${y1}L${x2},${y2}`;
+}
+
+// Convert rect element to path data
+export const rectToPath = (rect: SVGRectElement): string => {
+  const x = parseFloat(rect.getAttribute('x') || '0');
+  const y = parseFloat(rect.getAttribute('y') || '0');
+  const width = parseFloat(rect.getAttribute('width') || '0');
+  const height = parseFloat(rect.getAttribute('height') || '0');
+  
+  // Handle transform if present
+  const transform = rect.getAttribute('transform');
+  if (transform) {
+    // For simplicity, we'll use the center line of the rect
+    // This should work for most start-finish lines
+    const centerX = x + width / 2;
+    const centerY = y + height / 2;
+    
+    // Create a simple line through the center of the rect
+    // For rotated rects, we'll use the longer dimension
+    const isRotated = transform.includes('rotate');
+    if (isRotated) {
+      // For rotated rects, use the diagonal
+      const halfLength = Math.sqrt(width * width + height * height) / 2;
+      return `M${centerX - halfLength},${centerY}L${centerX + halfLength},${centerY}`;
+    } else {
+      // For non-rotated rects, use the center line
+      return `M${centerX},${y}L${centerX},${y + height}`;
+    }
+  }
+  
+  // For non-rotated rects, use the center line
+  const centerX = x + width / 2;
+  return `M${centerX},${y}L${centerX},${y + height}`;
+}
+
+// Extract start-finish line data from various SVG element types
+export const extractStartFinishData = (svg: SVGSVGElement): { line: string; arrow: string } | null => {
+  // Try to find use elements with symbol references first (for complex SVGs)
+  const useElements = svg.querySelectorAll('use');
+  if (useElements.length >= 2) {
+    // Look for start-finish line and arrow symbols
+    let linePath = '';
+    let arrowPath = '';
+    
+    for (const useEl of useElements) {
+      const href = useEl.getAttribute('href') || useEl.getAttribute('xlink:href');
+      const transform = useEl.getAttribute('transform') || '';
+      
+      if (href) {
+        const symbolId = href.replace('#', '');
+        const symbol = svg.querySelector(`symbol[id="${symbolId}"]`);
+        
+        if (symbol) {
+          // Extract transform values
+          const translateMatch = transform.match(/translate\(([^,\s]+)\s+([^)]+)\)/);
+          const translateX = translateMatch ? parseFloat(translateMatch[1]) : 0;
+          const translateY = translateMatch ? parseFloat(translateMatch[2]) : 0;
+          
+          // Check if this is a line (rect) or arrow (polygon)
+          const rect = symbol.querySelector('rect');
+          const polygon = symbol.querySelector('polygon');
+          
+          if (rect) {
+            // Convert rect to path and apply transform
+            const x = parseFloat(rect.getAttribute('x') || '0');
+            const y = parseFloat(rect.getAttribute('y') || '0');
+            const width = parseFloat(rect.getAttribute('width') || '0');
+            const height = parseFloat(rect.getAttribute('height') || '0');
+            
+            // Create line through center of rect
+            const centerX = x + width / 2;
+            const lineX1 = translateX + centerX;
+            const lineY1 = translateY + y;
+            const lineX2 = translateX + centerX;
+            const lineY2 = translateY + y + height;
+            
+            linePath = `M${lineX1},${lineY1}L${lineX2},${lineY2}`;
+          } else if (polygon) {
+            // Convert polygon to path and apply transform
+            const points = polygon.getAttribute('points');
+            if (points) {
+              const coords = points.trim().split(/\s+/).map(parseFloat).filter(n => !isNaN(n));
+              const transformedPoints = [];
+              for (let i = 0; i < coords.length; i += 2) {
+                if (i + 1 < coords.length) {
+                  transformedPoints.push(`${coords[i] + translateX},${coords[i + 1] + translateY}`);
+                }
+              }
+              if (transformedPoints.length >= 3) {
+                arrowPath = `M${transformedPoints[0]}L${transformedPoints.slice(1).join('L')}Z`;
+              }
+            }
+          }
+        }
+      }
+    }
+    
+    if (linePath && arrowPath) {
+      return { line: linePath, arrow: arrowPath };
+    }
+  }
+
+  // Try to find line + path combination (most common case)
+  const line = svg.querySelector('line');
+  const pathArrow = svg.querySelector('path');
+  if (line && pathArrow) {
+    const linePath = lineToPath(line);
+    const arrowPath = pathArrow.getAttribute('d')?.replace(/\s/g, '') || '';
+    if (linePath && arrowPath) {
+      return { line: linePath, arrow: arrowPath };
+    }
+  }
+
+  // Try to find path elements (existing logic)
+  const paths = svg.querySelectorAll('path');
+  if (paths.length >= 2) {
+    const line = paths[0]?.getAttribute('d')?.replace(/\s/g, '') || '';
+    const arrow = paths[1]?.getAttribute('d')?.replace(/\s/g, '') || '';
+    if (line && arrow) {
+      return { line, arrow };
+    }
+  }
+
+  // Try to find single path element (for tracks with combined line+arrow)
+  if (paths.length === 1) {
+    const pathData = paths[0]?.getAttribute('d')?.replace(/\s/g, '') || '';
+    if (pathData) {
+      // For single path, we'll use it as both line and arrow
+      // The intersection logic will determine which one works
+      return { line: pathData, arrow: pathData };
+    }
+  }
+
+  // Try to find rect + polygon combination
+  const rect = svg.querySelector('rect');
+  const polygon = svg.querySelector('polygon');
+  if (rect && polygon) {
+    const rectPath = rectToPath(rect);
+    const polygonPath = polygon.getAttribute('points');
+    if (rectPath && polygonPath) {
+      // Convert polygon points to path
+      // Points are space-separated pairs like "x1 y1 x2 y2 x3 y3"
+      const coords = polygonPath.trim().split(/\s+/).map(parseFloat).filter(n => !isNaN(n));
+      const points = [];
+      for (let i = 0; i < coords.length; i += 2) {
+        if (i + 1 < coords.length) {
+          points.push([coords[i], coords[i + 1]]);
+        }
+      }
+      
+      if (points.length >= 3) {
+        const polygonPathData = `M${points[0][0]},${points[0][1]}L${points.slice(1).map(p => `${p[0]},${p[1]}`).join('L')}Z`;
+        return { line: rectPath, arrow: polygonPathData };
+      }
+    }
+  }
+
+  // Try to find rect + path combination
+  if (rect && pathArrow) {
+    const rectPath = rectToPath(rect);
+    const arrowPath = pathArrow.getAttribute('d')?.replace(/\s/g, '') || '';
+    if (rectPath && arrowPath) {
+      return { line: rectPath, arrow: arrowPath };
+    }
+  }
+
+  return null;
 }
