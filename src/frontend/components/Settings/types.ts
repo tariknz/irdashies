@@ -28,6 +28,8 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
     background: { opacity: number };
     countryFlags: { enabled: boolean };
     carNumber: { enabled: boolean };
+    lastTime: { enabled: boolean };
+    fastestTime: { enabled: boolean };
   };
 }
 

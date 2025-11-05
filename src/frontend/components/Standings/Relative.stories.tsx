@@ -3,6 +3,7 @@ import { Relative } from './Relative';
 import {
   TelemetryDecorator,
   DynamicTelemetrySelector,
+  TelemetryDecoratorWithConfig,
 } from '@irdashies/storybook';
 import { useState } from 'react';
 
@@ -67,4 +68,25 @@ export const MultiClass: Story = {
 
 export const WithFlairs: Story = {
   decorators: [TelemetryDecorator('/test-data/1752616787255')],
+};
+
+export const WithTimesEnabled: Story = {
+  decorators: [
+    TelemetryDecoratorWithConfig('/test-data/1732355190142', {
+      relative: {
+        lastTime: { enabled: true },
+        fastestTime: { enabled: true },
+      },
+    }),
+  ],
+};
+
+export const WithOnlyLastTimesEnabled: Story = {
+  decorators: [
+    TelemetryDecoratorWithConfig('/test-data/1732355190142', {
+      relative: {
+        lastTime: { enabled: true },
+      },
+    }),
+  ],
 };
