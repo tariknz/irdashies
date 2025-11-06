@@ -8,20 +8,3 @@ html,body,#app {
   width: 100%;
   height: 100%;
 }
-
-.fi-tire-compound {
-    width: 1em;
-    height: 1em;
-    display: inline-block;
-    background-repeat: no-repeat;
-    background-size: 100% auto;
-    background-image: url("assets/img/tire_compound.png");
-}
-
-.fi-tire-compound-0 {
-    background-position: 0 0;
-}
-
-.fi-tire-compound-1 {
-    background-position: 0 25%;
-}

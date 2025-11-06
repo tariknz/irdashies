@@ -11,6 +11,8 @@ const defaultConfig: RelativeWidgetSettings['config'] = {
   background: { opacity: 0 },
   countryFlags: { enabled: true },
   carNumber: { enabled: true },
+  lastTime: { enabled: false },
+  fastestTime: { enabled: false },
   compound: { enabled: false },
 };
 
@@ -22,7 +24,9 @@ const migrateConfig = (savedConfig: unknown): RelativeWidgetSettings['config'] =
     background: { opacity: (config.background as { opacity?: number })?.opacity ?? 0 },
     countryFlags: { enabled: (config.countryFlags as { enabled?: boolean })?.enabled ?? true },
     carNumber: { enabled: (config.carNumber as { enabled?: boolean })?.enabled ?? true },
-    compound: { enabled: (config.compound as { enabled?: boolean })?.enabled ?? true },
+    lastTime: { enabled: (config.lastTime as { enabled?: boolean })?.enabled ?? false },
+    fastestTime: { enabled: (config.fastestTime as { enabled?: boolean })?.enabled ?? false },
+    compound: { enabled: (config.compound as { enabled?: boolean })?.enabled ?? false },
   };
 };
 
@@ -106,6 +110,24 @@ export const RelativeSettings = () => {
               enabled={settings.config.countryFlags.enabled}
               onToggle={(enabled) =>
                 handleConfigChange({ countryFlags: { enabled } })
+              }
+            />
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-slate-300">Show Last Time</span>
+            <ToggleSwitch
+              enabled={settings.config.lastTime.enabled}
+              onToggle={(enabled) =>
+                handleConfigChange({ lastTime: { enabled } })
+              }
+            />
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-slate-300">Show Best Time</span>
+            <ToggleSwitch
+              enabled={settings.config.fastestTime.enabled}
+              onToggle={(enabled) =>
+                handleConfigChange({ fastestTime: { enabled } })
               }
             />
           </div>

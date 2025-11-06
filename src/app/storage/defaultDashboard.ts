@@ -9,7 +9,7 @@ export const defaultDashboard: DashboardLayout = {
         "x": 6,
         "y": 624,
         "width": 560,
-        "height": 574
+        "height": 774
       },
       "config": {
         "iRatingChange": {
@@ -36,6 +36,9 @@ export const defaultDashboard: DashboardLayout = {
         "carNumber": {
           "enabled": true
         },
+        "compound": {
+          "enabled": true
+        },
         "driverStandings": {
           "buffer": 3,
           "numNonClassDrivers": 3,
@@ -57,7 +60,9 @@ export const defaultDashboard: DashboardLayout = {
         "trace": {
           "enabled": true,
           "includeThrottle": true,
-          "includeBrake": true
+          "includeBrake": true,
+          "includeAbs": true,
+          "includeSteer": true
         },
         "bar": {
           "enabled": true,
@@ -93,6 +98,15 @@ export const defaultDashboard: DashboardLayout = {
         },
         "carNumber": {
           "enabled": true
+        },
+        "lastTime": {
+          "enabled": false
+        },
+        "fastestTime": {
+          "enabled": false
+        },
+        "compound": {
+          "enabled": false
         }
       }
     },

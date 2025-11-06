@@ -53,9 +53,7 @@ export const useDriverStandings = ({
         carIdxF2TimeValue: carIdxF2Time?.value,
         carIdxOnPitRoadValue: carIdxOnPitRoad?.value,
         carIdxTrackSurfaceValue: carIdxTrackSurface?.value,
-
         radioTransmitCarIdx: radioTransmitCarIdx?.value,
-
         carIdxTireCompoundValue: carIdxTireCompound?.value,
       },
       {
@@ -97,6 +95,7 @@ export const useDriverStandings = ({
     numNonClassDrivers,
     minPlayerClassDrivers,
     numTopDrivers,
+    carIdxTireCompound?.value
   ]);
 
   return standingsWithGain;

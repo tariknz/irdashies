@@ -1,6 +1,6 @@
 import type { Session, Telemetry, IrSdkBridge } from '@irdashies/types';
-import mockTelemetry from './telemetry.json';
-import mockSessionInfo from './session.json';
+import mockTelemetry from '../../../irsdk/node/utils/mock-data/telemetry.json';
+import mockSessionInfo from '../../../irsdk/node/utils/mock-data/session.json';
 
 export async function generateMockDataFromPath(
   path?: string

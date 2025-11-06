@@ -7,7 +7,18 @@ import {
   useSessionQualifyingResults,
   useCurrentSessionType,
 } from '@irdashies/context';
-import { Standings } from '../createStandings';
+import { Standings, type LastTimeState } from '../createStandings';
+
+const getLastTimeState = (
+  lastTime: number | undefined,
+  fastestTime: number | undefined,
+  hasFastestTime: boolean
+): LastTimeState => {
+  if (lastTime !== undefined && fastestTime !== undefined && lastTime === fastestTime) {
+    return hasFastestTime ? 'session-fastest' : 'personal-best';
+  }
+  return undefined;
+};
 
 export const useDriverPositions = () => {
   const carIdxPosition = useTelemetry('CarIdxPosition');
@@ -80,6 +91,13 @@ export const useDriverStandings = () => {
   const qualifyingPositions = useSessionQualifyingResults();
 
   const driverStandings: Standings[] = useMemo(() => {
+    const fastestTime = driverPositions.reduce((fastest, pos) => {
+      if (pos.bestLap !== undefined && pos.bestLap > 0) {
+        return fastest === undefined || pos.bestLap < fastest ? pos.bestLap : fastest;
+      }
+      return fastest;
+    }, undefined as number | undefined);
+
     const standings = drivers.map((driver) => {
       const driverPos = driverPositions.find(
         (driverPos) => driverPos.carIdx === driver.carIdx,
@@ -107,6 +125,10 @@ export const useDriverStandings = () => {
         classPosition = qualifyingPosition ? qualifyingPosition.Position + 1 : undefined;
       }
 
+      const hasFastestTime = driverPos.bestLap !== undefined && 
+                             fastestTime !== undefined && 
+                             driverPos.bestLap === fastestTime;
+
       return {
         carIdx: driver.carIdx,
         position: driverPos.position,
@@ -123,8 +145,13 @@ export const useDriverStandings = () => {
           flairId: driver.flairId,
         },
         fastestTime: driverPos.bestLap,
-        hasFastestTime: false, // TODO
+        hasFastestTime,
         lastTime: driverPos.lastLap,
+        lastTimeState: getLastTimeState(
+          driverPos.lastLap,
+          driverPos.bestLap,
+          hasFastestTime
+        ),
         onPitRoad: carState?.onPitRoad ?? false,
         onTrack: carState?.onTrack ?? false,
         tireCompound: carState?.tireCompound ?? 0,

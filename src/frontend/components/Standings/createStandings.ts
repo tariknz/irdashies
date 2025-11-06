@@ -1,6 +1,8 @@
 import type { SessionResults, Driver } from '@irdashies/types';
 import { calculateIRatingGain, RaceResult, CalculationResult } from '@irdashies/utils/iratingGain';
 
+export type LastTimeState = 'session-fastest' | 'personal-best' | undefined;
+
 export interface Standings {
   carIdx: number;
   position?: number;
@@ -19,6 +21,7 @@ export interface Standings {
   fastestTime: number;
   hasFastestTime: boolean;
   lastTime: number;
+  lastTimeState?: LastTimeState;
   onPitRoad: boolean;
   tireCompound: number;
   onTrack: boolean;
@@ -54,6 +57,17 @@ const calculateDelta = (
   if (delta && delta <= 0) delta = undefined;
 
   return delta;
+};
+
+const getLastTimeState = (
+  lastTime: number | undefined,
+  fastestTime: number | undefined,
+  hasFastestTime: boolean
+): LastTimeState => {
+  if (lastTime !== undefined && fastestTime !== undefined && lastTime === fastestTime) {
+    return hasFastestTime ? 'session-fastest' : 'personal-best';
+  }
+  return undefined;
 };
 
 /**
@@ -118,6 +132,11 @@ export const createDriverStandings = (
         fastestTime: result.FastestTime,
         hasFastestTime: result.CarIdx === fastestDriverIdx,
         lastTime: result.LastTime,
+        lastTimeState: getLastTimeState(
+          result.LastTime,
+          result.FastestTime,
+          result.CarIdx === fastestDriverIdx
+        ),
         onPitRoad: telemetry?.carIdxOnPitRoadValue?.[result.CarIdx] ?? false,
         onTrack:
           (telemetry?.carIdxTrackSurfaceValue?.[result.CarIdx] ?? -1) > -1,
