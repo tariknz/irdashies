@@ -134,7 +134,7 @@ export const DriverInfoRow = ({
           {lastTimeString}
         </td>
       )}
-     {tireCompound !== undefined && (
+     {tireCompound !== undefined && carId && (
         <td className="px-2">
            <Compound tireCompound={tireCompound} carId={carId} size="sm" className="mr-2 flex-shrink-0" />
         </td>
