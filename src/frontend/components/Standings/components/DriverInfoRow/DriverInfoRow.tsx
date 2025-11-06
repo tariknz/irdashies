@@ -6,6 +6,7 @@ import { formatTime } from '@irdashies/utils/time';
 import { CountryFlag } from '../CountryFlag/CountryFlag';
 import type { LastTimeState } from '../../createStandings';
 import { Compound } from '../Compound/Compound';
+import { CarManufacturer } from '../CarManufacturer/CarManufacturer';
 
 interface DriverRowInfoProps {
   carIdx: number;
@@ -134,11 +135,9 @@ export const DriverInfoRow = ({
           {lastTimeString}
         </td>
       )}
-     {tireCompound !== undefined && (
-        <td>
-          <div className="flex items-center pr-1">
-           <Compound tireCompound={tireCompound} size="sm" />
-          </div>
+     {tireCompound !== undefined && carId && (
+        <td className="px-2">
+           <Compound tireCompound={tireCompound} carId={carId} size="sm" className="mr-2 flex-shrink-0" />
         </td>
      )}
     </tr>

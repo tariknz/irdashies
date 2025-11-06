@@ -1,6 +1,5 @@
 import React from 'react';
-import '../../../../index.css'
-import { IRacingFlag } from '../CountryFlag/IRacingFlag';
+import carLogoImage from '../../../../assets/img/car_manufacturer.png';
 
 interface CarManufacturerProps {
   carId: number;
@@ -8,11 +7,48 @@ interface CarManufacturerProps {
   size?: 'sm' | 'md' | 'lg';
 }
 
-// Size classes for the car manufacturer
+// Size classes for the car logo
 const sizeClasses = {
-  sm: 'w-18 h-18',
-  md: 'w-24 h-24',
-  lg: 'w-48 h-48',
+  sm: 'text-[1em]',
+  md: 'text-[1.5em]',
+  lg: 'text-[2em]',
+};
+
+const carLogoPositions: Record<string, { x: string; y: string }> = {
+  "unknown":    { x: '0', y: '0' },
+  "porsche": { x: '0', y: '2.55%' },
+  "ferrari": { x: '0', y: '5.13%' },
+  "bmw": { x: '0', y: '7.66%' },
+  "audi": { x: '0', y: '10.34%' },
+  "ford": { x: '0', y: '12.81%' },
+  "acura": { x: '0', y: '15.38%' },
+  "mclaren": { x: '0', y: '17.95%' },
+  "chevrolet": { x: '0', y: '20.55%' },
+  "aston": { x: '0', y: '22.9%' },
+  "lamborghini": { x: '0', y: '25.67%' },
+  "honda": { x: '0', y: '28.22%' },
+  "cadillac": { x: '0', y: '30.77%' },
+  "skipbarber": { x: '0', y: '33.32%' },
+  "pontiac": { x: '0', y: '35.8%' },
+  "radical": { x: '0', y: '38.5%' },
+  "riley": { x: '0', y: '41.2%' },
+  "scca": { x: '0', y: '43.5%' },
+  "lotus": { x: '0', y: '46.17%' },
+  "vw": { x: '0', y: '48.72%' },
+  "williams": { x: '0', y: '51.27%' },
+  "mazda": { x: '0', y: '53.85%' },
+  "kia": { x: '0', y: '56.37%' },
+  "ruf": { x: '0', y: '58.92%' },
+  "toyota": { x: '0', y: '61.50%' },
+  "holden": { x: '0', y: '64.12%' },
+  "nissan": { x: '0', y: '66.67%' },
+  "subaru": { x: '0', y: '69.22%' },
+  "hyundai": { x: '0', y: '71.77%' },
+  "ligier": { x: '0', y: '74.32%' },
+  "renault": { x: '0', y: '76.94%' },
+  "superformula": { x: '0', y: '79.51%' },
+  "dallara": { x: '0', y: '82.0%' },
+  "mercedes": { x: '0', y: '84.60%' },
 };
 
 // Cars models
@@ -142,6 +178,7 @@ export const CAR_ID_TO_CAR_MANUFACTURER: Record<number, string> = {
   184: 'chevrolet', // Chevrolet Corvette Z06 GT3.R
   185: 'ford',      // Ford MUSTANG GT3
   186: 'unknown',   // Street Stock - Casino M2
+  188: 'mclaren',   // Mclaren 720s EVO GT3
   190: 'ford',      // Supercars Ford Mustang Gen3
   192: 'chevrolet', // Supercars Chevrolet Camaro Gen3
   194: 'acura',     // Acura NSX GT3 EVO 22
@@ -169,6 +206,9 @@ export const CarManufacturer: React.FC<CarManufacturerProps> = ({
                                                     size = 'md',
                                                   }) => {
 
+  if (carId < 0) {
+    return null;
+  }
 
 
   let carManufacturer = getCarManufacturerFromCarID(carId);
@@ -179,7 +219,11 @@ export const CarManufacturer: React.FC<CarManufacturerProps> = ({
 
   return (
     <span
-      className={`fi-car-manufacturer fi-car-manufacturer-${carManufacturer} ${sizeClasses[size]} ${className}`}
+      className={`inline-block w-[1em] h-[1em] bg-no-repeat bg-size-[100%_auto] ${sizeClasses[size]} ${className}`}
+      style={{
+        backgroundImage: `url(${carLogoImage})`,
+        backgroundPosition: `${carLogoPositions[carManufacturer].x} ${carLogoPositions[carManufacturer].y}` ,
+      }}
     />
   );
 };
