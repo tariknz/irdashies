@@ -227,6 +227,24 @@ export const AllManufacturers: Story = {
         <CarManufacturer carId={72} size="md" />
         <CarManufacturer carId={72} size="lg" />
       </div>
+      <div className="flex items-center gap-4">
+        <span className="text-white w-24">srx:</span>
+        <CarManufacturer carId={179} size="sm" />
+        <CarManufacturer carId={179} size="md" />
+        <CarManufacturer carId={179} size="lg" />
+      </div>
+      <div className="flex items-center gap-4">
+        <span className="text-white w-24">buick:</span>
+        <CarManufacturer carId={154} size="sm" />
+        <CarManufacturer carId={154} size="md" />
+        <CarManufacturer carId={154} size="lg" />
+      </div>
+      <div className="flex items-center gap-4">
+        <span className="text-white w-24">hpd:</span>
+        <CarManufacturer carId={39} size="sm" />
+        <CarManufacturer carId={39} size="md" />
+        <CarManufacturer carId={39} size="lg" />
+      </div>
     </div>
   ),
 };

@@ -49,6 +49,9 @@ const carLogoPositions: Record<string, { x: string; y: string }> = {
   "superformula": { x: '0', y: '79.51%' },
   "dallara": { x: '0', y: '82.0%' },
   "mercedes": { x: '0', y: '84.60%' },
+  "srx": { x: '0', y: '87.17%' },
+  "buick": { x: '0', y: '89.78%' },
+  "hpd": { x: '0', y: '92.4%' },
 };
 
 // Cars models
@@ -72,7 +75,7 @@ export const CAR_ID_TO_CAR_MANUFACTURER: Record<number, string> = {
   33: 'williams',   // Williams-Toyota FW31
   34: 'mazda',      // Mazda MX-5 cup (legacy)
   38: 'chevrolet',  // NASCAR Nationwide Chevrolet Impala - 2012 (legacy)
-  39: 'hpd',        // HDP ARX-01c
+  39: 'hpd',        // HPD ARX-01c
   40: 'ford',       // Ford GT GT2
   41: 'cadillac',   // Cadillac CTS-V Racecar
   42: 'lotus',      // Lotus 49
@@ -132,7 +135,7 @@ export const CAR_ID_TO_CAR_MANUFACTURER: Record<number, string> = {
   123: 'ford',      // NASCAR Truck Ford F150
   124: 'chevrolet', //NASCAR Legends Chevrolet Monte Carlo - 1987
   125: 'ford',      //NASCAR Legends Ford Thunderbird - 1987
-  127: 'chervrolet',// Chevrolet Corvette C8.R GTE
+  127: 'chevrolet',// Chevrolet Corvette C8.R GTE
   128: 'dallara',   // Dallara P217
   129: 'dallara',   // Dallara iR-01
   131: 'unknown',   // Dirt Big Block Modified
@@ -206,15 +209,10 @@ export const CarManufacturer: React.FC<CarManufacturerProps> = ({
                                                     size = 'md',
                                                   }) => {
 
-  if (carId < 0) {
+  const carManufacturer = getCarManufacturerFromCarID(carId) || 'unknown';
+
+  if (carId < 0 || !Object.keys(carLogoPositions).includes(carManufacturer)) {
     return null;
-  }
-
-
-  let carManufacturer = getCarManufacturerFromCarID(carId);
-
-  if (!carManufacturer) {
-   carManufacturer = 'unknown';
   }
 
   return (

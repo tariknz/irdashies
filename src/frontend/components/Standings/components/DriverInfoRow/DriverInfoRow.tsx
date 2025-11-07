@@ -115,7 +115,7 @@ export const DriverInfoRow = ({
           )}
         </div>
       </td>
-      {carId && <td><CarManufacturer carId={carId} size="sm" className="mr-2 flex-shrink-0" /></td>}
+      {carId && <td><div className="flex items-center pr-1"><CarManufacturer carId={carId} size="sm" className="mr-2 flex-shrink-0" /></div></td>}
       {badge && <td>{badge}</td>}
       {iratingChange && (
         <td className="px-2 text-left">
