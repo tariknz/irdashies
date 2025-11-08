@@ -254,6 +254,10 @@ export const CarManufacturer = ({
       style={{
         backgroundImage: `url(${carLogoImage})`,
         backgroundPosition: `${carLogoPositions[carManufacturer].x} ${carLogoPositions[carManufacturer].y}`,
+        imageRendering: 'auto',
+        transform: 'translateZ(0)',
+        backfaceVisibility: 'hidden',
+        willChange: 'transform',
       }}
     />
   );
