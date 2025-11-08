@@ -1,14 +1,14 @@
-import React from 'react';
 import tireCompoundImage from '../../../../assets/img/tire_compound.png';
 
+const carsWithMultipleDryTires: number[] = [71, 99, 129, 145, 161];
+
 interface CompoundProps {
+  carId: number;
   tireCompound: number;
-  className?: string;
   size?: 'sm' | 'md' | 'lg';
 }
 
-
-// Size classes for the compound 
+// Size classes for the compound
 const sizeClasses = {
   sm: 'text-[1em]',
   md: 'text-[1.5em]',
@@ -17,20 +17,24 @@ const sizeClasses = {
 
 const compoundPositions: Record<number, { x: string; y: string }> = {
   0: { x: '0', y: '0' },
-  1: { x: '0', y: '25%' },
+  1: { x: '0', y: '33%' },
+  2: { x: '0', y: '66%' },
 };
 
-export const Compound: React.FC<CompoundProps> = ({
+export const Compound = ({
+  carId,
   tireCompound,
   size = 'md',
-}) => {
-
+}: CompoundProps) => {
   if (tireCompound < 0) {
     return null;
   }
+  
+  const tireIndex = carsWithMultipleDryTires.includes(carId)
+    ? tireCompound
+    : tireCompound === 0 ? 0 : 2;
 
-  const position = compoundPositions[tireCompound];
-
+  const position = compoundPositions[tireIndex];
 
   return (
     <span

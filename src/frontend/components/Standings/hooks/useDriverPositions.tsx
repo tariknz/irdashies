@@ -59,6 +59,7 @@ export const useDrivers = () => {
         relativeSpeed: driver.CarClassRelSpeed,
         estLapTime: driver.CarClassEstLapTime,
       },
+      carId: driver.CarID
     })) ?? [];
   return drivers;
 };
@@ -157,6 +158,7 @@ export const useDriverStandings = () => {
         tireCompound: carState?.tireCompound ?? 0,
         carClass: driver.carClass,
         radioActive: driverPos.carIdx === radioTransmitCarIdx,
+        carId: driver.carId
       };
     });
 
