@@ -1,6 +1,4 @@
-import {
-  SpeakerHighIcon,
-} from '@phosphor-icons/react';
+import { SpeakerHighIcon } from '@phosphor-icons/react';
 import { getTailwindStyle } from '@irdashies/utils/colors';
 import { formatTime } from '@irdashies/utils/time';
 import { CountryFlag } from '../CountryFlag/CountryFlag';
@@ -55,7 +53,7 @@ export const DriverInfoRow = ({
   hidden,
   flairId,
   tireCompound,
-  carId
+  carId,
 }: DriverRowInfoProps) => {
   // convert seconds to mm:ss:ms
   const lastTimeString = formatTime(lastTime);
@@ -84,21 +82,25 @@ export const DriverInfoRow = ({
       >
         {position}
       </td>
-      <td 
+      <td
         className={[
           getTailwindStyle(classColor).driverIcon,
           'border-l-4',
-          carNumber ? 'text-white text-right px-1 w-10' : 'w-0'
+          carNumber ? 'text-white text-right px-1 w-10' : 'w-0',
         ].join(' ')}
       >
         {carNumber && `#${carNumber}`}
       </td>
-      <td
-        className="px-2 py-0.5 w-full max-w-0 overflow-hidden"
-      >
+      <td className="px-2 py-0.5 w-full max-w-0 overflow-hidden">
         <div className="flex justify-between align-center items-center">
           <div className="flex-1 flex items-center overflow-hidden">
-            {flairId && <CountryFlag flairId={flairId} size="sm" className="mr-2 flex-shrink-0" />}
+            {flairId && (
+              <CountryFlag
+                flairId={flairId}
+                size="sm"
+                className="mr-2 shrink-0"
+              />
+            )}
             <span
               className={`animate-pulse transition-[width] duration-300 ${radioActive ? 'w-4 mr-1' : 'w-0 overflow-hidden'}`}
             >
@@ -115,16 +117,19 @@ export const DriverInfoRow = ({
           )}
         </div>
       </td>
-      {carId && <td><div className="flex items-center pr-1"><CarManufacturer carId={carId} size="sm" className="mr-2 flex-shrink-0" /></div></td>}
-      {badge && <td>{badge}</td>}
-      {iratingChange && (
-        <td className="px-2 text-left">
-          {iratingChange}
+      {carId && (
+        <td>
+          <div className="flex items-center pr-2">
+            <CarManufacturer
+              carId={carId}
+              size="sm"
+            />
+          </div>
         </td>
       )}
-      {delta !== undefined && (
-        <td className="px-2">{delta.toFixed(1)}</td>
-      )}
+      {badge && <td>{badge}</td>}
+      {iratingChange && <td className="px-2 text-left">{iratingChange}</td>}
+      {delta !== undefined && <td className="px-2">{delta.toFixed(1)}</td>}
       {fastestTime !== undefined && (
         <td className={`px-2 ${hasFastestTime ? 'text-purple-400' : ''}`}>
           {fastestTimeString}
@@ -135,11 +140,13 @@ export const DriverInfoRow = ({
           {lastTimeString}
         </td>
       )}
-     {tireCompound !== undefined && carId && (
-        <td className="px-2">
-           <Compound tireCompound={tireCompound} carId={carId} size="sm" className="mr-2 flex-shrink-0" />
+      {tireCompound !== undefined && carId && (
+        <td>
+          <div className="flex items-center pr-1">
+            <Compound tireCompound={tireCompound} carId={carId} size="sm" />
+          </div>
         </td>
-     )}
+      )}
     </tr>
   );
 };
