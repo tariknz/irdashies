@@ -22,7 +22,7 @@ const defaultConfig: StandingsWidgetSettings['config'] = {
     numTopDrivers: 3,
   },
   compound: { enabled: true },
-  carManufacturer: { enabled: false }
+  carManufacturer: { enabled: true }
 };
 
 // Migration function to handle missing properties in the new config format
@@ -76,7 +76,7 @@ const migrateConfig = (
       enabled: (config.compound as { enabled?: boolean })?.enabled ?? true,
     },
     carManufacturer: {
-      enabled: (config.carManufacturer as { enabled?: boolean })?.enabled ?? false,
+      enabled: (config.carManufacturer as { enabled?: boolean })?.enabled ?? true,
     }
   };
 };

@@ -14,7 +14,7 @@ const defaultConfig: RelativeWidgetSettings['config'] = {
   lastTime: { enabled: false },
   fastestTime: { enabled: false },
   compound: { enabled: false },
-  carManufacturer: { enabled: false }
+  carManufacturer: { enabled: true }
 };
 
 const migrateConfig = (savedConfig: unknown): RelativeWidgetSettings['config'] => {
