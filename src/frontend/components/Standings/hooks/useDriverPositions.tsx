@@ -28,17 +28,26 @@ export const useDriverPositions = () => {
   const carIdxF2Time = useTelemetry('CarIdxF2Time');
   const carIdxLapNum = useTelemetry('CarIdxLap');
 
-  const positions = carIdxPosition?.value?.map((position, carIdx) => ({
-    carIdx,
-    position,
-    classPosition: carIdxClassPosition?.value?.[carIdx],
-    delta: carIdxF2Time?.value?.[carIdx], // only to leader currently, need to handle non-race sessions
-    bestLap: carIdxBestLap?.value?.[carIdx],
-    lastLap: carIdxLastLap?.value?.[carIdx],
-    lapNum: carIdxLapNum?.value?.[carIdx],
-  }));
+  const positions = useMemo(() => {
+    return carIdxPosition?.value?.map((position, carIdx) => ({
+      carIdx,
+      position,
+      classPosition: carIdxClassPosition?.value?.[carIdx],
+      delta: carIdxF2Time?.value?.[carIdx], // only to leader currently, need to handle non-race sessions
+      bestLap: carIdxBestLap?.value?.[carIdx],
+      lastLap: carIdxLastLap?.value?.[carIdx],
+      lapNum: carIdxLapNum?.value?.[carIdx],
+    })) ?? [];
+  }, [
+    carIdxPosition?.value,
+    carIdxClassPosition?.value,
+    carIdxBestLap?.value,
+    carIdxLastLap?.value,
+    carIdxF2Time?.value,
+    carIdxLapNum?.value,
+  ]);
 
-  return positions ?? [];
+  return positions;
 };
 
 export const useDrivers = () => {
@@ -69,15 +78,14 @@ export const useCarState = () => {
   const carIdxOnPitRoad = useTelemetry<boolean[]>('CarIdxOnPitRoad');
   const carIdxTireCompound = useTelemetry<number[]>('CarIdxTireCompound');
 
-  // turn two arrays to one array with object of index and boolean values
-  return (
-    carIdxTrackSurface?.value?.map((onTrack, index) => ({
+  return useMemo(() => {
+    return carIdxTrackSurface?.value?.map((onTrack, index) => ({
       carIdx: index,
       onTrack: onTrack > -1,
       onPitRoad: carIdxOnPitRoad?.value?.[index],
       tireCompound: carIdxTireCompound?.value?.[index]
-    })) ?? []
-  );
+    })) ?? [];
+  }, [carIdxTrackSurface?.value, carIdxOnPitRoad?.value, carIdxTireCompound?.value]);
 };
 
 // TODO: this should eventually replace the useDriverStandings hook

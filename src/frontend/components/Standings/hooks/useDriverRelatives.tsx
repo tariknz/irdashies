@@ -65,8 +65,11 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
     };
 
     const sortedDrivers = drivers
-      .filter((driver) => driver.onTrack || driver.carIdx === playerIndex) // filter out drivers not on track
-      .filter((driver) => driver.carIdx > -1 && driver.carIdx !== paceCarIdx) // filter out pace car
+      .filter((driver) => 
+        (driver.onTrack || driver.carIdx === playerIndex) && 
+        driver.carIdx > -1 && 
+        driver.carIdx !== paceCarIdx
+      )
       .map((result) => {
         const relativePct = calculateRelativePct(result.carIdx);
         return {
