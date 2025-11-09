@@ -31,6 +31,7 @@ interface DriverRowInfoProps {
   flairId?: number;
   tireCompound?: number;
   carId?: number;
+  lastPitLap?: number;
 }
 
 export const DriverInfoRow = ({
@@ -55,7 +56,8 @@ export const DriverInfoRow = ({
   hidden,
   flairId,
   tireCompound,
-  carId
+  carId,
+  lastPitLap,
 }: DriverRowInfoProps) => {
   // convert seconds to mm:ss:ms
   const lastTimeString = formatTime(lastTime);
@@ -112,6 +114,13 @@ export const DriverInfoRow = ({
             <span className="text-white animate-pulse text-xs border-yellow-500 border-2 rounded-md text-center text-nowrap px-2 m-0 leading-tight">
               PIT
             </span>
+          )}
+          {!onPitRoad && lastPitLap && (
+            <div>
+              <span className="text-white text-xs border-yellow-500 border-1 bg-black text-center text-nowrap px-2 m-0 leading-tight">
+                L {lastPitLap}
+              </span>
+            </div>
           )}
         </div>
       </td>

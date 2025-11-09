@@ -36,6 +36,7 @@ export const useDriverPositions = () => {
     bestLap: carIdxBestLap?.value?.[carIdx],
     lastLap: carIdxLastLap?.value?.[carIdx],
     lapNum: carIdxLapNum?.value?.[carIdx],
+    lastPitLap: undefined,
   }));
 
   return positions ?? [];
@@ -158,7 +159,8 @@ export const useDriverStandings = () => {
         tireCompound: carState?.tireCompound ?? 0,
         carClass: driver.carClass,
         radioActive: driverPos.carIdx === radioTransmitCarIdx,
-        carId: driver.carId
+        carId: driver.carId,
+        lastPitLap: driverPos.lastPitLap
       };
     });
 

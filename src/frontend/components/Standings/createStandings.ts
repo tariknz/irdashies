@@ -35,6 +35,7 @@ export interface Standings {
   radioActive?: boolean;
   iratingChange?: number;
   carId?: number;
+  lastPitLap?: number;
 }
 
 const calculateDelta = (
@@ -150,7 +151,8 @@ export const createDriverStandings = (
           estLapTime: driver.CarClassEstLapTime,
         },
         radioActive: telemetry.radioTransmitCarIdx?.includes(result.CarIdx),
-        carId: driver.CarID
+        carId: driver.CarID,
+        lastPitLap: 15
       };
     })
     .filter((s) => !!s);

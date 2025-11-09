@@ -42,6 +42,7 @@ export const useDriverStandings = ({
   const carIdxTireCompound = useTelemetry<number[]>('CarIdxTireCompound');
   const isOfficial = useSessionIsOfficial();
 
+
   const standingsWithGain = useMemo(() => {
     const initialStandings = createDriverStandings(
       {

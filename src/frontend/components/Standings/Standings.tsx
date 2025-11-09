@@ -69,6 +69,7 @@ export const Standings = () => {
                   flairId={settings?.countryFlags?.enabled ?? true ? result.driver?.flairId : undefined}
                   tireCompound={settings?.compound?.enabled ?? true ? result.tireCompound : undefined}
                   carId={settings?.carManufacturer?.enabled ?? true ? result.carId : undefined}
+                  lastPitLap={result.lastPitLap}
                   badge={
                     settings?.badge?.enabled ? (
                       <DriverRatingBadge
