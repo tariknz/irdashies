@@ -62,6 +62,7 @@ export const useDriverStandings = (settings?: StandingsWidgetSettings['config'])
   // Only pass lap history when feature is enabled to avoid unnecessary calculations
   const lapTimeHistoryForCalc = lapTimeDeltasEnabled ? lapTimeHistory : undefined;
 
+
   const standingsWithGain = useMemo(() => {
     const initialStandings = createDriverStandings(
       {
