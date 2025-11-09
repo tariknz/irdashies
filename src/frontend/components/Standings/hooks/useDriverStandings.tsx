@@ -41,6 +41,11 @@ export const useDriverStandings = ({
   const radioTransmitCarIdx = useTelemetry('RadioTransmitCarIdx');
   const carIdxTireCompound = useTelemetry<number[]>('CarIdxTireCompound');
   const isOfficial = useSessionIsOfficial();
+  const driverClass = useMemo(() => {
+    return sessionDrivers?.find(
+      (driver) => driver.CarIdx === driverCarIdx
+    )?.CarClassID;
+  }, [sessionDrivers, driverCarIdx]);
 
   const standingsWithGain = useMemo(() => {
     const initialStandings = createDriverStandings(
@@ -63,9 +68,6 @@ export const useDriverStandings = ({
       }
     );
     const groupedByClass = groupStandingsByClass(initialStandings);
-    const driverClass = sessionDrivers?.find(
-      (driver) => driver.CarIdx === driverCarIdx
-    )?.CarClassID;
 
     // Calculate iRating changes for race sessions
     const augmentedGroupedByClass =
@@ -95,7 +97,8 @@ export const useDriverStandings = ({
     numNonClassDrivers,
     minPlayerClassDrivers,
     numTopDrivers,
-    carIdxTireCompound?.value
+    carIdxTireCompound?.value,
+    driverClass,
   ]);
 
   return standingsWithGain;

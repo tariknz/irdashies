@@ -14,6 +14,7 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
     useSessionStore((s) => s.session?.DriverInfo?.PaceCarIdx) ?? -1;
 
   const standings = useMemo(() => {
+    const driversByCarIdx = new Map(drivers.map(driver => [driver.carIdx, driver]));
     const calculateRelativePct = (carIdx: number) => {
       if (playerIndex === undefined) {
         return NaN;
@@ -43,8 +44,8 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
       const playerDistPct = carIdxLapDistPct?.[playerCarIdx];
       const otherDistPct = carIdxLapDistPct?.[otherCarIdx];
 
-      const player = drivers.find((driver) => driver.carIdx === playerIndex);
-      const other = drivers.find((driver) => driver.carIdx === otherCarIdx);
+      const player = playerIndex !== undefined ? driversByCarIdx.get(playerIndex) : undefined;
+      const other = driversByCarIdx.get(otherCarIdx);
 
       // Use the slower car's lap time for more conservative deltas in multiclass
       const playerEstLapTime = player?.carClass?.estLapTime ?? 0;

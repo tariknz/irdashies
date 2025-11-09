@@ -1,3 +1,4 @@
+import { memo, useMemo } from 'react';
 import { SpeakerHighIcon } from '@phosphor-icons/react';
 import { getTailwindStyle } from '@irdashies/utils/colors';
 import { formatTime } from '@irdashies/utils/time';
@@ -31,7 +32,7 @@ interface DriverRowInfoProps {
   carId?: number;
 }
 
-export const DriverInfoRow = ({
+export const DriverInfoRow = memo(({
   carIdx,
   carNumber,
   classColor,
@@ -55,9 +56,9 @@ export const DriverInfoRow = ({
   tireCompound,
   carId,
 }: DriverRowInfoProps) => {
-  // convert seconds to mm:ss:ms
-  const lastTimeString = formatTime(lastTime);
-  const fastestTimeString = formatTime(fastestTime);
+  // Memoize formatted time strings to avoid recalculation on every render
+  const lastTimeString = useMemo(() => formatTime(lastTime), [lastTime]);
+  const fastestTimeString = useMemo(() => formatTime(fastestTime), [fastestTime]);
 
   const getLastTimeColorClass = (state?: LastTimeState): string => {
     if (state === 'session-fastest') return 'text-purple-400';
@@ -149,4 +150,6 @@ export const DriverInfoRow = ({
       )}
     </tr>
   );
-};
+});
+
+DriverInfoRow.displayName = 'DriverInfoRow';
