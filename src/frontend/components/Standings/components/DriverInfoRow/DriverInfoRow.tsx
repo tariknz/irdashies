@@ -157,7 +157,7 @@ export const DriverInfoRow = ({
            <td
              key={index}
              className={[
-               'px-2 text-center',
+               'px-1 text-center',
                deltaValue > 0 ? 'text-green-400' : 'text-red-400'
              ].join(' ')}
            >
@@ -169,7 +169,7 @@ export const DriverInfoRow = ({
      {lapTimeDeltas === undefined && isPlayer && numLapDeltasToShow && (
        <>
          {[...Array(numLapDeltasToShow)].map((_, index) => (
-           <td key={index} className="px-2 text-center">-</td>
+           <td key={index} className="px-1 text-center">-</td>
          ))}
        </>
      )}
