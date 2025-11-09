@@ -13,6 +13,7 @@ import { Settings } from './components/Settings/Settings';
 import { EditMode } from './components/EditMode/EditMode';
 import { ThemeManager } from './components/ThemeManager/ThemeManager';
 import { WIDGET_MAP } from './WidgetIndex';
+import { LapTimesStoreUpdater } from './context/LapTimesStore/LapTimesStoreUpdater';
 
 const AppRoutes = () => {
   const { currentDashboard } = useDashboard();
@@ -55,13 +56,15 @@ const App = () => (
     <RunningStateProvider bridge={window.irsdkBridge}>
       <SessionProvider bridge={window.irsdkBridge} />
       <TelemetryProvider bridge={window.irsdkBridge} />
-      <HashRouter>
-        <EditMode>
-          <ThemeManager>
-            <AppRoutes />
-          </ThemeManager>
-        </EditMode>
-      </HashRouter>
+      <LapTimesStoreUpdater>
+        <HashRouter>
+          <EditMode>
+            <ThemeManager>
+              <AppRoutes />
+            </ThemeManager>
+          </EditMode>
+        </HashRouter>
+      </LapTimesStoreUpdater>
     </RunningStateProvider>
   </DashboardProvider>
 );

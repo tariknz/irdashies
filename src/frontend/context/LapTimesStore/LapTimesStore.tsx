@@ -5,6 +5,7 @@ export interface LapTimeBuffer {
   lastLapTimes: number[];
   lastSessionTime: number;
   lapTimeHistory: number[][]; // [carIdx][sample]
+  version: number; // Incremented when lapTimeHistory changes
 }
 
 interface LapTimesState {
@@ -80,6 +81,8 @@ export const useLapTimesStore = create<LapTimesState>((set, get) => ({
       ? lapTimeBuffer.lapTimeHistory.map(arr => [...arr])
       : carIdxLastLapTime.map(() => []);
 
+    let historyChanged = false;
+
     if (
       lapTimeBuffer &&
       lapTimeBuffer.lastLapTimes.length === carIdxLastLapTime.length &&
@@ -92,6 +95,7 @@ export const useLapTimesStore = create<LapTimesState>((set, get) => ({
           if (!newHistory[idx]) newHistory[idx] = [];
           newHistory[idx].push(lapTime);
           if (newHistory[idx].length > LAP_TIME_AVG_WINDOW) newHistory[idx].shift();
+          historyChanged = true;
         }
       });
     } else if (!lapTimeBuffer) {
@@ -99,6 +103,7 @@ export const useLapTimesStore = create<LapTimesState>((set, get) => ({
       carIdxLastLapTime.forEach((lapTime, idx) => {
         if (lapTime > 0) {
           newHistory[idx] = [lapTime];
+          historyChanged = true;
         }
       });
     }
@@ -121,6 +126,7 @@ export const useLapTimesStore = create<LapTimesState>((set, get) => ({
         lastLapTimes: [...carIdxLastLapTime],
         lastSessionTime: sessionTime,
         lapTimeHistory: newHistory,
+        version: historyChanged ? (lapTimeBuffer?.version ?? 0) + 1 : (lapTimeBuffer?.version ?? 0),
       },
       lastLapTimeUpdate: sessionTime,
       lapTimes: avgLapTimes,
@@ -131,4 +137,40 @@ export const useLapTimesStore = create<LapTimesState>((set, get) => ({
 /**
  * @returns An array of average lap times for each car in the session by index. Time value in seconds
  */
-export const useLapTimes = (): number[] => useStore(useLapTimesStore, (state) => state.lapTimes); 
+export const useLapTimes = (): number[] => useStore(useLapTimesStore, (state) => state.lapTimes);
+
+// Stable empty array reference to prevent unnecessary re-renders
+const EMPTY_LAP_HISTORY: number[][] = [];
+
+// Track the last version seen to enable O(1) equality checks
+let lastSeenVersion = -1;
+let lastSeenHistory: number[][] = EMPTY_LAP_HISTORY;
+
+/**
+ * @returns Raw lap time history for each car. Returns array of arrays where [carIdx][lapIndex] contains lap time in seconds
+ * Most recent lap is at the end of each car's array. Returns up to LAP_TIME_AVG_WINDOW laps per car.
+ *
+ * Performance: Uses version-based equality checking for O(1) comparison instead of deep array comparison.
+ * This is critical for 24hr endurance races with 60 cars and 60 FPS telemetry updates.
+ */
+export const useLapTimeHistory = (): number[][] => {
+  return useStore(
+    useLapTimesStore,
+    (state: LapTimesState) => {
+      const buffer = state.lapTimeBuffer;
+      if (!buffer) return EMPTY_LAP_HISTORY;
+
+      const currentVersion = buffer.version;
+
+      // If version hasn't changed, return the cached reference
+      if (currentVersion === lastSeenVersion) {
+        return lastSeenHistory;
+      }
+
+      // Version changed, update cache
+      lastSeenVersion = currentVersion;
+      lastSeenHistory = buffer.lapTimeHistory;
+      return buffer.lapTimeHistory;
+    }
+  );
+}; 

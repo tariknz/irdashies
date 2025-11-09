@@ -15,7 +15,7 @@ import {
 export const Standings = () => {
   const [parent] = useAutoAnimate();
   const settings = useStandingsSettings();
-  const standings = useDriverStandings(settings?.driverStandings);
+  const standings = useDriverStandings(settings);
   const classStats = useCarClassStats();
   return (
     <div
@@ -77,6 +77,8 @@ export const Standings = () => {
                       />
                     ) : undefined
                   }
+                  lapTimeDeltas={settings?.lapTimeDeltas?.enabled ? result.lapTimeDeltas : undefined}
+                  numLapDeltasToShow={settings?.lapTimeDeltas?.enabled ? settings.lapTimeDeltas.numLaps : undefined}
                 />
               ))}
             </Fragment>

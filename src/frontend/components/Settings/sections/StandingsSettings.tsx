@@ -22,7 +22,8 @@ const defaultConfig: StandingsWidgetSettings['config'] = {
     numTopDrivers: 3,
   },
   compound: { enabled: true },
-  carManufacturer: { enabled: true }
+  carManufacturer: { enabled: true },
+  lapTimeDeltas: { enabled: false, numLaps: 3 }
 };
 
 // Migration function to handle missing properties in the new config format
@@ -77,6 +78,10 @@ const migrateConfig = (
     },
     carManufacturer: {
       enabled: (config.carManufacturer as { enabled?: boolean })?.enabled ?? true,
+    },
+    lapTimeDeltas: {
+      enabled: (config.lapTimeDeltas as { enabled?: boolean })?.enabled ?? false,
+      numLaps: (config.lapTimeDeltas as { numLaps?: number })?.numLaps ?? 3,
     }
   };
 };
@@ -190,6 +195,43 @@ export const StandingsSettings = () => {
                   }
                 />
               </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-slate-300">Show Lap Time Deltas</span>
+                <ToggleSwitch
+                  enabled={settings.config.lapTimeDeltas.enabled}
+                  onToggle={(enabled) =>
+                    handleConfigChange({
+                      lapTimeDeltas: {
+                        ...settings.config.lapTimeDeltas,
+                        enabled
+                      }
+                    })
+                  }
+                />
+              </div>
+              {settings.config.lapTimeDeltas.enabled && (
+                <div className="flex items-center justify-between pl-4">
+                  <span className="text-sm text-slate-300">Number of Laps to Show</span>
+                  <select
+                    value={settings.config.lapTimeDeltas.numLaps}
+                    onChange={(e) =>
+                      handleConfigChange({
+                        lapTimeDeltas: {
+                          ...settings.config.lapTimeDeltas,
+                          numLaps: parseInt(e.target.value),
+                        },
+                      })
+                    }
+                    className="w-20 bg-slate-700 text-white rounded-md px-2 py-1"
+                  >
+                    <option value={1}>1</option>
+                    <option value={2}>2</option>
+                    <option value={3}>3</option>
+                    <option value={4}>4</option>
+                    <option value={5}>5</option>
+                  </select>
+                </div>
+              )}
             </div>
           </div>
           {/* Driver Standings Settings */}
