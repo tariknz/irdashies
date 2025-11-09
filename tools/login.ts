@@ -1,4 +1,3 @@
-import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
 import 'dotenv/config';
@@ -50,7 +49,7 @@ export const login = async () => {
         const retryAfter = response.headers.get('Retry-After');
         if (retryAfter) {
           throw new Error(
-            `Rate limit exceeded. Please wait ${retryAfter} seconds before trying again.`
+            `Rate limit exceeded. Please wait ${retryAfter} seconds before trying again. ${rateLimitRemaining} remaining.`
           );
         }
       }
