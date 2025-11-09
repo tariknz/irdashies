@@ -1,13 +1,14 @@
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'fs';
+import { writeFileSync, mkdirSync, existsSync } from 'fs';
+import { getAccessToken } from './auth';
 
 export const getCars = async () => {
-  const cookie = readFileSync('asset-data/cookie-jar.txt', 'utf8');
+  const accessToken = getAccessToken();
   try {
     const response = await fetch(
       'https://members-ng.iracing.com/data/car/get',
       {
         headers: {
-          cookie,
+          Authorization: `Bearer ${accessToken}`,
         },
       }
     );
