@@ -36,6 +36,7 @@ export interface Standings {
   iratingChange?: number;
   carId?: number;
   lapTimeDeltas?: number[]; // Array of deltas vs player's recent laps, most recent last
+  lastPitLap?: number;
 }
 
 const calculateDelta = (
@@ -205,6 +206,8 @@ export const createDriverStandings = (
                   numLapsToShow
                 )
               : undefined,
+        carId: driver.CarID,
+        lastPitLap: 15
       };
     })
     .filter((s) => !!s);

@@ -37,6 +37,7 @@ export const useDriverPositions = () => {
       bestLap: carIdxBestLap?.value?.[carIdx],
       lastLap: carIdxLastLap?.value?.[carIdx],
       lapNum: carIdxLapNum?.value?.[carIdx],
+      lastPitLap: undefined,
     })) ?? [];
   }, [
     carIdxPosition?.value,
@@ -45,6 +46,7 @@ export const useDriverPositions = () => {
     carIdxLastLap?.value,
     carIdxF2Time?.value,
     carIdxLapNum?.value,
+    lastPitLap?.value,
   ]);
 
   return positions;
@@ -110,11 +112,11 @@ export const useDriverStandings = () => {
     // Create Map lookups for O(1) access instead of O(n) find() calls
     const driverPositionsByCarIdx = new Map(driverPositions.map(pos => [pos.carIdx, pos]));
     const carStatesByCarIdx = new Map(carStates.map(state => [state.carIdx, state]));
-    const qualifyingPositionsByCarIdx = qualifyingPositions 
+    const qualifyingPositionsByCarIdx = qualifyingPositions
       ? new Map(qualifyingPositions.map(q => [q.CarIdx, q]))
       : new Map();
 
-    const playerLap = playerCarIdx !== undefined 
+    const playerLap = playerCarIdx !== undefined
       ? driverPositionsByCarIdx.get(playerCarIdx)?.lapNum ?? 0
       : 0;
 
@@ -171,7 +173,8 @@ export const useDriverStandings = () => {
         tireCompound: carState?.tireCompound ?? 0,
         carClass: driver.carClass,
         radioActive: driverPos.carIdx === radioTransmitCarIdx,
-        carId: driver.carId
+        carId: driver.carId,
+        lastPitLap: driverPos.lastPitLap
       };
     });
 

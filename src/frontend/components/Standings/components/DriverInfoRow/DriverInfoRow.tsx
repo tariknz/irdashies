@@ -49,6 +49,7 @@ interface DriverRowInfoProps {
   isMultiClass: boolean;
   displayOrder?: string[];
   config?: RelativeWidgetSettings['config'] | StandingsWidgetSettings['config'];
+  lastPitLap?: number;
 }
 
 export const DriverInfoRow = memo(
@@ -80,7 +81,8 @@ export const DriverInfoRow = memo(
     isMultiClass,
     displayOrder,
     config,
-  }: DriverRowInfoProps) => {
+    lastPitLap,
+   }: DriverRowInfoProps) => {
     const lastTimeString = useMemo(() => formatTime(lastTime), [lastTime]);
     const fastestTimeString = useMemo(
       () => formatTime(fastestTime),
