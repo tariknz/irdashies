@@ -12,6 +12,7 @@ interface LapTimesState {
   lapTimeBuffer: LapTimeBuffer | null;
   lastLapTimeUpdate: number;
   lapTimes: number[];
+  lastSessionNum: number | null;
   updateLapTimes: (telemetry: Telemetry | null) => void;
 }
 
@@ -62,10 +63,24 @@ export const useLapTimesStore = create<LapTimesState>((set, get) => ({
   lapTimeBuffer: null,
   lastLapTimeUpdate: 0,
   lapTimes: [],
+  lastSessionNum: null,
   updateLapTimes: (telemetry) => {
-    const { lapTimeBuffer, lastLapTimeUpdate } = get();
+    const { lapTimeBuffer, lastLapTimeUpdate, lastSessionNum } = get();
     const sessionTime = telemetry?.SessionTime?.value?.[0] ?? 0;
-    
+    const currentSessionNum = telemetry?.SessionNum?.value?.[0] ?? null;
+
+    // Reset lap time history when session changes (e.g., practice -> qualifying -> race)
+    if (lastSessionNum !== null && currentSessionNum !== null && currentSessionNum !== lastSessionNum) {
+      console.log(`[LapTimesStore] Session changed from ${lastSessionNum} to ${currentSessionNum}, resetting lap time history`);
+      set({
+        lapTimeBuffer: null,
+        lastLapTimeUpdate: 0,
+        lapTimes: [],
+        lastSessionNum: currentSessionNum,
+      });
+      return;
+    }
+
     // Check if enough simulation time has passed since last update
     if (sessionTime - lastLapTimeUpdate < LAP_TIME_UPDATE_INTERVAL) {
       return;
@@ -73,7 +88,10 @@ export const useLapTimesStore = create<LapTimesState>((set, get) => ({
 
     const carIdxLastLapTime = telemetry?.CarIdxLastLapTime?.value ?? [];
     if (!carIdxLastLapTime.length) {
-      set({ lapTimes: carIdxLastLapTime.map(() => 0) });
+      set({
+        lapTimes: carIdxLastLapTime.map(() => 0),
+        lastSessionNum: currentSessionNum,
+      });
       return;
     }
 
@@ -130,6 +148,7 @@ export const useLapTimesStore = create<LapTimesState>((set, get) => ({
       },
       lastLapTimeUpdate: sessionTime,
       lapTimes: avgLapTimes,
+      lastSessionNum: currentSessionNum,
     });
   },
 }));

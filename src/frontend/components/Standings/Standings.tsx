@@ -11,10 +11,15 @@ import {
   useDriverStandings,
   useStandingsSettings,
 } from './hooks';
+import { useLapTimesStoreUpdater } from '../../context/LapTimesStore/LapTimesStoreUpdater';
 
 export const Standings = () => {
   const [parent] = useAutoAnimate();
   const settings = useStandingsSettings();
+
+  // Update lap times store with telemetry data (only for this overlay)
+  useLapTimesStoreUpdater();
+
   const standings = useDriverStandings(settings);
   const classStats = useCarClassStats();
   return (

@@ -3,10 +3,12 @@ import { useTelemetryStore } from '../TelemetryStore/TelemetryStore';
 import { useLapTimesStore } from './LapTimesStore';
 
 /**
- * Provider component that automatically updates the LapTimesStore with telemetry data.
+ * Hook that automatically updates the LapTimesStore with telemetry data.
  * This ensures lap time history is always up-to-date without manual updates in components.
+ *
+ * Use this hook in components that need lap time history tracking (e.g., Standings overlay).
  */
-export const LapTimesStoreUpdater = ({ children }: { children: React.ReactNode }) => {
+export const useLapTimesStoreUpdater = () => {
   const telemetry = useTelemetryStore(state => state.telemetry);
   const updateLapTimes = useLapTimesStore(state => state.updateLapTimes);
 
@@ -15,6 +17,4 @@ export const LapTimesStoreUpdater = ({ children }: { children: React.ReactNode }
       updateLapTimes(telemetry);
     }
   }, [telemetry, updateLapTimes]);
-
-  return <>{children}</>;
 };
