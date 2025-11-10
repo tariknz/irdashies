@@ -35,6 +35,7 @@ export interface Standings {
   radioActive?: boolean;
   iratingChange?: number;
   carId?: number;
+  lapTimeDeltas?: number[]; // Array of deltas vs player's recent laps, most recent last
 }
 
 const calculateDelta = (
@@ -72,6 +73,42 @@ const getLastTimeState = (
 };
 
 /**
+ * Calculate lap time deltas between a driver's recent laps and the player's recent laps
+ * @param driverLapHistory - Array of driver's lap times (most recent last)
+ * @param playerLapHistory - Array of player's lap times (most recent last)
+ * @param numLaps - Number of recent laps to compare (1-5)
+ * @returns Array of deltas (driver time - player time), most recent last. Positive = driver slower, negative = driver faster
+ */
+const calculateLapTimeDeltas = (
+  driverLapHistory: number[],
+  playerLapHistory: number[],
+  numLaps: number
+): number[] | undefined => {
+  if (!driverLapHistory || !playerLapHistory || driverLapHistory.length === 0 || playerLapHistory.length === 0) {
+    return undefined;
+  }
+
+  const deltas: number[] = [];
+  const lapsToCompare = Math.min(numLaps, driverLapHistory.length, playerLapHistory.length);
+
+  // Compare the last N laps (most recent laps)
+  for (let i = 0; i < lapsToCompare; i++) {
+    const driverLapIndex = driverLapHistory.length - lapsToCompare + i;
+    const playerLapIndex = playerLapHistory.length - lapsToCompare + i;
+
+    const driverLapTime = driverLapHistory[driverLapIndex];
+    const playerLapTime = playerLapHistory[playerLapIndex];
+
+    // Only calculate delta if both lap times are valid
+    if (driverLapTime > 0 && playerLapTime > 0) {
+      deltas.push(driverLapTime - playerLapTime);
+    }
+  }
+
+  return deltas.length > 0 ? deltas : undefined;
+};
+
+/**
  * This method will create the driver standings for the current session
  * It will calculate the delta to the leader
  * It will also determine if the driver has the fastest time
@@ -97,12 +134,19 @@ export const createDriverStandings = (
       FastestTime: number;
     }[];
     sessionType?: string;
-  }
+  },
+  lapTimeHistory?: number[][],
+  numLapsToShow?: number
 ): Standings[] => {
   const results =
     currentSession.resultsPositions ?? session.qualifyingResults ?? [];
   const fastestDriverIdx = currentSession.resultsFastestLap?.[0]?.CarIdx;
   const fastestDriver = results?.find((r) => r.CarIdx === fastestDriverIdx);
+
+  // Get player's lap history for delta calculations
+  const playerLapHistory = session.playerIdx !== undefined && lapTimeHistory
+    ? lapTimeHistory[session.playerIdx]
+    : undefined;
 
   return results
     .map((result) => {
@@ -150,7 +194,17 @@ export const createDriverStandings = (
           estLapTime: driver.CarClassEstLapTime,
         },
         radioActive: telemetry.radioTransmitCarIdx?.includes(result.CarIdx),
-        carId: driver.CarID
+        carId: driver.CarID,
+        lapTimeDeltas:
+          result.CarIdx === session.playerIdx
+            ? undefined // Don't calculate deltas for player
+            : playerLapHistory && lapTimeHistory && numLapsToShow
+              ? calculateLapTimeDeltas(
+                  lapTimeHistory[result.CarIdx],
+                  playerLapHistory,
+                  numLapsToShow
+                )
+              : undefined,
       };
     })
     .filter((s) => !!s);

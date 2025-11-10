@@ -29,6 +29,8 @@ interface DriverRowInfoProps {
   flairId?: number;
   tireCompound?: number;
   carId?: number;
+  lapTimeDeltas?: number[];
+  numLapDeltasToShow?: number;
 }
 
 export const DriverInfoRow = ({
@@ -54,6 +56,8 @@ export const DriverInfoRow = ({
   flairId,
   tireCompound,
   carId,
+  lapTimeDeltas,
+  numLapDeltasToShow
 }: DriverRowInfoProps) => {
   // convert seconds to mm:ss:ms
   const lastTimeString = formatTime(lastTime);
@@ -147,6 +151,28 @@ export const DriverInfoRow = ({
           </div>
         </td>
       )}
+     {lapTimeDeltas !== undefined && (
+       <>
+         {lapTimeDeltas.map((deltaValue, index) => (
+           <td
+             key={index}
+             className={[
+               'px-1 text-center',
+               deltaValue > 0 ? 'text-green-400' : 'text-red-400'
+             ].join(' ')}
+           >
+             {deltaValue > 0 ? '+' : ''}{deltaValue.toFixed(1)}
+           </td>
+         ))}
+       </>
+     )}
+     {lapTimeDeltas === undefined && isPlayer && numLapDeltasToShow && (
+       <>
+         {[...Array(numLapDeltasToShow)].map((_, index) => (
+           <td key={index} className="px-1 text-center">-</td>
+         ))}
+       </>
+     )}
     </tr>
   );
 };
