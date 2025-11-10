@@ -16,7 +16,7 @@ export async function publishIRacingSDKEvents(
     const isSimRunning = await IRacingSDK.IsSimRunning();
     console.log('Sending running state to window', isSimRunning);
     overlayManager.publishMessage('runningState', isSimRunning);
-  }, 2000);
+  }, 5000);
 
   // Start the telemetry loop in the background
   (async () => {

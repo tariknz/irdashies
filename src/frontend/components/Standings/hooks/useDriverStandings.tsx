@@ -43,6 +43,11 @@ export const useDriverStandings = (settings?: StandingsWidgetSettings['config'])
   const radioTransmitCarIdx = useTelemetry('RadioTransmitCarIdx');
   const carIdxTireCompound = useTelemetry<number[]>('CarIdxTireCompound');
   const isOfficial = useSessionIsOfficial();
+  const driverClass = useMemo(() => {
+    return sessionDrivers?.find(
+      (driver) => driver.CarIdx === driverCarIdx
+    )?.CarClassID;
+  }, [sessionDrivers, driverCarIdx]);
   const lapTimeHistory = useLapTimeHistory();
 
   // Only pass lap history when feature is enabled to avoid unnecessary calculations
@@ -71,9 +76,6 @@ export const useDriverStandings = (settings?: StandingsWidgetSettings['config'])
       lapTimeDeltasEnabled ? numLapDeltas : undefined
     );
     const groupedByClass = groupStandingsByClass(initialStandings);
-    const driverClass = sessionDrivers?.find(
-      (driver) => driver.CarIdx === driverCarIdx
-    )?.CarClassID;
 
     // Calculate iRating changes for race sessions
     const augmentedGroupedByClass =
@@ -104,6 +106,7 @@ export const useDriverStandings = (settings?: StandingsWidgetSettings['config'])
     minPlayerClassDrivers,
     numTopDrivers,
     carIdxTireCompound?.value,
+    driverClass,
     lapTimeDeltasEnabled,
     numLapDeltas,
     lapTimeHistoryForCalc,
