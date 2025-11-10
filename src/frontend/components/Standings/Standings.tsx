@@ -13,6 +13,7 @@ import {
   useStandingsSettings,
 } from './hooks';
 import { useLapTimesStoreUpdater } from '../../context/LapTimesStore/LapTimesStoreUpdater';
+import { usePitLabStoreUpdater } from '../../context/PitLapStore/PitLapStoreUpdater';
 
 export const Standings = () => {
   const [parent] = useAutoAnimate();
@@ -20,6 +21,9 @@ export const Standings = () => {
 
   // Update lap times store with telemetry data (only for this overlay)
   useLapTimesStoreUpdater();
+
+  // Update pit laps
+  usePitLabStoreUpdater();
 
   const standings = useDriverStandings(settings);
   const classStats = useCarClassStats();const isMultiClass = standings.length > 1;

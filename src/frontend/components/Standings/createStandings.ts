@@ -137,7 +137,8 @@ export const createDriverStandings = (
     sessionType?: string;
   },
   lapTimeHistory?: number[][],
-  numLapsToShow?: number
+  numLapsToShow?: number,
+  lastPitLap: number[]
 ): Standings[] => {
   const results =
     currentSession.resultsPositions ?? session.qualifyingResults ?? [];
@@ -207,7 +208,7 @@ export const createDriverStandings = (
                 )
               : undefined,
         carId: driver.CarID,
-        lastPitLap: 15
+        lastPitLap: lastPitLap[result.CarIdx] ?? undefined
       };
     })
     .filter((s) => !!s);

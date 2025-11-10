@@ -12,6 +12,10 @@ import {
 } from '@irdashies/context';
 import { useLapTimeHistory } from '../../../context/LapTimesStore/LapTimesStore';
 import {
+  usePitLap,
+  usePitLapStore,
+} from '../../../context/PitLapStore/PitLapStore';
+import {
   createDriverStandings,
   groupStandingsByClass,
   sliceRelevantDrivers,
@@ -43,6 +47,7 @@ export const useDriverStandings = (settings?: StandingsWidgetSettings['config'])
   const radioTransmitCarIdx = useTelemetry('RadioTransmitCarIdx');
   const carIdxTireCompound = useTelemetry<number[]>('CarIdxTireCompound');
   const isOfficial = useSessionIsOfficial();
+  const lastPitLap = usePitLap();
   const driverClass = useMemo(() => {
     return sessionDrivers?.find(
       (driver) => driver.CarIdx === driverCarIdx
@@ -74,7 +79,8 @@ export const useDriverStandings = (settings?: StandingsWidgetSettings['config'])
         sessionType,
       },
       lapTimeHistoryForCalc,
-      lapTimeDeltasEnabled ? numLapDeltas : undefined
+      lapTimeDeltasEnabled ? numLapDeltas : undefined,
+      lastPitLap,
     );
     const groupedByClass = groupStandingsByClass(initialStandings);
 

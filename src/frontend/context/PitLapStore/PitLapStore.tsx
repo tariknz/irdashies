@@ -4,38 +4,41 @@ import { create, useStore } from 'zustand';
 interface PitLapState {
   sessionUniqId: number;
   pitLaps: number[]; // [carIdx]
+  sessionTime: number;
   updatePitLaps: (telemetry: Telemetry | null) => void;
 }
 
 export const usePitLapStore = create<PitLapState>((set, get) => ({
   sessionUniqId: 0,
+  sessionTime: 0,
   pitLaps: [],
   updatePitLaps: (telemetry) => {
-    const { sessionUniqId } = get();
-    const pitLaps :  number[] = [];
+    const { sessionUniqId, pitLaps, sessionTime } = get();
     const carIdxOnPitRoad = telemetry?.CarIdxOnPitRoad?.value ?? [];
     const carIdxLap = telemetry?.CarIdxLap?.value ?? [];
-    const newSessionUniqId = telemetry?.SessionUniqueID?.value?.[0] ?? 0;
+    const carIdxLapCompleted = telemetry?.CarIdxLapCompleted?.value ?? [];
+    const currentSessionUniqId = telemetry?.SessionUniqueID?.value?.[0] ?? 0;
+    const currentSessionTime = telemetry?.SessionTime?.value?.[0] ?? 0;
 
     // reset store when session was changed
-    if (newSessionUniqId !== 0 && newSessionUniqId !== sessionUniqId) {
-      set({ pitLaps: carIdxOnPitRoad.map((inPit, idx) => 0) });
-    }
-
-    if (!carIdxOnPitRoad.length) {
-      set({ sessionUniqId: sessionUniqId})
-      set({ pitLaps: carIdxOnPitRoad.map((inPit, idx) => 0) });
-      return;
+    if ((sessionUniqId !== 0 && currentSessionUniqId !== sessionUniqId) || sessionTime>currentSessionTime) {
+      set({ sessionUniqId: currentSessionUniqId,
+            pitLaps: [],
+            sessionTime: currentSessionTime
+      })
+      return
     }
 
     carIdxOnPitRoad.forEach((inPit, idx) => {
-      if (inPit) {
+      if (inPit && carIdxLapCompleted[idx] > 0) {
         pitLaps[idx] = carIdxLap[idx];
       }
     });
 
     set({
-      pitLaps: pitLaps
+      pitLaps: pitLaps,
+      sessionTime: currentSessionTime,
+      sessionUniqId: currentSessionUniqId
     });
   },
 }));
