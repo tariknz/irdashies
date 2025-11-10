@@ -30,6 +30,8 @@ interface DriverRowInfoProps {
   flairId?: number;
   tireCompound?: number;
   carId?: number;
+  lapTimeDeltas?: number[];
+  numLapDeltasToShow?: number;
 }
 
 export const DriverInfoRow = memo(({
@@ -55,6 +57,8 @@ export const DriverInfoRow = memo(({
   flairId,
   tireCompound,
   carId,
+  lapTimeDeltas,
+  numLapDeltasToShow
 }: DriverRowInfoProps) => {
   // Memoize formatted time strings to avoid recalculation on every render
   const lastTimeString = useMemo(() => formatTime(lastTime), [lastTime]);
@@ -148,6 +152,28 @@ export const DriverInfoRow = memo(({
           </div>
         </td>
       )}
+     {lapTimeDeltas !== undefined && (
+       <>
+         {lapTimeDeltas.map((deltaValue, index) => (
+           <td
+             key={index}
+             className={[
+               'px-1 text-center',
+               deltaValue > 0 ? 'text-green-400' : 'text-red-400'
+             ].join(' ')}
+           >
+             {deltaValue > 0 ? '+' : ''}{deltaValue.toFixed(1)}
+           </td>
+         ))}
+       </>
+     )}
+     {lapTimeDeltas === undefined && isPlayer && numLapDeltasToShow && (
+       <>
+         {[...Array(numLapDeltasToShow)].map((_, index) => (
+           <td key={index} className="px-1 text-center">-</td>
+         ))}
+       </>
+     )}
     </tr>
   );
 });
