@@ -11,10 +11,14 @@ import {
   useDriverStandings,
   useStandingsSettings,
 } from './hooks';
+import { usePitLabStoreUpdater } from '../../context/PitLapStore/PitLapStoreUpdater';
 
 export const Standings = () => {
   const [parent] = useAutoAnimate();
   const settings = useStandingsSettings();
+
+  usePitLabStoreUpdater();
+
   const standings = useDriverStandings(settings?.driverStandings);
   const classStats = useCarClassStats();
   return (

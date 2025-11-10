@@ -11,6 +11,10 @@ import {
   useTelemetryValue,
 } from '@irdashies/context';
 import {
+  usePitLap,
+  usePitLapStore,
+} from '../../../context/PitLapStore/PitLapStore';
+import {
   createDriverStandings,
   groupStandingsByClass,
   sliceRelevantDrivers,
@@ -41,6 +45,7 @@ export const useDriverStandings = ({
   const radioTransmitCarIdx = useTelemetry('RadioTransmitCarIdx');
   const carIdxTireCompound = useTelemetry<number[]>('CarIdxTireCompound');
   const isOfficial = useSessionIsOfficial();
+  const lastPitLap = usePitLap();
 
 
   const standingsWithGain = useMemo(() => {
@@ -61,7 +66,8 @@ export const useDriverStandings = ({
         resultsPositions: positions,
         resultsFastestLap: fastestLaps,
         sessionType,
-      }
+      },
+      lastPitLap,
     );
     const groupedByClass = groupStandingsByClass(initialStandings);
     const driverClass = sessionDrivers?.find(

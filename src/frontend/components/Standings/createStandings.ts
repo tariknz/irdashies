@@ -98,7 +98,8 @@ export const createDriverStandings = (
       FastestTime: number;
     }[];
     sessionType?: string;
-  }
+  },
+  lastPitLap: number[]
 ): Standings[] => {
   const results =
     currentSession.resultsPositions ?? session.qualifyingResults ?? [];
@@ -152,7 +153,7 @@ export const createDriverStandings = (
         },
         radioActive: telemetry.radioTransmitCarIdx?.includes(result.CarIdx),
         carId: driver.CarID,
-        lastPitLap: 15
+        lastPitLap: lastPitLap[result.CarIdx] ?? undefined
       };
     })
     .filter((s) => !!s);
