@@ -76,7 +76,7 @@ export const Relative = () => {
         />
       );
     });
-  }, [standings, playerIndex, totalRows, config]);
+  }, [standings, playerIndex, totalRows, config, isMultiClass]);
 
   // If no player found, render empty table with consistent height
   if (playerIndex === -1) {
