@@ -6,6 +6,8 @@ interface DriverClassHeaderProps {
   classColor: number | undefined;
   totalDrivers: number | undefined;
   sof: number | undefined;
+  highlightColor?: number;
+  isMultiClass: boolean;
 }
 
 export const DriverClassHeader = ({
@@ -13,6 +15,8 @@ export const DriverClassHeader = ({
   classColor,
   totalDrivers,
   sof,
+  highlightColor,
+  isMultiClass,
 }: DriverClassHeaderProps) => {
   if (!className) {
     return (
@@ -28,12 +32,12 @@ export const DriverClassHeader = ({
       <td colSpan={4} className="p-0">
         <div className={`[text-shadow:_1px_1px_1px_rgba(0_0_0/0.2)] mt-3 flex`}>
           <span
-            className={`${getTailwindStyle(classColor).classHeader} px-2 py-1 font-bold border-l-4`}
+            className={`${getTailwindStyle(classColor, highlightColor, isMultiClass).classHeader} px-2 py-1 font-bold border-l-4`}
           >
             {className}
           </span>
           <span
-            className={`${getTailwindStyle(classColor).driverIcon} px-2 py-1 flex items-center gap-1`}
+            className={`${getTailwindStyle(classColor, highlightColor, isMultiClass).driverIcon} px-2 py-1 flex items-center gap-1`}
           >
             {sof ? (
               <>

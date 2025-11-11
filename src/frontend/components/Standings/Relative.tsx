@@ -10,6 +10,7 @@ export const Relative = () => {
   const buffer = config?.buffer ?? 3;
   const standings = useDriverRelatives({ buffer });
   const [parent] = useAutoAnimate();
+  const isMultiClass = standings.length > 0 && new Set(standings.map(s => s.carClass.id)).size > 1;
 
   // Always render 2 * buffer + 1 rows (buffer above + player + buffer below)
   const totalRows = 2 * buffer + 1;
@@ -61,6 +62,7 @@ export const Relative = () => {
         radioActive={result.radioActive}
         isLapped={result.lappedState === 'behind'}
         isLappingAhead={result.lappedState === 'ahead'}
+        isMultiClass={isMultiClass}
         badge={
           <DriverRatingBadge
             license={result.driver?.license}
@@ -97,5 +99,6 @@ const DummyDriverRow = () => (
     isPlayer={false}
     hasFastestTime={false}
     hidden={true}
+    isMultiClass={false}
   />
 );

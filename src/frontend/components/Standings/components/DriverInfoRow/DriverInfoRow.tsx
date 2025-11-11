@@ -24,6 +24,7 @@ interface DriverRowInfoProps {
   isLapped?: boolean;
   isLappingAhead?: boolean;
   hidden?: boolean;
+  isMultiClass: boolean;
 }
 
 export const DriverInfoRow = ({
@@ -45,6 +46,7 @@ export const DriverInfoRow = ({
   isLappingAhead,
   iratingChange,
   hidden,
+  isMultiClass,
 }: DriverRowInfoProps) => {
   // convert seconds to mm:ss:ms
   const lastTimeString = formatTime(lastTime);
@@ -53,7 +55,9 @@ export const DriverInfoRow = ({
   const settings = currentDashboard?.generalSettings;
 
   // Now you can access settings.highlightColor
-  const highlightColor = settings?.highlightColor;
+  const highlightColor = settings?.highlightColor ?? 960745;
+
+
 
   return (
     <tr
@@ -68,12 +72,12 @@ export const DriverInfoRow = ({
       ].join(' ')}
     >
       <td
-        className={`text-center text-white px-2 ${isPlayer ? `${getTailwindStyle(classColor, highlightColor).classHeader}` : ''}`}
+        className={`text-center text-white px-2 ${isPlayer ? `${getTailwindStyle(classColor, highlightColor, isMultiClass).classHeader}` : ''}`}
       >
         {position}
       </td>
       <td
-        className={`${getTailwindStyle(classColor, highlightColor).driverIcon} text-white border-l-4 text-right px-1 w-10`}
+        className={`${getTailwindStyle(classColor, highlightColor, isMultiClass).driverIcon} text-white border-l-4 text-right px-1 w-10`}
       >
         #{carNumber}
       </td>

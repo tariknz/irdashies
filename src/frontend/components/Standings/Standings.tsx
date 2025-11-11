@@ -6,6 +6,7 @@ import { DriverRatingBadge } from './components/DriverRatingBadge/DriverRatingBa
 import { RatingChange } from './components/RatingChange/RatingChange';
 import { SessionBar } from './components/SessionBar/SessionBar';
 import { SessionFooter } from './components/SessionFooter/SessionFooter';
+import { useDashboard } from '@irdashies/context';
 import {
   useCarClassStats,
   useDriverStandings,
@@ -17,6 +18,9 @@ export const Standings = () => {
   const settings = useStandingsSettings();
   const standings = useDriverStandings(settings?.driverStandings);
   const classStats = useCarClassStats();
+  const isMultiClass = standings.length > 1;
+  const { currentDashboard } = useDashboard();
+  const highlightColor = currentDashboard?.generalSettings?.highlightColor ?? 960745;
   return (
     <div
       className={`w-full bg-slate-800/[var(--bg-opacity)] rounded-sm p-2 text-white overflow-hidden`}
@@ -32,9 +36,11 @@ export const Standings = () => {
               <DriverClassHeader
                 key={classId}
                 className={classStats?.[classId]?.shortName}
-                classColor={classStats?.[classId]?.color}
+                classColor={isMultiClass ? classStats?.[classId]?.color : highlightColor}
                 totalDrivers={classStats?.[classId]?.total}
                 sof={classStats?.[classId]?.sof}
+                highlightColor={highlightColor}
+                isMultiClass={isMultiClass}
               />
               {classStandings.map((result) => (
                 <DriverInfoRow
@@ -63,6 +69,7 @@ export const Standings = () => {
                   onPitRoad={result.onPitRoad}
                   onTrack={result.onTrack}
                   radioActive={result.radioActive}
+                  isMultiClass={isMultiClass}
                   badge={
                     settings?.badge?.enabled ? (
                       <DriverRatingBadge

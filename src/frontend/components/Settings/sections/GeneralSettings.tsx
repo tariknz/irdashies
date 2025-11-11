@@ -24,7 +24,7 @@ const HIGHLIGHT_COLOR_PRESETS = new Map([
   [1096065,  'Emerald'],
   [1357990,  'Teal'],
   [440020,   'Cyan'],
-  [959977,   'Sky'],
+  [960745,   'Sky'],
   [3395327,  'Blue'],
   [6514417,  'Indigo'],
   [9133302,  'Violet'],
@@ -41,7 +41,7 @@ export const GeneralSettings = () => {
   const [settings, setSettings] = useState<GeneralSettingsType>({
     fontSize: currentDashboard?.generalSettings?.fontSize ?? 'sm',
     colorPalette: currentDashboard?.generalSettings?.colorPalette ?? 'default',
-    highlightColor: currentDashboard?.generalSettings?.highlightColor ?? 959977
+    highlightColor: currentDashboard?.generalSettings?.highlightColor ?? 960745
   });
 
   if (!currentDashboard || !onDashboardUpdated) {
@@ -163,9 +163,9 @@ export const GeneralSettings = () => {
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-medium text-slate-200">Highlight Color</h3>
           <div className="flex items-center gap-2">
-            <span className="text-sm text-slate-300">{HIGHLIGHT_COLOR_PRESETS.get(settings.highlightColor ?? 959977)}</span>
+            <span className="text-sm text-slate-300">{HIGHLIGHT_COLOR_PRESETS.get(settings.highlightColor ?? 960745)}</span>
             <span 
-              className={`bg-${HIGHLIGHT_COLOR_PRESETS.get(settings.highlightColor ?? 959977)?.toLowerCase()}-800 rounded border-2 border-${HIGHLIGHT_COLOR_PRESETS.get(settings.highlightColor ?? 959977)?.toLowerCase()}-500`} 
+              className={`bg-${HIGHLIGHT_COLOR_PRESETS.get(settings.highlightColor ?? 960745)?.toLowerCase()}-800 rounded border-2 border-${HIGHLIGHT_COLOR_PRESETS.get(settings.highlightColor ?? 960745)?.toLowerCase()}-500`} 
               style={{ width: '20px', height: '20px' }}>
             </span>
           </div>
@@ -174,7 +174,7 @@ export const GeneralSettings = () => {
         {/* Highlight Color Dropdown */}
         <div className="mt-4">
           <select
-            value={settings.highlightColor ?? 959977}
+            value={settings.highlightColor ?? 960745}
             onChange={(e) => handleHighlightColorChange(parseInt(e.target.value))}
             className="w-full px-3 py-2 bg-slate-700 text-slate-300 rounded border border-slate-600 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
           >

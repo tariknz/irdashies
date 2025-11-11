@@ -1,17 +1,19 @@
 export const getTailwindStyle = (
   color?: number,
-  highlightColor?: number
+  highlightColor?: number,
+  isMultiClass = false
 ): {
   driverIcon: string;
   classHeader: string;
   fill: string;
   canvasFill: string;
 } => {
-  if (color === 0 && highlightColor) {
+  if (color === 0 || !isMultiClass) {
     color = highlightColor;
   }
 
   const hex = color !== undefined ? `#${(color).toString(16).padStart(6, '0')}` : 0;
+
   const classColorMap: Record<
     string,
     {
@@ -135,7 +137,7 @@ export const getTailwindStyle = (
       fill: 'fill-stone-500',
       canvasFill: getColor('stone'),
     }
-,    '#ffffff': {
+,    '#0ea5e9': {
       driverIcon: 'bg-sky-800 border-sky-500',
       classHeader: 'bg-sky-500 border-sky-500',
       fill: 'fill-sky-500',
@@ -143,7 +145,12 @@ export const getTailwindStyle = (
     },
   };
 
-  return classColorMap[hex] ?? classColorMap['#ffffff'];
+  return classColorMap[hex] ?? classColorMap['#ffffff'] ?? {
+    driverIcon: 'bg-sky-800 border-sky-500',
+    classHeader: 'bg-sky-500 border-sky-500',
+    fill: 'fill-sky-500',
+    canvasFill: getColor('sky')
+  };
 };
 
 export const getColor = (color?: string, value = 500) => {

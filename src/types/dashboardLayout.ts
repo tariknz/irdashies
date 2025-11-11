@@ -26,7 +26,7 @@ export interface DashboardWidget {
 export interface GeneralSettingsType {
   fontSize?: 'xs' | 'sm' | 'lg' | 'xl';
   colorPalette?: 'default' | string;
-  highlightColor?: 959977 | number;
+  highlightColor?: 960745 | number;
 }
 
 export interface DashboardLayout {
