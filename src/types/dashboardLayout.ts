@@ -27,6 +27,7 @@ export interface GeneralSettingsType {
   fontSize?: 'xs' | 'sm' | 'lg' | 'xl';
   colorPalette?: 'default' | string;
   showOnlyWhenOnTrack?: boolean;
+  highlightColor?: 960745 | number;
 }
 
 export interface DashboardLayout {

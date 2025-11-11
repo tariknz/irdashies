@@ -104,3 +104,6 @@ src/**/tracks/tracks.json
 build/
 bin/
 docs/features/
+
+#package-lock
+package-lock.json
