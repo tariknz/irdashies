@@ -24,10 +24,10 @@ export const getTailwindStyle = (
     }
   > = {
     '#ffda59': {
-      driverIcon: 'bg-orange-800 border-orange-500',
-      classHeader: 'bg-orange-500 border-orange-500',
-      fill: 'fill-orange-500',
-      canvasFill: getColor('orange'),
+      driverIcon: 'bg-yellow-800 border-yellow-500',
+      classHeader: 'bg-yellow-500 border-yellow-500',
+      fill: 'fill-yellow-500',
+      canvasFill: getColor('yellow'),
     },
     '#f97316': {
       driverIcon: 'bg-orange-800 border-orange-500',
