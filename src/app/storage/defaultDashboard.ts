@@ -39,6 +39,9 @@ export const defaultDashboard: DashboardLayout = {
         "compound": {
           "enabled": true
         },
+        "carManufacturer": {
+          "enabled": true
+        },
         "driverStandings": {
           "buffer": 3,
           "numNonClassDrivers": 3,
@@ -106,6 +109,9 @@ export const defaultDashboard: DashboardLayout = {
           "enabled": false
         },
         "compound": {
+          "enabled": false
+        },
+        "carManufacturer": {
           "enabled": false
         }
       }

@@ -20,6 +20,8 @@ export interface StandingsWidgetSettings extends BaseWidgetSettings {
       numTopDrivers: number;
     };
     compound: { enabled: boolean };
+    carManufacturer: { enabled: boolean };
+    lapTimeDeltas: { enabled: boolean; numLaps: number };
   };
 }
 
@@ -32,6 +34,7 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
     lastTime: { enabled: boolean };
     fastestTime: { enabled: boolean };
     compound: { enabled: boolean };
+    carManufacturer: { enabled: boolean };
   };
 }
 

@@ -202,19 +202,19 @@ export const TrackCanvas = ({
     const ctx = canvas?.getContext('2d');
     if (!canvas || !ctx || !path2DObjects) return;
 
-    const rect = canvas.getBoundingClientRect();
+    if (canvasSize.width === 0 || canvasSize.height === 0) return;
 
     // Clear the entire canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     // Calculate scale to fit the 1920x1080 track into the current canvas size
-    const scaleX = rect.width / TRACK_DRAWING_WIDTH;
-    const scaleY = rect.height / TRACK_DRAWING_HEIGHT;
+    const scaleX = canvasSize.width / TRACK_DRAWING_WIDTH;
+    const scaleY = canvasSize.height / TRACK_DRAWING_HEIGHT;
     const scale = Math.min(scaleX, scaleY); // Maintain aspect ratio
 
     // Calculate centering offset
-    const offsetX = (rect.width - TRACK_DRAWING_WIDTH * scale) / 2;
-    const offsetY = (rect.height - TRACK_DRAWING_HEIGHT * scale) / 2;
+    const offsetX = (canvasSize.width - TRACK_DRAWING_WIDTH * scale) / 2;
+    const offsetY = (canvasSize.height - TRACK_DRAWING_HEIGHT * scale) / 2;
 
     // Setup canvas context with scaling and shadow
     setupCanvasContext(ctx, scale, offsetX, offsetY);

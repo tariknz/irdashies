@@ -27,15 +27,21 @@ export const AllCompound: Story = {
     <div className="flex flex-col gap-4 p-4 bg-slate-800 rounded-lg">
         <div key={0} className="flex items-center gap-4">
           <span className="text-white w-24">0:</span>
-          <Compound tireCompound={0} size="sm" />
-          <Compound tireCompound={0} size="md" />
-          <Compound tireCompound={0} size="lg" />
+          <Compound tireCompound={0} carId={71} size="sm" />
+          <Compound tireCompound={0} carId={71} size="md" />
+          <Compound tireCompound={0} carId={71} size="lg" />
         </div>
         <div key={1} className="flex items-center gap-4">
           <span className="text-white w-24">1:</span>
-          <Compound tireCompound={1} size="sm" />
-          <Compound tireCompound={1} size="md" />
-          <Compound tireCompound={1} size="lg" />
+          <Compound tireCompound={1} carId={71} size="sm" />
+          <Compound tireCompound={1} carId={71} size="md" />
+          <Compound tireCompound={1} carId={71} size="lg" />
+        </div>
+        <div key={2} className="flex items-center gap-4">
+          <span className="text-white w-24">2:</span>
+          <Compound tireCompound={2} carId={71} size="sm" />
+          <Compound tireCompound={2} carId={71} size="md" />
+          <Compound tireCompound={2} carId={71} size="lg" />
         </div>
     </div>
   ),

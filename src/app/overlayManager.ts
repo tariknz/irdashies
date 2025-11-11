@@ -24,6 +24,7 @@ export class OverlayManager {
     setInterval(() => {
       this.getOverlays().forEach(({ window }) => {
         if (window.isDestroyed()) return;
+        if (!window.isVisible()) return;
         window.setAlwaysOnTop(true, 'screen-saver', 1);
       });
     }, 5000);
