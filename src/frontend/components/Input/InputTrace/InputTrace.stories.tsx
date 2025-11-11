@@ -7,9 +7,7 @@ const meta: Meta<typeof InputTrace> = {
 };
 export default meta;
 
-type Story = StoryObj<typeof InputTrace>;
-
-const Traces = () => {
+const Traces = ({ brakeAbsActive }: { brakeAbsActive: boolean }) => {
   const [throttle, setThrottle] = useState(0);
   const [brake, setBrake] = useState(0);
   useEffect(() => {
@@ -27,30 +25,33 @@ const Traces = () => {
   }, []);
   return (
     <InputTrace
-      input={{ brake, throttle }}
+      input={{ brake, throttle, brakeAbsActive: brakeAbsActive ?? false }}
       settings={{ includeBrake: true, includeThrottle: true }}
     />
   );
 };
 
-export const Primary: Story = {
-  render: () => <Traces />,
-  args: {},
+export const Primary: StoryObj<typeof Traces> = {
+  render: (args: { brakeAbsActive: boolean }) => <Traces brakeAbsActive={args.brakeAbsActive} />,
+  args: {
+    brakeAbsActive: false,
+  } as { brakeAbsActive: boolean },
 };
 
-export const OutsideRange: Story = {
+export const OutsideRange: StoryObj<typeof InputTrace> = {
   render: (args) => {
-    const [input, setInput] = useState({ brake: 2, throttle: -1 });
+    const [input, setInput] = useState({ brake: 2, throttle: -1, brakeAbsActive: false });
     useEffect(() => {
       const interval = setInterval(() => {
         setInput(() => ({
           brake: args.input.brake ?? 0,
           throttle: args.input.throttle ?? 0,
+          brakeAbsActive: args.input.brakeAbsActive ?? false,
         }));
       }, 1000 / 60);
 
       return () => clearInterval(interval);
-    }, [args.input.brake, args.input.throttle]);
+    }, [args.input.brake, args.input.throttle, args.input.brakeAbsActive]);
 
     return (
       <InputTrace
@@ -63,6 +64,7 @@ export const OutsideRange: Story = {
     input: {
       brake: 2,
       throttle: -1,
+      brakeAbsActive: true,
     },
   },
 };

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useDashboard } from '@irdashies/context';
 import { GeneralSettingsType } from '@irdashies/types';
+import { ToggleSwitch } from '../components/ToggleSwitch';
 
 const FONT_SIZE_PRESETS = {
   xs: 'Extra Small',
@@ -41,6 +42,8 @@ export const GeneralSettings = () => {
   const [settings, setSettings] = useState<GeneralSettingsType>({
     fontSize: currentDashboard?.generalSettings?.fontSize ?? 'sm',
     colorPalette: currentDashboard?.generalSettings?.colorPalette ?? 'default',
+    showOnlyWhenOnTrack:
+      currentDashboard?.generalSettings?.showOnlyWhenOnTrack ?? false,
     highlightColor: currentDashboard?.generalSettings?.highlightColor ?? 960745
   });
 
@@ -74,6 +77,11 @@ export const GeneralSettings = () => {
     updateDashboard(newSettings);
   };
 
+  const handleShowOnlyWhenOnTrackChange = (checked: boolean) => {
+    const newSettings = { ...settings, showOnlyWhenOnTrack: checked };
+    setSettings(newSettings);
+    updateDashboard(newSettings);
+  };
 
   return (
     <div className="flex flex-col h-full space-y-6">
@@ -185,6 +193,21 @@ export const GeneralSettings = () => {
         </div>
       </div>
 
+      {/* Show Only When On Track Settings */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h4 className="text-md font-medium text-slate-300">
+            Show Only When On Track
+          </h4>
+          <p className="text-sm text-slate-400">
+            If enabled, overlays will only be shown when you are driving.
+          </p>
+        </div>
+        <ToggleSwitch
+          enabled={settings.showOnlyWhenOnTrack ?? false}
+          onToggle={handleShowOnlyWhenOnTrackChange}
+        />
+      </div>
     </div>
   );
 };

@@ -49,9 +49,9 @@ export const Relative = () => {
     return (
       <DriverInfoRow
         key={result.carIdx}
-        carIdx={result.carIdx}
+        carIdx={ result.carIdx}
         classColor={result.carClass.color}
-        carNumber={result.driver?.carNum || ''}
+        carNumber={config?.carNumber?.enabled ?? true ? result.driver?.carNum || '' : undefined}
         name={result.driver?.name || ''}
         isPlayer={result.isPlayer}
         hasFastestTime={result.hasFastestTime}
@@ -62,6 +62,11 @@ export const Relative = () => {
         radioActive={result.radioActive}
         isLapped={result.lappedState === 'behind'}
         isLappingAhead={result.lappedState === 'ahead'}
+        flairId={config?.countryFlags?.enabled ?? true ? result.driver?.flairId : undefined}
+        lastTime={config?.lastTime?.enabled ? result.lastTime : undefined}
+        fastestTime={config?.fastestTime?.enabled ? result.fastestTime : undefined}
+        lastTimeState={config?.lastTime?.enabled ? result.lastTimeState : undefined}
+        tireCompound={config?.compound?.enabled ? result.tireCompound : undefined}
         isMultiClass={isMultiClass}
         badge={
           <DriverRatingBadge
@@ -75,7 +80,7 @@ export const Relative = () => {
 
   return (
     <div 
-      className="w-full bg-slate-800/[var(--bg-opacity)] rounded-sm p-2"
+      className="w-full bg-slate-800/(--bg-opacity) rounded-sm p-2"
       style={{
         ['--bg-opacity' as string]: `${config?.background?.opacity ?? 0}%`,
       }}
@@ -94,7 +99,6 @@ const DummyDriverRow = () => (
   <DriverInfoRow
     carIdx={0}
     classColor={0}
-    carNumber="33"
     name="Franz Hermann"
     isPlayer={false}
     hasFastestTime={false}

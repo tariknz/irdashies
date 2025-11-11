@@ -5,6 +5,7 @@ import type {
   IrSdkBridge,
   DashboardBridge,
   DashboardLayout,
+  SaveDashboardOptions,
 } from '@irdashies/types';
 
 export function exposeBridge() {
@@ -42,8 +43,8 @@ export function exposeBridge() {
         callback(value);
       });
     },
-    saveDashboard: (value: DashboardLayout) => {
-      ipcRenderer.send('saveDashboard', value);
+    saveDashboard: (value: DashboardLayout, options?: SaveDashboardOptions) => {
+      ipcRenderer.send('saveDashboard', value, options);
     },
     resetDashboard: (resetEverything: boolean) => {
       return ipcRenderer.invoke('resetDashboard', resetEverything);

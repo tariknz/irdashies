@@ -3300,7 +3300,9 @@
         "DivisionName": "Division 4",
         "DivisionID": 3,
         "CurDriverIncidentCount": -1,
-        "TeamIncidentCount": -1
+        "TeamIncidentCount": -1,
+        "FlairID": 77,
+        "CompoundID": 1
       },
       {
         "CarIdx": 2,
@@ -3349,7 +3351,9 @@
         "DivisionName": "Division 4",
         "DivisionID": 3,
         "CurDriverIncidentCount": -1,
-        "TeamIncidentCount": -1
+        "TeamIncidentCount": -1,
+        "FlairID": 223,
+        "CompoundID": 1
       },
       {
         "CarIdx": 3,
@@ -3398,7 +3402,9 @@
         "DivisionName": "Division 7",
         "DivisionID": 6,
         "CurDriverIncidentCount": -1,
-        "TeamIncidentCount": -1
+        "TeamIncidentCount": -1,
+        "FlairID": 223,
+        "CompoundID": 1
       },
       {
         "CarIdx": 4,
@@ -3447,7 +3453,9 @@
         "DivisionName": "Division 5",
         "DivisionID": 4,
         "CurDriverIncidentCount": 4,
-        "TeamIncidentCount": 4
+        "TeamIncidentCount": 4,
+        "FlairID": 149,
+        "CompoundID": 1
       },
       {
         "CarIdx": 5,
@@ -3496,7 +3504,9 @@
         "DivisionName": "Division 5",
         "DivisionID": 4,
         "CurDriverIncidentCount": -1,
-        "TeamIncidentCount": -1
+        "TeamIncidentCount": -1,
+        "FlairID": 223,
+        "CompoundID": 1
       },
       {
         "CarIdx": 6,
@@ -3545,7 +3555,8 @@
         "DivisionName": "Division 9",
         "DivisionID": 8,
         "CurDriverIncidentCount": -1,
-        "TeamIncidentCount": -1
+        "TeamIncidentCount": -1,
+        "FlairID": 223
       },
       {
         "CarIdx": 7,
@@ -3594,7 +3605,9 @@
         "DivisionName": "Division 5",
         "DivisionID": 4,
         "CurDriverIncidentCount": -1,
-        "TeamIncidentCount": -1
+        "TeamIncidentCount": -1,
+        "FlairID": 223,
+        "CompoundID": 1
       },
       {
         "CarIdx": 8,
@@ -3643,7 +3656,9 @@
         "DivisionName": "Division 5",
         "DivisionID": 4,
         "CurDriverIncidentCount": -1,
-        "TeamIncidentCount": -1
+        "TeamIncidentCount": -1,
+        "FlairID": 104, 
+        "CompoundID": 2 
       },
       {
         "CarIdx": 9,
@@ -3692,7 +3707,9 @@
         "DivisionName": "Division 5",
         "DivisionID": 4,
         "CurDriverIncidentCount": -1,
-        "TeamIncidentCount": -1
+        "TeamIncidentCount": -1,
+        "FlairID": 223,
+        "CompoundID": 1
       },
       {
         "CarIdx": 10,
@@ -3741,16 +3758,18 @@
         "DivisionName": "Division 8",
         "DivisionID": 7,
         "CurDriverIncidentCount": -1,
-        "TeamIncidentCount": -1
+        "TeamIncidentCount": -1,
+        "FlairID": 223,
+        "CompoundID": 1
       },
       {
         "CarIdx": 11,
-        "UserName": "Daniel Golding3",
-        "AbbrevName": "Golding3, D",
-        "Initials": "DG",
+        "UserName": "Pablo Diego José Francisco de Paula Juan Nepomuceno",
+        "AbbrevName": "Nepomuceno, P",
+        "Initials": "PDJ",
         "UserID": 930125,
         "TeamID": 0,
-        "TeamName": "Daniel Golding3",
+        "TeamName": "Pablo Diego José Francisco de Paula Juan Nepomuceno",
         "CarNumber": "40",
         "CarNumberRaw": 40,
         "CarPath": "bmwm4gt4",
@@ -3785,12 +3804,14 @@
         "CarNumberDesignStr": "0,0,ffffff,777777,000000",
         "CarSponsor_1": 0,
         "CarSponsor_2": 0,
-        "ClubName": "West",
+        "ClubName": "Hispanoamérica",
         "ClubID": 32,
         "DivisionName": "Division 6",
         "DivisionID": 5,
         "CurDriverIncidentCount": -1,
-        "TeamIncidentCount": -1
+        "TeamIncidentCount": -1,
+        "FlairID": 198,
+        "CompoundID": 1
       },
       {
         "CarIdx": 12,
@@ -3839,7 +3860,9 @@
         "DivisionName": "Division 6",
         "DivisionID": 5,
         "CurDriverIncidentCount": -1,
-        "TeamIncidentCount": -1
+        "TeamIncidentCount": -1,
+        "FlairID": 31,
+        "CompoundID": 1
       },
       {
         "CarIdx": 13,
@@ -3888,7 +3911,9 @@
         "DivisionName": "Division 6",
         "DivisionID": 5,
         "CurDriverIncidentCount": -1,
-        "TeamIncidentCount": -1
+        "TeamIncidentCount": -1,
+        "FlairID": 222,
+        "CompoundID": 1
       },
       {
         "CarIdx": 14,
@@ -3937,7 +3962,9 @@
         "DivisionName": "Division 6",
         "DivisionID": 5,
         "CurDriverIncidentCount": -1,
-        "TeamIncidentCount": -1
+        "TeamIncidentCount": -1,
+        "FlairID": 223,
+        "CompoundID": 1
       },
       {
         "CarIdx": 15,
@@ -3986,7 +4013,9 @@
         "DivisionName": "Division 4",
         "DivisionID": 3,
         "CurDriverIncidentCount": -1,
-        "TeamIncidentCount": -1
+        "TeamIncidentCount": -1,
+        "FlairID": 39,
+        "CompoundID": 1
       },
       {
         "CarIdx": 16,
@@ -4035,7 +4064,9 @@
         "DivisionName": "Division 4",
         "DivisionID": 3,
         "CurDriverIncidentCount": -1,
-        "TeamIncidentCount": -1
+        "TeamIncidentCount": -1,
+        "FlairID": 223,
+        "CompoundID": 1
       },
       {
         "CarIdx": 17,
@@ -4084,7 +4115,9 @@
         "DivisionName": "Division 4",
         "DivisionID": 3,
         "CurDriverIncidentCount": -1,
-        "TeamIncidentCount": -1
+        "TeamIncidentCount": -1,
+        "FlairID": 223,
+        "CompoundID": 1
       },
       {
         "CarIdx": 18,
@@ -4133,7 +4166,9 @@
         "DivisionName": "Division 3",
         "DivisionID": 2,
         "CurDriverIncidentCount": -1,
-        "TeamIncidentCount": -1
+        "TeamIncidentCount": -1,
+        "FlairID": 223,
+        "CompoundID": 1
       },
       {
         "CarIdx": 19,
@@ -4182,7 +4217,9 @@
         "DivisionName": "Division 6",
         "DivisionID": 5,
         "CurDriverIncidentCount": -1,
-        "TeamIncidentCount": -1
+        "TeamIncidentCount": -1,
+        "FlairID": 223,
+        "CompoundID": 1
       },
       {
         "CarIdx": 20,
@@ -4231,7 +4268,9 @@
         "DivisionName": "Division 7",
         "DivisionID": 6,
         "CurDriverIncidentCount": -1,
-        "TeamIncidentCount": -1
+        "TeamIncidentCount": -1,
+        "FlairID": 223,
+        "CompoundID": 1
       },
       {
         "CarIdx": 21,
@@ -4280,7 +4319,9 @@
         "DivisionName": "Division 7",
         "DivisionID": 6,
         "CurDriverIncidentCount": -1,
-        "TeamIncidentCount": -1
+        "TeamIncidentCount": -1,
+        "FlairID": 223,
+        "CompoundID": 1
       },
       {
         "CarIdx": 22,
@@ -4574,7 +4615,9 @@
         "DivisionName": "Division 4",
         "DivisionID": 3,
         "CurDriverIncidentCount": -1,
-        "TeamIncidentCount": -1
+        "TeamIncidentCount": -1,
+        "FlairID": 16,
+        "CompoundID": 1
       },
       {
         "CarIdx": 28,
@@ -4623,7 +4666,9 @@
         "DivisionName": "Division 3",
         "DivisionID": 2,
         "CurDriverIncidentCount": -1,
-        "TeamIncidentCount": -1
+        "TeamIncidentCount": -1,
+        "FlairID": 223,
+        "CompoundID": 1
       },
       {
         "CarIdx": 29,
@@ -4672,7 +4717,9 @@
         "DivisionName": "Division 3",
         "DivisionID": 2,
         "CurDriverIncidentCount": -1,
-        "TeamIncidentCount": -1
+        "TeamIncidentCount": -1,
+        "FlairID": 16,
+        "CompoundID": 1
       },
       {
         "CarIdx": 30,
@@ -4721,7 +4768,9 @@
         "DivisionName": "Division 4",
         "DivisionID": 3,
         "CurDriverIncidentCount": -1,
-        "TeamIncidentCount": -1
+        "TeamIncidentCount": -1,
+        "FlairID": 223,
+        "CompoundID": 1
       },
       {
         "CarIdx": 31,
@@ -4868,7 +4917,9 @@
         "DivisionName": "Division 5",
         "DivisionID": 4,
         "CurDriverIncidentCount": -1,
-        "TeamIncidentCount": -1
+        "TeamIncidentCount": -1,
+        "FlairID": 71,
+        "CompoundID": 1
       },
       {
         "CarIdx": 34,
@@ -4917,7 +4968,9 @@
         "DivisionName": "Division 5",
         "DivisionID": 4,
         "CurDriverIncidentCount": -1,
-        "TeamIncidentCount": -1
+        "TeamIncidentCount": -1,
+        "FlairID": 223,
+        "CompoundID": 1
       },
       {
         "CarIdx": 35,
@@ -5015,7 +5068,9 @@
         "DivisionName": "Division 5",
         "DivisionID": 4,
         "CurDriverIncidentCount": -1,
-        "TeamIncidentCount": -1
+        "TeamIncidentCount": -1,
+        "FlairID": 1,
+        "CompoundID": 1
       },
       {
         "CarIdx": 37,
@@ -5064,7 +5119,9 @@
         "DivisionName": "Division 4",
         "DivisionID": 3,
         "CurDriverIncidentCount": -1,
-        "TeamIncidentCount": -1
+        "TeamIncidentCount": -1,
+        "FlairID": 223,
+        "CompoundID": 1
       },
       {
         "CarIdx": 38,
@@ -5113,7 +5170,9 @@
         "DivisionName": "Division 7",
         "DivisionID": 6,
         "CurDriverIncidentCount": -1,
-        "TeamIncidentCount": -1
+        "TeamIncidentCount": -1,
+        "FlairID": 223,
+        "CompoundID": 1
       },
       {
         "CarIdx": 39,
@@ -5162,7 +5221,9 @@
         "DivisionName": "Division 7",
         "DivisionID": 6,
         "CurDriverIncidentCount": -1,
-        "TeamIncidentCount": -1
+        "TeamIncidentCount": -1,
+        "FlairID": 223,
+        "CompoundID": 1
       },
       {
         "CarIdx": 40,
@@ -5211,7 +5272,9 @@
         "DivisionName": "Division 4",
         "DivisionID": 3,
         "CurDriverIncidentCount": -1,
-        "TeamIncidentCount": -1
+        "TeamIncidentCount": -1,
+        "FlairID": 31,
+        "CompoundID": 1
       }
     ]
   },

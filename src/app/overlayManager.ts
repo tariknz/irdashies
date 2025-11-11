@@ -117,6 +117,15 @@ export class OverlayManager {
     this.currentSettingsWindow?.webContents.send(key, value);
   }
 
+  public closeAllOverlays(): void {
+    this.getOverlays().forEach(({ window }) => {
+      if (!window.isDestroyed()) {
+        window.close();
+      }
+    });
+    this.overlayWindows = {};
+  }
+
   public closeOrCreateWindows(dashboardLayout: DashboardLayout): void {
     const { widgets } = dashboardLayout;
     const widgetsById = widgets.reduce(
@@ -142,6 +151,42 @@ export class OverlayManager {
       if (!this.overlayWindows[widget.id]) {
         this.createOverlayWindow(widget);
       }
+    });
+  }
+
+  public forceRefreshOverlays(dashboardLayout: DashboardLayout): void {
+    this.closeAllOverlays();
+    const { widgets } = dashboardLayout;
+    widgets.forEach((widget) => {
+      if (!widget.enabled) return;
+      const window = this.createOverlayWindow(widget);
+      trackWindowMovement(widget, window);
+    });
+  }
+
+  public focusSettingsWindow(): void {
+    if (this.currentSettingsWindow && !this.currentSettingsWindow.isDestroyed()) {
+      if (this.currentSettingsWindow.isMinimized()) {
+        this.currentSettingsWindow.restore();
+      }
+      this.currentSettingsWindow.show();
+      this.currentSettingsWindow.focus();
+    }
+  }
+
+  /**
+   * Setup a single instance lock for the application. If the application is already running, it will quit the new instance.
+   */
+  public setupSingleInstanceLock(): void {
+    const gotTheLock = app.requestSingleInstanceLock();
+
+    if (!gotTheLock) {
+      app.quit();
+      return;
+    }
+
+    app.on('second-instance', () => {
+      this.focusSettingsWindow();
     });
   }
 

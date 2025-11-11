@@ -17,6 +17,8 @@ updateElectronApp();
 const overlayManager = new OverlayManager();
 const telemetrySink = new TelemetrySink();
 
+overlayManager.setupSingleInstanceLock();
+
 app.on('ready', () => {
   const dashboard = getOrCreateDefaultDashboard();
   overlayManager.createOverlays(dashboard);

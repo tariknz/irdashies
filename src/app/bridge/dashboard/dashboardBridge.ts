@@ -1,15 +1,18 @@
 import { ipcMain } from 'electron';
 import { onDashboardUpdated } from '../../storage/dashboardEvents';
 import { getDashboard, saveDashboard, resetDashboard } from '../../storage/dashboards';
-import { OverlayManager } from 'src/app/overlayManager';
+import { OverlayManager } from '../../overlayManager';
 
 export async function publishDashboardUpdates(overlayManager: OverlayManager) {
   onDashboardUpdated((dashboard) => {
     overlayManager.closeOrCreateWindows(dashboard);
     overlayManager.publishMessage('dashboardUpdated', dashboard);
   });
-  ipcMain.on('saveDashboard', (_, dashboard) => {
+  ipcMain.on('saveDashboard', (_, dashboard, options) => {
     saveDashboard('default', dashboard);
+    if (options?.forceReload) {
+      overlayManager.forceRefreshOverlays(dashboard);
+    }
   });
   ipcMain.on('reloadDashboard', () => {
     const dashboard = getDashboard('default');
@@ -19,7 +22,9 @@ export async function publishDashboardUpdates(overlayManager: OverlayManager) {
   });
 
   ipcMain.handle('resetDashboard', (_, resetEverything: boolean) => {
-    return resetDashboard(resetEverything, 'default');
+    const result = resetDashboard(resetEverything, 'default');
+    overlayManager.forceRefreshOverlays(result);
+    return result;
   });
 
   ipcMain.handle('toggleLockOverlays', () => {
