@@ -54,8 +54,8 @@ export const DriverInfoRow = ({
   iratingChange,
   hidden,
   flairId,
-  tireCompound
-  isMultiClass,
+  tireCompound,
+  isMultiClass
 }: DriverRowInfoProps) => {
   // convert seconds to mm:ss:ms
   const lastTimeString = formatTime(lastTime);
@@ -101,7 +101,6 @@ export const DriverInfoRow = ({
       </td>
       <td
         className={`${getTailwindStyle(classColor, highlightColor, isMultiClass).driverIcon} text-white border-l-4 text-right px-1 w-10`}
-        className="px-2 py-0.5 w-full max-w-0 overflow-hidden"
       >
         <div className="flex justify-between align-center items-center">
           <div className="flex-1 flex items-center overflow-hidden">
