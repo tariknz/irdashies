@@ -92,7 +92,7 @@ export const DriverInfoRow = ({
 
       <td 
         className={[
-          getTailwindStyle(classColor, highlightColor).driverIcon,
+          getTailwindStyle(classColor, highlightColor, isMultiClass).driverIcon,
           'border-l-4',
           carNumber ? 'text-white text-right px-1 w-10' : 'w-0'
         ].join(' ')}
@@ -100,7 +100,7 @@ export const DriverInfoRow = ({
         {carNumber && `#${carNumber}`}
       </td>
       <td
-        className={`${getTailwindStyle(classColor, highlightColor, isMultiClass).driverIcon} text-white border-l-4 text-right px-1 w-10`}
+        className={`px-2 py-0.5 w-full max-w-0 overflow-hidden`}
       >
         <div className="flex justify-between align-center items-center">
           <div className="flex-1 flex items-center overflow-hidden">
