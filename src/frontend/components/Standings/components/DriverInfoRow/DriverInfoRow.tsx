@@ -32,6 +32,8 @@ interface DriverRowInfoProps {
   tireCompound?: number;
   carId?: number;
   lastPitLap?: number;
+  lastLap?: number;
+  prevCarTrackSurface?: number;
 }
 
 export const DriverInfoRow = ({
@@ -58,6 +60,8 @@ export const DriverInfoRow = ({
   tireCompound,
   carId,
   lastPitLap,
+  lastLap,
+  prevCarTrackSurface,
 }: DriverRowInfoProps) => {
   // convert seconds to mm:ss:ms
   const lastTimeString = formatTime(lastTime);
@@ -110,14 +114,27 @@ export const DriverInfoRow = ({
               <span className="truncate">{name}</span>
             </div>
           </div>
-          {onPitRoad && (
+          {onPitRoad && prevCarTrackSurface !== 2 && (
+            <span className="text-white animate-pulse text-xs border-orange-500 border-2 rounded-md text-center text-nowrap px-2 m-0 leading-tight">
+              TOW
+            </span>
+          )}
+          <span>{prevCarTrackSurface}</span>
+          {onPitRoad && prevCarTrackSurface === 2 && (
             <span className="text-white animate-pulse text-xs border-yellow-500 border-2 rounded-md text-center text-nowrap px-2 m-0 leading-tight">
               PIT
             </span>
           )}
-          {!onPitRoad && lastPitLap && (
+          {!onPitRoad && lastPitLap && lastPitLap == lastLap && (
             <div>
-              <span className="text-white text-xs border-yellow-500 border-1 bg-black text-center text-nowrap px-2 m-0 leading-tight">
+              <span className="text-white text-xs border-green-700  border-2 rounded-md text-center text-nowrap px-2 m-0 leading-tight">
+                OUT
+              </span>
+            </div>
+          )}
+          {!onPitRoad && lastPitLap && lastPitLap !== lastLap && (
+            <div>
+              <span className="text-white text-xs border-yellow-500 border-1 text-center text-nowrap px-2 m-0 leading-tight">
                 L {lastPitLap}
               </span>
             </div>

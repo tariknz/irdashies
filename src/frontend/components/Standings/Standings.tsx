@@ -74,6 +74,8 @@ export const Standings = () => {
                   tireCompound={settings?.compound?.enabled ?? true ? result.tireCompound : undefined}
                   carId={settings?.carManufacturer?.enabled ?? true ? result.carId : undefined}
                   lastPitLap={result.lastPitLap}
+                  lastLap={result.lastLap}
+                  prevCarTrackSurface={result.prevCarTrackSurface}
                   badge={
                     settings?.badge?.enabled ? (
                       <DriverRatingBadge

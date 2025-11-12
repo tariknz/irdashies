@@ -11,8 +11,9 @@ import {
   useTelemetryValue,
 } from '@irdashies/context';
 import {
+  useCarLap,
   usePitLap,
-  usePitLapStore,
+  usePrevCarTrackSurface,
 } from '../../../context/PitLapStore/PitLapStore';
 import {
   createDriverStandings,
@@ -46,6 +47,9 @@ export const useDriverStandings = ({
   const carIdxTireCompound = useTelemetry<number[]>('CarIdxTireCompound');
   const isOfficial = useSessionIsOfficial();
   const lastPitLap = usePitLap();
+  const lastLap = useCarLap();
+  const prevCarTrackSurface = usePrevCarTrackSurface();
+  const onTrack = useTelemetryValue<boolean>('IsOnTrack') ?? false;
 
 
   const standingsWithGain = useMemo(() => {
@@ -68,6 +72,9 @@ export const useDriverStandings = ({
         sessionType,
       },
       lastPitLap,
+      lastLap,
+      onTrack,
+      prevCarTrackSurface
     );
     const groupedByClass = groupStandingsByClass(initialStandings);
     const driverClass = sessionDrivers?.find(

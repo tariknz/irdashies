@@ -36,6 +36,8 @@ export interface Standings {
   iratingChange?: number;
   carId?: number;
   lastPitLap?: number;
+  lastLap?: number;
+  prevCarTrackSurface?: number;
 }
 
 const calculateDelta = (
@@ -99,7 +101,10 @@ export const createDriverStandings = (
     }[];
     sessionType?: string;
   },
-  lastPitLap: number[]
+  lastPitLap: number[],
+  lastLap: number[],
+  onTrack: boolean,
+  prevCarTrackSurface: number[],
 ): Standings[] => {
   const results =
     currentSession.resultsPositions ?? session.qualifyingResults ?? [];
@@ -141,8 +146,8 @@ export const createDriverStandings = (
           result.CarIdx === fastestDriverIdx
         ),
         onPitRoad: telemetry?.carIdxOnPitRoadValue?.[result.CarIdx] ?? false,
-        onTrack:
-          (telemetry?.carIdxTrackSurfaceValue?.[result.CarIdx] ?? -1) > -1,
+        //onTrack:
+        //  (telemetry?.carIdxTrackSurfaceValue?.[result.CarIdx] ?? -1) > -1,
         tireCompound: telemetry?.carIdxTireCompoundValue?.[result.CarIdx] ?? 0,
         carClass: {
           id: driver.CarClassID,
@@ -153,7 +158,10 @@ export const createDriverStandings = (
         },
         radioActive: telemetry.radioTransmitCarIdx?.includes(result.CarIdx),
         carId: driver.CarID,
-        lastPitLap: lastPitLap[result.CarIdx] ?? undefined
+        lastPitLap: lastPitLap[result.CarIdx] ?? undefined,
+        lastLap: lastLap[result.CarIdx] ?? undefined,
+        onTrack: onTrack,
+        prevCarTrackSurface: prevCarTrackSurface[result.CarIdx] ?? undefined
       };
     })
     .filter((s) => !!s);
