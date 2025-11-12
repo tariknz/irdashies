@@ -14,7 +14,8 @@ const defaultConfig: RelativeWidgetSettings['config'] = {
   lastTime: { enabled: false },
   fastestTime: { enabled: false },
   compound: { enabled: false },
-  carManufacturer: { enabled: true }
+  carManufacturer: { enabled: true },
+  brakeBias: { enabled: false }
 };
 
 const migrateConfig = (savedConfig: unknown): RelativeWidgetSettings['config'] => {
@@ -29,6 +30,7 @@ const migrateConfig = (savedConfig: unknown): RelativeWidgetSettings['config'] =
     fastestTime: { enabled: (config.fastestTime as { enabled?: boolean })?.enabled ?? false },
     compound: { enabled: (config.compound as { enabled?: boolean })?.enabled ?? false },
     carManufacturer: { enabled: (config.carManufacturer as { enabled?: boolean })?.enabled ?? false },
+    brakeBias: { enabled: (config.brakeBias as { enabled?: boolean })?.enabled ?? false },
   };
 };
 
@@ -148,6 +150,15 @@ export const RelativeSettings = () => {
               enabled={settings.config.carManufacturer.enabled}
               onToggle={(enabled) =>
                 handleConfigChange({ carManufacturer: { enabled } })
+              }
+            />
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-slate-300">Show Brake Bias</span>
+            <ToggleSwitch
+              enabled={settings.config.brakeBias.enabled}
+              onToggle={(enabled) =>
+                handleConfigChange({ brakeBias: { enabled } })
               }
             />
           </div>

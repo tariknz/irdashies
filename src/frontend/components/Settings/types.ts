@@ -35,6 +35,7 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
     fastestTime: { enabled: boolean };
     compound: { enabled: boolean };
     carManufacturer: { enabled: boolean };
+    brakeBias: { enabled: boolean };
   };
 }
 
