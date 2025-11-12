@@ -50,6 +50,8 @@ interface DriverRowInfoProps {
   displayOrder?: string[];
   config?: RelativeWidgetSettings['config'] | StandingsWidgetSettings['config'];
   lastPitLap?: number;
+  lastLap?: number;
+  prevCarTrackSurface?: number;
 }
 
 export const DriverInfoRow = memo(
@@ -82,6 +84,8 @@ export const DriverInfoRow = memo(
     displayOrder,
     config,
     lastPitLap,
+    lastLap,
+    prevCarTrackSurface,
    }: DriverRowInfoProps) => {
     const lastTimeString = useMemo(() => formatTime(lastTime), [lastTime]);
     const fastestTimeString = useMemo(
