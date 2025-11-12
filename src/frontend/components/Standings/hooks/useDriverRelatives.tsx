@@ -8,6 +8,7 @@ import { useDriverStandings } from './useDriverPositions';
 import type { Standings } from '../createStandings';
 
 
+
 export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
   const driversGrouped = useDriverStandings();
   const drivers = driversGrouped as Standings[];
