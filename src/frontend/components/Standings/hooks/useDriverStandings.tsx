@@ -15,7 +15,7 @@ import {
   useCarLap,
   usePitLap,
   usePrevCarTrackSurface,
-} from '../../../context/PitLapStore/PitLapStore';
+} from '@irdashies/context';
 import {
   createDriverStandings,
   groupStandingsByClass,
@@ -62,7 +62,6 @@ export const useDriverStandings = (settings?: StandingsWidgetSettings['config'])
   // Only pass lap history when feature is enabled to avoid unnecessary calculations
   const lapTimeHistoryForCalc = lapTimeDeltasEnabled ? lapTimeHistory : undefined;
 
-
   const standingsWithGain = useMemo(() => {
     const initialStandings = createDriverStandings(
       {
@@ -87,7 +86,7 @@ export const useDriverStandings = (settings?: StandingsWidgetSettings['config'])
       lastPitLap,
       lastLap,
       onTrack,
-      prevCarTrackSurface
+      prevCarTrackSurface,
     );
     const groupedByClass = groupStandingsByClass(initialStandings);
 

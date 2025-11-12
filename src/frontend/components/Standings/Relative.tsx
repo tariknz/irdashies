@@ -6,6 +6,7 @@ import { DriverRatingBadge } from './components/DriverRatingBadge/DriverRatingBa
 import { RatingChange } from './components/RatingChange/RatingChange';
 import { SessionBar } from './components/SessionBar/SessionBar';
 import { SessionFooter } from './components/SessionFooter/SessionFooter';
+import { usePitLabStoreUpdater } from '../../context/PitLapStore/PitLapStoreUpdater';
 
 export const Relative = () => {
   const settings = useRelativeSettings();
@@ -13,6 +14,8 @@ export const Relative = () => {
   const standings = useDriverRelatives({ buffer });
   const [parent] = useAutoAnimate();
   const isMultiClass = standings.length > 0 && new Set(standings.map(s => s.carClass.id)).size > 1;
+
+  usePitLabStoreUpdater();
 
   // Always render 2 * buffer + 1 rows (buffer above + player + buffer below)
   const totalRows = 2 * buffer + 1;
@@ -126,6 +129,10 @@ export const Relative = () => {
           lastTimeState={settings?.lastTime?.enabled ? result.lastTimeState : undefined}
           tireCompound={settings?.compound?.enabled ? result.tireCompound : undefined}
           carId={result.carId}
+          lastPitLap={result.lastPitLap}
+          lastLap={result.lastLap}
+          carTrackSurface={result.carTrackSurface}
+          prevCarTrackSurface={result.prevCarTrackSurface}
           isMultiClass={isMultiClass}
           badge={
             settings?.badge?.enabled ? (

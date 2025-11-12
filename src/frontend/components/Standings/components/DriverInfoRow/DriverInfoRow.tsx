@@ -52,6 +52,7 @@ interface DriverRowInfoProps {
   lastPitLap?: number;
   lastLap?: number;
   prevCarTrackSurface?: number;
+  carTrackSurface?: number;
 }
 
 export const DriverInfoRow = memo(
@@ -86,6 +87,7 @@ export const DriverInfoRow = memo(
     lastPitLap,
     lastLap,
     prevCarTrackSurface,
+    carTrackSurface
    }: DriverRowInfoProps) => {
     const lastTimeString = useMemo(() => formatTime(lastTime), [lastTime]);
     const fastestTimeString = useMemo(

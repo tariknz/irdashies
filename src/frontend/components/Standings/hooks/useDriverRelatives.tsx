@@ -7,6 +7,7 @@ import {
 import { useDriverStandings } from './useDriverPositions';
 import type { Standings } from '../createStandings';
 
+
 export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
   const driversGrouped = useDriverStandings();
   const drivers = driversGrouped as Standings[];
@@ -14,6 +15,7 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
   const playerIndex = useDriverCarIdx();
   const paceCarIdx =
     useSessionStore((s) => s.session?.DriverInfo?.PaceCarIdx) ?? -1;
+
 
   const standings = useMemo(() => {
     const driversByCarIdx = new Map(drivers.map(driver => [driver.carIdx, driver]));
