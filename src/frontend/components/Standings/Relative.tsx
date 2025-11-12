@@ -4,12 +4,15 @@ import { useRelativeSettings, useDriverRelatives } from './hooks';
 import { DriverRatingBadge } from './components/DriverRatingBadge/DriverRatingBadge';
 import { SessionBar } from './components/SessionBar/SessionBar';
 import { SessionFooter } from './components/SessionFooter/SessionFooter';
+import { usePitLabStoreUpdater } from '../../context/PitLapStore/PitLapStoreUpdater';
 
 export const Relative = () => {
   const config = useRelativeSettings();
   const buffer = config?.buffer ?? 3;
   const standings = useDriverRelatives({ buffer });
   const [parent] = useAutoAnimate();
+
+  usePitLabStoreUpdater();
 
   // Always render 2 * buffer + 1 rows (buffer above + player + buffer below)
   const totalRows = 2 * buffer + 1;
@@ -67,6 +70,10 @@ export const Relative = () => {
         lastTimeState={config?.lastTime?.enabled ? result.lastTimeState : undefined}
         tireCompound={config?.compound?.enabled ? result.tireCompound : undefined}
         carId={config?.carManufacturer?.enabled ?? true ? result.carId : undefined}
+        lastPitLap={result.lastPitLap}
+        lastLap={result.lastLap}
+        carTrackSurface={result.carTrackSurface}
+        prevCarTrackSurface={result.prevCarTrackSurface}
         badge={
           <DriverRatingBadge
             license={result.driver?.license}

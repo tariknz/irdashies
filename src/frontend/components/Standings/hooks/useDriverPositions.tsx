@@ -6,7 +6,11 @@ import {
   useDriverCarIdx,
   useSessionQualifyingResults,
   useCurrentSessionType,
+  useCarLap,
+  usePitLap,
+  usePrevCarTrackSurface,
 } from '@irdashies/context';
+
 import { Standings, type LastTimeState } from '../createStandings';
 
 const getLastTimeState = (
@@ -24,9 +28,13 @@ export const useDriverPositions = () => {
   const carIdxPosition = useTelemetry('CarIdxPosition');
   const carIdxClassPosition = useTelemetry('CarIdxClassPosition');
   const carIdxBestLap = useTelemetry('CarIdxBestLapTime');
-  const carIdxLastLap = useTelemetry('CarIdxLastLapTime');
   const carIdxF2Time = useTelemetry('CarIdxF2Time');
   const carIdxLapNum = useTelemetry('CarIdxLap');
+  const carIdxTrackSurface = useTelemetry('CarIdxTrackSurface');
+  const prevCarTrackSurface = usePrevCarTrackSurface()
+  const lastPitLap = usePitLap()
+  const lastLap = useCarLap()
+
 
   const positions = carIdxPosition?.value?.map((position, carIdx) => ({
     carIdx,
@@ -34,9 +42,11 @@ export const useDriverPositions = () => {
     classPosition: carIdxClassPosition?.value?.[carIdx],
     delta: carIdxF2Time?.value?.[carIdx], // only to leader currently, need to handle non-race sessions
     bestLap: carIdxBestLap?.value?.[carIdx],
-    lastLap: carIdxLastLap?.value?.[carIdx],
+    lastLap: lastLap[carIdx] ?? undefined,
     lapNum: carIdxLapNum?.value?.[carIdx],
-    lastPitLap: undefined,
+    lastPitLap: lastPitLap[carIdx] ?? undefined,
+    prevCarTrackSurface: prevCarTrackSurface[carIdx] ?? undefined,
+    carTrackSurface: carIdxTrackSurface?.value?.[carIdx]
   }));
 
   return positions ?? [];
@@ -160,7 +170,10 @@ export const useDriverStandings = () => {
         carClass: driver.carClass,
         radioActive: driverPos.carIdx === radioTransmitCarIdx,
         carId: driver.carId,
-        lastPitLap: driverPos.lastPitLap
+        lastPitLap: driverPos.lastPitLap,
+        lastLap: driverPos.lastLap,
+        prevCarTrackSurface: driverPos.prevCarTrackSurface,
+        carTrackSurface: driverPos.carTrackSurface
       };
     });
 

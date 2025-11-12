@@ -14,7 +14,7 @@ import {
   useCarLap,
   usePitLap,
   usePrevCarTrackSurface,
-} from '../../../context/PitLapStore/PitLapStore';
+} from '@irdashies/context';
 import {
   createDriverStandings,
   groupStandingsByClass,
@@ -51,7 +51,6 @@ export const useDriverStandings = ({
   const prevCarTrackSurface = usePrevCarTrackSurface();
   const onTrack = useTelemetryValue<boolean>('IsOnTrack') ?? false;
 
-
   const standingsWithGain = useMemo(() => {
     const initialStandings = createDriverStandings(
       {
@@ -74,7 +73,7 @@ export const useDriverStandings = ({
       lastPitLap,
       lastLap,
       onTrack,
-      prevCarTrackSurface
+      prevCarTrackSurface,
     );
     const groupedByClass = groupStandingsByClass(initialStandings);
     const driverClass = sessionDrivers?.find(

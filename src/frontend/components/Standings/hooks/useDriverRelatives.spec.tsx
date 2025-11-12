@@ -32,6 +32,7 @@ describe('useDriverRelatives', () => {
       hasFastestTime: true,
       lastTime: 105,
       onPitRoad: false,
+      tireCompound: 0,
       onTrack: true,
       carClass: {
         id: 1,
@@ -55,6 +56,7 @@ describe('useDriverRelatives', () => {
       hasFastestTime: false,
       lastTime: 107,
       onPitRoad: false,
+      tireCompound: 0,
       onTrack: true,
       carClass: {
         id: 1,
@@ -78,6 +80,7 @@ describe('useDriverRelatives', () => {
       hasFastestTime: false,
       lastTime: 109,
       onPitRoad: false,
+      tireCompound: 0,
       onTrack: true,
       carClass: {
         id: 1,

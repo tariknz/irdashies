@@ -6,12 +6,14 @@ import {
 } from '@irdashies/context';
 import { useDriverStandings } from './useDriverPositions';
 
+
 export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
   const drivers = useDriverStandings();
   const carIdxLapDistPct = useTelemetryValues('CarIdxLapDistPct');
   const playerIndex = useDriverCarIdx();
   const paceCarIdx =
     useSessionStore((s) => s.session?.DriverInfo?.PaceCarIdx) ?? -1;
+
 
   const standings = useMemo(() => {
     const calculateRelativePct = (carIdx: number) => {

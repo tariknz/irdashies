@@ -448,7 +448,11 @@ function createStandings(
       resultsPositions: currentSession?.ResultsPositions,
       resultsFastestLap: currentSession?.ResultsFastestLap,
       sessionType: currentSession?.SessionType,
-    }
+    },
+    [],
+    [],
+    false,
+    [],
   );
   const driverClass = session?.DriverInfo?.Drivers?.find(
     (driver) => driver.CarIdx === session?.DriverInfo?.DriverCarIdx

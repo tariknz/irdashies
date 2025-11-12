@@ -43,7 +43,7 @@ export const usePitLapStore = create<PitLapState>((set, get) => ({
     });
 
     carIdxTrackSurface.forEach((location, idx) => {
-      if (location !== prevCarTrackSurface[idx]) {
+      if (location !== prevCarTrackSurface[idx] && location !== 1) {
         prevCarTrackSurface[idx] = location;
       }
     });
