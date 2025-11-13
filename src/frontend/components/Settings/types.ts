@@ -35,6 +35,13 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
     fastestTime: { enabled: boolean };
     compound: { enabled: boolean };
     carManufacturer: { enabled: boolean };
+    brakeBias: { enabled: boolean };
+    enhancedGapCalculation: {
+      enabled: boolean;
+      interpolationMethod: 'linear' | 'cubic';
+      sampleInterval: number;
+      maxLapHistory: number;
+    };
   };
 }
 

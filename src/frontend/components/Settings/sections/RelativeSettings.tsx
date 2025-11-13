@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
-import { useDashboard } from '@irdashies/context';
+import { useDashboard, useRelativeGapStore } from '@irdashies/context';
 import { RelativeWidgetSettings } from '../types';
 import { ToggleSwitch } from '../components/ToggleSwitch';
 
@@ -14,12 +14,20 @@ const defaultConfig: RelativeWidgetSettings['config'] = {
   lastTime: { enabled: false },
   fastestTime: { enabled: false },
   compound: { enabled: false },
-  carManufacturer: { enabled: true }
+  carManufacturer: { enabled: true },
+  brakeBias: { enabled: false },
+  enhancedGapCalculation: {
+    enabled: true,
+    interpolationMethod: 'linear',
+    sampleInterval: 0.01,
+    maxLapHistory: 5,
+  }
 };
 
 const migrateConfig = (savedConfig: unknown): RelativeWidgetSettings['config'] => {
   if (!savedConfig || typeof savedConfig !== 'object') return defaultConfig;
   const config = savedConfig as Record<string, unknown>;
+  const enhancedGap = config.enhancedGapCalculation as { enabled?: boolean; interpolationMethod?: 'linear' | 'cubic'; sampleInterval?: number; maxLapHistory?: number } | undefined;
   return {
     buffer: (config.buffer as { value?: number })?.value ?? 3,
     background: { opacity: (config.background as { opacity?: number })?.opacity ?? 0 },
@@ -29,6 +37,13 @@ const migrateConfig = (savedConfig: unknown): RelativeWidgetSettings['config'] =
     fastestTime: { enabled: (config.fastestTime as { enabled?: boolean })?.enabled ?? false },
     compound: { enabled: (config.compound as { enabled?: boolean })?.enabled ?? false },
     carManufacturer: { enabled: (config.carManufacturer as { enabled?: boolean })?.enabled ?? false },
+    brakeBias: { enabled: (config.brakeBias as { enabled?: boolean })?.enabled ?? false },
+    enhancedGapCalculation: {
+      enabled: enhancedGap?.enabled ?? true,
+      interpolationMethod: enhancedGap?.interpolationMethod ?? 'linear',
+      sampleInterval: enhancedGap?.sampleInterval ?? 0.01,
+      maxLapHistory: enhancedGap?.maxLapHistory ?? 5,
+    },
   };
 };
 
@@ -41,6 +56,21 @@ export const RelativeSettings = () => {
     enabled: savedSettings?.enabled ?? true,
     config: migrateConfig(savedSettings?.config),
   });
+
+  // Sync settings with RelativeGapStore only on mount
+  const updateStoreConfig = useRelativeGapStore((state) => state.updateConfig);
+
+  useEffect(() => {
+    // Only update on mount with the initial saved settings
+    const config = settings.config.enhancedGapCalculation;
+    updateStoreConfig({
+      enabled: config.enabled,
+      interpolationMethod: config.interpolationMethod,
+      sampleInterval: config.sampleInterval,
+      maxLapHistory: config.maxLapHistory,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Empty deps - only run once on mount
 
   if (!currentDashboard) {
     return <>Loading...</>;
@@ -150,6 +180,114 @@ export const RelativeSettings = () => {
                 handleConfigChange({ carManufacturer: { enabled } })
               }
             />
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-slate-300">Show Brake Bias</span>
+            <ToggleSwitch
+              enabled={settings.config.brakeBias.enabled}
+              onToggle={(enabled) =>
+                handleConfigChange({ brakeBias: { enabled } })
+              }
+            />
+          </div>
+
+          {/* Divider */}
+          <div className="border-t border-slate-600 my-4" />
+
+          {/* Enhanced Gap Calculation Section */}
+          <div className="space-y-4">
+            <div>
+              <h3 className="text-sm font-semibold text-slate-200 mb-2">
+                Enhanced Gap Calculation
+              </h3>
+              <p className="text-xs text-slate-400 mb-3">
+                Uses position/time records for accurate multi-class gaps instead of simple distance-based estimates
+              </p>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="text-sm text-slate-300">Enable Enhanced Calculation</span>
+                <p className="text-xs text-slate-400">
+                  Uses lap data interpolation for accuracy
+                </p>
+              </div>
+              <ToggleSwitch
+                enabled={settings.config.enhancedGapCalculation.enabled}
+                onToggle={(enabled) => {
+                  const newConfig = {
+                    ...settings.config.enhancedGapCalculation,
+                    enabled,
+                  };
+                  handleConfigChange({
+                    enhancedGapCalculation: newConfig,
+                  });
+                  // Update store immediately
+                  updateStoreConfig(newConfig);
+                }}
+              />
+            </div>
+
+            {settings.config.enhancedGapCalculation.enabled && (
+              <>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-sm text-slate-300">Interpolation Method</span>
+                    <p className="text-xs text-slate-400">
+                      Linear is more stable, cubic is smoother
+                    </p>
+                  </div>
+                  <select
+                    value={settings.config.enhancedGapCalculation.interpolationMethod}
+                    onChange={(e) => {
+                      const newConfig = {
+                        ...settings.config.enhancedGapCalculation,
+                        interpolationMethod: e.target.value as 'linear' | 'cubic',
+                      };
+                      handleConfigChange({
+                        enhancedGapCalculation: newConfig,
+                      });
+                      // Update store immediately
+                      updateStoreConfig(newConfig);
+                    }}
+                    className="bg-slate-700 text-slate-200 px-3 py-1 rounded border border-slate-600 focus:border-blue-500 focus:outline-none"
+                  >
+                    <option value="linear">Linear</option>
+                    <option value="cubic">Cubic Spline</option>
+                  </select>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-sm text-slate-300">Max Lap History</span>
+                    <p className="text-xs text-slate-400">
+                      Number of recent laps to keep for each car
+                    </p>
+                  </div>
+                  <select
+                    value={settings.config.enhancedGapCalculation.maxLapHistory}
+                    onChange={(e) => {
+                      const newConfig = {
+                        ...settings.config.enhancedGapCalculation,
+                        maxLapHistory: parseInt(e.target.value),
+                      };
+                      handleConfigChange({
+                        enhancedGapCalculation: newConfig,
+                      });
+                      // Update store immediately
+                      updateStoreConfig(newConfig);
+                    }}
+                    className="bg-slate-700 text-slate-200 px-3 py-1 rounded border border-slate-600 focus:border-blue-500 focus:outline-none"
+                  >
+                    {[3, 5, 7, 10].map((num) => (
+                      <option key={num} value={num}>
+                        {num} laps
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}

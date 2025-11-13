@@ -10,9 +10,11 @@ import type {
   RelativeGap,
   GapCalculationParams,
   EdgeCaseFlags,
+  LapPositionRecord,
 } from './types';
 import {
   interpolateTime,
+  calculateTimeGapFromSamples,
   calculatePositionDifference,
   getMedianLapTime,
 } from './InterpolationEngine';

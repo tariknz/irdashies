@@ -15,7 +15,7 @@ import type {
 
 describe('RelativeGapCalculator', () => {
   // Helper function to create test position samples
-  function createTestSamples(count = 100): PositionSample[] {
+  function createTestSamples(count: number = 100): PositionSample[] {
     const samples: PositionSample[] = [];
     for (let i = 0; i < count; i++) {
       samples.push({
@@ -28,7 +28,7 @@ describe('RelativeGapCalculator', () => {
   }
 
   // Helper to create a car history with lap records
-  function createTestHistory(carIdx: number, lapCount = 3): CarPositionHistory {
+  function createTestHistory(carIdx: number, lapCount: number = 3): CarPositionHistory {
     const lapRecords: LapPositionRecord[] = [];
     for (let i = 0; i < lapCount; i++) {
       lapRecords.push({

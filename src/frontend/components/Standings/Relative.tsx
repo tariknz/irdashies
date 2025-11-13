@@ -5,12 +5,16 @@ import { useRelativeSettings, useDriverRelatives } from './hooks';
 import { DriverRatingBadge } from './components/DriverRatingBadge/DriverRatingBadge';
 import { SessionBar } from './components/SessionBar/SessionBar';
 import { SessionFooter } from './components/SessionFooter/SessionFooter';
+import { useRelativeGapStoreUpdater } from '@irdashies/context';
 
 export const Relative = () => {
   const config = useRelativeSettings();
   const buffer = config?.buffer ?? 3;
   const standings = useDriverRelatives({ buffer });
   const [parent] = useAutoAnimate();
+
+  // Update relative gap store with telemetry data
+  useRelativeGapStoreUpdater();
 
   // Always render 2 * buffer + 1 rows (buffer above + player + buffer below)
   const totalRows = 2 * buffer + 1;

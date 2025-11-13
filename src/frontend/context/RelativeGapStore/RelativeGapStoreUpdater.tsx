@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-// import type { Telemetry } from '@irdashies/types';
+import type { Telemetry } from '@irdashies/types';
 import { useTelemetryStore } from '../TelemetryStore/TelemetryStore';
 import { useSessionStore } from '../SessionStore/SessionStore';
 import { useRelativeGapStore } from './RelativeGapStore';
