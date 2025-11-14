@@ -4,13 +4,13 @@ import {
   useSessionStore,
   useTelemetryValues,
 } from '@irdashies/context';
-import { useDriverStandings } from './useDriverStandings';
+import { useDriverStandings } from './useDriverPositions';
 import type { StandingsWidgetSettings } from '../../Settings/types';
+import type { Standings } from '../createStandings';
 
 export const useDriverRelatives = ({ buffer, settings }: { buffer: number; settings?: StandingsWidgetSettings['config'] }) => {
-  const driversGrouped = useDriverStandings(settings);
-  // Flatten the grouped standings
-  const drivers = driversGrouped.flatMap(([, classStandings]) => classStandings);
+  const driversGrouped = useDriverStandings();
+  const drivers = driversGrouped as Standings[];
   const carIdxLapDistPct = useTelemetryValues('CarIdxLapDistPct');
   const playerIndex = useDriverCarIdx();
   const paceCarIdx =
