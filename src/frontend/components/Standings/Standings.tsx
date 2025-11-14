@@ -44,8 +44,9 @@ export const Standings = () => {
                 classColor={isMultiClass ? classStats?.[classId]?.color : highlightColor}
                 totalDrivers={classStats?.[classId]?.total}
                 sof={classStats?.[classId]?.sof}
-                highlightColor={highlightColor} 
-                isMultiClass={isMultiClass} 
+                highlightColor={highlightColor}
+                isMultiClass={isMultiClass}
+                colSpan={12}
               />
               {classStandings.map((result) => (
                 <DriverInfoRow
@@ -58,8 +59,9 @@ export const Standings = () => {
                   hasFastestTime={result.hasFastestTime}
                   delta={settings?.delta?.enabled ? result.delta : undefined}
                   position={result.classPosition}
+                  iRating={settings?.iRating?.enabled ? result.driver.rating : undefined}
                   iratingChange={
-                    settings?.iRatingChange?.enabled ? (
+                    settings?.iratingChange?.enabled ? (
                       <RatingChange value={result.iratingChange} />
                     ) : undefined
                   }
@@ -77,7 +79,7 @@ export const Standings = () => {
                   onPitRoad={result.onPitRoad}
                   onTrack={result.onTrack}
                   radioActive={result.radioActive}
-                  isMultiClass={isMultiClass} 
+                  isMultiClass={isMultiClass}
                   flairId={settings?.countryFlags?.enabled ?? true ? result.driver?.flairId : undefined}
                   tireCompound={settings?.compound?.enabled ?? true ? result.tireCompound : undefined}
                   carId={settings?.carManufacturer?.enabled ?? true ? result.carId : undefined}
@@ -91,6 +93,8 @@ export const Standings = () => {
                   }
                   lapTimeDeltas={settings?.lapTimeDeltas?.enabled ? result.lapTimeDeltas : undefined}
                   numLapDeltasToShow={settings?.lapTimeDeltas?.enabled ? settings.lapTimeDeltas.numLaps : undefined}
+                  displayOrder={settings?.displayOrder}
+                  config={settings}
                 />
               ))}
             </Fragment>

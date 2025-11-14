@@ -12,7 +12,7 @@ export const defaultDashboard: DashboardLayout = {
         "height": 774
       },
       "config": {
-        "iRatingChange": {
+        "iratingChange": {
           "enabled": true
         },
         "badge": {
