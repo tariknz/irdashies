@@ -30,7 +30,7 @@ export const RatingChange = ({ value }: RatingChangeProps) => {
   }
 
   return (
-    <span className={`flex items-center gap-0.5 ${color}`}>
+    <span className={`flex items-center justify-center gap-0.5 ${color}`}>
       {icon}
       {text}
     </span>

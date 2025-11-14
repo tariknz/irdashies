@@ -5,9 +5,11 @@ import {
   useTelemetryValues,
 } from '@irdashies/context';
 import { useDriverStandings } from './useDriverPositions';
+import type { Standings } from '../createStandings';
 
 export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
-  const drivers = useDriverStandings();
+  const driversGrouped = useDriverStandings();
+  const drivers = driversGrouped as Standings[];
   const carIdxLapDistPct = useTelemetryValues('CarIdxLapDistPct');
   const playerIndex = useDriverCarIdx();
   const paceCarIdx =
