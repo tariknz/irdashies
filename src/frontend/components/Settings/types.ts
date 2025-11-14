@@ -87,3 +87,17 @@ export interface InputWidgetSettings extends BaseWidgetSettings {
     steer: SteerWidgetSettings;
   };
 }
+
+export interface FuelWidgetSettings extends BaseWidgetSettings {
+  config: {
+    fuelUnits: 'L' | 'gal';
+    showConsumption: boolean;
+    showLastLap: boolean;
+    show3LapAvg: boolean;
+    show10LapAvg: boolean;
+    showPitWindow: boolean;
+    showFuelSave: boolean;
+    safetyMargin: number;
+    background: { opacity: number };
+  };
+}

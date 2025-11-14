@@ -128,6 +128,7 @@ export class OverlayManager {
   }
 
   public closeOrCreateWindows(dashboardLayout: DashboardLayout): void {
+    console.log('[OverlayManager] closeOrCreateWindows called');
     const { widgets } = dashboardLayout;
     const widgetsById = widgets.reduce(
       (acc, widget) => {
@@ -137,9 +138,15 @@ export class OverlayManager {
       {} as Record<string, DashboardWidget>
     );
 
+    console.log('[OverlayManager] Widgets in dashboard:', Object.keys(widgetsById));
+    console.log('[OverlayManager] Currently open windows:', Object.keys(this.overlayWindows));
+
     const openWidgets = this.getOverlays();
     openWidgets.forEach(({ widget, window }) => {
+      const dashboardWidget = widgetsById[widget.id];
+      console.log(`[OverlayManager] Checking widget ${widget.id}: enabled=${dashboardWidget?.enabled}`);
       if (!widgetsById[widget.id]?.enabled) {
+        console.log(`[OverlayManager] CLOSING window for ${widget.id} - widget disabled or not in dashboard`);
         window.close();
         this.overlayWindows = Object.fromEntries(
           Object.entries(this.overlayWindows).filter(([key]) => key !== widget.id)
@@ -148,9 +155,16 @@ export class OverlayManager {
     });
 
     widgets.forEach((widget) => {
-      if (!widget.enabled) return; // skip disabled widgets
+      if (!widget.enabled) {
+        console.log(`[OverlayManager] Skipping disabled widget: ${widget.id}`);
+        return;
+      }
       if (!this.overlayWindows[widget.id]) {
-        this.createOverlayWindow(widget);
+        console.log(`[OverlayManager] Creating NEW window for ${widget.id}`);
+        const window = this.createOverlayWindow(widget);
+        trackWindowMovement(widget, window);
+      } else {
+        console.log(`[OverlayManager] Window already exists for ${widget.id}`);
       }
     });
   }
