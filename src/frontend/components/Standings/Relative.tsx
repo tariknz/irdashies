@@ -12,6 +12,7 @@ export const Relative = () => {
   const buffer = config?.buffer ?? 3;
   const standings = useDriverRelatives({ buffer });
   const [parent] = useAutoAnimate();
+  const isMultiClass = standings.length > 0 && new Set(standings.map(s => s.carClass.id)).size > 1; 
 
   // Update relative gap store with telemetry data
   useRelativeGapStoreUpdater();
@@ -69,6 +70,7 @@ export const Relative = () => {
           lastTimeState={config?.lastTime?.enabled ? result.lastTimeState : undefined}
           tireCompound={config?.compound?.enabled ? result.tireCompound : undefined}
           carId={config?.carManufacturer?.enabled ?? true ? result.carId : undefined}
+          isMultiClass={isMultiClass}
           badge={
             <DriverRatingBadge
               license={result.driver?.license}
@@ -78,7 +80,7 @@ export const Relative = () => {
         />
       );
     });
-  }, [standings, playerIndex, totalRows, config]);
+  }, [standings, playerIndex, totalRows, config, isMultiClass]);
 
   // If no player found, render empty table with consistent height
   if (playerIndex === -1) {
@@ -118,5 +120,6 @@ const DummyDriverRow = () => (
     isPlayer={false}
     hasFastestTime={false}
     hidden={true}
+    isMultiClass={false} 
   />
 );
