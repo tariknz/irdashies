@@ -5,10 +5,9 @@ import {
   useTelemetryValues,
 } from '@irdashies/context';
 import { useDriverStandings } from './useDriverPositions';
-import type { StandingsWidgetSettings } from '../../Settings/types';
 import type { Standings } from '../createStandings';
 
-export const useDriverRelatives = ({ buffer, settings }: { buffer: number; settings?: StandingsWidgetSettings['config'] }) => {
+export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
   const driversGrouped = useDriverStandings();
   const drivers = driversGrouped as Standings[];
   const carIdxLapDistPct = useTelemetryValues('CarIdxLapDistPct');

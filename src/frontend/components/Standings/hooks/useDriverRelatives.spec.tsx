@@ -111,9 +111,13 @@ describe('useDriverRelatives', () => {
     vi.mocked(useSessionStore).mockImplementation((selector) =>
       selector({
         session: {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           WeekendInfo: {} as any,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           SessionInfo: { Sessions: [] } as any,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           CameraInfo: { Groups: [] } as any,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           RadioInfo: { Radios: [] } as any,
           DriverInfo: {
             DriverCarIdx: 0,
@@ -148,7 +152,9 @@ describe('useDriverRelatives', () => {
             DriverTires: [],
             Drivers: [],
           },
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           SplitTimeInfo: {} as any,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           CarSetup: {} as any,
         },
         setSession: vi.fn(),
