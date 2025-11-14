@@ -106,7 +106,7 @@ export function isGreenFlag(sessionFlags: number): boolean {
 export function calculateConfidence(
   validLapCount: number
 ): 'high' | 'medium' | 'low' {
-  if (validLapCount >= 10) return 'high';
-  if (validLapCount >= 5) return 'medium';
+  if (validLapCount >= 5) return 'high';
+  if (validLapCount >= 3) return 'medium';
   return 'low';
 }

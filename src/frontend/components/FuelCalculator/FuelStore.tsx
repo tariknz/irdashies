@@ -37,6 +37,11 @@ interface FuelStoreActions {
   ) => void;
 
   /**
+   * Update just the lap distance percentage (for tracking lap crossing)
+   */
+  updateLapDistPct: (lapDistPct: number) => void;
+
+  /**
    * Clear all data (e.g., on session change)
    */
   clearAllData: () => void;
@@ -97,6 +102,10 @@ export const useFuelStore = create<FuelStore>((set, get) => ({
       lapCrossingTime: sessionTime,
       lastLap: currentLap,
     });
+  },
+
+  updateLapDistPct: (lapDistPct: number) => {
+    set({ lastLapDistPct: lapDistPct });
   },
 
   clearAllData: () => {
