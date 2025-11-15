@@ -4,7 +4,7 @@
  */
 
 import { useEffect, useMemo } from 'react';
-import { useTelemetryValues, useSessionLaps } from '@irdashies/context';
+import { useTelemetryValues, useSessionLaps, useTelemetry } from '@irdashies/context';
 import { useFuelStore } from './FuelStore';
 import type { FuelCalculation, FuelLapData } from './types';
 import {
@@ -28,6 +28,10 @@ export function useFuelCalculation(
   const sessionTime = useTelemetryValues('SessionTime')?.[0];
   const sessionNum = useTelemetryValues('SessionNum')?.[0];
   const sessionLaps = useSessionLaps(sessionNum);
+
+  // Get race leader's lap for multi-class racing
+  const carIdxLap = useTelemetry('CarIdxLap');
+  const carIdxPosition = useTelemetry('CarIdxPosition');
 
   const updateSessionInfo = useFuelStore((state) => state.updateSessionInfo);
   const addLapData = useFuelStore((state) => state.addLapData);
@@ -143,6 +147,14 @@ export function useFuelCalculation(
     const avg10Laps = calculateWeightedAverage(last10);
     const avgAllGreenLaps = calculateWeightedAverage(greenLaps);
 
+    // Calculate min and max fuel consumption from valid laps
+    const minLapUsage = validLaps.length > 0
+      ? Math.min(...validLaps.map(l => l.fuelUsed))
+      : 0;
+    const maxLapUsage = validLaps.length > 0
+      ? Math.max(...validLaps.map(l => l.fuelUsed))
+      : 0;
+
     // Use 10-lap average as primary metric, fall back to 3-lap if needed
     const avgFuelPerLap = last10.length >= 5 ? avg10Laps : avg3Laps;
 
@@ -165,6 +177,22 @@ export function useFuelCalculation(
       totalLaps = lap + lapsRemaining;
     }
 
+    // For lap-based races, account for race leader in multi-class racing
+    // Find the leader (position 1) and their lap number
+    if (carIdxPosition?.value && carIdxLap?.value && sessionLapsRemain !== 32767) {
+      const leaderCarIdx = carIdxPosition.value.findIndex((pos) => pos === 1);
+      if (leaderCarIdx !== -1) {
+        const leaderLap = carIdxLap.value[leaderCarIdx];
+        if (leaderLap !== undefined && totalLaps > 0) {
+          // Leader's laps remaining
+          const leaderLapsRemaining = totalLaps - leaderLap;
+          // Use the minimum of your laps remaining or leader's laps remaining
+          // This accounts for being lapped - race ends when leader finishes
+          lapsRemaining = Math.min(lapsRemaining, leaderLapsRemaining);
+        }
+      }
+    }
+
     // Calculate fuel needed with safety margin
     const fuelNeeded = lapsRemaining * avgFuelPerLap * (1 + safetyMargin);
     const canFinish = fuelLevel >= fuelNeeded;
@@ -178,6 +206,9 @@ export function useFuelCalculation(
     // Target consumption for fuel saving
     const targetConsumption = lapsRemaining > 0 ? fuelLevel / lapsRemaining : 0;
 
+    // Calculate fuel at finish (current fuel - fuel needed for remaining laps)
+    const fuelAtFinish = fuelLevel - (lapsRemaining * avgFuelPerLap);
+
     // Calculate confidence
     const confidence = calculateConfidence(validLaps.length);
 
@@ -187,6 +218,8 @@ export function useFuelCalculation(
       avg3Laps,
       avg10Laps,
       avgAllGreenLaps,
+      minLapUsage,
+      maxLapUsage,
       lapsWithFuel,
       lapsRemaining,
       totalLaps,
@@ -198,6 +231,7 @@ export function useFuelCalculation(
       canFinish,
       targetConsumption,
       confidence,
+      fuelAtFinish,
     };
 
     // console.log('[FuelCalculator] Calculation result:', result);
@@ -210,6 +244,8 @@ export function useFuelCalculation(
     sessionLaps,
     sessionTimeRemain,
     safetyMargin,
+    carIdxPosition?.value,
+    carIdxLap?.value,
   ]);
 
   return calculation;
