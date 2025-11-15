@@ -1,6 +1,8 @@
 import { useTelemetryValue } from '@irdashies/context';
 
 export const useInputs = () => {
+  console.log('🎮 useInputs hook called');
+  
   const brake = useTelemetryValue('Brake');
   const throttle = useTelemetryValue('Throttle');
   const clutch = useTelemetryValue('Clutch');
@@ -10,5 +12,7 @@ export const useInputs = () => {
   const steer = useTelemetryValue('SteeringWheelAngle');
   const brakeAbsActive = useTelemetryValue<boolean>('BrakeABSactive');
 
-  return { brake, throttle, clutch, gear, speed, unit, steer, brakeAbsActive };
+  const result = { brake, throttle, clutch, gear, speed, unit, steer, brakeAbsActive };
+    
+  return result;
 };
