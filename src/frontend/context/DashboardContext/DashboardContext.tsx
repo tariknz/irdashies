@@ -32,8 +32,15 @@ export const DashboardProvider: React.FC<{
   const [isDemoMode, setIsDemoMode] = useState(false);
 
   useEffect(() => {
+    console.log('📊 DashboardProvider mounted');
     bridge.reloadDashboard();
-    bridge.dashboardUpdated((dashboard) => setDashboard(dashboard));
+    bridge.dashboardUpdated((dashboard) => {
+      console.log('📊 DashboardProvider received dashboard update:', dashboard ? 'present' : 'null');
+      if (dashboard) {
+        console.log('📊 Dashboard generalSettings:', dashboard.generalSettings);
+      }
+      setDashboard(dashboard);
+    });
     bridge.onEditModeToggled((editMode) => setEditMode(editMode));
     bridge.getAppVersion?.().then((version) => setVersion(version));
   }, [bridge]);

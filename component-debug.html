@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Component Debug Test</title>
+  <style>
+    body {
+      font-family: monospace;
+      background: #1a1a1a;
+      color: #fff;
+      padding: 20px;
+    }
+    .section {
+      background: #2a2a2a;
+      padding: 20px;
+      margin: 20px 0;
+      border-radius: 8px;
+    }
+    .success { color: #4ade80; }
+    .error { color: #ff6b6b; }
+    .warning { color: #fbbf24; }
+    button {
+      background: #4ade80;
+      color: #000;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-family: monospace;
+      font-size: 14px;
+    }
+    button:hover {
+      background: #22c55e;
+    }
+    pre {
+      background: #1a1a1a;
+      padding: 10px;
+      border-radius: 4px;
+      overflow-x: auto;
+    }
+  </style>
+</head>
+<body>
+  <h1>🔍 Component Debug Tool</h1>
+  
+  <div class="section">
+    <h2>Test URLs</h2>
+    <button onclick="testComponentServer()">Test Component Server (Port 3000)</button>
+    <button onclick="testViteServer()">Test Vite Server (Port 5173)</button>
+    <button onclick="testWebSocket()">Test WebSocket Connection</button>
+    <button onclick="testFullComponent()">Open Test Component</button>
+  </div>
+
+  <div class="section">
+    <h2>Server Status</h2>
+    <div id="server-status">Checking...</div>
+  </div>
+
+  <div class="section">
+    <h2>Dashboard State</h2>
+    <div id="dashboard-state">Checking...</div>
+  </div>
+
+  <div class="section">
+    <h2>Console Output</h2>
+    <pre id="console-output">Waiting for tests...</pre>
+  </div>
+
+  <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+  <script>
+    const log = (msg, type = 'info') => {
+      const output = document.getElementById('console-output');
+      const timestamp = new Date().toLocaleTimeString();
+      const color = type === 'error' ? '#ff6b6b' : type === 'success' ? '#4ade80' : type === 'warning' ? '#fbbf24' : '#60a5fa';
+      output.innerHTML += `<span style="color: ${color}">[${timestamp}] ${msg}</span>\n`;
+      output.scrollTop = output.scrollHeight;
+    };
+
+    async function testComponentServer() {
+      log('Testing component server...', 'info');
+      try {
+        const response = await fetch('http://localhost:3000/health');
+        if (response.ok) {
+          const data = await response.json();
+          log(`✅ Component server is running: ${data.message}`, 'success');
+          document.getElementById('server-status').innerHTML = '<span class="success">✅ Component Server: Online</span>';
+        } else {
+          log(`❌ Component server returned: ${response.status}`, 'error');
+          document.getElementById('server-status').innerHTML = '<span class="error">❌ Component Server: Error</span>';
+        }
+      } catch (err) {
+        log(`❌ Component server not accessible: ${err.message}`, 'error');
+        document.getElementById('server-status').innerHTML = '<span class="error">❌ Component Server: Offline</span>';
+      }
+    }
+
+    async function testViteServer() {
+      log('Testing Vite server...', 'info');
+      try {
+        const response = await fetch('http://localhost:5173/component-renderer.html');
+        if (response.ok) {
+          log('✅ Vite server is running', 'success');
+        } else {
+          log(`❌ Vite server returned: ${response.status}`, 'error');
+        }
+      } catch (err) {
+        log(`❌ Vite server not accessible: ${err.message}`, 'error');
+      }
+    }
+
+    async function testWebSocket() {
+      log('Testing WebSocket connection...', 'info');
+      const socket = io('http://localhost:3000', {
+        reconnection: false,
+        timeout: 5000
+      });
+
+      socket.on('connect', () => {
+        log('✅ WebSocket connected successfully', 'success');
+      });
+
+      socket.on('initialState', (state) => {
+        log(`✅ Received initialState:`, 'success');
+        log(`  - Telemetry: ${state.telemetry ? 'present' : 'MISSING'}`, state.telemetry ? 'success' : 'warning');
+        log(`  - Session: ${state.sessionData ? 'present' : 'MISSING'}`, state.sessionData ? 'success' : 'warning');
+        log(`  - IsRunning: ${state.isRunning}`, 'info');
+        setTimeout(() => socket.disconnect(), 1000);
+      });
+
+      socket.on('connect_error', (err) => {
+        log(`❌ WebSocket connection failed: ${err.message}`, 'error');
+      });
+
+      setTimeout(() => {
+        if (!socket.connected) {
+          log('⏱️ WebSocket connection timeout', 'warning');
+          socket.disconnect();
+        }
+      }, 6000);
+    }
+
+    async function getDashboardState() {
+      log('Fetching dashboard state...', 'info');
+      try {
+        const response = await fetch('http://localhost:3000/debug/dashboard');
+        if (response.ok) {
+          const data = await response.json();
+          log(`Dashboard info:`, 'info');
+          log(`  - Has dashboard: ${data.hasDashboard}`, data.hasDashboard ? 'success' : 'warning');
+          log(`  - Widget count: ${data.widgetCount}`, 'info');
+          if (data.widgets && data.widgets.length > 0) {
+            log(`  - Widgets:`, 'info');
+            data.widgets.forEach(w => {
+              log(`    • ${w.id}: ${w.hasConfig ? w.configKeys.length + ' config keys' : 'no config'}`, 'info');
+            });
+          }
+          document.getElementById('dashboard-state').innerHTML = `
+            <div>
+              <p><strong>Has Dashboard:</strong> ${data.hasDashboard ? '<span class="success">Yes</span>' : '<span class="error">No</span>'}</p>
+              <p><strong>Widgets:</strong> ${data.widgetCount}</p>
+              ${data.widgets ? `<pre>${JSON.stringify(data.widgets, null, 2)}</pre>` : ''}
+            </div>
+          `;
+        } else {
+          log(`❌ Failed to fetch dashboard: ${response.status}`, 'error');
+        }
+      } catch (err) {
+        log(`❌ Error fetching dashboard: ${err.message}`, 'error');
+      }
+    }
+
+    function testFullComponent() {
+      log('Opening test component in new window...', 'info');
+      window.open('http://localhost:3000/component/standings', '_blank');
+    }
+
+    // Auto-run tests on load
+    window.addEventListener('load', () => {
+      log('=== Starting automatic tests ===', 'info');
+      setTimeout(() => testComponentServer(), 500);
+      setTimeout(() => testViteServer(), 1500);
+      setTimeout(() => getDashboardState(), 2500);
+      setTimeout(() => testWebSocket(), 3500);
+    });
+  </script>
+</body>
+</html>

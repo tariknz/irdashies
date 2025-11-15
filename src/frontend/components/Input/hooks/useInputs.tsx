@@ -1,8 +1,7 @@
 import { useTelemetryValue } from '@irdashies/context';
 
 export const useInputs = () => {
-  console.log('🎮 useInputs hook called');
-  
+ 
   const brake = useTelemetryValue('Brake');
   const throttle = useTelemetryValue('Throttle');
   const clutch = useTelemetryValue('Clutch');

@@ -1,9 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { createRoot } from 'react-dom/client';
+import React from 'react';
 import { WIDGET_MAP } from '../../frontend/WidgetIndex';
 import type { IrSdkBridge } from '../../types';
 import {
   DashboardProvider,
+  useDashboard,
   RunningStateProvider,
   SessionProvider,
   TelemetryProvider,
@@ -32,6 +34,7 @@ class WebSocketBridge implements IrSdkBridge {
   // Dashboard Bridge methods
   private editModeCallbacks: Set<(value: boolean) => void>;
   private dashboardUpdateCallbacks: Set<(value: any) => void>;
+  private lastDashboard: any = null;
 
   constructor() {
     this.telemetryCallbacks = new Set();
@@ -87,6 +90,7 @@ class WebSocketBridge implements IrSdkBridge {
           console.log('📥 Received initialState from bridge:', state);
           console.log('  Telemetry:', state.telemetry ? 'present' : 'missing');
           console.log('  SessionData:', state.sessionData ? 'present' : 'missing');
+          console.log('  Dashboard:', state.dashboard ? 'present' : 'missing');
           console.log('  IsRunning:', state.isRunning);
 
           if (state.telemetry) {
@@ -106,6 +110,17 @@ class WebSocketBridge implements IrSdkBridge {
                 cb(state.sessionData);
               } catch (e) {
                 console.error('Error in session callback:', e);
+              }
+            });
+          }
+          if (state.dashboard) {
+            console.log('  📤 Triggering dashboard callbacks...');
+            this.lastDashboard = state.dashboard;
+            this.dashboardUpdateCallbacks.forEach((cb) => {
+              try {
+                cb(state.dashboard);
+              } catch (e) {
+                console.error('Error in dashboard callback:', e);
               }
             });
           }
@@ -147,6 +162,18 @@ class WebSocketBridge implements IrSdkBridge {
               cb(running);
             } catch (e) {
               console.error('Error in running state callback:', e);
+            }
+          });
+        });
+
+        this.socket.on('dashboardUpdated', (dashboard: any) => {
+          console.log('📊 Received dashboardUpdated event');
+          this.lastDashboard = dashboard;
+          this.dashboardUpdateCallbacks.forEach((cb) => {
+            try {
+              cb(dashboard);
+            } catch (e) {
+              console.error('Error in dashboard update callback:', e);
             }
           });
         });
@@ -215,6 +242,15 @@ class WebSocketBridge implements IrSdkBridge {
 
   dashboardUpdated(callback: (value: any) => void): void {
     this.dashboardUpdateCallbacks.add(callback);
+    // If we already have a dashboard, send it immediately to the new callback
+    if (this.lastDashboard) {
+      console.log('📊 Sending cached dashboard to new callback');
+      try {
+        callback(this.lastDashboard);
+      } catch (e) {
+        console.error('Error in dashboard callback:', e);
+      }
+    }
   }
 
   reloadDashboard(): void {
@@ -406,12 +442,57 @@ export async function renderComponent(
     console.log('    Telemetry:', currentTelemetry ? 'present' : 'MISSING');
     console.log('    Session:', currentSession ? 'present' : 'MISSING');
 
+    // Component that applies theme CSS classes - must be inside DashboardProvider
+    const ThemeWrapper = () => {
+      const { currentDashboard } = useDashboard();
+      const settings = currentDashboard?.generalSettings;
+
+      React.useEffect(() => {
+        console.log('🎨 ThemeWrapper effect running:', { settings, hasContainer: !!containerElement });
+        
+        if (!settings) {
+          console.log('  ⚠️ No settings yet');
+          return;
+        }
+
+        // Apply classes directly to the container element we're rendering into
+        const targetElement = containerElement;
+
+        // Add overlay-window class if not present (needed for CSS selectors)
+        if (!targetElement.classList.contains('overlay-window')) {
+          targetElement.classList.add('overlay-window');
+        }
+
+        // Remove all existing theme classes
+        targetElement.classList.forEach(className => {
+          if (className.startsWith('overlay-theme-')) {
+            targetElement.classList.remove(className);
+          }
+        });
+
+        // Add new theme classes based on settings
+        if (settings.fontSize) {
+          targetElement.classList.add(`overlay-theme-${settings.fontSize}`);
+          console.log(`  ✅ Applied font size class: overlay-theme-${settings.fontSize}`);
+        }
+
+        if (settings.colorPalette) {
+          targetElement.classList.add(`overlay-theme-color-${settings.colorPalette}`);
+          console.log(`  ✅ Applied color class: overlay-theme-color-${settings.colorPalette}`);
+        }
+
+        console.log('  📊 Final classList:', Array.from(targetElement.classList));
+      }, [settings]);
+
+      return <ComponentFn {...config} />;
+    };
+
     const WrappedComponent = (
       <DashboardProvider bridge={bridge as any}>
         <RunningStateProvider bridge={bridge as any}>
           <SessionProvider bridge={bridge as any} />
           <TelemetryProvider bridge={bridge as any} />
-          <ComponentFn {...config} />
+          <ThemeWrapper />
         </RunningStateProvider>
       </DashboardProvider>
     );

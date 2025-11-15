@@ -6,6 +6,7 @@
 
 // Only import what we need for the browser environment
 import './frontend/index.css';
+import './frontend/theme.css';
 import { renderComponent } from './app/bridge/componentRenderer';
 
 console.log('📦 Component renderer entry point loaded (NOT loading App.tsx)');
