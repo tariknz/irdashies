@@ -6,6 +6,7 @@ import { DriverRatingBadge } from './components/DriverRatingBadge/DriverRatingBa
 import { RatingChange } from './components/RatingChange/RatingChange';
 import { SessionBar } from './components/SessionBar/SessionBar';
 import { SessionFooter } from './components/SessionFooter/SessionFooter';
+import { TitleBar } from './components/TitleBar/TitleBar';
 import { useDashboard } from '@irdashies/context';
 import {
   useCarClassStats,
@@ -33,6 +34,7 @@ export const Standings = () => {
         ['--bg-opacity' as string]: `${settings?.background?.opacity ?? 0}%`,
       }}
     >
+      <TitleBar titleBarSettings={settings?.titleBar} />
       <SessionBar />
       <table className="w-full table-auto text-sm border-separate border-spacing-y-0.5 mb-3">
         <tbody ref={parent}>

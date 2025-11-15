@@ -14,7 +14,8 @@ const defaultConfig: RelativeWidgetSettings['config'] = {
   lastTime: { enabled: false },
   fastestTime: { enabled: false },
   compound: { enabled: false },
-  carManufacturer: { enabled: true }
+  carManufacturer: { enabled: true },
+  titleBar: { enabled: true, progressBar: { enabled: true } }
 };
 
 const migrateConfig = (savedConfig: unknown): RelativeWidgetSettings['config'] => {
@@ -28,7 +29,13 @@ const migrateConfig = (savedConfig: unknown): RelativeWidgetSettings['config'] =
     lastTime: { enabled: (config.lastTime as { enabled?: boolean })?.enabled ?? false },
     fastestTime: { enabled: (config.fastestTime as { enabled?: boolean })?.enabled ?? false },
     compound: { enabled: (config.compound as { enabled?: boolean })?.enabled ?? false },
-    carManufacturer: { enabled: (config.carManufacturer as { enabled?: boolean })?.enabled ?? false },
+    carManufacturer: { enabled: (config.carManufacturer as { enabled?: boolean })?.enabled ?? true },
+    titleBar: {
+      enabled: (config.titleBar as { enabled?: boolean })?.enabled ?? true,
+      progressBar: {
+        enabled: (config.titleBar as { progressBar?: { enabled?: boolean } })?.progressBar?.enabled ?? true
+      }
+    }
   };
 };
 
@@ -150,6 +157,45 @@ export const RelativeSettings = () => {
                 handleConfigChange({ carManufacturer: { enabled } })
               }
             />
+          </div>
+
+          {/* Title Bar Settings */}
+          <div className="space-y-3 pt-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-medium text-slate-200">Title Bar</h3>
+            </div>
+            <div className="space-y-2 pl-4">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-slate-300">Show Title Bar</span>
+                <ToggleSwitch
+                  enabled={settings.config.titleBar.enabled}
+                  onToggle={(enabled) =>
+                    handleConfigChange({
+                      titleBar: {
+                        ...settings.config.titleBar,
+                        enabled
+                      }
+                    })
+                  }
+                />
+              </div>
+              {settings.config.titleBar.enabled && (
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-300">Show Progress Bar</span>
+                  <ToggleSwitch
+                    enabled={settings.config.titleBar.progressBar.enabled}
+                    onToggle={(enabled) =>
+                      handleConfigChange({
+                        titleBar: {
+                          ...settings.config.titleBar,
+                          progressBar: { enabled }
+                        }
+                      })
+                    }
+                  />
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}

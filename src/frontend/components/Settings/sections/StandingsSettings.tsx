@@ -23,7 +23,8 @@ const defaultConfig: StandingsWidgetSettings['config'] = {
   },
   compound: { enabled: true },
   carManufacturer: { enabled: true },
-  lapTimeDeltas: { enabled: false, numLaps: 3 }
+  lapTimeDeltas: { enabled: false, numLaps: 3 },
+  titleBar: { enabled: true, progressBar: { enabled: true } }
 };
 
 // Migration function to handle missing properties in the new config format
@@ -82,6 +83,12 @@ const migrateConfig = (
     lapTimeDeltas: {
       enabled: (config.lapTimeDeltas as { enabled?: boolean })?.enabled ?? false,
       numLaps: (config.lapTimeDeltas as { numLaps?: number })?.numLaps ?? 3,
+    },
+    titleBar: {
+      enabled: (config.titleBar as { enabled?: boolean })?.enabled ?? true,
+      progressBar: {
+        enabled: (config.titleBar as { progressBar?: { enabled?: boolean } })?.progressBar?.enabled ?? true
+      }
     }
   };
 };
@@ -321,6 +328,45 @@ export const StandingsSettings = () => {
             </div>
           </div>
 
+          {/* Title Bar Settings */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-medium text-slate-200">Title Bar</h3>
+            </div>
+            <div className="space-y-3 pl-4">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-slate-300">Show Title Bar</span>
+                <ToggleSwitch
+                  enabled={settings.config.titleBar.enabled}
+                  onToggle={(enabled) =>
+                    handleConfigChange({
+                      titleBar: {
+                        ...settings.config.titleBar,
+                        enabled
+                      }
+                    })
+                  }
+                />
+              </div>
+              {settings.config.titleBar.enabled && (
+                <div className="flex items-center justify-between pl-4">
+                  <span className="text-sm text-slate-300">Show Progress Bar</span>
+                  <ToggleSwitch
+                    enabled={settings.config.titleBar.progressBar.enabled}
+                    onToggle={(enabled) =>
+                      handleConfigChange({
+                        titleBar: {
+                          ...settings.config.titleBar,
+                          progressBar: { enabled }
+                        }
+                      })
+                    }
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+
           {/* Background Settings */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
@@ -357,4 +403,4 @@ export const StandingsSettings = () => {
       )}
     </BaseSettingsSection>
   );
-}; 
+};

@@ -5,6 +5,7 @@ import { useRelativeSettings, useDriverRelatives } from './hooks';
 import { DriverRatingBadge } from './components/DriverRatingBadge/DriverRatingBadge';
 import { SessionBar } from './components/SessionBar/SessionBar';
 import { SessionFooter } from './components/SessionFooter/SessionFooter';
+import { TitleBar } from './components/TitleBar/TitleBar';
 
 export const Relative = () => {
   const config = useRelativeSettings();
@@ -82,6 +83,7 @@ export const Relative = () => {
   if (playerIndex === -1) {
     return (
       <div className="w-full h-full">
+        <TitleBar titleBarSettings={config?.titleBar} />
         <SessionBar />
         <table className="w-full table-auto text-sm border-separate border-spacing-y-0.5 mb-3 mt-3">
           <tbody ref={parent}>{rows}</tbody>
@@ -92,12 +94,13 @@ export const Relative = () => {
   }
 
   return (
-    <div 
+    <div
       className="w-full bg-slate-800/(--bg-opacity) rounded-sm p-2"
       style={{
         ['--bg-opacity' as string]: `${config?.background?.opacity ?? 0}%`,
       }}
     >
+      <TitleBar titleBarSettings={config?.titleBar} />
       <SessionBar />
       <table className="w-full table-auto text-sm border-separate border-spacing-y-0.5 mb-3 mt-3">
         <tbody ref={parent}>{rows}</tbody>
