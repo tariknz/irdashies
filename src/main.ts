@@ -31,6 +31,11 @@ app.on('ready', async () => {
 
   setupTaskbar(telemetrySink, overlayManager);
   publishDashboardUpdates(overlayManager);
+  
+  // Send initial dashboard to component server bridge
+  console.log('📊 Sending initial dashboard to component server');
+  const { emitDashboardUpdated } = await import('./app/storage/dashboardEvents');
+  emitDashboardUpdated(dashboard);
 });
 
 app.on('window-all-closed', () => app.quit());
