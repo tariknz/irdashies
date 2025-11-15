@@ -42,6 +42,22 @@ export async function startComponentServer(irsdkBridge?: IrSdkBridge, dashboardB
   });
 
   /**
+   * Debug endpoint to check current dashboard state
+   */
+  app.get('/debug/dashboard', (req: Request, res: Response) => {
+    res.json({
+      hasDashboard: !!currentDashboard,
+      dashboard: currentDashboard,
+      widgetCount: currentDashboard?.widgets?.length || 0,
+      widgets: currentDashboard?.widgets?.map(w => ({
+        id: w.id,
+        hasConfig: !!w.config,
+        configKeys: w.config ? Object.keys(w.config) : []
+      }))
+    });
+  });
+
+  /**
    * Serve a specific component as a standalone page
    * Uses an iframe to load component from Vite dev server
    * Passes widget config from dashboard if available
@@ -57,15 +73,38 @@ export async function startComponentServer(irsdkBridge?: IrSdkBridge, dashboardB
     const vitePort = process.env.VITE_PORT || '5173';
     const wsUrl = 'http://localhost:3000';
 
-    // Try to get widget config from dashboard
+    // Get widget config from dashboard (no stream config)
     let configParam = '';
+    const normalizedName = componentName.toLowerCase();
+    let finalConfig = {};
+    
+    console.log(`🔍 Component request for: ${componentName}`);
+    console.log(`🔍 Normalized name: ${normalizedName}`);
+    console.log(`🔍 Current dashboard exists: ${!!currentDashboard}`);
+    
     if (currentDashboard) {
-      const normalizedName = componentName.toLowerCase();
+      console.log(`🔍 Dashboard widgets count: ${currentDashboard.widgets?.length || 0}`);
+      console.log(`🔍 Dashboard widgets:`, currentDashboard.widgets?.map(w => w.id));
+      
       const widget = currentDashboard.widgets?.find((w) => w.id.toLowerCase() === normalizedName);
+      console.log(`🔍 Found widget: ${!!widget}`);
+      
       if (widget?.config) {
-        configParam = `&config=${encodeURIComponent(JSON.stringify(widget.config))}`;
-        console.log(`✅ Found widget config for ${componentName}`);
+        console.log(`✅ Found widget config for ${componentName}:`, JSON.stringify(widget.config, null, 2));
+        finalConfig = widget.config;
+      } else {
+        console.log(`⚠️ No widget config found for ${componentName}`);
+        if (widget) {
+          console.log(`⚠️ Widget exists but config is:`, widget.config);
+        }
       }
+    } else {
+      console.log(`⚠️ No dashboard available`);
+    }
+    
+    if (Object.keys(finalConfig).length > 0) {
+      configParam = `&config=${encodeURIComponent(JSON.stringify(finalConfig))}`;
+      console.log(`📋 Final browser config for ${componentName}:`, JSON.stringify(finalConfig, null, 2));
     }
 
     // Generate wrapper HTML that uses an iframe
@@ -84,7 +123,7 @@ export async function startComponentServer(irsdkBridge?: IrSdkBridge, dashboardB
         </style>
       </head>
       <body>
-        <iframe src="http://localhost:${vitePort}/component-renderer.html?component=${encodeURIComponent(componentName)}&wsUrl=${encodeURIComponent(wsUrl)}${configParam}"></iframe>
+        <iframe src="http://localhost:${vitePort}/index-component-renderer.html?component=${encodeURIComponent(componentName)}&wsUrl=${encodeURIComponent(wsUrl)}${configParam}"></iframe>
       </body>
       </html>
     `;
