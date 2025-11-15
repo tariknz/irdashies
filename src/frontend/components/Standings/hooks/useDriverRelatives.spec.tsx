@@ -1,8 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
 import { useDriverRelatives } from './useDriverRelatives';
-import { useDriverCarIdx, useSessionStore, useTelemetryValues } from '@irdashies/context';
-import { useDriverStandings } from './useDriverPositions';
 import type { Standings } from '../createStandings';
 
 // Mock the context hooks
@@ -10,11 +8,21 @@ vi.mock('@irdashies/context', () => ({
   useDriverCarIdx: vi.fn(),
   useTelemetryValues: vi.fn(),
   useSessionStore: vi.fn(),
+  useRelativeGapStore: vi.fn(),
 }));
 
 vi.mock('./useDriverPositions', () => ({
   useDriverStandings: vi.fn(),
 }));
+
+vi.mock('@irdashies/context/RelativeGapStore', () => ({
+  detectEdgeCases: vi.fn(() => ({ isLapping: false, isBeingLapped: false, isMultiClass: false })),
+  calculateRelativeGap: vi.fn(() => null),
+}));
+
+// Import mocked functions after vi.mock
+const { useDriverCarIdx, useTelemetryValues, useSessionStore, useRelativeGapStore } = await import('@irdashies/context');
+const { useDriverStandings } = await import('./useDriverPositions');
 
 describe('useDriverRelatives', () => {
   const mockDrivers: Standings[] = [
@@ -98,6 +106,9 @@ describe('useDriverRelatives', () => {
     vi.mocked(useTelemetryValues).mockImplementation((key: string) => {
       if (key === 'CarIdxLapDistPct') return mockCarIdxLapDistPct;
       if (key === 'CarIdxEstTime') return mockCarIdxEstTime;
+      if (key === 'CarIdxLap') return [1, 1, 1];
+      if (key === 'CarIdxTrackSurface') return [3, 3, 3];
+      if (key === 'SessionTime') return [100];
       return [];
     });
     vi.mocked(useDriverStandings).mockReturnValue(mockDrivers);
@@ -108,6 +119,24 @@ describe('useDriverRelatives', () => {
         },
       },
     });
+    vi.mocked(useRelativeGapStore).mockImplementation((selector: any) => {
+      const mockState = {
+        config: {
+          enabled: false,
+          interpolationMethod: 'linear' as const,
+        },
+        getCarHistory: vi.fn(() => ({ lapRecords: [] })),
+      };
+      return selector ? selector(mockState) : mockState;
+    });
+    // Mock getState for store access
+    (useRelativeGapStore as any).getState = vi.fn(() => ({
+      config: {
+        enabled: false,
+        interpolationMethod: 'linear' as const,
+      },
+      getCarHistory: vi.fn(() => ({ lapRecords: [] })),
+    }));
   });
 
   it('should return empty array when no player is found', () => {

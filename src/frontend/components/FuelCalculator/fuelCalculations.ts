@@ -84,7 +84,8 @@ export function detectLapCrossing(
   currentDistPct: number,
   lastDistPct: number
 ): boolean {
-  return lastDistPct > 0.9 && currentDistPct < 0.1;
+  // Use stricter threshold to avoid false positives at exact 0.0/1.0
+  return lastDistPct > 0.9 && currentDistPct < 0.1 && lastDistPct < 1.0;
 }
 
 /**
@@ -106,7 +107,7 @@ export function isGreenFlag(sessionFlags: number): boolean {
 export function calculateConfidence(
   validLapCount: number
 ): 'high' | 'medium' | 'low' {
-  if (validLapCount >= 5) return 'high';
-  if (validLapCount >= 3) return 'medium';
+  if (validLapCount >= 10) return 'high';
+  if (validLapCount >= 5) return 'medium';
   return 'low';
 }
