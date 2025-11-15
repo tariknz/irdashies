@@ -6,6 +6,10 @@ import type { IrSdkBridge } from '@irdashies/types';
 let isDemoMode = false;
 let currentBridge: IrSdkBridge | undefined;
 
+export function getCurrentBridge(): IrSdkBridge | undefined {
+  return currentBridge;
+}
+
 export async function iRacingSDKSetup(
   telemetrySink: TelemetrySink,
   overlayManager: OverlayManager
