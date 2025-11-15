@@ -9,7 +9,7 @@ import { useFuelCalculation } from './useFuelCalculation';
 import { formatFuel } from './fuelCalculations';
 import type { FuelCalculatorSettings } from './types';
 
-interface FuelCalculatorProps extends Partial<FuelCalculatorSettings> {}
+type FuelCalculatorProps = Partial<FuelCalculatorSettings>;
 
 export const FuelCalculator = ({
   fuelUnits = 'L',

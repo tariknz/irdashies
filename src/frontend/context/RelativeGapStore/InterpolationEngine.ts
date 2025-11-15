@@ -263,7 +263,7 @@ export function calculateTimeGapFromSamples(
  * @param lapRecords Array of lap records
  * @returns Median lap time or null if no valid laps
  */
-export function getMedianLapTime(lapRecords: Array<{ lapTime: number; isValid: boolean }>): number | null {
+export function getMedianLapTime(lapRecords: { lapTime: number; isValid: boolean }[]): number | null {
   const validLaps = lapRecords.filter((lap) => lap.isValid).map((lap) => lap.lapTime);
 
   if (validLaps.length === 0) return null;

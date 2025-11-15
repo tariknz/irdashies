@@ -70,7 +70,7 @@ export function gallonsToLiters(gallons: number): number {
 export function formatFuel(
   liters: number,
   units: 'L' | 'gal',
-  decimals: number = 2
+  decimals = 2
 ): string {
   const value = units === 'gal' ? litersToGallons(liters) : liters;
   return `${value.toFixed(decimals)} ${units}`;
