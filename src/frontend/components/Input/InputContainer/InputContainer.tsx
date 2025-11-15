@@ -28,34 +28,44 @@ export const InputContainer = ({
   settings,
 }: InputProps) => {
   return (
-    <div className="w-full h-full inline-flex gap-1 p-2 flex-row bg-slate-800/50">
+    <div className="w-full h-full flex gap-1 p-2 flex-row bg-slate-800/50">
       {(settings?.trace?.enabled ?? true) && (
-        <InputTrace input={{ brake, throttle, brakeAbsActive, steer }} settings={settings?.trace} />
+        <div className="flex-1">
+          <InputTrace input={{ brake, throttle, brakeAbsActive, steer }} settings={settings?.trace} />
+        </div>
       )}
       {(settings?.bar?.enabled ?? true) && (
-        <InputBar
-          brake={brake}
-          brakeAbsActive={brakeAbsActive}
-          throttle={throttle}
-          clutch={clutch}
-          settings={settings?.bar}
-        />
+        <div className="flex-none h-full">
+          <InputBar
+            brake={brake}
+            brakeAbsActive={brakeAbsActive}
+            throttle={throttle}
+            clutch={clutch}
+            settings={settings?.bar}
+          />
+        </div>
       )}
-      {(settings?.gear?.enabled ?? true) && (
-        <InputGear
-          gear={gear}
-          speedMs={speed}
-          unit={unit}
-          settings={settings?.gear}
-        />
-      )}
-      {(settings?.steer?.enabled ?? true) && (
-        <InputSteer
-          angleRad={steer}
-          wheelStyle={settings?.steer?.config?.style}
-          wheelColor={settings?.steer?.config?.color}
-        />
-      )}
+      <div className="flex-none flex flex-col gap-1">
+        {(settings?.gear?.enabled ?? true) && (
+          <div className="flex-1">
+            <InputGear
+              gear={gear}
+              speedMs={speed}
+              unit={unit}
+              settings={settings?.gear}
+            />
+          </div>
+        )}
+        {(settings?.steer?.enabled ?? true) && (
+          <div className="flex-1">
+            <InputSteer
+              angleRad={steer}
+              wheelStyle={settings?.steer?.config?.style}
+              wheelColor={settings?.steer?.config?.color}
+            />
+          </div>
+        )}
+      </div>
     </div>
   );
 };
