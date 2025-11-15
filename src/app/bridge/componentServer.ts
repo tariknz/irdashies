@@ -1,10 +1,19 @@
 import express, { Request, Response } from 'express';
 import http from 'http';
+import path from 'path';
 import type { IrSdkBridge, DashboardBridge } from '@irdashies/types';
 import { currentDashboard } from './bridgeProxy';
 
 const PORT = 3000;
 const COMPONENT_PORT = process.env.COMPONENT_PORT || PORT;
+
+// Detect if we're in development or production
+const isDev = process.env.NODE_ENV === 'development' || process.env.VITE_DEV_SERVER_URL;
+const VITE_DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL;
+
+// In production, the renderer files are in the .webpack/renderer directory
+declare const MAIN_WINDOW_VITE_NAME: string;
+declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string;
 
 /**
  * Creates an Express server that serves components to external browsers
@@ -23,6 +32,13 @@ export async function startComponentServer(irsdkBridge?: IrSdkBridge, dashboardB
     res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
     next();
   });
+
+  // In production, serve static files from the renderer directory
+  if (!isDev) {
+    const rendererPath = path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}`);
+    console.log(`   Serving static files from: ${rendererPath}`);
+    app.use(express.static(rendererPath));
+  }
 
   // Create bridge proxy if bridge is provided
   if (irsdkBridge) {
@@ -107,6 +123,18 @@ export async function startComponentServer(irsdkBridge?: IrSdkBridge, dashboardB
       console.log(`📋 Final browser config for ${componentName}:`, JSON.stringify(finalConfig, null, 2));
     }
 
+    // Determine the URL for the component renderer based on dev/prod mode
+    let componentRendererUrl: string;
+    
+    if (isDev) {
+      // In development, use Vite dev server
+      const vitePort = process.env.VITE_PORT || '5173';
+      componentRendererUrl = `http://localhost:${vitePort}/index-component-renderer.html?component=${encodeURIComponent(componentName)}&wsUrl=${encodeURIComponent(wsUrl)}${configParam}`;
+    } else {
+      // In production, use the local component server serving static files
+      componentRendererUrl = `http://localhost:${COMPONENT_PORT}/index-component-renderer.html?component=${encodeURIComponent(componentName)}&wsUrl=${encodeURIComponent(wsUrl)}${configParam}`;
+    }
+
     // Generate wrapper HTML that uses an iframe
     const html = `
       <!DOCTYPE html>
@@ -123,7 +151,7 @@ export async function startComponentServer(irsdkBridge?: IrSdkBridge, dashboardB
         </style>
       </head>
       <body>
-        <iframe src="http://localhost:${vitePort}/index-component-renderer.html?component=${encodeURIComponent(componentName)}&wsUrl=${encodeURIComponent(wsUrl)}${configParam}" scrolling="no"></iframe>
+        <iframe src="${componentRendererUrl}" scrolling="no"></iframe>
       </body>
       </html>
     `;
@@ -157,6 +185,7 @@ export async function startComponentServer(irsdkBridge?: IrSdkBridge, dashboardB
 
   httpServer.listen(COMPONENT_PORT, () => {
     console.log(`✅ Component server running on http://localhost:${COMPONENT_PORT}`);
+    console.log(`   Mode: ${isDev ? 'Development' : 'Production'}`);
     console.log(`   List components: http://localhost:${COMPONENT_PORT}/components`);
     console.log(
       `   View component: http://localhost:${COMPONENT_PORT}/component/<ComponentName>`
