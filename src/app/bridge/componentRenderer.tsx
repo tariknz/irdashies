@@ -1,10 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { createRoot } from 'react-dom/client';
-import React from 'react';
 import { WIDGET_MAP } from '../../frontend/WidgetIndex';
 import type { IrSdkBridge } from '../../types';
 import {
   DashboardProvider,
+  RunningStateProvider,
   SessionProvider,
   TelemetryProvider,
 } from '@irdashies/context';
@@ -274,81 +274,12 @@ class WebSocketBridge implements IrSdkBridge {
     });
   }
 
-  async getDashboard(): Promise<any> {
-    console.log('getDashboard called');
-    return new Promise((resolve) => {
-      if (this.socket) {
-        this.socket.emit('getDashboard', (dashboard: any) => {
-          console.log('📥 Received dashboard from bridge:', dashboard);
-          resolve(dashboard);
-        });
-      } else {
-        resolve(null);
-      }
-    });
-  }
-
   toggleDemoMode(value: boolean): void {
     console.log('toggleDemoMode called', value);
     if (this.socket) {
       this.socket.emit('toggleDemoMode', value);
     }
   }
-}
-
-/**
- * Component to render dashboard grid with multiple widgets
- */
-function DashboardGridRenderer({
-  dashboard,
-  config,
-}: {
-  dashboard: any;
-  config: Record<string, any>;
-  bridge?: any;
-}): React.ReactElement {
-  const widgets = dashboard?.widgets || [];
-
-  return (
-    <div
-      style={{
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        width: '100%',
-        height: '100%',
-        backgroundColor: '#1a1a1a',
-      }}
-    >
-      {widgets
-        .filter((widget: any) => widget.enabled !== false)
-        .map((widget: any) => {
-          const ComponentFn = WIDGET_MAP[widget.id.toLowerCase()];
-          if (!ComponentFn) {
-            console.warn(`Widget component not found: ${widget.id}`);
-            return null;
-          }
-
-          const layout = widget.layout || { x: 0, y: 0, width: 100, height: 100 };
-
-          return (
-            <div
-              key={widget.id}
-              style={{
-                position: 'absolute',
-                left: `${layout.x}px`,
-                top: `${layout.y}px`,
-                width: `${layout.width}px`,
-                height: `${layout.height}px`,
-                overflow: 'hidden',
-              }}
-            >
-              <ComponentFn {...(widget.config || config)} />
-            </div>
-          );
-        })}
-    </div>
-  );
 }
 
 /**
@@ -455,18 +386,6 @@ export async function renderComponent(
     await new Promise((resolve) => setTimeout(resolve, 100));
     console.log('  ✅ Stores updated with initial data');
 
-    // Step 5.5: Fetch dashboard config if rendering full dashboard
-    let dashboard: any = null;
-    if (componentName === 'dashboard') {
-      console.log('📝 Step 5.5: Fetch dashboard config');
-      try {
-        dashboard = await bridge.getDashboard();
-        console.log('  ✅ Dashboard config received:', dashboard ? 'present' : 'null');
-      } catch (err) {
-        console.warn('  ⚠️ Failed to fetch dashboard:', err);
-      }
-    }
-
     // Step 6: Create root
     console.log('📝 Step 6: Create React root');
     const root = createRoot(containerElement);
@@ -491,6 +410,7 @@ export async function renderComponent(
 
     // Step 8: Render actual component wrapped with providers
     console.log('📝 Step 8: Render actual component with providers');
+    console.log('  📋 Component config:', config);
 
     // Log current store state before rendering
     const { useTelemetryStore: TelemetryStore } = await import('../../frontend/context/TelemetryStore/TelemetryStore');
@@ -501,41 +421,19 @@ export async function renderComponent(
     console.log('    Telemetry:', currentTelemetry ? 'present' : 'MISSING');
     console.log('    Session:', currentSession ? 'present' : 'MISSING');
 
-    let WrappedComponent: React.ReactElement;
-
-    if (componentName === 'dashboard' && dashboard) {
-      console.log('  Rendering full dashboard with widgets');
-      WrappedComponent = (
-        <DashboardProvider bridge={bridge as any}>
-          <SessionProvider bridge={bridge as any} />
-          <TelemetryProvider bridge={bridge as any} />
-          <DashboardGridRenderer dashboard={dashboard} config={config} />
-        </DashboardProvider>
-      );
-    } else {
-      const normalizedName = componentName.toLowerCase();
-      const ComponentFn = WIDGET_MAP[normalizedName];
-
-      if (!ComponentFn) {
-        throw new Error(
-          `Component not found: ${componentName}. Available: ${Object.keys(WIDGET_MAP).join(
-            ', '
-          )}`
-        );
-      }
-
-      WrappedComponent = (
-        <DashboardProvider bridge={bridge as any}>
+    const WrappedComponent = (
+      <DashboardProvider bridge={bridge as any}>
+        <RunningStateProvider bridge={bridge as any}>
           <SessionProvider bridge={bridge as any} />
           <TelemetryProvider bridge={bridge as any} />
           <ComponentFn {...config} />
-        </DashboardProvider>
-      );
-    }
+        </RunningStateProvider>
+      </DashboardProvider>
+    );
 
     root.render(WrappedComponent);
 
-    console.log(`✅ Successfully rendered: ${componentName}`);
+    console.log(`✅ Successfully rendered component: ${componentName}`);
   } catch (error) {
     console.error(`❌ Failed to render component: ${componentName}`, error);
     const errorMessage = error instanceof Error ? error.message : String(error);

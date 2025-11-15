@@ -1,6 +1,7 @@
 import express, { Request, Response } from 'express';
 import http from 'http';
-import type { IrSdkBridge } from '@irdashies/types';
+import type { IrSdkBridge, DashboardBridge } from '@irdashies/types';
+import { currentDashboard } from './bridgeProxy';
 
 const PORT = 3000;
 const COMPONENT_PORT = process.env.COMPONENT_PORT || PORT;
@@ -12,7 +13,7 @@ const COMPONENT_PORT = process.env.COMPONENT_PORT || PORT;
  * Access components via: http://localhost:3000/component/<componentName>
  * Example: http://localhost:3000/component/standings
  */
-export async function startComponentServer(irsdkBridge?: IrSdkBridge) {
+export async function startComponentServer(irsdkBridge?: IrSdkBridge, dashboardBridge?: DashboardBridge) {
   const app = express();
   const httpServer = http.createServer(app);
 
@@ -28,7 +29,7 @@ export async function startComponentServer(irsdkBridge?: IrSdkBridge) {
     try {
       // Dynamically import bridge proxy to avoid module resolution issues
       const { createBridgeProxy } = await import('./bridgeProxy');
-      createBridgeProxy(httpServer, irsdkBridge);
+      createBridgeProxy(httpServer, irsdkBridge, dashboardBridge);
       console.log(`   WebSocket bridge available at ws://localhost:${COMPONENT_PORT}`);
     } catch (err) {
       console.warn('Failed to initialize WebSocket bridge:', err);
@@ -43,6 +44,7 @@ export async function startComponentServer(irsdkBridge?: IrSdkBridge) {
   /**
    * Serve a specific component as a standalone page
    * Uses an iframe to load component from Vite dev server
+   * Passes widget config from dashboard if available
    */
   app.get('/component/:componentName', (req: Request, res: Response) => {
     const { componentName } = req.params;
@@ -54,6 +56,17 @@ export async function startComponentServer(irsdkBridge?: IrSdkBridge) {
 
     const vitePort = process.env.VITE_PORT || '5173';
     const wsUrl = 'http://localhost:3000';
+
+    // Try to get widget config from dashboard
+    let configParam = '';
+    if (currentDashboard) {
+      const normalizedName = componentName.toLowerCase();
+      const widget = currentDashboard.widgets?.find((w) => w.id.toLowerCase() === normalizedName);
+      if (widget?.config) {
+        configParam = `&config=${encodeURIComponent(JSON.stringify(widget.config))}`;
+        console.log(`✅ Found widget config for ${componentName}`);
+      }
+    }
 
     // Generate wrapper HTML that uses an iframe
     const html = `
@@ -71,7 +84,7 @@ export async function startComponentServer(irsdkBridge?: IrSdkBridge) {
         </style>
       </head>
       <body>
-        <iframe src="http://localhost:${vitePort}/component-renderer.html?component=${encodeURIComponent(componentName)}&wsUrl=${encodeURIComponent(wsUrl)}"></iframe>
+        <iframe src="http://localhost:${vitePort}/component-renderer.html?component=${encodeURIComponent(componentName)}&wsUrl=${encodeURIComponent(wsUrl)}${configParam}"></iframe>
       </body>
       </html>
     `;

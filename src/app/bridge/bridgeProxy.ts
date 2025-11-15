@@ -1,15 +1,19 @@
 import { Server as HTTPServer } from 'http';
 import { Server as SocketIOServer, Socket } from 'socket.io';
-import type { Telemetry, Session } from '@irdashies/types';
-import type { IrSdkBridge } from '@irdashies/types';
+import type { Telemetry, Session, DashboardLayout } from '@irdashies/types';
+import type { IrSdkBridge, DashboardBridge } from '@irdashies/types';
+
+// Export current state so it can be accessed by other parts of the app
+export let currentDashboard: DashboardLayout | null = null;
 
 /**
  * Bridge proxy that exposes Electron bridge data via WebSocket
- * Allows external browsers to receive real-time telemetry and session data
+ * Allows external browsers to receive real-time telemetry, session data, and dashboard configuration
  */
 export function createBridgeProxy(
   httpServer: HTTPServer,
-  irsdkBridge: IrSdkBridge
+  irsdkBridge: IrSdkBridge,
+  dashboardBridge?: DashboardBridge
 ) {
   const io = new SocketIOServer(httpServer, {
     cors: {
@@ -39,6 +43,14 @@ export function createBridgeProxy(
     io.emit('runningState', running);
   });
 
+  // Subscribe to dashboard updates if available
+  if (dashboardBridge) {
+    dashboardBridge.dashboardUpdated((dashboard: DashboardLayout) => {
+      currentDashboard = dashboard;
+      io.emit('dashboardUpdated', dashboard);
+    });
+  }
+
   // Handle client connections
   io.on('connection', (socket: Socket) => {
     console.log(`✅ Client connected: ${socket.id}`);
@@ -48,6 +60,12 @@ export function createBridgeProxy(
       telemetry: currentTelemetry,
       sessionData: currentSession,
       isRunning,
+      dashboard: currentDashboard,
+    });
+
+    // Handle getDashboard request from browser
+    socket.on('getDashboard', (callback: (dashboard: DashboardLayout | null) => void) => {
+      callback(currentDashboard);
     });
 
     socket.on('disconnect', () => {
