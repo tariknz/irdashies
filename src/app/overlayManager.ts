@@ -139,6 +139,7 @@ export class OverlayManager {
 
     const openWidgets = this.getOverlays();
     openWidgets.forEach(({ widget, window }) => {
+      // const dashboardWidget = widgetsById[widget.id];
       if (!widgetsById[widget.id]?.enabled) {
         window.close();
         this.overlayWindows = Object.fromEntries(
@@ -148,9 +149,14 @@ export class OverlayManager {
     });
 
     widgets.forEach((widget) => {
-      if (!widget.enabled) return; // skip disabled widgets
+      if (!widget.enabled) {
+        return;
+      }
       if (!this.overlayWindows[widget.id]) {
-        this.createOverlayWindow(widget);
+        const window = this.createOverlayWindow(widget);
+        trackWindowMovement(widget, window);
+      } else {
+        // Window already exists
       }
     });
   }

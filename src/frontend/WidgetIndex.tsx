@@ -4,6 +4,7 @@ import { Relative } from './components/Standings/Relative';
 import { TrackMap } from './components/TrackMap/TrackMap';
 import { Weather } from './components/Weather';
 import { FasterCarsFromBehind } from './components/FasterCarsFromBehind/FasterCarsFromBehind';
+import { FuelCalculator } from './components/FuelCalculator';
 
 // TODO: type this better, right now the config comes from settings
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -14,4 +15,5 @@ export const WIDGET_MAP: Record<string, (config: any) => React.JSX.Element> = {
   map: TrackMap,
   weather: Weather,
   fastercarsfrombehind: FasterCarsFromBehind,
+  fuel: FuelCalculator,
 };

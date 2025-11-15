@@ -208,6 +208,8 @@ export interface TelemetryVarList {
   SteeringWheelMaxForceNm: TelemetryVariable<number[]>;
   SteeringWheelUseLinear: TelemetryVariable<boolean[]>;
   BrakeABSactive: TelemetryVariable<boolean[]>;
+  dcBrakeBias: TelemetryVariable<number[]>;
+  dcPeakBrakeBias: TelemetryVariable<number[]>;
   EngineWarnings: TelemetryVariable<number[]>;
   FuelLevel: TelemetryVariable<number[]>;
   FuelLevelPct: TelemetryVariable<number[]>;

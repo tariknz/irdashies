@@ -1,8 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
 import { useDriverRelatives } from './useDriverRelatives';
-import { useDriverCarIdx, useSessionStore, useTelemetryValues } from '@irdashies/context';
-import { useDriverStandings } from './useDriverPositions';
 import type { Standings } from '../createStandings';
 
 // Mock the context hooks
@@ -10,11 +8,21 @@ vi.mock('@irdashies/context', () => ({
   useDriverCarIdx: vi.fn(),
   useTelemetryValues: vi.fn(),
   useSessionStore: vi.fn(),
+  useRelativeGapStore: vi.fn(),
 }));
 
 vi.mock('./useDriverPositions', () => ({
   useDriverStandings: vi.fn(),
 }));
+
+vi.mock('@irdashies/context/RelativeGapStore', () => ({
+  detectEdgeCases: vi.fn(() => ({ isLapping: false, isBeingLapped: false, isMultiClass: false })),
+  calculateRelativeGap: vi.fn(() => null),
+}));
+
+// Import mocked functions after vi.mock
+const { useDriverCarIdx, useTelemetryValues, useSessionStore, useRelativeGapStore } = await import('@irdashies/context');
+const { useDriverStandings } = await import('./useDriverPositions');
 
 describe('useDriverRelatives', () => {
   const mockDrivers: Standings[] = [
@@ -98,6 +106,9 @@ describe('useDriverRelatives', () => {
     vi.mocked(useTelemetryValues).mockImplementation((key: string) => {
       if (key === 'CarIdxLapDistPct') return mockCarIdxLapDistPct;
       if (key === 'CarIdxEstTime') return mockCarIdxEstTime;
+      if (key === 'CarIdxLap') return [1, 1, 1];
+      if (key === 'CarIdxTrackSurface') return [3, 3, 3];
+      if (key === 'SessionTime') return [100];
       return [];
     });
     vi.mocked(useDriverStandings).mockReturnValue(mockDrivers);
@@ -108,6 +119,52 @@ describe('useDriverRelatives', () => {
         },
       },
     });
+    // @ts-expect-error - Mock implementation doesn't need full type safety for test purposes
+    vi.mocked(useRelativeGapStore).mockImplementation((selector?: (state: unknown) => unknown) => {
+      const mockState = {
+        carHistories: new Map(),
+        config: {
+          enabled: false,
+          interpolationMethod: 'linear' as const,
+          sampleInterval: 0.01,
+          maxLapHistory: 5,
+          smoothingFactor: 0.3,
+        },
+        sessionNum: -1,
+        trackLength: 0,
+        getCarHistory: vi.fn(() => ({ lapRecords: [] })),
+        initializeCarHistory: vi.fn(),
+        addPositionSample: vi.fn(),
+        completeLap: vi.fn(),
+        clearAllData: vi.fn(),
+        updateConfig: vi.fn(),
+        updateSessionInfo: vi.fn(),
+      };
+      return selector ? selector(mockState) : mockState;
+    });
+    // Mock getState for store access
+    interface StoreWithGetState {
+      getState?: () => unknown;
+    }
+    (useRelativeGapStore as StoreWithGetState).getState = vi.fn(() => ({
+      carHistories: new Map(),
+      config: {
+        enabled: false,
+        interpolationMethod: 'linear' as const,
+        sampleInterval: 0.01,
+        maxLapHistory: 5,
+        smoothingFactor: 0.3,
+      },
+      sessionNum: -1,
+      trackLength: 0,
+      getCarHistory: vi.fn(() => ({ lapRecords: [] })),
+      initializeCarHistory: vi.fn(),
+      addPositionSample: vi.fn(),
+      completeLap: vi.fn(),
+      clearAllData: vi.fn(),
+      updateConfig: vi.fn(),
+      updateSessionInfo: vi.fn(),
+    }));
   });
 
   it('should return empty array when no player is found', () => {

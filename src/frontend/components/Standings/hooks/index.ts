@@ -1,3 +1,4 @@
+export * from './useBrakeBias';
 export * from './useCarClassStats';
 export * from './useDriverIncidents';
 export * from './useDriverStandings';

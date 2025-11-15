@@ -5,6 +5,7 @@ import { useRelativeSettings, useDriverRelatives } from './hooks';
 import { DriverRatingBadge } from './components/DriverRatingBadge/DriverRatingBadge';
 import { SessionBar } from './components/SessionBar/SessionBar';
 import { SessionFooter } from './components/SessionFooter/SessionFooter';
+import { useRelativeGapStoreUpdater } from '@irdashies/context';
 
 export const Relative = () => {
   const config = useRelativeSettings();
@@ -12,6 +13,9 @@ export const Relative = () => {
   const standings = useDriverRelatives({ buffer });
   const [parent] = useAutoAnimate();
   const isMultiClass = standings.length > 0 && new Set(standings.map(s => s.carClass.id)).size > 1; 
+
+  // Update relative gap store with telemetry data
+  useRelativeGapStoreUpdater();
 
   // Always render 2 * buffer + 1 rows (buffer above + player + buffer below)
   const totalRows = 2 * buffer + 1;

@@ -1,12 +1,17 @@
 import { useSessionName, useTelemetryValue } from '@irdashies/context';
 import { formatTimeShort } from '@irdashies/utils/time';
-import { useDriverIncidents, useSessionLapCount } from '../../hooks';
+import { useDriverIncidents, useSessionLapCount, useBrakeBias, useRelativeSettings } from '../../hooks';
 
 export const SessionBar = () => {
   const sessionNum = useTelemetryValue('SessionNum');
   const sessionName = useSessionName(sessionNum);
   const { incidentLimit, incidents } = useDriverIncidents();
   const { total, current, timeElapsed, timeRemaining } = useSessionLapCount();
+  const brakeBias = useBrakeBias();
+  const config = useRelativeSettings();
+
+  const showBrakeBias = config?.brakeBias?.enabled && brakeBias !== undefined;
+
   return (
     <div className="bg-slate-900/70 text-sm px-3 py-1 flex justify-between">
       <div className="flex flex-1 grow">{sessionName}</div>
@@ -22,6 +27,11 @@ export const SessionBar = () => {
             const remaining = formatTimeShort(timeRemaining, true);
             return elapsed ? `${elapsed} / ${remaining} m` : `${remaining} m`;
           })()}
+        </div>
+      )}
+      {showBrakeBias && (
+        <div className="flex flex-1 grow justify-center">
+          {brakeBias.isClio ? `BV: ${brakeBias.value.toFixed(0)}` : `BB: ${brakeBias.value.toFixed(1)}%`}
         </div>
       )}
       <div className="flex flex-1 grow justify-end">

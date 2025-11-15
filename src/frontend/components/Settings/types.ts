@@ -35,6 +35,13 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
     fastestTime: { enabled: boolean };
     compound: { enabled: boolean };
     carManufacturer: { enabled: boolean };
+    brakeBias: { enabled: boolean };
+    enhancedGapCalculation: {
+      enabled: boolean;
+      interpolationMethod: 'linear' | 'cubic';
+      sampleInterval: number;
+      maxLapHistory: number;
+    };
   };
 }
 
@@ -78,5 +85,21 @@ export interface InputWidgetSettings extends BaseWidgetSettings {
       unit: 'mph' | 'km/h' | 'auto';
     };
     steer: SteerWidgetSettings;
+  };
+}
+
+export interface FuelWidgetSettings extends BaseWidgetSettings {
+  config: {
+    fuelUnits: 'L' | 'gal';
+    showConsumption: boolean;
+    showMin: boolean;
+    showLastLap: boolean;
+    show3LapAvg: boolean;
+    show10LapAvg: boolean;
+    showMax: boolean;
+    showPitWindow: boolean;
+    showFuelSave: boolean;
+    safetyMargin: number;
+    background: { opacity: number };
   };
 }
