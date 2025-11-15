@@ -16,12 +16,22 @@ const componentName = params.get('component');
 const wsUrl = params.get('wsUrl') || 'http://localhost:3000';
 const configJson = params.get('config');
 
-const config = configJson ? JSON.parse(decodeURIComponent(configJson)) : {};
+let config = {};
+try {
+  config = configJson ? JSON.parse(decodeURIComponent(configJson)) : {};
+} catch (e) {
+  console.error('Failed to parse config JSON:', e);
+}
 
 console.log('📋 URL Parameters:');
 console.log(`  Component: ${componentName}`);
 console.log(`  WebSocket URL: ${wsUrl}`);
 console.log(`  Config:`, config);
+
+// Check if Socket.io is loaded
+if (typeof window !== 'undefined' && !(window as any).io) {
+  console.error('❌ Socket.io not loaded! Make sure the CDN script is included.');
+}
 
 // Find or create the root element
 let rootElement = document.getElementById('root');
@@ -33,9 +43,71 @@ if (!rootElement) {
   document.body.appendChild(rootElement);
 }
 
+// Show loading indicator
+rootElement.innerHTML = `
+  <div id="loading-indicator" style="
+    padding: 40px;
+    background: #1a1a1a;
+    color: #fff;
+    font-family: monospace;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 20px;
+  ">
+    <h1 style="font-size: 32px; margin: 0;">🔄 Loading Component</h1>
+    <div style="display: flex; flex-direction: column; gap: 10px; align-items: center;">
+      <p style="margin: 0; color: #4ade80;">Component: <strong>${componentName || 'none'}</strong></p>
+      <p style="margin: 0; color: #60a5fa;">WebSocket: <strong>${wsUrl}</strong></p>
+      <p style="margin: 0; color: #fbbf24;">Config: <strong>${Object.keys(config).length} keys</strong></p>
+    </div>
+    <div style="margin-top: 20px; padding: 20px; background: #374151; border-radius: 8px; max-width: 600px;">
+      <p style="margin: 0; font-size: 14px; color: #9ca3af; line-height: 1.6;">
+        ⏳ Initializing stores and connecting to WebSocket bridge...<br/>
+        Check browser console (F12) for detailed logs.
+      </p>
+    </div>
+    <div style="margin-top: 20px;">
+      <div style="width: 50px; height: 50px; border: 4px solid #374151; border-top-color: #4ade80; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+    </div>
+  </div>
+  <style>
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+`;
+
 // Render the component
 if (componentName) {
-  renderComponent(rootElement, componentName, config, wsUrl);
+  console.log('🎯 Starting component render...');
+  renderComponent(rootElement, componentName, config, wsUrl)
+    .then(() => {
+      console.log('✅ Component render completed successfully');
+    })
+    .catch((err) => {
+      console.error('❌ Component render failed:', err);
+      rootElement.innerHTML = `
+        <div style="
+          padding: 40px;
+          background: #1a1a1a;
+          color: #ff6b6b;
+          font-family: monospace;
+          min-height: 100vh;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          align-items: center;
+        ">
+          <h1>❌ Failed to Load Component</h1>
+          <p style="margin-top: 20px;">Component: ${componentName}</p>
+          <p style="margin-top: 10px; color: #999;">${err.message}</p>
+          <pre style="margin-top: 20px; color: #666; font-size: 12px; max-width: 600px; overflow: auto;">${err.stack || ''}</pre>
+        </div>
+      `;
+    });
 } else {
   rootElement.innerHTML = `
     <div style="

@@ -90,7 +90,7 @@ class WebSocketBridge implements IrSdkBridge {
           console.log('  IsRunning:', state.isRunning);
 
           if (state.telemetry) {
-            console.log('  📤 Triggering telemetry callbacks...');
+            console.log('  📤 Triggering telemetry callbacks with', Object.keys(state.telemetry).length, 'keys');
             this.telemetryCallbacks.forEach((cb) => {
               try {
                 cb(state.telemetry);
@@ -100,7 +100,7 @@ class WebSocketBridge implements IrSdkBridge {
             });
           }
           if (state.sessionData) {
-            console.log('  📤 Triggering session callbacks...');
+            console.log('  📤 Triggering session callbacks with', Object.keys(state.sessionData).length, 'keys');
             this.sessionCallbacks.forEach((cb) => {
               try {
                 cb(state.sessionData);
@@ -122,7 +122,6 @@ class WebSocketBridge implements IrSdkBridge {
         });
 
         this.socket.on('telemetry', (data: any) => {
-          console.log('📡 Received telemetry event');
           this.telemetryCallbacks.forEach((cb) => {
             try {
               cb(data);
@@ -133,7 +132,6 @@ class WebSocketBridge implements IrSdkBridge {
         });
 
         this.socket.on('sessionData', (data: any) => {
-          console.log('📡 Received sessionData event');
           this.sessionCallbacks.forEach((cb) => {
             try {
               cb(data);
@@ -144,7 +142,6 @@ class WebSocketBridge implements IrSdkBridge {
         });
 
         this.socket.on('runningState', (running: boolean) => {
-          console.log('📡 Received runningState event:', running);
           this.runningCallbacks.forEach((cb) => {
             try {
               cb(running);
@@ -363,36 +360,24 @@ export async function renderComponent(
     console.log('📝 Step 3: Create WebSocket bridge');
     const bridge = new WebSocketBridge();
 
-    // Step 4: Register store update listeners BEFORE connecting
-    console.log('📝 Step 4: Register store update listeners');
-    bridge.onTelemetry((telemetry: any) => {
-      console.log('📡 Bridge callback: Updating telemetry store');
-      useTelemetryStore.setState({ telemetry });
-    });
-
-    bridge.onSessionData((session: any) => {
-      console.log('📡 Bridge callback: Updating session store');
-      useSessionStore.setState({ session });
-    });
-    console.log('  ✅ Store listeners registered');
-
-    // Step 5: NOW connect to the bridge (listeners will catch initialState)
-    console.log('📝 Step 5: Connect to WebSocket bridge');
+    // Step 4: Connect to the bridge
+    // The providers will handle subscribing to bridge events
+    console.log('📝 Step 4: Connect to WebSocket bridge');
     console.log(`  Connecting to ${wsUrl}...`);
     await bridge.connect(wsUrl);
     console.log('  ✅ Bridge connected');
 
     // Give the store listeners a moment to process the initialState
     await new Promise((resolve) => setTimeout(resolve, 100));
-    console.log('  ✅ Stores updated with initial data');
+    console.log('  ✅ Stores will be updated by providers');
 
-    // Step 6: Create root
-    console.log('📝 Step 6: Create React root');
+    // Step 5: Create root
+    console.log('📝 Step 5: Create React root');
     const root = createRoot(containerElement);
     console.log('  ✅ Root created');
 
-    // Step 7: Get component from widget map
-    console.log('� Step 7: Get component from widget map');
+    // Step 6: Get component from widget map
+    console.log('📝 Step 6: Get component from widget map');
     const normalizedName = componentName.toLowerCase();
     console.log('  Looking for component:', normalizedName);
 
@@ -408,8 +393,8 @@ export async function renderComponent(
 
     console.log(`  ✅ Found component: ${componentName}`);
 
-    // Step 8: Render actual component wrapped with providers
-    console.log('📝 Step 8: Render actual component with providers');
+    // Step 7: Render actual component wrapped with providers
+    console.log('📝 Step 7: Render actual component with providers');
     console.log('  📋 Component config:', config);
 
     // Log current store state before rendering
@@ -434,6 +419,19 @@ export async function renderComponent(
     root.render(WrappedComponent);
 
     console.log(`✅ Successfully rendered component: ${componentName}`);
+    
+    // Debug: Check if anything was actually rendered
+    setTimeout(() => {
+      const children = containerElement.children;
+      console.log(`🔍 Post-render check:`);
+      console.log(`  Container children count: ${children.length}`);
+      console.log(`  Container innerHTML length: ${containerElement.innerHTML.length}`);
+      if (children.length > 0) {
+        console.log(`  First child:`, children[0]);
+      } else {
+        console.warn(`  ⚠️ No children rendered! Component may be conditionally hidden.`);
+      }
+    }, 1000);
   } catch (error) {
     console.error(`❌ Failed to render component: ${componentName}`, error);
     const errorMessage = error instanceof Error ? error.message : String(error);
