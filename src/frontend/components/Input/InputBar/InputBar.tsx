@@ -51,7 +51,7 @@ export const InputBar = ({
     drawBars(svgRef.current, activeInputs, brakeAbsActive, includeAbs);
   }, [brake, throttle, clutch, brakeAbsActive, includeClutch, includeBrake, includeThrottle, includeAbs]);
 
-  return <svg ref={svgRef} width="120"></svg>;
+  return <svg ref={svgRef} width="120" height="100%"></svg>;
 };
 
 function drawBars(svgElement: SVGSVGElement | null, data: { value: number; color: string }[], brakeAbsActive?: boolean, includeAbs?: boolean) {
