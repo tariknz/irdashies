@@ -1,4 +1,5 @@
 import { readFileSync, existsSync, mkdirSync, writeFileSync } from 'fs';
+import { getAccessToken } from './auth';
 
 interface TrackAsset {
   track_id: string;
@@ -8,7 +9,7 @@ interface TrackAsset {
 
 export const downloadTrackSvgs = async () => {
   const tracks = readFileSync('./asset-data/tracks.json', 'utf8');
-  const cookie = readFileSync('./asset-data/cookie-jar.txt', 'utf8');
+  const accessToken = getAccessToken();
 
   const allTracks: Record<string, TrackAsset> = JSON.parse(tracks);
 
@@ -20,7 +21,7 @@ export const downloadTrackSvgs = async () => {
         console.log(`Downloading ${layer} for track ${track.track_id}`);
         const response = await fetch(`${track.track_map}${layer}`, {
           headers: {
-            cookie,
+            Authorization: `Bearer ${accessToken}`,
           },
         });
 
