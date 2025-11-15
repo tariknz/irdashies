@@ -119,23 +119,51 @@ describe('useDriverRelatives', () => {
         },
       },
     });
-    vi.mocked(useRelativeGapStore).mockImplementation((selector: any) => {
+    // @ts-expect-error - Mock implementation doesn't need full type safety for test purposes
+    vi.mocked(useRelativeGapStore).mockImplementation((selector?: (state: unknown) => unknown) => {
       const mockState = {
+        carHistories: new Map(),
         config: {
           enabled: false,
           interpolationMethod: 'linear' as const,
+          sampleInterval: 0.01,
+          maxLapHistory: 5,
+          smoothingFactor: 0.3,
         },
+        sessionNum: -1,
+        trackLength: 0,
         getCarHistory: vi.fn(() => ({ lapRecords: [] })),
+        initializeCarHistory: vi.fn(),
+        addPositionSample: vi.fn(),
+        completeLap: vi.fn(),
+        clearAllData: vi.fn(),
+        updateConfig: vi.fn(),
+        updateSessionInfo: vi.fn(),
       };
       return selector ? selector(mockState) : mockState;
     });
     // Mock getState for store access
-    (useRelativeGapStore as any).getState = vi.fn(() => ({
+    interface StoreWithGetState {
+      getState?: () => unknown;
+    }
+    (useRelativeGapStore as StoreWithGetState).getState = vi.fn(() => ({
+      carHistories: new Map(),
       config: {
         enabled: false,
         interpolationMethod: 'linear' as const,
+        sampleInterval: 0.01,
+        maxLapHistory: 5,
+        smoothingFactor: 0.3,
       },
+      sessionNum: -1,
+      trackLength: 0,
       getCarHistory: vi.fn(() => ({ lapRecords: [] })),
+      initializeCarHistory: vi.fn(),
+      addPositionSample: vi.fn(),
+      completeLap: vi.fn(),
+      clearAllData: vi.fn(),
+      updateConfig: vi.fn(),
+      updateSessionInfo: vi.fn(),
     }));
   });
 
