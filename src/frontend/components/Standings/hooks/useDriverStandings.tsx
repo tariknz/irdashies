@@ -10,24 +10,26 @@ import {
   useTelemetry,
   useTelemetryValue,
 } from '@irdashies/context';
+import { useLapTimeHistory } from '../../../context/LapTimesStore/LapTimesStore';
 import {
   createDriverStandings,
   groupStandingsByClass,
   sliceRelevantDrivers,
   augmentStandingsWithIRating,
 } from '../createStandings';
+import type { StandingsWidgetSettings } from '../../Settings/types';
 
-export const useDriverStandings = ({
-  buffer,
-  numNonClassDrivers,
-  minPlayerClassDrivers,
-  numTopDrivers,
-}: {
-  buffer?: number;
-  numNonClassDrivers?: number;
-  minPlayerClassDrivers?: number;
-  numTopDrivers?: number;
-} = {}) => {
+export const useDriverStandings = (settings?: StandingsWidgetSettings['config']) => {
+  const {
+    driverStandings: {
+      buffer,
+      numNonClassDrivers,
+      minPlayerClassDrivers,
+      numTopDrivers,
+    } = {},
+    lapTimeDeltas: { enabled: lapTimeDeltasEnabled, numLaps: numLapDeltas } = { enabled: false, numLaps: 3 },
+  } = settings ?? {};
+
   const sessionDrivers = useSessionDrivers();
   const driverCarIdx = useDriverCarIdx();
   const qualifyingResults = useSessionQualifyingResults();
@@ -41,6 +43,15 @@ export const useDriverStandings = ({
   const radioTransmitCarIdx = useTelemetry('RadioTransmitCarIdx');
   const carIdxTireCompound = useTelemetry<number[]>('CarIdxTireCompound');
   const isOfficial = useSessionIsOfficial();
+  const driverClass = useMemo(() => {
+    return sessionDrivers?.find(
+      (driver) => driver.CarIdx === driverCarIdx
+    )?.CarClassID;
+  }, [sessionDrivers, driverCarIdx]);
+  const lapTimeHistory = useLapTimeHistory();
+
+  // Only pass lap history when feature is enabled to avoid unnecessary calculations
+  const lapTimeHistoryForCalc = lapTimeDeltasEnabled ? lapTimeHistory : undefined;
 
   const standingsWithGain = useMemo(() => {
     const initialStandings = createDriverStandings(
@@ -60,12 +71,11 @@ export const useDriverStandings = ({
         resultsPositions: positions,
         resultsFastestLap: fastestLaps,
         sessionType,
-      }
+      },
+      lapTimeHistoryForCalc,
+      lapTimeDeltasEnabled ? numLapDeltas : undefined
     );
     const groupedByClass = groupStandingsByClass(initialStandings);
-    const driverClass = sessionDrivers?.find(
-      (driver) => driver.CarIdx === driverCarIdx
-    )?.CarClassID;
 
     // Calculate iRating changes for race sessions
     const augmentedGroupedByClass =
@@ -95,7 +105,11 @@ export const useDriverStandings = ({
     numNonClassDrivers,
     minPlayerClassDrivers,
     numTopDrivers,
-    carIdxTireCompound?.value
+    carIdxTireCompound?.value,
+    driverClass,
+    lapTimeDeltasEnabled,
+    numLapDeltas,
+    lapTimeHistoryForCalc,
   ]);
 
   return standingsWithGain;

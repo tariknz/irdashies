@@ -20,7 +20,8 @@ export interface StandingsWidgetSettings extends BaseWidgetSettings {
       numTopDrivers: number;
     };
     compound: { enabled: boolean };
-    carManufacturer: { enabled: boolean }
+    carManufacturer: { enabled: boolean };
+    lapTimeDeltas: { enabled: boolean; numLaps: number };
   };
 }
 

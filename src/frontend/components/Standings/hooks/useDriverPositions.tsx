@@ -28,17 +28,26 @@ export const useDriverPositions = () => {
   const carIdxF2Time = useTelemetry('CarIdxF2Time');
   const carIdxLapNum = useTelemetry('CarIdxLap');
 
-  const positions = carIdxPosition?.value?.map((position, carIdx) => ({
-    carIdx,
-    position,
-    classPosition: carIdxClassPosition?.value?.[carIdx],
-    delta: carIdxF2Time?.value?.[carIdx], // only to leader currently, need to handle non-race sessions
-    bestLap: carIdxBestLap?.value?.[carIdx],
-    lastLap: carIdxLastLap?.value?.[carIdx],
-    lapNum: carIdxLapNum?.value?.[carIdx],
-  }));
+  const positions = useMemo(() => {
+    return carIdxPosition?.value?.map((position, carIdx) => ({
+      carIdx,
+      position,
+      classPosition: carIdxClassPosition?.value?.[carIdx],
+      delta: carIdxF2Time?.value?.[carIdx], // only to leader currently, need to handle non-race sessions
+      bestLap: carIdxBestLap?.value?.[carIdx],
+      lastLap: carIdxLastLap?.value?.[carIdx],
+      lapNum: carIdxLapNum?.value?.[carIdx],
+    })) ?? [];
+  }, [
+    carIdxPosition?.value,
+    carIdxClassPosition?.value,
+    carIdxBestLap?.value,
+    carIdxLastLap?.value,
+    carIdxF2Time?.value,
+    carIdxLapNum?.value,
+  ]);
 
-  return positions ?? [];
+  return positions;
 };
 
 export const useDrivers = () => {
@@ -69,15 +78,14 @@ export const useCarState = () => {
   const carIdxOnPitRoad = useTelemetry<boolean[]>('CarIdxOnPitRoad');
   const carIdxTireCompound = useTelemetry<number[]>('CarIdxTireCompound');
 
-  // turn two arrays to one array with object of index and boolean values
-  return (
-    carIdxTrackSurface?.value?.map((onTrack, index) => ({
+  return useMemo(() => {
+    return carIdxTrackSurface?.value?.map((onTrack, index) => ({
       carIdx: index,
       onTrack: onTrack > -1,
       onPitRoad: carIdxOnPitRoad?.value?.[index],
       tireCompound: carIdxTireCompound?.value?.[index]
-    })) ?? []
-  );
+    })) ?? [];
+  }, [carIdxTrackSurface?.value, carIdxOnPitRoad?.value, carIdxTireCompound?.value]);
 };
 
 // TODO: this should eventually replace the useDriverStandings hook
@@ -99,16 +107,23 @@ export const useDriverStandings = () => {
       return fastest;
     }, undefined as number | undefined);
 
+    // Create Map lookups for O(1) access instead of O(n) find() calls
+    const driverPositionsByCarIdx = new Map(driverPositions.map(pos => [pos.carIdx, pos]));
+    const carStatesByCarIdx = new Map(carStates.map(state => [state.carIdx, state]));
+    const qualifyingPositionsByCarIdx = qualifyingPositions 
+      ? new Map(qualifyingPositions.map(q => [q.CarIdx, q]))
+      : new Map();
+
+    const playerLap = playerCarIdx !== undefined 
+      ? driverPositionsByCarIdx.get(playerCarIdx)?.lapNum ?? 0
+      : 0;
+
     const standings = drivers.map((driver) => {
-      const driverPos = driverPositions.find(
-        (driverPos) => driverPos.carIdx === driver.carIdx,
-      );
+      const driverPos = driverPositionsByCarIdx.get(driver.carIdx);
 
       if (!driverPos) return undefined;
 
-      const carState = carStates.find((car) => car.carIdx === driver.carIdx);
-      const playerLap =
-        driverPositions.find((pos) => pos.carIdx === playerCarIdx)?.lapNum ?? 0;
+      const carState = carStatesByCarIdx.get(driver.carIdx);
 
       let lappedState: 'ahead' | 'behind' | 'same' | undefined = undefined;
       if (sessionType === 'Race') {
@@ -120,9 +135,7 @@ export const useDriverStandings = () => {
       // If the driver is not in the standings, use the qualifying position
       let classPosition: number | undefined = driverPos.classPosition;
       if (classPosition <= 0) {
-        const qualifyingPosition = qualifyingPositions?.find(
-          (q) => q.CarIdx === driver.carIdx,
-        );
+        const qualifyingPosition = qualifyingPositionsByCarIdx.get(driver.carIdx);
         classPosition = qualifyingPosition ? qualifyingPosition.Position + 1 : undefined;
       }
 

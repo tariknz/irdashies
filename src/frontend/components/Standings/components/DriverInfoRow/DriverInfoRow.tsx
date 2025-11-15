@@ -1,3 +1,4 @@
+import { memo, useMemo } from 'react';
 import { SpeakerHighIcon } from '@phosphor-icons/react';
 import { getTailwindStyle } from '@irdashies/utils/colors';
 import { formatTime } from '@irdashies/utils/time';
@@ -5,6 +6,7 @@ import { CountryFlag } from '../CountryFlag/CountryFlag';
 import type { LastTimeState } from '../../createStandings';
 import { Compound } from '../Compound/Compound';
 import { CarManufacturer } from '../CarManufacturer/CarManufacturer';
+import { useDashboard } from '@irdashies/context'; 
 
 interface DriverRowInfoProps {
   carIdx: number;
@@ -29,9 +31,12 @@ interface DriverRowInfoProps {
   flairId?: number;
   tireCompound?: number;
   carId?: number;
+  lapTimeDeltas?: number[];
+  numLapDeltasToShow?: number;
+  isMultiClass: boolean;
 }
 
-export const DriverInfoRow = ({
+export const DriverInfoRow = memo(({
   carIdx,
   carNumber,
   classColor,
@@ -54,10 +59,17 @@ export const DriverInfoRow = ({
   flairId,
   tireCompound,
   carId,
+  lapTimeDeltas,
+  numLapDeltasToShow,
+  isMultiClass
 }: DriverRowInfoProps) => {
-  // convert seconds to mm:ss:ms
-  const lastTimeString = formatTime(lastTime);
-  const fastestTimeString = formatTime(fastestTime);
+  // Memoize formatted time strings to avoid recalculation on every render
+  const lastTimeString = useMemo(() => formatTime(lastTime), [lastTime]);
+  const fastestTimeString = useMemo(() => formatTime(fastestTime), [fastestTime]);
+
+  const { currentDashboard } = useDashboard(); 
+  const settings = currentDashboard?.generalSettings; 
+  const highlightColor = settings?.highlightColor ?? 960745; 
 
   const getLastTimeColorClass = (state?: LastTimeState): string => {
     if (state === 'session-fastest') return 'text-purple-400';
@@ -78,13 +90,13 @@ export const DriverInfoRow = ({
       ].join(' ')}
     >
       <td
-        className={`text-center text-white px-2 ${isPlayer ? `${getTailwindStyle(classColor).classHeader}` : ''}`}
+        className={`text-center text-white px-2 ${isPlayer ? `${getTailwindStyle(classColor, highlightColor, isMultiClass).classHeader}` : ''}`}
       >
         {position}
       </td>
       <td
         className={[
-          getTailwindStyle(classColor).driverIcon,
+          getTailwindStyle(classColor, highlightColor, isMultiClass).driverIcon,
           'border-l-4',
           carNumber ? 'text-white text-right px-1 w-10' : 'w-0',
         ].join(' ')}
@@ -147,6 +159,30 @@ export const DriverInfoRow = ({
           </div>
         </td>
       )}
+     {lapTimeDeltas !== undefined && (
+       <>
+         {lapTimeDeltas.map((deltaValue, index) => (
+           <td
+             key={index}
+             className={[
+               'px-1 text-center',
+               deltaValue > 0 ? 'text-green-400' : 'text-red-400'
+             ].join(' ')}
+           >
+             {deltaValue > 0 ? '+' : ''}{deltaValue.toFixed(1)}
+           </td>
+         ))}
+       </>
+     )}
+     {lapTimeDeltas === undefined && isPlayer && numLapDeltasToShow && (
+       <>
+         {[...Array(numLapDeltasToShow)].map((_, index) => (
+           <td key={index} className="px-1 text-center">-</td>
+         ))}
+       </>
+     )}
     </tr>
   );
-};
+});
+
+DriverInfoRow.displayName = 'DriverInfoRow';
