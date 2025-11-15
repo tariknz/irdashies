@@ -2,7 +2,9 @@
 
 ## Summary
 
-Browser components now use the **exact same configuration** as Electron dashboard widgets. The configuration is automatically passed from the Electron app to the browser through the component server.
+Browser components use the **exact same configuration** as Electron dashboard widgets. The configuration is automatically passed from the Electron app to the browser through the component server in real-time.
+
+**No separate browser config** - What you configure in Electron is exactly what renders in the browser.
 
 ## How It Works
 
@@ -52,8 +54,10 @@ const html = `
 
 **Result:** Browser receives URL like:
 ```
-http://localhost:5173/component-renderer.html?component=standings&wsUrl=...&config={"someKey":"someValue"}
+http://localhost:5173/component-renderer.html?component=standings&wsUrl=http://localhost:3000&config={"someKey":"someValue"}
 ```
+
+**Important:** Always access components via the component server (`http://localhost:3000/component/standings`), not directly via Vite URL. The component server wraps the iframe with proper parameters.
 
 ---
 
