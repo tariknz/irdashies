@@ -117,13 +117,13 @@ export async function startComponentServer(irsdkBridge?: IrSdkBridge, dashboardB
         <title>${componentName} Component</title>
         <style>
           * { margin: 0; padding: 0; box-sizing: border-box; }
-          html, body, #root { width: 100%; height: 100%; }
-          body { background: #1a1a1a; font-family: system-ui, -apple-system, sans-serif; }
-          iframe { border: none; width: 100%; height: 100%; }
+          html, body, #root { width: 100%; height: 100%; overflow: hidden; }
+          body { background: transparent; font-family: system-ui, -apple-system, sans-serif; position: fixed; top: 0; left: 0; right: 0; bottom: 0; }
+          iframe { border: none; width: 100%; height: 100%; display: block; overflow: hidden; background: transparent; }
         </style>
       </head>
       <body>
-        <iframe src="http://localhost:${vitePort}/index-component-renderer.html?component=${encodeURIComponent(componentName)}&wsUrl=${encodeURIComponent(wsUrl)}${configParam}"></iframe>
+        <iframe src="http://localhost:${vitePort}/index-component-renderer.html?component=${encodeURIComponent(componentName)}&wsUrl=${encodeURIComponent(wsUrl)}${configParam}" scrolling="no"></iframe>
       </body>
       </html>
     `;

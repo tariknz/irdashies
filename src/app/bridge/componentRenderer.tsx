@@ -388,8 +388,6 @@ export async function renderComponent(
 
     // Step 2: Import stores (we'll need them to set up listeners)
     console.log('📝 Step 2: Import Zustand stores');
-    const { useTelemetryStore } = await import('../../frontend/context/TelemetryStore/TelemetryStore');
-    const { useSessionStore } = await import('../../frontend/context/SessionStore/SessionStore');
     console.log('  ✅ Stores imported');
 
     // Step 3: Create the bridge but DON'T connect yet
