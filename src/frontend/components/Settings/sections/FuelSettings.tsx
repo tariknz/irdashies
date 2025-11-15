@@ -8,9 +8,11 @@ const SETTING_ID = 'fuel';
 const defaultConfig: FuelWidgetSettings['config'] = {
   fuelUnits: 'L',
   showConsumption: true,
+  showMin: true,
   showLastLap: true,
   show3LapAvg: true,
   show10LapAvg: true,
+  showMax: true,
   showPitWindow: true,
   showFuelSave: true,
   safetyMargin: 0.05,
@@ -25,9 +27,11 @@ const migrateConfig = (
   return {
     fuelUnits: (config.fuelUnits as 'L' | 'gal') ?? 'L',
     showConsumption: (config.showConsumption as boolean) ?? true,
+    showMin: (config.showMin as boolean) ?? true,
     showLastLap: (config.showLastLap as boolean) ?? true,
     show3LapAvg: (config.show3LapAvg as boolean) ?? true,
     show10LapAvg: (config.show10LapAvg as boolean) ?? true,
+    showMax: (config.showMax as boolean) ?? true,
     showPitWindow: (config.showPitWindow as boolean) ?? true,
     showFuelSave: (config.showFuelSave as boolean) ?? true,
     safetyMargin: (config.safetyMargin as number) ?? 0.05,
@@ -99,6 +103,19 @@ export const FuelSettings = () => {
             <div className="ml-4 space-y-2 border-l-2 border-slate-600 pl-4">
               <div className="flex items-center justify-between">
                 <span className="text-xs text-slate-400">
+                  Show Min
+                </span>
+                <input
+                  type="checkbox"
+                  checked={settings.config.showMin}
+                  onChange={(e) =>
+                    handleConfigChange({ showMin: e.target.checked })
+                  }
+                  className="w-4 h-4 bg-slate-700 rounded"
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-slate-400">
                   Show Last Lap
                 </span>
                 <input
@@ -132,6 +149,19 @@ export const FuelSettings = () => {
                   checked={settings.config.show10LapAvg}
                   onChange={(e) =>
                     handleConfigChange({ show10LapAvg: e.target.checked })
+                  }
+                  className="w-4 h-4 bg-slate-700 rounded"
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-slate-400">
+                  Show Max
+                </span>
+                <input
+                  type="checkbox"
+                  checked={settings.config.showMax}
+                  onChange={(e) =>
+                    handleConfigChange({ showMax: e.target.checked })
                   }
                   className="w-4 h-4 bg-slate-700 rounded"
                 />

@@ -34,6 +34,10 @@ export interface FuelCalculation {
   avg10Laps: number;
   /** Average fuel consumption for all green flag laps (liters) */
   avgAllGreenLaps: number;
+  /** Minimum fuel used in a single lap (liters) */
+  minLapUsage: number;
+  /** Maximum fuel used in a single lap (liters) */
+  maxLapUsage: number;
   /** Estimated number of laps possible with current fuel */
   lapsWithFuel: number;
   /** Number of laps remaining in the session */
@@ -56,6 +60,8 @@ export interface FuelCalculation {
   targetConsumption: number;
   /** Confidence level in the calculations */
   confidence: 'high' | 'medium' | 'low';
+  /** Estimated fuel remaining at race finish (can be negative if insufficient fuel) */
+  fuelAtFinish: number;
 }
 
 /**
@@ -66,12 +72,16 @@ export interface FuelCalculatorSettings {
   fuelUnits: 'L' | 'gal';
   /** Show detailed consumption breakdown */
   showConsumption: boolean;
+  /** Show minimum fuel consumption */
+  showMin: boolean;
   /** Show consumption for last lap */
   showLastLap: boolean;
   /** Show average over last 3 laps */
   show3LapAvg: boolean;
   /** Show average over last 10 laps */
   show10LapAvg: boolean;
+  /** Show maximum fuel consumption */
+  showMax: boolean;
   /** Show pit window information */
   showPitWindow: boolean;
   /** Show fuel save indicator */
