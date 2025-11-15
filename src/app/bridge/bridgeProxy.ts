@@ -46,9 +46,12 @@ export function createBridgeProxy(
   // Subscribe to dashboard updates if available
   if (dashboardBridge) {
     dashboardBridge.dashboardUpdated((dashboard: DashboardLayout) => {
+      console.log('📊 Dashboard updated in bridgeProxy:', dashboard ? `${dashboard.widgets?.length || 0} widgets` : 'null');
       currentDashboard = dashboard;
       io.emit('dashboardUpdated', dashboard);
     });
+  } else {
+    console.log('⚠️ No dashboardBridge provided to bridgeProxy');
   }
 
   // Handle client connections
