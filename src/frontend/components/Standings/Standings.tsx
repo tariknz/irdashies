@@ -14,18 +14,33 @@ import {
   useStandingsSettings,
 } from './hooks';
 import { useLapTimesStoreUpdater } from '../../context/LapTimesStore/LapTimesStoreUpdater';
+import { useDrivingState } from '@irdashies/context';
 
 export const Standings = () => {
   const [parent] = useAutoAnimate();
   const settings = useStandingsSettings();
+  const { isDriving } = useDrivingState();
 
   // Update lap times store with telemetry data (only for this overlay)
   useLapTimesStoreUpdater();
 
   const standings = useDriverStandings(settings);
-  const classStats = useCarClassStats();const isMultiClass = standings.length > 1; 
-  const { currentDashboard } = useDashboard(); 
+  const classStats = useCarClassStats();
+  const isMultiClass = standings.length > 1;
+  const { currentDashboard } = useDashboard();
   const highlightColor = currentDashboard?.generalSettings?.highlightColor ?? 960745;
+
+  // Calculate display flags for manufacturer and compound columns
+  const allDrivers = standings.flatMap(([, classStandings]) => classStandings);
+  const uniqueCarIds = new Set(allDrivers.filter(d => d.carId).map(d => d.carId));
+  const uniqueTireCompounds = new Set(allDrivers.map(d => d.tireCompound));
+  const showManufacturer = uniqueCarIds.size > 1 && settings?.carManufacturer?.enabled;
+  const showCompound = uniqueTireCompounds.size > 1 && settings?.compound?.enabled;
+
+  // Show only when on track setting
+  if (settings?.showOnlyWhenOnTrack && !isDriving) {
+    return <></>;
+  }
 
   return (
     <div
@@ -79,10 +94,12 @@ export const Standings = () => {
                   onPitRoad={result.onPitRoad}
                   onTrack={result.onTrack}
                   radioActive={result.radioActive}
-                  isMultiClass={isMultiClass} 
+                  isMultiClass={isMultiClass}
                   flairId={settings?.countryFlags?.enabled ?? true ? result.driver?.flairId : undefined}
                   tireCompound={settings?.compound?.enabled ?? true ? result.tireCompound : undefined}
                   carId={settings?.carManufacturer?.enabled ?? true ? result.carId : undefined}
+                  showManufacturer={showManufacturer}
+                  showCompound={showCompound}
                   badge={
                     settings?.badge?.enabled ? (
                       <DriverRatingBadge

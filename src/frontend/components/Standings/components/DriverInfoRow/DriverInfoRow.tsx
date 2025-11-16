@@ -34,6 +34,8 @@ interface DriverRowInfoProps {
   lapTimeDeltas?: number[];
   numLapDeltasToShow?: number;
   isMultiClass: boolean;
+  showManufacturer?: boolean;
+  showCompound?: boolean;
 }
 
 export const DriverInfoRow = memo(({
@@ -61,7 +63,9 @@ export const DriverInfoRow = memo(({
   carId,
   lapTimeDeltas,
   numLapDeltasToShow,
-  isMultiClass
+  isMultiClass,
+  showManufacturer = false,
+  showCompound = false
 }: DriverRowInfoProps) => {
   // Memoize formatted time strings to avoid recalculation on every render
   const lastTimeString = useMemo(() => formatTime(lastTime), [lastTime]);
@@ -129,7 +133,7 @@ export const DriverInfoRow = memo(({
           )}
         </div>
       </td>
-      {carId && (
+      {showManufacturer && carId && (
         <td>
           <div className="flex items-center pr-2">
             <CarManufacturer
@@ -152,7 +156,7 @@ export const DriverInfoRow = memo(({
           {lastTimeString}
         </td>
       )}
-      {tireCompound !== undefined && carId && (
+      {showCompound && tireCompound !== undefined && carId && (
         <td>
           <div className="flex items-center pr-1">
             <Compound tireCompound={tireCompound} carId={carId} size="sm" />

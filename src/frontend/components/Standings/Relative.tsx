@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { useAutoAnimate } from '@formkit/auto-animate/react';
 import { DriverInfoRow } from './components/DriverInfoRow/DriverInfoRow';
 import { useRelativeSettings, useDriverRelatives } from './hooks';
+import { useDrivingState } from '@irdashies/context';
 import { DriverRatingBadge } from './components/DriverRatingBadge/DriverRatingBadge';
 import { SessionBar } from './components/SessionBar/SessionBar';
 import { SessionFooter } from './components/SessionFooter/SessionFooter';
@@ -9,10 +10,18 @@ import { TitleBar } from './components/TitleBar/TitleBar';
 
 export const Relative = () => {
   const config = useRelativeSettings();
+  const { isDriving } = useDrivingState();
+
   const buffer = config?.buffer ?? 3;
   const standings = useDriverRelatives({ buffer });
   const [parent] = useAutoAnimate();
-  const isMultiClass = standings.length > 0 && new Set(standings.map(s => s.carClass.id)).size > 1; 
+  const isMultiClass = standings.length > 0 && new Set(standings.map(s => s.carClass.id)).size > 1;
+
+  // Calculate display flags for manufacturer and compound columns
+  const uniqueCarIds = new Set(standings.filter(d => d.carId).map(d => d.carId));
+  const uniqueTireCompounds = new Set(standings.map(d => d.tireCompound));
+  const showManufacturer = uniqueCarIds.size > 1 && config?.carManufacturer?.enabled;
+  const showCompound = uniqueTireCompounds.size > 1 && config?.compound?.enabled;
 
   // Always render 2 * buffer + 1 rows (buffer above + player + buffer below)
   const totalRows = 2 * buffer + 1;
@@ -28,7 +37,7 @@ export const Relative = () => {
     // If no player found, return empty rows
     if (playerIndex === -1) {
       return Array.from({ length: totalRows }, (_, index) => (
-        <DummyDriverRow key={`empty-${index}`} />
+        <DummyDriverRow key={`empty-${index}`} showManufacturer={showManufacturer} showCompound={showCompound} />
       ));
     }
 
@@ -42,7 +51,7 @@ export const Relative = () => {
 
       if (!result) {
         // If no result, render a dummy row with visibility hidden
-        return <DummyDriverRow key={`placeholder-${index}`} />;
+        return <DummyDriverRow key={`placeholder-${index}`} showManufacturer={showManufacturer} showCompound={showCompound} />;
       }
 
       return (
@@ -68,6 +77,8 @@ export const Relative = () => {
           tireCompound={config?.compound?.enabled ? result.tireCompound : undefined}
           carId={config?.carManufacturer?.enabled ?? true ? result.carId : undefined}
           isMultiClass={isMultiClass}
+          showManufacturer={showManufacturer}
+          showCompound={showCompound}
           badge={
             <DriverRatingBadge
               license={result.driver?.license}
@@ -77,7 +88,12 @@ export const Relative = () => {
         />
       );
     });
-  }, [standings, playerIndex, totalRows, config, isMultiClass]);
+  }, [standings, playerIndex, totalRows, config, isMultiClass, showManufacturer, showCompound]);
+
+  // Show only when on track setting
+  if (config?.showOnlyWhenOnTrack && !isDriving) {
+    return <></>;
+  }
 
   // If no player found, render empty table with consistent height
   if (playerIndex === -1) {
@@ -111,7 +127,7 @@ export const Relative = () => {
 };
 
 // Dummy driver row component with visibility hidden to maintain consistent height
-const DummyDriverRow = () => (
+const DummyDriverRow = ({ showManufacturer, showCompound }: { showManufacturer: boolean; showCompound: boolean }) => (
   <DriverInfoRow
     carIdx={0}
     classColor={0}
@@ -119,6 +135,8 @@ const DummyDriverRow = () => (
     isPlayer={false}
     hasFastestTime={false}
     hidden={true}
-    isMultiClass={false} 
+    isMultiClass={false}
+    showManufacturer={showManufacturer}
+    showCompound={showCompound}
   />
 );
