@@ -26,7 +26,6 @@ export interface DashboardWidget {
 export interface GeneralSettingsType {
   fontSize?: 'xs' | 'sm' | 'lg' | 'xl';
   colorPalette?: 'default' | string;
-  showOnlyWhenOnTrack?: boolean;
   highlightColor?: number;
 }
 

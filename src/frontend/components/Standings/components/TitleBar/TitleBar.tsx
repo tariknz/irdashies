@@ -1,4 +1,4 @@
-import { useSessionName, useTelemetryValue, useWeekendInfoSeriesID, useWeekendInfoEventType } from '@irdashies/context';
+import { useSessionName, useTelemetryValue, useWeekendInfoSeriesID } from '@irdashies/context';
 import { useDashboard } from '@irdashies/context';
 import { useMemo } from 'react';
 import { seriesMapping } from '../../../../utils/seriesMapping';
@@ -10,7 +10,6 @@ interface TitleBarProps {
 export const TitleBar = ({ titleBarSettings }: TitleBarProps) => {
   const sessionNum = useTelemetryValue('SessionNum');
   const seriesId = useWeekendInfoSeriesID();
-  const eventType = useWeekendInfoEventType();
   const sessionName = useSessionName(sessionNum);
 
   // Use series name if available, otherwise fall back to session name
@@ -22,7 +21,6 @@ export const TitleBar = ({ titleBarSettings }: TitleBarProps) => {
   const sessionLapsTotal = useTelemetryValue('SessionLapsTotal');
   const raceLaps = useTelemetryValue('RaceLaps');
   const lapDistPct = useTelemetryValue('LapDistPct');
-  const sessionState = useTelemetryValue('SessionState');
 
   // Get highlight color from dashboard
   const { currentDashboard } = useDashboard();
@@ -30,7 +28,7 @@ export const TitleBar = ({ titleBarSettings }: TitleBarProps) => {
 
   const progressPercentage = useMemo(() => {
     // Only calculate progress for racing sessions
-    if (eventType !== "Race" || !sessionTimeRemain || !sessionTimeTotal || !raceLaps) {
+    if (sessionName !== "Race" || !sessionTimeRemain || !sessionTimeTotal || !raceLaps) {
       return 0;
     }
 
@@ -56,7 +54,7 @@ export const TitleBar = ({ titleBarSettings }: TitleBarProps) => {
 
       return progressPct;
     }
-  }, [eventType, sessionTimeRemain, sessionTimeTotal, sessionLapsTotal, raceLaps, lapDistPct]);
+  }, [sessionName, sessionTimeRemain, sessionTimeTotal, sessionLapsTotal, raceLaps, lapDistPct]);
 
   // Don't render title bar if disabled in settings
   if (!titleBarSettings?.enabled) {
@@ -66,14 +64,16 @@ export const TitleBar = ({ titleBarSettings }: TitleBarProps) => {
   return (
     <div className="relative bg-slate-900/70 text-sm px-3 py-2 flex justify-center items-center">
       {/* Background progress bar - only show for racing sessions and if enabled in settings */}
-      {eventType === "Race" && progressPercentage > 0 && titleBarSettings?.progressBar?.enabled && (
-        <div
-          className="absolute inset-2 opacity-60"
-          style={{
-            backgroundColor: `#${highlightColor.toString(16).padStart(6, '0')}`,
-            width: `${progressPercentage}%`,
-          }}
-        />
+      {sessionName === "Race" && progressPercentage > 0 && titleBarSettings?.progressBar?.enabled && (
+        <div className="absolute inset-x-3 inset-y-2">
+          <div
+            className="h-full opacity-80 rounded-sm"
+            style={{
+              width: `${progressPercentage}%`,
+              backgroundColor: `#${highlightColor.toString(16).padStart(6, '0')}`,
+            }}
+          />
+        </div>
       )}
 
       {/* Centered series/session name text */}

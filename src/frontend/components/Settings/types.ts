@@ -23,6 +23,7 @@ export interface StandingsWidgetSettings extends BaseWidgetSettings {
     carManufacturer: { enabled: boolean };
     lapTimeDeltas: { enabled: boolean; numLaps: number };
     titleBar: { enabled: boolean; progressBar: { enabled: boolean } };
+    showOnlyWhenOnTrack: boolean;
   };
 }
 
@@ -37,6 +38,7 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
     compound: { enabled: boolean };
     carManufacturer: { enabled: boolean };
     titleBar: { enabled: boolean; progressBar: { enabled: boolean } };
+    showOnlyWhenOnTrack: boolean;
   };
 }
 

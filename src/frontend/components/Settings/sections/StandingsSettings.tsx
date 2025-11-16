@@ -24,7 +24,8 @@ const defaultConfig: StandingsWidgetSettings['config'] = {
   compound: { enabled: true },
   carManufacturer: { enabled: true },
   lapTimeDeltas: { enabled: false, numLaps: 3 },
-  titleBar: { enabled: true, progressBar: { enabled: true } }
+  titleBar: { enabled: true, progressBar: { enabled: true } },
+  showOnlyWhenOnTrack: false
 };
 
 // Migration function to handle missing properties in the new config format
@@ -89,7 +90,8 @@ const migrateConfig = (
       progressBar: {
         enabled: (config.titleBar as { progressBar?: { enabled?: boolean } })?.progressBar?.enabled ?? true
       }
-    }
+    },
+    showOnlyWhenOnTrack: (config.showOnlyWhenOnTrack as boolean) ?? false
   };
 };
 
@@ -398,6 +400,24 @@ export const StandingsSettings = () => {
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* Show Only When On Track Settings */}
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className="text-md font-medium text-slate-300">
+                Show Only When On Track
+              </h4>
+              <p className="text-sm text-slate-400">
+                If enabled, standings will only be shown when you are driving.
+              </p>
+            </div>
+            <ToggleSwitch
+              enabled={settings.config.showOnlyWhenOnTrack ?? false}
+              onToggle={(enabled) =>
+                handleConfigChange({ showOnlyWhenOnTrack: enabled })
+              }
+            />
           </div>
         </div>
       )}

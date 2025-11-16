@@ -15,14 +15,15 @@ const defaultConfig: RelativeWidgetSettings['config'] = {
   fastestTime: { enabled: false },
   compound: { enabled: false },
   carManufacturer: { enabled: true },
-  titleBar: { enabled: true, progressBar: { enabled: true } }
+  titleBar: { enabled: true, progressBar: { enabled: true } },
+  showOnlyWhenOnTrack: false
 };
 
 const migrateConfig = (savedConfig: unknown): RelativeWidgetSettings['config'] => {
   if (!savedConfig || typeof savedConfig !== 'object') return defaultConfig;
   const config = savedConfig as Record<string, unknown>;
   return {
-    buffer: (config.buffer as { value?: number })?.value ?? 3,
+    buffer: (config.buffer as number | undefined) ?? 3,
     background: { opacity: (config.background as { opacity?: number })?.opacity ?? 0 },
     countryFlags: { enabled: (config.countryFlags as { enabled?: boolean })?.enabled ?? true },
     carNumber: { enabled: (config.carNumber as { enabled?: boolean })?.enabled ?? true },
@@ -35,7 +36,8 @@ const migrateConfig = (savedConfig: unknown): RelativeWidgetSettings['config'] =
       progressBar: {
         enabled: (config.titleBar as { progressBar?: { enabled?: boolean } })?.progressBar?.enabled ?? true
       }
-    }
+    },
+    showOnlyWhenOnTrack: (config.showOnlyWhenOnTrack as boolean) ?? false
   };
 };
 
@@ -196,6 +198,24 @@ export const RelativeSettings = () => {
                 </div>
               )}
             </div>
+          </div>
+
+          {/* Show Only When On Track Settings */}
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className="text-md font-medium text-slate-300">
+                Show Only When On Track
+              </h4>
+              <p className="text-sm text-slate-400">
+                If enabled, relatives will only be shown when you are driving.
+              </p>
+            </div>
+            <ToggleSwitch
+              enabled={settings.config.showOnlyWhenOnTrack ?? false}
+              onToggle={(enabled) =>
+                handleConfigChange({ showOnlyWhenOnTrack: enabled })
+              }
+            />
           </div>
         </div>
       )}
