@@ -62,6 +62,7 @@ export const FuelCalculator = ({
         pitWindowClose: 0,
         currentLap: 0,
         fuelAtFinish: 0,
+        validLapCount: 0,
       };
     }
 
@@ -141,7 +142,7 @@ export const FuelCalculator = ({
             <div className="flex justify-between py-1 hover:bg-white/5 hover:mx-[-4px] hover:px-1 rounded transition-colors">
               <span className="text-slate-400 text-xs">3 Lap Avg</span>
               <span className="text-white text-sm font-medium">
-                {formatFuel(displayData.avg3Laps, fuelUnits)}
+                {displayData.validLapCount >= 3 ? formatFuel(displayData.avg3Laps, fuelUnits) : '-'}
               </span>
             </div>
           )}
@@ -149,7 +150,7 @@ export const FuelCalculator = ({
             <div className="flex justify-between py-1 hover:bg-white/5 hover:mx-[-4px] hover:px-1 rounded transition-colors">
               <span className="text-slate-400 text-xs">10 Lap Avg</span>
               <span className="text-white text-sm font-medium">
-                {formatFuel(displayData.avg10Laps, fuelUnits)}
+                {displayData.validLapCount >= 10 ? formatFuel(displayData.avg10Laps, fuelUnits) : '-'}
               </span>
             </div>
           )}

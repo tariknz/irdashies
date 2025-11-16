@@ -62,6 +62,8 @@ export interface FuelCalculation {
   confidence: 'high' | 'medium' | 'low';
   /** Estimated fuel remaining at race finish (can be negative if insufficient fuel) */
   fuelAtFinish: number;
+  /** Number of valid laps completed */
+  validLapCount: number;
 }
 
 /**

@@ -232,6 +232,7 @@ export function useFuelCalculation(
       targetConsumption,
       confidence,
       fuelAtFinish,
+      validLapCount: validLaps.length,
     };
 
     // console.log('[FuelCalculator] Calculation result:', result);
