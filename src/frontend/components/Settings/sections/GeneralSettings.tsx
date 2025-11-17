@@ -10,32 +10,33 @@ const FONT_SIZE_PRESETS = {
   xl: 'Extra Large',
 };
 
+const HIGHLIGHT_COLOR_PRESETS = new Map([
+  [15680580, 'Red'],
+  [16347926, 'Orange'],
+  [16096779, 'Amber'],
+  [15381256, 'Yellow'],
+  [8702998,  'Lime'],
+  [2278750,  'Green'],
+  [1096065,  'Emerald'],
+  [1357990,  'Teal'],
+  [440020,   'Cyan'],
+  [960745,   'Sky'],
+  [3395327,  'Blue'],
+  [6514417,  'Indigo'],
+  [9133302,  'Violet'],
+  [11430911, 'Purple'],
+  [14239471, 'Fuchsia'],
+  [16734344, 'Pink'],
+  [16007006, 'Rose'],
+  [7434618,  'Zinc'],
+  [7893356,  'Stone']
+]);
+
 const COLOR_THEME_PRESETS: Record<string, string> = {
   default: 'Slate (default)',
   black: 'Black',
+  ...Object.fromEntries(Array.from(HIGHLIGHT_COLOR_PRESETS.values()).map(name => [name.toLowerCase(), name]))
 };
-
-const HIGHLIGHT_COLOR_PRESETS = new Map([ 
-  [15680580, 'Red'], 
-  [16347926, 'Orange'], 
-  [16096779, 'Amber'], 
-  [15381256, 'Yellow'], 
-  [8702998,  'Lime'], 
-  [2278750,  'Green'], 
-  [1096065,  'Emerald'], 
-  [1357990,  'Teal'], 
-  [440020,   'Cyan'], 
-  [960745,   'Sky'], 
-  [3395327,  'Blue'], 
-  [6514417,  'Indigo'], 
-  [9133302,  'Violet'], 
-  [11430911, 'Purple'], 
-  [14239471, 'Fuchsia'], 
-  [16734344, 'Pink'], 
-  [16007006, 'Rose'], 
-  [7434618,  'Zinc'], 
-  [7893356,  'Stone'] 
-]);
 
 export const GeneralSettings = () => {
   const { currentDashboard, onDashboardUpdated } = useDashboard();
@@ -65,7 +66,7 @@ export const GeneralSettings = () => {
     updateDashboard(newSettings);
   };
 
-  const handleColorThemeChange = (newTheme: 'default' | 'black') => {
+  const handleColorThemeChange = (newTheme: GeneralSettingsType['colorPalette']) => {
     const newSettings = { ...settings, colorPalette: newTheme };
     setSettings(newSettings);
     updateDashboard(newSettings);
@@ -150,6 +151,12 @@ export const GeneralSettings = () => {
           <h3 className="text-lg font-medium text-slate-200">Color Theme</h3>
           <div className="flex items-center gap-2">
             <span className="text-sm text-slate-300">{COLOR_THEME_PRESETS[settings.colorPalette ?? 'default']}</span>
+            {settings.colorPalette && settings.colorPalette !== 'default' && settings.colorPalette !== 'black' && (
+              <span
+                className={`bg-${settings.colorPalette}-800 rounded border-2 border-${settings.colorPalette}-500`}
+                style={{ width: '20px', height: '20px' }}
+              ></span>
+            )}
           </div>
         </div>
 
@@ -157,11 +164,12 @@ export const GeneralSettings = () => {
         <div className="mt-4">
           <select
             value={settings.colorPalette ?? 'default'}
-            onChange={(e) => handleColorThemeChange(e.target.value as 'default' | 'black')}
+            onChange={(e) => handleColorThemeChange(e.target.value as GeneralSettingsType['colorPalette'])}
             className="w-full px-3 py-2 bg-slate-700 text-slate-300 rounded border border-slate-600 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
           >
-            <option value="default">{COLOR_THEME_PRESETS.default}</option>
-            <option value="black">{COLOR_THEME_PRESETS.black}</option>
+            {Object.entries(COLOR_THEME_PRESETS).map(([key, value]) => (
+              <option key={key} value={key}>{value}</option>
+            ))}
           </select>
         </div>
       </div>
