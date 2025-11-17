@@ -190,7 +190,7 @@ export const DriverInfoRow = memo(({
       {
         id: 'iRating',
         shouldRender: (displayOrder ? displayOrder.includes('iRating') : true) && (config?.iRating?.enabled ?? false),
-        render: () => <td key="iRating" data-column="iRating" className="px-2 text-center just whitespace-nowrap">{hidden ? null : iRating}</td>,
+        render: () => <td key="iRating" data-column="iRating" className="px-2 text-center whitespace-nowrap">{hidden ? null : iRating}</td>,
       },
       {
         id: 'iratingChange',
