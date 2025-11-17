@@ -203,8 +203,9 @@ export class OverlayManager {
       return this.currentSettingsWindow;
     }
 
-    // Create the browser window.
-    const browserWindow = new BrowserWindow({
+    // Load saved window bounds
+    const savedBounds = loadWindowBounds();
+    const defaultOptions = {
       title: `iRacing Dashies - Settings`,
       frame: true,
       width: 800,
@@ -213,9 +214,17 @@ export class OverlayManager {
       webPreferences: {
         preload: path.join(__dirname, 'preload.js'),
       },
-    });
+    };
+
+    // Create the browser window with saved bounds if available
+    const browserWindow = new BrowserWindow(
+      savedBounds ? { ...defaultOptions, ...savedBounds } : defaultOptions
+    );
 
     this.currentSettingsWindow = browserWindow;
+
+    // Track window movement and resizing to save bounds
+    trackSettingsWindowMovement(browserWindow);
 
     // and load the index.html of the app.
     if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
@@ -243,3 +252,20 @@ export class OverlayManager {
     return browserWindow;
   }
 }
+
+function saveWindowBounds(browserWindow: BrowserWindow): void {
+  const bounds = browserWindow.getBounds();
+  writeData('settingsWindowBounds', bounds);
+}
+
+function loadWindowBounds(): Electron.Rectangle | undefined {
+  return readData<Electron.Rectangle>('settingsWindowBounds');
+}
+
+export const trackSettingsWindowMovement = (
+  browserWindow: BrowserWindow
+) => {
+  // Tracks moved and resized events on settings window and saves bounds to storage
+  browserWindow.on('moved', () => saveWindowBounds(browserWindow));
+  browserWindow.on('resized', () => saveWindowBounds(browserWindow));
+};

@@ -5,7 +5,7 @@ export interface BaseWidgetSettings<T = Record<string, unknown>> {
 
 export interface StandingsWidgetSettings extends BaseWidgetSettings {
   config: {
-    iRatingChange: { enabled: boolean };
+    iratingChange: { enabled: boolean };
     badge: { enabled: boolean };
     delta: { enabled: boolean };
     lastTime: { enabled: boolean };
@@ -22,6 +22,10 @@ export interface StandingsWidgetSettings extends BaseWidgetSettings {
     compound: { enabled: boolean };
     carManufacturer: { enabled: boolean };
     lapTimeDeltas: { enabled: boolean; numLaps: number };
+    position: boolean;
+    driverName: { enabled: boolean; width: number };
+    pitStatus: boolean;
+    displayOrder: string[];
   };
 }
 
@@ -35,6 +39,13 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
     fastestTime: { enabled: boolean };
     compound: { enabled: boolean };
     carManufacturer: { enabled: boolean };
+    badge: { enabled: boolean };
+    iratingChange: { enabled: boolean };
+    delta: { enabled: boolean };
+    position: boolean;
+    driverName: { enabled: boolean; width: number };
+    pitStatus: boolean;
+    displayOrder: string[];
   };
 }
 
