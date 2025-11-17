@@ -37,15 +37,12 @@ export const Relative = () => {
           hasFastestTime={false}
           hidden={true}
           isMultiClass={false}
-          lapTimeDeltas={undefined}
-          numLapDeltasToShow={undefined}
           displayOrder={settings?.displayOrder}
           config={settings}
           carNumber={settings?.carNumber?.enabled ?? true ? '' : undefined}
           flairId={settings?.countryFlags?.enabled ?? true ? 0 : undefined}
           carId={settings?.carManufacturer?.enabled ?? true ? 0 : undefined}
           badge={settings?.badge?.enabled ? <></> : undefined}
-          iRating={settings?.iRating?.enabled ? undefined : undefined}
           iratingChange={
             settings?.iratingChange?.enabled ? (
               <RatingChange value={undefined} />
@@ -90,7 +87,6 @@ export const Relative = () => {
             flairId={settings?.countryFlags?.enabled ?? true ? 0 : undefined}
             carId={settings?.carManufacturer?.enabled ?? true ? 0 : undefined}
             badge={settings?.badge?.enabled ? <></> : undefined}
-            iRating={settings?.iRating?.enabled ? undefined : undefined}
             iratingChange={
               settings?.iratingChange?.enabled ? (
                 <RatingChange value={undefined} />
@@ -139,15 +135,12 @@ export const Relative = () => {
               />
             ) : undefined
           }
-          iRating={settings?.iRating?.enabled ? result.driver?.rating : undefined}
           iratingChange={
             settings?.iratingChange?.enabled ? (
               <RatingChange value={result.iratingChange} />
             ) : undefined
           }
           delta={settings?.delta?.enabled ? result.delta : undefined}
-          lapTimeDeltas={settings?.lapTimeDeltas?.enabled ? result.lapTimeDeltas : undefined}
-          numLapDeltasToShow={settings?.lapTimeDeltas?.enabled ? settings.lapTimeDeltas.numLaps : undefined}
           displayOrder={settings?.displayOrder}
           config={settings}
         />

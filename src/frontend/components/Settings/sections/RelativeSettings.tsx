@@ -41,13 +41,11 @@ const sortableSettings: SortableSetting[] = [
   { id: 'pitStatus', label: 'Pit Status', configKey: 'pitStatus' },
   { id: 'carManufacturer', label: 'Car Manufacturer', configKey: 'carManufacturer' },
   { id: 'badge', label: 'Driver Badge', configKey: 'badge' },
-  { id: 'iRating', label: 'iRating', configKey: 'iRating' },
   { id: 'iratingChange', label: 'iRating Change', configKey: 'iratingChange' },
   { id: 'delta', label: 'Delta', configKey: 'delta' },
   { id: 'fastestTime', label: 'Best Time', configKey: 'fastestTime' },
   { id: 'lastTime', label: 'Last Time', configKey: 'lastTime' },
   { id: 'compound', label: 'Tire Compound', configKey: 'compound' },
-  { id: 'lapTimeDeltas', label: 'Lap Time Deltas', configKey: 'lapTimeDeltas', hasSubSetting: true },
 ];
 
 const defaultConfig: RelativeWidgetSettings['config'] = {
@@ -60,13 +58,11 @@ const defaultConfig: RelativeWidgetSettings['config'] = {
   pitStatus: true,
   carManufacturer: { enabled: true },
   badge: { enabled: true },
-  iRating: { enabled: false },
   iratingChange: { enabled: false },
   delta: { enabled: false },
   fastestTime: { enabled: false },
   lastTime: { enabled: false },
   compound: { enabled: false },
-  lapTimeDeltas: { enabled: false, numLaps: 3 },
   displayOrder: sortableSettings.map(s => s.id)
 };
 
@@ -105,16 +101,11 @@ const migrateConfig = (savedConfig: unknown): RelativeWidgetSettings['config'] =
     pitStatus: (config.pitStatus as boolean) ?? true,
     carManufacturer: { enabled: (config.carManufacturer as { enabled?: boolean })?.enabled ?? false },
     badge: { enabled: (config.badge as { enabled?: boolean })?.enabled ?? true },
-    iRating: { enabled: (config.iRating as { enabled?: boolean })?.enabled ?? false },
     iratingChange: { enabled: (config.iratingChange as { enabled?: boolean })?.enabled ?? false },
     delta: { enabled: (config.delta as { enabled?: boolean })?.enabled ?? false },
     fastestTime: { enabled: (config.fastestTime as { enabled?: boolean })?.enabled ?? false },
     lastTime: { enabled: (config.lastTime as { enabled?: boolean })?.enabled ?? false },
     compound: { enabled: (config.compound as { enabled?: boolean })?.enabled ?? false },
-    lapTimeDeltas: {
-      enabled: (config.lapTimeDeltas as { enabled?: boolean })?.enabled ?? false,
-      numLaps: (config.lapTimeDeltas as { numLaps?: number })?.numLaps ?? 3,
-    },
     displayOrder: mergeDisplayOrder(config.displayOrder as string[]),
   };
 };
@@ -144,11 +135,9 @@ const SortableItem = ({ setting, settings, handleConfigChange }: SortableItemPro
   const configValue = settings.config[setting.configKey];
   const isEnabled = setting.configKey === 'driverName'
     ? (configValue as { enabled: boolean; width: number }).enabled
-    : setting.configKey === 'lapTimeDeltas'
-      ? (configValue as { enabled: boolean; numLaps: number }).enabled
-      : typeof configValue === 'boolean'
-        ? configValue
-        : (configValue as { enabled: boolean }).enabled;
+    : typeof configValue === 'boolean'
+      ? configValue
+      : (configValue as { enabled: boolean }).enabled;
 
   return (
     <div ref={setNodeRef} style={style}>
@@ -170,13 +159,6 @@ const SortableItem = ({ setting, settings, handleConfigChange }: SortableItemPro
               handleConfigChange({
                 driverName: {
                   ...settings.config.driverName,
-                  enabled
-                }
-              });
-            } else if (setting.configKey === 'lapTimeDeltas') {
-              handleConfigChange({
-                lapTimeDeltas: {
-                  ...settings.config.lapTimeDeltas,
                   enabled
                 }
               });
@@ -208,29 +190,6 @@ const SortableItem = ({ setting, settings, handleConfigChange }: SortableItemPro
               className="w-20 h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer"
             />
           </div>
-        </div>
-      )}
-      {setting.hasSubSetting && setting.configKey === 'lapTimeDeltas' && settings.config.lapTimeDeltas.enabled && (
-        <div className="flex items-center justify-between pl-8 mt-2">
-          <span className="text-sm text-slate-300">Number of Laps to Show</span>
-          <select
-            value={settings.config.lapTimeDeltas.numLaps}
-            onChange={(e) =>
-              handleConfigChange({
-                lapTimeDeltas: {
-                  ...settings.config.lapTimeDeltas,
-                  numLaps: parseInt(e.target.value),
-                },
-              })
-            }
-            className="w-20 bg-slate-700 text-white rounded-md px-2 py-1"
-          >
-            <option value={1}>1</option>
-            <option value={2}>2</option>
-            <option value={3}>3</option>
-            <option value={4}>4</option>
-            <option value={5}>5</option>
-          </select>
         </div>
       )}
     </div>

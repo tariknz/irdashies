@@ -59,7 +59,6 @@ export const Standings = () => {
                   hasFastestTime={result.hasFastestTime}
                   delta={settings?.delta?.enabled ? result.delta : undefined}
                   position={result.classPosition}
-                  iRating={settings?.iRating?.enabled ? result.driver.rating : undefined}
                   iratingChange={
                     settings?.iratingChange?.enabled ? (
                       <RatingChange value={result.iratingChange} />

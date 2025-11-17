@@ -41,7 +41,6 @@ const sortableSettings: SortableSetting[] = [
   { id: 'pitStatus', label: 'Pit Status', configKey: 'pitStatus' },
   { id: 'carManufacturer', label: 'Car Manufacturer', configKey: 'carManufacturer' },
   { id: 'badge', label: 'Driver Badge', configKey: 'badge' },
-  { id: 'iRating', label: 'iRating', configKey: 'iRating' },
   { id: 'iratingChange', label: 'iRating Change', configKey: 'iratingChange' },
   { id: 'delta', label: 'Delta', configKey: 'delta' },
   { id: 'fastestTime', label: 'Best Time', configKey: 'fastestTime' },
@@ -51,7 +50,6 @@ const sortableSettings: SortableSetting[] = [
 ];
 
 const defaultConfig: StandingsWidgetSettings['config'] = {
-  iRating: { enabled: true },
   iratingChange: { enabled: true },
   badge: { enabled: true },
   delta: { enabled: true },
@@ -102,10 +100,6 @@ const migrateConfig = (
 
   // Handle new format with missing properties
   return {
-    iRating: {
-      enabled:
-        (config.iRating as { enabled?: boolean })?.enabled ?? true,
-    },
     iratingChange: {
       enabled:
         (config.iratingChange as { enabled?: boolean })?.enabled ?? true,

@@ -19,7 +19,6 @@ interface DriverRowInfoProps {
   delta?: number;
   position?: number;
   badge?: React.ReactNode;
-  iRating?: number;
   iratingChange?: React.ReactNode;
   lastTime?: number;
   fastestTime?: number;
@@ -58,7 +57,6 @@ export const DriverInfoRow = memo(({
   radioActive,
   isLapped,
   isLappingAhead,
-  iRating,
   iratingChange,
   hidden,
   flairId,
@@ -188,11 +186,6 @@ export const DriverInfoRow = memo(({
         render: () => <td key="badge" data-column="badge" className="whitespace-nowrap text-center">{hidden ? null : badge}</td>,
       },
       {
-        id: 'iRating',
-        shouldRender: (displayOrder ? displayOrder.includes('iRating') : true) && (config?.iRating?.enabled ?? false),
-        render: () => <td key="iRating" data-column="iRating" className="px-2 text-center whitespace-nowrap">{hidden ? null : iRating}</td>,
-      },
-      {
         id: 'iratingChange',
         shouldRender: (displayOrder ? displayOrder.includes('iratingChange') : true) && (config?.iratingChange?.enabled ?? false),
         render: () => <td key="iratingChange" data-column="iratingChange" className="px-2 text-center whitespace-nowrap">{hidden ? null : iratingChange}</td>,
@@ -233,7 +226,7 @@ export const DriverInfoRow = memo(({
       },
       {
         id: 'lapTimeDeltas',
-        shouldRender: (displayOrder ? displayOrder.includes('lapTimeDeltas') : true) && (config?.lapTimeDeltas?.enabled ?? false),
+        shouldRender: (displayOrder ? displayOrder.includes('lapTimeDeltas') : false) && (config && 'lapTimeDeltas' in config ? config.lapTimeDeltas.enabled : false),
         render: () => (
           <>
             {lapTimeDeltas !== undefined && (
@@ -282,7 +275,7 @@ export const DriverInfoRow = memo(({
     // If no displayOrder, return all columns that should render in original order
     return columns.filter(col => col.shouldRender);
   }, [
-    carNumber, flairId, carId, badge, iRating, iratingChange, delta,
+    carNumber, flairId, carId, badge, iratingChange, delta,
     tireCompound, lapTimeDeltas, numLapDeltasToShow, isPlayer, displayOrder, config,
     classColor, highlightColor, isMultiClass, hasFastestTime, lastTimeState,
     fastestTimeString, lastTimeString, name, onPitRoad, position, radioActive, hidden
