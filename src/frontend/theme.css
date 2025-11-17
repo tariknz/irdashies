@@ -55,7 +55,7 @@ html {
   --text-xl: 18px;
 }
 
-.overlay-window.overlay-theme-lg {
+.overlay-window.overlay-theme-md {
   --text-xs: 12px;
   --text-sm: 14px;
   --text-base: 16px;
@@ -63,12 +63,42 @@ html {
   --text-xl: 20px;
 }
 
-.overlay-window.overlay-theme-xl {
+.overlay-window.overlay-theme-lg {
   --text-xs: 14px;
   --text-sm: 16px;
   --text-base: 18px;
   --text-lg: 20px;
   --text-xl: 22px;
+}
+
+.overlay-window.overlay-theme-xl {
+  --text-xs: 16px;
+  --text-sm: 18px;
+  --text-base: 20px;
+  --text-lg: 22px;
+  --text-xl: 24px;
+  --text-2xl: 28px;
+  --text-3xl: 32px;
+}
+
+.overlay-window.overlay-theme-2xl {
+  --text-xs: 18px;
+  --text-sm: 20px;
+  --text-base: 22px;
+  --text-lg: 24px;
+  --text-xl: 26px;
+  --text-2xl: 32px;
+  --text-3xl: 36px;
+}
+
+.overlay-window.overlay-theme-3xl {
+  --text-xs: 20px;
+  --text-sm: 22px;
+  --text-base: 24px;
+  --text-lg: 26px;
+  --text-xl: 28px;
+  --text-2xl: 36px;
+  --text-3xl: 40px;
 }
 
 .overlay-window.overlay-theme-color-black {
