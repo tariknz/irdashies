@@ -6,8 +6,11 @@ import { ToggleSwitch } from '../components/ToggleSwitch';
 const FONT_SIZE_PRESETS = {
   xs: 'Extra Small',
   sm: 'Small',
+  md: 'Medium',
   lg: 'Large',
   xl: 'Extra Large',
+  '2xl': '2X Large',
+  '3xl': '3X Large',
 };
 
 const HIGHLIGHT_COLOR_PRESETS = new Map([
@@ -60,10 +63,27 @@ export const GeneralSettings = () => {
     onDashboardUpdated(updatedDashboard);
   };
 
-  const handleFontSizeChange = (newSize: 'xs' | 'sm' | 'lg' | 'xl') => {
+  const FONT_SIZE_VALUES: (keyof typeof FONT_SIZE_PRESETS)[] = ['xs', 'sm', 'md', 'lg', 'xl', '2xl', '3xl'];
+
+  const getSliderValue = (size: string | undefined): number => {
+    const index = FONT_SIZE_VALUES.indexOf(size as keyof typeof FONT_SIZE_PRESETS);
+    return index >= 0 ? index : 1; // Default to 1 (sm) if not found
+  };
+
+  const getSizeFromSliderValue = (value: number): keyof typeof FONT_SIZE_PRESETS => {
+    return FONT_SIZE_VALUES[value] || 'sm';
+  };
+
+  const handleFontSizeChange = (newSize: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl') => {
     const newSettings = { ...settings, fontSize: newSize };
     setSettings(newSettings);
     updateDashboard(newSettings);
+  };
+
+  const handleSliderChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const sliderValue = parseInt(event.target.value);
+    const newSize = getSizeFromSliderValue(sliderValue);
+    handleFontSizeChange(newSize);
   };
 
   const handleColorThemeChange = (newTheme: GeneralSettingsType['colorPalette']) => {
@@ -100,48 +120,17 @@ export const GeneralSettings = () => {
           </div>
         </div>
 
-        {/* Font Size Presets */}
-        <div className="flex gap-2 mt-4">
-          <button
-            onClick={() => handleFontSizeChange('xs')}
-            className={`px-3 py-1 rounded text-sm ${
-              settings.fontSize === 'xs'
-                ? 'bg-blue-500 text-white'
-                : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-            }`}
-          >
-            {FONT_SIZE_PRESETS.xs}
-          </button>
-          <button
-            onClick={() => handleFontSizeChange('sm')}
-            className={`px-3 py-1 rounded text-sm ${
-              settings.fontSize === 'sm'
-                ? 'bg-blue-500 text-white'
-                : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-            }`}
-          >
-            {FONT_SIZE_PRESETS.sm}
-          </button>
-          <button
-            onClick={() => handleFontSizeChange('lg')}
-            className={`px-3 py-1 rounded text-sm ${
-              settings.fontSize === 'lg'
-                ? 'bg-blue-500 text-white'
-                : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-            }`}
-          >
-            {FONT_SIZE_PRESETS.lg}
-          </button>
-          <button
-            onClick={() => handleFontSizeChange('xl')}
-            className={`px-3 py-1 rounded text-sm ${
-              settings.fontSize === 'xl'
-                ? 'bg-blue-500 text-white'
-                : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-            }`}
-          >
-            {FONT_SIZE_PRESETS.xl}
-          </button>
+        {/* Font Size Slider */}
+        <div className="mt-4">
+          <input
+            type="range"
+            min="0"
+            max="6"
+            step="1"
+            value={getSliderValue(settings.fontSize)}
+            onChange={handleSliderChange}
+            className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer slider accent-blue-500"
+          />
         </div>
       </div>
 
