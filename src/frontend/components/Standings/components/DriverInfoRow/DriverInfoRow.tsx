@@ -6,6 +6,7 @@ import { CountryFlag } from '../CountryFlag/CountryFlag';
 import type { LastTimeState } from '../../createStandings';
 import { Compound } from '../Compound/Compound';
 import { CarManufacturer } from '../CarManufacturer/CarManufacturer';
+import { useDashboard } from '@irdashies/context'; 
 
 interface DriverRowInfoProps {
   carIdx: number;
@@ -32,6 +33,7 @@ interface DriverRowInfoProps {
   carId?: number;
   lapTimeDeltas?: number[];
   numLapDeltasToShow?: number;
+  isMultiClass: boolean;
 }
 
 export const DriverInfoRow = memo(({
@@ -58,11 +60,16 @@ export const DriverInfoRow = memo(({
   tireCompound,
   carId,
   lapTimeDeltas,
-  numLapDeltasToShow
+  numLapDeltasToShow,
+  isMultiClass
 }: DriverRowInfoProps) => {
   // Memoize formatted time strings to avoid recalculation on every render
   const lastTimeString = useMemo(() => formatTime(lastTime), [lastTime]);
   const fastestTimeString = useMemo(() => formatTime(fastestTime), [fastestTime]);
+
+  const { currentDashboard } = useDashboard(); 
+  const settings = currentDashboard?.generalSettings; 
+  const highlightColor = settings?.highlightColor ?? 960745; 
 
   const getLastTimeColorClass = (state?: LastTimeState): string => {
     if (state === 'session-fastest') return 'text-purple-400';
@@ -83,13 +90,13 @@ export const DriverInfoRow = memo(({
       ].join(' ')}
     >
       <td
-        className={`text-center text-white px-2 ${isPlayer ? `${getTailwindStyle(classColor).classHeader}` : ''}`}
+        className={`text-center text-white px-2 ${isPlayer ? `${getTailwindStyle(classColor, highlightColor, isMultiClass).classHeader}` : ''}`}
       >
         {position}
       </td>
       <td
         className={[
-          getTailwindStyle(classColor).driverIcon,
+          getTailwindStyle(classColor, highlightColor, isMultiClass).driverIcon,
           'border-l-4',
           carNumber ? 'text-white text-right px-1 w-10' : 'w-0',
         ].join(' ')}
