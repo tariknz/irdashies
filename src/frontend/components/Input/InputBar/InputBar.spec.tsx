@@ -7,6 +7,7 @@ const settings = {
   includeBrake: true,
   includeThrottle: true,
   includeClutch: true,
+  includeAbs: true,
 };
 
 describe('InputBar', () => {
@@ -58,6 +59,7 @@ describe('InputBar', () => {
         includeBrake: true,
         includeThrottle: true,
         includeClutch: false,
+        includeAbs: false,
       }} />
     );
     const rectElements = container.querySelectorAll('rect');
