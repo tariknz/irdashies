@@ -107,7 +107,7 @@ export const DriverInfoRow = memo(
           id: 'position',
           shouldRender:
             (displayOrder ? displayOrder.includes('position') : true) &&
-            (config?.position ?? true),
+            (config?.position?.enabled ?? true),
           component: (
             <PositionCell
               key="position"
@@ -163,7 +163,7 @@ export const DriverInfoRow = memo(
           id: 'pitStatus',
           shouldRender:
             (displayOrder ? displayOrder.includes('pitStatus') : true) &&
-            (config?.pitStatus ?? true),
+            (config?.pitStatus?.enabled ?? true),
           component: (
             <PitStatusCell
               key="pitStatus"

@@ -32,6 +32,7 @@ const mockLapTimesState = {
   lastLapTimeUpdate: 0,
   lapTimes: [],
   updateLapTimes: vi.fn(),
+  lastSessionNum: null,
 };
 
 describe('useCarIdxAverageLapTime', () => {

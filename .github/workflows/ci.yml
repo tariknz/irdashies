@@ -43,6 +43,9 @@ jobs:
       if: steps.cache-deps.outputs.cache-hit != 'true'
       run: npm ci
 
+    - name: Ensure tracks
+      run: npm run ensure-tracks
+
     - name: Run linting
       run: npm run lint
 

@@ -53,7 +53,7 @@ export const WithGallons: Story = {
   decorators: [TelemetryDecorator()],
   args: {
     fuelUnits: 'gal',
-    showConsumption: {},
+    showConsumption: true,
   },
 };
 
@@ -105,6 +105,6 @@ export const MinimalView: Story = {
     showConsumption: true,
     showPitWindow: true,
     showFuelSave: true,
-    show10LapAvg: {},
+    show10LapAvg: true,
   },
 };
