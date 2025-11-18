@@ -139,12 +139,12 @@ export const createDriverStandings = (
     }[];
     sessionType?: string;
   },
-  lapTimeHistory?: number[][],
-  numLapsToShow?: number,
   lastPitLap: number[],
   lastLap: number[],
   onTrack: boolean,
   prevCarTrackSurface: number[],
+  numLapsToShow?: number,
+  lapTimeHistory?: number[][],
 ): Standings[] => {
   const results =
     currentSession.resultsPositions ?? session.qualifyingResults ?? [];
@@ -213,7 +213,6 @@ export const createDriverStandings = (
                   numLapsToShow
                 )
               : undefined,
-        carId: driver.CarID,
         lastPitLap: lastPitLap[result.CarIdx] ?? undefined,
         lastLap: lastLap[result.CarIdx] ?? undefined,
         onTrack: onTrack,
