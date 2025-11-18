@@ -36,11 +36,24 @@ export const defaultDashboard: DashboardLayout = {
         "carNumber": {
           "enabled": true
         },
+        "driverName": {
+          "enabled": true
+        },
+        "pitStatus": {
+          "enabled": true
+        },
+        "position": {
+          "enabled": true
+        },
         "compound": {
           "enabled": true
         },
         "carManufacturer": {
           "enabled": true
+        },
+        "lapTimeDeltas": {
+          "enabled": false,
+          "numLaps": 3
         },
         "driverStandings": {
           "buffer": 3,
@@ -96,22 +109,40 @@ export const defaultDashboard: DashboardLayout = {
         "background": {
           "opacity": 80
         },
-        "countryFlags": {
+        "position": {
           "enabled": true
         },
         "carNumber": {
           "enabled": true
         },
-        "lastTime": {
+        "countryFlags": {
+          "enabled": true
+        },
+        "driverName": {
+          "enabled": true
+        },
+        "pitStatus": {
+          "enabled": true
+        },
+        "carManufacturer": {
+          "enabled": true
+        },
+        "badge": {
+          "enabled": true
+        },
+        "iratingChange": {
           "enabled": false
+        },
+        "delta": {
+          "enabled": true
         },
         "fastestTime": {
           "enabled": false
         },
-        "compound": {
+        "lastTime": {
           "enabled": false
         },
-        "carManufacturer": {
+        "compound": {
           "enabled": false
         }
       }

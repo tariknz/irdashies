@@ -67,9 +67,9 @@ const defaultConfig: StandingsWidgetSettings['config'] = {
   compound: { enabled: true },
   carManufacturer: { enabled: true },
   lapTimeDeltas: { enabled: false, numLaps: 3 },
-  position: true,
+  position: { enabled: true },
   driverName: { enabled: true },
-  pitStatus: true,
+  pitStatus: { enabled: true },
   displayOrder: sortableSettings.map(s => s.id)
 };
 
@@ -147,13 +147,9 @@ const migrateConfig = (
       enabled: (config.lapTimeDeltas as { enabled?: boolean })?.enabled ?? false,
       numLaps: (config.lapTimeDeltas as { numLaps?: number })?.numLaps ?? 3,
     },
-    position: (config.position as boolean) ?? true,
-    driverName: {
-      enabled: typeof config.driverName === 'boolean'
-        ? config.driverName
-        : (config.driverName as { enabled?: boolean })?.enabled ?? true,
-    },
-    pitStatus: (config.pitStatus as boolean) ?? true,
+    position: { enabled: (config.position as { enabled?: boolean })?.enabled ?? true },
+    driverName: { enabled: (config.driverName as { enabled?: boolean })?.enabled ?? true },
+    pitStatus: { enabled: (config.pitStatus as { enabled?: boolean })?.enabled ?? true },
     displayOrder: mergeDisplayOrder(config.displayOrder as string[]),
   };
 };
@@ -181,13 +177,7 @@ const SortableItem = ({ setting, settings, handleConfigChange }: SortableItemPro
   };
 
   const configValue = settings.config[setting.configKey];
-  const isEnabled = setting.configKey === 'driverName'
-    ? (configValue as { enabled: boolean }).enabled
-    : setting.configKey === 'lapTimeDeltas'
-      ? (configValue as { enabled: boolean }).enabled
-      : typeof configValue === 'boolean'
-        ? configValue
-        : (configValue as { enabled: boolean }).enabled;
+  const isEnabled = (configValue as { enabled: boolean }).enabled;
 
   return (
     <div ref={setNodeRef} style={style}>
@@ -205,25 +195,12 @@ const SortableItem = ({ setting, settings, handleConfigChange }: SortableItemPro
         <ToggleSwitch
           enabled={isEnabled}
           onToggle={(enabled) => {
-            if (setting.configKey === 'driverName') {
-              handleConfigChange({
-                driverName: {
-                  ...settings.config.driverName,
-                  enabled
-                }
-              });
-            } else if (setting.configKey === 'lapTimeDeltas') {
-              handleConfigChange({
-                lapTimeDeltas: {
-                  ...settings.config.lapTimeDeltas,
-                  enabled
-                }
-              });
-            } else if (typeof settings.config[setting.configKey] === 'boolean') {
-              handleConfigChange({ [setting.configKey]: enabled });
-            } else {
-              handleConfigChange({ [setting.configKey]: { enabled } });
-            }
+            handleConfigChange({ 
+              [setting.configKey]: { 
+                ...(settings.config[setting.configKey] as object),
+                enabled 
+              } 
+            });
           }}
         />
       </div>

@@ -51,15 +51,15 @@ const sortableSettings: SortableSetting[] = [
 const defaultConfig: RelativeWidgetSettings['config'] = {
   buffer: 3,
   background: { opacity: 0 },
-  position: true,
+  position: { enabled: true },
   carNumber: { enabled: true },
   countryFlags: { enabled: true },
   driverName: { enabled: true },
-  pitStatus: true,
+  pitStatus: { enabled: true },
   carManufacturer: { enabled: true },
   badge: { enabled: true },
   iratingChange: { enabled: false },
-  delta: { enabled: false },
+  delta: { enabled: true },
   fastestTime: { enabled: false },
   lastTime: { enabled: false },
   compound: { enabled: false },
@@ -87,21 +87,17 @@ const migrateConfig = (savedConfig: unknown): RelativeWidgetSettings['config'] =
   if (!savedConfig || typeof savedConfig !== 'object') return defaultConfig;
   const config = savedConfig as Record<string, unknown>;
   return {
-    buffer: (config.buffer as { value?: number })?.value ?? 3,
+    buffer: (config.buffer as number) ?? 3,
     background: { opacity: (config.background as { opacity?: number })?.opacity ?? 0 },
-    position: (config.position as boolean) ?? true,
+    position: { enabled: (config.position as { enabled?: boolean })?.enabled ?? true },
     carNumber: { enabled: (config.carNumber as { enabled?: boolean })?.enabled ?? true },
     countryFlags: { enabled: (config.countryFlags as { enabled?: boolean })?.enabled ?? true },
-    driverName: {
-      enabled: typeof config.driverName === 'boolean'
-        ? config.driverName
-        : (config.driverName as { enabled?: boolean })?.enabled ?? true,
-    },
-    pitStatus: (config.pitStatus as boolean) ?? true,
-    carManufacturer: { enabled: (config.carManufacturer as { enabled?: boolean })?.enabled ?? false },
+    driverName: { enabled: (config.driverName as { enabled?: boolean })?.enabled ?? true },
+    pitStatus: { enabled: (config.pitStatus as { enabled?: boolean })?.enabled ?? true },
+    carManufacturer: { enabled: (config.carManufacturer as { enabled?: boolean })?.enabled ?? true },
     badge: { enabled: (config.badge as { enabled?: boolean })?.enabled ?? true },
     iratingChange: { enabled: (config.iratingChange as { enabled?: boolean })?.enabled ?? false },
-    delta: { enabled: (config.delta as { enabled?: boolean })?.enabled ?? false },
+    delta: { enabled: (config.delta as { enabled?: boolean })?.enabled ?? true },
     fastestTime: { enabled: (config.fastestTime as { enabled?: boolean })?.enabled ?? false },
     lastTime: { enabled: (config.lastTime as { enabled?: boolean })?.enabled ?? false },
     compound: { enabled: (config.compound as { enabled?: boolean })?.enabled ?? false },
@@ -132,11 +128,7 @@ const SortableItem = ({ setting, settings, handleConfigChange }: SortableItemPro
   };
 
   const configValue = settings.config[setting.configKey];
-  const isEnabled = setting.configKey === 'driverName'
-    ? (configValue as { enabled: boolean }).enabled
-    : typeof configValue === 'boolean'
-      ? configValue
-      : (configValue as { enabled: boolean }).enabled;
+  const isEnabled = (configValue as { enabled: boolean }).enabled;
 
   return (
     <div ref={setNodeRef} style={style}>
@@ -154,18 +146,12 @@ const SortableItem = ({ setting, settings, handleConfigChange }: SortableItemPro
         <ToggleSwitch
           enabled={isEnabled}
           onToggle={(enabled) => {
-            if (setting.configKey === 'driverName') {
-              handleConfigChange({
-                driverName: {
-                  ...settings.config.driverName,
-                  enabled
-                }
-              });
-            } else if (typeof settings.config[setting.configKey] === 'boolean') {
-              handleConfigChange({ [setting.configKey]: enabled });
-            } else {
-              handleConfigChange({ [setting.configKey]: { enabled } });
-            }
+            handleConfigChange({ 
+              [setting.configKey]: { 
+                ...(settings.config[setting.configKey] as object),
+                enabled 
+              } 
+            });
           }}
         />
       </div>
