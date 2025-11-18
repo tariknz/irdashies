@@ -1,11 +1,25 @@
-import {
-  SpeakerHighIcon,
-} from '@phosphor-icons/react';
+import { memo, useMemo } from 'react';
 import { getTailwindStyle } from '@irdashies/utils/colors';
 import { formatTime } from '@irdashies/utils/time';
-import { CountryFlag } from '../CountryFlag/CountryFlag';
 import type { LastTimeState } from '../../createStandings';
-import { Compound } from '../Compound/Compound';
+import { useDashboard } from '@irdashies/context';
+import type {
+  RelativeWidgetSettings,
+  StandingsWidgetSettings,
+} from '../../../Settings/types';
+import { BadgeCell } from './cells/BadgeCell';
+import { CarManufacturerCell } from './cells/CarManufacturerCell';
+import { CarNumberCell } from './cells/CarNumberCell';
+import { CompoundCell } from './cells/CompoundCell';
+import { CountryFlagsCell } from './cells/CountryFlagsCell';
+import { DeltaCell } from './cells/DeltaCell';
+import { DriverNameCell } from './cells/DriverNameCell';
+import { FastestTimeCell } from './cells/FastestTimeCell';
+import { IratingChangeCell } from './cells/IratingChangeCell';
+import { LapTimeDeltasCell } from './cells/LapTimeDeltasCell';
+import { LastTimeCell } from './cells/LastTimeCell';
+import { PitStatusCell } from './cells/PitStatusCell';
+import { PositionCell } from './cells/PositionCell';
 
 interface DriverRowInfoProps {
   carIdx: number;
@@ -29,115 +43,293 @@ interface DriverRowInfoProps {
   hidden?: boolean;
   flairId?: number;
   tireCompound?: number;
+  carId?: number;
+  lapTimeDeltas?: number[];
+  numLapDeltasToShow?: number;
+  isMultiClass: boolean;
+  displayOrder?: string[];
+  config?: RelativeWidgetSettings['config'] | StandingsWidgetSettings['config'];
 }
 
-export const DriverInfoRow = ({
-  carIdx,
-  carNumber,
-  classColor,
-  name,
-  isPlayer,
-  hasFastestTime,
-  delta,
-  position,
-  badge,
-  lastTime,
-  fastestTime,
-  lastTimeState,
-  onPitRoad,
-  onTrack,
-  radioActive,
-  isLapped,
-  isLappingAhead,
-  iratingChange,
-  hidden,
-  flairId,
-  tireCompound
-}: DriverRowInfoProps) => {
-  // convert seconds to mm:ss:ms
-  const lastTimeString = formatTime(lastTime);
-  const fastestTimeString = formatTime(fastestTime);
+export const DriverInfoRow = memo(
+  ({
+    carIdx,
+    carNumber,
+    classColor,
+    name,
+    isPlayer,
+    hasFastestTime,
+    delta,
+    position,
+    badge,
+    lastTime,
+    fastestTime,
+    lastTimeState,
+    onPitRoad,
+    onTrack,
+    radioActive,
+    isLapped,
+    isLappingAhead,
+    iratingChange,
+    hidden,
+    flairId,
+    tireCompound,
+    carId,
+    lapTimeDeltas,
+    numLapDeltasToShow,
+    isMultiClass,
+    displayOrder,
+    config,
+  }: DriverRowInfoProps) => {
+    const lastTimeString = useMemo(() => formatTime(lastTime), [lastTime]);
+    const fastestTimeString = useMemo(
+      () => formatTime(fastestTime),
+      [fastestTime]
+    );
 
-  const getLastTimeColorClass = (state?: LastTimeState): string => {
-    if (state === 'session-fastest') return 'text-purple-400';
-    if (state === 'personal-best') return 'text-green-400';
-    return '';
-  };
+    const { currentDashboard } = useDashboard();
+    const highlightColor = useMemo(() => {
+      return currentDashboard?.generalSettings?.highlightColor ?? 960745;
+    }, [currentDashboard?.generalSettings?.highlightColor]);
 
-  return (
-    <tr
-      key={carIdx}
-      className={[
-        `odd:bg-slate-800/70 even:bg-slate-900/70 text-sm`,
-        !onTrack || onPitRoad ? 'text-white/60' : '',
-        isPlayer ? 'text-amber-300' : '',
-        !isPlayer && isLapped ? 'text-blue-400' : '',
-        !isPlayer && isLappingAhead ? 'text-red-400' : '',
-        hidden ? 'invisible' : '',
-      ].join(' ')}
-    >
-      <td
-        className={`text-center text-white px-2 ${isPlayer ? `${getTailwindStyle(classColor).classHeader}` : ''}`}
-      >
-        {position}
-      </td>
-      <td 
+    const tailwindStyles = useMemo(() => {
+      return getTailwindStyle(classColor, highlightColor, isMultiClass);
+    }, [classColor, highlightColor, isMultiClass]);
+
+    const emptyLapDeltaPlaceholders = useMemo(() => {
+      if (!numLapDeltasToShow) return null;
+      return Array.from({ length: numLapDeltasToShow }, (_, index) => index);
+    }, [numLapDeltasToShow]);
+
+    const columnDefinitions = useMemo(() => {
+      const columns = [
+        {
+          id: 'position',
+          shouldRender:
+            (displayOrder ? displayOrder.includes('position') : true) &&
+            (config?.position?.enabled ?? true),
+          component: (
+            <PositionCell
+              key="position"
+              hidden={hidden}
+              position={position}
+              isPlayer={isPlayer}
+              tailwindStyles={tailwindStyles}
+            />
+          ),
+        },
+        {
+          id: 'carNumber',
+          shouldRender:
+            (displayOrder ? displayOrder.includes('carNumber') : true) &&
+            (config?.carNumber?.enabled ?? true),
+          component: (
+            <CarNumberCell
+              key="carNumber"
+              hidden={hidden}
+              carNumber={carNumber}
+              tailwindStyles={tailwindStyles}
+            />
+          ),
+        },
+        {
+          id: 'countryFlags',
+          shouldRender:
+            (displayOrder ? displayOrder.includes('countryFlags') : true) &&
+            (config?.countryFlags?.enabled ?? true),
+          component: (
+            <CountryFlagsCell
+              key="countryFlags"
+              hidden={hidden}
+              flairId={flairId}
+            />
+          ),
+        },
+        {
+          id: 'driverName',
+          shouldRender:
+            (displayOrder ? displayOrder.includes('driverName') : true) &&
+            (config?.driverName?.enabled ?? true),
+          component: (
+            <DriverNameCell
+              key="driverName"
+              hidden={hidden}
+              name={name}
+              radioActive={radioActive}
+            />
+          ),
+        },
+        {
+          id: 'pitStatus',
+          shouldRender:
+            (displayOrder ? displayOrder.includes('pitStatus') : true) &&
+            (config?.pitStatus?.enabled ?? true),
+          component: (
+            <PitStatusCell
+              key="pitStatus"
+              hidden={hidden}
+              onPitRoad={onPitRoad}
+            />
+          ),
+        },
+        {
+          id: 'carManufacturer',
+          shouldRender:
+            (displayOrder ? displayOrder.includes('carManufacturer') : true) &&
+            (config?.carManufacturer?.enabled ?? true),
+          component: (
+            <CarManufacturerCell
+              key="carManufacturer"
+              hidden={hidden}
+              carId={carId}
+            />
+          ),
+        },
+        {
+          id: 'badge',
+          shouldRender:
+            (displayOrder ? displayOrder.includes('badge') : true) &&
+            (config?.badge?.enabled ?? true),
+          component: <BadgeCell key="badge" hidden={hidden} badge={badge} />,
+        },
+        {
+          id: 'iratingChange',
+          shouldRender:
+            (displayOrder ? displayOrder.includes('iratingChange') : true) &&
+            (config?.iratingChange?.enabled ?? false),
+          component: (
+            <IratingChangeCell
+              key="iratingChange"
+              hidden={hidden}
+              iratingChange={iratingChange}
+            />
+          ),
+        },
+        {
+          id: 'delta',
+          shouldRender:
+            (displayOrder ? displayOrder.includes('delta') : true) &&
+            (config?.delta?.enabled ?? false),
+          component: <DeltaCell key="delta" hidden={hidden} delta={delta} />,
+        },
+        {
+          id: 'fastestTime',
+          shouldRender:
+            (displayOrder ? displayOrder.includes('fastestTime') : true) &&
+            (config?.fastestTime?.enabled ?? false),
+          component: (
+            <FastestTimeCell
+              key="fastestTime"
+              hidden={hidden}
+              fastestTimeString={fastestTimeString}
+              hasFastestTime={hasFastestTime}
+            />
+          ),
+        },
+        {
+          id: 'lastTime',
+          shouldRender:
+            (displayOrder ? displayOrder.includes('lastTime') : true) &&
+            (config?.lastTime?.enabled ?? false),
+          component: (
+            <LastTimeCell
+              key="lastTime"
+              hidden={hidden}
+              lastTimeString={lastTimeString}
+              lastTimeState={lastTimeState}
+            />
+          ),
+        },
+        {
+          id: 'compound',
+          shouldRender:
+            (displayOrder ? displayOrder.includes('compound') : true) &&
+            (config?.compound?.enabled ?? false),
+          component: (
+            <CompoundCell
+              key="compound"
+              hidden={hidden}
+              tireCompound={tireCompound}
+              carId={carId}
+            />
+          ),
+        },
+        {
+          id: 'lapTimeDeltas',
+          shouldRender:
+            (displayOrder ? displayOrder.includes('lapTimeDeltas') : false) &&
+            (config && 'lapTimeDeltas' in config
+              ? config.lapTimeDeltas.enabled
+              : false),
+          component: (
+            <LapTimeDeltasCell
+              key="lapTimeDeltas"
+              hidden={hidden}
+              lapTimeDeltas={lapTimeDeltas}
+              emptyLapDeltaPlaceholders={emptyLapDeltaPlaceholders}
+              isPlayer={isPlayer}
+            />
+          ),
+        },
+      ];
+
+      if (displayOrder) {
+        const orderedColumns = displayOrder
+          .map((orderId) => columns.find((col) => col.id === orderId))
+          .filter(
+            (col): col is NonNullable<typeof col> =>
+              col !== undefined && col.shouldRender
+          );
+
+        const remainingColumns = columns.filter(
+          (col) => col.shouldRender && !displayOrder.includes(col.id)
+        );
+
+        return [...orderedColumns, ...remainingColumns];
+      }
+
+      return columns.filter((col) => col.shouldRender);
+    }, [
+      displayOrder,
+      config,
+      hidden,
+      position,
+      isPlayer,
+      tailwindStyles,
+      carNumber,
+      flairId,
+      name,
+      radioActive,
+      onPitRoad,
+      carId,
+      badge,
+      iratingChange,
+      delta,
+      fastestTimeString,
+      hasFastestTime,
+      lastTimeString,
+      lastTimeState,
+      tireCompound,
+      lapTimeDeltas,
+      emptyLapDeltaPlaceholders,
+    ]);
+
+    return (
+      <tr
+        key={carIdx}
         className={[
-          getTailwindStyle(classColor).driverIcon,
-          'border-l-4',
-          carNumber ? 'text-white text-right px-1 w-10' : 'w-0'
+          `odd:bg-slate-800/70 even:bg-slate-900/70 text-sm`,
+          !onTrack || onPitRoad ? 'text-white/60' : '',
+          isPlayer ? 'text-amber-300' : '',
+          !isPlayer && isLapped ? 'text-blue-400' : '',
+          !isPlayer && isLappingAhead ? 'text-red-400' : '',
+          hidden ? 'invisible' : '',
         ].join(' ')}
       >
-        {carNumber && `#${carNumber}`}
-      </td>
-      <td
-        className="px-2 py-0.5 w-full max-w-0 overflow-hidden"
-      >
-        <div className="flex justify-between align-center items-center">
-          <div className="flex-1 flex items-center overflow-hidden">
-            {flairId && <CountryFlag flairId={flairId} size="sm" className="mr-2 shrink-0" />}
-            <span
-              className={`animate-pulse transition-[width] duration-300 ${radioActive ? 'w-4 mr-1' : 'w-0 overflow-hidden'}`}
-            >
-              <SpeakerHighIcon className="mt-px" size={16} />
-            </span>
-            <div className="flex-1 overflow-hidden mask-[linear-gradient(90deg,#000_90%,transparent)]">
-              <span className="truncate">{name}</span>
-            </div>
-          </div>
-          {onPitRoad && (
-            <span className="text-white animate-pulse text-xs border-yellow-500 border-2 rounded-md text-center text-nowrap px-2 m-0 leading-tight">
-              PIT
-            </span>
-          )}
-        </div>
-      </td>
-      {badge && <td>{badge}</td>}
-      {iratingChange && (
-        <td className="px-2 text-left">
-          {iratingChange}
-        </td>
-      )}
-      {delta !== undefined && (
-        <td className="px-2">{delta.toFixed(1)}</td>
-      )}
-      {fastestTime !== undefined && (
-        <td className={`px-2 ${hasFastestTime ? 'text-purple-400' : ''}`}>
-          {fastestTimeString}
-        </td>
-      )}
-      {lastTime !== undefined && (
-        <td className={`px-2 ${getLastTimeColorClass(lastTimeState)}`}>
-          {lastTimeString}
-        </td>
-      )}
-     {tireCompound !== undefined && (
-        <td>
-          <div className="flex items-center pr-1"> 
-           <Compound tireCompound={tireCompound} size="sm" />
-          </div>
-        </td>
-     )}
-    </tr>
-  );
-};
+        {columnDefinitions.map((column) => column.component)}
+      </tr>
+    );
+  }
+);
+
+DriverInfoRow.displayName = 'DriverInfoRow';

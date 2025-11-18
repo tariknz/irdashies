@@ -6,17 +6,26 @@ import { DriverRatingBadge } from './components/DriverRatingBadge/DriverRatingBa
 import { RatingChange } from './components/RatingChange/RatingChange';
 import { SessionBar } from './components/SessionBar/SessionBar';
 import { SessionFooter } from './components/SessionFooter/SessionFooter';
+import { useDashboard } from '@irdashies/context';
 import {
   useCarClassStats,
   useDriverStandings,
   useStandingsSettings,
 } from './hooks';
+import { useLapTimesStoreUpdater } from '../../context/LapTimesStore/LapTimesStoreUpdater';
 
 export const Standings = () => {
   const [parent] = useAutoAnimate();
   const settings = useStandingsSettings();
-  const standings = useDriverStandings(settings?.driverStandings);
-  const classStats = useCarClassStats();
+
+  // Update lap times store with telemetry data (only for this overlay)
+  useLapTimesStoreUpdater();
+
+  const standings = useDriverStandings(settings);
+  const classStats = useCarClassStats();const isMultiClass = standings.length > 1; 
+  const { currentDashboard } = useDashboard(); 
+  const highlightColor = currentDashboard?.generalSettings?.highlightColor ?? 960745;
+
   return (
     <div
       className={`w-full bg-slate-800/[var(--bg-opacity)] rounded-sm p-2 text-white overflow-hidden`}
@@ -32,9 +41,12 @@ export const Standings = () => {
               <DriverClassHeader
                 key={classId}
                 className={classStats?.[classId]?.shortName}
-                classColor={classStats?.[classId]?.color}
+                classColor={isMultiClass ? classStats?.[classId]?.color : highlightColor}
                 totalDrivers={classStats?.[classId]?.total}
                 sof={classStats?.[classId]?.sof}
+                highlightColor={highlightColor}
+                isMultiClass={isMultiClass}
+                colSpan={12}
               />
               {classStandings.map((result) => (
                 <DriverInfoRow
@@ -48,7 +60,7 @@ export const Standings = () => {
                   delta={settings?.delta?.enabled ? result.delta : undefined}
                   position={result.classPosition}
                   iratingChange={
-                    settings?.iRatingChange?.enabled ? (
+                    settings?.iratingChange?.enabled ? (
                       <RatingChange value={result.iratingChange} />
                     ) : undefined
                   }
@@ -66,8 +78,10 @@ export const Standings = () => {
                   onPitRoad={result.onPitRoad}
                   onTrack={result.onTrack}
                   radioActive={result.radioActive}
+                  isMultiClass={isMultiClass}
                   flairId={settings?.countryFlags?.enabled ?? true ? result.driver?.flairId : undefined}
                   tireCompound={settings?.compound?.enabled ?? true ? result.tireCompound : undefined}
+                  carId={result.carId}
                   badge={
                     settings?.badge?.enabled ? (
                       <DriverRatingBadge
@@ -76,6 +90,10 @@ export const Standings = () => {
                       />
                     ) : undefined
                   }
+                  lapTimeDeltas={settings?.lapTimeDeltas?.enabled ? result.lapTimeDeltas : undefined}
+                  numLapDeltasToShow={settings?.lapTimeDeltas?.enabled ? settings.lapTimeDeltas.numLaps : undefined}
+                  displayOrder={settings?.displayOrder}
+                  config={settings}
                 />
               ))}
             </Fragment>

@@ -5,7 +5,7 @@ export interface BaseWidgetSettings<T = Record<string, unknown>> {
 
 export interface StandingsWidgetSettings extends BaseWidgetSettings {
   config: {
-    iRatingChange: { enabled: boolean };
+    iratingChange: { enabled: boolean };
     badge: { enabled: boolean };
     delta: { enabled: boolean };
     lastTime: { enabled: boolean };
@@ -20,6 +20,12 @@ export interface StandingsWidgetSettings extends BaseWidgetSettings {
       numTopDrivers: number;
     };
     compound: { enabled: boolean };
+    carManufacturer: { enabled: boolean };
+    lapTimeDeltas: { enabled: boolean; numLaps: number };
+    position: { enabled: boolean };
+    driverName: { enabled: boolean };
+    pitStatus: { enabled: boolean };
+    displayOrder: string[];
   };
 }
 
@@ -32,6 +38,14 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
     lastTime: { enabled: boolean };
     fastestTime: { enabled: boolean };
     compound: { enabled: boolean };
+    carManufacturer: { enabled: boolean };
+    badge: { enabled: boolean };
+    iratingChange: { enabled: boolean };
+    delta: { enabled: boolean };
+    position: { enabled: boolean };
+    driverName: { enabled: boolean };
+    pitStatus: { enabled: boolean };
+    displayOrder: string[];
   };
 }
 
@@ -75,5 +89,21 @@ export interface InputWidgetSettings extends BaseWidgetSettings {
       unit: 'mph' | 'km/h' | 'auto';
     };
     steer: SteerWidgetSettings;
+  };
+}
+
+export interface FuelWidgetSettings extends BaseWidgetSettings {
+  config: {
+    fuelUnits: 'L' | 'gal';
+    showConsumption: boolean;
+    showMin: boolean;
+    showLastLap: boolean;
+    show3LapAvg: boolean;
+    show10LapAvg: boolean;
+    showMax: boolean;
+    showPitWindow: boolean;
+    showFuelSave: boolean;
+    safetyMargin: number;
+    background: { opacity: number };
   };
 }

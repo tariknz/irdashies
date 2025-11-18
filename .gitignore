@@ -103,3 +103,4 @@ src/**/tracks/tracks.json
 # native build
 build/
 bin/
+docs/features/

@@ -5,15 +5,18 @@ import {
   useTelemetryValues,
 } from '@irdashies/context';
 import { useDriverStandings } from './useDriverPositions';
+import type { Standings } from '../createStandings';
 
 export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
-  const drivers = useDriverStandings();
+  const driversGrouped = useDriverStandings();
+  const drivers = driversGrouped as Standings[];
   const carIdxLapDistPct = useTelemetryValues('CarIdxLapDistPct');
   const playerIndex = useDriverCarIdx();
   const paceCarIdx =
     useSessionStore((s) => s.session?.DriverInfo?.PaceCarIdx) ?? -1;
 
   const standings = useMemo(() => {
+    const driversByCarIdx = new Map(drivers.map(driver => [driver.carIdx, driver]));
     const calculateRelativePct = (carIdx: number) => {
       if (playerIndex === undefined) {
         return NaN;
@@ -43,8 +46,8 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
       const playerDistPct = carIdxLapDistPct?.[playerCarIdx];
       const otherDistPct = carIdxLapDistPct?.[otherCarIdx];
 
-      const player = drivers.find((driver) => driver.carIdx === playerIndex);
-      const other = drivers.find((driver) => driver.carIdx === otherCarIdx);
+      const player = playerIndex !== undefined ? driversByCarIdx.get(playerIndex) : undefined;
+      const other = driversByCarIdx.get(otherCarIdx);
 
       // Use the slower car's lap time for more conservative deltas in multiclass
       const playerEstLapTime = player?.carClass?.estLapTime ?? 0;
@@ -65,8 +68,11 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
     };
 
     const sortedDrivers = drivers
-      .filter((driver) => driver.onTrack || driver.carIdx === playerIndex) // filter out drivers not on track
-      .filter((driver) => driver.carIdx > -1 && driver.carIdx !== paceCarIdx) // filter out pace car
+      .filter((driver) => 
+        (driver.onTrack || driver.carIdx === playerIndex) && 
+        driver.carIdx > -1 && 
+        driver.carIdx !== paceCarIdx
+      )
       .map((result) => {
         const relativePct = calculateRelativePct(result.carIdx);
         return {

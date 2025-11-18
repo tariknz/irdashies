@@ -1,7 +1,7 @@
 import { Meta } from '@storybook/react-vite';
 import { EditMode } from './EditMode';
 import { DashboardProvider } from '@irdashies/context';
-import type { DashboardBridge } from '@irdashies/types';
+import type { DashboardBridge, DashboardLayout } from '@irdashies/types';
 import { Input } from '../Input';
 import { TelemetryDecorator } from '@irdashies/storybook';
 import { Standings } from '../Standings/Standings';
@@ -11,6 +11,10 @@ const meta: Meta<typeof EditMode> = {
   decorators: [TelemetryDecorator()],
 };
 export default meta;
+
+const mockDashboard: DashboardLayout = {
+  widgets: [],
+};
 
 const mockBridge: (editMode: boolean) => DashboardBridge = (editMode) => ({
   saveDashboard: () => {
@@ -22,6 +26,7 @@ const mockBridge: (editMode: boolean) => DashboardBridge = (editMode) => ({
   reloadDashboard: () => {
     // noop
   },
+  resetDashboard: () => Promise.resolve(mockDashboard),
   onEditModeToggled: (callback) => {
     callback(editMode);
   },

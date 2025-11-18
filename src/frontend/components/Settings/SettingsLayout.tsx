@@ -8,6 +8,7 @@ import { AdvancedSettings } from './sections/AdvancedSettings';
 import { InputSettings } from './sections/InputSettings';
 import { AboutSettings } from './sections/AboutSettings';
 import { FasterCarsFromBehindSettings } from './sections/FasterCarsFromBehindSettings';
+import { FuelSettings } from './sections/FuelSettings';
 import { GeneralSettings } from './sections/GeneralSettings';
 import { useDashboard } from '@irdashies/context';
 import { useState } from 'react';
@@ -117,6 +118,14 @@ export const SettingsLayout = () => {
             </li>
             <li>
               <Link
+                to="/settings/fuel"
+                className={menuItemClass('/fuel')}
+              >
+                Fuel Calculator
+              </Link>
+            </li>
+            <li>
+              <Link
                 to="/settings/faster-cars"
                 className={menuItemClass('/faster-cars')}
               >
@@ -156,6 +165,7 @@ export const SettingsLayout = () => {
             <Route path="standings" element={<StandingsSettings />} />
             <Route path="relative" element={<RelativeSettings />} />
             <Route path="weather" element={<WeatherSettings />} />
+            <Route path="fuel" element={<FuelSettings />} />
             <Route path="map" element={<TrackMapSettings />} />
             <Route path="input" element={<InputSettings />} />
             <Route path="faster-cars" element={<FasterCarsFromBehindSettings />} />
