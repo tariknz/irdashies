@@ -12,7 +12,7 @@ export const defaultDashboard: DashboardLayout = {
         "height": 774
       },
       "config": {
-        "iRatingChange": {
+        "iratingChange": {
           "enabled": true
         },
         "badge": {
@@ -155,6 +155,29 @@ export const defaultDashboard: DashboardLayout = {
       },
       "config": {
         "distanceThreshold": -0.3
+      }
+    },
+    {
+      "id": "fuel",
+      "enabled": false,
+      "layout": {
+        "x": 1720,
+        "y": 240,
+        "width": 300,
+        "height": 400
+      },
+      "config": {
+        "fuelUnits": "L",
+        "showConsumption": true,
+        "showLastLap": true,
+        "show3LapAvg": true,
+        "show10LapAvg": true,
+        "showPitWindow": true,
+        "showFuelSave": true,
+        "safetyMargin": 0.05,
+        "background": {
+          "opacity": 85
+        }
       }
     }
   ],

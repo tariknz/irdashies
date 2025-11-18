@@ -7,9 +7,11 @@ import {
 } from '@irdashies/context';
 import { useDriverStandings } from './useDriverPositions';
 import { detectEdgeCases, calculateRelativeGap } from '@irdashies/context/RelativeGapStore';
+import type { Standings } from '../createStandings';
 
 export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
-  const drivers = useDriverStandings();
+  const driversGrouped = useDriverStandings();
+  const drivers = driversGrouped as Standings[];
   const carIdxLapDistPct = useTelemetryValues('CarIdxLapDistPct');
   const carIdxLap = useTelemetryValues('CarIdxLap');
   const carIdxTrackSurface = useTelemetryValues('CarIdxTrackSurface');

@@ -4,12 +4,16 @@ import { useDriverRelatives } from './useDriverRelatives';
 import type { Standings } from '../createStandings';
 
 // Mock the context hooks
-vi.mock('@irdashies/context', () => ({
-  useDriverCarIdx: vi.fn(),
-  useTelemetryValues: vi.fn(),
-  useSessionStore: vi.fn(),
-  useRelativeGapStore: vi.fn(),
-}));
+vi.mock('@irdashies/context', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@irdashies/context')>();
+  return {
+    ...actual,
+    useDriverCarIdx: vi.fn(),
+    useTelemetryValues: vi.fn(),
+    useSessionStore: vi.fn(),
+    useRelativeGapStore: vi.fn(),
+  };
+});
 
 vi.mock('./useDriverPositions', () => ({
   useDriverStandings: vi.fn(),
@@ -41,6 +45,7 @@ describe('useDriverRelatives', () => {
       lastTime: 105,
       onPitRoad: false,
       onTrack: true,
+      tireCompound: 1,
       carClass: {
         id: 1,
         color: 0,
@@ -64,6 +69,7 @@ describe('useDriverRelatives', () => {
       lastTime: 107,
       onPitRoad: false,
       onTrack: true,
+      tireCompound: 2,
       carClass: {
         id: 1,
         color: 0,
@@ -87,6 +93,7 @@ describe('useDriverRelatives', () => {
       lastTime: 109,
       onPitRoad: false,
       onTrack: true,
+      tireCompound: 1,
       carClass: {
         id: 1,
         color: 0,
@@ -112,13 +119,58 @@ describe('useDriverRelatives', () => {
       return [];
     });
     vi.mocked(useDriverStandings).mockReturnValue(mockDrivers);
-    vi.mocked(useSessionStore).mockReturnValue({
-      session: {
-        DriverInfo: {
-          PaceCarIdx: 0,
+    vi.mocked(useSessionStore).mockImplementation((selector) =>
+      selector({
+        session: {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          WeekendInfo: {} as any,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          SessionInfo: { Sessions: [] } as any,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          CameraInfo: { Groups: [] } as any,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          RadioInfo: { Radios: [] } as any,
+          DriverInfo: {
+            DriverCarIdx: 0,
+            DriverUserID: 0,
+            PaceCarIdx: -1,
+            DriverHeadPosX: 0,
+            DriverHeadPosY: 0,
+            DriverHeadPosZ: 0,
+            DriverCarIsElectric: 0,
+            DriverCarIdleRPM: 0,
+            DriverCarRedLine: 0,
+            DriverCarEngCylinderCount: 0,
+            DriverCarFuelKgPerLtr: 0,
+            DriverCarFuelMaxLtr: 0,
+            DriverCarMaxFuelPct: 0,
+            DriverCarGearNumForward: 0,
+            DriverCarGearNeutral: 0,
+            DriverCarGearReverse: 0,
+            DriverCarSLFirstRPM: 0,
+            DriverCarSLShiftRPM: 0,
+            DriverCarSLLastRPM: 0,
+            DriverCarSLBlinkRPM: 0,
+            DriverCarVersion: '',
+            DriverPitTrkPct: 0,
+            DriverCarEstLapTime: 0,
+            DriverSetupName: '',
+            DriverSetupIsModified: 0,
+            DriverSetupLoadTypeName: '',
+            DriverSetupPassedTech: 0,
+            DriverIncidentCount: 0,
+            DriverBrakeCurvingFactor: 0,
+            DriverTires: [],
+            Drivers: [],
+          },
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          SplitTimeInfo: {} as any,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          CarSetup: {} as any,
         },
-      },
-    });
+        setSession: vi.fn(),
+      })
+    );
     // @ts-expect-error - Mock implementation doesn't need full type safety for test purposes
     vi.mocked(useRelativeGapStore).mockImplementation((selector?: (state: unknown) => unknown) => {
       const mockState = {

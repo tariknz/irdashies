@@ -24,9 +24,10 @@ export interface DashboardWidget {
 }
 
 export interface GeneralSettingsType {
-  fontSize?: 'xs' | 'sm' | 'lg' | 'xl';
-  colorPalette?: 'default' | string;
+  fontSize?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl';
+  colorPalette?: 'default' | 'black' | 'red' | 'orange' | 'amber' | 'yellow' | 'lime' | 'green' | 'emerald' | 'teal' | 'cyan' | 'sky' | 'blue' | 'indigo' | 'violet' | 'purple' | 'fuchsia' | 'pink' | 'rose' | 'zinc' | 'stone';
   showOnlyWhenOnTrack?: boolean;
+  highlightColor?: number;
 }
 
 export interface DashboardLayout {
