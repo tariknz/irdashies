@@ -23,8 +23,10 @@ export interface DashboardWidget {
   config?: Record<string, unknown>;
 }
 
+export type FontSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl';
+
 export interface GeneralSettingsType {
-  fontSize?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl';
+  fontSize?: FontSize;
   colorPalette?: 'default' | 'black' | 'red' | 'orange' | 'amber' | 'yellow' | 'lime' | 'green' | 'emerald' | 'teal' | 'cyan' | 'sky' | 'blue' | 'indigo' | 'violet' | 'purple' | 'fuchsia' | 'pink' | 'rose' | 'zinc' | 'stone';
   showOnlyWhenOnTrack?: boolean;
   highlightColor?: number;

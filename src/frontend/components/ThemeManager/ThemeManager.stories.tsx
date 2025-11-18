@@ -3,7 +3,7 @@ import { ThemeManager } from './ThemeManager';
 import { TelemetryDecorator } from '@irdashies/storybook';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { DashboardProvider } from '@irdashies/context';
-import type { DashboardBridge, DashboardLayout, GeneralSettingsType } from '@irdashies/types';
+import type { DashboardBridge, DashboardLayout, FontSize, GeneralSettingsType } from '@irdashies/types';
 import { useState } from 'react';
 import { WIDGET_MAP } from '../../WidgetIndex';
 import { defaultDashboard } from '../../../app/storage/defaultDashboard';
@@ -15,39 +15,33 @@ const meta: Meta<typeof ThemeManager> = {
 
 export default meta;
 
-// Helper function to create a mock dashboard bridge
 const createMockBridge = (
-  fontSize: 'xs' | 'sm' | 'lg' | 'xl',
-  setFontSize: (size: 'xs' | 'sm' | 'lg' | 'xl') => void,
+  fontSize: FontSize | undefined,
+  setFontSize: (size: FontSize | undefined) => void,
   colorPalette: GeneralSettingsType['colorPalette'],
   setColorPalette: (palette: GeneralSettingsType['colorPalette']) => void,
   widgets: DashboardLayout['widgets'] = []
 ): DashboardBridge => ({
   reloadDashboard: () => {
-    // noop
+    return;
   },
   saveDashboard: (dashboard: DashboardLayout) => {
-    // Update the font size and color palette in the dashboard
-    const newFontSize = dashboard.generalSettings?.fontSize;
-    if (newFontSize === 'xs' || newFontSize === 'sm' || newFontSize === 'lg' || newFontSize === 'xl') {
-      setFontSize(newFontSize);
-    }
-    setColorPalette(dashboard.generalSettings?.colorPalette  || 'default');
+    setFontSize(dashboard.generalSettings?.fontSize);
+    setColorPalette(dashboard.generalSettings?.colorPalette || 'default');
   },
   dashboardUpdated: (callback) => {
-    // Initialize with current font size and color palette
     callback({
       widgets,
       generalSettings: { fontSize, colorPalette },
     });
     return () => {
-      // noop
+      return;
     };
   },
   onEditModeToggled: (callback) => {
     callback(false);
     return () => {
-      // noop
+      return;
     };
   },
   toggleLockOverlays: () => Promise.resolve(true),
@@ -59,66 +53,75 @@ const createMockBridge = (
     }),
 });
 
-// Helper function to create theme controls (font size buttons and color palette dropdown)
+const FONT_SIZES: FontSize[] = ['xs', 'sm', 'md', 'lg', 'xl', '2xl', '3xl'];
+const FONT_SIZE_LABELS: Record<FontSize, string> = {
+  xs: 'Extra Small',
+  sm: 'Small',
+  md: 'Medium',
+  lg: 'Large',
+  xl: 'Extra Large',
+  '2xl': '2X Large',
+  '3xl': '3X Large',
+};
+
+const COLOR_PALETTES: NonNullable<GeneralSettingsType['colorPalette']>[] = [
+  'default',
+  'black',
+  'red',
+  'orange',
+  'amber',
+  'yellow',
+  'lime',
+  'green',
+  'emerald',
+  'teal',
+  'cyan',
+  'sky',
+  'blue',
+  'indigo',
+  'violet',
+  'purple',
+  'fuchsia',
+  'pink',
+  'rose',
+  'zinc',
+  'stone',
+];
+
 const createThemeControls = (
-  fontSize: 'xs' | 'sm' | 'lg' | 'xl',
+  fontSize: FontSize | undefined,
   colorPalette: GeneralSettingsType['colorPalette'],
   mockBridge: DashboardBridge
 ) => {
-  const getButtonClass = (size: 'xs' | 'sm' | 'lg' | 'xl') => {
-    const baseClass = 'px-2 py-1 rounded transition-colors';
-    return size === fontSize
-      ? `${baseClass} bg-blue-700 text-white`
-      : `${baseClass} bg-blue-500 text-white hover:bg-blue-600`;
+  const currentIndex = fontSize ? FONT_SIZES.indexOf(fontSize) : 1;
+
+  const handleSliderChange = (value: number) => {
+    const newSize = FONT_SIZES[value];
+    mockBridge.saveDashboard({
+      widgets: [],
+      generalSettings: { fontSize: newSize, colorPalette },
+    });
   };
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex gap-2">
-        <button
-          className={getButtonClass('xs')}
-          onClick={() =>
-            mockBridge.saveDashboard({
-              widgets: [],
-              generalSettings: { fontSize: 'xs', colorPalette },
-            })
-          }
-        >
-          Extra Small
-        </button>
-        <button
-          className={getButtonClass('sm')}
-          onClick={() =>
-            mockBridge.saveDashboard({
-              widgets: [],
-              generalSettings: { fontSize: 'sm', colorPalette },
-            })
-          }
-        >
-          Small
-        </button>
-        <button
-          className={getButtonClass('lg')}
-          onClick={() =>
-            mockBridge.saveDashboard({
-              widgets: [],
-              generalSettings: { fontSize: 'lg', colorPalette },
-            })
-          }
-        >
-          Large
-        </button>
-        <button
-          className={getButtonClass('xl')}
-          onClick={() =>
-            mockBridge.saveDashboard({
-              widgets: [],
-              generalSettings: { fontSize: 'xl', colorPalette },
-            })
-          }
-        >
-          Extra Large
-        </button>
+      <div className="flex flex-col gap-2">
+        <label htmlFor="fontSize" className="text-[12px] font-medium">
+          Font Size: {fontSize ? FONT_SIZE_LABELS[fontSize] : 'Small'}
+        </label>
+        <div className="flex items-center gap-3">
+          <span className="text-[10px] text-gray-400">XS</span>
+          <input
+            id="fontSize"
+            type="range"
+            min="0"
+            max={FONT_SIZES.length - 1}
+            value={currentIndex}
+            onChange={(e) => handleSliderChange(Number(e.target.value))}
+            className="flex-1 h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+          />
+          <span className="text-[10px] text-gray-400">3XL</span>
+        </div>
       </div>
       <div className="flex items-center gap-2">
         <label htmlFor="colorPalette" className="text-[12px]">
@@ -135,8 +138,11 @@ const createThemeControls = (
           }
           className="px-2 py-1 rounded border text-[12px]"
         >
-          <option value="default">Default</option>
-          <option value="black">Black</option>
+          {COLOR_PALETTES.map((palette) => (
+            <option key={palette} value={palette}>
+              {palette.charAt(0).toUpperCase() + palette.slice(1)}
+            </option>
+          ))}
         </select>
       </div>
     </div>
@@ -170,7 +176,7 @@ export const Primary = {
 
 export const WithFontSizeControls = {
   render: () => {
-    const [fontSize, setFontSize] = useState<'xs' | 'sm' | 'lg' | 'xl'>('sm');
+    const [fontSize, setFontSize] = useState<FontSize | undefined>('sm');
     const [colorPalette, setColorPalette] = useState<GeneralSettingsType['colorPalette']>('default');
     const mockBridge = createMockBridge(fontSize, setFontSize, colorPalette, setColorPalette);
 
@@ -197,7 +203,7 @@ export const WithFontSizeControls = {
 
 export const WithAllAvailableWidgets = {
   render: () => {
-    const [fontSize, setFontSize] = useState<'xs' | 'sm' | 'lg' | 'xl'>('sm');
+    const [fontSize, setFontSize] = useState<FontSize | undefined>('sm');
     const [colorPalette, setColorPalette] = useState<GeneralSettingsType['colorPalette']>('default');
     const mockBridge = createMockBridge(fontSize, setFontSize, colorPalette, setColorPalette, defaultDashboard.widgets);
 
