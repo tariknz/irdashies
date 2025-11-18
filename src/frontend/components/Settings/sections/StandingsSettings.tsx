@@ -66,6 +66,8 @@ const defaultConfig: StandingsWidgetSettings['config'] = {
   },
   compound: { enabled: true },
   carManufacturer: { enabled: true },
+  titleBar: { enabled: true, progressBar: { enabled: true } },
+  showOnlyWhenOnTrack: false,
   lapTimeDeltas: { enabled: false, numLaps: 3 },
   position: { enabled: true },
   driverName: { enabled: true },
@@ -147,6 +149,13 @@ const migrateConfig = (
       enabled: (config.lapTimeDeltas as { enabled?: boolean })?.enabled ?? false,
       numLaps: (config.lapTimeDeltas as { numLaps?: number })?.numLaps ?? 3,
     },
+    titleBar: {
+      enabled: (config.titleBar as { enabled?: boolean })?.enabled ?? true,
+      progressBar: {
+        enabled: (config.titleBar as { progressBar?: { enabled?: boolean } })?.progressBar?.enabled ?? true
+      }
+    },
+    showOnlyWhenOnTrack: (config.showOnlyWhenOnTrack as boolean) ?? false,
     position: { enabled: (config.position as { enabled?: boolean })?.enabled ?? true },
     driverName: { enabled: (config.driverName as { enabled?: boolean })?.enabled ?? true },
     pitStatus: { enabled: (config.pitStatus as { enabled?: boolean })?.enabled ?? true },
@@ -406,6 +415,45 @@ export const StandingsSettings = () => {
             </div>
           </div>
 
+          {/* Title Bar Settings */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-medium text-slate-200">Title Bar</h3>
+            </div>
+            <div className="space-y-3 pl-4">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-slate-300">Show Title Bar</span>
+                <ToggleSwitch
+                  enabled={settings.config.titleBar.enabled}
+                  onToggle={(enabled) =>
+                    handleConfigChange({
+                      titleBar: {
+                        ...settings.config.titleBar,
+                        enabled
+                      }
+                    })
+                  }
+                />
+              </div>
+              {settings.config.titleBar.enabled && (
+                <div className="flex items-center justify-between pl-4">
+                  <span className="text-sm text-slate-300">Show Progress Bar</span>
+                  <ToggleSwitch
+                    enabled={settings.config.titleBar.progressBar.enabled}
+                    onToggle={(enabled) =>
+                      handleConfigChange({
+                        titleBar: {
+                          ...settings.config.titleBar,
+                          progressBar: { enabled }
+                        }
+                      })
+                    }
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+
           {/* Background Settings */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
@@ -437,6 +485,24 @@ export const StandingsSettings = () => {
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* Show Only When On Track Settings */}
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className="text-md font-medium text-slate-300">
+                Show Only When On Track
+              </h4>
+              <p className="text-sm text-slate-400">
+                If enabled, standings will only be shown when you are driving.
+              </p>
+            </div>
+            <ToggleSwitch
+              enabled={settings.config.showOnlyWhenOnTrack ?? false}
+              onToggle={(enabled) =>
+                handleConfigChange({ showOnlyWhenOnTrack: enabled })
+              }
+            />
           </div>
         </div>
         );

@@ -63,7 +63,9 @@ const defaultConfig: RelativeWidgetSettings['config'] = {
   fastestTime: { enabled: false },
   lastTime: { enabled: false },
   compound: { enabled: false },
-  displayOrder: sortableSettings.map(s => s.id)
+  displayOrder: sortableSettings.map(s => s.id),
+  titleBar: { enabled: true, progressBar: { enabled: true } },
+  showOnlyWhenOnTrack: false
 };
 
 // Helper function to merge existing displayOrder with new default items
@@ -102,6 +104,13 @@ const migrateConfig = (savedConfig: unknown): RelativeWidgetSettings['config'] =
     lastTime: { enabled: (config.lastTime as { enabled?: boolean })?.enabled ?? false },
     compound: { enabled: (config.compound as { enabled?: boolean })?.enabled ?? false },
     displayOrder: mergeDisplayOrder(config.displayOrder as string[]),
+    titleBar: {
+      enabled: (config.titleBar as { enabled?: boolean })?.enabled ?? true,
+      progressBar: {
+        enabled: (config.titleBar as { progressBar?: { enabled?: boolean } })?.progressBar?.enabled ?? true
+      }
+    },
+    showOnlyWhenOnTrack: (config.showOnlyWhenOnTrack as boolean) ?? false
   };
 };
 
@@ -278,6 +287,45 @@ export const RelativeSettings = () => {
               </div>
             </div>
 
+            {/* Title Bar Settings */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-medium text-slate-200">Title Bar</h3>
+              </div>
+              <div className="space-y-3 pl-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-300">Show Title Bar</span>
+                  <ToggleSwitch
+                    enabled={settings.config.titleBar.enabled}
+                    onToggle={(enabled) =>
+                      handleConfigChange({
+                        titleBar: {
+                          ...settings.config.titleBar,
+                          enabled
+                        }
+                      })
+                    }
+                  />
+                </div>
+                {settings.config.titleBar.enabled && (
+                  <div className="flex items-center justify-between pl-4">
+                    <span className="text-sm text-slate-300">Show Progress Bar</span>
+                    <ToggleSwitch
+                      enabled={settings.config.titleBar.progressBar.enabled}
+                      onToggle={(enabled) =>
+                        handleConfigChange({
+                          titleBar: {
+                            ...settings.config.titleBar,
+                            progressBar: { enabled }
+                          }
+                        })
+                      }
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+
             {/* Background Settings */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
@@ -309,6 +357,24 @@ export const RelativeSettings = () => {
                   </div>
                 </div>
               </div>
+            </div>
+
+            {/* Show Only When On Track Settings */}
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="text-md font-medium text-slate-300">
+                  Show Only When On Track
+                </h4>
+                <p className="text-sm text-slate-400">
+                  If enabled, relatives will only be shown when you are driving.
+                </p>
+              </div>
+              <ToggleSwitch
+                enabled={settings.config.showOnlyWhenOnTrack ?? false}
+                onToggle={(enabled) =>
+                  handleConfigChange({ showOnlyWhenOnTrack: enabled })
+                }
+              />
             </div>
           </div>
         );

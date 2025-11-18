@@ -6,6 +6,7 @@ import { DriverRatingBadge } from './components/DriverRatingBadge/DriverRatingBa
 import { RatingChange } from './components/RatingChange/RatingChange';
 import { SessionBar } from './components/SessionBar/SessionBar';
 import { SessionFooter } from './components/SessionFooter/SessionFooter';
+import { TitleBar } from './components/TitleBar/TitleBar';
 import { useDashboard } from '@irdashies/context';
 import {
   useCarClassStats,
@@ -13,18 +14,26 @@ import {
   useStandingsSettings,
 } from './hooks';
 import { useLapTimesStoreUpdater } from '../../context/LapTimesStore/LapTimesStoreUpdater';
+import { useDrivingState } from '@irdashies/context';
 
 export const Standings = () => {
   const [parent] = useAutoAnimate();
   const settings = useStandingsSettings();
+  const { isDriving } = useDrivingState();
 
   // Update lap times store with telemetry data (only for this overlay)
   useLapTimesStoreUpdater();
 
   const standings = useDriverStandings(settings);
-  const classStats = useCarClassStats();const isMultiClass = standings.length > 1; 
-  const { currentDashboard } = useDashboard(); 
+  const classStats = useCarClassStats();
+  const isMultiClass = standings.length > 1;
+  const { currentDashboard } = useDashboard();
   const highlightColor = currentDashboard?.generalSettings?.highlightColor ?? 960745;
+
+  // Show only when on track setting
+  if (settings?.showOnlyWhenOnTrack && !isDriving) {
+    return <></>;
+  }
 
   return (
     <div
@@ -33,6 +42,7 @@ export const Standings = () => {
         ['--bg-opacity' as string]: `${settings?.background?.opacity ?? 0}%`,
       }}
     >
+      <TitleBar titleBarSettings={settings?.titleBar} />
       <SessionBar />
       <table className="w-full table-auto text-sm border-separate border-spacing-y-0.5 mb-3">
         <tbody ref={parent}>

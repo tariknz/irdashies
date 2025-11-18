@@ -2,17 +2,20 @@ import { useMemo } from 'react';
 import { useAutoAnimate } from '@formkit/auto-animate/react';
 import { DriverInfoRow } from './components/DriverInfoRow/DriverInfoRow';
 import { useRelativeSettings, useDriverRelatives } from './hooks';
+import { useDrivingState } from '@irdashies/context';
 import { DriverRatingBadge } from './components/DriverRatingBadge/DriverRatingBadge';
 import { RatingChange } from './components/RatingChange/RatingChange';
 import { SessionBar } from './components/SessionBar/SessionBar';
 import { SessionFooter } from './components/SessionFooter/SessionFooter';
+import { TitleBar } from './components/TitleBar/TitleBar';
 
 export const Relative = () => {
   const settings = useRelativeSettings();
   const buffer = settings?.buffer ?? 3;
+  const { isDriving } = useDrivingState();
   const standings = useDriverRelatives({ buffer });
   const [parent] = useAutoAnimate();
-  const isMultiClass = standings.length > 0 && new Set(standings.map(s => s.carClass.id)).size > 1; 
+  const isMultiClass = standings.length > 0 && new Set(standings.map(s => s.carClass.id)).size > 1;
 
   // Always render 2 * buffer + 1 rows (buffer above + player + buffer below)
   const totalRows = 2 * buffer + 1;
@@ -148,10 +151,16 @@ export const Relative = () => {
     });
   }, [standings, playerIndex, totalRows, settings, isMultiClass]);
 
+  // Show only when on track setting
+  if (settings?.showOnlyWhenOnTrack && !isDriving) {
+    return <></>;
+  }
+
   // If no player found, render empty table with consistent height
   if (playerIndex === -1) {
     return (
       <div className="w-full h-full">
+        <TitleBar titleBarSettings={settings?.titleBar} />
         <SessionBar />
         <table className="w-full table-auto text-sm border-separate border-spacing-y-0.5 mb-3 mt-3">
           <tbody ref={parent}>{rows}</tbody>
@@ -162,12 +171,13 @@ export const Relative = () => {
   }
 
   return (
-    <div 
+    <div
       className="w-full bg-slate-800/(--bg-opacity) rounded-sm p-2"
       style={{
         ['--bg-opacity' as string]: `${settings?.background?.opacity ?? 0}%`,
       }}
     >
+      <TitleBar titleBarSettings={settings?.titleBar} />
       <SessionBar />
       <table className="w-full table-auto text-sm border-separate border-spacing-y-0.5 mb-3 mt-3">
         <tbody ref={parent}>{rows}</tbody>

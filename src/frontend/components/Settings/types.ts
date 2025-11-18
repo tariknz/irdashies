@@ -22,6 +22,8 @@ export interface StandingsWidgetSettings extends BaseWidgetSettings {
     compound: { enabled: boolean };
     carManufacturer: { enabled: boolean };
     lapTimeDeltas: { enabled: boolean; numLaps: number };
+    titleBar: { enabled: boolean; progressBar: { enabled: boolean } };
+    showOnlyWhenOnTrack: boolean;
     position: { enabled: boolean };
     driverName: { enabled: boolean };
     pitStatus: { enabled: boolean };
@@ -39,6 +41,8 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
     fastestTime: { enabled: boolean };
     compound: { enabled: boolean };
     carManufacturer: { enabled: boolean };
+    titleBar: { enabled: boolean; progressBar: { enabled: boolean } };
+    showOnlyWhenOnTrack: boolean;
     badge: { enabled: boolean };
     iratingChange: { enabled: boolean };
     delta: { enabled: boolean };
