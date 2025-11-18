@@ -37,7 +37,7 @@ const sortableSettings: SortableSetting[] = [
   { id: 'position', label: 'Position', configKey: 'position' },
   { id: 'carNumber', label: 'Car Number', configKey: 'carNumber' },
   { id: 'countryFlags', label: 'Country Flags', configKey: 'countryFlags' },
-  { id: 'driverName', label: 'Driver Name', configKey: 'driverName', hasSubSetting: true },
+  { id: 'driverName', label: 'Driver Name', configKey: 'driverName' },
   { id: 'pitStatus', label: 'Pit Status', configKey: 'pitStatus' },
   { id: 'carManufacturer', label: 'Car Manufacturer', configKey: 'carManufacturer' },
   { id: 'badge', label: 'Driver Badge', configKey: 'badge' },
@@ -54,7 +54,7 @@ const defaultConfig: RelativeWidgetSettings['config'] = {
   position: true,
   carNumber: { enabled: true },
   countryFlags: { enabled: true },
-  driverName: { enabled: true, width: 250 },
+  driverName: { enabled: true },
   pitStatus: true,
   carManufacturer: { enabled: true },
   badge: { enabled: true },
@@ -96,7 +96,6 @@ const migrateConfig = (savedConfig: unknown): RelativeWidgetSettings['config'] =
       enabled: typeof config.driverName === 'boolean'
         ? config.driverName
         : (config.driverName as { enabled?: boolean })?.enabled ?? true,
-      width: (config.driverName as { width?: number })?.width ?? 250,
     },
     pitStatus: (config.pitStatus as boolean) ?? true,
     carManufacturer: { enabled: (config.carManufacturer as { enabled?: boolean })?.enabled ?? false },
@@ -134,7 +133,7 @@ const SortableItem = ({ setting, settings, handleConfigChange }: SortableItemPro
 
   const configValue = settings.config[setting.configKey];
   const isEnabled = setting.configKey === 'driverName'
-    ? (configValue as { enabled: boolean; width: number }).enabled
+    ? (configValue as { enabled: boolean }).enabled
     : typeof configValue === 'boolean'
       ? configValue
       : (configValue as { enabled: boolean }).enabled;
@@ -170,28 +169,6 @@ const SortableItem = ({ setting, settings, handleConfigChange }: SortableItemPro
           }}
         />
       </div>
-      {setting.hasSubSetting && setting.configKey === 'driverName' && settings.config.driverName.enabled && (
-        <div className="flex items-center justify-between pl-8 mt-2">
-          <span className="text-sm text-slate-300">Width</span>
-          <div className="flex items-center gap-2">
-            <input
-              type="range"
-              min="100"
-              max="500"
-              value={settings.config.driverName.width}
-              onChange={(e) =>
-                handleConfigChange({
-                  driverName: {
-                    ...settings.config.driverName,
-                    width: parseInt(e.target.value),
-                  },
-                })
-              }
-              className="w-20 h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer"
-            />
-          </div>
-        </div>
-      )}
     </div>
   );
 };

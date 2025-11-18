@@ -1,4 +1,4 @@
-import { memo, useMemo } from 'react';
+import { memo, useMemo, useCallback, Fragment } from 'react';
 import { SpeakerHighIcon } from '@phosphor-icons/react';
 import { getTailwindStyle } from '@irdashies/utils/colors';
 import { formatTime } from '@irdashies/utils/time';
@@ -8,6 +8,12 @@ import { Compound } from '../Compound/Compound';
 import { CarManufacturer } from '../CarManufacturer/CarManufacturer';
 import { useDashboard } from '@irdashies/context';
 import type { RelativeWidgetSettings, StandingsWidgetSettings } from '../../../Settings/types';
+
+const getLastTimeColorClass = (state?: LastTimeState): string => {
+  if (state === 'session-fastest') return 'text-purple-400';
+  if (state === 'personal-best') return 'text-green-400';
+  return '';
+};
 
 interface DriverRowInfoProps {
   carIdx: number;
@@ -73,188 +79,223 @@ export const DriverInfoRow = memo(({
   const fastestTimeString = useMemo(() => formatTime(fastestTime), [fastestTime]);
 
   const { currentDashboard } = useDashboard();
-  const settings = currentDashboard?.generalSettings;
-  const highlightColor = settings?.highlightColor ?? 960745;
+  const highlightColor = useMemo(() => {
+    return currentDashboard?.generalSettings?.highlightColor ?? 960745;
+  }, [currentDashboard?.generalSettings?.highlightColor]);
+
+  // Memoize tailwind styles to avoid recalculating on every render
+  const tailwindStyles = useMemo(() => {
+    return getTailwindStyle(classColor, highlightColor, isMultiClass);
+  }, [classColor, highlightColor, isMultiClass]);
+
+  // Memoize placeholder arrays for lapTimeDeltas
+  const emptyLapDeltaPlaceholders = useMemo(() => {
+    if (!numLapDeltasToShow) return null;
+    return Array.from({ length: numLapDeltasToShow }, (_, index) => index);
+  }, [numLapDeltasToShow]);
+
+  // Memoize column render functions using useCallback where possible
+  const renderPosition = useCallback(() => (
+    <td
+      key="position"
+      data-column="position"
+      className={`w-auto text-center text-white px-2 whitespace-nowrap ${isPlayer ? tailwindStyles.classHeader : ''}`}
+    >
+      {hidden ? '' : position}
+    </td>
+  ), [isPlayer, tailwindStyles.classHeader, hidden, position]);
+
+  const renderCarNumber = useCallback(() => (
+    <td
+      key="carNumber"
+      data-column="carNumber"
+      className={`w-auto ${tailwindStyles.driverIcon} border-l-4 text-white text-right px-1 whitespace-nowrap`}
+    >
+      {hidden ? '' : `#${carNumber}`}
+    </td>
+  ), [tailwindStyles.driverIcon, hidden, carNumber]);
+
+  const renderCountryFlags = useCallback(() => (
+    <td key="countryFlags" data-column="countryFlags" className="w-auto pl-2 whitespace-nowrap">
+      {hidden ? null : (flairId && <CountryFlag flairId={flairId} size="sm" />)}
+    </td>
+  ), [hidden, flairId]);
+
+  const renderDriverName = useCallback(() => (
+    <td
+      key="driverName"
+      data-column="driverName"
+      className="w-full max-w-0 px-2 py-0.5"
+    >
+      <div className="flex items-center overflow-hidden">
+        <span
+          className={`animate-pulse transition-[width] duration-300 ${radioActive ? 'w-4 mr-1' : 'w-0 overflow-hidden'}`}
+        >
+          <SpeakerHighIcon className="mt-px" size={16} />
+        </span>
+        <div className="flex-1 min-w-0 overflow-hidden mask-[linear-gradient(90deg,#000_90%,transparent)]">
+          <span className="block truncate">{hidden ? '' : name}</span>
+        </div>
+      </div>
+    </td>
+  ), [radioActive, hidden, name]);
+
+  const renderPitStatus = useCallback(() => (
+    <td key="pitStatus" data-column="pitStatus" className="w-auto px-1 text-center">
+      {hidden ? null : (onPitRoad && (
+        <span className="text-white animate-pulse text-xs border-yellow-500 border-2 rounded-md text-center text-nowrap px-2 leading-tight">
+          PIT
+        </span>
+      ))}
+    </td>
+  ), [hidden, onPitRoad]);
+
+  const renderCarManufacturer = useCallback(() => (
+    <td key="carManufacturer" data-column="carManufacturer" className="w-auto whitespace-nowrap">
+      <div className="flex items-center justify-center pr-2 text-center">
+        {hidden ? null : (carId && <CarManufacturer carId={carId} size="sm" />)}
+      </div>
+    </td>
+  ), [hidden, carId]);
+
+  const renderBadge = useCallback(() => (
+    <td key="badge" data-column="badge" className="w-auto whitespace-nowrap text-center">{hidden ? null : badge}</td>
+  ), [hidden, badge]);
+
+  const renderIratingChange = useCallback(() => (
+    <td key="iratingChange" data-column="iratingChange" className="w-auto px-2 text-center whitespace-nowrap">{hidden ? null : iratingChange}</td>
+  ), [hidden, iratingChange]);
+
+  const renderDelta = useCallback(() => (
+    <td key="delta" data-column="delta" className="w-auto px-2 whitespace-nowrap text-center">{hidden ? '' : delta?.toFixed(1)}</td>
+  ), [hidden, delta]);
+
+  const renderFastestTime = useCallback(() => (
+    <td key="fastestTime" data-column="fastestTime" className={`w-auto px-2 whitespace-nowrap ${hasFastestTime ? 'text-purple-400' : ''}`}>
+      {hidden ? '' : fastestTimeString}
+    </td>
+  ), [hasFastestTime, hidden, fastestTimeString]);
+
+  const renderLastTime = useCallback(() => (
+    <td key="lastTime" data-column="lastTime" className={`w-auto px-2 whitespace-nowrap ${getLastTimeColorClass(lastTimeState)}`}>
+      {hidden ? '' : lastTimeString}
+    </td>
+  ), [lastTimeState, hidden, lastTimeString]);
+
+  const renderCompound = useCallback(() => (
+    <td key="compound" data-column="compound" className="w-auto whitespace-nowrap text-center">
+      <div className="flex items-center justify-center pr-1">
+        {hidden ? null : (tireCompound !== undefined && carId && <Compound tireCompound={tireCompound} carId={carId} size="sm" />)}
+      </div>
+    </td>
+  ), [hidden, tireCompound, carId]);
+
+  const renderLapTimeDeltas = useCallback(() => {
+    if (lapTimeDeltas !== undefined) {
+      return (
+        <Fragment>
+          {lapTimeDeltas.map((deltaValue, index) => (
+            <td
+              key={`lapTimeDelta-${index}`}
+              data-column="lapTimeDelta"
+              className={`w-auto px-1 text-center whitespace-nowrap ${deltaValue > 0 ? 'text-green-400' : 'text-red-400'}`}
+            >
+              {hidden ? '' : (deltaValue > 0 ? '+' : '') + deltaValue.toFixed(1)}
+            </td>
+          ))}
+        </Fragment>
+      );
+    }
+    
+    if (emptyLapDeltaPlaceholders) {
+      if (isPlayer) {
+        return (
+          <Fragment>
+            {emptyLapDeltaPlaceholders.map((index) => (
+              <td key={`empty-lapTimeDelta-${index}`} data-column="lapTimeDelta" className="w-auto px-1 text-center whitespace-nowrap">{hidden ? '' : '-'}</td>
+            ))}
+          </Fragment>
+        );
+      }
+      return (
+        <Fragment>
+          {emptyLapDeltaPlaceholders.map((index) => (
+            <td key={`placeholder-lapTimeDelta-${index}`} data-column="lapTimeDelta" className="w-auto px-1 text-center whitespace-nowrap">{hidden ? '' : ''}</td>
+          ))}
+        </Fragment>
+      );
+    }
+    
+    return null;
+  }, [lapTimeDeltas, emptyLapDeltaPlaceholders, isPlayer, hidden]);
 
   // Define column configurations
   const columnDefinitions = useMemo(() => {
-    const getLastTimeColorClass = (state?: LastTimeState): string => {
-      if (state === 'session-fastest') return 'text-purple-400';
-      if (state === 'personal-best') return 'text-green-400';
-      return '';
-    };
-
     const columns = [
       {
         id: 'position',
         shouldRender: (displayOrder ? displayOrder.includes('position') : true) && (config?.position ?? true),
-        render: () => (
-          <td
-            key="position"
-            data-column="position"
-            className={`text-center text-white px-2 whitespace-nowrap ${isPlayer ? `${getTailwindStyle(classColor, highlightColor, isMultiClass).classHeader}` : ''}`}
-          >
-            {hidden ? '' : position}
-          </td>
-        ),
+        render: renderPosition,
       },
       {
         id: 'carNumber',
         shouldRender: (displayOrder ? displayOrder.includes('carNumber') : true) && (config?.carNumber?.enabled ?? true),
-        render: () => (
-          <td
-            key="carNumber"
-            data-column="carNumber"
-            className={[
-              getTailwindStyle(classColor, highlightColor, isMultiClass).driverIcon,
-              'border-l-4',
-              'text-white text-right px-1 whitespace-nowrap',
-            ].join(' ')}
-          >
-            {hidden ? '' : `#${carNumber}`}
-          </td>
-        ),
+        render: renderCarNumber,
       },
       {
         id: 'countryFlags',
         shouldRender: (displayOrder ? displayOrder.includes('countryFlags') : true) && (config?.countryFlags?.enabled ?? true),
-        render: () => (
-          <td key="countryFlags" data-column="countryFlags" className="px-1 whitespace-nowrap">
-            {hidden ? null : (flairId && <CountryFlag
-              flairId={flairId}
-              size="sm"
-            />)}
-          </td>
-        ),
+        render: renderCountryFlags,
       },
       {
         id: 'driverName',
         shouldRender: (displayOrder ? displayOrder.includes('driverName') : true) && (config?.driverName?.enabled ?? true),
-        render: () => (
-          <td
-            key="driverName"
-            data-column="driverName"
-            className="px-2 py-0.5"
-            style={{ 
-              width: config?.driverName?.width ?? 250,
-              maxWidth: config?.driverName?.width ?? 250 
-            }}
-          >
-            <div className="flex items-center overflow-hidden">
-              <span
-                className={`animate-pulse transition-[width] duration-300 ${radioActive ? 'w-4 mr-1' : 'w-0 overflow-hidden'}`}
-              >
-                <SpeakerHighIcon className="mt-px" size={16} />
-              </span>
-              <div className="flex-1 overflow-hidden mask-[linear-gradient(90deg,#000_90%,transparent)]">
-                <span className="truncate">{hidden ? '' : name}</span>
-              </div>
-            </div>
-          </td>
-        ),
+        render: renderDriverName,
       },
       {
         id: 'pitStatus',
         shouldRender: (displayOrder ? displayOrder.includes('pitStatus') : true) && (config?.pitStatus ?? true),
-        render: () => (
-          <td key="pitStatus" data-column="pitStatus" className="px-1 text-center">
-            {hidden ? null : (onPitRoad && (
-              <span className="text-white animate-pulse text-xs border-yellow-500 border-2 rounded-md text-center text-nowrap px-2 leading-tight">
-                PIT
-              </span>
-            ))}
-          </td>
-        ),
+        render: renderPitStatus,
       },
       {
         id: 'carManufacturer',
         shouldRender: (displayOrder ? displayOrder.includes('carManufacturer') : true) && (config?.carManufacturer?.enabled ?? true),
-        render: () => (
-          <td key="carManufacturer" data-column="carManufacturer" className="whitespace-nowrap">
-            <div className="flex items-center justify-center pr-2 text-center">
-              {hidden ? null : (carId && <CarManufacturer
-                carId={carId}
-                size="sm"
-              />)}
-            </div>
-          </td>
-        ),
+        render: renderCarManufacturer,
       },
       {
         id: 'badge',
         shouldRender: (displayOrder ? displayOrder.includes('badge') : true) && (config?.badge?.enabled ?? true),
-        render: () => <td key="badge" data-column="badge" className="whitespace-nowrap text-center">{hidden ? null : badge}</td>,
+        render: renderBadge,
       },
       {
         id: 'iratingChange',
         shouldRender: (displayOrder ? displayOrder.includes('iratingChange') : true) && (config?.iratingChange?.enabled ?? false),
-        render: () => <td key="iratingChange" data-column="iratingChange" className="px-2 text-center whitespace-nowrap">{hidden ? null : iratingChange}</td>,
+        render: renderIratingChange,
       },
       {
         id: 'delta',
         shouldRender: (displayOrder ? displayOrder.includes('delta') : true) && (config?.delta?.enabled ?? false),
-        render: () => <td key="delta" data-column="delta" className="px-2 whitespace-nowrap text-center">{hidden ? '' : delta?.toFixed(1)}</td>,
+        render: renderDelta,
       },
       {
         id: 'fastestTime',
         shouldRender: (displayOrder ? displayOrder.includes('fastestTime') : true) && (config?.fastestTime?.enabled ?? false),
-        render: () => (
-          <td key="fastestTime" data-column="fastestTime" className={`px-2 w-20 whitespace-nowrap ${hasFastestTime ? 'text-purple-400' : ''}`}>
-            {hidden ? '' : fastestTimeString}
-          </td>
-        ),
+        render: renderFastestTime,
       },
       {
         id: 'lastTime',
         shouldRender: (displayOrder ? displayOrder.includes('lastTime') : true) && (config?.lastTime?.enabled ?? false),
-        render: () => (
-          <td key="lastTime" data-column="lastTime" className={`px-2 w-20 whitespace-nowrap ${getLastTimeColorClass(lastTimeState)}`}>
-            {hidden ? '' : lastTimeString}
-          </td>
-        ),
+        render: renderLastTime,
       },
       {
         id: 'compound',
         shouldRender: (displayOrder ? displayOrder.includes('compound') : true) && (config?.compound?.enabled ?? false),
-        render: () => (
-          <td key="compound" data-column="compound" className="whitespace-nowrap text-center">
-            <div className="flex items-center justify-center pr-1">
-              {hidden ? null : (tireCompound !== undefined && carId && <Compound tireCompound={tireCompound} carId={carId} size="sm" />)}
-            </div>
-          </td>
-        ),
+        render: renderCompound,
       },
       {
         id: 'lapTimeDeltas',
         shouldRender: (displayOrder ? displayOrder.includes('lapTimeDeltas') : false) && (config && 'lapTimeDeltas' in config ? config.lapTimeDeltas.enabled : false),
-        render: () => (
-          <>
-            {lapTimeDeltas !== undefined && (
-              lapTimeDeltas.map((deltaValue, index) => (
-                <td
-                  key={`lapTimeDelta-${index}`}
-                  data-column="lapTimeDelta"
-                  className={[
-                    'px-1 text-center whitespace-nowrap',
-                    deltaValue > 0 ? 'text-green-400' : 'text-red-400'
-                  ].join(' ')}
-                >
-                  {hidden ? '' : (deltaValue > 0 ? '+' : '') + deltaValue.toFixed(1)}
-                </td>
-              ))
-            )}
-            {lapTimeDeltas === undefined && isPlayer && numLapDeltasToShow && (
-              [...Array(numLapDeltasToShow)].map((_, index) => (
-                <td key={`empty-lapTimeDelta-${index}`} data-column="lapTimeDelta" className="px-1 text-center whitespace-nowrap">{hidden ? '' : '-'}</td>
-              ))
-            )}
-            {lapTimeDeltas === undefined && (!isPlayer || !numLapDeltasToShow) && numLapDeltasToShow && (
-              [...Array(numLapDeltasToShow)].map((_, index) => (
-                <td key={`placeholder-lapTimeDelta-${index}`} data-column="lapTimeDelta" className="px-1 text-center whitespace-nowrap">{hidden ? '' : ''}</td>
-              ))
-            )}
-          </>
-        ),
+        render: renderLapTimeDeltas,
       },
     ];
 
@@ -275,10 +316,21 @@ export const DriverInfoRow = memo(({
     // If no displayOrder, return all columns that should render in original order
     return columns.filter(col => col.shouldRender);
   }, [
-    carNumber, flairId, carId, badge, iratingChange, delta,
-    tireCompound, lapTimeDeltas, numLapDeltasToShow, isPlayer, displayOrder, config,
-    classColor, highlightColor, isMultiClass, hasFastestTime, lastTimeState,
-    fastestTimeString, lastTimeString, name, onPitRoad, position, radioActive, hidden
+    displayOrder,
+    config,
+    renderPosition,
+    renderCarNumber,
+    renderCountryFlags,
+    renderDriverName,
+    renderPitStatus,
+    renderCarManufacturer,
+    renderBadge,
+    renderIratingChange,
+    renderDelta,
+    renderFastestTime,
+    renderLastTime,
+    renderCompound,
+    renderLapTimeDeltas,
   ]);
 
   return (
