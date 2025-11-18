@@ -9,7 +9,6 @@ const COMPONENT_PORT = process.env.COMPONENT_PORT || PORT;
 
 // Detect if we're in development or production
 const isDev = process.env.NODE_ENV === 'development' || process.env.VITE_DEV_SERVER_URL;
-const VITE_DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL;
 
 // In production, the renderer files are in the .webpack/renderer directory
 declare const MAIN_WINDOW_VITE_NAME: string;
