@@ -12,7 +12,6 @@ const isDev = process.env.NODE_ENV === 'development' || process.env.VITE_DEV_SER
 
 // In production, the renderer files are in the .webpack/renderer directory
 declare const MAIN_WINDOW_VITE_NAME: string;
-declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string;
 
 /**
  * Creates an Express server that serves components to external browsers

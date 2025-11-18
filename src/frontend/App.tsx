@@ -50,7 +50,7 @@ const AppRoutes = () => {
   );
 };
 
-const App = () => (
+export const App = () => (
   <DashboardProvider bridge={window.dashboardBridge}>
     <RunningStateProvider bridge={window.irsdkBridge}>
       <SessionProvider bridge={window.irsdkBridge} />

@@ -17,6 +17,7 @@ const configJson = params.get('config');
 const isDebugMode = params.get('debug') === 'true';
 
 // Setup conditional logging
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const originalConsole = {
   log: console.log,
   info: console.info,
@@ -26,13 +27,16 @@ const originalConsole = {
 
 if (!isDebugMode) {
   // Suppress all console logs except errors in non-debug mode
+  /* eslint-disable @typescript-eslint/no-empty-function */
   console.log = () => {};
   console.info = () => {};
   console.warn = () => {};
+  /* eslint-enable @typescript-eslint/no-empty-function */
   // Keep errors visible
 }
 
 // Make debug flag globally available
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 (window as any).__DEBUG_MODE__ = isDebugMode;
 
 if (isDebugMode) {
@@ -54,6 +58,7 @@ if (isDebugMode) {
 }
 
 // Check if Socket.io is loaded
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 if (typeof window !== 'undefined' && !(window as any).io) {
   console.error('❌ Socket.io not loaded! Make sure the CDN script is included.');
 }

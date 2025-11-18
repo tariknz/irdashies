@@ -46,7 +46,7 @@ class WebSocketBridge implements IrSdkBridge {
   private dashboardUpdateCallbacks: Set<(value: any) => void>;
   private demoModeCallbacks: Set<(value: boolean) => void>;
   private lastDashboard: any = null;
-  private currentIsDemoMode: boolean = false;
+  private currentIsDemoMode = false;
 
   constructor() {
     this.telemetryCallbacks = new Set();
