@@ -71,7 +71,7 @@ export const TitleBar = ({ titleBarSettings }: TitleBarProps) => {
   return (
     <div className="relative bg-slate-900/70 text-sm px-3 py-2 flex justify-center items-center">
       {/* Background progress bar - only show for racing sessions and if enabled in settings */}
-      {true && titleBarSettings?.progressBar?.enabled && (
+      {sessionName === "Race" && progressPercentage > 0 && titleBarSettings?.progressBar?.enabled && (
         <div className="absolute inset-x-3 inset-y-2">
           <div
             className="h-full rounded-sm"
