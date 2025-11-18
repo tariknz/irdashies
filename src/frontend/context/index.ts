@@ -6,4 +6,5 @@ export * from './TelemetryStore/TelemetryProvider';
 export * from './TelemetryStore/TelemetryStore';
 export * from './RelativeGapStore/RelativeGapStore';
 export * from './RelativeGapStore/RelativeGapStoreUpdater';
+export * from './RelativeGapStore/RelativeGapCalculator';
 export * from './shared';

@@ -12,6 +12,8 @@ vi.mock('@irdashies/context', async (importOriginal) => {
     useTelemetryValues: vi.fn(),
     useSessionStore: vi.fn(),
     useRelativeGapStore: vi.fn(),
+    detectEdgeCases: vi.fn(() => ({ isLapping: false, isBeingLapped: false, isMultiClass: false })),
+    calculateRelativeGap: vi.fn(() => null),
   };
 });
 
@@ -19,10 +21,8 @@ vi.mock('./useDriverPositions', () => ({
   useDriverStandings: vi.fn(),
 }));
 
-vi.mock('@irdashies/context/RelativeGapStore', () => ({
-  detectEdgeCases: vi.fn(() => ({ isLapping: false, isBeingLapped: false, isMultiClass: false })),
-  calculateRelativeGap: vi.fn(() => null),
-}));
+// Note: detectEdgeCases and calculateRelativeGap are now exported from @irdashies/context
+// We need to mock them in the context mock above
 
 // Import mocked functions after vi.mock
 const { useDriverCarIdx, useTelemetryValues, useSessionStore, useRelativeGapStore } = await import('@irdashies/context');
@@ -191,6 +191,7 @@ describe('useDriverRelatives', () => {
         clearAllData: vi.fn(),
         updateConfig: vi.fn(),
         updateSessionInfo: vi.fn(),
+        processPositionUpdates: vi.fn(() => new Map()),
       };
       return selector ? selector(mockState) : mockState;
     });
@@ -216,6 +217,7 @@ describe('useDriverRelatives', () => {
       clearAllData: vi.fn(),
       updateConfig: vi.fn(),
       updateSessionInfo: vi.fn(),
+      processPositionUpdates: vi.fn(() => new Map()),
     }));
   });
 

@@ -4,9 +4,10 @@ import {
   useSessionStore,
   useTelemetryValues,
   useRelativeGapStore,
+  detectEdgeCases,
+  calculateRelativeGap,
 } from '@irdashies/context';
 import { useDriverStandings } from './useDriverPositions';
-import { detectEdgeCases, calculateRelativeGap } from '@irdashies/context/RelativeGapStore';
 import type { Standings } from '../createStandings';
 
 export const useDriverRelatives = ({ buffer }: { buffer: number }) => {

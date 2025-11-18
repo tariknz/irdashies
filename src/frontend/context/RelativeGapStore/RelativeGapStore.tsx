@@ -308,15 +308,7 @@ export const useRelativeGapStore = create<RelativeGapStore>((set, get) => ({
  * Uses shallow equality to prevent unnecessary re-renders
  */
 export function useRelativeGapConfig() {
-  return useRelativeGapStore(
-    (state) => state.config,
-    (a, b) =>
-      a.enabled === b.enabled &&
-      a.interpolationMethod === b.interpolationMethod &&
-      a.sampleInterval === b.sampleInterval &&
-      a.maxLapHistory === b.maxLapHistory &&
-      a.smoothingFactor === b.smoothingFactor
-  );
+  return useRelativeGapStore((state) => state.config);
 }
 
 /**
