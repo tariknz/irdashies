@@ -1,6 +1,7 @@
-import { useEffect } from 'react';
-import { useTelemetryStore } from '../TelemetryStore/TelemetryStore';
+import { useEffect, useRef } from 'react';
+import { useTelemetryValue, useTelemetryValues } from '../TelemetryStore/TelemetryStore';
 import { useLapTimesStore } from './LapTimesStore';
+import { useStandingsSettings } from '../../components/Standings/hooks/useStandingsSettings';
 
 /**
  * Hook that automatically updates the LapTimesStore with telemetry data.
@@ -9,12 +10,27 @@ import { useLapTimesStore } from './LapTimesStore';
  * Use this hook in components that need lap time history tracking (e.g., Standings overlay).
  */
 export const useLapTimesStoreUpdater = () => {
-  const telemetry = useTelemetryStore(state => state.telemetry);
+  const sessionNum = useTelemetryValue('SessionNum');
+  const carIdxLastLapTime = useTelemetryValues('CarIdxLastLapTime');
   const updateLapTimes = useLapTimesStore(state => state.updateLapTimes);
+  const reset = useLapTimesStore(state => state.reset);
+  const standingsSettings = useStandingsSettings();
+  const lastSessionNumRef = useRef<number | null>(null);
+  
+  const currentSessionNum = sessionNum ?? null;
 
   useEffect(() => {
-    if (telemetry) {
-      updateLapTimes(telemetry);
+    if (lastSessionNumRef.current !== null && currentSessionNum !== null && currentSessionNum !== lastSessionNumRef.current) {
+      console.log(`[LapTimesStoreUpdater] Session changed from ${lastSessionNumRef.current} to ${currentSessionNum}`);
+      reset();
     }
-  }, [telemetry, updateLapTimes]);
+    
+    lastSessionNumRef.current = currentSessionNum;
+  }, [currentSessionNum, reset]);
+
+  useEffect(() => {
+    if (carIdxLastLapTime && standingsSettings?.lapTimeDeltas?.enabled) {
+      updateLapTimes(carIdxLastLapTime);
+    }
+  }, [carIdxLastLapTime, updateLapTimes, standingsSettings?.lapTimeDeltas?.enabled]);
 };
