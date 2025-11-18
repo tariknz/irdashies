@@ -81,12 +81,12 @@ export const useDriverStandings = (settings?: StandingsWidgetSettings['config'])
         resultsFastestLap: fastestLaps,
         sessionType,
       },
-      lapTimeHistoryForCalc,
-      lapTimeDeltasEnabled ? numLapDeltas : undefined,
       lastPitLap,
       lastLap,
       onTrack,
       prevCarTrackSurface,
+      lapTimeDeltasEnabled ? numLapDeltas : undefined,
+      lapTimeHistoryForCalc,
     );
     const groupedByClass = groupStandingsByClass(initialStandings);
 
