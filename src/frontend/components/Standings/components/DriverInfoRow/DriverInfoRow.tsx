@@ -177,6 +177,10 @@ export const DriverInfoRow = memo(
               key="pitStatus"
               hidden={hidden}
               onPitRoad={onPitRoad}
+              carTrackSurface={carTrackSurface}
+              prevCarTrackSurface={prevCarTrackSurface}
+              lastPitLap={lastPitLap}
+              lastLap={lastLap}
             />
           ),
         },

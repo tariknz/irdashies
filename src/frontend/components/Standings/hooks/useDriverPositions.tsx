@@ -43,7 +43,7 @@ export const useDriverPositions = () => {
       classPosition: carIdxClassPosition?.value?.[carIdx],
       delta: carIdxF2Time?.value?.[carIdx], // only to leader currently, need to handle non-race sessions
       bestLap: carIdxBestLap?.value?.[carIdx],
-      lastLap: carIdxLastLap?.value?.[carIdx],
+      lastLap: lastLap[carIdx] ?? undefined,
       lapNum: carIdxLapNum?.value?.[carIdx],
       lastPitLap: lastPitLap[carIdx] ?? undefined,
       prevCarTrackSurface: prevCarTrackSurface[carIdx] ?? undefined,
@@ -53,12 +53,12 @@ export const useDriverPositions = () => {
     carIdxPosition?.value,
     carIdxClassPosition?.value,
     carIdxBestLap?.value,
-    carIdxLastLap?.value,
+    lastLap,
     carIdxF2Time?.value,
     carIdxLapNum?.value,
-    lastPitLap?.value,
-    prevCarTrackSurface?.value,
-    carTrackSurface?.value
+    lastPitLap,
+    prevCarTrackSurface,
+    carIdxTrackSurface?.value
   ]);
 
   return positions;
