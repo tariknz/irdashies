@@ -85,7 +85,6 @@ export async function startComponentServer(irsdkBridge?: IrSdkBridge, dashboardB
       return res.status(400).json({ error: 'Invalid component name' });
     }
 
-    const vitePort = process.env.VITE_PORT || '5173';
     const wsUrl = 'http://localhost:3000';
 
     // Get widget config from dashboard (no stream config)
