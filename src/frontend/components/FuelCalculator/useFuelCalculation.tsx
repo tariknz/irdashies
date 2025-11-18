@@ -4,7 +4,7 @@
  */
 
 import { useEffect, useMemo } from 'react';
-import { useTelemetryValues, useSessionLaps, useTelemetry } from '@irdashies/context';
+import { useSessionLaps, useTelemetry, useTelemetryValue } from '@irdashies/context';
 import { useFuelStore } from './FuelStore';
 import type { FuelCalculation, FuelLapData } from './types';
 import {
@@ -18,15 +18,15 @@ import {
 export function useFuelCalculation(
   safetyMargin = 0.05
 ): FuelCalculation | null {
-  const fuelLevel = useTelemetryValues('FuelLevel')?.[0];
-  const fuelLevelPct = useTelemetryValues('FuelLevelPct')?.[0];
-  const lap = useTelemetryValues('Lap')?.[0];
-  const lapDistPct = useTelemetryValues('LapDistPct')?.[0];
-  const sessionLapsRemain = useTelemetryValues('SessionLapsRemain')?.[0];
-  const sessionTimeRemain = useTelemetryValues('SessionTimeRemain')?.[0];
-  const sessionFlags = useTelemetryValues('SessionFlags')?.[0];
-  const sessionTime = useTelemetryValues('SessionTime')?.[0];
-  const sessionNum = useTelemetryValues('SessionNum')?.[0];
+  const fuelLevel = useTelemetryValue('FuelLevel');
+  const fuelLevelPct = useTelemetryValue('FuelLevelPct');
+  const lap = useTelemetryValue('Lap');
+  const lapDistPct = useTelemetryValue('LapDistPct');
+  const sessionLapsRemain = useTelemetryValue('SessionLapsRemain');
+  const sessionTimeRemain = useTelemetryValue('SessionTimeRemain');
+  const sessionFlags = useTelemetryValue('SessionFlags');
+  const sessionTime = useTelemetryValue('SessionTime');
+  const sessionNum = useTelemetryValue('SessionNum');
   const sessionLaps = useSessionLaps(sessionNum);
 
   // Get race leader's lap for multi-class racing

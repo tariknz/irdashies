@@ -22,9 +22,9 @@ export interface StandingsWidgetSettings extends BaseWidgetSettings {
     compound: { enabled: boolean };
     carManufacturer: { enabled: boolean };
     lapTimeDeltas: { enabled: boolean; numLaps: number };
-    position: boolean;
-    driverName: { enabled: boolean; width: number };
-    pitStatus: boolean;
+    position: { enabled: boolean };
+    driverName: { enabled: boolean };
+    pitStatus: { enabled: boolean };
     displayOrder: string[];
   };
 }
@@ -43,9 +43,9 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
     badge: { enabled: boolean };
     iratingChange: { enabled: boolean };
     delta: { enabled: boolean };
-    position: boolean;
-    driverName: { enabled: boolean; width: number };
-    pitStatus: boolean;
+    position: { enabled: boolean };
+    driverName: { enabled: boolean };
+    pitStatus: { enabled: boolean };
     displayOrder: string[];
     enhancedGapCalculation: {
       enabled: boolean;
