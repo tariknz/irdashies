@@ -61,6 +61,20 @@ interface RelativeGapStoreActions {
   completeLap: (carIdx: number, lapTime: number, sessionTime: number) => void;
 
   /**
+   * Process position updates from telemetry for all cars
+   * This is the main update function that should be called from the updater hook
+   */
+  processPositionUpdates: (params: {
+    sessionTime: number;
+    sessionNum: number;
+    trackLength: number;
+    carIdxLapDistPct: number[];
+    carIdxLap: number[];
+    carIdxLastLapTime: number[];
+    lastLapNumbers: Map<number, number>;
+  }) => Map<number, number>;
+
+  /**
    * Clear all data (e.g., on session change)
    */
   clearAllData: () => void;
@@ -236,6 +250,52 @@ export const useRelativeGapStore = create<RelativeGapStore>((set, get) => ({
 
       return { sessionNum, trackLength };
     });
+  },
+
+  processPositionUpdates: (params) => {
+    const {
+      sessionTime,
+      sessionNum,
+      trackLength,
+      carIdxLapDistPct,
+      carIdxLap,
+      carIdxLastLapTime,
+      lastLapNumbers,
+    } = params;
+
+    // Update session info (will clear data on session change)
+    get().updateSessionInfo(sessionNum, trackLength);
+
+    // Create new map to track updated lap numbers
+    const updatedLapNumbers = new Map(lastLapNumbers);
+
+    // Process each car
+    for (let carIdx = 0; carIdx < carIdxLapDistPct.length; carIdx++) {
+      const position = carIdxLapDistPct[carIdx];
+      const currentLap = carIdxLap[carIdx];
+      const lastLapTime = carIdxLastLapTime[carIdx];
+
+      // Skip invalid positions
+      if (position < 0 || currentLap < 0) continue;
+
+      // Initialize car history if needed
+      get().initializeCarHistory(carIdx, currentLap, sessionTime);
+
+      // Detect lap completion
+      const previousLap = lastLapNumbers.get(carIdx) ?? currentLap;
+      if (currentLap > previousLap && lastLapTime > 0) {
+        // Lap completed!
+        get().completeLap(carIdx, lastLapTime, sessionTime);
+      }
+
+      // Update last lap number
+      updatedLapNumbers.set(carIdx, currentLap);
+
+      // Add position sample for current lap
+      get().addPositionSample(carIdx, position, sessionTime, currentLap);
+    }
+
+    return updatedLapNumbers;
   },
 
   getCarHistory: (carIdx: number) => {
