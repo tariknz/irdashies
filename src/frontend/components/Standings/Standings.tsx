@@ -81,7 +81,7 @@ export const Standings = () => {
                   isMultiClass={isMultiClass}
                   flairId={settings?.countryFlags?.enabled ?? true ? result.driver?.flairId : undefined}
                   tireCompound={settings?.compound?.enabled ?? true ? result.tireCompound : undefined}
-                  carId={settings?.carManufacturer?.enabled ?? true ? result.carId : undefined}
+                  carId={result.carId}
                   badge={
                     settings?.badge?.enabled ? (
                       <DriverRatingBadge
