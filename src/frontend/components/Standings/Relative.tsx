@@ -125,7 +125,7 @@ export const Relative = () => {
           fastestTime={settings?.fastestTime?.enabled ? result.fastestTime : undefined}
           lastTimeState={settings?.lastTime?.enabled ? result.lastTimeState : undefined}
           tireCompound={settings?.compound?.enabled ? result.tireCompound : undefined}
-          carId={settings?.carManufacturer?.enabled ?? true ? result.carId : undefined}
+          carId={result.carId}
           isMultiClass={isMultiClass}
           badge={
             settings?.badge?.enabled ? (
