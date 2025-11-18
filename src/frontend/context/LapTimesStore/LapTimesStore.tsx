@@ -9,7 +9,8 @@ export interface LapTimeBuffer {
 interface LapTimesState {
   lapTimeBuffer: LapTimeBuffer | null;
   lapTimes: number[];
-  updateLapTimes: (carIdxLastLapTime: number[]) => void;
+  sessionNum: number | null;
+  updateLapTimes: (carIdxLastLapTime: number[], sessionNum: number | null) => void;
   reset: () => void;
 }
 
@@ -58,8 +59,20 @@ function filterOutliers(lapTimes: number[]): number[] {
 export const useLapTimesStore = create<LapTimesState>((set, get) => ({
   lapTimeBuffer: null,
   lapTimes: [],
-  updateLapTimes: (carIdxLastLapTime) => {
-    const { lapTimeBuffer } = get();
+  sessionNum: null,
+  updateLapTimes: (carIdxLastLapTime, sessionNum) => {
+    const { lapTimeBuffer, sessionNum: prevSessionNum } = get();
+
+    // Auto-reset if session changed
+    if (prevSessionNum !== null && sessionNum !== null && sessionNum !== prevSessionNum) {
+      console.log(`[LapTimesStore] Session changed from ${prevSessionNum} to ${sessionNum}, resetting`);
+      set({
+        lapTimeBuffer: null,
+        lapTimes: [],
+        sessionNum,
+      });
+      return;
+    }
 
     if (!carIdxLastLapTime.length) {
       set({
@@ -115,6 +128,7 @@ export const useLapTimesStore = create<LapTimesState>((set, get) => ({
         version: historyChanged ? (lapTimeBuffer?.version ?? 0) + 1 : (lapTimeBuffer?.version ?? 0),
       },
       lapTimes: avgLapTimes,
+      sessionNum,
     });
   },
   reset: () => {
@@ -122,6 +136,7 @@ export const useLapTimesStore = create<LapTimesState>((set, get) => ({
     set({
       lapTimeBuffer: null,
       lapTimes: [],
+      sessionNum: null,
     });
   },
 }));

@@ -1,15 +1,10 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { renderHook } from '@testing-library/react';
 import { useCarIdxAverageLapTime } from './useCarIdxAverageLapTime';
-import { useTelemetryValues } from '../TelemetryStore/TelemetryStore';
 import { useLapTimesStore, useLapTimes } from '../LapTimesStore/LapTimesStore';
 import { useCarIdxClassEstLapTime } from '../SessionStore/SessionStore';
 
 // Mock the stores
-vi.mock('../TelemetryStore/TelemetryStore', () => ({
-  useTelemetryValues: vi.fn(),
-}));
-
 vi.mock('../LapTimesStore/LapTimesStore', () => ({
   useLapTimesStore: vi.fn(),
   useLapTimes: vi.fn(),
@@ -22,6 +17,7 @@ vi.mock('../SessionStore/SessionStore', () => ({
 const mockLapTimesState = {
   lapTimeBuffer: null,
   lapTimes: [],
+  sessionNum: null,
   updateLapTimes: vi.fn(),
   reset: vi.fn(),
 };
@@ -33,7 +29,6 @@ describe('useCarIdxAverageLapTime', () => {
   });
 
   it('should return empty array when no session data', () => {
-    vi.mocked(useTelemetryValues).mockReturnValue([]);
     vi.mocked(useLapTimesStore).mockImplementation((selector) => 
       selector(mockLapTimesState)
     );
@@ -50,7 +45,6 @@ describe('useCarIdxAverageLapTime', () => {
       1: 91.2,
     };
 
-    vi.mocked(useTelemetryValues).mockReturnValue([]);
     vi.mocked(useCarIdxClassEstLapTime).mockReturnValue(mockDrivers);
     vi.mocked(useLapTimesStore).mockImplementation((selector) => 
       selector(mockLapTimesState)
@@ -64,7 +58,6 @@ describe('useCarIdxAverageLapTime', () => {
   it('should use actual lap times when available', () => {
     const mockDrivers = {0: 90.5, 1: 91.2};
 
-    vi.mocked(useTelemetryValues).mockReturnValue([89.8, 90.1]);
     vi.mocked(useCarIdxClassEstLapTime).mockReturnValue(mockDrivers);
     vi.mocked(useLapTimesStore).mockImplementation((selector) => 
       selector(mockLapTimesState)
@@ -75,25 +68,20 @@ describe('useCarIdxAverageLapTime', () => {
     expect(result.current).toEqual([89.8, 90.1]);
   });
 
-  it('should update lap times when telemetry changes', () => {
-    const updateLapTimes = vi.fn();
-    const carIdxLastLapTime = [89.8, 90.1];
-
-    vi.mocked(useTelemetryValues).mockReturnValue(carIdxLastLapTime);
+  it('should read lap times from store', () => {
     vi.mocked(useCarIdxClassEstLapTime).mockReturnValue({});
     vi.mocked(useLapTimesStore).mockImplementation((selector) => 
-      selector({ ...mockLapTimesState, updateLapTimes })
+      selector(mockLapTimesState)
     );
     vi.mocked(useLapTimes).mockReturnValue([89.8, 90.1]);
 
-    renderHook(() => useCarIdxAverageLapTime());
-    expect(updateLapTimes).toHaveBeenCalledWith(carIdxLastLapTime);
+    const { result } = renderHook(() => useCarIdxAverageLapTime());
+    expect(result.current).toEqual([89.8, 90.1]);
   });
 
   it('should handle mixed known and unknown lap times', () => {
     const mockDrivers = {0: 90.5, 1: 91.2};
 
-    vi.mocked(useTelemetryValues).mockReturnValue([]);
     vi.mocked(useCarIdxClassEstLapTime).mockReturnValue(mockDrivers);
     vi.mocked(useLapTimesStore).mockImplementation((selector) => 
       selector(mockLapTimesState)
@@ -107,7 +95,6 @@ describe('useCarIdxAverageLapTime', () => {
   it('should handle missing car indices in session data', () => {
     const mockDrivers = {1: 91.2};
 
-    vi.mocked(useTelemetryValues).mockReturnValue([]);
     vi.mocked(useCarIdxClassEstLapTime).mockReturnValue(mockDrivers);
     vi.mocked(useLapTimesStore).mockImplementation((selector) => 
       selector(mockLapTimesState)
