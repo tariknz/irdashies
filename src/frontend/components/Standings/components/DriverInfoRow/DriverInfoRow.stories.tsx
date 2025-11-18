@@ -379,6 +379,7 @@ export const Relative = () => {
                   rating={result.driver?.rating}
                 />
               }
+              isMultiClass={false}
             />
           ))}
         </tbody>
