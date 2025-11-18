@@ -12,7 +12,7 @@ export const defaultDashboard: DashboardLayout = {
         "height": 774
       },
       "config": {
-        "iRatingChange": {
+        "iratingChange": {
           "enabled": true
         },
         "badge": {
@@ -36,11 +36,24 @@ export const defaultDashboard: DashboardLayout = {
         "carNumber": {
           "enabled": true
         },
+        "driverName": {
+          "enabled": true
+        },
+        "pitStatus": {
+          "enabled": true
+        },
+        "position": {
+          "enabled": true
+        },
         "compound": {
           "enabled": true
         },
         "carManufacturer": {
           "enabled": true
+        },
+        "lapTimeDeltas": {
+          "enabled": false,
+          "numLaps": 3
         },
         "driverStandings": {
           "buffer": 3,
@@ -96,22 +109,40 @@ export const defaultDashboard: DashboardLayout = {
         "background": {
           "opacity": 80
         },
-        "countryFlags": {
+        "position": {
           "enabled": true
         },
         "carNumber": {
           "enabled": true
         },
-        "lastTime": {
+        "countryFlags": {
+          "enabled": true
+        },
+        "driverName": {
+          "enabled": true
+        },
+        "pitStatus": {
+          "enabled": true
+        },
+        "carManufacturer": {
+          "enabled": true
+        },
+        "badge": {
+          "enabled": true
+        },
+        "iratingChange": {
           "enabled": false
+        },
+        "delta": {
+          "enabled": true
         },
         "fastestTime": {
           "enabled": false
         },
-        "compound": {
+        "lastTime": {
           "enabled": false
         },
-        "carManufacturer": {
+        "compound": {
           "enabled": false
         }
       }
@@ -155,6 +186,29 @@ export const defaultDashboard: DashboardLayout = {
       },
       "config": {
         "distanceThreshold": -0.3
+      }
+    },
+    {
+      "id": "fuel",
+      "enabled": false,
+      "layout": {
+        "x": 1720,
+        "y": 240,
+        "width": 300,
+        "height": 400
+      },
+      "config": {
+        "fuelUnits": "L",
+        "showConsumption": true,
+        "showLastLap": true,
+        "show3LapAvg": true,
+        "show10LapAvg": true,
+        "showPitWindow": true,
+        "showFuelSave": true,
+        "safetyMargin": 0.05,
+        "background": {
+          "opacity": 85
+        }
       }
     }
   ],
