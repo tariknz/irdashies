@@ -49,10 +49,11 @@ Examples:
 Each component page shows:
 
 1. **Connection Status** - Current WebSocket connection state (✅ Connected / ❌ Disconnected)
-2. **Component Config** - Configuration object passed to the component
-3. **Telemetry Data** - Live telemetry stream with real-time updates
-4. **Session Data** - Session information (track, cars, drivers, etc.)
-5. **Running State** - Indicator showing if iRacing is currently running
+2. **Demo Mode Indicator** - A yellow badge (🎭 DEMO MODE) appears in the top-right corner when the Electron app is using demo/mock data
+3. **Component Config** - Configuration object passed to the component
+4. **Telemetry Data** - Live telemetry stream with real-time updates
+5. **Session Data** - Session information (track, cars, drivers, etc.)
+6. **Running State** - Indicator showing if iRacing is currently running
 
 All data updates in real-time as it streams from the Electron app via WebSocket.
 
@@ -72,17 +73,19 @@ The WebSocket server (via Socket.io) provides the following events:
 ### Server → Client
 
 - `connect` - Client connected to server
-- `initialState` - Initial state with telemetry, sessionData, isRunning
+- `initialState` - Initial state with telemetry, sessionData, isRunning, isDemoMode
   ```javascript
   {
     telemetry: { ... },      // Current telemetry data
     sessionData: { ... },    // Current session information  
-    isRunning: boolean       // Whether iRacing is running
+    isRunning: boolean,      // Whether iRacing is running
+    isDemoMode: boolean      // Whether demo/mock data is being used
   }
   ```
 - `telemetry` - Updated telemetry data
 - `sessionData` - Updated session data
 - `runningState` - Updated running state (boolean)
+- `demoModeChanged` - Updated demo mode state (boolean)
 - `connect_error` - Connection error occurred
 
 ### Example Client Code
@@ -98,10 +101,16 @@ socket.on('initialState', (state) => {
   console.log('Telemetry:', state.telemetry);
   console.log('Session:', state.sessionData);
   console.log('Running:', state.isRunning);
+  console.log('Demo Mode:', state.isDemoMode);
 });
 
 socket.on('telemetry', (data) => {
   console.log('Updated telemetry:', data);
+});
+
+socket.on('demoModeChanged', (isDemoMode) => {
+  console.log('Demo mode changed:', isDemoMode);
+  // Update UI to show demo mode indicator
 });
 
 socket.on('disconnect', () => {

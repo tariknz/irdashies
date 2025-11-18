@@ -6,6 +6,7 @@ import { OverlayManager } from '../../overlayManager';
 
 // Store callbacks for dashboard updates
 const dashboardUpdateCallbacks: Set<(dashboard: DashboardLayout) => void> = new Set<(dashboard: DashboardLayout) => void>();
+const demoModeCallbacks: Set<(isDemoMode: boolean) => void> = new Set<(isDemoMode: boolean) => void>();
 
 /**
  * Main dashboard bridge instance exposed to component server
@@ -31,6 +32,9 @@ export const dashboardBridge: DashboardBridge = {
   },
   getAppVersion: async () => {
     return '1.0.0';
+  },
+  onDemoModeChanged: (callback: (isDemoMode: boolean) => void) => {
+    demoModeCallbacks.add(callback);
   },
 };
 
@@ -72,5 +76,20 @@ export async function publishDashboardUpdates(overlayManager: OverlayManager) {
 
   ipcMain.handle('getAppVersion', () => {
     return overlayManager.getVersion();
+  });
+}
+
+/**
+ * Notify all registered callbacks that demo mode has changed
+ * Called from iracingSdk setup when demo mode is toggled
+ */
+export function notifyDemoModeChanged(isDemoMode: boolean) {
+  console.log('🎭 Notifying dashboard bridge callbacks of demo mode change:', isDemoMode);
+  demoModeCallbacks.forEach((callback) => {
+    try {
+      callback(isDemoMode);
+    } catch (err) {
+      console.error('Error in demo mode callback:', err);
+    }
   });
 }

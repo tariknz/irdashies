@@ -21,7 +21,7 @@ declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string;
  * Access components via: http://localhost:3000/component/<componentName>
  * Example: http://localhost:3000/component/standings
  */
-export async function startComponentServer(irsdkBridge?: IrSdkBridge, dashboardBridge?: DashboardBridge) {
+export async function startComponentServer(irsdkBridge?: IrSdkBridge, dashboardBridge?: DashboardBridge, initialDemoMode = false) {
   const app = express();
   const httpServer = http.createServer(app);
 
@@ -41,14 +41,26 @@ export async function startComponentServer(irsdkBridge?: IrSdkBridge, dashboardB
 
   // Create bridge proxy if bridge is provided
   if (irsdkBridge) {
+    console.log('✅ Component server: irsdkBridge provided, creating bridge proxy...');
     try {
       // Dynamically import bridge proxy to avoid module resolution issues
       const { createBridgeProxy } = await import('./bridgeProxy');
-      createBridgeProxy(httpServer, irsdkBridge, dashboardBridge);
+      console.log('📦 Component server: bridgeProxy module imported');
+      const { resubscribeToBridge } = createBridgeProxy(httpServer, irsdkBridge, dashboardBridge, initialDemoMode);
       console.log(`   WebSocket bridge available at ws://localhost:${COMPONENT_PORT}`);
+      
+      // Register callback to resubscribe when bridge changes (e.g., demo mode toggle)
+      const { onBridgeChanged } = await import('./iracingSdk/setup');
+      onBridgeChanged((newBridge) => {
+        console.log('🔄 Component server: Bridge changed, resubscribing...');
+        resubscribeToBridge(newBridge);
+      });
+      console.log('✅ Component server: Registered bridge change callback');
     } catch (err) {
       console.warn('Failed to initialize WebSocket bridge:', err);
     }
+  } else {
+    console.warn('⚠️ Component server: No irsdkBridge provided, WebSocket bridge will not be created');
   }
 
   // Health check endpoint

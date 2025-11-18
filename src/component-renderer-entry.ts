@@ -9,13 +9,35 @@ import './frontend/index.css';
 import './frontend/theme.css';
 import { renderComponent } from './app/bridge/componentRenderer';
 
-console.log('📦 Component renderer entry point loaded (NOT loading App.tsx)');
-
 // Parse URL parameters to determine which component to render
 const params = new URLSearchParams(window.location.search);
 const componentName = params.get('component');
 const wsUrl = params.get('wsUrl') || 'http://localhost:3000';
 const configJson = params.get('config');
+const isDebugMode = params.get('debug') === 'true';
+
+// Setup conditional logging
+const originalConsole = {
+  log: console.log,
+  info: console.info,
+  warn: console.warn,
+  error: console.error,
+};
+
+if (!isDebugMode) {
+  // Suppress all console logs except errors in non-debug mode
+  console.log = () => {};
+  console.info = () => {};
+  console.warn = () => {};
+  // Keep errors visible
+}
+
+// Make debug flag globally available
+(window as any).__DEBUG_MODE__ = isDebugMode;
+
+if (isDebugMode) {
+  console.log('📦 Component renderer entry point loaded (NOT loading App.tsx)');
+}
 
 let config = {};
 try {
@@ -24,10 +46,12 @@ try {
   console.error('Failed to parse config JSON:', e);
 }
 
-console.log('📋 URL Parameters:');
-console.log(`  Component: ${componentName}`);
-console.log(`  WebSocket URL: ${wsUrl}`);
-console.log(`  Config:`, config);
+if (isDebugMode) {
+  console.log('📋 URL Parameters:');
+  console.log(`  Component: ${componentName}`);
+  console.log(`  WebSocket URL: ${wsUrl}`);
+  console.log(`  Config:`, config);
+}
 
 // Check if Socket.io is loaded
 if (typeof window !== 'undefined' && !(window as any).io) {
@@ -48,7 +72,7 @@ if (!rootElement) {
 rootElement.innerHTML = `
   <div id="loading-indicator" style="
     padding: 40px;
-    background: #1a1a1a;
+    background: transparent;
     color: #fff;
     font-family: monospace;
     min-height: 100vh;
@@ -83,17 +107,21 @@ rootElement.innerHTML = `
 
 // Render the component
 if (componentName) {
-  console.log('🎯 Starting component render...');
+  if (isDebugMode) {
+    console.log('🎯 Starting component render...');
+  }
   renderComponent(rootElement, componentName, config, wsUrl)
     .then(() => {
-      console.log('✅ Component render completed successfully');
+      if (isDebugMode) {
+        console.log('✅ Component render completed successfully');
+      }
     })
     .catch((err) => {
       console.error('❌ Component render failed:', err);
       rootElement.innerHTML = `
         <div style="
           padding: 40px;
-          background: #1a1a1a;
+          background: transparent;
           color: #ff6b6b;
           font-family: monospace;
           min-height: 100vh;
@@ -113,7 +141,7 @@ if (componentName) {
   rootElement.innerHTML = `
     <div style="
       padding: 40px;
-      background: #1a1a1a;
+      background: transparent;
       color: #fff;
       font-family: monospace;
       min-height: 100vh;

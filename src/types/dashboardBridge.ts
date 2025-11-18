@@ -13,4 +13,5 @@ export interface DashboardBridge {
   toggleLockOverlays: () => Promise<boolean>;
   getAppVersion: () => Promise<string>;
   toggleDemoMode?: (value: boolean) => void;
+  onDemoModeChanged?: (callback: (value: boolean) => void) => void;
 }

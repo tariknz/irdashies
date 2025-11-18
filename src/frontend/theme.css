@@ -8,6 +8,7 @@ layer(base);
   --text-xs: 10px;
   --text-sm: 12px;
   --text-base: 14px;
+  --spacing: 0.25rem;
 
   @keyframes pulse-border {
     0% {

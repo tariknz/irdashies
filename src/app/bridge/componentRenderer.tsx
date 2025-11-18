@@ -11,6 +11,16 @@ import {
   TelemetryProvider,
 } from '@irdashies/context';
 
+// Check if debug mode is enabled
+const isDebugMode = () => typeof window !== 'undefined' && (window as any).__DEBUG_MODE__ === true;
+
+// Conditional console logging
+const debugLog = (...args: any[]) => {
+  if (isDebugMode()) {
+    console.log(...args);
+  }
+};
+
 /**
  * New Approach:
  * Instead of trying to use Electron providers in a browser, we:
@@ -34,7 +44,9 @@ class WebSocketBridge implements IrSdkBridge {
   // Dashboard Bridge methods
   private editModeCallbacks: Set<(value: boolean) => void>;
   private dashboardUpdateCallbacks: Set<(value: any) => void>;
+  private demoModeCallbacks: Set<(value: boolean) => void>;
   private lastDashboard: any = null;
+  private currentIsDemoMode: boolean = false;
 
   constructor() {
     this.telemetryCallbacks = new Set();
@@ -42,6 +54,7 @@ class WebSocketBridge implements IrSdkBridge {
     this.runningCallbacks = new Set();
     this.editModeCallbacks = new Set();
     this.dashboardUpdateCallbacks = new Set();
+    this.demoModeCallbacks = new Set();
     this.socket = null;
     this.isConnecting = false;
     this.isConnected = false;
@@ -80,21 +93,21 @@ class WebSocketBridge implements IrSdkBridge {
         });
 
         this.socket.on('connect', () => {
-          console.log('✅ Connected to bridge');
+          debugLog('✅ Connected to bridge');
           this.isConnecting = false;
           this.isConnected = true;
           resolve();
         });
 
         this.socket.on('initialState', (state: any) => {
-          console.log('📥 Received initialState from bridge:', state);
-          console.log('  Telemetry:', state.telemetry ? 'present' : 'missing');
-          console.log('  SessionData:', state.sessionData ? 'present' : 'missing');
-          console.log('  Dashboard:', state.dashboard ? 'present' : 'missing');
-          console.log('  IsRunning:', state.isRunning);
+          debugLog('📥 Received initialState from bridge:', state);
+          debugLog('  Telemetry:', state.telemetry ? 'present' : 'missing');
+          debugLog('  SessionData:', state.sessionData ? 'present' : 'missing');
+          debugLog('  Dashboard:', state.dashboard ? 'present' : 'missing');
+          debugLog('  IsRunning:', state.isRunning);
 
           if (state.telemetry) {
-            console.log('  📤 Triggering telemetry callbacks with', Object.keys(state.telemetry).length, 'keys');
+            debugLog('  📤 Triggering telemetry callbacks with', Object.keys(state.telemetry).length, 'keys');
             this.telemetryCallbacks.forEach((cb) => {
               try {
                 cb(state.telemetry);
@@ -104,7 +117,7 @@ class WebSocketBridge implements IrSdkBridge {
             });
           }
           if (state.sessionData) {
-            console.log('  📤 Triggering session callbacks with', Object.keys(state.sessionData).length, 'keys');
+            debugLog('  📤 Triggering session callbacks with', Object.keys(state.sessionData).length, 'keys');
             this.sessionCallbacks.forEach((cb) => {
               try {
                 cb(state.sessionData);
@@ -114,7 +127,7 @@ class WebSocketBridge implements IrSdkBridge {
             });
           }
           if (state.dashboard) {
-            console.log('  📤 Triggering dashboard callbacks...');
+            debugLog('  📤 Triggering dashboard callbacks...');
             this.lastDashboard = state.dashboard;
             this.dashboardUpdateCallbacks.forEach((cb) => {
               try {
@@ -125,12 +138,23 @@ class WebSocketBridge implements IrSdkBridge {
             });
           }
           if (state.isRunning !== undefined) {
-            console.log('  📤 Triggering running state callbacks...');
+            debugLog('  📤 Triggering running state callbacks...');
             this.runningCallbacks.forEach((cb) => {
               try {
                 cb(state.isRunning);
               } catch (e) {
                 console.error('Error in running state callback:', e);
+              }
+            });
+          }
+          if (state.isDemoMode !== undefined) {
+            debugLog('  📤 Triggering demo mode callbacks...');
+            this.currentIsDemoMode = state.isDemoMode;
+            this.demoModeCallbacks.forEach((cb) => {
+              try {
+                cb(state.isDemoMode);
+              } catch (e) {
+                console.error('Error in demo mode callback:', e);
               }
             });
           }
@@ -167,13 +191,25 @@ class WebSocketBridge implements IrSdkBridge {
         });
 
         this.socket.on('dashboardUpdated', (dashboard: any) => {
-          console.log('📊 Received dashboardUpdated event');
+          debugLog('📊 Received dashboardUpdated event');
           this.lastDashboard = dashboard;
           this.dashboardUpdateCallbacks.forEach((cb) => {
             try {
               cb(dashboard);
             } catch (e) {
               console.error('Error in dashboard update callback:', e);
+            }
+          });
+        });
+
+        this.socket.on('demoModeChanged', (isDemoMode: boolean) => {
+          debugLog('🎭 Received demoModeChanged event:', isDemoMode);
+          this.currentIsDemoMode = isDemoMode;
+          this.demoModeCallbacks.forEach((cb) => {
+            try {
+              cb(isDemoMode);
+            } catch (e) {
+              console.error('Error in demo mode callback:', e);
             }
           });
         });
@@ -313,6 +349,19 @@ class WebSocketBridge implements IrSdkBridge {
       this.socket.emit('toggleDemoMode', value);
     }
   }
+
+  onDemoModeChanged(callback: (value: boolean) => void): void {
+    this.demoModeCallbacks.add(callback);
+    // Send current demo mode state to new callbacks immediately
+    if (this.currentIsDemoMode !== undefined) {
+      console.log('🎭 Sending cached demo mode to new callback:', this.currentIsDemoMode);
+      try {
+        callback(this.currentIsDemoMode);
+      } catch (e) {
+        console.error('Error in demo mode callback:', e);
+      }
+    }
+  }
 }
 
 /**
@@ -380,40 +429,40 @@ export async function renderComponent(
   wsUrl: string
 ): Promise<void> {
   try {
-    console.log('🚀 renderComponent called with:', { componentName, wsUrl });
+    debugLog('🚀 renderComponent called with:', { componentName, wsUrl });
 
     // Step 1: Initialize mock stores first
-    console.log('📝 Step 1: Initialize mock stores');
+    debugLog('📝 Step 1: Initialize mock stores');
     await initializeMockStores();
 
     // Step 2: Import stores (we'll need them to set up listeners)
-    console.log('📝 Step 2: Import Zustand stores');
-    console.log('  ✅ Stores imported');
+    debugLog('📝 Step 2: Import Zustand stores');
+    debugLog('  ✅ Stores imported');
 
     // Step 3: Create the bridge but DON'T connect yet
-    console.log('📝 Step 3: Create WebSocket bridge');
+    debugLog('📝 Step 3: Create WebSocket bridge');
     const bridge = new WebSocketBridge();
 
     // Step 4: Connect to the bridge
     // The providers will handle subscribing to bridge events
-    console.log('📝 Step 4: Connect to WebSocket bridge');
-    console.log(`  Connecting to ${wsUrl}...`);
+    debugLog('📝 Step 4: Connect to WebSocket bridge');
+    debugLog(`  Connecting to ${wsUrl}...`);
     await bridge.connect(wsUrl);
-    console.log('  ✅ Bridge connected');
+    debugLog('  ✅ Bridge connected');
 
     // Give the store listeners a moment to process the initialState
     await new Promise((resolve) => setTimeout(resolve, 100));
-    console.log('  ✅ Stores will be updated by providers');
+    debugLog('  ✅ Stores will be updated by providers');
 
     // Step 5: Create root
-    console.log('📝 Step 5: Create React root');
+    debugLog('📝 Step 5: Create React root');
     const root = createRoot(containerElement);
-    console.log('  ✅ Root created');
+    debugLog('  ✅ Root created');
 
     // Step 6: Get component from widget map
-    console.log('📝 Step 6: Get component from widget map');
+    debugLog('📝 Step 6: Get component from widget map');
     const normalizedName = componentName.toLowerCase();
-    console.log('  Looking for component:', normalizedName);
+    debugLog('  Looking for component:', normalizedName);
 
     const ComponentFn = WIDGET_MAP[normalizedName];
 
@@ -425,31 +474,36 @@ export async function renderComponent(
       );
     }
 
-    console.log(`  ✅ Found component: ${componentName}`);
+    debugLog(`  ✅ Found component: ${componentName}`);
 
     // Step 7: Render actual component wrapped with providers
-    console.log('📝 Step 7: Render actual component with providers');
-    console.log('  📋 Component config:', config);
+    debugLog('📝 Step 7: Render actual component with providers');
+    debugLog('  📋 Component config:', config);
 
     // Log current store state before rendering
     const { useTelemetryStore: TelemetryStore } = await import('../../frontend/context/TelemetryStore/TelemetryStore');
     const { useSessionStore: SessionStore } = await import('../../frontend/context/SessionStore/SessionStore');
     const currentTelemetry = TelemetryStore.getState().telemetry;
     const currentSession = SessionStore.getState().session;
-    console.log('  📊 Current store state:');
-    console.log('    Telemetry:', currentTelemetry ? 'present' : 'MISSING');
-    console.log('    Session:', currentSession ? 'present' : 'MISSING');
+    debugLog('  📊 Current store state:');
+    debugLog('    Telemetry:', currentTelemetry ? 'present' : 'MISSING');
+    debugLog('    Session:', currentSession ? 'present' : 'MISSING');
 
     // Component that applies theme CSS classes - must be inside DashboardProvider
     const ThemeWrapper = () => {
-      const { currentDashboard } = useDashboard();
+      const { currentDashboard, isDemoMode } = useDashboard();
       const settings = currentDashboard?.generalSettings;
 
+      // Debug effect to log when isDemoMode changes
       React.useEffect(() => {
-        console.log('🎨 ThemeWrapper effect running:', { settings, hasContainer: !!containerElement });
+        debugLog('🎭 ThemeWrapper: isDemoMode changed to:', isDemoMode);
+      }, [isDemoMode]);
+
+      React.useEffect(() => {
+        debugLog('🎨 ThemeWrapper effect running:', { settings, hasContainer: !!containerElement });
         
         if (!settings) {
-          console.log('  ⚠️ No settings yet');
+          debugLog('  ⚠️ No settings yet');
           return;
         }
 
@@ -461,6 +515,9 @@ export async function renderComponent(
           targetElement.classList.add('overlay-window');
         }
 
+        // Ensure transparent background for iframe/browser rendering
+        targetElement.style.background = 'transparent';
+
         // Remove all existing theme classes
         targetElement.classList.forEach(className => {
           if (className.startsWith('overlay-theme-')) {
@@ -471,18 +528,49 @@ export async function renderComponent(
         // Add new theme classes based on settings
         if (settings.fontSize) {
           targetElement.classList.add(`overlay-theme-${settings.fontSize}`);
-          console.log(`  ✅ Applied font size class: overlay-theme-${settings.fontSize}`);
+          debugLog(`  ✅ Applied font size class: overlay-theme-${settings.fontSize}`);
         }
 
         if (settings.colorPalette) {
           targetElement.classList.add(`overlay-theme-color-${settings.colorPalette}`);
-          console.log(`  ✅ Applied color class: overlay-theme-color-${settings.colorPalette}`);
+          debugLog(`  ✅ Applied color class: overlay-theme-color-${settings.colorPalette}`);
         }
 
-        console.log('  📊 Final classList:', Array.from(targetElement.classList));
+        debugLog('  📊 Final classList:', Array.from(targetElement.classList));
       }, [settings]);
 
-      return <ComponentFn {...config} />;
+      debugLog('🎭 ThemeWrapper render, isDemoMode:', isDemoMode);
+
+      return (
+        <>
+          {isDemoMode && (
+            <div 
+              data-demo-badge="true"
+              style={{
+                position: 'fixed',
+                top: '10px',
+                right: '10px',
+                background: 'rgba(251, 191, 36, 0.95)',
+                color: '#1a1a1a',
+                padding: '8px 16px',
+                borderRadius: '6px',
+                fontFamily: 'system-ui, -apple-system, sans-serif',
+                fontSize: '14px',
+                fontWeight: 'bold',
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)',
+                zIndex: 999999,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                pointerEvents: 'none',
+              }}>
+              <span style={{ fontSize: '18px' }}>🎭</span>
+              DEMO MODE
+            </div>
+          )}
+          <ComponentFn {...config} />
+        </>
+      );
     };
 
     const WrappedComponent = (
@@ -497,20 +585,22 @@ export async function renderComponent(
 
     root.render(WrappedComponent);
 
-    console.log(`✅ Successfully rendered component: ${componentName}`);
+    debugLog(`✅ Successfully rendered component: ${componentName}`);
     
     // Debug: Check if anything was actually rendered
-    setTimeout(() => {
-      const children = containerElement.children;
-      console.log(`🔍 Post-render check:`);
-      console.log(`  Container children count: ${children.length}`);
-      console.log(`  Container innerHTML length: ${containerElement.innerHTML.length}`);
-      if (children.length > 0) {
-        console.log(`  First child:`, children[0]);
-      } else {
-        console.warn(`  ⚠️ No children rendered! Component may be conditionally hidden.`);
-      }
-    }, 1000);
+    if (isDebugMode()) {
+      setTimeout(() => {
+        const children = containerElement.children;
+        debugLog(`🔍 Post-render check:`);
+        debugLog(`  Container children count: ${children.length}`);
+        debugLog(`  Container innerHTML length: ${containerElement.innerHTML.length}`);
+        if (children.length > 0) {
+          debugLog(`  First child:`, children[0]);
+        } else {
+          console.warn(`  ⚠️ No children rendered! Component may be conditionally hidden.`);
+        }
+      }, 1000);
+    }
   } catch (error) {
     console.error(`❌ Failed to render component: ${componentName}`, error);
     const errorMessage = error instanceof Error ? error.message : String(error);

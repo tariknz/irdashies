@@ -13,8 +13,14 @@ export let currentDashboard: DashboardLayout | null = null;
 export function createBridgeProxy(
   httpServer: HTTPServer,
   irsdkBridge: IrSdkBridge,
-  dashboardBridge?: DashboardBridge
+  dashboardBridge?: DashboardBridge,
+  initialDemoMode = false
 ) {
+  console.log('🚀 createBridgeProxy called!');
+  console.log('  Has irsdkBridge?', !!irsdkBridge);
+  console.log('  Has dashboardBridge?', !!dashboardBridge);
+  console.log('  Initial demo mode:', initialDemoMode);
+  
   const io = new SocketIOServer(httpServer, {
     cors: {
       origin: '*',
@@ -26,22 +32,54 @@ export function createBridgeProxy(
   let currentTelemetry: Telemetry | null = null;
   let currentSession: Session | null = null;
   let isRunning = false;
+  let isDemoMode = initialDemoMode;
 
-  // Subscribe to bridge events
-  irsdkBridge.onTelemetry((telemetry: Telemetry) => {
-    currentTelemetry = telemetry;
-    io.emit('telemetry', telemetry);
-  });
+  console.log('🎭 Bridge proxy initialized with demo mode:', isDemoMode);
 
-  irsdkBridge.onSessionData((session: Session) => {
-    currentSession = session;
-    io.emit('sessionData', session);
-  });
+  console.log('🔍 Bridge proxy: Registering event listeners...');
+  console.log('🔍 Bridge has onTelemetry?', typeof irsdkBridge.onTelemetry);
+  console.log('🔍 Bridge has onSessionData?', typeof irsdkBridge.onSessionData);
+  console.log('🔍 Bridge has onRunningState?', typeof irsdkBridge.onRunningState);
 
-  irsdkBridge.onRunningState((running: boolean) => {
-    isRunning = running;
-    io.emit('runningState', running);
-  });
+  // Function to subscribe to bridge events
+  const subscribeToBridge = (bridge: IrSdkBridge) => {
+    console.log('🔌 Bridge proxy: Subscribing to bridge events...');
+    
+    bridge.onTelemetry((telemetry: Telemetry) => {
+      currentTelemetry = telemetry;
+      console.log('🔄 Bridge proxy: Received telemetry, broadcasting to', io.engine.clientsCount, 'clients');
+      io.emit('telemetry', telemetry);
+    });
+    console.log('✅ Bridge proxy: onTelemetry listener registered');
+
+    bridge.onSessionData((session: Session) => {
+      currentSession = session;
+      console.log('🔄 Bridge proxy: Received session data, broadcasting to', io.engine.clientsCount, 'clients');
+      io.emit('sessionData', session);
+    });
+    console.log('✅ Bridge proxy: onSessionData listener registered');
+
+    bridge.onRunningState((running: boolean) => {
+      isRunning = running;
+      console.log('🔄 Bridge proxy: Received running state:', running, ', broadcasting to', io.engine.clientsCount, 'clients');
+      io.emit('runningState', running);
+    });
+    console.log('✅ Bridge proxy: onRunningState listener registered');
+  };
+
+  // Subscribe to initial bridge
+  subscribeToBridge(irsdkBridge);
+
+  // Return a function to resubscribe when bridge changes
+  const resubscribeToBridge = (newBridge: IrSdkBridge) => {
+    console.log('🔄 Bridge proxy: Re-subscribing to new bridge...');
+    // Reset current state
+    currentTelemetry = null;
+    currentSession = null;
+    isRunning = false;
+    // Subscribe to new bridge
+    subscribeToBridge(newBridge);
+  };
 
   // Subscribe to dashboard updates if available
   if (dashboardBridge) {
@@ -50,6 +88,15 @@ export function createBridgeProxy(
       currentDashboard = dashboard;
       io.emit('dashboardUpdated', dashboard);
     });
+
+    // Subscribe to demo mode changes
+    if (dashboardBridge.onDemoModeChanged) {
+      dashboardBridge.onDemoModeChanged((demoMode: boolean) => {
+        console.log('🎭 Demo mode changed in bridgeProxy:', demoMode);
+        isDemoMode = demoMode;
+        io.emit('demoModeChanged', demoMode);
+      });
+    }
   } else {
     console.log('⚠️ No dashboardBridge provided to bridgeProxy');
   }
@@ -64,6 +111,7 @@ export function createBridgeProxy(
       sessionData: currentSession,
       isRunning,
       dashboard: currentDashboard,
+      isDemoMode,
     });
 
     // Handle getDashboard request from browser
@@ -76,7 +124,7 @@ export function createBridgeProxy(
     });
   });
 
-  return io;
+  return { io, resubscribeToBridge };
 }
 
 /**

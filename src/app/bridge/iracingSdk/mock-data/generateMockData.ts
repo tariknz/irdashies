@@ -24,9 +24,9 @@ export function generateMockData(sessionData?: {
   telemetry: Telemetry | Telemetry[];
   sessionInfo: Session | Session[];
 }): IrSdkBridge {
-  let telemetryInterval: NodeJS.Timeout;
-  let sessionInfoInterval: NodeJS.Timeout;
-  let runningStateInterval: NodeJS.Timeout;
+  let telemetryInterval: NodeJS.Timeout | null = null;
+  let sessionInfoInterval: NodeJS.Timeout | null = null;
+  let runningStateInterval: NodeJS.Timeout | null = null;
 
   const telemetry = sessionData?.telemetry;
   const sessionInfo = sessionData?.sessionInfo;
@@ -36,43 +36,60 @@ export function generateMockData(sessionData?: {
 
   let prevTelemetry = mockTelemetry as unknown as Telemetry;
 
+  // Use Sets to support multiple subscribers
+  const telemetryCallbacks = new Set<(value: Telemetry) => void>();
+  const sessionCallbacks = new Set<(value: Session) => void>();
+  const runningStateCallbacks = new Set<(value: boolean) => void>();
+
   return {
     onTelemetry: (callback: (value: Telemetry) => void) => {
-      telemetryInterval = setInterval(() => {
-        let t = Array.isArray(telemetry)
-          ? telemetry[telemetryIdx % telemetry.length]
-          : telemetry;
-        if (!t) {
-          const throttleValue = prevTelemetry.Throttle.value[0];
-          const brakeValue = prevTelemetry.Brake.value[0];
-          t = {
-            ...prevTelemetry,
-            Brake: {
-              ...prevTelemetry.Brake,
-              value: [jitterValue(brakeValue)],
-            },
-            Throttle: {
-              ...prevTelemetry.Throttle,
-              value: [jitterValue(throttleValue)],
-            },
-            Gear: {
-              ...prevTelemetry.Gear,
-              value: [3],
-            },
-            Speed: {
-              ...prevTelemetry.Speed,
-              value: [44],
-            },
-          };
-          prevTelemetry = t;
-        }
+      console.log('📝 Mock bridge: Registering telemetry callback, total subscribers:', telemetryCallbacks.size + 1);
+      telemetryCallbacks.add(callback);
+      
+      // Start interval only once
+      if (!telemetryInterval) {
+        console.log('🚀 Mock bridge: Starting telemetry interval (60fps)');
+        telemetryInterval = setInterval(() => {
+          let t = Array.isArray(telemetry)
+            ? telemetry[telemetryIdx % telemetry.length]
+            : telemetry;
+          if (!t) {
+            const throttleValue = prevTelemetry.Throttle.value[0];
+            const brakeValue = prevTelemetry.Brake.value[0];
+            t = {
+              ...prevTelemetry,
+              Brake: {
+                ...prevTelemetry.Brake,
+                value: [jitterValue(brakeValue)],
+              },
+              Throttle: {
+                ...prevTelemetry.Throttle,
+                value: [jitterValue(throttleValue)],
+              },
+              Gear: {
+                ...prevTelemetry.Gear,
+                value: [3],
+              },
+              Speed: {
+                ...prevTelemetry.Speed,
+                value: [44],
+              },
+            };
+            prevTelemetry = t;
+          }
 
-        telemetryIdx = telemetryIdx + 1;
-        callback({ ...t });
-      }, 1000 / 60);
+          telemetryIdx = telemetryIdx + 1;
+          const data = { ...t };
+          
+          // Call all registered callbacks
+          telemetryCallbacks.forEach(cb => cb(data));
+        }, 1000 / 60);
+      }
     },
     onSessionData: (callback: (value: Session) => void) => {
-      // callback({ ...sessionInfo });
+      console.log('📝 Mock bridge: Registering session callback, total subscribers:', sessionCallbacks.size + 1);
+      sessionCallbacks.add(callback);
+      
       const updateSessionData = () => {
         let s = Array.isArray(sessionInfo)
           ? sessionInfo[sessionIdx % sessionInfo.length]
@@ -81,21 +98,42 @@ export function generateMockData(sessionData?: {
         if (!s) s = mockSessionInfo as unknown as Session;
         sessionIdx = sessionIdx + 1;
 
-        callback(s);
+        // Call all registered callbacks
+        sessionCallbacks.forEach(cb => cb(s));
       };
+      
+      // Send initial data immediately
       updateSessionData();
-      sessionInfoInterval = setInterval(updateSessionData, 2000);
+      
+      // Start interval only once
+      if (!sessionInfoInterval) {
+        console.log('🚀 Mock bridge: Starting session interval (2s)');
+        sessionInfoInterval = setInterval(updateSessionData, 2000);
+      }
     },
     onRunningState: (callback: (value: boolean) => void) => {
-      callback(true); // Set initial state
-      runningStateInterval = setInterval(() => {
-        callback(true);
-      }, 1000);
+      console.log('📝 Mock bridge: Registering running state callback, total subscribers:', runningStateCallbacks.size + 1);
+      runningStateCallbacks.add(callback);
+      
+      // Send initial state immediately
+      callback(true);
+      
+      // Start interval only once
+      if (!runningStateInterval) {
+        console.log('🚀 Mock bridge: Starting running state interval (1s)');
+        runningStateInterval = setInterval(() => {
+          runningStateCallbacks.forEach(cb => cb(true));
+        }, 1000);
+      }
     },
     stop: () => {
-      clearInterval(telemetryInterval);
-      clearInterval(sessionInfoInterval);
-      clearInterval(runningStateInterval);
+      console.log('🛑 Mock bridge: Stopping all intervals');
+      if (telemetryInterval) clearInterval(telemetryInterval);
+      if (sessionInfoInterval) clearInterval(sessionInfoInterval);
+      if (runningStateInterval) clearInterval(runningStateInterval);
+      telemetryCallbacks.clear();
+      sessionCallbacks.clear();
+      runningStateCallbacks.clear();
     },
   };
 }

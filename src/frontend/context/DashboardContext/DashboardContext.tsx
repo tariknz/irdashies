@@ -43,6 +43,14 @@ export const DashboardProvider: React.FC<{
     });
     bridge.onEditModeToggled((editMode) => setEditMode(editMode));
     bridge.getAppVersion?.().then((version) => setVersion(version));
+    
+    // Listen for demo mode changes from main process
+    if (bridge.onDemoModeChanged) {
+      bridge.onDemoModeChanged((demoMode) => {
+        console.log('🎭 DashboardProvider received demo mode change:', demoMode);
+        setIsDemoMode(demoMode);
+      });
+    }
   }, [bridge]);
 
   const saveDashboard = (dashboard: DashboardLayout, options?: SaveDashboardOptions) => {

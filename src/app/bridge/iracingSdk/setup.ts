@@ -5,9 +5,18 @@ import type { IrSdkBridge } from '@irdashies/types';
 
 let isDemoMode = false;
 let currentBridge: IrSdkBridge | undefined;
+let onBridgeChangedCallback: ((bridge: IrSdkBridge) => void) | undefined;
 
 export function getCurrentBridge(): IrSdkBridge | undefined {
   return currentBridge;
+}
+
+export function getIsDemoMode(): boolean {
+  return isDemoMode;
+}
+
+export function onBridgeChanged(callback: (bridge: IrSdkBridge) => void) {
+  onBridgeChangedCallback = callback;
 }
 
 export async function iRacingSDKSetup(
@@ -16,6 +25,7 @@ export async function iRacingSDKSetup(
 ) {
   // Listen for demo mode toggle events
   ipcMain.on('toggleDemoMode', async (_, value: boolean) => {
+    console.log('🎭 toggleDemoMode received in iracingSdk setup:', value);
     isDemoMode = value;
     // Stop the current bridge if it exists
     if (currentBridge) {
@@ -24,6 +34,13 @@ export async function iRacingSDKSetup(
     }
     // Reload the bridge with new mode
     await setupBridge(telemetrySink, overlayManager);
+    
+    // Notify overlay manager so it can broadcast to overlay windows
+    overlayManager.publishMessage('demoModeChanged', value);
+    
+    // Also notify dashboard bridge callbacks (for WebSocket clients)
+    const { notifyDemoModeChanged } = await import('../dashboard/dashboardBridge');
+    notifyDemoModeChanged(value);
   });
 
   await setupBridge(telemetrySink, overlayManager);
@@ -47,6 +64,12 @@ async function setupBridge(
 
     const { publishIRacingSDKEvents } = module;
     currentBridge = await publishIRacingSDKEvents(telemetrySink, overlayManager);
+    
+    // Notify callback if registered (for component server)
+    if (onBridgeChangedCallback && currentBridge) {
+      console.log('🔄 Notifying bridge changed callback...');
+      onBridgeChangedCallback(currentBridge);
+    }
   } catch (err) {
     console.error(`Failed to load bridge`);
     throw err;

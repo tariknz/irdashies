@@ -58,5 +58,10 @@ export function exposeBridge() {
     toggleDemoMode: (value: boolean) => {
       ipcRenderer.send('toggleDemoMode', value);
     },
+    onDemoModeChanged: (callback: (value: boolean) => void) => {
+      ipcRenderer.on('demoModeChanged', (_, value) => {
+        callback(value);
+      });
+    },
   } as DashboardBridge);
 }
