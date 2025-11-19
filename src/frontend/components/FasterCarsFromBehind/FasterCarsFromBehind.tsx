@@ -18,7 +18,7 @@ export const FasterCarsFromBehind = () => {
   });
 
   if (sessionType === 'Lone Qualify') {
-    return null;
+    return <></>;
   }
 
   return <FasterCarsFromBehindDisplay {...carBehind} />;
