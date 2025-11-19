@@ -7,7 +7,7 @@ interface PitStatusCellProps {
   prevCarTrackSurface?: number;
   lastPitLap?: number;
   lastLap?: number;
-  currentSessionType: string;
+  currentSessionType?: string;
 }
 
 export const PitStatusCell = memo(({ hidden, onPitRoad, carTrackSurface, prevCarTrackSurface, lastPitLap, lastLap, currentSessionType }: PitStatusCellProps) => (

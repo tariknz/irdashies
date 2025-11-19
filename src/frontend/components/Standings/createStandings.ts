@@ -41,7 +41,7 @@ export interface Standings {
   lastLap?: number;
   prevCarTrackSurface?: number;
   carTrackSurface?: number;
-  currentSessionType: string | undefined;
+  currentSessionType?: string;
 }
 
 const calculateDelta = (
