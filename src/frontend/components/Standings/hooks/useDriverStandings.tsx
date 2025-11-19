@@ -123,6 +123,10 @@ export const useDriverStandings = (settings?: StandingsWidgetSettings['config'])
     lapTimeDeltasEnabled,
     numLapDeltas,
     lapTimeHistoryForCalc,
+    lastLap,
+    lastPitLap,
+    onTrack,
+    prevCarTrackSurface
   ]);
 
   return standingsWithGain;

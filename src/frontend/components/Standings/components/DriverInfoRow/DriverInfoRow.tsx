@@ -2,7 +2,7 @@ import { memo, useMemo } from 'react';
 import { getTailwindStyle } from '@irdashies/utils/colors';
 import { formatTime } from '@irdashies/utils/time';
 import type { LastTimeState } from '../../createStandings';
-import { useDashboard, useSessionType } from '@irdashies/context';
+import { useDashboard } from '@irdashies/context';
 import type {
   RelativeWidgetSettings,
   StandingsWidgetSettings,
@@ -327,6 +327,11 @@ export const DriverInfoRow = memo(
       tireCompound,
       lapTimeDeltas,
       emptyLapDeltaPlaceholders,
+      carTrackSurface,
+      currentSessionType,
+      lastLap,
+      lastPitLap,
+      prevCarTrackSurface
     ]);
 
     return (

@@ -1,6 +1,5 @@
 import type { SessionResults, Driver } from '@irdashies/types';
 import { calculateIRatingGain, RaceResult, CalculationResult } from '@irdashies/utils/iratingGain';
-import { unstable_ClientInstrumentation } from 'react-router-dom';
 
 export type LastTimeState = 'session-fastest' | 'personal-best' | undefined;
 

@@ -22,7 +22,6 @@ export const usePitLapStore = create<PitLapState>((set, get) => ({
     const { sessionUniqId, pitLaps, sessionTime, prevCarTrackSurface, actualCarTrackSurface} = get();
     const carIdxOnPitRoad = telemetry?.CarIdxOnPitRoad?.value ?? [];
     const carIdxLap = telemetry?.CarIdxLap?.value ?? [];
-    const carIdxLapCompleted = telemetry?.CarIdxLapCompleted?.value ?? [];
     const currentSessionUniqId = telemetry?.SessionUniqueID?.value?.[0] ?? 0;
     const currentSessionTime = telemetry?.SessionTime?.value?.[0] ?? 0;
     const carIdxTrackSurface = telemetry?.CarIdxTrackSurface?.value ?? [];
