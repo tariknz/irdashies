@@ -1,0 +1,10 @@
+{
+  "scenario": "normal",
+  "totalSnapshots": 600,
+  "totalLaps": 30,
+  "trackLength": 2.5,
+  "fuelTankCapacity": 60,
+  "avgFuelPerLap": 2.1,
+  "avgLapTime": 90,
+  "generated": "2025-11-19T11:01:12.544Z"
+}

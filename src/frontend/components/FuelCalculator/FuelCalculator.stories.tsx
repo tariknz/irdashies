@@ -108,3 +108,31 @@ export const MinimalView: Story = {
     show10LapAvg: true,
   },
 };
+
+export const NormalRaceSimulation: Story = {
+  decorators: [TelemetryDecorator('/test-data/mock-fuel/normal')],
+  args: {
+    fuelUnits: 'L',
+    layout: 'vertical',
+    showConsumption: true,
+    showMin: true,
+    showLastLap: true,
+    show3LapAvg: true,
+    show10LapAvg: true,
+    showMax: true,
+    showPitWindow: true,
+    showFuelSave: true,
+    showFuelRequired: true,
+    safetyMargin: 0.05,
+    background: { opacity: 85 },
+  },
+};
+
+export const HorizontalLayout: Story = {
+  decorators: [TelemetryDecorator('/test-data/mock-fuel/normal')],
+  args: {
+    layout: 'horizontal',
+    showConsumption: true,
+    showFuelRequired: true,
+  },
+};
