@@ -7,6 +7,7 @@ import { RatingChange } from './components/RatingChange/RatingChange';
 import { SessionBar } from './components/SessionBar/SessionBar';
 import { SessionFooter } from './components/SessionFooter/SessionFooter';
 import { usePitLabStoreUpdater } from '../../context/PitLapStore/PitLapStoreUpdater';
+import { useRelativeGapStoreUpdater } from '@irdashies/context';
 
 export const Relative = () => {
   const settings = useRelativeSettings();
@@ -16,6 +17,9 @@ export const Relative = () => {
   const isMultiClass = standings.length > 0 && new Set(standings.map(s => s.carClass.id)).size > 1;
 
   usePitLabStoreUpdater();
+
+  // Update relative gap store with telemetry data
+  useRelativeGapStoreUpdater();
 
   // Always render 2 * buffer + 1 rows (buffer above + player + buffer below)
   const totalRows = 2 * buffer + 1;

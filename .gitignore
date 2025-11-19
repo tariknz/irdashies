@@ -104,3 +104,4 @@ src/**/tracks/tracks.json
 build/
 bin/
 docs/features/
+docs/reference/relatives.js
