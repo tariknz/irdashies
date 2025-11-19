@@ -1,5 +1,6 @@
 import type { SessionResults, Driver } from '@irdashies/types';
 import { calculateIRatingGain, RaceResult, CalculationResult } from '@irdashies/utils/iratingGain';
+import { unstable_ClientInstrumentation } from 'react-router-dom';
 
 export type LastTimeState = 'session-fastest' | 'personal-best' | undefined;
 
@@ -40,6 +41,7 @@ export interface Standings {
   lastLap?: number;
   prevCarTrackSurface?: number;
   carTrackSurface?: number;
+  currentSessionType: string | undefined;
 }
 
 const calculateDelta = (
@@ -129,6 +131,7 @@ export const createDriverStandings = (
     carIdxTrackSurfaceValue?: number[];
     radioTransmitCarIdx?: number[];
     carIdxTireCompoundValue?: number[];
+    isOnTrack?: boolean;
   },
   currentSession: {
     resultsPositions?: SessionResults[];
@@ -217,7 +220,8 @@ export const createDriverStandings = (
         lastLap: lastLap[result.CarIdx] ?? undefined,
         onTrack: onTrack,
         prevCarTrackSurface: prevCarTrackSurface[result.CarIdx] ?? undefined,
-        carTrackSurface: telemetry?.carIdxTrackSurfaceValue?.[result.CarIdx] ?? undefined
+        carTrackSurface: telemetry?.carIdxTrackSurfaceValue?.[result.CarIdx] ?? undefined,
+        currentSessionType: currentSession.sessionType
       };
     })
     .filter((s) => !!s);

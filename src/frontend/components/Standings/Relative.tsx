@@ -50,6 +50,7 @@ export const Relative = () => {
           flairId={settings?.countryFlags?.enabled ?? true ? 0 : undefined}
           carId={settings?.carManufacturer?.enabled ?? true ? 0 : undefined}
           badge={settings?.badge?.enabled ? <></> : undefined}
+          currentSessionType=""
           iratingChange={
             settings?.iratingChange?.enabled ? (
               <RatingChange value={undefined} />
@@ -94,6 +95,7 @@ export const Relative = () => {
             flairId={settings?.countryFlags?.enabled ?? true ? 0 : undefined}
             carId={settings?.carManufacturer?.enabled ?? true ? 0 : undefined}
             badge={settings?.badge?.enabled ? <></> : undefined}
+            currentSessionType=""
             iratingChange={
               settings?.iratingChange?.enabled ? (
                 <RatingChange value={undefined} />
@@ -108,6 +110,7 @@ export const Relative = () => {
             onTrack={true}
             radioActive={false}
             tireCompound={settings?.compound?.enabled ? 0 : undefined}
+            lastLap={undefined}
           />
         );
       }
@@ -138,6 +141,7 @@ export const Relative = () => {
           carTrackSurface={result.carTrackSurface}
           prevCarTrackSurface={result.prevCarTrackSurface}
           isMultiClass={isMultiClass}
+          currentSessionType={result.currentSessionType}
           badge={
             settings?.badge?.enabled ? (
               <DriverRatingBadge

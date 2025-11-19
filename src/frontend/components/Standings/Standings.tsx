@@ -101,6 +101,7 @@ export const Standings = () => {
                   lapTimeDeltas={settings?.lapTimeDeltas?.enabled ? result.lapTimeDeltas : undefined}
                   numLapDeltasToShow={settings?.lapTimeDeltas?.enabled ? settings.lapTimeDeltas.numLaps : undefined}
                   displayOrder={settings?.displayOrder}
+                  currentSessionType={result.currentSessionType}
                   config={settings}
                 />
               ))}

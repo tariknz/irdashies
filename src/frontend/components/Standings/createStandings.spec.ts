@@ -145,7 +145,7 @@ describe('createStandings', () => {
     const standings = createStandings(
       mockSessionData,
       mockTelemetryWithConnected,
-      mockCurrentSession
+      mockCurrentSession,
     );
 
     expect(standings[0][1][0].onTrack).toBe(true);

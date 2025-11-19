@@ -43,7 +43,7 @@ export const useDriverPositions = () => {
       classPosition: carIdxClassPosition?.value?.[carIdx],
       delta: carIdxF2Time?.value?.[carIdx], // only to leader currently, need to handle non-race sessions
       bestLap: carIdxBestLap?.value?.[carIdx],
-      lastLap: lastLap[carIdx] ?? undefined,
+      lastLap: lastLap[carIdx] ?? -1,
       lapNum: carIdxLapNum?.value?.[carIdx],
       lastPitLap: lastPitLap[carIdx] ?? undefined,
       prevCarTrackSurface: prevCarTrackSurface[carIdx] ?? undefined,
@@ -189,7 +189,8 @@ export const useDriverStandings = () => {
         lastPitLap: driverPos.lastPitLap,
         lastLap: driverPos.lastLap,
         prevCarTrackSurface: driverPos.prevCarTrackSurface,
-        carTrackSurface: driverPos.carTrackSurface
+        carTrackSurface: driverPos.carTrackSurface,
+        currentSessionType: sessionType
       };
     });
 

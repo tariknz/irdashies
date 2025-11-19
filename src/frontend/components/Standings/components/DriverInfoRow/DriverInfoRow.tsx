@@ -2,7 +2,7 @@ import { memo, useMemo } from 'react';
 import { getTailwindStyle } from '@irdashies/utils/colors';
 import { formatTime } from '@irdashies/utils/time';
 import type { LastTimeState } from '../../createStandings';
-import { useDashboard } from '@irdashies/context';
+import { useDashboard, useSessionType } from '@irdashies/context';
 import type {
   RelativeWidgetSettings,
   StandingsWidgetSettings,
@@ -53,6 +53,7 @@ interface DriverRowInfoProps {
   lastLap?: number;
   prevCarTrackSurface?: number;
   carTrackSurface?: number;
+  currentSessionType?: string;
 }
 
 export const DriverInfoRow = memo(
@@ -87,7 +88,8 @@ export const DriverInfoRow = memo(
     lastPitLap,
     lastLap,
     prevCarTrackSurface,
-    carTrackSurface
+    carTrackSurface,
+    currentSessionType
    }: DriverRowInfoProps) => {
     const lastTimeString = useMemo(() => formatTime(lastTime), [lastTime]);
     const fastestTimeString = useMemo(
@@ -181,6 +183,7 @@ export const DriverInfoRow = memo(
               prevCarTrackSurface={prevCarTrackSurface}
               lastPitLap={lastPitLap}
               lastLap={lastLap}
+              currentSessionType={currentSessionType}
             />
           ),
         },
