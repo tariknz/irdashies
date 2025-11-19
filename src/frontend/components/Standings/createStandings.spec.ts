@@ -137,6 +137,9 @@ describe('createStandings', () => {
       CarIdxTrackSurface: {
         value: [1],
       },
+      IsOnTrack: {
+        value: [true]
+      }
     } as Telemetry;
 
     const standings = createStandings(
