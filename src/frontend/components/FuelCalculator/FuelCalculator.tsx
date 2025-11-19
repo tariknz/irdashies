@@ -13,6 +13,7 @@ type FuelCalculatorProps = Partial<FuelCalculatorSettings>;
 
 export const FuelCalculator = ({
   fuelUnits = 'L',
+  layout = 'vertical',
   showConsumption = true,
   showMin = true,
   showLastLap = true,
@@ -21,6 +22,7 @@ export const FuelCalculator = ({
   showMax = true,
   showPitWindow = true,
   showFuelSave = true,
+  showFuelRequired = false,
   safetyMargin = 0.05,
   background = { opacity: 85 },
 }: FuelCalculatorProps) => {
@@ -83,9 +85,33 @@ export const FuelCalculator = ({
     return fuelData;
   }, [fuelData, currentFuelLevel]);
 
+  // Calculate fuel required for different consumption rates
+  const fuelRequired = useMemo(() => {
+    if (!fuelData || fuelData.lapsRemaining <= 0) return null;
+
+    return {
+      min: fuelData.minLapUsage * fuelData.lapsRemaining,
+      avg: (fuelData.avg10Laps || fuelData.avg3Laps) * fuelData.lapsRemaining,
+      max: fuelData.maxLapUsage * fuelData.lapsRemaining,
+    };
+  }, [fuelData]);
+
+  // Determine base classes based on layout
+  const containerClasses = layout === 'horizontal'
+    ? 'w-full max-w-[300px] max-h-[200px]'
+    : 'w-full';
+
+  const textSizeClasses = layout === 'horizontal'
+    ? 'text-xs'
+    : 'text-base';
+
+  const headerFontSize = layout === 'horizontal'
+    ? 'text-[1.5em]'
+    : 'text-[2.5em]';
+
   return (
     <div
-      className={`w-full bg-slate-800/[var(--bg-opacity)] rounded-sm p-3 text-white text-base border-2 transition-all duration-300 ${statusClasses}`}
+      className={`${containerClasses} bg-slate-800/[var(--bg-opacity)] rounded-sm p-3 text-white ${textSizeClasses} border-2 transition-all duration-300 ${statusClasses} overflow-hidden`}
       style={
         {
           '--bg-opacity': `${background.opacity}%`,
@@ -93,13 +119,13 @@ export const FuelCalculator = ({
       }
     >
       {/* Header: Current Fuel Level and Laps */}
-      <div className="flex flex-col items-center pb-3 mb-3 border-b border-slate-600/50 gap-2">
+      <div className={`flex flex-col items-center ${layout === 'horizontal' ? 'pb-1 mb-1' : 'pb-3 mb-3'} border-b border-slate-600/50 gap-2`}>
         <div className="flex justify-around w-full gap-4">
           {/* Fuel Level */}
           <div className="flex flex-col items-center flex-1">
             <div className="text-xs text-slate-400 uppercase tracking-wider mb-1">Fuel</div>
             <div className="flex items-baseline gap-1.5">
-              <span className="text-[2.5em] font-semibold text-green-400 [text-shadow:_0_0_10px_rgba(0,255,0,0.5)] leading-none">
+              <span className={`${headerFontSize} font-semibold text-green-400 [text-shadow:_0_0_10px_rgba(0,255,0,0.5)] leading-none`}>
                 {formatFuel(displayData.fuelLevel, fuelUnits, 1).split(' ')[0]}
               </span>
               <span className="text-xs text-slate-500">{fuelUnits}</span>
@@ -109,7 +135,7 @@ export const FuelCalculator = ({
           <div className="flex flex-col items-center flex-1">
             <div className="text-xs text-slate-400 uppercase tracking-wider mb-1">Laps</div>
             <div className="flex items-baseline gap-1.5">
-              <span className="text-[2.5em] font-semibold text-green-400 [text-shadow:_0_0_10px_rgba(0,255,0,0.5)] leading-none">
+              <span className={`${headerFontSize} font-semibold text-green-400 [text-shadow:_0_0_10px_rgba(0,255,0,0.5)] leading-none`}>
                 {displayData.lapsWithFuel}
               </span>
             </div>
@@ -119,8 +145,8 @@ export const FuelCalculator = ({
 
       {/* Fuel Consumption Details */}
       {showConsumption && (
-        <div className="mb-3 pb-2 border-b border-slate-600/30">
-          <div className="text-xs text-slate-500 uppercase tracking-wide mb-1.5">Consumption</div>
+        <div className={`${layout === 'horizontal' ? 'mb-1 pb-1' : 'mb-3 pb-2'} border-b border-slate-600/30`}>
+          <div className="text-xs text-slate-500 uppercase tracking-wide mb-1">Consumption</div>
           {showMin && fuelData && displayData.minLapUsage > 0 && (
             <div className="flex justify-between py-1 hover:bg-white/5 hover:mx-[-4px] hover:px-1 rounded transition-colors">
               <span className="text-slate-400 text-xs">Min</span>
@@ -166,8 +192,8 @@ export const FuelCalculator = ({
 
       {/* Pit Window */}
       {showPitWindow && fuelData && (
-        <div className="mb-3 pb-2 border-b border-slate-600/30">
-          <div className="text-xs text-slate-500 uppercase tracking-wide mb-1.5">Pit Window</div>
+        <div className={`${layout === 'horizontal' ? 'mb-1 pb-1' : 'mb-3 pb-2'} border-b border-slate-600/30`}>
+          <div className="text-xs text-slate-500 uppercase tracking-wide mb-1">Pit Window</div>
           <div className="mt-2">
             <div className="h-6 bg-slate-900/80 rounded-xl relative mb-1.5 border border-slate-600/50 overflow-hidden">
               <div
@@ -193,8 +219,8 @@ export const FuelCalculator = ({
 
       {/* Fuel Save Indicator */}
       {showFuelSave && fuelData && displayData.targetConsumption > 0 && (
-        <div className="mb-3 pb-2 border-b border-slate-600/30">
-          <div className="text-xs text-slate-500 uppercase tracking-wide mb-1.5">Fuel Save</div>
+        <div className={`${layout === 'horizontal' ? 'mb-1 pb-1' : 'mb-3 pb-2'} border-b border-slate-600/30`}>
+          <div className="text-xs text-slate-500 uppercase tracking-wide mb-1">Fuel Save</div>
           <div className="mt-2">
             <div className="h-4 bg-gradient-to-r from-green-400 via-yellow-500 to-red-500 rounded-lg relative mb-1.5">
               <div className="absolute left-1/2 w-0.5 h-full bg-white transform -translate-x-1/2" />
@@ -214,8 +240,35 @@ export const FuelCalculator = ({
         </div>
       )}
 
+      {/* Fuel Required Section */}
+      {showFuelRequired && fuelRequired && fuelData && (
+        <div className={`${layout === 'horizontal' ? 'mb-1 pb-1' : 'mb-3 pb-2'} border-b border-slate-600/30`}>
+          <div className="text-xs text-slate-500 uppercase tracking-wide mb-1.5">Fuel Required</div>
+          <div className="grid grid-cols-3 gap-2 text-center">
+            <div className="flex flex-col items-center">
+              <span className="text-[10px] text-slate-400 uppercase">Min</span>
+              <span className="text-xs font-medium text-green-400">
+                {formatFuel(fuelRequired.min, fuelUnits, 1)}
+              </span>
+            </div>
+            <div className="flex flex-col items-center">
+              <span className="text-[10px] text-slate-400 uppercase">Avg</span>
+              <span className="text-xs font-medium text-yellow-400">
+                {formatFuel(fuelRequired.avg, fuelUnits, 1)}
+              </span>
+            </div>
+            <div className="flex flex-col items-center">
+              <span className="text-[10px] text-slate-400 uppercase">Max</span>
+              <span className="text-xs font-medium text-orange-400">
+                {formatFuel(fuelRequired.max, fuelUnits, 1)}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Footer: Key Information */}
-      <div className="flex justify-around pt-3 mt-2 border-t border-slate-600/50 gap-3">
+      <div className={`flex justify-around ${layout === 'horizontal' ? 'pt-1 mt-1' : 'pt-3 mt-2'} border-t border-slate-600/50 gap-3`}>
         <div className="flex flex-col items-center gap-1 flex-1">
           <span className="text-xs text-slate-400 uppercase">To Finish</span>
           <span className="text-sm font-semibold text-green-400">

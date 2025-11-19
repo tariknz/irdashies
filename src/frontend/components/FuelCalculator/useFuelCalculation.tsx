@@ -28,6 +28,7 @@ export function useFuelCalculation(
   const sessionTime = useTelemetryValue('SessionTime');
   const sessionNum = useTelemetryValue('SessionNum');
   const sessionLaps = useSessionLaps(sessionNum);
+  const onPitRoad = useTelemetryValue('OnPitRoad');
 
   // Get race leader's lap for multi-class racing
   const carIdxLap = useTelemetry('CarIdxLap');
@@ -62,7 +63,8 @@ export function useFuelCalculation(
       fuelLevel === undefined ||
       sessionTime === undefined ||
       lap === undefined ||
-      sessionFlags === undefined
+      sessionFlags === undefined ||
+      onPitRoad === undefined
     )
       return;
 
@@ -84,6 +86,7 @@ export function useFuelCalculation(
           lapTime,
           isGreenFlag: isGreenFlag(sessionFlags),
           isValidForCalc: isValid,
+          isOutLap: state.wasOnPitRoad, // Mark if lap started from pit road
           timestamp: Date.now(),
         };
 
@@ -91,10 +94,10 @@ export function useFuelCalculation(
       }
 
       // Now update lap crossing state for the NEW lap
-      updateLapCrossing(lapDistPct, fuelLevel, sessionTime, lap);
+      updateLapCrossing(lapDistPct, fuelLevel, sessionTime, lap, onPitRoad === 1);
     } else if (state.lastLapDistPct === 0) {
       // Initialize on first telemetry
-      updateLapCrossing(lapDistPct, fuelLevel, sessionTime, lap);
+      updateLapCrossing(lapDistPct, fuelLevel, sessionTime, lap, onPitRoad === 1);
     } else {
       // Always update distance to track lap crossing properly
       updateLapDistPct(lapDistPct);
@@ -105,6 +108,7 @@ export function useFuelCalculation(
     sessionTime,
     lap,
     sessionFlags,
+    onPitRoad,
     addLapData,
     updateLapCrossing,
     updateLapDistPct,
@@ -148,8 +152,10 @@ export function useFuelCalculation(
     const avgAllGreenLaps = calculateWeightedAverage(greenLaps);
 
     // Calculate min and max fuel consumption from valid laps
-    const minLapUsage = validLaps.length > 0
-      ? Math.min(...validLaps.map(l => l.fuelUsed))
+    // Exclude out-laps for min calculation as they're typically not full laps
+    const fullLaps = validLaps.filter(l => !l.isOutLap);
+    const minLapUsage = fullLaps.length > 0
+      ? Math.min(...fullLaps.map(l => l.fuelUsed))
       : 0;
     const maxLapUsage = validLaps.length > 0
       ? Math.max(...validLaps.map(l => l.fuelUsed))
