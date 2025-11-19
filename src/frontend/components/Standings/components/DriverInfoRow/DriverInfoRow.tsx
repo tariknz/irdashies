@@ -53,7 +53,7 @@ interface DriverRowInfoProps {
   lastLap?: number;
   prevCarTrackSurface?: number;
   carTrackSurface?: number;
-  currentSessionType?: string;
+  currentSessionType: string;
 }
 
 export const DriverInfoRow = memo(
