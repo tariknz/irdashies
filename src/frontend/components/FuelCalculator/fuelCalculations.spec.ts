@@ -188,6 +188,7 @@ function mockLap(
     lapTime,
     isGreenFlag: true,
     isValidForCalc: true,
+    isOutLap: false,
     timestamp: Date.now(),
   };
 }

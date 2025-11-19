@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import { FuelWidgetSettings } from '../types';
 import { useDashboard } from '@irdashies/context';
@@ -7,6 +7,7 @@ const SETTING_ID = 'fuel';
 
 const defaultConfig: FuelWidgetSettings['config'] = {
   fuelUnits: 'L',
+  layout: 'vertical',
   showConsumption: true,
   showMin: true,
   showLastLap: true,
@@ -15,6 +16,7 @@ const defaultConfig: FuelWidgetSettings['config'] = {
   showMax: true,
   showPitWindow: true,
   showFuelSave: true,
+  showFuelRequired: false,
   safetyMargin: 0.05,
   background: { opacity: 85 },
 };
@@ -26,6 +28,7 @@ const migrateConfig = (
   const config = savedConfig as Record<string, unknown>;
   return {
     fuelUnits: (config.fuelUnits as 'L' | 'gal') ?? 'L',
+    layout: (config.layout as 'vertical' | 'horizontal') ?? 'vertical',
     showConsumption: (config.showConsumption as boolean) ?? true,
     showMin: (config.showMin as boolean) ?? true,
     showLastLap: (config.showLastLap as boolean) ?? true,
@@ -34,6 +37,7 @@ const migrateConfig = (
     showMax: (config.showMax as boolean) ?? true,
     showPitWindow: (config.showPitWindow as boolean) ?? true,
     showFuelSave: (config.showFuelSave as boolean) ?? true,
+    showFuelRequired: (config.showFuelRequired as boolean) ?? false,
     safetyMargin: (config.safetyMargin as number) ?? 0.05,
     background: {
       opacity:
@@ -51,6 +55,17 @@ export const FuelSettings = () => {
     enabled: savedSettings?.enabled ?? false,
     config: migrateConfig(savedSettings?.config),
   });
+
+  // Sync settings when dashboard changes (e.g., after layout edit)
+  useEffect(() => {
+    if (savedSettings) {
+      setSettings({
+        enabled: savedSettings.enabled,
+        config: migrateConfig(savedSettings.config),
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentDashboard]); // savedSettings derived from currentDashboard
 
   if (!currentDashboard) {
     return <>Loading...</>;
@@ -80,6 +95,28 @@ export const FuelSettings = () => {
             >
               <option value="L">Liters (L)</option>
               <option value="gal">Gallons (gal)</option>
+            </select>
+          </div>
+
+          {/* Layout Style */}
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-slate-300">
+              Layout Style
+              <span className="block text-xs text-slate-500">
+                Horizontal layout is more compact (300x200)
+              </span>
+            </span>
+            <select
+              value={settings.config.layout}
+              onChange={(e) =>
+                handleConfigChange({
+                  layout: e.target.value as 'vertical' | 'horizontal',
+                })
+              }
+              className="px-3 py-1 bg-slate-700 text-slate-200 rounded text-sm"
+            >
+              <option value="vertical">Vertical</option>
+              <option value="horizontal">Horizontal</option>
             </select>
           </div>
 
@@ -192,6 +229,24 @@ export const FuelSettings = () => {
               checked={settings.config.showFuelSave}
               onChange={(e) =>
                 handleConfigChange({ showFuelSave: e.target.checked })
+              }
+              className="w-4 h-4 bg-slate-700 rounded"
+            />
+          </div>
+
+          {/* Show Fuel Required */}
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-slate-300">
+              Show Fuel Required
+              <span className="block text-xs text-slate-500">
+                Display fuel needed for min/avg/max consumption
+              </span>
+            </span>
+            <input
+              type="checkbox"
+              checked={settings.config.showFuelRequired}
+              onChange={(e) =>
+                handleConfigChange({ showFuelRequired: e.target.checked })
               }
               className="w-4 h-4 bg-slate-700 rounded"
             />

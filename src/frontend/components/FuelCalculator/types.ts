@@ -16,6 +16,8 @@ export interface FuelLapData {
   isGreenFlag: boolean;
   /** Whether this lap is valid for calculations (outlier filtering) */
   isValidForCalc: boolean;
+  /** Whether the car started this lap from pit road (out-lap) */
+  isOutLap: boolean;
   /** Timestamp when lap was completed */
   timestamp: number;
 }
@@ -70,6 +72,8 @@ export interface FuelCalculation {
 export interface FuelCalculatorSettings {
   /** Fuel units to display */
   fuelUnits: 'L' | 'gal';
+  /** Layout style */
+  layout?: 'vertical' | 'horizontal';
   /** Show detailed consumption breakdown */
   showConsumption: boolean;
   /** Show minimum fuel consumption */
@@ -86,6 +90,8 @@ export interface FuelCalculatorSettings {
   showPitWindow: boolean;
   /** Show fuel save indicator */
   showFuelSave: boolean;
+  /** Show fuel required for min/avg/max consumption */
+  showFuelRequired?: boolean;
   /** Safety margin percentage (0-1) */
   safetyMargin: number;
   /** Background opacity (0-100) */

@@ -18,6 +18,8 @@ interface FuelStoreState {
   lastLapDistPct: number;
   /** Current session number (to detect session changes) */
   sessionNum: number;
+  /** Whether the car was on pit road at lap start */
+  wasOnPitRoad: boolean;
 }
 
 interface FuelStoreActions {
@@ -33,7 +35,8 @@ interface FuelStoreActions {
     lapDistPct: number,
     fuelLevel: number,
     sessionTime: number,
-    currentLap: number
+    currentLap: number,
+    isOnPitRoad: boolean
   ) => void;
 
   /**
@@ -70,6 +73,7 @@ export const useFuelStore = create<FuelStore>((set, get) => ({
   lapCrossingTime: 0,
   lastLapDistPct: 0,
   sessionNum: -1,
+  wasOnPitRoad: false,
 
   // Actions
   addLapData: (lapData: FuelLapData) => {
@@ -94,13 +98,15 @@ export const useFuelStore = create<FuelStore>((set, get) => ({
     lapDistPct: number,
     fuelLevel: number,
     sessionTime: number,
-    currentLap: number
+    currentLap: number,
+    isOnPitRoad: boolean
   ) => {
     set({
       lastLapDistPct: lapDistPct,
       lapStartFuel: fuelLevel,
       lapCrossingTime: sessionTime,
       lastLap: currentLap,
+      wasOnPitRoad: isOnPitRoad,
     });
   },
 
@@ -115,6 +121,7 @@ export const useFuelStore = create<FuelStore>((set, get) => ({
       lapStartFuel: 0,
       lapCrossingTime: 0,
       lastLapDistPct: 0,
+      wasOnPitRoad: false,
     });
   },
 
@@ -129,6 +136,7 @@ export const useFuelStore = create<FuelStore>((set, get) => ({
           lapStartFuel: 0,
           lapCrossingTime: 0,
           lastLapDistPct: 0,
+          wasOnPitRoad: false,
         };
       }
 
