@@ -14,7 +14,6 @@ import {
 } from './hooks';
 import { useLapTimesStoreUpdater } from '../../context/LapTimesStore/LapTimesStoreUpdater';
 import { usePitLabStoreUpdater } from '../../context/PitLapStore/PitLapStoreUpdater';
-import { useRelativeGapStoreUpdater } from '@irdashies/context';
 
 export const Standings = () => {
   const [parent] = useAutoAnimate();
@@ -25,9 +24,6 @@ export const Standings = () => {
 
   // Update pit laps
   usePitLabStoreUpdater();
-
-  // Update relative gap store with telemetry data
-  useRelativeGapStoreUpdater();
 
   const standings = useDriverStandings(settings);
   const classStats = useCarClassStats();const isMultiClass = standings.length > 1;
