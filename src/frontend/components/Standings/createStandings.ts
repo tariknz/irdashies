@@ -362,6 +362,11 @@ export const augmentStandingsWithInterval = (
       }
     }
 
+    // Set interval for the driver with the smallest gap (2nd place) to show how far behind P1 they are
+    if (sortedByGap.length > 0 && sortedByGap[0].gap !== undefined && sortedByGap[0].carIdx !== undefined) {
+      intervalMap.set(sortedByGap[0].carIdx, sortedByGap[0].gap);
+    }
+
     // Apply intervals to all drivers in this class
     const augmentedClassStandings = classStandings.map((driverStanding) => {
       // Player shows as undefined (no interval)
