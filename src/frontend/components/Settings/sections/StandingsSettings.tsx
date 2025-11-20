@@ -195,11 +195,11 @@ const SortableItem = ({ setting, settings, handleConfigChange }: SortableItemPro
         <ToggleSwitch
           enabled={isEnabled}
           onToggle={(enabled) => {
-            handleConfigChange({ 
-              [setting.configKey]: { 
+            handleConfigChange({
+              [setting.configKey]: {
                 ...(settings.config[setting.configKey] as object),
-                enabled 
-              } 
+                enabled
+              }
             });
           }}
         />

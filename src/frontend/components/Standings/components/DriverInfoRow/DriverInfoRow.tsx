@@ -49,6 +49,11 @@ interface DriverRowInfoProps {
   isMultiClass: boolean;
   displayOrder?: string[];
   config?: RelativeWidgetSettings['config'] | StandingsWidgetSettings['config'];
+  lastPitLap?: number;
+  lastLap?: number;
+  prevCarTrackSurface?: number;
+  carTrackSurface?: number;
+  currentSessionType?: string;
 }
 
 export const DriverInfoRow = memo(
@@ -80,7 +85,12 @@ export const DriverInfoRow = memo(
     isMultiClass,
     displayOrder,
     config,
-  }: DriverRowInfoProps) => {
+    lastPitLap,
+    lastLap,
+    prevCarTrackSurface,
+    carTrackSurface,
+    currentSessionType
+   }: DriverRowInfoProps) => {
     const lastTimeString = useMemo(() => formatTime(lastTime), [lastTime]);
     const fastestTimeString = useMemo(
       () => formatTime(fastestTime),
@@ -169,6 +179,11 @@ export const DriverInfoRow = memo(
               key="pitStatus"
               hidden={hidden}
               onPitRoad={onPitRoad}
+              carTrackSurface={carTrackSurface}
+              prevCarTrackSurface={prevCarTrackSurface}
+              lastPitLap={lastPitLap}
+              lastLap={lastLap}
+              currentSessionType={currentSessionType}
             />
           ),
         },
@@ -312,6 +327,11 @@ export const DriverInfoRow = memo(
       tireCompound,
       lapTimeDeltas,
       emptyLapDeltaPlaceholders,
+      carTrackSurface,
+      currentSessionType,
+      lastLap,
+      lastPitLap,
+      prevCarTrackSurface
     ]);
 
     return (

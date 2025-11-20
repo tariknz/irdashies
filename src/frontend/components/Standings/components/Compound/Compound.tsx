@@ -29,7 +29,7 @@ export const Compound = ({
   if (tireCompound < 0) {
     return null;
   }
-  
+
   const tireIndex = carsWithMultipleDryTires.includes(carId)
     ? tireCompound
     : tireCompound === 0 ? 0 : 2;

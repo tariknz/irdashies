@@ -134,15 +134,15 @@ describe('createStandings', () => {
   it('should show as onTrack when CarIdxTrackSurface is positive', () => {
     const mockTelemetryWithConnected = {
       ...mockTelemetry,
-      CarIdxTrackSurface: {
-        value: [1],
-      },
+      IsOnTrack: {
+        value: [true]
+      }
     } as Telemetry;
 
     const standings = createStandings(
       mockSessionData,
       mockTelemetryWithConnected,
-      mockCurrentSession
+      mockCurrentSession,
     );
 
     expect(standings[0][1][0].onTrack).toBe(true);
@@ -448,7 +448,13 @@ function createStandings(
       resultsPositions: currentSession?.ResultsPositions,
       resultsFastestLap: currentSession?.ResultsFastestLap,
       sessionType: currentSession?.SessionType,
-    }
+    },
+    [],
+    [],
+    telemetry?.IsOnTrack?.value?.[0] ?? false,
+    [],
+    undefined,
+    undefined
   );
   const driverClass = session?.DriverInfo?.Drivers?.find(
     (driver) => driver.CarIdx === session?.DriverInfo?.DriverCarIdx
