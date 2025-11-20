@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useAutoAnimate } from '@formkit/auto-animate/react';
 import { DriverInfoRow } from './components/DriverInfoRow/DriverInfoRow';
-import { useRelativeSettings, useDriverRelatives } from './hooks';
+import { useRelativeSettings, useDriverRelatives, useDriverStandings } from './hooks';
 import { DriverRatingBadge } from './components/DriverRatingBadge/DriverRatingBadge';
 import { RatingChange } from './components/RatingChange/RatingChange';
 import { SessionBar } from './components/SessionBar/SessionBar';
@@ -13,7 +13,12 @@ export const Relative = () => {
   const buffer = settings?.buffer ?? 3;
   const standings = useDriverRelatives({ buffer });
   const [parent] = useAutoAnimate();
-  const isMultiClass = standings.length > 0 && new Set(standings.map(s => s.carClass.id)).size > 1; 
+  const activeDrivers = useDriverStandings();
+  const isMultiClass = useMemo(() => {
+    const uniqueClasses = new Set(activeDrivers.flatMap(([, drivers]) => drivers.map(d => d.carClass.id)));
+    return uniqueClasses.size > 1;
+  }, [activeDrivers]);
+
 
   // Update relative gap store with telemetry data
   useRelativeGapStoreUpdater();
