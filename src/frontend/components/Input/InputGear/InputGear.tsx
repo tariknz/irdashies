@@ -33,11 +33,28 @@ export const InputGear = ({
   }
 
   return (
-    <div className="flex items-center justify-center font-mono">
+    <div
+      className="flex items-center justify-center font-mono h-full w-full text-white"
+    >
       <div className="flex flex-col items-center">
-        <div className="text-4xl font-bold leading-none">{gearText}</div>
-        <div className="text-l">{speed.toFixed(0)}</div>
-        <div className="text-xs text-gray-500 leading-none">{displayUnit}</div>
+        <div
+          className="font-bold leading-none"
+          style={{ fontSize: 'min(20vw, 20vh)' }}
+        >
+          {gearText}
+        </div>
+        <div
+          className="font-semibold"
+          style={{ fontSize: 'min(15vw, 15vh)' }}
+        >
+          {speed.toFixed(0)}
+        </div>
+        <div
+          className="text-gray-500 leading-none"
+          style={{ fontSize: 'min(10vw, 10vh)' }}
+        >
+          {displayUnit}
+        </div>
       </div>
     </div>
   );
