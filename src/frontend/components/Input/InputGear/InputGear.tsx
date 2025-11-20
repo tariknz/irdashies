@@ -33,7 +33,7 @@ export const InputGear = ({
   }
 
   return (
-    <div className="flex items-center justify-center font-mono p-2 w-[120px]">
+    <div className="flex items-center justify-center font-mono">
       <div className="flex flex-col items-center">
         <div className="text-4xl font-bold leading-none">{gearText}</div>
         <div className="text-l">{speed.toFixed(0)}</div>
