@@ -45,9 +45,9 @@ export const InputContainer = ({
           />
         </div>
       )}
-      <div className="flex-none flex flex-col gap-1">
+   
         {(settings?.gear?.enabled ?? true) && (
-          <div className="flex-1">
+          <div className="flex items-center p-2">
             <InputGear
               gear={gear}
               speedMs={speed}
@@ -57,7 +57,7 @@ export const InputContainer = ({
           </div>
         )}
         {(settings?.steer?.enabled ?? true) && (
-          <div className="flex-1">
+          <div className="p-2">
             <InputSteer
               angleRad={steer}
               wheelStyle={settings?.steer?.config?.style}
@@ -66,6 +66,5 @@ export const InputContainer = ({
           </div>
         )}
       </div>
-    </div>
   );
 };
