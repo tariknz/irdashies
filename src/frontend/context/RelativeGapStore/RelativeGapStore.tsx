@@ -95,7 +95,7 @@ interface RelativeGapStoreActions {
   getCarHistory: (carIdx: number) => CarPositionHistory | undefined;
 }
 
-export type RelativeGapStore = RelativeGapStoreState & RelativeGapStoreActions;
+type RelativeGapStore = RelativeGapStoreState & RelativeGapStoreActions;
 
 /**
  * Main Zustand store for relative gap calculations
