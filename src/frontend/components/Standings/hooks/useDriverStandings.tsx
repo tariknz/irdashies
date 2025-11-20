@@ -9,8 +9,6 @@ import {
   useSessionType,
   useTelemetry,
   useTelemetryValue,
-  useTelemetryValues,
-  useRelativeGapStore,
 } from '@irdashies/context';
 import { useLapTimeHistory } from '../../../context/LapTimesStore/LapTimesStore';
 import {
@@ -65,12 +63,7 @@ export const useDriverStandings = (settings?: StandingsWidgetSettings['config'])
   }, [sessionDrivers, driverCarIdx]);
   const lapTimeHistory = useLapTimeHistory();
 
-  // Gap calculation data
-  const carIdxLapDistPct = useTelemetryValues('CarIdxLapDistPct');
-  const carIdxLap = useTelemetryValues('CarIdxLap');
-  const sessionTime = useTelemetryValue('SessionTime') ?? 0;
-  const relativeGapStore = useRelativeGapStore();
-  const interpolationMethod = useRelativeGapStore((state) => state.config.interpolationMethod);
+  // Note: gap and interval calculations are now purely delta-based, no telemetry needed
 
   // Only pass lap history when feature is enabled to avoid unnecessary calculations
   const lapTimeHistoryForCalc = lapTimeDeltasEnabled ? lapTimeHistory : undefined;
@@ -111,15 +104,7 @@ export const useDriverStandings = (settings?: StandingsWidgetSettings['config'])
 
     // Calculate gap to class leader when enabled
     const gapAugmentedGroupedByClass = gapEnabled
-      ? augmentStandingsWithGap(iratingAugmentedGroupedByClass, {
-          carIdxLapDistPct,
-          carIdxLap,
-          carIdxTrackSurface: carIdxTrackSurface?.value,
-          carIdxF2TimeValue: carIdxF2Time?.value,
-          sessionTime,
-          relativeGapStore,
-          interpolationMethod,
-        })
+      ? augmentStandingsWithGap(iratingAugmentedGroupedByClass)
       : iratingAugmentedGroupedByClass;
 
     // Calculate interval to player when enabled
@@ -159,12 +144,7 @@ export const useDriverStandings = (settings?: StandingsWidgetSettings['config'])
     onTrack,
     prevCarTrackSurface,
     gapEnabled,
-    intervalEnabled,
-    carIdxLapDistPct,
-    carIdxLap,
-    sessionTime,
-    interpolationMethod,
-    relativeGapStore
+    intervalEnabled
   ]);
 
   return standingsWithGain;
