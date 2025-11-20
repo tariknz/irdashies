@@ -14,6 +14,7 @@ import {
 } from './hooks';
 import { useLapTimesStoreUpdater } from '../../context/LapTimesStore/LapTimesStoreUpdater';
 import { usePitLabStoreUpdater } from '../../context/PitLapStore/PitLapStoreUpdater';
+import { useRelativeGapStoreUpdater } from '@irdashies/context';
 
 export const Standings = () => {
   const [parent] = useAutoAnimate();
@@ -24,6 +25,9 @@ export const Standings = () => {
 
   // Update pit laps
   usePitLabStoreUpdater();
+
+  // Update relative gap store with telemetry data
+  useRelativeGapStoreUpdater();
 
   const standings = useDriverStandings(settings);
   const classStats = useCarClassStats();const isMultiClass = standings.length > 1;
@@ -62,6 +66,8 @@ export const Standings = () => {
                   isPlayer={result.isPlayer}
                   hasFastestTime={result.hasFastestTime}
                   delta={settings?.delta?.enabled ? result.delta : undefined}
+                  gap={settings?.gap?.enabled ? result.gap : undefined}
+                  interval={settings?.interval?.enabled ? result.interval : undefined}
                   position={result.classPosition}
                   iratingChange={
                     settings?.iratingChange?.enabled ? (

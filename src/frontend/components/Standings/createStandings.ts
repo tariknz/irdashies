@@ -1,7 +1,11 @@
 import type { SessionResults, Driver } from '@irdashies/types';
 import { calculateIRatingGain, RaceResult, CalculationResult } from '@irdashies/utils/iratingGain';
+import { detectEdgeCases, calculateRelativeGap } from '@irdashies/context';
+import type { RelativeGapStore } from '@irdashies/context';
 
 export type LastTimeState = 'session-fastest' | 'personal-best' | undefined;
+
+
 
 export interface Standings {
   carIdx: number;
@@ -10,6 +14,8 @@ export interface Standings {
   lap?: number;
   lappedState?: 'ahead' | 'behind' | 'same';
   delta?: number;
+  gap?: number;
+  interval?: number;
   isPlayer: boolean;
   driver: {
     name: string;
@@ -285,6 +291,171 @@ export const augmentStandingsWithIRating = (
         iratingChange: iratingChangeMap.get(driverStanding.carIdx),
       })
     );
+    return [classId, augmentedClassStandings];
+  });
+};
+
+/**
+ * This method will augment the standings with gap calculations to class leader
+ */
+export const augmentStandingsWithGap = (
+  groupedStandings: [string, Standings[]][],
+  relativeGapData: {
+    carIdxLapDistPct?: number[];
+    carIdxLap?: number[];
+    carIdxTrackSurface?: number[];
+    carIdxF2TimeValue?: number[];
+    sessionTime?: number;
+    relativeGapStore?: RelativeGapStore;
+    interpolationMethod?: 'linear' | 'cubic';
+  }
+): [string, Standings[]][] => {
+  const {
+    carIdxLapDistPct,
+    carIdxLap,
+    carIdxTrackSurface,
+    carIdxF2TimeValue,
+    sessionTime,
+    relativeGapStore,
+    interpolationMethod = 'linear'
+  } = relativeGapData;
+
+  return groupedStandings.map(([classId, classStandings]) => {
+    // Find class leader (lowest class position, excluding position 0 which is qualifying)
+    const sortedByClassPosition = classStandings
+      .filter(s => s.classPosition && s.classPosition > 0)
+      .sort((a, b) => (a.classPosition ?? 999) - (b.classPosition ?? 999));
+
+    const classLeader = sortedByClassPosition[0];
+    if (!classLeader) {
+      return [classId, classStandings];
+    }
+
+    const augmentedClassStandings = classStandings.map((driverStanding) => {
+      if (driverStanding.carIdx === classLeader.carIdx) {
+        // Class leader shows as dash (undefined gap)
+        return { ...driverStanding, gap: undefined };
+      }
+
+      // For standings, use the session timing data or lap time differences
+      // During races, we have CarIdxF2Time (time behind session leader)
+      // During practice/qualifying, calculate based on lap time differences to class leader
+
+      let gap: number | undefined;
+
+      // First priority: use official timing data (CarIdxF2Time)
+      if (carIdxF2TimeValue && carIdxF2TimeValue[driverStanding.carIdx] !== undefined) {
+        // This gives us the time behind session leader, not class leader
+        // We need to adjust this for intra-class timing
+        const driverTimeBehindSession = carIdxF2TimeValue[driverStanding.carIdx];
+        const leaderTimeBehindSession = carIdxF2TimeValue[classLeader.carIdx] ?? 0;
+        const relativeGapToLeader = driverTimeBehindSession - leaderTimeBehindSession;
+
+        gap = relativeGapToLeader > 0 ? relativeGapToLeader : undefined;
+      }
+
+      // Fallback: calculate based on lap time differences (practice/qualifying)
+      if (gap === undefined) {
+        // Calculate based on fastest lap time difference to class leader
+        if (driverStanding.fastestTime && classLeader.fastestTime && driverStanding.fastestTime > classLeader.fastestTime) {
+          gap = (driverStanding.fastestTime - classLeader.fastestTime) / 10000; // iRacing lap times are in 1/10000 seconds
+        }
+      }
+
+      // Final fallback: use complex relative calculation only if other methods fail
+      if (gap === undefined) {
+        const leaderPosition = carIdxLapDistPct?.[classLeader.carIdx];
+        const driverPosition = carIdxLapDistPct?.[driverStanding.carIdx];
+        const leaderLap = carIdxLap?.[classLeader.carIdx] ?? 0;
+        const driverLap = carIdxLap?.[driverStanding.carIdx] ?? 0;
+
+        if (leaderPosition !== undefined && driverPosition !== undefined && relativeGapStore) {
+          // Get position history for both cars
+          const leaderHistory = relativeGapStore.getCarHistory(classLeader.carIdx);
+          const driverHistory = relativeGapStore.getCarHistory(driverStanding.carIdx);
+
+          // Detect edge cases
+          const driverTrackSurface = carIdxTrackSurface?.[driverStanding.carIdx] ?? 0;
+          const isOffTrack = driverTrackSurface === -1 || driverTrackSurface === 0;
+          const isInPits = driverStanding.onPitRoad;
+          const hasLapHistory = (driverHistory?.lapRecords?.length ?? 0) > 0;
+
+          const edgeCase = detectEdgeCases(
+            driverStanding.carIdx,
+            isOffTrack,
+            isInPits,
+            driverLap,
+            hasLapHistory,
+          );
+
+          // Calculate relative gap using three-tier system as fallback
+          const gapResult = calculateRelativeGap(
+            leaderHistory,
+            driverHistory,
+            {
+              playerCarIdx: classLeader.carIdx,
+              otherCarIdx: driverStanding.carIdx,
+              playerPosition: leaderPosition,
+              otherPosition: driverPosition,
+              playerLap: leaderLap,
+              otherLap: driverLap,
+              sessionTime: sessionTime ?? 0,
+            },
+            classLeader.carClass?.estLapTime ?? 0,
+            driverStanding.carClass?.estLapTime ?? 0,
+            edgeCase,
+            interpolationMethod,
+          );
+
+          gap = gapResult.timeGap > 0 ? gapResult.timeGap : undefined;
+        }
+      }
+
+      return { ...driverStanding, gap };
+    });
+
+    return [classId, augmentedClassStandings];
+  });
+};
+
+
+/**
+ * This method will augment the standings with interval calculations to player
+ * Interval shows time gaps between consecutive cars, calculated by subtracting gaps
+ * For each driver, interval = gap_of_driver_behind - gap_of_current_driver
+ * Player shows as undefined (no interval)
+ */
+export const augmentStandingsWithInterval = (
+  groupedStandings: [string, Standings[]][]
+): [string, Standings[]][] => {
+  return groupedStandings.map(([classId, classStandings]) => {
+    // Sort drivers by their gap values (ascending - smallest gaps first = closest to leader)
+    const sortedByGap = classStandings
+      .filter(s => s.gap !== undefined && !s.isPlayer) // Only drivers with gap data
+      .sort((a, b) => (a.gap ?? 999) - (b.gap ?? 999));
+
+    // Create a map of gap differences
+    const intervalMap = new Map<number, number | undefined>();
+
+    // Calculate intervals: for each driver, subtract their gap from the gap of the driver immediately behind them
+    for (let i = 0; i < sortedByGap.length - 1; i++) {
+      const currentDriver = sortedByGap[i];
+      const driverBehind = sortedByGap[i + 1];
+
+      if (currentDriver.gap !== undefined && driverBehind.gap !== undefined && driverBehind.carIdx) {
+        // interval = gap_behind - gap_current (positive means behind is farther from leader)
+        intervalMap.set(driverBehind.carIdx, driverBehind.gap - currentDriver.gap);
+      }
+    }
+
+    // Apply intervals to all drivers in this class
+    const augmentedClassStandings = classStandings.map((driverStanding) => {
+      // Player shows as undefined (no interval)
+      const interval = driverStanding.isPlayer ? undefined : intervalMap.get(driverStanding.carIdx);
+
+      return { ...driverStanding, interval };
+    });
+
     return [classId, augmentedClassStandings];
   });
 };

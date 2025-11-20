@@ -8,6 +8,8 @@ export interface StandingsWidgetSettings extends BaseWidgetSettings {
     iratingChange: { enabled: boolean };
     badge: { enabled: boolean };
     delta: { enabled: boolean };
+    gap: { enabled: boolean };
+    interval: { enabled: boolean };
     lastTime: { enabled: boolean };
     fastestTime: { enabled: boolean };
     background: { opacity: number };
