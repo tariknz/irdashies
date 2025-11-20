@@ -4,7 +4,9 @@ import {
   TelemetryDecorator,
   DynamicTelemetrySelector,
 } from '@irdashies/storybook';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useFuelStore } from './FuelStore';
+import type { FuelLapData } from './types';
 
 export default {
   component: FuelCalculator,
@@ -134,5 +136,64 @@ export const HorizontalLayout: Story = {
     layout: 'horizontal',
     showConsumption: true,
     showFuelRequired: true,
+  },
+};
+
+// Helper component to populate fuel store with mock lap data
+const MockFuelDataProvider = ({ children }: { children: React.ReactNode }) => {
+  const addLapData = useFuelStore((state) => state.addLapData);
+  const updateLapCrossing = useFuelStore((state) => state.updateLapCrossing);
+  const clearAllData = useFuelStore((state) => state.clearAllData);
+
+  useEffect(() => {
+    // Clear existing data
+    clearAllData();
+
+    // Add mock lap history (laps 1-10)
+    const mockLaps: FuelLapData[] = [
+      { lapNumber: 1, fuelUsed: 1.8, lapTime: 85, isGreenFlag: true, isValidForCalc: true, isOutLap: false, timestamp: Date.now() - 900000 },
+      { lapNumber: 2, fuelUsed: 2.1, lapTime: 92, isGreenFlag: true, isValidForCalc: true, isOutLap: false, timestamp: Date.now() - 800000 },
+      { lapNumber: 3, fuelUsed: 2.15, lapTime: 91, isGreenFlag: true, isValidForCalc: true, isOutLap: false, timestamp: Date.now() - 700000 },
+      { lapNumber: 4, fuelUsed: 2.08, lapTime: 90, isGreenFlag: true, isValidForCalc: true, isOutLap: false, timestamp: Date.now() - 600000 },
+      { lapNumber: 5, fuelUsed: 2.12, lapTime: 91, isGreenFlag: true, isValidForCalc: true, isOutLap: false, timestamp: Date.now() - 500000 },
+      { lapNumber: 6, fuelUsed: 2.05, lapTime: 89, isGreenFlag: true, isValidForCalc: true, isOutLap: false, timestamp: Date.now() - 400000 },
+      { lapNumber: 7, fuelUsed: 2.18, lapTime: 92, isGreenFlag: true, isValidForCalc: true, isOutLap: false, timestamp: Date.now() - 300000 },
+      { lapNumber: 8, fuelUsed: 2.1, lapTime: 90, isGreenFlag: true, isValidForCalc: true, isOutLap: false, timestamp: Date.now() - 200000 },
+      { lapNumber: 9, fuelUsed: 2.14, lapTime: 91, isGreenFlag: true, isValidForCalc: true, isOutLap: false, timestamp: Date.now() - 100000 },
+      { lapNumber: 10, fuelUsed: 2.11, lapTime: 90, isGreenFlag: true, isValidForCalc: true, isOutLap: false, timestamp: Date.now() },
+    ];
+
+    mockLaps.forEach(lap => addLapData(lap));
+
+    // Set current lap crossing state
+    updateLapCrossing(0.1, 35.5, 900, 11, false);
+  }, [addLapData, updateLapCrossing, clearAllData]);
+
+  return <>{children}</>;
+};
+
+export const WithMockLapData: Story = {
+  decorators: [
+    (Story) => (
+      <MockFuelDataProvider>
+        <Story />
+      </MockFuelDataProvider>
+    ),
+    TelemetryDecorator(),
+  ],
+  args: {
+    fuelUnits: 'L',
+    layout: 'vertical',
+    showConsumption: true,
+    showMin: true,
+    showLastLap: true,
+    show3LapAvg: true,
+    show10LapAvg: true,
+    showMax: true,
+    showPitWindow: true,
+    showFuelSave: true,
+    showFuelRequired: true,
+    safetyMargin: 0.05,
+    background: { opacity: 85 },
   },
 };

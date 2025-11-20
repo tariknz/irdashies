@@ -203,6 +203,22 @@ export const FuelSettings = () => {
                   className="w-4 h-4 bg-slate-700 rounded"
                 />
               </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-slate-400">
+                  Show Fuel Required
+                  <span className="block text-[10px] text-slate-500">
+                    Fuel needed for min/avg/max
+                  </span>
+                </span>
+                <input
+                  type="checkbox"
+                  checked={settings.config.showFuelRequired}
+                  onChange={(e) =>
+                    handleConfigChange({ showFuelRequired: e.target.checked })
+                  }
+                  className="w-4 h-4 bg-slate-700 rounded"
+                />
+              </div>
             </div>
           )}
 
@@ -229,24 +245,6 @@ export const FuelSettings = () => {
               checked={settings.config.showFuelSave}
               onChange={(e) =>
                 handleConfigChange({ showFuelSave: e.target.checked })
-              }
-              className="w-4 h-4 bg-slate-700 rounded"
-            />
-          </div>
-
-          {/* Show Fuel Required */}
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-slate-300">
-              Show Fuel Required
-              <span className="block text-xs text-slate-500">
-                Display fuel needed for min/avg/max consumption
-              </span>
-            </span>
-            <input
-              type="checkbox"
-              checked={settings.config.showFuelRequired}
-              onChange={(e) =>
-                handleConfigChange({ showFuelRequired: e.target.checked })
               }
               className="w-4 h-4 bg-slate-700 rounded"
             />

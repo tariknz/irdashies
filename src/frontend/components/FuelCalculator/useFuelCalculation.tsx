@@ -152,8 +152,12 @@ export function useFuelCalculation(
     const avgAllGreenLaps = calculateWeightedAverage(greenLaps);
 
     // Calculate min and max fuel consumption from valid laps
-    // Exclude out-laps for min calculation as they're typically not full laps
-    const fullLaps = validLaps.filter(l => !l.isOutLap);
+    // Exclude out-laps and first lap (from grid or after reset) for min calculation
+    // as they're typically not full racing laps with representative fuel consumption
+    const firstLapNumber = validLaps.length > 0
+      ? Math.min(...validLaps.map(l => l.lapNumber))
+      : 0;
+    const fullLaps = validLaps.filter(l => !l.isOutLap && l.lapNumber !== firstLapNumber);
     const minLapUsage = fullLaps.length > 0
       ? Math.min(...fullLaps.map(l => l.fuelUsed))
       : 0;
@@ -164,8 +168,13 @@ export function useFuelCalculation(
     // Use 10-lap average as primary metric, fall back to 3-lap if needed
     const avgFuelPerLap = last10.length >= 5 ? avg10Laps : avg3Laps;
 
+    // Calculate average lap time for time until empty
+    const avgLapTime = validLaps.length > 0
+      ? validLaps.reduce((sum, l) => sum + l.lapTime, 0) / validLaps.length
+      : 0;
+
     // Calculate laps possible with current fuel
-    const lapsWithFuel = Math.floor(fuelLevel / avgFuelPerLap);
+    const lapsWithFuel = fuelLevel / avgFuelPerLap;
 
     // Determine laps remaining
     let lapsRemaining = sessionLapsRemain;
@@ -238,6 +247,7 @@ export function useFuelCalculation(
       targetConsumption,
       confidence,
       fuelAtFinish,
+      avgLapTime,
     };
 
     // console.log('[FuelCalculator] Calculation result:', result);

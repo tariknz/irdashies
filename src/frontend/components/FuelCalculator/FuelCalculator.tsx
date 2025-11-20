@@ -64,13 +64,14 @@ export const FuelCalculator = ({
         pitWindowClose: 0,
         currentLap: 0,
         fuelAtFinish: 0,
+        avgLapTime: 0,
       };
     }
 
     // If fuel level changed (e.g., in garage), recalculate laps with new fuel
     if (Math.abs(fuelData.fuelLevel - currentFuelLevel) > 0.1) {
       const avgFuelPerLap = fuelData.avg3Laps || fuelData.lastLapUsage;
-      const lapsWithFuel = avgFuelPerLap > 0 ? Math.floor(currentFuelLevel / avgFuelPerLap) : 0;
+      const lapsWithFuel = avgFuelPerLap > 0 ? currentFuelLevel / avgFuelPerLap : 0;
       const fuelAtFinish = currentFuelLevel - (fuelData.lapsRemaining * avgFuelPerLap);
 
       return {
@@ -136,55 +137,84 @@ export const FuelCalculator = ({
             <div className="text-xs text-slate-400 uppercase tracking-wider mb-1">Laps</div>
             <div className="flex items-baseline gap-1.5">
               <span className={`${headerFontSize} font-semibold text-green-400 [text-shadow:_0_0_10px_rgba(0,255,0,0.5)] leading-none`}>
-                {displayData.lapsWithFuel}
+                {displayData.lapsWithFuel.toFixed(1)}
               </span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Fuel Consumption Details */}
+      {/* Fuel Consumption & Required Table */}
       {showConsumption && (
         <div className={`${layout === 'horizontal' ? 'mb-1 pb-1' : 'mb-3 pb-2'} border-b border-slate-600/30`}>
-          <div className="text-xs text-slate-500 uppercase tracking-wide mb-1">Consumption</div>
+          {/* Table Header */}
+          <div className="grid grid-cols-3 gap-1 mb-1">
+            <span className="text-xs text-slate-500 uppercase tracking-wide"></span>
+            <span className="text-xs text-slate-500 uppercase tracking-wide text-right">Per Lap</span>
+            {showFuelRequired && fuelRequired && (
+              <span className="text-xs text-slate-500 uppercase tracking-wide text-right">To Finish</span>
+            )}
+          </div>
+          {/* Table Rows */}
           {showMin && fuelData && displayData.minLapUsage > 0 && (
-            <div className="flex justify-between py-1 hover:bg-white/5 hover:mx-[-4px] hover:px-1 rounded transition-colors">
+            <div className="grid grid-cols-3 gap-1 py-1 hover:bg-white/5 hover:mx-[-4px] hover:px-1 rounded transition-colors">
               <span className="text-slate-400 text-xs">Min</span>
-              <span className="text-white text-sm font-medium">
+              <span className="text-white text-sm font-medium text-right">
                 {formatFuel(displayData.minLapUsage, fuelUnits)}
               </span>
+              {showFuelRequired && fuelRequired && (
+                <span className="text-green-400 text-sm font-medium text-right">
+                  {formatFuel(fuelRequired.min, fuelUnits, 1)}
+                </span>
+              )}
             </div>
           )}
           {showLastLap && (
-            <div className="flex justify-between py-1 hover:bg-white/5 hover:mx-[-4px] hover:px-1 rounded transition-colors">
+            <div className="grid grid-cols-3 gap-1 py-1 hover:bg-white/5 hover:mx-[-4px] hover:px-1 rounded transition-colors">
               <span className="text-slate-400 text-xs">Last Lap</span>
-              <span className="text-white text-sm font-medium">
+              <span className="text-white text-sm font-medium text-right">
                 {formatFuel(displayData.lastLapUsage, fuelUnits)}
               </span>
+              {showFuelRequired && fuelRequired && (
+                <span className="text-slate-500 text-sm font-medium text-right">-</span>
+              )}
             </div>
           )}
           {show3LapAvg && (
-            <div className="flex justify-between py-1 hover:bg-white/5 hover:mx-[-4px] hover:px-1 rounded transition-colors">
+            <div className="grid grid-cols-3 gap-1 py-1 hover:bg-white/5 hover:mx-[-4px] hover:px-1 rounded transition-colors">
               <span className="text-slate-400 text-xs">3 Lap Avg</span>
-              <span className="text-white text-sm font-medium">
+              <span className="text-white text-sm font-medium text-right">
                 {formatFuel(displayData.avg3Laps, fuelUnits)}
               </span>
+              {showFuelRequired && fuelRequired && (
+                <span className="text-slate-500 text-sm font-medium text-right">-</span>
+              )}
             </div>
           )}
           {show10LapAvg && (
-            <div className="flex justify-between py-1 hover:bg-white/5 hover:mx-[-4px] hover:px-1 rounded transition-colors">
-              <span className="text-slate-400 text-xs">10 Lap Avg</span>
-              <span className="text-white text-sm font-medium">
+            <div className="grid grid-cols-3 gap-1 py-1 hover:bg-white/5 hover:mx-[-4px] hover:px-1 rounded transition-colors">
+              <span className="text-slate-400 text-xs">Avg</span>
+              <span className="text-white text-sm font-medium text-right">
                 {formatFuel(displayData.avg10Laps, fuelUnits)}
               </span>
+              {showFuelRequired && fuelRequired && (
+                <span className="text-yellow-400 text-sm font-medium text-right">
+                  {formatFuel(fuelRequired.avg, fuelUnits, 1)}
+                </span>
+              )}
             </div>
           )}
           {showMax && fuelData && displayData.maxLapUsage > 0 && (
-            <div className="flex justify-between py-1 hover:bg-white/5 hover:mx-[-4px] hover:px-1 rounded transition-colors">
+            <div className="grid grid-cols-3 gap-1 py-1 hover:bg-white/5 hover:mx-[-4px] hover:px-1 rounded transition-colors">
               <span className="text-slate-400 text-xs">Max</span>
-              <span className="text-white text-sm font-medium">
+              <span className="text-white text-sm font-medium text-right">
                 {formatFuel(displayData.maxLapUsage, fuelUnits)}
               </span>
+              {showFuelRequired && fuelRequired && (
+                <span className="text-orange-400 text-sm font-medium text-right">
+                  {formatFuel(fuelRequired.max, fuelUnits, 1)}
+                </span>
+              )}
             </div>
           )}
         </div>
@@ -211,7 +241,7 @@ export const FuelCalculator = ({
             <div className="text-center text-xs text-slate-400">
               {displayData.canFinish
                 ? 'No pit stop needed'
-                : `Lap ${displayData.pitWindowOpen} - ${displayData.pitWindowClose}`}
+                : `Lap ${displayData.pitWindowOpen} - ${displayData.pitWindowClose.toFixed(1)}`}
             </div>
           </div>
         </div>
@@ -240,32 +270,6 @@ export const FuelCalculator = ({
         </div>
       )}
 
-      {/* Fuel Required Section */}
-      {showFuelRequired && fuelRequired && fuelData && (
-        <div className={`${layout === 'horizontal' ? 'mb-1 pb-1' : 'mb-3 pb-2'} border-b border-slate-600/30`}>
-          <div className="text-xs text-slate-500 uppercase tracking-wide mb-1.5">Fuel Required</div>
-          <div className="grid grid-cols-3 gap-2 text-center">
-            <div className="flex flex-col items-center">
-              <span className="text-[10px] text-slate-400 uppercase">Min</span>
-              <span className="text-xs font-medium text-green-400">
-                {formatFuel(fuelRequired.min, fuelUnits, 1)}
-              </span>
-            </div>
-            <div className="flex flex-col items-center">
-              <span className="text-[10px] text-slate-400 uppercase">Avg</span>
-              <span className="text-xs font-medium text-yellow-400">
-                {formatFuel(fuelRequired.avg, fuelUnits, 1)}
-              </span>
-            </div>
-            <div className="flex flex-col items-center">
-              <span className="text-[10px] text-slate-400 uppercase">Max</span>
-              <span className="text-xs font-medium text-orange-400">
-                {formatFuel(fuelRequired.max, fuelUnits, 1)}
-              </span>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Footer: Key Information */}
       <div className={`flex justify-around ${layout === 'horizontal' ? 'pt-1 mt-1' : 'pt-3 mt-2'} border-t border-slate-600/50 gap-3`}>
@@ -286,6 +290,19 @@ export const FuelCalculator = ({
             <span className="text-xs text-slate-400 uppercase">Add at Stop</span>
             <span className="text-sm font-semibold text-green-400">
               {formatFuel(displayData.fuelToAdd, fuelUnits, 1)}
+            </span>
+          </div>
+        )}
+        {displayData.avgLapTime > 0 && displayData.lapsWithFuel > 0 && (
+          <div className="flex flex-col items-center gap-1 flex-1">
+            <span className="text-xs text-slate-400 uppercase">Time Empty</span>
+            <span className="text-sm font-semibold text-cyan-400">
+              {(() => {
+                const totalSeconds = Math.floor(displayData.lapsWithFuel * displayData.avgLapTime);
+                const minutes = Math.floor(totalSeconds / 60);
+                const seconds = totalSeconds % 60;
+                return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+              })()}
             </span>
           </div>
         )}

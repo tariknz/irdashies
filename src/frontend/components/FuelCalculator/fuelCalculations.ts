@@ -18,7 +18,7 @@ export function validateLapData(
   // Need at least 3 laps for statistical validation
   if (recentLaps.length < 3) return true;
 
-  // Statistical outlier detection (3 standard deviations)
+  // Statistical outlier detection
   const fuelValues = recentLaps.map((l) => l.fuelUsed);
   const mean = fuelValues.reduce((a, b) => a + b) / fuelValues.length;
   const variance =
@@ -26,8 +26,13 @@ export function validateLapData(
     fuelValues.length;
   const stdDev = Math.sqrt(variance);
 
-  // Allow up to 3 standard deviations from mean
-  return Math.abs(fuelUsed - mean) <= 3 * stdDev;
+  // Use minimum threshold of 15% of mean to handle fuel saving scenarios
+  // This ensures laps with different driving styles (normal vs fuel saving) are accepted
+  // Example: 1.08L normal, 0.97L ultra save = ~10% difference, well within 15%
+  const minThreshold = mean * 0.15;
+  const threshold = Math.max(3 * stdDev, minThreshold);
+
+  return Math.abs(fuelUsed - mean) <= threshold;
 }
 
 /**
