@@ -34,6 +34,7 @@ export const InputBar = ({
   },
 }: InputBarProps) => {
   const svgRef = useRef<SVGSVGElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const { includeAbs = true, includeClutch, includeBrake, includeThrottle } = settings;
 
   // Calculate active inputs and their values
@@ -50,24 +51,31 @@ export const InputBar = ({
     }));
   }, [brake, throttle, clutch, brakeAbsActive, includeClutch, includeBrake, includeThrottle, includeAbs]);
 
+  // Calculate bar layout
+  const barWidth = 40;
+  const gap = 8;
+  const totalWidth = activeInputs.length * barWidth + (activeInputs.length - 1) * gap;
+
   useEffect(() => {
     drawBars(svgRef.current, activeInputs, brakeAbsActive, includeAbs);
   }, [activeInputs, brakeAbsActive, includeAbs]);
 
   return (
-    <div className="grid grid-cols-[repeat(var(--cols),1fr)] grid-rows-[auto_1fr] h-full w-full gap-1" 
-         style={{ '--cols': activeInputs.length } as React.CSSProperties}>
+    <div ref={containerRef} className="flex flex-col h-full w-full items-center">
       {/* Top row: Values as text */}
-      {activeInputs.map(({ key, value }) => (
-        <div key={key} className="text-white text-center text-2xl font-bold">
-          {(value * 100).toFixed(0)}
-        </div>
-      ))}
+      <div className="flex justify-center gap-2" style={{ width: `${totalWidth}px`, gap: `${gap}px` }}>
+        {activeInputs.map(({ key, value }) => (
+          <div key={key} className="text-white text-center text-2xl font-bold" style={{ width: `${barWidth}px` }}>
+            {(value * 100).toFixed(0)}
+          </div>
+        ))}
+      </div>
       
-      {/* Bottom row: SVG bars (spans all columns) */}
+      {/* Bottom row: SVG bars */}
       <svg 
         ref={svgRef} 
-        className="col-span-full w-full h-full"
+        className="flex-1"
+        style={{ width: `${totalWidth}px` }}
         preserveAspectRatio="none"
       />
     </div>
@@ -82,29 +90,26 @@ function drawBars(
 ) {
   if (!svgElement) return;
 
-  const width = svgElement.clientWidth;
   const height = svgElement.clientHeight;
 
-  const xScale = d3
-    .scaleBand()
-    .domain(data.map((_, i) => i.toString()))
-    .range([0, width])
-    .padding(0.25);
+  // Calculate bar dimensions
+  const barWidth = 40; // Fixed width for each bar
+  const gap = 8; // Small gap between bars
 
   const yScale = d3.scaleLinear().domain([0, 1]).range([height, 0]);
 
   const svg = d3.select(svgElement);
   svg.selectAll('*').remove();
 
-  // Draw bars
+  // Draw bars (no centering needed since SVG width matches total width)
   svg
     .selectAll('rect')
     .data(data)
     .enter()
     .append('rect')
-    .attr('x', (_, i) => xScale(i.toString()) ?? 0)
+    .attr('x', (_, i) => i * (barWidth + gap))
     .attr('y', (d) => yScale(d.value))
-    .attr('width', xScale.bandwidth())
+    .attr('width', barWidth)
     .attr('height', (d) => height - yScale(d.value))
     .attr('fill', (d) => d.color);
 
@@ -114,7 +119,7 @@ function drawBars(
     if (brakeIndex !== -1) {
       svg
         .append('text')
-        .attr('x', (xScale(brakeIndex.toString()) ?? 0) + xScale.bandwidth() / 2)
+        .attr('x', brakeIndex * (barWidth + gap) + barWidth / 2)
         .attr('y', height - 4) // 4px above the bottom of the bar
         .attr('text-anchor', 'middle')
         .attr('font-size', '10rem')
