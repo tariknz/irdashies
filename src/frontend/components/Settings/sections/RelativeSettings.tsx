@@ -279,6 +279,31 @@ export const RelativeSettings = () => {
                 </DndContext>
               </div>
             </div>
+            {/* Session Bar Settings */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-medium text-slate-200">
+                  Session Bar
+                </h3>
+              </div>
+              <div className="space-y-3 px-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-sm text-slate-300">Brake Bias</span>
+                    <p className="text-xs text-slate-400">
+                      Show brake bias in header (or brake valve for Clio)
+                    </p>
+                  </div>
+                  <ToggleSwitch
+                    enabled={settings.config.brakeBias.enabled}
+                    onToggle={(enabled) =>
+                      handleConfigChange({ brakeBias: { enabled } })
+                    }
+                  />
+                </div>
+              </div>
+            </div>
+
             {/* Driver Standings Settings */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
