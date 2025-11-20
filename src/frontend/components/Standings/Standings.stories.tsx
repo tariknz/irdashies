@@ -68,3 +68,7 @@ export const PCCRaceWithMicUse: Story = {
 export const WithFlairs: Story = {
   decorators: [TelemetryDecorator('/test-data/1752616787255')],
 };
+
+export const Pitstops: Story = {
+  decorators: [TelemetryDecorator('/test-data/1752616787255')],
+};

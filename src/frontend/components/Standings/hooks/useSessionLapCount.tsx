@@ -4,7 +4,7 @@ import { useMemo } from 'react';
 export const useSessionLapCount = () => {
   const sessionNum = useTelemetryValue('SessionNum');
   const sessionLaps = useSessionLaps(sessionNum);
-  const current = useTelemetryValue('RaceLaps');
+  const current = useTelemetryValue('Lap');
   const timeRemaining = useTelemetryValue('SessionTimeTotal');
   const timeElapsed = useTelemetryValue('SessionTimeRemain');
 
