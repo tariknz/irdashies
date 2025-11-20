@@ -62,6 +62,8 @@ export const Standings = () => {
                   isPlayer={result.isPlayer}
                   hasFastestTime={result.hasFastestTime}
                   delta={settings?.delta?.enabled ? result.delta : undefined}
+                  gap={settings?.gap?.enabled ? result.gap : undefined}
+                  interval={settings?.interval?.enabled ? result.interval : undefined}
                   position={result.classPosition}
                   iratingChange={
                     settings?.iratingChange?.enabled ? (
