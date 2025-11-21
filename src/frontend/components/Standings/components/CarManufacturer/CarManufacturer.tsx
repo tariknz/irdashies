@@ -3,15 +3,7 @@ import carLogoImage from '../../../../assets/img/car_manufacturer.png';
 interface CarManufacturerProps {
   carId: number;
   className?: string;
-  size?: 'sm' | 'md' | 'lg';
 }
-
-// Size classes for the car logo
-const sizeClasses = {
-  sm: 'text-[1em]',
-  md: 'text-[1.5em]',
-  lg: 'text-[2em]',
-};
 
 const carLogoPositions: Record<string, { x: string; y: string }> = {
   unknown: { x: '0', y: '0' },
@@ -240,7 +232,6 @@ export const CAR_ID_TO_CAR_MANUFACTURER: Record<number, string> = {
 
 export const CarManufacturer = ({
   carId,
-  size = 'md',
 }: CarManufacturerProps) => {
   const carManufacturer = CAR_ID_TO_CAR_MANUFACTURER[carId] || 'unknown';
 
@@ -250,7 +241,7 @@ export const CarManufacturer = ({
 
   return (
     <span
-      className={`inline-block w-[1em] h-[1em] bg-no-repeat bg-size-[100%_auto] ${sizeClasses[size]}`}
+      className={`inline-block w-[1em] h-[1em] bg-no-repeat bg-size-[100%_auto]`}
       style={{
         backgroundImage: `url(${carLogoImage})`,
         backgroundPosition: `${carLogoPositions[carManufacturer].x} ${carLogoPositions[carManufacturer].y}`,
