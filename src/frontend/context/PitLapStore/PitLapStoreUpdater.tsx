@@ -20,7 +20,7 @@ export const usePitLabStoreUpdater = () => {
   const throttledSessionTime = useStore(useTelemetryStore, (state) => {
     const rawTime = state.telemetry?.SessionTime?.value?.[0];
     if (rawTime == null) return null;
-    return Math.floor(rawTime / 5) * 5;
+    return Math.floor(rawTime);
   });
 
   useEffect(() => {

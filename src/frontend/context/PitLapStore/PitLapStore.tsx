@@ -1,4 +1,6 @@
-import { create, useStore } from 'zustand';
+import { create } from 'zustand';
+import { useStoreWithEqualityFn } from 'zustand/traditional';
+import { arrayCompare } from '../TelemetryStore/telemetryCompare';
 
 interface PitLapState {
   sessionUniqId: number;
@@ -28,7 +30,7 @@ export const usePitLapStore = create<PitLapState>((set, get) => ({
     const { sessionUniqId, pitLaps, sessionTime, prevCarTrackSurface, actualCarTrackSurface} = get();
 
     // reset store when session was changed
-    if ((sessionUniqId !== 0 && currentSessionUniqId !== sessionUniqId) || sessionTime>currentSessionTime) {
+    if ((sessionUniqId !== 0 && currentSessionUniqId !== sessionUniqId) || sessionTime > currentSessionTime) {
       set({ sessionUniqId: currentSessionUniqId,
             pitLaps: [],
             carLaps: [],
@@ -66,6 +68,6 @@ export const usePitLapStore = create<PitLapState>((set, get) => ({
 /**
  * @returns An array of average lap times for each car in the session by index. Time value in seconds
  */
-export const usePitLap = (): number[] => useStore(usePitLapStore, (state) => state.pitLaps);
-export const useCarLap = (): number[] => useStore(usePitLapStore, (state) => state.carLaps);
-export const usePrevCarTrackSurface = (): number[] => useStore(usePitLapStore, (state) => state.prevCarTrackSurface);
+export const usePitLap = (): number[] => useStoreWithEqualityFn(usePitLapStore, (state) => state.pitLaps, arrayCompare);
+export const useCarLap = (): number[] => useStoreWithEqualityFn(usePitLapStore, (state) => state.carLaps, arrayCompare);
+export const usePrevCarTrackSurface = (): number[] => useStoreWithEqualityFn(usePitLapStore, (state) => state.prevCarTrackSurface, arrayCompare);
