@@ -1,6 +1,5 @@
 import { useMemo } from 'react';
 import {
-  useDriverCarIdx,
   useSessionDrivers,
   useSessionFastestLaps,
   useSessionIsOfficial,
@@ -9,6 +8,7 @@ import {
   useSessionType,
   useTelemetry,
   useTelemetryValue,
+  useFocusCarIdx,
 } from '@irdashies/context';
 import { useLapTimeHistory } from '../../../context/LapTimesStore/LapTimesStore';
 import {
@@ -31,7 +31,8 @@ export const useDriverStandings = (settings?: StandingsWidgetSettings['config'])
   } = settings ?? {};
 
   const sessionDrivers = useSessionDrivers();
-  const driverCarIdx = useDriverCarIdx();
+  // Use focus car index which handles spectator mode (uses CamCarIdx when spectating)
+  const driverCarIdx = useFocusCarIdx();
   const qualifyingResults = useSessionQualifyingResults();
   const sessionNum = useTelemetryValue('SessionNum');
   const sessionType = useSessionType(sessionNum);
