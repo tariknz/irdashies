@@ -1,23 +1,20 @@
-import type { Telemetry } from '@irdashies/types';
 import { create, useStore } from 'zustand';
 
 export interface LapTimeBuffer {
   lastLapTimes: number[];
-  lastSessionTime: number;
   lapTimeHistory: number[][]; // [carIdx][sample]
   version: number; // Incremented when lapTimeHistory changes
 }
 
 interface LapTimesState {
   lapTimeBuffer: LapTimeBuffer | null;
-  lastLapTimeUpdate: number;
   lapTimes: number[];
-  lastSessionNum: number | null;
-  updateLapTimes: (telemetry: Telemetry | null) => void;
+  sessionNum: number | null;
+  updateLapTimes: (carIdxLastLapTime: number[], sessionNum: number | null) => void;
+  reset: () => void;
 }
 
 const LAP_TIME_AVG_WINDOW = 5; // Average over last 5 laps
-const LAP_TIME_UPDATE_INTERVAL = 1; // Update interval in seconds
 const OUTLIER_THRESHOLD = 1.0; // Outlier detection threshold
 
 // Helper function to calculate median
@@ -61,36 +58,25 @@ function filterOutliers(lapTimes: number[]): number[] {
 
 export const useLapTimesStore = create<LapTimesState>((set, get) => ({
   lapTimeBuffer: null,
-  lastLapTimeUpdate: 0,
   lapTimes: [],
-  lastSessionNum: null,
-  updateLapTimes: (telemetry) => {
-    const { lapTimeBuffer, lastLapTimeUpdate, lastSessionNum } = get();
-    const sessionTime = telemetry?.SessionTime?.value?.[0] ?? 0;
-    const currentSessionNum = telemetry?.SessionNum?.value?.[0] ?? null;
+  sessionNum: null,
+  updateLapTimes: (carIdxLastLapTime, sessionNum) => {
+    const { lapTimeBuffer, sessionNum: prevSessionNum } = get();
 
-    // Reset lap time history when session changes (e.g., practice -> qualifying -> race)
-    if (lastSessionNum !== null && currentSessionNum !== null && currentSessionNum !== lastSessionNum) {
-      console.log(`[LapTimesStore] Session changed from ${lastSessionNum} to ${currentSessionNum}, resetting lap time history`);
+    // Auto-reset if session changed
+    if (prevSessionNum !== null && sessionNum !== null && sessionNum !== prevSessionNum) {
+      console.log(`[LapTimesStore] Session changed from ${prevSessionNum} to ${sessionNum}, resetting`);
       set({
         lapTimeBuffer: null,
-        lastLapTimeUpdate: 0,
         lapTimes: [],
-        lastSessionNum: currentSessionNum,
+        sessionNum,
       });
       return;
     }
 
-    // Check if enough simulation time has passed since last update
-    if (sessionTime - lastLapTimeUpdate < LAP_TIME_UPDATE_INTERVAL) {
-      return;
-    }
-
-    const carIdxLastLapTime = telemetry?.CarIdxLastLapTime?.value ?? [];
     if (!carIdxLastLapTime.length) {
       set({
         lapTimes: carIdxLastLapTime.map(() => 0),
-        lastSessionNum: currentSessionNum,
       });
       return;
     }
@@ -101,11 +87,7 @@ export const useLapTimesStore = create<LapTimesState>((set, get) => ({
 
     let historyChanged = false;
 
-    if (
-      lapTimeBuffer &&
-      lapTimeBuffer.lastLapTimes.length === carIdxLastLapTime.length &&
-      sessionTime !== lapTimeBuffer.lastSessionTime
-    ) {
+    if (lapTimeBuffer && lapTimeBuffer.lastLapTimes.length === carIdxLastLapTime.length) {
       carIdxLastLapTime.forEach((lapTime, idx) => {
         const prevLapTime = lapTimeBuffer.lastLapTimes[idx];
         // Only add to history if it's a new valid lap time
@@ -142,13 +124,19 @@ export const useLapTimesStore = create<LapTimesState>((set, get) => ({
     set({
       lapTimeBuffer: {
         lastLapTimes: [...carIdxLastLapTime],
-        lastSessionTime: sessionTime,
         lapTimeHistory: newHistory,
         version: historyChanged ? (lapTimeBuffer?.version ?? 0) + 1 : (lapTimeBuffer?.version ?? 0),
       },
-      lastLapTimeUpdate: sessionTime,
       lapTimes: avgLapTimes,
-      lastSessionNum: currentSessionNum,
+      sessionNum,
+    });
+  },
+  reset: () => {
+    console.log('[LapTimesStore] Resetting lap time history');
+    set({
+      lapTimeBuffer: null,
+      lapTimes: [],
+      sessionNum: null,
     });
   },
 }));

@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
-import { useTelemetryStore } from '../TelemetryStore/TelemetryStore';
+import { useTelemetryValue, useTelemetryValues } from '../TelemetryStore/TelemetryStore';
 import { useLapTimesStore } from './LapTimesStore';
+import { useStandingsSettings } from '../../components/Standings/hooks/useStandingsSettings';
 
 /**
  * Hook that automatically updates the LapTimesStore with telemetry data.
@@ -9,12 +10,14 @@ import { useLapTimesStore } from './LapTimesStore';
  * Use this hook in components that need lap time history tracking (e.g., Standings overlay).
  */
 export const useLapTimesStoreUpdater = () => {
-  const telemetry = useTelemetryStore(state => state.telemetry);
+  const sessionNum = useTelemetryValue('SessionNum');
+  const carIdxLastLapTime = useTelemetryValues('CarIdxLastLapTime');
   const updateLapTimes = useLapTimesStore(state => state.updateLapTimes);
+  const standingsSettings = useStandingsSettings();
 
   useEffect(() => {
-    if (telemetry) {
-      updateLapTimes(telemetry);
+    if (carIdxLastLapTime && standingsSettings?.lapTimeDeltas?.enabled) {
+      updateLapTimes(carIdxLastLapTime, sessionNum ?? null);
     }
-  }, [telemetry, updateLapTimes]);
+  }, [carIdxLastLapTime, sessionNum, updateLapTimes, standingsSettings?.lapTimeDeltas?.enabled]);
 };

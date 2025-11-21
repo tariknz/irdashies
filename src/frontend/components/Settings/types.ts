@@ -43,6 +43,7 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
     carManufacturer: { enabled: boolean };
     titleBar: { enabled: boolean; progressBar: { enabled: boolean } };
     showOnlyWhenOnTrack: boolean;
+    brakeBias: { enabled: boolean };
     badge: { enabled: boolean };
     iratingChange: { enabled: boolean };
     delta: { enabled: boolean };
@@ -50,6 +51,12 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
     driverName: { enabled: boolean };
     pitStatus: { enabled: boolean };
     displayOrder: string[];
+    enhancedGapCalculation: {
+      enabled: boolean;
+      interpolationMethod: 'linear' | 'cubic';
+      sampleInterval: number;
+      maxLapHistory: number;
+    };
   };
 }
 
