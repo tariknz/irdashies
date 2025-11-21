@@ -1,11 +1,11 @@
 import { useMemo } from 'react';
 import {
-  useDriverCarIdx,
   useSessionStore,
   useTelemetryValues,
   useRelativeGapStore,
   detectEdgeCases,
   calculateRelativeGap,
+  useFocusCarIdx,
 } from '@irdashies/context';
 import { useDriverStandings } from './useDriverPositions';
 import type { Standings } from '../createStandings';
@@ -19,7 +19,8 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
   const carIdxLap = useTelemetryValues('CarIdxLap');
   const carIdxTrackSurface = useTelemetryValues('CarIdxTrackSurface');
   const sessionTime = useTelemetryValues('SessionTime')?.[0] ?? 0;
-  const playerIndex = useDriverCarIdx();
+  // Use focus car index which handles spectator mode (uses CamCarIdx when spectating)
+  const playerIndex = useFocusCarIdx();
   const paceCarIdx =
     useSessionStore((s) => s.session?.DriverInfo?.PaceCarIdx) ?? -1;
 

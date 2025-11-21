@@ -3,12 +3,12 @@ import {
   useTelemetryValue,
   useTelemetry,
   useSessionDrivers,
-  useDriverCarIdx,
   useSessionQualifyingResults,
   useCurrentSessionType,
   useCarLap,
   usePitLap,
   usePrevCarTrackSurface,
+  useFocusCarIdx,
 } from '@irdashies/context';
 
 import { Standings, type LastTimeState } from '../createStandings';
@@ -112,7 +112,8 @@ export const useDriverStandings = () => {
   const drivers = useDrivers();
   const radioTransmitCarIdx = useTelemetryValue('RadioTransmitCarIdx');
   const carStates = useCarState();
-  const playerCarIdx = useDriverCarIdx();
+  // Use focus car index which handles spectator mode (uses CamCarIdx when spectating)
+  const playerCarIdx = useFocusCarIdx();
   const sessionType = useCurrentSessionType();
   const qualifyingPositions = useSessionQualifyingResults();
 
