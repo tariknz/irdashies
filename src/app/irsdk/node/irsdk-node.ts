@@ -165,18 +165,8 @@ export class IRacingSDK {
 
     try {
       const seshString = this._sdk?.getSessionData();
-      // Fix YAML issues: quote string values that contain commas
-      let fixedYaml = seshString;
-      if (fixedYaml) {
-        const lines = fixedYaml.split('\n');
-        fixedYaml = lines.map(line => {
-          const match = line.match(/^(\s*\w+:\s*)(.+)$/);
-          if (match && match[2] && match[2].includes(',') && !match[2].startsWith('"') && !match[2].startsWith("'")) {
-            return `${match[1]}"${match[2]}"`;
-          }
-          return line;
-        }).join('\n');
-      }
+      // Remove trailing commas
+      const fixedYaml = seshString?.replace(/(\w+):\s*,\s*\n/g, '$1: \n');
       this._sessionData = yaml.load(fixedYaml, { json: true }) as SessionData;
       return this._sessionData;
     } catch (err) {
