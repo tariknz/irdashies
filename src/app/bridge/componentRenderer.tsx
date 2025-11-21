@@ -491,13 +491,8 @@ export async function renderComponent(
 
     // Component that applies theme CSS classes - must be inside DashboardProvider
     const ThemeWrapper = () => {
-      const { currentDashboard, isDemoMode } = useDashboard();
+      const { currentDashboard } = useDashboard();
       const settings = currentDashboard?.generalSettings;
-
-      // Debug effect to log when isDemoMode changes
-      React.useEffect(() => {
-        debugLog('🎭 ThemeWrapper: isDemoMode changed to:', isDemoMode);
-      }, [isDemoMode]);
 
       React.useEffect(() => {
         debugLog('🎨 ThemeWrapper effect running:', { settings, hasContainer: !!containerElement });
@@ -539,38 +534,7 @@ export async function renderComponent(
         debugLog('  📊 Final classList:', Array.from(targetElement.classList));
       }, [settings]);
 
-      debugLog('🎭 ThemeWrapper render, isDemoMode:', isDemoMode);
-
-      return (
-        <>
-          {isDemoMode && (
-            <div 
-              data-demo-badge="true"
-              style={{
-                position: 'fixed',
-                top: '10px',
-                right: '10px',
-                background: 'rgba(251, 191, 36, 0.95)',
-                color: '#1a1a1a',
-                padding: '8px 16px',
-                borderRadius: '6px',
-                fontFamily: 'system-ui, -apple-system, sans-serif',
-                fontSize: '14px',
-                fontWeight: 'bold',
-                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)',
-                zIndex: 999999,
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                pointerEvents: 'none',
-              }}>
-              <span style={{ fontSize: '18px' }}>🎭</span>
-              DEMO MODE
-            </div>
-          )}
-          <ComponentFn {...config} />
-        </>
-      );
+      return <ComponentFn {...config} />;
     };
 
     const WrappedComponent = (

@@ -32,7 +32,6 @@ iRacing SDK → Electron Main Process → WebSocket Server → Browser Clients
 2. **Component Renderer** (`componentRenderer.tsx`)
    - Browser-side React renderer with WebSocket client
    - Applies theme settings and dashboard configuration
-   - Shows demo mode badge when using mock data
    - Supports conditional debug logging via `?debug=true`
 
 3. **Mock Data Generator** (`generateMockData.ts`)
@@ -102,7 +101,6 @@ http://localhost:3000/component/standings?debug=true
 
 Toggle between live iRacing data and mock data:
 - Use the Electron app's demo mode toggle
-- Demo mode badge appears in browser components
 - WebSocket automatically syncs state to all connected clients
 - Bridge resubscribes when switching data sources
 
@@ -112,7 +110,6 @@ Toggle between live iRacing data and mock data:
 ✅ **Transparent Backgrounds** - Ready for overlays and embedding  
 ✅ **Theme Support** - Respects dashboard font size and color settings  
 ✅ **Multi-Client** - Multiple browsers can connect simultaneously  
-✅ **Demo Mode Sync** - Live indication when using mock data  
 ✅ **Debug Mode** - Conditional logging with `?debug=true`  
 ✅ **Hot Reload** - Components update when dashboard settings change  
 
