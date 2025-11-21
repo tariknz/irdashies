@@ -25,12 +25,12 @@ export const usePitLabStoreUpdater = () => {
 
   useEffect(() => {
     updatePitLapTimes(
-      carIdxOnPitRoad ?? null,
-      carIdxLap ?? null,
-      sessionUniqueID ?? null,
-      throttledSessionTime ?? null,
-      carIdxTrackSurface ?? null,
-      sessionState ?? null
+      carIdxOnPitRoad ?? [],
+      carIdxLap ?? [],
+      sessionUniqueID ?? 0,
+      throttledSessionTime ?? 0,
+      carIdxTrackSurface ?? [],
+      sessionState ?? 0
     );
   }, [carIdxOnPitRoad, carIdxLap, sessionUniqueID, throttledSessionTime, carIdxTrackSurface, sessionState, updatePitLapTimes]);
 };

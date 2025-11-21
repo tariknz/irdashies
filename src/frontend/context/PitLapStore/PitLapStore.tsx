@@ -8,12 +8,12 @@ interface PitLapState {
   prevCarTrackSurface: number[] // [carIdx],
   sessionTime: number;
   updatePitLaps: (
-    carIdxOnPitRoad: number[] | null,
-    carIdxLap: number[] | null,
-    currentSessionUniqId: number | null,
-    currentSessionTime: number | null,
-    carIdxTrackSurface: number[] | null,
-    sessionState: number | null
+    carIdxOnPitRoad: number[],
+    carIdxLap: number[],
+    currentSessionUniqId: number,
+    currentSessionTime: number,
+    carIdxTrackSurface: number[],
+    sessionState: number
   ) => void;
 }
 
@@ -26,33 +26,27 @@ export const usePitLapStore = create<PitLapState>((set, get) => ({
   actualCarTrackSurface: [],
   updatePitLaps: (carIdxOnPitRoad, carIdxLap, currentSessionUniqId, currentSessionTime, carIdxTrackSurface, sessionState) => {
     const { sessionUniqId, pitLaps, sessionTime, prevCarTrackSurface, actualCarTrackSurface} = get();
-    const safeCarIdxOnPitRoad = carIdxOnPitRoad ?? [];
-    const safeCarIdxLap = carIdxLap ?? [];
-    const safeCurrentSessionUniqId = currentSessionUniqId ?? 0;
-    const safeCurrentSessionTime = currentSessionTime ?? 0;
-    const safeCarIdxTrackSurface = carIdxTrackSurface ?? [];
-    const safeSessionState = sessionState ?? 0;
 
     // reset store when session was changed
-    if ((sessionUniqId !== 0 && safeCurrentSessionUniqId !== sessionUniqId) || sessionTime>safeCurrentSessionTime) {
-      set({ sessionUniqId: safeCurrentSessionUniqId,
+    if ((sessionUniqId !== 0 && currentSessionUniqId !== sessionUniqId) || sessionTime>currentSessionTime) {
+      set({ sessionUniqId: currentSessionUniqId,
             pitLaps: [],
             carLaps: [],
             actualCarTrackSurface: [],
             prevCarTrackSurface: [],
-            sessionTime: safeCurrentSessionTime
+            sessionTime: currentSessionTime
       })
       return
     }
 
-    safeCarIdxOnPitRoad.forEach((inPit, idx) => {
+    carIdxOnPitRoad.forEach((inPit, idx) => {
       if (inPit) {
-        pitLaps[idx] = safeCarIdxLap[idx];
+        pitLaps[idx] = carIdxLap[idx];
       }
     });
 
-    safeCarIdxTrackSurface.forEach((location, idx) => {
-      if (actualCarTrackSurface[idx] !== location && safeSessionState < 5 && location != -1) {
+    carIdxTrackSurface.forEach((location, idx) => {
+      if (actualCarTrackSurface[idx] !== location && sessionState < 5 && location != -1) {
         prevCarTrackSurface[idx] = actualCarTrackSurface[idx];
         actualCarTrackSurface[idx] = location;
       }
@@ -60,11 +54,11 @@ export const usePitLapStore = create<PitLapState>((set, get) => ({
 
     set({
       pitLaps: pitLaps,
-      carLaps: safeCarIdxLap,
+      carLaps: carIdxLap,
       prevCarTrackSurface: prevCarTrackSurface,
       actualCarTrackSurface: actualCarTrackSurface,
-      sessionTime: safeCurrentSessionTime,
-      sessionUniqId: safeCurrentSessionUniqId
+      sessionTime: currentSessionTime,
+      sessionUniqId: currentSessionUniqId
     });
   },
 }));

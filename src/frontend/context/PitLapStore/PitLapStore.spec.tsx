@@ -23,12 +23,6 @@ describe('PitLapStore', () => {
     expect(state.actualCarTrackSurface).toEqual([]);
   });
 
-  it('should handle null telemetry values', () => {
-    usePitLapStore.getState().updatePitLaps(null, null, null, null, null, null);
-    expect(usePitLapStore.getState().pitLaps).toEqual([]);
-    expect(usePitLapStore.getState().carLaps).toEqual([]);
-  });
-
   it('should update pit laps when car enters pit road', () => {
     const carIdxOnPitRoad = [0, 1, 0, 1];
     const carIdxLap = [5, 10, 15, 20];
