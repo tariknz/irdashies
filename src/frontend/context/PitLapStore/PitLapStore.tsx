@@ -1,4 +1,3 @@
-import type { Telemetry } from '@irdashies/types';
 import { create, useStore } from 'zustand';
 
 interface PitLapState {
@@ -8,7 +7,14 @@ interface PitLapState {
   actualCarTrackSurface: number[]
   prevCarTrackSurface: number[] // [carIdx],
   sessionTime: number;
-  updatePitLaps: (telemetry: Telemetry | null) => void;
+  updatePitLaps: (
+    carIdxOnPitRoad: number[] | null,
+    carIdxLap: number[] | null,
+    currentSessionUniqId: number | null,
+    currentSessionTime: number | null,
+    carIdxTrackSurface: number[] | null,
+    sessionState: number | null
+  ) => void;
 }
 
 export const usePitLapStore = create<PitLapState>((set, get) => ({
@@ -18,35 +24,35 @@ export const usePitLapStore = create<PitLapState>((set, get) => ({
   carLaps: [],
   prevCarTrackSurface: [],
   actualCarTrackSurface: [],
-  updatePitLaps: (telemetry) => {
+  updatePitLaps: (carIdxOnPitRoad, carIdxLap, currentSessionUniqId, currentSessionTime, carIdxTrackSurface, sessionState) => {
     const { sessionUniqId, pitLaps, sessionTime, prevCarTrackSurface, actualCarTrackSurface} = get();
-    const carIdxOnPitRoad = telemetry?.CarIdxOnPitRoad?.value ?? [];
-    const carIdxLap = telemetry?.CarIdxLap?.value ?? [];
-    const currentSessionUniqId = telemetry?.SessionUniqueID?.value?.[0] ?? 0;
-    const currentSessionTime = telemetry?.SessionTime?.value?.[0] ?? 0;
-    const carIdxTrackSurface = telemetry?.CarIdxTrackSurface?.value ?? [];
-    const sessionState = telemetry?.SessionState?.value?.[0] ?? 0;
+    const safeCarIdxOnPitRoad = carIdxOnPitRoad ?? [];
+    const safeCarIdxLap = carIdxLap ?? [];
+    const safeCurrentSessionUniqId = currentSessionUniqId ?? 0;
+    const safeCurrentSessionTime = currentSessionTime ?? 0;
+    const safeCarIdxTrackSurface = carIdxTrackSurface ?? [];
+    const safeSessionState = sessionState ?? 0;
 
     // reset store when session was changed
-    if ((sessionUniqId !== 0 && currentSessionUniqId !== sessionUniqId) || sessionTime>currentSessionTime) {
-      set({ sessionUniqId: currentSessionUniqId,
+    if ((sessionUniqId !== 0 && safeCurrentSessionUniqId !== sessionUniqId) || sessionTime>safeCurrentSessionTime) {
+      set({ sessionUniqId: safeCurrentSessionUniqId,
             pitLaps: [],
             carLaps: [],
             actualCarTrackSurface: [],
             prevCarTrackSurface: [],
-            sessionTime: currentSessionTime
+            sessionTime: safeCurrentSessionTime
       })
       return
     }
 
-    carIdxOnPitRoad.forEach((inPit, idx) => {
+    safeCarIdxOnPitRoad.forEach((inPit, idx) => {
       if (inPit) {
-        pitLaps[idx] = carIdxLap[idx];
+        pitLaps[idx] = safeCarIdxLap[idx];
       }
     });
 
-    carIdxTrackSurface.forEach((location, idx) => {
-      if (actualCarTrackSurface[idx] !== location && sessionState < 5 && location != -1) {
+    safeCarIdxTrackSurface.forEach((location, idx) => {
+      if (actualCarTrackSurface[idx] !== location && safeSessionState < 5 && location != -1) {
         prevCarTrackSurface[idx] = actualCarTrackSurface[idx];
         actualCarTrackSurface[idx] = location;
       }
@@ -54,11 +60,11 @@ export const usePitLapStore = create<PitLapState>((set, get) => ({
 
     set({
       pitLaps: pitLaps,
-      carLaps: carIdxLap,
+      carLaps: safeCarIdxLap,
       prevCarTrackSurface: prevCarTrackSurface,
       actualCarTrackSurface: actualCarTrackSurface,
-      sessionTime: currentSessionTime,
-      sessionUniqId: currentSessionUniqId
+      sessionTime: safeCurrentSessionTime,
+      sessionUniqId: safeCurrentSessionUniqId
     });
   },
 }));

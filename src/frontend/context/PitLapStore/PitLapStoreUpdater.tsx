@@ -1,20 +1,36 @@
 import { useEffect } from 'react';
-import { useTelemetryStore } from '../TelemetryStore/TelemetryStore';
+import { useTelemetryValue, useTelemetryValues, useTelemetryStore } from '../TelemetryStore/TelemetryStore';
 import { usePitLapStore } from './PitLapStore';
+import { useStore } from 'zustand';
 
 /**
- * Hook that automatically updates the LapTimesStore with telemetry data.
- * This ensures lap time history is always up-to-date without manual updates in components.
+ * Hook that automatically updates the PitLapStore with telemetry data.
+ * This ensures pit lap tracking is always up-to-date without manual updates in components.
  *
- * Use this hook in components that need lap time history tracking (e.g., Standings overlay).
+ * Use this hook in components that need pit lap tracking (e.g., Standings overlay).
  */
 export const usePitLabStoreUpdater = () => {
-  const telemetry = useTelemetryStore(state => state.telemetry);
+  const carIdxOnPitRoad = useTelemetryValues('CarIdxOnPitRoad');
+  const carIdxLap = useTelemetryValues('CarIdxLap');
+  const sessionUniqueID = useTelemetryValue('SessionUniqueID');
+  const carIdxTrackSurface = useTelemetryValues('CarIdxTrackSurface');
+  const sessionState = useTelemetryValue('SessionState');
   const updatePitLapTimes = usePitLapStore(state => state.updatePitLaps);
 
+  const throttledSessionTime = useStore(useTelemetryStore, (state) => {
+    const rawTime = state.telemetry?.SessionTime?.value?.[0];
+    if (rawTime == null) return null;
+    return Math.floor(rawTime / 5) * 5;
+  });
+
   useEffect(() => {
-    if (telemetry) {
-      updatePitLapTimes(telemetry);
-    }
-  }, [telemetry, updatePitLapTimes]);
+    updatePitLapTimes(
+      carIdxOnPitRoad ?? null,
+      carIdxLap ?? null,
+      sessionUniqueID ?? null,
+      throttledSessionTime ?? null,
+      carIdxTrackSurface ?? null,
+      sessionState ?? null
+    );
+  }, [carIdxOnPitRoad, carIdxLap, sessionUniqueID, throttledSessionTime, carIdxTrackSurface, sessionState, updatePitLapTimes]);
 };
