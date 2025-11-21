@@ -70,7 +70,7 @@ const defaultConfig: RelativeWidgetSettings['config'] = {
     interpolationMethod: 'linear',
     sampleInterval: 0.01,
     maxLapHistory: 5,
-  }
+  },
   titleBar: { enabled: true, progressBar: { enabled: true } },
   showOnlyWhenOnTrack: false
 };

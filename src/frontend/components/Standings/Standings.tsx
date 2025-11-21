@@ -32,7 +32,6 @@ export const Standings = () => {
   const { currentDashboard } = useDashboard();
   const classStats = useCarClassStats();
   const isMultiClass = standings.length > 1;
-  const { currentDashboard } = useDashboard();
   const highlightColor = currentDashboard?.generalSettings?.highlightColor ?? 960745;
 
   // Show only when on track setting
