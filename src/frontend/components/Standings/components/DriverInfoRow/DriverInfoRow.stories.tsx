@@ -5,6 +5,7 @@ import { useAutoAnimate } from '@formkit/auto-animate/react';
 import { SessionBar } from '../SessionBar/SessionBar';
 import { SessionFooter } from '../SessionFooter/SessionFooter';
 import { RatingChange } from '../RatingChange/RatingChange';
+import { useCurrentSessionType } from '@irdashies/context';
 
 export default {
   component: DriverInfoRow,
@@ -217,7 +218,9 @@ export const Relative = () => {
       onTrack: true,
       radioActive: false,
       lappedState: undefined,
-      tireCompound: 0
+      tireCompound: 0,
+      lastPitLap: 0,
+      currentSessionType: useCurrentSessionType()
     },
     {
       carIdx: 2,
@@ -239,7 +242,9 @@ export const Relative = () => {
       onTrack: true,
       radioActive: false,
       lappedState: 'ahead',
-      tireCompound: 1
+      tireCompound: 1,
+      lastPitLap: 0,
+      currentSessionType: useCurrentSessionType()
     },
     {
       carIdx: 3,
@@ -261,7 +266,9 @@ export const Relative = () => {
       onTrack: true,
       radioActive: false,
       lappedState: 'same',
-      tireCompound: 1
+      tireCompound: 1,
+      lastPitLap: 0,
+      currentSessionType: useCurrentSessionType()
     },
     {
       carIdx: 4,
@@ -281,7 +288,9 @@ export const Relative = () => {
       onTrack: true,
       radioActive: false,
       lappedState: 'same',
-      tireCompound: 1
+      tireCompound: 1,
+      lastPitLap: 15,
+      currentSessionType: useCurrentSessionType()
     },
     {
       carIdx: 5,
@@ -301,7 +310,9 @@ export const Relative = () => {
       onTrack: true,
       radioActive: false,
       lappedState: 'behind',
-      tireCompound: 1
+      tireCompound: 1,
+      lastPitLap: 0,
+      currentSessionType: useCurrentSessionType()
     },
     {
       carIdx: 6,
@@ -321,7 +332,9 @@ export const Relative = () => {
       onTrack: true,
       radioActive: false,
       lappedState: 'same',
-      tireCompound: 1
+      tireCompound: 1,
+      lastPitLap: 0,
+      currentSessionType: useCurrentSessionType()
     },
     {
       carIdx: 7,
@@ -340,7 +353,9 @@ export const Relative = () => {
       onPitRoad: false,
       onTrack: true,
       radioActive: true,
-      tireCompound: 1
+      tireCompound: 1,
+      lastPitLap: 5,
+      currentSessionType: useCurrentSessionType()
     },
   ];
   const getRandomCarNum = () => Math.floor(Math.random() * 35) + 1;
@@ -380,6 +395,7 @@ export const Relative = () => {
                 />
               }
               isMultiClass={false}
+              currentSessionType={result.currentSessionType}
             />
           ))}
         </tbody>

@@ -13,6 +13,7 @@ import {
   useStandingsSettings,
 } from './hooks';
 import { useLapTimesStoreUpdater } from '../../context/LapTimesStore/LapTimesStoreUpdater';
+import { usePitLabStoreUpdater } from '../../context/PitLapStore/PitLapStoreUpdater';
 
 export const Standings = () => {
   const [parent] = useAutoAnimate();
@@ -21,9 +22,12 @@ export const Standings = () => {
   // Update lap times store with telemetry data (only for this overlay)
   useLapTimesStoreUpdater();
 
+  // Update pit laps
+  usePitLabStoreUpdater();
+
   const standings = useDriverStandings(settings);
-  const classStats = useCarClassStats();const isMultiClass = standings.length > 1; 
-  const { currentDashboard } = useDashboard(); 
+  const classStats = useCarClassStats();const isMultiClass = standings.length > 1;
+  const { currentDashboard } = useDashboard();
   const highlightColor = currentDashboard?.generalSettings?.highlightColor ?? 960745;
 
   // If no data, show a message instead of empty table
@@ -100,6 +104,10 @@ export const Standings = () => {
                   flairId={settings?.countryFlags?.enabled ?? true ? result.driver?.flairId : undefined}
                   tireCompound={settings?.compound?.enabled ?? true ? result.tireCompound : undefined}
                   carId={result.carId}
+                  lastPitLap={result.lastPitLap}
+                  lastLap={result.lastLap}
+                  carTrackSurface={result.carTrackSurface}
+                  prevCarTrackSurface={result.prevCarTrackSurface}
                   badge={
                     settings?.badge?.enabled ? (
                       <DriverRatingBadge
@@ -111,6 +119,7 @@ export const Standings = () => {
                   lapTimeDeltas={settings?.lapTimeDeltas?.enabled ? result.lapTimeDeltas : undefined}
                   numLapDeltasToShow={settings?.lapTimeDeltas?.enabled ? settings.lapTimeDeltas.numLaps : undefined}
                   displayOrder={settings?.displayOrder}
+                  currentSessionType={result.currentSessionType}
                   config={settings}
                 />
               ))}

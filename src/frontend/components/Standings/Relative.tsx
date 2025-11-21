@@ -1,22 +1,33 @@
 import { useMemo } from 'react';
 import { useAutoAnimate } from '@formkit/auto-animate/react';
 import { DriverInfoRow } from './components/DriverInfoRow/DriverInfoRow';
-import { useRelativeSettings, useDriverRelatives } from './hooks';
+import { useRelativeSettings, useDriverRelatives, useDriverStandings } from './hooks';
 import { DriverRatingBadge } from './components/DriverRatingBadge/DriverRatingBadge';
 import { RatingChange } from './components/RatingChange/RatingChange';
 import { SessionBar } from './components/SessionBar/SessionBar';
 import { SessionFooter } from './components/SessionFooter/SessionFooter';
+import { usePitLabStoreUpdater } from '../../context/PitLapStore/PitLapStoreUpdater';
+import { useRelativeGapStoreUpdater } from '@irdashies/context';
 
 export const Relative = () => {
   const settings = useRelativeSettings();
   const buffer = settings?.buffer ?? 3;
   const standings = useDriverRelatives({ buffer });
   const [parent] = useAutoAnimate();
-  const isMultiClass = standings.length > 0 && new Set(standings.map(s => s.carClass.id)).size > 1; 
+  const activeDrivers = useDriverStandings();
+  const isMultiClass = useMemo(() => {
+    const uniqueClasses = new Set(activeDrivers.flatMap(([, drivers]) => drivers.map(d => d.carClass.id)));
+    return uniqueClasses.size > 1;
+  }, [activeDrivers]);
+
+
+  // Update relative gap store with telemetry data
+  useRelativeGapStoreUpdater();
+  usePitLabStoreUpdater();
 
   // Always render 2 * buffer + 1 rows (buffer above + player + buffer below)
   const totalRows = 2 * buffer + 1;
-  
+
   // Memoize findIndex to avoid recalculating on every render
   const playerIndex = useMemo(
     () => standings.findIndex((result) => result.isPlayer),
@@ -43,6 +54,7 @@ export const Relative = () => {
           flairId={settings?.countryFlags?.enabled ?? true ? 0 : undefined}
           carId={settings?.carManufacturer?.enabled ?? true ? 0 : undefined}
           badge={settings?.badge?.enabled ? <></> : undefined}
+          currentSessionType=""
           iratingChange={
             settings?.iratingChange?.enabled ? (
               <RatingChange value={undefined} />
@@ -87,6 +99,7 @@ export const Relative = () => {
             flairId={settings?.countryFlags?.enabled ?? true ? 0 : undefined}
             carId={settings?.carManufacturer?.enabled ?? true ? 0 : undefined}
             badge={settings?.badge?.enabled ? <></> : undefined}
+            currentSessionType=""
             iratingChange={
               settings?.iratingChange?.enabled ? (
                 <RatingChange value={undefined} />
@@ -101,6 +114,7 @@ export const Relative = () => {
             onTrack={true}
             radioActive={false}
             tireCompound={settings?.compound?.enabled ? 0 : undefined}
+            lastLap={undefined}
           />
         );
       }
@@ -126,7 +140,12 @@ export const Relative = () => {
           lastTimeState={settings?.lastTime?.enabled ? result.lastTimeState : undefined}
           tireCompound={settings?.compound?.enabled ? result.tireCompound : undefined}
           carId={result.carId}
+          lastPitLap={result.lastPitLap}
+          lastLap={result.lastLap}
+          carTrackSurface={result.carTrackSurface}
+          prevCarTrackSurface={result.prevCarTrackSurface}
           isMultiClass={isMultiClass}
+          currentSessionType={result.currentSessionType}
           badge={
             settings?.badge?.enabled ? (
               <DriverRatingBadge

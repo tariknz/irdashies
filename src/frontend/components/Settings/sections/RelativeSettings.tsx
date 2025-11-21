@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
-import { useDashboard } from '@irdashies/context';
+import { useDashboard, useRelativeGapStore } from '@irdashies/context';
 import { RelativeWidgetSettings } from '../types';
 import { ToggleSwitch } from '../components/ToggleSwitch';
 import {
@@ -63,21 +63,45 @@ const defaultConfig: RelativeWidgetSettings['config'] = {
   fastestTime: { enabled: false },
   lastTime: { enabled: false },
   compound: { enabled: false },
-  displayOrder: sortableSettings.map(s => s.id)
+  brakeBias: { enabled: false },
+  displayOrder: sortableSettings.map(s => s.id),
+  enhancedGapCalculation: {
+    enabled: true,
+    interpolationMethod: 'linear',
+    sampleInterval: 0.01,
+    maxLapHistory: 5,
+  }
 };
 
 // Helper function to merge existing displayOrder with new default items
+// Inserts new items in their proper position based on sortableSettings order
 const mergeDisplayOrder = (existingOrder?: string[]): string[] => {
   if (!existingOrder) return defaultConfig.displayOrder;
 
   const allIds = sortableSettings.map(s => s.id);
   const merged = [...existingOrder];
 
-  // Add any missing new items to the end
-  allIds.forEach(id => {
-    if (!merged.includes(id)) {
-      merged.push(id);
+  // Get items that are missing from existing order
+  const missingIds = allIds.filter(id => !merged.includes(id));
+
+  // For each missing item, find where to insert it based on sortableSettings positions
+  missingIds.forEach(missingId => {
+    const missingIndex = allIds.indexOf(missingId);
+
+    // Find the closest existing item that comes after this missing item in sortableSettings
+    // We'll insert the missing item right before that closest item
+    let insertIndex = merged.length; // Default to end
+
+    for (let i = missingIndex + 1; i < allIds.length; i++) {
+      const existingItem = allIds[i];
+      const existingItemIndex = merged.indexOf(existingItem);
+      if (existingItemIndex !== -1) {
+        insertIndex = existingItemIndex;
+        break;
+      }
     }
+
+    merged.splice(insertIndex, 0, missingId);
   });
 
   return merged;
@@ -86,6 +110,7 @@ const mergeDisplayOrder = (existingOrder?: string[]): string[] => {
 const migrateConfig = (savedConfig: unknown): RelativeWidgetSettings['config'] => {
   if (!savedConfig || typeof savedConfig !== 'object') return defaultConfig;
   const config = savedConfig as Record<string, unknown>;
+  const enhancedGap = config.enhancedGapCalculation as { enabled?: boolean; interpolationMethod?: 'linear' | 'cubic'; sampleInterval?: number; maxLapHistory?: number } | undefined;
   return {
     buffer: (config.buffer as number) ?? 3,
     background: { opacity: (config.background as { opacity?: number })?.opacity ?? 0 },
@@ -95,6 +120,7 @@ const migrateConfig = (savedConfig: unknown): RelativeWidgetSettings['config'] =
     driverName: { enabled: (config.driverName as { enabled?: boolean })?.enabled ?? true },
     pitStatus: { enabled: (config.pitStatus as { enabled?: boolean })?.enabled ?? true },
     carManufacturer: { enabled: (config.carManufacturer as { enabled?: boolean })?.enabled ?? true },
+    brakeBias: { enabled: (config.brakeBias as { enabled?: boolean })?.enabled ?? false },
     badge: { enabled: (config.badge as { enabled?: boolean })?.enabled ?? true },
     iratingChange: { enabled: (config.iratingChange as { enabled?: boolean })?.enabled ?? false },
     delta: { enabled: (config.delta as { enabled?: boolean })?.enabled ?? true },
@@ -102,6 +128,12 @@ const migrateConfig = (savedConfig: unknown): RelativeWidgetSettings['config'] =
     lastTime: { enabled: (config.lastTime as { enabled?: boolean })?.enabled ?? false },
     compound: { enabled: (config.compound as { enabled?: boolean })?.enabled ?? false },
     displayOrder: mergeDisplayOrder(config.displayOrder as string[]),
+    enhancedGapCalculation: {
+      enabled: enhancedGap?.enabled ?? true,
+      interpolationMethod: enhancedGap?.interpolationMethod ?? 'linear',
+      sampleInterval: enhancedGap?.sampleInterval ?? 0.01,
+      maxLapHistory: enhancedGap?.maxLapHistory ?? 5,
+    },
   };
 };
 
@@ -146,11 +178,11 @@ const SortableItem = ({ setting, settings, handleConfigChange }: SortableItemPro
         <ToggleSwitch
           enabled={isEnabled}
           onToggle={(enabled) => {
-            handleConfigChange({ 
-              [setting.configKey]: { 
+            handleConfigChange({
+              [setting.configKey]: {
                 ...(settings.config[setting.configKey] as object),
-                enabled 
-              } 
+                enabled
+              }
             });
           }}
         />
@@ -176,6 +208,21 @@ export const RelativeSettings = () => {
       coordinateGetter: sortableKeyboardCoordinates,
     })
   );
+
+  // Sync settings with RelativeGapStore only on mount
+  const updateStoreConfig = useRelativeGapStore((state) => state.updateConfig);
+
+  useEffect(() => {
+    // Only update on mount with the initial saved settings
+    const config = settings.config.enhancedGapCalculation;
+    updateStoreConfig({
+      enabled: config.enabled,
+      interpolationMethod: config.interpolationMethod,
+      sampleInterval: config.sampleInterval,
+      maxLapHistory: config.maxLapHistory,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Empty deps - only run once on mount
 
   if (!currentDashboard) {
     return <>Loading...</>;
@@ -249,6 +296,31 @@ export const RelativeSettings = () => {
                 </DndContext>
               </div>
             </div>
+            {/* Session Bar Settings */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-medium text-slate-200">
+                  Session Bar
+                </h3>
+              </div>
+              <div className="space-y-3 px-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-sm text-slate-300">Brake Bias</span>
+                    <p className="text-xs text-slate-400">
+                      Show brake bias in header (or brake valve for Clio)
+                    </p>
+                  </div>
+                  <ToggleSwitch
+                    enabled={settings.config.brakeBias.enabled}
+                    onToggle={(enabled) =>
+                      handleConfigChange({ brakeBias: { enabled } })
+                    }
+                  />
+                </div>
+              </div>
+            </div>
+
             {/* Driver Standings Settings */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
@@ -308,6 +380,106 @@ export const RelativeSettings = () => {
                     </span>
                   </div>
                 </div>
+              </div>
+            </div>
+
+            {/* Enhanced Gap Calculation Section */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-medium text-slate-200">
+                  Enhanced Gap Calculation
+                </h3>
+              </div>
+              <div className="space-y-3 px-4">
+                <div>
+                  <p className="text-xs text-slate-400 mb-3">
+                    Uses position/time records for accurate multi-class gaps instead of simple distance-based estimates
+                  </p>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-sm text-slate-300">Enable Enhanced Calculation</span>
+                    <p className="text-xs text-slate-400">
+                      Uses lap data interpolation for accuracy
+                    </p>
+                  </div>
+                  <ToggleSwitch
+                    enabled={settings.config.enhancedGapCalculation.enabled}
+                    onToggle={(enabled) => {
+                      const newConfig = {
+                        ...settings.config.enhancedGapCalculation,
+                        enabled,
+                      };
+                      handleConfigChange({
+                        enhancedGapCalculation: newConfig,
+                      });
+                      // Update store immediately
+                      updateStoreConfig(newConfig);
+                    }}
+                  />
+                </div>
+
+                {settings.config.enhancedGapCalculation.enabled && (
+                  <>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <span className="text-sm text-slate-300">Interpolation Method</span>
+                        <p className="text-xs text-slate-400">
+                          Linear is more stable, cubic is smoother
+                        </p>
+                      </div>
+                      <select
+                        value={settings.config.enhancedGapCalculation.interpolationMethod}
+                        onChange={(e) => {
+                          const newConfig = {
+                            ...settings.config.enhancedGapCalculation,
+                            interpolationMethod: e.target.value as 'linear' | 'cubic',
+                          };
+                          handleConfigChange({
+                            enhancedGapCalculation: newConfig,
+                          });
+                          // Update store immediately
+                          updateStoreConfig(newConfig);
+                        }}
+                        className="bg-slate-700 text-slate-200 px-3 py-1 rounded border border-slate-600 focus:border-blue-500 focus:outline-none"
+                      >
+                        <option value="linear">Linear</option>
+                        <option value="cubic">Cubic Spline</option>
+                      </select>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <span className="text-sm text-slate-300">Max Lap History</span>
+                        <p className="text-xs text-slate-400">
+                          Number of recent laps to keep for each car
+                        </p>
+                      </div>
+                      <select
+                        value={settings.config.enhancedGapCalculation.maxLapHistory}
+                        onChange={(e) => {
+                          const newConfig = {
+                            ...settings.config.enhancedGapCalculation,
+                            maxLapHistory: parseInt(e.target.value),
+                          };
+                          handleConfigChange({
+                            enhancedGapCalculation: newConfig,
+                          });
+                          // Update store immediately
+                          updateStoreConfig(newConfig);
+                        }}
+                        className="bg-slate-700 text-slate-200 px-3 py-1 rounded border border-slate-600 focus:border-blue-500 focus:outline-none"
+                      >
+                        {[3, 5, 7, 10].map((num) => (
+                          <option key={num} value={num}>
+                            {num} laps
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </div>
