@@ -78,17 +78,34 @@ const defaultConfig: StandingsWidgetSettings['config'] = {
 };
 
 // Helper function to merge existing displayOrder with new default items
+// Inserts new items in their proper position based on sortableSettings order
 const mergeDisplayOrder = (existingOrder?: string[]): string[] => {
   if (!existingOrder) return defaultConfig.displayOrder;
 
   const allIds = sortableSettings.map(s => s.id);
   const merged = [...existingOrder];
 
-  // Add any missing new items to the end
-  allIds.forEach(id => {
-    if (!merged.includes(id)) {
-      merged.push(id);
+  // Get items that are missing from existing order
+  const missingIds = allIds.filter(id => !merged.includes(id));
+
+  // For each missing item, find where to insert it based on sortableSettings positions
+  missingIds.forEach(missingId => {
+    const missingIndex = allIds.indexOf(missingId);
+
+    // Find the closest existing item that comes after this missing item in sortableSettings
+    // We'll insert the missing item right before that closest item
+    let insertIndex = merged.length; // Default to end
+
+    for (let i = missingIndex + 1; i < allIds.length; i++) {
+      const existingItem = allIds[i];
+      const existingItemIndex = merged.indexOf(existingItem);
+      if (existingItemIndex !== -1) {
+        insertIndex = existingItemIndex;
+        break;
+      }
     }
+
+    merged.splice(insertIndex, 0, missingId);
   });
 
   return merged;
