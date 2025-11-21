@@ -102,8 +102,8 @@ export const useDriverStandings = (settings?: StandingsWidgetSettings['config'])
         ? augmentStandingsWithIRating(groupedByClass)
         : groupedByClass;
 
-    // Calculate gap to class leader when enabled
-    const gapAugmentedGroupedByClass = gapEnabled
+    // Calculate gap to class leader when enabled OR when interval is enabled (interval needs gap data)
+    const gapAugmentedGroupedByClass = gapEnabled || intervalEnabled
       ? augmentStandingsWithGap(iratingAugmentedGroupedByClass)
       : iratingAugmentedGroupedByClass;
 
