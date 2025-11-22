@@ -45,6 +45,7 @@ export const Primary: Story = {
     config: {
       fastestTime: { enabled: true },
       lastTime: { enabled: true },
+      iratingChange: { enabled: true },
     } as StandingsWidgetSettings['config'],
   },
 };
