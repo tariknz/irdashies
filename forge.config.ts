@@ -4,15 +4,28 @@ import { MakerDMG } from '@electron-forge/maker-dmg';
 import { VitePlugin } from '@electron-forge/plugin-vite';
 import { FusesPlugin } from '@electron-forge/plugin-fuses';
 import { FuseV1Options, FuseVersion } from '@electron/fuses';
+import path from 'node:path';
 
 const config: ForgeConfig = {
   packagerConfig: {
     asar: true,
+    icon: path.resolve(__dirname, 'docs/assets/icons/logo'),
+    extraResource: [
+      path.resolve(__dirname, 'docs/assets/icons'),
+    ],
   },
   rebuildConfig: {
     force: true,
   },
-  makers: [new MakerSquirrel({}), new MakerDMG({})],
+  makers: [
+    new MakerSquirrel({
+      iconUrl: path.resolve(__dirname, 'docs/assets/icons/logo.ico'),
+      setupIcon: path.resolve(__dirname, 'docs/assets/icons/logo.ico'),
+    }),
+    new MakerDMG({
+      icon: path.resolve(__dirname, 'docs/assets/icons/logo.icns'),
+    }),
+  ],
   publishers: [
     {
       name: '@electron-forge/publisher-github',

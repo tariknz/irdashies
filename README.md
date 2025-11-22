@@ -1,5 +1,10 @@
 # iRacing Dashies
 
+<div align="center" style="padding-bottom: 20px;">
+  <img src="./docs/assets/icons/logo.svg" alt="Logo" width="200" height="200">
+</div>
+
+
 Welcome to the iRacing Dashies project! This repository contains the code and documentation for building iRacing overlays. 
 
 This is an open-source project that aims to provide a platform to build overlays and utilities for iRacing using React and Electron. 

@@ -15,6 +15,15 @@ interface DashboardWidgetWithWindow {
   window: BrowserWindow;
 }
 
+function getIconPath(): string {
+  const isDev = !!MAIN_WINDOW_VITE_DEV_SERVER_URL;
+  const basePath = isDev 
+    ? path.join(__dirname, '../../docs/assets/icons')
+    : path.join(process.resourcesPath, 'icons');
+  
+  return path.join(basePath, 'logo.png');
+}
+
 export class OverlayManager {
   private overlayWindows: Record<string, DashboardWidgetWithWindow> = {};
   private currentSettingsWindow: BrowserWindow | undefined;
@@ -68,6 +77,7 @@ export class OverlayManager {
       resizable: false,
       movable: false,
       roundedCorners: false,
+      icon: getIconPath(),
       webPreferences: {
         preload: path.join(__dirname, 'preload.js'),
       },
@@ -211,6 +221,7 @@ export class OverlayManager {
       width: 800,
       height: 700,
       autoHideMenuBar: true,
+      icon: getIconPath(),
       webPreferences: {
         preload: path.join(__dirname, 'preload.js'),
       },
