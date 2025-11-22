@@ -224,7 +224,8 @@ export const DriverInfoRow = memo(
           id: 'delta',
           shouldRender:
             (displayOrder ? displayOrder.includes('delta') : true) &&
-            (config?.delta?.enabled ?? true),
+            (config?.delta?.enabled ?? true) &&
+            !(config && 'gap' in config),
           component: <DeltaCell key="delta" hidden={hidden} delta={delta} />,
         },
         {

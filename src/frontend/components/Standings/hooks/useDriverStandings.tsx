@@ -139,7 +139,6 @@ export const useDriverStandings = (settings?: StandingsWidgetSettings['config'])
     lapTimeHistoryForCalc,
     lastLap,
     lastPitLap,
-    onTrack,
     prevCarTrackSurface,
     gapEnabled,
     intervalEnabled

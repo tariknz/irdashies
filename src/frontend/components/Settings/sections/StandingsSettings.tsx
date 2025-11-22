@@ -42,7 +42,6 @@ const sortableSettings: SortableSetting[] = [
   { id: 'carManufacturer', label: 'Car Manufacturer', configKey: 'carManufacturer' },
   { id: 'badge', label: 'Driver Badge', configKey: 'badge' },
   { id: 'iratingChange', label: 'iRating Change', configKey: 'iratingChange' },
-  { id: 'delta', label: 'Delta', configKey: 'delta' },
   { id: 'gap', label: 'Gap', configKey: 'gap' },
   { id: 'interval', label: 'Interval', configKey: 'interval' },
   { id: 'fastestTime', label: 'Best Time', configKey: 'fastestTime' },
@@ -126,7 +125,7 @@ const migrateConfig = (
         (config.iratingChange as { enabled?: boolean })?.enabled ?? true,
     },
     badge: { enabled: (config.badge as { enabled?: boolean })?.enabled ?? true },
-    delta: { enabled: (config.delta as { enabled?: boolean })?.enabled ?? true },
+    delta: { enabled: true },
     gap: { enabled: (config.gap as { enabled?: boolean })?.enabled ?? true },
     interval: { enabled: (config.interval as { enabled?: boolean })?.enabled ?? false },
     lastTime: {
