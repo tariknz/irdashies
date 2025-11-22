@@ -2,7 +2,6 @@ import { memo, useMemo } from 'react';
 import { getTailwindStyle } from '@irdashies/utils/colors';
 import { formatTime } from '@irdashies/utils/time';
 import type { LastTimeState } from '../../createStandings';
-import { useDashboard } from '@irdashies/context';
 import type {
   RelativeWidgetSettings,
   StandingsWidgetSettings,
@@ -49,6 +48,12 @@ interface DriverRowInfoProps {
   isMultiClass: boolean;
   displayOrder?: string[];
   config?: RelativeWidgetSettings['config'] | StandingsWidgetSettings['config'];
+  lastPitLap?: number;
+  lastLap?: number;
+  prevCarTrackSurface?: number;
+  carTrackSurface?: number;
+  currentSessionType?: string;
+  highlightColor?: number;
 }
 
 export const DriverInfoRow = memo(
@@ -80,17 +85,18 @@ export const DriverInfoRow = memo(
     isMultiClass,
     displayOrder,
     config,
-  }: DriverRowInfoProps) => {
+    lastPitLap,
+    lastLap,
+    prevCarTrackSurface,
+    carTrackSurface,
+    currentSessionType,
+    highlightColor = 960745
+   }: DriverRowInfoProps) => {
     const lastTimeString = useMemo(() => formatTime(lastTime), [lastTime]);
     const fastestTimeString = useMemo(
       () => formatTime(fastestTime),
       [fastestTime]
     );
-
-    const { currentDashboard } = useDashboard();
-    const highlightColor = useMemo(() => {
-      return currentDashboard?.generalSettings?.highlightColor ?? 960745;
-    }, [currentDashboard?.generalSettings?.highlightColor]);
 
     const tailwindStyles = useMemo(() => {
       return getTailwindStyle(classColor, highlightColor, isMultiClass);
@@ -169,6 +175,11 @@ export const DriverInfoRow = memo(
               key="pitStatus"
               hidden={hidden}
               onPitRoad={onPitRoad}
+              carTrackSurface={carTrackSurface}
+              prevCarTrackSurface={prevCarTrackSurface}
+              lastPitLap={lastPitLap}
+              lastLap={lastLap}
+              currentSessionType={currentSessionType}
             />
           ),
         },
@@ -209,7 +220,7 @@ export const DriverInfoRow = memo(
           id: 'delta',
           shouldRender:
             (displayOrder ? displayOrder.includes('delta') : true) &&
-            (config?.delta?.enabled ?? false),
+            (config?.delta?.enabled ?? true),
           component: <DeltaCell key="delta" hidden={hidden} delta={delta} />,
         },
         {
@@ -312,6 +323,11 @@ export const DriverInfoRow = memo(
       tireCompound,
       lapTimeDeltas,
       emptyLapDeltaPlaceholders,
+      carTrackSurface,
+      currentSessionType,
+      lastLap,
+      lastPitLap,
+      prevCarTrackSurface
     ]);
 
     return (

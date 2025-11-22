@@ -6,13 +6,14 @@ import { DriverRatingBadge } from './components/DriverRatingBadge/DriverRatingBa
 import { RatingChange } from './components/RatingChange/RatingChange';
 import { SessionBar } from './components/SessionBar/SessionBar';
 import { SessionFooter } from './components/SessionFooter/SessionFooter';
-import { useDashboard } from '@irdashies/context';
 import {
   useCarClassStats,
   useDriverStandings,
   useStandingsSettings,
+  useHighlightColor,
 } from './hooks';
 import { useLapTimesStoreUpdater } from '../../context/LapTimesStore/LapTimesStoreUpdater';
+import { usePitLabStoreUpdater } from '../../context/PitLapStore/PitLapStoreUpdater';
 
 export const Standings = () => {
   const [parent] = useAutoAnimate();
@@ -21,14 +22,17 @@ export const Standings = () => {
   // Update lap times store with telemetry data (only for this overlay)
   useLapTimesStoreUpdater();
 
+  // Update pit laps
+  usePitLabStoreUpdater();
+
   const standings = useDriverStandings(settings);
-  const classStats = useCarClassStats();const isMultiClass = standings.length > 1; 
-  const { currentDashboard } = useDashboard(); 
-  const highlightColor = currentDashboard?.generalSettings?.highlightColor ?? 960745;
+  const classStats = useCarClassStats();
+  const isMultiClass = standings.length > 1;
+  const highlightColor = useHighlightColor();
 
   return (
     <div
-      className={`w-full bg-slate-800/[var(--bg-opacity)] rounded-sm p-2 text-white overflow-hidden`}
+      className={`w-full bg-slate-800/(--bg-opacity) rounded-sm p-2 text-white overflow-hidden`}
       style={{
         ['--bg-opacity' as string]: `${settings?.background?.opacity ?? 0}%`,
       }}
@@ -82,6 +86,10 @@ export const Standings = () => {
                   flairId={settings?.countryFlags?.enabled ?? true ? result.driver?.flairId : undefined}
                   tireCompound={settings?.compound?.enabled ?? true ? result.tireCompound : undefined}
                   carId={result.carId}
+                  lastPitLap={result.lastPitLap}
+                  lastLap={result.lastLap}
+                  carTrackSurface={result.carTrackSurface}
+                  prevCarTrackSurface={result.prevCarTrackSurface}
                   badge={
                     settings?.badge?.enabled ? (
                       <DriverRatingBadge
@@ -93,7 +101,9 @@ export const Standings = () => {
                   lapTimeDeltas={settings?.lapTimeDeltas?.enabled ? result.lapTimeDeltas : undefined}
                   numLapDeltasToShow={settings?.lapTimeDeltas?.enabled ? settings.lapTimeDeltas.numLaps : undefined}
                   displayOrder={settings?.displayOrder}
+                  currentSessionType={result.currentSessionType}
                   config={settings}
+                  highlightColor={highlightColor}
                 />
               ))}
             </Fragment>

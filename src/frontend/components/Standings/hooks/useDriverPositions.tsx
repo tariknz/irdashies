@@ -6,7 +6,11 @@ import {
   useSessionQualifyingResults,
   useCurrentSessionType,
   useFocusCarIdx,
+  useCarLap,
+  usePitLap,
+  usePrevCarTrackSurface,
 } from '@irdashies/context';
+
 import { Standings, type LastTimeState } from '../createStandings';
 
 const getLastTimeState = (
@@ -24,9 +28,14 @@ export const useDriverPositions = () => {
   const carIdxPosition = useTelemetry('CarIdxPosition');
   const carIdxClassPosition = useTelemetry('CarIdxClassPosition');
   const carIdxBestLap = useTelemetry('CarIdxBestLapTime');
-  const carIdxLastLap = useTelemetry('CarIdxLastLapTime');
+  const carIdxLastLapTime = useTelemetry('CarIdxLastLapTime');
   const carIdxF2Time = useTelemetry('CarIdxF2Time');
   const carIdxLapNum = useTelemetry('CarIdxLap');
+  const carIdxTrackSurface = useTelemetry('CarIdxTrackSurface');
+  const prevCarTrackSurface = usePrevCarTrackSurface()
+  const lastPitLap = usePitLap()
+  const lastLap = useCarLap()
+
 
   const positions = useMemo(() => {
     return carIdxPosition?.value?.map((position, carIdx) => ({
@@ -35,16 +44,24 @@ export const useDriverPositions = () => {
       classPosition: carIdxClassPosition?.value?.[carIdx],
       delta: carIdxF2Time?.value?.[carIdx], // only to leader currently, need to handle non-race sessions
       bestLap: carIdxBestLap?.value?.[carIdx],
-      lastLap: carIdxLastLap?.value?.[carIdx],
+      lastLap: lastLap[carIdx] ?? -1,
+      lastLapTime: carIdxLastLapTime?.value?.[carIdx] ?? -1,
       lapNum: carIdxLapNum?.value?.[carIdx],
+      lastPitLap: lastPitLap[carIdx] ?? undefined,
+      prevCarTrackSurface: prevCarTrackSurface[carIdx] ?? undefined,
+      carTrackSurface: carIdxTrackSurface?.value?.[carIdx]
     })) ?? [];
   }, [
     carIdxPosition?.value,
     carIdxClassPosition?.value,
     carIdxBestLap?.value,
-    carIdxLastLap?.value,
+    carIdxLastLapTime?.value,
+    lastLap,
     carIdxF2Time?.value,
     carIdxLapNum?.value,
+    lastPitLap,
+    prevCarTrackSurface,
+    carIdxTrackSurface?.value
   ]);
 
   return positions;
@@ -111,11 +128,11 @@ export const useDriverStandings = () => {
     // Create Map lookups for O(1) access instead of O(n) find() calls
     const driverPositionsByCarIdx = new Map(driverPositions.map(pos => [pos.carIdx, pos]));
     const carStatesByCarIdx = new Map(carStates.map(state => [state.carIdx, state]));
-    const qualifyingPositionsByCarIdx = qualifyingPositions 
+    const qualifyingPositionsByCarIdx = qualifyingPositions
       ? new Map(qualifyingPositions.map(q => [q.CarIdx, q]))
       : new Map();
 
-    const playerLap = playerCarIdx !== undefined 
+    const playerLap = playerCarIdx !== undefined
       ? driverPositionsByCarIdx.get(playerCarIdx)?.lapNum ?? 0
       : 0;
 
@@ -161,9 +178,9 @@ export const useDriverStandings = () => {
         },
         fastestTime: driverPos.bestLap,
         hasFastestTime,
-        lastTime: driverPos.lastLap,
+        lastTime: driverPos.lastLapTime,
         lastTimeState: getLastTimeState(
-          driverPos.lastLap,
+          driverPos.lastLapTime,
           driverPos.bestLap,
           hasFastestTime
         ),
@@ -172,7 +189,12 @@ export const useDriverStandings = () => {
         tireCompound: carState?.tireCompound ?? 0,
         carClass: driver.carClass,
         radioActive: driverPos.carIdx === radioTransmitCarIdx,
-        carId: driver.carId
+        carId: driver.carId,
+        lastPitLap: driverPos.lastPitLap,
+        lastLap: driverPos.lastLap,
+        prevCarTrackSurface: driverPos.prevCarTrackSurface,
+        carTrackSurface: driverPos.carTrackSurface,
+        currentSessionType: sessionType
       };
     });
 
