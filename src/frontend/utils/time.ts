@@ -40,15 +40,33 @@ export const formatTimeElapsedHMS = (seconds?: number): string => {
   const minutes = Math.floor((totalSeconds % 3600) / 60);
   const secs = totalSeconds % 60;
 
-  return `${hours}:${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+  if (hours > 0) {
+    return `${hours}:${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+  } else {
+    return `${minutes}:${String(secs).padStart(2, '0')}`;
+  }
 };
 
-export const formatTimeRemainingHours = (seconds?: number): string => {
+export const formatTimeRemaining = (seconds?: number): string => {
   if (!seconds) return '';
   if (seconds < 0) return '';
 
   const totalSeconds = Math.floor(seconds);
-  const hours = Math.round(totalSeconds / 3600); // Round to nearest hour
+  const totalMinutes = Math.floor(totalSeconds / 60);
 
-  return `${hours}`;
+  if (totalMinutes >= 60) {
+    const hours = Math.round(totalSeconds / 3600);
+    return `${hours} hr`;
+  } else if (totalMinutes > 0) {
+    const remainingMinutes = totalMinutes;
+    const remainingSeconds = totalSeconds % 60;
+    if (remainingSeconds === 0) {
+      return `${remainingMinutes} min`;
+    } else {
+      return `${remainingMinutes}:${String(remainingSeconds).padStart(2, '0')} min`;
+    }
+  } else if (totalSeconds > 0) {
+    return `${totalSeconds} sec`;
+  }
+  return '';
 };
