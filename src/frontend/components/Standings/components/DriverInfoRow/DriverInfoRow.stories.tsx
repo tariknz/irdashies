@@ -2,10 +2,9 @@ import { Meta, StoryObj } from '@storybook/react-vite';
 import { DriverInfoRow } from './DriverInfoRow';
 import { DriverRatingBadge } from '../DriverRatingBadge/DriverRatingBadge';
 import { useAutoAnimate } from '@formkit/auto-animate/react';
-import { SessionBar } from '../SessionBar/SessionBar';
-import { SessionFooter } from '../SessionFooter/SessionFooter';
 import { RatingChange } from '../RatingChange/RatingChange';
 import { useCurrentSessionType } from '@irdashies/context';
+import type { StandingsWidgetSettings } from '../../../Settings/types';
 
 export default {
   component: DriverInfoRow,
@@ -28,6 +27,7 @@ export const Primary: Story = {
     carNumber: '999',
     name: 'John Doe',
     isPlayer: false,
+    hasFastestTime: false,
     delta: 0.1,
     position: 1,
     classColor: 16777215,
@@ -36,7 +36,16 @@ export const Primary: Story = {
     badge: <DriverRatingBadge license="A 4.99" rating={4999} />,
     onPitRoad: false,
     onTrack: true,
-    tireCompound: 1
+    radioActive: false,
+    tireCompound: 1,
+    isMultiClass: false,
+    flairId: 223,
+    carId: 122,
+    currentSessionType: 'Race',
+    config: {
+      fastestTime: { enabled: true },
+      lastTime: { enabled: true },
+    } as StandingsWidgetSettings['config'],
   },
 };
 
@@ -131,7 +140,7 @@ export const IRatingNoChange: Story = {
   },
 };
 
-export const Relative = () => {
+const Relative = () => {
   const getRandomRating = () =>
     Math.floor(Math.random() * (1300 - 700 + 1)) + 700;
   const getRandomLicense = () => {
@@ -367,7 +376,6 @@ export const Relative = () => {
 
   return (
     <div className="w-full h-full">
-      <SessionBar />
       <table className="w-full table-auto text-sm border-separate border-spacing-y-0.5 mb-3 mt-3">
         <tbody ref={parent}>
           {standings.map((result) => (
@@ -400,7 +408,6 @@ export const Relative = () => {
           ))}
         </tbody>
       </table>
-      <SessionFooter />
     </div>
   );
 };

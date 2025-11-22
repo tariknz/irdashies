@@ -2,7 +2,6 @@ import { memo, useMemo } from 'react';
 import { getTailwindStyle } from '@irdashies/utils/colors';
 import { formatTime } from '@irdashies/utils/time';
 import type { LastTimeState } from '../../createStandings';
-import { useDashboard } from '@irdashies/context';
 import type {
   RelativeWidgetSettings,
   StandingsWidgetSettings,
@@ -54,6 +53,7 @@ interface DriverRowInfoProps {
   prevCarTrackSurface?: number;
   carTrackSurface?: number;
   currentSessionType?: string;
+  highlightColor?: number;
 }
 
 export const DriverInfoRow = memo(
@@ -89,18 +89,14 @@ export const DriverInfoRow = memo(
     lastLap,
     prevCarTrackSurface,
     carTrackSurface,
-    currentSessionType
+    currentSessionType,
+    highlightColor = 960745
    }: DriverRowInfoProps) => {
     const lastTimeString = useMemo(() => formatTime(lastTime), [lastTime]);
     const fastestTimeString = useMemo(
       () => formatTime(fastestTime),
       [fastestTime]
     );
-
-    const { currentDashboard } = useDashboard();
-    const highlightColor = useMemo(() => {
-      return currentDashboard?.generalSettings?.highlightColor ?? 960745;
-    }, [currentDashboard?.generalSettings?.highlightColor]);
 
     const tailwindStyles = useMemo(() => {
       return getTailwindStyle(classColor, highlightColor, isMultiClass);
@@ -224,7 +220,7 @@ export const DriverInfoRow = memo(
           id: 'delta',
           shouldRender:
             (displayOrder ? displayOrder.includes('delta') : true) &&
-            (config?.delta?.enabled ?? false),
+            (config?.delta?.enabled ?? true),
           component: <DeltaCell key="delta" hidden={hidden} delta={delta} />,
         },
         {

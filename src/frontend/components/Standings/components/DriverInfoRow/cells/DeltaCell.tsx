@@ -6,7 +6,7 @@ interface DeltaCellProps {
 }
 
 export const DeltaCell = memo(({ hidden, delta }: DeltaCellProps) => (
-  <td data-column="delta" className="w-auto px-2 whitespace-nowrap text-center">
+  <td data-column="delta" className="w-auto px-2 whitespace-nowrap text-left">
     {hidden ? '' : delta?.toFixed(1)}
   </td>
 ));
