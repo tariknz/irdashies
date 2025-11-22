@@ -6,11 +6,11 @@ import { DriverRatingBadge } from './components/DriverRatingBadge/DriverRatingBa
 import { RatingChange } from './components/RatingChange/RatingChange';
 import { SessionBar } from './components/SessionBar/SessionBar';
 import { SessionFooter } from './components/SessionFooter/SessionFooter';
-import { useDashboard } from '@irdashies/context';
 import {
   useCarClassStats,
   useDriverStandings,
   useStandingsSettings,
+  useHighlightColor,
 } from './hooks';
 import { useLapTimesStoreUpdater } from '../../context/LapTimesStore/LapTimesStoreUpdater';
 import { usePitLabStoreUpdater } from '../../context/PitLapStore/PitLapStoreUpdater';
@@ -26,9 +26,9 @@ export const Standings = () => {
   usePitLabStoreUpdater();
 
   const standings = useDriverStandings(settings);
-  const classStats = useCarClassStats();const isMultiClass = standings.length > 1;
-  const { currentDashboard } = useDashboard();
-  const highlightColor = currentDashboard?.generalSettings?.highlightColor ?? 960745;
+  const classStats = useCarClassStats();
+  const isMultiClass = standings.length > 1;
+  const highlightColor = useHighlightColor();
 
   return (
     <div
@@ -103,6 +103,7 @@ export const Standings = () => {
                   displayOrder={settings?.displayOrder}
                   currentSessionType={result.currentSessionType}
                   config={settings}
+                  highlightColor={highlightColor}
                 />
               ))}
             </Fragment>
