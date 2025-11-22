@@ -358,6 +358,8 @@ const RelativeWithReorderableConfig = () => {
       compound: { enabled: true },
       brakeBias: { enabled: false },
       displayOrder: displayOrder,
+      titleBar: { enabled: true, progressBar: { enabled: true } },
+      showOnlyWhenOnTrack: false,
       enhancedGapCalculation: {
         enabled: true,
         interpolationMethod: 'linear',
@@ -469,4 +471,3 @@ export const RelativeWithReorderableConfigStory: Story = {
   name: 'Relative with Reorderable Config',
   render: () => <RelativeWithReorderableConfig />,
 };
-
