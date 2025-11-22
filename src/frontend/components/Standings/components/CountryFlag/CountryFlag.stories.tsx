@@ -12,10 +12,6 @@ const meta: Meta<typeof CountryFlag> = {
       control: { type: 'number' },
       description: 'FlairID from the flairs.json data',
     },
-    className: {
-      control: { type: 'text' },
-      description: 'Additional CSS classes',
-    },
   },
 };
 
