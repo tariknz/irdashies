@@ -1,7 +1,7 @@
 # iRacing Dashies
 
 <div align="center" style="padding-bottom: 20px;">
-  <img src="./docs/assets/logo.svg" alt="Logo" width="200" height="200">
+  <img src="./docs/assets/icons/logo.svg" alt="Logo" width="200" height="200">
 </div>
 
 
