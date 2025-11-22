@@ -100,3 +100,7 @@ export const WithTyresEnabled: Story = {
     }),
   ],
 };
+
+export const SuzukaGT3EnduranceRace: Story = {
+  decorators: [TelemetryDecorator('/test-data/1763227688917')],
+};

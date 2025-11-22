@@ -7,8 +7,8 @@ interface CountryFlagsCellProps {
 }
 
 export const CountryFlagsCell = memo(({ hidden, flairId }: CountryFlagsCellProps) => (
-  <td data-column="countryFlags" className="w-auto pl-2 whitespace-nowrap">
-    {hidden ? null : (flairId && <CountryFlag flairId={flairId} size="sm" />)}
+  <td data-column="countryFlags" className="w-auto whitespace-nowrap px-2">
+    {hidden ? null : (flairId && <CountryFlag flairId={flairId} />)}
   </td>
 ));
 

@@ -25,7 +25,7 @@ export const SessionBar = () => {
           {(() => {
             const elapsed = formatTimeShort(timeElapsed);
             const remaining = formatTimeShort(timeRemaining, true);
-            return elapsed ? `${elapsed} / ${remaining} m` : `${remaining} m`;
+            return elapsed ? `${elapsed} / ${remaining} m` : (remaining ? `${remaining} m` : '');
           })()}
         </div>
       )}
