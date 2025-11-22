@@ -83,7 +83,7 @@ export const PitStatusCell = memo(
         )}
         {lastPit && (
           <div>
-            <span className="text-white text-xs border-yellow-500 border text-center text-nowrap px-2 m-0 leading-tight">
+            <span className="text-white text-xs border-yellow-500 border-2 rounded-md text-center text-nowrap px-2 m-0 leading-tight">
               L {lastPitLap}
             </span>
           </div>
