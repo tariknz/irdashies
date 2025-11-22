@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { useAutoAnimate } from '@formkit/auto-animate/react';
 import { DriverInfoRow } from './components/DriverInfoRow/DriverInfoRow';
 import { useDrivingState } from '@irdashies/context';
-import { useRelativeSettings, useDriverRelatives, useDriverStandings } from './hooks';
+import { useRelativeSettings, useDriverRelatives, useDriverStandings, useHighlightColor } from './hooks';
 import { DriverRatingBadge } from './components/DriverRatingBadge/DriverRatingBadge';
 import { RatingChange } from './components/RatingChange/RatingChange';
 import { SessionBar } from './components/SessionBar/SessionBar';
@@ -18,6 +18,7 @@ export const Relative = () => {
   const standings = useDriverRelatives({ buffer });
   const [parent] = useAutoAnimate();
   const activeDrivers = useDriverStandings();
+  const highlightColor = useHighlightColor();
   const isMultiClass = useMemo(() => {
     const uniqueClasses = new Set(activeDrivers.flatMap(([, drivers]) => drivers.map(d => d.carClass.id)));
     return uniqueClasses.size > 1;
@@ -63,7 +64,7 @@ export const Relative = () => {
               <RatingChange value={undefined} />
             ) : undefined
           }
-          delta={settings?.delta?.enabled ? 0 : undefined}
+          delta={settings?.delta?.enabled ?? true ? 0 : undefined}
           fastestTime={settings?.fastestTime?.enabled ? undefined : undefined}
           lastTime={settings?.lastTime?.enabled ? undefined : undefined}
           lastTimeState={settings?.lastTime?.enabled ? undefined : undefined}
@@ -72,6 +73,7 @@ export const Relative = () => {
           onTrack={true}
           radioActive={false}
           tireCompound={settings?.compound?.enabled ? 0 : undefined}
+          highlightColor={highlightColor}
         />
       ));
     }
@@ -108,7 +110,7 @@ export const Relative = () => {
                 <RatingChange value={undefined} />
               ) : undefined
             }
-            delta={settings?.delta?.enabled ? 0 : undefined}
+            delta={settings?.delta?.enabled ?? true ? 0 : undefined}
             fastestTime={settings?.fastestTime?.enabled ? undefined : undefined}
             lastTime={settings?.lastTime?.enabled ? undefined : undefined}
             lastTimeState={settings?.lastTime?.enabled ? undefined : undefined}
@@ -118,6 +120,7 @@ export const Relative = () => {
             radioActive={false}
             tireCompound={settings?.compound?.enabled ? 0 : undefined}
             lastLap={undefined}
+            highlightColor={highlightColor}
           />
         );
       }
@@ -162,13 +165,14 @@ export const Relative = () => {
               <RatingChange value={result.iratingChange} />
             ) : undefined
           }
-          delta={settings?.delta?.enabled ? result.delta : undefined}
+          delta={settings?.delta?.enabled ?? true ? result.delta : undefined}
           displayOrder={settings?.displayOrder}
           config={settings}
+          highlightColor={highlightColor}
         />
       );
     });
-  }, [standings, playerIndex, totalRows, settings, isMultiClass]);
+  }, [standings, playerIndex, totalRows, settings, isMultiClass, highlightColor]);
 
   // Show only when on track setting
   if (settings?.showOnlyWhenOnTrack && !isDriving) {

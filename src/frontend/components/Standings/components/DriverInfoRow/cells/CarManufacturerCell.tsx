@@ -7,9 +7,9 @@ interface CarManufacturerCellProps {
 }
 
 export const CarManufacturerCell = memo(({ hidden, carId }: CarManufacturerCellProps) => (
-  <td data-column="carManufacturer" className="w-auto whitespace-nowrap">
-    <div className="flex items-center justify-center pr-2 text-center">
-      {hidden ? null : (carId && <CarManufacturer carId={carId} size="sm" />)}
+  <td data-column="carManufacturer" className="w-auto whitespace-nowrap px-2">
+    <div className="flex items-center justify-center text-center">
+      {hidden ? null : (carId && <CarManufacturer carId={carId} />)}
     </div>
   </td>
 ));

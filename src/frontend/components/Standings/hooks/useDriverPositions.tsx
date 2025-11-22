@@ -28,6 +28,7 @@ export const useDriverPositions = () => {
   const carIdxPosition = useTelemetry('CarIdxPosition');
   const carIdxClassPosition = useTelemetry('CarIdxClassPosition');
   const carIdxBestLap = useTelemetry('CarIdxBestLapTime');
+  const carIdxLastLapTime = useTelemetry('CarIdxLastLapTime');
   const carIdxF2Time = useTelemetry('CarIdxF2Time');
   const carIdxLapNum = useTelemetry('CarIdxLap');
   const carIdxTrackSurface = useTelemetry('CarIdxTrackSurface');
@@ -44,6 +45,7 @@ export const useDriverPositions = () => {
       delta: carIdxF2Time?.value?.[carIdx], // only to leader currently, need to handle non-race sessions
       bestLap: carIdxBestLap?.value?.[carIdx],
       lastLap: lastLap[carIdx] ?? -1,
+      lastLapTime: carIdxLastLapTime?.value?.[carIdx] ?? -1,
       lapNum: carIdxLapNum?.value?.[carIdx],
       lastPitLap: lastPitLap[carIdx] ?? undefined,
       prevCarTrackSurface: prevCarTrackSurface[carIdx] ?? undefined,
@@ -53,6 +55,7 @@ export const useDriverPositions = () => {
     carIdxPosition?.value,
     carIdxClassPosition?.value,
     carIdxBestLap?.value,
+    carIdxLastLapTime?.value,
     lastLap,
     carIdxF2Time?.value,
     carIdxLapNum?.value,
@@ -174,9 +177,9 @@ export const useDriverStandings = () => {
         },
         fastestTime: driverPos.bestLap,
         hasFastestTime,
-        lastTime: driverPos.lastLap,
+        lastTime: driverPos.lastLapTime,
         lastTimeState: getLastTimeState(
-          driverPos.lastLap,
+          driverPos.lastLapTime,
           driverPos.bestLap,
           hasFastestTime
         ),

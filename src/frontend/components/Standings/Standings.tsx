@@ -12,6 +12,7 @@ import {
   useCarClassStats,
   useDriverStandings,
   useStandingsSettings,
+  useHighlightColor,
 } from './hooks';
 import { useLapTimesStoreUpdater } from '../../context/LapTimesStore/LapTimesStoreUpdater';
 import { usePitLabStoreUpdater } from '../../context/PitLapStore/PitLapStoreUpdater';
@@ -29,10 +30,10 @@ export const Standings = () => {
   usePitLabStoreUpdater();
 
   const standings = useDriverStandings(settings);
-  const { currentDashboard } = useDashboard();
   const classStats = useCarClassStats();
   const isMultiClass = standings.length > 1;
-  const highlightColor = currentDashboard?.generalSettings?.highlightColor ?? 960745;
+  const highlightColor = useHighlightColor();
+  const { currentDashboard } = useDashboard();
 
   // Show only when on track setting
   if (settings?.showOnlyWhenOnTrack && !isDriving) {
@@ -41,7 +42,7 @@ export const Standings = () => {
 
   return (
     <div
-      className={`w-full bg-slate-800/[var(--bg-opacity)] rounded-sm p-2 text-white overflow-hidden`}
+      className={`w-full bg-slate-800/(--bg-opacity) rounded-sm p-2 text-white overflow-hidden`}
       style={{
         ['--bg-opacity' as string]: `${settings?.background?.opacity ?? 0}%`,
       }}
@@ -113,6 +114,7 @@ export const Standings = () => {
                   displayOrder={settings?.displayOrder}
                   currentSessionType={result.currentSessionType}
                   config={settings}
+                  highlightColor={highlightColor}
                 />
               ))}
             </Fragment>
