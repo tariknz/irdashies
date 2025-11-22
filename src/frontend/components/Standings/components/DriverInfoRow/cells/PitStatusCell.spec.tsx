@@ -29,23 +29,9 @@ describe('PitStatusCell', () => {
     expect(td?.textContent).toBe('');
     expect(td?.textContent).not.toBe('00');
     
-    // CRITICAL TEST: The original buggy code renders <td></td> with NO children
-    // This causes "00" to appear in some browsers/CSS contexts
-    // The fix MUST explicitly render an empty string: <td>{''}</td>
-    // 
-    // Note: In jsdom, React normalizes empty strings, so both render the same.
-    // However, in real browsers, explicitly rendering '' prevents "00" from appearing.
-    // The fix ensures we explicitly return an empty string rather than having no children.
-    //
     // Verify the cell is empty but doesn't contain "00"
     expect(td?.innerHTML).not.toContain('00');
     expect(td?.textContent).toBe('');
-    
-    // The key difference is in the code structure:
-    // Original: <td>{conditional1 ? ... : null}{conditional2 ? ... : null}...</td>
-    //           When all false, renders <td></td> with NO children
-    // Fix:      if (no conditions) return <td>{''}</td>
-    //           Explicitly renders empty string to prevent browser defaults
   });
 
   it('renders empty cell when hidden', () => {
