@@ -4,6 +4,17 @@ import { OverlayManager } from './overlayManager';
 import { writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
+declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string;
+
+function getIconPath(): string {
+  const isDev = !!MAIN_WINDOW_VITE_DEV_SERVER_URL;
+  const basePath = isDev 
+    ? path.join(__dirname, '../../docs/assets/icons')
+    : path.join(process.resourcesPath, 'icons');
+  
+  return path.join(basePath, 'logo-tray.png');
+}
+
 class Taskbar {
   private tray: Tray;
 
@@ -17,9 +28,9 @@ class Taskbar {
   }
 
   private createTray(): Tray {
-    const icon = nativeImage.createFromDataURL(
-      'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAAAXNSR0IArs4c6QAAAH5JREFUSEvtlUEOgCAMBJdvGfXz6rs0JuIB0zjZpFyUaxeWadlQlLxK8vnqbrBJGgKqVdJ01ajuQbC/tKwSU91vEDb0fjztK6K9pTp7BoukMbj/WZtrzSXA+exuQNHtoFF0e8jpBhTdJqAbqc7OwYcNaA6orv+XSXOAdemf/gFmjSgZ2hbq7gAAAABJRU5ErkJggg=='
-    );
+    const iconPath = getIconPath();
+    const icon = nativeImage.createFromPath(iconPath);
+    
     const tray = new Tray(icon);
     tray.setToolTip('irDashies');
     return tray;

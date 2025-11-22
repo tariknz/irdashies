@@ -134,8 +134,8 @@ describe('createStandings', () => {
   it('should show as onTrack when CarIdxTrackSurface is positive', () => {
     const mockTelemetryWithConnected = {
       ...mockTelemetry,
-      IsOnTrack: {
-        value: [true]
+      CarIdxTrackSurface: {
+        value: [1]
       }
     } as Telemetry;
 
@@ -451,7 +451,6 @@ function createStandings(
     },
     [],
     [],
-    telemetry?.IsOnTrack?.value?.[0] ?? false,
     [],
     undefined,
     undefined

@@ -55,7 +55,6 @@ export const useDriverStandings = (settings?: StandingsWidgetSettings['config'])
   const lastPitLap = usePitLap();
   const lastLap = useCarLap();
   const prevCarTrackSurface = usePrevCarTrackSurface();
-  const onTrack = useTelemetryValue<boolean>('IsOnTrack') ?? false;
   const driverClass = useMemo(() => {
     return sessionDrivers?.find(
       (driver) => driver.CarIdx === driverCarIdx
@@ -89,7 +88,6 @@ export const useDriverStandings = (settings?: StandingsWidgetSettings['config'])
       },
       lastPitLap,
       lastLap,
-      onTrack,
       prevCarTrackSurface,
       lapTimeDeltasEnabled ? numLapDeltas : undefined,
       lapTimeHistoryForCalc,

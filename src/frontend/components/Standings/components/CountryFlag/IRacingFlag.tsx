@@ -1,26 +1,11 @@
 import React from 'react';
 
-interface IRacingFlagProps {
-  className?: string;
-  size?: 'sm' | 'md' | 'lg';
-}
-
-const sizeClasses = {
-  sm: 'w-4 h-3',
-  md: 'w-6 h-4.5',
-  lg: 'w-8 h-6',
-};
-
-export const IRacingFlag: React.FC<IRacingFlagProps> = ({
-  className = '',
-  size = 'md',
-}) => {
+export const IRacingFlag: React.FC = () => {
   return (
-         <svg
-       xmlns="http://www.w3.org/2000/svg"
-       viewBox="0 0 495.73 371.8"
-       className={`${sizeClasses[size]} ${className}`}
-     >
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 495.73 371.8"
+    >
       <defs>
         <style>{`
       .cls-1 {
