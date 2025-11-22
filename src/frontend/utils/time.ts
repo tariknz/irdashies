@@ -30,3 +30,25 @@ export const formatTimeShort = (
 
   return formattedTime;
 };
+
+export const formatTimeElapsedHMS = (seconds?: number): string => {
+  if (!seconds) return '';
+  if (seconds < 0) return '';
+
+  const totalSeconds = Math.floor(seconds);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const secs = totalSeconds % 60;
+
+  return `${hours}:${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+};
+
+export const formatTimeRemainingHours = (seconds?: number): string => {
+  if (!seconds) return '';
+  if (seconds < 0) return '';
+
+  const totalSeconds = Math.floor(seconds);
+  const hours = Math.round(totalSeconds / 3600); // Round to nearest hour
+
+  return `${hours}`;
+};
