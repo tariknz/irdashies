@@ -7,7 +7,6 @@ import { RatingChange } from './components/RatingChange/RatingChange';
 import { SessionBar } from './components/SessionBar/SessionBar';
 import { SessionFooter } from './components/SessionFooter/SessionFooter';
 import { TitleBar } from './components/TitleBar/TitleBar';
-import { useDashboard } from '@irdashies/context';
 import {
   useCarClassStats,
   useDriverStandings,
@@ -33,7 +32,6 @@ export const Standings = () => {
   const classStats = useCarClassStats();
   const isMultiClass = standings.length > 1;
   const highlightColor = useHighlightColor();
-  const { currentDashboard } = useDashboard();
 
   // Show only when on track setting
   if (settings?.showOnlyWhenOnTrack && !isDriving) {
