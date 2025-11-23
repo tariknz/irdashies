@@ -10,7 +10,7 @@ interface DriverNameCellProps {
 export const DriverNameCell = memo(({ hidden, name, radioActive }: DriverNameCellProps) => (
   <td
     data-column="driverName"
-    className="w-full max-w-0 px-2 py-0.5"
+    className="w-full max-w-0 px-1 py-0.5"
   >
     <div className="flex items-center overflow-hidden">
       <span
