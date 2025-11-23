@@ -60,8 +60,8 @@ const defaultConfig: RelativeWidgetSettings['config'] = {
   badge: { enabled: true },
   iratingChange: { enabled: false },
   delta: { enabled: true },
-  fastestTime: { enabled: false },
-  lastTime: { enabled: false },
+  fastestTime: { enabled: false, timeFormat: 'full' },
+  lastTime: { enabled: false, timeFormat: 'full' },
   compound: { enabled: false },
   brakeBias: { enabled: false },
   displayOrder: sortableSettings.map(s => s.id),
@@ -126,8 +126,8 @@ const migrateConfig = (savedConfig: unknown): RelativeWidgetSettings['config'] =
     badge: { enabled: (config.badge as { enabled?: boolean })?.enabled ?? true },
     iratingChange: { enabled: (config.iratingChange as { enabled?: boolean })?.enabled ?? false },
     delta: { enabled: (config.delta as { enabled?: boolean })?.enabled ?? true },
-    fastestTime: { enabled: (config.fastestTime as { enabled?: boolean })?.enabled ?? false },
-    lastTime: { enabled: (config.lastTime as { enabled?: boolean })?.enabled ?? false },
+    fastestTime: { enabled: (config.fastestTime as { enabled?: boolean; timeFormat?: string })?.enabled ?? false, timeFormat: ((config.fastestTime as { enabled?: boolean; timeFormat?: string })?.timeFormat as 'full' | 'mixed' | 'minutes' | 'seconds-full' | 'seconds-mixed' | 'seconds') ?? 'full' },
+    lastTime: { enabled: (config.lastTime as { enabled?: boolean; timeFormat?: string })?.enabled ?? false, timeFormat: ((config.lastTime as { enabled?: boolean; timeFormat?: string })?.timeFormat as 'full' | 'mixed' | 'minutes' | 'seconds-full' | 'seconds-mixed' | 'seconds') ?? 'full' },
     compound: { enabled: (config.compound as { enabled?: boolean })?.enabled ?? false },
     displayOrder: mergeDisplayOrder(config.displayOrder as string[]),
     enhancedGapCalculation: {
@@ -187,15 +187,41 @@ const SortableItem = ({ setting, settings, handleConfigChange }: SortableItemPro
         <ToggleSwitch
           enabled={isEnabled}
           onToggle={(enabled) => {
+            const configValue = settings.config[setting.configKey] as { enabled: boolean; [key: string]: unknown };
             handleConfigChange({
               [setting.configKey]: {
-                ...(settings.config[setting.configKey] as object),
+                ...configValue,
                 enabled
               }
             });
           }}
         />
       </div>
+      {(setting.configKey === 'fastestTime' || setting.configKey === 'lastTime') && (configValue as { enabled: boolean }).enabled && (
+        <div className="flex items-center justify-between pl-8 mt-2">
+          <span className="text-sm text-slate-300"></span>
+          <select
+            value={(configValue as { enabled: boolean; timeFormat: string }).timeFormat}
+            onChange={(e) => {
+              const configValue = settings.config[setting.configKey] as { enabled: boolean; timeFormat: string; [key: string]: unknown };
+              handleConfigChange({
+                [setting.configKey]: {
+                  ...configValue,
+                  timeFormat: e.target.value as 'full' | 'mixed' | 'minutes' | 'seconds-full' | 'seconds-mixed' | 'seconds'
+                },
+              });
+            }}
+            className="w-26 bg-slate-700 text-white rounded-md px-2 py-1"
+          >
+            <option value="full">1:42.123</option>
+            <option value="mixed">1:42.1</option>
+            <option value="minutes">1:42</option>
+            <option value="seconds-full">42.123</option>
+            <option value="seconds-mixed">42.1</option>
+            <option value="seconds">42</option>
+          </select>
+        </div>
+      )}
     </div>
   );
 };

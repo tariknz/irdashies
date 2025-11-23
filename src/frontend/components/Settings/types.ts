@@ -8,8 +8,8 @@ export interface StandingsWidgetSettings extends BaseWidgetSettings {
     iratingChange: { enabled: boolean };
     badge: { enabled: boolean };
     delta: { enabled: boolean };
-    lastTime: { enabled: boolean };
-    fastestTime: { enabled: boolean };
+    lastTime: { enabled: boolean; timeFormat: 'full' | 'mixed' | 'minutes' | 'seconds-full' | 'seconds-mixed' | 'seconds' };
+    fastestTime: { enabled: boolean; timeFormat: 'full' | 'mixed' | 'minutes' | 'seconds-full' | 'seconds-mixed' | 'seconds' };
     background: { opacity: number };
     countryFlags: { enabled: boolean };
     carNumber: { enabled: boolean };
@@ -37,8 +37,8 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
     background: { opacity: number };
     countryFlags: { enabled: boolean };
     carNumber: { enabled: boolean };
-    lastTime: { enabled: boolean };
-    fastestTime: { enabled: boolean };
+    lastTime: { enabled: boolean; timeFormat: 'full' | 'mixed' | 'minutes' | 'seconds-full' | 'seconds-mixed' | 'seconds' };
+    fastestTime: { enabled: boolean; timeFormat: 'full' | 'mixed' | 'minutes' | 'seconds-full' | 'seconds-mixed' | 'seconds' };
     compound: { enabled: boolean };
     carManufacturer: { enabled: boolean };
     titleBar: { enabled: boolean; progressBar: { enabled: boolean } };
