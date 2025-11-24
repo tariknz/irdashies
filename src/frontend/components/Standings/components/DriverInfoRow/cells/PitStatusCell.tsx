@@ -8,7 +8,7 @@ interface PitStatusCellProps {
   lastPitLap?: number;
   lastLap?: number;
   currentSessionType?: string;
-  dnf?: boolean;
+  dnf: boolean;
 }
 
 export const PitStatusCell = memo(

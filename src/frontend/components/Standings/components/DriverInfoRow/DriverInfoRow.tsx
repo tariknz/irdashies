@@ -56,7 +56,7 @@ interface DriverRowInfoProps {
   carTrackSurface?: number;
   currentSessionType?: string;
   highlightColor?: number;
-  dnf?: boolean;
+  dnf: boolean;
 }
 
 export const DriverInfoRow = memo(
