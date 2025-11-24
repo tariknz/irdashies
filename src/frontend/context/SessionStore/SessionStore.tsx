@@ -65,6 +65,18 @@ export const useSessionIsOfficial = () =>
       !!state.session?.WeekendInfo?.Official
   );
 
+export const useWeekendInfoSeriesID = () =>
+  useStore(
+    useSessionStore,
+    (state) => state.session?.WeekendInfo?.SeriesID
+  );
+
+export const useWeekendInfoEventType = () =>
+  useStore(
+    useSessionStore,
+    (state) => state.session?.WeekendInfo?.EventType
+  );
+
 export const useDriverCarIdx = () =>
   useStore(useSessionStore, (state) => state.session?.DriverInfo?.DriverCarIdx);
 

@@ -220,7 +220,6 @@ export const defaultDashboard: DashboardLayout = {
   ],
   "generalSettings": {
     "fontSize": "sm",
-    "colorPalette": "black",
-    "showOnlyWhenOnTrack": false
+    "colorPalette": "black"
   }
 };

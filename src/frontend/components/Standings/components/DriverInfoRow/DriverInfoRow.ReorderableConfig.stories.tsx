@@ -353,11 +353,13 @@ const RelativeWithReorderableConfig = () => {
       badge: { enabled: true },
       iratingChange: { enabled: true },
       delta: { enabled: true },
-      fastestTime: { enabled: true },
-      lastTime: { enabled: true },
+      fastestTime: { enabled: true, timeFormat: 'full' },
+      lastTime: { enabled: true, timeFormat: 'full' },
       compound: { enabled: true },
       brakeBias: { enabled: false },
       displayOrder: displayOrder,
+      titleBar: { enabled: true, progressBar: { enabled: true } },
+      showOnlyWhenOnTrack: false,
       enhancedGapCalculation: {
         enabled: true,
         interpolationMethod: 'linear',
@@ -469,4 +471,3 @@ export const RelativeWithReorderableConfigStory: Story = {
   name: 'Relative with Reorderable Config',
   render: () => <RelativeWithReorderableConfig />,
 };
-

@@ -7,7 +7,6 @@ import {
   RunningStateProvider,
   useRunningState,
   SessionProvider,
-  useDrivingState,
 } from '@irdashies/context';
 import { Settings } from './components/Settings/Settings';
 import { EditMode } from './components/EditMode/EditMode';
@@ -17,11 +16,6 @@ import { WIDGET_MAP } from './WidgetIndex';
 const AppRoutes = () => {
   const { currentDashboard } = useDashboard();
   const { running } = useRunningState();
-  const { isDriving } = useDrivingState();
-
-  const shouldShowOverlays =
-    currentDashboard?.generalSettings?.showOnlyWhenOnTrack !== true ||
-    isDriving;
 
   return (
     <Routes>
@@ -36,7 +30,7 @@ const AppRoutes = () => {
             key={widget.id}
             path={`/${widget.id}`}
             element={
-              running && shouldShowOverlays ? (
+              running ? (
                 <WidgetComponent {...widget.config} />
               ) : (
                 <></>
