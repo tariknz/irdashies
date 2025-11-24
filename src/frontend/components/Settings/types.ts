@@ -8,6 +8,8 @@ export interface StandingsWidgetSettings extends BaseWidgetSettings {
     iratingChange: { enabled: boolean };
     badge: { enabled: boolean; badgeFormat: 'license-color-rating-bw' | 'license-color-rating-bw-no-license' | 'rating-color-no-license' | 'license-bw-rating-bw' | 'rating-only-bw-rating-bw' | 'license-bw-rating-bw-no-license' | 'rating-bw-no-license' };
     delta: { enabled: boolean };
+    gap: { enabled: boolean };
+    interval: { enabled: boolean };
     lastTime: { enabled: boolean; timeFormat: 'full' | 'mixed' | 'minutes' | 'seconds-full' | 'seconds-mixed' | 'seconds' };
     fastestTime: { enabled: boolean; timeFormat: 'full' | 'mixed' | 'minutes' | 'seconds-full' | 'seconds-mixed' | 'seconds' };
     background: { opacity: number };

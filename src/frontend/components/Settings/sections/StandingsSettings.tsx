@@ -152,7 +152,8 @@ const sortableSettings: SortableSetting[] = [
   { id: 'carManufacturer', label: 'Car Manufacturer', configKey: 'carManufacturer' },
   { id: 'badge', label: 'Driver Badge', configKey: 'badge' },
   { id: 'iratingChange', label: 'iRating Change', configKey: 'iratingChange' },
-  { id: 'delta', label: 'Delta', configKey: 'delta' },
+  { id: 'gap', label: 'Gap', configKey: 'gap' },
+  { id: 'interval', label: 'Interval', configKey: 'interval' },
   { id: 'fastestTime', label: 'Best Time', configKey: 'fastestTime' },
   { id: 'lastTime', label: 'Last Time', configKey: 'lastTime' },
   { id: 'compound', label: 'Tire Compound', configKey: 'compound' },
@@ -163,6 +164,8 @@ const defaultConfig: StandingsWidgetSettings['config'] = {
   iratingChange: { enabled: true },
   badge: { enabled: true, badgeFormat: 'license-color-rating-bw' },
   delta: { enabled: true },
+  gap: { enabled: false },
+  interval: { enabled: false },
   lastTime: { enabled: true, timeFormat: 'full' },
   fastestTime: { enabled: true, timeFormat: 'full' },
   background: { opacity: 0 },
@@ -238,6 +241,8 @@ const migrateConfig = (
       badgeFormat: ((config.badge as { badgeFormat?: string })?.badgeFormat as 'license-color-rating-bw' | 'license-color-rating-bw-no-license' | 'rating-color-no-license' | 'license-bw-rating-bw' | 'rating-only-bw-rating-bw' | 'license-bw-rating-bw-no-license' | 'rating-bw-no-license') ?? 'license-color-rating-bw'
     },
     delta: { enabled: (config.delta as { enabled?: boolean })?.enabled ?? true },
+    gap: { enabled: (config.gap as { enabled?: boolean })?.enabled ?? true },
+    interval: { enabled: (config.interval as { enabled?: boolean })?.enabled ?? false },
     lastTime: {
       enabled: (config.lastTime as { enabled?: boolean; timeFormat?: string })?.enabled ?? true,
       timeFormat: ((config.lastTime as { enabled?: boolean; timeFormat?: string })?.timeFormat as 'full' | 'mixed' | 'minutes' | 'seconds-full' | 'seconds-mixed' | 'seconds') ?? 'full',
