@@ -146,22 +146,57 @@ describe('time', () => {
     });
 
     describe('format: "duration"', () => {
-      it('should format duration mm:ss for times under 1 hour not on minute boundary', () => {
+      it('should format duration m:ss for times under 1 hour with single digit minutes', () => {
         expect(formatTime(75.123, 'duration')).toBe('1:15');
       });
 
-      it('should format duration with just minutes for times under 1 hour on minute boundary', () => {
-        expect(formatTime(60, 'duration')).toBe('1');
-        expect(formatTime(180, 'duration')).toBe('3');
+      it('should format duration m:ss for times under 1 hour on minute boundary', () => {
+        expect(formatTime(60, 'duration')).toBe('1:00');
+        expect(formatTime(180, 'duration')).toBe('3:00');
       });
 
-      it('should show hours with H suffix when hours > 0', () => {
-        expect(formatTime(3661.789, 'duration')).toBe('1H');
-        expect(formatTime(86400, 'duration')).toBe('24H');
+      it('should format duration mm:ss when under 1 hour with double digit minutes', () => {
+        expect(formatTime(725.789, 'duration')).toBe('12:05');
+      });
+
+      it('should format h:mm:ss when hours > 0', () => {
+        expect(formatTime(3661.789, 'duration')).toBe('1:01:01');
+        expect(formatTime(86400, 'duration')).toBe('24:00:00');
       });
 
       it('should format mm:ss when under 1 hour not on minute boundary', () => {
         expect(formatTime(361.789, 'duration')).toBe('6:01');
+      });
+    });
+
+    describe('format: "duration-wlabels"', () => {
+      it('should format with labels for seconds only', () => {
+        expect(formatTime(45.123, 'duration-wlabels')).toBe('45 Secs');
+      });
+
+      it('should format with labels for minutes and seconds', () => {
+        expect(formatTime(75.123, 'duration-wlabels')).toBe('1 Min 15 Secs');
+      });
+
+      it('should format with labels for minutes and seconds', () => {
+        expect(formatTime(122, 'duration-wlabels')).toBe('2 Mins 2 Secs');
+      });
+
+      it('should format with labels for single minute', () => {
+        expect(formatTime(60, 'duration-wlabels')).toBe('1 Min');
+      });
+
+      it('should format with labels for hours only', () => {
+        expect(formatTime(3600, 'duration-wlabels')).toBe('1 Hr');
+        expect(formatTime(7200, 'duration-wlabels')).toBe('2 Hrs');
+      });
+
+      it('should format with labels for hours, minutes and seconds', () => {
+        expect(formatTime(3661.789, 'duration-wlabels')).toBe('1 Hr 1 Min 1 Sec');
+      });
+
+      it('should return empty string for zero seconds', () => {
+        expect(formatTime(0, 'duration-wlabels')).toBe('');
       });
     });
 
@@ -170,6 +205,7 @@ describe('time', () => {
       expect(formatTime(-1, 'mixed')).toBe('');
       expect(formatTime(undefined, 'minutes')).toBe('');
       expect(formatTime(0, 'duration')).toBe('');
+      expect(formatTime(0, 'duration-wlabels')).toBe('');
     });
   });
 });
