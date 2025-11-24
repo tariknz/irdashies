@@ -1,5 +1,5 @@
 import { useSessionName, useTelemetryValue } from '@irdashies/context';
-import { formatTimeShort } from '@irdashies/utils/time';
+import { formatTime } from '@irdashies/utils/time';
 import { useDriverIncidents, useSessionLapCount, useBrakeBias, useRelativeSettings } from '../../hooks';
 
 export const SessionBar = () => {
@@ -23,9 +23,9 @@ export const SessionBar = () => {
       {timeRemaining <= 86400 && ( // 86400 seconds = 24 hours
         <div className="flex flex-1 grow justify-center">
           {(() => {
-            const elapsed = formatTimeShort(timeElapsed);
-            const remaining = formatTimeShort(timeRemaining, true);
-            return elapsed ? `${elapsed} / ${remaining} m` : (remaining ? `${remaining} m` : '');
+            const elapsed = formatTime(timeElapsed, 'duration');
+            const remaining = formatTime(timeRemaining, 'duration');
+            return elapsed ? `${elapsed} / ${remaining}` : (remaining ? `${remaining}` : '');
           })()}
         </div>
       )}

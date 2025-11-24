@@ -53,8 +53,8 @@ const defaultConfig: StandingsWidgetSettings['config'] = {
   iratingChange: { enabled: true },
   badge: { enabled: true },
   delta: { enabled: true },
-  lastTime: { enabled: true },
-  fastestTime: { enabled: true },
+  lastTime: { enabled: true, timeFormat: 'full' },
+  fastestTime: { enabled: true, timeFormat: 'full' },
   background: { opacity: 0 },
   countryFlags: { enabled: true },
   carNumber: { enabled: true },
@@ -126,10 +126,12 @@ const migrateConfig = (
     badge: { enabled: (config.badge as { enabled?: boolean })?.enabled ?? true },
     delta: { enabled: (config.delta as { enabled?: boolean })?.enabled ?? true },
     lastTime: {
-      enabled: (config.lastTime as { enabled?: boolean })?.enabled ?? true,
+      enabled: (config.lastTime as { enabled?: boolean; timeFormat?: string })?.enabled ?? true,
+      timeFormat: ((config.lastTime as { enabled?: boolean; timeFormat?: string })?.timeFormat as 'full' | 'mixed' | 'minutes' | 'seconds-full' | 'seconds-mixed' | 'seconds') ?? 'full',
     },
     fastestTime: {
-      enabled: (config.fastestTime as { enabled?: boolean })?.enabled ?? true,
+      enabled: (config.fastestTime as { enabled?: boolean; timeFormat?: string })?.enabled ?? true,
+      timeFormat: ((config.fastestTime as { enabled?: boolean; timeFormat?: string })?.timeFormat as 'full' | 'mixed' | 'minutes' | 'seconds-full' | 'seconds-mixed' | 'seconds') ?? 'full',
     },
     background: {
       opacity: (config.background as { opacity?: number })?.opacity ?? 0,
@@ -221,9 +223,10 @@ const SortableItem = ({ setting, settings, handleConfigChange }: SortableItemPro
         <ToggleSwitch
           enabled={isEnabled}
           onToggle={(enabled) => {
+            const configValue = settings.config[setting.configKey] as { enabled: boolean; [key: string]: unknown };
             handleConfigChange({
               [setting.configKey]: {
-                ...(settings.config[setting.configKey] as object),
+                ...configValue,
                 enabled
               }
             });
@@ -250,6 +253,31 @@ const SortableItem = ({ setting, settings, handleConfigChange }: SortableItemPro
             <option value={3}>3</option>
             <option value={4}>4</option>
             <option value={5}>5</option>
+          </select>
+        </div>
+      )}
+      {(setting.configKey === 'fastestTime' || setting.configKey === 'lastTime') && (configValue as { enabled: boolean }).enabled && (
+        <div className="flex items-center justify-between pl-8 mt-2">
+          <span className="text-sm text-slate-300"></span>
+          <select
+            value={(configValue as { enabled: boolean; timeFormat: string }).timeFormat}
+            onChange={(e) => {
+              const configValue = settings.config[setting.configKey] as { enabled: boolean; timeFormat: string; [key: string]: unknown };
+              handleConfigChange({
+                [setting.configKey]: {
+                  ...configValue,
+                  timeFormat: e.target.value as 'full' | 'mixed' | 'minutes' | 'seconds-full' | 'seconds-mixed' | 'seconds'
+                },
+              });
+            }}
+            className="w-26 bg-slate-700 text-white rounded-md px-2 py-1"
+          >
+            <option value="full">1:42.123</option>
+            <option value="mixed">1:42.1</option>
+            <option value="minutes">1:42</option>
+            <option value="seconds-full">42.123</option>
+            <option value="seconds-mixed">42.1</option>
+            <option value="seconds">42</option>
           </select>
         </div>
       )}

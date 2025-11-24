@@ -1,6 +1,6 @@
 import { memo, useMemo } from 'react';
 import { getTailwindStyle } from '@irdashies/utils/colors';
-import { formatTime } from '@irdashies/utils/time';
+import { formatTime, type TimeFormat } from '@irdashies/utils/time';
 import type { LastTimeState } from '../../createStandings';
 import type {
   RelativeWidgetSettings,
@@ -92,11 +92,15 @@ export const DriverInfoRow = memo(
     currentSessionType,
     highlightColor = 960745
    }: DriverRowInfoProps) => {
-    const lastTimeString = useMemo(() => formatTime(lastTime), [lastTime]);
-    const fastestTimeString = useMemo(
-      () => formatTime(fastestTime),
-      [fastestTime]
-    );
+    const lastTimeString = useMemo(() => {
+      const format = config?.lastTime?.timeFormat ?? 'full';
+      return formatTime(lastTime, format as TimeFormat);
+    }, [lastTime, config?.lastTime?.timeFormat]);
+
+    const fastestTimeString = useMemo(() => {
+      const format = config?.fastestTime?.timeFormat ?? 'full';
+      return formatTime(fastestTime, format as TimeFormat);
+    }, [fastestTime, config?.fastestTime?.timeFormat]);
 
     const tailwindStyles = useMemo(() => {
       return getTailwindStyle(classColor, highlightColor, isMultiClass);
