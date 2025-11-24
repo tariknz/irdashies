@@ -1,7 +1,10 @@
 import type { SessionResults, Driver } from '@irdashies/types';
 import { calculateIRatingGain, RaceResult, CalculationResult } from '@irdashies/utils/iratingGain';
 
+
 export type LastTimeState = 'session-fastest' | 'personal-best' | undefined;
+
+
 
 export interface Standings {
   carIdx: number;
@@ -10,6 +13,8 @@ export interface Standings {
   lap?: number;
   lappedState?: 'ahead' | 'behind' | 'same';
   delta?: number;
+  gap?: number;
+  interval?: number;
   isPlayer: boolean;
   driver: {
     name: string;
@@ -283,6 +288,91 @@ export const augmentStandingsWithIRating = (
         iratingChange: iratingChangeMap.get(driverStanding.carIdx),
       })
     );
+    return [classId, augmentedClassStandings];
+  });
+};
+
+/**
+ * This method will augment the standings with gap calculations to class leader
+ * Gap = driver_delta - class_leader_delta (both relative to session leader)
+ */
+export const augmentStandingsWithGap = (
+  groupedStandings: [string, Standings[]][]
+): [string, Standings[]][] => {
+  return groupedStandings.map(([classId, classStandings]) => {
+    // Find class leader (lowest class position)
+    const sortedByClassPosition = classStandings
+      .filter(s => s.classPosition && s.classPosition > 0)
+      .sort((a, b) => (a.classPosition ?? 999) - (b.classPosition ?? 999));
+
+    const classLeader = sortedByClassPosition[0];
+    if (!classLeader || classLeader.delta === undefined) {
+      return [classId, classStandings];
+    }
+
+    // Calculate gap for each driver: gap = driver_delta - class_leader_delta
+    const augmentedClassStandings = classStandings.map((driverStanding) => {
+      if (driverStanding.carIdx === classLeader.carIdx) {
+        // Class leader shows as dash (undefined gap)
+        return { ...driverStanding, gap: undefined };
+      }
+
+      // Gap is simply the difference between this driver's delta and the class leader's delta
+      const gap = driverStanding.delta !== undefined && classLeader.delta !== undefined
+        ? driverStanding.delta - classLeader.delta
+        : undefined;
+
+      // Only show positive gaps (drivers behind class leader)
+      return { ...driverStanding, gap: gap && gap > 0 ? gap : undefined };
+    });
+
+    return [classId, augmentedClassStandings];
+  });
+};
+
+
+/**
+ * This method will augment the standings with interval calculations to player
+ * Interval shows time gaps between consecutive cars, calculated by subtracting gaps
+ * For each driver, interval = gap_of_driver_behind - gap_of_current_driver
+ * Player shows as undefined (no interval)
+ */
+export const augmentStandingsWithInterval = (
+  groupedStandings: [string, Standings[]][]
+): [string, Standings[]][] => {
+  return groupedStandings.map(([classId, classStandings]) => {
+    // Sort drivers by their gap values (ascending - smallest gaps first = closest to leader)
+    const sortedByGap = classStandings
+      .filter(s => s.gap !== undefined && !s.isPlayer) // Only drivers with gap data
+      .sort((a, b) => (a.gap ?? 999) - (b.gap ?? 999));
+
+    // Create a map of gap differences
+    const intervalMap = new Map<number, number | undefined>();
+
+    // Calculate intervals: for each driver, subtract their gap from the gap of the driver immediately behind them
+    for (let i = 0; i < sortedByGap.length - 1; i++) {
+      const currentDriver = sortedByGap[i];
+      const driverBehind = sortedByGap[i + 1];
+
+      if (currentDriver.gap !== undefined && driverBehind.gap !== undefined && driverBehind.carIdx) {
+        // interval = gap_behind - gap_current (positive means behind is farther from leader)
+        intervalMap.set(driverBehind.carIdx, driverBehind.gap - currentDriver.gap);
+      }
+    }
+
+    // Set interval for the driver with the smallest gap (2nd place) to show how far behind P1 they are
+    if (sortedByGap.length > 0 && sortedByGap[0].gap !== undefined && sortedByGap[0].carIdx !== undefined) {
+      intervalMap.set(sortedByGap[0].carIdx, sortedByGap[0].gap);
+    }
+
+    // Apply intervals to all drivers in this class
+    const augmentedClassStandings = classStandings.map((driverStanding) => {
+      // Player shows as undefined (no interval)
+      const interval = driverStanding.isPlayer ? undefined : intervalMap.get(driverStanding.carIdx);
+
+      return { ...driverStanding, interval };
+    });
+
     return [classId, augmentedClassStandings];
   });
 };
