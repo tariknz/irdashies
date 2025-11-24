@@ -106,6 +106,8 @@ export const DriverInfoRow = memo(
       return formatTime(fastestTime, format as TimeFormat);
     }, [fastestTime, config?.fastestTime?.timeFormat]);
 
+    const offTrack = (carTrackSurface === 0) ? true : false;
+
     const tailwindStyles = useMemo(() => {
       return getTailwindStyle(classColor, highlightColor, isMultiClass);
     }, [classColor, highlightColor, isMultiClass]);
@@ -128,6 +130,7 @@ export const DriverInfoRow = memo(
               hidden={hidden}
               position={position}
               isPlayer={isPlayer}
+              offTrack={offTrack}
               tailwindStyles={tailwindStyles}
             />
           ),
