@@ -28,6 +28,8 @@ interface DriverRowInfoProps {
   isPlayer: boolean;
   hasFastestTime: boolean;
   delta?: number;
+  gap?: number;
+  interval?: number;
   position?: number;
   badge?: React.ReactNode;
   iratingChange?: React.ReactNode;
@@ -65,6 +67,8 @@ export const DriverInfoRow = memo(
     isPlayer,
     hasFastestTime,
     delta,
+    gap,
+    interval,
     position,
     badge,
     lastTime,
@@ -224,8 +228,25 @@ export const DriverInfoRow = memo(
           id: 'delta',
           shouldRender:
             (displayOrder ? displayOrder.includes('delta') : true) &&
-            (config?.delta?.enabled ?? true),
+            (config?.delta?.enabled ?? true) &&
+            !(config && 'gap' in config),
           component: <DeltaCell key="delta" hidden={hidden} delta={delta} />,
+        },
+        {
+          id: 'gap',
+          shouldRender:
+            (displayOrder ? displayOrder.includes('gap') : true) &&
+            (config && 'gap' in config ? config.gap.enabled : false) &&
+            currentSessionType?.toLowerCase() === 'race',
+          component: <DeltaCell key="gap" hidden={hidden} delta={gap} showDashForUndefined={true} />,
+        },
+        {
+          id: 'interval',
+          shouldRender:
+            (displayOrder ? displayOrder.includes('interval') : true) &&
+            (config && 'interval' in config ? config.interval.enabled : false) &&
+            currentSessionType?.toLowerCase() === 'race',
+          component: <DeltaCell key="interval" hidden={hidden} delta={interval} showDashForUndefined={true} />,
         },
         {
           id: 'fastestTime',
@@ -320,6 +341,8 @@ export const DriverInfoRow = memo(
       badge,
       iratingChange,
       delta,
+      gap,
+      interval,
       fastestTimeString,
       hasFastestTime,
       lastTimeString,
