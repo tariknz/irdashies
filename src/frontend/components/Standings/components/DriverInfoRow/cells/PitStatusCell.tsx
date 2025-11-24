@@ -60,8 +60,8 @@ export const PitStatusCell = memo(
     return (
       <td data-column="pitStatus" className="w-auto px-1 text-center">
         {repair && (
-          <span className="text-orange-500 text-xs bg-black border-orange-500 border-2 rounded-md text-center text-nowrap px-2 m-0 leading-tight">
-            🟠
+          <span className="text-orange-500 text-xs bg-black border-orange-500 border-2 rounded-md  items-center justify-center text-nowrap px-2 m-0 leading-tight">
+            <span className="inline-block w-[0.8em] h-[0.8em] bg-orange-500 rounded-full"/>
           </span>
         )}
         {dnf && (
