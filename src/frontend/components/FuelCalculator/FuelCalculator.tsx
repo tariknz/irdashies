@@ -43,9 +43,16 @@ export const FuelCalculator = ({
     const history = Array.from(lapHistory.values()).sort(
       (a, b) => b.lapNumber - a.lapNumber
     );
-    // Filter to valid laps (not out-laps) and take last N
+
+    // Get first lap number to exclude it (pace lap or first lap after reset)
+    const allLaps = history.filter(lap => lap.fuelUsed > 0);
+    const firstLapNumber = allLaps.length > 0
+      ? Math.min(...allLaps.map(l => l.lapNumber))
+      : 0;
+
+    // Filter to valid laps (not out-laps and not first lap) and take last N
     const validLaps = history
-      .filter(lap => !lap.isOutLap && lap.fuelUsed > 0)
+      .filter(lap => !lap.isOutLap && lap.fuelUsed > 0 && lap.lapNumber !== firstLapNumber)
       .slice(0, lapCount)
       .reverse(); // Oldest to newest for graph
 
@@ -190,7 +197,7 @@ export const FuelCalculator = ({
             )}
           </div>
           {/* Table Rows */}
-          {showMin && fuelData && displayData.minLapUsage > 0 && (
+          {showMin && (
             <div className="grid grid-cols-3 gap-1 py-1 hover:bg-white/5 hover:mx-[-4px] hover:px-1 rounded transition-colors">
               <span className="text-slate-400 text-xs">Min</span>
               <span className="text-white text-sm font-medium text-right">
@@ -231,7 +238,7 @@ export const FuelCalculator = ({
           )}
           {show10LapAvg && (
             <div className="grid grid-cols-3 gap-1 py-1 hover:bg-white/5 hover:mx-[-4px] hover:px-1 rounded transition-colors">
-              <span className="text-slate-400 text-xs">Avg</span>
+              <span className="text-slate-400 text-xs">10 Lap Avg</span>
               <span className="text-white text-sm font-medium text-right">
                 {formatFuel(displayData.avg10Laps, fuelUnits)}
               </span>
@@ -242,7 +249,7 @@ export const FuelCalculator = ({
               )}
             </div>
           )}
-          {showMax && fuelData && displayData.maxLapUsage > 0 && (
+          {showMax && (
             <div className="grid grid-cols-3 gap-1 py-1 hover:bg-white/5 hover:mx-[-4px] hover:px-1 rounded transition-colors">
               <span className="text-slate-400 text-xs">Max</span>
               <span className="text-white text-sm font-medium text-right">
@@ -286,11 +293,13 @@ export const FuelCalculator = ({
       )}
 
       {/* Fuel Consumption Graph */}
-      {showConsumptionGraph && graphData && (
+      {showConsumptionGraph && (
         <div className={`${layout === 'horizontal' ? 'mb-1 pb-1' : 'mb-3 pb-2'} border-b border-slate-600/30`}>
           <div className="text-xs text-slate-500 uppercase tracking-wide mb-1.5">Consumption History</div>
-          <div className="h-12 relative">
-            {consumptionGraphType === 'histogram' ? (
+          {graphData ? (
+          <>
+            <div className="h-12 relative">
+              {consumptionGraphType === 'histogram' ? (
               // Histogram view - bars for each lap
               (() => {
                 const range = graphData.maxFuel - graphData.minFuel;
@@ -371,13 +380,19 @@ export const FuelCalculator = ({
                   </>
                 );
               })()
-            )}
-          </div>
-          <div className="flex justify-between text-xs text-slate-400 mt-1">
-            <span>L{graphData.laps[0]?.lapNumber}</span>
-            <span className="text-yellow-400">Avg: {formatFuel(graphData.avgFuel, fuelUnits)}</span>
-            <span>L{graphData.laps[graphData.laps.length - 1]?.lapNumber}</span>
-          </div>
+              )}
+            </div>
+            <div className="flex justify-between text-xs text-slate-400 mt-1">
+              <span>L{graphData.laps[0]?.lapNumber}</span>
+              <span className="text-yellow-400">Avg: {formatFuel(graphData.avgFuel, fuelUnits)}</span>
+              <span>L{graphData.laps[graphData.laps.length - 1]?.lapNumber}</span>
+            </div>
+          </>
+          ) : (
+            <div className="h-12 flex items-center justify-center text-xs text-slate-500">
+              Waiting for lap data...
+            </div>
+          )}
         </div>
       )}
 

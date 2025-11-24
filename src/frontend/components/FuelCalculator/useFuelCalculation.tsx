@@ -158,8 +158,8 @@ export function useFuelCalculation(
     const last10 = fullLaps.slice(0, 10);
 
     // Calculate averages - use full laps for averages to exclude first/out laps
-    // But lastLapUsage should be the most recent valid lap regardless
-    const lastLapUsage = validLaps[0]?.fuelUsed || 0;
+    // Use fullLaps[0] for lastLapUsage to exclude first/out laps
+    const lastLapUsage = fullLaps[0]?.fuelUsed || 0;
     const avg3Laps = last3.length > 0 ? calculateWeightedAverage(last3) : lastLapUsage;
     const avg10Laps = last10.length > 0 ? calculateWeightedAverage(last10) : avg3Laps;
     const avgAllGreenLaps = greenLaps.length > 0 ? calculateWeightedAverage(greenLaps) : avg10Laps;
