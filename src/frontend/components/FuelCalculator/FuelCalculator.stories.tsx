@@ -149,24 +149,30 @@ const MockFuelDataProvider = ({ children }: { children: React.ReactNode }) => {
     // Clear existing data
     clearAllData();
 
-    // Add mock lap history (laps 1-10)
-    const mockLaps: FuelLapData[] = [
-      { lapNumber: 1, fuelUsed: 1.8, lapTime: 85, isGreenFlag: true, isValidForCalc: true, isOutLap: false, timestamp: Date.now() - 900000 },
-      { lapNumber: 2, fuelUsed: 2.1, lapTime: 92, isGreenFlag: true, isValidForCalc: true, isOutLap: false, timestamp: Date.now() - 800000 },
-      { lapNumber: 3, fuelUsed: 2.15, lapTime: 91, isGreenFlag: true, isValidForCalc: true, isOutLap: false, timestamp: Date.now() - 700000 },
-      { lapNumber: 4, fuelUsed: 2.08, lapTime: 90, isGreenFlag: true, isValidForCalc: true, isOutLap: false, timestamp: Date.now() - 600000 },
-      { lapNumber: 5, fuelUsed: 2.12, lapTime: 91, isGreenFlag: true, isValidForCalc: true, isOutLap: false, timestamp: Date.now() - 500000 },
-      { lapNumber: 6, fuelUsed: 2.05, lapTime: 89, isGreenFlag: true, isValidForCalc: true, isOutLap: false, timestamp: Date.now() - 400000 },
-      { lapNumber: 7, fuelUsed: 2.18, lapTime: 92, isGreenFlag: true, isValidForCalc: true, isOutLap: false, timestamp: Date.now() - 300000 },
-      { lapNumber: 8, fuelUsed: 2.1, lapTime: 90, isGreenFlag: true, isValidForCalc: true, isOutLap: false, timestamp: Date.now() - 200000 },
-      { lapNumber: 9, fuelUsed: 2.14, lapTime: 91, isGreenFlag: true, isValidForCalc: true, isOutLap: false, timestamp: Date.now() - 100000 },
-      { lapNumber: 10, fuelUsed: 2.11, lapTime: 90, isGreenFlag: true, isValidForCalc: true, isOutLap: false, timestamp: Date.now() },
-    ];
+    // Add mock lap history (laps 1-30 for histogram)
+    const mockLaps: FuelLapData[] = Array.from({ length: 30 }, (_, i) => {
+      // Create varied fuel usage with some above and below average (avg ~2.1)
+      const baseUsage = 2.1;
+      const variation = [
+        -0.3, 0, 0.05, -0.02, 0.02, -0.05, 0.08, 0, 0.01, -0.06,
+        0.15, -0.1, 0.03, -0.02, 0.05, -0.08, 0.1, -0.03, 0.02, -0.05,
+        0.12, -0.07, 0.04, -0.01, 0.06, -0.04, 0.09, -0.02, 0.03, -0.06
+      ][i];
+      return {
+        lapNumber: i + 1,
+        fuelUsed: baseUsage + variation,
+        lapTime: 90 + Math.floor(Math.random() * 3),
+        isGreenFlag: true,
+        isValidForCalc: true,
+        isOutLap: false,
+        timestamp: Date.now() - (30 - i) * 100000,
+      };
+    });
 
     mockLaps.forEach(lap => addLapData(lap));
 
     // Set current lap crossing state
-    updateLapCrossing(0.1, 35.5, 900, 11, false);
+    updateLapCrossing(0.1, 35.5, 2700, 31, false);
   }, [addLapData, updateLapCrossing, clearAllData]);
 
   return <>{children}</>;
@@ -191,9 +197,66 @@ export const WithMockLapData: Story = {
     show10LapAvg: true,
     showMax: true,
     showPitWindow: true,
-    showFuelSave: true,
     showFuelRequired: true,
+    showConsumptionGraph: true,
+    consumptionGraphType: 'histogram',
     safetyMargin: 0.05,
     background: { opacity: 85 },
+  },
+};
+
+export const WithHistogram: Story = {
+  decorators: [
+    (Story) => (
+      <MockFuelDataProvider>
+        <Story />
+      </MockFuelDataProvider>
+    ),
+    TelemetryDecorator(),
+  ],
+  args: {
+    fuelUnits: 'L',
+    layout: 'vertical',
+    showConsumption: true,
+    showPitWindow: true,
+    showConsumptionGraph: true,
+    consumptionGraphType: 'histogram',
+    safetyMargin: 0.05,
+    background: { opacity: 85 },
+  },
+};
+
+export const WithLineChart: Story = {
+  decorators: [
+    (Story) => (
+      <MockFuelDataProvider>
+        <Story />
+      </MockFuelDataProvider>
+    ),
+    TelemetryDecorator(),
+  ],
+  args: {
+    fuelUnits: 'L',
+    layout: 'vertical',
+    showConsumption: true,
+    showPitWindow: true,
+    showConsumptionGraph: true,
+    consumptionGraphType: 'line',
+    safetyMargin: 0.05,
+    background: { opacity: 85 },
+  },
+};
+
+export const WithoutConsumptionGraph: Story = {
+  decorators: [
+    (Story) => (
+      <MockFuelDataProvider>
+        <Story />
+      </MockFuelDataProvider>
+    ),
+    TelemetryDecorator(),
+  ],
+  args: {
+    showConsumptionGraph: false,
   },
 };

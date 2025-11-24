@@ -17,6 +17,8 @@ const defaultConfig: FuelWidgetSettings['config'] = {
   showPitWindow: true,
   showFuelSave: true,
   showFuelRequired: false,
+  showConsumptionGraph: true,
+  consumptionGraphType: 'histogram',
   safetyMargin: 0.05,
   background: { opacity: 85 },
 };
@@ -38,6 +40,8 @@ const migrateConfig = (
     showPitWindow: (config.showPitWindow as boolean) ?? true,
     showFuelSave: (config.showFuelSave as boolean) ?? true,
     showFuelRequired: (config.showFuelRequired as boolean) ?? false,
+    showConsumptionGraph: (config.showConsumptionGraph as boolean) ?? true,
+    consumptionGraphType: (config.consumptionGraphType as 'line' | 'histogram') ?? 'histogram',
     safetyMargin: (config.safetyMargin as number) ?? 0.05,
     background: {
       opacity:
@@ -235,7 +239,7 @@ export const FuelSettings = () => {
             />
           </div>
 
-          {/* Show Fuel Save Indicator */}
+          {/* Show Fuel Save Indicator - Commented out while feature is disabled
           <div className="flex items-center justify-between">
             <span className="text-sm text-slate-300">
               Show Fuel Save Indicator
@@ -249,6 +253,48 @@ export const FuelSettings = () => {
               className="w-4 h-4 bg-slate-700 rounded"
             />
           </div>
+          */}
+
+          {/* Show Consumption Graph */}
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-slate-300">
+              Show Consumption Graph
+            </span>
+            <input
+              type="checkbox"
+              checked={settings.config.showConsumptionGraph}
+              onChange={(e) =>
+                handleConfigChange({ showConsumptionGraph: e.target.checked })
+              }
+              className="w-4 h-4 bg-slate-700 rounded"
+            />
+          </div>
+
+          {/* Graph Type (when enabled) */}
+          {settings.config.showConsumptionGraph && (
+            <div className="ml-4 border-l-2 border-slate-600 pl-4">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-slate-400">
+                  Graph Type
+                  <span className="block text-[10px] text-slate-500">
+                    Line: 5 laps, Histogram: 30 laps
+                  </span>
+                </span>
+                <select
+                  value={settings.config.consumptionGraphType}
+                  onChange={(e) =>
+                    handleConfigChange({
+                      consumptionGraphType: e.target.value as 'line' | 'histogram',
+                    })
+                  }
+                  className="px-3 py-1 bg-slate-700 text-slate-200 rounded text-sm"
+                >
+                  <option value="line">Line Chart</option>
+                  <option value="histogram">Histogram</option>
+                </select>
+              </div>
+            </div>
+          )}
 
           {/* Safety Margin */}
           <div className="flex items-center justify-between">

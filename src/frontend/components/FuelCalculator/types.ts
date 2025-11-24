@@ -94,6 +94,10 @@ export interface FuelCalculatorSettings {
   showFuelSave: boolean;
   /** Show fuel required for min/avg/max consumption */
   showFuelRequired?: boolean;
+  /** Show consumption history graph */
+  showConsumptionGraph?: boolean;
+  /** Consumption graph type */
+  consumptionGraphType?: 'line' | 'histogram';
   /** Safety margin percentage (0-1) */
   safetyMargin: number;
   /** Background opacity (0-100) */

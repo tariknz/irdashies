@@ -112,6 +112,8 @@ export interface FuelWidgetSettings extends BaseWidgetSettings {
     showPitWindow: boolean;
     showFuelSave: boolean;
     showFuelRequired: boolean;
+    showConsumptionGraph: boolean;
+    consumptionGraphType: 'line' | 'histogram';
     safetyMargin: number;
     background: { opacity: number };
   };

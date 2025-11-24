@@ -7,6 +7,7 @@ import { useMemo } from 'react';
 import { useTelemetryValues } from '@irdashies/context';
 import { useFuelCalculation } from './useFuelCalculation';
 import { formatFuel } from './fuelCalculations';
+import { useFuelStore } from './FuelStore';
 import type { FuelCalculatorSettings } from './types';
 
 type FuelCalculatorProps = Partial<FuelCalculatorSettings>;
@@ -21,22 +22,55 @@ export const FuelCalculator = ({
   show10LapAvg = true,
   showMax = true,
   showPitWindow = true,
-  showFuelSave = true,
+  // showFuelSave = true, // Commented out - unused while Fuel Save section is disabled
   showFuelRequired = false,
+  showConsumptionGraph = true,
+  consumptionGraphType = 'histogram',
   safetyMargin = 0.05,
   background = { opacity: 85 },
 }: FuelCalculatorProps) => {
   const fuelData = useFuelCalculation(safetyMargin);
+  // Subscribe to lapHistory directly to trigger re-renders when it changes
+  const lapHistory = useFuelStore((state) => state.lapHistory);
 
   // Get current fuel level from telemetry even when no lap data
   const currentFuelLevel = useTelemetryValues('FuelLevel')?.[0] || 0;
+
+  // Get laps of fuel consumption for the graph
+  const graphData = useMemo(() => {
+    const lapCount = consumptionGraphType === 'histogram' ? 30 : 5;
+    // Convert Map to array and sort by lap number descending
+    const history = Array.from(lapHistory.values()).sort(
+      (a, b) => b.lapNumber - a.lapNumber
+    );
+    // Filter to valid laps (not out-laps) and take last N
+    const validLaps = history
+      .filter(lap => !lap.isOutLap && lap.fuelUsed > 0)
+      .slice(0, lapCount)
+      .reverse(); // Oldest to newest for graph
+
+    if (validLaps.length < 2) return null;
+
+    const fuelValues = validLaps.map(lap => lap.fuelUsed);
+    const avgFuel = fuelValues.reduce((sum, v) => sum + v, 0) / fuelValues.length;
+    const minFuel = Math.min(...fuelValues);
+    const maxFuel = Math.max(...fuelValues);
+
+    return {
+      laps: validLaps,
+      fuelValues,
+      avgFuel,
+      minFuel,
+      maxFuel,
+    };
+  }, [lapHistory, consumptionGraphType]);
 
   // Determine status border and glow colors
   const statusClasses = useMemo(() => {
     if (!fuelData) return 'border-slate-600';
     if (fuelData.canFinish) return 'border-green-500 shadow-[0_0_15px_rgba(0,255,0,0.2)]';
     if (fuelData.pitWindowClose - fuelData.currentLap < 5)
-      return 'border-red-500 shadow-[0_0_15px_rgba(255,48,48,0.3)] animate-pulse';
+      return 'border-red-500 shadow-[0_0_15px_rgba(255,48,48,0.3)]';
     return 'border-orange-500 shadow-[0_0_15px_rgba(255,165,0,0.2)]';
   }, [fuelData]);
 
@@ -175,8 +209,10 @@ export const FuelCalculator = ({
               <span className="text-white text-sm font-medium text-right">
                 {formatFuel(displayData.lastLapUsage, fuelUnits)}
               </span>
-              {showFuelRequired && fuelRequired && (
-                <span className="text-slate-500 text-sm font-medium text-right">-</span>
+              {showFuelRequired && fuelRequired && fuelData && (
+                <span className="text-white text-sm font-medium text-right">
+                  {formatFuel(displayData.lastLapUsage * fuelData.lapsRemaining, fuelUnits, 1)}
+                </span>
               )}
             </div>
           )}
@@ -186,8 +222,10 @@ export const FuelCalculator = ({
               <span className="text-white text-sm font-medium text-right">
                 {formatFuel(displayData.avg3Laps, fuelUnits)}
               </span>
-              {showFuelRequired && fuelRequired && (
-                <span className="text-slate-500 text-sm font-medium text-right">-</span>
+              {showFuelRequired && fuelRequired && fuelData && (
+                <span className="text-cyan-400 text-sm font-medium text-right">
+                  {formatFuel(displayData.avg3Laps * fuelData.lapsRemaining, fuelUnits, 1)}
+                </span>
               )}
             </div>
           )}
@@ -247,7 +285,103 @@ export const FuelCalculator = ({
         </div>
       )}
 
-      {/* Fuel Save Indicator */}
+      {/* Fuel Consumption Graph */}
+      {showConsumptionGraph && graphData && (
+        <div className={`${layout === 'horizontal' ? 'mb-1 pb-1' : 'mb-3 pb-2'} border-b border-slate-600/30`}>
+          <div className="text-xs text-slate-500 uppercase tracking-wide mb-1.5">Consumption History</div>
+          <div className="h-12 relative">
+            {consumptionGraphType === 'histogram' ? (
+              // Histogram view - bars for each lap
+              (() => {
+                const range = graphData.maxFuel - graphData.minFuel;
+                const padding = range * 0.1 || 0.1;
+                const yMin = graphData.minFuel - padding;
+                const yMax = graphData.maxFuel + padding;
+                const avgYPct = ((graphData.avgFuel - yMin) / (yMax - yMin)) * 100;
+
+                return (
+                  <div className="w-full h-full flex items-end justify-center gap-[1px] relative">
+                    {/* Average line */}
+                    <div
+                      className="absolute left-0 right-0 border-t border-dashed border-yellow-400/80"
+                      style={{ bottom: `${avgYPct}%` }}
+                    />
+                    {/* Bars */}
+                    {graphData.fuelValues.map((fuel, i) => {
+                      const heightPct = ((fuel - yMin) / (yMax - yMin)) * 100;
+                      const isAboveAvg = fuel > graphData.avgFuel;
+                      return (
+                        <div
+                          key={i}
+                          className={`w-[2px] ${isAboveAvg ? 'bg-red-400' : 'bg-green-400'}`}
+                          style={{ height: `${heightPct}%` }}
+                        />
+                      );
+                    })}
+                  </div>
+                );
+              })()
+            ) : (
+              // Line chart view
+              (() => {
+                const range = graphData.maxFuel - graphData.minFuel;
+                const padding = range * 0.1 || 0.1;
+                const yMin = graphData.minFuel - padding;
+                const yMax = graphData.maxFuel + padding;
+                const avgYPct = ((graphData.avgFuel - yMin) / (yMax - yMin)) * 100;
+                const points = graphData.fuelValues.map((fuel, i) => {
+                  const xPct = (i / (graphData.fuelValues.length - 1)) * 100;
+                  const yPct = ((fuel - yMin) / (yMax - yMin)) * 100;
+                  return { xPct, yPct };
+                });
+
+                return (
+                  <>
+                    {/* SVG for lines only - stretched to fill */}
+                    <svg viewBox="0 0 100 100" className="absolute inset-0 w-full h-full" preserveAspectRatio="none">
+                      {/* Average line */}
+                      <line
+                        x1="0"
+                        y1={100 - avgYPct}
+                        x2="100"
+                        y2={100 - avgYPct}
+                        stroke="rgba(251, 191, 36, 0.8)"
+                        strokeWidth="1"
+                        strokeDasharray="4,3"
+                      />
+                      {/* Data line */}
+                      <polyline
+                        points={points.map(p => `${p.xPct},${100 - p.yPct}`).join(' ')}
+                        fill="none"
+                        stroke="rgba(74, 222, 128, 0.8)"
+                        strokeWidth="1.5"
+                      />
+                    </svg>
+                    {/* Circles positioned absolutely to maintain shape */}
+                    {points.map((p, i) => (
+                      <div
+                        key={i}
+                        className="absolute w-2 h-2 bg-green-400 rounded-full border border-green-300 transform -translate-x-1/2 -translate-y-1/2"
+                        style={{
+                          left: `${p.xPct}%`,
+                          top: `${100 - p.yPct}%`,
+                        }}
+                      />
+                    ))}
+                  </>
+                );
+              })()
+            )}
+          </div>
+          <div className="flex justify-between text-xs text-slate-400 mt-1">
+            <span>L{graphData.laps[0]?.lapNumber}</span>
+            <span className="text-yellow-400">Avg: {formatFuel(graphData.avgFuel, fuelUnits)}</span>
+            <span>L{graphData.laps[graphData.laps.length - 1]?.lapNumber}</span>
+          </div>
+        </div>
+      )}
+
+      {/* Fuel Save Indicator - Commented out for now
       {showFuelSave && fuelData && displayData.targetConsumption > 0 && (
         <div className={`${layout === 'horizontal' ? 'mb-1 pb-1' : 'mb-3 pb-2'} border-b border-slate-600/30`}>
           <div className="text-xs text-slate-500 uppercase tracking-wide mb-1">Fuel Save</div>
@@ -269,6 +403,7 @@ export const FuelCalculator = ({
           </div>
         </div>
       )}
+      */}
 
 
       {/* Footer: Key Information */}

@@ -38,6 +38,8 @@ export function useFuelCalculation(
   const addLapData = useFuelStore((state) => state.addLapData);
   const updateLapCrossing = useFuelStore((state) => state.updateLapCrossing);
   const updateLapDistPct = useFuelStore((state) => state.updateLapDistPct);
+  // Subscribe to lapHistory to trigger recalculation when laps are added
+  const lapHistoryMap = useFuelStore((state) => state.lapHistory);
 
   // Debug logging - disabled
   // useEffect(() => {
@@ -126,7 +128,10 @@ export function useFuelCalculation(
       return null;
     }
 
-    const lapHistory = useFuelStore.getState().getLapHistory();
+    // Convert Map to sorted array (most recent first)
+    const lapHistory = Array.from(lapHistoryMap.values()).sort(
+      (a, b) => b.lapNumber - a.lapNumber
+    );
 
     // Need at least 1 lap for calculations
     if (lapHistory.length < 1) {
@@ -140,38 +145,42 @@ export function useFuelCalculation(
     // Calculate tank capacity from current fuel level and percentage
     const fuelTankCapacity = fuelLevelPct > 0 ? fuelLevel / fuelLevelPct : 60; // Default to 60L if can't calculate
 
-    // Get different lap groupings
-    const greenLaps = validLaps.filter((l) => l.isGreenFlag);
-    const last3 = validLaps.slice(0, 3);
-    const last10 = validLaps.slice(0, 10);
-
-    // Calculate averages
-    const lastLapUsage = validLaps[0]?.fuelUsed || 0;
-    const avg3Laps = calculateWeightedAverage(last3);
-    const avg10Laps = calculateWeightedAverage(last10);
-    const avgAllGreenLaps = calculateWeightedAverage(greenLaps);
-
-    // Calculate min and max fuel consumption from valid laps
-    // Exclude out-laps and first lap (from grid or after reset) for min calculation
+    // Exclude out-laps and first lap (from grid or after reset) for calculations
     // as they're typically not full racing laps with representative fuel consumption
     const firstLapNumber = validLaps.length > 0
       ? Math.min(...validLaps.map(l => l.lapNumber))
       : 0;
     const fullLaps = validLaps.filter(l => !l.isOutLap && l.lapNumber !== firstLapNumber);
+
+    // Get different lap groupings from full laps (excluding first/out laps)
+    const greenLaps = fullLaps.filter((l) => l.isGreenFlag);
+    const last3 = fullLaps.slice(0, 3);
+    const last10 = fullLaps.slice(0, 10);
+
+    // Calculate averages - use full laps for averages to exclude first/out laps
+    // But lastLapUsage should be the most recent valid lap regardless
+    const lastLapUsage = validLaps[0]?.fuelUsed || 0;
+    const avg3Laps = last3.length > 0 ? calculateWeightedAverage(last3) : lastLapUsage;
+    const avg10Laps = last10.length > 0 ? calculateWeightedAverage(last10) : avg3Laps;
+    const avgAllGreenLaps = greenLaps.length > 0 ? calculateWeightedAverage(greenLaps) : avg10Laps;
+
+    // Calculate min and max fuel consumption from full laps
     const minLapUsage = fullLaps.length > 0
       ? Math.min(...fullLaps.map(l => l.fuelUsed))
       : 0;
-    const maxLapUsage = validLaps.length > 0
-      ? Math.max(...validLaps.map(l => l.fuelUsed))
+    const maxLapUsage = fullLaps.length > 0
+      ? Math.max(...fullLaps.map(l => l.fuelUsed))
       : 0;
 
     // Use 10-lap average as primary metric, fall back to 3-lap if needed
     const avgFuelPerLap = last10.length >= 5 ? avg10Laps : avg3Laps;
 
-    // Calculate average lap time for time until empty
-    const avgLapTime = validLaps.length > 0
-      ? validLaps.reduce((sum, l) => sum + l.lapTime, 0) / validLaps.length
-      : 0;
+    // Calculate average lap time for time until empty (use full laps to exclude first/out laps)
+    const avgLapTime = fullLaps.length > 0
+      ? fullLaps.reduce((sum, l) => sum + l.lapTime, 0) / fullLaps.length
+      : validLaps.length > 0
+        ? validLaps.reduce((sum, l) => sum + l.lapTime, 0) / validLaps.length
+        : 0;
 
     // Calculate laps possible with current fuel
     const lapsWithFuel = fuelLevel / avgFuelPerLap;
@@ -262,6 +271,7 @@ export function useFuelCalculation(
     safetyMargin,
     carIdxPosition?.value,
     carIdxLap?.value,
+    lapHistoryMap,
   ]);
 
   return calculation;
