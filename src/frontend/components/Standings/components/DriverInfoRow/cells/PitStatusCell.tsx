@@ -8,6 +8,7 @@ interface PitStatusCellProps {
   lastPitLap?: number;
   lastLap?: number;
   currentSessionType?: string;
+  dnf?: boolean;
 }
 
 export const PitStatusCell = memo(
@@ -19,11 +20,8 @@ export const PitStatusCell = memo(
     lastPitLap,
     lastLap,
     currentSessionType,
+    dnf,
   }: PitStatusCellProps) => {
-    const dnf =
-      (prevCarTrackSurface ?? -1) > -1 &&
-      carTrackSurface === -1 &&
-      currentSessionType == 'Race';
     const tow =
       carTrackSurface == 1 &&
       prevCarTrackSurface != undefined &&

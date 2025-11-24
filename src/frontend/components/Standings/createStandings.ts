@@ -1,5 +1,6 @@
 import type { SessionResults, Driver } from '@irdashies/types';
 import { calculateIRatingGain, RaceResult, CalculationResult } from '@irdashies/utils/iratingGain';
+import { GlobalFlags } from '../../../app/irsdk/types';
 
 
 export type LastTimeState = 'session-fastest' | 'personal-best' | undefined;
@@ -46,6 +47,7 @@ export interface Standings {
   prevCarTrackSurface?: number;
   carTrackSurface?: number;
   currentSessionType?: string;
+  dnf?: boolean;
 }
 
 const calculateDelta = (
@@ -136,6 +138,7 @@ export const createDriverStandings = (
     radioTransmitCarIdx?: number[];
     carIdxTireCompoundValue?: number[];
     isOnTrack?: boolean;
+    carIdxSessionFlags?: number[];
   },
   currentSession: {
     resultsPositions?: SessionResults[];
@@ -223,7 +226,8 @@ export const createDriverStandings = (
         lastLap: lastLap[result.CarIdx] ?? undefined,
         prevCarTrackSurface: prevCarTrackSurface[result.CarIdx] ?? undefined,
         carTrackSurface: telemetry?.carIdxTrackSurfaceValue?.[result.CarIdx] ?? undefined,
-        currentSessionType: currentSession.sessionType
+        currentSessionType: currentSession.sessionType,
+        dnf: telemetry.carIdxSessionFlags?.[result.CarIdx] & GlobalFlags.Disqualify
       };
     })
     .filter((s) => !!s);

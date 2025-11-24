@@ -56,6 +56,7 @@ interface DriverRowInfoProps {
   carTrackSurface?: number;
   currentSessionType?: string;
   highlightColor?: number;
+  dnf?: boolean;
 }
 
 export const DriverInfoRow = memo(
@@ -94,7 +95,8 @@ export const DriverInfoRow = memo(
     prevCarTrackSurface,
     carTrackSurface,
     currentSessionType,
-    highlightColor = 960745
+    highlightColor = 960745,
+    dnf,
    }: DriverRowInfoProps) => {
     const lastTimeString = useMemo(() => {
       const format = config?.lastTime?.timeFormat ?? 'full';
@@ -191,6 +193,7 @@ export const DriverInfoRow = memo(
               lastPitLap={lastPitLap}
               lastLap={lastLap}
               currentSessionType={currentSessionType}
+              dnf={dnf}
             />
           ),
         },
