@@ -22,6 +22,7 @@ describe('PitStatusCell', () => {
         prevCarTrackSurface={1}
         currentSessionType="Qualify"
         dnf={false}
+        repair={false}
       />
     );
     
@@ -43,6 +44,7 @@ describe('PitStatusCell', () => {
         carTrackSurface={2}
         currentSessionType="Race"
         dnf={false}
+        repair={false}
       />
     );
     
@@ -74,6 +76,7 @@ describe('PitStatusCell', () => {
         lastLap={5}
         currentSessionType="Race"
         dnf={false}
+        repair={false}
       />
     );
     
@@ -89,6 +92,7 @@ describe('PitStatusCell', () => {
         lastLap={3}
         carTrackSurface={1}
         dnf={false}
+        repair={false}
       />
     );
     
@@ -103,6 +107,7 @@ describe('PitStatusCell', () => {
         carTrackSurface={2}
         currentSessionType="Race"
         dnf={false}
+        repair={false}
       />
     );
     
@@ -118,6 +123,7 @@ describe('PitStatusCell', () => {
         lastLap={5}
         carTrackSurface={1}
         dnf={false}
+        repair={false}
       />
     );
     
@@ -148,6 +154,7 @@ describe('PitStatusCell', () => {
         lastLap={0}
         currentSessionType="Qualify"
         dnf={false}
+        repair={false}
       />
     );
     
@@ -167,6 +174,7 @@ describe('PitStatusCell', () => {
         lastPitLap={undefined}
         currentSessionType="Qualify"
         dnf={false}
+        repair={false}
       />
     );
     
@@ -186,6 +194,7 @@ describe('PitStatusCell', () => {
         lastPitLap={0}
         currentSessionType="Qualify"
         dnf={false}
+        repair={false}
       />
     );
     

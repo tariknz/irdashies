@@ -119,6 +119,7 @@ export const Standings = () => {
                     config={settings}
                     highlightColor={highlightColor}
                     dnf={result.dnf}
+                    repair={result.repair}
                   />
                 ))}
               </Fragment>

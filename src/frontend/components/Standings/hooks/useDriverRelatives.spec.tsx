@@ -53,7 +53,9 @@ describe('useDriverRelatives', () => {
         relativeSpeed: 1.0,
         estLapTime: 100,
       },
-      currentSessionType: "Race"
+      currentSessionType: "Race",
+      dnf: false,
+      repair: false
     },
     {
       carIdx: 1,
@@ -78,7 +80,9 @@ describe('useDriverRelatives', () => {
         relativeSpeed: 1.0,
         estLapTime: 100,
       },
-      currentSessionType: "Race"
+      currentSessionType: "Race",
+      dnf: false,
+      repair: false
     },
     {
       carIdx: 2,
@@ -103,7 +107,9 @@ describe('useDriverRelatives', () => {
         relativeSpeed: 1.0,
         estLapTime: 100,
       },
-      currentSessionType: "Race"
+      currentSessionType: "Race",
+      dnf: false,
+      repair: false
     },
   ];
 

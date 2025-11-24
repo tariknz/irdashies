@@ -48,6 +48,7 @@ export interface Standings {
   carTrackSurface?: number;
   currentSessionType?: string;
   dnf: boolean;
+  repair: boolean;
 }
 
 const calculateDelta = (
@@ -227,7 +228,8 @@ export const createDriverStandings = (
         prevCarTrackSurface: prevCarTrackSurface[result.CarIdx] ?? undefined,
         carTrackSurface: telemetry?.carIdxTrackSurfaceValue?.[result.CarIdx] ?? undefined,
         currentSessionType: currentSession.sessionType,
-        dnf: !!((telemetry?.carIdxSessionFlags?.[result.CarIdx] ?? 0) & GlobalFlags.Disqualify)
+        dnf: !!((telemetry?.carIdxSessionFlags?.[result.CarIdx] ?? 0) & GlobalFlags.Disqualify),
+        repair: !!((telemetry?.carIdxSessionFlags?.[result.CarIdx] ?? 0) & GlobalFlags.Repair),
       };
     })
     .filter((s) => !!s);

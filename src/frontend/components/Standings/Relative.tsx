@@ -77,6 +77,8 @@ export const Relative = () => {
           radioActive={false}
           tireCompound={settings?.compound?.enabled ? 0 : undefined}
           highlightColor={highlightColor}
+          dnf={false}
+          repair={false}
         />
       ));
     }
@@ -124,6 +126,8 @@ export const Relative = () => {
             tireCompound={settings?.compound?.enabled ? 0 : undefined}
             lastLap={undefined}
             highlightColor={highlightColor}
+            dnf={false}
+            repair={false}
           />
         );
       }
@@ -173,6 +177,8 @@ export const Relative = () => {
           displayOrder={settings?.displayOrder}
           config={settings}
           highlightColor={highlightColor}
+          dnf={result.dnf}
+          repair={result.repair}
         />
       );
     });
