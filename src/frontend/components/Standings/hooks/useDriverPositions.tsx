@@ -12,6 +12,7 @@ import {
 } from '@irdashies/context';
 
 import { Standings, type LastTimeState } from '../createStandings';
+import { GlobalFlags } from '../../../../app/irsdk/types';
 
 const getLastTimeState = (
   lastTime: number | undefined,
@@ -94,13 +95,16 @@ export const useCarState = () => {
   const carIdxTrackSurface = useTelemetry('CarIdxTrackSurface');
   const carIdxOnPitRoad = useTelemetry<boolean[]>('CarIdxOnPitRoad');
   const carIdxTireCompound = useTelemetry<number[]>('CarIdxTireCompound');
+  const carIdxSessionFlags = useTelemetry<number[]>('CarIdxSessionFlags');
 
   return useMemo(() => {
     return carIdxTrackSurface?.value?.map((onTrack, index) => ({
       carIdx: index,
       onTrack: onTrack > -1,
       onPitRoad: carIdxOnPitRoad?.value?.[index],
-      tireCompound: carIdxTireCompound?.value?.[index]
+      tireCompound: carIdxTireCompound?.value?.[index],
+      dnf: !!((carIdxSessionFlags?.value?.[index] ?? 0) & GlobalFlags.Disqualify),
+      repair: !!((carIdxSessionFlags?.value?.[index] ?? 0) & GlobalFlags.Repair)
     })) ?? [];
   }, [carIdxTrackSurface?.value, carIdxOnPitRoad?.value, carIdxTireCompound?.value]);
 };
@@ -194,7 +198,9 @@ export const useDriverStandings = () => {
         lastLap: driverPos.lastLap,
         prevCarTrackSurface: driverPos.prevCarTrackSurface,
         carTrackSurface: driverPos.carTrackSurface,
-        currentSessionType: sessionType
+        currentSessionType: sessionType,
+        dnf: carState?.dnf ?? false,
+        repair: carState?.repair ?? false
       };
     });
 

@@ -363,7 +363,9 @@ export const DriverInfoRow = memo(
       currentSessionType,
       lastLap,
       lastPitLap,
-      prevCarTrackSurface
+      prevCarTrackSurface,
+      dnf,
+      repair
     ]);
 
     return (
