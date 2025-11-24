@@ -104,6 +104,7 @@ export const Standings = () => {
                       <DriverRatingBadge
                         license={result.driver?.license}
                         rating={result.driver?.rating}
+                        format={settings.badge.badgeFormat}
                       />
                     ) : undefined
                   }

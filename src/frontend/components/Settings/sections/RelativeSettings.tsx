@@ -24,6 +24,116 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { DotsSixVerticalIcon } from '@phosphor-icons/react';
 
+// Badge preview component to show different formats
+const BadgeFormatPreview = ({
+  format,
+  selected,
+  onClick
+}: {
+  format: string;
+  selected: boolean;
+  onClick: () => void;
+}) => {
+  const renderPreview = () => {
+    switch (format) {
+      case 'license-color-rating-bw':
+        return (
+          <div className="flex gap-1 items-center">
+            <div className="text-white text-nowrap border-2 px-1 rounded-md text-xs leading-tight border-green-500 bg-green-800">
+              B 3.8
+            </div>
+            <div className="bg-white/10 text-white border-2 border-transparent px-1 rounded-md text-xs leading-tight">
+              1.4k
+            </div>
+          </div>
+        );
+      case 'rating-only-color-rating-bw':
+        return (
+          <div className="flex gap-1 items-center">
+            <div className="text-white text-nowrap border-2 px-1 rounded-md text-xs leading-tight border-green-500 bg-green-800">
+              3.8
+            </div>
+            <div className="bg-white/10 text-white border-2 border-transparent px-1 rounded-md text-xs leading-tight">
+              1.4k
+            </div>
+          </div>
+        );
+      case 'license-color-rating-bw-no-license':
+        return (
+          <div className="flex gap-1 items-center">
+            <div className="text-white text-nowrap border-2 px-1 rounded-md text-xs leading-tight border-green-500 bg-green-800">
+              B
+            </div>
+            <div className="bg-white/10 text-white border-2 border-transparent px-1 rounded-md text-xs leading-tight">
+              1.4k
+            </div>
+          </div>
+        );
+      case 'rating-color-no-license':
+        return (
+          <div className="text-white text-nowrap border-2 px-1 rounded-md text-xs leading-tight border-green-500 bg-green-800">
+            1.4k
+          </div>
+        );
+      case 'license-bw-rating-bw':
+        return (
+          <div className="flex gap-1 items-center">
+            <div className="bg-white/10 text-white border-2 border-transparent px-1 rounded-md text-xs leading-tight">
+              B 3.8
+            </div>
+            <div className="bg-white/10 text-white border-2 border-transparent px-1 rounded-md text-xs leading-tight">
+              1.4k
+            </div>
+          </div>
+        );
+      case 'rating-only-bw-rating-bw':
+        return (
+          <div className="flex gap-1 items-center">
+            <div className="bg-white/10 text-white border-2 border-transparent px-1 rounded-md text-xs leading-tight">
+              3.8
+            </div>
+            <div className="bg-white/10 text-white border-2 border-transparent px-1 rounded-md text-xs leading-tight">
+              1.4k
+            </div>
+          </div>
+        );
+      case 'license-bw-rating-bw-no-license':
+        return (
+          <div className="flex gap-1 items-center">
+            <div className="bg-white/10 text-white border-2 border-transparent px-1 rounded-md text-xs leading-tight">
+              B
+            </div>
+            <div className="bg-white/10 text-white border-2 border-transparent px-1 rounded-md text-xs leading-tight">
+              1.4k
+            </div>
+          </div>
+        );
+      case 'rating-bw-no-license':
+        return (
+          <div className="text-white text-nowrap border-2 px-1 rounded-md text-xs leading-tight bg-white/10 border-transparent">
+            1.4k
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`px-3 py-1 rounded cursor-pointer transition-colors inline-flex items-center justify-center ${
+        selected
+          ? 'border border-blue-500 bg-blue-500/10'
+          : 'hover:bg-slate-800'
+      }`}
+    >
+      {renderPreview()}
+    </button>
+  );
+};
+
 const SETTING_ID = 'relative';
 
 interface SortableSetting {
@@ -57,7 +167,7 @@ const defaultConfig: RelativeWidgetSettings['config'] = {
   driverName: { enabled: true },
   pitStatus: { enabled: true },
   carManufacturer: { enabled: true },
-  badge: { enabled: true },
+  badge: { enabled: true, badgeFormat: 'license-color-rating-bw' },
   iratingChange: { enabled: false },
   delta: { enabled: true },
   fastestTime: { enabled: false, timeFormat: 'full' },
@@ -123,7 +233,10 @@ const migrateConfig = (savedConfig: unknown): RelativeWidgetSettings['config'] =
     pitStatus: { enabled: (config.pitStatus as { enabled?: boolean })?.enabled ?? true },
     carManufacturer: { enabled: (config.carManufacturer as { enabled?: boolean })?.enabled ?? true },
     brakeBias: { enabled: (config.brakeBias as { enabled?: boolean })?.enabled ?? false },
-    badge: { enabled: (config.badge as { enabled?: boolean })?.enabled ?? true },
+    badge: {
+      enabled: (config.badge as { enabled?: boolean })?.enabled ?? true,
+      badgeFormat: ((config.badge as { badgeFormat?: string })?.badgeFormat as 'license-color-rating-bw' | 'license-color-rating-bw-no-license' | 'rating-color-no-license' | 'license-bw-rating-bw' | 'rating-only-bw-rating-bw' | 'license-bw-rating-bw-no-license' | 'rating-bw-no-license') ?? 'license-color-rating-bw'
+    },
     iratingChange: { enabled: (config.iratingChange as { enabled?: boolean })?.enabled ?? false },
     delta: { enabled: (config.delta as { enabled?: boolean })?.enabled ?? true },
     fastestTime: { enabled: (config.fastestTime as { enabled?: boolean; timeFormat?: string })?.enabled ?? false, timeFormat: ((config.fastestTime as { enabled?: boolean; timeFormat?: string })?.timeFormat as 'full' | 'mixed' | 'minutes' | 'seconds-full' | 'seconds-mixed' | 'seconds') ?? 'full' },
@@ -197,6 +310,116 @@ const SortableItem = ({ setting, settings, handleConfigChange }: SortableItemPro
           }}
         />
       </div>
+      {setting.configKey === 'badge' && (configValue as { enabled: boolean }).enabled && (
+      <div className="mt-3">
+        <div className="flex flex-wrap gap-3 justify-end">
+          <BadgeFormatPreview
+            format="license-color-rating-bw"
+            selected={(configValue as { enabled: boolean; badgeFormat: string }).badgeFormat === 'license-color-rating-bw'}
+            onClick={() => {
+              const configValue = settings.config[setting.configKey] as { enabled: boolean; badgeFormat: string; [key: string]: unknown };
+              handleConfigChange({
+                [setting.configKey]: {
+                  ...configValue,
+                  badgeFormat: 'license-color-rating-bw'
+                },
+              });
+            }}
+          />
+          <BadgeFormatPreview
+            format="rating-only-color-rating-bw"
+            selected={(configValue as { enabled: boolean; badgeFormat: string }).badgeFormat === 'rating-only-color-rating-bw'}
+            onClick={() => {
+              const configValue = settings.config[setting.configKey] as { enabled: boolean; badgeFormat: string; [key: string]: unknown };
+              handleConfigChange({
+                [setting.configKey]: {
+                  ...configValue,
+                  badgeFormat: 'rating-only-color-rating-bw'
+                },
+              });
+            }}
+          />
+          <BadgeFormatPreview
+            format="license-color-rating-bw-no-license"
+            selected={(configValue as { enabled: boolean; badgeFormat: string }).badgeFormat === 'license-color-rating-bw-no-license'}
+            onClick={() => {
+              const configValue = settings.config[setting.configKey] as { enabled: boolean; badgeFormat: string; [key: string]: unknown };
+              handleConfigChange({
+                [setting.configKey]: {
+                  ...configValue,
+                  badgeFormat: 'license-color-rating-bw-no-license'
+                },
+              });
+            }}
+          />
+          <BadgeFormatPreview
+            format="rating-color-no-license"
+            selected={(configValue as { enabled: boolean; badgeFormat: string }).badgeFormat === 'rating-color-no-license'}
+            onClick={() => {
+              const configValue = settings.config[setting.configKey] as { enabled: boolean; badgeFormat: string; [key: string]: unknown };
+              handleConfigChange({
+                [setting.configKey]: {
+                  ...configValue,
+                  badgeFormat: 'rating-color-no-license'
+                },
+              });
+            }}
+          />
+          <BadgeFormatPreview
+            format="license-bw-rating-bw"
+            selected={(configValue as { enabled: boolean; badgeFormat: string }).badgeFormat === 'license-bw-rating-bw'}
+            onClick={() => {
+              const configValue = settings.config[setting.configKey] as { enabled: boolean; badgeFormat: string; [key: string]: unknown };
+              handleConfigChange({
+                [setting.configKey]: {
+                  ...configValue,
+                  badgeFormat: 'license-bw-rating-bw'
+                },
+              });
+            }}
+          />
+          <BadgeFormatPreview
+            format="rating-only-bw-rating-bw"
+            selected={(configValue as { enabled: boolean; badgeFormat: string }).badgeFormat === 'rating-only-bw-rating-bw'}
+            onClick={() => {
+              const configValue = settings.config[setting.configKey] as { enabled: boolean; badgeFormat: string; [key: string]: unknown };
+              handleConfigChange({
+                [setting.configKey]: {
+                  ...configValue,
+                  badgeFormat: 'rating-only-bw-rating-bw'
+                },
+              });
+            }}
+          />
+          <BadgeFormatPreview
+            format="license-bw-rating-bw-no-license"
+            selected={(configValue as { enabled: boolean; badgeFormat: string }).badgeFormat === 'license-bw-rating-bw-no-license'}
+            onClick={() => {
+              const configValue = settings.config[setting.configKey] as { enabled: boolean; badgeFormat: string; [key: string]: unknown };
+              handleConfigChange({
+                [setting.configKey]: {
+                  ...configValue,
+                  badgeFormat: 'license-bw-rating-bw-no-license'
+                },
+              });
+            }}
+          />
+          <BadgeFormatPreview
+            format="rating-bw-no-license"
+            selected={(configValue as { enabled: boolean; badgeFormat: string }).badgeFormat === 'rating-bw-no-license'}
+            onClick={() => {
+              const configValue = settings.config[setting.configKey] as { enabled: boolean; badgeFormat: string; [key: string]: unknown };
+              handleConfigChange({
+                [setting.configKey]: {
+                  ...configValue,
+                  badgeFormat: 'rating-bw-no-license'
+                },
+              });
+            }}
+          />
+          </div>
+        </div>
+      )}
       {(setting.configKey === 'fastestTime' || setting.configKey === 'lastTime') && (configValue as { enabled: boolean }).enabled && (
         <div className="flex items-center justify-between pl-8 mt-2">
           <span className="text-sm text-slate-300"></span>

@@ -350,7 +350,7 @@ const RelativeWithReorderableConfig = () => {
       driverName: { enabled: true },
       pitStatus: { enabled: true },
       carManufacturer: { enabled: true },
-      badge: { enabled: true },
+      badge: { enabled: true, badgeFormat: 'license-color-rating-bw' },
       iratingChange: { enabled: true },
       delta: { enabled: true },
       fastestTime: { enabled: true, timeFormat: 'full' },
