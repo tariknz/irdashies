@@ -1,6 +1,6 @@
 import { memo, useMemo } from 'react';
 import { getTailwindStyle } from '@irdashies/utils/colors';
-import { formatTime } from '@irdashies/utils/time';
+import { formatTime, type TimeFormat } from '@irdashies/utils/time';
 import type { LastTimeState } from '../../createStandings';
 import type {
   RelativeWidgetSettings,
@@ -28,6 +28,8 @@ interface DriverRowInfoProps {
   isPlayer: boolean;
   hasFastestTime: boolean;
   delta?: number;
+  gap?: number;
+  interval?: number;
   position?: number;
   badge?: React.ReactNode;
   iratingChange?: React.ReactNode;
@@ -65,6 +67,8 @@ export const DriverInfoRow = memo(
     isPlayer,
     hasFastestTime,
     delta,
+    gap,
+    interval,
     position,
     badge,
     lastTime,
@@ -92,11 +96,15 @@ export const DriverInfoRow = memo(
     currentSessionType,
     highlightColor = 960745
    }: DriverRowInfoProps) => {
-    const lastTimeString = useMemo(() => formatTime(lastTime), [lastTime]);
-    const fastestTimeString = useMemo(
-      () => formatTime(fastestTime),
-      [fastestTime]
-    );
+    const lastTimeString = useMemo(() => {
+      const format = config?.lastTime?.timeFormat ?? 'full';
+      return formatTime(lastTime, format as TimeFormat);
+    }, [lastTime, config?.lastTime?.timeFormat]);
+
+    const fastestTimeString = useMemo(() => {
+      const format = config?.fastestTime?.timeFormat ?? 'full';
+      return formatTime(fastestTime, format as TimeFormat);
+    }, [fastestTime, config?.fastestTime?.timeFormat]);
 
     const tailwindStyles = useMemo(() => {
       return getTailwindStyle(classColor, highlightColor, isMultiClass);
@@ -220,8 +228,25 @@ export const DriverInfoRow = memo(
           id: 'delta',
           shouldRender:
             (displayOrder ? displayOrder.includes('delta') : true) &&
-            (config?.delta?.enabled ?? true),
+            (config?.delta?.enabled ?? true) &&
+            !(config && 'gap' in config),
           component: <DeltaCell key="delta" hidden={hidden} delta={delta} />,
+        },
+        {
+          id: 'gap',
+          shouldRender:
+            (displayOrder ? displayOrder.includes('gap') : true) &&
+            (config && 'gap' in config ? config.gap.enabled : false) &&
+            currentSessionType?.toLowerCase() === 'race',
+          component: <DeltaCell key="gap" hidden={hidden} delta={gap} showDashForUndefined={true} />,
+        },
+        {
+          id: 'interval',
+          shouldRender:
+            (displayOrder ? displayOrder.includes('interval') : true) &&
+            (config && 'interval' in config ? config.interval.enabled : false) &&
+            currentSessionType?.toLowerCase() === 'race',
+          component: <DeltaCell key="interval" hidden={hidden} delta={interval} showDashForUndefined={true} />,
         },
         {
           id: 'fastestTime',
@@ -316,6 +341,8 @@ export const DriverInfoRow = memo(
       badge,
       iratingChange,
       delta,
+      gap,
+      interval,
       fastestTimeString,
       hasFastestTime,
       lastTimeString,
