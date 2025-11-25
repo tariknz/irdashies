@@ -192,7 +192,7 @@ export async function startComponentServer(irsdkBridge?: IrSdkBridge, dashboardB
     });
   });
 
-  httpServer.listen(COMPONENT_PORT, () => {
+  httpServer.listen(Number(COMPONENT_PORT), 'localhost', () => {
     console.log(`✅ Component server running on http://localhost:${COMPONENT_PORT}`);
     console.log(`   Mode: ${isDev ? 'Development' : 'Production'}`);
     console.log(`   List components: http://localhost:${COMPONENT_PORT}/components`);
