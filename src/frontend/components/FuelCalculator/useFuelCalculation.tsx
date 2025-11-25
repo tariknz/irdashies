@@ -175,6 +175,11 @@ export function useFuelCalculation(
     // Use 10-lap average as primary metric, fall back to 3-lap if needed
     const avgFuelPerLap = last10.length >= 5 ? avg10Laps : avg3Laps;
 
+    // Guard against zero or invalid avgFuelPerLap
+    if (avgFuelPerLap <= 0) {
+      return null;
+    }
+
     // Calculate average lap time for time until empty (use full laps to exclude first/out laps)
     const avgLapTime = fullLaps.length > 0
       ? fullLaps.reduce((sum, l) => sum + l.lapTime, 0) / fullLaps.length
@@ -207,14 +212,23 @@ export function useFuelCalculation(
       const leaderCarIdx = carIdxPosition.value.findIndex((pos) => pos === 1);
       if (leaderCarIdx !== -1) {
         const leaderLap = carIdxLap.value[leaderCarIdx];
-        if (leaderLap !== undefined && totalLaps > 0) {
+        if (leaderLap !== undefined && totalLaps > 0 && leaderLap > 0) {
           // Leader's laps remaining
           const leaderLapsRemaining = totalLaps - leaderLap;
-          // Use the minimum of your laps remaining or leader's laps remaining
-          // This accounts for being lapped - race ends when leader finishes
-          lapsRemaining = Math.min(lapsRemaining, leaderLapsRemaining);
+          // Guard against negative or unreasonably large values
+          // This can happen with data glitches or when leader position changes
+          if (leaderLapsRemaining > 0 && leaderLapsRemaining < 10000) {
+            // Use the minimum of your laps remaining or leader's laps remaining
+            // This accounts for being lapped - race ends when leader finishes
+            lapsRemaining = Math.min(lapsRemaining, leaderLapsRemaining);
+          }
         }
       }
+    }
+
+    // Guard against invalid lapsRemaining
+    if (!Number.isFinite(lapsRemaining) || lapsRemaining < 0 || lapsRemaining > 10000) {
+      lapsRemaining = sessionLapsRemain;
     }
 
     // Calculate fuel needed with safety margin

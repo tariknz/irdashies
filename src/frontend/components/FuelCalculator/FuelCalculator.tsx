@@ -302,11 +302,9 @@ export const FuelCalculator = ({
               {consumptionGraphType === 'histogram' ? (
               // Histogram view - bars for each lap
               (() => {
-                const range = graphData.maxFuel - graphData.minFuel;
-                const padding = range * 0.1 || 0.1;
-                const yMin = graphData.minFuel - padding;
-                const yMax = graphData.maxFuel + padding;
-                const avgYPct = ((graphData.avgFuel - yMin) / (yMax - yMin)) * 100;
+                // Scale from 0 with 15% headroom above max
+                const yMax = graphData.maxFuel * 1.15;
+                const avgYPct = (graphData.avgFuel / yMax) * 100;
 
                 return (
                   <div className="w-full h-full flex items-end justify-center gap-[1px] relative">
@@ -317,7 +315,7 @@ export const FuelCalculator = ({
                     />
                     {/* Bars */}
                     {graphData.fuelValues.map((fuel, i) => {
-                      const heightPct = ((fuel - yMin) / (yMax - yMin)) * 100;
+                      const heightPct = (fuel / yMax) * 100;
                       const isAboveAvg = fuel > graphData.avgFuel;
                       return (
                         <div
@@ -333,14 +331,12 @@ export const FuelCalculator = ({
             ) : (
               // Line chart view
               (() => {
-                const range = graphData.maxFuel - graphData.minFuel;
-                const padding = range * 0.1 || 0.1;
-                const yMin = graphData.minFuel - padding;
-                const yMax = graphData.maxFuel + padding;
-                const avgYPct = ((graphData.avgFuel - yMin) / (yMax - yMin)) * 100;
+                // Scale from 0 with 15% headroom above max (same as histogram)
+                const yMax = graphData.maxFuel * 1.15;
+                const avgYPct = (graphData.avgFuel / yMax) * 100;
                 const points = graphData.fuelValues.map((fuel, i) => {
                   const xPct = (i / (graphData.fuelValues.length - 1)) * 100;
-                  const yPct = ((fuel - yMin) / (yMax - yMin)) * 100;
+                  const yPct = (fuel / yMax) * 100;
                   return { xPct, yPct };
                 });
 
