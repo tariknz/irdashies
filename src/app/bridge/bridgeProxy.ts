@@ -20,7 +20,7 @@ export function createBridgeProxy(
   console.log('  Has irsdkBridge?', !!irsdkBridge);
   console.log('  Has dashboardBridge?', !!dashboardBridge);
   console.log('  Initial demo mode:', initialDemoMode);
-  
+
   const io = new SocketIOServer(httpServer, {
     cors: {
       origin: '*',
@@ -41,24 +41,50 @@ export function createBridgeProxy(
   console.log('🔍 Bridge has onSessionData?', typeof irsdkBridge.onSessionData);
   console.log('🔍 Bridge has onRunningState?', typeof irsdkBridge.onRunningState);
 
+  // Store reference to current bridge
+  let currentBridge: IrSdkBridge | null = null;
+  let unsubscribeFunctions: (() => void)[] = [];
+
   // Function to subscribe to bridge events
   const subscribeToBridge = (bridge: IrSdkBridge) => {
     console.log('🔌 Bridge proxy: Subscribing to bridge events...');
-    
-    bridge.onRunningState((running: boolean) => {
+    currentBridge = bridge;
+
+    const unsubTelemetry = bridge.onTelemetry((telemetry: Telemetry) => {
+      currentTelemetry = telemetry;
+      io.emit('telemetry', telemetry);
+    });
+    console.log('✅ Bridge proxy: onTelemetry listener registered');
+
+    const unsubSession = bridge.onSessionData((session: Session) => {
+      currentSession = session;
+      io.emit('sessionData', session);
+    });
+    console.log('✅ Bridge proxy: onSessionData listener registered');
+
+    const unsubRunning = bridge.onRunningState((running: boolean) => {
       isRunning = running;
       console.log('🔄 Bridge proxy: Received running state:', running, ', broadcasting to', io.engine.clientsCount, 'clients');
       io.emit('runningState', running);
     });
     console.log('✅ Bridge proxy: onRunningState listener registered');
+
+    // Store unsubscribe functions if they were returned
+    unsubscribeFunctions = [unsubTelemetry, unsubSession, unsubRunning].filter(fn => typeof fn === 'function');
   };
 
-  // Subscribe to initial bridge
-  subscribeToBridge(irsdkBridge);
+  // Function to unsubscribe from bridge events
+  const unsubscribeFromBridge = () => {
+    console.log('🔌 Bridge proxy: Unsubscribing from bridge events...');
+    unsubscribeFunctions.forEach(unsub => unsub());
+    unsubscribeFunctions = [];
+  };
 
   // Return a function to resubscribe when bridge changes
   const resubscribeToBridge = (newBridge: IrSdkBridge) => {
     console.log('🔄 Bridge proxy: Re-subscribing to new bridge...');
+    // Unsubscribe from old bridge first
+    unsubscribeFromBridge();
     // Reset current state
     currentTelemetry = null;
     currentSession = null;
@@ -90,6 +116,11 @@ export function createBridgeProxy(
   // Handle client connections
   io.on('connection', (socket: Socket) => {
     console.log(`✅ Client connected: ${socket.id}`);
+    
+    // Subscribe to bridge when first client connects (or resubscribe if needed)
+    if (io.engine.clientsCount === 1 && unsubscribeFunctions.length === 0) {
+      subscribeToBridge(currentBridge || irsdkBridge);
+    }
 
     // Send current state to newly connected client
     socket.emit('initialState', {
@@ -107,6 +138,12 @@ export function createBridgeProxy(
 
     socket.on('disconnect', () => {
       console.log(`❌ Client disconnected: ${socket.id}`);
+      
+      // Unsubscribe from bridge when last client disconnects
+      if (io.engine.clientsCount === 0) {
+        console.log('🛑 No clients connected, stopping bridge subscriptions');
+        unsubscribeFromBridge();
+      }
     });
   });
 
