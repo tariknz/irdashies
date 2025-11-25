@@ -6,7 +6,7 @@ export interface BaseWidgetSettings<T = Record<string, unknown>> {
 export interface StandingsWidgetSettings extends BaseWidgetSettings {
   config: {
     iratingChange: { enabled: boolean };
-    badge: { enabled: boolean };
+    badge: { enabled: boolean; badgeFormat: 'license-color-rating-bw' | 'license-color-rating-bw-no-license' | 'rating-color-no-license' | 'license-bw-rating-bw' | 'rating-only-bw-rating-bw' | 'license-bw-rating-bw-no-license' | 'rating-bw-no-license' };
     delta: { enabled: boolean };
     gap: { enabled: boolean };
     interval: { enabled: boolean };
@@ -46,7 +46,7 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
     titleBar: { enabled: boolean; progressBar: { enabled: boolean } };
     showOnlyWhenOnTrack: boolean;
     brakeBias: { enabled: boolean };
-    badge: { enabled: boolean };
+    badge: { enabled: boolean; badgeFormat: 'license-color-rating-bw' | 'license-color-rating-bw-no-license' | 'rating-color-no-license' | 'license-bw-rating-bw' | 'rating-only-bw-rating-bw' | 'license-bw-rating-bw-no-license' | 'rating-bw-no-license' };
     iratingChange: { enabled: boolean };
     delta: { enabled: boolean };
     position: { enabled: boolean };

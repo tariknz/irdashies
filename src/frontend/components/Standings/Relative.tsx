@@ -57,7 +57,13 @@ export const Relative = () => {
           carNumber={settings?.carNumber?.enabled ?? true ? '' : undefined}
           flairId={settings?.countryFlags?.enabled ?? true ? 0 : undefined}
           carId={settings?.carManufacturer?.enabled ?? true ? 0 : undefined}
-          badge={settings?.badge?.enabled ? <></> : undefined}
+          badge={settings?.badge?.enabled ? (
+            <DriverRatingBadge
+              license={undefined}
+              rating={undefined}
+              format={settings.badge.badgeFormat}
+            />
+          ) : undefined}
           currentSessionType=""
           iratingChange={
             settings?.iratingChange?.enabled ? (
@@ -157,6 +163,7 @@ export const Relative = () => {
               <DriverRatingBadge
                 license={result.driver?.license}
                 rating={result.driver?.rating}
+                format={settings.badge.badgeFormat}
               />
             ) : undefined
           }

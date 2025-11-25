@@ -23,6 +23,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { DotsSixVerticalIcon } from '@phosphor-icons/react';
+import { BadgeFormatPreview } from '../components/BadgeFormatPreview';
 
 const SETTING_ID = 'relative';
 
@@ -57,7 +58,7 @@ const defaultConfig: RelativeWidgetSettings['config'] = {
   driverName: { enabled: true },
   pitStatus: { enabled: true },
   carManufacturer: { enabled: true },
-  badge: { enabled: true },
+  badge: { enabled: true, badgeFormat: 'license-color-rating-bw' },
   iratingChange: { enabled: false },
   delta: { enabled: true },
   fastestTime: { enabled: false, timeFormat: 'full' },
@@ -123,7 +124,10 @@ const migrateConfig = (savedConfig: unknown): RelativeWidgetSettings['config'] =
     pitStatus: { enabled: (config.pitStatus as { enabled?: boolean })?.enabled ?? true },
     carManufacturer: { enabled: (config.carManufacturer as { enabled?: boolean })?.enabled ?? true },
     brakeBias: { enabled: (config.brakeBias as { enabled?: boolean })?.enabled ?? false },
-    badge: { enabled: (config.badge as { enabled?: boolean })?.enabled ?? true },
+    badge: {
+      enabled: (config.badge as { enabled?: boolean })?.enabled ?? true,
+      badgeFormat: ((config.badge as { badgeFormat?: string })?.badgeFormat as 'license-color-rating-bw' | 'license-color-rating-bw-no-license' | 'rating-color-no-license' | 'license-bw-rating-bw' | 'rating-only-bw-rating-bw' | 'license-bw-rating-bw-no-license' | 'rating-bw-no-license') ?? 'license-color-rating-bw'
+    },
     iratingChange: { enabled: (config.iratingChange as { enabled?: boolean })?.enabled ?? false },
     delta: { enabled: (config.delta as { enabled?: boolean })?.enabled ?? true },
     fastestTime: { enabled: (config.fastestTime as { enabled?: boolean; timeFormat?: string })?.enabled ?? false, timeFormat: ((config.fastestTime as { enabled?: boolean; timeFormat?: string })?.timeFormat as 'full' | 'mixed' | 'minutes' | 'seconds-full' | 'seconds-mixed' | 'seconds') ?? 'full' },
@@ -197,6 +201,116 @@ const SortableItem = ({ setting, settings, handleConfigChange }: SortableItemPro
           }}
         />
       </div>
+      {setting.configKey === 'badge' && (configValue as { enabled: boolean }).enabled && (
+      <div className="mt-3">
+        <div className="flex flex-wrap gap-3 justify-end">
+          <BadgeFormatPreview
+            format="license-color-rating-bw"
+            selected={(configValue as { enabled: boolean; badgeFormat: string }).badgeFormat === 'license-color-rating-bw'}
+            onClick={() => {
+              const configValue = settings.config[setting.configKey] as { enabled: boolean; badgeFormat: string; [key: string]: unknown };
+              handleConfigChange({
+                [setting.configKey]: {
+                  ...configValue,
+                  badgeFormat: 'license-color-rating-bw'
+                },
+              });
+            }}
+          />
+          <BadgeFormatPreview
+            format="rating-only-color-rating-bw"
+            selected={(configValue as { enabled: boolean; badgeFormat: string }).badgeFormat === 'rating-only-color-rating-bw'}
+            onClick={() => {
+              const configValue = settings.config[setting.configKey] as { enabled: boolean; badgeFormat: string; [key: string]: unknown };
+              handleConfigChange({
+                [setting.configKey]: {
+                  ...configValue,
+                  badgeFormat: 'rating-only-color-rating-bw'
+                },
+              });
+            }}
+          />
+          <BadgeFormatPreview
+            format="license-color-rating-bw-no-license"
+            selected={(configValue as { enabled: boolean; badgeFormat: string }).badgeFormat === 'license-color-rating-bw-no-license'}
+            onClick={() => {
+              const configValue = settings.config[setting.configKey] as { enabled: boolean; badgeFormat: string; [key: string]: unknown };
+              handleConfigChange({
+                [setting.configKey]: {
+                  ...configValue,
+                  badgeFormat: 'license-color-rating-bw-no-license'
+                },
+              });
+            }}
+          />
+          <BadgeFormatPreview
+            format="rating-color-no-license"
+            selected={(configValue as { enabled: boolean; badgeFormat: string }).badgeFormat === 'rating-color-no-license'}
+            onClick={() => {
+              const configValue = settings.config[setting.configKey] as { enabled: boolean; badgeFormat: string; [key: string]: unknown };
+              handleConfigChange({
+                [setting.configKey]: {
+                  ...configValue,
+                  badgeFormat: 'rating-color-no-license'
+                },
+              });
+            }}
+          />
+          <BadgeFormatPreview
+            format="license-bw-rating-bw"
+            selected={(configValue as { enabled: boolean; badgeFormat: string }).badgeFormat === 'license-bw-rating-bw'}
+            onClick={() => {
+              const configValue = settings.config[setting.configKey] as { enabled: boolean; badgeFormat: string; [key: string]: unknown };
+              handleConfigChange({
+                [setting.configKey]: {
+                  ...configValue,
+                  badgeFormat: 'license-bw-rating-bw'
+                },
+              });
+            }}
+          />
+          <BadgeFormatPreview
+            format="rating-only-bw-rating-bw"
+            selected={(configValue as { enabled: boolean; badgeFormat: string }).badgeFormat === 'rating-only-bw-rating-bw'}
+            onClick={() => {
+              const configValue = settings.config[setting.configKey] as { enabled: boolean; badgeFormat: string; [key: string]: unknown };
+              handleConfigChange({
+                [setting.configKey]: {
+                  ...configValue,
+                  badgeFormat: 'rating-only-bw-rating-bw'
+                },
+              });
+            }}
+          />
+          <BadgeFormatPreview
+            format="license-bw-rating-bw-no-license"
+            selected={(configValue as { enabled: boolean; badgeFormat: string }).badgeFormat === 'license-bw-rating-bw-no-license'}
+            onClick={() => {
+              const configValue = settings.config[setting.configKey] as { enabled: boolean; badgeFormat: string; [key: string]: unknown };
+              handleConfigChange({
+                [setting.configKey]: {
+                  ...configValue,
+                  badgeFormat: 'license-bw-rating-bw-no-license'
+                },
+              });
+            }}
+          />
+          <BadgeFormatPreview
+            format="rating-bw-no-license"
+            selected={(configValue as { enabled: boolean; badgeFormat: string }).badgeFormat === 'rating-bw-no-license'}
+            onClick={() => {
+              const configValue = settings.config[setting.configKey] as { enabled: boolean; badgeFormat: string; [key: string]: unknown };
+              handleConfigChange({
+                [setting.configKey]: {
+                  ...configValue,
+                  badgeFormat: 'rating-bw-no-license'
+                },
+              });
+            }}
+          />
+          </div>
+        </div>
+      )}
       {(setting.configKey === 'fastestTime' || setting.configKey === 'lastTime') && (configValue as { enabled: boolean }).enabled && (
         <div className="flex items-center justify-between pl-8 mt-2">
           <span className="text-sm text-slate-300"></span>
