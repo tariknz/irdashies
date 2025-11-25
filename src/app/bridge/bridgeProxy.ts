@@ -116,10 +116,15 @@ export function createBridgeProxy(
   // Handle client connections
   io.on('connection', (socket: Socket) => {
     console.log(`✅ Client connected: ${socket.id}`);
+    console.log(`📊 Total clients: ${io.engine.clientsCount}`);
+    console.log(`📊 Subscriptions active: ${unsubscribeFunctions.length > 0}`);
     
-    // Subscribe to bridge when first client connects (or resubscribe if needed)
-    if (io.engine.clientsCount === 1 && unsubscribeFunctions.length === 0) {
+    // Subscribe to bridge if not already subscribed
+    if (unsubscribeFunctions.length === 0) {
+      console.log('🔌 No active subscriptions, subscribing to bridge...');
       subscribeToBridge(currentBridge || irsdkBridge);
+    } else {
+      console.log('✅ Bridge already subscribed, reusing existing subscription');
     }
 
     // Send current state to newly connected client
