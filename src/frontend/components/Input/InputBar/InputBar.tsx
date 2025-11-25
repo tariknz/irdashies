@@ -57,18 +57,29 @@ export const InputBar = ({
   const totalWidth = activeInputs.length * barWidth + (activeInputs.length - 1) * gap;
 
   useEffect(() => {
-    drawBars(svgRef.current, activeInputs, brakeAbsActive, includeAbs);
-  }, [activeInputs, brakeAbsActive, includeAbs]);
+    drawBars(svgRef.current, activeInputs);
+  }, [activeInputs]);
 
   return (
     <div ref={containerRef} className="flex flex-col h-full w-full items-center">
       {/* Top row: Values as text */}
       <div className="flex justify-center gap-2" style={{ width: `${totalWidth}px`, gap: `${gap}px` }}>
-        {activeInputs.map(({ key, value }) => (
-          <div key={key} className="text-white text-center text-2xl font-bold" style={{ width: `${barWidth}px` }}>
-            {(value * 100).toFixed(0)}
-          </div>
-        ))}
+        {activeInputs.map(({ key, value, color }) => {
+          const displayValue = (value * 100).toFixed(0);
+          const isHundred = displayValue === '100';
+          return (
+            <div 
+              key={key} 
+              className="text-center text-lg font-bold" 
+              style={{ 
+                width: `${barWidth}px`,
+                color: isHundred ? color : 'white'
+              }}
+            >
+              {isHundred ? '00' : displayValue}
+            </div>
+          );
+        })}
       </div>
       
       {/* Bottom row: SVG bars */}
@@ -85,8 +96,6 @@ export const InputBar = ({
 function drawBars(
   svgElement: SVGSVGElement | null, 
   data: { key: string; value: number; color: string }[], 
-  brakeAbsActive?: boolean, 
-  includeAbs?: boolean
 ) {
   if (!svgElement) return;
 
