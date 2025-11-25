@@ -16,13 +16,13 @@ export const SessionProvider = ({ bridge }: SessionProviderProps) => {
           setSession(telemetry);
         });
       });
-      return;
+      return () => bridge.then((bridge) => bridge.stop());
     }
 
     bridge.onSessionData((telemetry) => {
       setSession(telemetry);
     });
-    // Don't stop bridge on unmount - it should persist
+    return () => bridge.stop();
   }, [bridge, setSession]);
 
   return <></>;
