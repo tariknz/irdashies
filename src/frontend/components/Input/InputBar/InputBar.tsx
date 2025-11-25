@@ -52,7 +52,7 @@ export const InputBar = ({
   }, [brake, throttle, clutch, brakeAbsActive, includeClutch, includeBrake, includeThrottle, includeAbs]);
 
   // Calculate bar layout
-  const barWidth = 40;
+  const barWidth = 20;
   const gap = 8;
   const totalWidth = activeInputs.length * barWidth + (activeInputs.length - 1) * gap;
 
@@ -93,7 +93,7 @@ function drawBars(
   const height = svgElement.clientHeight;
 
   // Calculate bar dimensions
-  const barWidth = 40; // Fixed width for each bar
+  const barWidth = 20; // Fixed width for each bar
   const gap = 8; // Small gap between bars
 
   const yScale = d3.scaleLinear().domain([0, 1]).range([height, 0]);
