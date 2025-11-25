@@ -38,24 +38,6 @@ export const Standings = () => {
     return <></>;
   }
 
-  // If no data, show a message instead of empty table
-  if (standings.length === 0) {
-    return (
-      <div
-        className="w-full bg-slate-800/90 rounded-sm p-4 text-white"
-        style={{ minHeight: '200px' }}
-      >
-        <div className="flex flex-col items-center justify-center h-full gap-4">
-          <div className="text-2xl">🏁</div>
-          <div className="text-lg font-semibold">Standings</div>
-          <div className="text-sm text-gray-400 text-center">
-            Waiting for session data...
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div
       className={`w-full bg-slate-800/(--bg-opacity) rounded-sm p-2 text-white overflow-hidden`}
