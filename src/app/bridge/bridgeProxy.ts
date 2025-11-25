@@ -45,20 +45,6 @@ export function createBridgeProxy(
   const subscribeToBridge = (bridge: IrSdkBridge) => {
     console.log('🔌 Bridge proxy: Subscribing to bridge events...');
     
-    bridge.onTelemetry((telemetry: Telemetry) => {
-      currentTelemetry = telemetry;
-      console.log('🔄 Bridge proxy: Received telemetry, broadcasting to', io.engine.clientsCount, 'clients');
-      io.emit('telemetry', telemetry);
-    });
-    console.log('✅ Bridge proxy: onTelemetry listener registered');
-
-    bridge.onSessionData((session: Session) => {
-      currentSession = session;
-      console.log('🔄 Bridge proxy: Received session data, broadcasting to', io.engine.clientsCount, 'clients');
-      io.emit('sessionData', session);
-    });
-    console.log('✅ Bridge proxy: onSessionData listener registered');
-
     bridge.onRunningState((running: boolean) => {
       isRunning = running;
       console.log('🔄 Bridge proxy: Received running state:', running, ', broadcasting to', io.engine.clientsCount, 'clients');
