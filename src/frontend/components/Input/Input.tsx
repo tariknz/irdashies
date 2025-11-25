@@ -1,14 +1,12 @@
 import { InputContainer } from './InputContainer/InputContainer';
 import { useInputSettings } from './hooks/useInputSettings';
 import { useInputs } from './hooks/useInputs';
-import { InputWidgetSettings } from '../Settings/types';
 
-export const Input = (props?: InputWidgetSettings['config']) => {
+export const Input = () => {
   const inputs = useInputs();
-  const settingsFromHook = useInputSettings();
 
   // Use props if provided (browser mode), otherwise use hook (Electron mode)
-  const settings = props || settingsFromHook;
+  const settings = useInputSettings();
 
   // Debug: Check if inputs are available
   if (!inputs || Object.values(inputs).every(v => v === undefined)) {
