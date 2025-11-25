@@ -12,6 +12,8 @@ import {
   calculateWeightedAverage,
   detectLapCrossing,
   isGreenFlag,
+  isWhiteFlag,
+  isCheckeredFlag,
   calculateConfidence,
 } from './fuelCalculations';
 
@@ -41,15 +43,7 @@ export function useFuelCalculation(
   // Subscribe to lapHistory to trigger recalculation when laps are added
   const lapHistoryMap = useFuelStore((state) => state.lapHistory);
 
-  // Debug logging - enabled for troubleshooting
-  useEffect(() => {
-    if (lapDistPct !== undefined && lapDistPct > 0.85) {
-      const state = useFuelStore.getState();
-      console.log(
-        `[FuelCalculator] Near finish - lap:${lap} dist:${lapDistPct.toFixed(3)} lastDist:${state.lastLapDistPct.toFixed(3)} fuel:${fuelLevel?.toFixed(2)} startFuel:${state.lapStartFuel.toFixed(2)}`
-      );
-    }
-  }, [fuelLevel, lap, lapDistPct]);
+  // Debug logging disabled - only lap crossing events are logged below
 
   // Update session info (clears data on session change)
   useEffect(() => {
@@ -77,13 +71,7 @@ export function useFuelCalculation(
       const fuelUsed = state.lapStartFuel - fuelLevel;
       const lapTime = sessionTime - state.lapCrossingTime;
 
-      console.log('[FuelCalculator] Lap crossing detected!', {
-        completedLap: lap - 1,
-        fuelUsed: fuelUsed.toFixed(3),
-        lapTime: lapTime.toFixed(2),
-        newLap: lap,
-        fuelLevel: fuelLevel.toFixed(2),
-      });
+      console.log(`[FuelCalculator] Lap ${lap - 1} complete - Used: ${fuelUsed.toFixed(3)}L, Time: ${lapTime.toFixed(2)}s, Remaining: ${fuelLevel.toFixed(2)}L, SessionLapsRemain: ${sessionLapsRemain}`);
 
       // Validate and store lap data
       if (fuelUsed > 0 && lapTime > 0) {
@@ -100,12 +88,7 @@ export function useFuelCalculation(
           timestamp: Date.now(),
         };
 
-        console.log('[FuelCalculator] Lap data stored:', {
-          lapNumber: lapData.lapNumber,
-          fuelUsed: lapData.fuelUsed.toFixed(3),
-          isValid: lapData.isValidForCalc,
-          isGreenFlag: lapData.isGreenFlag,
-        });
+        console.log(`[FuelCalculator]   -> Valid: ${lapData.isValidForCalc}, Green: ${lapData.isGreenFlag}, OutLap: ${lapData.isOutLap}`);
 
         addLapData(lapData);
       }
@@ -209,16 +192,27 @@ export function useFuelCalculation(
     let lapsRemaining = sessionLapsRemain;
     let totalLaps = typeof sessionLaps === 'string' ? parseInt(sessionLaps, 10) : sessionLaps || 0;
 
-    // For timed races (SessionLapsRemain = 32767), estimate from time
-    if (
-      sessionTimeRemain !== undefined &&
-      sessionTimeRemain > 0 &&
-      sessionLapsRemain === 32767
-    ) {
-      const avgLapTime =
-        validLaps.reduce((sum, l) => sum + l.lapTime, 0) / validLaps.length;
-      lapsRemaining = Math.ceil(sessionTimeRemain / avgLapTime) + 1;
-      totalLaps = lap + lapsRemaining;
+    // Check for white/checkered flag first - overrides all other calculations
+    // This handles final lap in both timed and lap-based races
+    if (sessionFlags !== undefined && (isWhiteFlag(sessionFlags) || isCheckeredFlag(sessionFlags))) {
+      // White/checkered flag = final lap or race complete
+      // Set to 1 lap remaining to show fuel to finish line, ignore any time extensions
+      console.log(`[FuelCalculator] ${isCheckeredFlag(sessionFlags) ? 'Checkered' : 'White'} flag detected - final lap (ignoring sessionTimeRemain: ${sessionTimeRemain}, sessionLapsRemain: ${sessionLapsRemain})`);
+      lapsRemaining = 1;
+      totalLaps = lap + 1;
+    } else if (sessionLapsRemain === 32767) {
+      // Timed race without white flag - estimate from time
+      if (sessionTimeRemain !== undefined && sessionTimeRemain > 0) {
+        const avgLapTime =
+          validLaps.reduce((sum, l) => sum + l.lapTime, 0) / validLaps.length;
+        lapsRemaining = Math.ceil(sessionTimeRemain / avgLapTime) + 1;
+        totalLaps = lap + lapsRemaining;
+      } else {
+        // Can't determine laps remaining for timed race - use best estimate
+        // Assume 1 lap remaining to keep calculator visible
+        lapsRemaining = 1;
+        totalLaps = lap + 1;
+      }
     }
 
     // For lap-based races, account for race leader in multi-class racing
@@ -227,7 +221,8 @@ export function useFuelCalculation(
       const leaderCarIdx = carIdxPosition.value.findIndex((pos) => pos === 1);
       if (leaderCarIdx !== -1) {
         const leaderLap = carIdxLap.value[leaderCarIdx];
-        if (leaderLap !== undefined && totalLaps > 0 && leaderLap > 0) {
+        // Ensure totalLaps is valid before using it
+        if (leaderLap !== undefined && Number.isFinite(totalLaps) && totalLaps > 0 && leaderLap > 0) {
           // Leader's laps remaining
           const leaderLapsRemaining = totalLaps - leaderLap;
           // Guard against negative or unreasonably large values
@@ -242,8 +237,15 @@ export function useFuelCalculation(
     }
 
     // Guard against invalid lapsRemaining
+    // Don't reset to sessionLapsRemain if it's the magic timed-race value (32767)
     if (!Number.isFinite(lapsRemaining) || lapsRemaining < 0 || lapsRemaining > 10000) {
-      lapsRemaining = sessionLapsRemain;
+      if (sessionLapsRemain !== 32767) {
+        lapsRemaining = sessionLapsRemain;
+      } else {
+        // If sessionLapsRemain is the timed-race magic number and we have invalid lapsRemaining,
+        // we can't make a valid calculation - return null
+        return null;
+      }
     }
 
     // Calculate fuel needed with safety margin
@@ -288,17 +290,11 @@ export function useFuelCalculation(
       avgLapTime,
     };
 
-    console.log('[FuelCalculator] Calculation result:', {
-      lap: result.currentLap,
-      lapsRemaining: result.lapsRemaining,
-      totalLaps: result.totalLaps,
-      fuelLevel: result.fuelLevel.toFixed(2),
-      avgFuelPerLap: avgFuelPerLap.toFixed(3),
-      fuelToFinish: result.fuelToFinish.toFixed(2),
-      lapsWithFuel: result.lapsWithFuel,
-      canFinish: result.canFinish,
-      validLapsCount: validLaps.length,
-    });
+    // Only log when lap changes to avoid spam
+    const state = useFuelStore.getState();
+    if (result.currentLap !== state.lastLap) {
+      console.log(`[FuelCalculator] Lap ${result.currentLap} - Fuel: ${result.fuelLevel.toFixed(2)}L, LapsRemaining: ${result.lapsRemaining}, AvgPerLap: ${avgFuelPerLap.toFixed(3)}L, ToFinish: ${result.fuelToFinish.toFixed(2)}L, CanFinish: ${result.canFinish}, ValidLaps: ${validLaps.length}, TotalLaps: ${totalLaps}, LeaderLap: ${carIdxLap?.value?.[carIdxPosition?.value?.findIndex(p => p === 1) ?? -1] ?? 'N/A'}`);
+    }
     return result;
   }, [
     fuelLevel,
@@ -307,6 +303,7 @@ export function useFuelCalculation(
     sessionLapsRemain,
     sessionLaps,
     sessionTimeRemain,
+    sessionFlags,
     safetyMargin,
     carIdxPosition?.value,
     carIdxLap?.value,

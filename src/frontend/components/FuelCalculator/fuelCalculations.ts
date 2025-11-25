@@ -107,6 +107,22 @@ export function isGreenFlag(sessionFlags: number): boolean {
 }
 
 /**
+ * Check if white flag is showing (final lap in timed races)
+ */
+export function isWhiteFlag(sessionFlags: number): boolean {
+  const WHITE_FLAG = 0x00000002;
+  return (sessionFlags & WHITE_FLAG) !== 0;
+}
+
+/**
+ * Check if checkered flag is showing (race finished)
+ */
+export function isCheckeredFlag(sessionFlags: number): boolean {
+  const CHECKERED_FLAG = 0x00000001;
+  return (sessionFlags & CHECKERED_FLAG) !== 0;
+}
+
+/**
  * Calculate confidence level based on number of valid laps
  */
 export function calculateConfidence(
