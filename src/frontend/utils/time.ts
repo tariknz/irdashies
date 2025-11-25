@@ -1,4 +1,4 @@
-export type TimeFormat = 'full' | 'mixed' | 'minutes' | 'seconds-full' | 'seconds-mixed' | 'seconds' | 'duration';
+export type TimeFormat = 'full' | 'mixed' | 'minutes' | 'seconds-full' | 'seconds-mixed' | 'seconds' | 'duration' | 'duration-wlabels';
 
 export const formatTime = (seconds?: number, format: TimeFormat = 'full'): string => {
   if (!seconds) return '';
@@ -45,14 +45,31 @@ export const formatTime = (seconds?: number, format: TimeFormat = 'full'): strin
       formattedTime = `${totalSeconds % 60}`;
       break;
     case 'duration':
+      formattedTime = '';
       if (hours > 0) {
-        formattedTime = `${hours}H`;
-      } else if (totalSeconds % 60 === 0) {
-        formattedTime = `${minutes}`;
-      } else {
-        formattedTime = `${minutes}:${String(remainingSeconds).padStart(2, '0')}`;
+        formattedTime = `${hours}`;
+      }
+      if (hours > 0 || minutes > 0) {
+        if (formattedTime) formattedTime += ':';
+        formattedTime += `${String(minutes).padStart(hours > 0 ? 2 : 0, '0')}`;
+      }
+      formattedTime += `:${String(remainingSeconds).padStart(2, '0')}`;
+      break;
+    case 'duration-wlabels':
+      formattedTime = '';
+      if (hours > 0) {
+        formattedTime += `${hours} Hr${hours > 1 ? 's' : ''}`;
+      }
+      if (minutes > 0) {
+        if (formattedTime) formattedTime += ' ';
+        formattedTime += `${minutes} Min${minutes > 1 ? 's' : ''}`;
+      }
+      if (remainingSeconds > 0) {
+        if (formattedTime) formattedTime += ' ';
+        formattedTime += `${remainingSeconds} Sec${remainingSeconds > 1 ? 's' : ''}`;
       }
       break;
+
   }
 
   return formattedTime;
