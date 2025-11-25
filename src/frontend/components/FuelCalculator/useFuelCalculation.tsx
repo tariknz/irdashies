@@ -41,15 +41,15 @@ export function useFuelCalculation(
   // Subscribe to lapHistory to trigger recalculation when laps are added
   const lapHistoryMap = useFuelStore((state) => state.lapHistory);
 
-  // Debug logging - disabled
-  // useEffect(() => {
-  //   if (lapDistPct !== undefined && lapDistPct > 0.85) {
-  //     const state = useFuelStore.getState();
-  //     console.log(
-  //       `[FuelCalculator] Near finish - lap:${lap} dist:${lapDistPct.toFixed(3)} lastDist:${state.lastLapDistPct.toFixed(3)} fuel:${fuelLevel?.toFixed(2)} startFuel:${state.lapStartFuel.toFixed(2)}`
-  //     );
-  //   }
-  // }, [fuelLevel, lap, lapDistPct]);
+  // Debug logging - enabled for troubleshooting
+  useEffect(() => {
+    if (lapDistPct !== undefined && lapDistPct > 0.85) {
+      const state = useFuelStore.getState();
+      console.log(
+        `[FuelCalculator] Near finish - lap:${lap} dist:${lapDistPct.toFixed(3)} lastDist:${state.lastLapDistPct.toFixed(3)} fuel:${fuelLevel?.toFixed(2)} startFuel:${state.lapStartFuel.toFixed(2)}`
+      );
+    }
+  }, [fuelLevel, lap, lapDistPct]);
 
   // Update session info (clears data on session change)
   useEffect(() => {
@@ -77,6 +77,14 @@ export function useFuelCalculation(
       const fuelUsed = state.lapStartFuel - fuelLevel;
       const lapTime = sessionTime - state.lapCrossingTime;
 
+      console.log('[FuelCalculator] Lap crossing detected!', {
+        completedLap: lap - 1,
+        fuelUsed: fuelUsed.toFixed(3),
+        lapTime: lapTime.toFixed(2),
+        newLap: lap,
+        fuelLevel: fuelLevel.toFixed(2),
+      });
+
       // Validate and store lap data
       if (fuelUsed > 0 && lapTime > 0) {
         const recentLaps = state.getLapHistory().slice(0, 10);
@@ -91,6 +99,13 @@ export function useFuelCalculation(
           isOutLap: state.wasOnPitRoad, // Mark if lap started from pit road
           timestamp: Date.now(),
         };
+
+        console.log('[FuelCalculator] Lap data stored:', {
+          lapNumber: lapData.lapNumber,
+          fuelUsed: lapData.fuelUsed.toFixed(3),
+          isValid: lapData.isValidForCalc,
+          isGreenFlag: lapData.isGreenFlag,
+        });
 
         addLapData(lapData);
       }
@@ -273,7 +288,17 @@ export function useFuelCalculation(
       avgLapTime,
     };
 
-    // console.log('[FuelCalculator] Calculation result:', result);
+    console.log('[FuelCalculator] Calculation result:', {
+      lap: result.currentLap,
+      lapsRemaining: result.lapsRemaining,
+      totalLaps: result.totalLaps,
+      fuelLevel: result.fuelLevel.toFixed(2),
+      avgFuelPerLap: avgFuelPerLap.toFixed(3),
+      fuelToFinish: result.fuelToFinish.toFixed(2),
+      lapsWithFuel: result.lapsWithFuel,
+      canFinish: result.canFinish,
+      validLapsCount: validLaps.length,
+    });
     return result;
   }, [
     fuelLevel,
