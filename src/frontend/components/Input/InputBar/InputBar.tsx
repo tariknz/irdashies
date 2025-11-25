@@ -113,21 +113,4 @@ function drawBars(
     .attr('height', (d) => height - yScale(d.value))
     .attr('fill', (d) => d.color);
 
-  // Overlay ABS label if needed
-  if (brakeAbsActive && includeAbs) {
-    const brakeIndex = data.findIndex((d) => d.key === 'brake');
-    if (brakeIndex !== -1) {
-      svg
-        .append('text')
-        .attr('x', brakeIndex * (barWidth + gap) + barWidth / 2)
-        .attr('y', height - 4) // 4px above the bottom of the bar
-        .attr('text-anchor', 'middle')
-        .attr('font-size', '10rem')
-        .attr('font-weight', 'bold')
-        .attr('fill', '#fff')
-        .attr('pointer-events', 'none')
-        .attr('style', 'text-shadow: 0 1px 4px #000;')
-        .text('ABS');
-    }
-  }
 }
