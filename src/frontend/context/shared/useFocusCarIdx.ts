@@ -1,4 +1,4 @@
-import { useDriverCarIdx } from '../SessionStore/SessionStore';
+import { useDriverCarIdx, useSessionDrivers } from '../SessionStore/SessionStore';
 import { useTelemetryValue } from '../TelemetryStore/TelemetryStore';
 
 /**

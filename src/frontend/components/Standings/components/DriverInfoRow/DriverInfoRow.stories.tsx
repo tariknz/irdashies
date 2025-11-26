@@ -33,7 +33,7 @@ export const Primary: Story = {
     classColor: 16777215,
     fastestTime: 111.111,
     lastTime: 112.225,
-    badge: <DriverRatingBadge license="A 4.99" rating={4999} />,
+    badge: <DriverRatingBadge license="A 4.99" rating={4999} format="license-color-rating-bw" />,
     iratingChange: <RatingChange value={10} />,
     onPitRoad: false,
     onTrack: true,
@@ -402,6 +402,7 @@ const Relative = () => {
                 <DriverRatingBadge
                   license={result.driver?.license}
                   rating={result.driver?.rating}
+                  format="license-color-rating-bw"
                 />
               }
               isMultiClass={false}
@@ -416,4 +417,60 @@ const Relative = () => {
 
 export const MockedRelativeTable: Story = {
   render: () => <Relative />,
+};
+
+export const BadgeFormatLicenseColorRatingBw: Story = {
+  args: {
+    ...Primary.args,
+    badge: <DriverRatingBadge license="A 4.99" rating={4999} format="license-color-rating-bw" />,
+  },
+};
+
+export const BadgeFormatLicenseColorRatingBwNoLicense: Story = {
+  args: {
+    ...Primary.args,
+    badge: <DriverRatingBadge license="A 4.99" rating={4999} format="license-color-rating-bw-no-license" />,
+  },
+};
+
+export const BadgeFormatRatingColorNoLicense: Story = {
+  args: {
+    ...Primary.args,
+    badge: <DriverRatingBadge license="A 4.99" rating={4999} format="rating-color-no-license" />,
+  },
+};
+
+export const BadgeFormatLicenseBwRatingBw: Story = {
+  args: {
+    ...Primary.args,
+    badge: <DriverRatingBadge license="A 4.99" rating={4999} format="license-bw-rating-bw" />,
+  },
+};
+
+export const BadgeFormatRatingOnlyBwRatingBw: Story = {
+  args: {
+    ...Primary.args,
+    badge: <DriverRatingBadge license="A 4.99" rating={4999} format="rating-only-bw-rating-bw" />,
+  },
+};
+
+export const BadgeFormatLicenseBwRatingBwNoLicense: Story = {
+  args: {
+    ...Primary.args,
+    badge: <DriverRatingBadge license="A 4.99" rating={4999} format="license-bw-rating-bw-no-license" />,
+  },
+};
+
+export const BadgeFormatRatingBwNoLicense: Story = {
+  args: {
+    ...Primary.args,
+    badge: <DriverRatingBadge license="A 4.99" rating={4999} format="rating-bw-no-license" />,
+  },
+};
+
+export const BadgeFormatRatingOnlyColorRatingBw: Story = {
+  args: {
+    ...Primary.args,
+    badge: <DriverRatingBadge license="A 4.99" rating={4999} format="rating-only-color-rating-bw" />,
+  },
 };

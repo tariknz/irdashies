@@ -23,6 +23,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { DotsSixVerticalIcon } from '@phosphor-icons/react';
+import { BadgeFormatPreview } from '../components/BadgeFormatPreview';
 
 const SETTING_ID = 'standings';
 
@@ -42,7 +43,8 @@ const sortableSettings: SortableSetting[] = [
   { id: 'carManufacturer', label: 'Car Manufacturer', configKey: 'carManufacturer' },
   { id: 'badge', label: 'Driver Badge', configKey: 'badge' },
   { id: 'iratingChange', label: 'iRating Change', configKey: 'iratingChange' },
-  { id: 'delta', label: 'Delta', configKey: 'delta' },
+  { id: 'gap', label: 'Gap', configKey: 'gap' },
+  { id: 'interval', label: 'Interval', configKey: 'interval' },
   { id: 'fastestTime', label: 'Best Time', configKey: 'fastestTime' },
   { id: 'lastTime', label: 'Last Time', configKey: 'lastTime' },
   { id: 'compound', label: 'Tire Compound', configKey: 'compound' },
@@ -51,10 +53,12 @@ const sortableSettings: SortableSetting[] = [
 
 const defaultConfig: StandingsWidgetSettings['config'] = {
   iratingChange: { enabled: true },
-  badge: { enabled: true },
+  badge: { enabled: true, badgeFormat: 'license-color-rating-bw' },
   delta: { enabled: true },
-  lastTime: { enabled: true },
-  fastestTime: { enabled: true },
+  gap: { enabled: false },
+  interval: { enabled: false },
+  lastTime: { enabled: true, timeFormat: 'full' },
+  fastestTime: { enabled: true, timeFormat: 'full' },
   background: { opacity: 0 },
   countryFlags: { enabled: true },
   carNumber: { enabled: true },
@@ -66,6 +70,8 @@ const defaultConfig: StandingsWidgetSettings['config'] = {
   },
   compound: { enabled: true },
   carManufacturer: { enabled: true },
+  titleBar: { enabled: true, progressBar: { enabled: true } },
+  showOnlyWhenOnTrack: false,
   lapTimeDeltas: { enabled: false, numLaps: 3 },
   position: { enabled: true },
   driverName: { enabled: true },
@@ -121,13 +127,20 @@ const migrateConfig = (
       enabled:
         (config.iratingChange as { enabled?: boolean })?.enabled ?? true,
     },
-    badge: { enabled: (config.badge as { enabled?: boolean })?.enabled ?? true },
+    badge: {
+      enabled: (config.badge as { enabled?: boolean })?.enabled ?? true,
+      badgeFormat: ((config.badge as { badgeFormat?: string })?.badgeFormat as 'license-color-rating-bw' | 'license-color-rating-bw-no-license' | 'rating-color-no-license' | 'license-bw-rating-bw' | 'rating-only-bw-rating-bw' | 'license-bw-rating-bw-no-license' | 'rating-bw-no-license') ?? 'license-color-rating-bw'
+    },
     delta: { enabled: (config.delta as { enabled?: boolean })?.enabled ?? true },
+    gap: { enabled: (config.gap as { enabled?: boolean })?.enabled ?? true },
+    interval: { enabled: (config.interval as { enabled?: boolean })?.enabled ?? false },
     lastTime: {
-      enabled: (config.lastTime as { enabled?: boolean })?.enabled ?? true,
+      enabled: (config.lastTime as { enabled?: boolean; timeFormat?: string })?.enabled ?? true,
+      timeFormat: ((config.lastTime as { enabled?: boolean; timeFormat?: string })?.timeFormat as 'full' | 'mixed' | 'minutes' | 'seconds-full' | 'seconds-mixed' | 'seconds') ?? 'full',
     },
     fastestTime: {
-      enabled: (config.fastestTime as { enabled?: boolean })?.enabled ?? true,
+      enabled: (config.fastestTime as { enabled?: boolean; timeFormat?: string })?.enabled ?? true,
+      timeFormat: ((config.fastestTime as { enabled?: boolean; timeFormat?: string })?.timeFormat as 'full' | 'mixed' | 'minutes' | 'seconds-full' | 'seconds-mixed' | 'seconds') ?? 'full',
     },
     background: {
       opacity: (config.background as { opacity?: number })?.opacity ?? 0,
@@ -164,6 +177,13 @@ const migrateConfig = (
       enabled: (config.lapTimeDeltas as { enabled?: boolean })?.enabled ?? false,
       numLaps: (config.lapTimeDeltas as { numLaps?: number })?.numLaps ?? 3,
     },
+    titleBar: {
+      enabled: (config.titleBar as { enabled?: boolean })?.enabled ?? true,
+      progressBar: {
+        enabled: (config.titleBar as { progressBar?: { enabled?: boolean } })?.progressBar?.enabled ?? true
+      }
+    },
+    showOnlyWhenOnTrack: (config.showOnlyWhenOnTrack as boolean) ?? false,
     position: { enabled: (config.position as { enabled?: boolean })?.enabled ?? true },
     driverName: { enabled: (config.driverName as { enabled?: boolean })?.enabled ?? true },
     pitStatus: { enabled: (config.pitStatus as { enabled?: boolean })?.enabled ?? true },
@@ -212,9 +232,10 @@ const SortableItem = ({ setting, settings, handleConfigChange }: SortableItemPro
         <ToggleSwitch
           enabled={isEnabled}
           onToggle={(enabled) => {
+            const configValue = settings.config[setting.configKey] as { enabled: boolean; [key: string]: unknown };
             handleConfigChange({
               [setting.configKey]: {
-                ...(settings.config[setting.configKey] as object),
+                ...configValue,
                 enabled
               }
             });
@@ -241,6 +262,141 @@ const SortableItem = ({ setting, settings, handleConfigChange }: SortableItemPro
             <option value={3}>3</option>
             <option value={4}>4</option>
             <option value={5}>5</option>
+          </select>
+        </div>
+      )}
+      {setting.configKey === 'badge' && (configValue as { enabled: boolean }).enabled && (
+      <div className="mt-3">
+        <div className="flex flex-wrap gap-3 justify-end">
+          <BadgeFormatPreview
+            format="license-color-rating-bw"
+            selected={(configValue as { enabled: boolean; badgeFormat: string }).badgeFormat === 'license-color-rating-bw'}
+            onClick={() => {
+              const configValue = settings.config[setting.configKey] as { enabled: boolean; badgeFormat: string; [key: string]: unknown };
+              handleConfigChange({
+                [setting.configKey]: {
+                  ...configValue,
+                  badgeFormat: 'license-color-rating-bw'
+                },
+              });
+            }}
+          />
+          <BadgeFormatPreview
+            format="rating-only-color-rating-bw"
+            selected={(configValue as { enabled: boolean; badgeFormat: string }).badgeFormat === 'rating-only-color-rating-bw'}
+            onClick={() => {
+              const configValue = settings.config[setting.configKey] as { enabled: boolean; badgeFormat: string; [key: string]: unknown };
+              handleConfigChange({
+                [setting.configKey]: {
+                  ...configValue,
+                  badgeFormat: 'rating-only-color-rating-bw'
+                },
+              });
+            }}
+          />
+          <BadgeFormatPreview
+            format="license-color-rating-bw-no-license"
+            selected={(configValue as { enabled: boolean; badgeFormat: string }).badgeFormat === 'license-color-rating-bw-no-license'}
+            onClick={() => {
+              const configValue = settings.config[setting.configKey] as { enabled: boolean; badgeFormat: string; [key: string]: unknown };
+              handleConfigChange({
+                [setting.configKey]: {
+                  ...configValue,
+                  badgeFormat: 'license-color-rating-bw-no-license'
+                },
+              });
+            }}
+          />
+          <BadgeFormatPreview
+            format="rating-color-no-license"
+            selected={(configValue as { enabled: boolean; badgeFormat: string }).badgeFormat === 'rating-color-no-license'}
+            onClick={() => {
+              const configValue = settings.config[setting.configKey] as { enabled: boolean; badgeFormat: string; [key: string]: unknown };
+              handleConfigChange({
+                [setting.configKey]: {
+                  ...configValue,
+                  badgeFormat: 'rating-color-no-license'
+                },
+              });
+            }}
+          />
+          <BadgeFormatPreview
+            format="license-bw-rating-bw"
+            selected={(configValue as { enabled: boolean; badgeFormat: string }).badgeFormat === 'license-bw-rating-bw'}
+            onClick={() => {
+              const configValue = settings.config[setting.configKey] as { enabled: boolean; badgeFormat: string; [key: string]: unknown };
+              handleConfigChange({
+                [setting.configKey]: {
+                  ...configValue,
+                  badgeFormat: 'license-bw-rating-bw'
+                },
+              });
+            }}
+          />
+          <BadgeFormatPreview
+            format="rating-only-bw-rating-bw"
+            selected={(configValue as { enabled: boolean; badgeFormat: string }).badgeFormat === 'rating-only-bw-rating-bw'}
+            onClick={() => {
+              const configValue = settings.config[setting.configKey] as { enabled: boolean; badgeFormat: string; [key: string]: unknown };
+              handleConfigChange({
+                [setting.configKey]: {
+                  ...configValue,
+                  badgeFormat: 'rating-only-bw-rating-bw'
+                },
+              });
+            }}
+          />
+          <BadgeFormatPreview
+            format="license-bw-rating-bw-no-license"
+            selected={(configValue as { enabled: boolean; badgeFormat: string }).badgeFormat === 'license-bw-rating-bw-no-license'}
+            onClick={() => {
+              const configValue = settings.config[setting.configKey] as { enabled: boolean; badgeFormat: string; [key: string]: unknown };
+              handleConfigChange({
+                [setting.configKey]: {
+                  ...configValue,
+                  badgeFormat: 'license-bw-rating-bw-no-license'
+                },
+              });
+            }}
+          />
+          <BadgeFormatPreview
+            format="rating-bw-no-license"
+            selected={(configValue as { enabled: boolean; badgeFormat: string }).badgeFormat === 'rating-bw-no-license'}
+            onClick={() => {
+              const configValue = settings.config[setting.configKey] as { enabled: boolean; badgeFormat: string; [key: string]: unknown };
+              handleConfigChange({
+                [setting.configKey]: {
+                  ...configValue,
+                  badgeFormat: 'rating-bw-no-license'
+                },
+              });
+            }}
+          />
+          </div>
+        </div>
+      )}
+      {(setting.configKey === 'fastestTime' || setting.configKey === 'lastTime') && (configValue as { enabled: boolean }).enabled && (
+        <div className="flex items-center justify-between pl-8 mt-2">
+          <span className="text-sm text-slate-300"></span>
+          <select
+            value={(configValue as { enabled: boolean; timeFormat: string }).timeFormat}
+            onChange={(e) => {
+              const configValue = settings.config[setting.configKey] as { enabled: boolean; timeFormat: string; [key: string]: unknown };
+              handleConfigChange({
+                [setting.configKey]: {
+                  ...configValue,
+                  timeFormat: e.target.value as 'full' | 'mixed' | 'minutes' | 'seconds-full' | 'seconds-mixed' | 'seconds'
+                },
+              });
+            }}
+            className="w-26 bg-slate-700 text-white rounded-md px-2 py-1"
+          >
+            <option value="full">1:42.123</option>
+            <option value="mixed">1:42.1</option>
+            <option value="minutes">1:42</option>
+            <option value="seconds-full">42.123</option>
+            <option value="seconds-mixed">42.1</option>
+            <option value="seconds">42</option>
           </select>
         </div>
       )}
@@ -423,6 +579,45 @@ export const StandingsSettings = () => {
             </div>
           </div>
 
+          {/* Title Bar Settings */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-medium text-slate-200">Title Bar</h3>
+            </div>
+            <div className="space-y-3 pl-4">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-slate-300">Show Title Bar</span>
+                <ToggleSwitch
+                  enabled={settings.config.titleBar.enabled}
+                  onToggle={(enabled) =>
+                    handleConfigChange({
+                      titleBar: {
+                        ...settings.config.titleBar,
+                        enabled
+                      }
+                    })
+                  }
+                />
+              </div>
+              {settings.config.titleBar.enabled && (
+                <div className="flex items-center justify-between pl-4">
+                  <span className="text-sm text-slate-300">Show Progress Bar</span>
+                  <ToggleSwitch
+                    enabled={settings.config.titleBar.progressBar.enabled}
+                    onToggle={(enabled) =>
+                      handleConfigChange({
+                        titleBar: {
+                          ...settings.config.titleBar,
+                          progressBar: { enabled }
+                        }
+                      })
+                    }
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+
           {/* Background Settings */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
@@ -454,6 +649,24 @@ export const StandingsSettings = () => {
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* Show Only When On Track Settings */}
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className="text-md font-medium text-slate-300">
+                Show Only When On Track
+              </h4>
+              <p className="text-sm text-slate-400">
+                If enabled, standings will only be shown when you are driving.
+              </p>
+            </div>
+            <ToggleSwitch
+              enabled={settings.config.showOnlyWhenOnTrack ?? false}
+              onToggle={(enabled) =>
+                handleConfigChange({ showOnlyWhenOnTrack: enabled })
+              }
+            />
           </div>
         </div>
         );

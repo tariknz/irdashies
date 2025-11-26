@@ -21,6 +21,8 @@ import {
   groupStandingsByClass,
   sliceRelevantDrivers,
   augmentStandingsWithIRating,
+  augmentStandingsWithGap,
+  augmentStandingsWithInterval,
 } from '../createStandings';
 import type { StandingsWidgetSettings } from '../../Settings/types';
 
@@ -32,6 +34,8 @@ export const useDriverStandings = (settings?: StandingsWidgetSettings['config'])
       minPlayerClassDrivers,
       numTopDrivers,
     } = {},
+    gap: { enabled: gapEnabled } = { enabled: false },
+    interval: { enabled: intervalEnabled } = { enabled: false },
     lapTimeDeltas: { enabled: lapTimeDeltasEnabled, numLaps: numLapDeltas } = { enabled: false, numLaps: 3 },
   } = settings ?? {};
 
@@ -58,6 +62,8 @@ export const useDriverStandings = (settings?: StandingsWidgetSettings['config'])
     )?.CarClassID;
   }, [sessionDrivers, driverCarIdx]);
   const lapTimeHistory = useLapTimeHistory();
+
+  // Note: gap and interval calculations are now purely delta-based, no telemetry needed
 
   // Only pass lap history when feature is enabled to avoid unnecessary calculations
   const lapTimeHistoryForCalc = lapTimeDeltasEnabled ? lapTimeHistory : undefined;
@@ -90,12 +96,22 @@ export const useDriverStandings = (settings?: StandingsWidgetSettings['config'])
     const groupedByClass = groupStandingsByClass(initialStandings);
 
     // Calculate iRating changes for race sessions
-    const augmentedGroupedByClass =
+    const iratingAugmentedGroupedByClass =
       sessionType === 'Race' && isOfficial
         ? augmentStandingsWithIRating(groupedByClass)
         : groupedByClass;
 
-    return sliceRelevantDrivers(augmentedGroupedByClass, driverClass, {
+    // Calculate gap to class leader when enabled OR when interval is enabled (interval needs gap data)
+    const gapAugmentedGroupedByClass = gapEnabled || intervalEnabled
+      ? augmentStandingsWithGap(iratingAugmentedGroupedByClass)
+      : iratingAugmentedGroupedByClass;
+
+    // Calculate interval to player when enabled
+    const intervalAugmentedGroupedByClass = intervalEnabled
+      ? augmentStandingsWithInterval(gapAugmentedGroupedByClass)
+      : gapAugmentedGroupedByClass;
+
+    return sliceRelevantDrivers(intervalAugmentedGroupedByClass, driverClass, {
       buffer,
       numNonClassDrivers,
       minPlayerClassDrivers,
@@ -124,7 +140,9 @@ export const useDriverStandings = (settings?: StandingsWidgetSettings['config'])
     lapTimeHistoryForCalc,
     lastLap,
     lastPitLap,
-    prevCarTrackSurface
+    prevCarTrackSurface,
+    gapEnabled,
+    intervalEnabled
   ]);
 
   return standingsWithGain;
