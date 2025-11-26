@@ -1,10 +1,7 @@
 import type { SessionResults, Driver } from '@irdashies/types';
 import { calculateIRatingGain, RaceResult, CalculationResult } from '@irdashies/utils/iratingGain';
 
-
 export type LastTimeState = 'session-fastest' | 'personal-best' | undefined;
-
-
 
 export interface Standings {
   carIdx: number;
@@ -15,6 +12,7 @@ export interface Standings {
   delta?: number;
   gap?: number;
   interval?: number;
+  lapsDown?: number;
   isPlayer: boolean;
   driver: {
     name: string;
@@ -297,7 +295,8 @@ export const augmentStandingsWithIRating = (
  * Gap = driver_delta - class_leader_delta (both relative to session leader)
  */
 export const augmentStandingsWithGap = (
-  groupedStandings: [string, Standings[]][]
+  groupedStandings: [string, Standings[]][],
+  lastLap: number[]
 ): [string, Standings[]][] => {
   return groupedStandings.map(([classId, classStandings]) => {
     // Find class leader (lowest class position)
@@ -314,8 +313,13 @@ export const augmentStandingsWithGap = (
     const augmentedClassStandings = classStandings.map((driverStanding) => {
       if (driverStanding.carIdx === classLeader.carIdx) {
         // Class leader shows as dash (undefined gap)
-        return { ...driverStanding, gap: undefined };
+        return { ...driverStanding, gap: undefined, lapsDown: 0 };
       }
+
+      // Calculate laps down: positive if driver is behind on laps, negative if ahead
+      const leaderLap = lastLap[classLeader.carIdx] ?? 0;
+      const driverLap = lastLap[driverStanding.carIdx] ?? 0;
+      const lapsDown = Math.max(0, leaderLap - driverLap); // Only show positive laps down
 
       // Gap is simply the difference between this driver's delta and the class leader's delta
       const gap = driverStanding.delta !== undefined && classLeader.delta !== undefined
@@ -323,7 +327,7 @@ export const augmentStandingsWithGap = (
         : undefined;
 
       // Only show positive gaps (drivers behind class leader)
-      return { ...driverStanding, gap: gap && gap > 0 ? gap : undefined };
+      return { ...driverStanding, gap: gap && gap > 0 ? gap : undefined, lapsDown };
     });
 
     return [classId, augmentedClassStandings];

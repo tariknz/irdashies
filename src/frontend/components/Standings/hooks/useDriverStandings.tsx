@@ -34,10 +34,11 @@ export const useDriverStandings = (settings?: StandingsWidgetSettings['config'])
       minPlayerClassDrivers,
       numTopDrivers,
     } = {},
-    gap: { enabled: gapEnabled } = { enabled: false },
-    interval: { enabled: intervalEnabled } = { enabled: false },
     lapTimeDeltas: { enabled: lapTimeDeltasEnabled, numLaps: numLapDeltas } = { enabled: false, numLaps: 3 },
   } = settings ?? {};
+
+  const gapEnabled = settings?.gap?.enabled ?? false;
+  const intervalEnabled = settings?.interval?.enabled ?? false;
 
   const sessionDrivers = useSessionDrivers();
   // Use focus car index which handles spectator mode (uses CamCarIdx when spectating)
@@ -103,7 +104,7 @@ export const useDriverStandings = (settings?: StandingsWidgetSettings['config'])
 
     // Calculate gap to class leader when enabled OR when interval is enabled (interval needs gap data)
     const gapAugmentedGroupedByClass = gapEnabled || intervalEnabled
-      ? augmentStandingsWithGap(iratingAugmentedGroupedByClass)
+      ? augmentStandingsWithGap(iratingAugmentedGroupedByClass, lastLap)
       : iratingAugmentedGroupedByClass;
 
     // Calculate interval to player when enabled

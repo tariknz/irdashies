@@ -30,6 +30,7 @@ interface DriverRowInfoProps {
   delta?: number;
   gap?: number;
   interval?: number;
+  lapsDown?: number;
   position?: number;
   badge?: React.ReactNode;
   iratingChange?: React.ReactNode;
@@ -69,6 +70,7 @@ export const DriverInfoRow = memo(
     delta,
     gap,
     interval,
+    lapsDown,
     position,
     badge,
     lastTime,
@@ -238,7 +240,7 @@ export const DriverInfoRow = memo(
             (displayOrder ? displayOrder.includes('gap') : true) &&
             (config && 'gap' in config ? config.gap.enabled : false) &&
             currentSessionType?.toLowerCase() === 'race',
-          component: <DeltaCell key="gap" hidden={hidden} delta={gap} showDashForUndefined={true} />,
+          component: <DeltaCell key="gap" hidden={hidden} delta={gap} lapsDown={lapsDown} showDashForUndefined={true} />,
         },
         {
           id: 'interval',
@@ -343,6 +345,7 @@ export const DriverInfoRow = memo(
       delta,
       gap,
       interval,
+      lapsDown,
       fastestTimeString,
       hasFastestTime,
       lastTimeString,
