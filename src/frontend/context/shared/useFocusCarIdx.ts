@@ -1,30 +1,30 @@
-import { useDriverCarIdx, useSessionDrivers } from '../SessionStore/SessionStore';
+import { useDriverCarIdx } from '../SessionStore/SessionStore';
 import { useTelemetryValue } from '../TelemetryStore/TelemetryStore';
 
 /**
  * Hook to get the car index that should be the "focus" for relative displays.
  *
- * When driving: returns DriverCarIdx (the player's car)
- * When spectating: returns CamCarIdx (the car being watched)
+ * Always returns the car currently being viewed (CamCarIdx) when available,
+ * falling back to the driver's own car (DriverCarIdx) otherwise.
  *
- * This allows the Relative display to show gaps around the spectated car
- * instead of always showing the spectator's entry.
+ * This ensures the Relative and Standings displays always center on the
+ * car being watched, regardless of whether you're:
+ * - Racing (your own car)
+ * - Spectating (another driver)
+ * - Watching a replay
+ * - Spotting for another driver
+ * - Switching cameras during a session
  */
 export const useFocusCarIdx = (): number | undefined => {
   const driverCarIdx = useDriverCarIdx();
   const camCarIdx = useTelemetryValue('CamCarIdx');
-  const drivers = useSessionDrivers();
 
-  // Check if the user is a spectator
-  const isSpectator = drivers?.find(
-    (d) => d.CarIdx === driverCarIdx
-  )?.IsSpectator === 1;
-
-  // If spectating and we have a valid camera target, use that
-  // Otherwise use the driver's car index
-  if (isSpectator && camCarIdx !== undefined && camCarIdx >= 0) {
+  // If we have a valid camera target, always use that
+  // This works in all scenarios: racing, spectating, replays, spotting
+  if (camCarIdx !== undefined && camCarIdx >= 0) {
     return camCarIdx;
   }
 
+  // Fallback to driver's car index if no camera target
   return driverCarIdx;
 };
