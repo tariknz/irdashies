@@ -10,10 +10,9 @@ interface CompoundCellProps {
 export const CompoundCell = memo(({ hidden, tireCompound, carId }: CompoundCellProps) => (
   <td data-column="compound" className="w-auto whitespace-nowrap text-center px-2">
     <div className="flex items-center justify-center">
-      {hidden ? null : (tireCompound !== undefined && carId && <Compound tireCompound={tireCompound} carId={carId} />)}
+      {hidden ? null : (tireCompound !== undefined && carId !== undefined && <Compound tireCompound={tireCompound} carIdx={carId} />)}
     </div>
   </td>
 ));
 
 CompoundCell.displayName = 'CompoundCell';
-
