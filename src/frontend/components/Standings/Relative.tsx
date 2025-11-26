@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { useAutoAnimate } from '@formkit/auto-animate/react';
 import { DriverInfoRow } from './components/DriverInfoRow/DriverInfoRow';
 import { useDrivingState } from '@irdashies/context';
-import { useRelativeSettings, useDriverRelatives, useDriverStandings, useHighlightColor } from './hooks';
+import { useRelativeSettings, useDriverRelatives, useHighlightColor } from './hooks';
 import { DriverRatingBadge } from './components/DriverRatingBadge/DriverRatingBadge';
 import { RatingChange } from './components/RatingChange/RatingChange';
 import { SessionBar } from './components/SessionBar/SessionBar';
@@ -10,6 +10,7 @@ import { SessionFooter } from './components/SessionFooter/SessionFooter';
 import { TitleBar } from './components/TitleBar/TitleBar';
 import { usePitLabStoreUpdater } from '../../context/PitLapStore/PitLapStoreUpdater';
 import { useRelativeGapStoreUpdater } from '@irdashies/context';
+import { useWeekendInfoNumCarClasses } from '@irdashies/context';
 
 export const Relative = () => {
   const settings = useRelativeSettings();
@@ -17,13 +18,9 @@ export const Relative = () => {
   const { isDriving } = useDrivingState();
   const standings = useDriverRelatives({ buffer });
   const [parent] = useAutoAnimate();
-  const activeDrivers = useDriverStandings();
   const highlightColor = useHighlightColor();
-  const isMultiClass = useMemo(() => {
-    const uniqueClasses = new Set(activeDrivers.flatMap(([, drivers]) => drivers.map(d => d.carClass.id)));
-    return uniqueClasses.size > 1;
-  }, [activeDrivers]);
-
+  const numCarClasses = useWeekendInfoNumCarClasses();
+  const isMultiClass = (numCarClasses ?? 0) > 1;
 
   // Update relative gap store with telemetry data
   useRelativeGapStoreUpdater();
@@ -57,7 +54,13 @@ export const Relative = () => {
           carNumber={settings?.carNumber?.enabled ?? true ? '' : undefined}
           flairId={settings?.countryFlags?.enabled ?? true ? 0 : undefined}
           carId={settings?.carManufacturer?.enabled ?? true ? 0 : undefined}
-          badge={settings?.badge?.enabled ? <></> : undefined}
+          badge={settings?.badge?.enabled ? (
+            <DriverRatingBadge
+              license={undefined}
+              rating={undefined}
+              format={settings.badge.badgeFormat}
+            />
+          ) : undefined}
           currentSessionType=""
           iratingChange={
             settings?.iratingChange?.enabled ? (
@@ -157,6 +160,7 @@ export const Relative = () => {
               <DriverRatingBadge
                 license={result.driver?.license}
                 rating={result.driver?.rating}
+                format={settings.badge.badgeFormat}
               />
             ) : undefined
           }
