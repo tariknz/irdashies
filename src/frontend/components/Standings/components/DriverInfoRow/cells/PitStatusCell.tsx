@@ -60,34 +60,46 @@ export const PitStatusCell = memo(
     return (
       <td data-column="pitStatus" className="w-auto px-1 text-center">
         {repair && (
-          <span className="text-orange-500 text-xs bg-black border-white border-1 rounded-md  items-center justify-center text-nowrap px-2 m-0 leading-tight">
-            <span className="inline-block w-[0.8em] h-[0.8em] bg-orange-500 rounded-full"/>
-          </span>
+          <div className="inline">
+            <span className="text-orange-500 text-xs bg-black border-white border-1 rounded-md  items-center justify-center text-nowrap px-2 m-0 leading-tight">
+              <span className="inline-block w-[0.8em] h-[0.8em] bg-orange-500 rounded-full"/>
+            </span>
+          </div>
         )}
         {dnf && (
-          <span className="text-white text-xs border-red-500 border-2 rounded-md text-center text-nowrap px-2 m-0 leading-tight">
-            DNF
-          </span>
+          <div>
+            <span className="text-white text-xs border-red-500 border-2 rounded-md text-center text-nowrap px-2 m-0 leading-tight">
+              DNF
+            </span>
+          </div>
         )}
         {tow && (
-          <span className="text-white animate-pulse text-xs border-orange-500 border-2 rounded-md text-center text-nowrap px-2 m-0 leading-tight">
-            TOW
-          </span>
+          <div className="inline">
+            <span className="text-white animate-pulse text-xs border-orange-500 border-2 rounded-md text-center text-nowrap px-2 m-0 leading-tight">
+              TOW
+            </span>
+          </div>
         )}
         {out && (
-          <span className="text-white text-xs border-green-700  border-2 rounded-md text-center text-nowrap px-2 m-0 leading-tight">
-            OUT
-          </span>
+          <div className="inline">
+            <span className="text-white text-xs border-green-700  border-2 rounded-md text-center text-nowrap px-2 m-0 leading-tight">
+              OUT
+            </span>
+          </div>
         )}
         {pit && (
-          <span className="text-white animate-pulse text-xs border-yellow-500 border-2 rounded-md text-center text-nowrap px-2 m-0 leading-tight">
-            PIT
-          </span>
+          <div className="inline">
+            <span className="text-white animate-pulse text-xs border-yellow-500 border-2 rounded-md text-center text-nowrap px-2 m-0 leading-tight">
+              PIT
+            </span>
+          </div>
         )}
         {lastPit && (
-          <span className="text-white text-xs border-yellow-500 border-2 rounded-md text-center text-nowrap px-2 m-0 leading-tight">
-            L {lastPitLap}
-          </span>
+          <div className="inline">
+            <span className="text-white text-xs border-yellow-500 border-2 rounded-md text-center text-nowrap px-2 m-0 leading-tight">
+              L {lastPitLap}
+            </span>
+          </div>
         )}
       </td>
     );
