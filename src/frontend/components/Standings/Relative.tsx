@@ -79,6 +79,8 @@ export const Relative = () => {
           highlightColor={highlightColor}
           dnf={false}
           repair={false}
+          penalty={false}
+          slowdown={false}
         />
       ));
     }
@@ -128,6 +130,8 @@ export const Relative = () => {
             highlightColor={highlightColor}
             dnf={false}
             repair={false}
+            penalty={false}
+            slowdown={false}
           />
         );
       }
@@ -179,6 +183,8 @@ export const Relative = () => {
           highlightColor={highlightColor}
           dnf={result.dnf}
           repair={result.repair}
+          penalty={result.penalty}
+          slowdown={result.slowdown}
         />
       );
     });

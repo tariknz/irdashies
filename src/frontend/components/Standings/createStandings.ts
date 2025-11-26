@@ -49,6 +49,8 @@ export interface Standings {
   currentSessionType?: string;
   dnf: boolean;
   repair: boolean;
+  penalty: boolean;
+  slowdown: boolean;
 }
 
 const calculateDelta = (
@@ -230,6 +232,8 @@ export const createDriverStandings = (
         currentSessionType: currentSession.sessionType,
         dnf: !!((telemetry?.carIdxSessionFlags?.[result.CarIdx] ?? 0) & GlobalFlags.Disqualify),
         repair: !!((telemetry?.carIdxSessionFlags?.[result.CarIdx] ?? 0) & GlobalFlags.Repair),
+        penalty: !!((telemetry?.carIdxSessionFlags?.[result.CarIdx] ?? 0) & GlobalFlags.Black),
+        slowdown: !!((telemetry?.carIdxSessionFlags?.[result.CarIdx] ?? 0) & GlobalFlags.Furled),
       };
     })
     .filter((s) => !!s);

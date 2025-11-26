@@ -58,6 +58,8 @@ interface DriverRowInfoProps {
   highlightColor?: number;
   dnf: boolean;
   repair: boolean;
+  penalty: boolean;
+  slowdown: boolean;
 }
 
 export const DriverInfoRow = memo(
@@ -98,7 +100,9 @@ export const DriverInfoRow = memo(
     currentSessionType,
     highlightColor = 960745,
     dnf,
-    repair
+    repair,
+    penalty,
+    slowdown
    }: DriverRowInfoProps) => {
     const lastTimeString = useMemo(() => {
       const format = config?.lastTime?.timeFormat ?? 'full';
@@ -197,6 +201,8 @@ export const DriverInfoRow = memo(
               currentSessionType={currentSessionType}
               dnf={dnf}
               repair={repair}
+              penalty={penalty}
+              slowdown={slowdown}
             />
           ),
         },
@@ -365,7 +371,9 @@ export const DriverInfoRow = memo(
       lastPitLap,
       prevCarTrackSurface,
       dnf,
-      repair
+      repair,
+      penalty,
+      slowdown
     ]);
 
     return (

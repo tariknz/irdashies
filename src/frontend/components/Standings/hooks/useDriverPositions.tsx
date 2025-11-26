@@ -104,7 +104,9 @@ export const useCarState = () => {
       onPitRoad: carIdxOnPitRoad?.value?.[index],
       tireCompound: carIdxTireCompound?.value?.[index],
       dnf: !!((carIdxSessionFlags?.value?.[index] ?? 0) & GlobalFlags.Disqualify),
-      repair: !!((carIdxSessionFlags?.value?.[index] ?? 0) & GlobalFlags.Repair)
+      repair: !!((carIdxSessionFlags?.value?.[index] ?? 0) & GlobalFlags.Repair),
+      penalty: !!((carIdxSessionFlags?.value?.[index] ?? 0) & GlobalFlags.Black),
+      slowdown: !!((carIdxSessionFlags?.value?.[index] ?? 0) & GlobalFlags.Furled)
     })) ?? [];
   }, [carIdxTrackSurface?.value, carIdxOnPitRoad?.value, carIdxTireCompound?.value]);
 };
@@ -200,7 +202,9 @@ export const useDriverStandings = () => {
         carTrackSurface: driverPos.carTrackSurface,
         currentSessionType: sessionType,
         dnf: carState?.dnf ?? false,
-        repair: carState?.repair ?? false
+        repair: carState?.repair ?? false,
+        penalty: carState?.penalty ?? false,
+        slowdown: carState?.slowdown ?? false
       };
     });
 

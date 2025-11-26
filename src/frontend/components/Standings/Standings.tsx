@@ -120,6 +120,8 @@ export const Standings = () => {
                     highlightColor={highlightColor}
                     dnf={result.dnf}
                     repair={result.repair}
+                    penalty={result.penalty}
+                    slowdown={result.slowdown}
                   />
                 ))}
               </Fragment>

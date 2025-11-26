@@ -10,6 +10,8 @@ interface PitStatusCellProps {
   currentSessionType?: string;
   dnf?: boolean;
   repair?: boolean;
+  penalty?: boolean;
+  slowdown?: boolean;
 }
 
 export const PitStatusCell = memo(
@@ -22,7 +24,9 @@ export const PitStatusCell = memo(
     lastLap,
     currentSessionType,
     dnf,
-    repair
+    repair,
+    penalty,
+    slowdown
   }: PitStatusCellProps) => {
     const tow =
       carTrackSurface == 1 &&
@@ -59,6 +63,12 @@ export const PitStatusCell = memo(
 
     return (
       <td data-column="pitStatus" className="w-auto px-1 text-center">
+        {(penalty || slowdown) && (
+          <div className="inline">
+            <span className={`text-orange-500 text-xs bg-black border-white border-1 rounded-md text-center text-nowrap px-2 m-0 leading-tight ${slowdown ? 'animate-pulse' : ''}`}>
+            </span>
+          </div>
+        )}
         {repair && (
           <div className="inline">
             <span className="text-orange-500 text-xs bg-black border-white border-1 rounded-md  items-center justify-center text-nowrap px-2 m-0 leading-tight">

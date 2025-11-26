@@ -23,6 +23,8 @@ describe('PitStatusCell', () => {
         currentSessionType="Qualify"
         dnf={false}
         repair={false}
+        penalty={false}
+        slowdown={false}
       />
     );
     
@@ -45,6 +47,8 @@ describe('PitStatusCell', () => {
         currentSessionType="Race"
         dnf={false}
         repair={false}
+        penalty={false}
+        slowdown={false}
       />
     );
     
@@ -61,6 +65,9 @@ describe('PitStatusCell', () => {
         prevCarTrackSurface={1}
         currentSessionType="Race"
         dnf={true}
+        repair={true}
+        penalty={true}
+        slowdown={true}
       />
     );
     
@@ -77,6 +84,8 @@ describe('PitStatusCell', () => {
         currentSessionType="Race"
         dnf={false}
         repair={false}
+        penalty={false}
+        slowdown={false}
       />
     );
     
@@ -93,6 +102,8 @@ describe('PitStatusCell', () => {
         carTrackSurface={1}
         dnf={false}
         repair={false}
+        penalty={false}
+        slowdown={false}
       />
     );
     
@@ -108,6 +119,8 @@ describe('PitStatusCell', () => {
         currentSessionType="Race"
         dnf={false}
         repair={false}
+        penalty={false}
+        slowdown={false}
       />
     );
     
@@ -124,6 +137,8 @@ describe('PitStatusCell', () => {
         carTrackSurface={1}
         dnf={false}
         repair={false}
+        penalty={false}
+        slowdown={false}
       />
     );
     
@@ -155,6 +170,8 @@ describe('PitStatusCell', () => {
         currentSessionType="Qualify"
         dnf={false}
         repair={false}
+        penalty={false}
+        slowdown={false}
       />
     );
     
@@ -175,6 +192,8 @@ describe('PitStatusCell', () => {
         currentSessionType="Qualify"
         dnf={false}
         repair={false}
+        penalty={false}
+        slowdown={false}
       />
     );
     
@@ -195,6 +214,8 @@ describe('PitStatusCell', () => {
         currentSessionType="Qualify"
         dnf={false}
         repair={false}
+        penalty={false}
+        slowdown={false}
       />
     );
     
