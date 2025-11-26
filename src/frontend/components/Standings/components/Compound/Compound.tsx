@@ -2,13 +2,12 @@ import { useStore } from 'zustand';
 import { useSessionStore } from '../../../../context/SessionStore/SessionStore';
 
 interface CompoundProps {
-  carIdx: number;
   tireCompound: number;
   mockTires?: { TireIndex: number; TireCompoundType: string }[];
 }
 
 export const Compound = ({
-  tireCompound, mockTires, carIdx
+  tireCompound, mockTires
 }: CompoundProps) => {
   const session = useStore(useSessionStore, (state) => state.session);
   const driverTires = mockTires || session?.DriverInfo?.DriverTires;
