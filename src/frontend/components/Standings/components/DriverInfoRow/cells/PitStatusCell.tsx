@@ -8,6 +8,10 @@ interface PitStatusCellProps {
   lastPitLap?: number;
   lastLap?: number;
   currentSessionType?: string;
+  dnf?: boolean;
+  repair?: boolean;
+  penalty?: boolean;
+  slowdown?: boolean;
 }
 
 export const PitStatusCell = memo(
@@ -19,11 +23,11 @@ export const PitStatusCell = memo(
     lastPitLap,
     lastLap,
     currentSessionType,
+    dnf,
+    repair,
+    penalty,
+    slowdown
   }: PitStatusCellProps) => {
-    const dnf =
-      (prevCarTrackSurface ?? -1) > -1 &&
-      carTrackSurface === -1 &&
-      currentSessionType == 'Race';
     const tow =
       carTrackSurface == 1 &&
       prevCarTrackSurface != undefined &&
@@ -48,7 +52,7 @@ export const PitStatusCell = memo(
       lastPitLap !== lastLap &&
       carTrackSurface != -1;
 
-    if (hidden || (!dnf && !tow && !out && !pit && !lastPit)) {
+    if (hidden || (!repair && !dnf && !tow && !out && !pit && !lastPit)) {
       // Explicitly render empty string when the cell has no content
       return (
         <td data-column="pitStatus" className="w-auto px-1 text-center">
@@ -59,30 +63,49 @@ export const PitStatusCell = memo(
 
     return (
       <td data-column="pitStatus" className="w-auto px-1 text-center">
+        {(penalty || slowdown) && (
+          <div className="inline">
+            <span className={`text-orange-500 text-xs bg-black border-white border-1 rounded-md text-center text-nowrap px-2 m-0 leading-tight ${slowdown ? 'animate-pulse' : ''}`}>
+            </span>
+          </div>
+        )}
+        {repair && (
+          <div className="inline">
+            <span className="text-orange-500 text-xs bg-black border-white border-1 rounded-md  items-center justify-center text-nowrap px-2 m-0 leading-tight">
+              <span className="inline-block w-[0.8em] h-[0.8em] bg-orange-500 rounded-full"/>
+            </span>
+          </div>
+        )}
         {dnf && (
-          <span className="text-white text-xs border-red-500 border-2 rounded-md text-center text-nowrap px-2 m-0 leading-tight">
-            DNF
-          </span>
+          <div>
+            <span className="text-white text-xs border-red-500 border-2 rounded-md text-center text-nowrap px-2 m-0 leading-tight">
+              DNF
+            </span>
+          </div>
         )}
         {tow && (
-          <span className="text-white animate-pulse text-xs border-orange-500 border-2 rounded-md text-center text-nowrap px-2 m-0 leading-tight">
-            TOW
-          </span>
+          <div className="inline">
+            <span className="text-white animate-pulse text-xs border-orange-500 border-2 rounded-md text-center text-nowrap px-2 m-0 leading-tight">
+              TOW
+            </span>
+          </div>
         )}
         {out && (
-          <div>
+          <div className="inline">
             <span className="text-white text-xs border-green-700  border-2 rounded-md text-center text-nowrap px-2 m-0 leading-tight">
               OUT
             </span>
           </div>
         )}
         {pit && (
-          <span className="text-white animate-pulse text-xs border-yellow-500 border-2 rounded-md text-center text-nowrap px-2 m-0 leading-tight">
-            PIT
-          </span>
+          <div className="inline">
+            <span className="text-white animate-pulse text-xs border-yellow-500 border-2 rounded-md text-center text-nowrap px-2 m-0 leading-tight">
+              PIT
+            </span>
+          </div>
         )}
         {lastPit && (
-          <div>
+          <div className="inline">
             <span className="text-white text-xs border-yellow-500 border-2 rounded-md text-center text-nowrap px-2 m-0 leading-tight">
               L {lastPitLap}
             </span>

@@ -56,6 +56,10 @@ interface DriverRowInfoProps {
   carTrackSurface?: number;
   currentSessionType?: string;
   highlightColor?: number;
+  dnf: boolean;
+  repair: boolean;
+  penalty: boolean;
+  slowdown: boolean;
 }
 
 export const DriverInfoRow = memo(
@@ -94,7 +98,11 @@ export const DriverInfoRow = memo(
     prevCarTrackSurface,
     carTrackSurface,
     currentSessionType,
-    highlightColor = 960745
+    highlightColor = 960745,
+    dnf,
+    repair,
+    penalty,
+    slowdown
    }: DriverRowInfoProps) => {
     const lastTimeString = useMemo(() => {
       const format = config?.lastTime?.timeFormat ?? 'full';
@@ -105,6 +113,8 @@ export const DriverInfoRow = memo(
       const format = config?.fastestTime?.timeFormat ?? 'full';
       return formatTime(fastestTime, format as TimeFormat);
     }, [fastestTime, config?.fastestTime?.timeFormat]);
+
+    const offTrack = (carTrackSurface === 0) ? true : false;
 
     const tailwindStyles = useMemo(() => {
       return getTailwindStyle(classColor, highlightColor, isMultiClass);
@@ -128,6 +138,7 @@ export const DriverInfoRow = memo(
               hidden={hidden}
               position={position}
               isPlayer={isPlayer}
+              offTrack={offTrack}
               tailwindStyles={tailwindStyles}
             />
           ),
@@ -188,6 +199,10 @@ export const DriverInfoRow = memo(
               lastPitLap={lastPitLap}
               lastLap={lastLap}
               currentSessionType={currentSessionType}
+              dnf={dnf}
+              repair={repair}
+              penalty={penalty}
+              slowdown={slowdown}
             />
           ),
         },
@@ -354,7 +369,11 @@ export const DriverInfoRow = memo(
       currentSessionType,
       lastLap,
       lastPitLap,
-      prevCarTrackSurface
+      prevCarTrackSurface,
+      dnf,
+      repair,
+      penalty,
+      slowdown
     ]);
 
     return (

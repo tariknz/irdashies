@@ -21,6 +21,10 @@ describe('PitStatusCell', () => {
         carTrackSurface={1}
         prevCarTrackSurface={1}
         currentSessionType="Qualify"
+        dnf={false}
+        repair={false}
+        penalty={false}
+        slowdown={false}
       />
     );
     
@@ -41,6 +45,10 @@ describe('PitStatusCell', () => {
         onPitRoad={true}
         carTrackSurface={2}
         currentSessionType="Race"
+        dnf={false}
+        repair={false}
+        penalty={false}
+        slowdown={false}
       />
     );
     
@@ -56,6 +64,10 @@ describe('PitStatusCell', () => {
         carTrackSurface={-1}
         prevCarTrackSurface={1}
         currentSessionType="Race"
+        dnf={true}
+        repair={true}
+        penalty={true}
+        slowdown={true}
       />
     );
     
@@ -70,6 +82,10 @@ describe('PitStatusCell', () => {
         prevCarTrackSurface={1}
         lastLap={5}
         currentSessionType="Race"
+        dnf={false}
+        repair={false}
+        penalty={false}
+        slowdown={false}
       />
     );
     
@@ -84,6 +100,10 @@ describe('PitStatusCell', () => {
         lastPitLap={3}
         lastLap={3}
         carTrackSurface={1}
+        dnf={false}
+        repair={false}
+        penalty={false}
+        slowdown={false}
       />
     );
     
@@ -97,6 +117,10 @@ describe('PitStatusCell', () => {
         onPitRoad={true}
         carTrackSurface={2}
         currentSessionType="Race"
+        dnf={false}
+        repair={false}
+        penalty={false}
+        slowdown={false}
       />
     );
     
@@ -111,6 +135,10 @@ describe('PitStatusCell', () => {
         lastPitLap={2}
         lastLap={5}
         carTrackSurface={1}
+        dnf={false}
+        repair={false}
+        penalty={false}
+        slowdown={false}
       />
     );
     
@@ -140,6 +168,10 @@ describe('PitStatusCell', () => {
         prevCarTrackSurface={1}
         lastLap={0}
         currentSessionType="Qualify"
+        dnf={false}
+        repair={false}
+        penalty={false}
+        slowdown={false}
       />
     );
     
@@ -158,6 +190,10 @@ describe('PitStatusCell', () => {
         lastLap={0}
         lastPitLap={undefined}
         currentSessionType="Qualify"
+        dnf={false}
+        repair={false}
+        penalty={false}
+        slowdown={false}
       />
     );
     
@@ -176,6 +212,10 @@ describe('PitStatusCell', () => {
         lastLap={1}
         lastPitLap={0}
         currentSessionType="Qualify"
+        dnf={false}
+        repair={false}
+        penalty={false}
+        slowdown={false}
       />
     );
     

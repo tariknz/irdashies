@@ -231,7 +231,11 @@ const Relative = () => {
       lappedState: undefined,
       tireCompound: 0,
       lastPitLap: 0,
-      currentSessionType: useCurrentSessionType()
+      currentSessionType: useCurrentSessionType(),
+      dnf: false,
+      repair: false,
+      penalty: false,
+      slowdown: false
     },
     {
       carIdx: 2,
@@ -255,7 +259,11 @@ const Relative = () => {
       lappedState: 'ahead',
       tireCompound: 1,
       lastPitLap: 0,
-      currentSessionType: useCurrentSessionType()
+      currentSessionType: useCurrentSessionType(),
+      dnf: false,
+      repair: false,
+      penalty: false,
+      slowdown: false
     },
     {
       carIdx: 3,
@@ -279,7 +287,11 @@ const Relative = () => {
       lappedState: 'same',
       tireCompound: 1,
       lastPitLap: 0,
-      currentSessionType: useCurrentSessionType()
+      currentSessionType: useCurrentSessionType(),
+      dnf: false,
+      repair: false,
+      penalty: false,
+      slowdown: false
     },
     {
       carIdx: 4,
@@ -301,7 +313,11 @@ const Relative = () => {
       lappedState: 'same',
       tireCompound: 1,
       lastPitLap: 15,
-      currentSessionType: useCurrentSessionType()
+      currentSessionType: useCurrentSessionType(),
+      dnf: true,
+      repair: false,
+      penalty: false,
+      slowdown: false
     },
     {
       carIdx: 5,
@@ -323,7 +339,11 @@ const Relative = () => {
       lappedState: 'behind',
       tireCompound: 1,
       lastPitLap: 0,
-      currentSessionType: useCurrentSessionType()
+      currentSessionType: useCurrentSessionType(),
+      dnf: false,
+      repair: true,
+      penalty: false,
+      slowdown: false
     },
     {
       carIdx: 6,
@@ -345,7 +365,11 @@ const Relative = () => {
       lappedState: 'same',
       tireCompound: 1,
       lastPitLap: 0,
-      currentSessionType: useCurrentSessionType()
+      currentSessionType: useCurrentSessionType(),
+      dnf: false,
+      repair: false,
+      penalty: false,
+      slowdown: false
     },
     {
       carIdx: 7,
@@ -366,7 +390,11 @@ const Relative = () => {
       radioActive: true,
       tireCompound: 1,
       lastPitLap: 5,
-      currentSessionType: useCurrentSessionType()
+      currentSessionType: useCurrentSessionType(),
+      dnf: false,
+      repair: false,
+      penalty: false,
+      slowdown: false
     },
   ];
   const getRandomCarNum = () => Math.floor(Math.random() * 35) + 1;
@@ -407,6 +435,10 @@ const Relative = () => {
               }
               isMultiClass={false}
               currentSessionType={result.currentSessionType}
+              dnf={result.dnf}
+              repair={result.repair}
+              penalty={result.penalty}
+              slowdown={result.slowdown}
             />
           ))}
         </tbody>

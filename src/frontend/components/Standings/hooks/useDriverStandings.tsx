@@ -52,6 +52,7 @@ export const useDriverStandings = (settings?: StandingsWidgetSettings['config'])
   const carIdxTrackSurface = useTelemetry('CarIdxTrackSurface');
   const radioTransmitCarIdx = useTelemetry('RadioTransmitCarIdx');
   const carIdxTireCompound = useTelemetry<number[]>('CarIdxTireCompound');
+  const carIdxSessionFlags = useTelemetry<number[]>('CarIdxSessionFlags');
   const isOfficial = useSessionIsOfficial();
   const lastPitLap = usePitLap();
   const lastLap = useCarLap();
@@ -81,6 +82,7 @@ export const useDriverStandings = (settings?: StandingsWidgetSettings['config'])
         carIdxTrackSurfaceValue: carIdxTrackSurface?.value,
         radioTransmitCarIdx: radioTransmitCarIdx?.value,
         carIdxTireCompoundValue: carIdxTireCompound?.value,
+        carIdxSessionFlags: carIdxSessionFlags?.value
       },
       {
         resultsPositions: positions,
@@ -142,7 +144,8 @@ export const useDriverStandings = (settings?: StandingsWidgetSettings['config'])
     lastPitLap,
     prevCarTrackSurface,
     gapEnabled,
-    intervalEnabled
+    intervalEnabled,
+    carIdxSessionFlags?.value
   ]);
 
   return standingsWithGain;
