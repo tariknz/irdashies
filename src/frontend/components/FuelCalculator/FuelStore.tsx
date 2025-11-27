@@ -20,6 +20,8 @@ interface FuelStoreState {
   sessionNum: number;
   /** Whether the car was on pit road at lap start */
   wasOnPitRoad: boolean;
+  /** Last session flags to detect flag changes */
+  lastSessionFlags: number;
 }
 
 interface FuelStoreActions {
@@ -74,6 +76,7 @@ export const useFuelStore = create<FuelStore>((set, get) => ({
   lastLapDistPct: 0,
   sessionNum: -1,
   wasOnPitRoad: false,
+  lastSessionFlags: 0,
 
   // Actions
   addLapData: (lapData: FuelLapData) => {
@@ -122,26 +125,15 @@ export const useFuelStore = create<FuelStore>((set, get) => ({
       lapCrossingTime: 0,
       lastLapDistPct: 0,
       wasOnPitRoad: false,
+      lastSessionFlags: 0,
     });
   },
 
   updateSessionInfo: (sessionNum: number) => {
-    set((state) => {
-      // Clear data if session changed
-      if (state.sessionNum !== sessionNum && state.sessionNum !== -1) {
-        return {
-          sessionNum,
-          lapHistory: new Map(),
-          lastLap: 0,
-          lapStartFuel: 0,
-          lapCrossingTime: 0,
-          lastLapDistPct: 0,
-          wasOnPitRoad: false,
-        };
-      }
-
-      return { sessionNum };
-    });
+    // Don't clear data on session change - preserve fuel consumption data
+    // across warmup/qualifying/race within the same iRacing session
+    // Data will only be cleared when explicitly leaving the session
+    set({ sessionNum });
   },
 
   getLapHistory: () => {

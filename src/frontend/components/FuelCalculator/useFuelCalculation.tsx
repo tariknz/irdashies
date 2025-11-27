@@ -45,7 +45,7 @@ export function useFuelCalculation(
 
   // Debug logging disabled - only lap crossing events are logged below
 
-  // Update session info (clears data on session change)
+  // Track current session number (preserves data across session changes)
   useEffect(() => {
     if (sessionNum !== undefined) {
       updateSessionInfo(sessionNum);
@@ -197,7 +197,16 @@ export function useFuelCalculation(
     if (sessionFlags !== undefined && (isWhiteFlag(sessionFlags) || isCheckeredFlag(sessionFlags))) {
       // White/checkered flag = final lap or race complete
       // Set to 1 lap remaining to show fuel to finish line, ignore any time extensions
-      console.log(`[FuelCalculator] ${isCheckeredFlag(sessionFlags) ? 'Checkered' : 'White'} flag detected - final lap (ignoring sessionTimeRemain: ${sessionTimeRemain}, sessionLapsRemain: ${sessionLapsRemain})`);
+
+      // Only log when flag state changes to avoid spam
+      const state = useFuelStore.getState();
+      const flagChanged = state.lastSessionFlags !== sessionFlags;
+      if (flagChanged) {
+        console.log(`[FuelCalculator] ${isCheckeredFlag(sessionFlags) ? 'Checkered' : 'White'} flag detected - final lap (ignoring sessionTimeRemain: ${sessionTimeRemain}, sessionLapsRemain: ${sessionLapsRemain})`);
+        // Update stored flag state
+        useFuelStore.setState({ lastSessionFlags: sessionFlags });
+      }
+
       lapsRemaining = 1;
       totalLaps = lap + 1;
     } else if (sessionLapsRemain === 32767) {
