@@ -56,7 +56,8 @@ describe('useDriverRelatives', () => {
       currentSessionType: "Race",
       dnf: false,
       repair: false,
-      penalty: false
+      penalty: false,
+      slowdown: false,
     },
     {
       carIdx: 1,
@@ -84,7 +85,8 @@ describe('useDriverRelatives', () => {
       currentSessionType: "Race",
       dnf: false,
       repair: false,
-      penalty: false
+      penalty: false,
+      slowdown: false
     },
     {
       carIdx: 2,
@@ -112,7 +114,8 @@ describe('useDriverRelatives', () => {
       currentSessionType: "Race",
       dnf: false,
       repair: false,
-      penalty: false
+      penalty: false,
+      slowdown: false
     },
   ];
 
