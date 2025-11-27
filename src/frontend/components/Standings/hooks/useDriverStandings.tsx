@@ -144,7 +144,8 @@ export const useDriverStandings = (settings?: StandingsWidgetSettings['config'])
     lastPitLap,
     prevCarTrackSurface,
     gapEnabled,
-    intervalEnabled
+    intervalEnabled,
+    carIdxSessionFlags?.value
   ]);
 
   return standingsWithGain;

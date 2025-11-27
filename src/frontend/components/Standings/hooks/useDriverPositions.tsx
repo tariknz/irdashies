@@ -108,7 +108,7 @@ export const useCarState = () => {
       penalty: !!((carIdxSessionFlags?.value?.[index] ?? 0) & GlobalFlags.Black),
       slowdown: !!((carIdxSessionFlags?.value?.[index] ?? 0) & GlobalFlags.Furled)
     })) ?? [];
-  }, [carIdxTrackSurface?.value, carIdxOnPitRoad?.value, carIdxTireCompound?.value]);
+  }, [carIdxTrackSurface?.value, carIdxOnPitRoad?.value, carIdxTireCompound?.value, carIdxSessionFlags?.value]);
 };
 
 // TODO: this should eventually replace the useDriverStandings hook
