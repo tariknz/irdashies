@@ -102,6 +102,8 @@ export function useFuelCalculation(
       // Always update distance to track lap crossing properly
       updateLapDistPct(lapDistPct);
     }
+    // sessionLapsRemain is intentionally excluded - only used for logging
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     lapDistPct,
     fuelLevel,
