@@ -43,12 +43,10 @@ export function generateMockData(sessionData?: {
 
   return {
     onTelemetry: (callback: (value: Telemetry) => void) => {
-      console.log('📝 Mock bridge: Registering telemetry callback, total subscribers:', telemetryCallbacks.size + 1);
       telemetryCallbacks.add(callback);
       
       // Start interval only once
       if (!telemetryInterval) {
-        console.log('🚀 Mock bridge: Starting telemetry interval (60fps)');
         telemetryInterval = setInterval(() => {
           let t = Array.isArray(telemetry)
             ? telemetry[telemetryIdx % telemetry.length]
@@ -85,9 +83,18 @@ export function generateMockData(sessionData?: {
           telemetryCallbacks.forEach(cb => cb(data));
         }, 1000 / 60);
       }
+      
+      // Return unsubscribe function
+      return () => {
+        telemetryCallbacks.delete(callback);
+        // Stop interval if no more callbacks
+        if (telemetryCallbacks.size === 0 && telemetryInterval) {
+          clearInterval(telemetryInterval);
+          telemetryInterval = null;
+        }
+      };
     },
     onSessionData: (callback: (value: Session) => void) => {
-      console.log('📝 Mock bridge: Registering session callback, total subscribers:', sessionCallbacks.size + 1);
       sessionCallbacks.add(callback);
       
       const updateSessionData = () => {
@@ -107,12 +114,20 @@ export function generateMockData(sessionData?: {
       
       // Start interval only once
       if (!sessionInfoInterval) {
-        console.log('🚀 Mock bridge: Starting session interval (2s)');
         sessionInfoInterval = setInterval(updateSessionData, 2000);
       }
+      
+      // Return unsubscribe function
+      return () => {
+        sessionCallbacks.delete(callback);
+        // Stop interval if no more callbacks
+        if (sessionCallbacks.size === 0 && sessionInfoInterval) {
+          clearInterval(sessionInfoInterval);
+          sessionInfoInterval = null;
+        }
+      };
     },
     onRunningState: (callback: (value: boolean) => void) => {
-      console.log('📝 Mock bridge: Registering running state callback, total subscribers:', runningStateCallbacks.size + 1);
       runningStateCallbacks.add(callback);
       
       // Send initial state immediately
@@ -120,11 +135,20 @@ export function generateMockData(sessionData?: {
       
       // Start interval only once
       if (!runningStateInterval) {
-        console.log('🚀 Mock bridge: Starting running state interval (1s)');
         runningStateInterval = setInterval(() => {
           runningStateCallbacks.forEach(cb => cb(true));
         }, 1000);
       }
+      
+      // Return unsubscribe function
+      return () => {
+        runningStateCallbacks.delete(callback);
+        // Stop interval if no more callbacks
+        if (runningStateCallbacks.size === 0 && runningStateInterval) {
+          clearInterval(runningStateInterval);
+          runningStateInterval = null;
+        }
+      };
     },
     stop: () => {
       console.log('🛑 Mock bridge: Stopping all intervals');

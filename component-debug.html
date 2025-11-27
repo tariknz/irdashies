@@ -67,7 +67,6 @@
     <pre id="console-output">Waiting for tests...</pre>
   </div>
 
-  <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
   <script>
     const log = (msg, type = 'info') => {
       const output = document.getElementById('console-output');
@@ -111,31 +110,37 @@
 
     async function testWebSocket() {
       log('Testing WebSocket connection...', 'info');
-      const socket = io('http://localhost:3000', {
-        reconnection: false,
-        timeout: 5000
-      });
+      const wsUrl = 'ws://localhost:3000';
+      const socket = new WebSocket(wsUrl);
 
-      socket.on('connect', () => {
+      socket.onopen = () => {
         log('✅ WebSocket connected successfully', 'success');
-      });
+      };
 
-      socket.on('initialState', (state) => {
-        log(`✅ Received initialState:`, 'success');
-        log(`  - Telemetry: ${state.telemetry ? 'present' : 'MISSING'}`, state.telemetry ? 'success' : 'warning');
-        log(`  - Session: ${state.sessionData ? 'present' : 'MISSING'}`, state.sessionData ? 'success' : 'warning');
-        log(`  - IsRunning: ${state.isRunning}`, 'info');
-        setTimeout(() => socket.disconnect(), 1000);
-      });
+      socket.onmessage = (event) => {
+        try {
+          const message = JSON.parse(event.data);
+          if (message.type === 'initialState') {
+            const state = message.data;
+            log(`✅ Received initialState:`, 'success');
+            log(`  - Telemetry: ${state.telemetry ? 'present' : 'MISSING'}`, state.telemetry ? 'success' : 'warning');
+            log(`  - Session: ${state.sessionData ? 'present' : 'MISSING'}`, state.sessionData ? 'success' : 'warning');
+            log(`  - IsRunning: ${state.isRunning}`, 'info');
+            setTimeout(() => socket.close(), 1000);
+          }
+        } catch (e) {
+          log(`Error parsing message: ${e.message}`, 'error');
+        }
+      };
 
-      socket.on('connect_error', (err) => {
-        log(`❌ WebSocket connection failed: ${err.message}`, 'error');
-      });
+      socket.onerror = (err) => {
+        log(`❌ WebSocket connection failed`, 'error');
+      };
 
       setTimeout(() => {
-        if (!socket.connected) {
+        if (socket.readyState !== WebSocket.OPEN) {
           log('⏱️ WebSocket connection timeout', 'warning');
-          socket.disconnect();
+          socket.close();
         }
       }, 6000);
     }

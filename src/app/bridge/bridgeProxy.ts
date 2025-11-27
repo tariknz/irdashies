@@ -1,5 +1,5 @@
 import { Server as HTTPServer } from 'http';
-import { Server as SocketIOServer, Socket } from 'socket.io';
+import { WebSocketServer, WebSocket } from 'ws';
 import type { Telemetry, Session, DashboardLayout } from '@irdashies/types';
 import type { IrSdkBridge, DashboardBridge } from '@irdashies/types';
 
@@ -21,18 +21,24 @@ export function createBridgeProxy(
   console.log('  Has dashboardBridge?', !!dashboardBridge);
   console.log('  Initial demo mode:', initialDemoMode);
 
-  const io = new SocketIOServer(httpServer, {
-    cors: {
-      origin: '*',
-      methods: ['GET', 'POST'],
-    },
-  });
+  const wss = new WebSocketServer({ server: httpServer });
 
   // Track connected clients
+  const clients = new Set<WebSocket>();
   let currentTelemetry: Telemetry | null = null;
   let currentSession: Session | null = null;
   let isRunning = false;
   let isDemoMode = initialDemoMode;
+
+  // Helper function to broadcast to all clients
+  const broadcast = (type: string, data: unknown) => {
+    const message = JSON.stringify({ type, data });
+    clients.forEach((client) => {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(message);
+      }
+    });
+  };
 
   console.log('🎭 Bridge proxy initialized with demo mode:', isDemoMode);
 
@@ -52,20 +58,21 @@ export function createBridgeProxy(
 
     const unsubTelemetry = bridge.onTelemetry((telemetry: Telemetry) => {
       currentTelemetry = telemetry;
-      io.emit('telemetry', telemetry);
+      broadcast('telemetry', telemetry);
     });
     console.log('✅ Bridge proxy: onTelemetry listener registered');
 
     const unsubSession = bridge.onSessionData((session: Session) => {
       currentSession = session;
-      io.emit('sessionData', session);
+      broadcast('sessionData', session);
     });
     console.log('✅ Bridge proxy: onSessionData listener registered');
 
     const unsubRunning = bridge.onRunningState((running: boolean) => {
       isRunning = running;
-      console.log('🔄 Bridge proxy: Received running state:', running, ', broadcasting to', io.engine.clientsCount, 'clients');
-      io.emit('runningState', running);
+      if (clients.size > 0) {
+        broadcast('runningState', running);
+      }
     });
     console.log('✅ Bridge proxy: onRunningState listener registered');
 
@@ -98,7 +105,7 @@ export function createBridgeProxy(
     dashboardBridge.dashboardUpdated((dashboard: DashboardLayout) => {
       console.log('📊 Dashboard updated in bridgeProxy:', dashboard ? `${dashboard.widgets?.length || 0} widgets` : 'null');
       currentDashboard = dashboard;
-      io.emit('dashboardUpdated', dashboard);
+      broadcast('dashboardUpdated', dashboard);
     });
 
     // Subscribe to demo mode changes
@@ -106,7 +113,7 @@ export function createBridgeProxy(
       dashboardBridge.onDemoModeChanged((demoMode: boolean) => {
         console.log('🎭 Demo mode changed in bridgeProxy:', demoMode);
         isDemoMode = demoMode;
-        io.emit('demoModeChanged', demoMode);
+        broadcast('demoModeChanged', demoMode);
       });
     }
   } else {
@@ -114,9 +121,11 @@ export function createBridgeProxy(
   }
 
   // Handle client connections
-  io.on('connection', (socket: Socket) => {
-    console.log(`✅ Client connected: ${socket.id}`);
-    console.log(`📊 Total clients: ${io.engine.clientsCount}`);
+  wss.on('connection', (ws: WebSocket) => {
+    const clientId = Math.random().toString(36).substring(7);
+    console.log(`✅ Client connected: ${clientId}`);
+    clients.add(ws);
+    console.log(`📊 Total clients: ${clients.size}`);
     console.log(`📊 Subscriptions active: ${unsubscribeFunctions.length > 0}`);
     
     // Subscribe to bridge if not already subscribed
@@ -128,31 +137,50 @@ export function createBridgeProxy(
     }
 
     // Send current state to newly connected client
-    socket.emit('initialState', {
-      telemetry: currentTelemetry,
-      sessionData: currentSession,
-      isRunning,
-      dashboard: currentDashboard,
-      isDemoMode,
+    ws.send(JSON.stringify({
+      type: 'initialState',
+      data: {
+        telemetry: currentTelemetry,
+        sessionData: currentSession,
+        isRunning,
+        dashboard: currentDashboard,
+        isDemoMode,
+      },
+    }));
+
+    // Handle incoming messages from client
+    ws.on('message', (message: Buffer) => {
+      try {
+        const parsed = JSON.parse(message.toString());
+        
+        if (parsed.type === 'getDashboard') {
+          ws.send(JSON.stringify({
+            type: 'dashboard',
+            data: currentDashboard,
+          }));
+        }
+      } catch (error) {
+        console.error('Error parsing client message:', error);
+      }
     });
 
-    // Handle getDashboard request from browser
-    socket.on('getDashboard', (callback: (dashboard: DashboardLayout | null) => void) => {
-      callback(currentDashboard);
-    });
-
-    socket.on('disconnect', () => {
-      console.log(`❌ Client disconnected: ${socket.id}`);
+    ws.on('close', () => {
+      console.log(`❌ Client disconnected: ${clientId}`);
+      clients.delete(ws);
       
       // Unsubscribe from bridge when last client disconnects
-      if (io.engine.clientsCount === 0) {
+      if (clients.size === 0) {
         console.log('🛑 No clients connected, stopping bridge subscriptions');
         unsubscribeFromBridge();
       }
     });
+
+    ws.on('error', (error: Error) => {
+      console.error(`WebSocket error for client ${clientId}:`, error);
+    });
   });
 
-  return { io, resubscribeToBridge };
+  return { wss, resubscribeToBridge };
 }
 
 /**

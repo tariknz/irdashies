@@ -4,8 +4,5 @@ declare global {
   interface Window {
     irsdkBridge: IrSdkBridge;
     dashboardBridge: DashboardBridge;
-    electron?: {
-      openFile: () => Promise<void>;
-    };
   }
 }

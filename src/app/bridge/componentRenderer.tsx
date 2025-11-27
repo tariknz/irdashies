@@ -33,13 +33,19 @@ const debugLog = (...args: any[]) => {
  * Web-based bridge that connects to the WebSocket server
  */
 class WebSocketBridge implements IrSdkBridge {
-  private socket: any;
+  private socket: WebSocket | null;
   private telemetryCallbacks: Set<(data: any) => void>;
   private sessionCallbacks: Set<(data: any) => void>;
   private runningCallbacks: Set<(running: boolean) => void>;
   private isConnecting: boolean;
   private connectionPromise: Promise<void> | null;
   private isConnected: boolean;
+  private wsUrl: string;
+  private reconnectTimer: ReturnType<typeof setTimeout> | null;
+  private reconnectAttempts: number;
+  private maxReconnectAttempts: number;
+  private reconnectDelay: number;
+  private reconnectDelayMax: number;
 
   // Dashboard Bridge methods
   private editModeCallbacks: Set<(value: boolean) => void>;
@@ -59,47 +65,22 @@ class WebSocketBridge implements IrSdkBridge {
     this.isConnecting = false;
     this.isConnected = false;
     this.connectionPromise = null;
+    this.wsUrl = '';
+    this.reconnectTimer = null;
+    this.reconnectAttempts = 0;
+    this.maxReconnectAttempts = Infinity;
+    this.reconnectDelay = 1000;
+    this.reconnectDelayMax = 5000;
   }
 
-  async connect(wsUrl: string): Promise<void> {
-    if (this.isConnected) {
-      return;
-    }
+  private handleMessage(event: MessageEvent) {
+    try {
+      const message = JSON.parse(event.data);
+      const { type, data } = message;
 
-    if (this.connectionPromise) {
-      return this.connectionPromise;
-    }
-
-    if (this.isConnecting) {
-      return;
-    }
-
-    this.isConnecting = true;
-
-    this.connectionPromise = new Promise((resolve, reject) => {
-      const { io } = window as any;
-      if (!io) {
-        this.isConnecting = false;
-        reject(new Error('Socket.io not loaded'));
-        return;
-      }
-
-      try {
-        this.socket = io(wsUrl, {
-          reconnection: true,
-          reconnectionDelay: 1000,
-          reconnectionDelayMax: 5000,
-          reconnectionAttempts: Infinity,
-        });
-
-        this.socket.on('connect', () => {
-          debugLog('✅ Connected to bridge');
-          this.isConnecting = false;
-          this.isConnected = true;
-          resolve();
-        });
-
-        this.socket.on('initialState', (state: any) => {
+      switch (type) {
+        case 'initialState': {
+          const state = data;
           debugLog('📥 Received initialState from bridge:', state);
           debugLog('  Telemetry:', state.telemetry ? 'present' : 'missing');
           debugLog('  SessionData:', state.sessionData ? 'present' : 'missing');
@@ -158,9 +139,9 @@ class WebSocketBridge implements IrSdkBridge {
               }
             });
           }
-        });
-
-        this.socket.on('telemetry', (data: any) => {
+          break;
+        }
+        case 'telemetry':
           this.telemetryCallbacks.forEach((cb) => {
             try {
               cb(data);
@@ -168,9 +149,8 @@ class WebSocketBridge implements IrSdkBridge {
               console.error('Error in telemetry callback:', e);
             }
           });
-        });
-
-        this.socket.on('sessionData', (data: any) => {
+          break;
+        case 'sessionData':
           this.sessionCallbacks.forEach((cb) => {
             try {
               cb(data);
@@ -178,57 +158,137 @@ class WebSocketBridge implements IrSdkBridge {
               console.error('Error in session callback:', e);
             }
           });
-        });
-
-        this.socket.on('runningState', (running: boolean) => {
+          break;
+        case 'runningState':
           this.runningCallbacks.forEach((cb) => {
             try {
-              cb(running);
+              cb(data);
             } catch (e) {
               console.error('Error in running state callback:', e);
             }
           });
-        });
-
-        this.socket.on('dashboardUpdated', (dashboard: any) => {
+          break;
+        case 'dashboardUpdated':
           debugLog('📊 Received dashboardUpdated event');
-          this.lastDashboard = dashboard;
+          this.lastDashboard = data;
           this.dashboardUpdateCallbacks.forEach((cb) => {
             try {
-              cb(dashboard);
+              cb(data);
             } catch (e) {
               console.error('Error in dashboard update callback:', e);
             }
           });
-        });
-
-        this.socket.on('demoModeChanged', (isDemoMode: boolean) => {
-          debugLog('🎭 Received demoModeChanged event:', isDemoMode);
-          this.currentIsDemoMode = isDemoMode;
+          break;
+        case 'demoModeChanged':
+          debugLog('🎭 Received demoModeChanged event:', data);
+          this.currentIsDemoMode = data;
           this.demoModeCallbacks.forEach((cb) => {
             try {
-              cb(isDemoMode);
+              cb(data);
             } catch (e) {
               console.error('Error in demo mode callback:', e);
             }
           });
-        });
+          break;
+        case 'dashboard':
+          this.lastDashboard = data;
+          this.dashboardUpdateCallbacks.forEach((cb) => {
+            try {
+              cb(data);
+            } catch (e) {
+              console.error('Error in dashboard callback:', e);
+            }
+          });
+          break;
+      }
+    } catch (error) {
+      console.error('Error parsing WebSocket message:', error);
+    }
+  }
 
-        this.socket.on('connect_error', (err: any) => {
-          console.error('WebSocket connection error:', err);
+  private attemptReconnect() {
+    if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+      console.error('Max reconnection attempts reached');
+      return;
+    }
+
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+    }
+
+    const delay = Math.min(this.reconnectDelay * Math.pow(2, this.reconnectAttempts), this.reconnectDelayMax);
+    this.reconnectAttempts++;
+
+    debugLog(`Attempting to reconnect in ${delay}ms (attempt ${this.reconnectAttempts})`);
+
+    this.reconnectTimer = setTimeout(() => {
+      this.connect(this.wsUrl).catch((err) => {
+        console.error('Reconnection failed:', err);
+        this.attemptReconnect();
+      });
+    }, delay);
+  }
+
+  async connect(wsUrl: string): Promise<void> {
+    if (this.isConnected && this.socket?.readyState === WebSocket.OPEN) {
+      return;
+    }
+
+    if (this.connectionPromise) {
+      return this.connectionPromise;
+    }
+
+    if (this.isConnecting) {
+      return;
+    }
+
+    this.isConnecting = true;
+    this.wsUrl = wsUrl;
+
+    // Convert http:// to ws://
+    const wsUrlConverted = wsUrl.replace(/^http/, 'ws');
+
+    this.connectionPromise = new Promise((resolve, reject) => {
+      try {
+        const ws = new WebSocket(wsUrlConverted);
+        this.socket = ws;
+
+        ws.onopen = () => {
+          debugLog('✅ Connected to bridge');
           this.isConnecting = false;
-          reject(err);
-        });
+          this.isConnected = true;
+          this.reconnectAttempts = 0;
+          resolve();
+        };
 
-        this.socket.on('disconnect', () => {
+        ws.onmessage = (event) => {
+          this.handleMessage(event);
+        };
+
+        ws.onerror = (error) => {
+          console.error('WebSocket error:', error);
+          if (this.isConnecting) {
+            this.isConnecting = false;
+            reject(new Error('WebSocket connection error'));
+          }
+        };
+
+        ws.onclose = () => {
           console.log('❌ Disconnected from bridge');
           this.isConnected = false;
-        });
+          this.socket = null;
+          
+          // Attempt to reconnect if we were previously connected
+          if (!this.isConnecting) {
+            this.attemptReconnect();
+          }
+        };
 
         // Timeout after 10 seconds
         setTimeout(() => {
           if (this.isConnecting) {
             this.isConnecting = false;
+            ws.close();
             reject(new Error('Connection timeout'));
           }
         }, 10000);
@@ -266,8 +326,13 @@ class WebSocketBridge implements IrSdkBridge {
   }
 
   stop(): void {
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
     if (this.socket) {
-      this.socket.disconnect();
+      this.socket.close();
+      this.socket = null;
       this.isConnected = false;
     }
   }
@@ -286,31 +351,44 @@ class WebSocketBridge implements IrSdkBridge {
       } catch (e) {
         console.error('Error in dashboard callback:', e);
       }
+    } else if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+      // Request dashboard if we don't have it cached
+      this.socket.send(JSON.stringify({ type: 'getDashboard' }));
     }
   }
 
   reloadDashboard(): void {
     console.log('reloadDashboard called');
-    // Emit event to Electron if needed
-    if (this.socket) {
-      this.socket.emit('reloadDashboard');
+    if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+      this.socket.send(JSON.stringify({ type: 'reloadDashboard' }));
     }
   }
 
   saveDashboard(dashboard: any, options?: any): void {
     console.log('saveDashboard called', dashboard);
-    if (this.socket) {
-      this.socket.emit('saveDashboard', { dashboard, options });
+    if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+      this.socket.send(JSON.stringify({ type: 'saveDashboard', data: { dashboard, options } }));
     }
   }
 
   async resetDashboard(resetEverything: boolean): Promise<any> {
     console.log('resetDashboard called', resetEverything);
     return new Promise((resolve) => {
-      if (this.socket) {
-        this.socket.emit('resetDashboard', { resetEverything }, (result: any) => {
-          resolve(result);
-        });
+      if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+        const requestId = Math.random().toString(36).substring(7);
+        const handler = (event: MessageEvent) => {
+          try {
+            const message = JSON.parse(event.data);
+            if (message.type === 'resetDashboard' && message.requestId === requestId) {
+              this.socket?.removeEventListener('message', handler);
+              resolve(message.data);
+            }
+          } catch (e) {
+            console.error('Error in resetDashboard callback:', e);
+          }
+        };
+        this.socket.addEventListener('message', handler);
+        this.socket.send(JSON.stringify({ type: 'resetDashboard', requestId, data: { resetEverything } }));
       } else {
         resolve(null);
       }
@@ -320,10 +398,21 @@ class WebSocketBridge implements IrSdkBridge {
   async toggleLockOverlays(): Promise<boolean> {
     console.log('toggleLockOverlays called');
     return new Promise((resolve) => {
-      if (this.socket) {
-        this.socket.emit('toggleLockOverlays', (result: boolean) => {
-          resolve(result);
-        });
+      if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+        const requestId = Math.random().toString(36).substring(7);
+        const handler = (event: MessageEvent) => {
+          try {
+            const message = JSON.parse(event.data);
+            if (message.type === 'toggleLockOverlays' && message.requestId === requestId) {
+              this.socket?.removeEventListener('message', handler);
+              resolve(message.data);
+            }
+          } catch (e) {
+            console.error('Error in toggleLockOverlays callback:', e);
+          }
+        };
+        this.socket.addEventListener('message', handler);
+        this.socket.send(JSON.stringify({ type: 'toggleLockOverlays', requestId }));
       } else {
         resolve(false);
       }
@@ -333,10 +422,22 @@ class WebSocketBridge implements IrSdkBridge {
   async getAppVersion(): Promise<string> {
     console.log('getAppVersion called');
     return new Promise((resolve) => {
-      if (this.socket) {
-        this.socket.emit('getAppVersion', (version: string) => {
-          resolve(version);
-        });
+      if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+        const requestId = Math.random().toString(36).substring(7);
+        const handler = (event: MessageEvent) => {
+          try {
+            const message = JSON.parse(event.data);
+            if (message.type === 'getAppVersion' && message.requestId === requestId) {
+              this.socket?.removeEventListener('message', handler);
+              resolve(message.data);
+            }
+          } catch (e) {
+            console.error('Error in getAppVersion callback:', e);
+            // Ignore parsing errors
+          }
+        };
+        this.socket.addEventListener('message', handler);
+        this.socket.send(JSON.stringify({ type: 'getAppVersion', requestId }));
       } else {
         resolve('unknown');
       }
@@ -345,8 +446,8 @@ class WebSocketBridge implements IrSdkBridge {
 
   toggleDemoMode(value: boolean): void {
     console.log('toggleDemoMode called', value);
-    if (this.socket) {
-      this.socket.emit('toggleDemoMode', value);
+    if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+      this.socket.send(JSON.stringify({ type: 'toggleDemoMode', data: value }));
     }
   }
 
