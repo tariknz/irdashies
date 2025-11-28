@@ -16,7 +16,7 @@
     "make": "electron-forge make",
     "publish:ci": "electron-forge publish",
     "publish": "npx env-cmd electron-forge publish",
-    "lint": "tsc --project ./tsconfig.json --noEmit && eslint --ext .ts,.tsx .",
+    "lint": "tsc --project ./tsconfig.json --noEmit && eslint . --max-warnings 0",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
     "test": "vitest --coverage",

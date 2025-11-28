@@ -14,6 +14,24 @@ interface PitStatusCellProps {
   slowdown?: boolean;
 }
 
+interface StatusBadgeProps {
+  textColor?: string;
+  borderColorClass: string;
+  animate?: boolean;
+  children: React.ReactNode;
+  additionalClasses?: string;
+}
+
+const StatusBadge = ({ textColor = 'text-white', borderColorClass, animate, children, additionalClasses = '' }: StatusBadgeProps) => {
+  const baseClasses = 'text-xs border-2 rounded-md text-center text-nowrap px-2 m-0 leading-tight';
+  const animationClass = animate ? 'animate-pulse' : '';
+  return (
+    <span className={`${textColor} ${baseClasses} ${borderColorClass} ${animationClass} ${additionalClasses}`}>
+      {children}
+    </span>
+  );
+};
+
 export const PitStatusCell = memo(
   ({
     hidden,
@@ -52,8 +70,7 @@ export const PitStatusCell = memo(
       lastPitLap !== lastLap &&
       carTrackSurface != -1;
 
-    if (hidden || (!repair && !dnf && !tow && !out && !pit && !lastPit)) {
-      // Explicitly render empty string when the cell has no content
+    if (hidden || (!repair && !dnf && !penalty && !slowdown && !tow && !out && !pit && !lastPit)) {
       return (
         <td data-column="pitStatus" className="w-auto px-1 text-center">
           {''}
@@ -62,55 +79,49 @@ export const PitStatusCell = memo(
     }
 
     return (
-      <td data-column="pitStatus" className="w-auto px-1 text-center">
-        {(penalty || slowdown) && (
-          <div className="inline">
-            <span className={`text-orange-500 text-xs bg-black border-white border-1 rounded-md text-center text-nowrap px-2 m-0 leading-tight ${slowdown ? 'animate-pulse' : ''}`}>
-            </span>
-          </div>
+      <td data-column="pitStatus" className="w-auto px-1 text-center align-middle">
+        <div className="flex flex-row-reverse items-center gap-0.5">
+        {penalty && (
+          <StatusBadge textColor="text-orange-500" borderColorClass="border-gray-500" additionalClasses="bg-black/80 inline-block min-w-6">
+            {'\u00A0'}
+          </StatusBadge>
+        )}
+        {slowdown && (
+          <StatusBadge textColor="text-orange-500" borderColorClass="border-gray-500" animate additionalClasses="bg-black/80 inline-block min-w-6">
+            {'\u00A0'}
+          </StatusBadge>
         )}
         {repair && (
-          <div className="inline">
-            <span className="text-orange-500 text-xs bg-black border-white border-1 rounded-md  items-center justify-center text-nowrap px-2 m-0 leading-tight">
-              <span className="inline-block w-[0.8em] h-[0.8em] bg-orange-500 rounded-full"/>
-            </span>
-          </div>
+          <StatusBadge textColor="text-orange-500" borderColorClass="border-gray-500" additionalClasses="bg-black/80 items-center justify-center">
+            <span className="inline-block w-[0.8em] h-[0.8em] bg-orange-500 rounded-full"/>
+          </StatusBadge>
         )}
         {dnf && (
-          <div>
-            <span className="text-white text-xs border-red-500 border-2 rounded-md text-center text-nowrap px-2 m-0 leading-tight">
-              DNF
-            </span>
-          </div>
+          <StatusBadge borderColorClass="border-red-500">
+            DNF
+          </StatusBadge>
         )}
         {tow && (
-          <div className="inline">
-            <span className="text-white animate-pulse text-xs border-orange-500 border-2 rounded-md text-center text-nowrap px-2 m-0 leading-tight">
-              TOW
-            </span>
-          </div>
+          <StatusBadge borderColorClass="border-orange-500" animate>
+            TOW
+          </StatusBadge>
         )}
         {out && (
-          <div className="inline">
-            <span className="text-white text-xs border-green-700  border-2 rounded-md text-center text-nowrap px-2 m-0 leading-tight">
-              OUT
-            </span>
-          </div>
+          <StatusBadge borderColorClass="border-green-700">
+            OUT
+          </StatusBadge>
         )}
         {pit && (
-          <div className="inline">
-            <span className="text-white animate-pulse text-xs border-yellow-500 border-2 rounded-md text-center text-nowrap px-2 m-0 leading-tight">
-              PIT
-            </span>
-          </div>
+          <StatusBadge borderColorClass="border-yellow-500" animate>
+            PIT
+          </StatusBadge>
         )}
         {lastPit && (
-          <div className="inline">
-            <span className="text-white text-xs border-yellow-500 border-2 rounded-md text-center text-nowrap px-2 m-0 leading-tight">
-              L {lastPitLap}
-            </span>
-          </div>
+          <StatusBadge borderColorClass="border-yellow-500">
+            L {lastPitLap}
+          </StatusBadge>
         )}
+        </div>
       </td>
     );
   }
