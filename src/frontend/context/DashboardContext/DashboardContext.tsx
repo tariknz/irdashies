@@ -5,12 +5,20 @@ import React, {
   ReactNode,
   useEffect,
 } from 'react';
-import type { DashboardBridge, DashboardLayout, GeneralSettingsType, SaveDashboardOptions } from '@irdashies/types';
+import type {
+  DashboardBridge,
+  DashboardLayout,
+  GeneralSettingsType,
+  SaveDashboardOptions,
+} from '@irdashies/types';
 
 interface DashboardContextProps {
   editMode: boolean;
   currentDashboard: DashboardLayout | undefined;
-  onDashboardUpdated?: (dashboard: DashboardLayout, options?: SaveDashboardOptions) => void;
+  onDashboardUpdated?: (
+    dashboard: DashboardLayout,
+    options?: SaveDashboardOptions
+  ) => void;
   resetDashboard: (resetEverything: boolean) => Promise<DashboardLayout>;
   bridge: DashboardBridge;
   version: string;
@@ -34,26 +42,20 @@ export const DashboardProvider: React.FC<{
   useEffect(() => {
     console.log('📊 DashboardProvider mounted');
     bridge.reloadDashboard();
-    bridge.dashboardUpdated((dashboard) => {
-      console.log('📊 DashboardProvider received dashboard update:', dashboard ? 'present' : 'null');
-      if (dashboard) {
-        console.log('📊 Dashboard generalSettings:', dashboard.generalSettings);
-      }
-      setDashboard(dashboard);
-    });
+    bridge.dashboardUpdated((dashboard) => setDashboard(dashboard));
     bridge.onEditModeToggled((editMode) => setEditMode(editMode));
     bridge.getAppVersion?.().then((version) => setVersion(version));
-    
-    // Listen for demo mode changes from main process
-    if (bridge.onDemoModeChanged) {
-      bridge.onDemoModeChanged((demoMode) => {
-        console.log('🎭 DashboardProvider received demo mode change:', demoMode);
-        setIsDemoMode(demoMode);
-      });
-    }
+    bridge.onDemoModeChanged?.((demoMode) => setIsDemoMode(demoMode));
+
+    return () => {
+      bridge.stop();
+    };
   }, [bridge]);
 
-  const saveDashboard = (dashboard: DashboardLayout, options?: SaveDashboardOptions) => {
+  const saveDashboard = (
+    dashboard: DashboardLayout,
+    options?: SaveDashboardOptions
+  ) => {
     bridge.saveDashboard(dashboard, options);
   };
 

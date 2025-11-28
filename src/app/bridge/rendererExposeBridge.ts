@@ -63,5 +63,10 @@ export function exposeBridge() {
         callback(value);
       });
     },
+    stop: () => {
+      ipcRenderer.removeAllListeners('editModeToggled');
+      ipcRenderer.removeAllListeners('dashboardUpdated');
+      ipcRenderer.removeAllListeners('demoModeChanged');
+    },
   } as DashboardBridge);
 }

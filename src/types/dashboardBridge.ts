@@ -14,4 +14,5 @@ export interface DashboardBridge {
   getAppVersion: () => Promise<string>;
   toggleDemoMode?: (value: boolean) => void;
   onDemoModeChanged?: (callback: (value: boolean) => void) => void;
+  stop: () => void;
 }
