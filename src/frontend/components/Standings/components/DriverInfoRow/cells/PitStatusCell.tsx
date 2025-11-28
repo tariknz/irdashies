@@ -79,19 +79,20 @@ export const PitStatusCell = memo(
     }
 
     return (
-      <td data-column="pitStatus" className="w-auto px-1 text-center flex flex-row-reverse gap-0.5">
+      <td data-column="pitStatus" className="w-auto px-1 text-center align-middle">
+        <div className="flex flex-row-reverse items-center gap-0.5">
         {penalty && (
-          <StatusBadge textColor="text-orange-500" borderColorClass="border-white" additionalClasses="bg-black/80 inline-block min-w-6">
+          <StatusBadge textColor="text-orange-500" borderColorClass="border-gray-500" additionalClasses="bg-black/80 inline-block min-w-6">
             {'\u00A0'}
           </StatusBadge>
         )}
         {slowdown && (
-          <StatusBadge textColor="text-orange-500" borderColorClass="border-white" animate additionalClasses="bg-black/80 inline-block min-w-6">
+          <StatusBadge textColor="text-orange-500" borderColorClass="border-gray-500" animate additionalClasses="bg-black/80 inline-block min-w-6">
             {'\u00A0'}
           </StatusBadge>
         )}
         {repair && (
-          <StatusBadge textColor="text-orange-500" borderColorClass="border-white" additionalClasses="bg-black/80 items-center justify-center">
+          <StatusBadge textColor="text-orange-500" borderColorClass="border-gray-500" additionalClasses="bg-black/80 items-center justify-center">
             <span className="inline-block w-[0.8em] h-[0.8em] bg-orange-500 rounded-full"/>
           </StatusBadge>
         )}
@@ -120,6 +121,7 @@ export const PitStatusCell = memo(
             L {lastPitLap}
           </StatusBadge>
         )}
+        </div>
       </td>
     );
   }
