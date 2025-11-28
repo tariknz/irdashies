@@ -78,7 +78,7 @@ async function serveStaticFile(filePath: string, res: http.ServerResponse) {
  * Access components via: http://localhost:3000/component/<componentName>
  * Example: http://localhost:3000/component/standings
  */
-export async function startComponentServer(irsdkBridge?: IrSdkBridge, dashboardBridge?: DashboardBridge, initialDemoMode = false) {
+export async function startComponentServer(irsdkBridge?: IrSdkBridge, dashboardBridge?: DashboardBridge) {
   let staticPath: string | null = null;
   if (!isDev) {
     staticPath = path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}`);
@@ -245,7 +245,7 @@ export async function startComponentServer(irsdkBridge?: IrSdkBridge, dashboardB
       // Dynamically import bridge proxy to avoid module resolution issues
       const { createBridgeProxy } = await import('./bridgeProxy');
       console.log('📦 Component server: bridgeProxy module imported');
-      const { resubscribeToBridge } = createBridgeProxy(httpServer, irsdkBridge, dashboardBridge, initialDemoMode);
+      const { resubscribeToBridge } = createBridgeProxy(httpServer, irsdkBridge, dashboardBridge);
       console.log(`   WebSocket bridge available at ws://localhost:${COMPONENT_PORT}`);
       
       // Register callback to resubscribe when bridge changes (e.g., demo mode toggle)

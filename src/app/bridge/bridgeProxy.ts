@@ -2,6 +2,7 @@ import { Server as HTTPServer } from 'http';
 import { WebSocketServer, WebSocket } from 'ws';
 import type { Telemetry, Session, DashboardLayout } from '@irdashies/types';
 import type { IrSdkBridge, DashboardBridge } from '@irdashies/types';
+import { getIsDemoMode } from './iracingSdk/setup';
 
 // Export current state so it can be accessed by other parts of the app
 export let currentDashboard: DashboardLayout | null = null;
@@ -13,13 +14,11 @@ export let currentDashboard: DashboardLayout | null = null;
 export function createBridgeProxy(
   httpServer: HTTPServer,
   irsdkBridge: IrSdkBridge,
-  dashboardBridge?: DashboardBridge,
-  initialDemoMode = false
+  dashboardBridge?: DashboardBridge
 ) {
   console.log('🚀 createBridgeProxy called!');
   console.log('  Has irsdkBridge?', !!irsdkBridge);
   console.log('  Has dashboardBridge?', !!dashboardBridge);
-  console.log('  Initial demo mode:', initialDemoMode);
 
   const wss = new WebSocketServer({ server: httpServer });
 
@@ -28,7 +27,13 @@ export function createBridgeProxy(
   let currentTelemetry: Telemetry | null = null;
   let currentSession: Session | null = null;
   let isRunning = false;
-  let isDemoMode = initialDemoMode;
+  let isDemoMode = getIsDemoMode();
+
+  // Initialize current dashboard from dashboardBridge if available
+  if (dashboardBridge?.getCurrentDashboard) {
+    currentDashboard = dashboardBridge.getCurrentDashboard();
+    console.log('📊 Initial dashboard loaded:', currentDashboard ? `${currentDashboard.widgets?.length || 0} widgets` : 'null');
+  }
 
   // Helper function to broadcast to all clients
   const broadcast = (type: string, data: unknown) => {

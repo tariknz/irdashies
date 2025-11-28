@@ -1,5 +1,5 @@
 import { app } from 'electron';
-import { iRacingSDKSetup, getCurrentBridge, getIsDemoMode } from './app/bridge/iracingSdk/setup';
+import { iRacingSDKSetup, getCurrentBridge } from './app/bridge/iracingSdk/setup';
 import { getOrCreateDefaultDashboard } from './app/storage/dashboards';
 import { setupTaskbar } from './app';
 import { publishDashboardUpdates, dashboardBridge } from './app/bridge/dashboard/dashboardBridge';
@@ -21,22 +21,17 @@ const telemetrySink = new TelemetrySink();
 overlayManager.setupSingleInstanceLock();
 
 app.on('ready', async () => {
-  // Start component server - pass bridge after SDK setup
   await iRacingSDKSetup(telemetrySink, overlayManager);
-  const bridge = getCurrentBridge();
-  const isDemoMode = getIsDemoMode();
-  await startComponentServer(bridge, dashboardBridge, isDemoMode);
 
   const dashboard = getOrCreateDefaultDashboard();
-  overlayManager.createOverlays(dashboard);
+  const bridge = getCurrentBridge();
 
+  // Start component server for browser components
+  await startComponentServer(bridge, dashboardBridge);
+
+  overlayManager.createOverlays(dashboard);
   setupTaskbar(telemetrySink, overlayManager);
   publishDashboardUpdates(overlayManager);
-  
-  // Send initial dashboard to component server bridge
-  console.log('📊 Sending initial dashboard to component server');
-  const { emitDashboardUpdated } = await import('./app/storage/dashboardEvents');
-  emitDashboardUpdated(dashboard);
 });
 
 app.on('window-all-closed', () => app.quit());

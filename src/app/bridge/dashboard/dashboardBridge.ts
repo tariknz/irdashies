@@ -36,6 +36,9 @@ export const dashboardBridge: DashboardBridge = {
   onDemoModeChanged: (callback: (isDemoMode: boolean) => void) => {
     demoModeCallbacks.add(callback);
   },
+  getCurrentDashboard: () => {
+    return getDashboard('default');
+  },
 };
 
 export async function publishDashboardUpdates(overlayManager: OverlayManager) {

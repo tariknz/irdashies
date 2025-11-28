@@ -48,7 +48,7 @@ export const DashboardProvider: React.FC<{
     bridge.onDemoModeChanged?.((demoMode) => setIsDemoMode(demoMode));
 
     return () => {
-      bridge.stop();
+      bridge.stop?.();
     };
   }, [bridge]);
 
