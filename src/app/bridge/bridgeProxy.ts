@@ -187,35 +187,3 @@ export function createBridgeProxy(
 
   return { wss, resubscribeToBridge };
 }
-
-/**
- * Create a mock bridge for testing/demo purposes
- */
-export function createMockBridge(): IrSdkBridge {
-  const listeners: {
-    telemetry: Set<(data: Telemetry) => void>;
-    sessionData: Set<(data: Session) => void>;
-    runningState: Set<(running: boolean) => void>;
-  } = {
-    telemetry: new Set(),
-    sessionData: new Set(),
-    runningState: new Set(),
-  };
-
-  return {
-    onTelemetry: (callback: (data: Telemetry) => void) => {
-      listeners.telemetry.add(callback);
-    },
-    onSessionData: (callback: (data: Session) => void) => {
-      listeners.sessionData.add(callback);
-    },
-    onRunningState: (callback: (running: boolean) => void) => {
-      listeners.runningState.add(callback);
-    },
-    stop: () => {
-      listeners.telemetry.clear();
-      listeners.sessionData.clear();
-      listeners.runningState.clear();
-    },
-  };
-}
