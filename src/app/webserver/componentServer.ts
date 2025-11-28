@@ -210,7 +210,7 @@ export async function startComponentServer(irsdkBridge?: IrSdkBridge, dashboardB
       const { createBridgeProxy } = await import('./bridgeProxy');
       const { resubscribeToBridge } = createBridgeProxy(httpServer, irsdkBridge, dashboardBridge);
       
-      const { onBridgeChanged } = await import('./iracingSdk/setup');
+      const { onBridgeChanged } = await import('../bridge/iracingSdk/setup');
       onBridgeChanged((newBridge) => {
         resubscribeToBridge(newBridge);
       });
@@ -223,3 +223,4 @@ export async function startComponentServer(irsdkBridge?: IrSdkBridge, dashboardB
     console.log(`Component server running on http://localhost:${COMPONENT_PORT}`);
   });
 }
+

@@ -5,7 +5,7 @@ import { setupTaskbar } from './app';
 import { publishDashboardUpdates, dashboardBridge } from './app/bridge/dashboard/dashboardBridge';
 import { TelemetrySink } from './app/bridge/iracingSdk/telemetrySink';
 import { OverlayManager } from './app/overlayManager';
-import { startComponentServer } from './app/bridge/componentServer';
+import { startComponentServer } from './app/webserver/componentServer';
 import { updateElectronApp } from 'update-electron-app';
 // @ts-expect-error no types for squirrel
 import started from 'electron-squirrel-startup';

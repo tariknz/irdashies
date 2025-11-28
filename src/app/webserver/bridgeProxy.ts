@@ -2,7 +2,7 @@ import { Server as HTTPServer } from 'http';
 import { WebSocketServer, WebSocket } from 'ws';
 import type { Telemetry, Session, DashboardLayout } from '@irdashies/types';
 import type { IrSdkBridge, DashboardBridge } from '@irdashies/types';
-import { getIsDemoMode } from './iracingSdk/setup';
+import { getIsDemoMode } from '../bridge/iracingSdk/setup';
 
 // Export current state so it can be accessed by other parts of the app
 export let currentDashboard: DashboardLayout | null = null;
@@ -156,3 +156,4 @@ export function createBridgeProxy(
 
   return { wss, resubscribeToBridge };
 }
+

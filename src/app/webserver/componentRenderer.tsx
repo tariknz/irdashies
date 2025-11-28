@@ -596,3 +596,4 @@ declare global {
 if (typeof window !== 'undefined') {
   (window as any).renderComponent = renderComponent;
 }
+

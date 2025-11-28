@@ -7,7 +7,7 @@
 // Only import what we need for the browser environment
 import './frontend/index.css';
 import './frontend/theme.css';
-import { renderComponent } from './app/bridge/componentRenderer';
+import { renderComponent } from './app/webserver/componentRenderer';
 
 // Parse URL parameters to determine which component to render
 const params = new URLSearchParams(window.location.search);
