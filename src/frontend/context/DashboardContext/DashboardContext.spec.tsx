@@ -12,6 +12,9 @@ const mockBridge: DashboardBridge = {
   toggleLockOverlays: vi.fn().mockResolvedValue(true),
   getAppVersion: vi.fn().mockResolvedValue('0.0.7+mock'),
   resetDashboard: vi.fn().mockResolvedValue({}),
+  stop: vi.fn(),
+  onDemoModeChanged: vi.fn(),
+  toggleDemoMode: vi.fn(),
 };
 
 const TestComponent: React.FC = () => {
@@ -105,5 +108,15 @@ describe('DashboardContext', () => {
     expect(screen.getByTestId('current-dashboard').textContent).toBe(
       JSON.stringify(mockDashboard)
     );
+  });
+
+  it('stops the bridge on unmount', () => {
+    render(
+      <DashboardProvider bridge={mockBridge}>
+        <TestComponent />
+      </DashboardProvider>
+    );
+
+    expect(mockBridge.stop).toHaveBeenCalled();
   });
 });
