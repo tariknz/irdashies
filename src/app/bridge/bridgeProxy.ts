@@ -122,18 +122,17 @@ export function createBridgeProxy(
               data: currentDashboard,
             }));
             break;
-          case 'saveDashboard':
-          case 'resetDashboard':
-            ws.send(JSON.stringify({ type: 'resetDashboard', requestId: parsed.requestId, data: null }));
-            break;
-          case 'toggleLockOverlays':
-            ws.send(JSON.stringify({ type: 'toggleLockOverlays', requestId: parsed.requestId, data: false }));
+          case 'reloadDashboard':
+            dashboardBridge?.reloadDashboard();
             break;
           case 'getAppVersion':
-            ws.send(JSON.stringify({ type: 'getAppVersion', requestId: parsed.requestId, data: 'browser' }));
+            ws.send(JSON.stringify({
+              type: 'appVersion',
+              data: dashboardBridge?.getAppVersion(),
+            }));
             break;
-          case 'toggleDemoMode':
-          case 'reloadDashboard':
+          default:
+            console.log('🔄 Bridge proxy: Unknown message type:', parsed.type);
             break;
         }
       } catch (error) {
@@ -145,6 +144,7 @@ export function createBridgeProxy(
       clients.delete(ws);
       
       if (clients.size === 0) {
+        console.log('🔌 No clients connected, unsubscribing from bridge...');
         unsubscribeFromBridge();
       }
     });
