@@ -453,7 +453,7 @@ function createStandings(
     [],
     [],
     undefined,
-    undefined
+    undefined,
   );
   const driverClass = session?.DriverInfo?.Drivers?.find(
     (driver) => driver.CarIdx === session?.DriverInfo?.DriverCarIdx
