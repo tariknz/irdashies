@@ -60,18 +60,10 @@ export const App = () => (
   </DashboardProvider>
 );
 
-// Only render the App if we're in Electron mode (bridges exist)
-// Skip rendering in browser-only component renderer mode
-if (window.dashboardBridge && window.irsdkBridge) {
-  const el = document.getElementById('app');
-  if (!el) {
-    throw new Error('No #app element found');
-  }
-
-  const root = createRoot(el);
-  root.render(<App />);
-} else {
-  console.log(
-    '⚠️ App.tsx: Skipping Electron app rendering - running in component-renderer mode'
-  );
+const el = document.getElementById('app');
+if (!el) {
+  throw new Error('No #app element found');
 }
+
+const root = createRoot(el);
+root.render(<App />);
