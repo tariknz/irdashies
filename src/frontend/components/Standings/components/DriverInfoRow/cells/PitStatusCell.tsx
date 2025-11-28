@@ -52,7 +52,7 @@ export const PitStatusCell = memo(
       lastPitLap !== lastLap &&
       carTrackSurface != -1;
 
-    if (hidden || (!repair && !dnf && !tow && !out && !pit && !lastPit)) {
+    if (hidden || (!repair && !dnf && !penalty && !slowdown && !tow && !out && !pit && !lastPit)) {
       // Explicitly render empty string when the cell has no content
       return (
         <td data-column="pitStatus" className="w-auto px-1 text-center">
@@ -63,21 +63,29 @@ export const PitStatusCell = memo(
 
     return (
       <td data-column="pitStatus" className="w-auto px-1 text-center">
-        {(penalty || slowdown) && (
+        {penalty && (
           <div className="inline">
-            <span className={`text-orange-500 text-xs bg-black border-white border-1 rounded-md text-center text-nowrap px-2 m-0 leading-tight ${slowdown ? 'animate-pulse' : ''}`}>
+            <span className="text-orange-500 text-xs bg-black/80 border-white border-2 rounded-md text-center text-nowrap px-2 m-0 leading-tight inline-block min-w-6">
+              {`\u00A0`}
+            </span>
+          </div>
+        )}
+        {slowdown && (
+          <div className="inline">
+            <span className={`text-orange-500 text-xs bg-black/80 border-white border-2 rounded-md text-center text-nowrap px-2 m-0 leading-tight inline-block min-w-6 ${slowdown ? 'animate-pulse' : ''}`}>
+              {`\u00A0`}
             </span>
           </div>
         )}
         {repair && (
           <div className="inline">
-            <span className="text-orange-500 text-xs bg-black border-white border-1 rounded-md  items-center justify-center text-nowrap px-2 m-0 leading-tight">
+            <span className="text-orange-500 text-xs bg-black/80 border-white border-2 rounded-md items-center justify-center text-nowrap px-2 m-0 leading-tight">
               <span className="inline-block w-[0.8em] h-[0.8em] bg-orange-500 rounded-full"/>
             </span>
           </div>
         )}
         {dnf && (
-          <div>
+          <div className="inline">
             <span className="text-white text-xs border-red-500 border-2 rounded-md text-center text-nowrap px-2 m-0 leading-tight">
               DNF
             </span>

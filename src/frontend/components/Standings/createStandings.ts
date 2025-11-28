@@ -1,6 +1,6 @@
 import type { SessionResults, Driver } from '@irdashies/types';
 import { calculateIRatingGain, RaceResult, CalculationResult } from '@irdashies/utils/iratingGain';
-import { GlobalFlags } from '../../../app/irsdk/types';
+import { GlobalFlags } from '@irdashies/types';
 
 
 export type LastTimeState = 'session-fastest' | 'personal-best' | undefined;
