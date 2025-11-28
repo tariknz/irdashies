@@ -20,6 +20,11 @@ export default defineConfig({
       '.vite/build/Release/'
     ),
   ],
+  build: {
+    rollupOptions: {
+      external: ['bufferutil', 'utf-8-validate'],
+    },
+  },
   resolve: {
     // Some dependencies have Node.js specific imports
     // This ensures they are properly resolved in Electron

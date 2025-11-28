@@ -86,7 +86,6 @@
     "@dnd-kit/utilities": "^3.2.2",
     "@formkit/auto-animate": "^0.9.0",
     "@phosphor-icons/react": "^2.1.10",
-    "bufferutil": "^4.0.9",
     "d3": "^7.9.0",
     "electron-squirrel-startup": "^1.0.1",
     "flag-icons": "^7.5.0",
@@ -97,7 +96,6 @@
     "stream-json": "^1.9.1",
     "update-electron-app": "^3.1.1",
     "use-sync-external-store": "^1.6.0",
-    "utf-8-validate": "^6.0.5",
     "ws": "^8.18.0",
     "zustand": "^5.0.8"
   }
