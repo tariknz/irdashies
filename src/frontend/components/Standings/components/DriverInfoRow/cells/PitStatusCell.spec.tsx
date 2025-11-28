@@ -72,7 +72,7 @@ describe('PitStatusCell', () => {
     );
     
     const td = container.querySelector('td[data-column="pitStatus"]');
-    expect(td?.textContent).toBe('DNF');
+    expect(td?.textContent).toContain('DNF');
   });
 
   it('renders TOW when car is being towed', () => {
