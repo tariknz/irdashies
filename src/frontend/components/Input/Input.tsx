@@ -4,22 +4,7 @@ import { useInputs } from './hooks/useInputs';
 
 export const Input = () => {
   const inputs = useInputs();
-
-  // Use props if provided (browser mode), otherwise use hook (Electron mode)
   const settings = useInputSettings();
-
-  // Debug: Check if inputs are available
-  if (!inputs || Object.values(inputs).every(v => v === undefined)) {
-    console.log('⚠️ Input component: No telemetry data available yet');
-    return (
-      <div className="w-full h-full flex items-center justify-center bg-slate-800/50 text-white">
-        <div className="text-center">
-          <div className="text-2xl mb-2">🎮</div>
-          <div>Waiting for telemetry data...</div>
-        </div>
-      </div>
-    );
-  }
 
   return <InputContainer {...inputs} settings={settings} />;
 };

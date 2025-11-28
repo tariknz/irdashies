@@ -20,14 +20,15 @@ export const TelemetryProvider = ({ bridge }: TelemetryProviderProps) => {
           setTelemetry(telemetry);
         });
       });
-      return;
+      return () => bridge.then((bridge) => bridge.stop());
     }
 
     console.log('📡 Bridge is ready, setting up callback');
     bridge.onTelemetry((telemetry) => {
       setTelemetry(telemetry);
     });
-    // Don't stop bridge on unmount - it should persist
+
+    return () => bridge.stop();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bridge]);
 

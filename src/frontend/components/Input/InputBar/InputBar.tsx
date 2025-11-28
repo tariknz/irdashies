@@ -1,5 +1,5 @@
 import * as d3 from 'd3';
-import { useEffect, useRef, useMemo } from 'react';
+import { useEffect, useRef } from 'react';
 import { getColor } from '@irdashies/utils/colors';
 
 const INPUT_CONFIG = [
@@ -34,92 +34,84 @@ export const InputBar = ({
   },
 }: InputBarProps) => {
   const svgRef = useRef<SVGSVGElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
   const { includeAbs = true, includeClutch, includeBrake, includeThrottle } = settings;
 
-  // Calculate active inputs and their values
-  const activeInputs = useMemo(() => {
-    return INPUT_CONFIG.filter(({ key }) => {
+  useEffect(() => {
+    // Filter and map the values based on settings
+    const activeInputs = INPUT_CONFIG.filter(({ key }) => {
       if (key === 'clutch') return includeClutch;
       if (key === 'throttle') return includeThrottle;
       if (key === 'brake') return includeBrake;
       return false;
     }).map(({ key, color }) => ({
-      key,
       value: key === 'clutch' ? clutch ?? 0 : key === 'brake' ? brake ?? 0 : throttle ?? 0,
       color: key === 'brake' && brakeAbsActive && includeAbs ? getColor('yellow', 500) : color
     }));
+
+    drawBars(svgRef.current, activeInputs, brakeAbsActive, includeAbs);
   }, [brake, throttle, clutch, brakeAbsActive, includeClutch, includeBrake, includeThrottle, includeAbs]);
 
-  // Calculate bar layout
-  const barWidth = 20;
-  const gap = 8;
-  const totalWidth = activeInputs.length * barWidth + (activeInputs.length - 1) * gap;
-
-  useEffect(() => {
-    drawBars(svgRef.current, activeInputs);
-  }, [activeInputs]);
-
-  return (
-    <div ref={containerRef} className="flex flex-col h-full w-full items-center">
-      {/* Top row: Values as text */}
-      <div className="flex justify-center gap-2" style={{ width: `${totalWidth}px`, gap: `${gap}px` }}>
-        {activeInputs.map(({ key, value, color }) => {
-          const displayValue = (value * 100).toFixed(0);
-          const isHundred = displayValue === '100';
-          return (
-            <div 
-              key={key} 
-              className="text-center text-lg font-bold" 
-              style={{ 
-                width: `${barWidth}px`,
-                color: isHundred ? color : 'white'
-              }}
-            >
-              {isHundred ? '00' : displayValue}
-            </div>
-          );
-        })}
-      </div>
-      
-      {/* Bottom row: SVG bars */}
-      <svg 
-        ref={svgRef} 
-        className="flex-1"
-        style={{ width: `${totalWidth}px` }}
-        preserveAspectRatio="none"
-      />
-    </div>
-  );
+  return <svg ref={svgRef} width="120"></svg>;
 };
 
-function drawBars(
-  svgElement: SVGSVGElement | null, 
-  data: { key: string; value: number; color: string }[], 
-) {
+function drawBars(svgElement: SVGSVGElement | null, data: { value: number; color: string }[], brakeAbsActive?: boolean, includeAbs?: boolean) {
   if (!svgElement) return;
 
-  const height = svgElement.clientHeight;
+  const topOffset = 15;
+  const width = svgElement.clientWidth;
+  const height = svgElement.clientHeight - topOffset;
 
-  // Calculate bar dimensions
-  const barWidth = 20; // Fixed width for each bar
-  const gap = 8; // Small gap between bars
+  const xScale = d3
+    .scaleBand()
+    .domain(data.map((_, i) => i.toString()))
+    .range([0, width])
+    .padding(0.25);
 
   const yScale = d3.scaleLinear().domain([0, 1]).range([height, 0]);
 
   const svg = d3.select(svgElement);
   svg.selectAll('*').remove();
 
-  // Draw bars (no centering needed since SVG width matches total width)
   svg
     .selectAll('rect')
     .data(data)
     .enter()
     .append('rect')
-    .attr('x', (_, i) => i * (barWidth + gap))
-    .attr('y', (d) => yScale(d.value))
-    .attr('width', barWidth)
+    .attr('x', (_, i) => xScale(i.toString()) ?? 0)
+    .attr('y', (d) => yScale(d.value) + topOffset)
+    .attr('width', xScale.bandwidth())
     .attr('height', (d) => height - yScale(d.value))
     .attr('fill', (d) => d.color);
 
+  svg
+    .selectAll('text.value')
+    .data(data)
+    .enter()
+    .append('text')
+    .attr('class', 'value')
+    .attr('x', (_, i) => (xScale(i.toString()) ?? 0) + xScale.bandwidth() / 2)
+    .attr('y', () => 10)
+    .attr('text-anchor', 'middle')
+    .attr('font-size', '10px')
+    .attr('fill', 'white')
+    .text((d) => (d.value * 100).toFixed(0));
+
+  // Overlay ABS label if needed
+  if (brakeAbsActive && includeAbs) {
+    // Find the brake bar index
+    const brakeIndex = data.findIndex((d, i) => INPUT_CONFIG[i].key === 'brake');
+    if (brakeIndex !== -1) {
+      svg
+        .append('text')
+        .attr('x', (xScale(brakeIndex.toString()) ?? 0) + xScale.bandwidth() / 2)
+        .attr('y', height + topOffset - 4) // 4px above the bottom of the bar
+        .attr('text-anchor', 'middle')
+        .attr('font-size', '11px')
+        .attr('font-weight', 'bold')
+        .attr('fill', '#fff')
+        .attr('pointer-events', 'none')
+        .attr('style', 'text-shadow: 0 1px 4px #000;')
+        .text('ABS');
+    }
+  }
 }

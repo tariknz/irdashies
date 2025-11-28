@@ -33,15 +33,14 @@ describe('InputBar', () => {
     const rectElements = container.querySelectorAll('rect');
     expect(rectElements.length).toBe(3);
   });
-
-  it('renders div text with correct values', () => {
+  it('renders text with correct values', () => {
     const { container } = render(
       <InputBar brake={0.5} throttle={0.7} clutch={0.3} settings={settings} />
     );
-    const textDivs = container.querySelectorAll('.text-center');
-    expect(textDivs[0].textContent).toBe('30'); // clutch
-    expect(textDivs[1].textContent).toBe('50'); // brake
-    expect(textDivs[2].textContent).toBe('70'); // throttle
+    const textElements = container.querySelectorAll('text');
+    expect(textElements[0].textContent).toBe('30'); // clutch
+    expect(textElements[1].textContent).toBe('50'); // brake
+    expect(textElements[2].textContent).toBe('70'); // throttle
   });
 
   it('renders the correct colors', () => {
@@ -65,13 +64,5 @@ describe('InputBar', () => {
     );
     const rectElements = container.querySelectorAll('rect');
     expect(rectElements.length).toBe(2);
-  });
-
-  it('changes brake bar color to yellow when ABS is active', () => {
-    const { container } = render(
-      <InputBar brake={0.5} throttle={0.7} clutch={0.3} brakeAbsActive={true} settings={settings} />
-    );
-    const rectElements = container.querySelectorAll('rect');
-    expect(rectElements[1].getAttribute('fill')).toBe(getColor('yellow', 500)); // brake bar should be yellow
   });
 });

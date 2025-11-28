@@ -50,18 +50,12 @@ export function InputSteer({
   wheelColor = 'light',
 }: InputSteerProps) {
   const wheelRef = useRef<HTMLDivElement>(null);
-
+  
   // Memoize the wheel component selection (only changes when style/color change)
   const WheelComponent = useMemo(() => {
-    const component = wheelStyle in wheelComponentMap
-      ? wheelComponentMap[wheelStyle]?.[wheelColor]
-      : wheelComponentMap.default?.[wheelColor];
-    
-    // Fallback to default light if component is undefined
-    if (!component) {
-      console.error(`Wheel component not found for style: ${wheelStyle}, color: ${wheelColor}`);
-    }
-    return component || wheelComponentMap.default.light;
+    return wheelStyle in wheelComponentMap
+      ? wheelComponentMap[wheelStyle][wheelColor]
+      : wheelComponentMap.default[wheelColor];
   }, [wheelStyle, wheelColor]);
 
   // Use CSS custom properties for smooth updates without React re-renders
@@ -72,7 +66,7 @@ export function InputSteer({
   }, [angleRad]);
 
   return (
-    <div className="w-[120px] h-full flex items-center justify-center fill-white relative">
+    <div className="w-[120px] h-full flex fill-white relative">
       <div
         ref={wheelRef}
         className='w-full h-full flex'

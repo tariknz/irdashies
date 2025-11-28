@@ -1,8 +1,8 @@
-import { StoryObj } from '@storybook/react-vite';
+import { Meta, StoryObj } from '@storybook/react-vite';
 import { Input } from './Input';
 import { TelemetryDecorator } from '@irdashies/storybook';
 
-const meta = {
+const meta: Meta<typeof Input> = {
   component: Input,
   decorators: [TelemetryDecorator()],
 };
@@ -14,16 +14,18 @@ export const Primary: Story = {
   render: () => (
     <>
       <div className="h-[80px] w-[400px]">
-        <Input/>
+        <Input />
       </div>
     </>
   ),
+  args: {},
 };
 
 export const Bigger: Story = {
   render: () => (
     <div className="h-full w-full">
-      <Input/>
+      <Input />
     </div>
   ),
+  args: {},
 };

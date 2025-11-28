@@ -89,7 +89,6 @@ export const InputTrace = ({
     <svg
       ref={svgRef}
       width={'100%'}
-      height={'100%'}
       viewBox={`0 0 ${width} ${height}`}
       preserveAspectRatio="none"
     ></svg>
