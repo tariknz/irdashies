@@ -79,7 +79,7 @@ export const PitStatusCell = memo(
     }
 
     return (
-      <td data-column="pitStatus" className="w-auto px-1 text-center flex gap-0.5">
+      <td data-column="pitStatus" className="w-auto px-1 text-center flex flex-row-reverse gap-0.5">
         {penalty && (
           <StatusBadge textColor="text-orange-500" borderColorClass="border-white" additionalClasses="bg-black/80 inline-block min-w-6">
             {'\u00A0'}
