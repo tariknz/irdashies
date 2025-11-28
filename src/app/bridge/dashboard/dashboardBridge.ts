@@ -39,6 +39,12 @@ export const dashboardBridge: DashboardBridge = {
   getCurrentDashboard: () => {
     return getDashboard('default');
   },
+  toggleDemoMode: () => {
+    return;
+  },
+  stop: () => {
+    return;
+  },
 };
 
 export async function publishDashboardUpdates(overlayManager: OverlayManager) {
