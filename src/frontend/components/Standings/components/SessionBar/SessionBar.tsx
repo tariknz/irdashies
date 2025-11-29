@@ -1,10 +1,11 @@
-import { useSessionName, useTelemetryValue } from '@irdashies/context';
-import { formatTimeShort } from '@irdashies/utils/time';
+import { useSessionName, useSessionLaps, useTelemetryValue } from '@irdashies/context';
+import { formatTime } from '@irdashies/utils/time';
 import { useDriverIncidents, useSessionLapCount, useBrakeBias, useRelativeSettings } from '../../hooks';
 
 export const SessionBar = () => {
   const sessionNum = useTelemetryValue('SessionNum');
   const sessionName = useSessionName(sessionNum);
+  const sessionLaps = useSessionLaps(sessionNum);
   const { incidentLimit, incidents } = useDriverIncidents();
   const { total, current, timeElapsed, timeRemaining } = useSessionLapCount();
   const brakeBias = useBrakeBias();
@@ -14,27 +15,27 @@ export const SessionBar = () => {
 
   return (
     <div className="bg-slate-900/70 text-sm px-3 py-1 flex justify-between">
-      <div className="flex flex-1 grow">{sessionName}</div>
+      <div className="flex">{sessionName}</div>
       {current > 0 && (
-        <div className="flex flex-1 grow justify-center">
+        <div className="flex justify-center">
           L {current} {total ? ` / ${total}` : ''}
         </div>
       )}
-      {timeRemaining <= 86400 && ( // 86400 seconds = 24 hours
-        <div className="flex flex-1 grow justify-center">
+      {sessionLaps == 'unlimited' && ( // 86400 seconds = 24 hours
+        <div className="flex justify-center">
           {(() => {
-            const elapsed = formatTimeShort(timeElapsed);
-            const remaining = formatTimeShort(timeRemaining, true);
-            return elapsed ? `${elapsed} / ${remaining} m` : `${remaining} m`;
+            const elapsed = formatTime(timeElapsed, 'duration');
+            const remaining = formatTime(timeRemaining, 'duration-wlabels');
+            return elapsed ? `${elapsed} / ${remaining}` : (remaining ? `${remaining}` : '');
           })()}
         </div>
       )}
       {showBrakeBias && (
-        <div className="flex flex-1 grow justify-center">
+        <div className="flex justify-center">
           {brakeBias.isClio ? `BV: ${brakeBias.value.toFixed(0)}` : `BB: ${brakeBias.value.toFixed(1)}%`}
         </div>
       )}
-      <div className="flex flex-1 grow justify-end">
+      <div className="flex justify-end">
         {incidents}
         {incidentLimit ? ' / ' + incidentLimit : ''} x
       </div>

@@ -4,8 +4,6 @@ import { IRacingFlag } from './IRacingFlag';
 
 interface CountryFlagProps {
   flairId: number;
-  className?: string;
-  size?: 'sm' | 'md' | 'lg';
 }
 
 // Hardcoded FlairID to country code mapping
@@ -256,27 +254,18 @@ const getCountryCodeFromFlairId = (flairId: number): string => {
   return FLAIR_ID_TO_COUNTRY_CODE[flairId];
 };
 
-// Size classes for the flag
-const sizeClasses = {
-  sm: 'w-4 h-3',
-  md: 'w-6 h-4.5',
-  lg: 'w-8 h-6',
-};
-
 export const CountryFlag: React.FC<CountryFlagProps> = ({
-  flairId,
-  className = '',
-  size = 'md',
+  flairId
 }) => {
   const countryCode = getCountryCodeFromFlairId(flairId);
 
   if (!countryCode) {
-    return <IRacingFlag size={size} className={className} />;
+    return <IRacingFlag />;
   }
 
   return (
     <span
-      className={`fi fi-${countryCode.toLowerCase()} ${sizeClasses[size]} ${className}`}
+      className={`fi fi-${countryCode.toLowerCase()}`}
     />
   );
 };

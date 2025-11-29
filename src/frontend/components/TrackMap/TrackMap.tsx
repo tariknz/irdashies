@@ -13,11 +13,13 @@ export const TrackMap = () => {
   if (!trackId) return <></>;
 
   return (
-    <TrackCanvas
-      trackId={trackId}
-      drivers={driversTrackData}
-      enableTurnNames={settings?.enableTurnNames ?? false}
-      debug={debug}
-    />
+    <div className="w-full h-full">
+      <TrackCanvas
+        trackId={trackId}
+        drivers={driversTrackData}
+        enableTurnNames={settings?.enableTurnNames ?? false}
+        debug={debug}
+      />
+    </div>
   );
 };

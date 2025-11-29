@@ -2,9 +2,9 @@ import { Meta, StoryObj } from '@storybook/react-vite';
 import { DriverInfoRow } from './DriverInfoRow';
 import { DriverRatingBadge } from '../DriverRatingBadge/DriverRatingBadge';
 import { useAutoAnimate } from '@formkit/auto-animate/react';
-import { SessionBar } from '../SessionBar/SessionBar';
-import { SessionFooter } from '../SessionFooter/SessionFooter';
 import { RatingChange } from '../RatingChange/RatingChange';
+import { useCurrentSessionType } from '@irdashies/context';
+import type { StandingsWidgetSettings } from '../../../Settings/types';
 
 export default {
   component: DriverInfoRow,
@@ -27,15 +27,27 @@ export const Primary: Story = {
     carNumber: '999',
     name: 'John Doe',
     isPlayer: false,
+    hasFastestTime: false,
     delta: 0.1,
     position: 1,
     classColor: 16777215,
     fastestTime: 111.111,
     lastTime: 112.225,
-    badge: <DriverRatingBadge license="A 4.99" rating={4999} />,
+    badge: <DriverRatingBadge license="A 4.99" rating={4999} format="license-color-rating-bw" />,
+    iratingChange: <RatingChange value={10} />,
     onPitRoad: false,
     onTrack: true,
-    tireCompound: 1
+    radioActive: false,
+    tireCompound: 1,
+    isMultiClass: false,
+    flairId: 2,
+    carId: 122,
+    currentSessionType: 'Race',
+    config: {
+      fastestTime: { enabled: true },
+      lastTime: { enabled: true },
+      iratingChange: { enabled: true },
+    } as StandingsWidgetSettings['config'],
   },
 };
 
@@ -130,7 +142,7 @@ export const IRatingNoChange: Story = {
   },
 };
 
-export const Relative = () => {
+const Relative = () => {
   const getRandomRating = () =>
     Math.floor(Math.random() * (1300 - 700 + 1)) + 700;
   const getRandomLicense = () => {
@@ -217,7 +229,13 @@ export const Relative = () => {
       onTrack: true,
       radioActive: false,
       lappedState: undefined,
-      tireCompound: 0
+      tireCompound: 0,
+      lastPitLap: 0,
+      currentSessionType: useCurrentSessionType(),
+      dnf: false,
+      repair: false,
+      penalty: false,
+      slowdown: false
     },
     {
       carIdx: 2,
@@ -239,7 +257,13 @@ export const Relative = () => {
       onTrack: true,
       radioActive: false,
       lappedState: 'ahead',
-      tireCompound: 1
+      tireCompound: 1,
+      lastPitLap: 0,
+      currentSessionType: useCurrentSessionType(),
+      dnf: false,
+      repair: false,
+      penalty: false,
+      slowdown: false
     },
     {
       carIdx: 3,
@@ -261,7 +285,13 @@ export const Relative = () => {
       onTrack: true,
       radioActive: false,
       lappedState: 'same',
-      tireCompound: 1
+      tireCompound: 1,
+      lastPitLap: 0,
+      currentSessionType: useCurrentSessionType(),
+      dnf: false,
+      repair: false,
+      penalty: false,
+      slowdown: false
     },
     {
       carIdx: 4,
@@ -281,7 +311,13 @@ export const Relative = () => {
       onTrack: true,
       radioActive: false,
       lappedState: 'same',
-      tireCompound: 1
+      tireCompound: 1,
+      lastPitLap: 15,
+      currentSessionType: useCurrentSessionType(),
+      dnf: true,
+      repair: false,
+      penalty: false,
+      slowdown: false
     },
     {
       carIdx: 5,
@@ -301,7 +337,13 @@ export const Relative = () => {
       onTrack: true,
       radioActive: false,
       lappedState: 'behind',
-      tireCompound: 1
+      tireCompound: 1,
+      lastPitLap: 0,
+      currentSessionType: useCurrentSessionType(),
+      dnf: false,
+      repair: true,
+      penalty: false,
+      slowdown: false
     },
     {
       carIdx: 6,
@@ -321,7 +363,13 @@ export const Relative = () => {
       onTrack: true,
       radioActive: false,
       lappedState: 'same',
-      tireCompound: 1
+      tireCompound: 1,
+      lastPitLap: 0,
+      currentSessionType: useCurrentSessionType(),
+      dnf: false,
+      repair: false,
+      penalty: false,
+      slowdown: false
     },
     {
       carIdx: 7,
@@ -340,7 +388,13 @@ export const Relative = () => {
       onPitRoad: false,
       onTrack: true,
       radioActive: true,
-      tireCompound: 1
+      tireCompound: 1,
+      lastPitLap: 5,
+      currentSessionType: useCurrentSessionType(),
+      dnf: false,
+      repair: false,
+      penalty: false,
+      slowdown: false
     },
   ];
   const getRandomCarNum = () => Math.floor(Math.random() * 35) + 1;
@@ -352,7 +406,6 @@ export const Relative = () => {
 
   return (
     <div className="w-full h-full">
-      <SessionBar />
       <table className="w-full table-auto text-sm border-separate border-spacing-y-0.5 mb-3 mt-3">
         <tbody ref={parent}>
           {standings.map((result) => (
@@ -377,18 +430,199 @@ export const Relative = () => {
                 <DriverRatingBadge
                   license={result.driver?.license}
                   rating={result.driver?.rating}
+                  format="license-color-rating-bw"
                 />
               }
               isMultiClass={false}
+              currentSessionType={result.currentSessionType}
+              dnf={result.dnf}
+              repair={result.repair}
+              penalty={result.penalty}
+              slowdown={result.slowdown}
             />
           ))}
         </tbody>
       </table>
-      <SessionFooter />
     </div>
   );
 };
 
 export const MockedRelativeTable: Story = {
   render: () => <Relative />,
+};
+
+export const BadgeFormatLicenseColorRatingBw: Story = {
+  args: {
+    ...Primary.args,
+    badge: <DriverRatingBadge license="A 4.99" rating={4999} format="license-color-rating-bw" />,
+  },
+};
+
+export const BadgeFormatLicenseColorRatingBwNoLicense: Story = {
+  args: {
+    ...Primary.args,
+    badge: <DriverRatingBadge license="A 4.99" rating={4999} format="license-color-rating-bw-no-license" />,
+  },
+};
+
+export const BadgeFormatRatingColorNoLicense: Story = {
+  args: {
+    ...Primary.args,
+    badge: <DriverRatingBadge license="A 4.99" rating={4999} format="rating-color-no-license" />,
+  },
+};
+
+export const BadgeFormatLicenseBwRatingBw: Story = {
+  args: {
+    ...Primary.args,
+    badge: <DriverRatingBadge license="A 4.99" rating={4999} format="license-bw-rating-bw" />,
+  },
+};
+
+export const BadgeFormatRatingOnlyBwRatingBw: Story = {
+  args: {
+    ...Primary.args,
+    badge: <DriverRatingBadge license="A 4.99" rating={4999} format="rating-only-bw-rating-bw" />,
+  },
+};
+
+export const BadgeFormatLicenseBwRatingBwNoLicense: Story = {
+  args: {
+    ...Primary.args,
+    badge: <DriverRatingBadge license="A 4.99" rating={4999} format="license-bw-rating-bw-no-license" />,
+  },
+};
+
+export const BadgeFormatRatingBwNoLicense: Story = {
+  args: {
+    ...Primary.args,
+    badge: <DriverRatingBadge license="A 4.99" rating={4999} format="rating-bw-no-license" />,
+  },
+};
+
+export const BadgeFormatRatingOnlyColorRatingBw: Story = {
+  args: {
+    ...Primary.args,
+    badge: <DriverRatingBadge license="A 4.99" rating={4999} format="rating-only-color-rating-bw" />,
+  },
+};
+
+const AllFlagCombinations = () => {
+  const flagCombinations = [
+    { name: 'No Flags', dnf: false, repair: false, penalty: false, slowdown: false, onPitRoad: false, lastPitLap: undefined, lastLap: undefined, carTrackSurface: undefined, prevCarTrackSurface: undefined },
+    { name: 'DNF Only', dnf: true, repair: false, penalty: false, slowdown: false, onPitRoad: false, lastPitLap: undefined, lastLap: undefined, carTrackSurface: undefined, prevCarTrackSurface: undefined },
+    { name: 'Repair Only', dnf: false, repair: true, penalty: false, slowdown: false, onPitRoad: false, lastPitLap: undefined, lastLap: undefined, carTrackSurface: undefined, prevCarTrackSurface: undefined },
+    { name: 'Penalty Only', dnf: false, repair: false, penalty: true, slowdown: false, onPitRoad: false, lastPitLap: undefined, lastLap: undefined, carTrackSurface: undefined, prevCarTrackSurface: undefined },
+    { name: 'Slowdown Only', dnf: false, repair: false, penalty: false, slowdown: true, onPitRoad: false, lastPitLap: undefined, lastLap: undefined, carTrackSurface: undefined, prevCarTrackSurface: undefined },
+    { name: 'DNF + Repair', dnf: true, repair: true, penalty: false, slowdown: false, onPitRoad: false, lastPitLap: undefined, lastLap: undefined, carTrackSurface: undefined, prevCarTrackSurface: undefined },
+    { name: 'DNF + Penalty', dnf: true, repair: false, penalty: true, slowdown: false, onPitRoad: false, lastPitLap: undefined, lastLap: undefined, carTrackSurface: undefined, prevCarTrackSurface: undefined },
+    { name: 'DNF + Slowdown', dnf: true, repair: false, penalty: false, slowdown: true, onPitRoad: false, lastPitLap: undefined, lastLap: undefined, carTrackSurface: undefined, prevCarTrackSurface: undefined },
+    { name: 'Repair + Penalty', dnf: false, repair: true, penalty: true, slowdown: false, onPitRoad: false, lastPitLap: undefined, lastLap: undefined, carTrackSurface: undefined, prevCarTrackSurface: undefined },
+    { name: 'Repair + Slowdown', dnf: false, repair: true, penalty: false, slowdown: true, onPitRoad: false, lastPitLap: undefined, lastLap: undefined, carTrackSurface: undefined, prevCarTrackSurface: undefined },
+    { name: 'Penalty + Slowdown', dnf: false, repair: false, penalty: true, slowdown: true, onPitRoad: false, lastPitLap: undefined, lastLap: undefined, carTrackSurface: undefined, prevCarTrackSurface: undefined },
+    { name: 'DNF + Repair + Penalty', dnf: true, repair: true, penalty: true, slowdown: false, onPitRoad: false, lastPitLap: undefined, lastLap: undefined, carTrackSurface: undefined, prevCarTrackSurface: undefined },
+    { name: 'DNF + Repair + Slowdown', dnf: true, repair: true, penalty: false, slowdown: true, onPitRoad: false, lastPitLap: undefined, lastLap: undefined, carTrackSurface: undefined, prevCarTrackSurface: undefined },
+    { name: 'DNF + Penalty + Slowdown', dnf: true, repair: false, penalty: true, slowdown: true, onPitRoad: false, lastPitLap: undefined, lastLap: undefined, carTrackSurface: undefined, prevCarTrackSurface: undefined },
+    { name: 'Repair + Penalty + Slowdown', dnf: false, repair: true, penalty: true, slowdown: true, onPitRoad: false, lastPitLap: undefined, lastLap: undefined, carTrackSurface: undefined, prevCarTrackSurface: undefined },
+    { name: 'All Flags', dnf: true, repair: true, penalty: true, slowdown: true, onPitRoad: false, lastPitLap: undefined, lastLap: undefined, carTrackSurface: undefined, prevCarTrackSurface: undefined },
+    { name: 'Outlap', dnf: false, repair: false, penalty: false, slowdown: false, onPitRoad: false, lastPitLap: 5, lastLap: 5, carTrackSurface: 1, prevCarTrackSurface: undefined },
+    { name: 'Outlap + DNF', dnf: true, repair: false, penalty: false, slowdown: false, onPitRoad: false, lastPitLap: 5, lastLap: 5, carTrackSurface: 1, prevCarTrackSurface: undefined },
+    { name: 'Outlap + Repair', dnf: false, repair: true, penalty: false, slowdown: false, onPitRoad: false, lastPitLap: 5, lastLap: 5, carTrackSurface: 1, prevCarTrackSurface: undefined },
+    { name: 'Outlap + Penalty', dnf: false, repair: false, penalty: true, slowdown: false, onPitRoad: false, lastPitLap: 5, lastLap: 5, carTrackSurface: 1, prevCarTrackSurface: undefined },
+    { name: 'Outlap + Slowdown', dnf: false, repair: false, penalty: false, slowdown: true, onPitRoad: false, lastPitLap: 5, lastLap: 5, carTrackSurface: 1, prevCarTrackSurface: undefined },
+    { name: 'PIT', dnf: false, repair: false, penalty: false, slowdown: false, onPitRoad: true, lastPitLap: undefined, lastLap: undefined, carTrackSurface: 2, prevCarTrackSurface: undefined },
+    { name: 'PIT + DNF', dnf: true, repair: false, penalty: false, slowdown: false, onPitRoad: true, lastPitLap: undefined, lastLap: undefined, carTrackSurface: 2, prevCarTrackSurface: undefined },
+    { name: 'PIT + Repair', dnf: false, repair: true, penalty: false, slowdown: false, onPitRoad: true, lastPitLap: undefined, lastLap: undefined, carTrackSurface: 2, prevCarTrackSurface: undefined },
+    { name: 'PIT + Penalty', dnf: false, repair: false, penalty: true, slowdown: false, onPitRoad: true, lastPitLap: undefined, lastLap: undefined, carTrackSurface: 2, prevCarTrackSurface: undefined },
+    { name: 'PIT + Slowdown', dnf: false, repair: false, penalty: false, slowdown: true, onPitRoad: true, lastPitLap: undefined, lastLap: undefined, carTrackSurface: 2, prevCarTrackSurface: undefined },
+    { name: 'Pit Lap (L 5)', dnf: false, repair: false, penalty: false, slowdown: false, onPitRoad: false, lastPitLap: 5, lastLap: 10, carTrackSurface: 1, prevCarTrackSurface: undefined },
+    { name: 'Pit Lap + DNF', dnf: true, repair: false, penalty: false, slowdown: false, onPitRoad: false, lastPitLap: 5, lastLap: 10, carTrackSurface: 1, prevCarTrackSurface: undefined },
+    { name: 'Pit Lap + Repair', dnf: false, repair: true, penalty: false, slowdown: false, onPitRoad: false, lastPitLap: 5, lastLap: 10, carTrackSurface: 1, prevCarTrackSurface: undefined },
+    { name: 'Pit Lap + Penalty', dnf: false, repair: false, penalty: true, slowdown: false, onPitRoad: false, lastPitLap: 5, lastLap: 10, carTrackSurface: 1, prevCarTrackSurface: undefined },
+    { name: 'Pit Lap + Slowdown', dnf: false, repair: false, penalty: false, slowdown: true, onPitRoad: false, lastPitLap: 5, lastLap: 10, carTrackSurface: 1, prevCarTrackSurface: undefined },
+    { name: 'TOW', dnf: false, repair: false, penalty: false, slowdown: false, onPitRoad: false, lastPitLap: undefined, lastLap: 10, carTrackSurface: 1, prevCarTrackSurface: 0 },
+    { name: 'TOW + DNF', dnf: true, repair: false, penalty: false, slowdown: false, onPitRoad: false, lastPitLap: undefined, lastLap: 10, carTrackSurface: 1, prevCarTrackSurface: 0 },
+    { name: 'TOW + Repair', dnf: false, repair: true, penalty: false, slowdown: false, onPitRoad: false, lastPitLap: undefined, lastLap: 10, carTrackSurface: 1, prevCarTrackSurface: 0 },
+    { name: 'TOW + Penalty', dnf: false, repair: false, penalty: true, slowdown: false, onPitRoad: false, lastPitLap: undefined, lastLap: 10, carTrackSurface: 1, prevCarTrackSurface: 0 },
+    { name: 'TOW + Slowdown', dnf: false, repair: false, penalty: false, slowdown: true, onPitRoad: false, lastPitLap: undefined, lastLap: 10, carTrackSurface: 1, prevCarTrackSurface: 0 },
+    { name: 'Outlap + DNF + Repair', dnf: true, repair: true, penalty: false, slowdown: false, onPitRoad: false, lastPitLap: 5, lastLap: 5, carTrackSurface: 1, prevCarTrackSurface: undefined },
+    { name: 'Outlap + DNF + Penalty', dnf: true, repair: false, penalty: true, slowdown: false, onPitRoad: false, lastPitLap: 5, lastLap: 5, carTrackSurface: 1, prevCarTrackSurface: undefined },
+    { name: 'Outlap + DNF + Slowdown', dnf: true, repair: false, penalty: false, slowdown: true, onPitRoad: false, lastPitLap: 5, lastLap: 5, carTrackSurface: 1, prevCarTrackSurface: undefined },
+    { name: 'Outlap + Repair + Penalty', dnf: false, repair: true, penalty: true, slowdown: false, onPitRoad: false, lastPitLap: 5, lastLap: 5, carTrackSurface: 1, prevCarTrackSurface: undefined },
+    { name: 'Outlap + Repair + Slowdown', dnf: false, repair: true, penalty: false, slowdown: true, onPitRoad: false, lastPitLap: 5, lastLap: 5, carTrackSurface: 1, prevCarTrackSurface: undefined },
+    { name: 'Outlap + Penalty + Slowdown', dnf: false, repair: false, penalty: true, slowdown: true, onPitRoad: false, lastPitLap: 5, lastLap: 5, carTrackSurface: 1, prevCarTrackSurface: undefined },
+    { name: 'Outlap + All Flags', dnf: true, repair: true, penalty: true, slowdown: true, onPitRoad: false, lastPitLap: 5, lastLap: 5, carTrackSurface: 1, prevCarTrackSurface: undefined },
+    { name: 'PIT + DNF + Repair', dnf: true, repair: true, penalty: false, slowdown: false, onPitRoad: true, lastPitLap: undefined, lastLap: undefined, carTrackSurface: 2, prevCarTrackSurface: undefined },
+    { name: 'PIT + DNF + Penalty', dnf: true, repair: false, penalty: true, slowdown: false, onPitRoad: true, lastPitLap: undefined, lastLap: undefined, carTrackSurface: 2, prevCarTrackSurface: undefined },
+    { name: 'PIT + DNF + Slowdown', dnf: true, repair: false, penalty: false, slowdown: true, onPitRoad: true, lastPitLap: undefined, lastLap: undefined, carTrackSurface: 2, prevCarTrackSurface: undefined },
+    { name: 'PIT + Repair + Penalty', dnf: false, repair: true, penalty: true, slowdown: false, onPitRoad: true, lastPitLap: undefined, lastLap: undefined, carTrackSurface: 2, prevCarTrackSurface: undefined },
+    { name: 'PIT + Repair + Slowdown', dnf: false, repair: true, penalty: false, slowdown: true, onPitRoad: true, lastPitLap: undefined, lastLap: undefined, carTrackSurface: 2, prevCarTrackSurface: undefined },
+    { name: 'PIT + Penalty + Slowdown', dnf: false, repair: false, penalty: true, slowdown: true, onPitRoad: true, lastPitLap: undefined, lastLap: undefined, carTrackSurface: 2, prevCarTrackSurface: undefined },
+    { name: 'PIT + All Flags', dnf: true, repair: true, penalty: true, slowdown: true, onPitRoad: true, lastPitLap: undefined, lastLap: undefined, carTrackSurface: 2, prevCarTrackSurface: undefined },
+    { name: 'Pit Lap + DNF + Repair', dnf: true, repair: true, penalty: false, slowdown: false, onPitRoad: false, lastPitLap: 5, lastLap: 10, carTrackSurface: 1, prevCarTrackSurface: undefined },
+    { name: 'Pit Lap + DNF + Penalty', dnf: true, repair: false, penalty: true, slowdown: false, onPitRoad: false, lastPitLap: 5, lastLap: 10, carTrackSurface: 1, prevCarTrackSurface: undefined },
+    { name: 'Pit Lap + DNF + Slowdown', dnf: true, repair: false, penalty: false, slowdown: true, onPitRoad: false, lastPitLap: 5, lastLap: 10, carTrackSurface: 1, prevCarTrackSurface: undefined },
+    { name: 'Pit Lap + Repair + Penalty', dnf: false, repair: true, penalty: true, slowdown: false, onPitRoad: false, lastPitLap: 5, lastLap: 10, carTrackSurface: 1, prevCarTrackSurface: undefined },
+    { name: 'Pit Lap + Repair + Slowdown', dnf: false, repair: true, penalty: false, slowdown: true, onPitRoad: false, lastPitLap: 5, lastLap: 10, carTrackSurface: 1, prevCarTrackSurface: undefined },
+    { name: 'Pit Lap + Penalty + Slowdown', dnf: false, repair: false, penalty: true, slowdown: true, onPitRoad: false, lastPitLap: 5, lastLap: 10, carTrackSurface: 1, prevCarTrackSurface: undefined },
+    { name: 'Pit Lap + All Flags', dnf: true, repair: true, penalty: true, slowdown: true, onPitRoad: false, lastPitLap: 5, lastLap: 10, carTrackSurface: 1, prevCarTrackSurface: undefined },
+    { name: 'TOW + DNF + Repair', dnf: true, repair: true, penalty: false, slowdown: false, onPitRoad: false, lastPitLap: undefined, lastLap: 10, carTrackSurface: 1, prevCarTrackSurface: 0 },
+    { name: 'TOW + DNF + Penalty', dnf: true, repair: false, penalty: true, slowdown: false, onPitRoad: false, lastPitLap: undefined, lastLap: 10, carTrackSurface: 1, prevCarTrackSurface: 0 },
+    { name: 'TOW + DNF + Slowdown', dnf: true, repair: false, penalty: false, slowdown: true, onPitRoad: false, lastPitLap: undefined, lastLap: 10, carTrackSurface: 1, prevCarTrackSurface: 0 },
+    { name: 'TOW + Repair + Penalty', dnf: false, repair: true, penalty: true, slowdown: false, onPitRoad: false, lastPitLap: undefined, lastLap: 10, carTrackSurface: 1, prevCarTrackSurface: 0 },
+    { name: 'TOW + Repair + Slowdown', dnf: false, repair: true, penalty: false, slowdown: true, onPitRoad: false, lastPitLap: undefined, lastLap: 10, carTrackSurface: 1, prevCarTrackSurface: 0 },
+    { name: 'TOW + Penalty + Slowdown', dnf: false, repair: false, penalty: true, slowdown: true, onPitRoad: false, lastPitLap: undefined, lastLap: 10, carTrackSurface: 1, prevCarTrackSurface: 0 },
+    { name: 'TOW + All Flags', dnf: true, repair: true, penalty: true, slowdown: true, onPitRoad: false, lastPitLap: undefined, lastLap: 10, carTrackSurface: 1, prevCarTrackSurface: 0 },
+  ];
+
+  return (
+    <div className="w-full h-full max-w-2xl">
+      <table className="w-full table-auto text-sm border-separate border-spacing-y-0.5 mb-3 mt-3">
+        <tbody>
+          {flagCombinations.map((combo, index) => (
+            <DriverInfoRow
+              key={index}
+              carIdx={index + 1}
+              carNumber={`${index + 1}`}
+              name={combo.name}
+              isPlayer={false}
+              hasFastestTime={false}
+              delta={0.1}
+              position={index + 1}
+              classColor={16777215}
+              fastestTime={111.111}
+              lastTime={112.225}
+              badge={<DriverRatingBadge license="A 4.99" rating={4999} format="license-color-rating-bw" />}
+              iratingChange={<RatingChange value={0} />}
+              onPitRoad={combo.onPitRoad}
+              onTrack={true}
+              radioActive={false}
+              tireCompound={1}
+              isMultiClass={false}
+              flairId={2}
+              carId={122}
+              currentSessionType="Race"
+              dnf={combo.dnf}
+              repair={combo.repair}
+              penalty={combo.penalty}
+              slowdown={combo.slowdown}
+              lastPitLap={combo.lastPitLap}
+              lastLap={combo.lastLap}
+              carTrackSurface={combo.carTrackSurface}
+              prevCarTrackSurface={combo.prevCarTrackSurface}
+              config={{
+                fastestTime: { enabled: true },
+                lastTime: { enabled: true },
+                iratingChange: { enabled: true },
+              } as StandingsWidgetSettings['config']}
+            />
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+};
+
+export const AllFlagCombinationsStory: Story = {
+  render: () => <AllFlagCombinations />,
 };

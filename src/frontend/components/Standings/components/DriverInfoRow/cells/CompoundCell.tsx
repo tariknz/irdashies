@@ -8,9 +8,9 @@ interface CompoundCellProps {
 }
 
 export const CompoundCell = memo(({ hidden, tireCompound, carId }: CompoundCellProps) => (
-  <td data-column="compound" className="w-auto whitespace-nowrap text-center">
-    <div className="flex items-center justify-center pr-1">
-      {hidden ? null : (tireCompound !== undefined && carId && <Compound tireCompound={tireCompound} carId={carId} size="sm" />)}
+  <td data-column="compound" className="w-auto whitespace-nowrap text-center px-2">
+    <div className="flex items-center justify-center">
+      {hidden ? null : (tireCompound !== undefined && carId && <Compound tireCompound={tireCompound} carId={carId} />)}
     </div>
   </td>
 ));

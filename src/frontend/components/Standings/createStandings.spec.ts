@@ -135,14 +135,14 @@ describe('createStandings', () => {
     const mockTelemetryWithConnected = {
       ...mockTelemetry,
       CarIdxTrackSurface: {
-        value: [1],
-      },
+        value: [1]
+      }
     } as Telemetry;
 
     const standings = createStandings(
       mockSessionData,
       mockTelemetryWithConnected,
-      mockCurrentSession
+      mockCurrentSession,
     );
 
     expect(standings[0][1][0].onTrack).toBe(true);
@@ -448,7 +448,12 @@ function createStandings(
       resultsPositions: currentSession?.ResultsPositions,
       resultsFastestLap: currentSession?.ResultsFastestLap,
       sessionType: currentSession?.SessionType,
-    }
+    },
+    [],
+    [],
+    [],
+    undefined,
+    undefined,
   );
   const driverClass = session?.DriverInfo?.Drivers?.find(
     (driver) => driver.CarIdx === session?.DriverInfo?.DriverCarIdx

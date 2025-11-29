@@ -10,7 +10,7 @@ import { defaultDashboard } from '../../../app/storage/defaultDashboard';
 
 const meta: Meta<typeof ThemeManager> = {
   component: ThemeManager,
-  decorators: [TelemetryDecorator('/test-data/1747384033336')],
+  decorators: [TelemetryDecorator('/test-data/1763227688917')],
 };
 
 export default meta;
@@ -51,6 +51,21 @@ const createMockBridge = (
       widgets: [],
       generalSettings: { fontSize, colorPalette },
     }),
+  toggleDemoMode: () => {
+    return;
+  },
+  onDemoModeChanged: (callback) => {
+    callback(false);
+    return () => {
+      return;
+    };
+  },
+  getCurrentDashboard: () => {
+    return null;
+  },
+  stop: () => {
+    return;
+  },
 });
 
 const FONT_SIZES: FontSize[] = ['xs', 'sm', 'md', 'lg', 'xl', '2xl', '3xl'];

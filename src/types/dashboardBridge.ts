@@ -12,5 +12,8 @@ export interface DashboardBridge {
   resetDashboard: (resetEverything: boolean) => Promise<DashboardLayout>;
   toggleLockOverlays: () => Promise<boolean>;
   getAppVersion: () => Promise<string>;
-  toggleDemoMode?: (value: boolean) => void;
+  toggleDemoMode: (value: boolean) => void;
+  onDemoModeChanged: (callback: (value: boolean) => void) => void;
+  getCurrentDashboard: () => DashboardLayout | null;
+  stop: () => void;
 }
