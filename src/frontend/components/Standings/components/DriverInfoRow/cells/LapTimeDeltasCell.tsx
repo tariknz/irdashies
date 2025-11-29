@@ -17,7 +17,7 @@ export const LapTimeDeltasCell = memo(({ hidden, lapTimeDeltas, emptyLapDeltaPla
             data-column="lapTimeDelta"
             className={`w-auto px-1 text-center whitespace-nowrap ${deltaValue > 0 ? 'text-green-400' : 'text-red-400'}`}
           >
-            {hidden ? '' : (deltaValue > 0 ? '+' : '') + deltaValue.toFixed(1)}
+            {hidden ? '' : Math.abs(deltaValue).toFixed(1)}
           </td>
         ))}
       </Fragment>

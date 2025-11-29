@@ -208,6 +208,10 @@ const RelativeWithReorderableConfig = () => {
       currentSessionType: useCurrentSessionType(),
       carId: 122,
       iratingChange: -8,
+      dnf: false,
+      repair: false,
+      penalty: false,
+      slowdown: false
     },
     {
       carIdx: 3,
@@ -234,6 +238,10 @@ const RelativeWithReorderableConfig = () => {
       currentSessionType: useCurrentSessionType(),
       carId: 122,
       iratingChange: 0,
+      dnf: false,
+      repair: false,
+      penalty: false,
+      slowdown: false
     },
     {
       carIdx: 4,
@@ -258,6 +266,10 @@ const RelativeWithReorderableConfig = () => {
       currentSessionType: useCurrentSessionType(),
       carId: 122,
       iratingChange: 23,
+      dnf: false,
+      repair: false,
+      penalty: false,
+      slowdown: false
     },
     {
       carIdx: 5,
@@ -282,6 +294,10 @@ const RelativeWithReorderableConfig = () => {
       currentSessionType: useCurrentSessionType(),
       carId: 122,
       iratingChange: -42,
+      dnf: false,
+      repair: false,
+      penalty: false,
+      slowdown: false
     },
     {
       carIdx: 6,
@@ -306,6 +322,10 @@ const RelativeWithReorderableConfig = () => {
       currentSessionType: useCurrentSessionType(),
       carId: 122,
       iratingChange: 5,
+      dnf: false,
+      repair: false,
+      penalty: false,
+      slowdown: false
     },
     {
       carIdx: 7,
@@ -329,6 +349,10 @@ const RelativeWithReorderableConfig = () => {
       currentSessionType: useCurrentSessionType(),
       carId: 122,
       iratingChange: -15,
+      dnf: false,
+      repair: false,
+      penalty: false,
+      slowdown: false
     },
   ];
   const getRandomCarNum = () => Math.floor(Math.random() * 35) + 1;
@@ -350,14 +374,16 @@ const RelativeWithReorderableConfig = () => {
       driverName: { enabled: true },
       pitStatus: { enabled: true },
       carManufacturer: { enabled: true },
-      badge: { enabled: true },
+      badge: { enabled: true, badgeFormat: 'license-color-rating-bw' },
       iratingChange: { enabled: true },
       delta: { enabled: true },
-      fastestTime: { enabled: true },
-      lastTime: { enabled: true },
+      fastestTime: { enabled: true, timeFormat: 'full' },
+      lastTime: { enabled: true, timeFormat: 'full' },
       compound: { enabled: true },
       brakeBias: { enabled: false },
       displayOrder: displayOrder,
+      titleBar: { enabled: true, progressBar: { enabled: true } },
+      showOnlyWhenOnTrack: false,
       enhancedGapCalculation: {
         enabled: true,
         interpolationMethod: 'linear',
@@ -426,6 +452,10 @@ const RelativeWithReorderableConfig = () => {
                 fastestTime={result.fastestTime}
                 lastTime={result.lastTime}
                 iratingChange={<RatingChange value={result.iratingChange} />}
+                dnf={result.dnf ?? false}
+                repair={result.repair ?? false}
+                penalty={result.penalty ?? false}
+                slowdown={result.slowdown ?? false}
               />
             ))}
           </tbody>
@@ -469,4 +499,3 @@ export const RelativeWithReorderableConfigStory: Story = {
   name: 'Relative with Reorderable Config',
   render: () => <RelativeWithReorderableConfig />,
 };
-

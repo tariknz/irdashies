@@ -3,15 +3,16 @@ import {
   useTelemetryValue,
   useTelemetry,
   useSessionDrivers,
-  useDriverCarIdx,
   useSessionQualifyingResults,
   useCurrentSessionType,
   useCarLap,
   usePitLap,
   usePrevCarTrackSurface,
+  useFocusCarIdx,
 } from '@irdashies/context';
 
 import { Standings, type LastTimeState } from '../createStandings';
+import { GlobalFlags } from '../../../../app/irsdk/types';
 
 const getLastTimeState = (
   lastTime: number | undefined,
@@ -94,15 +95,20 @@ export const useCarState = () => {
   const carIdxTrackSurface = useTelemetry('CarIdxTrackSurface');
   const carIdxOnPitRoad = useTelemetry<boolean[]>('CarIdxOnPitRoad');
   const carIdxTireCompound = useTelemetry<number[]>('CarIdxTireCompound');
+  const carIdxSessionFlags = useTelemetry<number[]>('CarIdxSessionFlags');
 
   return useMemo(() => {
     return carIdxTrackSurface?.value?.map((onTrack, index) => ({
       carIdx: index,
       onTrack: onTrack > -1,
       onPitRoad: carIdxOnPitRoad?.value?.[index],
-      tireCompound: carIdxTireCompound?.value?.[index]
+      tireCompound: carIdxTireCompound?.value?.[index],
+      dnf: !!((carIdxSessionFlags?.value?.[index] ?? 0) & GlobalFlags.Disqualify),
+      repair: !!((carIdxSessionFlags?.value?.[index] ?? 0) & GlobalFlags.Repair),
+      penalty: !!((carIdxSessionFlags?.value?.[index] ?? 0) & GlobalFlags.Black),
+      slowdown: !!((carIdxSessionFlags?.value?.[index] ?? 0) & GlobalFlags.Furled)
     })) ?? [];
-  }, [carIdxTrackSurface?.value, carIdxOnPitRoad?.value, carIdxTireCompound?.value]);
+  }, [carIdxTrackSurface?.value, carIdxOnPitRoad?.value, carIdxTireCompound?.value, carIdxSessionFlags?.value]);
 };
 
 // TODO: this should eventually replace the useDriverStandings hook
@@ -112,7 +118,8 @@ export const useDriverStandings = () => {
   const drivers = useDrivers();
   const radioTransmitCarIdx = useTelemetryValue('RadioTransmitCarIdx');
   const carStates = useCarState();
-  const playerCarIdx = useDriverCarIdx();
+  // Use focus car index which handles spectator mode (uses CamCarIdx when spectating)
+  const playerCarIdx = useFocusCarIdx();
   const sessionType = useCurrentSessionType();
   const qualifyingPositions = useSessionQualifyingResults();
 
@@ -193,7 +200,11 @@ export const useDriverStandings = () => {
         lastLap: driverPos.lastLap,
         prevCarTrackSurface: driverPos.prevCarTrackSurface,
         carTrackSurface: driverPos.carTrackSurface,
-        currentSessionType: sessionType
+        currentSessionType: sessionType,
+        dnf: carState?.dnf ?? false,
+        repair: carState?.repair ?? false,
+        penalty: carState?.penalty ?? false,
+        slowdown: carState?.slowdown ?? false
       };
     });
 

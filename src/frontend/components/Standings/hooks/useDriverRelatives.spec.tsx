@@ -8,7 +8,7 @@ vi.mock('@irdashies/context', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@irdashies/context')>();
   return {
     ...actual,
-    useDriverCarIdx: vi.fn(),
+    useFocusCarIdx: vi.fn(),
     useTelemetryValues: vi.fn(),
     useSessionStore: vi.fn(),
     useRelativeGapStore: vi.fn(),
@@ -25,7 +25,7 @@ vi.mock('./useDriverPositions', () => ({
 // We need to mock them in the context mock above
 
 // Import mocked functions after vi.mock
-const { useDriverCarIdx, useTelemetryValues, useSessionStore, useRelativeGapStore } = await import('@irdashies/context');
+const { useFocusCarIdx, useTelemetryValues, useSessionStore, useRelativeGapStore } = await import('@irdashies/context');
 const { useDriverStandings } = await import('./useDriverPositions');
 
 describe('useDriverRelatives', () => {
@@ -53,7 +53,11 @@ describe('useDriverRelatives', () => {
         relativeSpeed: 1.0,
         estLapTime: 100,
       },
-      currentSessionType: "Race"
+      currentSessionType: "Race",
+      dnf: false,
+      repair: false,
+      penalty: false,
+      slowdown: false,
     },
     {
       carIdx: 1,
@@ -78,7 +82,11 @@ describe('useDriverRelatives', () => {
         relativeSpeed: 1.0,
         estLapTime: 100,
       },
-      currentSessionType: "Race"
+      currentSessionType: "Race",
+      dnf: false,
+      repair: false,
+      penalty: false,
+      slowdown: false
     },
     {
       carIdx: 2,
@@ -103,7 +111,11 @@ describe('useDriverRelatives', () => {
         relativeSpeed: 1.0,
         estLapTime: 100,
       },
-      currentSessionType: "Race"
+      currentSessionType: "Race",
+      dnf: false,
+      repair: false,
+      penalty: false,
+      slowdown: false
     },
   ];
 
@@ -112,7 +124,7 @@ describe('useDriverRelatives', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(useDriverCarIdx).mockReturnValue(0);
+    vi.mocked(useFocusCarIdx).mockReturnValue(0);
     vi.mocked(useTelemetryValues).mockImplementation((key: string) => {
       if (key === 'CarIdxLapDistPct') return mockCarIdxLapDistPct;
       if (key === 'CarIdxEstTime') return mockCarIdxEstTime;
@@ -225,7 +237,7 @@ describe('useDriverRelatives', () => {
   });
 
   it('should return empty array when no player is found', () => {
-    vi.mocked(useDriverCarIdx).mockReturnValue(undefined);
+    vi.mocked(useFocusCarIdx).mockReturnValue(undefined);
 
     const { result } = renderHook(() => useDriverRelatives({ buffer: 2 }));
     expect(result.current).toEqual([]);

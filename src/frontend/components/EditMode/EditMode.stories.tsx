@@ -32,6 +32,21 @@ const mockBridge: (editMode: boolean) => DashboardBridge = (editMode) => ({
   },
   toggleLockOverlays: () => Promise.resolve(true),
   getAppVersion: () => Promise.resolve('1.0.0'),
+  toggleDemoMode: () => {
+    return;
+  },
+  onDemoModeChanged: (callback) => {
+    callback(false);
+    return () => {
+      return;
+    };
+  },
+  getCurrentDashboard: () => {
+    return null;
+  },
+  stop: () => {
+    return;
+  },
 });
 
 export const Primary = {
@@ -46,7 +61,7 @@ export const Primary = {
   },
   args: {
     editMode: true,
-  },
+  } as { editMode: boolean },
 };
 
 export const WithInput = {
@@ -55,7 +70,7 @@ export const WithInput = {
       <div className="h-[80px] w-[400px]">
         <DashboardProvider bridge={mockBridge(args.editMode)}>
           <EditMode>
-            <Input />
+            <Input/>
           </EditMode>
         </DashboardProvider>
       </div>
@@ -63,7 +78,7 @@ export const WithInput = {
   },
   args: {
     editMode: true,
-  },
+  } as { editMode: boolean },
 };
 
 export const WithStandings = {
@@ -78,5 +93,5 @@ export const WithStandings = {
   },
   args: {
     editMode: true,
-  },
+  } as { editMode: boolean },
 };

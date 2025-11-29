@@ -8,7 +8,29 @@ interface PitStatusCellProps {
   lastPitLap?: number;
   lastLap?: number;
   currentSessionType?: string;
+  dnf?: boolean;
+  repair?: boolean;
+  penalty?: boolean;
+  slowdown?: boolean;
 }
+
+interface StatusBadgeProps {
+  textColor?: string;
+  borderColorClass: string;
+  animate?: boolean;
+  children: React.ReactNode;
+  additionalClasses?: string;
+}
+
+const StatusBadge = ({ textColor = 'text-white', borderColorClass, animate, children, additionalClasses = '' }: StatusBadgeProps) => {
+  const baseClasses = 'text-xs border-2 rounded-md text-center text-nowrap px-2 m-0 leading-tight';
+  const animationClass = animate ? 'animate-pulse' : '';
+  return (
+    <span className={`${textColor} ${baseClasses} ${borderColorClass} ${animationClass} ${additionalClasses}`}>
+      {children}
+    </span>
+  );
+};
 
 export const PitStatusCell = memo(
   ({
@@ -19,11 +41,11 @@ export const PitStatusCell = memo(
     lastPitLap,
     lastLap,
     currentSessionType,
+    dnf,
+    repair,
+    penalty,
+    slowdown
   }: PitStatusCellProps) => {
-    const dnf =
-      (prevCarTrackSurface ?? -1) > -1 &&
-      carTrackSurface === -1 &&
-      currentSessionType == 'Race';
     const tow =
       carTrackSurface == 1 &&
       prevCarTrackSurface != undefined &&
@@ -48,8 +70,7 @@ export const PitStatusCell = memo(
       lastPitLap !== lastLap &&
       carTrackSurface != -1;
 
-    if (hidden || (!dnf && !tow && !out && !pit && !lastPit)) {
-      // Explicitly render empty string when the cell has no content
+    if (hidden || (!repair && !dnf && !penalty && !slowdown && !tow && !out && !pit && !lastPit)) {
       return (
         <td data-column="pitStatus" className="w-auto px-1 text-center">
           {''}
@@ -58,36 +79,49 @@ export const PitStatusCell = memo(
     }
 
     return (
-      <td data-column="pitStatus" className="w-auto px-1 text-center">
+      <td data-column="pitStatus" className="w-auto px-1 text-center align-middle">
+        <div className="flex flex-row-reverse items-center gap-0.5">
+        {penalty && (
+          <StatusBadge textColor="text-orange-500" borderColorClass="border-gray-500" additionalClasses="bg-black/80 inline-block min-w-6">
+            {'\u00A0'}
+          </StatusBadge>
+        )}
+        {slowdown && (
+          <StatusBadge textColor="text-orange-500" borderColorClass="border-gray-500" animate additionalClasses="bg-black/80 inline-block min-w-6">
+            {'\u00A0'}
+          </StatusBadge>
+        )}
+        {repair && (
+          <StatusBadge textColor="text-orange-500" borderColorClass="border-gray-500" additionalClasses="bg-black/80 items-center justify-center">
+            <span className="inline-block w-[0.8em] h-[0.8em] bg-orange-500 rounded-full"/>
+          </StatusBadge>
+        )}
         {dnf && (
-          <span className="text-white text-xs border-red-500 border-2 rounded-md text-center text-nowrap px-2 m-0 leading-tight">
+          <StatusBadge borderColorClass="border-red-500">
             DNF
-          </span>
+          </StatusBadge>
         )}
         {tow && (
-          <span className="text-white animate-pulse text-xs border-orange-500 border-2 rounded-md text-center text-nowrap px-2 m-0 leading-tight">
+          <StatusBadge borderColorClass="border-orange-500" animate>
             TOW
-          </span>
+          </StatusBadge>
         )}
         {out && (
-          <div>
-            <span className="text-white text-xs border-green-700  border-2 rounded-md text-center text-nowrap px-2 m-0 leading-tight">
-              OUT
-            </span>
-          </div>
+          <StatusBadge borderColorClass="border-green-700">
+            OUT
+          </StatusBadge>
         )}
         {pit && (
-          <span className="text-white animate-pulse text-xs border-yellow-500 border-2 rounded-md text-center text-nowrap px-2 m-0 leading-tight">
+          <StatusBadge borderColorClass="border-yellow-500" animate>
             PIT
-          </span>
+          </StatusBadge>
         )}
         {lastPit && (
-          <div>
-            <span className="text-white text-xs border-yellow-500 border-2 rounded-md text-center text-nowrap px-2 m-0 leading-tight">
-              L {lastPitLap}
-            </span>
-          </div>
+          <StatusBadge borderColorClass="border-yellow-500">
+            L {lastPitLap}
+          </StatusBadge>
         )}
+        </div>
       </td>
     );
   }

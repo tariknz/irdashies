@@ -21,6 +21,12 @@ export const defaultDashboard: DashboardLayout = {
         "delta": {
           "enabled": true
         },
+        "gap": {
+          "enabled": false
+        },
+        "interval": {
+          "enabled": false
+        },
         "lastTime": {
           "enabled": true
         },
@@ -221,7 +227,6 @@ export const defaultDashboard: DashboardLayout = {
   ],
   "generalSettings": {
     "fontSize": "sm",
-    "colorPalette": "black",
-    "showOnlyWhenOnTrack": false
+    "colorPalette": "black"
   }
 };
