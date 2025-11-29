@@ -61,10 +61,28 @@ export function useFuelCalculation(
   const carIdxLap = useTelemetry('CarIdxLap');
   const carIdxPosition = useTelemetry('CarIdxPosition');
 
-  // Get fuel tank capacity from DriverInfo (actual tank size, not calculated from current fuel)
-  const fuelTankCapacityFromSession = useStore(
+  // Get fuel tank capacity from DriverInfo
+  const driverCarFuelMaxLtr = useStore(
     useSessionStore,
     (state) => state.session?.DriverInfo?.DriverCarFuelMaxLtr
+  );
+
+  // Get maximum fuel percentage allowed by session (e.g., 0.6 for 60% tank limit)
+  const driverCarMaxFuelPct = useStore(
+    useSessionStore,
+    (state) => state.session?.DriverInfo?.DriverCarMaxFuelPct
+  );
+
+  // Calculate actual tank capacity respecting session limits
+  const fuelTankCapacityFromSession =
+    driverCarFuelMaxLtr !== undefined && driverCarMaxFuelPct !== undefined
+      ? driverCarFuelMaxLtr * driverCarMaxFuelPct
+      : driverCarFuelMaxLtr;
+
+  // Get track ID to detect track changes
+  const trackId = useStore(
+    useSessionStore,
+    (state) => state.session?.WeekendInfo?.TrackID
   );
 
   // Store actions (stable references)
@@ -109,14 +127,30 @@ export function useFuelCalculation(
     }
   }, [sessionNum, updateSessionInfo]);
 
-  // Clear fuel data when session ends (user exits to menu/leaves sim)
-  // SessionState.Invalid (0) indicates no active session
+  // Clear fuel data when session ends or track changes
+  // Track the last known track ID to detect changes
+  const lastTrackIdRef = useRef<number | undefined>(undefined);
+
   useEffect(() => {
+    // Clear data if session ends (SessionState.Invalid = 0)
     if (sessionState === 0) {
-      if (DEBUG_LOGGING) console.log('[FuelCalculator] Session ended, clearing all fuel data');
+      if (DEBUG_LOGGING) console.log('[FuelCalculator] Session ended (SessionState=0), clearing all fuel data');
+      clearAllData();
+      lastTrackIdRef.current = undefined;
+      return;
+    }
+
+    // Clear data if track changes (new session at different track)
+    if (trackId !== undefined && lastTrackIdRef.current !== undefined && trackId !== lastTrackIdRef.current) {
+      if (DEBUG_LOGGING) console.log(`[FuelCalculator] Track changed (${lastTrackIdRef.current} -> ${trackId}), clearing all fuel data`);
       clearAllData();
     }
-  }, [sessionState, clearAllData]);
+
+    // Update the last known track ID
+    if (trackId !== undefined) {
+      lastTrackIdRef.current = trackId;
+    }
+  }, [sessionState, trackId, clearAllData]);
 
   // Detect lap crossings and process fuel data
   useEffect(() => {
@@ -134,22 +168,24 @@ export function useFuelCalculation(
 
     // Detect lap crossing - when lap distance goes from >0.9 to <0.1
     if (detectLapCrossing(lapDistPct, state.lastLapDistPct)) {
+      const completedLap = lap - 1;
       const fuelUsed = state.lapStartFuel - fuelLevel;
       const lapTime = sessionTime - state.lapCrossingTime;
 
       if (DEBUG_LOGGING) {
         console.log(
-          `[FuelCalculator] Lap ${lap - 1} complete - Used: ${fuelUsed.toFixed(3)}L, Time: ${lapTime.toFixed(2)}s, Remaining: ${fuelLevel.toFixed(2)}L, SessionLapsRemain: ${sessionLapsRemain}`
+          `[FuelCalculator] Lap ${completedLap} complete - Used: ${fuelUsed.toFixed(3)}L, Time: ${lapTime.toFixed(2)}s, Remaining: ${fuelLevel.toFixed(2)}L, SessionLapsRemain: ${sessionLapsRemain}`
         );
       }
 
-      // Validate and store lap data
-      if (fuelUsed > 0 && lapTime > 0) {
+      // Skip lap 0 and lap 1 (standing/rolling start laps are too short and unreliable)
+      // Validate and store lap data only from lap 2 onwards
+      if (completedLap >= 2 && fuelUsed > 0 && lapTime > 0) {
         const recentLaps = state.getRecentLaps(10);
         const isValid = validateLapData(fuelUsed, lapTime, recentLaps);
 
         const lapData: FuelLapData = {
-          lapNumber: lap - 1,
+          lapNumber: completedLap,
           fuelUsed,
           lapTime,
           isGreenFlag: isGreenFlag(sessionFlags),
@@ -226,9 +262,8 @@ export function useFuelCalculation(
     const validLaps = lapHistory.filter((l) => l.isValidForCalc);
     if (validLaps.length === 0) return null;
 
-    // Get actual fuel tank capacity from session data (DriverInfo)
-    // This is the real tank size, not calculated from current fuel level
-    // Falls back to calculation if session data not available yet
+    // Get tank capacity - prioritize session data as it now includes tank limit multiplier
+    // Falls back to calculation from fuel level if session data unavailable
     const fuelTankCapacity =
       fuelTankCapacityFromSession ??
       (fuelLevelPct > 0 ? fuelLevel / fuelLevelPct : DEFAULT_TANK_CAPACITY);
@@ -406,15 +441,6 @@ export function useFuelCalculation(
         // Solving: numStops >= (fuelNeeded - currentFuel) / tankCapacity
         stopsRemaining = Math.ceil(fuelDeficit / fuelTankCapacity);
       }
-
-      if (DEBUG_LOGGING) {
-        console.log(
-          `[Endurance] LapsRemaining: ${lapsRemaining}, Fuel/lap: ${avgFuelPerLap.toFixed(2)}L, ` +
-            `Needed: ${fuelNeededToFinish.toFixed(1)}L (inc ${(safetyMargin * 100).toFixed(0)}% margin), ` +
-            `Current: ${fuelLevel.toFixed(1)}L, Tank: ${fuelTankCapacity.toFixed(1)}L, ` +
-            `Stops: ${stopsRemaining}, Laps/stint: ${lapsPerStint?.toFixed(1) ?? 'N/A'}`
-        );
-      }
     }
 
     // ========================================================================
@@ -477,6 +503,16 @@ export function useFuelCalculation(
         console.log(
           `[FuelCalculator] Lap ${result.currentLap} - Fuel: ${result.fuelLevel.toFixed(2)}L, LapsRemaining: ${result.lapsRemaining}, AvgPerLap: ${avgFuelPerLap.toFixed(3)}L, ToFinish: ${result.fuelToFinish.toFixed(2)}L, CanFinish: ${result.canFinish}, ValidLaps: ${validLaps.length}, TotalLaps: ${totalLaps}, LeaderLap: ${leaderLapRef.current ?? 'N/A'}`
         );
+
+        // Log endurance strategy details
+        if (result.stopsRemaining !== undefined) {
+          console.log(
+            `[Endurance] LapsRemaining: ${result.lapsRemaining}, Fuel/lap: ${avgFuelPerLap.toFixed(2)}L, ` +
+              `Needed: ${result.fuelToFinish.toFixed(1)}L (inc ${(safetyMargin * 100).toFixed(0)}% margin), ` +
+              `Current: ${result.fuelLevel.toFixed(1)}L, Tank: ${fuelTankCapacity.toFixed(1)}L, ` +
+              `Stops: ${result.stopsRemaining}, Laps/stint: ${result.lapsPerStint?.toFixed(1) ?? 'N/A'}`
+          );
+        }
       }
     }
     return result;

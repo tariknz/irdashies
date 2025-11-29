@@ -45,15 +45,10 @@ export const FuelCalculator = ({
       (a, b) => b.lapNumber - a.lapNumber
     );
 
-    // Get first lap number to exclude it (pace lap or first lap after reset)
-    const allLaps = history.filter(lap => lap.fuelUsed > 0);
-    const firstLapNumber = allLaps.length > 0
-      ? Math.min(...allLaps.map(l => l.lapNumber))
-      : 0;
-
-    // Filter to valid laps (not out-laps and not first lap) and take last N
+    // Filter to valid laps (not out-laps) and take last N
+    // Note: Lap 0 and 1 are already excluded during recording, so no need to filter first lap here
     const validLaps = history
-      .filter(lap => !lap.isOutLap && lap.fuelUsed > 0 && lap.lapNumber !== firstLapNumber)
+      .filter(lap => !lap.isOutLap && lap.fuelUsed > 0)
       .slice(0, lapCount)
       .reverse(); // Oldest to newest for graph
 
@@ -76,19 +71,45 @@ export const FuelCalculator = ({
   // Determine status border and glow colors
   const statusClasses = useMemo(() => {
     if (!fuelData) return 'border-slate-600';
-    if (fuelData.canFinish) return 'border-green-500 shadow-[0_0_15px_rgba(0,255,0,0.2)]';
-    if (fuelData.pitWindowClose - fuelData.currentLap < 5)
+
+    const lapsUntilPit = fuelData.pitWindowClose - fuelData.currentLap;
+    const isLastStint = fuelData.stopsRemaining === 0;
+    const fuelIsTight = fuelData.fuelAtFinish < (fuelData.fuelToFinish * 0.1); // Less than 10% buffer
+
+    // Red: Must pit within 1 lap
+    if (lapsUntilPit <= 1) {
       return 'border-red-500 shadow-[0_0_15px_rgba(255,48,48,0.3)]';
-    return 'border-orange-500 shadow-[0_0_15px_rgba(255,165,0,0.2)]';
+    }
+
+    // Orange: Within 5 laps of pit, OR on last stint with tight fuel
+    if (lapsUntilPit <= 5 || (isLastStint && fuelIsTight)) {
+      return 'border-orange-500 shadow-[0_0_15px_rgba(255,165,0,0.2)]';
+    }
+
+    // Green: Normal operation
+    return 'border-green-500 shadow-[0_0_15px_rgba(0,255,0,0.2)]';
   }, [fuelData]);
 
   // Determine text color for header numbers based on fuel status
   const headerTextClasses = useMemo(() => {
     if (!fuelData) return 'text-white [text-shadow:_0_0_10px_rgba(255,255,255,0.3)]';
-    if (fuelData.canFinish) return 'text-green-400 [text-shadow:_0_0_10px_rgba(0,255,0,0.5)]';
-    if (fuelData.pitWindowClose - fuelData.currentLap < 5)
+
+    const lapsUntilPit = fuelData.pitWindowClose - fuelData.currentLap;
+    const isLastStint = fuelData.stopsRemaining === 0;
+    const fuelIsTight = fuelData.fuelAtFinish < (fuelData.fuelToFinish * 0.1); // Less than 10% buffer
+
+    // Red: Must pit within 1 lap
+    if (lapsUntilPit <= 1) {
       return 'text-red-400 [text-shadow:_0_0_10px_rgba(255,48,48,0.5)]';
-    return 'text-orange-400 [text-shadow:_0_0_10px_rgba(255,165,0,0.5)]';
+    }
+
+    // Orange: Within 5 laps of pit, OR on last stint with tight fuel
+    if (lapsUntilPit <= 5 || (isLastStint && fuelIsTight)) {
+      return 'text-orange-400 [text-shadow:_0_0_10px_rgba(255,165,0,0.5)]';
+    }
+
+    // Green: Normal operation
+    return 'text-green-400 [text-shadow:_0_0_10px_rgba(0,255,0,0.5)]';
   }, [fuelData]);
 
   // Create display data - use fuelData if available, otherwise show current fuel
@@ -156,19 +177,25 @@ export const FuelCalculator = ({
 
     return (fuelNeeded: number) => {
       const currentFuel = displayData.fuelLevel;
+      const lapsUntilPit = fuelData.pitWindowClose - fuelData.currentLap;
+      const isLastStint = fuelData.stopsRemaining === 0;
+
       // Apply safety margin to comparison (same as main calculation)
       const fuelNeededWithMargin = fuelNeeded * (1 + safetyMargin);
+      const fuelIsTight = currentFuel < fuelNeededWithMargin;
 
-      if (currentFuel >= fuelNeededWithMargin) {
-        // Safe - green
-        return 'text-green-400/70';
-      } else if (fuelData.pitWindowClose - fuelData.currentLap < 5) {
-        // Critical - red
+      // Red: Must pit within 1 lap and this consumption rate won't make it
+      if (lapsUntilPit <= 1 && fuelIsTight) {
         return 'text-red-400/70';
-      } else {
-        // Warning - orange
+      }
+
+      // Orange: Within 5 laps of pit OR (on last stint and fuel is tight)
+      if (lapsUntilPit <= 5 || (isLastStint && fuelIsTight)) {
         return 'text-orange-400/70';
       }
+
+      // Green: Normal operation
+      return 'text-green-400/70';
     };
   }, [fuelData, displayData.fuelLevel, safetyMargin]);
 
