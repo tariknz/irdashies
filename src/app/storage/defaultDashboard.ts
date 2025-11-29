@@ -199,12 +199,19 @@ export const defaultDashboard: DashboardLayout = {
       },
       "config": {
         "fuelUnits": "L",
+        "layout": "vertical",
         "showConsumption": true,
+        "showMin": true,
         "showLastLap": true,
         "show3LapAvg": true,
         "show10LapAvg": true,
+        "showMax": true,
         "showPitWindow": true,
+        "showEnduranceStrategy": false,
         "showFuelSave": true,
+        "showFuelRequired": false,
+        "showConsumptionGraph": true,
+        "consumptionGraphType": "histogram",
         "safetyMargin": 0.05,
         "background": {
           "opacity": 85

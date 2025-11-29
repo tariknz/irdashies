@@ -15,6 +15,7 @@ const defaultConfig: FuelWidgetSettings['config'] = {
   show10LapAvg: true,
   showMax: true,
   showPitWindow: true,
+  showEnduranceStrategy: false,
   showFuelSave: true,
   showFuelRequired: false,
   showConsumptionGraph: true,
@@ -38,6 +39,7 @@ const migrateConfig = (
     show10LapAvg: (config.show10LapAvg as boolean) ?? true,
     showMax: (config.showMax as boolean) ?? true,
     showPitWindow: (config.showPitWindow as boolean) ?? true,
+    showEnduranceStrategy: (config.showEnduranceStrategy as boolean) ?? false,
     showFuelSave: (config.showFuelSave as boolean) ?? true,
     showFuelRequired: (config.showFuelRequired as boolean) ?? false,
     showConsumptionGraph: (config.showConsumptionGraph as boolean) ?? true,
@@ -107,7 +109,7 @@ export const FuelSettings = () => {
             <span className="text-sm text-slate-300">
               Layout Style
               <span className="block text-xs text-slate-500">
-                Horizontal layout is more compact (300x200)
+                Horizontal: wide bar for top/bottom of screen
               </span>
             </span>
             <select
@@ -239,6 +241,24 @@ export const FuelSettings = () => {
             />
           </div>
 
+          {/* Show Endurance Strategy */}
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-slate-300">
+              Show Endurance Strategy
+              <span className="block text-xs text-slate-500">
+                Total pit stops and stint info for long races
+              </span>
+            </span>
+            <input
+              type="checkbox"
+              checked={settings.config.showEnduranceStrategy}
+              onChange={(e) =>
+                handleConfigChange({ showEnduranceStrategy: e.target.checked })
+              }
+              className="w-4 h-4 bg-slate-700 rounded"
+            />
+          </div>
+
           {/* Show Fuel Save Indicator - Commented out while feature is disabled
           <div className="flex items-center justify-between">
             <span className="text-sm text-slate-300">
@@ -301,7 +321,7 @@ export const FuelSettings = () => {
             <span className="text-sm text-slate-300">
               Safety Margin
               <span className="block text-xs text-slate-500">
-                Extra fuel buffer for calculations
+                Extra fuel buffer (affects &quot;To Finish&quot; and border colors)
               </span>
             </span>
             <div className="flex items-center gap-2">

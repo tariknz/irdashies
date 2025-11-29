@@ -82,6 +82,7 @@ export const updateDashboardWidget = (
   }
 
   const updatedDashboard = {
+    ...dashboard,
     widgets: dashboard.widgets.map((existingWidget) =>
       existingWidget.id === updatedWidget.id ? updatedWidget : existingWidget
     ),

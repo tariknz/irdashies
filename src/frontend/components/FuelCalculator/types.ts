@@ -66,6 +66,12 @@ export interface FuelCalculation {
   fuelAtFinish: number;
   /** Average lap time in seconds (for time until empty calculation) */
   avgLapTime: number;
+  /** Total session time in seconds (for endurance strategy) */
+  sessionTimeTotal?: number;
+  /** Estimated number of pit stops remaining in the session */
+  stopsRemaining?: number;
+  /** Estimated laps per fuel stint (on a full tank) */
+  lapsPerStint?: number;
 }
 
 /**
@@ -90,6 +96,8 @@ export interface FuelCalculatorSettings {
   showMax: boolean;
   /** Show pit window information */
   showPitWindow: boolean;
+  /** Show endurance strategy (total pit stops for entire session) */
+  showEnduranceStrategy?: boolean;
   /** Show fuel save indicator */
   showFuelSave: boolean;
   /** Show fuel required for min/avg/max consumption */
