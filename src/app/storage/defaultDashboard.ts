@@ -108,7 +108,7 @@ export const defaultDashboard: DashboardLayout = {
         "x": 1720,
         "y": 940,
         "width": 402,
-        "height": 256
+        "height": 300
       },
       "config": {
         "buffer": 3,
@@ -201,7 +201,7 @@ export const defaultDashboard: DashboardLayout = {
         "x": 1720,
         "y": 240,
         "width": 300,
-        "height": 400
+        "height": 420
       },
       "config": {
         "fuelUnits": "L",
