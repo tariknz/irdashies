@@ -227,6 +227,7 @@ export const defaultDashboard: DashboardLayout = {
   ],
   "generalSettings": {
     "fontSize": "sm",
-    "colorPalette": "black"
+    "colorPalette": "black",
+    "skipTaskbar": true
   }
 };
