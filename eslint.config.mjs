@@ -16,6 +16,6 @@ export default defineConfig([
   { settings: { react: { version: 'detect' } } },
   pluginReact.configs.flat.recommended,
   pluginReact.configs.flat['jsx-runtime'],
-  reactHooks.configs['recommended-latest'],
+  reactHooks.configs.flat.recommended,
   storybook.configs['flat/recommended'],
 ]);
