@@ -224,5 +224,27 @@ describe('PitStatusCell', () => {
     expect(td?.textContent).toBe('');
     expect(td?.textContent).not.toBe('00');
   });
+
+  it('does not render "00" when penalty is true and lastLap/lastPitLap are 0', () => {
+    const { container } = renderInTable(
+      <PitStatusCell
+        onPitRoad={false}
+        carTrackSurface={1}
+        prevCarTrackSurface={1}
+        lastLap={0}
+        lastPitLap={0}
+        currentSessionType="Race"
+        dnf={false}
+        repair={false}
+        penalty={true}
+        slowdown={false}
+      />
+    );
+    
+    const td = container.querySelector('td[data-column="pitStatus"]');
+    expect(td).toBeTruthy();
+    expect(td?.textContent).not.toContain('0');
+    expect(td?.innerHTML).not.toContain('>0<');
+  });
 });
 

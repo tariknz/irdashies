@@ -51,10 +51,10 @@ export const PitStatusCell = memo(
       prevCarTrackSurface != undefined &&
       prevCarTrackSurface !== 2 &&
       currentSessionType == 'Race' &&
-      lastLap;
+      !!lastLap;
     const out =
       !onPitRoad &&
-      lastPitLap &&
+      !!lastPitLap &&
       lastPitLap == lastLap &&
       carTrackSurface != -1;
     const pit =
@@ -65,7 +65,7 @@ export const PitStatusCell = memo(
         currentSessionType != 'Race');
     const lastPit =
       !onPitRoad &&
-      lastPitLap &&
+      !!lastPitLap &&
       lastPitLap > 1 &&
       lastPitLap !== lastLap &&
       carTrackSurface != -1;
