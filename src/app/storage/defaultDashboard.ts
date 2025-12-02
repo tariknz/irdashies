@@ -108,7 +108,7 @@ export const defaultDashboard: DashboardLayout = {
         "x": 1720,
         "y": 940,
         "width": 402,
-        "height": 256
+        "height": 300
       },
       "config": {
         "buffer": 3,
@@ -201,16 +201,23 @@ export const defaultDashboard: DashboardLayout = {
         "x": 1720,
         "y": 240,
         "width": 300,
-        "height": 400
+        "height": 420
       },
       "config": {
         "fuelUnits": "L",
+        "layout": "vertical",
         "showConsumption": true,
+        "showMin": true,
         "showLastLap": true,
         "show3LapAvg": true,
         "show10LapAvg": true,
+        "showMax": true,
         "showPitWindow": true,
+        "showEnduranceStrategy": false,
         "showFuelSave": true,
+        "showFuelRequired": false,
+        "showConsumptionGraph": true,
+        "consumptionGraphType": "histogram",
         "safetyMargin": 0.05,
         "background": {
           "opacity": 85
@@ -220,6 +227,7 @@ export const defaultDashboard: DashboardLayout = {
   ],
   "generalSettings": {
     "fontSize": "sm",
-    "colorPalette": "black"
+    "colorPalette": "black",
+    "skipTaskbar": true
   }
 };

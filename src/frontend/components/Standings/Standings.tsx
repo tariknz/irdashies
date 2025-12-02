@@ -118,6 +118,10 @@ export const Standings = () => {
                     currentSessionType={result.currentSessionType}
                     config={settings}
                     highlightColor={highlightColor}
+                    dnf={result.dnf}
+                    repair={result.repair}
+                    penalty={result.penalty}
+                    slowdown={result.slowdown}
                   />
                 ))}
               </Fragment>

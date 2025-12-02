@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import { FuelWidgetSettings } from '../types';
 import { useDashboard } from '@irdashies/context';
@@ -7,6 +7,7 @@ const SETTING_ID = 'fuel';
 
 const defaultConfig: FuelWidgetSettings['config'] = {
   fuelUnits: 'L',
+  layout: 'vertical',
   showConsumption: true,
   showMin: true,
   showLastLap: true,
@@ -14,7 +15,11 @@ const defaultConfig: FuelWidgetSettings['config'] = {
   show10LapAvg: true,
   showMax: true,
   showPitWindow: true,
+  showEnduranceStrategy: false,
   showFuelSave: true,
+  showFuelRequired: false,
+  showConsumptionGraph: true,
+  consumptionGraphType: 'histogram',
   safetyMargin: 0.05,
   background: { opacity: 85 },
 };
@@ -26,6 +31,7 @@ const migrateConfig = (
   const config = savedConfig as Record<string, unknown>;
   return {
     fuelUnits: (config.fuelUnits as 'L' | 'gal') ?? 'L',
+    layout: (config.layout as 'vertical' | 'horizontal') ?? 'vertical',
     showConsumption: (config.showConsumption as boolean) ?? true,
     showMin: (config.showMin as boolean) ?? true,
     showLastLap: (config.showLastLap as boolean) ?? true,
@@ -33,7 +39,11 @@ const migrateConfig = (
     show10LapAvg: (config.show10LapAvg as boolean) ?? true,
     showMax: (config.showMax as boolean) ?? true,
     showPitWindow: (config.showPitWindow as boolean) ?? true,
+    showEnduranceStrategy: (config.showEnduranceStrategy as boolean) ?? false,
     showFuelSave: (config.showFuelSave as boolean) ?? true,
+    showFuelRequired: (config.showFuelRequired as boolean) ?? false,
+    showConsumptionGraph: (config.showConsumptionGraph as boolean) ?? true,
+    consumptionGraphType: (config.consumptionGraphType as 'line' | 'histogram') ?? 'histogram',
     safetyMargin: (config.safetyMargin as number) ?? 0.05,
     background: {
       opacity:
@@ -51,6 +61,17 @@ export const FuelSettings = () => {
     enabled: savedSettings?.enabled ?? false,
     config: migrateConfig(savedSettings?.config),
   });
+
+  // Sync settings when dashboard changes (e.g., after layout edit)
+  useEffect(() => {
+    if (savedSettings) {
+      setSettings({
+        enabled: savedSettings.enabled,
+        config: migrateConfig(savedSettings.config),
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentDashboard]); // savedSettings derived from currentDashboard
 
   if (!currentDashboard) {
     return <>Loading...</>;
@@ -80,6 +101,28 @@ export const FuelSettings = () => {
             >
               <option value="L">Liters (L)</option>
               <option value="gal">Gallons (gal)</option>
+            </select>
+          </div>
+
+          {/* Layout Style */}
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-slate-300">
+              Layout Style
+              <span className="block text-xs text-slate-500">
+                Horizontal: wide bar for top/bottom of screen
+              </span>
+            </span>
+            <select
+              value={settings.config.layout}
+              onChange={(e) =>
+                handleConfigChange({
+                  layout: e.target.value as 'vertical' | 'horizontal',
+                })
+              }
+              className="px-3 py-1 bg-slate-700 text-slate-200 rounded text-sm"
+            >
+              <option value="vertical">Vertical</option>
+              <option value="horizontal">Horizontal</option>
             </select>
           </div>
 
@@ -166,6 +209,22 @@ export const FuelSettings = () => {
                   className="w-4 h-4 bg-slate-700 rounded"
                 />
               </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-slate-400">
+                  Show Fuel Required
+                  <span className="block text-[10px] text-slate-500">
+                    Fuel needed for min/avg/max
+                  </span>
+                </span>
+                <input
+                  type="checkbox"
+                  checked={settings.config.showFuelRequired}
+                  onChange={(e) =>
+                    handleConfigChange({ showFuelRequired: e.target.checked })
+                  }
+                  className="w-4 h-4 bg-slate-700 rounded"
+                />
+              </div>
             </div>
           )}
 
@@ -182,7 +241,25 @@ export const FuelSettings = () => {
             />
           </div>
 
-          {/* Show Fuel Save Indicator */}
+          {/* Show Endurance Strategy */}
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-slate-300">
+              Show Endurance Strategy
+              <span className="block text-xs text-slate-500">
+                Total pit stops and stint info for long races
+              </span>
+            </span>
+            <input
+              type="checkbox"
+              checked={settings.config.showEnduranceStrategy}
+              onChange={(e) =>
+                handleConfigChange({ showEnduranceStrategy: e.target.checked })
+              }
+              className="w-4 h-4 bg-slate-700 rounded"
+            />
+          </div>
+
+          {/* Show Fuel Save Indicator - Commented out while feature is disabled
           <div className="flex items-center justify-between">
             <span className="text-sm text-slate-300">
               Show Fuel Save Indicator
@@ -196,13 +273,55 @@ export const FuelSettings = () => {
               className="w-4 h-4 bg-slate-700 rounded"
             />
           </div>
+          */}
+
+          {/* Show Consumption Graph */}
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-slate-300">
+              Show Consumption Graph
+            </span>
+            <input
+              type="checkbox"
+              checked={settings.config.showConsumptionGraph}
+              onChange={(e) =>
+                handleConfigChange({ showConsumptionGraph: e.target.checked })
+              }
+              className="w-4 h-4 bg-slate-700 rounded"
+            />
+          </div>
+
+          {/* Graph Type (when enabled) */}
+          {settings.config.showConsumptionGraph && (
+            <div className="ml-4 border-l-2 border-slate-600 pl-4">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-slate-400">
+                  Graph Type
+                  <span className="block text-[10px] text-slate-500">
+                    Line: 5 laps, Histogram: 30 laps
+                  </span>
+                </span>
+                <select
+                  value={settings.config.consumptionGraphType}
+                  onChange={(e) =>
+                    handleConfigChange({
+                      consumptionGraphType: e.target.value as 'line' | 'histogram',
+                    })
+                  }
+                  className="px-3 py-1 bg-slate-700 text-slate-200 rounded text-sm"
+                >
+                  <option value="line">Line Chart</option>
+                  <option value="histogram">Histogram</option>
+                </select>
+              </div>
+            </div>
+          )}
 
           {/* Safety Margin */}
           <div className="flex items-center justify-between">
             <span className="text-sm text-slate-300">
               Safety Margin
               <span className="block text-xs text-slate-500">
-                Extra fuel buffer for calculations
+                Extra fuel buffer (affects &quot;To Finish&quot; and border colors)
               </span>
             </span>
             <div className="flex items-center gap-2">

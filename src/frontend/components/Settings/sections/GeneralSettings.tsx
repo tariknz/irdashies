@@ -45,7 +45,8 @@ export const GeneralSettings = () => {
   const [settings, setSettings] = useState<GeneralSettingsType>({
     fontSize: currentDashboard?.generalSettings?.fontSize ?? 'sm',
     colorPalette: currentDashboard?.generalSettings?.colorPalette ?? 'default',
-    highlightColor: currentDashboard?.generalSettings?.highlightColor ?? 960745
+    highlightColor: currentDashboard?.generalSettings?.highlightColor ?? 960745,
+    skipTaskbar: currentDashboard?.generalSettings?.skipTaskbar ?? true
   });
 
   if (!currentDashboard || !onDashboardUpdated) {
@@ -95,7 +96,11 @@ export const GeneralSettings = () => {
     updateDashboard(newSettings); 
   };
 
-
+  const handleSkipTaskbarChange = (enabled: boolean) => {
+    const newSettings = { ...settings, skipTaskbar: enabled };
+    setSettings(newSettings);
+    updateDashboard(newSettings);
+  };
 
   return (
     <div className="flex flex-col h-full space-y-6">
@@ -183,6 +188,24 @@ export const GeneralSettings = () => {
         </div> 
       </div>
 
+      {/* Hide from Taskbar Setting */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-medium text-slate-200">Hide Overlays from Taskbar</h3>
+            <p className="text-sm text-slate-400">When enabled, overlay windows won&apos;t appear in the taskbar. The app is still accessible via the system tray. (requires restart)</p>
+          </div>
+          <label className="relative inline-flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              checked={settings.skipTaskbar ?? true}
+              onChange={(e) => handleSkipTaskbarChange(e.target.checked)}
+              className="sr-only peer"
+            />
+            <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+          </label>
+        </div>
+      </div>
 
     </div>
   );

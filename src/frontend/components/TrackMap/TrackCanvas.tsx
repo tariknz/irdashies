@@ -191,8 +191,12 @@ export const TrackCanvas = ({
     // Observe the canvas element itself
     resizeObserver.observe(canvas);
 
+    // Add window resize listener as fallback
+    window.addEventListener('resize', resize);
+
     return () => {
       resizeObserver.disconnect();
+      window.removeEventListener('resize', resize);
     };
   }, [trackId]);
 
