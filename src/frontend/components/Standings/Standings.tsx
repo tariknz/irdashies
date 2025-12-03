@@ -47,8 +47,8 @@ export const Standings = () => {
       }}
     >
       <TitleBar titleBarSettings={settings?.titleBar} />
-      <SessionBar />
-      <table className="w-full table-auto text-sm border-separate border-spacing-y-0.5 mb-3">
+      {(settings?.headerBar?.enabled ?? true) && <SessionBar />}
+      <table className="w-full table-auto text-sm border-separate">
         <tbody ref={parent}>
           {standings.map(([classId, classStandings]) => (
             classStandings.length > 0 ? (
@@ -129,7 +129,7 @@ export const Standings = () => {
           ))}
         </tbody>
       </table>
-      <SessionFooter />
+      {(settings?.footerBar?.enabled ?? true) && <SessionFooter />}
     </div>
   );
 };

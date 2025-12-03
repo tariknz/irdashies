@@ -8,7 +8,7 @@ export const SessionFooter = () => {
   const { trackWetness } = useTrackWetness();
   const { trackTemp, airTemp } = useTrackTemperature();
   return (
-    <div className="bg-slate-900/70 text-sm px-3 py-1 flex justify-between">
+    <div className="bg-slate-900/70 text-sm px-3 py-1 flex justify-between mt-3">
       <div className="flex flex-1 grow gap-1 items-center">
         <ClockIcon />
         <span>{time}</span>

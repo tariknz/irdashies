@@ -201,7 +201,7 @@ export const Relative = () => {
       <div className="w-full h-full">
         <TitleBar titleBarSettings={settings?.titleBar} />
         <SessionBar />
-        <table className="w-full table-auto text-sm border-separate border-spacing-y-0.5 mb-3 mt-3">
+        <table className="w-full table-auto text-sm border-separate">
           <tbody ref={parent}>{rows}</tbody>
         </table>
         <SessionFooter />
@@ -218,7 +218,7 @@ export const Relative = () => {
     >
       <TitleBar titleBarSettings={settings?.titleBar} />
       <SessionBar />
-      <table className="w-full table-auto text-sm border-separate border-spacing-y-0.5 mb-3 mt-3">
+      <table className="w-full table-auto text-sm border-separate">
         <tbody ref={parent}>{rows}</tbody>
       </table>
       <SessionFooter />

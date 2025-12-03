@@ -14,7 +14,7 @@ export const SessionBar = () => {
   const showBrakeBias = config?.brakeBias?.enabled && brakeBias !== undefined;
 
   return (
-    <div className="bg-slate-900/70 text-sm px-3 py-1 flex justify-between">
+    <div className="bg-slate-900/70 text-sm px-3 py-1 flex justify-between mb-3">
       <div className="flex">{sessionName}</div>
       {current > 0 && (
         <div className="flex justify-center">

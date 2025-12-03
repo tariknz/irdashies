@@ -73,6 +73,22 @@ const defaultConfig: RelativeWidgetSettings['config'] = {
     maxLapHistory: 5,
   },
   titleBar: { enabled: true, progressBar: { enabled: true } },
+  headerBar: {
+    enabled: true,
+    sessionName: { enabled: true },
+    timeRemaining: { enabled: true },
+    incidentCount: { enabled: true },
+    brakeBias: { enabled: false },
+    displayOrder: ['sessionName', 'timeRemaining', 'brakeBias', 'incidentCount']
+  },
+  footerBar: {
+    enabled: true,
+    localTime: { enabled: true },
+    trackWetness: { enabled: true },
+    airTemperature: { enabled: true },
+    trackTemperature: { enabled: true },
+    displayOrder: ['localTime', 'trackWetness', 'airTemperature', 'trackTemperature']
+  },
   showOnlyWhenOnTrack: false
 };
 
@@ -145,6 +161,22 @@ const migrateConfig = (savedConfig: unknown): RelativeWidgetSettings['config'] =
       progressBar: {
         enabled: (config.titleBar as { progressBar?: { enabled?: boolean } })?.progressBar?.enabled ?? true
       }
+    },
+    headerBar: {
+      enabled: (config.headerBar as { enabled?: boolean })?.enabled ?? true,
+      sessionName: { enabled: (config.headerBar as { sessionName?: { enabled?: boolean } })?.sessionName?.enabled ?? true },
+      timeRemaining: { enabled: (config.headerBar as { timeRemaining?: { enabled?: boolean } })?.timeRemaining?.enabled ?? true },
+      incidentCount: { enabled: (config.headerBar as { incidentCount?: { enabled?: boolean } })?.incidentCount?.enabled ?? true },
+      brakeBias: { enabled: (config.headerBar as { brakeBias?: { enabled?: boolean } })?.brakeBias?.enabled ?? false },
+      displayOrder: (config.headerBar as { displayOrder?: string[] })?.displayOrder ?? ['sessionName', 'timeRemaining', 'brakeBias', 'incidentCount']
+    },
+    footerBar: {
+      enabled: (config.footerBar as { enabled?: boolean })?.enabled ?? true,
+      localTime: { enabled: (config.footerBar as { localTime?: { enabled?: boolean } })?.localTime?.enabled ?? true },
+      trackWetness: { enabled: (config.footerBar as { trackWetness?: { enabled?: boolean } })?.trackWetness?.enabled ?? true },
+      airTemperature: { enabled: (config.footerBar as { airTemperature?: { enabled?: boolean } })?.airTemperature?.enabled ?? true },
+      trackTemperature: { enabled: (config.footerBar as { trackTemperature?: { enabled?: boolean } })?.trackTemperature?.enabled ?? true },
+      displayOrder: (config.footerBar as { displayOrder?: string[] })?.displayOrder ?? ['localTime', 'trackWetness', 'airTemperature', 'trackTemperature']
     },
     showOnlyWhenOnTrack: (config.showOnlyWhenOnTrack as boolean) ?? false
   };
@@ -534,6 +566,202 @@ export const RelativeSettings = () => {
                       }
                     />
                   </div>
+                )}
+              </div>
+            </div>
+
+            {/* Header Bar Settings */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-medium text-slate-200">Header Bar</h3>
+                <button
+                  onClick={() => {
+                    const defaultOrder = ['sessionName', 'timeRemaining', 'brakeBias', 'incidentCount'];
+                    handleConfigChange({
+                      headerBar: {
+                        ...settings.config.headerBar,
+                        displayOrder: defaultOrder
+                      }
+                    });
+                  }}
+                  className="px-3 py-1 text-sm bg-slate-600 hover:bg-slate-500 text-slate-300 rounded-md transition-colors"
+                >
+                  Reset to Default Order
+                </button>
+              </div>
+              <div className="space-y-3 px-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-300">Show Header Bar</span>
+                  <ToggleSwitch
+                    enabled={settings.config.headerBar.enabled}
+                    onToggle={(enabled) =>
+                      handleConfigChange({
+                        headerBar: {
+                          ...settings.config.headerBar,
+                          enabled
+                        }
+                      })
+                    }
+                  />
+                </div>
+                {settings.config.headerBar.enabled && (
+                  <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={(event: DragEndEvent) => {
+                      const { active, over } = event;
+                      if (over && active.id !== over.id) {
+                        const oldIndex = settings.config.headerBar.displayOrder.indexOf(active.id as string);
+                        const newIndex = settings.config.headerBar.displayOrder.indexOf(over.id as string);
+                        const newOrder = arrayMove(settings.config.headerBar.displayOrder, oldIndex, newIndex);
+                        handleConfigChange({
+                          headerBar: {
+                            ...settings.config.headerBar,
+                            displayOrder: newOrder
+                          }
+                        });
+                      }
+                    }}
+                  >
+                    <SortableContext items={settings.config.headerBar.displayOrder} strategy={verticalListSortingStrategy}>
+                      <div className="space-y-3 pl-4">
+                        {settings.config.headerBar.displayOrder.map((itemId) => {
+                          const itemConfig = settings.config.headerBar[itemId as keyof typeof settings.config.headerBar] as { enabled: boolean };
+                          const labels: Record<string, string> = {
+                            sessionName: 'Session Name',
+                            timeRemaining: 'Time Remaining',
+                            brakeBias: 'Brake Bias',
+                            incidentCount: 'Incident Count'
+                          };
+                          return (
+                            <div key={itemId}>
+                              <div className="flex items-center justify-between group">
+                                <div className="flex items-center gap-2 flex-1">
+                                  <div
+                                    {...useSortable({ id: itemId }).attributes}
+                                    {...useSortable({ id: itemId }).listeners}
+                                    className="cursor-grab opacity-60 hover:opacity-100 transition-opacity p-1 hover:bg-slate-600 rounded"
+                                  >
+                                    <DotsSixVerticalIcon size={16} className="text-slate-400" />
+                                  </div>
+                                  <span className="text-sm text-slate-300">{labels[itemId]}</span>
+                                </div>
+                                <ToggleSwitch
+                                  enabled={itemConfig.enabled}
+                                  onToggle={(enabled) => {
+                                    handleConfigChange({
+                                      headerBar: {
+                                        ...settings.config.headerBar,
+                                        [itemId]: { enabled }
+                                      }
+                                    });
+                                  }}
+                                />
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </SortableContext>
+                  </DndContext>
+                )}
+              </div>
+            </div>
+
+            {/* Footer Bar Settings */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-medium text-slate-200">Footer Bar</h3>
+                <button
+                  onClick={() => {
+                    const defaultOrder = ['localTime', 'trackWetness', 'airTemperature', 'trackTemperature'];
+                    handleConfigChange({
+                      footerBar: {
+                        ...settings.config.footerBar,
+                        displayOrder: defaultOrder
+                      }
+                    });
+                  }}
+                  className="px-3 py-1 text-sm bg-slate-600 hover:bg-slate-500 text-slate-300 rounded-md transition-colors"
+                >
+                  Reset to Default Order
+                </button>
+              </div>
+              <div className="space-y-3 px-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-300">Show Footer Bar</span>
+                  <ToggleSwitch
+                    enabled={settings.config.footerBar.enabled}
+                    onToggle={(enabled) =>
+                      handleConfigChange({
+                        footerBar: {
+                          ...settings.config.footerBar,
+                          enabled
+                        }
+                      })
+                    }
+                  />
+                </div>
+                {settings.config.footerBar.enabled && (
+                  <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={(event: DragEndEvent) => {
+                      const { active, over } = event;
+                      if (over && active.id !== over.id) {
+                        const oldIndex = settings.config.footerBar.displayOrder.indexOf(active.id as string);
+                        const newIndex = settings.config.footerBar.displayOrder.indexOf(over.id as string);
+                        const newOrder = arrayMove(settings.config.footerBar.displayOrder, oldIndex, newIndex);
+                        handleConfigChange({
+                          footerBar: {
+                            ...settings.config.footerBar,
+                            displayOrder: newOrder
+                          }
+                        });
+                      }
+                    }}
+                  >
+                    <SortableContext items={settings.config.footerBar.displayOrder} strategy={verticalListSortingStrategy}>
+                      <div className="space-y-3 pl-4">
+                        {settings.config.footerBar.displayOrder.map((itemId) => {
+                          const itemConfig = settings.config.footerBar[itemId as keyof typeof settings.config.footerBar] as { enabled: boolean };
+                          const labels: Record<string, string> = {
+                            localTime: 'Local Time',
+                            trackWetness: 'Track Wetness',
+                            airTemperature: 'Air Temperature',
+                            trackTemperature: 'Track Temperature'
+                          };
+                          return (
+                            <div key={itemId}>
+                              <div className="flex items-center justify-between group">
+                                <div className="flex items-center gap-2 flex-1">
+                                  <div
+                                    {...useSortable({ id: itemId }).attributes}
+                                    {...useSortable({ id: itemId }).listeners}
+                                    className="cursor-grab opacity-60 hover:opacity-100 transition-opacity p-1 hover:bg-slate-600 rounded"
+                                  >
+                                    <DotsSixVerticalIcon size={16} className="text-slate-400" />
+                                  </div>
+                                  <span className="text-sm text-slate-300">{labels[itemId]}</span>
+                                </div>
+                                <ToggleSwitch
+                                  enabled={itemConfig.enabled}
+                                  onToggle={(enabled) => {
+                                    handleConfigChange({
+                                      footerBar: {
+                                        ...settings.config.footerBar,
+                                        [itemId]: { enabled }
+                                      }
+                                    });
+                                  }}
+                                />
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </SortableContext>
+                  </DndContext>
                 )}
               </div>
             </div>

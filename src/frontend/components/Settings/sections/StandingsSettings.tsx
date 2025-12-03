@@ -71,6 +71,22 @@ const defaultConfig: StandingsWidgetSettings['config'] = {
   compound: { enabled: true },
   carManufacturer: { enabled: true },
   titleBar: { enabled: true, progressBar: { enabled: true } },
+  headerBar: {
+    enabled: true,
+    sessionName: { enabled: true },
+    timeRemaining: { enabled: true },
+    incidentCount: { enabled: true },
+    brakeBias: { enabled: false },
+    displayOrder: ['sessionName', 'timeRemaining', 'brakeBias', 'incidentCount']
+  },
+  footerBar: {
+    enabled: true,
+    localTime: { enabled: true },
+    trackWetness: { enabled: true },
+    airTemperature: { enabled: true },
+    trackTemperature: { enabled: true },
+    displayOrder: ['localTime', 'trackWetness', 'airTemperature', 'trackTemperature']
+  },
   showOnlyWhenOnTrack: false,
   lapTimeDeltas: { enabled: false, numLaps: 3 },
   position: { enabled: true },
@@ -113,83 +129,99 @@ const mergeDisplayOrder = (existingOrder?: string[]): string[] => {
   return merged;
 };
 
-// Migration function to handle missing properties in the new config format
-const migrateConfig = (
-  savedConfig: unknown
-): StandingsWidgetSettings['config'] => {
-  if (!savedConfig || typeof savedConfig !== 'object') return defaultConfig;
+  // Migration function to handle missing properties in the new config format
+  const migrateConfig = (
+    savedConfig: unknown
+  ): StandingsWidgetSettings['config'] => {
+    if (!savedConfig || typeof savedConfig !== 'object') return defaultConfig;
 
-  const config = savedConfig as Record<string, unknown>;
+    const config = savedConfig as Record<string, unknown>;
 
-  // Handle new format with missing properties
-  return {
-    iratingChange: {
-      enabled:
-        (config.iratingChange as { enabled?: boolean })?.enabled ?? true,
-    },
-    badge: {
-      enabled: (config.badge as { enabled?: boolean })?.enabled ?? true,
-      badgeFormat: ((config.badge as { badgeFormat?: string })?.badgeFormat as 'license-color-rating-bw' | 'license-color-rating-bw-no-license' | 'rating-color-no-license' | 'license-bw-rating-bw' | 'rating-only-bw-rating-bw' | 'license-bw-rating-bw-no-license' | 'rating-bw-no-license') ?? 'license-color-rating-bw'
-    },
-    delta: { enabled: (config.delta as { enabled?: boolean })?.enabled ?? true },
-    gap: { enabled: (config.gap as { enabled?: boolean })?.enabled ?? true },
-    interval: { enabled: (config.interval as { enabled?: boolean })?.enabled ?? false },
-    lastTime: {
-      enabled: (config.lastTime as { enabled?: boolean; timeFormat?: string })?.enabled ?? true,
-      timeFormat: ((config.lastTime as { enabled?: boolean; timeFormat?: string })?.timeFormat as 'full' | 'mixed' | 'minutes' | 'seconds-full' | 'seconds-mixed' | 'seconds') ?? 'full',
-    },
-    fastestTime: {
-      enabled: (config.fastestTime as { enabled?: boolean; timeFormat?: string })?.enabled ?? true,
-      timeFormat: ((config.fastestTime as { enabled?: boolean; timeFormat?: string })?.timeFormat as 'full' | 'mixed' | 'minutes' | 'seconds-full' | 'seconds-mixed' | 'seconds') ?? 'full',
-    },
-    background: {
-      opacity: (config.background as { opacity?: number })?.opacity ?? 0,
-    },
-    countryFlags: {
-      enabled: (config.countryFlags as { enabled?: boolean })?.enabled ?? true,
-    },
-    carNumber: {
-      enabled: (config.carNumber as { enabled?: boolean })?.enabled ?? true,
-    },
-    driverStandings: {
-      buffer:
-        (config.driverStandings as { buffer?: number })?.buffer ??
-        defaultConfig.driverStandings.buffer,
-      numNonClassDrivers:
-        (config.driverStandings as { numNonClassDrivers?: number })
-          ?.numNonClassDrivers ??
-        defaultConfig.driverStandings.numNonClassDrivers,
-      minPlayerClassDrivers:
-        (config.driverStandings as { minPlayerClassDrivers?: number })
-          ?.minPlayerClassDrivers ??
-        defaultConfig.driverStandings.minPlayerClassDrivers,
-      numTopDrivers:
-        (config.driverStandings as { numTopDrivers?: number })?.numTopDrivers ??
-        defaultConfig.driverStandings.numTopDrivers,
-    },
-    compound: {
-      enabled: (config.compound as { enabled?: boolean })?.enabled ?? true,
-    },
-    carManufacturer: {
-      enabled: (config.carManufacturer as { enabled?: boolean })?.enabled ?? true,
-    },
-    lapTimeDeltas: {
-      enabled: (config.lapTimeDeltas as { enabled?: boolean })?.enabled ?? false,
-      numLaps: (config.lapTimeDeltas as { numLaps?: number })?.numLaps ?? 3,
-    },
-    titleBar: {
-      enabled: (config.titleBar as { enabled?: boolean })?.enabled ?? true,
-      progressBar: {
-        enabled: (config.titleBar as { progressBar?: { enabled?: boolean } })?.progressBar?.enabled ?? true
-      }
-    },
-    showOnlyWhenOnTrack: (config.showOnlyWhenOnTrack as boolean) ?? false,
-    position: { enabled: (config.position as { enabled?: boolean })?.enabled ?? true },
-    driverName: { enabled: (config.driverName as { enabled?: boolean })?.enabled ?? true },
-    pitStatus: { enabled: (config.pitStatus as { enabled?: boolean })?.enabled ?? true },
-    displayOrder: mergeDisplayOrder(config.displayOrder as string[]),
+    // Handle new format with missing properties
+    return {
+      iratingChange: {
+        enabled:
+          (config.iratingChange as { enabled?: boolean })?.enabled ?? true,
+      },
+      badge: {
+        enabled: (config.badge as { enabled?: boolean })?.enabled ?? true,
+        badgeFormat: ((config.badge as { badgeFormat?: string })?.badgeFormat as 'license-color-rating-bw' | 'license-color-rating-bw-no-license' | 'rating-color-no-license' | 'license-bw-rating-bw' | 'rating-only-bw-rating-bw' | 'license-bw-rating-bw-no-license' | 'rating-bw-no-license') ?? 'license-color-rating-bw'
+      },
+      delta: { enabled: (config.delta as { enabled?: boolean })?.enabled ?? true },
+      gap: { enabled: (config.gap as { enabled?: boolean })?.enabled ?? true },
+      interval: { enabled: (config.interval as { enabled?: boolean })?.enabled ?? false },
+      lastTime: {
+        enabled: (config.lastTime as { enabled?: boolean; timeFormat?: string })?.enabled ?? true,
+        timeFormat: ((config.lastTime as { enabled?: boolean; timeFormat?: string })?.timeFormat as 'full' | 'mixed' | 'minutes' | 'seconds-full' | 'seconds-mixed' | 'seconds') ?? 'full',
+      },
+      fastestTime: {
+        enabled: (config.fastestTime as { enabled?: boolean; timeFormat?: string })?.enabled ?? true,
+        timeFormat: ((config.fastestTime as { enabled?: boolean; timeFormat?: string })?.timeFormat as 'full' | 'mixed' | 'minutes' | 'seconds-full' | 'seconds-mixed' | 'seconds') ?? 'full',
+      },
+      background: {
+        opacity: (config.background as { opacity?: number })?.opacity ?? 0,
+      },
+      countryFlags: {
+        enabled: (config.countryFlags as { enabled?: boolean })?.enabled ?? true,
+      },
+      carNumber: {
+        enabled: (config.carNumber as { enabled?: boolean })?.enabled ?? true,
+      },
+      driverStandings: {
+        buffer:
+          (config.driverStandings as { buffer?: number })?.buffer ??
+          defaultConfig.driverStandings.buffer,
+        numNonClassDrivers:
+          (config.driverStandings as { numNonClassDrivers?: number })
+            ?.numNonClassDrivers ??
+          defaultConfig.driverStandings.numNonClassDrivers,
+        minPlayerClassDrivers:
+          (config.driverStandings as { minPlayerClassDrivers?: number })
+            ?.minPlayerClassDrivers ??
+          defaultConfig.driverStandings.minPlayerClassDrivers,
+        numTopDrivers:
+          (config.driverStandings as { numTopDrivers?: number })?.numTopDrivers ??
+          defaultConfig.driverStandings.numTopDrivers,
+      },
+      compound: {
+        enabled: (config.compound as { enabled?: boolean })?.enabled ?? true,
+      },
+      carManufacturer: {
+        enabled: (config.carManufacturer as { enabled?: boolean })?.enabled ?? true,
+      },
+      lapTimeDeltas: {
+        enabled: (config.lapTimeDeltas as { enabled?: boolean })?.enabled ?? false,
+        numLaps: (config.lapTimeDeltas as { numLaps?: number })?.numLaps ?? 3,
+      },
+      titleBar: {
+        enabled: (config.titleBar as { enabled?: boolean })?.enabled ?? true,
+        progressBar: {
+          enabled: (config.titleBar as { progressBar?: { enabled?: boolean } })?.progressBar?.enabled ?? true
+        }
+      },
+      headerBar: {
+        enabled: (config.headerBar as { enabled?: boolean })?.enabled ?? true,
+        sessionName: { enabled: (config.headerBar as { sessionName?: { enabled?: boolean } })?.sessionName?.enabled ?? true },
+        timeRemaining: { enabled: (config.headerBar as { timeRemaining?: { enabled?: boolean } })?.timeRemaining?.enabled ?? true },
+        incidentCount: { enabled: (config.headerBar as { incidentCount?: { enabled?: boolean } })?.incidentCount?.enabled ?? true },
+        brakeBias: { enabled: (config.headerBar as { brakeBias?: { enabled?: boolean } })?.brakeBias?.enabled ?? false },
+        displayOrder: (config.headerBar as { displayOrder?: string[] })?.displayOrder ?? ['sessionName', 'timeRemaining', 'brakeBias', 'incidentCount']
+      },
+      footerBar: {
+        enabled: (config.footerBar as { enabled?: boolean })?.enabled ?? true,
+        localTime: { enabled: (config.footerBar as { localTime?: { enabled?: boolean } })?.localTime?.enabled ?? true },
+        trackWetness: { enabled: (config.footerBar as { trackWetness?: { enabled?: boolean } })?.trackWetness?.enabled ?? true },
+        airTemperature: { enabled: (config.footerBar as { airTemperature?: { enabled?: boolean } })?.airTemperature?.enabled ?? true },
+        trackTemperature: { enabled: (config.footerBar as { trackTemperature?: { enabled?: boolean } })?.trackTemperature?.enabled ?? true },
+        displayOrder: (config.footerBar as { displayOrder?: string[] })?.displayOrder ?? ['localTime', 'trackWetness', 'airTemperature', 'trackTemperature']
+      },
+      showOnlyWhenOnTrack: (config.showOnlyWhenOnTrack as boolean) ?? false,
+      position: { enabled: (config.position as { enabled?: boolean })?.enabled ?? true },
+      driverName: { enabled: (config.driverName as { enabled?: boolean })?.enabled ?? true },
+      pitStatus: { enabled: (config.pitStatus as { enabled?: boolean })?.enabled ?? true },
+      displayOrder: mergeDisplayOrder(config.displayOrder as string[]),
+    };
   };
-};
 
 interface SortableItemProps {
   setting: SortableSetting;
@@ -614,6 +646,202 @@ export const StandingsSettings = () => {
                     }
                   />
                 </div>
+              )}
+            </div>
+          </div>
+
+          {/* Header Bar Settings */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-medium text-slate-200">Header Bar</h3>
+              <button
+                onClick={() => {
+                  const defaultOrder = ['sessionName', 'timeRemaining', 'brakeBias', 'incidentCount'];
+                  handleConfigChange({
+                    headerBar: {
+                      ...settings.config.headerBar,
+                      displayOrder: defaultOrder
+                    }
+                  });
+                }}
+                className="px-3 py-1 text-sm bg-slate-600 hover:bg-slate-500 text-slate-300 rounded-md transition-colors"
+              >
+                Reset to Default Order
+              </button>
+            </div>
+            <div className="space-y-3 px-4">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-slate-300">Show Header Bar</span>
+                <ToggleSwitch
+                  enabled={settings.config.headerBar.enabled}
+                  onToggle={(enabled) =>
+                    handleConfigChange({
+                      headerBar: {
+                        ...settings.config.headerBar,
+                        enabled
+                      }
+                    })
+                  }
+                />
+              </div>
+              {settings.config.headerBar.enabled && (
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={(event: DragEndEvent) => {
+                    const { active, over } = event;
+                    if (over && active.id !== over.id) {
+                      const oldIndex = settings.config.headerBar.displayOrder.indexOf(active.id as string);
+                      const newIndex = settings.config.headerBar.displayOrder.indexOf(over.id as string);
+                      const newOrder = arrayMove(settings.config.headerBar.displayOrder, oldIndex, newIndex);
+                      handleConfigChange({
+                        headerBar: {
+                          ...settings.config.headerBar,
+                          displayOrder: newOrder
+                        }
+                      });
+                    }
+                  }}
+                >
+                  <SortableContext items={settings.config.headerBar.displayOrder} strategy={verticalListSortingStrategy}>
+                    <div className="space-y-3 pl-4">
+                      {settings.config.headerBar.displayOrder.map((itemId) => {
+                        const itemConfig = settings.config.headerBar[itemId as keyof typeof settings.config.headerBar] as { enabled: boolean };
+                        const labels: Record<string, string> = {
+                          sessionName: 'Session Name',
+                          timeRemaining: 'Time Remaining',
+                          brakeBias: 'Brake Bias',
+                          incidentCount: 'Incident Count'
+                        };
+                        return (
+                          <div key={itemId}>
+                            <div className="flex items-center justify-between group">
+                              <div className="flex items-center gap-2 flex-1">
+                                <div
+                                  {...useSortable({ id: itemId }).attributes}
+                                  {...useSortable({ id: itemId }).listeners}
+                                  className="cursor-grab opacity-60 hover:opacity-100 transition-opacity p-1 hover:bg-slate-600 rounded"
+                                >
+                                  <DotsSixVerticalIcon size={16} className="text-slate-400" />
+                                </div>
+                                <span className="text-sm text-slate-300">{labels[itemId]}</span>
+                              </div>
+                              <ToggleSwitch
+                                enabled={itemConfig.enabled}
+                                onToggle={(enabled) => {
+                                  handleConfigChange({
+                                    headerBar: {
+                                      ...settings.config.headerBar,
+                                      [itemId]: { enabled }
+                                    }
+                                  });
+                                }}
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </SortableContext>
+                </DndContext>
+              )}
+            </div>
+          </div>
+
+          {/* Footer Bar Settings */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-medium text-slate-200">Footer Bar</h3>
+              <button
+                onClick={() => {
+                  const defaultOrder = ['localTime', 'trackWetness', 'airTemperature', 'trackTemperature'];
+                  handleConfigChange({
+                    footerBar: {
+                      ...settings.config.footerBar,
+                      displayOrder: defaultOrder
+                    }
+                  });
+                }}
+                className="px-3 py-1 text-sm bg-slate-600 hover:bg-slate-500 text-slate-300 rounded-md transition-colors"
+              >
+                Reset to Default Order
+              </button>
+            </div>
+            <div className="space-y-3 px-4">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-slate-300">Show Footer Bar</span>
+                <ToggleSwitch
+                  enabled={settings.config.footerBar.enabled}
+                  onToggle={(enabled) =>
+                    handleConfigChange({
+                      footerBar: {
+                        ...settings.config.footerBar,
+                        enabled
+                      }
+                    })
+                  }
+                />
+              </div>
+              {settings.config.footerBar.enabled && (
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={(event: DragEndEvent) => {
+                    const { active, over } = event;
+                    if (over && active.id !== over.id) {
+                      const oldIndex = settings.config.footerBar.displayOrder.indexOf(active.id as string);
+                      const newIndex = settings.config.footerBar.displayOrder.indexOf(over.id as string);
+                      const newOrder = arrayMove(settings.config.footerBar.displayOrder, oldIndex, newIndex);
+                      handleConfigChange({
+                        footerBar: {
+                          ...settings.config.footerBar,
+                          displayOrder: newOrder
+                        }
+                      });
+                    }
+                  }}
+                >
+                  <SortableContext items={settings.config.footerBar.displayOrder} strategy={verticalListSortingStrategy}>
+                    <div className="space-y-3 pl-4">
+                      {settings.config.footerBar.displayOrder.map((itemId) => {
+                        const itemConfig = settings.config.footerBar[itemId as keyof typeof settings.config.footerBar] as { enabled: boolean };
+                        const labels: Record<string, string> = {
+                          localTime: 'Local Time',
+                          trackWetness: 'Track Wetness',
+                          airTemperature: 'Air Temperature',
+                          trackTemperature: 'Track Temperature'
+                        };
+                        return (
+                          <div key={itemId}>
+                            <div className="flex items-center justify-between group">
+                              <div className="flex items-center gap-2 flex-1">
+                                <div
+                                  {...useSortable({ id: itemId }).attributes}
+                                  {...useSortable({ id: itemId }).listeners}
+                                  className="cursor-grab opacity-60 hover:opacity-100 transition-opacity p-1 hover:bg-slate-600 rounded"
+                                >
+                                  <DotsSixVerticalIcon size={16} className="text-slate-400" />
+                                </div>
+                                <span className="text-sm text-slate-300">{labels[itemId]}</span>
+                              </div>
+                              <ToggleSwitch
+                                enabled={itemConfig.enabled}
+                                onToggle={(enabled) => {
+                                  handleConfigChange({
+                                    footerBar: {
+                                      ...settings.config.footerBar,
+                                      [itemId]: { enabled }
+                                    }
+                                  });
+                                }}
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </SortableContext>
+                </DndContext>
               )}
             </div>
           </div>
