@@ -24,7 +24,7 @@ import { useCurrentTime } from './hooks/useCurrentTime';
 import { useTrackWetness } from './hooks/useTrackWetness';
 import { useTrackTemperature } from './hooks/useTrackTemperature';
 import { formatTime } from '../../utils/time';
-import { ClockIcon, DropIcon, RoadHorizonIcon, ThermometerIcon } from '@phosphor-icons/react';
+import { ClockIcon, DropIcon, RoadHorizonIcon, ThermometerIcon, TireIcon } from '@phosphor-icons/react';
 
 // Custom component that renders standings without header/footer session bars
 const StandingsWithoutHeaderFooter = () => {
@@ -506,7 +506,8 @@ const FullHeaderBar = () => {
       )}
       {brakeBias && (
         <div className="flex items-center gap-1">
-          <span>{brakeBias.isClio ? `BV: ${brakeBias.value.toFixed(0)}` : `BB: ${brakeBias.value.toFixed(1)}%`}</span>
+          <TireIcon />
+          <span>{brakeBias.isClio ? `${brakeBias.value.toFixed(0)}` : `${brakeBias.value.toFixed(1)}%`}</span>
         </div>
       )}
       <div className="flex items-center gap-1">

@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 export const useCurrentTime = () => {
   const options: Intl.DateTimeFormatOptions = useMemo(
     () => ({
-      hour: '2-digit',
+      hour: 'numeric',
       minute: '2-digit',
     }),
     []

@@ -132,4 +132,4 @@ export const Standings = () => {
       {(settings?.footerBar?.enabled ?? true) && <SessionBar position="footer" variant="standings" />}
     </div>
   );
-a};
+};

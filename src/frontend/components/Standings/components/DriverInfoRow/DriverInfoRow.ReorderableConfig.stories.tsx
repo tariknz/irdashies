@@ -389,10 +389,18 @@ const RelativeWithReorderableConfig = () => {
         timeRemaining: { enabled: true },
         incidentCount: { enabled: true },
         brakeBias: { enabled: false },
+        localTime: { enabled: true },
+        trackWetness: { enabled: false },
+        airTemperature: { enabled: false },
+        trackTemperature: { enabled: false },
         displayOrder: ['sessionName', 'timeRemaining', 'brakeBias', 'incidentCount']
       },
       footerBar: {
         enabled: true,
+        sessionName: { enabled: false },
+        timeRemaining: { enabled: false },
+        incidentCount: { enabled: false },
+        brakeBias: { enabled: true },
         localTime: { enabled: true },
         trackWetness: { enabled: true },
         airTemperature: { enabled: true },

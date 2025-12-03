@@ -246,7 +246,14 @@ export default {
 type Story = StoryObj<typeof Relative>;
 
 export const Primary: Story = {
-  decorators: [TelemetryDecorator()],
+  decorators: [
+    TelemetryDecoratorWithConfig(undefined, {
+      relative: {
+        headerBar: { enabled: true },
+        footerBar: { enabled: true },
+      },
+    }),
+  ],
 };
 
 export const DynamicTelemetry: Story = {
@@ -262,7 +269,12 @@ export const DynamicTelemetry: Story = {
             onPathChange={setSelectedPath}
             initialPath={selectedPath}
           />
-          {TelemetryDecorator(selectedPath)(Story, context)}
+          {TelemetryDecoratorWithConfig(selectedPath, {
+            relative: {
+              headerBar: { enabled: true },
+              footerBar: { enabled: true },
+            },
+          })(Story, context)}
         </>
       );
     },
@@ -270,37 +282,88 @@ export const DynamicTelemetry: Story = {
 };
 
 export const MultiClassPCCWithClio: Story = {
-  decorators: [TelemetryDecorator('/test-data/1731637331038')],
+  decorators: [
+    TelemetryDecoratorWithConfig('/test-data/1731637331038', {
+      relative: {
+        headerBar: { enabled: true },
+        footerBar: { enabled: true },
+      },
+    }),
+  ],
 };
 
 export const SupercarsRace: Story = {
-  decorators: [TelemetryDecorator('/test-data/1732274253573')],
+  decorators: [
+    TelemetryDecoratorWithConfig('/test-data/1732274253573', {
+      relative: {
+        headerBar: { enabled: true },
+        footerBar: { enabled: true },
+      },
+    }),
+  ],
 };
 
 export const AdvancedMX5: Story = {
-  decorators: [TelemetryDecorator('/test-data/1732260478001')],
+  decorators: [
+    TelemetryDecoratorWithConfig('/test-data/1732260478001', {
+      relative: {
+        headerBar: { enabled: true },
+        footerBar: { enabled: true },
+      },
+    }),
+  ],
 };
 
 export const GT3Practice: Story = {
-  decorators: [TelemetryDecorator('/test-data/1732355190142')],
+  decorators: [
+    TelemetryDecoratorWithConfig('/test-data/1732355190142', {
+      relative: {
+        headerBar: { enabled: true },
+        footerBar: { enabled: true },
+      },
+    }),
+  ],
 };
 
 export const PCCPacing: Story = {
-  decorators: [TelemetryDecorator('/test-data/1735296198162')],
+  decorators: [
+    TelemetryDecoratorWithConfig('/test-data/1735296198162', {
+      relative: {
+        headerBar: { enabled: true },
+        footerBar: { enabled: true },
+      },
+    }),
+  ],
 };
 
 export const MultiClass: Story = {
-  decorators: [TelemetryDecorator('/test-data/1747384033336')],
+  decorators: [
+    TelemetryDecoratorWithConfig('/test-data/1747384033336', {
+      relative: {
+        headerBar: { enabled: true },
+        footerBar: { enabled: true },
+      },
+    }),
+  ],
 };
 
 export const WithFlairs: Story = {
-  decorators: [TelemetryDecorator('/test-data/1752616787255')],
+  decorators: [
+    TelemetryDecoratorWithConfig('/test-data/1752616787255', {
+      relative: {
+        headerBar: { enabled: true },
+        footerBar: { enabled: true },
+      },
+    }),
+  ],
 };
 
 export const WithTimesEnabled: Story = {
   decorators: [
     TelemetryDecoratorWithConfig(undefined, {
       relative: {
+        headerBar: { enabled: true },
+        footerBar: { enabled: true },
         lastTime: { enabled: true },
         fastestTime: { enabled: true },
       },
@@ -312,6 +375,8 @@ export const WithOnlyLastTimesEnabled: Story = {
   decorators: [
     TelemetryDecoratorWithConfig(undefined, {
       relative: {
+        headerBar: { enabled: true },
+        footerBar: { enabled: true },
         lastTime: { enabled: true },
       },
     }),
@@ -322,6 +387,8 @@ export const WithTyresEnabled: Story = {
   decorators: [
     TelemetryDecoratorWithConfig(undefined, {
       relative: {
+        headerBar: { enabled: true },
+        footerBar: { enabled: true },
         compound: { enabled: true },
       },
     }),
@@ -329,7 +396,14 @@ export const WithTyresEnabled: Story = {
 };
 
 export const SuzukaGT3EnduranceRace: Story = {
-  decorators: [TelemetryDecorator('/test-data/1763227688917')],
+  decorators: [
+    TelemetryDecoratorWithConfig('/test-data/1763227688917', {
+      relative: {
+        headerBar: { enabled: true },
+        footerBar: { enabled: true },
+      },
+    }),
+  ],
 };
 
 // Component that renders relative standings without header bar but with footer
