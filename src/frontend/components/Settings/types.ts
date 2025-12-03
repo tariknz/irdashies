@@ -31,10 +31,18 @@ export interface StandingsWidgetSettings extends BaseWidgetSettings {
       timeRemaining: { enabled: boolean };
       incidentCount: { enabled: boolean };
       brakeBias: { enabled: boolean };
+      localTime: { enabled: boolean };
+      trackWetness: { enabled: boolean };
+      airTemperature: { enabled: boolean };
+      trackTemperature: { enabled: boolean };
       displayOrder: string[];
     };
     footerBar: {
       enabled: boolean;
+      sessionName: { enabled: boolean };
+      timeRemaining: { enabled: boolean };
+      incidentCount: { enabled: boolean };
+      brakeBias: { enabled: boolean };
       localTime: { enabled: boolean };
       trackWetness: { enabled: boolean };
       airTemperature: { enabled: boolean };
@@ -66,10 +74,18 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
       timeRemaining: { enabled: boolean };
       incidentCount: { enabled: boolean };
       brakeBias: { enabled: boolean };
+      localTime: { enabled: boolean };
+      trackWetness: { enabled: boolean };
+      airTemperature: { enabled: boolean };
+      trackTemperature: { enabled: boolean };
       displayOrder: string[];
     };
     footerBar: {
       enabled: boolean;
+      sessionName: { enabled: boolean };
+      timeRemaining: { enabled: boolean };
+      incidentCount: { enabled: boolean };
+      brakeBias: { enabled: boolean };
       localTime: { enabled: boolean };
       trackWetness: { enabled: boolean };
       airTemperature: { enabled: boolean };

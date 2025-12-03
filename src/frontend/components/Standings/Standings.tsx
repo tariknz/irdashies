@@ -48,7 +48,7 @@ export const Standings = () => {
     >
       <TitleBar titleBarSettings={settings?.titleBar} />
       {(settings?.headerBar?.enabled ?? true) && <SessionBar />}
-      <table className="w-full table-auto text-sm border-separate">
+      <table className="w-full table-auto text-sm border-separate border-spacing-y-0.5">
         <tbody ref={parent}>
           {standings.map(([classId, classStandings]) => (
             classStandings.length > 0 ? (
