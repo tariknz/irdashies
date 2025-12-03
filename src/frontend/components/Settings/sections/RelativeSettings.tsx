@@ -64,7 +64,6 @@ const defaultConfig: RelativeWidgetSettings['config'] = {
   fastestTime: { enabled: false, timeFormat: 'full' },
   lastTime: { enabled: false, timeFormat: 'full' },
   compound: { enabled: false },
-  brakeBias: { enabled: false },
   displayOrder: sortableSettings.map(s => s.id),
   enhancedGapCalculation: {
     enabled: true,
@@ -78,7 +77,7 @@ const defaultConfig: RelativeWidgetSettings['config'] = {
     sessionName: { enabled: true },
     timeRemaining: { enabled: true },
     incidentCount: { enabled: true },
-    brakeBias: { enabled: false },
+    brakeBias: { enabled: true },
     localTime: { enabled: false },
     trackWetness: { enabled: false },
     airTemperature: { enabled: false },
@@ -147,7 +146,6 @@ const migrateConfig = (savedConfig: unknown): RelativeWidgetSettings['config'] =
     driverName: { enabled: (config.driverName as { enabled?: boolean })?.enabled ?? true },
     pitStatus: { enabled: (config.pitStatus as { enabled?: boolean })?.enabled ?? true },
     carManufacturer: { enabled: (config.carManufacturer as { enabled?: boolean })?.enabled ?? true },
-    brakeBias: { enabled: (config.brakeBias as { enabled?: boolean })?.enabled ?? false },
     badge: {
       enabled: (config.badge as { enabled?: boolean })?.enabled ?? true,
       badgeFormat: ((config.badge as { badgeFormat?: string })?.badgeFormat as 'license-color-rating-bw' | 'license-color-rating-bw-no-license' | 'rating-color-no-license' | 'license-bw-rating-bw' | 'rating-only-bw-rating-bw' | 'license-bw-rating-bw-no-license' | 'rating-bw-no-license') ?? 'license-color-rating-bw'
@@ -617,30 +615,6 @@ export const RelativeSettings = () => {
                     </div>
                   </SortableContext>
                 </DndContext>
-              </div>
-            </div>
-            {/* Session Bar Settings */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium text-slate-200">
-                  Session Bar
-                </h3>
-              </div>
-              <div className="space-y-3 px-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <span className="text-sm text-slate-300">Brake Bias</span>
-                    <p className="text-xs text-slate-400">
-                      Show brake bias in header (or brake valve for Clio)
-                    </p>
-                  </div>
-                  <ToggleSwitch
-                    enabled={settings.config.brakeBias.enabled}
-                    onToggle={(enabled) =>
-                      handleConfigChange({ brakeBias: { enabled } })
-                    }
-                  />
-                </div>
               </div>
             </div>
 

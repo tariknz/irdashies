@@ -6,7 +6,6 @@ import { useTrackTemperature } from '../../hooks/useTrackTemperature';
 import { useCurrentTime } from '../../hooks/useCurrentTime';
 import { useStandingsSettings, useRelativeSettings } from '../../hooks';
 import { ClockIcon, DropIcon, RoadHorizonIcon, ThermometerIcon, TireIcon } from '@phosphor-icons/react';
-import type { StandingsWidgetSettings, RelativeWidgetSettings } from '../../../Settings/types';
 
 interface SessionBarProps {
   position?: 'header' | 'footer';
@@ -23,7 +22,7 @@ export const SessionBar = ({ position = 'header', variant = 'standings' }: Sessi
   const sessionName = useSessionName(sessionNum);
   const sessionLaps = useSessionLaps(sessionNum);
   const { incidentLimit, incidents } = useDriverIncidents();
-  const { total, current, timeElapsed, timeRemaining } = useSessionLapCount();
+  const { current, timeElapsed, timeRemaining } = useSessionLapCount();
   const brakeBias = useBrakeBias();
   const { trackWetness } = useTrackWetness();
   const { trackTemp, airTemp } = useTrackTemperature();

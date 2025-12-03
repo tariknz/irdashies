@@ -5,7 +5,7 @@ import {
   DynamicTelemetrySelector,
   TelemetryDecoratorWithConfig,
 } from '@irdashies/storybook';
-import { useState, Fragment, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useAutoAnimate } from '@formkit/auto-animate/react';
 import { DriverInfoRow } from './components/DriverInfoRow/DriverInfoRow';
 import { DriverRatingBadge } from './components/DriverRatingBadge/DriverRatingBadge';
