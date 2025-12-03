@@ -5,7 +5,7 @@ import { useTrackWetness } from '../../hooks/useTrackWetness';
 import { useTrackTemperature } from '../../hooks/useTrackTemperature';
 import { useCurrentTime } from '../../hooks/useCurrentTime';
 import { useStandingsSettings, useRelativeSettings } from '../../hooks';
-import { ClockIcon, DropIcon, RoadHorizonIcon, ThermometerIcon } from '@phosphor-icons/react';
+import { ClockIcon, DropIcon, RoadHorizonIcon, ThermometerIcon, TireIcon } from '@phosphor-icons/react';
 import type { StandingsWidgetSettings, RelativeWidgetSettings } from '../../../Settings/types';
 
 interface SessionBarProps {
@@ -68,8 +68,9 @@ export const SessionBar = ({ position = 'header', variant = 'standings' }: Sessi
       render: () => {
         if (!brakeBias || typeof brakeBias.value !== 'number' || isNaN(brakeBias.value)) return null;
         return (
-          <div className="flex justify-center">
-            {brakeBias.isClio ? `BV: ${brakeBias.value.toFixed(0)}` : `BB: ${brakeBias.value.toFixed(1)}%`}
+          <div className="flex justify-center gap-1 items-center">
+            <TireIcon />
+            {brakeBias.isClio ? `${brakeBias.value.toFixed(0)}` : `${brakeBias.value.toFixed(1)}%`}
           </div>
         );
       },
