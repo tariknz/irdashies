@@ -11,7 +11,7 @@ import { DriverInfoRow } from './components/DriverInfoRow/DriverInfoRow';
 import { DriverRatingBadge } from './components/DriverRatingBadge/DriverRatingBadge';
 import { RatingChange } from './components/RatingChange/RatingChange';
 import { SessionBar } from './components/SessionBar/SessionBar';
-import { SessionFooter } from './components/SessionFooter/SessionFooter';
+
 import { TitleBar } from './components/TitleBar/TitleBar';
 import { useDrivingState } from '@irdashies/context';
 import { useRelativeSettings, useDriverRelatives, useHighlightColor } from './hooks';
@@ -525,8 +525,8 @@ const RelativeWithoutHeader = () => {
         <table className="w-full table-auto text-sm border-separate border-spacing-y-0.5">
           <tbody ref={parent}>{rows}</tbody>
         </table>
-        {/* Keep SessionFooter here */}
-        <SessionFooter />
+        {/* Keep SessionBar here */}
+        <SessionBar position="footer" />
       </div>
     );
   }
@@ -543,8 +543,8 @@ const RelativeWithoutHeader = () => {
       <table className="w-full table-auto text-sm border-separate border-spacing-y-0.5">
         <tbody ref={parent}>{rows}</tbody>
       </table>
-      {/* Keep SessionFooter here */}
-      <SessionFooter />
+      {/* Keep SessionBar here */}
+      <SessionBar position="footer" />
     </div>
   );
 };

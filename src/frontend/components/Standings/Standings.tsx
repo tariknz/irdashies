@@ -5,7 +5,7 @@ import { DriverInfoRow } from './components/DriverInfoRow/DriverInfoRow';
 import { DriverRatingBadge } from './components/DriverRatingBadge/DriverRatingBadge';
 import { RatingChange } from './components/RatingChange/RatingChange';
 import { SessionBar } from './components/SessionBar/SessionBar';
-import { SessionFooter } from './components/SessionFooter/SessionFooter';
+
 import { TitleBar } from './components/TitleBar/TitleBar';
 import {
   useCarClassStats,
@@ -47,7 +47,7 @@ export const Standings = () => {
       }}
     >
       <TitleBar titleBarSettings={settings?.titleBar} />
-      {(settings?.headerBar?.enabled ?? true) && <SessionBar />}
+      {(settings?.headerBar?.enabled ?? true) && <SessionBar position="header" variant="standings" />}
       <table className="w-full table-auto text-sm border-separate border-spacing-y-0.5">
         <tbody ref={parent}>
           {standings.map(([classId, classStandings]) => (
@@ -129,7 +129,7 @@ export const Standings = () => {
           ))}
         </tbody>
       </table>
-      {(settings?.footerBar?.enabled ?? true) && <SessionFooter />}
+      {(settings?.footerBar?.enabled ?? true) && <SessionBar position="footer" variant="standings" />}
     </div>
   );
-};
+a};

@@ -6,7 +6,7 @@ import { useRelativeSettings, useDriverRelatives, useHighlightColor } from './ho
 import { DriverRatingBadge } from './components/DriverRatingBadge/DriverRatingBadge';
 import { RatingChange } from './components/RatingChange/RatingChange';
 import { SessionBar } from './components/SessionBar/SessionBar';
-import { SessionFooter } from './components/SessionFooter/SessionFooter';
+
 import { TitleBar } from './components/TitleBar/TitleBar';
 import { usePitLabStoreUpdater } from '../../context/PitLapStore/PitLapStoreUpdater';
 import { useRelativeGapStoreUpdater } from '@irdashies/context';
@@ -200,11 +200,11 @@ export const Relative = () => {
     return (
       <div className="w-full h-full">
         <TitleBar titleBarSettings={settings?.titleBar} />
-        <SessionBar />
+        {(settings?.headerBar?.enabled ?? false) && <SessionBar position="header" variant="relative" />}
         <table className="w-full table-auto text-sm border-separate border-spacing-y-0.5">
           <tbody ref={parent}>{rows}</tbody>
         </table>
-        <SessionFooter />
+        {(settings?.footerBar?.enabled ?? true) && <SessionBar position="footer" variant="relative" />}
       </div>
     );
   }
@@ -217,11 +217,11 @@ export const Relative = () => {
       }}
     >
       <TitleBar titleBarSettings={settings?.titleBar} />
-      <SessionBar />
+      {(settings?.headerBar?.enabled ?? false) && <SessionBar position="header" variant="relative" />}
       <table className="w-full table-auto text-sm border-separate border-spacing-y-0.5">
         <tbody ref={parent}>{rows}</tbody>
       </table>
-      <SessionFooter />
+      {(settings?.footerBar?.enabled ?? true) && <SessionBar position="footer" variant="relative" />}
     </div>
   );
 };

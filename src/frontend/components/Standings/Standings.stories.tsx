@@ -8,7 +8,7 @@ import { DriverInfoRow } from './components/DriverInfoRow/DriverInfoRow';
 import { DriverRatingBadge } from './components/DriverRatingBadge/DriverRatingBadge';
 import { RatingChange } from './components/RatingChange/RatingChange';
 import { SessionBar } from './components/SessionBar/SessionBar';
-import { SessionFooter } from './components/SessionFooter/SessionFooter';
+
 import { TitleBar } from './components/TitleBar/TitleBar';
 import {
   useCarClassStats,
@@ -331,8 +331,8 @@ const StandingsWithoutHeader = () => {
           ))}
         </tbody>
       </table>
-      {/* Keep SessionFooter here */}
-      <SessionFooter />
+      {/* Keep SessionBar here */}
+      <SessionBar position="footer" />
     </div>
   );
 };
