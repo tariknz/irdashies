@@ -329,7 +329,8 @@ export const augmentStandingsWithGap = (
       // Calculate laps down: positive if driver is behind on laps, negative if ahead
       const leaderLap = lastLap[classLeader.carIdx] ?? 0;
       const driverLap = lastLap[driverStanding.carIdx] ?? 0;
-      const lapsDown = Math.max(0, leaderLap - driverLap); // Only show positive laps down
+      // Calculate laps down: only show when leader is at least 2 laps ahead
+      const lapsDown = Math.max(0, leaderLap - driverLap - 1);
 
       // Gap is simply the difference between this driver's delta and the class leader's delta
       const gap = driverStanding.delta !== undefined && classLeader.delta !== undefined
