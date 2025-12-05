@@ -57,6 +57,10 @@ interface DriverRowInfoProps {
   carTrackSurface?: number;
   currentSessionType?: string;
   highlightColor?: number;
+  dnf: boolean;
+  repair: boolean;
+  penalty: boolean;
+  slowdown: boolean;
 }
 
 export const DriverInfoRow = memo(
@@ -96,8 +100,12 @@ export const DriverInfoRow = memo(
     prevCarTrackSurface,
     carTrackSurface,
     currentSessionType,
-    highlightColor = 960745
-   }: DriverRowInfoProps) => {
+    highlightColor = 960745,
+    dnf,
+    repair,
+    penalty,
+    slowdown,
+  }: DriverRowInfoProps) => {
     const lastTimeString = useMemo(() => {
       const format = config?.lastTime?.timeFormat ?? 'full';
       return formatTime(lastTime, format as TimeFormat);
@@ -107,6 +115,8 @@ export const DriverInfoRow = memo(
       const format = config?.fastestTime?.timeFormat ?? 'full';
       return formatTime(fastestTime, format as TimeFormat);
     }, [fastestTime, config?.fastestTime?.timeFormat]);
+
+    const offTrack = carTrackSurface === 0 ? true : false;
 
     const tailwindStyles = useMemo(() => {
       return getTailwindStyle(classColor, highlightColor, isMultiClass);
@@ -130,6 +140,7 @@ export const DriverInfoRow = memo(
               hidden={hidden}
               position={position}
               isPlayer={isPlayer}
+              offTrack={offTrack}
               tailwindStyles={tailwindStyles}
             />
           ),
@@ -190,6 +201,10 @@ export const DriverInfoRow = memo(
               lastPitLap={lastPitLap}
               lastLap={lastLap}
               currentSessionType={currentSessionType}
+              dnf={dnf}
+              repair={repair}
+              penalty={penalty}
+              slowdown={slowdown}
             />
           ),
         },
@@ -246,9 +261,18 @@ export const DriverInfoRow = memo(
           id: 'interval',
           shouldRender:
             (displayOrder ? displayOrder.includes('interval') : true) &&
-            (config && 'interval' in config ? config.interval.enabled : false) &&
+            (config && 'interval' in config
+              ? config.interval.enabled
+              : false) &&
             currentSessionType?.toLowerCase() === 'race',
-          component: <DeltaCell key="interval" hidden={hidden} delta={interval} showDashForUndefined={true} />,
+          component: (
+            <DeltaCell
+              key="interval"
+              hidden={hidden}
+              delta={interval}
+              showDashForUndefined={true}
+            />
+          ),
         },
         {
           id: 'fastestTime',
@@ -333,12 +357,22 @@ export const DriverInfoRow = memo(
       hidden,
       position,
       isPlayer,
+      offTrack,
       tailwindStyles,
       carNumber,
       flairId,
       name,
       radioActive,
       onPitRoad,
+      carTrackSurface,
+      prevCarTrackSurface,
+      lastPitLap,
+      lastLap,
+      currentSessionType,
+      dnf,
+      repair,
+      penalty,
+      slowdown,
       carId,
       badge,
       iratingChange,
@@ -353,11 +387,6 @@ export const DriverInfoRow = memo(
       tireCompound,
       lapTimeDeltas,
       emptyLapDeltaPlaceholders,
-      carTrackSurface,
-      currentSessionType,
-      lastLap,
-      lastPitLap,
-      prevCarTrackSurface
     ]);
 
     return (

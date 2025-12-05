@@ -4,6 +4,30 @@
 
 import type { FuelLapData } from './types';
 
+// ============================================================================
+// Constants - Session Flags (defined once at module level)
+// ============================================================================
+
+/** Green flag bit - racing conditions */
+export const FLAG_GREEN = 0x00000004; // 1 << 2
+/** White flag bit - final lap */
+export const FLAG_WHITE = 0x00000002; // 1 << 1
+/** Checkered flag bit - race finished */
+export const FLAG_CHECKERED = 0x00000001; // 1 << 0
+/** Yellow flag bit - caution */
+export const FLAG_YELLOW = 0x00004000; // 1 << 14
+/** Caution flag bit */
+export const FLAG_CAUTION = 0x00008000; // 1 << 15
+/** Red flag bit - session stopped */
+export const FLAG_RED = 0x00010000; // 1 << 16
+
+/** Combined mask for non-green conditions */
+const CAUTION_FLAGS_MASK = FLAG_YELLOW | FLAG_CAUTION | FLAG_RED;
+
+// ============================================================================
+// Validation Functions
+// ============================================================================
+
 /**
  * Validate if a lap's fuel data is reasonable (outlier detection)
  */
@@ -18,17 +42,25 @@ export function validateLapData(
   // Need at least 3 laps for statistical validation
   if (recentLaps.length < 3) return true;
 
-  // Statistical outlier detection (3 standard deviations)
+  // Statistical outlier detection
   const fuelValues = recentLaps.map((l) => l.fuelUsed);
-  const mean = fuelValues.reduce((a, b) => a + b) / fuelValues.length;
+  const mean = fuelValues.reduce((a, b) => a + b, 0) / fuelValues.length;
   const variance =
-    fuelValues.reduce((sq, n) => sq + Math.pow(n - mean, 2), 0) /
-    fuelValues.length;
+    fuelValues.reduce((sq, n) => sq + (n - mean) ** 2, 0) / fuelValues.length;
   const stdDev = Math.sqrt(variance);
 
-  // Allow up to 3 standard deviations from mean
-  return Math.abs(fuelUsed - mean) <= 3 * stdDev;
+  // Use minimum threshold of 15% of mean to handle fuel saving scenarios
+  // This ensures laps with different driving styles (normal vs fuel saving) are accepted
+  // Example: 1.08L normal, 0.97L ultra save = ~10% difference, well within 15%
+  const minThreshold = mean * 0.15;
+  const threshold = Math.max(3 * stdDev, minThreshold);
+
+  return Math.abs(fuelUsed - mean) <= threshold;
 }
+
+// ============================================================================
+// Calculation Functions
+// ============================================================================
 
 /**
  * Calculate weighted average fuel consumption
@@ -39,29 +71,101 @@ export function calculateWeightedAverage(laps: FuelLapData[]): number {
 
   let weightedSum = 0;
   let weightSum = 0;
+  const baseWeight = 1.2;
+  const lapCount = laps.length;
 
   // Use exponential weighting: more recent laps have higher weight
-  laps.forEach((lap, idx) => {
-    const weight = Math.pow(1.2, laps.length - idx - 1);
-    weightedSum += lap.fuelUsed * weight;
+  for (let idx = 0; idx < lapCount; idx++) {
+    const weight = baseWeight ** (lapCount - idx - 1);
+    weightedSum += laps[idx].fuelUsed * weight;
     weightSum += weight;
-  });
+  }
 
   return weightedSum / weightSum;
 }
 
 /**
+ * Calculate simple average of fuel values
+ * More efficient than weighted average when weights aren't needed
+ */
+export function calculateSimpleAverage(laps: FuelLapData[]): number {
+  if (laps.length === 0) return 0;
+  let sum = 0;
+  for (const lap of laps) {
+    sum += lap.fuelUsed;
+  }
+  return sum / laps.length;
+}
+
+/**
+ * Calculate average lap time from lap data
+ */
+export function calculateAvgLapTime(laps: FuelLapData[]): number {
+  if (laps.length === 0) return 0;
+  let sum = 0;
+  for (const lap of laps) {
+    sum += lap.lapTime;
+  }
+  return sum / laps.length;
+}
+
+/**
+ * Find min and max fuel usage in a single pass
+ * More efficient than separate Math.min/max with spread operator
+ */
+export function findFuelMinMax(laps: FuelLapData[]): {
+  min: number;
+  max: number;
+} {
+  if (laps.length === 0) return { min: 0, max: 0 };
+
+  let min = laps[0].fuelUsed;
+  let max = laps[0].fuelUsed;
+
+  for (let i = 1; i < laps.length; i++) {
+    const fuel = laps[i].fuelUsed;
+    if (fuel < min) min = fuel;
+    if (fuel > max) max = fuel;
+  }
+
+  return { min, max };
+}
+
+/**
+ * Find the first (lowest) lap number in a collection
+ * More efficient than Math.min(...laps.map(l => l.lapNumber))
+ */
+export function findFirstLapNumber(laps: FuelLapData[]): number {
+  if (laps.length === 0) return 0;
+
+  let minLapNumber = laps[0].lapNumber;
+  for (let i = 1; i < laps.length; i++) {
+    if (laps[i].lapNumber < minLapNumber) {
+      minLapNumber = laps[i].lapNumber;
+    }
+  }
+  return minLapNumber;
+}
+
+// ============================================================================
+// Unit Conversion Functions
+// ============================================================================
+
+/** Conversion factor: 1 liter = 0.264172 gallons */
+const LITERS_TO_GALLONS = 0.264172;
+
+/**
  * Convert liters to gallons
  */
 export function litersToGallons(liters: number): number {
-  return liters * 0.264172;
+  return liters * LITERS_TO_GALLONS;
 }
 
 /**
  * Convert gallons to liters
  */
 export function gallonsToLiters(gallons: number): number {
-  return gallons / 0.264172;
+  return gallons / LITERS_TO_GALLONS;
 }
 
 /**
@@ -76,6 +180,10 @@ export function formatFuel(
   return `${value.toFixed(decimals)} ${units}`;
 }
 
+// ============================================================================
+// Lap Detection Functions
+// ============================================================================
+
 /**
  * Detect if a lap crossing occurred
  * Lap crossing happens when distance percentage goes from high (>0.9) to low (<0.1)
@@ -88,18 +196,46 @@ export function detectLapCrossing(
   return lastDistPct > 0.9 && currentDistPct < 0.1 && lastDistPct < 1.0;
 }
 
+// ============================================================================
+// Session Flag Functions
+// ============================================================================
+
 /**
  * Check if current session flags indicate green flag conditions
  */
 export function isGreenFlag(sessionFlags: number): boolean {
-  const YELLOW_FLAG = 0x00004000; // 1 << 14
-  const CAUTION_FLAG = 0x00008000; // 1 << 15
-  const RED_FLAG = 0x00010000; // 1 << 16
-
-  return (
-    (sessionFlags & (YELLOW_FLAG | CAUTION_FLAG | RED_FLAG)) === 0
-  );
+  return (sessionFlags & CAUTION_FLAGS_MASK) === 0;
 }
+
+/**
+ * Check if white flag is showing (final lap in timed races)
+ */
+export function isWhiteFlag(sessionFlags: number): boolean {
+  return (sessionFlags & FLAG_WHITE) !== 0;
+}
+
+/**
+ * Check if checkered flag is showing (race finished)
+ */
+export function isCheckeredFlag(sessionFlags: number): boolean {
+  return (sessionFlags & FLAG_CHECKERED) !== 0;
+}
+
+/**
+ * Check if either white or checkered flag is showing (final lap / race complete)
+ */
+export function isFinalLap(sessionFlags: number): boolean {
+  return (sessionFlags & (FLAG_WHITE | FLAG_CHECKERED)) !== 0;
+}
+
+// ============================================================================
+// Confidence Functions
+// ============================================================================
+
+/** Threshold for high confidence calculations */
+const HIGH_CONFIDENCE_LAPS = 10;
+/** Threshold for medium confidence calculations */
+const MEDIUM_CONFIDENCE_LAPS = 5;
 
 /**
  * Calculate confidence level based on number of valid laps
@@ -107,7 +243,41 @@ export function isGreenFlag(sessionFlags: number): boolean {
 export function calculateConfidence(
   validLapCount: number
 ): 'high' | 'medium' | 'low' {
-  if (validLapCount >= 10) return 'high';
-  if (validLapCount >= 5) return 'medium';
+  if (validLapCount >= HIGH_CONFIDENCE_LAPS) return 'high';
+  if (validLapCount >= MEDIUM_CONFIDENCE_LAPS) return 'medium';
   return 'low';
+}
+
+// ============================================================================
+// Lap Filtering Utilities
+// ============================================================================
+
+/**
+ * Filter laps to get only valid full racing laps
+ * Excludes out-laps and the first lap (from grid/reset)
+ */
+export function getFullRacingLaps(
+  validLaps: FuelLapData[],
+  firstLapNumber: number
+): FuelLapData[] {
+  const result: FuelLapData[] = [];
+  for (const lap of validLaps) {
+    if (!lap.isOutLap && lap.lapNumber !== firstLapNumber) {
+      result.push(lap);
+    }
+  }
+  return result;
+}
+
+/**
+ * Filter laps to get only green flag laps
+ */
+export function getGreenFlagLaps(laps: FuelLapData[]): FuelLapData[] {
+  const result: FuelLapData[] = [];
+  for (const lap of laps) {
+    if (lap.isGreenFlag) {
+      result.push(lap);
+    }
+  }
+  return result;
 }

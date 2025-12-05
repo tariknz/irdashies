@@ -28,6 +28,7 @@ export class OverlayManager {
   private overlayWindows: Record<string, DashboardWidgetWithWindow> = {};
   private currentSettingsWindow: BrowserWindow | undefined;
   private isLocked = true;
+  private skipTaskbar = true;
 
   constructor() {
     setInterval(() => {
@@ -50,7 +51,8 @@ export class OverlayManager {
   }
 
   public createOverlays(dashboardLayout: DashboardLayout): void {
-    const { widgets } = dashboardLayout;
+    const { widgets, generalSettings } = dashboardLayout;
+    this.skipTaskbar = generalSettings?.skipTaskbar ?? true;
     widgets.forEach((widget) => {
       if (!widget.enabled) return; // skip disabled widgets
       const window = this.createOverlayWindow(widget);
@@ -73,6 +75,7 @@ export class OverlayManager {
       title: `iRacing Dashies - ${title}`,
       transparent: true,
       frame: false,
+      skipTaskbar: this.skipTaskbar,
       focusable: true, //for OpenKneeeboard/VR
       resizable: false,
       movable: false,

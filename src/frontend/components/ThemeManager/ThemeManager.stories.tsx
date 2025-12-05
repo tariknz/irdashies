@@ -51,6 +51,21 @@ const createMockBridge = (
       widgets: [],
       generalSettings: { fontSize, colorPalette },
     }),
+  toggleDemoMode: () => {
+    return;
+  },
+  onDemoModeChanged: (callback) => {
+    callback(false);
+    return () => {
+      return;
+    };
+  },
+  getCurrentDashboard: () => {
+    return null;
+  },
+  stop: () => {
+    return;
+  },
 });
 
 const FONT_SIZES: FontSize[] = ['xs', 'sm', 'md', 'lg', 'xl', '2xl', '3xl'];

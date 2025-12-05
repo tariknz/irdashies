@@ -77,6 +77,12 @@ export const useWeekendInfoEventType = () =>
     (state) => state.session?.WeekendInfo?.EventType
   );
 
+export const useWeekendInfoNumCarClasses = () =>
+  useStore(
+    useSessionStore,
+    (state) => state.session?.WeekendInfo?.NumCarClasses
+  );
+
 export const useDriverCarIdx = () =>
   useStore(useSessionStore, (state) => state.session?.DriverInfo?.DriverCarIdx);
 

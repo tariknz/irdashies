@@ -21,6 +21,10 @@ describe('PitStatusCell', () => {
         carTrackSurface={1}
         prevCarTrackSurface={1}
         currentSessionType="Qualify"
+        dnf={false}
+        repair={false}
+        penalty={false}
+        slowdown={false}
       />
     );
     
@@ -41,6 +45,10 @@ describe('PitStatusCell', () => {
         onPitRoad={true}
         carTrackSurface={2}
         currentSessionType="Race"
+        dnf={false}
+        repair={false}
+        penalty={false}
+        slowdown={false}
       />
     );
     
@@ -56,11 +64,15 @@ describe('PitStatusCell', () => {
         carTrackSurface={-1}
         prevCarTrackSurface={1}
         currentSessionType="Race"
+        dnf={true}
+        repair={true}
+        penalty={true}
+        slowdown={true}
       />
     );
     
     const td = container.querySelector('td[data-column="pitStatus"]');
-    expect(td?.textContent).toBe('DNF');
+    expect(td?.textContent).toContain('DNF');
   });
 
   it('renders TOW when car is being towed', () => {
@@ -70,6 +82,10 @@ describe('PitStatusCell', () => {
         prevCarTrackSurface={1}
         lastLap={5}
         currentSessionType="Race"
+        dnf={false}
+        repair={false}
+        penalty={false}
+        slowdown={false}
       />
     );
     
@@ -84,6 +100,10 @@ describe('PitStatusCell', () => {
         lastPitLap={3}
         lastLap={3}
         carTrackSurface={1}
+        dnf={false}
+        repair={false}
+        penalty={false}
+        slowdown={false}
       />
     );
     
@@ -97,6 +117,10 @@ describe('PitStatusCell', () => {
         onPitRoad={true}
         carTrackSurface={2}
         currentSessionType="Race"
+        dnf={false}
+        repair={false}
+        penalty={false}
+        slowdown={false}
       />
     );
     
@@ -111,6 +135,10 @@ describe('PitStatusCell', () => {
         lastPitLap={2}
         lastLap={5}
         carTrackSurface={1}
+        dnf={false}
+        repair={false}
+        penalty={false}
+        slowdown={false}
       />
     );
     
@@ -140,6 +168,10 @@ describe('PitStatusCell', () => {
         prevCarTrackSurface={1}
         lastLap={0}
         currentSessionType="Qualify"
+        dnf={false}
+        repair={false}
+        penalty={false}
+        slowdown={false}
       />
     );
     
@@ -158,6 +190,10 @@ describe('PitStatusCell', () => {
         lastLap={0}
         lastPitLap={undefined}
         currentSessionType="Qualify"
+        dnf={false}
+        repair={false}
+        penalty={false}
+        slowdown={false}
       />
     );
     
@@ -176,6 +212,10 @@ describe('PitStatusCell', () => {
         lastLap={1}
         lastPitLap={0}
         currentSessionType="Qualify"
+        dnf={false}
+        repair={false}
+        penalty={false}
+        slowdown={false}
       />
     );
     
@@ -183,6 +223,28 @@ describe('PitStatusCell', () => {
     expect(td).toBeTruthy();
     expect(td?.textContent).toBe('');
     expect(td?.textContent).not.toBe('00');
+  });
+
+  it('does not render "00" when penalty is true and lastLap/lastPitLap are 0', () => {
+    const { container } = renderInTable(
+      <PitStatusCell
+        onPitRoad={false}
+        carTrackSurface={1}
+        prevCarTrackSurface={1}
+        lastLap={0}
+        lastPitLap={0}
+        currentSessionType="Race"
+        dnf={false}
+        repair={false}
+        penalty={true}
+        slowdown={false}
+      />
+    );
+    
+    const td = container.querySelector('td[data-column="pitStatus"]');
+    expect(td).toBeTruthy();
+    expect(td?.textContent).not.toContain('0');
+    expect(td?.innerHTML).not.toContain('>0<');
   });
 });
 

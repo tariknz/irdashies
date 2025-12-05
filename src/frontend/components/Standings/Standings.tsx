@@ -15,7 +15,7 @@ import {
 } from './hooks';
 import { useLapTimesStoreUpdater } from '../../context/LapTimesStore/LapTimesStoreUpdater';
 import { usePitLabStoreUpdater } from '../../context/PitLapStore/PitLapStoreUpdater';
-import { useDrivingState } from '@irdashies/context';
+import { useDrivingState, useWeekendInfoNumCarClasses } from '@irdashies/context';
 
 export const Standings = () => {
   const [parent] = useAutoAnimate();
@@ -30,7 +30,8 @@ export const Standings = () => {
 
   const standings = useDriverStandings(settings);
   const classStats = useCarClassStats();
-  const isMultiClass = standings.length > 1;
+  const numCarClasses = useWeekendInfoNumCarClasses();
+  const isMultiClass = (numCarClasses ?? 0) > 1;
   const highlightColor = useHighlightColor();
 
   // Show only when on track setting
@@ -118,6 +119,10 @@ export const Standings = () => {
                     currentSessionType={result.currentSessionType}
                     config={settings}
                     highlightColor={highlightColor}
+                    dnf={result.dnf}
+                    repair={result.repair}
+                    penalty={result.penalty}
+                    slowdown={result.slowdown}
                   />
                 ))}
               </Fragment>

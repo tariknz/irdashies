@@ -95,6 +95,7 @@ export interface TelemetryVarList {
   CarIdxQualTireCompound: TelemetryVariable<number[]>;
   CarIdxQualTireCompoundLocked: TelemetryVariable<boolean[]>;
   CarIdxFastRepairsUsed: TelemetryVariable<number[]>;
+  CarIdxSessionFlags: TelemetryVariable<number[]>;
   PaceMode: TelemetryVariable<number[]>;
   CarIdxPaceLine: TelemetryVariable<number[]>;
   CarIdxPaceRow: TelemetryVariable<number[]>;

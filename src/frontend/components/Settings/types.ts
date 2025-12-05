@@ -108,6 +108,7 @@ export interface InputWidgetSettings extends BaseWidgetSettings {
 export interface FuelWidgetSettings extends BaseWidgetSettings {
   config: {
     fuelUnits: 'L' | 'gal';
+    layout: 'vertical' | 'horizontal';
     showConsumption: boolean;
     showMin: boolean;
     showLastLap: boolean;
@@ -115,7 +116,11 @@ export interface FuelWidgetSettings extends BaseWidgetSettings {
     show10LapAvg: boolean;
     showMax: boolean;
     showPitWindow: boolean;
+    showEnduranceStrategy: boolean;
     showFuelSave: boolean;
+    showFuelRequired: boolean;
+    showConsumptionGraph: boolean;
+    consumptionGraphType: 'line' | 'histogram';
     safetyMargin: number;
     background: { opacity: number };
   };

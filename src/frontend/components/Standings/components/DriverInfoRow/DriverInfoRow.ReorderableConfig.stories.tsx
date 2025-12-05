@@ -208,6 +208,10 @@ const RelativeWithReorderableConfig = () => {
       currentSessionType: useCurrentSessionType(),
       carId: 122,
       iratingChange: -8,
+      dnf: false,
+      repair: false,
+      penalty: false,
+      slowdown: false
     },
     {
       carIdx: 3,
@@ -234,6 +238,10 @@ const RelativeWithReorderableConfig = () => {
       currentSessionType: useCurrentSessionType(),
       carId: 122,
       iratingChange: 0,
+      dnf: false,
+      repair: false,
+      penalty: false,
+      slowdown: false
     },
     {
       carIdx: 4,
@@ -258,6 +266,10 @@ const RelativeWithReorderableConfig = () => {
       currentSessionType: useCurrentSessionType(),
       carId: 122,
       iratingChange: 23,
+      dnf: false,
+      repair: false,
+      penalty: false,
+      slowdown: false
     },
     {
       carIdx: 5,
@@ -282,6 +294,10 @@ const RelativeWithReorderableConfig = () => {
       currentSessionType: useCurrentSessionType(),
       carId: 122,
       iratingChange: -42,
+      dnf: false,
+      repair: false,
+      penalty: false,
+      slowdown: false
     },
     {
       carIdx: 6,
@@ -306,6 +322,10 @@ const RelativeWithReorderableConfig = () => {
       currentSessionType: useCurrentSessionType(),
       carId: 122,
       iratingChange: 5,
+      dnf: false,
+      repair: false,
+      penalty: false,
+      slowdown: false
     },
     {
       carIdx: 7,
@@ -329,6 +349,10 @@ const RelativeWithReorderableConfig = () => {
       currentSessionType: useCurrentSessionType(),
       carId: 122,
       iratingChange: -15,
+      dnf: false,
+      repair: false,
+      penalty: false,
+      slowdown: false
     },
   ];
   const getRandomCarNum = () => Math.floor(Math.random() * 35) + 1;
@@ -428,6 +452,10 @@ const RelativeWithReorderableConfig = () => {
                 fastestTime={result.fastestTime}
                 lastTime={result.lastTime}
                 iratingChange={<RatingChange value={result.iratingChange} />}
+                dnf={result.dnf ?? false}
+                repair={result.repair ?? false}
+                penalty={result.penalty ?? false}
+                slowdown={result.slowdown ?? false}
               />
             ))}
           </tbody>

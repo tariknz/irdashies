@@ -16,6 +16,8 @@ export interface FuelLapData {
   isGreenFlag: boolean;
   /** Whether this lap is valid for calculations (outlier filtering) */
   isValidForCalc: boolean;
+  /** Whether the car started this lap from pit road (out-lap) */
+  isOutLap: boolean;
   /** Timestamp when lap was completed */
   timestamp: number;
 }
@@ -62,6 +64,14 @@ export interface FuelCalculation {
   confidence: 'high' | 'medium' | 'low';
   /** Estimated fuel remaining at race finish (can be negative if insufficient fuel) */
   fuelAtFinish: number;
+  /** Average lap time in seconds (for time until empty calculation) */
+  avgLapTime: number;
+  /** Total session time in seconds (for endurance strategy) */
+  sessionTimeTotal?: number;
+  /** Estimated number of pit stops remaining in the session */
+  stopsRemaining?: number;
+  /** Estimated laps per fuel stint (on a full tank) */
+  lapsPerStint?: number;
 }
 
 /**
@@ -70,6 +80,8 @@ export interface FuelCalculation {
 export interface FuelCalculatorSettings {
   /** Fuel units to display */
   fuelUnits: 'L' | 'gal';
+  /** Layout style */
+  layout?: 'vertical' | 'horizontal';
   /** Show detailed consumption breakdown */
   showConsumption: boolean;
   /** Show minimum fuel consumption */
@@ -84,8 +96,16 @@ export interface FuelCalculatorSettings {
   showMax: boolean;
   /** Show pit window information */
   showPitWindow: boolean;
+  /** Show endurance strategy (total pit stops for entire session) */
+  showEnduranceStrategy?: boolean;
   /** Show fuel save indicator */
   showFuelSave: boolean;
+  /** Show fuel required for min/avg/max consumption */
+  showFuelRequired?: boolean;
+  /** Show consumption history graph */
+  showConsumptionGraph?: boolean;
+  /** Consumption graph type */
+  consumptionGraphType?: 'line' | 'histogram';
   /** Safety margin percentage (0-1) */
   safetyMargin: number;
   /** Background opacity (0-100) */

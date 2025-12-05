@@ -1,3 +1,4 @@
+export * from './enum';
 export * from './irSdkBridge';
 export * from './dashboardBridge';
 export * from './dashboardLayout';
