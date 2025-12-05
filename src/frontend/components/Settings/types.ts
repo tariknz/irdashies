@@ -25,6 +25,30 @@ export interface StandingsWidgetSettings extends BaseWidgetSettings {
     carManufacturer: { enabled: boolean };
     lapTimeDeltas: { enabled: boolean; numLaps: number };
     titleBar: { enabled: boolean; progressBar: { enabled: boolean } };
+    headerBar: {
+      enabled: boolean;
+      sessionName: { enabled: boolean };
+      timeRemaining: { enabled: boolean };
+      incidentCount: { enabled: boolean };
+      brakeBias: { enabled: boolean };
+      localTime: { enabled: boolean };
+      trackWetness: { enabled: boolean };
+      airTemperature: { enabled: boolean };
+      trackTemperature: { enabled: boolean };
+      displayOrder: string[];
+    };
+    footerBar: {
+      enabled: boolean;
+      sessionName: { enabled: boolean };
+      timeRemaining: { enabled: boolean };
+      incidentCount: { enabled: boolean };
+      brakeBias: { enabled: boolean };
+      localTime: { enabled: boolean };
+      trackWetness: { enabled: boolean };
+      airTemperature: { enabled: boolean };
+      trackTemperature: { enabled: boolean };
+      displayOrder: string[];
+    };
     showOnlyWhenOnTrack: boolean;
     position: { enabled: boolean };
     driverName: { enabled: boolean };
@@ -44,8 +68,31 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
     compound: { enabled: boolean };
     carManufacturer: { enabled: boolean };
     titleBar: { enabled: boolean; progressBar: { enabled: boolean } };
+    headerBar: {
+      enabled: boolean;
+      sessionName: { enabled: boolean };
+      timeRemaining: { enabled: boolean };
+      incidentCount: { enabled: boolean };
+      brakeBias: { enabled: boolean };
+      localTime: { enabled: boolean };
+      trackWetness: { enabled: boolean };
+      airTemperature: { enabled: boolean };
+      trackTemperature: { enabled: boolean };
+      displayOrder: string[];
+    };
+    footerBar: {
+      enabled: boolean;
+      sessionName: { enabled: boolean };
+      timeRemaining: { enabled: boolean };
+      incidentCount: { enabled: boolean };
+      brakeBias: { enabled: boolean };
+      localTime: { enabled: boolean };
+      trackWetness: { enabled: boolean };
+      airTemperature: { enabled: boolean };
+      trackTemperature: { enabled: boolean };
+      displayOrder: string[];
+    };
     showOnlyWhenOnTrack: boolean;
-    brakeBias: { enabled: boolean };
     badge: { enabled: boolean; badgeFormat: 'license-color-rating-bw' | 'license-color-rating-bw-no-license' | 'rating-color-no-license' | 'license-bw-rating-bw' | 'rating-only-bw-rating-bw' | 'license-bw-rating-bw-no-license' | 'rating-bw-no-license' };
     iratingChange: { enabled: boolean };
     delta: { enabled: boolean };
