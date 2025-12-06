@@ -3,23 +3,7 @@ import { DriverInfoRow } from './DriverInfoRow';
 import { useCurrentSessionType } from '@irdashies/context';
 import type { RelativeWidgetSettings } from '../../../Settings/types';
 import { useState, useMemo } from 'react';
-import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  DragEndEvent,
-} from '@dnd-kit/core';
-import {
-  arrayMove,
-  SortableContext,
-  sortableKeyboardCoordinates,
-  verticalListSortingStrategy,
-  useSortable,
-} from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
+import { useSortableList } from '../../../SortableList';
 import { DotsSixVerticalIcon } from '@phosphor-icons/react';
 import type { Meta } from '@storybook/react-vite';
 import type { DriverInfoRow as DriverInfoRowType } from './DriverInfoRow';
@@ -56,36 +40,6 @@ const sortableSettings = [
   { id: 'lastTime', label: 'Last Time' },
   { id: 'compound', label: 'Tire Compound' },
 ];
-
-const SortableItem = ({ id, label }: { id: string; label: string }) => {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-  };
-
-  return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className="flex items-center gap-2 p-2 bg-slate-700 rounded mb-1 cursor-grab active:cursor-grabbing"
-      {...attributes}
-      {...listeners}
-    >
-      <DotsSixVerticalIcon className="text-slate-400" size={16} />
-      <span className="text-slate-200 text-sm">{label}</span>
-    </div>
-  );
-};
 
 const RelativeWithReorderableConfig = () => {
   const currentSessionType = useCurrentSessionType();
@@ -415,24 +369,16 @@ const RelativeWithReorderableConfig = () => {
     [displayOrder]
   );
 
-  const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
+  const items = displayOrder.map(id => {
+    const setting = sortableSettings.find(s => s.id === id);
+    return setting ? { ...setting } : null;
+  }).filter((s): s is { id: string; label: string } => s !== null);
 
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-
-    if (over && active.id !== over.id) {
-      setDisplayOrder((items) => {
-        const oldIndex = items.indexOf(active.id as string);
-        const newIndex = items.indexOf(over.id as string);
-        return arrayMove(items, oldIndex, newIndex);
-      });
-    }
-  };
+  const { getItemProps, displayItems } = useSortableList({
+    items,
+    onReorder: (newItems) => setDisplayOrder(newItems.map(i => i.id)),
+    getItemId: (item) => item.id,
+  });
 
   return (
     <div className="w-full h-full flex flex-col gap-4 p-4">
@@ -480,23 +426,23 @@ const RelativeWithReorderableConfig = () => {
         <h3 className="text-lg font-medium text-slate-200 mb-4">
           Reorder Config
         </h3>
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragEnd={handleDragEnd}
-        >
-          <SortableContext
-            items={displayOrder}
-            strategy={verticalListSortingStrategy}
-          >
-            {displayOrder.map((id) => {
-              const setting = sortableSettings.find((s) => s.id === id);
-              return setting ? (
-                <SortableItem key={id} id={id} label={setting.label} />
-              ) : null;
-            })}
-          </SortableContext>
-        </DndContext>
+        <div className="space-y-1">
+          {displayItems.map((item) => {
+            const { dragHandleProps, itemProps } = getItemProps(item);
+            return (
+              <div
+                key={item.id}
+                {...itemProps}
+                className="flex items-center gap-2 p-2 bg-slate-700 rounded cursor-grab active:cursor-grabbing"
+              >
+                <div {...dragHandleProps}>
+                  <DotsSixVerticalIcon className="text-slate-400" size={16} />
+                </div>
+                <span className="text-slate-200 text-sm">{item.label}</span>
+              </div>
+            );
+          })}
+        </div>
         <button
           onClick={() => {
             setDisplayOrder(sortableSettings.map((s) => s.id));
