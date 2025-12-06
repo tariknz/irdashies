@@ -4,11 +4,17 @@ import { OverlayManager } from './overlayManager';
 import { writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { startProfiling, stopProfiling, isProfiling } from './profiler';
+import {
+  logMemoryUsage,
+  takeHeapSnapshot,
+  saveMemoryReport,
+} from './memoryProfiler';
 
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string;
 
+const isDev = !!MAIN_WINDOW_VITE_DEV_SERVER_URL;
+
 function getIconPath(): string {
-  const isDev = !!MAIN_WINDOW_VITE_DEV_SERVER_URL;
   const basePath = isDev 
     ? path.join(__dirname, '../../docs/assets/icons')
     : path.join(process.resourcesPath, 'icons');
@@ -57,25 +63,50 @@ class Taskbar {
           this.saveTelemetry();
         },
       },
-      // WIP
-      // {
-      //   label: 'Record Telemetry',
-      //   click: async () => {
-      //     await this.telemetrySink.startRecording();
-      //   },
-      // },
-      {
-        label: isProfiling() ? 'Stop CPU Profiling' : 'Start CPU Profiling',
-        click: async () => {
-          if (isProfiling()) {
-            const filePath = await stopProfiling();
-            console.log('Profile saved to:', filePath);
-          } else {
-            await startProfiling();
-          }
-          this.setupContextMenu();
-        },
-      },
+      // Dev-only profiling tools
+      ...(isDev
+        ? [
+            {
+              label: isProfiling()
+                ? 'Stop CPU Profiling'
+                : 'Start CPU Profiling',
+              click: async () => {
+                if (isProfiling()) {
+                  const filePath = await stopProfiling();
+                  console.log('Profile saved to:', filePath);
+                } else {
+                  await startProfiling();
+                }
+                this.setupContextMenu();
+              },
+            },
+            {
+              label: 'Memory',
+              submenu: [
+                {
+                  label: 'Log Memory Usage',
+                  click: async () => {
+                    await logMemoryUsage();
+                  },
+                },
+                {
+                  label: 'Take Heap Snapshot',
+                  click: async () => {
+                    const filePath = await takeHeapSnapshot();
+                    console.log('Heap snapshot saved to:', filePath);
+                  },
+                },
+                {
+                  label: 'Save Memory Report',
+                  click: async () => {
+                    const filePath = await saveMemoryReport();
+                    console.log('Memory report saved to:', filePath);
+                  },
+                },
+              ],
+            },
+          ]
+        : []),
       {
         label: 'Quit',
         click: () => {
