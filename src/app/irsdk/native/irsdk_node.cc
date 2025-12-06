@@ -50,6 +50,7 @@ iRacingSdkNode::iRacingSdkNode(const Napi::CallbackInfo &info)
   , _sessionStatusID(0)
   , _lastSessionCt(-1)
   , _sessionData(NULL)
+  , _sessionJson("{}")
   , _loggingEnabled(false)
 {
   printf("Initializing cpp class instance...\n");
@@ -399,7 +400,13 @@ Napi::Value iRacingSdkNode::GetSessionData(const Napi::CallbackInfo &info)
     // Convert to UTF-8 then to JSON
     if (this->_sessionData != NULL) {
       std::string utf8Session = ConvertToUTF8(this->_sessionData);
+      if (this->_loggingEnabled) {
+        printf("YAML length: %zu bytes\n", utf8Session.length());
+      }
       this->_sessionJson = yamlToJson(utf8Session.c_str());
+      if (this->_loggingEnabled) {
+        printf("JSON length: %zu bytes\n", this->_sessionJson.length());
+      }
     } else {
       this->_sessionJson = "{}";
     }
