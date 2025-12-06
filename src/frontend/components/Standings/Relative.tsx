@@ -1,10 +1,7 @@
 import { useMemo } from 'react';
-import { useAutoAnimate } from '@formkit/auto-animate/react';
 import { DriverInfoRow } from './components/DriverInfoRow/DriverInfoRow';
 import { useDrivingState } from '@irdashies/context';
 import { useRelativeSettings, useDriverRelatives, useHighlightColor } from './hooks';
-import { DriverRatingBadge } from './components/DriverRatingBadge/DriverRatingBadge';
-import { RatingChange } from './components/RatingChange/RatingChange';
 import { SessionBar } from './components/SessionBar/SessionBar';
 
 import { TitleBar } from './components/TitleBar/TitleBar';
@@ -17,7 +14,6 @@ export const Relative = () => {
   const buffer = settings?.buffer ?? 3;
   const { isDriving } = useDrivingState();
   const standings = useDriverRelatives({ buffer });
-  const [parent] = useAutoAnimate();
   const highlightColor = useHighlightColor();
   const numCarClasses = useWeekendInfoNumCarClasses();
   const isMultiClass = (numCarClasses ?? 0) > 1;
@@ -54,19 +50,10 @@ export const Relative = () => {
           carNumber={settings?.carNumber?.enabled ?? true ? '' : undefined}
           flairId={settings?.countryFlags?.enabled ?? true ? 0 : undefined}
           carId={settings?.carManufacturer?.enabled ?? true ? 0 : undefined}
-          badge={settings?.badge?.enabled ? (
-            <DriverRatingBadge
-              license={undefined}
-              rating={undefined}
-              format={settings.badge.badgeFormat}
-            />
-          ) : undefined}
+          license={undefined}
+          rating={undefined}
           currentSessionType=""
-          iratingChange={
-            settings?.iratingChange?.enabled ? (
-              <RatingChange value={undefined} />
-            ) : undefined
-          }
+          iratingChangeValue={undefined}
           delta={settings?.delta?.enabled ?? true ? 0 : undefined}
           fastestTime={settings?.fastestTime?.enabled ? undefined : undefined}
           lastTime={settings?.lastTime?.enabled ? undefined : undefined}
@@ -110,13 +97,10 @@ export const Relative = () => {
             carNumber={settings?.carNumber?.enabled ?? true ? '' : undefined}
             flairId={settings?.countryFlags?.enabled ?? true ? 0 : undefined}
             carId={settings?.carManufacturer?.enabled ?? true ? 0 : undefined}
-            badge={settings?.badge?.enabled ? <></> : undefined}
+            license={undefined}
+            rating={undefined}
             currentSessionType=""
-            iratingChange={
-              settings?.iratingChange?.enabled ? (
-                <RatingChange value={undefined} />
-              ) : undefined
-            }
+            iratingChangeValue={undefined}
             delta={settings?.delta?.enabled ?? true ? 0 : undefined}
             fastestTime={settings?.fastestTime?.enabled ? undefined : undefined}
             lastTime={settings?.lastTime?.enabled ? undefined : undefined}
@@ -139,7 +123,7 @@ export const Relative = () => {
       return (
         <DriverInfoRow
           key={result.carIdx}
-          carIdx={ result.carIdx}
+          carIdx={result.carIdx}
           classColor={result.carClass.color}
           carNumber={settings?.carNumber?.enabled ?? true ? result.driver?.carNum || '' : undefined}
           name={result.driver?.name || ''}
@@ -163,20 +147,9 @@ export const Relative = () => {
           prevCarTrackSurface={result.prevCarTrackSurface}
           isMultiClass={isMultiClass}
           currentSessionType={result.currentSessionType}
-          badge={
-            settings?.badge?.enabled ? (
-              <DriverRatingBadge
-                license={result.driver?.license}
-                rating={result.driver?.rating}
-                format={settings.badge.badgeFormat}
-              />
-            ) : undefined
-          }
-          iratingChange={
-            settings?.iratingChange?.enabled ? (
-              <RatingChange value={result.iratingChange} />
-            ) : undefined
-          }
+          license={result.driver?.license}
+          rating={result.driver?.rating}
+          iratingChangeValue={result.iratingChange}
           delta={settings?.delta?.enabled ?? true ? result.delta : undefined}
           displayOrder={settings?.displayOrder}
           config={settings}
@@ -202,7 +175,7 @@ export const Relative = () => {
         <TitleBar titleBarSettings={settings?.titleBar} />
         {(settings?.headerBar?.enabled ?? false) && <SessionBar position="header" variant="relative" />}
         <table className="w-full table-auto text-sm border-separate border-spacing-y-0.5">
-          <tbody ref={parent}>{rows}</tbody>
+          <tbody>{rows}</tbody>
         </table>
         {(settings?.footerBar?.enabled ?? true) && <SessionBar position="footer" variant="relative" />}
       </div>
@@ -219,7 +192,7 @@ export const Relative = () => {
       <TitleBar titleBarSettings={settings?.titleBar} />
       {(settings?.headerBar?.enabled ?? false) && <SessionBar position="header" variant="relative" />}
       <table className="w-full table-auto text-sm border-separate border-spacing-y-0.5">
-        <tbody ref={parent}>{rows}</tbody>
+        <tbody>{rows}</tbody>
       </table>
       {(settings?.footerBar?.enabled ?? true) && <SessionBar position="footer" variant="relative" />}
     </div>

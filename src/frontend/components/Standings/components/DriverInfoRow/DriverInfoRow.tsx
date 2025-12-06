@@ -31,8 +31,9 @@ interface DriverRowInfoProps {
   gap?: number;
   interval?: number;
   position?: number;
-  badge?: React.ReactNode;
-  iratingChange?: React.ReactNode;
+  license?: string;
+  rating?: number;
+  iratingChangeValue?: number;
   lastTime?: number;
   fastestTime?: number;
   lastTimeState?: LastTimeState;
@@ -74,7 +75,9 @@ export const DriverInfoRow = memo(
     gap,
     interval,
     position,
-    badge,
+    license,
+    rating,
+    iratingChangeValue,
     lastTime,
     fastestTime,
     lastTimeState,
@@ -83,7 +86,6 @@ export const DriverInfoRow = memo(
     radioActive,
     isLapped,
     isLappingAhead,
-    iratingChange,
     hidden,
     flairId,
     tireCompound,
@@ -224,7 +226,15 @@ export const DriverInfoRow = memo(
           shouldRender:
             (displayOrder ? displayOrder.includes('badge') : true) &&
             (config?.badge?.enabled ?? true),
-          component: <BadgeCell key="badge" hidden={hidden} badge={badge} />,
+          component: (
+            <BadgeCell
+              key="badge"
+              hidden={hidden}
+              license={license}
+              rating={rating}
+              badgeFormat={config?.badge?.badgeFormat}
+            />
+          ),
         },
         {
           id: 'iratingChange',
@@ -235,7 +245,7 @@ export const DriverInfoRow = memo(
             <IratingChangeCell
               key="iratingChange"
               hidden={hidden}
-              iratingChange={iratingChange}
+              iratingChangeValue={iratingChangeValue}
             />
           ),
         },
@@ -379,8 +389,9 @@ export const DriverInfoRow = memo(
       penalty,
       slowdown,
       carId,
-      badge,
-      iratingChange,
+      license,
+      rating,
+      iratingChangeValue,
       delta,
       gap,
       interval,
