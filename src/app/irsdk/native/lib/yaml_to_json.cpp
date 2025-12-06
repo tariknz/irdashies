@@ -150,8 +150,16 @@ std::string yamlToJson(const char* yaml) {
         bool isArray = isArrayItem(line);
         
         // Pop states that are at same or higher indent level
-        while (stateStack.size() > 1 && stateStack.top().indent >= indent) {
-            stateStack.pop();
+        // For array items, only pop if indent is strictly less (arrays can be at same indent as parent key)
+        // For non-array items, pop if indent is same or less (siblings)
+        if (isArray) {
+            while (stateStack.size() > 1 && stateStack.top().indent > indent) {
+                stateStack.pop();
+            }
+        } else {
+            while (stateStack.size() > 1 && stateStack.top().indent >= indent) {
+                stateStack.pop();
+            }
         }
         
         if (stateStack.empty()) {
