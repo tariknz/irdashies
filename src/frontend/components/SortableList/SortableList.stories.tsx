@@ -38,7 +38,7 @@ const SortableListDemo = () => {
         items={items}
         onReorder={setItems}
         className="space-y-2"
-        renderItem={(item, { isDragging, dragHandleProps, itemProps }) => (
+        renderItem={(item, { dragHandleProps, itemProps }) => (
           <div
             key={item.id}
             {...itemProps}

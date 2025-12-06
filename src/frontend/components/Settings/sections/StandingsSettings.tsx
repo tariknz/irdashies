@@ -3,7 +3,7 @@ import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import { StandingsWidgetSettings } from '../types';
 import { useDashboard } from '@irdashies/context';
 import { ToggleSwitch } from '../components/ToggleSwitch';
-import { useSortableList, arrayMove } from '../../SortableList';
+import { useSortableList } from '../../SortableList';
 import { DotsSixVerticalIcon } from '@phosphor-icons/react';
 import { BadgeFormatPreview } from '../components/BadgeFormatPreview';
 
