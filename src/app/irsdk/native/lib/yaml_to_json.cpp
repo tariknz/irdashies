@@ -156,9 +156,9 @@ std::string yamlToJson(const char* yaml) {
         }
         
         ParseState& parentState = stateStack.top();
-        json* parent = parentState.current;
+        json* currentObj = parentState.current;
         
-        if (!parent) {
+        if (!currentObj) {
             printf("YAML parse error: null parent at line %d\n", lineNum);
             return "{}";
         }
@@ -170,21 +170,12 @@ std::string yamlToJson(const char* yaml) {
             }
             std::string content = trim(trimmedLine.substr(1)); // Remove leading '-'
             
-            // Ensure parent has array for current key if needed
-            if (!parentState.key.empty() && !parent->contains(parentState.key)) {
-                (*parent)[parentState.key] = json::array();
+            // Convert current object to array if this is first array item
+            if (!currentObj->is_array()) {
+                *currentObj = json::array();
             }
             
-            json* targetArray = parent;
-            if (!parentState.key.empty()) {
-                targetArray = &(*parent)[parentState.key];
-            }
-            
-            if (!targetArray || !targetArray->is_array()) {
-                continue; // Skip if not a valid array target
-            }
-            
-            // Check if this array item has a key
+            // Check if this array item has a key (object in array)
             size_t colonPos = content.find(':');
             if (colonPos != std::string::npos && colonPos > 0) {
                 std::string key = trim(content.substr(0, colonPos));
@@ -199,14 +190,14 @@ std::string yamlToJson(const char* yaml) {
                     arrayItem[key] = parseValue(valueStr);
                 }
                 
-                targetArray->push_back(arrayItem);
+                currentObj->push_back(arrayItem);
                 
                 // Push state for potential nested content
-                json& lastItem = targetArray->back();
-                stateStack.push({&lastItem, indent, key, true});
+                json& lastItem = currentObj->back();
+                stateStack.push({&lastItem, indent, "", true});
             } else {
                 // Simple array value
-                targetArray->push_back(parseValue(content));
+                currentObj->push_back(parseValue(content));
             }
         } else {
             // Key-value pair: "key: value" or "key:"
@@ -221,12 +212,18 @@ std::string yamlToJson(const char* yaml) {
                     continue; // Skip lines with empty keys
                 }
                 
+                // Make sure we're working with an object
+                if (!currentObj->is_object()) {
+                    continue;
+                }
+                
                 if (valueStr.empty()) {
-                    // No value - could be object or array (determined by next line)
-                    (*parent)[key] = json::object();
-                    stateStack.push({parent, indent, key, false});
+                    // No value - create object for potential nesting
+                    (*currentObj)[key] = json::object();
+                    // Push pointer to the NEW object
+                    stateStack.push({&(*currentObj)[key], indent, key, false});
                 } else {
-                    (*parent)[key] = parseValue(valueStr);
+                    (*currentObj)[key] = parseValue(valueStr);
                 }
             }
         }
