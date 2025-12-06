@@ -145,81 +145,60 @@ export const IRatingNoChange: Story = {
   },
 };
 
-const Relative = () => {
-  const getRandomRating = () =>
-    Math.floor(Math.random() * (1300 - 700 + 1)) + 700;
-  const getRandomLicense = () => {
-    const licenses = ['C', 'B', 'A'];
-    const license = licenses[Math.floor(Math.random() * licenses.length)];
-    const rating = (Math.random() * (4.5 - 1.5) + 1.5).toFixed(2);
+// Pre-generated mock data for Relative story (generated at module load, not during render)
+const mockRelativeData = (() => {
+  const seededRandom = (seed: number) => {
+    const x = Math.sin(seed) * 10000;
+    return x - Math.floor(x);
+  };
+  
+  let seed = 42;
+  const random = () => seededRandom(seed++);
+  
+  const names = ['Alice', 'Bob', 'Charlie', 'David', 'Eve', 'Frank', 'Grace', 'Hank', 'Ivy', 'Jack'];
+  const surnames = ['Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis', 'Rodriguez', 'Martinez'];
+  const middleNames = ['James', 'Marie', 'Lee', 'Ann', 'Grace', 'John', 'Michael', 'Elizabeth', 'David', 'Rose'];
+  const licenses = ['C', 'B', 'A'];
+  
+  const getRating = () => Math.floor(random() * (1300 - 700 + 1)) + 700;
+  const getLicense = () => {
+    const license = licenses[Math.floor(random() * licenses.length)];
+    const rating = (random() * (4.5 - 1.5) + 1.5).toFixed(2);
     return `${license} ${rating}`;
   };
-
-  const names = [
-    'Alice',
-    'Bob',
-    'Charlie',
-    'David',
-    'Eve',
-    'Frank',
-    'Grace',
-    'Hank',
-    'Ivy',
-    'Jack',
-  ];
-  const getRandomName = () => names[Math.floor(Math.random() * names.length)];
-  const getRandomSurname = () => {
-    const surnames = [
-      'Smith',
-      'Johnson',
-      'Williams',
-      'Brown',
-      'Jones',
-      'Garcia',
-      'Miller',
-      'Davis',
-      'Rodriguez',
-      'Martinez',
-    ];
-    return surnames[Math.floor(Math.random() * surnames.length)];
-  };
-
-  const getRandomMiddleName = () => {
-    const middleNames = [
-      'James',
-      'Marie',
-      'Lee',
-      'Ann',
-      'Grace',
-      'John',
-      'Michael',
-      'Elizabeth',
-      'David',
-      'Rose',
-    ];
-    return middleNames[Math.floor(Math.random() * middleNames.length)];
-  };
-
-  const getRandomFullName = () => {
-    const hasMiddleName = Math.random() > 0.5;
-    const firstName = getRandomName();
-    const surname = getRandomSurname();
+  const getFullName = () => {
+    const hasMiddleName = random() > 0.5;
+    const firstName = names[Math.floor(random() * names.length)];
+    const surname = surnames[Math.floor(random() * surnames.length)];
     if (hasMiddleName) {
-      const middleName = getRandomMiddleName();
+      const middleName = middleNames[Math.floor(random() * middleNames.length)];
       return `${firstName} ${middleName} ${surname}`;
     }
     return `${firstName} ${surname}`;
   };
+  const getCarNum = () => (Math.floor(random() * 35) + 1).toString();
+  
+  return {
+    drivers: Array.from({ length: 7 }, () => ({
+      name: getFullName(),
+      license: getLicense(),
+      rating: getRating(),
+      carNum: getCarNum(),
+    })),
+  };
+})();
 
+const Relative = () => {
+  const currentSessionType = useCurrentSessionType();
   const standings = [
     {
       carIdx: 1,
       carClass: { color: 0xff5888 },
       driver: {
-        carNum: '999',
-        name: getRandomFullName(),
-        license: getRandomLicense(),
-        rating: getRandomRating(),
+        carNum: mockRelativeData.drivers[0].carNum,
+        name: mockRelativeData.drivers[0].name,
+        license: mockRelativeData.drivers[0].license,
+        rating: mockRelativeData.drivers[0].rating,
         flairId: 223, // United States
       },
       isPlayer: false,
@@ -234,7 +213,7 @@ const Relative = () => {
       lappedState: undefined,
       tireCompound: 0,
       lastPitLap: 0,
-      currentSessionType: useCurrentSessionType(),
+      currentSessionType,
       dnf: false,
       repair: false,
       penalty: false,
@@ -244,10 +223,10 @@ const Relative = () => {
       carIdx: 2,
       carClass: { color: 0xffda59 },
       driver: {
-        carNum: '999',
-        name: getRandomFullName(),
-        license: getRandomLicense(),
-        rating: getRandomRating(),
+        carNum: mockRelativeData.drivers[1].carNum,
+        name: mockRelativeData.drivers[1].name,
+        license: mockRelativeData.drivers[1].license,
+        rating: mockRelativeData.drivers[1].rating,
         flairId: 222, // United Kingdom
       },
       isPlayer: false,
@@ -262,7 +241,7 @@ const Relative = () => {
       lappedState: 'ahead',
       tireCompound: 1,
       lastPitLap: 0,
-      currentSessionType: useCurrentSessionType(),
+      currentSessionType,
       dnf: false,
       repair: false,
       penalty: false,
@@ -272,10 +251,10 @@ const Relative = () => {
       carIdx: 3,
       carClass: { color: 0xff5888 },
       driver: {
-        carNum: '999',
-        name: getRandomFullName(),
-        license: getRandomLicense(),
-        rating: getRandomRating(),
+        carNum: mockRelativeData.drivers[2].carNum,
+        name: mockRelativeData.drivers[2].name,
+        license: mockRelativeData.drivers[2].license,
+        rating: mockRelativeData.drivers[2].rating,
         flairId: 77, // Germany
       },
       isPlayer: false,
@@ -290,7 +269,7 @@ const Relative = () => {
       lappedState: 'same',
       tireCompound: 1,
       lastPitLap: 0,
-      currentSessionType: useCurrentSessionType(),
+      currentSessionType,
       dnf: false,
       repair: false,
       penalty: false,
@@ -300,10 +279,10 @@ const Relative = () => {
       carIdx: 4,
       carClass: { color: 0xff5888 },
       driver: {
-        carNum: '23',
-        name: getRandomFullName(),
-        license: getRandomLicense(),
-        rating: getRandomRating(),
+        carNum: mockRelativeData.drivers[3].carNum,
+        name: mockRelativeData.drivers[3].name,
+        license: mockRelativeData.drivers[3].license,
+        rating: mockRelativeData.drivers[3].rating,
         flairId: 71, // France
       },
       isPlayer: true,
@@ -316,7 +295,7 @@ const Relative = () => {
       lappedState: 'same',
       tireCompound: 1,
       lastPitLap: 15,
-      currentSessionType: useCurrentSessionType(),
+      currentSessionType,
       dnf: true,
       repair: false,
       penalty: false,
@@ -326,10 +305,10 @@ const Relative = () => {
       carIdx: 5,
       carClass: { color: 0xae6bff },
       driver: {
-        carNum: '999',
-        name: getRandomFullName(),
-        license: getRandomLicense(),
-        rating: getRandomRating(),
+        carNum: mockRelativeData.drivers[4].carNum,
+        name: mockRelativeData.drivers[4].name,
+        license: mockRelativeData.drivers[4].license,
+        rating: mockRelativeData.drivers[4].rating,
         flairId: 101, // Italy
       },
       isPlayer: false,
@@ -342,7 +321,7 @@ const Relative = () => {
       lappedState: 'behind',
       tireCompound: 1,
       lastPitLap: 0,
-      currentSessionType: useCurrentSessionType(),
+      currentSessionType,
       dnf: false,
       repair: true,
       penalty: false,
@@ -352,10 +331,10 @@ const Relative = () => {
       carIdx: 6,
       carClass: { color: 0xff5888 },
       driver: {
-        carNum: '999',
-        name: getRandomFullName(),
-        license: getRandomLicense(),
-        rating: getRandomRating(),
+        carNum: mockRelativeData.drivers[5].carNum,
+        name: mockRelativeData.drivers[5].name,
+        license: mockRelativeData.drivers[5].license,
+        rating: mockRelativeData.drivers[5].rating,
         flairId: 198, // Spain
       },
       isPlayer: false,
@@ -368,7 +347,7 @@ const Relative = () => {
       lappedState: 'same',
       tireCompound: 1,
       lastPitLap: 0,
-      currentSessionType: useCurrentSessionType(),
+      currentSessionType,
       dnf: false,
       repair: false,
       penalty: false,
@@ -378,10 +357,10 @@ const Relative = () => {
       carIdx: 7,
       carClass: { color: 0xae6bff },
       driver: {
-        carNum: '999',
-        name: getRandomFullName(),
-        license: getRandomLicense(),
-        rating: getRandomRating(),
+        carNum: mockRelativeData.drivers[6].carNum,
+        name: mockRelativeData.drivers[6].name,
+        license: mockRelativeData.drivers[6].license,
+        rating: mockRelativeData.drivers[6].rating,
         flairId: 39, // Canada
       },
       isPlayer: false,
@@ -393,17 +372,13 @@ const Relative = () => {
       radioActive: true,
       tireCompound: 1,
       lastPitLap: 5,
-      currentSessionType: useCurrentSessionType(),
+      currentSessionType,
       dnf: false,
       repair: false,
       penalty: false,
       slowdown: false
     },
   ];
-  const getRandomCarNum = () => Math.floor(Math.random() * 35) + 1;
-  standings.forEach((standing) => {
-    standing.driver.carNum = getRandomCarNum().toString();
-  });
 
   return (
     <div className="w-full h-full">

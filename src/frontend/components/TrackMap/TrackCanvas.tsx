@@ -63,19 +63,16 @@ export const TrackCanvas = ({
 
   // Memoize Path2D objects to avoid re-creating them on every render
   // this is used to draw the track and start/finish line
+  const insidePath = trackDrawing?.active?.inside;
+  const startFinishLinePath = trackDrawing?.startFinish?.line;
   const path2DObjects = useMemo(() => {
-    if (!trackDrawing?.active?.inside || !trackDrawing?.startFinish?.line)
-      return null;
+    if (!insidePath || !startFinishLinePath) return null;
 
     return {
-      inside: trackDrawing.active.inside
-        ? new Path2D(trackDrawing.active.inside)
-        : null,
-      startFinish: trackDrawing.startFinish.line
-        ? new Path2D(trackDrawing.startFinish.line)
-        : null,
+      inside: new Path2D(insidePath),
+      startFinish: new Path2D(startFinishLinePath),
     };
-  }, [trackDrawing?.active?.inside, trackDrawing?.startFinish?.line]);
+  }, [insidePath, startFinishLinePath]);
 
   // Memoize color calculations
   const driverColors = useMemo(() => {
