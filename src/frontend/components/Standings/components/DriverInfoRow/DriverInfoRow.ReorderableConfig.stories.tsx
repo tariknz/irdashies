@@ -41,81 +41,57 @@ const sortableSettings = [
   { id: 'compound', label: 'Tire Compound' },
 ];
 
-const RelativeWithReorderableConfig = () => {
-  const currentSessionType = useCurrentSessionType();
-  const getRandomLicense = () => {
-    const licenses = ['C', 'B', 'A'];
-    return licenses[Math.floor(Math.random() * licenses.length)];
+// Pre-generated mock data (generated at module load, not during render)
+const mockReorderableConfigData = (() => {
+  const seededRandom = (seed: number) => {
+    const x = Math.sin(seed) * 10000;
+    return x - Math.floor(x);
   };
-  const getRandomSafetyRating = () => {
-    return parseFloat((Math.random() * (4.5 - 1.5) + 1.5).toFixed(2));
-  };
-
-  const names = [
-    'Alice',
-    'Bob',
-    'Charlie',
-    'David',
-    'Eve',
-    'Frank',
-    'Grace',
-    'Hank',
-    'Ivy',
-    'Jack',
-  ];
-  const getRandomName = () => names[Math.floor(Math.random() * names.length)];
-  const getRandomSurname = () => {
-    const surnames = [
-      'Smith',
-      'Johnson',
-      'Williams',
-      'Brown',
-      'Jones',
-      'Garcia',
-      'Miller',
-      'Davis',
-      'Rodriguez',
-      'Martinez',
-    ];
-    return surnames[Math.floor(Math.random() * surnames.length)];
-  };
-
-  const getRandomMiddleName = () => {
-    const middleNames = [
-      'James',
-      'Marie',
-      'Lee',
-      'Ann',
-      'Grace',
-      'John',
-      'Michael',
-      'Elizabeth',
-      'David',
-      'Rose',
-    ];
-    return middleNames[Math.floor(Math.random() * middleNames.length)];
-  };
-
-  const getRandomFullName = () => {
-    const hasMiddleName = Math.random() > 0.5;
-    const firstName = getRandomName();
-    const surname = getRandomSurname();
+  
+  let seed = 123;
+  const random = () => seededRandom(seed++);
+  
+  const names = ['Alice', 'Bob', 'Charlie', 'David', 'Eve', 'Frank', 'Grace', 'Hank', 'Ivy', 'Jack'];
+  const surnames = ['Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis', 'Rodriguez', 'Martinez'];
+  const middleNames = ['James', 'Marie', 'Lee', 'Ann', 'Grace', 'John', 'Michael', 'Elizabeth', 'David', 'Rose'];
+  const licenses = ['C', 'B', 'A'];
+  
+  const getLicense = () => licenses[Math.floor(random() * licenses.length)];
+  const getSafetyRating = () => parseFloat((random() * (4.5 - 1.5) + 1.5).toFixed(2));
+  const getFullName = () => {
+    const hasMiddleName = random() > 0.5;
+    const firstName = names[Math.floor(random() * names.length)];
+    const surname = surnames[Math.floor(random() * surnames.length)];
     if (hasMiddleName) {
-      const middleName = getRandomMiddleName();
+      const middleName = middleNames[Math.floor(random() * middleNames.length)];
       return `${firstName} ${middleName} ${surname}`;
     }
     return `${firstName} ${surname}`;
   };
+  const getCarNum = () => (Math.floor(random() * 35) + 1).toString();
+  
+  return {
+    drivers: Array.from({ length: 7 }, () => ({
+      name: getFullName(),
+      license: getLicense(),
+      rating: getSafetyRating(),
+      carNum: getCarNum(),
+    })),
+  };
+})();
+
+const RelativeWithReorderableConfig = () => {
+  const currentSessionType = useCurrentSessionType();
 
   const standings = [
     {
       carIdx: 1,
       carClass: { color: 0xff5888 },
       driver: {
-        carNum: '999',
-        name: getRandomFullName(),
-        license: getRandomLicense(),
-        rating: getRandomSafetyRating(),
+        carNum: mockReorderableConfigData.drivers[0].carNum,
+        name: mockReorderableConfigData.drivers[0].name,
+        license: mockReorderableConfigData.drivers[0].license,
+        rating: mockReorderableConfigData.drivers[0].rating,
         flairId: 223,
       },
       isPlayer: false,
@@ -138,10 +114,10 @@ const RelativeWithReorderableConfig = () => {
       carIdx: 2,
       carClass: { color: 0xffda59 },
       driver: {
-        carNum: '999',
-        name: getRandomFullName(),
-        license: getRandomLicense(),
-        rating: getRandomSafetyRating(),
+        carNum: mockReorderableConfigData.drivers[1].carNum,
+        name: mockReorderableConfigData.drivers[1].name,
+        license: mockReorderableConfigData.drivers[1].license,
+        rating: mockReorderableConfigData.drivers[1].rating,
         flairId: 222,
       },
       isPlayer: false,
@@ -168,10 +144,10 @@ const RelativeWithReorderableConfig = () => {
       carIdx: 3,
       carClass: { color: 0xff5888 },
       driver: {
-        carNum: '999',
-        name: getRandomFullName(),
-        license: getRandomLicense(),
-        rating: getRandomSafetyRating(),
+        carNum: mockReorderableConfigData.drivers[2].carNum,
+        name: mockReorderableConfigData.drivers[2].name,
+        license: mockReorderableConfigData.drivers[2].license,
+        rating: mockReorderableConfigData.drivers[2].rating,
         flairId: 77,
       },
       isPlayer: false,
@@ -198,10 +174,10 @@ const RelativeWithReorderableConfig = () => {
       carIdx: 4,
       carClass: { color: 0xff5888 },
       driver: {
-        carNum: '23',
-        name: getRandomFullName(),
-        license: getRandomLicense(),
-        rating: getRandomSafetyRating(),
+        carNum: mockReorderableConfigData.drivers[3].carNum,
+        name: mockReorderableConfigData.drivers[3].name,
+        license: mockReorderableConfigData.drivers[3].license,
+        rating: mockReorderableConfigData.drivers[3].rating,
         flairId: 71,
       },
       isPlayer: true,
@@ -226,10 +202,10 @@ const RelativeWithReorderableConfig = () => {
       carIdx: 5,
       carClass: { color: 0xae6bff },
       driver: {
-        carNum: '999',
-        name: getRandomFullName(),
-        license: getRandomLicense(),
-        rating: getRandomSafetyRating(),
+        carNum: mockReorderableConfigData.drivers[4].carNum,
+        name: mockReorderableConfigData.drivers[4].name,
+        license: mockReorderableConfigData.drivers[4].license,
+        rating: mockReorderableConfigData.drivers[4].rating,
         flairId: 101,
       },
       isPlayer: false,
@@ -254,10 +230,10 @@ const RelativeWithReorderableConfig = () => {
       carIdx: 6,
       carClass: { color: 0xff5888 },
       driver: {
-        carNum: '999',
-        name: getRandomFullName(),
-        license: getRandomLicense(),
-        rating: getRandomSafetyRating(),
+        carNum: mockReorderableConfigData.drivers[5].carNum,
+        name: mockReorderableConfigData.drivers[5].name,
+        license: mockReorderableConfigData.drivers[5].license,
+        rating: mockReorderableConfigData.drivers[5].rating,
         flairId: 198,
       },
       isPlayer: false,
@@ -282,10 +258,10 @@ const RelativeWithReorderableConfig = () => {
       carIdx: 7,
       carClass: { color: 0xae6bff },
       driver: {
-        carNum: '999',
-        name: getRandomFullName(),
-        license: getRandomLicense(),
-        rating: getRandomSafetyRating(),
+        carNum: mockReorderableConfigData.drivers[6].carNum,
+        name: mockReorderableConfigData.drivers[6].name,
+        license: mockReorderableConfigData.drivers[6].license,
+        rating: mockReorderableConfigData.drivers[6].rating,
         flairId: 39,
       },
       isPlayer: false,
@@ -306,10 +282,6 @@ const RelativeWithReorderableConfig = () => {
       slowdown: false
     },
   ];
-  const getRandomCarNum = () => Math.floor(Math.random() * 35) + 1;
-  standings.forEach((standing) => {
-    standing.driver.carNum = getRandomCarNum().toString();
-  });
 
   const [displayOrder, setDisplayOrder] = useState<string[]>(
     sortableSettings.map((s) => s.id)
