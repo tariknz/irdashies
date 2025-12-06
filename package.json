@@ -21,6 +21,8 @@
     "build-storybook": "storybook build",
     "test": "vitest --coverage",
     "ensure-tracks": "npx tsx ./tools/ensure-tracks.ts",
+    "analyze-memory": "npx tsx ./tools/analyze-memory.ts",
+    "analyze-profile": "npx tsx ./tools/analyze-profile.ts",
     "chromatic": "npm run ensure-tracks && npx chromatic"
   },
   "devDependencies": {

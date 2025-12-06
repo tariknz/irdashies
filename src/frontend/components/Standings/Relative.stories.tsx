@@ -7,8 +7,6 @@ import {
 } from '@irdashies/storybook';
 import { useState, useMemo } from 'react';
 import { DriverInfoRow } from './components/DriverInfoRow/DriverInfoRow';
-import { DriverRatingBadge } from './components/DriverRatingBadge/DriverRatingBadge';
-import { RatingChange } from './components/RatingChange/RatingChange';
 import { SessionBar } from './components/SessionBar/SessionBar';
 
 import { TitleBar } from './components/TitleBar/TitleBar';
@@ -60,18 +58,11 @@ const RelativeWithoutHeaderFooter = () => {
           carNumber={settings?.carNumber?.enabled ?? true ? '' : undefined}
           flairId={settings?.countryFlags?.enabled ?? true ? 0 : undefined}
           carId={settings?.carManufacturer?.enabled ?? true ? 0 : undefined}
-          badge={settings?.badge?.enabled ? (
-            <DriverRatingBadge
-              license={undefined}
-              rating={undefined}
-              format={settings.badge.badgeFormat}
-            />
-          ) : undefined}
+          license={settings?.badge?.enabled ? undefined : undefined}
+          rating={settings?.badge?.enabled ? undefined : undefined}
           currentSessionType=""
-          iratingChange={
-            settings?.iratingChange?.enabled ? (
-              <RatingChange value={undefined} />
-            ) : undefined
+          iratingChangeValue={
+            settings?.iratingChange?.enabled ? undefined : undefined
           }
           delta={settings?.delta?.enabled ?? true ? 0 : undefined}
           fastestTime={settings?.fastestTime?.enabled ? undefined : undefined}
@@ -116,13 +107,10 @@ const RelativeWithoutHeaderFooter = () => {
             carNumber={settings?.carNumber?.enabled ?? true ? '' : undefined}
             flairId={settings?.countryFlags?.enabled ?? true ? 0 : undefined}
             carId={settings?.carManufacturer?.enabled ?? true ? 0 : undefined}
-            badge={settings?.badge?.enabled ? <></> : undefined}
+            license={undefined}
+            rating={undefined}
             currentSessionType=""
-            iratingChange={
-              settings?.iratingChange?.enabled ? (
-                <RatingChange value={undefined} />
-              ) : undefined
-            }
+            iratingChangeValue={undefined}
             delta={settings?.delta?.enabled ?? true ? 0 : undefined}
             fastestTime={settings?.fastestTime?.enabled ? undefined : undefined}
             lastTime={settings?.lastTime?.enabled ? undefined : undefined}
@@ -145,7 +133,7 @@ const RelativeWithoutHeaderFooter = () => {
       return (
         <DriverInfoRow
           key={result.carIdx}
-          carIdx={ result.carIdx}
+          carIdx={result.carIdx}
           classColor={result.carClass.color}
           carNumber={settings?.carNumber?.enabled ?? true ? result.driver?.carNum || '' : undefined}
           name={result.driver?.name || ''}
@@ -169,19 +157,10 @@ const RelativeWithoutHeaderFooter = () => {
           prevCarTrackSurface={result.prevCarTrackSurface}
           isMultiClass={isMultiClass}
           currentSessionType={result.currentSessionType}
-          badge={
-            settings?.badge?.enabled ? (
-              <DriverRatingBadge
-                license={result.driver?.license}
-                rating={result.driver?.rating}
-                format={settings.badge.badgeFormat}
-              />
-            ) : undefined
-          }
-          iratingChange={
-            settings?.iratingChange?.enabled ? (
-              <RatingChange value={result.iratingChange} />
-            ) : undefined
+          license={settings?.badge?.enabled ? result.driver?.license : undefined}
+          rating={settings?.badge?.enabled ? result.driver?.rating : undefined}
+          iratingChangeValue={
+            settings?.iratingChange?.enabled ? result.iratingChange : undefined
           }
           delta={settings?.delta?.enabled ?? true ? result.delta : undefined}
           displayOrder={settings?.displayOrder}
@@ -446,18 +425,11 @@ const RelativeWithoutHeader = () => {
           carNumber={settings?.carNumber?.enabled ?? true ? '' : undefined}
           flairId={settings?.countryFlags?.enabled ?? true ? 0 : undefined}
           carId={settings?.carManufacturer?.enabled ?? true ? 0 : undefined}
-          badge={settings?.badge?.enabled ? (
-            <DriverRatingBadge
-              license={undefined}
-              rating={undefined}
-              format={settings.badge.badgeFormat}
-            />
-          ) : undefined}
+          license={settings?.badge?.enabled ? undefined : undefined}
+          rating={settings?.badge?.enabled ? undefined : undefined}
           currentSessionType=""
-          iratingChange={
-            settings?.iratingChange?.enabled ? (
-              <RatingChange value={undefined} />
-            ) : undefined
+          iratingChangeValue={
+            settings?.iratingChange?.enabled ? undefined : undefined
           }
           delta={settings?.delta?.enabled ?? true ? 0 : undefined}
           fastestTime={settings?.fastestTime?.enabled ? undefined : undefined}
@@ -502,13 +474,10 @@ const RelativeWithoutHeader = () => {
             carNumber={settings?.carNumber?.enabled ?? true ? '' : undefined}
             flairId={settings?.countryFlags?.enabled ?? true ? 0 : undefined}
             carId={settings?.carManufacturer?.enabled ?? true ? 0 : undefined}
-            badge={settings?.badge?.enabled ? <></> : undefined}
+            license={undefined}
+            rating={undefined}
             currentSessionType=""
-            iratingChange={
-              settings?.iratingChange?.enabled ? (
-                <RatingChange value={undefined} />
-              ) : undefined
-            }
+            iratingChangeValue={undefined}
             delta={settings?.delta?.enabled ?? true ? 0 : undefined}
             fastestTime={settings?.fastestTime?.enabled ? undefined : undefined}
             lastTime={settings?.lastTime?.enabled ? undefined : undefined}
@@ -531,7 +500,7 @@ const RelativeWithoutHeader = () => {
       return (
         <DriverInfoRow
           key={result.carIdx}
-          carIdx={ result.carIdx}
+          carIdx={result.carIdx}
           classColor={result.carClass.color}
           carNumber={settings?.carNumber?.enabled ?? true ? result.driver?.carNum || '' : undefined}
           name={result.driver?.name || ''}
@@ -555,19 +524,10 @@ const RelativeWithoutHeader = () => {
           prevCarTrackSurface={result.prevCarTrackSurface}
           isMultiClass={isMultiClass}
           currentSessionType={result.currentSessionType}
-          badge={
-            settings?.badge?.enabled ? (
-              <DriverRatingBadge
-                license={result.driver?.license}
-                rating={result.driver?.rating}
-                format={settings.badge.badgeFormat}
-              />
-            ) : undefined
-          }
-          iratingChange={
-            settings?.iratingChange?.enabled ? (
-              <RatingChange value={result.iratingChange} />
-            ) : undefined
+          license={settings?.badge?.enabled ? result.driver?.license : undefined}
+          rating={settings?.badge?.enabled ? result.driver?.rating : undefined}
+          iratingChangeValue={
+            settings?.iratingChange?.enabled ? result.iratingChange : undefined
           }
           delta={settings?.delta?.enabled ?? true ? result.delta : undefined}
           displayOrder={settings?.displayOrder}
@@ -672,18 +632,11 @@ const RelativeWithoutFooter = () => {
           carNumber={settings?.carNumber?.enabled ?? true ? '' : undefined}
           flairId={settings?.countryFlags?.enabled ?? true ? 0 : undefined}
           carId={settings?.carManufacturer?.enabled ?? true ? 0 : undefined}
-          badge={settings?.badge?.enabled ? (
-            <DriverRatingBadge
-              license={undefined}
-              rating={undefined}
-              format={settings.badge.badgeFormat}
-            />
-          ) : undefined}
+          license={settings?.badge?.enabled ? undefined : undefined}
+          rating={settings?.badge?.enabled ? undefined : undefined}
           currentSessionType=""
-          iratingChange={
-            settings?.iratingChange?.enabled ? (
-              <RatingChange value={undefined} />
-            ) : undefined
+          iratingChangeValue={
+            settings?.iratingChange?.enabled ? undefined : undefined
           }
           delta={settings?.delta?.enabled ?? true ? 0 : undefined}
           fastestTime={settings?.fastestTime?.enabled ? undefined : undefined}
@@ -728,13 +681,10 @@ const RelativeWithoutFooter = () => {
             carNumber={settings?.carNumber?.enabled ?? true ? '' : undefined}
             flairId={settings?.countryFlags?.enabled ?? true ? 0 : undefined}
             carId={settings?.carManufacturer?.enabled ?? true ? 0 : undefined}
-            badge={settings?.badge?.enabled ? <></> : undefined}
+            license={undefined}
+            rating={undefined}
             currentSessionType=""
-            iratingChange={
-              settings?.iratingChange?.enabled ? (
-                <RatingChange value={undefined} />
-              ) : undefined
-            }
+            iratingChangeValue={undefined}
             delta={settings?.delta?.enabled ?? true ? 0 : undefined}
             fastestTime={settings?.fastestTime?.enabled ? undefined : undefined}
             lastTime={settings?.lastTime?.enabled ? undefined : undefined}
@@ -757,7 +707,7 @@ const RelativeWithoutFooter = () => {
       return (
         <DriverInfoRow
           key={result.carIdx}
-          carIdx={ result.carIdx}
+          carIdx={result.carIdx}
           classColor={result.carClass.color}
           carNumber={settings?.carNumber?.enabled ?? true ? result.driver?.carNum || '' : undefined}
           name={result.driver?.name || ''}
@@ -781,19 +731,10 @@ const RelativeWithoutFooter = () => {
           prevCarTrackSurface={result.prevCarTrackSurface}
           isMultiClass={isMultiClass}
           currentSessionType={result.currentSessionType}
-          badge={
-            settings?.badge?.enabled ? (
-              <DriverRatingBadge
-                license={result.driver?.license}
-                rating={result.driver?.rating}
-                format={settings.badge.badgeFormat}
-              />
-            ) : undefined
-          }
-          iratingChange={
-            settings?.iratingChange?.enabled ? (
-              <RatingChange value={result.iratingChange} />
-            ) : undefined
+          license={settings?.badge?.enabled ? result.driver?.license : undefined}
+          rating={settings?.badge?.enabled ? result.driver?.rating : undefined}
+          iratingChangeValue={
+            settings?.iratingChange?.enabled ? result.iratingChange : undefined
           }
           delta={settings?.delta?.enabled ?? true ? result.delta : undefined}
           displayOrder={settings?.displayOrder}

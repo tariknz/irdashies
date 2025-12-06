@@ -449,10 +449,10 @@ export const MockedRelativeTable: Story = {
 };
 
 const AllBadgeFormats = () => {
-  const badgeFormats: Array<{
+  const badgeFormats: {
     name: string;
     format: StandingsWidgetSettings['config']['badge']['badgeFormat'];
-  }> = [
+  }[] = [
     { name: 'License Color Rating B&W', format: 'license-color-rating-bw' },
     { name: 'License Color Rating B&W (No License)', format: 'license-color-rating-bw-no-license' },
     { name: 'Rating Color (No License)', format: 'rating-color-no-license' },

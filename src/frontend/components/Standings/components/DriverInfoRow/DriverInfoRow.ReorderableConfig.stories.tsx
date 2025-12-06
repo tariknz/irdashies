@@ -1,7 +1,5 @@
 import { StoryObj } from '@storybook/react-vite';
 import { DriverInfoRow } from './DriverInfoRow';
-import { DriverRatingBadge } from '../DriverRatingBadge/DriverRatingBadge';
-import { RatingChange } from '../RatingChange/RatingChange';
 import { useCurrentSessionType } from '@irdashies/context';
 import type { RelativeWidgetSettings } from '../../../Settings/types';
 import { useState, useMemo } from 'react';
@@ -90,13 +88,13 @@ const SortableItem = ({ id, label }: { id: string; label: string }) => {
 };
 
 const RelativeWithReorderableConfig = () => {
-  const getRandomRating = () =>
-    Math.floor(Math.random() * (1300 - 700 + 1)) + 700;
+  const currentSessionType = useCurrentSessionType();
   const getRandomLicense = () => {
     const licenses = ['C', 'B', 'A'];
-    const license = licenses[Math.floor(Math.random() * licenses.length)];
-    const rating = (Math.random() * (4.5 - 1.5) + 1.5).toFixed(2);
-    return `${license} ${rating}`;
+    return licenses[Math.floor(Math.random() * licenses.length)];
+  };
+  const getRandomSafetyRating = () => {
+    return parseFloat((Math.random() * (4.5 - 1.5) + 1.5).toFixed(2));
   };
 
   const names = [
@@ -163,7 +161,7 @@ const RelativeWithReorderableConfig = () => {
         carNum: '999',
         name: getRandomFullName(),
         license: getRandomLicense(),
-        rating: getRandomRating(),
+        rating: getRandomSafetyRating(),
         flairId: 223,
       },
       isPlayer: false,
@@ -178,7 +176,7 @@ const RelativeWithReorderableConfig = () => {
       lappedState: undefined,
       tireCompound: 0,
       lastPitLap: 0,
-      currentSessionType: useCurrentSessionType(),
+      currentSessionType: currentSessionType,
       carId: 122,
       iratingChange: 15,
     },
@@ -189,7 +187,7 @@ const RelativeWithReorderableConfig = () => {
         carNum: '999',
         name: getRandomFullName(),
         license: getRandomLicense(),
-        rating: getRandomRating(),
+        rating: getRandomSafetyRating(),
         flairId: 222,
       },
       isPlayer: false,
@@ -204,7 +202,7 @@ const RelativeWithReorderableConfig = () => {
       lappedState: 'ahead',
       tireCompound: 1,
       lastPitLap: 0,
-      currentSessionType: useCurrentSessionType(),
+      currentSessionType: currentSessionType,
       carId: 122,
       iratingChange: -8,
       dnf: false,
@@ -219,7 +217,7 @@ const RelativeWithReorderableConfig = () => {
         carNum: '999',
         name: getRandomFullName(),
         license: getRandomLicense(),
-        rating: getRandomRating(),
+        rating: getRandomSafetyRating(),
         flairId: 77,
       },
       isPlayer: false,
@@ -234,7 +232,7 @@ const RelativeWithReorderableConfig = () => {
       lappedState: 'same',
       tireCompound: 1,
       lastPitLap: 0,
-      currentSessionType: useCurrentSessionType(),
+      currentSessionType: currentSessionType,
       carId: 122,
       iratingChange: 0,
       dnf: false,
@@ -249,7 +247,7 @@ const RelativeWithReorderableConfig = () => {
         carNum: '23',
         name: getRandomFullName(),
         license: getRandomLicense(),
-        rating: getRandomRating(),
+        rating: getRandomSafetyRating(),
         flairId: 71,
       },
       isPlayer: true,
@@ -262,7 +260,7 @@ const RelativeWithReorderableConfig = () => {
       lappedState: 'same',
       tireCompound: 1,
       lastPitLap: 15,
-      currentSessionType: useCurrentSessionType(),
+      currentSessionType: currentSessionType,
       carId: 122,
       iratingChange: 23,
       dnf: false,
@@ -277,7 +275,7 @@ const RelativeWithReorderableConfig = () => {
         carNum: '999',
         name: getRandomFullName(),
         license: getRandomLicense(),
-        rating: getRandomRating(),
+        rating: getRandomSafetyRating(),
         flairId: 101,
       },
       isPlayer: false,
@@ -290,7 +288,7 @@ const RelativeWithReorderableConfig = () => {
       lappedState: 'behind',
       tireCompound: 1,
       lastPitLap: 0,
-      currentSessionType: useCurrentSessionType(),
+      currentSessionType: currentSessionType,
       carId: 122,
       iratingChange: -42,
       dnf: false,
@@ -305,7 +303,7 @@ const RelativeWithReorderableConfig = () => {
         carNum: '999',
         name: getRandomFullName(),
         license: getRandomLicense(),
-        rating: getRandomRating(),
+        rating: getRandomSafetyRating(),
         flairId: 198,
       },
       isPlayer: false,
@@ -318,7 +316,7 @@ const RelativeWithReorderableConfig = () => {
       lappedState: 'same',
       tireCompound: 1,
       lastPitLap: 0,
-      currentSessionType: useCurrentSessionType(),
+      currentSessionType: currentSessionType,
       carId: 122,
       iratingChange: 5,
       dnf: false,
@@ -333,7 +331,7 @@ const RelativeWithReorderableConfig = () => {
         carNum: '999',
         name: getRandomFullName(),
         license: getRandomLicense(),
-        rating: getRandomRating(),
+        rating: getRandomSafetyRating(),
         flairId: 39,
       },
       isPlayer: false,
@@ -345,7 +343,7 @@ const RelativeWithReorderableConfig = () => {
       radioActive: true,
       tireCompound: 1,
       lastPitLap: 5,
-      currentSessionType: useCurrentSessionType(),
+      currentSessionType: currentSessionType,
       carId: 122,
       iratingChange: -15,
       dnf: false,
@@ -460,19 +458,15 @@ const RelativeWithReorderableConfig = () => {
                 flairId={result.driver?.flairId}
                 tireCompound={result.tireCompound}
                 carId={result.carId}
-                badge={
-                  <DriverRatingBadge
-                    license={result.driver?.license}
-                    rating={result.driver?.rating}
-                  />
-                }
+                license={result.driver?.license}
+                rating={result.driver?.rating}
                 isMultiClass={false}
                 currentSessionType={result.currentSessionType}
                 displayOrder={displayOrder}
                 config={config}
                 fastestTime={result.fastestTime}
                 lastTime={result.lastTime}
-                iratingChange={<RatingChange value={result.iratingChange} />}
+                iratingChangeValue={result.iratingChange}
                 dnf={result.dnf ?? false}
                 repair={result.repair ?? false}
                 penalty={result.penalty ?? false}
