@@ -3,25 +3,7 @@ import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import { useDashboard, useRelativeGapStore } from '@irdashies/context';
 import { RelativeWidgetSettings } from '../types';
 import { ToggleSwitch } from '../components/ToggleSwitch';
-import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  DragEndEvent,
-} from '@dnd-kit/core';
-import {
-  arrayMove,
-  SortableContext,
-  sortableKeyboardCoordinates,
-  verticalListSortingStrategy,
-} from '@dnd-kit/sortable';
-import {
-  useSortable,
-} from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
+import { useSortableList, arrayMove } from '../../SortableList';
 import { DotsSixVerticalIcon } from '@phosphor-icons/react';
 import { BadgeFormatPreview } from '../components/BadgeFormatPreview';
 
@@ -99,24 +81,18 @@ const defaultConfig: RelativeWidgetSettings['config'] = {
   showOnlyWhenOnTrack: false
 };
 
-// Helper function to merge existing displayOrder with new default items
-// Inserts new items in their proper position based on sortableSettings order
 const mergeDisplayOrder = (existingOrder?: string[]): string[] => {
   if (!existingOrder) return defaultConfig.displayOrder;
 
   const allIds = sortableSettings.map(s => s.id);
   const merged = [...existingOrder];
 
-  // Get items that are missing from existing order
   const missingIds = allIds.filter(id => !merged.includes(id));
 
-  // For each missing item, find where to insert it based on sortableSettings positions
   missingIds.forEach(missingId => {
     const missingIndex = allIds.indexOf(missingId);
 
-    // Find the closest existing item that comes after this missing item in sortableSettings
-    // We'll insert the missing item right before that closest item
-    let insertIndex = merged.length; // Default to end
+    let insertIndex = merged.length;
 
     for (let i = missingIndex + 1; i < allIds.length; i++) {
       const existingItem = allIds[i];
@@ -196,318 +172,166 @@ const migrateConfig = (savedConfig: unknown): RelativeWidgetSettings['config'] =
   };
 };
 
-interface SortableItemProps {
-  setting: SortableSetting;
+const barItemLabels: Record<string, string> = {
+  sessionName: 'Session Name',
+  timeRemaining: 'Time Remaining',
+  incidentCount: 'Incident Count',
+  brakeBias: 'Brake Bias',
+  localTime: 'Local Time',
+  trackWetness: 'Track Wetness',
+  airTemperature: 'Air Temperature',
+  trackTemperature: 'Track Temperature'
+};
+
+interface DisplaySettingsListProps {
+  itemsOrder: string[];
+  onReorder: (newOrder: string[]) => void;
   settings: RelativeWidgetSettings;
   handleConfigChange: (changes: Partial<RelativeWidgetSettings['config']>) => void;
 }
 
-const SortableItem = ({ setting, settings, handleConfigChange }: SortableItemProps) => {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: setting.id });
+const DisplaySettingsList = ({ itemsOrder, onReorder, settings, handleConfigChange }: DisplaySettingsListProps) => {
+  const items = itemsOrder.map(id => {
+    const setting = sortableSettings.find(s => s.id === id);
+    return setting ? { ...setting } : null;
+  }).filter((s): s is SortableSetting => s !== null);
 
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-  };
-
-  const configValue = settings.config[setting.configKey];
-  const isEnabled = (configValue as { enabled: boolean }).enabled;
+  const { getItemProps, displayItems } = useSortableList({
+    items,
+    onReorder: (newItems) => onReorder(newItems.map(i => i.id)),
+    getItemId: (item) => item.id,
+  });
 
   return (
-    <div ref={setNodeRef} style={style}>
-      <div className="flex items-center justify-between group">
-        <div className="flex items-center gap-2 flex-1">
-          <div
-            {...attributes}
-            {...listeners}
-            className="cursor-grab opacity-60 hover:opacity-100 transition-opacity p-1 hover:bg-slate-600 rounded"
-          >
-            <DotsSixVerticalIcon size={16} className="text-slate-400" />
+    <div className="space-y-3">
+      {displayItems.map((setting) => {
+        const { dragHandleProps, itemProps } = getItemProps(setting);
+        const configValue = settings.config[setting.configKey];
+        const isEnabled = (configValue as { enabled: boolean }).enabled;
+
+        return (
+          <div key={setting.id} {...itemProps}>
+            <div className="flex items-center justify-between group">
+              <div className="flex items-center gap-2 flex-1">
+                <div
+                  {...dragHandleProps}
+                  className="cursor-grab opacity-60 hover:opacity-100 transition-opacity p-1 hover:bg-slate-600 rounded"
+                >
+                  <DotsSixVerticalIcon size={16} className="text-slate-400" />
+                </div>
+                <span className="text-sm text-slate-300">{setting.label}</span>
+              </div>
+              <ToggleSwitch
+                enabled={isEnabled}
+                onToggle={(enabled) => {
+                  const cv = settings.config[setting.configKey] as { enabled: boolean; [key: string]: unknown };
+                  handleConfigChange({
+                    [setting.configKey]: { ...cv, enabled }
+                  });
+                }}
+              />
+            </div>
+            {setting.configKey === 'badge' && (configValue as { enabled: boolean }).enabled && (
+              <div className="mt-3">
+                <div className="flex flex-wrap gap-3 justify-end">
+                  {(['license-color-rating-bw', 'rating-only-color-rating-bw', 'license-color-rating-bw-no-license', 'rating-color-no-license', 'license-bw-rating-bw', 'rating-only-bw-rating-bw', 'license-bw-rating-bw-no-license', 'rating-bw-no-license'] as const).map((format) => (
+                    <BadgeFormatPreview
+                      key={format}
+                      format={format}
+                      selected={(configValue as { enabled: boolean; badgeFormat: string }).badgeFormat === format}
+                      onClick={() => {
+                        const cv = settings.config[setting.configKey] as { enabled: boolean; badgeFormat: string; [key: string]: unknown };
+                        handleConfigChange({
+                          [setting.configKey]: { ...cv, badgeFormat: format },
+                        });
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+            {(setting.configKey === 'fastestTime' || setting.configKey === 'lastTime') && (configValue as { enabled: boolean }).enabled && (
+              <div className="flex items-center justify-between pl-8 mt-2">
+                <span className="text-sm text-slate-300"></span>
+                <select
+                  value={(configValue as { enabled: boolean; timeFormat: string }).timeFormat}
+                  onChange={(e) => {
+                    const cv = settings.config[setting.configKey] as { enabled: boolean; timeFormat: string; [key: string]: unknown };
+                    handleConfigChange({
+                      [setting.configKey]: {
+                        ...cv,
+                        timeFormat: e.target.value as 'full' | 'mixed' | 'minutes' | 'seconds-full' | 'seconds-mixed' | 'seconds'
+                      },
+                    });
+                  }}
+                  className="w-26 bg-slate-700 text-white rounded-md px-2 py-1"
+                >
+                  <option value="full">1:42.123</option>
+                  <option value="mixed">1:42.1</option>
+                  <option value="minutes">1:42</option>
+                  <option value="seconds-full">42.123</option>
+                  <option value="seconds-mixed">42.1</option>
+                  <option value="seconds">42</option>
+                </select>
+              </div>
+            )}
           </div>
-          <span className="text-sm text-slate-300">{setting.label}</span>
-        </div>
-        <ToggleSwitch
-          enabled={isEnabled}
-          onToggle={(enabled) => {
-            const configValue = settings.config[setting.configKey] as { enabled: boolean; [key: string]: unknown };
-            handleConfigChange({
-              [setting.configKey]: {
-                ...configValue,
-                enabled
-              }
-            });
-          }}
-        />
-      </div>
-      {setting.configKey === 'badge' && (configValue as { enabled: boolean }).enabled && (
-      <div className="mt-3">
-        <div className="flex flex-wrap gap-3 justify-end">
-          <BadgeFormatPreview
-            format="license-color-rating-bw"
-            selected={(configValue as { enabled: boolean; badgeFormat: string }).badgeFormat === 'license-color-rating-bw'}
-            onClick={() => {
-              const configValue = settings.config[setting.configKey] as { enabled: boolean; badgeFormat: string; [key: string]: unknown };
-              handleConfigChange({
-                [setting.configKey]: {
-                  ...configValue,
-                  badgeFormat: 'license-color-rating-bw'
-                },
-              });
-            }}
-          />
-          <BadgeFormatPreview
-            format="rating-only-color-rating-bw"
-            selected={(configValue as { enabled: boolean; badgeFormat: string }).badgeFormat === 'rating-only-color-rating-bw'}
-            onClick={() => {
-              const configValue = settings.config[setting.configKey] as { enabled: boolean; badgeFormat: string; [key: string]: unknown };
-              handleConfigChange({
-                [setting.configKey]: {
-                  ...configValue,
-                  badgeFormat: 'rating-only-color-rating-bw'
-                },
-              });
-            }}
-          />
-          <BadgeFormatPreview
-            format="license-color-rating-bw-no-license"
-            selected={(configValue as { enabled: boolean; badgeFormat: string }).badgeFormat === 'license-color-rating-bw-no-license'}
-            onClick={() => {
-              const configValue = settings.config[setting.configKey] as { enabled: boolean; badgeFormat: string; [key: string]: unknown };
-              handleConfigChange({
-                [setting.configKey]: {
-                  ...configValue,
-                  badgeFormat: 'license-color-rating-bw-no-license'
-                },
-              });
-            }}
-          />
-          <BadgeFormatPreview
-            format="rating-color-no-license"
-            selected={(configValue as { enabled: boolean; badgeFormat: string }).badgeFormat === 'rating-color-no-license'}
-            onClick={() => {
-              const configValue = settings.config[setting.configKey] as { enabled: boolean; badgeFormat: string; [key: string]: unknown };
-              handleConfigChange({
-                [setting.configKey]: {
-                  ...configValue,
-                  badgeFormat: 'rating-color-no-license'
-                },
-              });
-            }}
-          />
-          <BadgeFormatPreview
-            format="license-bw-rating-bw"
-            selected={(configValue as { enabled: boolean; badgeFormat: string }).badgeFormat === 'license-bw-rating-bw'}
-            onClick={() => {
-              const configValue = settings.config[setting.configKey] as { enabled: boolean; badgeFormat: string; [key: string]: unknown };
-              handleConfigChange({
-                [setting.configKey]: {
-                  ...configValue,
-                  badgeFormat: 'license-bw-rating-bw'
-                },
-              });
-            }}
-          />
-          <BadgeFormatPreview
-            format="rating-only-bw-rating-bw"
-            selected={(configValue as { enabled: boolean; badgeFormat: string }).badgeFormat === 'rating-only-bw-rating-bw'}
-            onClick={() => {
-              const configValue = settings.config[setting.configKey] as { enabled: boolean; badgeFormat: string; [key: string]: unknown };
-              handleConfigChange({
-                [setting.configKey]: {
-                  ...configValue,
-                  badgeFormat: 'rating-only-bw-rating-bw'
-                },
-              });
-            }}
-          />
-          <BadgeFormatPreview
-            format="license-bw-rating-bw-no-license"
-            selected={(configValue as { enabled: boolean; badgeFormat: string }).badgeFormat === 'license-bw-rating-bw-no-license'}
-            onClick={() => {
-              const configValue = settings.config[setting.configKey] as { enabled: boolean; badgeFormat: string; [key: string]: unknown };
-              handleConfigChange({
-                [setting.configKey]: {
-                  ...configValue,
-                  badgeFormat: 'license-bw-rating-bw-no-license'
-                },
-              });
-            }}
-          />
-          <BadgeFormatPreview
-            format="rating-bw-no-license"
-            selected={(configValue as { enabled: boolean; badgeFormat: string }).badgeFormat === 'rating-bw-no-license'}
-            onClick={() => {
-              const configValue = settings.config[setting.configKey] as { enabled: boolean; badgeFormat: string; [key: string]: unknown };
-              handleConfigChange({
-                [setting.configKey]: {
-                  ...configValue,
-                  badgeFormat: 'rating-bw-no-license'
-                },
-              });
-            }}
-          />
-          </div>
-        </div>
-      )}
-      {(setting.configKey === 'fastestTime' || setting.configKey === 'lastTime') && (configValue as { enabled: boolean }).enabled && (
-        <div className="flex items-center justify-between pl-8 mt-2">
-          <span className="text-sm text-slate-300"></span>
-          <select
-            value={(configValue as { enabled: boolean; timeFormat: string }).timeFormat}
-            onChange={(e) => {
-              const configValue = settings.config[setting.configKey] as { enabled: boolean; timeFormat: string; [key: string]: unknown };
-              handleConfigChange({
-                [setting.configKey]: {
-                  ...configValue,
-                  timeFormat: e.target.value as 'full' | 'mixed' | 'minutes' | 'seconds-full' | 'seconds-mixed' | 'seconds'
-                },
-              });
-            }}
-            className="w-26 bg-slate-700 text-white rounded-md px-2 py-1"
-          >
-            <option value="full">1:42.123</option>
-            <option value="mixed">1:42.1</option>
-            <option value="minutes">1:42</option>
-            <option value="seconds-full">42.123</option>
-            <option value="seconds-mixed">42.1</option>
-            <option value="seconds">42</option>
-          </select>
-        </div>
-      )}
+        );
+      })}
     </div>
   );
 };
 
-interface SortableHeaderBarItemProps {
-  itemId: string;
+interface BarItemsListProps {
+  items: string[];
+  onReorder: (newOrder: string[]) => void;
+  barType: 'headerBar' | 'footerBar';
   settings: RelativeWidgetSettings;
   handleConfigChange: (changes: Partial<RelativeWidgetSettings['config']>) => void;
 }
 
-const SortableHeaderBarItem = ({ itemId, settings, handleConfigChange }: SortableHeaderBarItemProps) => {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: itemId });
+const BarItemsList = ({ items, onReorder, barType, settings, handleConfigChange }: BarItemsListProps) => {
+  const wrappedItems = items.map(id => ({ id }));
 
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-  };
-
-  const itemConfig = settings.config.headerBar[itemId as keyof typeof settings.config.headerBar] as { enabled: boolean };
-  const labels: Record<string, string> = {
-    sessionName: 'Session Name',
-    timeRemaining: 'Time Remaining',
-    incidentCount: 'Incident Count',
-    brakeBias: 'Brake Bias',
-    localTime: 'Local Time',
-    trackWetness: 'Track Wetness',
-    airTemperature: 'Air Temperature',
-    trackTemperature: 'Track Temperature'
-  };
+  const { getItemProps, displayItems } = useSortableList({
+    items: wrappedItems,
+    onReorder: (newItems) => onReorder(newItems.map(i => i.id)),
+    getItemId: (item) => item.id,
+  });
 
   return (
-    <div ref={setNodeRef} style={style}>
-      <div className="flex items-center justify-between group">
-        <div className="flex items-center gap-2 flex-1">
-          <div
-            {...attributes}
-            {...listeners}
-            className="cursor-grab opacity-60 hover:opacity-100 transition-opacity p-1 hover:bg-slate-600 rounded"
-          >
-            <DotsSixVerticalIcon size={16} className="text-slate-400" />
+    <div className="space-y-3 pl-4">
+      {displayItems.map((item) => {
+        const { dragHandleProps, itemProps } = getItemProps(item);
+        const itemConfig = settings.config[barType][item.id as keyof typeof settings.config.headerBar] as { enabled: boolean };
+
+        return (
+          <div key={item.id} {...itemProps}>
+            <div className="flex items-center justify-between group">
+              <div className="flex items-center gap-2 flex-1">
+                <div
+                  {...dragHandleProps}
+                  className="cursor-grab opacity-60 hover:opacity-100 transition-opacity p-1 hover:bg-slate-600 rounded"
+                >
+                  <DotsSixVerticalIcon size={16} className="text-slate-400" />
+                </div>
+                <span className="text-sm text-slate-300">{barItemLabels[item.id]}</span>
+              </div>
+              <ToggleSwitch
+                enabled={itemConfig.enabled}
+                onToggle={(enabled) => {
+                  handleConfigChange({
+                    [barType]: {
+                      ...settings.config[barType],
+                      [item.id]: { enabled }
+                    }
+                  });
+                }}
+              />
+            </div>
           </div>
-          <span className="text-sm text-slate-300">{labels[itemId]}</span>
-        </div>
-        <ToggleSwitch
-          enabled={itemConfig.enabled}
-          onToggle={(enabled) => {
-            handleConfigChange({
-              headerBar: {
-                ...settings.config.headerBar,
-                [itemId]: { enabled }
-              }
-            });
-          }}
-        />
-      </div>
-    </div>
-  );
-};
-
-interface SortableFooterBarItemProps {
-  itemId: string;
-  settings: RelativeWidgetSettings;
-  handleConfigChange: (changes: Partial<RelativeWidgetSettings['config']>) => void;
-}
-
-const SortableFooterBarItem = ({ itemId, settings, handleConfigChange }: SortableFooterBarItemProps) => {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: itemId });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-  };
-
-  const itemConfig = settings.config.footerBar[itemId as keyof typeof settings.config.footerBar] as { enabled: boolean };
-  const labels: Record<string, string> = {
-    sessionName: 'Session Name',
-    timeRemaining: 'Time Remaining',
-    incidentCount: 'Incident Count',
-    brakeBias: 'Brake Bias',
-    localTime: 'Local Time',
-    trackWetness: 'Track Wetness',
-    airTemperature: 'Air Temperature',
-    trackTemperature: 'Track Temperature'
-  };
-
-  return (
-    <div ref={setNodeRef} style={style}>
-      <div className="flex items-center justify-between group">
-        <div className="flex items-center gap-2 flex-1">
-          <div
-            {...attributes}
-            {...listeners}
-            className="cursor-grab opacity-60 hover:opacity-100 transition-opacity p-1 hover:bg-slate-600 rounded"
-          >
-            <DotsSixVerticalIcon size={16} className="text-slate-400" />
-          </div>
-          <span className="text-sm text-slate-300">{labels[itemId]}</span>
-        </div>
-        <ToggleSwitch
-          enabled={itemConfig.enabled}
-          onToggle={(enabled) => {
-            handleConfigChange({
-              footerBar: {
-                ...settings.config.footerBar,
-                [itemId]: { enabled }
-              }
-            });
-          }}
-        />
-      </div>
+        );
+      })}
     </div>
   );
 };
@@ -523,18 +347,9 @@ export const RelativeSettings = () => {
   });
   const [itemsOrder, setItemsOrder] = useState(settings.config.displayOrder);
 
-  const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
-
-  // Sync settings with RelativeGapStore only on mount
   const updateStoreConfig = useRelativeGapStore((state) => state.updateConfig);
 
   useEffect(() => {
-    // Only update on mount with the initial saved settings
     const config = settings.config.enhancedGapCalculation;
     updateStoreConfig({
       enabled: config.enabled,
@@ -543,7 +358,7 @@ export const RelativeSettings = () => {
       maxLapHistory: config.maxLapHistory,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Empty deps - only run once on mount
+  }, []);
 
   if (!currentDashboard) {
     return <>Loading...</>;
@@ -558,21 +373,9 @@ export const RelativeSettings = () => {
       widgetId="relative"
     >
       {(handleConfigChange) => {
-        const handleDragEnd = (event: DragEndEvent) => {
-          const { active, over } = event;
-
-          if (over && active.id !== over.id) {
-            setItemsOrder((items) => {
-              const oldIndex = items.indexOf(active.id as string);
-              const newIndex = items.indexOf(over.id as string);
-              const newOrder = arrayMove(items, oldIndex, newIndex);
-
-              // Save the new order to config
-              handleConfigChange({ displayOrder: newOrder });
-
-              return newOrder;
-            });
-          }
+        const handleDisplayOrderChange = (newOrder: string[]) => {
+          setItemsOrder(newOrder);
+          handleConfigChange({ displayOrder: newOrder });
         };
 
         return (
@@ -593,43 +396,23 @@ export const RelativeSettings = () => {
                 </button>
               </div>
               <div className="px-4">
-                <DndContext
-                  sensors={sensors}
-                  collisionDetection={closestCenter}
-                  onDragEnd={handleDragEnd}
-                >
-                  <SortableContext items={itemsOrder} strategy={verticalListSortingStrategy}>
-                    <div className="space-y-3">
-                      {itemsOrder.map((itemId) => {
-                        const setting = sortableSettings.find(s => s.id === itemId);
-                        if (!setting) return null;
-                        return (
-                          <SortableItem
-                            key={setting.id}
-                            setting={setting}
-                            settings={settings}
-                            handleConfigChange={handleConfigChange}
-                          />
-                        );
-                      })}
-                    </div>
-                  </SortableContext>
-                </DndContext>
+                <DisplaySettingsList
+                  itemsOrder={itemsOrder}
+                  onReorder={handleDisplayOrderChange}
+                  settings={settings}
+                  handleConfigChange={handleConfigChange}
+                />
               </div>
             </div>
 
             {/* Driver Standings Settings */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium text-slate-200">
-                  Driver Standings
-                </h3>
+                <h3 className="text-lg font-medium text-slate-200">Driver Standings</h3>
               </div>
               <div className="space-y-3 px-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-slate-300">
-                    Drivers to show around player
-                  </span>
+                  <span className="text-sm text-slate-300">Drivers to show around player</span>
                   <select
                     value={settings.config.buffer}
                     onChange={(e) =>
@@ -721,37 +504,20 @@ export const RelativeSettings = () => {
                   />
                 </div>
                 {settings.config.headerBar.enabled && (
-                  <DndContext
-                    sensors={sensors}
-                    collisionDetection={closestCenter}
-                    onDragEnd={(event: DragEndEvent) => {
-                      const { active, over } = event;
-                      if (over && active.id !== over.id) {
-                        const oldIndex = settings.config.headerBar.displayOrder.indexOf(active.id as string);
-                        const newIndex = settings.config.headerBar.displayOrder.indexOf(over.id as string);
-                        const newOrder = arrayMove(settings.config.headerBar.displayOrder, oldIndex, newIndex);
-                        handleConfigChange({
-                          headerBar: {
-                            ...settings.config.headerBar,
-                            displayOrder: newOrder
-                          }
-                        });
-                      }
+                  <BarItemsList
+                    items={settings.config.headerBar.displayOrder}
+                    onReorder={(newOrder) => {
+                      handleConfigChange({
+                        headerBar: {
+                          ...settings.config.headerBar,
+                          displayOrder: newOrder
+                        }
+                      });
                     }}
-                  >
-                    <SortableContext items={settings.config.headerBar.displayOrder} strategy={verticalListSortingStrategy}>
-                      <div className="space-y-3 pl-4">
-                        {settings.config.headerBar.displayOrder.map((itemId) => (
-                          <SortableHeaderBarItem
-                            key={itemId}
-                            itemId={itemId}
-                            settings={settings}
-                            handleConfigChange={handleConfigChange}
-                          />
-                        ))}
-                      </div>
-                    </SortableContext>
-                  </DndContext>
+                    barType="headerBar"
+                    settings={settings}
+                    handleConfigChange={handleConfigChange}
+                  />
                 )}
               </div>
             </div>
@@ -791,37 +557,20 @@ export const RelativeSettings = () => {
                   />
                 </div>
                 {settings.config.footerBar.enabled && (
-                  <DndContext
-                    sensors={sensors}
-                    collisionDetection={closestCenter}
-                    onDragEnd={(event: DragEndEvent) => {
-                      const { active, over } = event;
-                      if (over && active.id !== over.id) {
-                        const oldIndex = settings.config.footerBar.displayOrder.indexOf(active.id as string);
-                        const newIndex = settings.config.footerBar.displayOrder.indexOf(over.id as string);
-                        const newOrder = arrayMove(settings.config.footerBar.displayOrder, oldIndex, newIndex);
-                        handleConfigChange({
-                          footerBar: {
-                            ...settings.config.footerBar,
-                            displayOrder: newOrder
-                          }
-                        });
-                      }
+                  <BarItemsList
+                    items={settings.config.footerBar.displayOrder}
+                    onReorder={(newOrder) => {
+                      handleConfigChange({
+                        footerBar: {
+                          ...settings.config.footerBar,
+                          displayOrder: newOrder
+                        }
+                      });
                     }}
-                  >
-                    <SortableContext items={settings.config.footerBar.displayOrder} strategy={verticalListSortingStrategy}>
-                      <div className="space-y-3 pl-4">
-                        {settings.config.footerBar.displayOrder.map((itemId) => (
-                          <SortableFooterBarItem
-                            key={itemId}
-                            itemId={itemId}
-                            settings={settings}
-                            handleConfigChange={handleConfigChange}
-                          />
-                        ))}
-                      </div>
-                    </SortableContext>
-                  </DndContext>
+                    barType="footerBar"
+                    settings={settings}
+                    handleConfigChange={handleConfigChange}
+                  />
                 )}
               </div>
             </div>
@@ -829,15 +578,11 @@ export const RelativeSettings = () => {
             {/* Background Settings */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium text-slate-200">
-                  Background
-                </h3>
+                <h3 className="text-lg font-medium text-slate-200">Background</h3>
               </div>
               <div className="space-y-3 pl-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-slate-300">
-                    Background Opacity
-                  </span>
+                  <span className="text-sm text-slate-300">Background Opacity</span>
                   <div className="flex items-center gap-2">
                     <input
                       type="range"
@@ -862,9 +607,7 @@ export const RelativeSettings = () => {
             {/* Enhanced Gap Calculation Section */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium text-slate-200">
-                  Enhanced Gap Calculation
-                </h3>
+                <h3 className="text-lg font-medium text-slate-200">Enhanced Gap Calculation</h3>
               </div>
               <div className="space-y-3 px-4">
                 <div>
@@ -876,9 +619,7 @@ export const RelativeSettings = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <span className="text-sm text-slate-300">Enable Enhanced Calculation</span>
-                    <p className="text-xs text-slate-400">
-                      Uses lap data interpolation for accuracy
-                    </p>
+                    <p className="text-xs text-slate-400">Uses lap data interpolation for accuracy</p>
                   </div>
                   <ToggleSwitch
                     enabled={settings.config.enhancedGapCalculation.enabled}
@@ -890,7 +631,6 @@ export const RelativeSettings = () => {
                       handleConfigChange({
                         enhancedGapCalculation: newConfig,
                       });
-                      // Update store immediately
                       updateStoreConfig(newConfig);
                     }}
                   />
@@ -901,9 +641,7 @@ export const RelativeSettings = () => {
                     <div className="flex items-center justify-between">
                       <div>
                         <span className="text-sm text-slate-300">Interpolation Method</span>
-                        <p className="text-xs text-slate-400">
-                          Linear is more stable, cubic is smoother
-                        </p>
+                        <p className="text-xs text-slate-400">Linear is more stable, cubic is smoother</p>
                       </div>
                       <select
                         value={settings.config.enhancedGapCalculation.interpolationMethod}
@@ -915,7 +653,6 @@ export const RelativeSettings = () => {
                           handleConfigChange({
                             enhancedGapCalculation: newConfig,
                           });
-                          // Update store immediately
                           updateStoreConfig(newConfig);
                         }}
                         className="bg-slate-700 text-slate-200 px-3 py-1 rounded border border-slate-600 focus:border-blue-500 focus:outline-none"
@@ -928,9 +665,7 @@ export const RelativeSettings = () => {
                     <div className="flex items-center justify-between">
                       <div>
                         <span className="text-sm text-slate-300">Max Lap History</span>
-                        <p className="text-xs text-slate-400">
-                          Number of recent laps to keep for each car
-                        </p>
+                        <p className="text-xs text-slate-400">Number of recent laps to keep for each car</p>
                       </div>
                       <select
                         value={settings.config.enhancedGapCalculation.maxLapHistory}
@@ -942,7 +677,6 @@ export const RelativeSettings = () => {
                           handleConfigChange({
                             enhancedGapCalculation: newConfig,
                           });
-                          // Update store immediately
                           updateStoreConfig(newConfig);
                         }}
                         className="bg-slate-700 text-slate-200 px-3 py-1 rounded border border-slate-600 focus:border-blue-500 focus:outline-none"
@@ -962,9 +696,7 @@ export const RelativeSettings = () => {
             {/* Show Only When On Track Settings */}
             <div className="flex items-center justify-between">
               <div>
-                <h4 className="text-md font-medium text-slate-300">
-                  Show Only When On Track
-                </h4>
+                <h4 className="text-md font-medium text-slate-300">Show Only When On Track</h4>
                 <p className="text-sm text-slate-400">
                   If enabled, relatives will only be shown when you are driving.
                 </p>

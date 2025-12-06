@@ -83,21 +83,18 @@
   },
   "license": "MIT",
   "dependencies": {
-    "@dnd-kit/core": "^6.3.1",
-    "@dnd-kit/sortable": "^10.0.0",
-    "@dnd-kit/utilities": "^3.2.2",
     "@phosphor-icons/react": "^2.1.10",
     "d3": "^7.9.0",
     "electron-squirrel-startup": "^1.0.1",
     "flag-icons": "^7.5.0",
     "js-yaml": "^4.1.1",
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0",
+    "react": "^19.2.1",
+    "react-dom": "^19.2.1",
     "react-router-dom": "^7.9.4",
     "stream-json": "^1.9.1",
     "update-electron-app": "^3.1.1",
     "use-sync-external-store": "^1.6.0",
-    "ws": "^8.18.0",
-    "zustand": "^5.0.8"
+    "ws": "^8.18.3",
+    "zustand": "^5.0.9"
   }
 }
