@@ -240,8 +240,8 @@ std::string yamlToJson(const char* yaml) {
                 if (valueStr.empty()) {
                     // No value - create object for potential nesting
                     (*currentObj)[key] = json::object();
-                    // Push pointer to the NEW object
-                    stateStack.push({&(*currentObj)[key], indent, key, false});
+                    // Push pointer to the NEW object with indent+1 so children are properly nested
+                    stateStack.push({&(*currentObj)[key], indent + 1, key, false});
                 } else {
                     (*currentObj)[key] = parseValue(valueStr);
                 }
