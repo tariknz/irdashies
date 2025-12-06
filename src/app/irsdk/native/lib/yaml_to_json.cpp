@@ -4,6 +4,8 @@
 #include <string>
 #include <sstream>
 #include <cctype>
+#include <cstdlib>
+#include <cerrno>
 #include <stack>
 
 using json = nlohmann::json;
@@ -82,11 +84,15 @@ json parseValue(const std::string& rawValue) {
         if (hasDecimal) {
             return json(std::stod(value));
         } else {
-            try {
-                return json(std::stoll(value));
-            } catch (...) {
-                return json(std::stod(value));
+            // Use strtoll to avoid exceptions (NAPI_DISABLE_CPP_EXCEPTIONS)
+            char* endPtr = nullptr;
+            errno = 0;
+            long long intVal = std::strtoll(value.c_str(), &endPtr, 10);
+            if (errno == 0 && endPtr == value.c_str() + value.size()) {
+                return json(intVal);
             }
+            // Fallback to double for overflow
+            return json(std::stod(value));
         }
     }
     
