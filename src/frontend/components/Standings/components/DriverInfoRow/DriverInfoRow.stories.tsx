@@ -1,7 +1,5 @@
 import { Meta, StoryObj } from '@storybook/react-vite';
 import { DriverInfoRow } from './DriverInfoRow';
-import { DriverRatingBadge } from '../DriverRatingBadge/DriverRatingBadge';
-import { RatingChange } from '../RatingChange/RatingChange';
 import { useCurrentSessionType } from '@irdashies/context';
 import type { StandingsWidgetSettings } from '../../../Settings/types';
 
@@ -32,8 +30,9 @@ export const Primary: Story = {
     classColor: 16777215,
     fastestTime: 111.111,
     lastTime: 112.225,
-    badge: <DriverRatingBadge license="A 4.99" rating={4999} format="license-color-rating-bw" />,
-    iratingChange: <RatingChange value={10} />,
+    license: 'A 4.99',
+    rating: 4999,
+    iratingChangeValue: 10,
     onPitRoad: false,
     onTrack: true,
     radioActive: false,
@@ -46,7 +45,12 @@ export const Primary: Story = {
       fastestTime: { enabled: true },
       lastTime: { enabled: true },
       iratingChange: { enabled: true },
+      badge: { enabled: true, badgeFormat: 'license-color-rating-bw' },
     } as StandingsWidgetSettings['config'],
+    dnf: false,
+    repair: false,
+    penalty: false,
+    slowdown: false,
   },
 };
 
@@ -121,7 +125,7 @@ export const IRatingChange: Story = {
   name: 'iRating Positive Change',
   args: {
     ...Primary.args,
-    iratingChange: <RatingChange value={10} />,
+    iratingChangeValue: 10,
   },
 };
 
@@ -129,7 +133,7 @@ export const IRatingChangeNegative: Story = {
   name: 'iRating Negative Change',
   args: {
     ...Primary.args,
-    iratingChange: <RatingChange value={-58} />,
+    iratingChangeValue: -58,
   },
 };
 
@@ -137,7 +141,7 @@ export const IRatingNoChange: Story = {
   name: 'iRating No Change',
   args: {
     ...Primary.args,
-    iratingChange: <RatingChange value={0} />,
+    iratingChangeValue: 0,
   },
 };
 
@@ -423,19 +427,15 @@ const Relative = () => {
               isLappingAhead={result.lappedState === 'ahead'}
               flairId={result.driver?.flairId}
               tireCompound={result.tireCompound}
-              badge={
-                <DriverRatingBadge
-                  license={result.driver?.license}
-                  rating={result.driver?.rating}
-                  format="license-color-rating-bw"
-                />
-              }
+              license={result.driver?.license}
+              rating={result.driver?.rating}
               isMultiClass={false}
               currentSessionType={result.currentSessionType}
               dnf={result.dnf}
               repair={result.repair}
               penalty={result.penalty}
               slowdown={result.slowdown}
+              config={{ badge: { enabled: true, badgeFormat: 'license-color-rating-bw' } } as StandingsWidgetSettings['config']}
             />
           ))}
         </tbody>
@@ -448,60 +448,66 @@ export const MockedRelativeTable: Story = {
   render: () => <Relative />,
 };
 
-export const BadgeFormatLicenseColorRatingBw: Story = {
-  args: {
-    ...Primary.args,
-    badge: <DriverRatingBadge license="A 4.99" rating={4999} format="license-color-rating-bw" />,
-  },
+const AllBadgeFormats = () => {
+  const badgeFormats: Array<{
+    name: string;
+    format: StandingsWidgetSettings['config']['badge']['badgeFormat'];
+  }> = [
+    { name: 'License Color Rating B&W', format: 'license-color-rating-bw' },
+    { name: 'License Color Rating B&W (No License)', format: 'license-color-rating-bw-no-license' },
+    { name: 'Rating Color (No License)', format: 'rating-color-no-license' },
+    { name: 'License B&W Rating B&W', format: 'license-bw-rating-bw' },
+    { name: 'Rating Only B&W Rating B&W', format: 'rating-only-bw-rating-bw' },
+    { name: 'License B&W Rating B&W (No License)', format: 'license-bw-rating-bw-no-license' },
+    { name: 'Rating B&W (No License)', format: 'rating-bw-no-license' },
+  ];
+
+  return (
+    <div className="w-full h-full">
+      <table className="w-full table-auto text-sm border-separate border-spacing-y-0.5 mb-3 mt-3">
+        <tbody>
+          {badgeFormats.map((badgeFormat, index) => (
+            <DriverInfoRow
+              key={index}
+              carIdx={index + 1}
+              carNumber={`${index + 1}`}
+              name={badgeFormat.name}
+              isPlayer={false}
+              hasFastestTime={false}
+              delta={0.1}
+              position={index + 1}
+              classColor={16777215}
+              fastestTime={111.111}
+              lastTime={112.225}
+              license="A 4.99"
+              rating={4999}
+              iratingChangeValue={10}
+              onPitRoad={false}
+              onTrack={true}
+              radioActive={false}
+              tireCompound={1}
+              isMultiClass={false}
+              flairId={2}
+              carId={122}
+              currentSessionType="Race"
+              dnf={false}
+              repair={false}
+              penalty={false}
+              slowdown={false}
+              config={{
+                ...Primary.args?.config,
+                badge: { enabled: true, badgeFormat: badgeFormat.format },
+              } as StandingsWidgetSettings['config']}
+            />
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
 };
 
-export const BadgeFormatLicenseColorRatingBwNoLicense: Story = {
-  args: {
-    ...Primary.args,
-    badge: <DriverRatingBadge license="A 4.99" rating={4999} format="license-color-rating-bw-no-license" />,
-  },
-};
-
-export const BadgeFormatRatingColorNoLicense: Story = {
-  args: {
-    ...Primary.args,
-    badge: <DriverRatingBadge license="A 4.99" rating={4999} format="rating-color-no-license" />,
-  },
-};
-
-export const BadgeFormatLicenseBwRatingBw: Story = {
-  args: {
-    ...Primary.args,
-    badge: <DriverRatingBadge license="A 4.99" rating={4999} format="license-bw-rating-bw" />,
-  },
-};
-
-export const BadgeFormatRatingOnlyBwRatingBw: Story = {
-  args: {
-    ...Primary.args,
-    badge: <DriverRatingBadge license="A 4.99" rating={4999} format="rating-only-bw-rating-bw" />,
-  },
-};
-
-export const BadgeFormatLicenseBwRatingBwNoLicense: Story = {
-  args: {
-    ...Primary.args,
-    badge: <DriverRatingBadge license="A 4.99" rating={4999} format="license-bw-rating-bw-no-license" />,
-  },
-};
-
-export const BadgeFormatRatingBwNoLicense: Story = {
-  args: {
-    ...Primary.args,
-    badge: <DriverRatingBadge license="A 4.99" rating={4999} format="rating-bw-no-license" />,
-  },
-};
-
-export const BadgeFormatRatingOnlyColorRatingBw: Story = {
-  args: {
-    ...Primary.args,
-    badge: <DriverRatingBadge license="A 4.99" rating={4999} format="rating-only-color-rating-bw" />,
-  },
+export const AllBadgeFormatsStory: Story = {
+  render: () => <AllBadgeFormats />,
 };
 
 const AllFlagCombinations = () => {
@@ -589,8 +595,9 @@ const AllFlagCombinations = () => {
               classColor={16777215}
               fastestTime={111.111}
               lastTime={112.225}
-              badge={<DriverRatingBadge license="A 4.99" rating={4999} format="license-color-rating-bw" />}
-              iratingChange={<RatingChange value={0} />}
+              license="A 4.99"
+              rating={4999}
+              iratingChangeValue={0}
               onPitRoad={combo.onPitRoad}
               onTrack={true}
               radioActive={false}
@@ -608,9 +615,10 @@ const AllFlagCombinations = () => {
               carTrackSurface={combo.carTrackSurface}
               prevCarTrackSurface={combo.prevCarTrackSurface}
               config={{
-                fastestTime: { enabled: true },
-                lastTime: { enabled: true },
+                fastestTime: { enabled: true, timeFormat: 'full' },
+                lastTime: { enabled: true, timeFormat: 'full' },
                 iratingChange: { enabled: true },
+                badge: { enabled: true, badgeFormat: 'license-color-rating-bw' },
               } as StandingsWidgetSettings['config']}
             />
           ))}
