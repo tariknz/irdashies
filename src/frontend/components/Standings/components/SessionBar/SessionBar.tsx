@@ -125,7 +125,11 @@ export const SessionBar = ({ position = 'header', variant = 'standings' }: Sessi
       definition: itemDefinitions[key as keyof typeof itemDefinitions],
     }))
     .filter(({ definition }) => definition?.enabled)
-    .map(({ definition }) => definition.render())
+    .map(({ key, definition }) => {
+      const element = definition.render();
+      if (!element) return null;
+      return <div key={key}>{element}</div>;
+    })
     .filter(Boolean);
 
   return (

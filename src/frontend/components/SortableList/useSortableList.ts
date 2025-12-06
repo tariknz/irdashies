@@ -22,6 +22,7 @@ export interface SortableItemProps {
     onDragEnd: () => void;
   };
   itemProps: {
+    'data-sortable-id': string;
     ref: (el: HTMLElement | null) => void;
     onDragOver: (e: DragEvent<HTMLElement>) => void;
     onDragLeave: () => void;
@@ -55,6 +56,32 @@ export function useSortableList<T>({
           onDragStart: (e: DragEvent<HTMLElement>) => {
             e.dataTransfer.effectAllowed = 'move';
             e.dataTransfer.setData('text/plain', id);
+
+            const rowElement = itemRefs.current.get(id);
+            if (rowElement) {
+              const rect = rowElement.getBoundingClientRect();
+              const clone = rowElement.cloneNode(true) as HTMLElement;
+              clone.style.position = 'absolute';
+              clone.style.top = '-9999px';
+              clone.style.left = '-9999px';
+              clone.style.width = `${rect.width}px`;
+              clone.style.opacity = '1';
+              clone.style.boxShadow = '0 4px 12px rgba(0,0,0,0.4)';
+              clone.style.borderRadius = '6px';
+              clone.style.backgroundColor = '#334155';
+              clone.style.padding = '8px';
+              document.body.appendChild(clone);
+
+              const handleRect = e.currentTarget.getBoundingClientRect();
+              const offsetX = handleRect.left - rect.left + handleRect.width / 2;
+              const offsetY = handleRect.top - rect.top + handleRect.height / 2;
+              e.dataTransfer.setDragImage(clone, offsetX, offsetY);
+
+              requestAnimationFrame(() => {
+                document.body.removeChild(clone);
+              });
+            }
+
             setDraggedId(id);
             draggedIdRef.current = id;
             setPreviewItems([...items]);
@@ -67,6 +94,7 @@ export function useSortableList<T>({
           },
         },
         itemProps: {
+          'data-sortable-id': id,
           ref: (el: HTMLElement | null) => {
             if (el) itemRefs.current.set(id, el);
             else itemRefs.current.delete(id);
