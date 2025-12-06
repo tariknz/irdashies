@@ -1,4 +1,3 @@
-import yaml from 'js-yaml';
 import {
   BroadcastMessages,
   CameraState,
@@ -156,7 +155,7 @@ export class IRacingSDK {
   }
 
   /**
-   * Gets the current session data (from yaml format).
+   * Gets the current session data (parsed from native JSON).
    * @returns {SessionData}
    */
   public getSessionData(): SessionData | null {
@@ -164,10 +163,9 @@ export class IRacingSDK {
     if (!this._sdk) return null;
 
     try {
-      const seshString = this._sdk?.getSessionData();
-      // Remove trailing commas
-      const fixedYaml = seshString?.replace(/(\w+):\s*,\s*\n/g, '$1: \n');
-      this._sessionData = yaml.load(fixedYaml, { json: true }) as SessionData;
+      const jsonString = this._sdk?.getSessionData();
+      if (!jsonString) return null;
+      this._sessionData = JSON.parse(jsonString) as SessionData;
       this._dataVer = this.currDataVersion;
       return this._sessionData;
     } catch (err) {

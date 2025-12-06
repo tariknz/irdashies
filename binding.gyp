@@ -17,6 +17,7 @@
                             "src/app/irsdk/native/irsdk_node.cc",
                             "src/app/irsdk/native/lib/irsdk_utils.cpp",
                             "src/app/irsdk/native/lib/yaml_parser.cpp",
+                            "src/app/irsdk/native/lib/yaml_to_json.cpp",
                             "src/app/irsdk/native/lib/irsdk_defines.h",
                         ]
                     },

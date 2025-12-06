@@ -28,7 +28,7 @@ export interface INativeSDK {
   // State
   isRunning(): boolean;
   waitForData(timeout?: number): boolean;
-  getSessionData(): string; // full yaml
+  getSessionData(): string; // JSON string (converted from YAML in native layer)
   getTelemetryData(): TelemetryVarList;
 
   getTelemetryVariable<T>(index: number): TelemetryVariable<T>;
@@ -73,7 +73,7 @@ export class NativeSDK implements INativeSDK {
 
   public waitForData(timeout?: number): boolean;
 
-  public getSessionData(): string; // full yaml
+  public getSessionData(): string; // JSON string (converted from YAML in native layer)
 
   public getTelemetryData(): TelemetryVarList;
 

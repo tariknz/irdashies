@@ -1,5 +1,6 @@
 #include "./irsdk_node.h"
 #include "./lib/yaml_parser.h"
+#include "./lib/yaml_to_json.h"
 
 /*
 Nan::SetPrototypeMethod(tmpl, "getSessionData", GetSessionData);
@@ -394,15 +395,17 @@ Napi::Value iRacingSdkNode::GetSessionData(const Napi::CallbackInfo &info)
     printf("Session data has been updated (prev: %d, new: %d)\n", this->_lastSessionCt, latestUpdate);
     this->_lastSessionCt = latestUpdate;
     this->_sessionData = irsdk_getSessionInfoStr();
-  }
-  const char *session = this->_sessionData;
-  if (session == NULL) {
-    return Napi::String::New(info.Env(), "");
+    
+    // Convert to UTF-8 then to JSON
+    if (this->_sessionData != NULL) {
+      std::string utf8Session = ConvertToUTF8(this->_sessionData);
+      this->_sessionJson = yamlToJson(utf8Session.c_str());
+    } else {
+      this->_sessionJson = "{}";
+    }
   }
   
-  // Convert Windows-1252 to UTF-8
-  std::string utf8Session = ConvertToUTF8(session);
-  return Napi::String::New(info.Env(), utf8Session.c_str());
+  return Napi::String::New(info.Env(), this->_sessionJson);
 }
 
 Napi::Value iRacingSdkNode::GetTelemetryVar(const Napi::CallbackInfo &info)

@@ -2,6 +2,7 @@
 #define IRSDK_NODE_H
 
 #include <napi.h>
+#include <string>
 #include "./lib/irsdk_defines.h"
 #include "./lib/irsdk_client.h"
 
@@ -45,6 +46,7 @@ private:
     int _sessionStatusID;
     int _lastSessionCt;
     const char* _sessionData;
+    std::string _sessionJson;
 };
 
 #endif
