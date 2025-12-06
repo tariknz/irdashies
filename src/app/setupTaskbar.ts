@@ -3,6 +3,7 @@ import { TelemetrySink } from './bridge/iracingSdk/telemetrySink';
 import { OverlayManager } from './overlayManager';
 import { writeFile } from 'node:fs/promises';
 import path from 'node:path';
+import { startProfiling, stopProfiling, isProfiling } from './profiler';
 
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string;
 
@@ -63,6 +64,18 @@ class Taskbar {
       //     await this.telemetrySink.startRecording();
       //   },
       // },
+      {
+        label: isProfiling() ? 'Stop CPU Profiling' : 'Start CPU Profiling',
+        click: async () => {
+          if (isProfiling()) {
+            const filePath = await stopProfiling();
+            console.log('Profile saved to:', filePath);
+          } else {
+            await startProfiling();
+          }
+          this.setupContextMenu();
+        },
+      },
       {
         label: 'Quit',
         click: () => {
