@@ -2,7 +2,6 @@ import { Meta, StoryObj } from '@storybook/react-vite';
 import { Standings } from './Standings';
 import { TelemetryDecorator, DynamicTelemetrySelector } from '@irdashies/storybook';
 import { useState, Fragment } from 'react';
-import { useAutoAnimate } from '@formkit/auto-animate/react';
 import { DriverClassHeader } from './components/DriverClassHeader/DriverClassHeader';
 import { DriverInfoRow } from './components/DriverInfoRow/DriverInfoRow';
 import { DriverRatingBadge } from './components/DriverRatingBadge/DriverRatingBadge';
@@ -28,7 +27,6 @@ import { ClockIcon, DropIcon, RoadHorizonIcon, ThermometerIcon, TireIcon } from 
 
 // Custom component that renders standings without header/footer session bars
 const StandingsWithoutHeaderFooter = () => {
-  const [parent] = useAutoAnimate();
   const settings = useStandingsSettings();
   const { isDriving } = useDrivingState();
 
@@ -59,7 +57,7 @@ const StandingsWithoutHeaderFooter = () => {
       <TitleBar titleBarSettings={settings?.titleBar} />
       {/* No SessionBar here */}
       <table className="w-full table-auto text-sm border-separate border-spacing-y-0.5">
-        <tbody ref={parent}>
+        <tbody>
           {standings.map(([classId, classStandings]) => (
             classStandings.length > 0 ? (
               <Fragment key={classId}>
@@ -220,7 +218,6 @@ export const SuzukaGT3EnduranceRace: Story = {
 
 // Component that renders standings without header bar but with footer
 const StandingsWithoutHeader = () => {
-  const [parent] = useAutoAnimate();
   const settings = useStandingsSettings();
   const { isDriving } = useDrivingState();
 
@@ -251,7 +248,7 @@ const StandingsWithoutHeader = () => {
       <TitleBar titleBarSettings={settings?.titleBar} />
       {/* No SessionBar here */}
       <table className="w-full table-auto text-sm border-separate border-spacing-y-0.5">
-        <tbody ref={parent}>
+        <tbody>
           {standings.map(([classId, classStandings]) => (
             classStandings.length > 0 ? (
               <Fragment key={classId}>
@@ -349,7 +346,6 @@ export const NoHeader: Story = {
 
 // Component that renders standings without footer but with header bar
 const StandingsWithoutFooter = () => {
-  const [parent] = useAutoAnimate();
   const settings = useStandingsSettings();
   const { isDriving } = useDrivingState();
 
@@ -381,7 +377,7 @@ const StandingsWithoutFooter = () => {
       {/* Keep SessionBar here */}
       <SessionBar />
       <table className="w-full table-auto text-sm border-separate border-spacing-y-0.5">
-        <tbody ref={parent}>
+        <tbody>
           {standings.map(([classId, classStandings]) => (
             classStandings.length > 0 ? (
               <Fragment key={classId}>
@@ -535,7 +531,6 @@ const FullHeaderBar = () => {
 
 // Component that renders standings with all header bar options visible, no footer
 const StandingsWithFullHeader = () => {
-  const [parent] = useAutoAnimate();
   const settings = useStandingsSettings();
   const { isDriving } = useDrivingState();
 
@@ -567,7 +562,7 @@ const StandingsWithFullHeader = () => {
       {/* Custom full header bar */}
       <FullHeaderBar />
       <table className="w-full table-auto text-sm border-separate border-spacing-y-0.5">
-        <tbody ref={parent}>
+        <tbody>
           {standings.map(([classId, classStandings]) => (
             classStandings.length > 0 ? (
               <Fragment key={classId}>

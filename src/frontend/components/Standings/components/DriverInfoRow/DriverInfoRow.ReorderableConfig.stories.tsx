@@ -2,7 +2,6 @@ import { StoryObj } from '@storybook/react-vite';
 import { DriverInfoRow } from './DriverInfoRow';
 import { DriverRatingBadge } from '../DriverRatingBadge/DriverRatingBadge';
 import { RatingChange } from '../RatingChange/RatingChange';
-import { useAutoAnimate } from '@formkit/auto-animate/react';
 import { useCurrentSessionType } from '@irdashies/context';
 import type { RelativeWidgetSettings } from '../../../Settings/types';
 import { useState, useMemo } from 'react';
@@ -437,13 +436,11 @@ const RelativeWithReorderableConfig = () => {
     }
   };
 
-  const [parent] = useAutoAnimate();
-
   return (
     <div className="w-full h-full flex flex-col gap-4 p-4">
       <div className="flex-1">
         <table className="w-full table-auto text-sm border-separate border-spacing-y-0.5 mb-3 mt-3">
-          <tbody ref={parent}>
+          <tbody>
             {standings.map((result) => (
               <DriverInfoRow
                 key={result.carIdx}

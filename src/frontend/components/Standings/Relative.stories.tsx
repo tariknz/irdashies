@@ -6,7 +6,6 @@ import {
   TelemetryDecoratorWithConfig,
 } from '@irdashies/storybook';
 import { useState, useMemo } from 'react';
-import { useAutoAnimate } from '@formkit/auto-animate/react';
 import { DriverInfoRow } from './components/DriverInfoRow/DriverInfoRow';
 import { DriverRatingBadge } from './components/DriverRatingBadge/DriverRatingBadge';
 import { RatingChange } from './components/RatingChange/RatingChange';
@@ -25,7 +24,6 @@ const RelativeWithoutHeaderFooter = () => {
   const buffer = settings?.buffer ?? 3;
   const { isDriving } = useDrivingState();
   const standings = useDriverRelatives({ buffer });
-  const [parent] = useAutoAnimate();
   const highlightColor = useHighlightColor();
   const numCarClasses = useWeekendInfoNumCarClasses();
   const isMultiClass = (numCarClasses ?? 0) > 1;
@@ -210,7 +208,7 @@ const RelativeWithoutHeaderFooter = () => {
         <TitleBar titleBarSettings={settings?.titleBar} />
         {/* No SessionBar here */}
         <table className="w-full table-auto text-sm border-separate border-spacing-y-0.5">
-          <tbody ref={parent}>{rows}</tbody>
+          <tbody>{rows}</tbody>
         </table>
         {/* No SessionFooter here */}
       </div>
@@ -227,7 +225,7 @@ const RelativeWithoutHeaderFooter = () => {
       <TitleBar titleBarSettings={settings?.titleBar} />
       {/* No SessionBar here */}
       <table className="w-full table-auto text-sm border-separate border-spacing-y-0.5">
-        <tbody ref={parent}>{rows}</tbody>
+        <tbody>{rows}</tbody>
       </table>
       {/* No SessionFooter here */}
     </div>
@@ -412,7 +410,6 @@ const RelativeWithoutHeader = () => {
   const buffer = settings?.buffer ?? 3;
   const { isDriving } = useDrivingState();
   const standings = useDriverRelatives({ buffer });
-  const [parent] = useAutoAnimate();
   const highlightColor = useHighlightColor();
   const numCarClasses = useWeekendInfoNumCarClasses();
   const isMultiClass = (numCarClasses ?? 0) > 1;
@@ -597,7 +594,7 @@ const RelativeWithoutHeader = () => {
         <TitleBar titleBarSettings={settings?.titleBar} />
         {/* No SessionBar here */}
         <table className="w-full table-auto text-sm border-separate border-spacing-y-0.5">
-          <tbody ref={parent}>{rows}</tbody>
+          <tbody>{rows}</tbody>
         </table>
         {/* Keep SessionBar here */}
         <SessionBar position="footer" />
@@ -615,7 +612,7 @@ const RelativeWithoutHeader = () => {
       <TitleBar titleBarSettings={settings?.titleBar} />
       {/* No SessionBar here */}
       <table className="w-full table-auto text-sm border-separate border-spacing-y-0.5">
-        <tbody ref={parent}>{rows}</tbody>
+        <tbody>{rows}</tbody>
       </table>
       {/* Keep SessionBar here */}
       <SessionBar position="footer" />
@@ -639,7 +636,6 @@ const RelativeWithoutFooter = () => {
   const buffer = settings?.buffer ?? 3;
   const { isDriving } = useDrivingState();
   const standings = useDriverRelatives({ buffer });
-  const [parent] = useAutoAnimate();
   const highlightColor = useHighlightColor();
   const numCarClasses = useWeekendInfoNumCarClasses();
   const isMultiClass = (numCarClasses ?? 0) > 1;
@@ -825,7 +821,7 @@ const RelativeWithoutFooter = () => {
         {/* Keep SessionBar here */}
         <SessionBar />
         <table className="w-full table-auto text-sm border-separate border-spacing-y-0.5">
-          <tbody ref={parent}>{rows}</tbody>
+          <tbody>{rows}</tbody>
         </table>
         {/* No SessionFooter here */}
       </div>
@@ -843,7 +839,7 @@ const RelativeWithoutFooter = () => {
       {/* Keep SessionBar here */}
       <SessionBar />
       <table className="w-full table-auto text-sm border-separate border-spacing-y-0.5">
-        <tbody ref={parent}>{rows}</tbody>
+        <tbody>{rows}</tbody>
       </table>
       {/* No SessionFooter here */}
     </div>

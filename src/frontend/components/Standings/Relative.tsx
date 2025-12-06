@@ -1,5 +1,4 @@
 import { useMemo } from 'react';
-import { useAutoAnimate } from '@formkit/auto-animate/react';
 import { DriverInfoRow } from './components/DriverInfoRow/DriverInfoRow';
 import { useDrivingState } from '@irdashies/context';
 import { useRelativeSettings, useDriverRelatives, useHighlightColor } from './hooks';
@@ -17,7 +16,6 @@ export const Relative = () => {
   const buffer = settings?.buffer ?? 3;
   const { isDriving } = useDrivingState();
   const standings = useDriverRelatives({ buffer });
-  const [parent] = useAutoAnimate();
   const highlightColor = useHighlightColor();
   const numCarClasses = useWeekendInfoNumCarClasses();
   const isMultiClass = (numCarClasses ?? 0) > 1;
@@ -202,7 +200,7 @@ export const Relative = () => {
         <TitleBar titleBarSettings={settings?.titleBar} />
         {(settings?.headerBar?.enabled ?? false) && <SessionBar position="header" variant="relative" />}
         <table className="w-full table-auto text-sm border-separate border-spacing-y-0.5">
-          <tbody ref={parent}>{rows}</tbody>
+          <tbody>{rows}</tbody>
         </table>
         {(settings?.footerBar?.enabled ?? true) && <SessionBar position="footer" variant="relative" />}
       </div>
@@ -219,7 +217,7 @@ export const Relative = () => {
       <TitleBar titleBarSettings={settings?.titleBar} />
       {(settings?.headerBar?.enabled ?? false) && <SessionBar position="header" variant="relative" />}
       <table className="w-full table-auto text-sm border-separate border-spacing-y-0.5">
-        <tbody ref={parent}>{rows}</tbody>
+        <tbody>{rows}</tbody>
       </table>
       {(settings?.footerBar?.enabled ?? true) && <SessionBar position="footer" variant="relative" />}
     </div>

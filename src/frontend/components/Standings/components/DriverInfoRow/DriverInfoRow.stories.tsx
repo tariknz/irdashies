@@ -1,7 +1,6 @@
 import { Meta, StoryObj } from '@storybook/react-vite';
 import { DriverInfoRow } from './DriverInfoRow';
 import { DriverRatingBadge } from '../DriverRatingBadge/DriverRatingBadge';
-import { useAutoAnimate } from '@formkit/auto-animate/react';
 import { RatingChange } from '../RatingChange/RatingChange';
 import { useCurrentSessionType } from '@irdashies/context';
 import type { StandingsWidgetSettings } from '../../../Settings/types';
@@ -402,12 +401,10 @@ const Relative = () => {
     standing.driver.carNum = getRandomCarNum().toString();
   });
 
-  const [parent] = useAutoAnimate();
-
   return (
     <div className="w-full h-full">
       <table className="w-full table-auto text-sm border-separate border-spacing-y-0.5 mb-3 mt-3">
-        <tbody ref={parent}>
+        <tbody>
           {standings.map((result) => (
             <DriverInfoRow
               key={result.carIdx}

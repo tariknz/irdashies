@@ -1,5 +1,4 @@
 import { Fragment } from 'react';
-import { useAutoAnimate } from '@formkit/auto-animate/react';
 import { DriverClassHeader } from './components/DriverClassHeader/DriverClassHeader';
 import { DriverInfoRow } from './components/DriverInfoRow/DriverInfoRow';
 import { DriverRatingBadge } from './components/DriverRatingBadge/DriverRatingBadge';
@@ -18,7 +17,6 @@ import { usePitLabStoreUpdater } from '../../context/PitLapStore/PitLapStoreUpda
 import { useDrivingState, useWeekendInfoNumCarClasses } from '@irdashies/context';
 
 export const Standings = () => {
-  const [parent] = useAutoAnimate();
   const settings = useStandingsSettings();
   const { isDriving } = useDrivingState();
 
@@ -49,7 +47,7 @@ export const Standings = () => {
       <TitleBar titleBarSettings={settings?.titleBar} />
       {(settings?.headerBar?.enabled ?? true) && <SessionBar position="header" variant="standings" />}
       <table className="w-full table-auto text-sm border-separate border-spacing-y-0.5">
-        <tbody ref={parent}>
+        <tbody>
           {standings.map(([classId, classStandings]) => (
             classStandings.length > 0 ? (
               <Fragment key={classId}>
