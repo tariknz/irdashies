@@ -149,12 +149,20 @@ std::string yamlToJson(const char* yaml) {
         int indent = countIndent(line);
         bool isArray = isArrayItem(line);
         
-        // Pop states that are at same or higher indent level
-        // For array items, only pop if indent is strictly less (arrays can be at same indent as parent key)
-        // For non-array items, pop if indent is same or less (siblings)
+        // Pop states based on indent level
+        // For array items: pop until we find an array OR an object that should become an array
+        // For non-array items: pop states at same or higher indent (they're siblings or done)
         if (isArray) {
-            while (stateStack.size() > 1 && stateStack.top().indent > indent) {
-                stateStack.pop();
+            // Pop until we find where this array item belongs
+            // Array items belong to the nearest ancestor that is/becomes an array
+            while (stateStack.size() > 1) {
+                ParseState& top = stateStack.top();
+                // If the top state is at higher indent, pop it
+                if (top.indent >= indent) {
+                    stateStack.pop();
+                } else {
+                    break;
+                }
             }
         } else {
             while (stateStack.size() > 1 && stateStack.top().indent >= indent) {
@@ -204,9 +212,9 @@ std::string yamlToJson(const char* yaml) {
                 
                 currentObj->push_back(arrayItem);
                 
-                // Push state for potential nested content
+                // Push state for nested content - use indent+1 so next array item at same level goes to parent
                 json& lastItem = currentObj->back();
-                stateStack.push({&lastItem, indent, "", true});
+                stateStack.push({&lastItem, indent + 1, "", true});
             } else {
                 // Simple array value
                 currentObj->push_back(parseValue(content));
