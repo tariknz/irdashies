@@ -136,9 +136,13 @@ std::string yamlToJson(const char* yaml) {
     while (std::getline(stream, line)) {
         lineNum++;
         
-        // Skip empty lines and comments
+        // Skip empty lines, comments, and YAML document markers
         std::string trimmedLine = trim(line);
         if (trimmedLine.empty() || trimmedLine[0] == '#') {
+            continue;
+        }
+        // Skip YAML document separators (--- and ...)
+        if (trimmedLine == "---" || trimmedLine == "...") {
             continue;
         }
         
