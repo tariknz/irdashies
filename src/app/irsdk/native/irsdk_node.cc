@@ -391,9 +391,17 @@ std::string ConvertToUTF8(const char* input) {
 
 Napi::Value iRacingSdkNode::GetSessionData(const Napi::CallbackInfo &info)
 {
+  printf("[GetSessionData] called, lastSessionCt=%d\n", this->_lastSessionCt);
+  fflush(stdout);
+  
   int latestUpdate = irsdk_getSessionInfoStrUpdate();
+  printf("[GetSessionData] latestUpdate=%d\n", latestUpdate);
+  fflush(stdout);
+  
   if (this->_lastSessionCt != latestUpdate) {
     printf("Session data has been updated (prev: %d, new: %d)\n", this->_lastSessionCt, latestUpdate);
+    fflush(stdout);
+    
     this->_lastSessionCt = latestUpdate;
     this->_sessionData = irsdk_getSessionInfoStr();
     
@@ -401,19 +409,20 @@ Napi::Value iRacingSdkNode::GetSessionData(const Napi::CallbackInfo &info)
     if (this->_sessionData != NULL) {
       std::string utf8Session = ConvertToUTF8(this->_sessionData);
       printf("YAML length: %zu bytes\n", utf8Session.length());
-      
-      // Debug: print first 200 chars of YAML
-      printf("YAML preview: %.200s...\n", utf8Session.c_str());
+      fflush(stdout);
       
       this->_sessionJson = yamlToJson(utf8Session.c_str());
       printf("JSON length: %zu bytes\n", this->_sessionJson.length());
-      
-      // Debug: print first 200 chars of JSON
-      printf("JSON preview: %.200s...\n", this->_sessionJson.c_str());
+      printf("JSON first 500 chars: %.500s\n", this->_sessionJson.c_str());
+      fflush(stdout);
     } else {
       printf("Session data is NULL!\n");
+      fflush(stdout);
       this->_sessionJson = "{}";
     }
+  } else {
+    printf("[GetSessionData] using cached data, returning %zu bytes\n", this->_sessionJson.length());
+    fflush(stdout);
   }
   
   return Napi::String::New(info.Env(), this->_sessionJson);
