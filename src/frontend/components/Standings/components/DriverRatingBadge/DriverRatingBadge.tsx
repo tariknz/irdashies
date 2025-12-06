@@ -27,7 +27,7 @@ export const DriverRatingBadge = ({
   const simplifiedRating = (rating / 1000).toFixed(fixed);
 
   // Extract safety rating number from license string
-  const safetyRatingMatch = license.match(/([A-Z])\s*(\d+\.\d+)/);
+  const safetyRatingMatch = license?.match(/([A-Z])\s*(\d+\.\d+)/);
   const safetyRating = safetyRatingMatch ? parseFloat(safetyRatingMatch[2]).toFixed(1) : '';
   const formattedLicense = license?.replace(/([A-Z])\s*(\d+)\.(\d+)/, (_, level) => {
     return `${level}`;

@@ -5,7 +5,6 @@ import { useSortableList } from './useSortableList';
 import { DotsSixVerticalIcon } from '@phosphor-icons/react';
 
 const meta = {
-  title: 'Components/SortableList',
   component: SortableList,
 } satisfies Meta<typeof SortableList>;
 
