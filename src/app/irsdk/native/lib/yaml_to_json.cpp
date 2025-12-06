@@ -1,5 +1,8 @@
 #include "yaml_to_json.h"
+
+#define JSON_NOEXCEPTION 1
 #include "json.hpp"
+
 #include <vector>
 #include <string>
 #include <sstream>
@@ -81,18 +84,27 @@ json parseValue(const std::string& rawValue) {
     
     // Don't treat single sign as number
     if (isNumber && value.size() > (hasSign ? 1 : 0)) {
+        char* endPtr = nullptr;
+        errno = 0;
+        
         if (hasDecimal) {
-            return json(std::stod(value));
+            double dblVal = std::strtod(value.c_str(), &endPtr);
+            if (errno == 0 && endPtr == value.c_str() + value.size()) {
+                return json(dblVal);
+            }
+            return json(value); // Fallback to string
         } else {
-            // Use strtoll to avoid exceptions (NAPI_DISABLE_CPP_EXCEPTIONS)
-            char* endPtr = nullptr;
-            errno = 0;
             long long intVal = std::strtoll(value.c_str(), &endPtr, 10);
             if (errno == 0 && endPtr == value.c_str() + value.size()) {
                 return json(intVal);
             }
-            // Fallback to double for overflow
-            return json(std::stod(value));
+            // Try double for overflow
+            errno = 0;
+            double dblVal = std::strtod(value.c_str(), &endPtr);
+            if (errno == 0 && endPtr == value.c_str() + value.size()) {
+                return json(dblVal);
+            }
+            return json(value); // Fallback to string
         }
     }
     
@@ -119,8 +131,11 @@ std::string yamlToJson(const char* yaml) {
     
     std::istringstream stream(yaml);
     std::string line;
+    int lineNum = 0;
     
     while (std::getline(stream, line)) {
+        lineNum++;
+        
         // Skip empty lines and comments
         std::string trimmedLine = trim(line);
         if (trimmedLine.empty() || trimmedLine[0] == '#') {
@@ -135,11 +150,24 @@ std::string yamlToJson(const char* yaml) {
             stateStack.pop();
         }
         
+        if (stateStack.empty()) {
+            printf("YAML parse error: empty state stack at line %d\n", lineNum);
+            return "{}";
+        }
+        
         ParseState& parentState = stateStack.top();
         json* parent = parentState.current;
         
+        if (!parent) {
+            printf("YAML parse error: null parent at line %d\n", lineNum);
+            return "{}";
+        }
+        
         if (isArray) {
             // Array item: "- key: value" or "- value"
+            if (trimmedLine.size() < 2) {
+                continue; // Skip malformed array items
+            }
             std::string content = trim(trimmedLine.substr(1)); // Remove leading '-'
             
             // Ensure parent has array for current key if needed
@@ -152,16 +180,22 @@ std::string yamlToJson(const char* yaml) {
                 targetArray = &(*parent)[parentState.key];
             }
             
+            if (!targetArray || !targetArray->is_array()) {
+                continue; // Skip if not a valid array target
+            }
+            
             // Check if this array item has a key
             size_t colonPos = content.find(':');
-            if (colonPos != std::string::npos) {
+            if (colonPos != std::string::npos && colonPos > 0) {
                 std::string key = trim(content.substr(0, colonPos));
-                std::string valueStr = trim(content.substr(colonPos + 1));
+                std::string valueStr = (colonPos + 1 < content.size()) 
+                    ? trim(content.substr(colonPos + 1)) 
+                    : "";
                 
                 // Create new object for this array item
                 json arrayItem = json::object();
                 
-                if (!valueStr.empty()) {
+                if (!valueStr.empty() && !key.empty()) {
                     arrayItem[key] = parseValue(valueStr);
                 }
                 
@@ -177,13 +211,18 @@ std::string yamlToJson(const char* yaml) {
         } else {
             // Key-value pair: "key: value" or "key:"
             size_t colonPos = trimmedLine.find(':');
-            if (colonPos != std::string::npos) {
+            if (colonPos != std::string::npos && colonPos > 0) {
                 std::string key = trim(trimmedLine.substr(0, colonPos));
-                std::string valueStr = trim(trimmedLine.substr(colonPos + 1));
+                std::string valueStr = (colonPos + 1 < trimmedLine.size())
+                    ? trim(trimmedLine.substr(colonPos + 1))
+                    : "";
+                
+                if (key.empty()) {
+                    continue; // Skip lines with empty keys
+                }
                 
                 if (valueStr.empty()) {
                     // No value - could be object or array (determined by next line)
-                    // For now, create as object, will be converted if needed
                     (*parent)[key] = json::object();
                     stateStack.push({parent, indent, key, false});
                 } else {
@@ -193,5 +232,5 @@ std::string yamlToJson(const char* yaml) {
         }
     }
     
-    return root.dump();
+    return root.dump(-1, ' ', false, json::error_handler_t::replace);
 }
