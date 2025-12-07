@@ -22,7 +22,7 @@ export const AdvancedSettings = () => {
 
     try {
       const dashboard = JSON.parse(dashboardInput);
-      onDashboardUpdated(dashboard);
+      onDashboardUpdated(dashboard, { forceReload: true });
     } catch (e) {
       console.error(e);
       alert('Invalid JSON format');

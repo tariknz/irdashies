@@ -3755,12 +3755,12 @@
       },
       {
         "CarIdx": 11,
-        "UserName": "Daniel Golding3",
-        "AbbrevName": "Golding3, D",
-        "Initials": "DG",
+        "UserName": "Pablo Diego José Francisco de Paula Juan Nepomuceno",
+        "AbbrevName": "Nepomuceno, P",
+        "Initials": "PDJ",
         "UserID": 930125,
         "TeamID": 0,
-        "TeamName": "Daniel Golding3",
+        "TeamName": "Pablo Diego José Francisco de Paula Juan Nepomuceno",
         "CarNumber": "40",
         "CarNumberRaw": 40,
         "CarPath": "bmwm4gt4",
@@ -3795,13 +3795,13 @@
         "CarNumberDesignStr": "0,0,ffffff,777777,000000",
         "CarSponsor_1": 0,
         "CarSponsor_2": 0,
-        "ClubName": "West",
+        "ClubName": "Hispanoamérica",
         "ClubID": 32,
         "DivisionName": "Division 6",
         "DivisionID": 5,
         "CurDriverIncidentCount": -1,
         "TeamIncidentCount": -1,
-        "FlairID": 223
+        "FlairID": 198
       },
       {
         "CarIdx": 12,

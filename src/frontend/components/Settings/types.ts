@@ -5,19 +5,55 @@ export interface BaseWidgetSettings<T = Record<string, unknown>> {
 
 export interface StandingsWidgetSettings extends BaseWidgetSettings {
   config: {
-    iRatingChange: { enabled: boolean };
-    badge: { enabled: boolean };
+    iratingChange: { enabled: boolean };
+    badge: { enabled: boolean; badgeFormat: 'license-color-rating-bw' | 'license-color-rating-bw-no-license' | 'rating-color-no-license' | 'license-bw-rating-bw' | 'rating-only-bw-rating-bw' | 'license-bw-rating-bw-no-license' | 'rating-bw-no-license' };
     delta: { enabled: boolean };
-    lastTime: { enabled: boolean };
-    fastestTime: { enabled: boolean };
+    gap: { enabled: boolean };
+    interval: { enabled: boolean };
+    lastTime: { enabled: boolean; timeFormat: 'full' | 'mixed' | 'minutes' | 'seconds-full' | 'seconds-mixed' | 'seconds' };
+    fastestTime: { enabled: boolean; timeFormat: 'full' | 'mixed' | 'minutes' | 'seconds-full' | 'seconds-mixed' | 'seconds' };
     background: { opacity: number };
     countryFlags: { enabled: boolean };
+    carNumber: { enabled: boolean };
     driverStandings: {
       buffer: number;
       numNonClassDrivers: number;
       minPlayerClassDrivers: number;
       numTopDrivers: number;
     };
+    compound: { enabled: boolean };
+    carManufacturer: { enabled: boolean };
+    lapTimeDeltas: { enabled: boolean; numLaps: number };
+    titleBar: { enabled: boolean; progressBar: { enabled: boolean } };
+    headerBar: {
+      enabled: boolean;
+      sessionName: { enabled: boolean };
+      timeRemaining: { enabled: boolean };
+      incidentCount: { enabled: boolean };
+      brakeBias: { enabled: boolean };
+      localTime: { enabled: boolean };
+      trackWetness: { enabled: boolean };
+      airTemperature: { enabled: boolean };
+      trackTemperature: { enabled: boolean };
+      displayOrder: string[];
+    };
+    footerBar: {
+      enabled: boolean;
+      sessionName: { enabled: boolean };
+      timeRemaining: { enabled: boolean };
+      incidentCount: { enabled: boolean };
+      brakeBias: { enabled: boolean };
+      localTime: { enabled: boolean };
+      trackWetness: { enabled: boolean };
+      airTemperature: { enabled: boolean };
+      trackTemperature: { enabled: boolean };
+      displayOrder: string[];
+    };
+    showOnlyWhenOnTrack: boolean;
+    position: { enabled: boolean };
+    driverName: { enabled: boolean };
+    pitStatus: { enabled: boolean };
+    displayOrder: string[];
   };
 }
 
@@ -26,6 +62,50 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
     buffer: number;
     background: { opacity: number };
     countryFlags: { enabled: boolean };
+    carNumber: { enabled: boolean };
+    lastTime: { enabled: boolean; timeFormat: 'full' | 'mixed' | 'minutes' | 'seconds-full' | 'seconds-mixed' | 'seconds' };
+    fastestTime: { enabled: boolean; timeFormat: 'full' | 'mixed' | 'minutes' | 'seconds-full' | 'seconds-mixed' | 'seconds' };
+    compound: { enabled: boolean };
+    carManufacturer: { enabled: boolean };
+    titleBar: { enabled: boolean; progressBar: { enabled: boolean } };
+    headerBar: {
+      enabled: boolean;
+      sessionName: { enabled: boolean };
+      timeRemaining: { enabled: boolean };
+      incidentCount: { enabled: boolean };
+      brakeBias: { enabled: boolean };
+      localTime: { enabled: boolean };
+      trackWetness: { enabled: boolean };
+      airTemperature: { enabled: boolean };
+      trackTemperature: { enabled: boolean };
+      displayOrder: string[];
+    };
+    footerBar: {
+      enabled: boolean;
+      sessionName: { enabled: boolean };
+      timeRemaining: { enabled: boolean };
+      incidentCount: { enabled: boolean };
+      brakeBias: { enabled: boolean };
+      localTime: { enabled: boolean };
+      trackWetness: { enabled: boolean };
+      airTemperature: { enabled: boolean };
+      trackTemperature: { enabled: boolean };
+      displayOrder: string[];
+    };
+    showOnlyWhenOnTrack: boolean;
+    badge: { enabled: boolean; badgeFormat: 'license-color-rating-bw' | 'license-color-rating-bw-no-license' | 'rating-color-no-license' | 'license-bw-rating-bw' | 'rating-only-bw-rating-bw' | 'license-bw-rating-bw-no-license' | 'rating-bw-no-license' };
+    iratingChange: { enabled: boolean };
+    delta: { enabled: boolean };
+    position: { enabled: boolean };
+    driverName: { enabled: boolean };
+    pitStatus: { enabled: boolean };
+    displayOrder: string[];
+    enhancedGapCalculation: {
+      enabled: boolean;
+      interpolationMethod: 'linear' | 'cubic';
+      sampleInterval: number;
+      maxLapHistory: number;
+    };
   };
 }
 
@@ -54,17 +134,41 @@ export interface InputWidgetSettings extends BaseWidgetSettings {
       enabled: boolean;
       includeThrottle: boolean;
       includeBrake: boolean;
+      includeAbs: boolean;
+      includeSteer?: boolean;
     };
     bar: {
       enabled: boolean;
       includeClutch: boolean;
       includeBrake: boolean;
       includeThrottle: boolean;
+      includeAbs: boolean;
     };
     gear: {
       enabled: boolean;
       unit: 'mph' | 'km/h' | 'auto';
     };
     steer: SteerWidgetSettings;
+  };
+}
+
+export interface FuelWidgetSettings extends BaseWidgetSettings {
+  config: {
+    fuelUnits: 'L' | 'gal';
+    layout: 'vertical' | 'horizontal';
+    showConsumption: boolean;
+    showMin: boolean;
+    showLastLap: boolean;
+    show3LapAvg: boolean;
+    show10LapAvg: boolean;
+    showMax: boolean;
+    showPitWindow: boolean;
+    showEnduranceStrategy: boolean;
+    showFuelSave: boolean;
+    showFuelRequired: boolean;
+    showConsumptionGraph: boolean;
+    consumptionGraphType: 'line' | 'histogram';
+    safetyMargin: number;
+    background: { opacity: number };
   };
 }

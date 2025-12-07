@@ -1,6 +1,7 @@
 import type { Telemetry, TelemetryVar } from '@irdashies/types';
 import { create, useStore } from 'zustand';
 import { useStoreWithEqualityFn } from 'zustand/traditional';
+import { useMemo } from 'react';
 import { arrayCompare, telemetryCompare } from './telemetryCompare';
 
 interface TelemetryState {
@@ -60,9 +61,7 @@ export const useTelemetryValuesMapped = <
 >(
   key: keyof Telemetry,
   mapFn: (val: T[number]) => T[number]
-): T =>
-  useStoreWithEqualityFn(
-    useTelemetryStore,
-    (state) => (state.telemetry?.[key]?.value ?? []).map(mapFn) as T,
-    arrayCompare
-  );
+): T => {
+  const rawValues = useTelemetryValues<T>(key);
+  return useMemo(() => rawValues.map(mapFn) as T, [rawValues, mapFn]);
+};

@@ -21,14 +21,26 @@ export const useDriverProgress = () => {
   // Throttled state to reduce update frequency
   const [throttledLapDist, setThrottledLapDist] = useState<number[]>([]);
   const lastUpdateRef = useRef<number>(0);
+  const rafRef = useRef<number | null>(null);
 
-  // Throttle the lap distance updates
+  // Throttle the lap distance updates using requestAnimationFrame
   useEffect(() => {
     const now = Date.now();
     if (now - lastUpdateRef.current >= UPDATE_THROTTLE_MS) {
-      setThrottledLapDist(driversLapDist || []);
-      lastUpdateRef.current = now;
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current);
+      }
+      rafRef.current = requestAnimationFrame(() => {
+        setThrottledLapDist(driversLapDist || []);
+        lastUpdateRef.current = Date.now();
+      });
     }
+
+    return () => {
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current);
+      }
+    };
   }, [driversLapDist]);
 
   const driversTrackData = useMemo(() => {

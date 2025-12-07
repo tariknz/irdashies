@@ -59,10 +59,18 @@ export const useSessionLaps = (sessionNum: number | undefined) =>
   );
 
 export const useSessionIsOfficial = () =>
+  useStore(useSessionStore, (state) => !!state.session?.WeekendInfo?.Official);
+
+export const useWeekendInfoSeriesID = () =>
+  useStore(useSessionStore, (state) => state.session?.WeekendInfo?.SeriesID);
+
+export const useWeekendInfoEventType = () =>
+  useStore(useSessionStore, (state) => state.session?.WeekendInfo?.EventType);
+
+export const useWeekendInfoNumCarClasses = () =>
   useStore(
     useSessionStore,
-    (state) =>
-      !!state.session?.WeekendInfo?.Official
+    (state) => state.session?.WeekendInfo?.NumCarClasses
   );
 
 export const useDriverCarIdx = () =>
@@ -105,18 +113,23 @@ export const useTrackLength = () =>
     if (unit === 'km') {
       return parseFloat(value) * 1000;
     }
-
     return parseFloat(value);
   });
-
 
 /**
  * @returns The car index and car class estimated lap time for each driver
  */
 export const useCarIdxClassEstLapTime = () =>
-  useStore(useSessionStore, (state) => {
-    return state.session?.DriverInfo?.Drivers?.reduce((acc, driver) => {
-      acc[driver.CarIdx] = driver.CarClassEstLapTime;
-      return acc;
-    }, {} as Record<number, number>);
-  });
+  useStoreWithEqualityFn(
+    useSessionStore,
+    (state) => {
+      return state.session?.DriverInfo?.Drivers?.reduce(
+        (acc, driver) => {
+          acc[driver.CarIdx] = driver.CarClassEstLapTime;
+          return acc;
+        },
+        {} as Record<number, number>
+      );
+    },
+    shallow
+  );

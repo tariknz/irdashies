@@ -43,6 +43,9 @@ jobs:
       if: steps.cache-deps.outputs.cache-hit != 'true'
       run: npm ci
 
+    - name: Ensure tracks
+      run: npm run ensure-tracks
+
     - name: Run linting
       run: npm run lint
 
@@ -66,12 +69,13 @@ jobs:
           echo "Version changed from $previousVersion to $currentVersion"
         }
 
-    - name: Generate assets
-      if: steps.check_version.outputs.version_changed == 'true'
-      run: npm run generate-assets
-      env:
-        IRACING_USERNAME: ${{ secrets.IRACING_USERNAME }}
-        IRACING_PASSWORD: ${{ secrets.IRACING_PASSWORD }}
+    # - name: Generate assets
+    #   if: steps.check_version.outputs.version_changed == 'true'
+    #   run: npm run generate-assets
+    #   env:
+    #     IRACING_USERNAME: ${{ secrets.IRACING_USERNAME }}
+    #     IRACING_PASSWORD: ${{ secrets.IRACING_PASSWORD }}
+    #     APP_SECRET: ${{ secrets.APP_SECRET }}
 
     - name: Make
       if: steps.check_version.outputs.version_changed == 'true'

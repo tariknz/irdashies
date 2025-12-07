@@ -3,6 +3,24 @@ import { TelemetrySink } from './bridge/iracingSdk/telemetrySink';
 import { OverlayManager } from './overlayManager';
 import { writeFile } from 'node:fs/promises';
 import path from 'node:path';
+import { startProfiling, stopProfiling, isProfiling } from './profiler';
+import {
+  logMemoryUsage,
+  takeHeapSnapshot,
+  saveMemoryReport,
+} from './memoryProfiler';
+
+declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string;
+
+const isDev = !!MAIN_WINDOW_VITE_DEV_SERVER_URL;
+
+function getIconPath(): string {
+  const basePath = isDev 
+    ? path.join(__dirname, '../../docs/assets/icons')
+    : path.join(process.resourcesPath, 'icons');
+  
+  return path.join(basePath, 'logo-tray.png');
+}
 
 class Taskbar {
   private tray: Tray;
@@ -17,9 +35,9 @@ class Taskbar {
   }
 
   private createTray(): Tray {
-    const icon = nativeImage.createFromDataURL(
-      'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAAAXNSR0IArs4c6QAAAH5JREFUSEvtlUEOgCAMBJdvGfXz6rs0JuIB0zjZpFyUaxeWadlQlLxK8vnqbrBJGgKqVdJ01ajuQbC/tKwSU91vEDb0fjztK6K9pTp7BoukMbj/WZtrzSXA+exuQNHtoFF0e8jpBhTdJqAbqc7OwYcNaA6orv+XSXOAdemf/gFmjSgZ2hbq7gAAAABJRU5ErkJggg=='
-    );
+    const iconPath = getIconPath();
+    const icon = nativeImage.createFromPath(iconPath);
+    
     const tray = new Tray(icon);
     tray.setToolTip('irDashies');
     return tray;
@@ -45,13 +63,50 @@ class Taskbar {
           this.saveTelemetry();
         },
       },
-      // WIP
-      // {
-      //   label: 'Record Telemetry',
-      //   click: async () => {
-      //     await this.telemetrySink.startRecording();
-      //   },
-      // },
+      // Dev-only profiling tools
+      ...(isDev
+        ? [
+            {
+              label: isProfiling()
+                ? 'Stop CPU Profiling'
+                : 'Start CPU Profiling',
+              click: async () => {
+                if (isProfiling()) {
+                  const filePath = await stopProfiling();
+                  console.log('Profile saved to:', filePath);
+                } else {
+                  await startProfiling();
+                }
+                this.setupContextMenu();
+              },
+            },
+            {
+              label: 'Memory',
+              submenu: [
+                {
+                  label: 'Log Memory Usage',
+                  click: async () => {
+                    await logMemoryUsage();
+                  },
+                },
+                {
+                  label: 'Take Heap Snapshot',
+                  click: async () => {
+                    const filePath = await takeHeapSnapshot();
+                    console.log('Heap snapshot saved to:', filePath);
+                  },
+                },
+                {
+                  label: 'Save Memory Report',
+                  click: async () => {
+                    const filePath = await saveMemoryReport();
+                    console.log('Memory report saved to:', filePath);
+                  },
+                },
+              ],
+            },
+          ]
+        : []),
       {
         label: 'Quit',
         click: () => {

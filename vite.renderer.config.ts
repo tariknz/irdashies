@@ -1,7 +1,11 @@
 import { defineConfig } from 'vite';
 import tailwindcss from '@tailwindcss/postcss';
 import path from 'node:path';
-import tsconfig from './tsconfig.json';
+import tsconfig from './tsconfig.json' with { type: 'json' };
+import { fileURLToPath } from 'node:url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.join(path.dirname(__filename)); // __dirname is not used in ESM
 
 // allow for path aliases in tsconfig.json to be used in Vite
 // will load the paths from tsconfig.json paths property and create an object with key value pairs
@@ -37,6 +41,10 @@ export default defineConfig({
   },
   build: {
     rollupOptions: {
+      input: {
+        main: path.resolve(__dirname, 'index.html'),
+        'component-renderer': path.resolve(__dirname, 'index-component-renderer.html'),
+      },
       output: {
         manualChunks: {
           'vendor-react': ['react', 'react-dom', 'react-router-dom'],

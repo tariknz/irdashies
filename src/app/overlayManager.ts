@@ -15,15 +15,26 @@ interface DashboardWidgetWithWindow {
   window: BrowserWindow;
 }
 
+function getIconPath(): string {
+  const isDev = !!MAIN_WINDOW_VITE_DEV_SERVER_URL;
+  const basePath = isDev 
+    ? path.join(__dirname, '../../docs/assets/icons')
+    : path.join(process.resourcesPath, 'icons');
+  
+  return path.join(basePath, 'logo.png');
+}
+
 export class OverlayManager {
   private overlayWindows: Record<string, DashboardWidgetWithWindow> = {};
   private currentSettingsWindow: BrowserWindow | undefined;
   private isLocked = true;
+  private skipTaskbar = true;
 
   constructor() {
     setInterval(() => {
       this.getOverlays().forEach(({ window }) => {
         if (window.isDestroyed()) return;
+        if (!window.isVisible()) return;
         window.setAlwaysOnTop(true, 'screen-saver', 1);
       });
     }, 5000);
@@ -40,7 +51,8 @@ export class OverlayManager {
   }
 
   public createOverlays(dashboardLayout: DashboardLayout): void {
-    const { widgets } = dashboardLayout;
+    const { widgets, generalSettings } = dashboardLayout;
+    this.skipTaskbar = generalSettings?.skipTaskbar ?? true;
     widgets.forEach((widget) => {
       if (!widget.enabled) return; // skip disabled widgets
       const window = this.createOverlayWindow(widget);
@@ -63,10 +75,12 @@ export class OverlayManager {
       title: `iRacing Dashies - ${title}`,
       transparent: true,
       frame: false,
+      skipTaskbar: this.skipTaskbar,
       focusable: true, //for OpenKneeeboard/VR
       resizable: false,
       movable: false,
       roundedCorners: false,
+      icon: getIconPath(),
       webPreferences: {
         preload: path.join(__dirname, 'preload.js'),
       },
@@ -117,6 +131,15 @@ export class OverlayManager {
     this.currentSettingsWindow?.webContents.send(key, value);
   }
 
+  public closeAllOverlays(): void {
+    this.getOverlays().forEach(({ window }) => {
+      if (!window.isDestroyed()) {
+        window.close();
+      }
+    });
+    this.overlayWindows = {};
+  }
+
   public closeOrCreateWindows(dashboardLayout: DashboardLayout): void {
     const { widgets } = dashboardLayout;
     const widgetsById = widgets.reduce(
@@ -129,6 +152,7 @@ export class OverlayManager {
 
     const openWidgets = this.getOverlays();
     openWidgets.forEach(({ widget, window }) => {
+      // const dashboardWidget = widgetsById[widget.id];
       if (!widgetsById[widget.id]?.enabled) {
         window.close();
         this.overlayWindows = Object.fromEntries(
@@ -138,10 +162,51 @@ export class OverlayManager {
     });
 
     widgets.forEach((widget) => {
-      if (!widget.enabled) return; // skip disabled widgets
-      if (!this.overlayWindows[widget.id]) {
-        this.createOverlayWindow(widget);
+      if (!widget.enabled) {
+        return;
       }
+      if (!this.overlayWindows[widget.id]) {
+        const window = this.createOverlayWindow(widget);
+        trackWindowMovement(widget, window);
+      } else {
+        // Window already exists
+      }
+    });
+  }
+
+  public forceRefreshOverlays(dashboardLayout: DashboardLayout): void {
+    this.closeAllOverlays();
+    const { widgets } = dashboardLayout;
+    widgets.forEach((widget) => {
+      if (!widget.enabled) return;
+      const window = this.createOverlayWindow(widget);
+      trackWindowMovement(widget, window);
+    });
+  }
+
+  public focusSettingsWindow(): void {
+    if (this.currentSettingsWindow && !this.currentSettingsWindow.isDestroyed()) {
+      if (this.currentSettingsWindow.isMinimized()) {
+        this.currentSettingsWindow.restore();
+      }
+      this.currentSettingsWindow.show();
+      this.currentSettingsWindow.focus();
+    }
+  }
+
+  /**
+   * Setup a single instance lock for the application. If the application is already running, it will quit the new instance.
+   */
+  public setupSingleInstanceLock(): void {
+    const gotTheLock = app.requestSingleInstanceLock();
+
+    if (!gotTheLock) {
+      app.quit();
+      return;
+    }
+
+    app.on('second-instance', () => {
+      this.focusSettingsWindow();
     });
   }
 
@@ -151,19 +216,29 @@ export class OverlayManager {
       return this.currentSettingsWindow;
     }
 
-    // Create the browser window.
-    const browserWindow = new BrowserWindow({
+    // Load saved window bounds
+    const savedBounds = loadWindowBounds();
+    const defaultOptions = {
       title: `iRacing Dashies - Settings`,
       frame: true,
       width: 800,
       height: 700,
       autoHideMenuBar: true,
+      icon: getIconPath(),
       webPreferences: {
         preload: path.join(__dirname, 'preload.js'),
       },
-    });
+    };
+
+    // Create the browser window with saved bounds if available
+    const browserWindow = new BrowserWindow(
+      savedBounds ? { ...defaultOptions, ...savedBounds } : defaultOptions
+    );
 
     this.currentSettingsWindow = browserWindow;
+
+    // Track window movement and resizing to save bounds
+    trackSettingsWindowMovement(browserWindow);
 
     // and load the index.html of the app.
     if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
@@ -191,3 +266,20 @@ export class OverlayManager {
     return browserWindow;
   }
 }
+
+function saveWindowBounds(browserWindow: BrowserWindow): void {
+  const bounds = browserWindow.getBounds();
+  writeData('settingsWindowBounds', bounds);
+}
+
+function loadWindowBounds(): Electron.Rectangle | undefined {
+  return readData<Electron.Rectangle>('settingsWindowBounds');
+}
+
+export const trackSettingsWindowMovement = (
+  browserWindow: BrowserWindow
+) => {
+  // Tracks moved and resized events on settings window and saves bounds to storage
+  browserWindow.on('moved', () => saveWindowBounds(browserWindow));
+  browserWindow.on('resized', () => saveWindowBounds(browserWindow));
+};

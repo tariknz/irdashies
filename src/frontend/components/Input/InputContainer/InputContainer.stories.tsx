@@ -53,12 +53,15 @@ const RandomTraces = () => {
           enabled: true,
           includeThrottle: true,
           includeBrake: true,
+          includeAbs: true,
+          includeSteer: true,
         },
         bar: {
           enabled: true,
           includeThrottle: true,
           includeBrake: true,
           includeClutch: true,
+          includeAbs: true,
         },
         gear: {
           enabled: true,
@@ -77,6 +80,10 @@ const RandomTraces = () => {
 };
 
 export const Primary: Story = {
-  render: () => <RandomTraces />,
+  render: () => 
+    (<div className='h-[100px] w-[500px]'>
+        <RandomTraces />
+      </div>
+    ),
   args: {},
 };

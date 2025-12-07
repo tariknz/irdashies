@@ -1,7 +1,7 @@
 import { Meta } from '@storybook/react-vite';
 import { EditMode } from './EditMode';
 import { DashboardProvider } from '@irdashies/context';
-import type { DashboardBridge } from '@irdashies/types';
+import type { DashboardBridge, DashboardLayout } from '@irdashies/types';
 import { Input } from '../Input';
 import { TelemetryDecorator } from '@irdashies/storybook';
 import { Standings } from '../Standings/Standings';
@@ -11,6 +11,10 @@ const meta: Meta<typeof EditMode> = {
   decorators: [TelemetryDecorator()],
 };
 export default meta;
+
+const mockDashboard: DashboardLayout = {
+  widgets: [],
+};
 
 const mockBridge: (editMode: boolean) => DashboardBridge = (editMode) => ({
   saveDashboard: () => {
@@ -22,11 +26,27 @@ const mockBridge: (editMode: boolean) => DashboardBridge = (editMode) => ({
   reloadDashboard: () => {
     // noop
   },
+  resetDashboard: () => Promise.resolve(mockDashboard),
   onEditModeToggled: (callback) => {
     callback(editMode);
   },
   toggleLockOverlays: () => Promise.resolve(true),
   getAppVersion: () => Promise.resolve('1.0.0'),
+  toggleDemoMode: () => {
+    return;
+  },
+  onDemoModeChanged: (callback) => {
+    callback(false);
+    return () => {
+      return;
+    };
+  },
+  getCurrentDashboard: () => {
+    return null;
+  },
+  stop: () => {
+    return;
+  },
 });
 
 export const Primary = {
@@ -41,7 +61,7 @@ export const Primary = {
   },
   args: {
     editMode: true,
-  },
+  } as { editMode: boolean },
 };
 
 export const WithInput = {
@@ -50,7 +70,7 @@ export const WithInput = {
       <div className="h-[80px] w-[400px]">
         <DashboardProvider bridge={mockBridge(args.editMode)}>
           <EditMode>
-            <Input />
+            <Input/>
           </EditMode>
         </DashboardProvider>
       </div>
@@ -58,7 +78,7 @@ export const WithInput = {
   },
   args: {
     editMode: true,
-  },
+  } as { editMode: boolean },
 };
 
 export const WithStandings = {
@@ -73,5 +93,5 @@ export const WithStandings = {
   },
   args: {
     editMode: true,
-  },
+  } as { editMode: boolean },
 };

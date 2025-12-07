@@ -95,6 +95,7 @@ export interface TelemetryVarList {
   CarIdxQualTireCompound: TelemetryVariable<number[]>;
   CarIdxQualTireCompoundLocked: TelemetryVariable<boolean[]>;
   CarIdxFastRepairsUsed: TelemetryVariable<number[]>;
+  CarIdxSessionFlags: TelemetryVariable<number[]>;
   PaceMode: TelemetryVariable<number[]>;
   CarIdxPaceLine: TelemetryVariable<number[]>;
   CarIdxPaceRow: TelemetryVariable<number[]>;
@@ -208,6 +209,8 @@ export interface TelemetryVarList {
   SteeringWheelMaxForceNm: TelemetryVariable<number[]>;
   SteeringWheelUseLinear: TelemetryVariable<boolean[]>;
   BrakeABSactive: TelemetryVariable<boolean[]>;
+  dcBrakeBias: TelemetryVariable<number[]>;
+  dcPeakBrakeBias: TelemetryVariable<number[]>;
   EngineWarnings: TelemetryVariable<number[]>;
   FuelLevel: TelemetryVariable<number[]>;
   FuelLevelPct: TelemetryVariable<number[]>;

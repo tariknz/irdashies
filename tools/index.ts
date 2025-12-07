@@ -1,5 +1,7 @@
+import { analyzeTracks } from './analyze-tracks';
 import { downloadTrackSvgs } from './download-track-svgs';
 import { generateTrackJson } from './generate-paths-json';
+import { getCars } from './get-cars';
 import { getFlairs } from './get-flairs';
 import { getTracks } from './get-tracks';
 import { getTracksInfo } from './get-tracks-info';
@@ -7,11 +9,13 @@ import { login } from './login';
 
 const main = async () => {
   await login();
+  await getCars();
   await getFlairs();
   await getTracks();
   await getTracksInfo();
   await downloadTrackSvgs();
   generateTrackJson();
+  analyzeTracks();
 };
 
 main();

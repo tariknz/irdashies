@@ -63,19 +63,16 @@ export const TrackCanvas = ({
 
   // Memoize Path2D objects to avoid re-creating them on every render
   // this is used to draw the track and start/finish line
+  const insidePath = trackDrawing?.active?.inside;
+  const startFinishLinePath = trackDrawing?.startFinish?.line;
   const path2DObjects = useMemo(() => {
-    if (!trackDrawing?.active?.inside || !trackDrawing?.startFinish?.line)
-      return null;
+    if (!insidePath || !startFinishLinePath) return null;
 
     return {
-      inside: trackDrawing.active.inside
-        ? new Path2D(trackDrawing.active.inside)
-        : null,
-      startFinish: trackDrawing.startFinish.line
-        ? new Path2D(trackDrawing.startFinish.line)
-        : null,
+      inside: new Path2D(insidePath),
+      startFinish: new Path2D(startFinishLinePath),
     };
-  }, [trackDrawing?.active?.inside, trackDrawing?.startFinish?.line]);
+  }, [insidePath, startFinishLinePath]);
 
   // Memoize color calculations
   const driverColors = useMemo(() => {
@@ -191,8 +188,12 @@ export const TrackCanvas = ({
     // Observe the canvas element itself
     resizeObserver.observe(canvas);
 
+    // Add window resize listener as fallback
+    window.addEventListener('resize', resize);
+
     return () => {
       resizeObserver.disconnect();
+      window.removeEventListener('resize', resize);
     };
   }, [trackId]);
 
@@ -202,19 +203,19 @@ export const TrackCanvas = ({
     const ctx = canvas?.getContext('2d');
     if (!canvas || !ctx || !path2DObjects) return;
 
-    const rect = canvas.getBoundingClientRect();
+    if (canvasSize.width === 0 || canvasSize.height === 0) return;
 
     // Clear the entire canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     // Calculate scale to fit the 1920x1080 track into the current canvas size
-    const scaleX = rect.width / TRACK_DRAWING_WIDTH;
-    const scaleY = rect.height / TRACK_DRAWING_HEIGHT;
+    const scaleX = canvasSize.width / TRACK_DRAWING_WIDTH;
+    const scaleY = canvasSize.height / TRACK_DRAWING_HEIGHT;
     const scale = Math.min(scaleX, scaleY); // Maintain aspect ratio
 
     // Calculate centering offset
-    const offsetX = (rect.width - TRACK_DRAWING_WIDTH * scale) / 2;
-    const offsetY = (rect.height - TRACK_DRAWING_HEIGHT * scale) / 2;
+    const offsetX = (canvasSize.width - TRACK_DRAWING_WIDTH * scale) / 2;
+    const offsetY = (canvasSize.height - TRACK_DRAWING_HEIGHT * scale) / 2;
 
     // Setup canvas context with scaling and shadow
     setupCanvasContext(ctx, scale, offsetX, offsetY);

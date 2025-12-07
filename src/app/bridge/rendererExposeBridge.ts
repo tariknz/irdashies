@@ -5,6 +5,7 @@ import type {
   IrSdkBridge,
   DashboardBridge,
   DashboardLayout,
+  SaveDashboardOptions,
 } from '@irdashies/types';
 
 export function exposeBridge() {
@@ -42,8 +43,8 @@ export function exposeBridge() {
         callback(value);
       });
     },
-    saveDashboard: (value: DashboardLayout) => {
-      ipcRenderer.send('saveDashboard', value);
+    saveDashboard: (value: DashboardLayout, options?: SaveDashboardOptions) => {
+      ipcRenderer.send('saveDashboard', value, options);
     },
     resetDashboard: (resetEverything: boolean) => {
       return ipcRenderer.invoke('resetDashboard', resetEverything);
@@ -56,6 +57,16 @@ export function exposeBridge() {
     },
     toggleDemoMode: (value: boolean) => {
       ipcRenderer.send('toggleDemoMode', value);
+    },
+    onDemoModeChanged: (callback: (value: boolean) => void) => {
+      ipcRenderer.on('demoModeChanged', (_, value) => {
+        callback(value);
+      });
+    },
+    stop: () => {
+      ipcRenderer.removeAllListeners('editModeToggled');
+      ipcRenderer.removeAllListeners('dashboardUpdated');
+      ipcRenderer.removeAllListeners('demoModeChanged');
     },
   } as DashboardBridge);
 }

@@ -97,9 +97,8 @@ test-data/unused
 src/**/tracks/*.svg
 asset-data
 
-# should be generated with script
-src/**/tracks/tracks.json
-
 # native build
 build/
 bin/
+docs/features/
+docs/reference/relatives.js
