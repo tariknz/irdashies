@@ -1,4 +1,3 @@
-import { useAutoAnimate } from '@formkit/auto-animate/react';
 import { useTrackTemperature } from './hooks/useTrackTemperature';
 import { useTrackWeather } from './hooks/useTrackWeather';
 import { WeatherTemp } from './WeatherTemp/WeatherTemp';
@@ -10,7 +9,6 @@ import { useWeatherSettings } from './hooks/useWeatherSettings';
 import { useTelemetryValue } from '@irdashies/context';
 
 export const Weather = () => {
-  const [parent] = useAutoAnimate();
   const weather = useTrackWeather();
   const trackTemp = useTrackTemperature();
   const windSpeed = weather.windVelocity;
@@ -25,7 +23,6 @@ export const Weather = () => {
       style={{
         ['--bg-opacity' as string]: `${settings?.background?.opacity ?? 25}%`,
       }}
-      ref={parent}
     >
       <div className="flex flex-col p-2 w-full rounded-sm gap-2">
         <WeatherTemp title="Track" value={trackTemp.trackTemp} />

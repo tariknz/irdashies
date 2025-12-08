@@ -1,15 +1,29 @@
 import { memo } from 'react';
+import {
+  DriverRatingBadge,
+  type DriverRatingBadgeProps,
+} from '../../DriverRatingBadge/DriverRatingBadge';
 
 interface BadgeCellProps {
   hidden?: boolean;
-  badge?: React.ReactNode;
+  license?: string;
+  rating?: number;
+  badgeFormat?: DriverRatingBadgeProps['format'];
 }
 
-export const BadgeCell = memo(({ hidden, badge }: BadgeCellProps) => (
-  <td data-column="badge" className="w-auto whitespace-nowrap text-center">
-    {hidden ? null : badge}
-  </td>
-));
+export const BadgeCell = memo(
+  ({ hidden, license, rating, badgeFormat }: BadgeCellProps) => (
+    <td data-column="badge" className="w-auto whitespace-nowrap text-center">
+      {hidden ? null : (
+        <DriverRatingBadge
+          license={license}
+          rating={rating}
+          format={badgeFormat}
+        />
+      )}
+    </td>
+  )
+);
 
 BadgeCell.displayName = 'BadgeCell';
 

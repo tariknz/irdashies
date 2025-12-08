@@ -5,7 +5,211 @@ import {
   DynamicTelemetrySelector,
   TelemetryDecoratorWithConfig,
 } from '@irdashies/storybook';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
+import { DriverInfoRow } from './components/DriverInfoRow/DriverInfoRow';
+import { SessionBar } from './components/SessionBar/SessionBar';
+
+import { TitleBar } from './components/TitleBar/TitleBar';
+import { useDrivingState } from '@irdashies/context';
+import { useRelativeSettings, useDriverRelatives, useHighlightColor } from './hooks';
+import { usePitLabStoreUpdater } from '../../context/PitLapStore/PitLapStoreUpdater';
+import { useRelativeGapStoreUpdater } from '@irdashies/context';
+import { useWeekendInfoNumCarClasses } from '@irdashies/context';
+
+// Custom component that renders relative standings without header/footer session bars
+const RelativeWithoutHeaderFooter = () => {
+  const settings = useRelativeSettings();
+  const buffer = settings?.buffer ?? 3;
+  const { isDriving } = useDrivingState();
+  const standings = useDriverRelatives({ buffer });
+  const highlightColor = useHighlightColor();
+  const numCarClasses = useWeekendInfoNumCarClasses();
+  const isMultiClass = (numCarClasses ?? 0) > 1;
+
+  // Update relative gap store with telemetry data
+  useRelativeGapStoreUpdater();
+  usePitLabStoreUpdater();
+
+  // Always render 2 * buffer + 1 rows (buffer above + player + buffer below)
+  const totalRows = 2 * buffer + 1;
+
+  // Memoize findIndex to avoid recalculating on every render
+  const playerIndex = useMemo(
+    () => standings.findIndex((result) => result.isPlayer),
+    [standings]
+  );
+
+  // Memoize rows array creation to avoid recreating on every render
+  const rows = useMemo(() => {
+    // If no player found, return empty rows
+    if (playerIndex === -1) {
+      return Array.from({ length: totalRows }, (_, index) => (
+        <DriverInfoRow
+          key={`empty-${index}`}
+          carIdx={0}
+          classColor={0}
+          name="Franz Hermann"
+          isPlayer={false}
+          hasFastestTime={false}
+          hidden={true}
+          isMultiClass={false}
+          displayOrder={settings?.displayOrder}
+          config={settings}
+          carNumber={settings?.carNumber?.enabled ?? true ? '' : undefined}
+          flairId={settings?.countryFlags?.enabled ?? true ? 0 : undefined}
+          carId={settings?.carManufacturer?.enabled ?? true ? 0 : undefined}
+          license={settings?.badge?.enabled ? undefined : undefined}
+          rating={settings?.badge?.enabled ? undefined : undefined}
+          currentSessionType=""
+          iratingChangeValue={
+            settings?.iratingChange?.enabled ? undefined : undefined
+          }
+          delta={settings?.delta?.enabled ?? true ? 0 : undefined}
+          fastestTime={settings?.fastestTime?.enabled ? undefined : undefined}
+          lastTime={settings?.lastTime?.enabled ? undefined : undefined}
+          lastTimeState={settings?.lastTime?.enabled ? undefined : undefined}
+          position={settings?.position ? undefined : undefined}
+          onPitRoad={false}
+          onTrack={true}
+          radioActive={false}
+          tireCompound={settings?.compound?.enabled ? 0 : undefined}
+          highlightColor={highlightColor}
+          dnf={false}
+          repair={false}
+          penalty={false}
+          slowdown={false}
+        />
+      ));
+    }
+
+    // Create an array of fixed size with placeholder rows
+    return Array.from({ length: totalRows }, (_, index) => {
+      // Calculate the actual index in the standings array
+      // Center the player in the middle of the display
+      const centerIndex = Math.floor(totalRows / 2); // buffer
+      const actualIndex = index - centerIndex + playerIndex;
+      const result = standings[actualIndex];
+
+      if (!result) {
+        // If no result, render a dummy row with visibility hidden
+        return (
+          <DriverInfoRow
+            key={`placeholder-${index}`}
+            carIdx={0}
+            classColor={0}
+            name="Franz Hermann"
+            isPlayer={false}
+            hasFastestTime={false}
+            hidden={true}
+            isMultiClass={false}
+            displayOrder={settings?.displayOrder}
+            config={settings}
+            carNumber={settings?.carNumber?.enabled ?? true ? '' : undefined}
+            flairId={settings?.countryFlags?.enabled ?? true ? 0 : undefined}
+            carId={settings?.carManufacturer?.enabled ?? true ? 0 : undefined}
+            license={undefined}
+            rating={undefined}
+            currentSessionType=""
+            iratingChangeValue={undefined}
+            delta={settings?.delta?.enabled ?? true ? 0 : undefined}
+            fastestTime={settings?.fastestTime?.enabled ? undefined : undefined}
+            lastTime={settings?.lastTime?.enabled ? undefined : undefined}
+            lastTimeState={settings?.lastTime?.enabled ? undefined : undefined}
+            position={settings?.position ? undefined : undefined}
+            onPitRoad={false}
+            onTrack={true}
+            radioActive={false}
+            tireCompound={settings?.compound?.enabled ? 0 : undefined}
+            lastLap={undefined}
+            highlightColor={highlightColor}
+            dnf={false}
+            repair={false}
+            penalty={false}
+            slowdown={false}
+          />
+        );
+      }
+
+      return (
+        <DriverInfoRow
+          key={result.carIdx}
+          carIdx={result.carIdx}
+          classColor={result.carClass.color}
+          carNumber={settings?.carNumber?.enabled ?? true ? result.driver?.carNum || '' : undefined}
+          name={result.driver?.name || ''}
+          isPlayer={result.isPlayer}
+          hasFastestTime={result.hasFastestTime}
+          position={result.classPosition}
+          onPitRoad={result.onPitRoad}
+          onTrack={result.onTrack}
+          radioActive={result.radioActive}
+          isLapped={result.lappedState === 'behind'}
+          isLappingAhead={result.lappedState === 'ahead'}
+          flairId={settings?.countryFlags?.enabled ?? true ? result.driver?.flairId : undefined}
+          lastTime={settings?.lastTime?.enabled ? result.lastTime : undefined}
+          fastestTime={settings?.fastestTime?.enabled ? result.fastestTime : undefined}
+          lastTimeState={settings?.lastTime?.enabled ? result.lastTimeState : undefined}
+          tireCompound={settings?.compound?.enabled ? result.tireCompound : undefined}
+          carId={result.carId}
+          lastPitLap={result.lastPitLap}
+          lastLap={result.lastLap}
+          carTrackSurface={result.carTrackSurface}
+          prevCarTrackSurface={result.prevCarTrackSurface}
+          isMultiClass={isMultiClass}
+          currentSessionType={result.currentSessionType}
+          license={settings?.badge?.enabled ? result.driver?.license : undefined}
+          rating={settings?.badge?.enabled ? result.driver?.rating : undefined}
+          iratingChangeValue={
+            settings?.iratingChange?.enabled ? result.iratingChange : undefined
+          }
+          delta={settings?.delta?.enabled ?? true ? result.delta : undefined}
+          displayOrder={settings?.displayOrder}
+          config={settings}
+          highlightColor={highlightColor}
+          dnf={result.dnf}
+          repair={result.repair}
+          penalty={result.penalty}
+          slowdown={result.slowdown}
+        />
+      );
+    });
+  }, [standings, playerIndex, totalRows, settings, isMultiClass, highlightColor]);
+
+  // Show only when on track setting
+  if (settings?.showOnlyWhenOnTrack && !isDriving) {
+    return <></>;
+  }
+
+  // If no player found, render empty table with consistent height
+  if (playerIndex === -1) {
+    return (
+      <div className="w-full h-full">
+        <TitleBar titleBarSettings={settings?.titleBar} />
+        {/* No SessionBar here */}
+        <table className="w-full table-auto text-sm border-separate border-spacing-y-0.5">
+          <tbody>{rows}</tbody>
+        </table>
+        {/* No SessionFooter here */}
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="w-full bg-slate-800/(--bg-opacity) rounded-sm p-2"
+      style={{
+        ['--bg-opacity' as string]: `${settings?.background?.opacity ?? 0}%`,
+      }}
+    >
+      <TitleBar titleBarSettings={settings?.titleBar} />
+      {/* No SessionBar here */}
+      <table className="w-full table-auto text-sm border-separate border-spacing-y-0.5">
+        <tbody>{rows}</tbody>
+      </table>
+      {/* No SessionFooter here */}
+    </div>
+  );
+};
 
 export default {
   component: Relative,
@@ -19,7 +223,14 @@ export default {
 type Story = StoryObj<typeof Relative>;
 
 export const Primary: Story = {
-  decorators: [TelemetryDecorator()],
+  decorators: [
+    TelemetryDecoratorWithConfig(undefined, {
+      relative: {
+        headerBar: { enabled: true },
+        footerBar: { enabled: true },
+      },
+    }),
+  ],
 };
 
 export const DynamicTelemetry: Story = {
@@ -35,7 +246,12 @@ export const DynamicTelemetry: Story = {
             onPathChange={setSelectedPath}
             initialPath={selectedPath}
           />
-          {TelemetryDecorator(selectedPath)(Story, context)}
+          {TelemetryDecoratorWithConfig(selectedPath, {
+            relative: {
+              headerBar: { enabled: true },
+              footerBar: { enabled: true },
+            },
+          })(Story, context)}
         </>
       );
     },
@@ -43,37 +259,88 @@ export const DynamicTelemetry: Story = {
 };
 
 export const MultiClassPCCWithClio: Story = {
-  decorators: [TelemetryDecorator('/test-data/1731637331038')],
+  decorators: [
+    TelemetryDecoratorWithConfig('/test-data/1731637331038', {
+      relative: {
+        headerBar: { enabled: true },
+        footerBar: { enabled: true },
+      },
+    }),
+  ],
 };
 
 export const SupercarsRace: Story = {
-  decorators: [TelemetryDecorator('/test-data/1732274253573')],
+  decorators: [
+    TelemetryDecoratorWithConfig('/test-data/1732274253573', {
+      relative: {
+        headerBar: { enabled: true },
+        footerBar: { enabled: true },
+      },
+    }),
+  ],
 };
 
 export const AdvancedMX5: Story = {
-  decorators: [TelemetryDecorator('/test-data/1732260478001')],
+  decorators: [
+    TelemetryDecoratorWithConfig('/test-data/1732260478001', {
+      relative: {
+        headerBar: { enabled: true },
+        footerBar: { enabled: true },
+      },
+    }),
+  ],
 };
 
 export const GT3Practice: Story = {
-  decorators: [TelemetryDecorator('/test-data/1732355190142')],
+  decorators: [
+    TelemetryDecoratorWithConfig('/test-data/1732355190142', {
+      relative: {
+        headerBar: { enabled: true },
+        footerBar: { enabled: true },
+      },
+    }),
+  ],
 };
 
 export const PCCPacing: Story = {
-  decorators: [TelemetryDecorator('/test-data/1735296198162')],
+  decorators: [
+    TelemetryDecoratorWithConfig('/test-data/1735296198162', {
+      relative: {
+        headerBar: { enabled: true },
+        footerBar: { enabled: true },
+      },
+    }),
+  ],
 };
 
 export const MultiClass: Story = {
-  decorators: [TelemetryDecorator('/test-data/1747384033336')],
+  decorators: [
+    TelemetryDecoratorWithConfig('/test-data/1747384033336', {
+      relative: {
+        headerBar: { enabled: true },
+        footerBar: { enabled: true },
+      },
+    }),
+  ],
 };
 
 export const WithFlairs: Story = {
-  decorators: [TelemetryDecorator('/test-data/1752616787255')],
+  decorators: [
+    TelemetryDecoratorWithConfig('/test-data/1752616787255', {
+      relative: {
+        headerBar: { enabled: true },
+        footerBar: { enabled: true },
+      },
+    }),
+  ],
 };
 
 export const WithTimesEnabled: Story = {
   decorators: [
     TelemetryDecoratorWithConfig(undefined, {
       relative: {
+        headerBar: { enabled: true },
+        footerBar: { enabled: true },
         lastTime: { enabled: true },
         fastestTime: { enabled: true },
       },
@@ -85,6 +352,8 @@ export const WithOnlyLastTimesEnabled: Story = {
   decorators: [
     TelemetryDecoratorWithConfig(undefined, {
       relative: {
+        headerBar: { enabled: true },
+        footerBar: { enabled: true },
         lastTime: { enabled: true },
       },
     }),
@@ -95,6 +364,8 @@ export const WithTyresEnabled: Story = {
   decorators: [
     TelemetryDecoratorWithConfig(undefined, {
       relative: {
+        headerBar: { enabled: true },
+        footerBar: { enabled: true },
         compound: { enabled: true },
       },
     }),
@@ -102,5 +373,421 @@ export const WithTyresEnabled: Story = {
 };
 
 export const SuzukaGT3EnduranceRace: Story = {
-  decorators: [TelemetryDecorator('/test-data/1763227688917')],
+  decorators: [
+    TelemetryDecoratorWithConfig('/test-data/1763227688917', {
+      relative: {
+        headerBar: { enabled: true },
+        footerBar: { enabled: true },
+      },
+    }),
+  ],
+};
+
+// Component that renders relative standings without header bar but with footer
+const RelativeWithoutHeader = () => {
+  const settings = useRelativeSettings();
+  const buffer = settings?.buffer ?? 3;
+  const { isDriving } = useDrivingState();
+  const standings = useDriverRelatives({ buffer });
+  const highlightColor = useHighlightColor();
+  const numCarClasses = useWeekendInfoNumCarClasses();
+  const isMultiClass = (numCarClasses ?? 0) > 1;
+
+  // Update relative gap store with telemetry data
+  useRelativeGapStoreUpdater();
+  usePitLabStoreUpdater();
+
+  // Always render 2 * buffer + 1 rows (buffer above + player + buffer below)
+  const totalRows = 2 * buffer + 1;
+
+  // Memoize findIndex to avoid recalculating on every render
+  const playerIndex = useMemo(
+    () => standings.findIndex((result) => result.isPlayer),
+    [standings]
+  );
+
+  // Memoize rows array creation to avoid recreating on every render
+  const rows = useMemo(() => {
+    // If no player found, return empty rows
+    if (playerIndex === -1) {
+      return Array.from({ length: totalRows }, (_, index) => (
+        <DriverInfoRow
+          key={`empty-${index}`}
+          carIdx={0}
+          classColor={0}
+          name="Franz Hermann"
+          isPlayer={false}
+          hasFastestTime={false}
+          hidden={true}
+          isMultiClass={false}
+          displayOrder={settings?.displayOrder}
+          config={settings}
+          carNumber={settings?.carNumber?.enabled ?? true ? '' : undefined}
+          flairId={settings?.countryFlags?.enabled ?? true ? 0 : undefined}
+          carId={settings?.carManufacturer?.enabled ?? true ? 0 : undefined}
+          license={settings?.badge?.enabled ? undefined : undefined}
+          rating={settings?.badge?.enabled ? undefined : undefined}
+          currentSessionType=""
+          iratingChangeValue={
+            settings?.iratingChange?.enabled ? undefined : undefined
+          }
+          delta={settings?.delta?.enabled ?? true ? 0 : undefined}
+          fastestTime={settings?.fastestTime?.enabled ? undefined : undefined}
+          lastTime={settings?.lastTime?.enabled ? undefined : undefined}
+          lastTimeState={settings?.lastTime?.enabled ? undefined : undefined}
+          position={settings?.position ? undefined : undefined}
+          onPitRoad={false}
+          onTrack={true}
+          radioActive={false}
+          tireCompound={settings?.compound?.enabled ? 0 : undefined}
+          highlightColor={highlightColor}
+          dnf={false}
+          repair={false}
+          penalty={false}
+          slowdown={false}
+        />
+      ));
+    }
+
+    // Create an array of fixed size with placeholder rows
+    return Array.from({ length: totalRows }, (_, index) => {
+      // Calculate the actual index in the standings array
+      // Center the player in the middle of the display
+      const centerIndex = Math.floor(totalRows / 2); // buffer
+      const actualIndex = index - centerIndex + playerIndex;
+      const result = standings[actualIndex];
+
+      if (!result) {
+        // If no result, render a dummy row with visibility hidden
+        return (
+          <DriverInfoRow
+            key={`placeholder-${index}`}
+            carIdx={0}
+            classColor={0}
+            name="Franz Hermann"
+            isPlayer={false}
+            hasFastestTime={false}
+            hidden={true}
+            isMultiClass={false}
+            displayOrder={settings?.displayOrder}
+            config={settings}
+            carNumber={settings?.carNumber?.enabled ?? true ? '' : undefined}
+            flairId={settings?.countryFlags?.enabled ?? true ? 0 : undefined}
+            carId={settings?.carManufacturer?.enabled ?? true ? 0 : undefined}
+            license={undefined}
+            rating={undefined}
+            currentSessionType=""
+            iratingChangeValue={undefined}
+            delta={settings?.delta?.enabled ?? true ? 0 : undefined}
+            fastestTime={settings?.fastestTime?.enabled ? undefined : undefined}
+            lastTime={settings?.lastTime?.enabled ? undefined : undefined}
+            lastTimeState={settings?.lastTime?.enabled ? undefined : undefined}
+            position={settings?.position ? undefined : undefined}
+            onPitRoad={false}
+            onTrack={true}
+            radioActive={false}
+            tireCompound={settings?.compound?.enabled ? 0 : undefined}
+            lastLap={undefined}
+            highlightColor={highlightColor}
+            dnf={false}
+            repair={false}
+            penalty={false}
+            slowdown={false}
+          />
+        );
+      }
+
+      return (
+        <DriverInfoRow
+          key={result.carIdx}
+          carIdx={result.carIdx}
+          classColor={result.carClass.color}
+          carNumber={settings?.carNumber?.enabled ?? true ? result.driver?.carNum || '' : undefined}
+          name={result.driver?.name || ''}
+          isPlayer={result.isPlayer}
+          hasFastestTime={result.hasFastestTime}
+          position={result.classPosition}
+          onPitRoad={result.onPitRoad}
+          onTrack={result.onTrack}
+          radioActive={result.radioActive}
+          isLapped={result.lappedState === 'behind'}
+          isLappingAhead={result.lappedState === 'ahead'}
+          flairId={settings?.countryFlags?.enabled ?? true ? result.driver?.flairId : undefined}
+          lastTime={settings?.lastTime?.enabled ? result.lastTime : undefined}
+          fastestTime={settings?.fastestTime?.enabled ? result.fastestTime : undefined}
+          lastTimeState={settings?.lastTime?.enabled ? result.lastTimeState : undefined}
+          tireCompound={settings?.compound?.enabled ? result.tireCompound : undefined}
+          carId={result.carId}
+          lastPitLap={result.lastPitLap}
+          lastLap={result.lastLap}
+          carTrackSurface={result.carTrackSurface}
+          prevCarTrackSurface={result.prevCarTrackSurface}
+          isMultiClass={isMultiClass}
+          currentSessionType={result.currentSessionType}
+          license={settings?.badge?.enabled ? result.driver?.license : undefined}
+          rating={settings?.badge?.enabled ? result.driver?.rating : undefined}
+          iratingChangeValue={
+            settings?.iratingChange?.enabled ? result.iratingChange : undefined
+          }
+          delta={settings?.delta?.enabled ?? true ? result.delta : undefined}
+          displayOrder={settings?.displayOrder}
+          config={settings}
+          highlightColor={highlightColor}
+          dnf={result.dnf}
+          repair={result.repair}
+          penalty={result.penalty}
+          slowdown={result.slowdown}
+        />
+      );
+    });
+  }, [standings, playerIndex, totalRows, settings, isMultiClass, highlightColor]);
+
+  // Show only when on track setting
+  if (settings?.showOnlyWhenOnTrack && !isDriving) {
+    return <></>;
+  }
+
+  // If no player found, render empty table with consistent height
+  if (playerIndex === -1) {
+    return (
+      <div className="w-full h-full">
+        <TitleBar titleBarSettings={settings?.titleBar} />
+        {/* No SessionBar here */}
+        <table className="w-full table-auto text-sm border-separate border-spacing-y-0.5">
+          <tbody>{rows}</tbody>
+        </table>
+        {/* Keep SessionBar here */}
+        <SessionBar position="footer" />
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="w-full bg-slate-800/(--bg-opacity) rounded-sm p-2"
+      style={{
+        ['--bg-opacity' as string]: `${settings?.background?.opacity ?? 0}%`,
+      }}
+    >
+      <TitleBar titleBarSettings={settings?.titleBar} />
+      {/* No SessionBar here */}
+      <table className="w-full table-auto text-sm border-separate border-spacing-y-0.5">
+        <tbody>{rows}</tbody>
+      </table>
+      {/* Keep SessionBar here */}
+      <SessionBar position="footer" />
+    </div>
+  );
+};
+
+export const NoHeaderFooter: Story = {
+  render: () => <RelativeWithoutHeaderFooter />,
+  decorators: [TelemetryDecorator()],
+};
+
+export const NoHeader: Story = {
+  render: () => <RelativeWithoutHeader />,
+  decorators: [TelemetryDecorator()],
+};
+
+// Component that renders relative standings without footer but with header bar
+const RelativeWithoutFooter = () => {
+  const settings = useRelativeSettings();
+  const buffer = settings?.buffer ?? 3;
+  const { isDriving } = useDrivingState();
+  const standings = useDriverRelatives({ buffer });
+  const highlightColor = useHighlightColor();
+  const numCarClasses = useWeekendInfoNumCarClasses();
+  const isMultiClass = (numCarClasses ?? 0) > 1;
+
+  // Update relative gap store with telemetry data
+  useRelativeGapStoreUpdater();
+  usePitLabStoreUpdater();
+
+  // Always render 2 * buffer + 1 rows (buffer above + player + buffer below)
+  const totalRows = 2 * buffer + 1;
+
+  // Memoize findIndex to avoid recalculating on every render
+  const playerIndex = useMemo(
+    () => standings.findIndex((result) => result.isPlayer),
+    [standings]
+  );
+
+  // Memoize rows array creation to avoid recreating on every render
+  const rows = useMemo(() => {
+    // If no player found, return empty rows
+    if (playerIndex === -1) {
+      return Array.from({ length: totalRows }, (_, index) => (
+        <DriverInfoRow
+          key={`empty-${index}`}
+          carIdx={0}
+          classColor={0}
+          name="Franz Hermann"
+          isPlayer={false}
+          hasFastestTime={false}
+          hidden={true}
+          isMultiClass={false}
+          displayOrder={settings?.displayOrder}
+          config={settings}
+          carNumber={settings?.carNumber?.enabled ?? true ? '' : undefined}
+          flairId={settings?.countryFlags?.enabled ?? true ? 0 : undefined}
+          carId={settings?.carManufacturer?.enabled ?? true ? 0 : undefined}
+          license={settings?.badge?.enabled ? undefined : undefined}
+          rating={settings?.badge?.enabled ? undefined : undefined}
+          currentSessionType=""
+          iratingChangeValue={
+            settings?.iratingChange?.enabled ? undefined : undefined
+          }
+          delta={settings?.delta?.enabled ?? true ? 0 : undefined}
+          fastestTime={settings?.fastestTime?.enabled ? undefined : undefined}
+          lastTime={settings?.lastTime?.enabled ? undefined : undefined}
+          lastTimeState={settings?.lastTime?.enabled ? undefined : undefined}
+          position={settings?.position ? undefined : undefined}
+          onPitRoad={false}
+          onTrack={true}
+          radioActive={false}
+          tireCompound={settings?.compound?.enabled ? 0 : undefined}
+          highlightColor={highlightColor}
+          dnf={false}
+          repair={false}
+          penalty={false}
+          slowdown={false}
+        />
+      ));
+    }
+
+    // Create an array of fixed size with placeholder rows
+    return Array.from({ length: totalRows }, (_, index) => {
+      // Calculate the actual index in the standings array
+      // Center the player in the middle of the display
+      const centerIndex = Math.floor(totalRows / 2); // buffer
+      const actualIndex = index - centerIndex + playerIndex;
+      const result = standings[actualIndex];
+
+      if (!result) {
+        // If no result, render a dummy row with visibility hidden
+        return (
+          <DriverInfoRow
+            key={`placeholder-${index}`}
+            carIdx={0}
+            classColor={0}
+            name="Franz Hermann"
+            isPlayer={false}
+            hasFastestTime={false}
+            hidden={true}
+            isMultiClass={false}
+            displayOrder={settings?.displayOrder}
+            config={settings}
+            carNumber={settings?.carNumber?.enabled ?? true ? '' : undefined}
+            flairId={settings?.countryFlags?.enabled ?? true ? 0 : undefined}
+            carId={settings?.carManufacturer?.enabled ?? true ? 0 : undefined}
+            license={undefined}
+            rating={undefined}
+            currentSessionType=""
+            iratingChangeValue={undefined}
+            delta={settings?.delta?.enabled ?? true ? 0 : undefined}
+            fastestTime={settings?.fastestTime?.enabled ? undefined : undefined}
+            lastTime={settings?.lastTime?.enabled ? undefined : undefined}
+            lastTimeState={settings?.lastTime?.enabled ? undefined : undefined}
+            position={settings?.position ? undefined : undefined}
+            onPitRoad={false}
+            onTrack={true}
+            radioActive={false}
+            tireCompound={settings?.compound?.enabled ? 0 : undefined}
+            lastLap={undefined}
+            highlightColor={highlightColor}
+            dnf={false}
+            repair={false}
+            penalty={false}
+            slowdown={false}
+          />
+        );
+      }
+
+      return (
+        <DriverInfoRow
+          key={result.carIdx}
+          carIdx={result.carIdx}
+          classColor={result.carClass.color}
+          carNumber={settings?.carNumber?.enabled ?? true ? result.driver?.carNum || '' : undefined}
+          name={result.driver?.name || ''}
+          isPlayer={result.isPlayer}
+          hasFastestTime={result.hasFastestTime}
+          position={result.classPosition}
+          onPitRoad={result.onPitRoad}
+          onTrack={result.onTrack}
+          radioActive={result.radioActive}
+          isLapped={result.lappedState === 'behind'}
+          isLappingAhead={result.lappedState === 'ahead'}
+          flairId={settings?.countryFlags?.enabled ?? true ? result.driver?.flairId : undefined}
+          lastTime={settings?.lastTime?.enabled ? result.lastTime : undefined}
+          fastestTime={settings?.fastestTime?.enabled ? result.fastestTime : undefined}
+          lastTimeState={settings?.lastTime?.enabled ? result.lastTimeState : undefined}
+          tireCompound={settings?.compound?.enabled ? result.tireCompound : undefined}
+          carId={result.carId}
+          lastPitLap={result.lastPitLap}
+          lastLap={result.lastLap}
+          carTrackSurface={result.carTrackSurface}
+          prevCarTrackSurface={result.prevCarTrackSurface}
+          isMultiClass={isMultiClass}
+          currentSessionType={result.currentSessionType}
+          license={settings?.badge?.enabled ? result.driver?.license : undefined}
+          rating={settings?.badge?.enabled ? result.driver?.rating : undefined}
+          iratingChangeValue={
+            settings?.iratingChange?.enabled ? result.iratingChange : undefined
+          }
+          delta={settings?.delta?.enabled ?? true ? result.delta : undefined}
+          displayOrder={settings?.displayOrder}
+          config={settings}
+          highlightColor={highlightColor}
+          dnf={result.dnf}
+          repair={result.repair}
+          penalty={result.penalty}
+          slowdown={result.slowdown}
+        />
+      );
+    });
+  }, [standings, playerIndex, totalRows, settings, isMultiClass, highlightColor]);
+
+  // Show only when on track setting
+  if (settings?.showOnlyWhenOnTrack && !isDriving) {
+    return <></>;
+  }
+
+  // If no player found, render empty table with consistent height
+  if (playerIndex === -1) {
+    return (
+      <div className="w-full h-full">
+        <TitleBar titleBarSettings={settings?.titleBar} />
+        {/* Keep SessionBar here */}
+        <SessionBar />
+        <table className="w-full table-auto text-sm border-separate border-spacing-y-0.5">
+          <tbody>{rows}</tbody>
+        </table>
+        {/* No SessionFooter here */}
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="w-full bg-slate-800/(--bg-opacity) rounded-sm p-2"
+      style={{
+        ['--bg-opacity' as string]: `${settings?.background?.opacity ?? 0}%`,
+      }}
+    >
+      <TitleBar titleBarSettings={settings?.titleBar} />
+      {/* Keep SessionBar here */}
+      <SessionBar />
+      <table className="w-full table-auto text-sm border-separate border-spacing-y-0.5">
+        <tbody>{rows}</tbody>
+      </table>
+      {/* No SessionFooter here */}
+    </div>
+  );
+};
+
+export const NoFooter: Story = {
+  render: () => <RelativeWithoutFooter />,
+  decorators: [TelemetryDecorator()],
 };

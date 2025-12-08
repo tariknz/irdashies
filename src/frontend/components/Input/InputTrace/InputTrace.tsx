@@ -28,6 +28,7 @@ export const InputTrace = ({
 }: InputTraceProps) => {
   const { includeThrottle, includeBrake, includeAbs = true, includeSteer = true } = settings;
   const svgRef = useRef<SVGSVGElement>(null);
+  const rafRef = useRef<number | null>(null);
   const { width, height } = { width: 400, height: 100 };
 
   const [brakeArray, setBrakeArray] = useState<number[]>(
@@ -44,24 +45,32 @@ export const InputTrace = ({
   );
 
   useEffect(() => {
-    // slice first value and append new value
-    if (includeThrottle) {  
-      setThrottleArray((v) => [...v.slice(1), input.throttle ?? 0]);
+    if (rafRef.current) {
+      cancelAnimationFrame(rafRef.current);
     }
-    if (includeBrake) {
-      setBrakeArray((v) => [...v.slice(1), input.brake ?? 0]);
-      if (includeAbs) {
-        setBrakeABSArray((v) => [...v.slice(1), input.brakeAbsActive ?? false]);
+    
+    rafRef.current = requestAnimationFrame(() => {
+      if (includeThrottle) {  
+        setThrottleArray((v) => [...v.slice(1), input.throttle ?? 0]);
       }
-    }
-    if (includeSteer) {
-      // Normalize steering angle: map ±2π radians to 0-1 range where 0.5 = center (0 radians)
-      // Negative angles (left) → values < 0.5 → go up (top)
-      // Positive angles (right) → values > 0.5 → go down (bottom)
-      const angleRad = input.steer ?? 0;
-      const normalizedValue = Math.max(0, Math.min(1, (angleRad / (2 * Math.PI)) + 0.5));
-      setSteerArray((v) => [...v.slice(1), normalizedValue]);
-    }
+      if (includeBrake) {
+        setBrakeArray((v) => [...v.slice(1), input.brake ?? 0]);
+        if (includeAbs) {
+          setBrakeABSArray((v) => [...v.slice(1), input.brakeAbsActive ?? false]);
+        }
+      }
+      if (includeSteer) {
+        const angleRad = input.steer ?? 0;
+        const normalizedValue = Math.max(0, Math.min(1, (angleRad / (2 * Math.PI)) + 0.5));
+        setSteerArray((v) => [...v.slice(1), normalizedValue]);
+      }
+    });
+
+    return () => {
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current);
+      }
+    };
   }, [input, includeThrottle, includeBrake, includeAbs, includeSteer]);
 
   useEffect(() => {

@@ -1,11 +1,8 @@
 import { Fragment } from 'react';
-import { useAutoAnimate } from '@formkit/auto-animate/react';
 import { DriverClassHeader } from './components/DriverClassHeader/DriverClassHeader';
 import { DriverInfoRow } from './components/DriverInfoRow/DriverInfoRow';
-import { DriverRatingBadge } from './components/DriverRatingBadge/DriverRatingBadge';
-import { RatingChange } from './components/RatingChange/RatingChange';
 import { SessionBar } from './components/SessionBar/SessionBar';
-import { SessionFooter } from './components/SessionFooter/SessionFooter';
+
 import { TitleBar } from './components/TitleBar/TitleBar';
 import {
   useCarClassStats,
@@ -18,7 +15,6 @@ import { usePitLabStoreUpdater } from '../../context/PitLapStore/PitLapStoreUpda
 import { useDrivingState, useWeekendInfoNumCarClasses } from '@irdashies/context';
 
 export const Standings = () => {
-  const [parent] = useAutoAnimate();
   const settings = useStandingsSettings();
   const { isDriving } = useDrivingState();
 
@@ -47,9 +43,9 @@ export const Standings = () => {
       }}
     >
       <TitleBar titleBarSettings={settings?.titleBar} />
-      <SessionBar />
-      <table className="w-full table-auto text-sm border-separate border-spacing-y-0.5 mb-3">
-        <tbody ref={parent}>
+      {(settings?.headerBar?.enabled ?? true) && <SessionBar position="header" variant="standings" />}
+      <table className="w-full table-auto text-sm border-separate border-spacing-y-0.5">
+        <tbody>
           {standings.map(([classId, classStandings]) => (
             classStandings.length > 0 ? (
               <Fragment key={classId}>
@@ -76,22 +72,10 @@ export const Standings = () => {
                     gap={settings?.gap?.enabled ? result.gap : undefined}
                     interval={settings?.interval?.enabled ? result.interval : undefined}
                     position={result.classPosition}
-                    iratingChange={
-                      settings?.iratingChange?.enabled ? (
-                        <RatingChange value={result.iratingChange} />
-                      ) : undefined
-                    }
-                    lastTime={
-                      settings?.lastTime?.enabled ? result.lastTime : undefined
-                    }
-                    fastestTime={
-                      settings?.fastestTime?.enabled
-                        ? result.fastestTime
-                        : undefined
-                    }
-                    lastTimeState={
-                      settings?.lastTime?.enabled ? result.lastTimeState : undefined
-                    }
+                    iratingChangeValue={result.iratingChange}
+                    lastTime={settings?.lastTime?.enabled ? result.lastTime : undefined}
+                    fastestTime={settings?.fastestTime?.enabled ? result.fastestTime : undefined}
+                    lastTimeState={settings?.lastTime?.enabled ? result.lastTimeState : undefined}
                     onPitRoad={result.onPitRoad}
                     onTrack={result.onTrack}
                     radioActive={result.radioActive}
@@ -103,15 +87,8 @@ export const Standings = () => {
                     lastLap={result.lastLap}
                     carTrackSurface={result.carTrackSurface}
                     prevCarTrackSurface={result.prevCarTrackSurface}
-                    badge={
-                      settings?.badge?.enabled ? (
-                        <DriverRatingBadge
-                          license={result.driver?.license}
-                          rating={result.driver?.rating}
-                          format={settings.badge.badgeFormat}
-                        />
-                      ) : undefined
-                    }
+                    license={result.driver?.license}
+                    rating={result.driver?.rating}
                     lapTimeDeltas={settings?.lapTimeDeltas?.enabled ? result.lapTimeDeltas : undefined}
                     numLapDeltasToShow={settings?.lapTimeDeltas?.enabled ? settings.lapTimeDeltas.numLaps : undefined}
                     displayOrder={settings?.displayOrder}
@@ -129,7 +106,7 @@ export const Standings = () => {
           ))}
         </tbody>
       </table>
-      <SessionFooter />
+      {(settings?.footerBar?.enabled ?? true) && <SessionBar position="footer" variant="standings" />}
     </div>
   );
 };

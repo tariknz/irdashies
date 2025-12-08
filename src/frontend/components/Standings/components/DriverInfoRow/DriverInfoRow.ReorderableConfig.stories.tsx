@@ -1,28 +1,9 @@
 import { StoryObj } from '@storybook/react-vite';
 import { DriverInfoRow } from './DriverInfoRow';
-import { DriverRatingBadge } from '../DriverRatingBadge/DriverRatingBadge';
-import { RatingChange } from '../RatingChange/RatingChange';
-import { useAutoAnimate } from '@formkit/auto-animate/react';
 import { useCurrentSessionType } from '@irdashies/context';
 import type { RelativeWidgetSettings } from '../../../Settings/types';
 import { useState, useMemo } from 'react';
-import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  DragEndEvent,
-} from '@dnd-kit/core';
-import {
-  arrayMove,
-  SortableContext,
-  sortableKeyboardCoordinates,
-  verticalListSortingStrategy,
-  useSortable,
-} from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
+import { useSortableList } from '../../../SortableList';
 import { DotsSixVerticalIcon } from '@phosphor-icons/react';
 import type { Meta } from '@storybook/react-vite';
 import type { DriverInfoRow as DriverInfoRowType } from './DriverInfoRow';
@@ -60,111 +41,57 @@ const sortableSettings = [
   { id: 'compound', label: 'Tire Compound' },
 ];
 
-const SortableItem = ({ id, label }: { id: string; label: string }) => {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
+// Pre-generated mock data (generated at module load, not during render)
+const mockReorderableConfigData = (() => {
+  const seededRandom = (seed: number) => {
+    const x = Math.sin(seed) * 10000;
+    return x - Math.floor(x);
   };
-
-  return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className="flex items-center gap-2 p-2 bg-slate-700 rounded mb-1 cursor-grab active:cursor-grabbing"
-      {...attributes}
-      {...listeners}
-    >
-      <DotsSixVerticalIcon className="text-slate-400" size={16} />
-      <span className="text-slate-200 text-sm">{label}</span>
-    </div>
-  );
-};
-
-const RelativeWithReorderableConfig = () => {
-  const getRandomRating = () =>
-    Math.floor(Math.random() * (1300 - 700 + 1)) + 700;
-  const getRandomLicense = () => {
-    const licenses = ['C', 'B', 'A'];
-    const license = licenses[Math.floor(Math.random() * licenses.length)];
-    const rating = (Math.random() * (4.5 - 1.5) + 1.5).toFixed(2);
-    return `${license} ${rating}`;
-  };
-
-  const names = [
-    'Alice',
-    'Bob',
-    'Charlie',
-    'David',
-    'Eve',
-    'Frank',
-    'Grace',
-    'Hank',
-    'Ivy',
-    'Jack',
-  ];
-  const getRandomName = () => names[Math.floor(Math.random() * names.length)];
-  const getRandomSurname = () => {
-    const surnames = [
-      'Smith',
-      'Johnson',
-      'Williams',
-      'Brown',
-      'Jones',
-      'Garcia',
-      'Miller',
-      'Davis',
-      'Rodriguez',
-      'Martinez',
-    ];
-    return surnames[Math.floor(Math.random() * surnames.length)];
-  };
-
-  const getRandomMiddleName = () => {
-    const middleNames = [
-      'James',
-      'Marie',
-      'Lee',
-      'Ann',
-      'Grace',
-      'John',
-      'Michael',
-      'Elizabeth',
-      'David',
-      'Rose',
-    ];
-    return middleNames[Math.floor(Math.random() * middleNames.length)];
-  };
-
-  const getRandomFullName = () => {
-    const hasMiddleName = Math.random() > 0.5;
-    const firstName = getRandomName();
-    const surname = getRandomSurname();
+  
+  let seed = 123;
+  const random = () => seededRandom(seed++);
+  
+  const names = ['Alice', 'Bob', 'Charlie', 'David', 'Eve', 'Frank', 'Grace', 'Hank', 'Ivy', 'Jack'];
+  const surnames = ['Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis', 'Rodriguez', 'Martinez'];
+  const middleNames = ['James', 'Marie', 'Lee', 'Ann', 'Grace', 'John', 'Michael', 'Elizabeth', 'David', 'Rose'];
+  const licenses = ['C', 'B', 'A'];
+  
+  const getLicense = () => licenses[Math.floor(random() * licenses.length)];
+  const getSafetyRating = () => parseFloat((random() * (4.5 - 1.5) + 1.5).toFixed(2));
+  const getFullName = () => {
+    const hasMiddleName = random() > 0.5;
+    const firstName = names[Math.floor(random() * names.length)];
+    const surname = surnames[Math.floor(random() * surnames.length)];
     if (hasMiddleName) {
-      const middleName = getRandomMiddleName();
+      const middleName = middleNames[Math.floor(random() * middleNames.length)];
       return `${firstName} ${middleName} ${surname}`;
     }
     return `${firstName} ${surname}`;
   };
+  const getCarNum = () => (Math.floor(random() * 35) + 1).toString();
+  
+  return {
+    drivers: Array.from({ length: 7 }, () => ({
+      name: getFullName(),
+      license: getLicense(),
+      rating: getSafetyRating(),
+      carNum: getCarNum(),
+    })),
+  };
+})();
+
+const RelativeWithReorderableConfig = () => {
+  const currentSessionType = useCurrentSessionType();
 
   const standings = [
     {
       carIdx: 1,
       carClass: { color: 0xff5888 },
       driver: {
-        carNum: '999',
-        name: getRandomFullName(),
-        license: getRandomLicense(),
-        rating: getRandomRating(),
+        carNum: mockReorderableConfigData.drivers[0].carNum,
+        name: mockReorderableConfigData.drivers[0].name,
+        license: mockReorderableConfigData.drivers[0].license,
+        rating: mockReorderableConfigData.drivers[0].rating,
         flairId: 223,
       },
       isPlayer: false,
@@ -179,7 +106,7 @@ const RelativeWithReorderableConfig = () => {
       lappedState: undefined,
       tireCompound: 0,
       lastPitLap: 0,
-      currentSessionType: useCurrentSessionType(),
+      currentSessionType: currentSessionType,
       carId: 122,
       iratingChange: 15,
     },
@@ -187,10 +114,10 @@ const RelativeWithReorderableConfig = () => {
       carIdx: 2,
       carClass: { color: 0xffda59 },
       driver: {
-        carNum: '999',
-        name: getRandomFullName(),
-        license: getRandomLicense(),
-        rating: getRandomRating(),
+        carNum: mockReorderableConfigData.drivers[1].carNum,
+        name: mockReorderableConfigData.drivers[1].name,
+        license: mockReorderableConfigData.drivers[1].license,
+        rating: mockReorderableConfigData.drivers[1].rating,
         flairId: 222,
       },
       isPlayer: false,
@@ -205,7 +132,7 @@ const RelativeWithReorderableConfig = () => {
       lappedState: 'ahead',
       tireCompound: 1,
       lastPitLap: 0,
-      currentSessionType: useCurrentSessionType(),
+      currentSessionType: currentSessionType,
       carId: 122,
       iratingChange: -8,
       dnf: false,
@@ -217,10 +144,10 @@ const RelativeWithReorderableConfig = () => {
       carIdx: 3,
       carClass: { color: 0xff5888 },
       driver: {
-        carNum: '999',
-        name: getRandomFullName(),
-        license: getRandomLicense(),
-        rating: getRandomRating(),
+        carNum: mockReorderableConfigData.drivers[2].carNum,
+        name: mockReorderableConfigData.drivers[2].name,
+        license: mockReorderableConfigData.drivers[2].license,
+        rating: mockReorderableConfigData.drivers[2].rating,
         flairId: 77,
       },
       isPlayer: false,
@@ -235,7 +162,7 @@ const RelativeWithReorderableConfig = () => {
       lappedState: 'same',
       tireCompound: 1,
       lastPitLap: 0,
-      currentSessionType: useCurrentSessionType(),
+      currentSessionType: currentSessionType,
       carId: 122,
       iratingChange: 0,
       dnf: false,
@@ -247,10 +174,10 @@ const RelativeWithReorderableConfig = () => {
       carIdx: 4,
       carClass: { color: 0xff5888 },
       driver: {
-        carNum: '23',
-        name: getRandomFullName(),
-        license: getRandomLicense(),
-        rating: getRandomRating(),
+        carNum: mockReorderableConfigData.drivers[3].carNum,
+        name: mockReorderableConfigData.drivers[3].name,
+        license: mockReorderableConfigData.drivers[3].license,
+        rating: mockReorderableConfigData.drivers[3].rating,
         flairId: 71,
       },
       isPlayer: true,
@@ -263,7 +190,7 @@ const RelativeWithReorderableConfig = () => {
       lappedState: 'same',
       tireCompound: 1,
       lastPitLap: 15,
-      currentSessionType: useCurrentSessionType(),
+      currentSessionType: currentSessionType,
       carId: 122,
       iratingChange: 23,
       dnf: false,
@@ -275,10 +202,10 @@ const RelativeWithReorderableConfig = () => {
       carIdx: 5,
       carClass: { color: 0xae6bff },
       driver: {
-        carNum: '999',
-        name: getRandomFullName(),
-        license: getRandomLicense(),
-        rating: getRandomRating(),
+        carNum: mockReorderableConfigData.drivers[4].carNum,
+        name: mockReorderableConfigData.drivers[4].name,
+        license: mockReorderableConfigData.drivers[4].license,
+        rating: mockReorderableConfigData.drivers[4].rating,
         flairId: 101,
       },
       isPlayer: false,
@@ -291,7 +218,7 @@ const RelativeWithReorderableConfig = () => {
       lappedState: 'behind',
       tireCompound: 1,
       lastPitLap: 0,
-      currentSessionType: useCurrentSessionType(),
+      currentSessionType: currentSessionType,
       carId: 122,
       iratingChange: -42,
       dnf: false,
@@ -303,10 +230,10 @@ const RelativeWithReorderableConfig = () => {
       carIdx: 6,
       carClass: { color: 0xff5888 },
       driver: {
-        carNum: '999',
-        name: getRandomFullName(),
-        license: getRandomLicense(),
-        rating: getRandomRating(),
+        carNum: mockReorderableConfigData.drivers[5].carNum,
+        name: mockReorderableConfigData.drivers[5].name,
+        license: mockReorderableConfigData.drivers[5].license,
+        rating: mockReorderableConfigData.drivers[5].rating,
         flairId: 198,
       },
       isPlayer: false,
@@ -319,7 +246,7 @@ const RelativeWithReorderableConfig = () => {
       lappedState: 'same',
       tireCompound: 1,
       lastPitLap: 0,
-      currentSessionType: useCurrentSessionType(),
+      currentSessionType: currentSessionType,
       carId: 122,
       iratingChange: 5,
       dnf: false,
@@ -331,10 +258,10 @@ const RelativeWithReorderableConfig = () => {
       carIdx: 7,
       carClass: { color: 0xae6bff },
       driver: {
-        carNum: '999',
-        name: getRandomFullName(),
-        license: getRandomLicense(),
-        rating: getRandomRating(),
+        carNum: mockReorderableConfigData.drivers[6].carNum,
+        name: mockReorderableConfigData.drivers[6].name,
+        license: mockReorderableConfigData.drivers[6].license,
+        rating: mockReorderableConfigData.drivers[6].rating,
         flairId: 39,
       },
       isPlayer: false,
@@ -346,7 +273,7 @@ const RelativeWithReorderableConfig = () => {
       radioActive: true,
       tireCompound: 1,
       lastPitLap: 5,
-      currentSessionType: useCurrentSessionType(),
+      currentSessionType: currentSessionType,
       carId: 122,
       iratingChange: -15,
       dnf: false,
@@ -355,10 +282,6 @@ const RelativeWithReorderableConfig = () => {
       slowdown: false
     },
   ];
-  const getRandomCarNum = () => Math.floor(Math.random() * 35) + 1;
-  standings.forEach((standing) => {
-    standing.driver.carNum = getRandomCarNum().toString();
-  });
 
   const [displayOrder, setDisplayOrder] = useState<string[]>(
     sortableSettings.map((s) => s.id)
@@ -383,6 +306,30 @@ const RelativeWithReorderableConfig = () => {
       brakeBias: { enabled: false },
       displayOrder: displayOrder,
       titleBar: { enabled: true, progressBar: { enabled: true } },
+      headerBar: {
+        enabled: true,
+        sessionName: { enabled: true },
+        timeRemaining: { enabled: true },
+        incidentCount: { enabled: true },
+        brakeBias: { enabled: false },
+        localTime: { enabled: true },
+        trackWetness: { enabled: false },
+        airTemperature: { enabled: false },
+        trackTemperature: { enabled: false },
+        displayOrder: ['sessionName', 'timeRemaining', 'brakeBias', 'incidentCount']
+      },
+      footerBar: {
+        enabled: true,
+        sessionName: { enabled: false },
+        timeRemaining: { enabled: false },
+        incidentCount: { enabled: false },
+        brakeBias: { enabled: true },
+        localTime: { enabled: true },
+        trackWetness: { enabled: true },
+        airTemperature: { enabled: true },
+        trackTemperature: { enabled: true },
+        displayOrder: ['localTime', 'trackWetness', 'airTemperature', 'trackTemperature']
+      },
       showOnlyWhenOnTrack: false,
       enhancedGapCalculation: {
         enabled: true,
@@ -394,32 +341,22 @@ const RelativeWithReorderableConfig = () => {
     [displayOrder]
   );
 
-  const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
+  const items = displayOrder.map(id => {
+    const setting = sortableSettings.find(s => s.id === id);
+    return setting ? { ...setting } : null;
+  }).filter((s): s is { id: string; label: string } => s !== null);
 
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-
-    if (over && active.id !== over.id) {
-      setDisplayOrder((items) => {
-        const oldIndex = items.indexOf(active.id as string);
-        const newIndex = items.indexOf(over.id as string);
-        return arrayMove(items, oldIndex, newIndex);
-      });
-    }
-  };
-
-  const [parent] = useAutoAnimate();
+  const { getItemProps, displayItems } = useSortableList({
+    items,
+    onReorder: (newItems) => setDisplayOrder(newItems.map(i => i.id)),
+    getItemId: (item) => item.id,
+  });
 
   return (
     <div className="w-full h-full flex flex-col gap-4 p-4">
       <div className="flex-1">
         <table className="w-full table-auto text-sm border-separate border-spacing-y-0.5 mb-3 mt-3">
-          <tbody ref={parent}>
+          <tbody>
             {standings.map((result) => (
               <DriverInfoRow
                 key={result.carIdx}
@@ -439,19 +376,15 @@ const RelativeWithReorderableConfig = () => {
                 flairId={result.driver?.flairId}
                 tireCompound={result.tireCompound}
                 carId={result.carId}
-                badge={
-                  <DriverRatingBadge
-                    license={result.driver?.license}
-                    rating={result.driver?.rating}
-                  />
-                }
+                license={result.driver?.license}
+                rating={result.driver?.rating}
                 isMultiClass={false}
                 currentSessionType={result.currentSessionType}
                 displayOrder={displayOrder}
                 config={config}
                 fastestTime={result.fastestTime}
                 lastTime={result.lastTime}
-                iratingChange={<RatingChange value={result.iratingChange} />}
+                iratingChangeValue={result.iratingChange}
                 dnf={result.dnf ?? false}
                 repair={result.repair ?? false}
                 penalty={result.penalty ?? false}
@@ -465,23 +398,23 @@ const RelativeWithReorderableConfig = () => {
         <h3 className="text-lg font-medium text-slate-200 mb-4">
           Reorder Config
         </h3>
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragEnd={handleDragEnd}
-        >
-          <SortableContext
-            items={displayOrder}
-            strategy={verticalListSortingStrategy}
-          >
-            {displayOrder.map((id) => {
-              const setting = sortableSettings.find((s) => s.id === id);
-              return setting ? (
-                <SortableItem key={id} id={id} label={setting.label} />
-              ) : null;
-            })}
-          </SortableContext>
-        </DndContext>
+        <div className="space-y-1">
+          {displayItems.map((item) => {
+            const { dragHandleProps, itemProps } = getItemProps(item);
+            return (
+              <div
+                key={item.id}
+                {...itemProps}
+                className="flex items-center gap-2 p-2 bg-slate-700 rounded cursor-grab active:cursor-grabbing"
+              >
+                <div {...dragHandleProps}>
+                  <DotsSixVerticalIcon className="text-slate-400" size={16} />
+                </div>
+                <span className="text-slate-200 text-sm">{item.label}</span>
+              </div>
+            );
+          })}
+        </div>
         <button
           onClick={() => {
             setDisplayOrder(sortableSettings.map((s) => s.id));
