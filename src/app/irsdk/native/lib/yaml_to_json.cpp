@@ -36,6 +36,7 @@ int countIndent(const std::string& line) {
     for (char c : line) {
         if (c == ' ') count++;
         else if (c == '\t') count += 2;
+        else if (c == '-') count++;  // Count dash as indentation, matching yaml_parser.cpp behavior
         else break;
     }
     return count;
@@ -51,6 +52,14 @@ json parseValue(const std::string& rawValue) {
     
     if (value.empty()) {
         return json(nullptr);
+    }
+    
+    // Strip surrounding quotes if present (YAML quoted strings)
+    if (value.size() >= 2) {
+        if ((value[0] == '"' && value[value.size() - 1] == '"') ||
+            (value[0] == '\'' && value[value.size() - 1] == '\'')) {
+            value = value.substr(1, value.size() - 2);
+        }
     }
     
     // Check for boolean
@@ -154,10 +163,9 @@ std::string yamlToJson(const char* yaml) {
         // For non-array items: pop states at same or higher indent (they're siblings or done)
         if (isArray) {
             // Pop until we find where this array item belongs
-            // Array items belong to the nearest ancestor that is/becomes an array
+            // Use >= so sibling array items pop the previous array item state
             while (stateStack.size() > 1) {
                 ParseState& top = stateStack.top();
-                // If the top state is at higher indent, pop it
                 if (top.indent >= indent) {
                     stateStack.pop();
                 } else {
@@ -165,7 +173,9 @@ std::string yamlToJson(const char* yaml) {
                 }
             }
         } else {
-            while (stateStack.size() > 1 && stateStack.top().indent >= indent) {
+            // For non-array items, use > so same-indent properties stay in parent
+            // e.g., "- CarIdx: 0" pushes state at indent 3, "   UserName: x" at indent 3 should stay
+            while (stateStack.size() > 1 && stateStack.top().indent > indent) {
                 stateStack.pop();
             }
         }
@@ -188,6 +198,7 @@ std::string yamlToJson(const char* yaml) {
             if (trimmedLine.size() < 2) {
                 continue; // Skip malformed array items
             }
+            
             std::string content = trim(trimmedLine.substr(1)); // Remove leading '-'
             
             // Convert current object to array if this is first array item
@@ -212,9 +223,12 @@ std::string yamlToJson(const char* yaml) {
                 
                 currentObj->push_back(arrayItem);
                 
-                // Push state for nested content - use indent+1 so next array item at same level goes to parent
+                // Push state for nested content
+                // Array item "- CarIdx: 0" has indent 1 (the dash)
+                // Nested property "  UserName: ..." has indent 2 (two spaces, > 1)
+                // Push with same indent as array item so nested props with indent > this stay in this state
                 json& lastItem = currentObj->back();
-                stateStack.push({&lastItem, indent + 1, "", true});
+                stateStack.push({&lastItem, indent, "", true});
             } else {
                 // Simple array value
                 currentObj->push_back(parseValue(content));
