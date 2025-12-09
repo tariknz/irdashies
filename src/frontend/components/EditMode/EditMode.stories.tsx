@@ -67,7 +67,7 @@ export const Primary = {
 export const WithInput = {
   render: (args: { editMode: boolean }) => {
     return (
-      <div className="h-[80px] w-[400px]">
+      <div className="h-[140px] w-[420px]">
         <DashboardProvider bridge={mockBridge(args.editMode)}>
           <EditMode>
             <Input/>
