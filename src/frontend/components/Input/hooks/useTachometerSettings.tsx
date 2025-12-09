@@ -1,4 +1,5 @@
 import { useDashboard } from '@irdashies/context';
+import { InputWidgetSettings } from '../../Settings/types';
 
 /**
  * Hook for tachometer settings from dashboard config.
@@ -9,10 +10,10 @@ export const useTachometerSettings = () => {
 
   const inputSettings = currentDashboard?.widgets.find(
     (widget) => widget.id === 'input',
-  )?.config;
+  )?.config as InputWidgetSettings['config'] | undefined;
 
   return {
-    enabled: (inputSettings as any)?.tachometer?.enabled ?? true,
-    showRpmText: (inputSettings as any)?.tachometer?.showRpmText ?? false, // Default false
+    enabled: inputSettings?.tachometer?.enabled ?? true,
+    showRpmText: inputSettings?.tachometer?.showRpmText ?? false, // Default false
   };
 };

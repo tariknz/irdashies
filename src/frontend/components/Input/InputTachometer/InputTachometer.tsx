@@ -95,9 +95,6 @@ export const Tachometer = ({
       return () => {
         clearInterval(interval);
       };
-    } else {
-      // Make sure flash is off when not blinking
-      setFlash(false);
     }
   }, [clampedRpm, effectiveBlinkRpm]);
 

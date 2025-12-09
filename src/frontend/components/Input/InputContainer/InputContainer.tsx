@@ -102,20 +102,7 @@ export const InputContainer = ({
     );
 
     return [...orderedColumns, ...remainingColumns];
-  }, [
-    brake,
-    throttle,
-    brakeAbsActive,
-    steer,
-    settings?.trace,
-    settings?.bar,
-    settings?.gear,
-    settings?.steer,
-    displayOrder,
-    speed,
-    clutch,
-    unit,
-  ]);
+  }, [brake, throttle, clutch, gear, speed, unit, brakeAbsActive, steer, settings, displayOrder]);
 
   return (
     <div className="w-full h-full inline-flex gap-1 p-2 flex-row bg-slate-800/50">
