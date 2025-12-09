@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { InputWidgetSettings } from '../../Settings/types';
 import { InputBar } from '../InputBar/InputBar';
 import { InputGear } from '../InputGear/InputGear';
@@ -16,6 +17,8 @@ export interface InputProps {
   settings?: InputWidgetSettings['config'];
 }
 
+type InputSection = 'trace' | 'bar' | 'gear' | 'steer';
+
 export const InputContainer = ({
   brake,
   throttle,
@@ -27,35 +30,96 @@ export const InputContainer = ({
   brakeAbsActive,
   settings,
 }: InputProps) => {
+  const displayOrder = settings?.displayOrder as InputSection[] | undefined;
+
+  const columnDefinitions = useMemo(() => {
+    const columns = [
+      {
+        id: 'trace' as const,
+        shouldRender: settings?.trace?.enabled ?? true,
+        component: (
+          <InputTrace
+            key="trace"
+            input={{ brake, throttle, brakeAbsActive, steer }}
+            settings={settings?.trace}
+          />
+        ),
+      },
+      {
+        id: 'bar' as const,
+        shouldRender: settings?.bar?.enabled ?? true,
+        component: (
+          <InputBar
+            key="bar"
+            brake={brake}
+            brakeAbsActive={brakeAbsActive}
+            throttle={throttle}
+            clutch={clutch}
+            settings={settings?.bar}
+          />
+        ),
+      },
+      {
+        id: 'gear' as const,
+        shouldRender: settings?.gear?.enabled ?? true,
+        component: (
+          <InputGear
+            key="gear"
+            gear={gear}
+            speedMs={speed}
+            unit={unit}
+            settings={settings?.gear}
+          />
+        ),
+      },
+      {
+        id: 'steer' as const,
+        shouldRender: settings?.steer?.enabled ?? true,
+        component: (
+          <InputSteer
+            key="steer"
+            angleRad={steer}
+            wheelStyle={settings?.steer?.config?.style}
+            wheelColor={settings?.steer?.config?.color}
+          />
+        ),
+      },
+    ];
+
+    if (!displayOrder) {
+      return columns.filter((column) => column.shouldRender);
+    }
+
+    const orderedColumns = displayOrder
+      .map((orderId) => columns.find((column) => column.id === orderId))
+      .filter(
+        (column): column is NonNullable<typeof column> =>
+          column !== undefined && column.shouldRender
+      );
+
+    const remainingColumns = columns.filter(
+      (column) => column.shouldRender && !displayOrder.includes(column.id)
+    );
+
+    return [...orderedColumns, ...remainingColumns];
+  }, [
+    brake,
+    throttle,
+    brakeAbsActive,
+    steer,
+    settings?.trace,
+    settings?.bar,
+    settings?.gear,
+    settings?.steer,
+    displayOrder,
+    speed,
+    clutch,
+    unit,
+  ]);
+
   return (
     <div className="w-full h-full inline-flex gap-1 p-2 flex-row bg-slate-800/50">
-      {(settings?.trace?.enabled ?? true) && (
-        <InputTrace input={{ brake, throttle, brakeAbsActive, steer }} settings={settings?.trace} />
-      )}
-      {(settings?.bar?.enabled ?? true) && (
-        <InputBar
-          brake={brake}
-          brakeAbsActive={brakeAbsActive}
-          throttle={throttle}
-          clutch={clutch}
-          settings={settings?.bar}
-        />
-      )}
-      {(settings?.gear?.enabled ?? true) && (
-        <InputGear
-          gear={gear}
-          speedMs={speed}
-          unit={unit}
-          settings={settings?.gear}
-        />
-      )}
-      {(settings?.steer?.enabled ?? true) && (
-        <InputSteer
-          angleRad={steer}
-          wheelStyle={settings?.steer?.config?.style}
-          wheelColor={settings?.steer?.config?.color}
-        />
-      )}
+      {columnDefinitions.map((column) => column.component)}
     </div>
   );
 };
