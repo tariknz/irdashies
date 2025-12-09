@@ -46,7 +46,7 @@ export const Standings = () => {
       {(settings?.headerBar?.enabled ?? true) && <SessionBar position="header" variant="standings" />}
       <table className="w-full table-auto text-sm border-separate border-spacing-y-0.5">
         <tbody>
-          {standings.map(([classId, classStandings]) => (
+          {standings.map(([classId, classStandings], index) => (
             classStandings.length > 0 ? (
               <Fragment key={classId}>
                 <DriverClassHeader
@@ -101,6 +101,7 @@ export const Standings = () => {
                     slowdown={result.slowdown}
                   />
                 ))}
+                {index < standings.length - 1 && <div className="h-2"></div>}
               </Fragment>
             ) : null
           ))}
