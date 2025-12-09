@@ -162,10 +162,12 @@ interface DisplaySettingsListProps {
 }
 
 const DisplaySettingsList = ({ itemsOrder, onReorder, settings, handleConfigChange }: DisplaySettingsListProps) => {
-  const items = itemsOrder.map(id => {
-    const setting = sortableSettings.find(s => s.id === id);
-    return setting ? { ...setting } : null;
-  }).filter((s): s is SortableSetting => s !== null);
+  const items = itemsOrder
+    .map((id) => {
+      const setting = sortableSettings.find((s) => s.id === id);
+      return setting ? { ...setting } : null;
+    })
+    .filter((s): s is SortableSetting => s !== null);
 
   const { getItemProps, displayItems } = useSortableList({
     items,

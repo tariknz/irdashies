@@ -1,4 +1,5 @@
 import { useTelemetryValue } from '@irdashies/context';
+import type { Telemetry } from '@irdashies/types';
 import { useSessionStore } from '../../../context/SessionStore/SessionStore';
 
 /**
@@ -19,8 +20,8 @@ export const useTachometerData = () => {
     7500; // Conservative fallback for safety
 
   // iRacing shift lights telemetry values
-  const shiftRpm = useTelemetryValue('DriverCarSLShiftRPM' as never) ?? 0;  // Purple LEDs
-  const blinkRpm = useTelemetryValue('DriverCarSLBlinkRPM' as never) ?? 0;  // Blinking LEDs
+  const shiftRpm = useTelemetryValue('DriverCarSLShiftRPM' as keyof Telemetry) ?? 0;  // Purple LEDs
+  const blinkRpm = useTelemetryValue('DriverCarSLBlinkRPM' as keyof Telemetry) ?? 0;  // Blinking LEDs
 
   return {
     rpm,
