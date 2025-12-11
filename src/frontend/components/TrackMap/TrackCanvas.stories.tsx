@@ -292,6 +292,7 @@ export const Primary: Story = {
   args: {
     trackId: 1,
     drivers: sampleData,
+    enableTurnNames: true,
   },
 };
 
@@ -326,7 +327,7 @@ export const SingleDriver: Story = {
       isPlayer: args.isPlayer || false,
     }] as TrackDriver[];
 
-    return <TrackCanvas trackId={args.trackId} drivers={drivers} />;
+    return <TrackCanvas trackId={args.trackId} drivers={drivers} enableTurnNames={args.enableTurnNames} />;
   },
   args: {
     trackId: 1,
@@ -353,7 +354,7 @@ export const CirclingAround: Story = {
       return () => clearInterval(interval);
     });
 
-    return <TrackCanvas trackId={args.trackId} drivers={drivers} />;
+    return <TrackCanvas trackId={args.trackId} drivers={drivers} enableTurnNames={args.enableTurnNames} />;
   },
   args: {
     trackId: 1,
