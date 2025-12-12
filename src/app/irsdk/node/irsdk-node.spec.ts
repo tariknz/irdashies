@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { IRacingSDK } from './irsdk-node';
 import { getSdkOrMock } from './get-sdk';
 import type { INativeSDK } from '../native';
+import { SessionData } from '../types';
 
 // Mock the getSdkOrMock module
 vi.mock('./get-sdk', () => ({
@@ -33,7 +34,7 @@ describe('irsdk-node', () => {
   });
 
   it('should parse JSON session data correctly', () => {
-    const sessionJson = JSON.stringify({
+    const sessionJson = {
       WeekendInfo: {
         TrackName: 'test track',
         TrackID: 123,
@@ -49,7 +50,7 @@ describe('irsdk-node', () => {
           },
         ],
       },
-    });
+    } as SessionData;
 
     vi.mocked(mockSdk.getSessionData).mockReturnValue(sessionJson);
 
@@ -62,7 +63,7 @@ describe('irsdk-node', () => {
   });
 
   it('should handle null values in JSON', () => {
-    const sessionJson = JSON.stringify({
+    const sessionJson = {
       WeekendInfo: {
         TrackName: 'test track',
         TrackID: 123,
@@ -71,14 +72,14 @@ describe('irsdk-node', () => {
         Drivers: [
           {
             CarIdx: 1,
-            UserName: null,
-            AbbrevName: null,
+            UserName: null as string | null,
+            AbbrevName: null as string | null,
             Initials: null,
             UserID: 12345,
           },
         ],
       },
-    });
+    } as SessionData;
 
     vi.mocked(mockSdk.getSessionData).mockReturnValue(sessionJson);
 
@@ -91,7 +92,7 @@ describe('irsdk-node', () => {
   });
 
   it('should handle special characters in names', () => {
-    const sessionJson = JSON.stringify({
+    const sessionJson = {
       WeekendInfo: {
         TrackName: 'navarra speedlong',
         TrackID: 515,
@@ -105,7 +106,7 @@ describe('irsdk-node', () => {
           },
         ],
       },
-    });
+    } as SessionData;
 
     vi.mocked(mockSdk.getSessionData).mockReturnValue(sessionJson);
 
@@ -117,9 +118,9 @@ describe('irsdk-node', () => {
   });
 
   it('should cache session data based on data version', () => {
-    const sessionJson = JSON.stringify({
+    const sessionJson = {
       WeekendInfo: { TrackName: 'test track', TrackID: 123 },
-    });
+    } as SessionData;
 
     vi.mocked(mockSdk.getSessionData).mockReturnValue(sessionJson);
 

@@ -163,9 +163,9 @@ export class IRacingSDK {
     if (!this._sdk) return null;
 
     try {
-      const jsonString = this._sdk?.getSessionData();
-      if (!jsonString) return null;
-      this._sessionData = JSON.parse(jsonString) as SessionData;
+      const sessionData = this._sdk?.getSessionData();
+      if (!sessionData) return null;
+      this._sessionData = sessionData;
       this._dataVer = this.currDataVersion;
       return this._sessionData;
     } catch (err) {

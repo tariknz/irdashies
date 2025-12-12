@@ -1,12 +1,12 @@
 import type { INativeSDK } from '../../native';
 import type {
-  TelemetryVarList, TelemetryVariable, BroadcastMessages, CameraState, ReplayPositionCommand, ReplaySearchCommand, ReplayStateCommand, ReloadTexturesCommand, ChatCommand, PitCommand, TelemetryCommand, FFBCommand, VideoCaptureCommand,
+  TelemetryVarList, TelemetryVariable, BroadcastMessages, CameraState, ReplayPositionCommand, ReplaySearchCommand, ReplayStateCommand, ReloadTexturesCommand, ChatCommand, PitCommand, TelemetryCommand, FFBCommand, VideoCaptureCommand, SessionData,
 } from '../../types';
 
 import { loadMockSessionData, loadMockTelemetry } from './mock-data/loader';
 
 let mockTelemetry: TelemetryVarList | null = null;
-let MOCK_SESSION: string | null = null;
+let MOCK_SESSION: SessionData | null = null;
 
 export class MockSDK implements INativeSDK {
   public currDataVersion: number;
@@ -53,8 +53,8 @@ export class MockSDK implements INativeSDK {
     return this._isRunning;
   }
 
-  public getSessionData(): string {
-    return MOCK_SESSION ?? '';
+  public getSessionData(): SessionData {
+    return MOCK_SESSION ?? ({} as SessionData);
   }
 
   public getTelemetryData(): TelemetryVarList {

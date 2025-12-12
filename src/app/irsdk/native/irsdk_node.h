@@ -5,6 +5,7 @@
 #include <string>
 #include "./lib/irsdk_defines.h"
 #include "./lib/irsdk_client.h"
+#include "./lib/json.hpp"
 
 class iRacingSdkNode : public Napi::ObjectWrap<iRacingSdkNode>
 {
@@ -46,7 +47,7 @@ private:
     int _sessionStatusID;
     int _lastSessionCt;
     const char* _sessionData;
-    std::string _sessionJson;
+    nlohmann::json _sessionJson;
 };
 
 #endif
