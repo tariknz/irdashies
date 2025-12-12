@@ -391,50 +391,17 @@ std::string ConvertToUTF8(const char* input) {
 
 Napi::Value iRacingSdkNode::GetSessionData(const Napi::CallbackInfo &info)
 {
-  printf("[GetSessionData] called, lastSessionCt=%d\n", this->_lastSessionCt);
-  fflush(stdout);
-
   int latestUpdate = irsdk_getSessionInfoStrUpdate();
-  printf("[GetSessionData] latestUpdate=%d\n", latestUpdate);
-  fflush(stdout);
 
   if (this->_lastSessionCt != latestUpdate) {
-    printf("Session data has been updated (prev: %d, new: %d)\n", this->_lastSessionCt, latestUpdate);
-    fflush(stdout);
-
     this->_lastSessionCt = latestUpdate;
     this->_sessionData = irsdk_getSessionInfoStr();
 
     // Convert to UTF-8 then to JSON
     if (this->_sessionData != NULL) {
       std::string utf8Session = ConvertToUTF8(this->_sessionData);
-      printf("YAML length: %zu bytes\n", utf8Session.length());
-      fflush(stdout);
-
-      // Write YAML to file for debugging
-      FILE* yamlFile = fopen("C:\\temp\\iracing_session.yaml", "w");
-      if (yamlFile) {
-        fprintf(yamlFile, "%s", utf8Session.c_str());
-        fclose(yamlFile);
-        printf("Wrote YAML to C:\\temp\\iracing_session.yaml\n");
-        fflush(stdout);
-      }
-
       this->_sessionJson = yamlToJson(utf8Session.c_str());
-      printf("JSON length: %zu bytes\n", this->_sessionJson.length());
-      fflush(stdout);
-
-      // Write JSON to file for debugging
-      FILE* jsonFile = fopen("C:\\temp\\iracing_session.json", "w");
-      if (jsonFile) {
-        fprintf(jsonFile, "%s", this->_sessionJson.c_str());
-        fclose(jsonFile);
-        printf("Wrote JSON to C:\\temp\\iracing_session.json\n");
-        fflush(stdout);
-      }
     } else {
-      printf("Session data is NULL!\n");
-      fflush(stdout);
       this->_sessionJson = "{}";
     }
   }
