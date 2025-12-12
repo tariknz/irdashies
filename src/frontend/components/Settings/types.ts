@@ -149,6 +149,11 @@ export interface InputWidgetSettings extends BaseWidgetSettings {
       unit: 'mph' | 'km/h' | 'auto';
     };
     steer: SteerWidgetSettings;
+    tachometer: {
+      enabled: boolean;
+      showRpmText: boolean;
+    };
+    displayOrder: string[];
   };
 }
 

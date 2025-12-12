@@ -13,7 +13,7 @@ type Story = StoryObj<typeof Input>;
 export const Primary: Story = {
   render: () => (
     <>
-      <div className="h-[80px] w-[400px]">
+      <div className="h-[140px] w-[420px]">
         <Input />
       </div>
     </>
