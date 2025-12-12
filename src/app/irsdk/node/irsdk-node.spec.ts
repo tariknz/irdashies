@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { IRacingSDK } from './irsdk-node';
 import { getSdkOrMock } from './get-sdk';
 import type { INativeSDK } from '../native';
+import { SessionData } from '../types';
 
 // Mock the getSdkOrMock module
 vi.mock('./get-sdk', () => ({
@@ -24,6 +25,7 @@ describe('irsdk-node', () => {
   let mockSdk: INativeSDK;
 
   beforeEach(async () => {
+    vi.clearAllMocks();
     sdk = new IRacingSDK();
     // Wait for SDK to be ready
     await sdk.ready();
@@ -31,21 +33,26 @@ describe('irsdk-node', () => {
     mockSdk = await getSdkOrMock();
   });
 
-  it('should handle malformed YAML with trailing commas', () => {
-    const malformedYaml = `
-WeekendInfo:
-  TrackName: test track
-  TrackID: 123
-DriverInfo:
-  Drivers:
-    - CarIdx: 1
-      UserName: test
-      AbbrevName: test,  # Trailing comma
-      Initials: T
-      UserID: 12345
-`;
+  it('should parse JSON session data correctly', () => {
+    const sessionJson = {
+      WeekendInfo: {
+        TrackName: 'test track',
+        TrackID: 123,
+      },
+      DriverInfo: {
+        Drivers: [
+          {
+            CarIdx: 1,
+            UserName: 'test',
+            AbbrevName: 'test',
+            Initials: 'T',
+            UserID: 12345,
+          },
+        ],
+      },
+    } as SessionData;
 
-    vi.mocked(mockSdk.getSessionData).mockReturnValue(malformedYaml);
+    vi.mocked(mockSdk.getSessionData).mockReturnValue(sessionJson);
 
     const result = sdk.getSessionData();
 
@@ -55,21 +62,26 @@ DriverInfo:
     expect(result?.DriverInfo?.Drivers[0]?.UserName).toBe('test');
   });
 
-  it('should handle empty or null values', () => {
-    const malformedYaml = `
-WeekendInfo:
-  TrackName: test track
-  TrackID: 123
-DriverInfo:
-  Drivers:
-    - CarIdx: 1
-      UserName:     # Empty value
-      AbbrevName:   # Empty value
-      Initials:     # Empty value
-      UserID: 12345
-`;
+  it('should handle null values in JSON', () => {
+    const sessionJson = {
+      WeekendInfo: {
+        TrackName: 'test track',
+        TrackID: 123,
+      },
+      DriverInfo: {
+        Drivers: [
+          {
+            CarIdx: 1,
+            UserName: null as string | null,
+            AbbrevName: null as string | null,
+            Initials: null,
+            UserID: 12345,
+          },
+        ],
+      },
+    } as SessionData;
 
-    vi.mocked(mockSdk.getSessionData).mockReturnValue(malformedYaml);
+    vi.mocked(mockSdk.getSessionData).mockReturnValue(sessionJson);
 
     const result = sdk.getSessionData();
 
@@ -79,49 +91,46 @@ DriverInfo:
     expect(result?.DriverInfo?.Drivers[0]?.Initials).toBe(null);
   });
 
-  it('should handle empty value with trailing comma', () => {
-    const malformedYaml = `
-WeekendInfo:
-  TrackName: navarra speedlong
-  TrackID: 515
-DriverInfo:
-  Drivers:
-    - CarIdx: 11
-      UserName:     
-      AbbrevName:  ,  
-      Initials:   
-      UserID: 1195427
-`;
+  it('should handle special characters in names', () => {
+    const sessionJson = {
+      WeekendInfo: {
+        TrackName: 'navarra speedlong',
+        TrackID: 515,
+      },
+      DriverInfo: {
+        Drivers: [
+          {
+            CarIdx: 11,
+            TeamName: "Mike's Team",
+            UserName: "Coolio O'Brien",
+          },
+        ],
+      },
+    } as SessionData;
 
-    vi.mocked(mockSdk.getSessionData).mockReturnValue(malformedYaml);
-
-    const result = sdk.getSessionData();
-
-    expect(result).toBeDefined();
-    expect(result?.DriverInfo?.Drivers[0]?.UserName).toBe(null);
-    expect(result?.DriverInfo?.Drivers[0]?.AbbrevName).toBe(null);
-    expect(result?.DriverInfo?.Drivers[0]?.Initials).toBe(null);
-    expect(result?.DriverInfo?.Drivers[0]?.UserID).toBe(1195427);
-  });
-
-  it('should handle quotes in names', () => {
-    const malformedYaml = `
-WeekendInfo:
-  TrackName: navarra speedlong
-  TrackID: 515
-DriverInfo:
-  Drivers:
-    - CarIdx: 11
-      TeamName: Mike's Team
-      UserName: Coolio O'Brien
-`;
-
-    vi.mocked(mockSdk.getSessionData).mockReturnValue(malformedYaml);
+    vi.mocked(mockSdk.getSessionData).mockReturnValue(sessionJson);
 
     const result = sdk.getSessionData();
 
     expect(result).toBeDefined();
     expect(result?.DriverInfo?.Drivers[0]?.TeamName).toBe("Mike's Team");
     expect(result?.DriverInfo?.Drivers[0]?.UserName).toBe("Coolio O'Brien");
+  });
+
+  it('should cache session data based on data version', () => {
+    const sessionJson = {
+      WeekendInfo: { TrackName: 'test track', TrackID: 123 },
+    } as SessionData;
+
+    vi.mocked(mockSdk.getSessionData).mockReturnValue(sessionJson);
+
+    // First call
+    const result1 = sdk.getSessionData();
+    expect(result1?.WeekendInfo?.TrackName).toBe('test track');
+
+    // Second call should use cache (getSessionData not called again)
+    const result2 = sdk.getSessionData();
+    expect(result2).toBe(result1);
+    expect(mockSdk.getSessionData).toHaveBeenCalledTimes(1);
   });
 }); 

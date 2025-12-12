@@ -12,6 +12,7 @@ import {
   VideoCaptureCommand,
   TelemetryVariable,
   TelemetryVarList,
+  SessionData,
 } from '../types';
 
 type TelemetryTypesDict = Record<string, number>;
@@ -28,7 +29,7 @@ export interface INativeSDK {
   // State
   isRunning(): boolean;
   waitForData(timeout?: number): boolean;
-  getSessionData(): string; // full yaml
+  getSessionData(): SessionData;
   getTelemetryData(): TelemetryVarList;
 
   getTelemetryVariable<T>(index: number): TelemetryVariable<T>;
@@ -73,7 +74,7 @@ export class NativeSDK implements INativeSDK {
 
   public waitForData(timeout?: number): boolean;
 
-  public getSessionData(): string; // full yaml
+  public getSessionData(): SessionData;
 
   public getTelemetryData(): TelemetryVarList;
 
