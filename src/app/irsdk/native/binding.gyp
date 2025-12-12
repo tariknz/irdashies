@@ -6,6 +6,7 @@
         "src/irsdk_node.cc",
         "lib/irsdk_utils.cpp",
         "lib/yaml_parser.cpp",
+        "lib/yaml_to_json.cpp",
         "lib/irsdk_defines.h"
       ],
       "defines": [
