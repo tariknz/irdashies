@@ -29,7 +29,12 @@ export const DriverRatingBadge = ({
 
   // Extract safety rating number from license string
   const safetyRatingMatch = license?.match(/([A-Z])\s*(\d+\.\d+)/);
-  const safetyRating = safetyRatingMatch ? Math.floor(Math.min(parseFloat(safetyRatingMatch[2]), 4.99) * 10) / 10 : '';
+  const safetyRating = safetyRatingMatch ? (() => {
+    const num = parseFloat(safetyRatingMatch[2]);
+    const capped = Math.min(num, 4.99);
+    const truncated = Math.floor(capped * 100) / 100;
+    return truncated.toFixed(2);
+  })() : '';
   const formattedLicense = license?.replace(/([A-Z])\s*(\d+)\.(\d+)/, (_, level) => {
     return `${level}`;
   }) || license || 'R 0.0';
