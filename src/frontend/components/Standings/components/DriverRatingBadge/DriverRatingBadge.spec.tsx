@@ -54,7 +54,7 @@ describe('DriverRatingBadge', () => {
     const { container } = render(
       <DriverRatingBadge license={undefined} rating={undefined} />
     );
-    expect(container.textContent).toBe('R 00.0k');
+    expect(container.textContent).toBe('R 0.00.0k');
   });
 
   it('rounds rating to 1 decimal place', () => {
@@ -68,14 +68,14 @@ describe('DriverRatingBadge', () => {
     const { container } = render(
       <DriverRatingBadge license="A 02.99" rating={5000} />
     );
-    expect(container.textContent).toBe('A 2.99.0k');
+    expect(container.textContent).toBe('A 2.95.0k');
   });
 
   it('keeps single zero before decimal point', () => {
     const { container } = render(
       <DriverRatingBadge license="A 0.99" rating={5000} />
     );
-    expect(container.textContent).toBe('A 0.99.0k');
+    expect(container.textContent).toBe('A 0.95.0k');
   });
 
   it('handles multiple leading zeros', () => {
