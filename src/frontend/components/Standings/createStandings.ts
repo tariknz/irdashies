@@ -158,8 +158,9 @@ export const createDriverStandings = (
   numLapsToShow?: number,
   lapTimeHistory?: number[][],
 ): Standings[] => {
-  const results =
-    currentSession.resultsPositions ?? session.qualifyingResults ?? [];
+  const resultsPositions = Array.isArray(currentSession.resultsPositions) ? currentSession.resultsPositions : [];
+  const qualifyingResults = Array.isArray(session.qualifyingResults) ? session.qualifyingResults : [];
+  const results = resultsPositions.length > 0 ? resultsPositions : qualifyingResults;
   const fastestDriverIdx = currentSession.resultsFastestLap?.[0]?.CarIdx;
   const fastestDriver = results?.find((r) => r.CarIdx === fastestDriverIdx);
 

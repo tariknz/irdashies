@@ -134,7 +134,7 @@ export const useDriverStandings = () => {
     // Create Map lookups for O(1) access instead of O(n) find() calls
     const driverPositionsByCarIdx = new Map(driverPositions.map(pos => [pos.carIdx, pos]));
     const carStatesByCarIdx = new Map(carStates.map(state => [state.carIdx, state]));
-    const qualifyingPositionsByCarIdx = qualifyingPositions
+    const qualifyingPositionsByCarIdx = qualifyingPositions && Array.isArray(qualifyingPositions)
       ? new Map(qualifyingPositions.map(q => [q.CarIdx, q]))
       : new Map();
 
