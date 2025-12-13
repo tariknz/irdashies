@@ -346,7 +346,7 @@ const BarItemsList = ({ items, onReorder, barType, settings, handleConfigChange 
             </div>
             {(item.id === 'airTemperature' || item.id === 'trackTemperature') && itemConfig.enabled && (
               <div className="flex items-center justify-between pl-8 mt-2">
-                <span className="text-sm text-slate-300">Unit</span>
+                <span></span>
                 <select
                   value={itemConfig.unit ?? 'Metric'}
                   onChange={(e) => {
