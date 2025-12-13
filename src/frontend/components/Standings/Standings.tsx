@@ -71,6 +71,7 @@ export const Standings = () => {
                     delta={settings?.delta?.enabled ? result.delta : undefined}
                     gap={settings?.gap?.enabled ? result.gap : undefined}
                     interval={settings?.interval?.enabled ? result.interval : undefined}
+                    lapsDown={result.lapsDown}
                     position={result.classPosition}
                     iratingChangeValue={result.iratingChange}
                     lastTime={settings?.lastTime?.enabled ? result.lastTime : undefined}
