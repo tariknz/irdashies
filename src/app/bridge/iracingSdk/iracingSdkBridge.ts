@@ -3,7 +3,7 @@ import { TelemetrySink } from './telemetrySink';
 import { OverlayManager } from '../../overlayManager';
 import type { IrSdkBridge, Session, Telemetry } from '@irdashies/types';
 
-const TIMEOUT = 1000;
+const TIMEOUT = 66; // 15Hz update rate (1000/15 ≈ 66.67ms)
 
 export async function publishIRacingSDKEvents(
   telemetrySink: TelemetrySink,
@@ -37,7 +37,6 @@ export async function publishIRacingSDKEvents(
         while (!shouldStop && sdk.waitForData(TIMEOUT)) {
           const telemetry = sdk.getTelemetry();
           const session = sdk.getSessionData();
-          await new Promise((resolve) => setTimeout(resolve, 1000 / 25)); // 25Hz update rate
 
           if (telemetry) {
             overlayManager.publishMessage('telemetry', telemetry);
