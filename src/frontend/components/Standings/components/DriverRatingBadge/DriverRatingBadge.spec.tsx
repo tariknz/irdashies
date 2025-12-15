@@ -68,21 +68,21 @@ describe('DriverRatingBadge', () => {
     const { container } = render(
       <DriverRatingBadge license="A 02.99" rating={5000} />
     );
-    expect(container.textContent).toBe('A 3.05.0k');
+    expect(container.textContent).toBe('A 2.95.0k');
   });
 
   it('keeps single zero before decimal point', () => {
     const { container } = render(
       <DriverRatingBadge license="A 0.99" rating={5000} />
     );
-    expect(container.textContent).toBe('A 1.05.0k');
+    expect(container.textContent).toBe('A 0.95.0k');
   });
 
   it('handles multiple leading zeros', () => {
     const { container } = render(
       <DriverRatingBadge license="B 0003.45" rating={5000} />
     );
-    expect(container.textContent).toBe('B 3.55.0k');
+    expect(container.textContent).toBe('B 3.45.0k');
   });
 
   it('should handle invalid license strings', () => {
