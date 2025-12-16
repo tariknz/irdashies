@@ -380,7 +380,7 @@ const BarItemsList = ({ items, onReorder, barType, settings, handleConfigChange 
     <div className="space-y-3 pl-4">
       {displayItems.map((item) => {
         const { dragHandleProps, itemProps } = getItemProps(item);
-        const itemConfig = (settings.config[barType] as any)?.[item.id] as { enabled: boolean } | undefined;
+        const itemConfig = (settings.config[barType] as StandingsWidgetSettings['config']['headerBar'])?.[item.id as keyof StandingsWidgetSettings['config']['headerBar']] as { enabled: boolean; unit?: 'Metric' | 'Imperial' } | { enabled: boolean } | undefined;
 
         return (
           <div key={item.id} {...itemProps}>
@@ -397,29 +397,29 @@ const BarItemsList = ({ items, onReorder, barType, settings, handleConfigChange 
               <ToggleSwitch
                 enabled={itemConfig?.enabled ?? true}
                 onToggle={(enabled) => {
+                  const currentUnit = (itemConfig && 'unit' in itemConfig) ? itemConfig.unit : 'Metric';
                   handleConfigChange({
                     [barType]: {
                       ...settings.config[barType],
-                      [item.id]: {
-                        enabled,
-                        unit: itemConfig.unit ?? 'Metric'
-                      }
+                      [item.id]: (item.id === 'airTemperature' || item.id === 'trackTemperature')
+                        ? { enabled, unit: currentUnit }
+                        : { enabled }
                     }
                   });
                 }}
               />
             </div>
-            {(item.id === 'airTemperature' || item.id === 'trackTemperature') && itemConfig.enabled && (
+            {(item.id === 'airTemperature' || item.id === 'trackTemperature') && itemConfig && 'enabled' in itemConfig && itemConfig.enabled && (
               <div className="flex items-center justify-between pl-8 mt-2">
                 <span></span>
                 <select
-                  value={itemConfig.unit ?? 'Metric'}
+                  value={(itemConfig && 'unit' in itemConfig) ? itemConfig.unit : 'Metric'}
                   onChange={(e) => {
                     handleConfigChange({
                       [barType]: {
                         ...settings.config[barType],
                         [item.id]: {
-                          enabled: itemConfig.enabled,
+                          enabled: itemConfig && 'enabled' in itemConfig ? itemConfig.enabled : true,
                           unit: e.target.value as 'Metric' | 'Imperial'
                         }
                       }

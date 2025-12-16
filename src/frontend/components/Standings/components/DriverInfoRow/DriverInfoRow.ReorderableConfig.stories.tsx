@@ -314,8 +314,8 @@ const RelativeWithReorderableConfig = () => {
         brakeBias: { enabled: false },
         localTime: { enabled: true },
         trackWetness: { enabled: false },
-        airTemperature: { enabled: false },
-        trackTemperature: { enabled: false },
+        airTemperature: { enabled: false, unit: 'Metric' },
+        trackTemperature: { enabled: false, unit: 'Metric' },
         displayOrder: ['sessionName', 'timeRemaining', 'brakeBias', 'incidentCount']
       },
       footerBar: {
@@ -326,8 +326,8 @@ const RelativeWithReorderableConfig = () => {
         brakeBias: { enabled: true },
         localTime: { enabled: true },
         trackWetness: { enabled: true },
-        airTemperature: { enabled: true },
-        trackTemperature: { enabled: true },
+        airTemperature: { enabled: true, unit: 'Metric' },
+        trackTemperature: { enabled: true, unit: 'Metric' },
         displayOrder: ['localTime', 'trackWetness', 'airTemperature', 'trackTemperature']
       },
       showOnlyWhenOnTrack: false,
