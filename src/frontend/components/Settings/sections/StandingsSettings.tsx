@@ -7,6 +7,7 @@ import { useSortableList } from '../../SortableList';
 import { DotsSixVerticalIcon } from '@phosphor-icons/react';
 import { BadgeFormatPreview } from '../components/BadgeFormatPreview';
 import { VALID_SESSION_BAR_ITEM_KEYS, SESSION_BAR_ITEM_LABELS, DEFAULT_SESSION_BAR_DISPLAY_ORDER } from '../sessionBarConstants';
+import { mergeDisplayOrder } from '../../../utils/displayOrder';
 
 const SETTING_ID = 'standings';
 
@@ -86,33 +87,7 @@ const defaultConfig: StandingsWidgetSettings['config'] = {
   displayOrder: sortableSettings.map(s => s.id)
 };
 
-const mergeDisplayOrder = (existingOrder?: string[]): string[] => {
-  if (!existingOrder) return defaultConfig.displayOrder;
 
-  const allIds = sortableSettings.map(s => s.id);
-  const merged = [...existingOrder];
-
-  const missingIds = allIds.filter(id => !merged.includes(id));
-
-  missingIds.forEach(missingId => {
-    const missingIndex = allIds.indexOf(missingId);
-
-    let insertIndex = merged.length;
-
-    for (let i = missingIndex + 1; i < allIds.length; i++) {
-      const existingItem = allIds[i];
-      const existingItemIndex = merged.indexOf(existingItem);
-      if (existingItemIndex !== -1) {
-        insertIndex = existingItemIndex;
-        break;
-      }
-    }
-
-    merged.splice(insertIndex, 0, missingId);
-  });
-
-  return merged;
-};
 
 const migrateConfig = (
   savedConfig: unknown
@@ -192,7 +167,7 @@ const migrateConfig = (
       trackWetness: { enabled: (config.headerBar as { trackWetness?: { enabled?: boolean } })?.trackWetness?.enabled ?? false },
       airTemperature: { enabled: (config.headerBar as { airTemperature?: { enabled?: boolean } })?.airTemperature?.enabled ?? false },
       trackTemperature: { enabled: (config.headerBar as { trackTemperature?: { enabled?: boolean } })?.trackTemperature?.enabled ?? false },
-      displayOrder: ((config.headerBar as { displayOrder?: string[] })?.displayOrder ?? VALID_SESSION_BAR_ITEM_KEYS).filter(key => VALID_SESSION_BAR_ITEM_KEYS.includes(key as typeof VALID_SESSION_BAR_ITEM_KEYS[number]))
+      displayOrder: mergeDisplayOrder([...VALID_SESSION_BAR_ITEM_KEYS], (config.headerBar as { displayOrder?: string[] })?.displayOrder)
     },
     footerBar: {
       enabled: (config.footerBar as { enabled?: boolean })?.enabled ?? true,
@@ -204,13 +179,13 @@ const migrateConfig = (
       trackWetness: { enabled: (config.footerBar as { trackWetness?: { enabled?: boolean } })?.trackWetness?.enabled ?? true },
       airTemperature: { enabled: (config.footerBar as { airTemperature?: { enabled?: boolean } })?.airTemperature?.enabled ?? true },
       trackTemperature: { enabled: (config.footerBar as { trackTemperature?: { enabled?: boolean } })?.trackTemperature?.enabled ?? true },
-      displayOrder: ((config.footerBar as { displayOrder?: string[] })?.displayOrder ?? VALID_SESSION_BAR_ITEM_KEYS).filter(key => VALID_SESSION_BAR_ITEM_KEYS.includes(key as typeof VALID_SESSION_BAR_ITEM_KEYS[number]))
+      displayOrder: mergeDisplayOrder([...VALID_SESSION_BAR_ITEM_KEYS], (config.footerBar as { displayOrder?: string[] })?.displayOrder)
     },
     showOnlyWhenOnTrack: (config.showOnlyWhenOnTrack as boolean) ?? false,
     position: { enabled: (config.position as { enabled?: boolean })?.enabled ?? true },
     driverName: { enabled: (config.driverName as { enabled?: boolean })?.enabled ?? true },
     pitStatus: { enabled: (config.pitStatus as { enabled?: boolean })?.enabled ?? true },
-    displayOrder: mergeDisplayOrder(config.displayOrder as string[]),
+      displayOrder: mergeDisplayOrder(sortableSettings.map(s => s.id), config.displayOrder as string[]),
   };
 };
 

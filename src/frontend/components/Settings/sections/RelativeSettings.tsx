@@ -7,6 +7,7 @@ import { useSortableList } from '../../SortableList';
 import { DotsSixVerticalIcon } from '@phosphor-icons/react';
 import { BadgeFormatPreview } from '../components/BadgeFormatPreview';
 import { VALID_SESSION_BAR_ITEM_KEYS, SESSION_BAR_ITEM_LABELS, DEFAULT_SESSION_BAR_DISPLAY_ORDER } from '../sessionBarConstants';
+import { mergeDisplayOrder } from '../../../utils/displayOrder';
 
 const SETTING_ID = 'relative';
 
@@ -82,33 +83,7 @@ const defaultConfig: RelativeWidgetSettings['config'] = {
   showOnlyWhenOnTrack: false
 };
 
-const mergeDisplayOrder = (existingOrder?: string[]): string[] => {
-  if (!existingOrder) return defaultConfig.displayOrder;
 
-  const allIds = sortableSettings.map(s => s.id);
-  const merged = [...existingOrder];
-
-  const missingIds = allIds.filter(id => !merged.includes(id));
-
-  missingIds.forEach(missingId => {
-    const missingIndex = allIds.indexOf(missingId);
-
-    let insertIndex = merged.length;
-
-    for (let i = missingIndex + 1; i < allIds.length; i++) {
-      const existingItem = allIds[i];
-      const existingItemIndex = merged.indexOf(existingItem);
-      if (existingItemIndex !== -1) {
-        insertIndex = existingItemIndex;
-        break;
-      }
-    }
-
-    merged.splice(insertIndex, 0, missingId);
-  });
-
-  return merged;
-};
 
 const migrateConfig = (savedConfig: unknown): RelativeWidgetSettings['config'] => {
   if (!savedConfig || typeof savedConfig !== 'object') return defaultConfig;
@@ -132,7 +107,7 @@ const migrateConfig = (savedConfig: unknown): RelativeWidgetSettings['config'] =
     fastestTime: { enabled: (config.fastestTime as { enabled?: boolean; timeFormat?: string })?.enabled ?? false, timeFormat: ((config.fastestTime as { enabled?: boolean; timeFormat?: string })?.timeFormat as 'full' | 'mixed' | 'minutes' | 'seconds-full' | 'seconds-mixed' | 'seconds') ?? 'full' },
     lastTime: { enabled: (config.lastTime as { enabled?: boolean; timeFormat?: string })?.enabled ?? false, timeFormat: ((config.lastTime as { enabled?: boolean; timeFormat?: string })?.timeFormat as 'full' | 'mixed' | 'minutes' | 'seconds-full' | 'seconds-mixed' | 'seconds') ?? 'full' },
     compound: { enabled: (config.compound as { enabled?: boolean })?.enabled ?? false },
-    displayOrder: mergeDisplayOrder(config.displayOrder as string[]),
+    displayOrder: mergeDisplayOrder(sortableSettings.map(s => s.id), config.displayOrder as string[]),
     enhancedGapCalculation: {
       enabled: enhancedGap?.enabled ?? true,
       interpolationMethod: enhancedGap?.interpolationMethod ?? 'linear',
@@ -155,7 +130,7 @@ const migrateConfig = (savedConfig: unknown): RelativeWidgetSettings['config'] =
       trackWetness: { enabled: (config.headerBar as { trackWetness?: { enabled?: boolean } })?.trackWetness?.enabled ?? false },
       airTemperature: { enabled: (config.headerBar as { airTemperature?: { enabled?: boolean } })?.airTemperature?.enabled ?? false },
       trackTemperature: { enabled: (config.headerBar as { trackTemperature?: { enabled?: boolean } })?.trackTemperature?.enabled ?? false },
-      displayOrder: ((config.headerBar as { displayOrder?: string[] })?.displayOrder ?? VALID_SESSION_BAR_ITEM_KEYS).filter(key => VALID_SESSION_BAR_ITEM_KEYS.includes(key as typeof VALID_SESSION_BAR_ITEM_KEYS[number]))
+      displayOrder: mergeDisplayOrder([...VALID_SESSION_BAR_ITEM_KEYS], (config.headerBar as { displayOrder?: string[] })?.displayOrder)
     },
     footerBar: {
       enabled: (config.footerBar as { enabled?: boolean })?.enabled ?? true,
@@ -167,7 +142,7 @@ const migrateConfig = (savedConfig: unknown): RelativeWidgetSettings['config'] =
       trackWetness: { enabled: (config.footerBar as { trackWetness?: { enabled?: boolean } })?.trackWetness?.enabled ?? true },
       airTemperature: { enabled: (config.footerBar as { airTemperature?: { enabled?: boolean } })?.airTemperature?.enabled ?? true },
       trackTemperature: { enabled: (config.footerBar as { trackTemperature?: { enabled?: boolean } })?.trackTemperature?.enabled ?? true },
-      displayOrder: ((config.footerBar as { displayOrder?: string[] })?.displayOrder ?? VALID_SESSION_BAR_ITEM_KEYS).filter(key => VALID_SESSION_BAR_ITEM_KEYS.includes(key as typeof VALID_SESSION_BAR_ITEM_KEYS[number]))
+      displayOrder: mergeDisplayOrder([...VALID_SESSION_BAR_ITEM_KEYS], (config.footerBar as { displayOrder?: string[] })?.displayOrder)
     },
     showOnlyWhenOnTrack: (config.showOnlyWhenOnTrack as boolean) ?? false
   };
