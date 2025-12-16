@@ -303,7 +303,7 @@ const BarItemsList = ({ items, onReorder, barType, settings, handleConfigChange 
     <div className="space-y-3 pl-4">
       {displayItems.map((item) => {
         const { dragHandleProps, itemProps } = getItemProps(item);
-        const itemConfig = (settings.config[barType] as any)?.[item.id] as { enabled: boolean } | undefined;
+        const itemConfig = (settings.config[barType] as RelativeWidgetSettings['config']['headerBar'])?.[item.id as keyof RelativeWidgetSettings['config']['headerBar']] as { enabled: boolean } | undefined;
 
         return (
           <div key={item.id} {...itemProps}>
