@@ -215,7 +215,8 @@ const migrateConfig = (
 
 const barItemLabels: Record<string, string> = {
   sessionName: 'Session Name',
-  timeRemaining: 'Time Remaining',
+  lapsCompleted: 'Laps Completed',
+  sessionTime: 'Time Remaining',
   incidentCount: 'Incident Count',
   brakeBias: 'Brake Bias',
   localTime: 'Local Time',
