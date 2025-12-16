@@ -6,6 +6,7 @@ import { ToggleSwitch } from '../components/ToggleSwitch';
 import { useSortableList } from '../../SortableList';
 import { DotsSixVerticalIcon } from '@phosphor-icons/react';
 import { BadgeFormatPreview } from '../components/BadgeFormatPreview';
+import { VALID_SESSION_BAR_ITEM_KEYS, SESSION_BAR_ITEM_LABELS, DEFAULT_SESSION_BAR_DISPLAY_ORDER } from '../sessionBarConstants';
 
 const SETTING_ID = 'relative';
 
@@ -64,7 +65,7 @@ const defaultConfig: RelativeWidgetSettings['config'] = {
     trackWetness: { enabled: false },
     airTemperature: { enabled: false },
     trackTemperature: { enabled: false },
-    displayOrder: ['sessionName', 'timeRemaining', 'brakeBias', 'incidentCount', 'localTime', 'trackWetness', 'airTemperature', 'trackTemperature']
+    displayOrder: DEFAULT_SESSION_BAR_DISPLAY_ORDER
   },
   footerBar: {
     enabled: true,
@@ -76,7 +77,7 @@ const defaultConfig: RelativeWidgetSettings['config'] = {
     trackWetness: { enabled: true },
     airTemperature: { enabled: true },
     trackTemperature: { enabled: true },
-    displayOrder: ['sessionName', 'timeRemaining', 'incidentCount', 'brakeBias', 'localTime', 'trackWetness', 'airTemperature', 'trackTemperature']
+    displayOrder: DEFAULT_SESSION_BAR_DISPLAY_ORDER
   },
   showOnlyWhenOnTrack: false
 };
@@ -154,7 +155,7 @@ const migrateConfig = (savedConfig: unknown): RelativeWidgetSettings['config'] =
       trackWetness: { enabled: (config.headerBar as { trackWetness?: { enabled?: boolean } })?.trackWetness?.enabled ?? false },
       airTemperature: { enabled: (config.headerBar as { airTemperature?: { enabled?: boolean } })?.airTemperature?.enabled ?? false },
       trackTemperature: { enabled: (config.headerBar as { trackTemperature?: { enabled?: boolean } })?.trackTemperature?.enabled ?? false },
-      displayOrder: (config.headerBar as { displayOrder?: string[] })?.displayOrder ?? ['sessionName', 'timeRemaining', 'brakeBias', 'incidentCount', 'localTime', 'trackWetness', 'airTemperature', 'trackTemperature']
+      displayOrder: ((config.headerBar as { displayOrder?: string[] })?.displayOrder ?? VALID_SESSION_BAR_ITEM_KEYS).filter(key => VALID_SESSION_BAR_ITEM_KEYS.includes(key as typeof VALID_SESSION_BAR_ITEM_KEYS[number]))
     },
     footerBar: {
       enabled: (config.footerBar as { enabled?: boolean })?.enabled ?? true,
@@ -166,22 +167,13 @@ const migrateConfig = (savedConfig: unknown): RelativeWidgetSettings['config'] =
       trackWetness: { enabled: (config.footerBar as { trackWetness?: { enabled?: boolean } })?.trackWetness?.enabled ?? true },
       airTemperature: { enabled: (config.footerBar as { airTemperature?: { enabled?: boolean } })?.airTemperature?.enabled ?? true },
       trackTemperature: { enabled: (config.footerBar as { trackTemperature?: { enabled?: boolean } })?.trackTemperature?.enabled ?? true },
-      displayOrder: (config.footerBar as { displayOrder?: string[] })?.displayOrder ?? ['sessionName', 'timeRemaining', 'incidentCount', 'brakeBias', 'localTime', 'trackWetness', 'airTemperature', 'trackTemperature']
+      displayOrder: ((config.footerBar as { displayOrder?: string[] })?.displayOrder ?? VALID_SESSION_BAR_ITEM_KEYS).filter(key => VALID_SESSION_BAR_ITEM_KEYS.includes(key as typeof VALID_SESSION_BAR_ITEM_KEYS[number]))
     },
     showOnlyWhenOnTrack: (config.showOnlyWhenOnTrack as boolean) ?? false
   };
 };
 
-const barItemLabels: Record<string, string> = {
-  sessionName: 'Session Name',
-  timeRemaining: 'Time Remaining',
-  incidentCount: 'Incident Count',
-  brakeBias: 'Brake Bias',
-  localTime: 'Local Time',
-  trackWetness: 'Track Wetness',
-  airTemperature: 'Air Temperature',
-  trackTemperature: 'Track Temperature'
-};
+
 
 interface DisplaySettingsListProps {
   itemsOrder: string[];
@@ -303,7 +295,12 @@ const BarItemsList = ({ items, onReorder, barType, settings, handleConfigChange 
     <div className="space-y-3 pl-4">
       {displayItems.map((item) => {
         const { dragHandleProps, itemProps } = getItemProps(item);
-        const itemConfig = settings.config[barType][item.id as keyof typeof settings.config.headerBar] as { enabled: boolean };
+        const itemConfig = settings.config[barType][item.id as keyof typeof settings.config.headerBar] as { enabled: boolean } | undefined;
+
+        // Safety check: skip rendering if itemConfig is undefined
+        if (!itemConfig) {
+          return null;
+        }
 
         return (
           <div key={item.id} {...itemProps}>
@@ -315,7 +312,7 @@ const BarItemsList = ({ items, onReorder, barType, settings, handleConfigChange 
                 >
                   <DotsSixVerticalIcon size={16} className="text-slate-400" />
                 </div>
-                <span className="text-sm text-slate-300">{barItemLabels[item.id]}</span>
+                <span className="text-sm text-slate-300">{SESSION_BAR_ITEM_LABELS[item.id]}</span>
               </div>
               <ToggleSwitch
                 enabled={itemConfig.enabled}
@@ -475,11 +472,10 @@ export const RelativeSettings = () => {
                 <h3 className="text-lg font-medium text-slate-200">Header Bar</h3>
                 <button
                   onClick={() => {
-                    const defaultOrder = ['sessionName', 'timeRemaining', 'brakeBias', 'incidentCount', 'localTime', 'trackWetness', 'airTemperature', 'trackTemperature'];
                     handleConfigChange({
                       headerBar: {
                         ...settings.config.headerBar,
-                        displayOrder: defaultOrder
+                        displayOrder: [...DEFAULT_SESSION_BAR_DISPLAY_ORDER]
                       }
                     });
                   }}
@@ -528,11 +524,10 @@ export const RelativeSettings = () => {
                 <h3 className="text-lg font-medium text-slate-200">Footer Bar</h3>
                 <button
                   onClick={() => {
-                    const defaultOrder = ['sessionName', 'timeRemaining', 'incidentCount', 'brakeBias', 'localTime', 'trackWetness', 'airTemperature', 'trackTemperature'];
                     handleConfigChange({
                       footerBar: {
                         ...settings.config.footerBar,
-                        displayOrder: defaultOrder
+                        displayOrder: [...DEFAULT_SESSION_BAR_DISPLAY_ORDER]
                       }
                     });
                   }}
