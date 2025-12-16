@@ -303,7 +303,7 @@ const BarItemsList = ({ items, onReorder, barType, settings, handleConfigChange 
     <div className="space-y-3 pl-4">
       {displayItems.map((item) => {
         const { dragHandleProps, itemProps } = getItemProps(item);
-        const itemConfig = settings.config[barType][item.id as keyof typeof settings.config.headerBar] as { enabled: boolean };
+        const itemConfig = (settings.config[barType] as any)?.[item.id] as { enabled: boolean } | undefined;
 
         return (
           <div key={item.id} {...itemProps}>
@@ -318,7 +318,7 @@ const BarItemsList = ({ items, onReorder, barType, settings, handleConfigChange 
                 <span className="text-sm text-slate-300">{barItemLabels[item.id]}</span>
               </div>
               <ToggleSwitch
-                enabled={itemConfig.enabled}
+                enabled={itemConfig?.enabled ?? true}
                 onToggle={(enabled) => {
                   handleConfigChange({
                     [barType]: {
