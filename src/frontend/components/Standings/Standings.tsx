@@ -101,7 +101,7 @@ export const Standings = () => {
                     slowdown={result.slowdown}
                   />
                 ))}
-                {index < standings.length - 1 && <div className="h-2"></div>}
+                {index < standings.length - 1 && <tr><td colSpan={12} className="h-2"></td></tr>}
               </Fragment>
             ) : null
           ))}

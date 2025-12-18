@@ -25,7 +25,10 @@ export const SessionBar = ({ position = 'header', variant = 'standings' }: Sessi
   const { current, timeElapsed, timeRemaining } = useSessionLapCount();
   const brakeBias = useBrakeBias();
   const { trackWetness } = useTrackWetness();
-  const { trackTemp, airTemp } = useTrackTemperature();
+  const { trackTemp, airTemp } = useTrackTemperature({
+    airTempUnit: effectiveBarSettings?.airTemperature?.unit ?? 'Metric',
+    trackTempUnit: effectiveBarSettings?.trackTemperature?.unit ?? 'Metric',
+  });
   const time = useCurrentTime();
 
   // Define all possible items with their render functions
