@@ -6,6 +6,8 @@ import { ToggleSwitch } from '../components/ToggleSwitch';
 import { useSortableList } from '../../SortableList';
 import { DotsSixVerticalIcon } from '@phosphor-icons/react';
 import { BadgeFormatPreview } from '../components/BadgeFormatPreview';
+import { VALID_SESSION_BAR_ITEM_KEYS, SESSION_BAR_ITEM_LABELS, DEFAULT_SESSION_BAR_DISPLAY_ORDER } from '../sessionBarConstants';
+import { mergeDisplayOrder } from '../../../utils/displayOrder';
 
 const SETTING_ID = 'standings';
 
@@ -63,7 +65,7 @@ const defaultConfig: StandingsWidgetSettings['config'] = {
     trackWetness: { enabled: false },
     airTemperature: { enabled: false, unit: 'Metric' },
     trackTemperature: { enabled: false, unit: 'Metric' },
-    displayOrder: ['sessionName', 'timeRemaining', 'brakeBias', 'incidentCount', 'localTime', 'trackWetness', 'airTemperature', 'trackTemperature']
+    displayOrder: DEFAULT_SESSION_BAR_DISPLAY_ORDER
   },
   footerBar: {
     enabled: true,
@@ -75,7 +77,7 @@ const defaultConfig: StandingsWidgetSettings['config'] = {
     trackWetness: { enabled: true },
     airTemperature: { enabled: true, unit: 'Metric' },
     trackTemperature: { enabled: true, unit: 'Metric' },
-    displayOrder: ['sessionName', 'timeRemaining', 'incidentCount', 'brakeBias', 'localTime', 'trackWetness', 'airTemperature', 'trackTemperature']
+    displayOrder: DEFAULT_SESSION_BAR_DISPLAY_ORDER
   },
   showOnlyWhenOnTrack: false,
   lapTimeDeltas: { enabled: false, numLaps: 3 },
@@ -85,33 +87,7 @@ const defaultConfig: StandingsWidgetSettings['config'] = {
   displayOrder: sortableSettings.map(s => s.id)
 };
 
-const mergeDisplayOrder = (existingOrder?: string[]): string[] => {
-  if (!existingOrder) return defaultConfig.displayOrder;
 
-  const allIds = sortableSettings.map(s => s.id);
-  const merged = [...existingOrder];
-
-  const missingIds = allIds.filter(id => !merged.includes(id));
-
-  missingIds.forEach(missingId => {
-    const missingIndex = allIds.indexOf(missingId);
-
-    let insertIndex = merged.length;
-
-    for (let i = missingIndex + 1; i < allIds.length; i++) {
-      const existingItem = allIds[i];
-      const existingItemIndex = merged.indexOf(existingItem);
-      if (existingItemIndex !== -1) {
-        insertIndex = existingItemIndex;
-        break;
-      }
-    }
-
-    merged.splice(insertIndex, 0, missingId);
-  });
-
-  return merged;
-};
 
 const migrateConfig = (
   savedConfig: unknown
@@ -197,7 +173,7 @@ const migrateConfig = (
         enabled: (config.headerBar as { trackTemperature?: { enabled?: boolean; unit?: string } })?.trackTemperature?.enabled ?? false,
         unit: ((config.headerBar as { trackTemperature?: { unit?: string } })?.trackTemperature?.unit as 'Metric' | 'Imperial') ?? 'Metric'
       },
-      displayOrder: (config.headerBar as { displayOrder?: string[] })?.displayOrder ?? ['sessionName', 'timeRemaining', 'brakeBias', 'incidentCount', 'localTime', 'trackWetness', 'airTemperature', 'trackTemperature']
+      displayOrder: mergeDisplayOrder([...VALID_SESSION_BAR_ITEM_KEYS], (config.headerBar as { displayOrder?: string[] })?.displayOrder)
     },
     footerBar: {
       enabled: (config.footerBar as { enabled?: boolean })?.enabled ?? true,
@@ -215,27 +191,17 @@ const migrateConfig = (
         enabled: (config.footerBar as { trackTemperature?: { enabled?: boolean; unit?: string } })?.trackTemperature?.enabled ?? true,
         unit: ((config.footerBar as { trackTemperature?: { unit?: string } })?.trackTemperature?.unit as 'Metric' | 'Imperial') ?? 'Metric'
       },
-      displayOrder: (config.footerBar as { displayOrder?: string[] })?.displayOrder ?? ['sessionName', 'timeRemaining', 'incidentCount', 'brakeBias', 'localTime', 'trackWetness', 'airTemperature', 'trackTemperature']
+      displayOrder: mergeDisplayOrder([...VALID_SESSION_BAR_ITEM_KEYS], (config.footerBar as { displayOrder?: string[] })?.displayOrder)
     },
     showOnlyWhenOnTrack: (config.showOnlyWhenOnTrack as boolean) ?? false,
     position: { enabled: (config.position as { enabled?: boolean })?.enabled ?? true },
     driverName: { enabled: (config.driverName as { enabled?: boolean })?.enabled ?? true },
     pitStatus: { enabled: (config.pitStatus as { enabled?: boolean })?.enabled ?? true },
-    displayOrder: mergeDisplayOrder(config.displayOrder as string[]),
+      displayOrder: mergeDisplayOrder(sortableSettings.map(s => s.id), config.displayOrder as string[]),
   };
 };
 
-const barItemLabels: Record<string, string> = {
-  sessionName: 'Session Name',
-  lapsCompleted: 'Laps Completed',
-  sessionTime: 'Time Remaining',
-  incidentCount: 'Incident Count',
-  brakeBias: 'Brake Bias',
-  localTime: 'Local Time',
-  trackWetness: 'Track Wetness',
-  airTemperature: 'Air Temperature',
-  trackTemperature: 'Track Temperature'
-};
+
 
 interface DisplaySettingsListProps {
   itemsOrder: string[];
@@ -382,6 +348,11 @@ const BarItemsList = ({ items, onReorder, barType, settings, handleConfigChange 
         const { dragHandleProps, itemProps } = getItemProps(item);
         const itemConfig = (settings.config[barType] as StandingsWidgetSettings['config']['headerBar'])?.[item.id as keyof StandingsWidgetSettings['config']['headerBar']] as { enabled: boolean; unit?: 'Metric' | 'Imperial' } | { enabled: boolean } | undefined;
 
+        // Safety check: skip rendering if itemConfig is undefined
+        if (!itemConfig) {
+          return null;
+        }
+
         return (
           <div key={item.id} {...itemProps}>
             <div className="flex items-center justify-between group">
@@ -392,7 +363,7 @@ const BarItemsList = ({ items, onReorder, barType, settings, handleConfigChange 
                 >
                   <DotsSixVerticalIcon size={16} className="text-slate-400" />
                 </div>
-                <span className="text-sm text-slate-300">{barItemLabels[item.id]}</span>
+                <span className="text-sm text-slate-300">{SESSION_BAR_ITEM_LABELS[item.id]}</span>
               </div>
               <ToggleSwitch
                 enabled={itemConfig?.enabled ?? true}
@@ -615,11 +586,10 @@ export const StandingsSettings = () => {
                 <h3 className="text-lg font-medium text-slate-200">Header Bar</h3>
                 <button
                   onClick={() => {
-                    const defaultOrder = ['sessionName', 'timeRemaining', 'brakeBias', 'incidentCount', 'localTime', 'trackWetness', 'airTemperature', 'trackTemperature'];
                     handleConfigChange({
                       headerBar: {
                         ...settings.config.headerBar,
-                        displayOrder: defaultOrder
+                        displayOrder: [...DEFAULT_SESSION_BAR_DISPLAY_ORDER]
                       }
                     });
                   }}
@@ -668,11 +638,10 @@ export const StandingsSettings = () => {
                 <h3 className="text-lg font-medium text-slate-200">Footer Bar</h3>
                 <button
                   onClick={() => {
-                    const defaultOrder = ['sessionName', 'timeRemaining', 'incidentCount', 'brakeBias', 'localTime', 'trackWetness', 'airTemperature', 'trackTemperature'];
                     handleConfigChange({
                       footerBar: {
                         ...settings.config.footerBar,
-                        displayOrder: defaultOrder
+                        displayOrder: [...DEFAULT_SESSION_BAR_DISPLAY_ORDER]
                       }
                     });
                   }}

@@ -5,6 +5,7 @@ import { useDashboard } from '@irdashies/context';
 import { ToggleSwitch } from '../components/ToggleSwitch';
 import { useSortableList } from '../../SortableList';
 import { DotsSixVerticalIcon } from '@phosphor-icons/react';
+import { mergeDisplayOrder } from '../../../utils/displayOrder';
 
 const SETTING_ID = 'input';
 
@@ -54,33 +55,7 @@ const defaultConfig: InputWidgetSettings['config'] = {
   displayOrder: sortableSettings.map((s) => s.id),
 };
 
-const mergeDisplayOrder = (existingOrder?: string[]): string[] => {
-  if (!existingOrder) return defaultConfig.displayOrder;
 
-  const allIds = sortableSettings.map((s) => s.id);
-  const merged = [...existingOrder];
-
-  const missingIds = allIds.filter((id) => !merged.includes(id));
-
-  missingIds.forEach((missingId) => {
-    const missingIndex = allIds.indexOf(missingId);
-
-    let insertIndex = merged.length;
-
-    for (let i = missingIndex + 1; i < allIds.length; i++) {
-      const existingItem = allIds[i];
-      const existingItemIndex = merged.indexOf(existingItem);
-      if (existingItemIndex !== -1) {
-        insertIndex = existingItemIndex;
-        break;
-      }
-    }
-
-    merged.splice(insertIndex, 0, missingId);
-  });
-
-  return merged;
-};
 
 const migrateConfig = (savedConfig: unknown): InputWidgetSettings['config'] => {
   if (!savedConfig || typeof savedConfig !== 'object') return defaultConfig;
@@ -150,7 +125,7 @@ const migrateConfig = (savedConfig: unknown): InputWidgetSettings['config'] => {
         (config.tachometer as { showRpmText?: boolean })?.showRpmText ??
         defaultConfig.tachometer.showRpmText,
     },
-    displayOrder: mergeDisplayOrder(config.displayOrder as string[]),
+    displayOrder: mergeDisplayOrder(sortableSettings.map((s) => s.id), config.displayOrder as string[]),
   };
 };
 
