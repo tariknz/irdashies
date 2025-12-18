@@ -25,7 +25,7 @@ function getIconPath(): string {
 }
 
 export class OverlayManager {
-  private overlayWindows: Record<string, DashboardWidgetWithWindow> = {};
+  private overlayWindows = new Map<string, DashboardWidgetWithWindow>();
   private currentSettingsWindow: BrowserWindow | undefined;
   private isLocked = true;
   private skipTaskbar = true;
@@ -47,7 +47,7 @@ export class OverlayManager {
   }
 
   public getOverlays(): { widget: DashboardWidget; window: BrowserWindow }[] {
-    return Object.values(this.overlayWindows);
+    return Array.from(this.overlayWindows.values());
   }
 
   public createOverlays(dashboardLayout: DashboardLayout): void {
@@ -104,7 +104,15 @@ export class OverlayManager {
       );
     }
 
-    this.overlayWindows[id] = { widget, window: browserWindow };
+    this.overlayWindows.set(id, { widget, window: browserWindow });
+
+    browserWindow.on('closed', () => {
+      const closedWindow = this.overlayWindows.get(id);
+      if (closedWindow) {
+        console.log('Closing window', closedWindow.widget.id);
+      }
+      this.overlayWindows.delete(id);
+    });
 
     return browserWindow;
   }
@@ -126,9 +134,19 @@ export class OverlayManager {
     this.getOverlays().forEach(({ window }) => {
       if (window.isDestroyed()) return;
       // notifies the overlay windows that there's a dashboard settings/layout update
-      window.webContents.send(key, value);
+      try {
+        window.webContents.send(key, value);
+      } catch (e) {
+        console.error(`Failed to send message ${key} to window`, e);
+      }
     });
-    this.currentSettingsWindow?.webContents.send(key, value);
+    if (this.currentSettingsWindow && !this.currentSettingsWindow.isDestroyed()) {
+      try {
+        this.currentSettingsWindow.webContents.send(key, value);
+      } catch (e) {
+        console.error(`Failed to send message ${key} to settings window`, e);
+      }
+    }
   }
 
   public closeAllOverlays(): void {
@@ -137,7 +155,7 @@ export class OverlayManager {
         window.close();
       }
     });
-    this.overlayWindows = {};
+    this.overlayWindows.clear();
   }
 
   public closeOrCreateWindows(dashboardLayout: DashboardLayout): void {
@@ -155,9 +173,7 @@ export class OverlayManager {
       // const dashboardWidget = widgetsById[widget.id];
       if (!widgetsById[widget.id]?.enabled) {
         window.close();
-        this.overlayWindows = Object.fromEntries(
-          Object.entries(this.overlayWindows).filter(([key]) => key !== widget.id)
-        );
+        this.overlayWindows.delete(widget.id);
       }
     });
 
@@ -165,7 +181,7 @@ export class OverlayManager {
       if (!widget.enabled) {
         return;
       }
-      if (!this.overlayWindows[widget.id]) {
+      if (!this.overlayWindows.has(widget.id)) {
         const window = this.createOverlayWindow(widget);
         trackWindowMovement(widget, window);
       } else {
