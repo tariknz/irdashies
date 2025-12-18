@@ -145,6 +145,14 @@ export const IRatingNoChange: Story = {
   },
 };
 
+export const OffTrack: Story = {
+  args: {
+    ...Primary.args,
+    carTrackSurface: 0,
+  },
+};
+
+
 // Pre-generated mock data for Relative story (generated at module load, not during render)
 const mockRelativeData = (() => {
   const seededRandom = (seed: number) => {
