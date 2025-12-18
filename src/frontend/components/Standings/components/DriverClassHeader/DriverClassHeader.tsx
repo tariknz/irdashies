@@ -32,7 +32,7 @@ export const DriverClassHeader = ({
     <tr>
       <td></td>
       <td colSpan={colSpan ?? 4} className="p-0">
-        <div className={`[text-shadow:1px_1px_1px_rgba(0_0_0/0.2)] flex`}>
+        <div className={`[text-shadow:_1px_1px_1px_rgba(0_0_0/0.2)] flex`}>
           <span
             className={`${getTailwindStyle(classColor, highlightColor, isMultiClass).classHeader} px-2 py-1 font-bold border-l-4`}
           >
