@@ -62,15 +62,6 @@ json parseValue(const std::string& rawValue) {
         }
     }
     
-    // Check for empty array - explicit [] syntax
-    // This is how we distinguish empty arrays from empty objects:
-    // - "key: []" → empty array [] (explicit)
-    // - "key:" → empty object {} (default, unless next line has '-')
-    std::string trimmedValue = trim(value);
-    if (trimmedValue == "[]") {
-        return json::array();
-    }
-    
     // Check for boolean
     if (value == "true" || value == "True" || value == "TRUE") {
         return json(true);
@@ -211,9 +202,6 @@ std::string yamlToJson(const char* yaml) {
             std::string content = trim(trimmedLine.substr(1)); // Remove leading '-'
             
             // Convert current object to array if this is first array item
-            // This is how we distinguish: if a key had no value (key:), it was created as
-            // an empty object {}. When we encounter the first array item (-), we convert
-            // it to an array []. This is why "key:" becomes {} but "key:\n  - item" becomes [].
             if (!currentObj->is_array()) {
                 *currentObj = json::array();
             }
