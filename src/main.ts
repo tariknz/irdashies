@@ -21,6 +21,12 @@ const telemetrySink = new TelemetrySink();
 overlayManager.setupSingleInstanceLock();
 
 app.on('ready', async () => {
+  // Don't start services if we don't have the single instance lock
+  // (this instance should be quitting)
+  if (!overlayManager.hasLock()) {
+    return;
+  }
+
   await iRacingSDKSetup(telemetrySink, overlayManager);
 
   const dashboard = getOrCreateDefaultDashboard();
