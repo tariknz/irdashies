@@ -1,10 +1,11 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
-const NativeSDK = require("../build/Debug/irsdk_node.node").iRacingSdkNode;
 const path = require("path");
 const fs = require("fs");
 
+const NativeSDK = require(path.join(__dirname, "../../../../../build/Release/irsdk_node.node")).iRacingSdkNode;
+
 const TARGET_FILE = "_GENERATED_telemetry.ts";
-const OUT_PATH = path.resolve(process.cwd(), "../types/", TARGET_FILE);
+const OUT_PATH = path.resolve(__dirname, "../../../../types/", TARGET_FILE);
 
 console.log("Generating iRacing telemetry variable types.");
 console.log("Make sure the sim is running!");

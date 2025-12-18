@@ -44,5 +44,6 @@ export interface SessionInfo {
 }
 
 export interface SessionList {
+  CurrentSessionNum: number;
   Sessions: SessionInfo[];
 }
