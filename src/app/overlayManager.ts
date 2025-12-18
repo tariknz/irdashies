@@ -29,6 +29,7 @@ export class OverlayManager {
   private currentSettingsWindow: BrowserWindow | undefined;
   private isLocked = true;
   private skipTaskbar = true;
+  private hasSingleInstanceLock = false;
 
   constructor() {
     setInterval(() => {
@@ -212,18 +213,30 @@ export class OverlayManager {
 
   /**
    * Setup a single instance lock for the application. If the application is already running, it will quit the new instance.
+   * @returns true if the lock was obtained, false otherwise
    */
-  public setupSingleInstanceLock(): void {
+  public setupSingleInstanceLock(): boolean {
     const gotTheLock = app.requestSingleInstanceLock();
 
     if (!gotTheLock) {
       app.quit();
-      return;
+      this.hasSingleInstanceLock = false;
+      return false;
     }
 
+    this.hasSingleInstanceLock = true;
     app.on('second-instance', () => {
       this.focusSettingsWindow();
     });
+    return true;
+  }
+
+  /**
+   * Check if the application has obtained the single instance lock.
+   * This should be checked before starting services that require exclusive access (like servers).
+   */
+  public hasLock(): boolean {
+    return this.hasSingleInstanceLock;
   }
 
   public createSettingsWindow(): BrowserWindow {
