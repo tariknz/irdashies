@@ -61,8 +61,8 @@ const defaultConfig: StandingsWidgetSettings['config'] = {
     brakeBias: { enabled: false },
     localTime: { enabled: false },
     trackWetness: { enabled: false },
-    airTemperature: { enabled: false },
-    trackTemperature: { enabled: false },
+    airTemperature: { enabled: false, unit: 'Metric' },
+    trackTemperature: { enabled: false, unit: 'Metric' },
     displayOrder: ['sessionName', 'timeRemaining', 'brakeBias', 'incidentCount', 'localTime', 'trackWetness', 'airTemperature', 'trackTemperature']
   },
   footerBar: {
@@ -73,8 +73,8 @@ const defaultConfig: StandingsWidgetSettings['config'] = {
     brakeBias: { enabled: false },
     localTime: { enabled: true },
     trackWetness: { enabled: true },
-    airTemperature: { enabled: true },
-    trackTemperature: { enabled: true },
+    airTemperature: { enabled: true, unit: 'Metric' },
+    trackTemperature: { enabled: true, unit: 'Metric' },
     displayOrder: ['sessionName', 'timeRemaining', 'incidentCount', 'brakeBias', 'localTime', 'trackWetness', 'airTemperature', 'trackTemperature']
   },
   showOnlyWhenOnTrack: false,
@@ -189,8 +189,14 @@ const migrateConfig = (
       brakeBias: { enabled: (config.headerBar as { brakeBias?: { enabled?: boolean } })?.brakeBias?.enabled ?? false },
       localTime: { enabled: (config.headerBar as { localTime?: { enabled?: boolean } })?.localTime?.enabled ?? false },
       trackWetness: { enabled: (config.headerBar as { trackWetness?: { enabled?: boolean } })?.trackWetness?.enabled ?? false },
-      airTemperature: { enabled: (config.headerBar as { airTemperature?: { enabled?: boolean } })?.airTemperature?.enabled ?? false },
-      trackTemperature: { enabled: (config.headerBar as { trackTemperature?: { enabled?: boolean } })?.trackTemperature?.enabled ?? false },
+      airTemperature: {
+        enabled: (config.headerBar as { airTemperature?: { enabled?: boolean; unit?: string } })?.airTemperature?.enabled ?? false,
+        unit: ((config.headerBar as { airTemperature?: { unit?: string } })?.airTemperature?.unit as 'Metric' | 'Imperial') ?? 'Metric'
+      },
+      trackTemperature: {
+        enabled: (config.headerBar as { trackTemperature?: { enabled?: boolean; unit?: string } })?.trackTemperature?.enabled ?? false,
+        unit: ((config.headerBar as { trackTemperature?: { unit?: string } })?.trackTemperature?.unit as 'Metric' | 'Imperial') ?? 'Metric'
+      },
       displayOrder: (config.headerBar as { displayOrder?: string[] })?.displayOrder ?? ['sessionName', 'timeRemaining', 'brakeBias', 'incidentCount', 'localTime', 'trackWetness', 'airTemperature', 'trackTemperature']
     },
     footerBar: {
@@ -201,8 +207,14 @@ const migrateConfig = (
       brakeBias: { enabled: (config.footerBar as { brakeBias?: { enabled?: boolean } })?.brakeBias?.enabled ?? false },
       localTime: { enabled: (config.footerBar as { localTime?: { enabled?: boolean } })?.localTime?.enabled ?? true },
       trackWetness: { enabled: (config.footerBar as { trackWetness?: { enabled?: boolean } })?.trackWetness?.enabled ?? true },
-      airTemperature: { enabled: (config.footerBar as { airTemperature?: { enabled?: boolean } })?.airTemperature?.enabled ?? true },
-      trackTemperature: { enabled: (config.footerBar as { trackTemperature?: { enabled?: boolean } })?.trackTemperature?.enabled ?? true },
+      airTemperature: {
+        enabled: (config.footerBar as { airTemperature?: { enabled?: boolean; unit?: string } })?.airTemperature?.enabled ?? true,
+        unit: ((config.footerBar as { airTemperature?: { unit?: string } })?.airTemperature?.unit as 'Metric' | 'Imperial') ?? 'Metric'
+      },
+      trackTemperature: {
+        enabled: (config.footerBar as { trackTemperature?: { enabled?: boolean; unit?: string } })?.trackTemperature?.enabled ?? true,
+        unit: ((config.footerBar as { trackTemperature?: { unit?: string } })?.trackTemperature?.unit as 'Metric' | 'Imperial') ?? 'Metric'
+      },
       displayOrder: (config.footerBar as { displayOrder?: string[] })?.displayOrder ?? ['sessionName', 'timeRemaining', 'incidentCount', 'brakeBias', 'localTime', 'trackWetness', 'airTemperature', 'trackTemperature']
     },
     showOnlyWhenOnTrack: (config.showOnlyWhenOnTrack as boolean) ?? false,
@@ -215,7 +227,8 @@ const migrateConfig = (
 
 const barItemLabels: Record<string, string> = {
   sessionName: 'Session Name',
-  timeRemaining: 'Time Remaining',
+  lapsCompleted: 'Laps Completed',
+  sessionTime: 'Time Remaining',
   incidentCount: 'Incident Count',
   brakeBias: 'Brake Bias',
   localTime: 'Local Time',
@@ -367,7 +380,7 @@ const BarItemsList = ({ items, onReorder, barType, settings, handleConfigChange 
     <div className="space-y-3 pl-4">
       {displayItems.map((item) => {
         const { dragHandleProps, itemProps } = getItemProps(item);
-        const itemConfig = settings.config[barType][item.id as keyof typeof settings.config.headerBar] as { enabled: boolean };
+        const itemConfig = (settings.config[barType] as StandingsWidgetSettings['config']['headerBar'])?.[item.id as keyof StandingsWidgetSettings['config']['headerBar']] as { enabled: boolean; unit?: 'Metric' | 'Imperial' } | { enabled: boolean } | undefined;
 
         return (
           <div key={item.id} {...itemProps}>
@@ -382,17 +395,43 @@ const BarItemsList = ({ items, onReorder, barType, settings, handleConfigChange 
                 <span className="text-sm text-slate-300">{barItemLabels[item.id]}</span>
               </div>
               <ToggleSwitch
-                enabled={itemConfig.enabled}
+                enabled={itemConfig?.enabled ?? true}
                 onToggle={(enabled) => {
+                  const currentUnit = (itemConfig && 'unit' in itemConfig) ? itemConfig.unit : 'Metric';
                   handleConfigChange({
                     [barType]: {
                       ...settings.config[barType],
-                      [item.id]: { enabled }
+                      [item.id]: (item.id === 'airTemperature' || item.id === 'trackTemperature')
+                        ? { enabled, unit: currentUnit }
+                        : { enabled }
                     }
                   });
                 }}
               />
             </div>
+            {(item.id === 'airTemperature' || item.id === 'trackTemperature') && itemConfig && 'enabled' in itemConfig && itemConfig.enabled && (
+              <div className="flex items-center justify-between pl-8 mt-2">
+                <span></span>
+                <select
+                  value={(itemConfig && 'unit' in itemConfig) ? itemConfig.unit : 'Metric'}
+                  onChange={(e) => {
+                    handleConfigChange({
+                      [barType]: {
+                        ...settings.config[barType],
+                        [item.id]: {
+                          enabled: itemConfig && 'enabled' in itemConfig ? itemConfig.enabled : true,
+                          unit: e.target.value as 'Metric' | 'Imperial'
+                        }
+                      }
+                    });
+                  }}
+                  className="w-20 bg-slate-700 text-white rounded-md px-2 py-1"
+                >
+                  <option value="Metric">°C</option>
+                  <option value="Imperial">°F</option>
+                </select>
+              </div>
+            )}
           </div>
         );
       })}

@@ -33,8 +33,8 @@ export interface StandingsWidgetSettings extends BaseWidgetSettings {
       brakeBias: { enabled: boolean };
       localTime: { enabled: boolean };
       trackWetness: { enabled: boolean };
-      airTemperature: { enabled: boolean };
-      trackTemperature: { enabled: boolean };
+      airTemperature: { enabled: boolean; unit: 'Metric' | 'Imperial' };
+      trackTemperature: { enabled: boolean; unit: 'Metric' | 'Imperial' };
       displayOrder: string[];
     };
     footerBar: {
@@ -45,8 +45,8 @@ export interface StandingsWidgetSettings extends BaseWidgetSettings {
       brakeBias: { enabled: boolean };
       localTime: { enabled: boolean };
       trackWetness: { enabled: boolean };
-      airTemperature: { enabled: boolean };
-      trackTemperature: { enabled: boolean };
+      airTemperature: { enabled: boolean; unit: 'Metric' | 'Imperial' };
+      trackTemperature: { enabled: boolean; unit: 'Metric' | 'Imperial' };
       displayOrder: string[];
     };
     showOnlyWhenOnTrack: boolean;
@@ -76,8 +76,8 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
       brakeBias: { enabled: boolean };
       localTime: { enabled: boolean };
       trackWetness: { enabled: boolean };
-      airTemperature: { enabled: boolean };
-      trackTemperature: { enabled: boolean };
+      airTemperature: { enabled: boolean; unit: 'Metric' | 'Imperial' };
+      trackTemperature: { enabled: boolean; unit: 'Metric' | 'Imperial' };
       displayOrder: string[];
     };
     footerBar: {
@@ -88,8 +88,8 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
       brakeBias: { enabled: boolean };
       localTime: { enabled: boolean };
       trackWetness: { enabled: boolean };
-      airTemperature: { enabled: boolean };
-      trackTemperature: { enabled: boolean };
+      airTemperature: { enabled: boolean; unit: 'Metric' | 'Imperial' };
+      trackTemperature: { enabled: boolean; unit: 'Metric' | 'Imperial' };
       displayOrder: string[];
     };
     showOnlyWhenOnTrack: boolean;
