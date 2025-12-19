@@ -197,7 +197,7 @@ export const GeneralSettings = () => {
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-lg font-medium text-slate-200">Hide Overlays from Taskbar</h3>
-                <p className="text-sm text-slate-400">When enabled, overlay windows won't appear in the taskbar. The app is still accessible via the system tray. (requires restart)</p>
+                <p className="text-sm text-slate-400">When enabled, overlay windows won&apos;t appear in the taskbar. The app is still accessible via the system tray. (requires restart)</p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
