@@ -59,7 +59,7 @@ const defaultConfig: RelativeWidgetSettings['config'] = {
   headerBar: {
     enabled: true,
     sessionName: { enabled: true },
-    timeRemaining: { enabled: true },
+    timeRemaining: { enabled: true, mode: 'Elapsed' },
     incidentCount: { enabled: true },
     brakeBias: { enabled: true },
     localTime: { enabled: false },
@@ -71,7 +71,7 @@ const defaultConfig: RelativeWidgetSettings['config'] = {
   footerBar: {
     enabled: true,
     sessionName: { enabled: false },
-    timeRemaining: { enabled: false },
+    timeRemaining: { enabled: false, mode: 'Elapsed' },
     incidentCount: { enabled: false },
     brakeBias: { enabled: false },
     localTime: { enabled: true },
@@ -123,7 +123,10 @@ const migrateConfig = (savedConfig: unknown): RelativeWidgetSettings['config'] =
     headerBar: {
       enabled: (config.headerBar as { enabled?: boolean })?.enabled ?? true,
       sessionName: { enabled: (config.headerBar as { sessionName?: { enabled?: boolean } })?.sessionName?.enabled ?? true },
-      timeRemaining: { enabled: (config.headerBar as { timeRemaining?: { enabled?: boolean } })?.timeRemaining?.enabled ?? true },
+      timeRemaining: { 
+        enabled: (config.headerBar as { timeRemaining?: { enabled?: boolean } })?.timeRemaining?.enabled ?? true,
+        mode: ((config.headerBar as { timeRemaining?: { mode?: string } })?.timeRemaining?.mode as 'Elapsed' | 'Remaining') ?? 'Elapsed'
+      },
       incidentCount: { enabled: (config.headerBar as { incidentCount?: { enabled?: boolean } })?.incidentCount?.enabled ?? true },
       brakeBias: { enabled: (config.headerBar as { brakeBias?: { enabled?: boolean } })?.brakeBias?.enabled ?? false },
       localTime: { enabled: (config.headerBar as { localTime?: { enabled?: boolean } })?.localTime?.enabled ?? false },
@@ -141,7 +144,10 @@ const migrateConfig = (savedConfig: unknown): RelativeWidgetSettings['config'] =
     footerBar: {
       enabled: (config.footerBar as { enabled?: boolean })?.enabled ?? true,
       sessionName: { enabled: (config.footerBar as { sessionName?: { enabled?: boolean } })?.sessionName?.enabled ?? false },
-      timeRemaining: { enabled: (config.footerBar as { timeRemaining?: { enabled?: boolean } })?.timeRemaining?.enabled ?? false },
+      timeRemaining: {
+        enabled: (config.footerBar as { timeRemaining?: { enabled?: boolean } })?.timeRemaining?.enabled ?? false,
+        mode: ((config.footerBar as { timeRemaining?: { mode?: string } })?.timeRemaining?.mode as 'Elapsed' | 'Remaining') ?? 'Elapsed'
+      },
       incidentCount: { enabled: (config.footerBar as { incidentCount?: { enabled?: boolean } })?.incidentCount?.enabled ?? false },
       brakeBias: { enabled: (config.footerBar as { brakeBias?: { enabled?: boolean } })?.brakeBias?.enabled ?? false },
       localTime: { enabled: (config.footerBar as { localTime?: { enabled?: boolean } })?.localTime?.enabled ?? true },
@@ -282,7 +288,7 @@ const BarItemsList = ({ items, onReorder, barType, settings, handleConfigChange 
     <div className="space-y-3 pl-4">
       {displayItems.map((item) => {
         const { dragHandleProps, itemProps } = getItemProps(item);
-        const itemConfig = (settings.config[barType] as RelativeWidgetSettings['config']['headerBar'])?.[item.id as keyof RelativeWidgetSettings['config']['headerBar']] as { enabled: boolean; unit?: 'Metric' | 'Imperial' } | { enabled: boolean } | undefined;
+        const itemConfig = (settings.config[barType] as RelativeWidgetSettings['config']['headerBar'])?.[item.id as keyof RelativeWidgetSettings['config']['headerBar']] as { enabled: boolean; unit?: 'Metric' | 'Imperial' } | { enabled: boolean; mode?: 'Elapsed' | 'Remaining' } | undefined;
 
         // Safety check: skip rendering if itemConfig is undefined
         if (!itemConfig) {
@@ -336,6 +342,29 @@ const BarItemsList = ({ items, onReorder, barType, settings, handleConfigChange 
                 >
                   <option value="Metric">°C</option>
                   <option value="Imperial">°F</option>
+                </select>
+              </div>
+            )}
+            {item.id === 'timeRemaining' && itemConfig && 'enabled' in itemConfig && itemConfig.enabled && (
+              <div className="flex items-center justify-between pl-8 mt-2">
+                <span></span>
+                <select
+                  value={(itemConfig && 'mode' in itemConfig) ? itemConfig.mode : 'Elapsed'}
+                  onChange={(e) => {
+                    handleConfigChange({
+                      [barType]: {
+                        ...settings.config[barType],
+                        [item.id]: {
+                          enabled: itemConfig && 'enabled' in itemConfig ? itemConfig.enabled : true,
+                          mode: e.target.value as 'Elapsed' | 'Remaining'
+                        }
+                      }
+                    });
+                  }}
+                  className="w-26 bg-slate-700 text-white rounded-md px-2 py-1"
+                >
+                  <option value="Elapsed">Elapsed</option>
+                  <option value="Remaining">Remaining</option>
                 </select>
               </div>
             )}

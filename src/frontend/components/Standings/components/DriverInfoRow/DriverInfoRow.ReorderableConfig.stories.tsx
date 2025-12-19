@@ -309,7 +309,7 @@ const RelativeWithReorderableConfig = () => {
       headerBar: {
         enabled: true,
         sessionName: { enabled: true },
-        timeRemaining: { enabled: true },
+        timeRemaining: { enabled: true, mode: 'Elapsed' },
         incidentCount: { enabled: true },
         brakeBias: { enabled: false },
         localTime: { enabled: true },
@@ -321,7 +321,7 @@ const RelativeWithReorderableConfig = () => {
       footerBar: {
         enabled: true,
         sessionName: { enabled: false },
-        timeRemaining: { enabled: false },
+        timeRemaining: { enabled: false, mode: 'Elapsed' },
         incidentCount: { enabled: false },
         brakeBias: { enabled: true },
         localTime: { enabled: true },
