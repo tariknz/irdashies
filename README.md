@@ -42,8 +42,7 @@ This project is built with React and Electron and uses the iRacing SDK to retrie
 - Node.js (v20 or higher)
 - npm (comes with Node.js)
 - Windows build tools if you are on Windows
-  - `npm install -g windows-build-tools` from an elevated PowerShell (run as Administrator). 
-  - See [this guide](https://github.com/Microsoft/nodejs-guidelines/blob/master/windows-environment.md#compiling-native-addon-modules) for more details and alternative methods.
+  - Modern Node.js installations include the necessary build tools. If you encounter issues building native modules, ensure you selected the option to install build tools during Node.js installation, or reinstall Node.js with build tools enabled.
 - iRacing installed on your machine (Windows only)
 
 > Note: Developing on MacOS is fully supported and does not require iRacing or any additional tools to be installed as it uses a mocked SDK.
@@ -142,7 +141,7 @@ To run the linting, run the following command:
 npm run lint
 ```
 
-> Ensure you have ESLint extension installed if using VS Code and have enabled "Use Flat Config" in your settings.
+> Ensure you have ESLint extension installed if using VS Code. This project uses ESLint flat config format (eslint.config.mjs).
 
 ## Developing on Mac
 
@@ -154,17 +153,67 @@ As you may know, the iRacing SDK is only available on Windows. To develop on Mac
 
 Displays the throttle, clutch, and brake input traces, as well as the current gear and speed.
 
+**Features:**
+- Input trace visualization (throttle, brake, ABS indicator, steering)
+- Input bar display (clutch, brake, throttle, ABS indicator)
+- Current gear display with speed (auto/mph/km/h units)
+- Steering wheel visualization with multiple styles (default, formula, LMP, NASCAR, U-shape) and color themes (light/dark)
+- Tachometer with optional RPM text display
+- Customizable display order for all components
+
 ![Input Trace](./docs/assets/input.png)
 
 ### Standings
 
 Displays standings information for the current session.
 
-![Standings](./docs/assets/standings.png)
+**Features:**
+- Driver information: position, car number, country flags, driver name, pit status
+- Car details: manufacturer, tire compound
+- Driver badges with multiple format options (license/rating combinations)
+- Timing information: gap, interval, best lap time, last lap time (multiple time format options)
+- iRating change display
+- Lap time deltas (configurable number of laps: 1-5)
+- Title bar with session progress bar
+- Header and footer bars with customizable items:
+  - Session name, time remaining, incident count
+  - Brake bias, local time, track wetness
+  - Air and track temperature (Metric/Imperial units)
+- Driver standings configuration:
+  - Drivers to show around player
+  - Drivers to show in other classes
+  - Minimum drivers in player's class
+  - Top drivers to always show
+- Customizable display order for all columns
+- Adjustable background opacity
+- Option to show only when on track
+
+![Standings](./docs/assets/standings-custom-theme-color-black.png)
 
 ### Relative
 
 Displays drive relative delta information for the current session.
+
+**Features:**
+- Driver information: position, car number, country flags, driver name, pit status
+- Car details: manufacturer, tire compound
+- Driver badges with multiple format options (license/rating combinations)
+- Relative delta timing display
+- Timing information: best lap time, last lap time (multiple time format options)
+- iRating change display (optional)
+- Enhanced gap calculation with advanced options:
+  - Interpolation methods (linear, cubic spline)
+  - Configurable max lap history (3, 5, 7, or 10 laps)
+  - Uses position/time records for accurate multi-class gaps
+- Title bar with session progress bar
+- Header and footer bars with customizable items:
+  - Session name, time remaining, incident count
+  - Brake bias, local time, track wetness
+  - Air and track temperature (Metric/Imperial units)
+- Configurable number of drivers to show around player (1-10)
+- Customizable display order for all columns
+- Adjustable background opacity
+- Option to show only when on track
 
 ![Relative](./docs/assets/relative.png)
 
@@ -172,9 +221,11 @@ Displays drive relative delta information for the current session.
 
 Displays a track map with the current position of the cars on track and the track layout with the turn numbers / names.
 
-> This is very much a work in progress and is currently missing a few tracks and some track directions are not correct currently.
-
-> This is hidden by default until its ready for GA. To enable this, you will need to go into the settings and set the track map to be enabled. Save and restart the application.
+**Features:**
+- Real-time car positions on track
+- Track layout visualization
+- Optional turn numbers and names display
+- Multi-class support
 
 ![Track Map](./docs/assets/trackmap.png)
 
@@ -182,7 +233,51 @@ Displays a track map with the current position of the cars on track and the trac
 
 Displays the weather information for the current session.
 
+**Features:**
+- Current weather conditions
+- Track and air temperature
+- Wind speed and direction
+- Humidity and precipitation
+- Adjustable background opacity
+
 ![Weather](./docs/assets/weather.png)
+
+### Faster Cars From Behind
+
+Displays information about faster cars approaching from behind, including driver name, distance, and a visual indicator that pulses when cars are close.
+
+**Features:**
+- Driver name and distance display
+- Visual pulsing indicator when cars are close
+- Configurable distance threshold for alerts
+- Real-time detection of faster approaching cars
+
+![Faster Cars From Behind](./docs/assets/fastercarsfrombehind.png)
+
+### Fuel Calculator
+
+Displays comprehensive fuel management information including current fuel level, fuel consumption per lap (min, max, averages), pit window timing, fuel required to finish, and consumption history graphs. Supports both vertical and horizontal layouts.
+
+**Features:**
+- Fuel units: Liters (L) or Gallons (gal)
+- Layout options: Vertical or horizontal
+- Consumption statistics:
+  - Minimum consumption
+  - Last lap consumption
+  - 3-lap average
+  - 10-lap average
+  - Maximum consumption
+  - Fuel required calculations
+- Pit window timing information
+- Endurance strategy display (total pit stops and stint info for long races)
+- Consumption history graphs:
+  - Line chart (5 laps)
+  - Histogram (30 laps)
+- Configurable safety margin (0-20%) for fuel calculations
+- Adjustable background opacity
+
+
+<img src="./docs/assets/fuelcalculator.png" alt="Fuel Calculator" width="250px">
 
 ## Contributing
 

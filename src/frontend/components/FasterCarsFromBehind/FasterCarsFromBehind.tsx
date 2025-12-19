@@ -37,7 +37,7 @@ export const FasterCarsFromBehindDisplay = ({
   const animate = distance && distance > -0.3 ? 'animate-pulse' : '';
   const red = percent || 0;
   const green = 100 - (percent || 0);
-  const background = getTailwindStyle(classColor).classHeader;
+  const background = getTailwindStyle(classColor, undefined, true).classHeader;
 
   return (
     <div className={`w-full flex justify-between rounded-sm p-1 pb-2 font-bold relative ${background} ${animate}`}>
