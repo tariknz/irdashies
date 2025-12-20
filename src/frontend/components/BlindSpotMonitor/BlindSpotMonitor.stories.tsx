@@ -7,7 +7,7 @@ export default {
   component: BlindSpotMonitorDisplay,
   decorators: [
     (Story) => (
-      <div className='w-[500px] m-5 h-[500px]'>
+      <div className="w-[500px] m-5 h-[300px]">
         <Story />
       </div>
     ),
@@ -18,11 +18,25 @@ export default {
     },
     leftState: {
       control: { type: 'select' },
-      options: ['Off', 'Clear', 'CarLeft', 'CarRight', 'Cars2Left', 'Cars2Right'] as BlindSpotState[],
+      options: [
+        'Off',
+        'Clear',
+        'CarLeft',
+        'CarRight',
+        'Cars2Left',
+        'Cars2Right',
+      ] as BlindSpotState[],
     },
     rightState: {
       control: { type: 'select' },
-      options: ['Off', 'Clear', 'CarLeft', 'CarRight', 'Cars2Left', 'Cars2Right'] as BlindSpotState[],
+      options: [
+        'Off',
+        'Clear',
+        'CarLeft',
+        'CarRight',
+        'Cars2Left',
+        'Cars2Right',
+      ] as BlindSpotState[],
     },
     leftPercent: {
       control: { type: 'range', min: -1, max: 1, step: 0.1 },
@@ -104,7 +118,6 @@ export const CarBehindOnLeft: Story = {
   },
 };
 
-
 export const NoBackground: Story = {
   args: {
     show: true,
@@ -137,7 +150,6 @@ export const LowBackgroundOpacity: Story = {
     bgOpacity: 10,
   },
 };
-
 
 export const TwoCarsOnLeft: Story = {
   args: {
