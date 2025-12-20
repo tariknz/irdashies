@@ -1,5 +1,6 @@
 import { Meta, StoryObj } from '@storybook/react-vite';
 import { BlindSpotMonitorDisplay } from './BlindSpotMonitor';
+import { useEffect, useState } from 'react';
 
 export default {
   component: BlindSpotMonitorDisplay,
@@ -155,4 +156,195 @@ export const TwoCarsOnRight: Story = {
     rightPercent: -0.2,
     bgOpacity: 30,
   },
+};
+
+const CarPassingAnimation = () => {
+  const [leftPercent, setLeftPercent] = useState(-1.0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setLeftPercent((prev) => {
+        const speed = 0.02;
+        const next = prev + speed;
+
+        if (next >= 1.0) {
+          return -1.0;
+        }
+
+        return next;
+      });
+    }, 50);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <BlindSpotMonitorDisplay
+      show={true}
+      leftState={1}
+      rightState={0}
+      leftPercent={leftPercent}
+      rightPercent={0}
+      bgOpacity={30}
+    />
+  );
+};
+
+const CarPassingFromBehindRightAnimation = () => {
+  const [rightPercent, setRightPercent] = useState(-1.0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setRightPercent((prev) => {
+        const speed = 0.02;
+        const next = prev + speed;
+
+        if (next >= 1.0) {
+          return -1.0;
+        }
+
+        return next;
+      });
+    }, 50);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <BlindSpotMonitorDisplay
+      show={true}
+      leftState={0}
+      rightState={1}
+      leftPercent={0}
+      rightPercent={rightPercent}
+      bgOpacity={30}
+    />
+  );
+};
+
+const YouPassingCarOnLeftAnimation = () => {
+  const [leftPercent, setLeftPercent] = useState(1.0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setLeftPercent((prev) => {
+        const speed = -0.02;
+        const next = prev + speed;
+
+        if (next <= -1.0) {
+          return 1.0;
+        }
+
+        return next;
+      });
+    }, 50);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <BlindSpotMonitorDisplay
+      show={true}
+      leftState={1}
+      rightState={0}
+      leftPercent={leftPercent}
+      rightPercent={0}
+      bgOpacity={30}
+    />
+  );
+};
+
+const YouPassingCarOnRightAnimation = () => {
+  const [rightPercent, setRightPercent] = useState(1.0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setRightPercent((prev) => {
+        const speed = -0.02;
+        const next = prev + speed;
+
+        if (next <= -1.0) {
+          return 1.0;
+        }
+
+        return next;
+      });
+    }, 50);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <BlindSpotMonitorDisplay
+      show={true}
+      leftState={0}
+      rightState={1}
+      leftPercent={0}
+      rightPercent={rightPercent}
+      bgOpacity={30}
+    />
+  );
+};
+
+const CarsPassingBothSidesAnimation = () => {
+  const [leftPercent, setLeftPercent] = useState(-1.0);
+  const [rightPercent, setRightPercent] = useState(-1.0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setLeftPercent((prev) => {
+        const speed = 0.02;
+        const next = prev + speed;
+
+        if (next >= 1.0) {
+          return -1.0;
+        }
+
+        return next;
+      });
+      setRightPercent((prev) => {
+        const speed = 0.02;
+        const next = prev + speed;
+
+        if (next >= 1.0) {
+          return -1.0;
+        }
+
+        return next;
+      });
+    }, 50);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <BlindSpotMonitorDisplay
+      show={true}
+      leftState={1}
+      rightState={1}
+      leftPercent={leftPercent}
+      rightPercent={rightPercent}
+      bgOpacity={30}
+    />
+  );
+};
+
+export const CarPassingFromBehindLeft: Story = {
+  render: () => <CarPassingAnimation />,
+};
+
+export const CarPassingFromBehindRight: Story = {
+  render: () => <CarPassingFromBehindRightAnimation />,
+};
+
+export const YouPassingCarOnLeft: Story = {
+  render: () => <YouPassingCarOnLeftAnimation />,
+};
+
+export const YouPassingCarOnRight: Story = {
+  render: () => <YouPassingCarOnRightAnimation />,
+};
+
+export const CarsPassingBothSides: Story = {
+  render: () => <CarsPassingBothSidesAnimation />,
 };

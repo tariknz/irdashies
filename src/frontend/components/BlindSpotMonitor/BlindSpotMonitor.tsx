@@ -14,7 +14,8 @@ const Indicator = ({
   percent,
   state,
 }: IndicatorProps) => {
-  const fillPercent = Math.max(0, Math.min(1, (percent + 1) / 2));
+  const isCarAhead = percent >= 0;
+  const fillPercent = Math.abs(percent);
   
   const fillBackground =
     state === 2
@@ -32,10 +33,10 @@ const Indicator = ({
         />
       )}
       <div
-        className={`absolute bottom-0 rounded-full w-[20px] h-full ${side === 'left' ? 'left-0' : 'right-0'} ${fillBackground ? '' : 'bg-amber-500'}`}
+        className={`absolute ${isCarAhead ? 'bottom-0' : 'top-0'} rounded-full w-[20px] h-full ${side === 'left' ? 'left-0' : 'right-0'} ${fillBackground ? '' : 'bg-amber-500'}`}
         style={{
           transform: `scaleY(${fillPercent})`,
-          transformOrigin: 'bottom',
+          transformOrigin: isCarAhead ? 'bottom' : 'top',
           ...(fillBackground && { background: fillBackground }),
         }}
       />
