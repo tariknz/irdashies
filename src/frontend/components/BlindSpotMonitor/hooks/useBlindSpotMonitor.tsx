@@ -58,7 +58,7 @@ export const useBlindSpotMonitor = (): BlindSpotMonitorState => {
     const maxDistAPct = maxDistAhead / trackLength;
     const maxDistBPct = maxDistBehind / trackLength;
 
-    const findClosestCar = (targetSide: 'left' | 'right'): number | null => {
+    const findClosestCar = (): number | null => {
       let closestDist = 1;
       let closestCarDistPct: number | null = null;
 
@@ -95,22 +95,22 @@ export const useBlindSpotMonitor = (): BlindSpotMonitorState => {
       return Math.max(-1, Math.min(1, percent));
     };
 
-    const closestCarDistPct = findClosestCar('left');
-    
     let leftState = 0;
     let rightState = 0;
     let leftPercent = 0;
     let rightPercent = 0;
 
+    const closestCarDistPct = findClosestCar();
+
     if (carLeftRightValue === 2) {
-      rightState = 1;
-      if (closestCarDistPct !== null) {
-        rightPercent = calculatePercent(closestCarDistPct);
-      }
-    } else if (carLeftRightValue === 3) {
       leftState = 1;
       if (closestCarDistPct !== null) {
         leftPercent = calculatePercent(closestCarDistPct);
+      }
+    } else if (carLeftRightValue === 3) {
+      rightState = 1;
+      if (closestCarDistPct !== null) {
+        rightPercent = calculatePercent(closestCarDistPct);
       }
     } else if (carLeftRightValue === 4) {
       leftState = 1;

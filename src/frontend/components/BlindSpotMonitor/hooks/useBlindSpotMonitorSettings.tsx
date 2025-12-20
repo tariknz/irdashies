@@ -11,9 +11,6 @@ export const useBlindSpotMonitorSettings = () => {
   if (
     settings &&
     typeof settings === 'object' &&
-    'lineColor' in settings &&
-    'lineOpacity' in settings &&
-    'lineWidth' in settings &&
     'distAhead' in settings &&
     'distBehind' in settings
   ) {
