@@ -154,6 +154,7 @@ export interface InputWidgetSettings extends BaseWidgetSettings {
       showRpmText: boolean;
     };
     displayOrder: string[];
+    showOnlyWhenOnTrack: boolean;
   };
 }
 
