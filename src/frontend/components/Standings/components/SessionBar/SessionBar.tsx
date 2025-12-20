@@ -1,4 +1,5 @@
-import { useSessionName, useSessionLaps, useTelemetryValue } from '@irdashies/context';
+import { useRef } from 'react';
+import { useSessionName, useSessionLaps, useTelemetryValue, useSessionQualifyingResults, useSessionDrivers, useFocusCarIdx, useSessionPositions } from '@irdashies/context';
 import { formatTime } from '@irdashies/utils/time';
 import { useDriverIncidents, useSessionLapCount, useBrakeBias } from '../../hooks';
 import { useTrackWetness } from '../../hooks/useTrackWetness';
@@ -22,7 +23,7 @@ export const SessionBar = ({ position = 'header', variant = 'standings' }: Sessi
   const sessionName = useSessionName(sessionNum);
   const sessionLaps = useSessionLaps(sessionNum);
   const { incidentLimit, incidents } = useDriverIncidents();
-  const { state, currentLap, time, timeTotal, timeRemaining } = useSessionLapCount();
+  const { state, currentLap, totalLaps, time, timeTotal, timeRemaining } = useSessionLapCount();
   const brakeBias = useBrakeBias();
   const { trackWetness } = useTrackWetness();
   const { trackTemp, airTemp } = useTrackTemperature({
@@ -30,6 +31,13 @@ export const SessionBar = ({ position = 'header', variant = 'standings' }: Sessi
     trackTempUnit: effectiveBarSettings?.trackTemperature?.unit ?? 'Metric',
   });
   const localTime = useCurrentTime();
+  const sessionDrivers = useSessionDrivers();
+  const driverCarIdx = useFocusCarIdx();
+  const qualifyingResults = useSessionQualifyingResults();
+  const racePositions = useSessionPositions(sessionNum);
+
+  // Cache for estimated total time based on P1 laps completed
+  const cachedTotalTime = useRef<{lapsComplete: number, totalTime: number} | null>(null);
 
   // Define all possible items with their render functions
   const itemDefinitions = {
@@ -75,11 +83,105 @@ export const SessionBar = ({ position = 'header', variant = 'standings' }: Sessi
         }
 
         // For lap-limited sessions, show total laps completed
-        if (currentLap > 0) {
-          return <div className="flex justify-center">L{currentLap}</div>;
+        // if (currentLap > 0) {
+        //   return <div className="flex justify-center">L{currentLap}</div>;
+        // }
+
+        let p1LapsComplete = 0;
+        let averageLapTime = 0;
+        let totalTime = 0;
+        let totalTimeStr = "";
+        let timeElapsed = 0;
+        let timeElapsedStr = "";
+        let estimatedTimeRemaining = 0;
+        let estimatedTimeRemainingStr = "";
+        const driverClassId = sessionDrivers?.find(driver => driver.CarIdx === driverCarIdx)?.CarClassID;
+
+        if(sessionName?.toLowerCase() === "race") {
+          // Calculate timeElapsed based on session state first
+          if (state === 4) {
+            timeElapsed = timeTotal - timeRemaining;
+          } else if (state === 1) {
+            timeElapsed = time;
+          } else {
+            timeElapsed = 0;
+          }
+
+          // Determine average lap time from P1 or qualifying
+          if(racePositions) {
+            // Find the P1 driver (position 1)
+            const p1Driver = racePositions.find(result => result.Position === 1);
+
+            if (p1Driver && p1Driver.LastTime > 0) {
+              averageLapTime = p1Driver.LastTime;
+              p1LapsComplete = p1Driver.LapsComplete;
+            }
+          }
+
+          if (!averageLapTime && qualifyingResults && (driverClassId ?? -1) >= 0) {
+            // Filter results to only the driver's class and valid times (> 0)
+            const classQualifyingTimes = qualifyingResults
+              .filter(result => {
+                const driver = sessionDrivers?.find(d => d.CarIdx === result.CarIdx);
+                return driver?.CarClassID === driverClassId && result.FastestTime > 0;
+              })
+              .map(result => result.FastestTime);
+
+            if (classQualifyingTimes.length > 0) {
+              const fastestQualifyingTime = Math.min(...classQualifyingTimes);
+              averageLapTime = fastestQualifyingTime;
+            }
+          }
+
+          // Calculate estimated total time (cached per P1 lap completion)
+          if(averageLapTime > 0 && totalLaps) {
+            if (cachedTotalTime.current && cachedTotalTime.current.lapsComplete === p1LapsComplete) {
+              totalTime = cachedTotalTime.current.totalTime;
+            } else {
+              if(p1LapsComplete && timeElapsed) {
+                let lapsRemaining = totalLaps - p1LapsComplete;
+                totalTime = (lapsRemaining * averageLapTime) + timeElapsed;
+              } else {
+                totalTime = totalLaps * averageLapTime;
+              }
+              // Cache the calculated total time
+              cachedTotalTime.current = { lapsComplete: p1LapsComplete, totalTime };
+            }
+
+            totalTimeStr = formatTime(totalTime, 'duration');
+          }
+
+          // Display based on session state
+          if(timeRemaining && timeTotal && state === 4) {
+            timeElapsedStr = formatTime(timeElapsed, 'duration');
+            estimatedTimeRemaining = totalTime - timeElapsed;
+            estimatedTimeRemainingStr = formatTime(estimatedTimeRemaining, 'duration');
+            let estimatedTimeTotal = timeElapsed + estimatedTimeRemaining;
+            let estimatedTimeTotalStr = formatTime(estimatedTimeTotal, 'duration');
+
+            let progressStr = '';
+            if(estimatedTimeTotal) {
+              if (mode === 'Elapsed') {
+                progressStr = `${timeElapsedStr} / ≈ ${estimatedTimeTotalStr}`;
+              } else if (mode === 'Remaining') {
+                progressStr = `${estimatedTimeRemainingStr} / ≈ ${estimatedTimeTotalStr}`;
+              }
+            }
+            
+            return <div className="flex justify-center">{progressStr}</div>;
+          } else if(timeRemaining < timeTotal && state === 1) {
+            timeElapsedStr = formatTime(timeElapsed, 'duration');
+            let timeRemainingStr = formatTime(timeRemaining, 'duration');
+            let thisTotalTime = timeElapsed + timeRemaining;
+            let thisTotalTimeStr = formatTime(thisTotalTime, 'duration');
+
+            let thisTimeStr = `${mode === "Elapsed" ? timeElapsedStr : timeRemainingStr} / ${thisTotalTimeStr}`;
+
+            return <div className="flex justify-content-center">{thisTimeStr}</div>
+          }
         }
 
-        return null;
+        return <div className="flex justify-center">{totalTimeStr ? `≈ ${totalTimeStr}` : ''}</div>;
       },
     },
     incidentCount: {
