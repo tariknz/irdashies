@@ -1,10 +1,10 @@
 // Valid keys for headerBar and footerBar items (session bar components)
-export const VALID_SESSION_BAR_ITEM_KEYS = ['sessionName', 'timeRemaining', 'incidentCount', 'brakeBias', 'localTime', 'trackWetness', 'airTemperature', 'trackTemperature'] as const;
+export const VALID_SESSION_BAR_ITEM_KEYS = ['sessionName', 'sessionTime', 'incidentCount', 'brakeBias', 'localTime', 'trackWetness', 'airTemperature', 'trackTemperature'] as const;
 
 // Labels for session bar items
 export const SESSION_BAR_ITEM_LABELS: Record<string, string> = {
   sessionName: 'Session Name',
-  timeRemaining: 'Time Remaining',
+  sessionTime: 'Session Time',
   incidentCount: 'Incident Count',
   brakeBias: 'Brake Bias',
   localTime: 'Local Time',

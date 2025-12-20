@@ -117,7 +117,7 @@ export const UsingHookDirectly: Story = {
 const StringArrayDemo = () => {
   const [items, setItems] = useState([
     'sessionName',
-    'timeRemaining',
+    'sessionTime',
     'incidentCount',
     'brakeBias',
   ]);

@@ -37,10 +37,10 @@ export const SessionBar = ({ position = 'header', variant = 'standings' }: Sessi
       enabled: effectiveBarSettings?.sessionName?.enabled ?? (position === 'header' ? true : false),
       render: () => <div className="flex">{sessionName}</div>,
     },
-    timeRemaining: {
-      enabled: effectiveBarSettings?.timeRemaining?.enabled ?? (position === 'header' ? true : false),
+    sessionTime: {
+      enabled: effectiveBarSettings?.sessionTime?.enabled ?? (position === 'header' ? true : false),
       render: () => {
-        const mode = effectiveBarSettings?.timeRemaining?.mode ?? 'Elapsed';
+        const mode = effectiveBarSettings?.sessionTime?.mode ?? 'Remaining';
 
         // For timed sessions
         if (sessionLaps === 'unlimited') {
@@ -143,7 +143,7 @@ export const SessionBar = ({ position = 'header', variant = 'standings' }: Sessi
 
   // Get display order, fallback to default order
   const displayOrder = effectiveBarSettings?.displayOrder || (position === 'header'
-    ? ['sessionName', 'timeRemaining', 'localTime', 'brakeBias', 'incidentCount']
+    ? ['sessionName', 'sessionTime', 'localTime', 'brakeBias', 'incidentCount']
     : ['localTime', 'trackWetness', 'airTemperature', 'trackTemperature']
   );
 
