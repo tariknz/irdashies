@@ -381,6 +381,23 @@ export const defaultDashboard: DashboardLayout = {
           "opacity": 85
         }
       }
+    },
+    {
+      "id": "blindspotmonitor",
+      "enabled": false,
+      "layout": {
+        "x": 200,
+        "y": 50,
+        "width": 800,
+        "height": 500
+      },
+      "config": {
+        "lineColor": "#ffffff",
+        "lineOpacity": 100,
+        "lineWidth": 5,
+        "distAhead": 4,
+        "distBehind": 4
+      }
     }
   ],
   "generalSettings": {
