@@ -180,7 +180,9 @@ export interface FuelWidgetSettings extends BaseWidgetSettings {
 
 export interface BlindSpotMonitorWidgetSettings extends BaseWidgetSettings {
   config: {
-    bgOpacity?: number;
+    background?: {
+      opacity: number;
+    };
     distAhead: number;
     distBehind: number;
   };

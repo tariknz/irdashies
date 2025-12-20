@@ -97,7 +97,7 @@ export const BlindSpotMonitor = () => {
       rightState={state.rightState}
       leftPercent={state.leftPercent}
       rightPercent={state.rightPercent}
-      bgOpacity={settings?.bgOpacity}
+      bgOpacity={settings?.background?.opacity}
     />
   );
 };

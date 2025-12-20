@@ -41,6 +41,7 @@ export const Primary: Story = {
     rightState: 1,
     leftPercent: 0,
     rightPercent: 0,
+    bgOpacity: 30,
   },
 };
 
@@ -51,6 +52,7 @@ export const CarOnRight: Story = {
     rightState: 1,
     leftPercent: 0,
     rightPercent: 0.5,
+    bgOpacity: 30,
   },
 };
 
@@ -61,6 +63,7 @@ export const CarOnLeft: Story = {
     rightState: 0,
     leftPercent: -0.5,
     rightPercent: 0,
+    bgOpacity: 30,
   },
 };
 
@@ -71,6 +74,7 @@ export const CarsOnBothSides: Story = {
     rightState: 1,
     leftPercent: 0.3,
     rightPercent: -0.3,
+    bgOpacity: 30,
   },
 };
 
@@ -81,6 +85,7 @@ export const CarAheadOnRight: Story = {
     rightState: 1,
     leftPercent: 0,
     rightPercent: 1.0,
+    bgOpacity: 30,
   },
 };
 
@@ -91,18 +96,19 @@ export const CarBehindOnLeft: Story = {
     rightState: 0,
     leftPercent: -1.0,
     rightPercent: 0,
+    bgOpacity: 30,
   },
 };
 
 
-export const WithBackground: Story = {
+export const NoBackground: Story = {
   args: {
     show: true,
     leftState: 1,
     rightState: 1,
     leftPercent: 0,
     rightPercent: 0,
-    bgOpacity: 50,
+    bgOpacity: 0,
   },
 };
 
@@ -124,7 +130,7 @@ export const LowBackgroundOpacity: Story = {
     rightState: 1,
     leftPercent: 0,
     rightPercent: 0,
-    bgOpacity: 20,
+    bgOpacity: 10,
   },
 };
 
@@ -136,6 +142,7 @@ export const TwoCarsOnLeft: Story = {
     rightState: 0,
     leftPercent: 0.2,
     rightPercent: 0,
+    bgOpacity: 30,
   },
 };
 
@@ -146,5 +153,6 @@ export const TwoCarsOnRight: Story = {
     rightState: 2,
     leftPercent: 0,
     rightPercent: -0.2,
+    bgOpacity: 30,
   },
 };

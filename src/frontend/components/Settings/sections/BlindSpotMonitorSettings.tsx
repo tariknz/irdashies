@@ -8,7 +8,9 @@ const SETTING_ID = 'blindspotmonitor';
 const defaultConfig: BlindSpotMonitorWidgetSettings['config'] = {
   distAhead: 4,
   distBehind: 4,
-  bgOpacity: 0,
+  background: {
+    opacity: 30,
+  },
 };
 
 export const BlindSpotMonitorSettings = () => {
@@ -39,16 +41,18 @@ export const BlindSpotMonitorSettings = () => {
           {/* Background Opacity */}
           <div className="space-y-2">
             <label className="text-slate-300">
-              Background Opacity: {settings.config.bgOpacity || 0}%
+              Background Opacity: {settings.config.background?.opacity ?? 30}%
             </label>
             <input
               type="range"
               min="0"
               max="100"
               step="5"
-              value={settings.config.bgOpacity || 0}
+              value={settings.config.background?.opacity ?? 30}
               onChange={(e) =>
-                handleConfigChange({ bgOpacity: parseInt(e.target.value) })
+                handleConfigChange({
+                  background: { opacity: parseInt(e.target.value) },
+                })
               }
               className="w-full"
             />
