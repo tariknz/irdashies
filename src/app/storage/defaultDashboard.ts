@@ -392,11 +392,9 @@ export const defaultDashboard: DashboardLayout = {
         "height": 500
       },
       "config": {
-        "lineColor": "#ffffff",
-        "lineOpacity": 100,
-        "lineWidth": 5,
         "distAhead": 4,
-        "distBehind": 4
+        "distBehind": 4,
+        "bgOpacity": 0
       }
     }
   ],

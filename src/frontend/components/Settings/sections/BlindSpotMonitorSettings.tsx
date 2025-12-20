@@ -6,9 +6,6 @@ import { BlindSpotMonitorWidgetSettings } from '../types';
 const SETTING_ID = 'blindspotmonitor';
 
 const defaultConfig: BlindSpotMonitorWidgetSettings['config'] = {
-  lineColor: '#ffffff',
-  lineOpacity: 100,
-  lineWidth: 5,
   distAhead: 4,
   distBehind: 4,
   bgOpacity: 0,
@@ -56,26 +53,6 @@ export const BlindSpotMonitorSettings = () => {
               className="w-full"
             />
           </div>
-
-          {/* Background Width */}
-          {settings.config.bgColor && (
-            <div className="space-y-2">
-              <label className="text-slate-300">
-                Background Width: {settings.config.bgWidth || 0}px
-              </label>
-              <input
-                type="range"
-                min="1"
-                max="80"
-                step="1"
-                value={settings.config.bgWidth || 0}
-                onChange={(e) =>
-                  handleConfigChange({ bgWidth: parseInt(e.target.value) })
-                }
-                className="w-full"
-              />
-            </div>
-          )}
 
           {/* Distance Ahead */}
           <div className="space-y-2">
