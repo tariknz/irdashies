@@ -16,11 +16,7 @@ const Indicator = ({
 }: IndicatorProps) => {
   const isCarAhead = percent >= 0;
   const fillPercent = Math.abs(percent);
-  
-  const fillBackground =
-    state === 'Cars2Left' || state === 'Cars2Right'
-      ? 'linear-gradient(to top, rgb(245, 158, 11) 0%, rgb(245, 158, 11) 12%, transparent 12%, transparent 18%, rgb(245, 158, 11) 18%, rgb(245, 158, 11) 30%, transparent 30%)'
-      : undefined;
+  const isTwoCars = state === 'Cars2Left' || state === 'Cars2Right';
 
   return (
     <div className={`absolute inset-y-0 ${side === 'left' ? 'left-0' : 'right-0'} w-[20px]`}>
@@ -33,11 +29,10 @@ const Indicator = ({
         />
       )}
       <div
-        className={`absolute ${isCarAhead ? 'bottom-0' : 'top-0'} rounded-full w-[20px] h-full ${side === 'left' ? 'left-0' : 'right-0'} ${fillBackground ? '' : 'bg-amber-500'}`}
+        className={`absolute ${isCarAhead ? 'bottom-0' : 'top-0'} rounded-full w-[20px] h-full ${side === 'left' ? 'left-0' : 'right-0'} ${isTwoCars ? 'bg-red-500' : 'bg-amber-500'}`}
         style={{
           transform: `scaleY(${fillPercent})`,
           transformOrigin: isCarAhead ? 'bottom' : 'top',
-          ...(fillBackground && { background: fillBackground }),
         }}
       />
     </div>
