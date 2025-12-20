@@ -268,7 +268,7 @@ export const DriverInfoRow = memo(
               key="gap"
               hidden={hidden}
               delta={gap}
-              showForUndefined="gap"
+              showForUndefined={position === 1 ? "gap" : undefined}
             />
           ),
         },
@@ -285,7 +285,7 @@ export const DriverInfoRow = memo(
               key="interval"
               hidden={hidden}
               delta={interval}
-              showForUndefined="int"
+              showForUndefined={position === 1 ? "int" : undefined}
             />
           ),
         },
