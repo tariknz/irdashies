@@ -444,9 +444,9 @@ const FullHeaderBar = () => {
   const sessionName = useSessionName(sessionNum);
   const sessionLaps = useSessionLaps(sessionNum);
   const { incidentLimit, incidents } = useDriverIncidents();
-  const { total, current, timeElapsed, timeRemaining } = useSessionLapCount();
+  const { currentLap, totalLaps, timeTotal, timeRemaining } = useSessionLapCount();
   const brakeBias = useBrakeBias();
-  const time = useCurrentTime();
+  const localTime = useCurrentTime();
   const { trackWetness } = useTrackWetness();
   const { trackTemp, airTemp } = useTrackTemperature();
 
@@ -455,18 +455,33 @@ const FullHeaderBar = () => {
       <div className="flex items-center gap-1">
         <span>{sessionName}</span>
       </div>
-      {current > 0 && (
+      {currentLap > 0 && (
         <div className="flex items-center gap-1">
-          <span>L {current} {total ? ` / ${total}` : ''}</span>
+          <span>L {currentLap} {totalLaps ? ` / ${totalLaps}` : ''}</span>
         </div>
       )}
       {sessionLaps == 'unlimited' && (
         <div className="flex items-center gap-1">
           <span>
             {(() => {
-              const elapsed = formatTime(timeElapsed, 'duration');
-              const remaining = formatTime(timeRemaining, 'duration-wlabels');
-              return elapsed ? `${elapsed} / ${remaining}` : (remaining ? `${remaining}` : '');
+              const mode = 'Elapsed';
+
+              const elapsedTime = Math.max(0, timeTotal - timeRemaining);
+              const remainingTime = Math.max(0, timeRemaining);
+              const totalTime = timeTotal;
+
+              const elapsedStr = (elapsedTime < totalTime) ? formatTime(elapsedTime, 'duration') : null;
+              const remainingStr = (remainingTime < totalTime) ? formatTime(remainingTime, 'duration') : null;
+              const totalStr = formatTime(totalTime, 'duration-wlabels');
+
+              let timeStr = '';
+              if (mode === 'Elapsed') {
+                timeStr = elapsedStr ? `${elapsedStr} / ${totalStr}` : totalStr || '';
+              } else if (mode === 'Remaining') {
+                timeStr = remainingStr ? `${remainingStr} / ${totalStr}` : totalStr || '';
+              }
+
+              return timeStr ? <div className="flex justify-center">{timeStr}</div> : null;
             })()}
           </span>
         </div>
@@ -482,7 +497,7 @@ const FullHeaderBar = () => {
       </div>
       <div className="flex items-center gap-1">
         <ClockIcon />
-        <span>{time}</span>
+        <span>{localTime}</span>
       </div>
       <div className="flex items-center gap-1">
         <DropIcon />

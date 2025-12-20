@@ -79,6 +79,7 @@ const RandomTraces = () => {
           showRpmText: true,
         },
         displayOrder: ['trace', 'bar', 'gear', 'steer'],
+        showOnlyWhenOnTrack: true,
       }}
     />
   );
