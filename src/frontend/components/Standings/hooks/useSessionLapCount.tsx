@@ -4,15 +4,19 @@ import { useMemo } from 'react';
 export const useSessionLapCount = () => {
   const sessionNum = useTelemetryValue('SessionNum');
   const sessionLaps = useSessionLaps(sessionNum);
-  const current = useTelemetryValue('Lap');
-  const timeRemaining = useTelemetryValue('SessionTimeTotal');
-  const timeElapsed = useTelemetryValue('SessionTimeRemain');
+  const sessionState = useTelemetryValue('SessionState');
+  const currentLap = useTelemetryValue('Lap');
+  const time = useTelemetryValue('SessionTime');
+  const timeTotal = useTelemetryValue('SessionTimeTotal');
+  const timeRemaining = useTelemetryValue('SessionTimeRemain');
 
   const result = useMemo(() => {
     const result = {
-      current: 0,
-      total: 0,
-      timeElapsed: 0,
+      state: 0,
+      currentLap: 0,
+      totalLaps: 0,
+      time: 0,
+      timeTotal: 0,
       timeRemaining: 0,
     };
 
@@ -21,15 +25,17 @@ export const useSessionLapCount = () => {
     }
 
     if (typeof sessionLaps === 'number') {
-      result.total = sessionLaps;
+      result.totalLaps = sessionLaps;
     }
-
-    result.current = current ?? 0;
+    
+    result.state = sessionState ?? 0;
+    result.time = time ?? 0;
+    result.timeTotal = timeTotal ?? 0;
+    result.currentLap = currentLap ?? 0;
     result.timeRemaining = timeRemaining ?? 0;
-    result.timeElapsed = timeElapsed ?? 0;
 
     return result;
-  }, [sessionLaps, current, timeRemaining, timeElapsed]);
+  }, [sessionLaps, currentLap, sessionState, time, timeTotal, timeRemaining]);
 
   return result;
 };

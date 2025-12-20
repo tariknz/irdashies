@@ -28,7 +28,7 @@ export interface StandingsWidgetSettings extends BaseWidgetSettings {
     headerBar: {
       enabled: boolean;
       sessionName: { enabled: boolean };
-      timeRemaining: { enabled: boolean };
+      sessionTime: { enabled: boolean; mode: 'Remaining' | 'Elapsed' };
       incidentCount: { enabled: boolean };
       brakeBias: { enabled: boolean };
       localTime: { enabled: boolean };
@@ -40,7 +40,7 @@ export interface StandingsWidgetSettings extends BaseWidgetSettings {
     footerBar: {
       enabled: boolean;
       sessionName: { enabled: boolean };
-      timeRemaining: { enabled: boolean };
+      sessionTime: { enabled: boolean; mode: 'Remaining' | 'Elapsed' };
       incidentCount: { enabled: boolean };
       brakeBias: { enabled: boolean };
       localTime: { enabled: boolean };
@@ -71,7 +71,7 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
     headerBar: {
       enabled: boolean;
       sessionName: { enabled: boolean };
-      timeRemaining: { enabled: boolean };
+      sessionTime: { enabled: boolean; mode: 'Remaining' | 'Elapsed' };
       incidentCount: { enabled: boolean };
       brakeBias: { enabled: boolean };
       localTime: { enabled: boolean };
@@ -83,7 +83,7 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
     footerBar: {
       enabled: boolean;
       sessionName: { enabled: boolean };
-      timeRemaining: { enabled: boolean };
+      sessionTime: { enabled: boolean; mode: 'Remaining' | 'Elapsed' };
       incidentCount: { enabled: boolean };
       brakeBias: { enabled: boolean };
       localTime: { enabled: boolean };

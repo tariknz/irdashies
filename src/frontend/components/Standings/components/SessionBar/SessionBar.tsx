@@ -22,14 +22,14 @@ export const SessionBar = ({ position = 'header', variant = 'standings' }: Sessi
   const sessionName = useSessionName(sessionNum);
   const sessionLaps = useSessionLaps(sessionNum);
   const { incidentLimit, incidents } = useDriverIncidents();
-  const { current, timeElapsed, timeRemaining } = useSessionLapCount();
+  const { state, currentLap, time, timeTotal, timeRemaining } = useSessionLapCount();
   const brakeBias = useBrakeBias();
   const { trackWetness } = useTrackWetness();
   const { trackTemp, airTemp } = useTrackTemperature({
     airTempUnit: effectiveBarSettings?.airTemperature?.unit ?? 'Metric',
     trackTempUnit: effectiveBarSettings?.trackTemperature?.unit ?? 'Metric',
   });
-  const time = useCurrentTime();
+  const localTime = useCurrentTime();
 
   // Define all possible items with their render functions
   const itemDefinitions = {
@@ -37,20 +37,46 @@ export const SessionBar = ({ position = 'header', variant = 'standings' }: Sessi
       enabled: effectiveBarSettings?.sessionName?.enabled ?? (position === 'header' ? true : false),
       render: () => <div className="flex">{sessionName}</div>,
     },
-    timeRemaining: {
-      enabled: effectiveBarSettings?.timeRemaining?.enabled ?? (position === 'header' ? true : false),
+    sessionTime: {
+      enabled: effectiveBarSettings?.sessionTime?.enabled ?? (position === 'header' ? true : false),
       render: () => {
-        // For timed sessions, show elapsed / total
+        const mode = effectiveBarSettings?.sessionTime?.mode ?? 'Remaining';
+
+        // For timed sessions
         if (sessionLaps === 'unlimited') {
-          const elapsed = formatTime(timeElapsed, 'duration');
-          const remaining = formatTime(timeRemaining, 'duration-wlabels');
-          const timeStr = elapsed ? `${elapsed} / ${remaining}` : remaining || '';
+          let elapsedTime, remainingTime, totalTime;
+
+          if (state === 4) { // active session
+            elapsedTime = Math.max(0, timeTotal - timeRemaining);
+            remainingTime = Math.max(0, timeRemaining);
+            totalTime = timeTotal;
+          } else if (state === 1) { // waiting/pre-session
+            elapsedTime = time;
+            remainingTime = Math.max(0, timeRemaining);
+            totalTime = time + Math.max(0, timeRemaining);
+          } else { // other states
+            elapsedTime = timeTotal;
+            remainingTime = timeTotal;
+            totalTime = timeTotal;
+          }
+
+          const elapsedStr = (elapsedTime < totalTime) ? formatTime(elapsedTime, 'duration') : null;
+          const remainingStr = (remainingTime < totalTime) ? formatTime(remainingTime, 'duration') : null;
+          const totalStr = formatTime(totalTime, 'duration-wlabels');
+
+          let timeStr = '';
+          if (mode === 'Elapsed') {
+            timeStr = elapsedStr ? `${elapsedStr} / ${totalStr}` : totalStr || '';
+          } else if (mode === 'Remaining') {
+            timeStr = remainingStr ? `${remainingStr} / ${totalStr}` : totalStr || '';
+          }
+
           return timeStr ? <div className="flex justify-center">{timeStr}</div> : null;
         }
 
         // For lap-limited sessions, show total laps completed
-        if (current > 0) {
-          return <div className="flex justify-center">L{current}</div>;
+        if (currentLap > 0) {
+          return <div className="flex justify-center">L{currentLap}</div>;
         }
 
         return null;
@@ -82,7 +108,7 @@ export const SessionBar = ({ position = 'header', variant = 'standings' }: Sessi
       render: () => (
         <div className="flex justify-center gap-1 items-center">
           <ClockIcon />
-          <span>{time}</span>
+          <span>{localTime}</span>
         </div>
       ),
     },
@@ -117,7 +143,7 @@ export const SessionBar = ({ position = 'header', variant = 'standings' }: Sessi
 
   // Get display order, fallback to default order
   const displayOrder = effectiveBarSettings?.displayOrder || (position === 'header'
-    ? ['sessionName', 'timeRemaining', 'localTime', 'brakeBias', 'incidentCount']
+    ? ['sessionName', 'sessionTime', 'localTime', 'brakeBias', 'incidentCount']
     : ['localTime', 'trackWetness', 'airTemperature', 'trackTemperature']
   );
 
