@@ -3,10 +3,12 @@ import { useTelemetryValues, useTelemetryValue } from '@irdashies/context';
 import { useDriverCarIdx, useTrackLength } from '@irdashies/context';
 import { useBlindSpotMonitorSettings } from './useBlindSpotMonitorSettings';
 
+export type BlindSpotState = 'Off' | 'Clear' | 'CarLeft' | 'CarRight' | 'Cars2Left' | 'Cars2Right';
+
 interface BlindSpotMonitorState {
   show: boolean;
-  leftState: number;
-  rightState: number;
+  leftState: BlindSpotState;
+  rightState: BlindSpotState;
   leftPercent: number;
   rightPercent: number;
 }
@@ -23,8 +25,8 @@ export const useBlindSpotMonitor = (): BlindSpotMonitorState => {
     if (!carLeftRight || !lapDistPcts || driverCarIdx === undefined || !trackLength || !settings || !isOnTrack) {
       return {
         show: false,
-        leftState: 0,
-        rightState: 0,
+        leftState: 'Off',
+        rightState: 'Off',
         leftPercent: 0,
         rightPercent: 0,
       };
@@ -35,8 +37,8 @@ export const useBlindSpotMonitor = (): BlindSpotMonitorState => {
     if (carLeftRightValue <= 1) {
       return {
         show: false,
-        leftState: 0,
-        rightState: 0,
+        leftState: 'Clear',
+        rightState: 'Clear',
         leftPercent: 0,
         rightPercent: 0,
       };
@@ -46,8 +48,8 @@ export const useBlindSpotMonitor = (): BlindSpotMonitorState => {
     if (driverCarDistPct === undefined || driverCarDistPct === -1) {
       return {
         show: false,
-        leftState: 0,
-        rightState: 0,
+        leftState: 'Off',
+        rightState: 'Off',
         leftPercent: 0,
         rightPercent: 0,
       };
@@ -95,38 +97,38 @@ export const useBlindSpotMonitor = (): BlindSpotMonitorState => {
       return Math.max(-1, Math.min(1, percent));
     };
 
-    let leftState = 0;
-    let rightState = 0;
+    let leftState: BlindSpotState = 'Off';
+    let rightState: BlindSpotState = 'Off';
     let leftPercent = 0;
     let rightPercent = 0;
 
     const closestCarDistPct = findClosestCar();
 
     if (carLeftRightValue === 2) {
-      leftState = 1;
+      leftState = 'CarLeft';
       if (closestCarDistPct !== null) {
         leftPercent = calculatePercent(closestCarDistPct);
       }
     } else if (carLeftRightValue === 3) {
-      rightState = 1;
+      rightState = 'CarRight';
       if (closestCarDistPct !== null) {
         rightPercent = calculatePercent(closestCarDistPct);
       }
     } else if (carLeftRightValue === 4) {
-      leftState = 1;
-      rightState = 1;
+      leftState = 'CarLeft';
+      rightState = 'CarRight';
       if (closestCarDistPct !== null) {
         const percent = calculatePercent(closestCarDistPct);
         leftPercent = percent;
         rightPercent = percent;
       }
     } else if (carLeftRightValue === 5) {
-      leftState = 2;
+      leftState = 'Cars2Left';
       if (closestCarDistPct !== null) {
         leftPercent = calculatePercent(closestCarDistPct);
       }
     } else if (carLeftRightValue === 6) {
-      rightState = 2;
+      rightState = 'Cars2Right';
       if (closestCarDistPct !== null) {
         rightPercent = calculatePercent(closestCarDistPct);
       }

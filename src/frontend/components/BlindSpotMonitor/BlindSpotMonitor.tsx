@@ -1,11 +1,11 @@
-import { useBlindSpotMonitor } from './hooks/useBlindSpotMonitor';
+import { useBlindSpotMonitor, BlindSpotState } from './hooks/useBlindSpotMonitor';
 import { useBlindSpotMonitorSettings } from './hooks/useBlindSpotMonitorSettings';
 
 interface IndicatorProps {
   side: 'left' | 'right';
   bgOpacity?: number;
   percent: number;
-  state: number;
+  state: BlindSpotState;
 }
 
 const Indicator = ({
@@ -18,7 +18,7 @@ const Indicator = ({
   const fillPercent = Math.abs(percent);
   
   const fillBackground =
-    state === 2
+    state === 'Cars2Left' || state === 'Cars2Right'
       ? 'linear-gradient(to top, rgb(245, 158, 11) 0%, rgb(245, 158, 11) 12%, transparent 12%, transparent 18%, rgb(245, 158, 11) 18%, rgb(245, 158, 11) 30%, transparent 30%)'
       : undefined;
 
@@ -46,8 +46,8 @@ const Indicator = ({
 
 export interface BlindSpotMonitorDisplayProps {
   show: boolean;
-  leftState: number;
-  rightState: number;
+  leftState: BlindSpotState;
+  rightState: BlindSpotState;
   leftPercent: number;
   rightPercent: number;
   bgOpacity?: number;
@@ -67,7 +67,7 @@ export const BlindSpotMonitorDisplay = ({
 
   return (
     <div className="w-full h-full relative">
-      {leftState > 0 && (
+      {(leftState === 'CarLeft' || leftState === 'Cars2Left') && (
         <Indicator
           side="left"
           bgOpacity={bgOpacity}
@@ -75,7 +75,7 @@ export const BlindSpotMonitorDisplay = ({
           state={leftState}
         />
       )}
-      {rightState > 0 && (
+      {(rightState === 'CarRight' || rightState === 'Cars2Right') && (
         <Indicator
           side="right"
           bgOpacity={bgOpacity}
