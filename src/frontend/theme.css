@@ -5,6 +5,7 @@ layer(base);
 @theme {
   --font-sans: 'Lato', sans-serif;
   --animate-pulse-border: pulse-border 1s infinite;
+  --animate-blink: blink 1s infinite;
   --text-xs: 10px;
   --text-sm: 12px;
   --text-base: 14px;
@@ -30,6 +31,15 @@ layer(base);
     }
     50% {
       opacity: 0.5;
+    }
+  }
+
+  @keyframes blink {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0;
     }
   }
 }
