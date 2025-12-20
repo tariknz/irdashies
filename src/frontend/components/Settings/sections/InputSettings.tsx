@@ -53,6 +53,7 @@ const defaultConfig: InputWidgetSettings['config'] = {
     showRpmText: false,
   },
   displayOrder: sortableSettings.map((s) => s.id),
+  showOnlyWhenOnTrack: true,
 };
 
 
@@ -126,6 +127,7 @@ const migrateConfig = (savedConfig: unknown): InputWidgetSettings['config'] => {
         defaultConfig.tachometer.showRpmText,
     },
     displayOrder: mergeDisplayOrder(sortableSettings.map((s) => s.id), config.displayOrder as string[]),
+    showOnlyWhenOnTrack: (config.showOnlyWhenOnTrack as boolean) ?? true,
   };
 };
 
@@ -523,6 +525,22 @@ export const InputSettings = () => {
                   </div>
                 </div>
               )}
+            </div>
+
+            {/* Show Only When On Track Settings */}
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="text-md font-medium text-slate-300">Show Only When On Track</h4>
+                <p className="text-sm text-slate-400">
+                  If enabled, inputs will only be shown when you are driving.
+                </p>
+              </div>
+              <ToggleSwitch
+                enabled={settings.config.showOnlyWhenOnTrack ?? true}
+                onToggle={(enabled) =>
+                  handleConfigChange({ showOnlyWhenOnTrack: enabled })
+                }
+              />
             </div>
           </div>
         );

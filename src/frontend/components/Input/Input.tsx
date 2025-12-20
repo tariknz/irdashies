@@ -4,12 +4,19 @@ import { useInputs } from './hooks/useInputs';
 import { useTachometerData } from './hooks/useTachometerData';
 import { useTachometerSettings } from './hooks/useTachometerSettings';
 import { Tachometer } from './InputTachometer/InputTachometer';
+import { useDrivingState } from '@irdashies/context';
 
 export const Input = () => {
   const inputs = useInputs();
   const settings = useInputSettings();
+  const { isDriving } = useDrivingState();
   const tachometerData = useTachometerData();
   const tachometerSettings = useTachometerSettings();
+
+  // Show only when on track setting
+  if (settings?.showOnlyWhenOnTrack && !isDriving) {
+    return <></>;
+  }
 
   return (
     <div className="h-full flex flex-col">
