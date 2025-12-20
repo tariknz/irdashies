@@ -270,7 +270,7 @@ const DisplaySettingsList = ({ itemsOrder, onReorder, settings, handleConfigChan
                       },
                     })
                   }
-                  className="w-20 bg-slate-700 text-white rounded-md px-2 py-1"
+                  className="bg-slate-700 text-white rounded-md px-2 py-1"
                 >
                   <option value={1}>1</option>
                   <option value={2}>2</option>
@@ -313,7 +313,7 @@ const DisplaySettingsList = ({ itemsOrder, onReorder, settings, handleConfigChan
                       },
                     });
                   }}
-                  className="w-26 bg-slate-700 text-white rounded-md px-2 py-1"
+                  className="bg-slate-700 text-white rounded-md px-2 py-1"
                 >
                   <option value="full">1:42.123</option>
                   <option value="mixed">1:42.1</option>
@@ -402,7 +402,7 @@ const BarItemsList = ({ items, onReorder, barType, settings, handleConfigChange 
                       }
                     });
                   }}
-                  className="w-20 bg-slate-700 text-white rounded-md px-2 py-1"
+                  className="bg-slate-700 text-white rounded-md px-2 py-1"
                 >
                   <option value="Metric">°C</option>
                   <option value="Imperial">°F</option>
@@ -425,7 +425,7 @@ const BarItemsList = ({ items, onReorder, barType, settings, handleConfigChange 
                       }
                     });
                   }}
-                  className="w-26 bg-slate-700 text-white rounded-md px-2 py-1"
+                  className="bg-slate-700 text-white rounded-md px-2 py-1"
                 >
                   <option value="Remaining">Remaining</option>
                   <option value="Elapsed">Elapsed</option>
@@ -513,7 +513,7 @@ export const StandingsSettings = () => {
                         },
                       })
                     }
-                    className="w-20 bg-slate-700 text-white rounded-md px-2 py-1"
+                    className="bg-slate-700 text-white rounded-md px-2 py-1"
                   />
                 </div>
                 <div className="flex items-center justify-between">
@@ -530,7 +530,7 @@ export const StandingsSettings = () => {
                         },
                       })
                     }
-                    className="w-20 bg-slate-700 text-white rounded-md px-2 py-1"
+                    className="bg-slate-700 text-white rounded-md px-2 py-1"
                   />
                 </div>
                 <div className="flex items-center justify-between">
@@ -547,7 +547,7 @@ export const StandingsSettings = () => {
                         },
                       })
                     }
-                    className="w-20 bg-slate-700 text-white rounded-md px-2 py-1"
+                    className="bg-slate-700 text-white rounded-md px-2 py-1"
                   />
                 </div>
                 <div className="flex items-center justify-between">
@@ -564,7 +564,7 @@ export const StandingsSettings = () => {
                         },
                       })
                     }
-                    className="w-20 bg-slate-700 text-white rounded-md px-2 py-1"
+                    className="bg-slate-700 text-white rounded-md px-2 py-1"
                   />
                 </div>
               </div>
@@ -732,7 +732,7 @@ export const StandingsSettings = () => {
                           background: { opacity: parseInt(e.target.value) },
                         })
                       }
-                      className="w-20 h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer"
+                      className="h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer"
                     />
                     <span className="text-xs text-slate-400 w-8">
                       {settings.config.background.opacity}%

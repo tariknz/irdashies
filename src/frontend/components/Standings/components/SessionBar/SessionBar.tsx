@@ -6,6 +6,7 @@ import { useTrackWetness } from '../../hooks/useTrackWetness';
 import { useTrackTemperature } from '../../hooks/useTrackTemperature';
 import { useCurrentTime } from '../../hooks/useCurrentTime';
 import { useStandingsSettings, useRelativeSettings } from '../../hooks';
+import { useLapTimeHistory } from '../../../../context/LapTimesStore/LapTimesStore';
 import { ClockIcon, DropIcon, RoadHorizonIcon, ThermometerIcon, TireIcon } from '@phosphor-icons/react';
 
 interface SessionBarProps {
@@ -38,6 +39,9 @@ export const SessionBar = ({ position = 'header', variant = 'standings' }: Sessi
 
   // Cache for estimated total time based on P1 laps completed
   const cachedTotalTime = useRef<{lapsComplete: number, totalTime: number} | null>(null);
+
+  // Get lap time history for all cars
+  const lapTimeHistory = useLapTimeHistory();
 
   // Define all possible items with their render functions
   const itemDefinitions = {
@@ -107,14 +111,33 @@ export const SessionBar = ({ position = 'header', variant = 'standings' }: Sessi
             timeElapsed = 0;
           }
 
-          // Determine average lap time from P1 or qualifying
+          // Determine average lap time from P1's fastest 3 lap times
           if(racePositions) {
             // Find the P1 driver (position 1)
             const p1Driver = racePositions.find(result => result.Position === 1);
 
-            if (p1Driver && p1Driver.LastTime > 0) {
-              averageLapTime = p1Driver.LastTime;
+            if (p1Driver) {
+              const p1CarIdx = p1Driver.CarIdx;
               p1LapsComplete = p1Driver.LapsComplete;
+
+              // Get P1's race lap times from history
+              const p1LapTimes = lapTimeHistory[p1CarIdx] || [];
+
+              // Include qualifying time initially, drop after 4+ race laps
+              let allLapTimes = [...p1LapTimes];
+              if (p1LapsComplete < 4 && p1Driver.LastTime > 0) {
+                allLapTimes.push(p1Driver.LastTime);
+              }
+
+              if (allLapTimes.length > 0) {
+                // Sort to get fastest times and take top 3
+                const fastestThree = allLapTimes.sort((a, b) => a - b).slice(0, 3);
+                // Calculate average of fastest 3
+                averageLapTime = fastestThree.reduce((sum, time) => sum + time, 0) / fastestThree.length;
+              } else if (p1Driver.LastTime > 0) {
+                // Fall back to qualifying time
+                averageLapTime = p1Driver.LastTime;
+              }
             }
           }
 
@@ -148,7 +171,7 @@ export const SessionBar = ({ position = 'header', variant = 'standings' }: Sessi
               cachedTotalTime.current = { lapsComplete: p1LapsComplete, totalTime };
             }
 
-            totalTimeStr = formatTime(totalTime, 'duration');
+            totalTimeStr = formatTime(totalTime, 'duration-wlabels');
           }
 
           // Display based on session state
@@ -173,7 +196,7 @@ export const SessionBar = ({ position = 'header', variant = 'standings' }: Sessi
             timeElapsedStr = formatTime(timeElapsed, 'duration');
             let timeRemainingStr = formatTime(timeRemaining, 'duration');
             let thisTotalTime = timeElapsed + timeRemaining;
-            let thisTotalTimeStr = formatTime(thisTotalTime, 'duration');
+            let thisTotalTimeStr = formatTime(thisTotalTime, 'duration-wlabels');
 
             let thisTimeStr = `${mode === "Elapsed" ? timeElapsedStr : timeRemainingStr} / ${thisTotalTimeStr}`;
 
