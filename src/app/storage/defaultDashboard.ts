@@ -388,7 +388,7 @@ export const defaultDashboard: DashboardLayout = {
     },
     {
       "id": "blindspotmonitor",
-      "enabled": false,
+      "enabled": true,
       "layout": {
         "x": 200,
         "y": 50,
