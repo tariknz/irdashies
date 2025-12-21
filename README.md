@@ -169,6 +169,8 @@ Displays standings information for the current session.
 
 **Features:**
 - Driver information: position, car number, country flags, driver name, pit status
+  - Country flags: Support for 250+ countries, can be enabled/disabled, shows iRacing flag for unaffiliated drivers
+  - Pit status indicators: DNF (red), TOW (orange, animated), OUT (green), PIT (yellow, animated), last pit lap number, repair/meatball flag (orange dot), penalty/black flag (orange), slowdown (orange, animated)
 - Car details: manufacturer, tire compound
 - Driver badges with multiple format options (license/rating combinations)
 - Timing information: gap, interval, best lap time, last lap time (multiple time format options)
@@ -196,6 +198,8 @@ Displays drive relative delta information for the current session.
 
 **Features:**
 - Driver information: position, car number, country flags, driver name, pit status
+  - Country flags: Support for 250+ countries, can be enabled/disabled, shows iRacing flag for unaffiliated drivers
+  - Pit status indicators: DNF (red), TOW (orange, animated), OUT (green), PIT (yellow, animated), last pit lap number, repair/meatball flag (orange dot), penalty/black flag (orange), slowdown (orange, animated)
 - Car details: manufacturer, tire compound
 - Driver badges with multiple format options (license/rating combinations)
 - Relative delta timing display
@@ -276,8 +280,25 @@ Displays comprehensive fuel management information including current fuel level,
 - Configurable safety margin (0-20%) for fuel calculations
 - Adjustable background opacity
 
-
 <img src="./docs/assets/fuelcalculator.png" alt="Fuel Calculator" width="250px">
+
+### Blind Spot Monitor
+
+Displays visual indicators on the left and right sides of the screen when cars are detected in your blind spots. The indicator position dynamically adjusts based on the distance to the detected car.
+
+**Features:**
+- Left and right side detection
+- Visual amber indicator bars that move vertically based on car distance
+- Detection of single car or multiple cars (2 cars) on each side
+- Configurable detection distances:
+  - Distance ahead (3-6 meters)
+  - Distance behind (3-6 meters)
+- Adjustable indicator width (5-100px)
+- Adjustable background opacity
+- Only displays when on track
+- Real-time position tracking based on lap distance
+
+![Blind Spot Monitor](./docs/assets/blindspot-monitor.png)
 
 ## Contributing
 

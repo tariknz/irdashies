@@ -188,6 +188,7 @@ export async function startComponentServer(irsdkBridge?: IrSdkBridge, dashboardB
         'weather',
         'fastercarsfrombehind',
         'fuel',
+        'blindspotmonitor',
       ];
 
       sendJSON(res, 200, {
