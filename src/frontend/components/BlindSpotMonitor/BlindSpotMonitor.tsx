@@ -8,6 +8,7 @@ export interface BlindSpotMonitorDisplayProps {
   rightState: BlindSpotState;
   leftPercent: number;
   rightPercent: number;
+  disableTransition: boolean;
   bgOpacity?: number;
   width?: number;
 }
@@ -18,33 +19,33 @@ export const BlindSpotMonitorDisplay = ({
   rightState,
   leftPercent,
   rightPercent,
+  disableTransition,
   bgOpacity,
   width,
 }: BlindSpotMonitorDisplayProps) => {
-  if (!show) {
-    return null;
-  }
+  const showLeft = show && (leftState === 'CarLeft' || leftState === 'Cars2Left');
+  const showRight = show && (rightState === 'CarRight' || rightState === 'Cars2Right');
 
   return (
     <div className="w-full h-full relative">
-      {(leftState === 'CarLeft' || leftState === 'Cars2Left') && (
-        <BlindSpotMonitorIndicator
-          side="left"
-          bgOpacity={bgOpacity}
-          percent={leftPercent}
-          state={leftState}
-          width={width}
-        />
-      )}
-      {(rightState === 'CarRight' || rightState === 'Cars2Right') && (
-        <BlindSpotMonitorIndicator
-          side="right"
-          bgOpacity={bgOpacity}
-          percent={rightPercent}
-          state={rightState}
-          width={width}
-        />
-      )}
+      <BlindSpotMonitorIndicator
+        side="left"
+        bgOpacity={bgOpacity}
+        percent={leftPercent}
+        state={leftState}
+        width={width}
+        visible={showLeft}
+        disableTransition={disableTransition}
+      />
+      <BlindSpotMonitorIndicator
+        side="right"
+        bgOpacity={bgOpacity}
+        percent={rightPercent}
+        state={rightState}
+        width={width}
+        visible={showRight}
+        disableTransition={disableTransition}
+      />
     </div>
   );
 };
@@ -60,6 +61,7 @@ export const BlindSpotMonitor = () => {
       rightState={state.rightState}
       leftPercent={state.leftPercent}
       rightPercent={state.rightPercent}
+      disableTransition={state.disableTransition}
       bgOpacity={settings?.background?.opacity}
       width={settings?.width}
     />
