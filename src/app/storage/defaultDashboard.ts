@@ -400,7 +400,8 @@ export const defaultDashboard: DashboardLayout = {
         "distBehind": 4,
         "background": {
           "opacity": 30
-        }
+        },
+        "width": 20
       }
     }
   ],

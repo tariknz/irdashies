@@ -5,6 +5,7 @@ export interface BlindSpotMonitorIndicatorProps {
   bgOpacity?: number;
   percent: number;
   state: BlindSpotState;
+  width?: number;
 }
 
 export const BlindSpotMonitorIndicator = ({
@@ -12,10 +13,11 @@ export const BlindSpotMonitorIndicator = ({
   bgOpacity,
   percent,
   state,
+  width,
 }: BlindSpotMonitorIndicatorProps) => {
   const isTwoCars = state === 'Cars2Left' || state === 'Cars2Right';
   const topPosition = `${25 - percent * 75}%`;
-  const width = '20px';
+  const widthPx = `${width ?? 20}px`;
   const twoCarsText = state === 'Cars2Left' ? '2 left' : '2 right';
 
   return (
@@ -33,14 +35,14 @@ export const BlindSpotMonitorIndicator = ({
             bgOpacity !== undefined && bgOpacity > 0
               ? `rgba(0, 0, 0, ${bgOpacity / 100})`
               : 'transparent',
-          width: width,
+          width: widthPx,
         }}
       >
         <div
           className={`absolute rounded-full h-[50%] left-1/2 -translate-x-1/2 bg-amber-500 flex items-center justify-center`}
           style={{
             top: topPosition,
-            width: width,
+            width: widthPx,
           }}
         ></div>
 

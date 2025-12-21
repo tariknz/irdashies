@@ -9,6 +9,7 @@ export interface BlindSpotMonitorDisplayProps {
   leftPercent: number;
   rightPercent: number;
   bgOpacity?: number;
+  width?: number;
 }
 
 export const BlindSpotMonitorDisplay = ({
@@ -18,6 +19,7 @@ export const BlindSpotMonitorDisplay = ({
   leftPercent,
   rightPercent,
   bgOpacity,
+  width,
 }: BlindSpotMonitorDisplayProps) => {
   if (!show) {
     return null;
@@ -31,6 +33,7 @@ export const BlindSpotMonitorDisplay = ({
           bgOpacity={bgOpacity}
           percent={leftPercent}
           state={leftState}
+          width={width}
         />
       )}
       {(rightState === 'CarRight' || rightState === 'Cars2Right') && (
@@ -39,6 +42,7 @@ export const BlindSpotMonitorDisplay = ({
           bgOpacity={bgOpacity}
           percent={rightPercent}
           state={rightState}
+          width={width}
         />
       )}
     </div>
@@ -57,6 +61,7 @@ export const BlindSpotMonitor = () => {
       leftPercent={state.leftPercent}
       rightPercent={state.rightPercent}
       bgOpacity={settings?.background?.opacity}
+      width={settings?.width}
     />
   );
 };

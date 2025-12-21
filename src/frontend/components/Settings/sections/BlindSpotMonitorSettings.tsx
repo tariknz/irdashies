@@ -11,6 +11,7 @@ const defaultConfig: BlindSpotMonitorWidgetSettings['config'] = {
   background: {
     opacity: 30,
   },
+  width: 20,
 };
 
 export const BlindSpotMonitorSettings = () => {
@@ -97,6 +98,27 @@ export const BlindSpotMonitorSettings = () => {
             />
             <p className="text-slate-400 text-sm">
               Distance to car behind in meters. Distance at which point line starts to appear at the bottom.
+            </p>
+          </div>
+
+          {/* Width */}
+          <div className="space-y-2">
+            <label className="text-slate-300">
+              Width: {settings.config.width ?? 20}px
+            </label>
+            <input
+              type="range"
+              min="5"
+              max="100"
+              step="1"
+              value={settings.config.width ?? 20}
+              onChange={(e) =>
+                handleConfigChange({ width: parseInt(e.target.value) })
+              }
+              className="w-full"
+            />
+            <p className="text-slate-400 text-sm">
+              Width of the blind spot indicator in pixels.
             </p>
           </div>
         </div>

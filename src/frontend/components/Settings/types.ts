@@ -186,5 +186,6 @@ export interface BlindSpotMonitorWidgetSettings extends BaseWidgetSettings {
     };
     distAhead: number;
     distBehind: number;
+    width?: number;
   };
 }
