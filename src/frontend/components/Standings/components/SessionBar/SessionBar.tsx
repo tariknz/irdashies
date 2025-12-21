@@ -87,10 +87,6 @@ export const SessionBar = ({ position = 'header', variant = 'standings' }: Sessi
         }
 
         // For lap-limited sessions, show total laps completed
-        // if (currentLap > 0) {
-        //   return <div className="flex justify-center">L{currentLap}</div>;
-        // }
-
         let p1LapsComplete = 0;
         let averageLapTime = 0;
         let totalTime = 0;
@@ -124,14 +120,16 @@ export const SessionBar = ({ position = 'header', variant = 'standings' }: Sessi
               const p1LapTimes = lapTimeHistory[p1CarIdx] || [];
 
               // Include qualifying time initially, drop after 4+ race laps
-              let allLapTimes = [...p1LapTimes];
+              let latestLapTimes = [...p1LapTimes];
               if (p1LapsComplete < 4 && p1Driver.LastTime > 0) {
-                allLapTimes.push(p1Driver.LastTime);
+                latestLapTimes.push(p1Driver.LastTime);
               }
+              // Take the latest 5 lap times
+              latestLapTimes = latestLapTimes.slice(-5);
 
-              if (allLapTimes.length > 0) {
+              if (latestLapTimes.length > 0) {
                 // Sort to get fastest times and take top 3
-                const fastestThree = allLapTimes.sort((a, b) => a - b).slice(0, 3);
+                const fastestThree = latestLapTimes.sort((a, b) => a - b).slice(0, 3);
                 // Calculate average of fastest 3
                 averageLapTime = fastestThree.reduce((sum, time) => sum + time, 0) / fastestThree.length;
               } else if (p1Driver.LastTime > 0) {
