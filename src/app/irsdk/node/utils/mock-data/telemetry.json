@@ -260,7 +260,7 @@
     "unit": "",
     "varType": 1,
     "value": [
-      false
+      true
     ]
   },
   "IsReplayPlaying": {
@@ -786,7 +786,7 @@
       -1,
       0.841148853302002,
       -1,
-      -1,
+      0.02848,
       -1,
       -1,
       -1,
@@ -3221,7 +3221,7 @@
     "unit": "irsdk_CarLeftRight",
     "varType": 2,
     "value": [
-      1
+      4
     ]
   },
   "PitsOpen": {
@@ -3518,7 +3518,7 @@
     "unit": "",
     "varType": 2,
     "value": [
-      5
+      4
     ]
   },
   "CamCameraNumber": {

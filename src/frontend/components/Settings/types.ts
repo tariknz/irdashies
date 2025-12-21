@@ -178,3 +178,14 @@ export interface FuelWidgetSettings extends BaseWidgetSettings {
     background: { opacity: number };
   };
 }
+
+export interface BlindSpotMonitorWidgetSettings extends BaseWidgetSettings {
+  config: {
+    background?: {
+      opacity: number;
+    };
+    distAhead: number;
+    distBehind: number;
+    width?: number;
+  };
+}

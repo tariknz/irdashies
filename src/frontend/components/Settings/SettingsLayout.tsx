@@ -10,6 +10,7 @@ import { AboutSettings } from './sections/AboutSettings';
 import { FasterCarsFromBehindSettings } from './sections/FasterCarsFromBehindSettings';
 import { FuelSettings } from './sections/FuelSettings';
 import { GeneralSettings } from './sections/GeneralSettings';
+import { BlindSpotMonitorSettings } from './sections/BlindSpotMonitorSettings';
 import { useDashboard } from '@irdashies/context';
 import { useState } from 'react';
 
@@ -139,6 +140,14 @@ export const SettingsLayout = () => {
                 </div>
               </Link>
             </li>
+            <li>
+              <Link
+                to="/settings/blindspotmonitor"
+                className={menuItemClass('/blindspotmonitor')}
+              >
+                Blind Spot Monitor
+              </Link>
+            </li>
           </ul>
           {/* Advanced settings pushed to bottom */}
           <div className="mt-auto pt-4 border-t border-slate-700 flex flex-col gap-2">
@@ -169,6 +178,7 @@ export const SettingsLayout = () => {
             <Route path="map" element={<TrackMapSettings />} />
             <Route path="input" element={<InputSettings />} />
             <Route path="faster-cars" element={<FasterCarsFromBehindSettings />} />
+            <Route path="blindspotmonitor" element={<BlindSpotMonitorSettings />} />
             <Route path="advanced" element={<AdvancedSettings />} />
             <Route path="about" element={<AboutSettings />} />
             <Route
