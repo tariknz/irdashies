@@ -82,7 +82,7 @@ export const SettingsLayout = () => {
       <div className="flex flex-row gap-4 flex-1 min-h-0">
         {/* Left Column - Widget Menu */}
         <div className="w-1/3 bg-slate-800 p-4 rounded-md flex flex-col overflow-y-auto">
-          <ul className="flex flex-col gap-2 flex-1">
+          <ul className="flex flex-col gap-2 flex-1 mb-2">
             <li>
               <Link to="/settings/general" className={menuItemClass('/general')}>
                 General
