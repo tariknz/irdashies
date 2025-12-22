@@ -156,18 +156,13 @@ export const createDriverStandings = (
   lastLap: number[],
   prevCarTrackSurface: number[],
   numLapsToShow?: number,
-  lapTimeHistory?: number[][],
+  lapDeltasVsPlayer?: number[][], // NEW: Pre-calculated deltas from LapTimesStore
 ): Standings[] => {
   const resultsPositions = Array.isArray(currentSession.resultsPositions) ? currentSession.resultsPositions : [];
   const qualifyingResults = Array.isArray(session.qualifyingResults) ? session.qualifyingResults : [];
   const results = resultsPositions.length > 0 ? resultsPositions : qualifyingResults;
   const fastestDriverIdx = currentSession.resultsFastestLap?.[0]?.CarIdx;
   const fastestDriver = results?.find((r) => r.CarIdx === fastestDriverIdx);
-
-  // Get player's lap history for delta calculations
-  const playerLapHistory = session.playerIdx !== undefined && lapTimeHistory
-    ? lapTimeHistory[session.playerIdx]
-    : undefined;
 
   return results
     .map((result) => {
@@ -218,13 +213,9 @@ export const createDriverStandings = (
         carId: driver.CarID,
         lapTimeDeltas:
           result.CarIdx === session.playerIdx
-            ? undefined // Don't calculate deltas for player
-            : playerLapHistory && lapTimeHistory && numLapsToShow
-              ? calculateLapTimeDeltas(
-                  lapTimeHistory[result.CarIdx],
-                  playerLapHistory,
-                  numLapsToShow
-                )
+            ? undefined // Don't show deltas for player (comparing to themselves)
+            : lapDeltasVsPlayer && lapDeltasVsPlayer[result.CarIdx] && lapDeltasVsPlayer[result.CarIdx].length > 0
+              ? lapDeltasVsPlayer[result.CarIdx].slice(0, numLapsToShow) // Use pre-calculated deltas
               : undefined,
         lastPitLap: lastPitLap[result.CarIdx] ?? undefined,
         lastLap: lastLap[result.CarIdx] ?? undefined,

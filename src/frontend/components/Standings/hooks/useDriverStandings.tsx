@@ -10,7 +10,7 @@ import {
   useTelemetryValue,
   useFocusCarIdx,
 } from '@irdashies/context';
-import { useLapTimeHistory } from '../../../context/LapTimesStore/LapTimesStore';
+import { useLapDeltasVsPlayer } from '../../../context/LapTimesStore/LapTimesStore';
 import {
   useCarLap,
   usePitLap,
@@ -62,12 +62,12 @@ export const useDriverStandings = (settings?: StandingsWidgetSettings['config'])
       (driver) => driver.CarIdx === driverCarIdx
     )?.CarClassID;
   }, [sessionDrivers, driverCarIdx]);
-  const lapTimeHistory = useLapTimeHistory();
+  const lapDeltasVsPlayer = useLapDeltasVsPlayer();
 
   // Note: gap and interval calculations are now purely delta-based, no telemetry needed
 
-  // Only pass lap history when feature is enabled to avoid unnecessary calculations
-  const lapTimeHistoryForCalc = lapTimeDeltasEnabled ? lapTimeHistory : undefined;
+  // Only pass deltas when feature is enabled to avoid unnecessary calculations
+  const lapDeltasForCalc = lapTimeDeltasEnabled ? lapDeltasVsPlayer : undefined;
 
   const standingsWithGain = useMemo(() => {
     const initialStandings = createDriverStandings(
@@ -93,7 +93,7 @@ export const useDriverStandings = (settings?: StandingsWidgetSettings['config'])
       lastLap,
       prevCarTrackSurface,
       lapTimeDeltasEnabled ? numLapDeltas : undefined,
-      lapTimeHistoryForCalc,
+      lapDeltasForCalc,
     );
     const groupedByClass = groupStandingsByClass(initialStandings);
 
@@ -139,7 +139,7 @@ export const useDriverStandings = (settings?: StandingsWidgetSettings['config'])
     driverClass,
     lapTimeDeltasEnabled,
     numLapDeltas,
-    lapTimeHistoryForCalc,
+    lapDeltasForCalc,
     lastLap,
     lastPitLap,
     prevCarTrackSurface,

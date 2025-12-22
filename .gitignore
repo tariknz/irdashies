@@ -102,3 +102,5 @@ build/
 bin/
 docs/features/
 docs/reference/relatives.js
+COMMIT_REVIEW.md
+LAP_TIME_DELTA_BUG_ANALYSIS.md
