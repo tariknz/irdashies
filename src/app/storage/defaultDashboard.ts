@@ -396,8 +396,8 @@ export const defaultDashboard: DashboardLayout = {
         "height": 500
       },
       "config": {
-        "distAhead": 4,
-        "distBehind": 4,
+        "distAhead": 4.5,
+        "distBehind": 4.5,
         "background": {
           "opacity": 30
         },

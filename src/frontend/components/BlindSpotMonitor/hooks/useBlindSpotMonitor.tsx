@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useTelemetryValues, useTelemetryValue } from '@irdashies/context';
 import { useDriverCarIdx, useTrackLength } from '@irdashies/context';
 import { useBlindSpotMonitorSettings } from './useBlindSpotMonitorSettings';
@@ -11,6 +11,7 @@ interface BlindSpotMonitorState {
   rightState: BlindSpotState;
   leftPercent: number;
   rightPercent: number;
+  disableTransition: boolean;
 }
 
 export const useBlindSpotMonitor = (): BlindSpotMonitorState => {
@@ -20,15 +21,17 @@ export const useBlindSpotMonitor = (): BlindSpotMonitorState => {
   const trackLength = useTrackLength();
   const settings = useBlindSpotMonitorSettings();
   const isOnTrack = useTelemetryValue<boolean>('IsOnTrack') ?? false;
+  const [lastPercent, setLastPercent] = useState<number | null>(null);
 
-  return useMemo(() => {
+  const result = useMemo(() => {
     if (!carLeftRight || !lapDistPcts || driverCarIdx === undefined || !trackLength || !settings || !isOnTrack) {
       return {
         show: false,
-        leftState: 'Off',
-        rightState: 'Off',
+        leftState: 'Off' as BlindSpotState,
+        rightState: 'Off' as BlindSpotState,
         leftPercent: 0,
         rightPercent: 0,
+        disableTransition: false,
       };
     }
 
@@ -37,10 +40,11 @@ export const useBlindSpotMonitor = (): BlindSpotMonitorState => {
     if (carLeftRightValue <= 1) {
       return {
         show: false,
-        leftState: 'Clear',
-        rightState: 'Clear',
+        leftState: 'Clear' as BlindSpotState,
+        rightState: 'Clear' as BlindSpotState,
         leftPercent: 0,
         rightPercent: 0,
+        disableTransition: false,
       };
     }
 
@@ -48,10 +52,11 @@ export const useBlindSpotMonitor = (): BlindSpotMonitorState => {
     if (driverCarDistPct === undefined || driverCarDistPct === -1) {
       return {
         show: false,
-        leftState: 'Off',
-        rightState: 'Off',
+        leftState: 'Off' as BlindSpotState,
+        rightState: 'Off' as BlindSpotState,
         leftPercent: 0,
         rightPercent: 0,
+        disableTransition: false,
       };
     }
 
@@ -101,37 +106,38 @@ export const useBlindSpotMonitor = (): BlindSpotMonitorState => {
     let rightState: BlindSpotState = 'Off';
     let leftPercent = 0;
     let rightPercent = 0;
+    let disableTransition = false;
 
-    const closestCarDistPct = findClosestCar();
+    const isMoving = carLeftRightValue === 2 || carLeftRightValue === 3;
+    const closestCarDistPct = isMoving ? findClosestCar() : null;
 
     if (carLeftRightValue === 2) {
       leftState = 'CarLeft';
       if (closestCarDistPct !== null) {
         leftPercent = calculatePercent(closestCarDistPct);
+        if (lastPercent !== null && Math.abs(lastPercent - leftPercent) > 0.5) {
+          disableTransition = true;
+        }
       }
     } else if (carLeftRightValue === 3) {
       rightState = 'CarRight';
       if (closestCarDistPct !== null) {
         rightPercent = calculatePercent(closestCarDistPct);
+        if (lastPercent !== null && Math.abs(lastPercent - rightPercent) > 0.5) {
+          disableTransition = true;
+        }
       }
     } else if (carLeftRightValue === 4) {
       leftState = 'CarLeft';
       rightState = 'CarRight';
-      if (closestCarDistPct !== null) {
-        const percent = calculatePercent(closestCarDistPct);
-        leftPercent = percent;
-        rightPercent = percent;
-      }
+      leftPercent = 0;
+      rightPercent = 0;
     } else if (carLeftRightValue === 5) {
       leftState = 'Cars2Left';
-      if (closestCarDistPct !== null) {
-        leftPercent = calculatePercent(closestCarDistPct);
-      }
+      leftPercent = 0;
     } else if (carLeftRightValue === 6) {
       rightState = 'Cars2Right';
-      if (closestCarDistPct !== null) {
-        rightPercent = calculatePercent(closestCarDistPct);
-      }
+      rightPercent = 0;
     }
 
     return {
@@ -140,7 +146,29 @@ export const useBlindSpotMonitor = (): BlindSpotMonitorState => {
       rightState,
       leftPercent,
       rightPercent,
+      disableTransition,
     };
-  }, [carLeftRight, lapDistPcts, driverCarIdx, trackLength, settings, isOnTrack]);
+  }, [carLeftRight, lapDistPcts, driverCarIdx, trackLength, settings, isOnTrack, lastPercent]);
+
+  // Track previous percent to detect track wrap-around (when percent jumps > 0.5)
+  // This requires setState in useEffect, which is necessary for tracking previous render values
+  useEffect(() => {
+    if (!result.show) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setLastPercent(null);
+      return;
+    }
+
+    const currentPercent = result.leftPercent !== 0 ? result.leftPercent : result.rightPercent;
+    const isMoving = result.leftState === 'CarLeft' || result.rightState === 'CarRight';
+
+    if (isMoving && currentPercent !== 0) {
+      setLastPercent(currentPercent);
+    } else {
+      setLastPercent(null);
+    }
+  }, [result.show, result.leftPercent, result.rightPercent, result.leftState, result.rightState]);
+
+  return result;
 };
 
