@@ -18,6 +18,7 @@ const mockLapTimesState = {
   lapTimeBuffer: null,
   lapTimes: [],
   sessionNum: null,
+  playerCarIdx: null,
   updateLapTimes: vi.fn(),
   reset: vi.fn(),
 };
