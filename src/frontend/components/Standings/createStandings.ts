@@ -437,14 +437,28 @@ export const sliceRelevantDrivers = <T extends { isPlayer?: boolean }>(
       }
     }
 
-    // Ensure we have at least `minPlayerClassDrivers`
-    let lastIndex = end;
-    while (
-      relevantDrivers.size < minPlayerClassDrivers &&
-      lastIndex < standings.length
-    ) {
-      relevantDrivers.add(standings[lastIndex]);
-      lastIndex++;
+    // Ensure we have at least `minPlayerClassDrivers` by expanding from both ends of the buffer range
+    let expandBefore = start - 1;
+    let expandAfter = end;
+    while (relevantDrivers.size < minPlayerClassDrivers) {
+      let added = false;
+
+      // Try to add from before the buffer range
+      if (expandBefore >= 0 && standings[expandBefore]) {
+        relevantDrivers.add(standings[expandBefore]);
+        expandBefore--;
+        added = true;
+      }
+
+      // Try to add from after the buffer range
+      if (expandAfter < standings.length && standings[expandAfter]) {
+        relevantDrivers.add(standings[expandAfter]);
+        expandAfter++;
+        added = true;
+      }
+
+      // If we couldn't add in either direction, we're done
+      if (!added) break;
     }
 
     const sortedDrivers = standings.filter((driver) =>
