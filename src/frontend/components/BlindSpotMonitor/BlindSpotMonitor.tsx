@@ -8,7 +8,7 @@ export interface BlindSpotMonitorDisplayProps {
   rightState: BlindSpotState;
   leftPercent: number;
   rightPercent: number;
-  disableTransition: boolean;
+  disableTransition?: boolean;
   bgOpacity?: number;
   width?: number;
 }
@@ -19,7 +19,7 @@ export const BlindSpotMonitorDisplay = ({
   rightState,
   leftPercent,
   rightPercent,
-  disableTransition,
+  disableTransition = false,
   bgOpacity,
   width,
 }: BlindSpotMonitorDisplayProps) => {
