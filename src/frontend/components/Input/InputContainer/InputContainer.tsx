@@ -38,50 +38,58 @@ export const InputContainer = ({
         id: 'trace' as const,
         shouldRender: settings?.trace?.enabled ?? true,
         component: (
-          <InputTrace
-            key="trace"
-            input={{ brake, throttle, brakeAbsActive, steer }}
-            settings={settings?.trace}
-          />
+          <div className="flex flex-3">
+            <InputTrace
+              key="trace"
+              input={{ brake, throttle, brakeAbsActive, steer }}
+              settings={settings?.trace}
+            />
+          </div>
         ),
       },
       {
         id: 'bar' as const,
         shouldRender: settings?.bar?.enabled ?? true,
         component: (
-          <InputBar
-            key="bar"
-            brake={brake}
-            brakeAbsActive={brakeAbsActive}
-            throttle={throttle}
-            clutch={clutch}
-            settings={settings?.bar}
-          />
+          <div className="flex flex-1">
+            <InputBar
+              key="bar"
+              brake={brake}
+              brakeAbsActive={brakeAbsActive}
+              throttle={throttle}
+              clutch={clutch}
+              settings={settings?.bar}
+            />
+          </div>
         ),
       },
       {
         id: 'gear' as const,
         shouldRender: settings?.gear?.enabled ?? true,
         component: (
-          <InputGear
-            key="gear"
-            gear={gear}
-            speedMs={speed}
-            unit={unit}
-            settings={settings?.gear}
-          />
+          <div className="flex flex-1">
+            <InputGear
+              key="gear"
+              gear={gear}
+              speedMs={speed}
+              unit={unit}
+              settings={settings?.gear}
+            />
+          </div>
         ),
       },
       {
         id: 'steer' as const,
         shouldRender: settings?.steer?.enabled ?? true,
         component: (
-          <InputSteer
-            key="steer"
-            angleRad={steer}
-            wheelStyle={settings?.steer?.config?.style}
-            wheelColor={settings?.steer?.config?.color}
-          />
+          <div className="flex flex-1">
+            <InputSteer
+              key="steer"
+              angleRad={steer}
+              wheelStyle={settings?.steer?.config?.style}
+              wheelColor={settings?.steer?.config?.color}
+            />
+          </div>
         ),
       },
     ];
@@ -102,7 +110,18 @@ export const InputContainer = ({
     );
 
     return [...orderedColumns, ...remainingColumns];
-  }, [brake, throttle, clutch, gear, speed, unit, brakeAbsActive, steer, settings, displayOrder]);
+  }, [
+    brake,
+    throttle,
+    clutch,
+    gear,
+    speed,
+    unit,
+    brakeAbsActive,
+    steer,
+    settings,
+    displayOrder,
+  ]);
 
   return (
     <div className="w-full h-full inline-flex gap-1 p-2 flex-row bg-slate-800/50">

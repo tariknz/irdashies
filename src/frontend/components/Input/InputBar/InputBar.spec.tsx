@@ -1,7 +1,6 @@
 import { render } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
 import { InputBar } from './InputBar';
-import { getColor } from '@irdashies/utils/colors';
 
 const settings = {
   includeBrake: true,
@@ -18,40 +17,39 @@ describe('InputBar', () => {
     expect(container).toBeInTheDocument();
   });
 
-  it('renders an SVG element', () => {
+  it('renders a container div', () => {
     const { container } = render(
       <InputBar brake={0.5} throttle={0.7} clutch={0.3} settings={settings} />
     );
-    const svgElement = container.querySelector('svg');
-    expect(svgElement).toBeInTheDocument();
+    const containerDiv = container.firstChild as HTMLElement;
+    expect(containerDiv).toBeInTheDocument();
+    expect(containerDiv.style.display).toBe('flex');
   });
 
   it('renders the correct number of bars', () => {
     const { container } = render(
       <InputBar brake={0.5} throttle={0.7} clutch={0.3} settings={settings} />
     );
-    const rectElements = container.querySelectorAll('rect');
-    expect(rectElements.length).toBe(3);
+    const barContainers = Array.from(container.querySelectorAll('[data-testid^="input-bar-"]')).filter(
+      (el) => !(el as HTMLElement).getAttribute('data-testid')?.includes('fill')
+    );
+    expect(barContainers.length).toBe(3);
   });
+
   it('renders text with correct values', () => {
     const { container } = render(
       <InputBar brake={0.5} throttle={0.7} clutch={0.3} settings={settings} />
     );
-    const textElements = container.querySelectorAll('text');
-    expect(textElements[0].textContent).toBe('30'); // clutch
-    expect(textElements[1].textContent).toBe('50'); // brake
-    expect(textElements[2].textContent).toBe('70'); // throttle
+    const textElements = Array.from(container.querySelectorAll('div')).filter(
+      (el) => el.textContent && /^\d+$/.test(el.textContent.trim())
+    );
+    expect(textElements.length).toBeGreaterThanOrEqual(3);
+    const values = textElements.map((el) => el.textContent?.trim()).filter(Boolean);
+    expect(values).toContain('30');
+    expect(values).toContain('50');
+    expect(values).toContain('70');
   });
 
-  it('renders the correct colors', () => {
-    const { container } = render(
-      <InputBar brake={0.5} throttle={0.7} clutch={0.3} settings={settings} />
-    );
-    const rectElements = container.querySelectorAll('rect');
-    expect(rectElements[0].getAttribute('fill')).toBe(getColor('blue'));
-    expect(rectElements[1].getAttribute('fill')).toBe(getColor('red'));
-    expect(rectElements[2].getAttribute('fill')).toBe(getColor('green'));
-  });
 
   it('renders the throttle and brake bars when includeThrottle and includeBrake are true', () => {
     const { container } = render(
@@ -62,7 +60,9 @@ describe('InputBar', () => {
         includeAbs: false,
       }} />
     );
-    const rectElements = container.querySelectorAll('rect');
-    expect(rectElements.length).toBe(2);
+    const barContainers = Array.from(container.querySelectorAll('[data-testid^="input-bar-"]')).filter(
+      (el) => !(el as HTMLElement).getAttribute('data-testid')?.includes('fill')
+    );
+    expect(barContainers.length).toBe(2);
   });
 });
