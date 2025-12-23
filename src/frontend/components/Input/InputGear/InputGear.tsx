@@ -33,11 +33,17 @@ export const InputGear = ({
   }
 
   return (
-    <div className="flex items-center justify-center font-mono p-2 w-[120px]">
+    <div className="@container flex items-center justify-center font-mono p-2 w-full h-full">
       <div className="flex flex-col items-center">
-        <div className="text-4xl font-bold leading-none">{gearText}</div>
-        <div className="text-l">{speed.toFixed(0)}</div>
-        <div className="text-xs text-gray-500 leading-none">{displayUnit}</div>
+        <div className="font-bold leading-none text-[clamp(1.5rem,40cqw,4rem)]">
+          {gearText}
+        </div>
+        <div className="text-[clamp(0.875rem,16cqw,1.5rem)]">
+          {speed.toFixed(0)}
+        </div>
+        <div className="text-gray-500 leading-none text-[clamp(0.625rem,8cqw,1rem)]">
+          {displayUnit}
+        </div>
       </div>
     </div>
   );
