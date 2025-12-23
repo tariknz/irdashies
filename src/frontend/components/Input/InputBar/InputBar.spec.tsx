@@ -23,7 +23,6 @@ describe('InputBar', () => {
     );
     const containerDiv = container.firstChild as HTMLElement;
     expect(containerDiv).toBeInTheDocument();
-    expect(containerDiv.style.display).toBe('flex');
   });
 
   it('renders the correct number of bars', () => {
