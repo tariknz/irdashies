@@ -12,14 +12,14 @@ const settings = {
 describe('InputBar', () => {
   it('renders without crashing', () => {
     const { container } = render(
-      <InputBar brake={0.5} throttle={0.7} clutch={0.2} settings={settings} />
+      <InputBar brake={0.5} throttle={0.7} clutch={0.8} settings={settings} />
     );
     expect(container).toBeInTheDocument();
   });
 
   it('renders a container div', () => {
     const { container } = render(
-      <InputBar brake={0.5} throttle={0.7} clutch={0.2} settings={settings} />
+      <InputBar brake={0.5} throttle={0.7} clutch={0.8} settings={settings} />
     );
     const containerDiv = container.firstChild as HTMLElement;
     expect(containerDiv).toBeInTheDocument();
@@ -27,7 +27,7 @@ describe('InputBar', () => {
 
   it('renders the correct number of bars', () => {
     const { container } = render(
-      <InputBar brake={0.5} throttle={0.7} clutch={0.2} settings={settings} />
+      <InputBar brake={0.5} throttle={0.7} clutch={0.8} settings={settings} />
     );
     const barContainers = Array.from(container.querySelectorAll('[data-testid^="input-bar-"]')).filter(
       (el) => !(el as HTMLElement).getAttribute('data-testid')?.includes('fill')
@@ -37,14 +37,14 @@ describe('InputBar', () => {
 
   it('renders text with correct values', () => {
     const { container } = render(
-      <InputBar brake={0.5} throttle={0.7} clutch={0.2} settings={settings} />
+      <InputBar brake={0.5} throttle={0.7} clutch={0.8} settings={settings} />
     );
     const textElements = Array.from(container.querySelectorAll('div')).filter(
       (el) => el.textContent && /^\d+$/.test(el.textContent.trim())
     );
     expect(textElements.length).toBeGreaterThanOrEqual(3);
     const values = textElements.map((el) => el.textContent?.trim()).filter(Boolean);
-    expect(values).toContain('80'); // clutch 0.2 inverted = 0.8 (80%)
+    expect(values).toContain('80'); // clutch
     expect(values).toContain('50'); // brake
     expect(values).toContain('70'); // throttle
   });
@@ -52,7 +52,7 @@ describe('InputBar', () => {
 
   it('renders the throttle and brake bars when includeThrottle and includeBrake are true', () => {
     const { container } = render(
-      <InputBar brake={0.5} throttle={0.7} clutch={0.2} settings={{
+      <InputBar brake={0.5} throttle={0.7} clutch={0.8} settings={{
         includeBrake: true,
         includeThrottle: true,
         includeClutch: false,

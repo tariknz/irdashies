@@ -46,13 +46,12 @@ export const InputBar = ({
       if (key === 'brake') return includeBrake;
       return false;
     }).map(({ key, color }) => {
-      const rawValue =
+      const value =
         key === 'clutch'
           ? (clutch ?? 0)
           : key === 'brake'
             ? (brake ?? 0)
             : (throttle ?? 0);
-      const value = key === 'clutch' ? 1 - rawValue : rawValue;
       const isBrakeWithAbs = key === 'brake' && brakeAbsActive && includeAbs;
       return {
         key,
