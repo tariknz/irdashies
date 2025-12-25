@@ -32,6 +32,7 @@ export interface StandingsWidgetSettings extends BaseWidgetSettings {
       incidentCount: { enabled: boolean };
       brakeBias: { enabled: boolean };
       localTime: { enabled: boolean };
+      sessionClockTime: { enabled: boolean };
       trackWetness: { enabled: boolean };
       airTemperature: { enabled: boolean; unit: 'Metric' | 'Imperial' };
       trackTemperature: { enabled: boolean; unit: 'Metric' | 'Imperial' };
@@ -44,6 +45,7 @@ export interface StandingsWidgetSettings extends BaseWidgetSettings {
       incidentCount: { enabled: boolean };
       brakeBias: { enabled: boolean };
       localTime: { enabled: boolean };
+      sessionClockTime: { enabled: boolean };
       trackWetness: { enabled: boolean };
       airTemperature: { enabled: boolean; unit: 'Metric' | 'Imperial' };
       trackTemperature: { enabled: boolean; unit: 'Metric' | 'Imperial' };
@@ -75,6 +77,7 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
       incidentCount: { enabled: boolean };
       brakeBias: { enabled: boolean };
       localTime: { enabled: boolean };
+      sessionClockTime: { enabled: boolean };
       trackWetness: { enabled: boolean };
       airTemperature: { enabled: boolean; unit: 'Metric' | 'Imperial' };
       trackTemperature: { enabled: boolean; unit: 'Metric' | 'Imperial' };
@@ -87,6 +90,7 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
       incidentCount: { enabled: boolean };
       brakeBias: { enabled: boolean };
       localTime: { enabled: boolean };
+      sessionClockTime: { enabled: boolean };
       trackWetness: { enabled: boolean };
       airTemperature: { enabled: boolean; unit: 'Metric' | 'Imperial' };
       trackTemperature: { enabled: boolean; unit: 'Metric' | 'Imperial' };

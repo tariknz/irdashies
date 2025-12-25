@@ -5,7 +5,8 @@ import { useTrackWetness } from '../../hooks/useTrackWetness';
 import { useTrackTemperature } from '../../hooks/useTrackTemperature';
 import { useCurrentTime } from '../../hooks/useCurrentTime';
 import { useStandingsSettings, useRelativeSettings } from '../../hooks';
-import { ClockIcon, DropIcon, RoadHorizonIcon, ThermometerIcon, TireIcon } from '@phosphor-icons/react';
+import { ClockIcon, ClockUserIcon, DropIcon, RoadHorizonIcon, ThermometerIcon, TireIcon } from '@phosphor-icons/react';
+import { useSessionCurrentTime } from '../../hooks/useSessionCurrentTime';
 
 interface SessionBarProps {
   position?: 'header' | 'footer';
@@ -30,7 +31,7 @@ export const SessionBar = ({ position = 'header', variant = 'standings' }: Sessi
     trackTempUnit: effectiveBarSettings?.trackTemperature?.unit ?? 'Metric',
   });
   const localTime = useCurrentTime();
-
+  const sessionClockTime = useSessionCurrentTime();
   // Define all possible items with their render functions
   const itemDefinitions = {
     sessionName: {
@@ -107,8 +108,17 @@ export const SessionBar = ({ position = 'header', variant = 'standings' }: Sessi
       enabled: effectiveBarSettings?.localTime?.enabled ?? (position === 'header' ? true : true),
       render: () => (
         <div className="flex justify-center gap-1 items-center">
-          <ClockIcon />
+          <ClockUserIcon />
           <span>{localTime}</span>
+        </div>
+      ),
+    },
+    sessionClockTime: {
+      enabled: effectiveBarSettings?.sessionClockTime?.enabled ?? false,
+      render: () => (
+        <div className="flex justify-center gap-1 items-center">
+          <ClockIcon />
+          <span>{sessionClockTime}</span>
         </div>
       ),
     },
