@@ -228,6 +228,8 @@ export const CAR_ID_TO_CAR_MANUFACTURER: Record<number, string> = {
   204: 'ford', // Ford Mustang GT4
   205: 'dallara', // Dallara IL-15
   206: 'aston', // Aston Martin Vantage GT3 EVO
+  207: 'unknown', // FIA Cross Car
+  208: 'porsche', // Porsche 992.2 Cup
 };
 
 export const CarManufacturer = ({
