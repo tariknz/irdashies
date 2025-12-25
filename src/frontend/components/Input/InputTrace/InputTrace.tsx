@@ -19,6 +19,7 @@ export interface InputTraceProps {
     includeBrake?: boolean;
     includeAbs?: boolean;
     includeSteer?: boolean;
+    strokeWidth?: number;
   };
 }
 
@@ -26,7 +27,7 @@ export const InputTrace = ({
   input,
   settings = { includeThrottle: true, includeBrake: true, includeAbs: true },
 }: InputTraceProps) => {
-  const { includeThrottle, includeBrake, includeAbs = true, includeSteer = true } = settings;
+  const { includeThrottle, includeBrake, includeAbs = true, includeSteer = true, strokeWidth = 3 } = settings;
   const svgRef = useRef<SVGSVGElement>(null);
   const rafRef = useRef<number | null>(null);
   const { width, height } = { width: 400, height: 100 };
@@ -91,8 +92,8 @@ export const InputTrace = ({
         absColor: includeAbs ? BRAKE_ABS_COLOR : undefined
       });
     }
-    drawGraph(svgRef.current, valueArrayWithColors, width, height);
-  }, [brakeArray, brakeABSArray, height, throttleArray, steerArray, width, includeThrottle, includeBrake, includeAbs, includeSteer]);
+    drawGraph(svgRef.current, valueArrayWithColors, width, height, strokeWidth);
+  }, [brakeArray, brakeABSArray, height, throttleArray, steerArray, width, includeThrottle, includeBrake, includeAbs, includeSteer, strokeWidth]);
 
   return (
     <svg
@@ -114,7 +115,8 @@ function drawGraph(
     isCentered?: boolean;
   }[],
   width: number,
-  height: number
+  height: number,
+  strokeWidth: number
 ) {
   if (!svgElement) return;
 
@@ -133,11 +135,11 @@ function drawGraph(
 
   valueArrayWithColors.forEach(({ values, color, absStates, absColor, isCentered }) => {
     if (absStates && absColor) {
-      drawABSAwareLine(svg, values, absStates, xScale, yScale, color, absColor);
+      drawABSAwareLine(svg, values, absStates, xScale, yScale, color, absColor, strokeWidth);
     } else if (isCentered) {
       drawCenteredLine(svg, values, xScale, yScale, color, height);
     } else {
-      drawLine(svg, values, xScale, yScale, color);
+      drawLine(svg, values, xScale, yScale, color, strokeWidth);
     }
   });
 }
@@ -168,7 +170,8 @@ function drawLine(
   valueArray: number[],
   xScale: d3.ScaleLinear<number, number>,
   yScale: d3.ScaleLinear<number, number>,
-  color: string
+  color: string,
+  strokeWidth: number
 ) {
   const line = d3
     .line<number>()
@@ -182,7 +185,7 @@ function drawLine(
     .datum(valueArray)
     .attr('fill', 'none')
     .attr('stroke', color)
-    .attr('stroke-width', 3)
+    .attr('stroke-width', strokeWidth)
     .attr('d', line);
 }
 
@@ -227,7 +230,8 @@ function drawABSAwareLine(
   xScale: d3.ScaleLinear<number, number>,
   yScale: d3.ScaleLinear<number, number>,
   normalColor: string,
-  absColor: string
+  absColor: string,
+  strokeWidth: number
 ) {
   // Group consecutive points by ABS state
   const segments: { values: { value: number; index: number }[]; isABS: boolean }[] = [];
@@ -265,13 +269,14 @@ function drawABSAwareLine(
         .y((d) => yScale(Math.max(0, Math.min(1, d.value))))
         .curve(d3.curveBasis);
 
+      const segmentStrokeWidth = segment.isABS ? Math.round(strokeWidth * 1.67) : strokeWidth;
       svg
         .append('g')
         .append('path')
         .datum(segment.values)
         .attr('fill', 'none')
         .attr('stroke', segment.isABS ? absColor : normalColor)
-        .attr('stroke-width', segment.isABS ? 5 : 3)
+        .attr('stroke-width', segmentStrokeWidth)
         .attr('d', line);
     }
   });
