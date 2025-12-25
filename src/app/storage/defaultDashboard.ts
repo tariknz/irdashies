@@ -157,7 +157,8 @@ export const defaultDashboard: DashboardLayout = {
           "includeThrottle": true,
           "includeBrake": true,
           "includeAbs": true,
-          "includeSteer": true
+          "includeSteer": true,
+          "strokeWidth": 3
         },
         "bar": {
           "enabled": true,

@@ -136,6 +136,7 @@ export interface InputWidgetSettings extends BaseWidgetSettings {
       includeBrake: boolean;
       includeAbs: boolean;
       includeSteer?: boolean;
+      strokeWidth?: number;
     };
     bar: {
       enabled: boolean;

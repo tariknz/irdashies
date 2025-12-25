@@ -29,6 +29,7 @@ const defaultConfig: InputWidgetSettings['config'] = {
     includeBrake: true,
     includeAbs: true,
     includeSteer: true,
+    strokeWidth: 3,
   },
   bar: {
     enabled: true,
@@ -81,6 +82,9 @@ const migrateConfig = (savedConfig: unknown): InputWidgetSettings['config'] => {
       includeSteer:
         (config.trace as { includeSteer?: boolean })?.includeSteer ??
         defaultConfig.trace.includeSteer,
+      strokeWidth:
+        (config.trace as { strokeWidth?: number })?.strokeWidth ??
+        defaultConfig.trace.strokeWidth,
     },
     bar: {
       enabled:
@@ -318,6 +322,26 @@ export const InputSettings = () => {
                     />
                     <span className="text-sm text-slate-200">Show Steering Trace</span>
                   </label>
+                  <div className="flex items-center justify-between pt-2">
+                    <span className="text-sm text-slate-200">Stroke Width</span>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="range"
+                        min="1"
+                        max="10"
+                        value={config.trace.strokeWidth ?? 3}
+                        onChange={(e) =>
+                          handleConfigChange({
+                            trace: { ...config.trace, strokeWidth: parseInt(e.target.value) },
+                          })
+                        }
+                        className="w-20 h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer"
+                      />
+                      <span className="text-xs text-slate-400 w-8">
+                        {config.trace.strokeWidth ?? 3}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
