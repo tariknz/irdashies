@@ -5,6 +5,8 @@ export const IRacingFlag: React.FC = () => {
     <svg
       xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 495.73 371.8"
+      width="1.333333em"
+      height="1em"
     >
       <defs>
         <style>{`
