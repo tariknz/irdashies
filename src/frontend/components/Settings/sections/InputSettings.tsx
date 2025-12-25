@@ -52,6 +52,7 @@ const defaultConfig: InputWidgetSettings['config'] = {
     enabled: true,
     showRpmText: false,
   },
+  background: { opacity: 0 },
   displayOrder: sortableSettings.map((s) => s.id),
   showOnlyWhenOnTrack: true,
 };
@@ -125,6 +126,9 @@ const migrateConfig = (savedConfig: unknown): InputWidgetSettings['config'] => {
       showRpmText:
         (config.tachometer as { showRpmText?: boolean })?.showRpmText ??
         defaultConfig.tachometer.showRpmText,
+    },
+    background: {
+      opacity: (config.background as { opacity?: number })?.opacity ?? 0,
     },
     displayOrder: mergeDisplayOrder(sortableSettings.map((s) => s.id), config.displayOrder as string[]),
     showOnlyWhenOnTrack: (config.showOnlyWhenOnTrack as boolean) ?? true,
@@ -525,6 +529,35 @@ export const InputSettings = () => {
                   </div>
                 </div>
               )}
+            </div>
+
+            {/* Background Settings */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-medium text-slate-200">Background</h3>
+              </div>
+              <div className="space-y-3 pl-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-300">Background Opacity</span>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={settings.config.background.opacity}
+                      onChange={(e) =>
+                        handleConfigChange({
+                          background: { opacity: parseInt(e.target.value) },
+                        })
+                      }
+                      className="w-20 h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer"
+                    />
+                    <span className="text-xs text-slate-400 w-8">
+                      {settings.config.background.opacity}%
+                    </span>
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* Show Only When On Track Settings */}

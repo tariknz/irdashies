@@ -80,6 +80,9 @@ const RandomTraces = () => {
         },
         displayOrder: ['trace', 'bar', 'gear', 'steer'],
         showOnlyWhenOnTrack: true,
+        background: {
+          opacity: 80,
+        },
       }}
     />
   );

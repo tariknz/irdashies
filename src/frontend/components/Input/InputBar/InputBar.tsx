@@ -77,7 +77,7 @@ export const InputBar = ({
         <div
           key={key}
           data-testid={`input-bar-${key}`}
-          className="flex-1 flex flex-col relative min-w-5"
+          className="flex-1 flex flex-col relative min-w-4"
         >
           <div className="text-[10px] text-white text-center h-[15px] leading-[15px] shrink-0">
             {(value * 100).toFixed(0)}
