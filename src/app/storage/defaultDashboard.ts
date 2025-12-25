@@ -181,6 +181,7 @@ export const defaultDashboard: DashboardLayout = {
           "enabled": true,
           "showRpmText": false
         },
+        "showOnlyWhenOnTrack": true,
         "displayOrder": ["trace", "bar", "gear", "steer"]
       }
     },
