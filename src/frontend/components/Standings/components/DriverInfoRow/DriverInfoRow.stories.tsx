@@ -291,7 +291,7 @@ const Relative = () => {
         name: mockRelativeData.drivers[3].name,
         license: mockRelativeData.drivers[3].license,
         rating: mockRelativeData.drivers[3].rating,
-        flairId: 2, // France
+        flairId: 2, // iRacing
       },
       isPlayer: true,
       delta: 0,
