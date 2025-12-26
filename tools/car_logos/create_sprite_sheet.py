@@ -10,7 +10,7 @@ import math
 
 LOGO_DIR = "logos"
 SPRITE_SIZE = 128
-OUTPUT_FILE = "../../src/frontend/assets/car_manufacturer.png"
+OUTPUT_FILE = "../../src/frontend/assets/img/car_manufacturer.png"
 TS_OUTPUT_FILE = "../../src/frontend/components/Standings/components/CarManufacturer/spritePositions.ts"
 
 def resize_logo(img, target_size):
@@ -104,4 +104,3 @@ def create_sprite_sheet():
 
 if __name__ == "__main__":
     create_sprite_sheet()
-

@@ -56,24 +56,21 @@ export const AllCars: Story = {
       .sort((a, b) => a.id - b.id);
 
     return (
-      <div className="p-4 bg-slate-800 rounded-lg max-h-[90vh] overflow-y-auto">
-        <h2 className="text-white text-xl font-bold mb-4 sticky top-0 bg-slate-800 pb-2">
+      <div className="p-4 max-h-[90vh] overflow-y-auto">
+        <h2 className="text-xl font-bold mb-4">
           All Cars ({carEntries.length})
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           {carEntries.map(({ id, name, manufacturer }) => (
-            <div
-              key={id}
-              className="flex items-center gap-3 p-2 bg-slate-700 rounded hover:bg-slate-600 transition-colors"
-            >
+            <div key={id} className="flex items-center gap-3 p-2">
               <div className="shrink-0">
                 <CarManufacturer carId={id} />
               </div>
               <div className="flex-1 min-w-0">
-                <div className="text-white text-sm font-medium truncate" title={name}>
+                <div className="text-sm truncate" title={name}>
                   {name}
                 </div>
-                <div className="text-slate-400 text-xs">
+                <div className="text-xs">
                   ID: {id} • {manufacturer}
                 </div>
               </div>
@@ -109,30 +106,27 @@ export const AllCarsByManufacturer: Story = {
     const sortedManufacturers = Object.keys(groupedByManufacturer).sort();
 
     return (
-      <div className="p-4 bg-slate-800 rounded-lg max-h-[90vh] overflow-y-auto">
-        <h2 className="text-white text-xl font-bold mb-4 sticky top-0 bg-slate-800 pb-2">
+      <div className="p-4 max-h-[90vh] overflow-y-auto">
+        <h2 className="text-xl font-bold mb-4">
           All Cars by Manufacturer
         </h2>
         <div className="space-y-6">
           {sortedManufacturers.map((manufacturer) => (
-            <div key={manufacturer} className="border-b border-slate-600 pb-4 last:border-0">
-              <h3 className="text-white text-lg font-semibold mb-3 capitalize">
+            <div key={manufacturer} className="pb-4">
+              <h3 className="text-lg font-semibold mb-3 capitalize">
                 {manufacturer} ({groupedByManufacturer[manufacturer].length})
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
                 {groupedByManufacturer[manufacturer].map(({ id, name }) => (
-                  <div
-                    key={id}
-                    className="flex items-center gap-2 p-2 bg-slate-700 rounded hover:bg-slate-600 transition-colors"
-                  >
-                    <div className="flex-shrink-0">
+                  <div key={id} className="flex items-center gap-2 p-2">
+                    <div className="shrink-0">
                       <CarManufacturer carId={id} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="text-white text-sm truncate" title={name}>
+                      <div className="text-sm truncate" title={name}>
                         {name}
                       </div>
-                      <div className="text-slate-400 text-xs">ID: {id}</div>
+                      <div className="text-xs">ID: {id}</div>
                     </div>
                   </div>
                 ))}
@@ -156,24 +150,21 @@ export const UnknownManufacturerCars: Story = {
       .sort((a, b) => a.id - b.id);
 
     return (
-      <div className="p-4 bg-slate-800 rounded-lg max-h-[90vh] overflow-y-auto">
-        <h2 className="text-white text-xl font-bold mb-4 sticky top-0 bg-slate-800 pb-2">
+      <div className="p-4 max-h-[90vh] overflow-y-auto">
+        <h2 className="text-xl font-bold mb-4">
           Unknown Manufacturer Cars ({unknownCars.length})
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           {unknownCars.map(({ id, name }) => (
-            <div
-              key={id}
-              className="flex items-center gap-3 p-2 bg-slate-700 rounded hover:bg-slate-600 transition-colors"
-            >
-              <div className="flex-shrink-0">
+            <div key={id} className="flex items-center gap-3 p-2">
+              <div className="shrink-0">
                 <CarManufacturer carId={id} />
               </div>
               <div className="flex-1 min-w-0">
-                <div className="text-white text-sm font-medium truncate" title={name}>
+                <div className="text-sm truncate" title={name}>
                   {name}
                 </div>
-                <div className="text-slate-400 text-xs">ID: {id}</div>
+                <div className="text-xs">ID: {id}</div>
               </div>
             </div>
           ))}
