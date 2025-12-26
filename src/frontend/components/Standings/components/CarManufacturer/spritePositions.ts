@@ -42,3 +42,4 @@ export const CAR_MANUFACTURER_SPRITE_POSITIONS: Record<string, { x: number; y: n
   vw: { x: 1, y: 5 },
   williams: { x: 2, y: 5 },
 };
+
