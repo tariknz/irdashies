@@ -112,6 +112,11 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
 export interface WeatherWidgetSettings extends BaseWidgetSettings {
   config: {
     background: { opacity: number };
+    includeAirTemp: boolean;
+    includeTrackTemp: boolean;
+    includeWind: boolean;
+    includeWetness: boolean;
+    includeTrackState: boolean;
   };
 }
 
