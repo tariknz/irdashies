@@ -20,7 +20,7 @@ export const Weather = () => {
     : unitSetting === 'Metric';
   const actualUnit = isMetric ? 'Metric' : 'Imperial';
 
-  const { trackTemp, airTemp } = useTrackTemperature({
+  const { trackTemp } = useTrackTemperature({
     airTempUnit: actualUnit,
     trackTempUnit: actualUnit,
   });

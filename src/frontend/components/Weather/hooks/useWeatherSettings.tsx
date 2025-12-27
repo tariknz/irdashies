@@ -8,7 +8,8 @@ const defaultConfig: WeatherWidgetSettings['config'] = {
   includeTrackTemp: true,
   includeWind: false,
   includeWetness: false,
-  includeTrackState: false
+  includeTrackState: false,
+  units: 'auto'
 };
 
 export const useWeatherSettings = () => {
@@ -18,7 +19,7 @@ export const useWeatherSettings = () => {
     const weatherSettings = currentDashboard?.widgets.find(
       (widget) => widget.id === 'weather',
     )?.config;
-    
+
     return { ...defaultConfig, ...(weatherSettings as WeatherWidgetSettings['config']) };
   }, [currentDashboard]);
 }; 

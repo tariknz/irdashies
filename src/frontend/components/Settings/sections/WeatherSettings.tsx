@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import { WeatherWidgetSettings } from '../types';
 import { useDashboard } from '@irdashies/context';
@@ -33,27 +33,6 @@ const migrateConfig = (savedConfig: unknown): WeatherWidgetSettings['config'] =>
   };
 };
 
-interface DisplaySettingsListProps {
-  itemsOrder: string[];
-  onReorder: (newOrder: string[]) => void;
-  settings: WeatherWidgetSettings;
-  handleConfigChange: (changes: Partial<WeatherWidgetSettings['config']>) => void;
-}
-
-interface SortableSetting {
-  id: string;
-  label: string;
-  configKey: keyof WeatherWidgetSettings['config'];
-}
-
-const sortableSettings: SortableSetting[] = [
-  { id: 'trace', label: 'Trace', configKey: 'includeTrackTemp' },
-  { id: 'airTemp', label: 'Air Temperature', configKey: 'includeAirTemp' },
-  { id: 'wind', label: 'Wind', configKey: 'includeWind' },
-  { id: 'wetness', label: 'Wetness', configKey: 'includeWetness' },
-  { id: 'trackState', label: 'Track State', configKey: 'includeTrackState' },
-];
-
 export const WeatherSettings = () => {
   const { currentDashboard } = useDashboard();
   const savedSettings = currentDashboard?.widgets.find(
@@ -63,15 +42,6 @@ export const WeatherSettings = () => {
     enabled: savedSettings?.enabled ?? false,
     config: migrateConfig(savedSettings?.config),
   });
-
-  // Keep local state in sync when dashboard updates elsewhere
-  useEffect(() => {
-    const s = currentDashboard?.widgets.find((w) => w.id === SETTING_ID) as WeatherWidgetSettings | undefined;
-    setSettings({
-      enabled: s?.enabled ?? false,
-      config: migrateConfig(s?.config),
-    });
-  }, [currentDashboard]);
 
   if (!currentDashboard) {
     return <>Loading...</>;
@@ -152,31 +122,28 @@ export const WeatherSettings = () => {
             <div className="flex items-center gap-2">
               <button
                 onClick={() => handleConfigChange({ units: 'auto' })}
-                className={`px-3 py-1 rounded text-sm transition-colors ${
-                  settings.config.units === 'auto'
+                className={`px-3 py-1 rounded text-sm transition-colors ${settings.config.units === 'auto'
                     ? 'bg-blue-600 text-white'
                     : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
-                }`}
+                  }`}
               >
                 auto
               </button>
               <button
                 onClick={() => handleConfigChange({ units: 'Metric' })}
-                className={`px-3 py-1 rounded text-sm transition-colors ${
-                  settings.config.units === 'Metric'
+                className={`px-3 py-1 rounded text-sm transition-colors ${settings.config.units === 'Metric'
                     ? 'bg-blue-600 text-white'
                     : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
-                }`}
+                  }`}
               >
                 °C
               </button>
               <button
                 onClick={() => handleConfigChange({ units: 'Imperial' })}
-                className={`px-3 py-1 rounded text-sm transition-colors ${
-                  settings.config.units === 'Imperial'
+                className={`px-3 py-1 rounded text-sm transition-colors ${settings.config.units === 'Imperial'
                     ? 'bg-blue-600 text-white'
                     : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
-                }`}
+                  }`}
               >
                 °F
               </button>
