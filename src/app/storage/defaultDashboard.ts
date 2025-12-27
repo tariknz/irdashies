@@ -7,7 +7,7 @@ export const defaultDashboard: DashboardLayout = {
       "enabled": true,
       "layout": {
         "x": 6,
-        "y": 624,
+        "y": 10,
         "width": 560,
         "height": 774
       },
@@ -152,8 +152,8 @@ export const defaultDashboard: DashboardLayout = {
       "id": "input",
       "enabled": true,
       "layout": {
-        "x": 919,
-        "y": 1113,
+        "x": 622,
+        "y": 864,
         "width": 396,
         "height": 113
       },
@@ -199,8 +199,8 @@ export const defaultDashboard: DashboardLayout = {
       "id": "relative",
       "enabled": true,
       "layout": {
-        "x": 1720,
-        "y": 940,
+        "x": 7,
+        "y": 674,
         "width": 402,
         "height": 300
       },
@@ -336,8 +336,8 @@ export const defaultDashboard: DashboardLayout = {
       "id": "map",
       "enabled": true,
       "layout": {
-        "x": 1720,
-        "y": 8,
+        "x": 1102,
+        "y": 41,
         "width": 407,
         "height": 227
       },
@@ -349,23 +349,24 @@ export const defaultDashboard: DashboardLayout = {
       "id": "weather",
       "enabled": true,
       "layout": {
-        "x": 6,
-        "y": 6,
+        "x": 1334,
+        "y": 271,
         "width": 174,
         "height": 379
       },
       "config": {
         "background": {
           "opacity": 25
-        }
+        },
+        "units": "auto"
       }
     },
     {
       "id": "fastercarsfrombehind",
       "enabled": true,
       "layout": {
-        "x": 910,
-        "y": 7,
+        "x": 588,
+        "y": 44,
         "width": 405,
         "height": 43
       },
@@ -377,7 +378,7 @@ export const defaultDashboard: DashboardLayout = {
       "id": "fuel",
       "enabled": false,
       "layout": {
-        "x": 1720,
+        "x": 1102,
         "y": 240,
         "width": 300,
         "height": 420
@@ -407,8 +408,8 @@ export const defaultDashboard: DashboardLayout = {
       "id": "blindspotmonitor",
       "enabled": false,
       "layout": {
-        "x": 200,
-        "y": 50,
+        "x": 378,
+        "y": 102,
         "width": 800,
         "height": 500
       },
@@ -425,6 +426,7 @@ export const defaultDashboard: DashboardLayout = {
   "generalSettings": {
     "fontSize": "sm",
     "colorPalette": "black",
-    "skipTaskbar": true
+    "skipTaskbar": true,
+    "disableHardwareAcceleration": false
   }
 };
