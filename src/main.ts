@@ -1,4 +1,4 @@
-import { app } from 'electron';
+import { app, dialog, autoUpdater } from 'electron';
 import { iRacingSDKSetup, getCurrentBridge } from './app/bridge/iracingSdk/setup';
 import { getOrCreateDefaultDashboard } from './app/storage/dashboards';
 import { setupTaskbar } from './app';
@@ -13,7 +13,42 @@ import started from 'electron-squirrel-startup';
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) app.quit();
 
-updateElectronApp();
+function formatReleaseNotes(notes: string): string {
+  return notes
+    .replace(/^#+\s+/gm, '') // Remove markdown headers
+    .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold markdown
+    .replace(/\*(.*?)\*/g, '$1') // Remove italic markdown
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // Convert links to plain text
+    .replace(/`([^`]+)`/g, '$1') // Remove inline code markers
+    .trim();
+}
+
+updateElectronApp({
+  onNotifyUser: (info) => {
+    const formattedNotes = formatReleaseNotes(info.releaseNotes || 'No release notes available.');
+    const releaseDate = info.releaseDate
+      ? info.releaseDate.toLocaleDateString()
+      : '';
+
+    dialog
+      .showMessageBox({
+        type: 'info',
+        title: 'Update Available',
+        message: `A new version (${info.releaseName || 'latest'}) is ready to install.`,
+        detail: releaseDate
+          ? `Release Date: ${releaseDate}\n\n${formattedNotes}`
+          : formattedNotes,
+        buttons: ['Restart Now', 'Later'],
+        defaultId: 0,
+        cancelId: 1,
+      })
+      .then((result) => {
+        if (result.response === 0) {
+          autoUpdater.quitAndInstall();
+        }
+      });
+  },
+});
 
 const overlayManager = new OverlayManager();
 const telemetrySink = new TelemetrySink();
