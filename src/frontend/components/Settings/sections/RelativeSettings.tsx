@@ -63,6 +63,7 @@ const defaultConfig: RelativeWidgetSettings['config'] = {
     incidentCount: { enabled: true },
     brakeBias: { enabled: true },
     localTime: { enabled: false },
+    sessionClockTime: { enabled: false },
     trackWetness: { enabled: false },
     airTemperature: { enabled: false, unit: 'Metric' },
     trackTemperature: { enabled: false, unit: 'Metric' },
@@ -75,6 +76,7 @@ const defaultConfig: RelativeWidgetSettings['config'] = {
     incidentCount: { enabled: false },
     brakeBias: { enabled: false },
     localTime: { enabled: true },
+    sessionClockTime: { enabled: false },
     trackWetness: { enabled: true },
     airTemperature: { enabled: true, unit: 'Metric' },
     trackTemperature: { enabled: true, unit: 'Metric' },
@@ -130,6 +132,7 @@ const migrateConfig = (savedConfig: unknown): RelativeWidgetSettings['config'] =
       incidentCount: { enabled: (config.headerBar as { incidentCount?: { enabled?: boolean } })?.incidentCount?.enabled ?? true },
       brakeBias: { enabled: (config.headerBar as { brakeBias?: { enabled?: boolean } })?.brakeBias?.enabled ?? false },
       localTime: { enabled: (config.headerBar as { localTime?: { enabled?: boolean } })?.localTime?.enabled ?? false },
+      sessionClockTime: { enabled: (config.headerBar as { sessionClockTime?: { enabled?: boolean } })?.sessionClockTime?.enabled ?? false },
       trackWetness: { enabled: (config.headerBar as { trackWetness?: { enabled?: boolean } })?.trackWetness?.enabled ?? false },
       airTemperature: {
         enabled: (config.headerBar as { airTemperature?: { enabled?: boolean; unit?: string } })?.airTemperature?.enabled ?? false,
@@ -151,6 +154,7 @@ const migrateConfig = (savedConfig: unknown): RelativeWidgetSettings['config'] =
       incidentCount: { enabled: (config.footerBar as { incidentCount?: { enabled?: boolean } })?.incidentCount?.enabled ?? false },
       brakeBias: { enabled: (config.footerBar as { brakeBias?: { enabled?: boolean } })?.brakeBias?.enabled ?? false },
       localTime: { enabled: (config.footerBar as { localTime?: { enabled?: boolean } })?.localTime?.enabled ?? true },
+      sessionClockTime: { enabled: (config.footerBar as { sessionClockTime?: { enabled?: boolean } })?.sessionClockTime?.enabled ?? false },
       trackWetness: { enabled: (config.footerBar as { trackWetness?: { enabled?: boolean } })?.trackWetness?.enabled ?? true },
       airTemperature: {
         enabled: (config.footerBar as { airTemperature?: { enabled?: boolean; unit?: string } })?.airTemperature?.enabled ?? true,

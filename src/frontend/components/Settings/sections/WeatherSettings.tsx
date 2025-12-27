@@ -14,7 +14,8 @@ const defaultConfig: WeatherWidgetSettings['config'] = {
   includeTrackTemp: true,
   includeWind: false,
   includeWetness: false,
-  includeTrackState: false
+  includeTrackState: false,
+  units: 'auto',
 };
 
 const migrateConfig = (savedConfig: unknown): WeatherWidgetSettings['config'] => {
@@ -28,6 +29,7 @@ const migrateConfig = (savedConfig: unknown): WeatherWidgetSettings['config'] =>
     includeWind: typeof config.includeWind === 'boolean' ? (config.includeWind as boolean) : defaultConfig.includeWind,
     includeWetness: typeof config.includeWetness === 'boolean' ? (config.includeWetness as boolean) : defaultConfig.includeWetness,
     includeTrackState: typeof config.includeTrackState === 'boolean' ? (config.includeTrackState as boolean) : defaultConfig.includeTrackState,
+    units: (config.units as 'auto' | 'Metric' | 'Imperial') ?? 'auto',
   };
 };
 
@@ -144,6 +146,41 @@ export const WeatherSettings = () => {
               enabled={!!config.includeTrackState}
               onToggle={(enabled) => handleConfigChange({ includeTrackState: enabled })}
             />
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-slate-300">Temperature Units</span>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => handleConfigChange({ units: 'auto' })}
+                className={`px-3 py-1 rounded text-sm transition-colors ${
+                  settings.config.units === 'auto'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
+                }`}
+              >
+                auto
+              </button>
+              <button
+                onClick={() => handleConfigChange({ units: 'Metric' })}
+                className={`px-3 py-1 rounded text-sm transition-colors ${
+                  settings.config.units === 'Metric'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
+                }`}
+              >
+                °C
+              </button>
+              <button
+                onClick={() => handleConfigChange({ units: 'Imperial' })}
+                className={`px-3 py-1 rounded text-sm transition-colors ${
+                  settings.config.units === 'Imperial'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
+                }`}
+              >
+                °F
+              </button>
+            </div>
           </div>
         </div>
       )}

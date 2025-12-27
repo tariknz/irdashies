@@ -130,7 +130,7 @@ export const Tachometer = ({
   };
 
   return (
-    <div className="flex items-center gap-1 p-2 bg-slate-800/30 rounded">
+    <div className="flex items-center gap-1 p-2 rounded">
       {/* LED lights */}
       <div className="flex gap-1">
         {Array.from({ length: numLights }, (_, i) => (

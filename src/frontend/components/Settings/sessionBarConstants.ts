@@ -1,5 +1,5 @@
 // Valid keys for headerBar and footerBar items (session bar components)
-export const VALID_SESSION_BAR_ITEM_KEYS = ['sessionName', 'sessionTime', 'incidentCount', 'brakeBias', 'localTime', 'trackWetness', 'airTemperature', 'trackTemperature'] as const;
+export const VALID_SESSION_BAR_ITEM_KEYS = ['sessionName', 'sessionTime', 'incidentCount', 'brakeBias', 'localTime', 'sessionClockTime', 'trackWetness', 'airTemperature', 'trackTemperature'] as const;
 
 // Labels for session bar items
 export const SESSION_BAR_ITEM_LABELS: Record<string, string> = {
@@ -8,6 +8,7 @@ export const SESSION_BAR_ITEM_LABELS: Record<string, string> = {
   incidentCount: 'Incident Count',
   brakeBias: 'Brake Bias',
   localTime: 'Local Time',
+  sessionClockTime: 'Session Clock Time',
   trackWetness: 'Track Wetness',
   airTemperature: 'Air Temperature',
   trackTemperature: 'Track Temperature'

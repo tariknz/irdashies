@@ -6,13 +6,11 @@ export interface BrokenTrack {
 
 export const BROKEN_TRACKS: BrokenTrack[] = [
   // Suzuka variants - non-continuous
-  { id: 168, name: 'Suzuka', issue: 'non-continuous' },
   { id: 173, name: 'Suzuka', issue: 'non-continuous' },
   { id: 175, name: 'Suzuka', issue: 'non-continuous' },
   { id: 176, name: 'Suzuka', issue: 'non-continuous' },
   
   // Oran Park variants - non-continuous
-  { id: 202, name: 'Oran Park', issue: 'non-continuous' },
   { id: 207, name: 'Oran Park', issue: 'non-continuous' },
   { id: 209, name: 'Oran Park', issue: 'non-continuous' },
   { id: 211, name: 'Oran Park', issue: 'non-continuous' },

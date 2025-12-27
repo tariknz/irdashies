@@ -29,6 +29,7 @@ const defaultConfig: InputWidgetSettings['config'] = {
     includeBrake: true,
     includeAbs: true,
     includeSteer: true,
+    strokeWidth: 3,
   },
   bar: {
     enabled: true,
@@ -52,6 +53,7 @@ const defaultConfig: InputWidgetSettings['config'] = {
     enabled: true,
     showRpmText: false,
   },
+  background: { opacity: 0 },
   displayOrder: sortableSettings.map((s) => s.id),
   showOnlyWhenOnTrack: true,
 };
@@ -80,6 +82,9 @@ const migrateConfig = (savedConfig: unknown): InputWidgetSettings['config'] => {
       includeSteer:
         (config.trace as { includeSteer?: boolean })?.includeSteer ??
         defaultConfig.trace.includeSteer,
+      strokeWidth:
+        (config.trace as { strokeWidth?: number })?.strokeWidth ??
+        defaultConfig.trace.strokeWidth,
     },
     bar: {
       enabled:
@@ -125,6 +130,9 @@ const migrateConfig = (savedConfig: unknown): InputWidgetSettings['config'] => {
       showRpmText:
         (config.tachometer as { showRpmText?: boolean })?.showRpmText ??
         defaultConfig.tachometer.showRpmText,
+    },
+    background: {
+      opacity: (config.background as { opacity?: number })?.opacity ?? 0,
     },
     displayOrder: mergeDisplayOrder(sortableSettings.map((s) => s.id), config.displayOrder as string[]),
     showOnlyWhenOnTrack: (config.showOnlyWhenOnTrack as boolean) ?? true,
@@ -314,6 +322,26 @@ export const InputSettings = () => {
                     />
                     <span className="text-sm text-slate-200">Show Steering Trace</span>
                   </label>
+                  <div className="flex items-center justify-between pt-2">
+                    <span className="text-sm text-slate-200">Stroke Width</span>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="range"
+                        min="1"
+                        max="10"
+                        value={config.trace.strokeWidth ?? 3}
+                        onChange={(e) =>
+                          handleConfigChange({
+                            trace: { ...config.trace, strokeWidth: parseInt(e.target.value) },
+                          })
+                        }
+                        className="w-20 h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer"
+                      />
+                      <span className="text-xs text-slate-400 w-8">
+                        {config.trace.strokeWidth ?? 3}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
@@ -475,24 +503,61 @@ export const InputSettings = () => {
               </div>
               {config.gear.enabled && (
                 <div className="space-y-3 pl-4 pt-2">
-                  <div className="flex items-center gap-3">
-                    <label className="text-sm text-slate-200">Speed Unit:</label>
-                    <select
-                      value={config.gear.unit}
-                      onChange={(e) =>
-                        handleConfigChange({
-                          gear: {
-                            ...config.gear,
-                            unit: e.target.value as 'mph' | 'km/h' | 'auto',
-                          },
-                        })
-                      }
-                      className="bg-slate-700 text-slate-200 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="auto">auto</option>
-                      <option value="mph">mph</option>
-                      <option value="km/h">km/h</option>
-                    </select>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-slate-200">Speed Unit</span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() =>
+                          handleConfigChange({
+                            gear: {
+                              ...config.gear,
+                              unit: 'auto',
+                            },
+                          })
+                        }
+                        className={`px-3 py-1 rounded text-sm transition-colors ${
+                          config.gear.unit === 'auto'
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
+                        }`}
+                      >
+                        auto
+                      </button>
+                      <button
+                        onClick={() =>
+                          handleConfigChange({
+                            gear: {
+                              ...config.gear,
+                              unit: 'mph',
+                            },
+                          })
+                        }
+                        className={`px-3 py-1 rounded text-sm transition-colors ${
+                          config.gear.unit === 'mph'
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
+                        }`}
+                      >
+                        mph
+                      </button>
+                      <button
+                        onClick={() =>
+                          handleConfigChange({
+                            gear: {
+                              ...config.gear,
+                              unit: 'km/h',
+                            },
+                          })
+                        }
+                        className={`px-3 py-1 rounded text-sm transition-colors ${
+                          config.gear.unit === 'km/h'
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
+                        }`}
+                      >
+                        km/h
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}
@@ -525,6 +590,35 @@ export const InputSettings = () => {
                   </div>
                 </div>
               )}
+            </div>
+
+            {/* Background Settings */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-medium text-slate-200">Background</h3>
+              </div>
+              <div className="space-y-3 pl-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-300">Background Opacity</span>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={settings.config.background.opacity}
+                      onChange={(e) =>
+                        handleConfigChange({
+                          background: { opacity: parseInt(e.target.value) },
+                        })
+                      }
+                      className="w-20 h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer"
+                    />
+                    <span className="text-xs text-slate-400 w-8">
+                      {settings.config.background.opacity}%
+                    </span>
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* Show Only When On Track Settings */}

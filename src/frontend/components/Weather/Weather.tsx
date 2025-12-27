@@ -1,4 +1,5 @@
-import { useTrackTemperature } from './hooks/useTrackTemperature';
+import { useTelemetryValue } from '@irdashies/context';
+import { useTrackTemperature } from '../Standings/hooks/useTrackTemperature';
 import { useTrackWeather } from './hooks/useTrackWeather';
 import { WeatherTemp } from './WeatherTemp/WeatherTemp';
 import { WeatherTrackWetness } from './WeatherTrackWetness/WeatherTrackWetness';
@@ -6,16 +7,26 @@ import { WeatherTrackRubbered } from './WeatherTrackRubbered/WeatherTrackRubbere
 import { WindDirection } from './WindDirection/WindDirection';
 import { useTrackRubberedState } from './hooks/useTrackRubberedState';
 import { useWeatherSettings } from './hooks/useWeatherSettings';
-import { useTelemetryValue } from '@irdashies/context';
 
 export const Weather = () => {
   const weather = useTrackWeather();
-  const trackTemp = useTrackTemperature();
+  const settings = useWeatherSettings();
+  const displayUnits = useTelemetryValue('DisplayUnits'); // 0 = imperial, 1 = metric
+
+  // Determine actual unit to use: auto uses iRacing's DisplayUnits setting
+  const unitSetting = settings?.units ?? 'auto';
+  const isMetric = unitSetting === 'auto'
+    ? displayUnits === 1
+    : unitSetting === 'Metric';
+  const actualUnit = isMetric ? 'Metric' : 'Imperial';
+
+  const { trackTemp, airTemp } = useTrackTemperature({
+    airTempUnit: actualUnit,
+    trackTempUnit: actualUnit,
+  });
   const windSpeed = weather.windVelocity;
   const relativeWindDirection =  (weather.windDirection ?? 0) - (weather.windYaw ?? 0);
   const trackRubbered = useTrackRubberedState();
-  const settings = useWeatherSettings();
-  const unit = useTelemetryValue('DisplayUnits');
 
   return (
     <div
@@ -26,13 +37,13 @@ export const Weather = () => {
     >
       <div className="flex flex-col p-2 w-full rounded-sm gap-2">
         {settings.includeTrackTemp && (
-          <WeatherTemp title="Track" value={trackTemp.trackTemp} />
+          <WeatherTemp title="Track" value={trackTemp} />
         )}
         {settings.includeAirTemp && (
-          <WeatherTemp title="Air" value={trackTemp.airTemp} />
+          <WeatherTemp title="Air" value={trackTemp} />
         )}
         {settings.includeWind && (
-          <WindDirection speedMs={windSpeed} direction={relativeWindDirection} metric={unit === 1} />
+          <WindDirection speedMs={windSpeed} direction={relativeWindDirection} metric={isMetric} />
         )}
         {settings.includeWetness && (
           <WeatherTrackWetness trackMoisture={weather.trackMoisture} />

@@ -22,14 +22,21 @@ export const Input = () => {
     <div className="h-full flex flex-col">
       {/* Tachometer at the top when enabled */}
       {tachometerSettings.enabled && (
-        <div className="flex justify-center mb-2 flex-shrink-0">
-          <Tachometer
-            rpm={tachometerData.rpm}
-            maxRpm={tachometerData.maxRpm}
-            shiftRpm={tachometerData.shiftRpm}
-            blinkRpm={tachometerData.blinkRpm}
-            showRpmText={tachometerSettings.showRpmText}
-          />
+        <div className="flex justify-center mb-2 shrink-0">
+          <div
+            className="bg-slate-800/(--bg-opacity)"
+            style={{
+              ['--bg-opacity' as string]: `${settings?.background?.opacity ?? 80}%`,
+            }}
+          >
+            <Tachometer
+              rpm={tachometerData.rpm}
+              maxRpm={tachometerData.maxRpm}
+              shiftRpm={tachometerData.shiftRpm}
+              blinkRpm={tachometerData.blinkRpm}
+              showRpmText={tachometerSettings.showRpmText}
+            />
+          </div>
         </div>
       )}
 

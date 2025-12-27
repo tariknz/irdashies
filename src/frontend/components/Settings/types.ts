@@ -32,6 +32,7 @@ export interface StandingsWidgetSettings extends BaseWidgetSettings {
       incidentCount: { enabled: boolean };
       brakeBias: { enabled: boolean };
       localTime: { enabled: boolean };
+      sessionClockTime: { enabled: boolean };
       trackWetness: { enabled: boolean };
       airTemperature: { enabled: boolean; unit: 'Metric' | 'Imperial' };
       trackTemperature: { enabled: boolean; unit: 'Metric' | 'Imperial' };
@@ -44,6 +45,7 @@ export interface StandingsWidgetSettings extends BaseWidgetSettings {
       incidentCount: { enabled: boolean };
       brakeBias: { enabled: boolean };
       localTime: { enabled: boolean };
+      sessionClockTime: { enabled: boolean };
       trackWetness: { enabled: boolean };
       airTemperature: { enabled: boolean; unit: 'Metric' | 'Imperial' };
       trackTemperature: { enabled: boolean; unit: 'Metric' | 'Imperial' };
@@ -75,6 +77,7 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
       incidentCount: { enabled: boolean };
       brakeBias: { enabled: boolean };
       localTime: { enabled: boolean };
+      sessionClockTime: { enabled: boolean };
       trackWetness: { enabled: boolean };
       airTemperature: { enabled: boolean; unit: 'Metric' | 'Imperial' };
       trackTemperature: { enabled: boolean; unit: 'Metric' | 'Imperial' };
@@ -87,6 +90,7 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
       incidentCount: { enabled: boolean };
       brakeBias: { enabled: boolean };
       localTime: { enabled: boolean };
+      sessionClockTime: { enabled: boolean };
       trackWetness: { enabled: boolean };
       airTemperature: { enabled: boolean; unit: 'Metric' | 'Imperial' };
       trackTemperature: { enabled: boolean; unit: 'Metric' | 'Imperial' };
@@ -117,6 +121,7 @@ export interface WeatherWidgetSettings extends BaseWidgetSettings {
     includeWind: boolean;
     includeWetness: boolean;
     includeTrackState: boolean;
+    units: 'auto' | 'Metric' | 'Imperial';
   };
 }
 
@@ -141,6 +146,7 @@ export interface InputWidgetSettings extends BaseWidgetSettings {
       includeBrake: boolean;
       includeAbs: boolean;
       includeSteer?: boolean;
+      strokeWidth?: number;
     };
     bar: {
       enabled: boolean;
@@ -158,6 +164,7 @@ export interface InputWidgetSettings extends BaseWidgetSettings {
       enabled: boolean;
       showRpmText: boolean;
     };
+    background: { opacity: number };
     displayOrder: string[];
     showOnlyWhenOnTrack: boolean;
   };
