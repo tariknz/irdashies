@@ -10,11 +10,11 @@ const SETTING_ID = 'weather';
 
 const defaultConfig: WeatherWidgetSettings['config'] = {
   background: { opacity: 0 },
-  includeAirTemp: true,
-  includeTrackTemp: true,
-  includeWind: false,
-  includeWetness: false,
-  includeTrackState: false,
+  airTemp: { enabled: true },
+  trackTemp: { enabled: true },
+  wetness: { enabled: true },
+  trackState: { enabled: true },
+  wind: { enabled: true },
   units: 'auto',
 };
 
@@ -24,11 +24,11 @@ const migrateConfig = (savedConfig: unknown): WeatherWidgetSettings['config'] =>
 
   return {
     background: { opacity: (config.background as { opacity?: number })?.opacity ?? defaultConfig.background.opacity },
-    includeAirTemp: typeof config.includeAirTemp === 'boolean' ? (config.includeAirTemp as boolean) : defaultConfig.includeAirTemp,
-    includeTrackTemp: typeof config.includeTrackTemp === 'boolean' ? (config.includeTrackTemp as boolean) : defaultConfig.includeTrackTemp,
-    includeWind: typeof config.includeWind === 'boolean' ? (config.includeWind as boolean) : defaultConfig.includeWind,
-    includeWetness: typeof config.includeWetness === 'boolean' ? (config.includeWetness as boolean) : defaultConfig.includeWetness,
-    includeTrackState: typeof config.includeTrackState === 'boolean' ? (config.includeTrackState as boolean) : defaultConfig.includeTrackState,
+    airTemp: { enabled: (config.airTemp as { enabled?: boolean })?.enabled ?? defaultConfig.airTemp.enabled },
+    trackTemp: { enabled: (config.trackTemp as { enabled?: boolean })?.enabled ?? defaultConfig.trackTemp.enabled },
+    wetness: { enabled: (config.wetness as { enabled?: boolean })?.enabled ?? defaultConfig.wetness.enabled },
+    trackState: { enabled: (config.trackState as { enabled?: boolean })?.enabled ?? defaultConfig.trackState.enabled },
+    wind: { enabled: (config.wind as { enabled?: boolean })?.enabled ?? defaultConfig.wind.enabled },
     units: (config.units as 'auto' | 'Metric' | 'Imperial') ?? 'auto',
   };
 };
@@ -69,8 +69,8 @@ export const WeatherSettings = () => {
               <p className="text-sm text-slate-400">Show the current track surface temperature.</p>
             </div>
             <ToggleSwitch
-              enabled={!!config.includeTrackTemp}
-              onToggle={(enabled) => handleConfigChange({ includeTrackTemp: enabled })}
+              enabled={!!config.trackTemp.enabled}
+              onToggle={(enabled) => handleConfigChange({ trackTemp: { enabled } })}
             />
           </div>
 
@@ -80,8 +80,8 @@ export const WeatherSettings = () => {
               <p className="text-sm text-slate-400">Show ambient air temperature.</p>
             </div>
             <ToggleSwitch
-              enabled={!!config.includeAirTemp}
-              onToggle={(enabled) => handleConfigChange({ includeAirTemp: enabled })}
+              enabled={!!config.airTemp.enabled}
+              onToggle={(enabled) => handleConfigChange({ airTemp: { enabled } })}
             />
           </div>
 
@@ -91,8 +91,8 @@ export const WeatherSettings = () => {
               <p className="text-sm text-slate-400">Show wind speed/direction if available.</p>
             </div>
             <ToggleSwitch
-              enabled={!!config.includeWind}
-              onToggle={(enabled) => handleConfigChange({ includeWind: enabled })}
+              enabled={!!config.wind.enabled}
+              onToggle={(enabled) => handleConfigChange({ wind: { enabled } })}
             />
           </div>
 
@@ -102,8 +102,8 @@ export const WeatherSettings = () => {
               <p className="text-sm text-slate-400">Show track wetness / moisture level.</p>
             </div>
             <ToggleSwitch
-              enabled={!!config.includeWetness}
-              onToggle={(enabled) => handleConfigChange({ includeWetness: enabled })}
+              enabled={!!config.wetness.enabled}
+              onToggle={(enabled) => handleConfigChange({ wetness: { enabled } })}
             />
           </div>
 
@@ -113,8 +113,8 @@ export const WeatherSettings = () => {
               <p className="text-sm text-slate-400">Show track state (dry/wet/unknown).</p>
             </div>
             <ToggleSwitch
-              enabled={!!config.includeTrackState}
-              onToggle={(enabled) => handleConfigChange({ includeTrackState: enabled })}
+              enabled={!!config.trackState.enabled}
+              onToggle={(enabled) => handleConfigChange({ trackState: { enabled } })}
             />
           </div>
           <div className="flex items-center justify-between">
@@ -123,8 +123,8 @@ export const WeatherSettings = () => {
               <button
                 onClick={() => handleConfigChange({ units: 'auto' })}
                 className={`px-3 py-1 rounded text-sm transition-colors ${settings.config.units === 'auto'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
                   }`}
               >
                 auto
@@ -132,8 +132,8 @@ export const WeatherSettings = () => {
               <button
                 onClick={() => handleConfigChange({ units: 'Metric' })}
                 className={`px-3 py-1 rounded text-sm transition-colors ${settings.config.units === 'Metric'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
                   }`}
               >
                 °C
@@ -141,8 +141,8 @@ export const WeatherSettings = () => {
               <button
                 onClick={() => handleConfigChange({ units: 'Imperial' })}
                 className={`px-3 py-1 rounded text-sm transition-colors ${settings.config.units === 'Imperial'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
                   }`}
               >
                 °F

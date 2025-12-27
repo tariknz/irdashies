@@ -4,12 +4,22 @@ import { useMemo } from 'react';
 
 const defaultConfig: WeatherWidgetSettings['config'] = {
   background: { opacity: 0 },
-  includeAirTemp: true,
-  includeTrackTemp: true,
-  includeWind: false,
-  includeWetness: false,
-  includeTrackState: false,
-  units: 'auto'
+  units: 'auto',
+  airTemp: {
+    enabled: true
+  },
+  trackTemp: {
+    enabled: true
+  },
+  wetness: {
+    enabled: true
+  },
+  trackState: {
+    enabled: true
+  },
+  wind: {
+    enabled: true
+  }
 };
 
 export const useWeatherSettings = () => {

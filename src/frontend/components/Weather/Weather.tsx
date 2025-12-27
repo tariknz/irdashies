@@ -36,19 +36,19 @@ export const Weather = () => {
       }}
     >
       <div className="flex flex-col p-2 w-full rounded-sm gap-2">
-        {settings.includeTrackTemp && (
+        {settings.trackTemp.enabled && (
           <WeatherTemp title="Track" value={trackTemp} />
         )}
-        {settings.includeAirTemp && (
+        {settings.airTemp.enabled && (
           <WeatherTemp title="Air" value={trackTemp} />
         )}
-        {settings.includeWind && (
+        {settings.wind.enabled && (
           <WindDirection speedMs={windSpeed} direction={relativeWindDirection} metric={isMetric} />
         )}
-        {settings.includeWetness && (
+        {settings.wetness.enabled && (
           <WeatherTrackWetness trackMoisture={weather.trackMoisture} />
         )}
-        {settings.includeTrackState && (
+        {settings.trackState.enabled && (
           <WeatherTrackRubbered trackRubbered={trackRubbered} />
         )}
       </div>
