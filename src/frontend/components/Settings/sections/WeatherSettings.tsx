@@ -56,7 +56,7 @@ export const WeatherSettings = () => {
   return (
     <BaseSettingsSection
       title="Weather"
-      description="Show weather-related readings (air/track temperature, wind, wetness, track state)."
+      description="Show weather related readings (air/track temperature, wind, wetness, track state)."
       settings={settings}
       onSettingsChange={(s) => setSettings(s)}
       widgetId={SETTING_ID}
@@ -64,6 +64,22 @@ export const WeatherSettings = () => {
       {(handleConfigChange) => (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
+            <span className="text-sm text-slate-300">Background Opacity</span>
+            <div className="flex items-center gap-2">
+              <input
+                type="range"
+                min="0"
+                max="100"
+                value={settings.config.background.opacity}
+                onChange={(e) =>
+                  handleConfigChange({ background: { opacity: parseInt(e.target.value) } })
+                }
+                className="w-20 h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer"
+              />
+              <span className="text-xs text-slate-400 w-8">
+                {settings.config.background.opacity}%
+              </span>
+            </div>
             <div>
               <h3 className="text-lg font-medium text-slate-200">Track Temperature</h3>
               <p className="text-sm text-slate-400">Show the current track surface temperature.</p>
