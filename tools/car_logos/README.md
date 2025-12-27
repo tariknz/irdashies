@@ -56,7 +56,7 @@ The script generates two files:
    - Sprite size: 128x128 pixels per logo
 
 2. **TypeScript Position Mapping**
-   - Location: `src/frontend/components/Standings/components/CarManufacturer/spritePositions.ts`
+   - Location: `src/frontend/components/Standings/components/CarManufacturer/carManufacturerSpritePositions.ts`
    - Exports:
      - `SPRITE_SIZE`: Size of each sprite (128)
      - `SPRITES_PER_ROW`: Number of sprites per row
@@ -93,7 +93,7 @@ After generating the sprite sheet, you may need to update the car-to-manufacture
 This file maps car IDs to their manufacturer names. When adding new cars or updating existing ones:
 
 1. Ensure the manufacturer name in the mapping matches the logo filename (without extension)
-2. The manufacturer key must exist in `CAR_MANUFACTURER_SPRITE_POSITIONS` from `spritePositions.ts`
+2. The manufacturer key must exist in `CAR_MANUFACTURER_SPRITE_POSITIONS` from `carManufacturerSpritePositions.ts`
 3. Use `'unknown'` for cars without a specific manufacturer logo
 
 Example:

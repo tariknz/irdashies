@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Script to create a sprite sheet from car logos.
-Each logo is resized to 128x128 pixels and arranged in a grid.
+Each logo is resized to 256x256 pixels (2x for retina displays) and arranged in a grid.
 """
 
 import os
@@ -9,9 +9,9 @@ from PIL import Image
 import math
 
 LOGO_DIR = "logos"
-SPRITE_SIZE = 128
+SPRITE_SIZE = 256
 OUTPUT_FILE = "../../src/frontend/assets/img/car_manufacturer.png"
-TS_OUTPUT_FILE = "../../src/frontend/components/Standings/components/CarManufacturer/spritePositions.ts"
+TS_OUTPUT_FILE = "../../src/frontend/components/Standings/components/CarManufacturer/carManufacturerSpritePositions.ts"
 
 def resize_logo(img, target_size):
     """Resize logo to target_size x target_size while maintaining aspect ratio."""

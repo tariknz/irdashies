@@ -1,6 +1,6 @@
 import carLogoImage from '../../../../assets/img/car_manufacturer.png';
 import { CAR_ID_TO_CAR_MANUFACTURER } from './carManufacturerMapping';
-import { CAR_MANUFACTURER_SPRITE_POSITIONS, SPRITES_PER_ROW, SPRITES_PER_COLUMN } from './spritePositions';
+import { CAR_MANUFACTURER_SPRITE_POSITIONS, SPRITES_PER_ROW, SPRITES_PER_COLUMN } from './carManufacturerSpritePositions';
 
 interface CarManufacturerProps {
   carId: number;
@@ -18,17 +18,18 @@ export const CarManufacturer = ({
   }
 
   const position = CAR_MANUFACTURER_SPRITE_POSITIONS[carManufacturer];
-  const backgroundSize = `${SPRITES_PER_ROW}em ${SPRITES_PER_COLUMN}em`;
-  const backgroundPosition = `${-position.x}em ${-position.y}em`;
+  const spriteSizeEm = 1;
+  const backgroundSize = `${SPRITES_PER_ROW * spriteSizeEm}em ${SPRITES_PER_COLUMN * spriteSizeEm}em`;
+  const backgroundPosition = `${-position.x * spriteSizeEm}em ${-position.y * spriteSizeEm}em`;
 
   return (
     <span
-      className="inline-block w-[1em] h-[1em] bg-no-repeat"
+      className="inline-block w-[1em] h-[1em] bg-no-repeat scale-125"
       style={{
         backgroundImage: `url(${carLogoImage})`,
         backgroundSize,
         backgroundPosition,
-        imageRendering: 'auto',
+        imageRendering: '-webkit-optimize-contrast',
         transform: 'translateZ(0)',
         backfaceVisibility: 'hidden',
         willChange: 'transform',
