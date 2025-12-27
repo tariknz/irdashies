@@ -29,7 +29,7 @@ export const CarManufacturer = ({
         backgroundImage: `url(${carLogoImage})`,
         backgroundSize,
         backgroundPosition,
-        imageRendering: '-webkit-optimize-contrast',
+        imageRendering: 'auto',
         transform: 'translateZ(0)',
         backfaceVisibility: 'hidden',
         willChange: 'transform',
