@@ -80,6 +80,9 @@ export const WeatherSettings = () => {
                 {settings.config.background.opacity}%
               </span>
             </div>
+          </div>
+          <div className="flex items-center justify-between">
+
             <div>
               <h3 className="text-lg font-medium text-slate-200">Track Temperature</h3>
               <p className="text-sm text-slate-400">Show the current track surface temperature.</p>
