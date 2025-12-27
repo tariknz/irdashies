@@ -52,6 +52,7 @@
     "@types/ws": "^8.5.13",
     "@vitejs/plugin-react": "^5.1.1",
     "@vitest/coverage-v8": "^4.0.15",
+    "baseline-browser-mapping": "^2.9.11",
     "chromatic": "^13.3.4",
     "dotenv": "^17.2.3",
     "electron": "35.1.2",

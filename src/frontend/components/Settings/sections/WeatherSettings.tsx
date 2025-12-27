@@ -7,6 +7,7 @@ const SETTING_ID = 'weather';
 
 const defaultConfig: WeatherWidgetSettings['config'] = {
   background: { opacity: 0 },
+  units: 'Metric',
 };
 
 const migrateConfig = (savedConfig: unknown): WeatherWidgetSettings['config'] => {
@@ -14,6 +15,7 @@ const migrateConfig = (savedConfig: unknown): WeatherWidgetSettings['config'] =>
   const config = savedConfig as Record<string, unknown>;
   return {
     background: { opacity: (config.background as { opacity?: number })?.opacity ?? 0 },
+    units: (config.units as 'Metric' | 'Imperial') ?? 'Metric',
   };
 };
 
@@ -57,6 +59,31 @@ export const WeatherSettings = () => {
               <span className="text-xs text-slate-400 w-8">
                 {settings.config.background.opacity}%
               </span>
+            </div>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-slate-300">Temperature Units</span>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => handleConfigChange({ units: 'Metric' })}
+                className={`px-3 py-1 rounded text-sm transition-colors ${
+                  settings.config.units === 'Metric'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
+                }`}
+              >
+                °C
+              </button>
+              <button
+                onClick={() => handleConfigChange({ units: 'Imperial' })}
+                className={`px-3 py-1 rounded text-sm transition-colors ${
+                  settings.config.units === 'Imperial'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
+                }`}
+              >
+                °F
+              </button>
             </div>
           </div>
         </div>
