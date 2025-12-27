@@ -20,7 +20,7 @@ export const Weather = () => {
     : unitSetting === 'Metric';
   const actualUnit = isMetric ? 'Metric' : 'Imperial';
 
-  const { trackTemp, airTemp } = useTrackTemperature({
+  const { trackTemp } = useTrackTemperature({
     airTempUnit: actualUnit,
     trackTempUnit: actualUnit,
   });
@@ -36,11 +36,21 @@ export const Weather = () => {
       }}
     >
       <div className="flex flex-col p-2 w-full rounded-sm gap-2">
-        <WeatherTemp title="Track" value={trackTemp} />
-        <WeatherTemp title="Air" value={airTemp} />
-        <WindDirection speedMs={windSpeed} direction={relativeWindDirection} metric={isMetric} />
-        <WeatherTrackWetness trackMoisture={weather.trackMoisture} />
-        <WeatherTrackRubbered trackRubbered={trackRubbered} />
+        {settings.includeTrackTemp && (
+          <WeatherTemp title="Track" value={trackTemp} />
+        )}
+        {settings.includeAirTemp && (
+          <WeatherTemp title="Air" value={trackTemp} />
+        )}
+        {settings.includeWind && (
+          <WindDirection speedMs={windSpeed} direction={relativeWindDirection} metric={isMetric} />
+        )}
+        {settings.includeWetness && (
+          <WeatherTrackWetness trackMoisture={weather.trackMoisture} />
+        )}
+        {settings.includeTrackState && (
+          <WeatherTrackRubbered trackRubbered={trackRubbered} />
+        )}
       </div>
     </div>
   );
