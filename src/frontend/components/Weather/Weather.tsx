@@ -6,18 +6,27 @@ import { WeatherTrackRubbered } from './WeatherTrackRubbered/WeatherTrackRubbere
 import { WindDirection } from './WindDirection/WindDirection';
 import { useTrackRubberedState } from './hooks/useTrackRubberedState';
 import { useWeatherSettings } from './hooks/useWeatherSettings';
+import { useTelemetryValue } from '@irdashies/context';
 
 export const Weather = () => {
   const weather = useTrackWeather();
   const settings = useWeatherSettings();
+  const displayUnits = useTelemetryValue('DisplayUnits'); // 0 = imperial, 1 = metric
+
+  // Determine actual unit to use: auto uses iRacing's DisplayUnits setting
+  const unitSetting = settings?.units ?? 'auto';
+  const isMetric = unitSetting === 'auto'
+    ? displayUnits === 1
+    : unitSetting === 'Metric';
+  const actualUnit = isMetric ? 'Metric' : 'Imperial';
+
   const { trackTemp, airTemp } = useTrackTemperature({
-    airTempUnit: settings?.units ?? 'Metric',
-    trackTempUnit: settings?.units ?? 'Metric',
+    airTempUnit: actualUnit,
+    trackTempUnit: actualUnit,
   });
   const windSpeed = weather.windVelocity;
   const relativeWindDirection =  (weather.windDirection ?? 0) - (weather.windYaw ?? 0);
   const trackRubbered = useTrackRubberedState();
-  const isImperial = settings?.units === 'Imperial';
 
   return (
     <div
@@ -29,7 +38,7 @@ export const Weather = () => {
       <div className="flex flex-col p-2 w-full rounded-sm gap-2">
         <WeatherTemp title="Track" value={trackTemp} />
         <WeatherTemp title="Air" value={airTemp} />
-        <WindDirection speedMs={windSpeed} direction={relativeWindDirection} metric={!isImperial} />
+        <WindDirection speedMs={windSpeed} direction={relativeWindDirection} metric={isMetric} />
         <WeatherTrackWetness trackMoisture={weather.trackMoisture} />
         <WeatherTrackRubbered trackRubbered={trackRubbered} />
       </div>
