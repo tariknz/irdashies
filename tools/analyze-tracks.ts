@@ -1,5 +1,6 @@
 import fs from 'fs';
 import { TrackDrawing } from '../src/frontend/components/TrackMap/TrackCanvas';
+import { BROKEN_TRACKS } from '../src/frontend/components/TrackMap/tracks/brokenTracks';
 
 interface TrackInfo {
   track_id: number;
@@ -32,7 +33,7 @@ export const analyzeTracks = (): void => {
   );
 
   // Known broken track IDs from brokenTracks.ts (manually extracted)
-  const knownBrokenIds = [168, 173, 175, 176, 202, 207, 209, 211, 193, 217, 388, 239, 240, 242, 246, 247, 400, 437, 452, 506];
+  const knownBrokenIds = BROKEN_TRACKS.map(track => track.id);
 
   // Read track info for names
   const trackInfo: TrackInfo[] = JSON.parse(fs.readFileSync('./asset-data/track-info.json', 'utf8'));
