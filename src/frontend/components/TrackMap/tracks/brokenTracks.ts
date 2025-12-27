@@ -11,7 +11,6 @@ export const BROKEN_TRACKS: BrokenTrack[] = [
   { id: 176, name: 'Suzuka', issue: 'non-continuous' },
   
   // Oran Park variants - non-continuous
-  { id: 202, name: 'Oran Park', issue: 'non-continuous' },
   { id: 207, name: 'Oran Park', issue: 'non-continuous' },
   { id: 209, name: 'Oran Park', issue: 'non-continuous' },
   { id: 211, name: 'Oran Park', issue: 'non-continuous' },
