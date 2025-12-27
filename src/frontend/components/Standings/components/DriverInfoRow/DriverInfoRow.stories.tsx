@@ -2,6 +2,7 @@ import { Meta, StoryObj } from '@storybook/react-vite';
 import { DriverInfoRow } from './DriverInfoRow';
 import { useCurrentSessionType } from '@irdashies/context';
 import type { StandingsWidgetSettings } from '../../../Settings/types';
+import { CAR_ID_TO_CAR_MANUFACTURER } from '../CarManufacturer/carManufacturerMapping';
 
 export default {
   component: DriverInfoRow,
@@ -613,4 +614,50 @@ const AllFlagCombinations = () => {
 
 export const AllFlagCombinationsStory: Story = {
   render: () => <AllFlagCombinations />,
+};
+
+const AllCarsComponent = () => {
+  const carEntries = Object.entries(CAR_ID_TO_CAR_MANUFACTURER)
+    .map(([id, data]) => ({ id: Number(id), ...data }))
+    .sort((a, b) => a.id - b.id);
+
+  return (
+    <div className="w-full h-full max-h-[90vh] overflow-y-auto">
+      <table className="w-full table-auto text-sm border-separate border-spacing-y-0.5 mb-3 mt-3">
+        <tbody>
+          {carEntries.map(({ id, name }, index) => (
+            <DriverInfoRow
+              key={id}
+              carIdx={index + 1}
+              carNumber={`${id}`}
+              name={name}
+              isPlayer={false}
+              hasFastestTime={false}
+              position={index + 1}
+              classColor={16777215}
+              isMultiClass={false}
+              flairId={2}
+              carId={id}
+              dnf={false}
+              repair={false}
+              penalty={false}
+              slowdown={false}
+              config={{
+                countryFlags: { enabled: false },
+                gap: { enabled: false },
+                badge: { enabled: false },
+              } as StandingsWidgetSettings['config']}
+            />
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+};
+
+export const AllCars: Story = {
+  render: () => <AllCarsComponent />,
+  parameters: {
+    layout: 'padded',
+  },
 };

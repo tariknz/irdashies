@@ -1,3 +1,4 @@
+import { useTelemetryValue } from '@irdashies/context';
 import { useTrackTemperature } from '../Standings/hooks/useTrackTemperature';
 import { useTrackWeather } from './hooks/useTrackWeather';
 import { WeatherTemp } from './WeatherTemp/WeatherTemp';
@@ -6,7 +7,6 @@ import { WeatherTrackRubbered } from './WeatherTrackRubbered/WeatherTrackRubbere
 import { WindDirection } from './WindDirection/WindDirection';
 import { useTrackRubberedState } from './hooks/useTrackRubberedState';
 import { useWeatherSettings } from './hooks/useWeatherSettings';
-import { useTelemetryValue } from '@irdashies/context';
 
 export const Weather = () => {
   const weather = useTrackWeather();
