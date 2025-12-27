@@ -7,7 +7,7 @@ const SETTING_ID = 'weather';
 
 const defaultConfig: WeatherWidgetSettings['config'] = {
   background: { opacity: 0 },
-  units: 'Metric',
+  units: 'auto',
 };
 
 const migrateConfig = (savedConfig: unknown): WeatherWidgetSettings['config'] => {
@@ -15,7 +15,7 @@ const migrateConfig = (savedConfig: unknown): WeatherWidgetSettings['config'] =>
   const config = savedConfig as Record<string, unknown>;
   return {
     background: { opacity: (config.background as { opacity?: number })?.opacity ?? 0 },
-    units: (config.units as 'Metric' | 'Imperial') ?? 'Metric',
+    units: (config.units as 'auto' | 'Metric' | 'Imperial') ?? 'auto',
   };
 };
 
@@ -64,6 +64,16 @@ export const WeatherSettings = () => {
           <div className="flex items-center justify-between">
             <span className="text-sm text-slate-300">Temperature Units</span>
             <div className="flex items-center gap-2">
+              <button
+                onClick={() => handleConfigChange({ units: 'auto' })}
+                className={`px-3 py-1 rounded text-sm transition-colors ${
+                  settings.config.units === 'auto'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
+                }`}
+              >
+                auto
+              </button>
               <button
                 onClick={() => handleConfigChange({ units: 'Metric' })}
                 className={`px-3 py-1 rounded text-sm transition-colors ${

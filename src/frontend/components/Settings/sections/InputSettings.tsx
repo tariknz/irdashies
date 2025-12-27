@@ -503,24 +503,61 @@ export const InputSettings = () => {
               </div>
               {config.gear.enabled && (
                 <div className="space-y-3 pl-4 pt-2">
-                  <div className="flex items-center gap-3">
-                    <label className="text-sm text-slate-200">Speed Unit:</label>
-                    <select
-                      value={config.gear.unit}
-                      onChange={(e) =>
-                        handleConfigChange({
-                          gear: {
-                            ...config.gear,
-                            unit: e.target.value as 'mph' | 'km/h' | 'auto',
-                          },
-                        })
-                      }
-                      className="bg-slate-700 text-slate-200 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="auto">auto</option>
-                      <option value="mph">mph</option>
-                      <option value="km/h">km/h</option>
-                    </select>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-slate-200">Speed Unit</span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() =>
+                          handleConfigChange({
+                            gear: {
+                              ...config.gear,
+                              unit: 'auto',
+                            },
+                          })
+                        }
+                        className={`px-3 py-1 rounded text-sm transition-colors ${
+                          config.gear.unit === 'auto'
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
+                        }`}
+                      >
+                        auto
+                      </button>
+                      <button
+                        onClick={() =>
+                          handleConfigChange({
+                            gear: {
+                              ...config.gear,
+                              unit: 'mph',
+                            },
+                          })
+                        }
+                        className={`px-3 py-1 rounded text-sm transition-colors ${
+                          config.gear.unit === 'mph'
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
+                        }`}
+                      >
+                        mph
+                      </button>
+                      <button
+                        onClick={() =>
+                          handleConfigChange({
+                            gear: {
+                              ...config.gear,
+                              unit: 'km/h',
+                            },
+                          })
+                        }
+                        className={`px-3 py-1 rounded text-sm transition-colors ${
+                          config.gear.unit === 'km/h'
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
+                        }`}
+                      >
+                        km/h
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}
