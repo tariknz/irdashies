@@ -18,6 +18,7 @@ updateElectronApp();
 const overlayManager = new OverlayManager();
 const telemetrySink = new TelemetrySink();
 
+overlayManager.setupHardwareAcceleration();
 overlayManager.setupSingleInstanceLock();
 
 app.on('ready', async () => {
