@@ -10,7 +10,7 @@ interface TrackInfo {
   config_name: string;
 }
 
-export const generateTrackJson = () => {
+export const generateTrackJsonForTrack = (trackId: number | string): TrackDrawing | undefined => {
   const order = [
     'background',
     'inactive',
@@ -19,12 +19,136 @@ export const generateTrackJson = () => {
     'turns',
     'start-finish',
   ];
-  const tracks = fs.readdirSync(`./asset-data`);
+  
+  const trackIdStr = String(trackId);
+  const trackPath = `./asset-data/${trackIdStr}`;
+  
+  if (!fs.existsSync(trackPath) || !fs.lstatSync(trackPath).isDirectory()) {
+    console.error(`Track directory not found for trackId: ${trackId}`);
+    return undefined;
+  }
+
   const trackInfoString = fs.readFileSync(
     './asset-data/track-info.json',
     'utf8'
   );
   const trackInfo: TrackInfo[] = JSON.parse(trackInfoString);
+  
+  const track = trackInfo.find((t) => t.track_id === +trackIdStr);
+  if (!track) {
+    console.error(`No track info found for ${trackId}`);
+    return undefined;
+  }
+
+  const json = fs
+    .readdirSync(trackPath)
+    .sort(
+      (a, b) =>
+        order.indexOf(a.replace('.svg', '')) -
+        order.indexOf(b.replace('.svg', ''))
+    )
+    .filter((file) => file.endsWith('.svg'))
+    .map((file) => {
+      const overridePath = `./tools/tracks/overrides/${trackIdStr}/${file}`;
+      const svgPath = fs.existsSync(overridePath)
+        ? overridePath
+        : `${trackPath}/${file}`;
+      const svgContent = fs.readFileSync(svgPath, 'utf8');
+      return { file, svgContent };
+    })
+    .reduce((acc, { file, svgContent }) => {
+      const id = `${file.replace('.svg', '')}`;
+      const svg = getSvgDom(svgContent);
+      const prop = id.replace(/([-_][a-z])/g, (group) =>
+        group.toUpperCase().replace('-', '').replace('_', '')
+      );
+
+      if (prop === 'active') {
+        const path = svg.querySelector('path') as SVGPathElement | null;
+        const rawPathData = path?.getAttribute('d');
+        if (!rawPathData) {
+          return acc;
+        }
+        // Normalize path data: replace spaces with commas for proper number separation
+        // Handle edge cases: remove commas after command letters, clean up multiple commas
+        const pathData = rawPathData
+          .trim()
+          .replace(/\s+/g, ' ') // First normalize whitespace
+          .replace(/\s/g, ',') // Replace spaces with commas
+          .replace(/,([MmLlHhVvCcSsQqTtAaZz])/g, '$1') // Remove comma before command
+          .replace(/([MmLlHhVvCcSsQqTtAaZz]),/g, '$1') // Remove comma after command
+          .replace(/,,+/g, ',') // Replace multiple commas with single comma
+          .replace(/^,/, '') // Remove leading comma
+          .replace(/,$/, ''); // Remove trailing comma
+        const firstZIndex = pathData.toLocaleLowerCase().indexOf('z');
+        const firstZ = firstZIndex === -1 ? pathData.length : firstZIndex + 1;
+        const inside = pathData.slice(0, firstZ);
+        const outside = pathData.slice(firstZ);
+        
+        const trackPathPoints = preCalculatePoints(inside);
+        const pathProps = new svgPathProperties(inside);
+        const totalLength = pathProps.getTotalLength();
+
+        
+        acc[prop] = {
+          inside,
+          outside,
+          trackPathPoints,
+          totalLength,
+        };
+      }
+
+      if (prop === 'startFinish') {
+        const startFinishData = extractStartFinishData(svg);
+        if (!startFinishData) {
+          return acc;
+        }
+
+        const { line, arrow } = startFinishData;
+        let flipLineArrow = false;
+        let intersection = findIntersectionPoint(
+          acc['active'].inside,
+          line
+        );
+
+        if (!intersection) {
+          flipLineArrow = true;
+          intersection = findIntersectionPoint(
+            acc['active'].inside,
+            arrow
+          );
+        }
+        acc[prop] = {
+          line: flipLineArrow ? arrow : line,
+          arrow: flipLineArrow ? line : arrow,
+          point: intersection,
+          direction: findDirection(parseInt(trackIdStr)),
+        };
+      }
+
+      if (prop === 'turns') {
+        const texts = svg.querySelectorAll('text');
+        const turns = Array.from(texts).map((text) => {
+          const transform = text.getAttribute('transform');
+          const groups = transform?.match(
+            /(?:matrix\(1 0 0 1 |translate\()([\d.]+) ([\d.]+)/
+          );
+          const x = groups?.[1] ? parseFloat(groups[1]) : 0;
+          const y = groups?.[2] ? parseFloat(groups[2]) : 0;
+          const content = text.textContent ?? undefined;
+          return { x, y, content };
+        });
+        acc[prop] = turns;
+      }
+
+      return acc;
+    }, {} as TrackDrawing);
+
+  return json;
+};
+
+export const generateTrackJson = () => {
+  const tracks = fs.readdirSync(`./asset-data`);
 
   const json = tracks.reduce(
     (acc, trackId) => {
@@ -35,7 +159,7 @@ export const generateTrackJson = () => {
 
       return {
         ...acc,
-        [parseInt(trackId)]: generateJson(trackId),
+        [parseInt(trackId)]: generateTrackJsonForTrack(trackId),
       };
     },
     {} as Record<number, TrackDrawing | undefined>
@@ -46,114 +170,6 @@ export const generateTrackJson = () => {
     JSON.stringify(json, undefined, 2),
     'utf8'
   );
-
-  function generateJson(trackId: string) {
-    const track = trackInfo.find((t) => t.track_id === +trackId);
-    if (!track) {
-      console.error(`No track info found for ${trackId}`);
-      return;
-    }
-    const json = fs
-      .readdirSync(`./asset-data/${trackId}`)
-      .sort(
-        (a, b) =>
-          order.indexOf(a.replace('.svg', '')) -
-          order.indexOf(b.replace('.svg', ''))
-      )
-      .filter((file) => file.endsWith('.svg'))
-      .map((file) => {
-        const svgContent = fs.readFileSync(
-          `./asset-data/${trackId}/${file}`,
-          'utf8'
-        );
-        return { file, trackId: parseInt(trackId), svgContent };
-      })
-      .reduce((acc, { file, trackId, svgContent }) => {
-        const id = `${file.replace('.svg', '')}`;
-        const svg = getSvgDom(svgContent);
-        // snake case to camel case
-        const prop = id.replace(/([-_][a-z])/g, (group) =>
-          group.toUpperCase().replace('-', '').replace('_', '')
-        );
-
-        if (prop === 'active') {
-          const path = svg.querySelector('path') as SVGPathElement | null;
-          const pathData = path?.getAttribute('d')?.replace(/\s/g, ''); // remove whitespace
-          if (!pathData) {
-            return acc;
-          }
-          // split on Z
-          const firstZ = pathData.toLocaleLowerCase().indexOf('z') + 1;
-          const inside = pathData.slice(0, firstZ);
-          const outside = pathData.slice(firstZ);
-          
-          // Pre calculate points for the inside path to be able to find the position 
-          // based on the percentage of the track completed
-          const trackPathPoints = preCalculatePoints(inside);
-          
-          // Calculate the total track length using svg-path-properties
-          const pathProps = new svgPathProperties(inside);
-          const totalLength = pathProps.getTotalLength();
-          
-          acc[prop] = {
-            inside,
-            outside,
-            trackPathPoints,
-            totalLength,
-          };
-        }
-
-        if (prop === 'startFinish') {
-          const startFinishData = extractStartFinishData(svg);
-          if (!startFinishData) {
-            return acc;
-          }
-
-          const { line, arrow } = startFinishData;
-          let flipLineArrow = false;
-          let intersection = findIntersectionPoint(
-            acc['active'].inside,
-            line
-          );
-
-          if (!intersection) {
-            flipLineArrow = true;
-            intersection = findIntersectionPoint(
-              acc['active'].inside,
-              arrow
-            );
-          }
-          acc[prop] = {
-            line: flipLineArrow ? arrow : line,
-            arrow: flipLineArrow ? line : arrow,
-            point: intersection,
-            direction: findDirection(trackId),
-          };
-        }
-
-        if (prop === 'turns') {
-          const texts = svg.querySelectorAll('text');
-          const turns = Array.from(texts).map((text) => {
-            const transform = text.getAttribute('transform');
-            const groups = transform?.match(
-              /(?:matrix\(1 0 0 1 |translate\()([\d.]+) ([\d.]+)/
-            );
-            const x = groups?.[1] ? parseFloat(groups[1]) : 0;
-            const y = groups?.[2] ? parseFloat(groups[2]) : 0;
-            const content = text.textContent ?? undefined;
-            return { x, y, content };
-          });
-          acc[prop] = turns;
-        }
-
-        // TODO:
-        // Unused currently, inactive, pit road, background
-
-        return acc;
-      }, {} as TrackDrawing);
-
-    return json;
-  }
 };
 
 const getSvgDom = (svgContent: string) => {
