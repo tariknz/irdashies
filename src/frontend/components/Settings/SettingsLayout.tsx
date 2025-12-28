@@ -88,7 +88,7 @@ export const SettingsLayout = () => {
       <div className="flex flex-row gap-4 flex-1 min-h-0 text-sm">
         {/* Left Column - Widget Menu */}
         <div className="w-1/4 bg-slate-800 p-4 rounded-md flex flex-col overflow-y-auto">
-          <ul className="flex flex-col gap-2 flex-1 mb-2 border-b border-slate-700 pb-2">
+          <ul className="flex flex-col gap-2 mb-2 border-b border-slate-700 pb-2">
             <li>
               <Link
                 to="/settings/general"
