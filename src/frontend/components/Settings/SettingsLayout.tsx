@@ -48,7 +48,7 @@ export const SettingsLayout = () => {
       <div className="flex flex-row gap-4 items-center justify-between">
         <div className="flex flex-row gap-4 items-center">
           <GearIcon size={32} weight="bold" />
-          <h1 className="text-2xl font-bold">Overlay Setup</h1>
+          <h1 className="text-2xl font-bold">Overlay Settings</h1>
         </div>
         <div className="flex flex-row gap-2">
           <button
