@@ -6,6 +6,7 @@ import { BROKEN_TRACKS } from './tracks/brokenTracks';
 
 export default {
   component: TrackCanvas,
+  title: 'widgets/TrackMap/components/TrackCanvas',
   args: {
     enableTurnNames: false,
     debug: true,

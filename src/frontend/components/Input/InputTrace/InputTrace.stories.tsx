@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 
 const meta: Meta<typeof InputTrace> = {
   component: InputTrace,
+  title: 'widgets/Input/components/InputTrace',
 };
 export default meta;
 

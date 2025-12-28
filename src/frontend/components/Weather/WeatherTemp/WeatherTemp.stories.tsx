@@ -3,6 +3,7 @@ import { WeatherTemp } from './WeatherTemp';
 
 export default {
   component: WeatherTemp,
+  title: 'widgets/Weather/components/WeatherTemp',
 } as Meta;
 
 type Story = StoryObj<typeof WeatherTemp>;

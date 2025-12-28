@@ -6,6 +6,7 @@ import { CAR_ID_TO_CAR_MANUFACTURER } from '../CarManufacturer/carManufacturerMa
 
 export default {
   component: DriverInfoRow,
+  title: 'widgets/Standings/components/DriverInfoRow',
   decorators: [
     (Story) => (
       <table className="w-full">

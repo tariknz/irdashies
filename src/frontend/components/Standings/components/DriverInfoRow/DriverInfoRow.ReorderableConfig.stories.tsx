@@ -11,6 +11,7 @@ import type { ComponentType } from 'react';
 
 const meta = {
   component: DriverInfoRow,
+  title: 'widgets/Standings/components/DriverInfoRow',
   decorators: [
     (Story: ComponentType) => (
       <table className="w-full">

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 
 const meta: Meta<typeof InputContainer> = {
   component: InputContainer,
+  title: 'widgets/Input/components/InputContainer',
 };
 export default meta;
 

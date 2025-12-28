@@ -213,6 +213,7 @@ const RelativeWithoutHeaderFooter = () => {
 
 export default {
   component: Relative,
+  title: 'widgets/Relative',
   parameters: {
     controls: {
       exclude: ['telemetryPath'],

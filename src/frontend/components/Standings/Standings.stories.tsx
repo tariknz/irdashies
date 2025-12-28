@@ -133,6 +133,7 @@ const StandingsWithoutHeaderFooter = () => {
 
 export default {
   component: Standings,
+  title: 'widgets/Standings',
 } as Meta;
 
 type Story = StoryObj<typeof Standings>;

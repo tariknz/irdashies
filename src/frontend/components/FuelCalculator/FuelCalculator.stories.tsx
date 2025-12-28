@@ -10,7 +10,7 @@ import type { FuelLapData } from './types';
 
 export default {
   component: FuelCalculator,
-  title: 'FRONTEND/components/FuelCalculator',
+  title: 'widgets/FuelCalculator',
 } as Meta;
 
 type Story = StoryObj<typeof FuelCalculator>;

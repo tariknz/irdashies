@@ -5,6 +5,7 @@ import { BlindSpotState } from './hooks/useBlindSpotMonitor';
 
 export default {
   component: BlindSpotMonitorDisplay,
+  title: 'widgets/BlindSpotMonitor',
   decorators: [
     (Story) => (
       <div className="w-[500px] m-5 h-[300px]">

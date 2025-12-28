@@ -8,6 +8,7 @@ import { Standings } from '../Standings/Standings';
 
 const meta: Meta<typeof EditMode> = {
   component: EditMode,
+  title: 'components/EditMode',
   decorators: [TelemetryDecorator()],
 };
 export default meta;
