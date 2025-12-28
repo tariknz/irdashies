@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 
 const meta: Meta<typeof Tachometer> = {
   component: Tachometer,
+  title: 'widgets/Input/components/InputTachometer',
 };
 export default meta;
 

@@ -10,6 +10,7 @@ import { defaultDashboard } from '../../../app/storage/defaultDashboard';
 
 const meta: Meta<typeof ThemeManager> = {
   component: ThemeManager,
+  title: 'components/ThemeManager',
   decorators: [TelemetryDecorator('/test-data/1763227688917')],
 };
 

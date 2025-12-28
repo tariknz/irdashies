@@ -3,6 +3,7 @@ import { WeatherTrackWetness } from './WeatherTrackWetness';
 
 export default {
   component: WeatherTrackWetness,
+  title: 'widgets/Weather/components/WeatherTrackWetness',
   argTypes: {
     trackMoisture: {
       control: {
