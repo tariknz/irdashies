@@ -100,16 +100,29 @@ export const SettingsLayout = () => {
           </ul>
           <ul className="flex flex-col gap-2 flex-1 mb-2">
             <li>
-              <Link to="/settings/input" className={menuItemClass('/input')}>
-                Input Traces
+              <Link
+                to="/settings/blindspotmonitor"
+                className={menuItemClass('/blindspotmonitor')}
+              >
+                Blind Spot Monitor
               </Link>
             </li>
             <li>
               <Link
-                to="/settings/standings"
-                className={menuItemClass('/standings')}
+                to="/settings/faster-cars"
+                className={menuItemClass('/faster-cars')}
               >
-                Standings
+                Faster Cars
+              </Link>
+            </li>
+            <li>
+              <Link to="/settings/fuel" className={menuItemClass('/fuel')}>
+                Fuel Calculator
+              </Link>
+            </li>
+            <li>
+              <Link to="/settings/input" className={menuItemClass('/input')}>
+                Input Traces
               </Link>
             </li>
             <li>
@@ -122,23 +135,10 @@ export const SettingsLayout = () => {
             </li>
             <li>
               <Link
-                to="/settings/weather"
-                className={menuItemClass('/weather')}
+                to="/settings/standings"
+                className={menuItemClass('/standings')}
               >
-                Weather
-              </Link>
-            </li>
-            <li>
-              <Link to="/settings/fuel" className={menuItemClass('/fuel')}>
-                Fuel Calculator
-              </Link>
-            </li>
-            <li>
-              <Link
-                to="/settings/faster-cars"
-                className={menuItemClass('/faster-cars')}
-              >
-                Faster Cars
+                Standings
               </Link>
             </li>
             <li>
@@ -150,10 +150,10 @@ export const SettingsLayout = () => {
             </li>
             <li>
               <Link
-                to="/settings/blindspotmonitor"
-                className={menuItemClass('/blindspotmonitor')}
+                to="/settings/weather"
+                className={menuItemClass('/weather')}
               >
-                Blind Spot Monitor
+                Weather
               </Link>
             </li>
           </ul>
