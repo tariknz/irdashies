@@ -213,7 +213,7 @@ export const InputSettings = () => {
 
   return (
     <BaseSettingsSection
-      title="Input Traces Settings"
+      title="Input Traces"
       description="Configure the input traces display settings for throttle, brake, and clutch."
       settings={settings}
       onSettingsChange={setSettings}

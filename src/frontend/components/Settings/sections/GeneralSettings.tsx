@@ -112,7 +112,7 @@ export const GeneralSettings = () => {
   return (
     <div className="flex flex-col h-full">
       <div className="flex-none">
-        <h2 className="text-xl mb-4">General Settings</h2>
+        <h2 className="text-xl mb-4">General</h2>
         <p className="text-slate-400 mb-4">Configure general application settings and preferences.</p>
       </div>
 

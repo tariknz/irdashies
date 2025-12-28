@@ -29,7 +29,7 @@ export const TrackMapSettings = () => {
 
   return (
     <BaseSettingsSection
-      title="Track Map Settings"
+      title="Track Map"
       description="Configure track map visualization settings."
       settings={settings}
       onSettingsChange={setSettings}

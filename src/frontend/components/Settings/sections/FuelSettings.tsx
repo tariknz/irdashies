@@ -79,7 +79,7 @@ export const FuelSettings = () => {
 
   return (
     <BaseSettingsSection
-      title="Fuel Calculator Settings"
+      title="Fuel Calculator"
       description="Configure fuel consumption tracking and pit stop calculations."
       settings={settings}
       onSettingsChange={setSettings}
