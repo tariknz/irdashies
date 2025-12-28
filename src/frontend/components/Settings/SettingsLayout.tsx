@@ -1,4 +1,9 @@
-import { GearIcon, LockIcon, LockOpenIcon, PresentationChartIcon } from '@phosphor-icons/react';
+import {
+  GearIcon,
+  LockIcon,
+  LockOpenIcon,
+  PresentationChartIcon,
+} from '@phosphor-icons/react';
 import { Link, Route, Routes, useLocation, Navigate } from 'react-router-dom';
 import { StandingsSettings } from './sections/StandingsSettings';
 import { RelativeSettings } from './sections/RelativeSettings';
@@ -16,7 +21,8 @@ import { useState } from 'react';
 
 export const SettingsLayout = () => {
   const location = useLocation();
-  const { bridge, editMode, isDemoMode, toggleDemoMode, currentDashboard } = useDashboard();
+  const { bridge, editMode, isDemoMode, toggleDemoMode, currentDashboard } =
+    useDashboard();
   const [isLocked, setIsLocked] = useState(!editMode);
 
   const isActive = (path: string) => {
@@ -79,15 +85,20 @@ export const SettingsLayout = () => {
           </button>
         </div>
       </div>
-      <div className="flex flex-row gap-4 flex-1 min-h-0">
+      <div className="flex flex-row gap-4 flex-1 min-h-0 text-sm">
         {/* Left Column - Widget Menu */}
-        <div className="w-1/3 bg-slate-800 p-4 rounded-md flex flex-col overflow-y-auto">
-          <ul className="flex flex-col gap-2 flex-1 mb-2">
+        <div className="w-1/4 bg-slate-800 p-4 rounded-md flex flex-col overflow-y-auto">
+          <ul className="flex flex-col gap-2 flex-1 mb-2 border-b border-slate-700 pb-2">
             <li>
-              <Link to="/settings/general" className={menuItemClass('/general')}>
+              <Link
+                to="/settings/general"
+                className={menuItemClass('/general')}
+              >
                 General
               </Link>
             </li>
+          </ul>
+          <ul className="flex flex-col gap-2 flex-1 mb-2">
             <li>
               <Link to="/settings/input" className={menuItemClass('/input')}>
                 Input Traces
@@ -118,10 +129,7 @@ export const SettingsLayout = () => {
               </Link>
             </li>
             <li>
-              <Link
-                to="/settings/fuel"
-                className={menuItemClass('/fuel')}
-              >
+              <Link to="/settings/fuel" className={menuItemClass('/fuel')}>
                 Fuel Calculator
               </Link>
             </li>
@@ -150,26 +158,30 @@ export const SettingsLayout = () => {
             </li>
           </ul>
           {/* Advanced settings pushed to bottom */}
-          <div className="mt-auto pt-4 border-t border-slate-700 flex flex-col gap-2">
-            <Link
-              to="/settings/advanced"
-              className={menuItemClass('/advanced')}
-            >
-              Advanced
-            </Link>
-            <Link
-              to="/settings/about"
-              className={menuItemClass('/about')}
-            >
-              About
-            </Link>
-          </div>
+          <ul className="mt-auto pt-2 border-t border-slate-700 flex flex-col gap-2">
+            <li>
+              <Link
+                to="/settings/advanced"
+                className={menuItemClass('/advanced')}
+              >
+                Advanced
+              </Link>
+            </li>
+            <li>
+              <Link to="/settings/about" className={menuItemClass('/about')}>
+                About
+              </Link>
+            </li>
+          </ul>
         </div>
 
         {/* Right Column - Widget Settings */}
-        <div className="w-2/3 bg-slate-800 p-4 rounded-md flex flex-col overflow-hidden">
+        <div className="w-3/4 bg-slate-800 p-4 rounded-md flex flex-col overflow-hidden">
           <Routes>
-            <Route path="/" element={<Navigate to="/settings/general" replace />} />
+            <Route
+              path="/"
+              element={<Navigate to="/settings/general" replace />}
+            />
             <Route path="general" element={<GeneralSettings />} />
             <Route path="standings" element={<StandingsSettings />} />
             <Route path="relative" element={<RelativeSettings />} />
@@ -177,8 +189,14 @@ export const SettingsLayout = () => {
             <Route path="fuel" element={<FuelSettings />} />
             <Route path="map" element={<TrackMapSettings />} />
             <Route path="input" element={<InputSettings />} />
-            <Route path="faster-cars" element={<FasterCarsFromBehindSettings />} />
-            <Route path="blindspotmonitor" element={<BlindSpotMonitorSettings />} />
+            <Route
+              path="faster-cars"
+              element={<FasterCarsFromBehindSettings />}
+            />
+            <Route
+              path="blindspotmonitor"
+              element={<BlindSpotMonitorSettings />}
+            />
             <Route path="advanced" element={<AdvancedSettings />} />
             <Route path="about" element={<AboutSettings />} />
             <Route
