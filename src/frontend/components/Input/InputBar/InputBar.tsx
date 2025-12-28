@@ -72,12 +72,13 @@ export const InputBar = ({
   ]);
 
   return (
-    <div className="flex gap-1 w-full h-full relative">
+    <div className="flex gap-1 w-full h-full relative justify-center">
       {activeInputs.map(({ key, value, color, showAbs }) => (
         <div
           key={key}
           data-testid={`input-bar-${key}`}
-          className="flex-1 flex flex-col relative min-w-0"
+          className="flex flex-col relative min-w-0 h-full"
+          style={{ aspectRatio: '1 / 4', width: 'auto' }}
         >
           <div className={`text-xs text-center h-4 flex justify-center ${value === 0 ? 'text-gray-400' : 'text-white'}`}>
             {(value * 100).toFixed(0)}

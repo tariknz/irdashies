@@ -38,7 +38,7 @@ export const InputContainer = ({
         id: 'trace' as const,
         shouldRender: settings?.trace?.enabled ?? true,
         component: (
-          <div className="flex flex-3">
+          <div className="flex flex-4">
             <InputTrace
               key="trace"
               input={{ brake, throttle, brakeAbsActive, steer }}
