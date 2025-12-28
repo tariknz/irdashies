@@ -171,31 +171,34 @@ export const FuelCalculator = ({
     };
   }, [fuelData, displayData.lastLapUsage, displayData.avg3Laps]);
 
-  // Helper function to determine color class for "To Finish" values based on fuel status
-  const getToFinishColorClass = (fuelNeeded: number) => {
-    if (!fuelData) return 'text-white/70';
+  // Determine color class for "To Finish" values based on fuel status
+  // eslint-disable-next-line react-hooks/preserve-manual-memoization
+  const getToFinishColorClass = useMemo(() => {
+    if (!fuelData) return () => 'text-white/70';
 
-    const currentFuel = displayData.fuelLevel;
-    const lapsUntilPit = fuelData.pitWindowClose - fuelData.currentLap;
-    const isLastStint = fuelData.stopsRemaining === 0;
+    return (fuelNeeded: number) => {
+      const currentFuel = displayData.fuelLevel;
+      const lapsUntilPit = fuelData.pitWindowClose - fuelData.currentLap;
+      const isLastStint = fuelData.stopsRemaining === 0;
 
-    // Apply safety margin to comparison (same as main calculation)
-    const fuelNeededWithMargin = fuelNeeded * (1 + safetyMargin);
-    const fuelIsTight = currentFuel < fuelNeededWithMargin;
+      // Apply safety margin to comparison (same as main calculation)
+      const fuelNeededWithMargin = fuelNeeded * (1 + safetyMargin);
+      const fuelIsTight = currentFuel < fuelNeededWithMargin;
 
-    // Red: Must pit within 1 lap and this consumption rate won't make it
-    if (lapsUntilPit <= 1 && fuelIsTight) {
-      return 'text-red-400/70';
-    }
+      // Red: Must pit within 1 lap and this consumption rate won't make it
+      if (lapsUntilPit <= 1 && fuelIsTight) {
+        return 'text-red-400/70';
+      }
 
-    // Orange: Within 5 laps of pit OR (on last stint and fuel is tight)
-    if (lapsUntilPit <= 5 || (isLastStint && fuelIsTight)) {
-      return 'text-orange-400/70';
-    }
+      // Orange: Within 5 laps of pit OR (on last stint and fuel is tight)
+      if (lapsUntilPit <= 5 || (isLastStint && fuelIsTight)) {
+        return 'text-orange-400/70';
+      }
 
-    // Green: Normal operation
-    return 'text-green-400/70';
-  };
+      // Green: Normal operation
+      return 'text-green-400/70';
+    };
+  }, [fuelData, displayData.fuelLevel, safetyMargin]);
 
   // Determine base classes based on layout
   const containerClasses = layout === 'horizontal'
