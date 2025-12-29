@@ -38,7 +38,7 @@ export const InputContainer = ({
         id: 'trace' as const,
         shouldRender: settings?.trace?.enabled ?? true,
         component: (
-          <div className="flex flex-3">
+          <div className="flex flex-4">
             <InputTrace
               key="trace"
               input={{ brake, throttle, brakeAbsActive, steer }}
@@ -51,7 +51,7 @@ export const InputContainer = ({
         id: 'bar' as const,
         shouldRender: settings?.bar?.enabled ?? true,
         component: (
-          <div className="flex flex-1">
+          <div className="flex flex-1 min-w-0">
             <InputBar
               key="bar"
               brake={brake}
@@ -67,7 +67,7 @@ export const InputContainer = ({
         id: 'gear' as const,
         shouldRender: settings?.gear?.enabled ?? true,
         component: (
-          <div className="flex flex-1">
+          <div className="flex flex-1 min-w-0">
             <InputGear
               key="gear"
               gear={gear}
@@ -82,7 +82,7 @@ export const InputContainer = ({
         id: 'steer' as const,
         shouldRender: settings?.steer?.enabled ?? true,
         component: (
-          <div className="flex flex-1">
+          <div className="flex flex-1 min-w-0">
             <InputSteer
               key="steer"
               angleRad={steer}
