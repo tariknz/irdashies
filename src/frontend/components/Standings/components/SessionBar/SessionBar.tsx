@@ -5,8 +5,9 @@ import { useTrackWetness } from '../../hooks/useTrackWetness';
 import { useTrackTemperature } from '../../hooks/useTrackTemperature';
 import { useCurrentTime } from '../../hooks/useCurrentTime';
 import { useStandingsSettings, useRelativeSettings } from '../../hooks';
-import { ClockIcon, ClockUserIcon, DropIcon, RoadHorizonIcon, ThermometerIcon, TireIcon } from '@phosphor-icons/react';
+import { ClockIcon, ClockUserIcon, CloudRainIcon, DropIcon, RoadHorizonIcon, ThermometerIcon, TireIcon } from '@phosphor-icons/react';
 import { useSessionCurrentTime } from '../../hooks/useSessionCurrentTime';
+import { usePrecipitation } from '../../hooks/usePrecipitation';
 
 interface SessionBarProps {
   position?: 'header' | 'footer';
@@ -26,6 +27,7 @@ export const SessionBar = ({ position = 'header', variant = 'standings' }: Sessi
   const { state, currentLap, time, timeTotal, timeRemaining } = useSessionLapCount();
   const brakeBias = useBrakeBias();
   const { trackWetness } = useTrackWetness();
+  const { precipitation } = usePrecipitation();
   const { trackTemp, airTemp } = useTrackTemperature({
     airTempUnit: effectiveBarSettings?.airTemperature?.unit ?? 'Metric',
     trackTempUnit: effectiveBarSettings?.trackTemperature?.unit ?? 'Metric',
@@ -128,6 +130,15 @@ export const SessionBar = ({ position = 'header', variant = 'standings' }: Sessi
         <div className="flex justify-center gap-1 items-center text-nowrap">
           <DropIcon />
           <span>{trackWetness}</span>
+        </div>
+      ),
+    },
+    precipitation: {
+      enabled: effectiveBarSettings?.precipitation?.enabled ?? (position === 'header' ? false : false),
+      render: () => (
+        <div className="flex justify-center gap-1 items-center text-nowrap">
+          <CloudRainIcon />
+          <span>{precipitation}</span>
         </div>
       ),
     },

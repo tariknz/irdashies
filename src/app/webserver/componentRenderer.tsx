@@ -461,6 +461,7 @@ async function initializeMockStores(): Promise<void> {
       LapDistPct: { value: [0] },
       TrackTemp: { value: [0] },
       TrackWetness: { value: [0] },
+      Precipitation: { value: [0] },
       WindDir: { value: [0] },
       WindVel: { value: [0] },
       AirTemp: { value: [0] },

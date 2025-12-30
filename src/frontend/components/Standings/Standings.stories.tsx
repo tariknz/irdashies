@@ -19,9 +19,10 @@ import { useDrivingState, useWeekendInfoNumCarClasses, useTelemetryValue, useSes
 import { useDriverIncidents, useSessionLapCount, useBrakeBias } from './hooks';
 import { useCurrentTime } from './hooks/useCurrentTime';
 import { useTrackWetness } from './hooks/useTrackWetness';
+import { usePrecipitation } from './hooks/usePrecipitation';
 import { useTrackTemperature } from './hooks/useTrackTemperature';
 import { formatTime } from '../../utils/time';
-import { ClockIcon, DropIcon, RoadHorizonIcon, ThermometerIcon, TireIcon } from '@phosphor-icons/react';
+import { ClockIcon, CloudRainIcon, DropIcon, RoadHorizonIcon, ThermometerIcon, TireIcon } from '@phosphor-icons/react';
 
 // Custom component that renders standings without header/footer session bars
 const StandingsWithoutHeaderFooter = () => {
@@ -449,6 +450,7 @@ const FullHeaderBar = () => {
   const brakeBias = useBrakeBias();
   const localTime = useCurrentTime();
   const { trackWetness } = useTrackWetness();
+  const { precipitation } = usePrecipitation();
   const { trackTemp, airTemp } = useTrackTemperature();
 
   return (
@@ -503,6 +505,10 @@ const FullHeaderBar = () => {
       <div className="flex items-center gap-1">
         <DropIcon />
         <span>{trackWetness}</span>
+      </div>
+      <div className="flex items-center gap-1">
+        <CloudRainIcon />
+        <span>{precipitation}</span>
       </div>
       <div className="flex items-center gap-1">
         <ThermometerIcon />
