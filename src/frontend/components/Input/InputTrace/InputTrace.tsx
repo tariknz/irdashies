@@ -20,22 +20,20 @@ export interface InputTraceProps {
     includeAbs?: boolean;
     includeSteer?: boolean;
     strokeWidth?: number;
-    timeWindowSeconds?: number;
+    maxSamples?: number;
   };
 }
 
 export const InputTrace = ({
   input,
-  settings = { includeThrottle: true, includeBrake: true, includeAbs: true, timeWindowSeconds: 10 },
+  settings = { includeThrottle: true, includeBrake: true, includeAbs: true, maxSamples: 250 },
 }: InputTraceProps) => {
-  const { includeThrottle, includeBrake, includeAbs = true, includeSteer = true, strokeWidth = 3, timeWindowSeconds = 10 } = settings;
+  const { includeThrottle, includeBrake, includeAbs = true, includeSteer = true, strokeWidth = 3, maxSamples = 250 } = settings;
   const svgRef = useRef<SVGSVGElement>(null);
   const rafRef = useRef<number | null>(null);
   const { width, height } = { width: 400, height: 100 };
 
-  const samplesPerSecond = 60;
-  const totalSamples = Math.floor(timeWindowSeconds * samplesPerSecond);
-  const bufferSize = Math.min(totalSamples, width * 2);
+  const bufferSize = maxSamples;
 
   const [brakeArray, setBrakeArray] = useState<number[]>(
     Array.from({ length: bufferSize }, () => 0)
@@ -49,13 +47,6 @@ export const InputTrace = ({
   const [steerArray, setSteerArray] = useState<number[]>(
     Array.from({ length: bufferSize }, () => 0.5)
   );
-
-  useEffect(() => {
-    setBrakeArray(Array.from({ length: bufferSize }, () => 0));
-    setBrakeABSArray(Array.from({ length: bufferSize }, () => false));
-    setThrottleArray(Array.from({ length: bufferSize }, () => 0));
-    setSteerArray(Array.from({ length: bufferSize }, () => 0.5));
-  }, [bufferSize]);
 
   useEffect(() => {
     if (rafRef.current) {

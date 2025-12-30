@@ -165,7 +165,7 @@ export const defaultDashboard: DashboardLayout = {
           "includeAbs": true,
           "includeSteer": true,
           "strokeWidth": 3,
-          "timeWindowSeconds": 10
+          "maxSamples": 400
         },
         "bar": {
           "enabled": true,
