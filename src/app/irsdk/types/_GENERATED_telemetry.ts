@@ -23,6 +23,12 @@ export interface TelemetryVariable<VarType = number[]> {
 }
 
 export interface TelemetryVarList {
+
+  // Manually added entries
+  dcPeakBrakeBias: TelemetryVariable<number[]>;
+  WeatherType: TelemetryVariable<number[]>;
+  dcTearOffVisor: TelemetryVariable<boolean[]>;
+
   SessionTime: TelemetryVariable<undefined[]>;
   SessionTick: TelemetryVariable<number[]>;
   SessionNum: TelemetryVariable<number[]>;
@@ -270,8 +276,6 @@ export interface TelemetryVarList {
   LatAccel: TelemetryVariable<number[]>;
   LongAccel: TelemetryVariable<number[]>;
   dcStarter: TelemetryVariable<boolean[]>;
-  dcToggleWindshieldWipers: TelemetryVariable<boolean[]>;
-  dcTriggerWindshieldWipers: TelemetryVariable<boolean[]>;
   dcPitSpeedLimiterToggle: TelemetryVariable<boolean[]>;
   dcHeadlightFlash: TelemetryVariable<boolean[]>;
   dpRFTireChange: TelemetryVariable<number[]>;
@@ -279,8 +283,6 @@ export interface TelemetryVarList {
   dpRRTireChange: TelemetryVariable<number[]>;
   dpLRTireChange: TelemetryVariable<number[]>;
   dpFuelFill: TelemetryVariable<number[]>;
-  dpFuelAutoFillEnabled: TelemetryVariable<number[]>;
-  dpFuelAutoFillActive: TelemetryVariable<number[]>;
   dpWindshieldTearoff: TelemetryVariable<number[]>;
   dpFuelAddKg: TelemetryVariable<number[]>;
   dpFastRepair: TelemetryVariable<number[]>;
@@ -291,6 +293,12 @@ export interface TelemetryVarList {
   dpRFTireColdPress: TelemetryVariable<number[]>;
   dpLRTireColdPress: TelemetryVariable<number[]>;
   dpRRTireColdPress: TelemetryVariable<number[]>;
+  dcTractionControl: TelemetryVariable<number[]>;
+  dcABS: TelemetryVariable<number[]>;
+  dpFuelAutoFillEnabled: TelemetryVariable<number[]>;
+  dpFuelAutoFillActive: TelemetryVariable<number[]>;
+  dcToggleWindshieldWipers: TelemetryVariable<boolean[]>;
+  dcTriggerWindshieldWipers: TelemetryVariable<boolean[]>;
   FuelUsePerHour: TelemetryVariable<number[]>;
   Voltage: TelemetryVariable<number[]>;
   WaterTemp: TelemetryVariable<number[]>;
