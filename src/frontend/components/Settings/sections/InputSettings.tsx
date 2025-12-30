@@ -30,6 +30,7 @@ const defaultConfig: InputWidgetSettings['config'] = {
     includeAbs: true,
     includeSteer: true,
     strokeWidth: 3,
+    timeWindowSeconds: 10,
   },
   bar: {
     enabled: true,
@@ -85,6 +86,9 @@ const migrateConfig = (savedConfig: unknown): InputWidgetSettings['config'] => {
       strokeWidth:
         (config.trace as { strokeWidth?: number })?.strokeWidth ??
         defaultConfig.trace.strokeWidth,
+      timeWindowSeconds:
+        (config.trace as { timeWindowSeconds?: number })?.timeWindowSeconds ??
+        defaultConfig.trace.timeWindowSeconds,
     },
     bar: {
       enabled:
@@ -341,6 +345,34 @@ export const InputSettings = () => {
                         {config.trace.strokeWidth ?? 3}
                       </span>
                     </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <label className="text-sm text-slate-200">Time Window (seconds):</label>
+                    <input
+                      type="range"
+                      min="1"
+                      max="30"
+                      step="1"
+                      value={config.trace.timeWindowSeconds}
+                      onChange={(e) =>
+                        handleConfigChange({
+                          trace: { ...config.trace, timeWindowSeconds: parseInt(e.target.value) },
+                        })
+                      }
+                      className="flex-1 h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer slider"
+                    />
+                    <input
+                      type="number"
+                      min="1"
+                      max="30"
+                      value={config.trace.timeWindowSeconds}
+                      onChange={(e) =>
+                        handleConfigChange({
+                          trace: { ...config.trace, timeWindowSeconds: parseInt(e.target.value) },
+                        })
+                      }
+                      className="w-16 bg-slate-700 text-slate-200 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
                   </div>
                 </div>
               )}

@@ -164,7 +164,8 @@ export const defaultDashboard: DashboardLayout = {
           "includeBrake": true,
           "includeAbs": true,
           "includeSteer": true,
-          "strokeWidth": 3
+          "strokeWidth": 3,
+          "timeWindowSeconds": 10
         },
         "bar": {
           "enabled": true,

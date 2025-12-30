@@ -20,30 +20,42 @@ export interface InputTraceProps {
     includeAbs?: boolean;
     includeSteer?: boolean;
     strokeWidth?: number;
+    timeWindowSeconds?: number;
   };
 }
 
 export const InputTrace = ({
   input,
-  settings = { includeThrottle: true, includeBrake: true, includeAbs: true },
+  settings = { includeThrottle: true, includeBrake: true, includeAbs: true, timeWindowSeconds: 10 },
 }: InputTraceProps) => {
-  const { includeThrottle, includeBrake, includeAbs = true, includeSteer = true, strokeWidth = 3 } = settings;
+  const { includeThrottle, includeBrake, includeAbs = true, includeSteer = true, strokeWidth = 3, timeWindowSeconds = 10 } = settings;
   const svgRef = useRef<SVGSVGElement>(null);
   const rafRef = useRef<number | null>(null);
   const { width, height } = { width: 400, height: 100 };
 
+  const samplesPerSecond = 60;
+  const totalSamples = Math.floor(timeWindowSeconds * samplesPerSecond);
+  const bufferSize = Math.min(totalSamples, width * 2);
+
   const [brakeArray, setBrakeArray] = useState<number[]>(
-    Array.from({ length: width }, () => 0)
+    Array.from({ length: bufferSize }, () => 0)
   );
   const [brakeABSArray, setBrakeABSArray] = useState<boolean[]>(
-    Array.from({ length: width }, () => false)
+    Array.from({ length: bufferSize }, () => false)
   );
   const [throttleArray, setThrottleArray] = useState<number[]>(
-    Array.from({ length: width }, () => 0)
+    Array.from({ length: bufferSize }, () => 0)
   );
   const [steerArray, setSteerArray] = useState<number[]>(
-    Array.from({ length: width }, () => 0.5)
+    Array.from({ length: bufferSize }, () => 0.5)
   );
+
+  useEffect(() => {
+    setBrakeArray(Array.from({ length: bufferSize }, () => 0));
+    setBrakeABSArray(Array.from({ length: bufferSize }, () => false));
+    setThrottleArray(Array.from({ length: bufferSize }, () => 0));
+    setSteerArray(Array.from({ length: bufferSize }, () => 0.5));
+  }, [bufferSize]);
 
   useEffect(() => {
     if (rafRef.current) {
@@ -52,18 +64,30 @@ export const InputTrace = ({
     
     rafRef.current = requestAnimationFrame(() => {
       if (includeThrottle) {  
-        setThrottleArray((v) => [...v.slice(1), input.throttle ?? 0]);
+        setThrottleArray((v) => {
+          if (v.length !== bufferSize) return Array.from({ length: bufferSize }, () => 0);
+          return [...v.slice(1), input.throttle ?? 0];
+        });
       }
       if (includeBrake) {
-        setBrakeArray((v) => [...v.slice(1), input.brake ?? 0]);
+        setBrakeArray((v) => {
+          if (v.length !== bufferSize) return Array.from({ length: bufferSize }, () => 0);
+          return [...v.slice(1), input.brake ?? 0];
+        });
         if (includeAbs) {
-          setBrakeABSArray((v) => [...v.slice(1), input.brakeAbsActive ?? false]);
+          setBrakeABSArray((v) => {
+            if (v.length !== bufferSize) return Array.from({ length: bufferSize }, () => false);
+            return [...v.slice(1), input.brakeAbsActive ?? false];
+          });
         }
       }
       if (includeSteer) {
         const angleRad = input.steer ?? 0;
         const normalizedValue = Math.max(0, Math.min(1, (angleRad / (2 * Math.PI)) + 0.5));
-        setSteerArray((v) => [...v.slice(1), normalizedValue]);
+        setSteerArray((v) => {
+          if (v.length !== bufferSize) return Array.from({ length: bufferSize }, () => 0.5);
+          return [...v.slice(1), normalizedValue];
+        });
       }
     });
 
@@ -72,7 +96,7 @@ export const InputTrace = ({
         cancelAnimationFrame(rafRef.current);
       }
     };
-  }, [input, includeThrottle, includeBrake, includeAbs, includeSteer]);
+  }, [input, includeThrottle, includeBrake, includeAbs, includeSteer, bufferSize]);
 
   useEffect(() => {
     const valueArrayWithColors = [];
@@ -92,8 +116,8 @@ export const InputTrace = ({
         absColor: includeAbs ? BRAKE_ABS_COLOR : undefined
       });
     }
-    drawGraph(svgRef.current, valueArrayWithColors, width, height, strokeWidth);
-  }, [brakeArray, brakeABSArray, height, throttleArray, steerArray, width, includeThrottle, includeBrake, includeAbs, includeSteer, strokeWidth]);
+    drawGraph(svgRef.current, valueArrayWithColors, width, height, strokeWidth, bufferSize);
+  }, [brakeArray, brakeABSArray, height, throttleArray, steerArray, width, includeThrottle, includeBrake, includeAbs, includeSteer, strokeWidth, bufferSize]);
 
   return (
     <svg
@@ -116,16 +140,17 @@ function drawGraph(
   }[],
   width: number,
   height: number,
-  strokeWidth: number
+  strokeWidth: number,
+  bufferSize: number
 ) {
-  if (!svgElement) return;
+  if (!svgElement || valueArrayWithColors.length === 0) return;
 
   const svg = d3.select(svgElement);
 
   svg.selectAll('*').remove();
 
   const scaleMargin = 0.05;
-  const xScale = d3.scaleLinear().domain([0, width]).range([0, width]);
+  const xScale = d3.scaleLinear().domain([0, bufferSize - 1]).range([0, width]);
   const yScale = d3
     .scaleLinear()
     .domain([0 - scaleMargin, 1 + scaleMargin])
