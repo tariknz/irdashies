@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { Fragment, useMemo } from 'react';
 import { InputWidgetSettings } from '../../Settings/types';
 import { InputBar } from '../InputBar/InputBar';
 import { InputGear } from '../InputGear/InputGear';
@@ -130,7 +130,9 @@ export const InputContainer = ({
         ['--bg-opacity' as string]: `${settings?.background?.opacity ?? 80}%`,
       }}
     >
-      {columnDefinitions.map((column) => column.component)}
+      {columnDefinitions.map((column) => (
+        <Fragment key={column.id}>{column.component}</Fragment>
+      ))}
     </div>
   );
 };
