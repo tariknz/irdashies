@@ -64,6 +64,7 @@ const defaultConfig: StandingsWidgetSettings['config'] = {
     localTime: { enabled: false },
     sessionClockTime: { enabled: false },
     trackWetness: { enabled: false },
+    precipitation: { enabled: false },
     airTemperature: { enabled: false, unit: 'Metric' },
     trackTemperature: { enabled: false, unit: 'Metric' },
     displayOrder: DEFAULT_SESSION_BAR_DISPLAY_ORDER
@@ -77,6 +78,7 @@ const defaultConfig: StandingsWidgetSettings['config'] = {
     localTime: { enabled: true },
     sessionClockTime: { enabled: false },
     trackWetness: { enabled: true },
+    precipitation: { enabled: false },
     airTemperature: { enabled: true, unit: 'Metric' },
     trackTemperature: { enabled: true, unit: 'Metric' },
     displayOrder: DEFAULT_SESSION_BAR_DISPLAY_ORDER
@@ -171,6 +173,7 @@ const migrateConfig = (
       localTime: { enabled: (config.headerBar as { localTime?: { enabled?: boolean } })?.localTime?.enabled ?? false },
       sessionClockTime: { enabled: (config.headerBar as { sessionClockTime?: { enabled?: boolean } })?.sessionClockTime?.enabled ?? false },
       trackWetness: { enabled: (config.headerBar as { trackWetness?: { enabled?: boolean } })?.trackWetness?.enabled ?? false },
+      precipitation: { enabled: (config.headerBar as { precipitation?: { enabled?: boolean } })?.precipitation?.enabled ?? false },
       airTemperature: {
         enabled: (config.headerBar as { airTemperature?: { enabled?: boolean; unit?: string } })?.airTemperature?.enabled ?? false,
         unit: ((config.headerBar as { airTemperature?: { unit?: string } })?.airTemperature?.unit as 'Metric' | 'Imperial') ?? 'Metric'
@@ -193,6 +196,7 @@ const migrateConfig = (
       localTime: { enabled: (config.footerBar as { localTime?: { enabled?: boolean } })?.localTime?.enabled ?? true },
       sessionClockTime: { enabled: (config.footerBar as { sessionClockTime?: { enabled?: boolean } })?.sessionClockTime?.enabled ?? false },
       trackWetness: { enabled: (config.footerBar as { trackWetness?: { enabled?: boolean } })?.trackWetness?.enabled ?? true },
+      precipitation: { enabled: (config.footerBar as { precipitation?: { enabled?: boolean } })?.precipitation?.enabled ?? false },
       airTemperature: {
         enabled: (config.footerBar as { airTemperature?: { enabled?: boolean; unit?: string } })?.airTemperature?.enabled ?? true,
         unit: ((config.footerBar as { airTemperature?: { unit?: string } })?.airTemperature?.unit as 'Metric' | 'Imperial') ?? 'Metric'

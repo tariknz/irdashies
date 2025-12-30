@@ -285,6 +285,9 @@ export const defaultDashboard: DashboardLayout = {
           "trackWetness": {
             "enabled": false
           },
+          "precipitation": {
+            "enabled": false
+          },
           "airTemperature": {
             "enabled": false,
             "unit": "Metric"
@@ -293,7 +296,7 @@ export const defaultDashboard: DashboardLayout = {
             "enabled": false,
             "unit": "Metric"
           },
-          "displayOrder": ["sessionName", "sessionTime", "incidentCount", "brakeBias", "localTime", "sessionClockTime", "trackWetness", "airTemperature", "trackTemperature"]
+          "displayOrder": ["sessionName", "sessionTime", "incidentCount", "brakeBias", "localTime", "sessionClockTime", "trackWetness", "precipitation", "airTemperature", "trackTemperature"]
         },
         "footerBar": {
           "enabled": true,
@@ -319,6 +322,9 @@ export const defaultDashboard: DashboardLayout = {
           "trackWetness": {
             "enabled": true
           },
+          "precipitation": {
+            "enabled": false
+          },
           "airTemperature": {
             "enabled": true,
             "unit": "Metric"
@@ -327,7 +333,7 @@ export const defaultDashboard: DashboardLayout = {
             "enabled": true,
             "unit": "Metric"
           },
-          "displayOrder": ["sessionName", "sessionTime", "incidentCount", "brakeBias", "localTime", "sessionClockTime", "trackWetness", "airTemperature", "trackTemperature"]
+          "displayOrder": ["sessionName", "sessionTime", "incidentCount", "brakeBias", "localTime", "sessionClockTime", "trackWetness", "precipitation", "airTemperature", "trackTemperature"]
         },
         "showOnlyWhenOnTrack": false
       }
