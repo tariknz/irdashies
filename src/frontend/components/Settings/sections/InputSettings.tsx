@@ -326,25 +326,32 @@ export const InputSettings = () => {
                     />
                     <span className="text-sm text-slate-200">Show Steering Trace</span>
                   </label>
-                  <div className="flex items-center justify-between pt-2">
-                    <span className="text-sm text-slate-200">Stroke Width</span>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="range"
-                        min="1"
-                        max="10"
-                        value={config.trace.strokeWidth ?? 3}
-                        onChange={(e) =>
-                          handleConfigChange({
-                            trace: { ...config.trace, strokeWidth: parseInt(e.target.value) },
-                          })
-                        }
-                        className="w-20 h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer"
-                      />
-                      <span className="text-xs text-slate-400 w-8">
-                        {config.trace.strokeWidth ?? 3}
-                      </span>
-                    </div>
+                  <div className="flex items-center gap-3 pt-2">
+                    <label className="text-sm text-slate-200">Stroke Width:</label>
+                    <input
+                      type="range"
+                      min="1"
+                      max="10"
+                      value={config.trace.strokeWidth ?? 3}
+                      onChange={(e) =>
+                        handleConfigChange({
+                          trace: { ...config.trace, strokeWidth: parseInt(e.target.value) },
+                        })
+                      }
+                      className="flex-1 h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer slider"
+                    />
+                    <input
+                      type="number"
+                      min="1"
+                      max="10"
+                      value={config.trace.strokeWidth ?? 3}
+                      onChange={(e) =>
+                        handleConfigChange({
+                          trace: { ...config.trace, strokeWidth: parseInt(e.target.value) },
+                        })
+                      }
+                      className="w-20 bg-slate-700 text-slate-200 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
                   </div>
                   <div className="flex items-center gap-3">
                     <label className="text-sm text-slate-200">Max Samples:</label>
