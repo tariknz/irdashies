@@ -28,7 +28,7 @@ export const FasterCarsFromBehindSettings = () => {
 
   return (
     <BaseSettingsSection
-      title="Faster Cars From Behind Settings"
+      title="Faster Cars From Behind"
       description="Configure settings for the faster cars detection widget."
       settings={settings}
       onSettingsChange={setSettings}

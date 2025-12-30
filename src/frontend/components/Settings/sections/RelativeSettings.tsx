@@ -413,7 +413,7 @@ export const RelativeSettings = () => {
 
   return (
     <BaseSettingsSection
-      title="Relative Settings"
+      title="Relative"
       description="Configure the relative timing display settings."
       settings={settings}
       onSettingsChange={setSettings}

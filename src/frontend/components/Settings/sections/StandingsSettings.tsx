@@ -462,7 +462,7 @@ export const StandingsSettings = () => {
 
   return (
     <BaseSettingsSection
-      title="Standings Settings"
+      title="Standings"
       description="Configure how the standings widget appears and behaves."
       settings={settings}
       onSettingsChange={setSettings}
