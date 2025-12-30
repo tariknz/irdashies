@@ -87,10 +87,10 @@ export const WithoutPitWindow: Story = {
   },
 };
 
-export const WithoutFuelSave: Story = {
+export const WithoutFuelScenarios: Story = {
   decorators: [TelemetryDecorator()],
   args: {
-    showFuelSave: false,
+    showFuelScenarios: false,
   },
 };
 
@@ -106,7 +106,7 @@ export const MinimalView: Story = {
   args: {
     showConsumption: true,
     showPitWindow: true,
-    showFuelSave: true,
+    showFuelScenarios: true,
     show10LapAvg: true,
   },
 };
@@ -123,7 +123,7 @@ export const NormalRaceSimulation: Story = {
     show10LapAvg: true,
     showMax: true,
     showPitWindow: true,
-    showFuelSave: true,
+    showFuelScenarios: true,
     showFuelRequired: true,
     safetyMargin: 0.05,
     background: { opacity: 85 },
@@ -277,5 +277,48 @@ export const WithoutConsumptionGraph: Story = {
   ],
   args: {
     showConsumptionGraph: false,
+  },
+};
+
+export const FuelScenariosShowcase: Story = {
+  decorators: [TelemetryDecorator('/test-data/mock-fuel/normal')],
+  args: {
+    fuelUnits: 'L',
+    layout: 'vertical',
+    showConsumption: true,
+    showMin: true,
+    showLastLap: true,
+    show3LapAvg: true,
+    show10LapAvg: true,
+    showMax: true,
+    showPitWindow: true,
+    showFuelScenarios: true,
+    showFuelRequired: false,
+    showConsumptionGraph: true,
+    consumptionGraphType: 'histogram',
+    safetyMargin: 0.05,
+    background: { opacity: 85 },
+  },
+};
+
+export const FuelScenariosHorizontal: Story = {
+  decorators: [TelemetryDecorator('/test-data/mock-fuel/normal')],
+  args: {
+    fuelUnits: 'L',
+    layout: 'horizontal',
+    showConsumption: true,
+    showMin: true,
+    showLastLap: true,
+    show3LapAvg: true,
+    show10LapAvg: true,
+    showMax: true,
+    showPitWindow: true,
+    showEnduranceStrategy: true,
+    showFuelScenarios: true,
+    showFuelRequired: false,
+    showConsumptionGraph: true,
+    consumptionGraphType: 'histogram',
+    safetyMargin: 0.05,
+    background: { opacity: 85 },
   },
 };

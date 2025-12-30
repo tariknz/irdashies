@@ -16,7 +16,7 @@ const defaultConfig: FuelWidgetSettings['config'] = {
   showMax: true,
   showPitWindow: true,
   showEnduranceStrategy: false,
-  showFuelSave: true,
+  showFuelScenarios: true,
   showFuelRequired: false,
   showConsumptionGraph: true,
   consumptionGraphType: 'histogram',
@@ -40,7 +40,7 @@ const migrateConfig = (
     showMax: (config.showMax as boolean) ?? true,
     showPitWindow: (config.showPitWindow as boolean) ?? true,
     showEnduranceStrategy: (config.showEnduranceStrategy as boolean) ?? false,
-    showFuelSave: (config.showFuelSave as boolean) ?? true,
+    showFuelScenarios: (config.showFuelScenarios as boolean) ?? (config.showFuelSave as boolean) ?? true,
     showFuelRequired: (config.showFuelRequired as boolean) ?? false,
     showConsumptionGraph: (config.showConsumptionGraph as boolean) ?? true,
     consumptionGraphType: (config.consumptionGraphType as 'line' | 'histogram') ?? 'histogram',
@@ -259,21 +259,20 @@ export const FuelSettings = () => {
             />
           </div>
 
-          {/* Show Fuel Save Indicator - Commented out while feature is disabled
+          {/* Show Fuel Scenarios */}
           <div className="flex items-center justify-between">
             <span className="text-sm text-slate-300">
-              Show Fuel Save Indicator
+              Show Fuel Scenarios
             </span>
             <input
               type="checkbox"
-              checked={settings.config.showFuelSave}
+              checked={settings.config.showFuelScenarios}
               onChange={(e) =>
-                handleConfigChange({ showFuelSave: e.target.checked })
+                handleConfigChange({ showFuelScenarios: e.target.checked })
               }
               className="w-4 h-4 bg-slate-700 rounded"
             />
           </div>
-          */}
 
           {/* Show Consumption Graph */}
           <div className="flex items-center justify-between">

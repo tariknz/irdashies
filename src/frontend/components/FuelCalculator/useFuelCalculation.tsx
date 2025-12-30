@@ -470,6 +470,36 @@ export function useFuelCalculation(
       );
     }
 
+    // ========================================================================
+    // Calculate Target Consumption Scenarios
+    // ========================================================================
+    const targetScenarios: FuelCalculation['targetScenarios'] = [];
+
+    // Only show scenarios if we have meaningful fuel data
+    if (lapsWithFuel >= 0.5) {
+      const currentLapTarget = Math.round(lapsWithFuel);
+
+      // Determine which scenarios to show based on lapsWithFuel
+      const scenarios: number[] = [];
+
+      if (currentLapTarget > 1) {
+        scenarios.push(currentLapTarget - 1); // -1 lap
+      }
+      scenarios.push(currentLapTarget);        // current
+      scenarios.push(currentLapTarget + 1);    // +1 lap
+
+      // Calculate fuel per lap for each scenario
+      for (const lapCount of scenarios) {
+        if (lapCount > 0) {
+          targetScenarios.push({
+            laps: lapCount,
+            fuelPerLap: fuelLevel / lapCount,
+            isCurrentTarget: lapCount === currentLapTarget,
+          });
+        }
+      }
+    }
+
     const result: FuelCalculation = {
       fuelLevel,
       lastLapUsage,
@@ -494,6 +524,7 @@ export function useFuelCalculation(
       sessionTimeTotal,
       stopsRemaining,
       lapsPerStint,
+      targetScenarios,
     };
 
     // Only log when lap changes to avoid spam

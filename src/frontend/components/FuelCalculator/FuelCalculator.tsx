@@ -23,7 +23,7 @@ export const FuelCalculator = ({
   showMax = true,
   showPitWindow = true,
   showEnduranceStrategy = false,
-  // showFuelSave = true, // Commented out - unused while Fuel Save section is disabled
+  showFuelScenarios = true,
   showFuelRequired = false,
   showConsumptionGraph = true,
   consumptionGraphType = 'histogram',
@@ -137,6 +137,7 @@ export const FuelCalculator = ({
         currentLap: 0,
         fuelAtFinish: 0,
         avgLapTime: 0,
+        targetScenarios: undefined,
       };
     }
 
@@ -146,12 +147,36 @@ export const FuelCalculator = ({
       const lapsWithFuel = avgFuelPerLap > 0 ? currentFuelLevel / avgFuelPerLap : 0;
       const fuelAtFinish = currentFuelLevel - (fuelData.lapsRemaining * avgFuelPerLap);
 
+      // Recalculate target scenarios with new fuel level
+      const targetScenarios: typeof fuelData.targetScenarios = [];
+      if (lapsWithFuel >= 0.5) {
+        const currentLapTarget = Math.round(lapsWithFuel);
+        const scenarios: number[] = [];
+
+        if (currentLapTarget > 1) {
+          scenarios.push(currentLapTarget - 1);
+        }
+        scenarios.push(currentLapTarget);
+        scenarios.push(currentLapTarget + 1);
+
+        for (const lapCount of scenarios) {
+          if (lapCount > 0) {
+            targetScenarios.push({
+              laps: lapCount,
+              fuelPerLap: currentFuelLevel / lapCount,
+              isCurrentTarget: lapCount === currentLapTarget,
+            });
+          }
+        }
+      }
+
       return {
         ...fuelData,
         fuelLevel: currentFuelLevel,
         lapsWithFuel,
         pitWindowClose: fuelData.currentLap + lapsWithFuel - 1,
         fuelAtFinish,
+        targetScenarios,
       };
     }
 
@@ -345,6 +370,32 @@ export const FuelCalculator = ({
               </div>
               <div className="text-[8px] text-slate-400 text-center mt-0.5">
                 {displayData.canFinish ? 'No stop' : `L${displayData.pitWindowOpen}-${displayData.pitWindowClose.toFixed(1)}`}
+              </div>
+            </div>
+          )}
+
+          {/* Target Consumption */}
+          {showFuelScenarios && displayData.targetScenarios && displayData.targetScenarios.length > 0 && (
+            <div className="flex flex-col justify-center min-w-[120px] pr-3 border-r border-slate-600/50">
+              <div className="text-[8px] text-slate-400 uppercase mb-1">Target</div>
+              <div className="flex gap-1.5">
+                {displayData.targetScenarios.map((scenario) => (
+                  <div
+                    key={scenario.laps}
+                    className="flex flex-col items-center"
+                  >
+                    <div className={`text-[9px] ${
+                      scenario.isCurrentTarget ? 'text-blue-400' : 'text-slate-400'
+                    }`}>
+                      {scenario.laps}L
+                    </div>
+                    <div className={`text-xs font-semibold ${
+                      scenario.isCurrentTarget ? 'text-blue-400' : 'text-white'
+                    }`}>
+                      {formatFuel(scenario.fuelPerLap, fuelUnits, 2).split(' ')[0]}
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           )}
@@ -668,29 +719,35 @@ export const FuelCalculator = ({
         </div>
       )}
 
-      {/* Fuel Save Indicator - Commented out for now
-      {showFuelSave && fuelData && displayData.targetConsumption > 0 && (
-        <div className={`${layout === 'horizontal' ? 'mb-1 pb-1' : 'mb-3 pb-2'} border-b border-slate-600/30`}>
-          <div className="text-xs text-slate-500 uppercase tracking-wide mb-1">Fuel Save</div>
-          <div className="mt-2">
-            <div className="h-4 bg-gradient-to-r from-green-400 via-yellow-500 to-red-500 rounded-lg relative mb-1.5">
-              <div className="absolute left-1/2 w-0.5 h-full bg-white transform -translate-x-1/2" />
+      {/* Target Consumption */}
+      {showFuelScenarios && displayData.targetScenarios && displayData.targetScenarios.length > 0 && (
+        <div className="mb-3 pb-2 border-b border-slate-600/30">
+          <div className="text-xs text-slate-500 uppercase tracking-wide mb-2">
+            Target Consumption
+          </div>
+          <div className="grid gap-2">
+            {displayData.targetScenarios.map((scenario) => (
               <div
-                className="absolute w-2.5 h-2.5 rounded-full top-0.5 bg-white border-2 border-slate-800 transform -translate-x-1/2 transition-all duration-300 shadow-[0_0_5px_rgba(0,0,0,0.5)]"
-                style={{
-                  left: `${Math.min(100, Math.max(0, ((displayData.lastLapUsage / displayData.targetConsumption - 0.5) / 1.0) * 100 + 50))}%`,
-                }}
-              />
-            </div>
-            <div className={`text-center text-xs font-medium ${displayData.lastLapUsage > displayData.targetConsumption ? 'text-red-400' : 'text-green-400'}`}>
-              {displayData.lastLapUsage > displayData.targetConsumption
-                ? `${formatFuel(displayData.lastLapUsage - displayData.targetConsumption, fuelUnits)} over`
-                : `${formatFuel(displayData.targetConsumption - displayData.lastLapUsage, fuelUnits)} under`}
-            </div>
+                key={scenario.laps}
+                className={`flex justify-between items-center px-2 py-1.5 rounded ${
+                  scenario.isCurrentTarget
+                    ? 'bg-blue-500/20 border border-blue-500/40'
+                    : 'bg-slate-900/50'
+                }`}
+              >
+                <span className="text-xs text-slate-400">
+                  {scenario.laps} {scenario.laps === 1 ? 'Lap' : 'Laps'}
+                </span>
+                <span className={`text-sm font-semibold ${
+                  scenario.isCurrentTarget ? 'text-blue-400' : 'text-white'
+                }`}>
+                  {formatFuel(scenario.fuelPerLap, fuelUnits)}
+                </span>
+              </div>
+            ))}
           </div>
         </div>
       )}
-      */}
 
 
       {/* Footer: Key Information */}
