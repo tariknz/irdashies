@@ -26,9 +26,9 @@ export interface InputTraceProps {
 
 export const InputTrace = ({
   input,
-  settings = { includeThrottle: true, includeBrake: true, includeAbs: true, maxSamples: 250 },
+  settings,
 }: InputTraceProps) => {
-  const { includeThrottle, includeBrake, includeAbs = true, includeSteer = true, strokeWidth = 3, maxSamples = 250 } = settings;
+  const { includeThrottle = true, includeBrake = true, includeAbs = true, includeSteer = true, strokeWidth = 3, maxSamples = 400 } = settings ?? {};
   const svgRef = useRef<SVGSVGElement>(null);
   const rafRef = useRef<number | null>(null);
   const { width, height } = { width: 400, height: 100 };
