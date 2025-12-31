@@ -122,6 +122,7 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
 export interface WeatherWidgetSettings extends BaseWidgetSettings {
   config: {
     background: { opacity: number };
+    displayOrder: string[];
     airTemp: {
       enabled: boolean
     };
@@ -134,7 +135,12 @@ export interface WeatherWidgetSettings extends BaseWidgetSettings {
     trackState: {
       enabled: boolean
     };
-    wind: { enabled: boolean };
+    humidity: {
+      enabled: boolean
+    };
+    wind: { 
+      enabled: boolean 
+    };
     units: 'auto' | 'Metric' | 'Imperial';
   };
 };
