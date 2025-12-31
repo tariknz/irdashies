@@ -120,6 +120,7 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
 export interface WeatherWidgetSettings extends BaseWidgetSettings {
   config: {
     background: { opacity: number };
+    displayOrder: string[];
     airTemp: {
       enabled: boolean
     };

@@ -8,6 +8,7 @@ import { WindDirection } from './WindDirection/WindDirection';
 import { useTrackRubberedState } from './hooks/useTrackRubberedState';
 import { useWeatherSettings } from './hooks/useWeatherSettings';
 import { WeatherHumidity } from './WeatherHumidity/WeatherHumidity';
+import { Fragment, useMemo } from 'react';
 
 export const Weather = () => {
   const weather = useTrackWeather();
@@ -26,35 +27,78 @@ export const Weather = () => {
     trackTempUnit: actualUnit,
   });
   const windSpeed = weather.windVelocity;
-  const relativeWindDirection =  (weather.windDirection ?? 0) - (weather.windYaw ?? 0);
+  const relativeWindDirection = (weather.windDirection ?? 0) - (weather.windYaw ?? 0);
   const trackRubbered = useTrackRubberedState();
+  const displayOrder = settings?.displayOrder as string[] | undefined;
+
+  const columnDefinitions = useMemo(() => {
+    const columns = [
+      {
+        id: 'trace' as const,
+        shouldRender: settings?.trackTemp?.enabled ?? true,
+        component: (
+          <WeatherTemp title="Track" value={trackTemp} />
+        ),
+      },
+      {
+        id: 'airTemp' as const,
+        shouldRender: settings?.airTemp?.enabled ?? true,
+        component: (
+          <WeatherTemp title="Air" value={airTemp} />
+        )
+      },
+      {
+        id: 'wind' as const,
+        shouldRender: settings?.wind?.enabled ?? true,
+        component: (<WindDirection speedMs={windSpeed} direction={relativeWindDirection} metric={isMetric} />)
+      },
+      {
+        id: 'humidity' as const,
+        shouldRender: settings?.humidity?.enabled ?? true,
+        component: (<WeatherHumidity humidity={weather.humidity} />)
+      },
+      {
+        id: 'wetness' as const,
+        shouldRender: settings?.wetness?.enabled ?? true,
+        component: (<WeatherTrackWetness trackMoisture={weather.trackMoisture} />)
+      },
+      {
+        id: 'trackState' as const,
+        shouldRender: settings?.trackState?.enabled ?? true,
+        component: (<WeatherTrackRubbered trackRubbered={trackRubbered} />)
+      },
+    ];
+
+    if (!displayOrder) {
+      return columns.filter((column) => column.shouldRender);
+    }
+
+    const orderedColumns = displayOrder
+      .map((orderId) => columns.find((column) => column.id === orderId))
+      .filter(
+        (column): column is NonNullable<typeof column> =>
+          column !== undefined && column.shouldRender
+      );
+
+    const remainingColumns = columns.filter(
+      (column) => column.shouldRender && !displayOrder.includes(column.id)
+    );
+
+    return [...orderedColumns, ...remainingColumns];
+  }, [settings?.trackTemp?.enabled, settings?.airTemp?.enabled, settings?.wind?.enabled, settings?.humidity?.enabled, settings?.wetness?.enabled, settings?.trackState?.enabled, trackTemp, airTemp, windSpeed, relativeWindDirection, isMetric, weather.humidity, weather.trackMoisture, trackRubbered, displayOrder]);
 
   return (
     <div
-      className="w-full inline-flex flex-row bg-slate-800/(--bg-opacity) rounded-sm"
+      className="w-full h-full inline-flex gap-1 p-2 flex-row bg-slate-800/(--bg-opacity)"
       style={{
-        ['--bg-opacity' as string]: `${settings?.background?.opacity ?? 25}%`,
+        ['--bg-opacity' as string]: `${settings?.background?.opacity ?? 80}%`,
       }}
     >
       <div className="flex flex-col p-2 w-full rounded-sm gap-2">
-        {settings.trackTemp.enabled && (
-          <WeatherTemp title="Track" value={trackTemp} />
-        )}
-        {settings.airTemp.enabled && (
-          <WeatherTemp title="Air" value={airTemp} />
-        )}
-        {settings.wind.enabled && (
-          <WindDirection speedMs={windSpeed} direction={relativeWindDirection} metric={isMetric} />
-        )}
-        {settings.humidity.enabled && (
-          <WeatherHumidity humidity={weather.humidity} />
-        )}
-        {settings.wetness.enabled && (
-          <WeatherTrackWetness trackMoisture={weather.trackMoisture} />
-        )}
-        {settings.trackState.enabled && (
-          <WeatherTrackRubbered trackRubbered={trackRubbered} />
-        )}
+
+        {columnDefinitions.map((column) => (
+          <Fragment key={column.id}>{column.component}</Fragment>
+        ))}
       </div>
     </div>
   );
