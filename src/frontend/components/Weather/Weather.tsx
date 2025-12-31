@@ -20,7 +20,7 @@ export const Weather = () => {
     : unitSetting === 'Metric';
   const actualUnit = isMetric ? 'Metric' : 'Imperial';
 
-  const { trackTemp } = useTrackTemperature({
+  const { trackTemp, airTemp } = useTrackTemperature({
     airTempUnit: actualUnit,
     trackTempUnit: actualUnit,
   });
@@ -30,7 +30,7 @@ export const Weather = () => {
 
   return (
     <div
-      className="w-full inline-flex flex-row bg-slate-800/[var(--bg-opacity)] rounded-sm"
+      className="w-full inline-flex flex-row bg-slate-800/(--bg-opacity) rounded-sm"
       style={{
         ['--bg-opacity' as string]: `${settings?.background?.opacity ?? 25}%`,
       }}
@@ -40,7 +40,7 @@ export const Weather = () => {
           <WeatherTemp title="Track" value={trackTemp} />
         )}
         {settings.airTemp.enabled && (
-          <WeatherTemp title="Air" value={trackTemp} />
+          <WeatherTemp title="Air" value={airTemp} />
         )}
         {settings.wind.enabled && (
           <WindDirection speedMs={windSpeed} direction={relativeWindDirection} metric={isMetric} />
