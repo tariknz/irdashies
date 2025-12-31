@@ -19,6 +19,9 @@ const defaultConfig: WeatherWidgetSettings['config'] = {
   },
   wind: {
     enabled: true
+  },
+  humidity: {
+    enabled: true
   }
 };
 

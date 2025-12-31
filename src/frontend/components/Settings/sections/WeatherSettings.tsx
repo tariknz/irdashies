@@ -16,6 +16,9 @@ const defaultConfig: WeatherWidgetSettings['config'] = {
   trackState: { enabled: true },
   wind: { enabled: true },
   units: 'auto',
+  humidity: {
+    enabled: true
+  }
 };
 
 const migrateConfig = (savedConfig: unknown): WeatherWidgetSettings['config'] => {
@@ -28,6 +31,7 @@ const migrateConfig = (savedConfig: unknown): WeatherWidgetSettings['config'] =>
     trackTemp: { enabled: (config.trackTemp as { enabled?: boolean })?.enabled ?? defaultConfig.trackTemp.enabled },
     wetness: { enabled: (config.wetness as { enabled?: boolean })?.enabled ?? defaultConfig.wetness.enabled },
     trackState: { enabled: (config.trackState as { enabled?: boolean })?.enabled ?? defaultConfig.trackState.enabled },
+    humidity: { enabled: (config.humidity as { enabled?: boolean })?.enabled ?? defaultConfig.humidity.enabled },
     wind: { enabled: (config.wind as { enabled?: boolean })?.enabled ?? defaultConfig.wind.enabled },
     units: (config.units as 'auto' | 'Metric' | 'Imperial') ?? 'auto',
   };
@@ -134,6 +138,17 @@ export const WeatherSettings = () => {
             <ToggleSwitch
               enabled={!!config.trackState.enabled}
               onToggle={(enabled) => handleConfigChange({ trackState: { enabled } })}
+            />
+          </div>
+
+           <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-medium text-slate-200">Humidity</h3>
+              <p className="text-sm text-slate-400">Show track humidity (%).</p>
+            </div>
+            <ToggleSwitch
+              enabled={!!config.humidity.enabled}
+              onToggle={(enabled) => handleConfigChange({ humidity: { enabled } })}
             />
           </div>
           <div className="flex items-center justify-between">

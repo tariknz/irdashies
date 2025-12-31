@@ -7,6 +7,7 @@ import { WeatherTrackRubbered } from './WeatherTrackRubbered/WeatherTrackRubbere
 import { WindDirection } from './WindDirection/WindDirection';
 import { useTrackRubberedState } from './hooks/useTrackRubberedState';
 import { useWeatherSettings } from './hooks/useWeatherSettings';
+import { WeatherHumidity } from './WeatherHumidity/WeatherHumidity';
 
 export const Weather = () => {
   const weather = useTrackWeather();
@@ -44,6 +45,9 @@ export const Weather = () => {
         )}
         {settings.wind.enabled && (
           <WindDirection speedMs={windSpeed} direction={relativeWindDirection} metric={isMetric} />
+        )}
+        {settings.humidity.enabled && (
+          <WeatherHumidity humidity={weather.humidity} />
         )}
         {settings.wetness.enabled && (
           <WeatherTrackWetness trackMoisture={weather.trackMoisture} />

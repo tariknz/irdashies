@@ -132,7 +132,12 @@ export interface WeatherWidgetSettings extends BaseWidgetSettings {
     trackState: {
       enabled: boolean
     };
-    wind: { enabled: boolean };
+    humidity: {
+      enabled: boolean
+    };
+    wind: { 
+      enabled: boolean 
+    };
     units: 'auto' | 'Metric' | 'Imperial';
   };
 };
