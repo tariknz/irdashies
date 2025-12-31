@@ -22,7 +22,8 @@ const defaultConfig: WeatherWidgetSettings['config'] = {
   },
   humidity: {
     enabled: true
-  }
+  },
+  displayOrder: []
 };
 
 export const useWeatherSettings = () => {
