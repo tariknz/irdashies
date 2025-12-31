@@ -12,6 +12,7 @@ import {
   drawTurnNames,
   drawDrivers,
 } from './trackDrawingUtils';
+import { useDriverOffTrack } from './hooks/useDriverOffTrack';
 
 export interface TrackProps {
   trackId: number;
@@ -60,6 +61,8 @@ export const TrackCanvas = ({
 
   const trackDrawing = (tracks as unknown as TrackDrawing[])[trackId];
   const shouldShow = shouldShowTrack(trackId, trackDrawing);
+
+  const driversOffTrack = useDriverOffTrack();
 
   // Memoize Path2D objects to avoid re-creating them on every render
   // this is used to draw the track and start/finish line
@@ -224,7 +227,7 @@ export const TrackCanvas = ({
     drawTrack(ctx, path2DObjects);
     drawStartFinishLine(ctx, startFinishLine);
     drawTurnNames(ctx, trackDrawing.turns, enableTurnNames);
-    drawDrivers(ctx, calculatePositions, driverColors);
+    drawDrivers(ctx, calculatePositions, driverColors, driversOffTrack);
 
     // Restore context state
     ctx.restore();
@@ -238,6 +241,7 @@ export const TrackCanvas = ({
     trackDrawing?.startFinish?.point,
     trackDrawing?.active?.trackPathPoints,
     startFinishLine,
+    driversOffTrack,
   ]);
 
   // Development/Storybook mode - show debug info and canvas

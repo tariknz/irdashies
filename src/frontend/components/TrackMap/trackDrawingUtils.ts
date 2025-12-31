@@ -81,7 +81,8 @@ export const drawTurnNames = (
 export const drawDrivers = (
   ctx: CanvasRenderingContext2D,
   calculatePositions: Record<number, TrackDriver & { position: { x: number; y: number } }>,
-  driverColors: Record<number, { fill: string; text: string }>
+  driverColors: Record<number, { fill: string; text: string }>,
+  driversOffTrack: boolean[]
 ) => {
   Object.values(calculatePositions)
     .sort((a, b) => Number(a.isPlayer) - Number(b.isPlayer)) // draws player last to be on top
@@ -93,6 +94,13 @@ export const drawDrivers = (
       ctx.beginPath();
       ctx.arc(position.x, position.y, 40, 0, 2 * Math.PI);
       ctx.fill();
+
+      if (driversOffTrack[driver.CarIdx]) {
+        ctx.strokeStyle = getColor('yellow', 400);
+        ctx.lineWidth = 10;
+        ctx.stroke();
+      }
+
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillStyle = color.text;
