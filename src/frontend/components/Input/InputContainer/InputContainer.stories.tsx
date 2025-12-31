@@ -56,6 +56,8 @@ const RandomTraces = () => {
           includeBrake: true,
           includeAbs: true,
           includeSteer: true,
+          strokeWidth: 3,
+          maxSamples: 400,
         },
         bar: {
           enabled: true,

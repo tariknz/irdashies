@@ -30,6 +30,7 @@ const defaultConfig: InputWidgetSettings['config'] = {
     includeAbs: true,
     includeSteer: true,
     strokeWidth: 3,
+    maxSamples: 400,
   },
   bar: {
     enabled: true,
@@ -85,6 +86,9 @@ const migrateConfig = (savedConfig: unknown): InputWidgetSettings['config'] => {
       strokeWidth:
         (config.trace as { strokeWidth?: number })?.strokeWidth ??
         defaultConfig.trace.strokeWidth,
+      maxSamples:
+        (config.trace as { maxSamples?: number })?.maxSamples ??
+        defaultConfig.trace.maxSamples,
     },
     bar: {
       enabled:
@@ -232,7 +236,7 @@ export const InputSettings = () => {
             {/* Display Settings */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium text-slate-200">Display Settings</h3>
+                <h3 className="text-lg font-medium text-slate-200">Display</h3>
                 <button
                   onClick={() => {
                     const defaultOrder = sortableSettings.map((s) => s.id);
@@ -254,10 +258,55 @@ export const InputSettings = () => {
               </div>
             </div>
 
+            {/* Background Settings */}
+            <div className="flex items-center gap-3">
+              <label className="text-sm text-slate-200">Background Opacity:</label>
+              <input
+                type="range"
+                min="0"
+                max="100"
+                value={settings.config.background.opacity}
+                onChange={(e) =>
+                  handleConfigChange({
+                    background: { opacity: parseInt(e.target.value) },
+                  })
+                }
+                className="flex-1 h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer slider"
+              />
+              <input
+                type="number"
+                min="0"
+                max="100"
+                value={settings.config.background.opacity}
+                onChange={(e) =>
+                  handleConfigChange({
+                    background: { opacity: parseInt(e.target.value) },
+                  })
+                }
+                className="w-20 bg-slate-700 text-slate-200 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            {/* Show Only When On Track Settings */}
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="text-md font-medium text-slate-300">Show Only When On Track</h4>
+                <p className="text-sm text-slate-400">
+                  If enabled, inputs will only be shown when you are driving.
+                </p>
+              </div>
+              <ToggleSwitch
+                enabled={settings.config.showOnlyWhenOnTrack ?? true}
+                onToggle={(enabled) =>
+                  handleConfigChange({ showOnlyWhenOnTrack: enabled })
+                }
+              />
+            </div>
+
             {/* Trace Settings */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium text-slate-200">Trace Settings</h3>
+                <h3 className="text-lg font-medium text-slate-200">Trace</h3>
                 <div className="flex items-center gap-3">
                   <span className="text-sm text-slate-300">Enable Trace Display</span>
                   <ToggleSwitch
@@ -322,25 +371,60 @@ export const InputSettings = () => {
                     />
                     <span className="text-sm text-slate-200">Show Steering Trace</span>
                   </label>
-                  <div className="flex items-center justify-between pt-2">
-                    <span className="text-sm text-slate-200">Stroke Width</span>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="range"
-                        min="1"
-                        max="10"
-                        value={config.trace.strokeWidth ?? 3}
-                        onChange={(e) =>
-                          handleConfigChange({
-                            trace: { ...config.trace, strokeWidth: parseInt(e.target.value) },
-                          })
-                        }
-                        className="w-20 h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer"
-                      />
-                      <span className="text-xs text-slate-400 w-8">
-                        {config.trace.strokeWidth ?? 3}
-                      </span>
-                    </div>
+                  <div className="flex items-center gap-3 pt-2">
+                    <label className="text-sm text-slate-200">Stroke Width:</label>
+                    <input
+                      type="range"
+                      min="1"
+                      max="10"
+                      value={config.trace.strokeWidth ?? 3}
+                      onChange={(e) =>
+                        handleConfigChange({
+                          trace: { ...config.trace, strokeWidth: parseInt(e.target.value) },
+                        })
+                      }
+                      className="flex-1 h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer slider"
+                    />
+                    <input
+                      type="number"
+                      min="1"
+                      max="10"
+                      value={config.trace.strokeWidth ?? 3}
+                      onChange={(e) =>
+                        handleConfigChange({
+                          trace: { ...config.trace, strokeWidth: parseInt(e.target.value) },
+                        })
+                      }
+                      className="w-20 bg-slate-700 text-slate-200 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <label className="text-sm text-slate-200">Max Samples:</label>
+                    <input
+                      type="range"
+                      min="50"
+                      max="1000"
+                      step="50"
+                      value={config.trace.maxSamples}
+                      onChange={(e) =>
+                        handleConfigChange({
+                          trace: { ...config.trace, maxSamples: parseInt(e.target.value) },
+                        })
+                      }
+                      className="flex-1 h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer slider"
+                    />
+                    <input
+                      type="number"
+                      min="50"
+                      max="1000"
+                      value={config.trace.maxSamples}
+                      onChange={(e) =>
+                        handleConfigChange({
+                          trace: { ...config.trace, maxSamples: parseInt(e.target.value) },
+                        })
+                      }
+                      className="w-20 bg-slate-700 text-slate-200 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
                   </div>
                 </div>
               )}
@@ -349,7 +433,7 @@ export const InputSettings = () => {
             {/* Bar Settings */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium text-slate-200">Bar Settings</h3>
+                <h3 className="text-lg font-medium text-slate-200">Bar</h3>
                 <div className="flex items-center gap-3">
                   <span className="text-sm text-slate-300">Enable Bar Display</span>
                   <ToggleSwitch
@@ -422,7 +506,7 @@ export const InputSettings = () => {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-medium text-slate-200">
-                  Steer Settings
+                  Steer
                 </h3>
                 <div className="flex items-center gap-3">
                   <span className="text-sm text-slate-300">
@@ -490,7 +574,7 @@ export const InputSettings = () => {
             {/* Gear Settings */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium text-slate-200">Gear Settings</h3>
+                <h3 className="text-lg font-medium text-slate-200">Gear</h3>
                 <div className="flex items-center gap-3">
                   <span className="text-sm text-slate-300">Enable Gear Display</span>
                   <ToggleSwitch
@@ -566,7 +650,7 @@ export const InputSettings = () => {
             {/* Tachometer Settings */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium text-slate-200">Tachometer Settings</h3>
+                <h3 className="text-lg font-medium text-slate-200">Tachometer</h3>
                 <div className="flex items-center gap-3">
                   <span className="text-sm text-slate-300">Enable Tachometer Display</span>
                   <ToggleSwitch
@@ -590,51 +674,6 @@ export const InputSettings = () => {
                   </div>
                 </div>
               )}
-            </div>
-
-            {/* Background Settings */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium text-slate-200">Background</h3>
-              </div>
-              <div className="space-y-3 pl-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-slate-300">Background Opacity</span>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="range"
-                      min="0"
-                      max="100"
-                      value={settings.config.background.opacity}
-                      onChange={(e) =>
-                        handleConfigChange({
-                          background: { opacity: parseInt(e.target.value) },
-                        })
-                      }
-                      className="w-20 h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer"
-                    />
-                    <span className="text-xs text-slate-400 w-8">
-                      {settings.config.background.opacity}%
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Show Only When On Track Settings */}
-            <div className="flex items-center justify-between">
-              <div>
-                <h4 className="text-md font-medium text-slate-300">Show Only When On Track</h4>
-                <p className="text-sm text-slate-400">
-                  If enabled, inputs will only be shown when you are driving.
-                </p>
-              </div>
-              <ToggleSwitch
-                enabled={settings.config.showOnlyWhenOnTrack ?? true}
-                onToggle={(enabled) =>
-                  handleConfigChange({ showOnlyWhenOnTrack: enabled })
-                }
-              />
             </div>
           </div>
         );
