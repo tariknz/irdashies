@@ -37,9 +37,6 @@ export const TrackMapSettings = () => {
     >
       {(handleConfigChange) => (
         <div className="space-y-4">
-          <div className="bg-yellow-600/20 text-yellow-100 p-4 rounded-md mb-4">
-            <p>This is still a work in progress. There are several tracks still missing, please report any issues/requests.</p>
-          </div>
           <div className="flex items-center justify-between">
             <div>
               <span className="text-sm text-slate-300">Enable Turn Names</span>
