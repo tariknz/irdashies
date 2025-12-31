@@ -103,7 +103,9 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
     showOnlyWhenOnTrack: boolean;
     badge: { enabled: boolean; badgeFormat: 'license-color-rating-bw' | 'license-color-rating-bw-no-license' | 'rating-color-no-license' | 'license-bw-rating-bw' | 'rating-only-bw-rating-bw' | 'license-bw-rating-bw-no-license' | 'rating-bw-no-license' };
     iratingChange: { enabled: boolean };
-    delta: { enabled: boolean };
+    delta: { enabled: boolean,
+      precision: number
+     };
     position: { enabled: boolean };
     driverName: { enabled: boolean };
     pitStatus: { enabled: boolean };
