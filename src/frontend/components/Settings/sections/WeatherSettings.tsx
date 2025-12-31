@@ -132,10 +132,6 @@ export const WeatherSettings = () => {
     return <>Loading...</>;
   }
 
-  const config = settings.config;
-
-
-
   // Render settings using the BaseSettingsSection helper.
   // Children is provided as a function which receives `handleConfigChange`.
   return (

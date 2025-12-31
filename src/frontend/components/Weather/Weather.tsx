@@ -47,6 +47,9 @@ export const Weather = () => {
           <WeatherTemp title="Air" value={airTemp} />
         )
       },
+      { id: 'trackTemp' as const,
+        shouldRender: settings?.trackTemp?.enabled ?? true,
+        component: (<WeatherTemp title="Track" value={trackTemp} />)},
       {
         id: 'wind' as const,
         shouldRender: settings?.wind?.enabled ?? true,
