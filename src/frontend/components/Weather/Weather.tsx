@@ -34,7 +34,7 @@ export const Weather = () => {
   const columnDefinitions = useMemo(() => {
     const columns = [
       {
-        id: 'trace' as const,
+        id: 'trackTemp' as const,
         shouldRender: settings?.trackTemp?.enabled ?? true,
         component: (
           <WeatherTemp title="Track" value={trackTemp} />
@@ -47,9 +47,6 @@ export const Weather = () => {
           <WeatherTemp title="Air" value={airTemp} />
         )
       },
-      { id: 'trackTemp' as const,
-        shouldRender: settings?.trackTemp?.enabled ?? true,
-        component: (<WeatherTemp title="Track" value={trackTemp} />)},
       {
         id: 'wind' as const,
         shouldRender: settings?.wind?.enabled ?? true,
@@ -88,7 +85,18 @@ export const Weather = () => {
     );
 
     return [...orderedColumns, ...remainingColumns];
-  }, [settings?.trackTemp?.enabled, settings?.airTemp?.enabled, settings?.wind?.enabled, settings?.humidity?.enabled, settings?.wetness?.enabled, settings?.trackState?.enabled, trackTemp, airTemp, windSpeed, relativeWindDirection, isMetric, weather.humidity, weather.trackMoisture, trackRubbered, displayOrder]);
+  }, [settings?.trackTemp?.enabled, 
+    settings?.airTemp?.enabled, 
+    settings?.wind?.enabled, 
+    settings?.humidity?.enabled, 
+    settings?.wetness?.enabled, 
+    settings?.trackState?.enabled, 
+    trackTemp, 
+    airTemp, 
+    windSpeed, 
+    relativeWindDirection, 
+    isMetric, 
+    weather.humidity, weather.trackMoisture, trackRubbered, displayOrder]);
 
   return (
     <div
