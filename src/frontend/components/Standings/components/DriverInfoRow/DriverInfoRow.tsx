@@ -61,6 +61,7 @@ interface DriverRowInfoProps {
   repair: boolean;
   penalty: boolean;
   slowdown: boolean;
+  deltaDecimalPlaces?: number;
 }
 
 export const DriverInfoRow = memo(
@@ -105,6 +106,7 @@ export const DriverInfoRow = memo(
     repair,
     penalty,
     slowdown,
+    deltaDecimalPlaces,
   }: DriverRowInfoProps) => {
     const lastTimeString = useMemo(() => {
       const format = config?.lastTime?.timeFormat ?? 'full';
@@ -255,7 +257,7 @@ export const DriverInfoRow = memo(
             (displayOrder ? displayOrder.includes('delta') : true) &&
             (config?.delta?.enabled ?? true) &&
             !(config && 'gap' in config),
-          component: <DeltaCell key="delta" hidden={hidden} delta={delta} />,
+          component: <DeltaCell key="delta" hidden={hidden} delta={delta} decimalPlaces={deltaDecimalPlaces} />,
         },
         {
           id: 'gap',
@@ -269,6 +271,7 @@ export const DriverInfoRow = memo(
               hidden={hidden}
               delta={gap}
               showForUndefined={position === 1 ? "gap" : undefined}
+              decimalPlaces={deltaDecimalPlaces}
             />
           ),
         },
@@ -286,6 +289,7 @@ export const DriverInfoRow = memo(
               hidden={hidden}
               delta={interval}
               showForUndefined={position === 1 ? "int" : undefined}
+              decimalPlaces={deltaDecimalPlaces}
             />
           ),
         },
