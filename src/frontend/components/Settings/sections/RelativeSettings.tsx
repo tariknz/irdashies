@@ -44,7 +44,7 @@ const defaultConfig: RelativeWidgetSettings['config'] = {
   carManufacturer: { enabled: true },
   badge: { enabled: true, badgeFormat: 'license-color-rating-bw' },
   iratingChange: { enabled: false },
-  delta: { enabled: true },
+  delta: { enabled: true, precision: 2 },
   fastestTime: { enabled: false, timeFormat: 'full' },
   lastTime: { enabled: false, timeFormat: 'full' },
   compound: { enabled: false },
@@ -107,7 +107,7 @@ const migrateConfig = (savedConfig: unknown): RelativeWidgetSettings['config'] =
       badgeFormat: ((config.badge as { badgeFormat?: string })?.badgeFormat as 'license-color-rating-bw' | 'license-color-rating-bw-no-license' | 'rating-color-no-license' | 'license-bw-rating-bw' | 'rating-only-bw-rating-bw' | 'license-bw-rating-bw-no-license' | 'rating-bw-no-license') ?? 'license-color-rating-bw'
     },
     iratingChange: { enabled: (config.iratingChange as { enabled?: boolean })?.enabled ?? false },
-    delta: { enabled: (config.delta as { enabled?: boolean })?.enabled ?? true },
+    delta: { enabled: (config.delta as { enabled?: boolean })?.enabled ?? true, precision: (config.delta as { precision?: number })?.precision ?? 2 },
     fastestTime: { enabled: (config.fastestTime as { enabled?: boolean; timeFormat?: string })?.enabled ?? false, timeFormat: ((config.fastestTime as { enabled?: boolean; timeFormat?: string })?.timeFormat as 'full' | 'mixed' | 'minutes' | 'seconds-full' | 'seconds-mixed' | 'seconds') ?? 'full' },
     lastTime: { enabled: (config.lastTime as { enabled?: boolean; timeFormat?: string })?.enabled ?? false, timeFormat: ((config.lastTime as { enabled?: boolean; timeFormat?: string })?.timeFormat as 'full' | 'mixed' | 'minutes' | 'seconds-full' | 'seconds-mixed' | 'seconds') ?? 'full' },
     compound: { enabled: (config.compound as { enabled?: boolean })?.enabled ?? false },
@@ -127,7 +127,7 @@ const migrateConfig = (savedConfig: unknown): RelativeWidgetSettings['config'] =
     headerBar: {
       enabled: (config.headerBar as { enabled?: boolean })?.enabled ?? true,
       sessionName: { enabled: (config.headerBar as { sessionName?: { enabled?: boolean } })?.sessionName?.enabled ?? true },
-      sessionTime: { 
+      sessionTime: {
         enabled: (config.headerBar as { sessionTime?: { enabled?: boolean } })?.sessionTime?.enabled ?? true,
         mode: ((config.headerBar as { sessionTime?: { mode?: string } })?.sessionTime?.mode as 'Remaining' | 'Elapsed') ?? 'Remaining'
       },
@@ -217,7 +217,7 @@ const DisplaySettingsList = ({ itemsOrder, onReorder, settings, handleConfigChan
               <ToggleSwitch
                 enabled={isEnabled}
                 onToggle={(enabled) => {
-                  const cv = settings.config[setting.configKey] as { enabled: boolean; [key: string]: unknown };
+                  const cv = settings.config[setting.configKey] as { enabled: boolean;[key: string]: unknown };
                   handleConfigChange({
                     [setting.configKey]: { ...cv, enabled }
                   });
@@ -233,7 +233,7 @@ const DisplaySettingsList = ({ itemsOrder, onReorder, settings, handleConfigChan
                       format={format}
                       selected={(configValue as { enabled: boolean; badgeFormat: string }).badgeFormat === format}
                       onClick={() => {
-                        const cv = settings.config[setting.configKey] as { enabled: boolean; badgeFormat: string; [key: string]: unknown };
+                        const cv = settings.config[setting.configKey] as { enabled: boolean; badgeFormat: string;[key: string]: unknown };
                         handleConfigChange({
                           [setting.configKey]: { ...cv, badgeFormat: format },
                         });
@@ -249,7 +249,7 @@ const DisplaySettingsList = ({ itemsOrder, onReorder, settings, handleConfigChan
                 <select
                   value={(configValue as { enabled: boolean; timeFormat: string }).timeFormat}
                   onChange={(e) => {
-                    const cv = settings.config[setting.configKey] as { enabled: boolean; timeFormat: string; [key: string]: unknown };
+                    const cv = settings.config[setting.configKey] as { enabled: boolean; timeFormat: string;[key: string]: unknown };
                     handleConfigChange({
                       [setting.configKey]: {
                         ...cv,
@@ -729,6 +729,32 @@ export const RelativeSettings = () => {
                         {[3, 5, 7, 10].map((num) => (
                           <option key={num} value={num}>
                             {num} laps
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <span className="text-sm text-slate-300">Relative precision value</span>
+                        <p className="text-xs text-slate-400">Number of decimal places to display</p>
+                      </div>
+                      <select
+                        value={settings.config.delta.precision}
+                        onChange={(e) => {
+                          const newConfig = {
+                            ...settings.config.delta,
+                            precision: parseInt(e.target.value),
+                          };
+                          handleConfigChange({
+                            delta: newConfig,
+                          });
+                          updateStoreConfig(newConfig);
+                        }}
+                        className="bg-slate-700 text-slate-200 px-3 py-1 rounded border border-slate-600 focus:border-blue-500 focus:outline-none"
+                      >
+                        {[0, 1, 2, 3].map((num) => (
+                          <option key={num} value={num}>
+                            {num}
                           </option>
                         ))}
                       </select>
