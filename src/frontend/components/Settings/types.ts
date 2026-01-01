@@ -58,6 +58,13 @@ export interface StandingsWidgetSettings extends BaseWidgetSettings {
     driverName: { enabled: boolean };
     pitStatus: { enabled: boolean };
     displayOrder: string[];
+    sessions: {
+      race: boolean;
+      loneQualify: boolean;
+      openQualify: boolean;
+      practice: boolean;
+      offlineTesting: boolean;
+    }
   };
 }
 
