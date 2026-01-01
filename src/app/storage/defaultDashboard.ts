@@ -236,7 +236,8 @@ export const defaultDashboard: DashboardLayout = {
           "enabled": false
         },
         "delta": {
-          "enabled": true
+          "enabled": true,
+          "precision": 2
         },
         "fastestTime": {
           "enabled": false,
@@ -359,13 +360,32 @@ export const defaultDashboard: DashboardLayout = {
         "x": 1334,
         "y": 271,
         "width": 174,
-        "height": 379
+        "height": 425
       },
       "config": {
         "background": {
           "opacity": 25
         },
-        "units": "auto"
+        "units": "auto",
+        "displayOrder": ["trackTemp", "airTemp", "wind", "humidity", "wetness", "trackState"],
+        "airTemp": {
+          "enabled": true
+        },
+        "trackTemp": {
+          "enabled": true
+        },
+        "wetness": {
+          "enabled": true
+        },
+        "trackState": {
+          "enabled": true
+        },
+        "humidity": {
+          "enabled": true
+        },
+        "wind": {
+          "enabled": true
+        }
       }
     },
     {
