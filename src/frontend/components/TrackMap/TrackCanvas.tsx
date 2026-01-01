@@ -77,21 +77,28 @@ export const TrackCanvas = ({
     };
   }, [insidePath, startFinishLinePath]);
 
+  // Calculate if this is a multi-class race by counting unique CarClassID values
+  const isMultiClass = useMemo(() => {
+    if (!drivers || drivers.length === 0) return false;
+    const uniqueClassIds = new Set(drivers.map(({ driver }) => driver.CarClassID));
+    return uniqueClassIds.size > 1;
+  }, [drivers]);
+
   // Memoize color calculations
   const driverColors = useMemo(() => {
     const colors: Record<number, { fill: string; text: string }> = {};
 
     drivers?.forEach(({ driver, isPlayer }) => {
       if (isPlayer) {
-        colors[driver.CarIdx] = { fill: getColor('yellow'), text: 'white' };
+        colors[driver.CarIdx] = { fill: getColor('amber'), text: 'white' };
       } else {
-        const style = getTailwindStyle(driver.CarClassColor);
+        const style = getTailwindStyle(driver.CarClassColor, undefined, isMultiClass);
         colors[driver.CarIdx] = { fill: style.canvasFill, text: 'white' };
       }
     });
 
     return colors;
-  }, [drivers]);
+  }, [drivers, isMultiClass]);
 
   // Get start/finish line calculations
   const startFinishLine = useStartFinishLine({
