@@ -15,6 +15,7 @@ interface TrackMapSettings {
     playerCircleSize: number;
     trackLineWidth: number;
     trackOutlineWidth: number;
+    useHighlightColor: boolean;
   };
 }
 
@@ -25,7 +26,8 @@ const defaultConfig: TrackMapSettings['config'] = {
   driverCircleSize: 40,
   playerCircleSize: 40,
   trackLineWidth: 20,
-  trackOutlineWidth: 40
+  trackOutlineWidth: 40,
+  useHighlightColor: false
 };
 
 export const TrackMapSettings = () => {
@@ -117,6 +119,21 @@ export const TrackMapSettings = () => {
             <p className="text-slate-400 text-sm">
               Size of the circle for the player on the track map
             </p>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div>
+              <span className="text-sm text-slate-300">Use Highlight Color</span>
+              <p className="text-xs text-slate-400">
+                Use the highlight color from general settings for the player&apos;s circle
+              </p>
+            </div>
+            <ToggleSwitch
+              enabled={settings.config.useHighlightColor ?? false}
+              onToggle={(enabled) => handleConfigChange({
+                useHighlightColor: enabled
+              })}
+            />
           </div>
 
           <div className="flex items-center justify-between">

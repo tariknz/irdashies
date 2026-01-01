@@ -15,6 +15,7 @@ export default {
     playerCircleSize: 40,
     trackLineWidth: 20,
     trackOutlineWidth: 40,
+    highlightColor: undefined,
     debug: true,
   },
   argTypes: {
@@ -41,6 +42,10 @@ export default {
     },
     trackOutlineWidth: {
       control: { type: 'range', min: 5, max: 150, step: 1 },
+    },
+    highlightColor: {
+      control: { type: 'number' },
+      description: 'Highlight color for player circle (RGB number). Leave undefined to use amber (16096779).',
     },
     debug: {
       control: { type: 'boolean' },
@@ -350,6 +355,7 @@ export const Primary: Story = {
     playerCircleSize: 40,
     trackLineWidth: 20,
     trackOutlineWidth: 40,
+    highlightColor: undefined,
   },
 };
 
@@ -364,6 +370,7 @@ export const InvertedTrackColors: Story = {
     playerCircleSize: 40,
     trackLineWidth: 20,
     trackOutlineWidth: 40,
+    highlightColor: undefined,
   },
 };
 
@@ -378,6 +385,7 @@ export const SingleClass: Story = {
     playerCircleSize: 40,
     trackLineWidth: 20,
     trackOutlineWidth: 40,
+    highlightColor: undefined,
   },
 };
 
@@ -424,6 +432,7 @@ export const SingleDriver: Story = {
         playerCircleSize={args.playerCircleSize ?? 40}
         trackLineWidth={args.trackLineWidth ?? 20}
         trackOutlineWidth={args.trackOutlineWidth ?? 40}
+        highlightColor={args.highlightColor}
       />
     );
   },
@@ -463,6 +472,7 @@ export const CirclingAround: Story = {
         playerCircleSize={args.playerCircleSize ?? 40}
         trackLineWidth={args.trackLineWidth ?? 20}
         trackOutlineWidth={args.trackOutlineWidth ?? 40}
+        highlightColor={args.highlightColor}
       />
     );
   },
@@ -515,6 +525,7 @@ export const AllTracksGrid: Story = {
                   playerCircleSize={args.playerCircleSize ?? 40}
                   trackLineWidth={args.trackLineWidth ?? 20}
                   trackOutlineWidth={args.trackOutlineWidth ?? 40}
+                  highlightColor={args.highlightColor}
                   debug={args.debug}
                 />
               </div>
@@ -563,6 +574,7 @@ export const BrokenTracksGrid: Story = {
                   playerCircleSize={args.playerCircleSize ?? 40}
                   trackLineWidth={args.trackLineWidth ?? 20}
                   trackOutlineWidth={args.trackOutlineWidth ?? 40}
+                  highlightColor={args.highlightColor}
                   debug={args.debug}
                 />
               </div>

@@ -356,7 +356,8 @@ export const defaultDashboard: DashboardLayout = {
         "driverCircleSize": 40,
         "playerCircleSize": 40,
         "trackLineWidth": 20,
-        "trackOutlineWidth": 40
+        "trackOutlineWidth": 40,
+        "useHighlightColor": false
       }
     },
     {

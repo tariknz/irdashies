@@ -10,6 +10,7 @@ interface TrackMapSettings {
     playerCircleSize: number;
     trackLineWidth: number;
     trackOutlineWidth: number;
+    useHighlightColor: boolean;
   };
 }
 
@@ -31,7 +32,8 @@ export const useTrackMapSettings = () => {
     ('driverCircleSize' in settings ? typeof settings.driverCircleSize === 'number' : true) &&
     ('playerCircleSize' in settings ? typeof settings.playerCircleSize === 'number' : true) &&
     ('trackLineWidth' in settings ? typeof settings.trackLineWidth === 'number' : true) &&
-    ('trackOutlineWidth' in settings ? typeof settings.trackOutlineWidth === 'number' : true)
+    ('trackOutlineWidth' in settings ? typeof settings.trackOutlineWidth === 'number' : true) &&
+    ('useHighlightColor' in settings ? typeof settings.useHighlightColor === 'boolean' : true)
   ) {
     return settings as TrackMapSettings['config'];
   }

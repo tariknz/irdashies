@@ -26,7 +26,7 @@ export const TrackMap = () => {
         playerCircleSize={settings?.playerCircleSize ?? 40}
         trackLineWidth={settings?.trackLineWidth ?? 20}
         trackOutlineWidth={settings?.trackOutlineWidth ?? 40}
-        highlightColor={highlightColor}
+        highlightColor={settings?.useHighlightColor ? highlightColor : undefined}
         debug={debug}
       />
     </div>
