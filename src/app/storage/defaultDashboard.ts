@@ -350,7 +350,13 @@ export const defaultDashboard: DashboardLayout = {
         "height": 227
       },
       "config": {
-        "enableTurnNames": false
+        "enableTurnNames": false,
+        "showCarNumbers": true,
+        "invertTrackColors": false,
+        "driverCircleSize": 40,
+        "playerCircleSize": 40,
+        "trackLineWidth": 20,
+        "trackOutlineWidth": 40
       }
     },
     {

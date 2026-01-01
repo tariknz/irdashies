@@ -9,6 +9,12 @@ export default {
   title: 'widgets/TrackMap/components/TrackCanvas',
   args: {
     enableTurnNames: false,
+    showCarNumbers: true,
+    invertTrackColors: false,
+    driverCircleSize: 40,
+    playerCircleSize: 40,
+    trackLineWidth: 20,
+    trackOutlineWidth: 40,
     debug: true,
   },
   argTypes: {
@@ -17,6 +23,24 @@ export default {
     },
     enableTurnNames: {
       control: { type: 'boolean' },
+    },
+    showCarNumbers: {
+      control: { type: 'boolean' },
+    },
+    invertTrackColors: {
+      control: { type: 'boolean' },
+    },
+    driverCircleSize: {
+      control: { type: 'range', min: 10, max: 100, step: 1 },
+    },
+    playerCircleSize: {
+      control: { type: 'range', min: 10, max: 100, step: 1 },
+    },
+    trackLineWidth: {
+      control: { type: 'range', min: 5, max: 100, step: 1 },
+    },
+    trackOutlineWidth: {
+      control: { type: 'range', min: 5, max: 150, step: 1 },
     },
     debug: {
       control: { type: 'boolean' },
@@ -294,6 +318,26 @@ export const Primary: Story = {
     trackId: 1,
     drivers: sampleData,
     enableTurnNames: true,
+    showCarNumbers: true,
+    invertTrackColors: false,
+    driverCircleSize: 40,
+    playerCircleSize: 40,
+    trackLineWidth: 20,
+    trackOutlineWidth: 40,
+  },
+};
+
+export const InvertedTrackColors: Story = {
+  args: {
+    trackId: 1,
+    drivers: sampleData,
+    enableTurnNames: true,
+    showCarNumbers: true,
+    invertTrackColors: true,
+    driverCircleSize: 40,
+    playerCircleSize: 40,
+    trackLineWidth: 20,
+    trackOutlineWidth: 40,
   },
 };
 
@@ -328,7 +372,19 @@ export const SingleDriver: Story = {
       isPlayer: args.isPlayer || false,
     }] as TrackDriver[];
 
-    return <TrackCanvas trackId={args.trackId} drivers={drivers} enableTurnNames={args.enableTurnNames} />;
+    return (
+      <TrackCanvas 
+        trackId={args.trackId} 
+        drivers={drivers} 
+        enableTurnNames={args.enableTurnNames}
+        showCarNumbers={args.showCarNumbers ?? true}
+        invertTrackColors={args.invertTrackColors ?? false}
+        driverCircleSize={args.driverCircleSize ?? 40}
+        playerCircleSize={args.playerCircleSize ?? 40}
+        trackLineWidth={args.trackLineWidth ?? 20}
+        trackOutlineWidth={args.trackOutlineWidth ?? 40}
+      />
+    );
   },
   args: {
     trackId: 1,
@@ -355,7 +411,19 @@ export const CirclingAround: Story = {
       return () => clearInterval(interval);
     });
 
-    return <TrackCanvas trackId={args.trackId} drivers={drivers} enableTurnNames={args.enableTurnNames} />;
+    return (
+      <TrackCanvas 
+        trackId={args.trackId} 
+        drivers={drivers} 
+        enableTurnNames={args.enableTurnNames}
+        showCarNumbers={args.showCarNumbers ?? true}
+        invertTrackColors={args.invertTrackColors ?? false}
+        driverCircleSize={args.driverCircleSize ?? 40}
+        playerCircleSize={args.playerCircleSize ?? 40}
+        trackLineWidth={args.trackLineWidth ?? 20}
+        trackOutlineWidth={args.trackOutlineWidth ?? 40}
+      />
+    );
   },
   args: {
     trackId: 1,
@@ -400,6 +468,12 @@ export const AllTracksGrid: Story = {
                   trackId={trackId} 
                   drivers={sampleData} 
                   enableTurnNames={args.enableTurnNames}
+                  showCarNumbers={args.showCarNumbers ?? true}
+                  invertTrackColors={args.invertTrackColors ?? false}
+                  driverCircleSize={args.driverCircleSize ?? 40}
+                  playerCircleSize={args.playerCircleSize ?? 40}
+                  trackLineWidth={args.trackLineWidth ?? 20}
+                  trackOutlineWidth={args.trackOutlineWidth ?? 40}
                   debug={args.debug}
                 />
               </div>
@@ -442,6 +516,12 @@ export const BrokenTracksGrid: Story = {
                   trackId={brokenTrack.id} 
                   drivers={sampleData} 
                   enableTurnNames={args.enableTurnNames}
+                  showCarNumbers={args.showCarNumbers ?? true}
+                  invertTrackColors={args.invertTrackColors ?? false}
+                  driverCircleSize={args.driverCircleSize ?? 40}
+                  playerCircleSize={args.playerCircleSize ?? 40}
+                  trackLineWidth={args.trackLineWidth ?? 20}
+                  trackOutlineWidth={args.trackOutlineWidth ?? 40}
                   debug={args.debug}
                 />
               </div>

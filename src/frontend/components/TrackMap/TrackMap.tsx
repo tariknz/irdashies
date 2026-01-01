@@ -18,6 +18,12 @@ export const TrackMap = () => {
         trackId={trackId}
         drivers={driversTrackData}
         enableTurnNames={settings?.enableTurnNames ?? false}
+        showCarNumbers={settings?.showCarNumbers ?? true}
+        invertTrackColors={settings?.invertTrackColors ?? false}
+        driverCircleSize={settings?.driverCircleSize ?? 40}
+        playerCircleSize={settings?.playerCircleSize ?? 40}
+        trackLineWidth={settings?.trackLineWidth ?? 20}
+        trackOutlineWidth={settings?.trackOutlineWidth ?? 40}
         debug={debug}
       />
     </div>
