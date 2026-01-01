@@ -55,6 +55,7 @@ const sampleData = [
     driver: {
       CarIdx: 2,
       CarNumber: '20',
+      CarClassID: 1,
       CarClassColor: 16767577,
       CarClassEstLapTime: 113.6302,
     },
@@ -65,6 +66,7 @@ const sampleData = [
     driver: {
       CarIdx: 9,
       CarNumber: '38',
+      CarClassID: 1,
       CarClassColor: 16767577,
       CarClassEstLapTime: 113.6302,
     },
@@ -75,6 +77,7 @@ const sampleData = [
     driver: {
       CarIdx: 10,
       CarNumber: '39',
+      CarClassID: 1,
       CarClassColor: 16767577,
       CarClassEstLapTime: 113.6302,
     },
@@ -85,6 +88,7 @@ const sampleData = [
     driver: {
       CarIdx: 13,
       CarNumber: '5',
+      CarClassID: 2,
       CarClassColor: 16734344,
       CarClassEstLapTime: 126.9374,
     },
@@ -95,6 +99,7 @@ const sampleData = [
     driver: {
       CarIdx: 15,
       CarNumber: '10',
+      CarClassID: 2,
       CarClassColor: 16734344,
       CarClassEstLapTime: 126.9374,
     },
@@ -105,6 +110,7 @@ const sampleData = [
     driver: {
       CarIdx: 16,
       CarNumber: '13',
+      CarClassID: 2,
       CarClassColor: 16734344,
       CarClassEstLapTime: 126.9374,
     },
@@ -115,6 +121,7 @@ const sampleData = [
     driver: {
       CarIdx: 18,
       CarNumber: '17',
+      CarClassID: 2,
       CarClassColor: 16734344,
       CarClassEstLapTime: 126.9374,
     },
@@ -125,6 +132,7 @@ const sampleData = [
     driver: {
       CarIdx: 19,
       CarNumber: '18',
+      CarClassID: 2,
       CarClassColor: 16734344,
       CarClassEstLapTime: 126.9374,
     },
@@ -135,6 +143,7 @@ const sampleData = [
     driver: {
       CarIdx: 20,
       CarNumber: '19',
+      CarClassID: 2,
       CarClassColor: 16734344,
       CarClassEstLapTime: 126.9374,
     },
@@ -145,6 +154,7 @@ const sampleData = [
     driver: {
       CarIdx: 22,
       CarNumber: '22',
+      CarClassID: 2,
       CarClassColor: 16734344,
       CarClassEstLapTime: 126.9374,
     },
@@ -155,6 +165,7 @@ const sampleData = [
     driver: {
       CarIdx: 23,
       CarNumber: '23',
+      CarClassID: 2,
       CarClassColor: 16734344,
       CarClassEstLapTime: 126.9374,
     },
@@ -165,6 +176,7 @@ const sampleData = [
     driver: {
       CarIdx: 24,
       CarNumber: '24',
+      CarClassID: 2,
       CarClassColor: 16734344,
       CarClassEstLapTime: 126.9374,
     },
@@ -175,6 +187,7 @@ const sampleData = [
     driver: {
       CarIdx: 25,
       CarNumber: '25',
+      CarClassID: 2,
       CarClassColor: 16734344,
       CarClassEstLapTime: 126.9374,
     },
@@ -185,6 +198,7 @@ const sampleData = [
     driver: {
       CarIdx: 26,
       CarNumber: '31',
+      CarClassID: 2,
       CarClassColor: 16734344,
       CarClassEstLapTime: 126.9374,
     },
@@ -195,6 +209,7 @@ const sampleData = [
     driver: {
       CarIdx: 27,
       CarNumber: '32',
+      CarClassID: 2,
       CarClassColor: 16734344,
       CarClassEstLapTime: 126.9374,
     },
@@ -205,6 +220,7 @@ const sampleData = [
     driver: {
       CarIdx: 28,
       CarNumber: '1',
+      CarClassID: 3,
       CarClassColor: 11430911,
       CarClassEstLapTime: 126.2284,
     },
@@ -215,6 +231,7 @@ const sampleData = [
     driver: {
       CarIdx: 29,
       CarNumber: '2',
+      CarClassID: 3,
       CarClassColor: 11430911,
       CarClassEstLapTime: 126.2284,
     },
@@ -225,6 +242,7 @@ const sampleData = [
     driver: {
       CarIdx: 30,
       CarNumber: '3',
+      CarClassID: 3,
       CarClassColor: 11430911,
       CarClassEstLapTime: 126.2284,
     },
@@ -235,6 +253,7 @@ const sampleData = [
     driver: {
       CarIdx: 31,
       CarNumber: '6',
+      CarClassID: 3,
       CarClassColor: 11430911,
       CarClassEstLapTime: 126.2284,
     },
@@ -245,6 +264,7 @@ const sampleData = [
     driver: {
       CarIdx: 32,
       CarNumber: '7',
+      CarClassID: 3,
       CarClassColor: 11430911,
       CarClassEstLapTime: 126.2284,
     },
@@ -255,6 +275,7 @@ const sampleData = [
     driver: {
       CarIdx: 33,
       CarNumber: '9',
+      CarClassID: 3,
       CarClassColor: 11430911,
       CarClassEstLapTime: 126.2284,
     },
@@ -265,6 +286,7 @@ const sampleData = [
     driver: {
       CarIdx: 35,
       CarNumber: '12',
+      CarClassID: 3,
       CarClassColor: 11430911,
       CarClassEstLapTime: 126.2284,
     },
@@ -275,6 +297,7 @@ const sampleData = [
     driver: {
       CarIdx: 36,
       CarNumber: '16',
+      CarClassID: 3,
       CarClassColor: 11430911,
       CarClassEstLapTime: 126.2284,
     },
@@ -285,6 +308,7 @@ const sampleData = [
     driver: {
       CarIdx: 37,
       CarNumber: '27',
+      CarClassID: 3,
       CarClassColor: 11430911,
       CarClassEstLapTime: 126.2284,
     },
@@ -295,6 +319,7 @@ const sampleData = [
     driver: {
       CarIdx: 39,
       CarNumber: '29',
+      CarClassID: 3,
       CarClassColor: 11430911,
       CarClassEstLapTime: 126.2284,
     },
@@ -305,6 +330,7 @@ const sampleData = [
     driver: {
       CarIdx: 40,
       CarNumber: '30',
+      CarClassID: 3,
       CarClassColor: 11430911,
       CarClassEstLapTime: 126.2284,
     },
@@ -341,6 +367,20 @@ export const InvertedTrackColors: Story = {
   },
 };
 
+export const SingleClass: Story = {
+  args: {
+    trackId: 1,
+    drivers: sampleData.filter(({ driver }) => driver.CarClassID === 2),
+    enableTurnNames: true,
+    showCarNumbers: true,
+    invertTrackColors: false,
+    driverCircleSize: 40,
+    playerCircleSize: 40,
+    trackLineWidth: 20,
+    trackOutlineWidth: 40,
+  },
+};
+
 export const SingleDriver: Story = {
   argTypes: {
     progress: {
@@ -365,6 +405,7 @@ export const SingleDriver: Story = {
       driver: {
         CarIdx: 39,
         CarNumber: args.carNumber || '29',
+        CarClassID: 3,
         CarClassColor: args.carClassColor || 11430911,
         CarClassEstLapTime: 126.2284,
       },
