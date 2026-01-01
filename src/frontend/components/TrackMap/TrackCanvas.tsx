@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Driver } from '@irdashies/types';
 import tracks from './tracks/tracks.json';
-import { getColor, getTailwindStyle } from '@irdashies/utils/colors';
+import { getTailwindStyle } from '@irdashies/utils/colors';
 import { shouldShowTrack } from './tracks/brokenTracks';
 import { TrackDebug } from './TrackDebug';
 import { useStartFinishLine } from './hooks/useStartFinishLine';
@@ -24,6 +24,7 @@ export interface TrackProps {
   playerCircleSize?: number;
   trackLineWidth?: number;
   trackOutlineWidth?: number;
+  highlightColor?: number;
   debug?: boolean;
 }
 
@@ -66,6 +67,7 @@ export const TrackCanvas = ({
   playerCircleSize = 40,
   trackLineWidth = 20,
   trackOutlineWidth = 40,
+  highlightColor = 960745,
   debug,
 }: TrackProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -100,9 +102,12 @@ export const TrackCanvas = ({
   const driverColors = useMemo(() => {
     const colors: Record<number, { fill: string; text: string }> = {};
 
+    // Convert highlight color number to hex string for canvas
+    const highlightColorHex = `#${highlightColor.toString(16).padStart(6, '0')}`;
+
     drivers?.forEach(({ driver, isPlayer }) => {
       if (isPlayer) {
-        colors[driver.CarIdx] = { fill: getColor('amber'), text: 'white' };
+        colors[driver.CarIdx] = { fill: highlightColorHex, text: 'white' };
       } else {
         const style = getTailwindStyle(driver.CarClassColor, undefined, isMultiClass);
         colors[driver.CarIdx] = { fill: style.canvasFill, text: 'white' };
@@ -110,7 +115,7 @@ export const TrackCanvas = ({
     });
 
     return colors;
-  }, [drivers, isMultiClass]);
+  }, [drivers, isMultiClass, highlightColor]);
 
   // Get start/finish line calculations
   const startFinishLine = useStartFinishLine({

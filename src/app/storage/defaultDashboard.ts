@@ -459,6 +459,7 @@ export const defaultDashboard: DashboardLayout = {
   "generalSettings": {
     "fontSize": "sm",
     "colorPalette": "black",
+    "highlightColor": 960745,
     "skipTaskbar": true,
     "disableHardwareAcceleration": false
   }
