@@ -88,7 +88,8 @@ const defaultConfig: StandingsWidgetSettings['config'] = {
   position: { enabled: true },
   driverName: { enabled: true },
   pitStatus: { enabled: true },
-  displayOrder: sortableSettings.map(s => s.id)
+  displayOrder: sortableSettings.map(s => s.id),
+  sessions: { race: true, loneQualify: true, openQualify: true, practice: true, offlineTesting: false}
 };
 
 
@@ -208,6 +209,13 @@ const migrateConfig = (
       displayOrder: mergeDisplayOrder([...VALID_SESSION_BAR_ITEM_KEYS], (config.footerBar as { displayOrder?: string[] })?.displayOrder)
     },
     showOnlyWhenOnTrack: (config.showOnlyWhenOnTrack as boolean) ?? false,
+    sessions: {
+      race: (config.sessions as { race?: boolean})?.race ?? defaultConfig.sessions.race,
+      loneQualify: (config.sessions as { loneQualify?: boolean})?.loneQualify ?? defaultConfig.sessions.loneQualify,
+      openQualify: (config.sessions as { openQualify?: boolean})?.openQualify ?? defaultConfig.sessions.openQualify,
+      practice: (config.sessions as { practice?: boolean})?.practice ?? defaultConfig.sessions.practice,
+      offlineTesting: (config.sessions as { offlineTesting?: boolean})?.offlineTesting ?? defaultConfig.sessions.offlineTesting,
+    },
     position: { enabled: (config.position as { enabled?: boolean })?.enabled ?? true },
     driverName: { enabled: (config.driverName as { enabled?: boolean })?.enabled ?? true },
     pitStatus: { enabled: (config.pitStatus as { enabled?: boolean })?.enabled ?? true },
@@ -764,6 +772,92 @@ export const StandingsSettings = () => {
                   handleConfigChange({ showOnlyWhenOnTrack: enabled })
                 }
               />
+            </div>
+
+            {/* Session Settings */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-medium text-slate-200">Session visibility</h3>
+              </div>
+            {/* Show In Race Session */}
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="text-md font-medium text-slate-300">Show In Race Session</h4>
+                <p className="text-sm text-slate-400">
+                  If enabled, standings will be shown in Race sessions.
+                </p>
+              </div>
+              <ToggleSwitch
+                enabled={settings.config.sessions.race ?? false}
+                onToggle={(enabled) =>
+                  handleConfigChange({ sessions: {...settings.config.sessions, race: enabled}})
+                }
+              />
+            </div>
+
+            {/* Show In Lone Qualify Session */}
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="text-md font-medium text-slate-300">Show In Lone Qualify Session</h4>
+                <p className="text-sm text-slate-400">
+                  If enabled, standings will be shown in Lone Qualify sessions.
+                </p>
+              </div>
+              <ToggleSwitch
+                enabled={settings.config.sessions.loneQualify ?? false}
+                onToggle={(enabled) =>
+                  handleConfigChange({ sessions: {...settings.config.sessions, loneQualify: enabled}})
+                }
+              />
+            </div>
+
+            {/* Show In Open Qualify Session */}
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="text-md font-medium text-slate-300">Show In Open Qualify Session</h4>
+                <p className="text-sm text-slate-400">
+                  If enabled, standings will be shown in Open Qualify sessions.
+                </p>
+              </div>
+              <ToggleSwitch
+                enabled={settings.config.sessions.openQualify ?? false}
+                onToggle={(enabled) =>
+                  handleConfigChange({ sessions: {...settings.config.sessions, openQualify: enabled}})
+                }
+              />
+            </div>
+
+            {/* Show In Practice Session */}
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="text-md font-medium text-slate-300">Show In Practice Session</h4>
+                <p className="text-sm text-slate-400">
+                  If enabled, standings will be shown in Practice sessions.
+                </p>
+              </div>
+              <ToggleSwitch
+                enabled={settings.config.sessions.practice ?? false}
+                onToggle={(enabled) =>
+                  handleConfigChange({ sessions: {...settings.config.sessions, practice: enabled}})
+                }
+              />
+            </div>
+
+            {/* Show In Offline Testing Session */}
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="text-md font-medium text-slate-300">Show In Offline Testing Session</h4>
+                <p className="text-sm text-slate-400">
+                  If enabled, standings will be shown in Offline Testing sessions.
+                </p>
+              </div>
+              <ToggleSwitch
+                enabled={settings.config.sessions.offlineTesting ?? false}
+                onToggle={(enabled) =>
+                  handleConfigChange({ sessions: {...settings.config.sessions, offlineTesting: enabled}})
+                }
+              />
+            </div>
             </div>
           </div>
         );
