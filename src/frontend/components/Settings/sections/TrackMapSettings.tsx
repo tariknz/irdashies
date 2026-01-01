@@ -157,12 +157,12 @@ export const TrackMapSettings = () => {
             </label>
             <input
               type="range"
-              min="5"
+              min="1"
               max="100"
               step="1"
               value={settings.config.trackLineWidth ?? 20}
               onChange={(e) =>
-                handleConfigChange({ trackLineWidth: parseInt(e.target.value) || 20 })
+                handleConfigChange({ trackLineWidth: parseInt(e.target.value) ?? 20 })
               }
               className="w-full"
             />
@@ -177,12 +177,12 @@ export const TrackMapSettings = () => {
             </label>
             <input
               type="range"
-              min="5"
+              min="1"
               max="150"
               step="1"
               value={settings.config.trackOutlineWidth ?? 40}
               onChange={(e) =>
-                handleConfigChange({ trackOutlineWidth: parseInt(e.target.value) || 40 })
+                handleConfigChange({ trackOutlineWidth: parseInt(e.target.value) ?? 40 })
               }
               className="w-full"
             />
