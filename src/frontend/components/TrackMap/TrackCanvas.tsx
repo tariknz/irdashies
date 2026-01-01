@@ -18,6 +18,13 @@ export interface TrackProps {
   trackId: number;
   drivers: TrackDriver[];
   enableTurnNames?: boolean;
+  showCarNumbers?: boolean;
+  invertTrackColors?: boolean;
+  driverCircleSize?: number;
+  playerCircleSize?: number;
+  trackLineWidth?: number;
+  trackOutlineWidth?: number;
+  highlightColor?: number;
   debug?: boolean;
 }
 
@@ -54,6 +61,13 @@ export const TrackCanvas = ({
   trackId,
   drivers,
   enableTurnNames,
+  showCarNumbers = true,
+  invertTrackColors = false,
+  driverCircleSize = 40,
+  playerCircleSize = 40,
+  trackLineWidth = 20,
+  trackOutlineWidth = 40,
+  highlightColor,
   debug,
 }: TrackProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -90,7 +104,14 @@ export const TrackCanvas = ({
 
     drivers?.forEach(({ driver, isPlayer }) => {
       if (isPlayer) {
-        colors[driver.CarIdx] = { fill: getColor('amber'), text: 'white' };
+        if (highlightColor) {
+          // Convert highlight color number to hex string for canvas
+          const highlightColorHex = `#${highlightColor.toString(16).padStart(6, '0')}`;
+          colors[driver.CarIdx] = { fill: highlightColorHex, text: 'white' };
+        } else {
+          // Default to amber when highlightColor is undefined
+          colors[driver.CarIdx] = { fill: getColor('amber'), text: 'white' };
+        }
       } else {
         const style = getTailwindStyle(driver.CarClassColor, undefined, isMultiClass);
         colors[driver.CarIdx] = { fill: style.canvasFill, text: 'white' };
@@ -98,7 +119,7 @@ export const TrackCanvas = ({
     });
 
     return colors;
-  }, [drivers, isMultiClass]);
+  }, [drivers, isMultiClass, highlightColor]);
 
   // Get start/finish line calculations
   const startFinishLine = useStartFinishLine({
@@ -231,10 +252,10 @@ export const TrackCanvas = ({
     setupCanvasContext(ctx, scale, offsetX, offsetY);
 
     // Draw all elements
-    drawTrack(ctx, path2DObjects);
+    drawTrack(ctx, path2DObjects, invertTrackColors, trackLineWidth, trackOutlineWidth);
     drawStartFinishLine(ctx, startFinishLine);
     drawTurnNames(ctx, trackDrawing.turns, enableTurnNames);
-    drawDrivers(ctx, calculatePositions, driverColors, driversOffTrack);
+    drawDrivers(ctx, calculatePositions, driverColors, driversOffTrack, driverCircleSize, playerCircleSize, showCarNumbers);
 
     // Restore context state
     ctx.restore();
@@ -245,10 +266,16 @@ export const TrackCanvas = ({
     driverColors,
     canvasSize,
     enableTurnNames,
+    showCarNumbers,
+    invertTrackColors,
+    trackLineWidth,
+    trackOutlineWidth,
     trackDrawing?.startFinish?.point,
     trackDrawing?.active?.trackPathPoints,
     startFinishLine,
     driversOffTrack,
+    driverCircleSize,
+    playerCircleSize,
   ]);
 
   // Development/Storybook mode - show debug info and canvas
