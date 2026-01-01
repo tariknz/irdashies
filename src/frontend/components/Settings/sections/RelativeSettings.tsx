@@ -8,6 +8,7 @@ import { DotsSixVerticalIcon } from '@phosphor-icons/react';
 import { BadgeFormatPreview } from '../components/BadgeFormatPreview';
 import { VALID_SESSION_BAR_ITEM_KEYS, SESSION_BAR_ITEM_LABELS, DEFAULT_SESSION_BAR_DISPLAY_ORDER } from '../sessionBarConstants';
 import { mergeDisplayOrder } from '../../../utils/displayOrder';
+import { SessionVisibility } from '../components/SessionVisibility';
 
 const SETTING_ID = 'relative';
 
@@ -84,7 +85,8 @@ const defaultConfig: RelativeWidgetSettings['config'] = {
     trackTemperature: { enabled: true, unit: 'Metric' },
     displayOrder: DEFAULT_SESSION_BAR_DISPLAY_ORDER
   },
-  showOnlyWhenOnTrack: false
+  showOnlyWhenOnTrack: false,
+  sessionVisibility: { race: true, loneQualify: false, openQualify: true, practice: true, offlineTesting: false }
 };
 
 
@@ -170,7 +172,15 @@ const migrateConfig = (savedConfig: unknown): RelativeWidgetSettings['config'] =
       },
       displayOrder: mergeDisplayOrder([...VALID_SESSION_BAR_ITEM_KEYS], (config.footerBar as { displayOrder?: string[] })?.displayOrder)
     },
-    showOnlyWhenOnTrack: (config.showOnlyWhenOnTrack as boolean) ?? false
+    showOnlyWhenOnTrack: (config.showOnlyWhenOnTrack as boolean) ?? false,
+        sessionVisibility: {
+        race: (config.sessionVisibility?.race as boolean) ?? defaultConfig.sessionVisibility.race,
+        loneQualify: (config.sessionVisibility?.loneQualify as boolean) ?? defaultConfig.sessionVisibility.loneQualify,
+        openQualify: (config.sessionVisibility?.openQualify as boolean) ?? defaultConfig.sessionVisibility.openQualify,
+        practice: (config.sessionVisibility?.practice as boolean) ?? defaultConfig.sessionVisibility.practice,
+        offlineTesting: (config.sessionVisibility?.offlineTesting as boolean) ?? defaultConfig.sessionVisibility.offlineTesting,
+
+    },
   };
 };
 
@@ -778,6 +788,19 @@ export const RelativeSettings = () => {
                   handleConfigChange({ showOnlyWhenOnTrack: enabled })
                 }
               />
+            </div>
+
+            {/* Session Visibility Settings */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-medium text-slate-200">Session Visibility</h3>
+              </div>
+              <div className="space-y-3 pl-4">
+                <SessionVisibility
+                  sessionVisibility={settings.config.sessionVisibility}
+                  handleConfigChange={handleConfigChange}
+                />
+              </div>
             </div>
           </div>
         );

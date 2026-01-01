@@ -3,6 +3,7 @@ import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import { TrackMapWidgetSettings } from '../types';
 import { useDashboard } from '@irdashies/context';
 import { ToggleSwitch } from '../components/ToggleSwitch';
+import { SessionVisibility } from '../components/SessionVisibility';
 
 const SETTING_ID = 'map';
 
@@ -14,7 +15,8 @@ const defaultConfig: TrackMapWidgetSettings['config'] = {
   playerCircleSize: 40,
   trackLineWidth: 20,
   trackOutlineWidth: 40,
-  useHighlightColor: false
+  useHighlightColor: false,
+  sessionVisibility: { race: true, loneQualify: true, openQualify: true, practice: true, offlineTesting: false }
 };
 
 export const TrackMapSettings = () => {
@@ -177,6 +179,18 @@ export const TrackMapSettings = () => {
               Width of the track outline
             </p>
           </div>
+          {/* Session Visibility Settings */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-medium text-slate-200">Session Visibility</h3>
+              </div>
+              <div className="space-y-3 pl-4">
+                <SessionVisibility
+                  sessionVisibility={settings.config.sessionVisibility}
+                  handleConfigChange={handleConfigChange}
+                />
+              </div>
+            </div>
         </div>
       )}
     </BaseSettingsSection>

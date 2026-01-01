@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import { useDashboard } from '@irdashies/context';
 import { BlindSpotMonitorWidgetSettings } from '../types';
+import { SessionVisibility } from '../components/SessionVisibility';
 
 const SETTING_ID = 'blindspotmonitor';
 
@@ -12,6 +13,13 @@ const defaultConfig: BlindSpotMonitorWidgetSettings['config'] = {
     opacity: 30,
   },
   width: 20,
+  sessionVisibility: {
+    race: true,
+    loneQualify: false,
+    openQualify: true,
+    practice: true,
+    offlineTesting: false,
+  },
 };
 
 export const BlindSpotMonitorSettings = () => {
@@ -120,6 +128,19 @@ export const BlindSpotMonitorSettings = () => {
             <p className="text-slate-400 text-sm">
               Width of the blind spot indicator in pixels.
             </p>
+          </div>
+
+          {/* Session Visibility Settings */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-medium text-slate-200">Session Visibility</h3>
+            </div>
+            <div className="space-y-3 pl-4">
+              <SessionVisibility
+                sessionVisibility={settings.config.sessionVisibility}
+                handleConfigChange={handleConfigChange}
+              />
+            </div>
           </div>
         </div>
       )}

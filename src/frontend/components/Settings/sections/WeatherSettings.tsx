@@ -8,6 +8,7 @@ import { DotsSixVerticalIcon } from '@phosphor-icons/react';
 import { useSortableList } from '../../SortableList';
 // sortable list is not used right now — keep import commented until needed
 // import { useSortableList } from '../../SortableList';
+import { SessionVisibility } from '../components/SessionVisibility';
 
 const SETTING_ID = 'weather';
 
@@ -46,7 +47,8 @@ const defaultConfig: WeatherWidgetSettings['config'] = {
   units: 'auto',
   humidity: {
     enabled: true
-  }
+  },
+  sessionVisibility: { race: true, loneQualify: true, openQualify: true, practice: true, offlineTesting: true }
 };
 
 const migrateConfig = (savedConfig: unknown): WeatherWidgetSettings['config'] => {
@@ -63,6 +65,13 @@ const migrateConfig = (savedConfig: unknown): WeatherWidgetSettings['config'] =>
     humidity: { enabled: (config.humidity as { enabled?: boolean })?.enabled ?? defaultConfig.humidity.enabled },
     wind: { enabled: (config.wind as { enabled?: boolean })?.enabled ?? defaultConfig.wind.enabled },
     units: (config.units as 'auto' | 'Metric' | 'Imperial') ?? 'auto',
+    sessionVisibility: {
+        race: (config.sessionVisibility?.race as boolean) ?? defaultConfig.sessionVisibility.race,
+        loneQualify: (config.sessionVisibility?.loneQualify as boolean) ?? defaultConfig.sessionVisibility.loneQualify,
+        openQualify: (config.sessionVisibility?.openQualify as boolean) ?? defaultConfig.sessionVisibility.openQualify,
+        practice: (config.sessionVisibility?.practice as boolean) ?? defaultConfig.sessionVisibility.practice,
+        offlineTesting: (config.sessionVisibility?.offlineTesting as boolean) ?? defaultConfig.sessionVisibility.offlineTesting,
+    },
   };
 };
 
@@ -224,6 +233,19 @@ export const WeatherSettings = () => {
                 >
                   °F
                 </button>
+              </div>
+            </div>
+            
+            {/* Session Visibility Settings */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-medium text-slate-200">Session Visibility</h3>
+              </div>
+              <div className="space-y-3 pl-4">
+                <SessionVisibility
+                  sessionVisibility={settings.config.sessionVisibility}
+                  handleConfigChange={handleConfigChange}
+                />
               </div>
             </div>
           </div>

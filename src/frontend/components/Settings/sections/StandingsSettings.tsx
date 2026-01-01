@@ -8,6 +8,7 @@ import { DotsSixVerticalIcon } from '@phosphor-icons/react';
 import { BadgeFormatPreview } from '../components/BadgeFormatPreview';
 import { VALID_SESSION_BAR_ITEM_KEYS, SESSION_BAR_ITEM_LABELS, DEFAULT_SESSION_BAR_DISPLAY_ORDER } from '../sessionBarConstants';
 import { mergeDisplayOrder } from '../../../utils/displayOrder';
+import { SessionVisibility } from '../components/SessionVisibility';
 
 const SETTING_ID = 'standings';
 
@@ -88,7 +89,8 @@ const defaultConfig: StandingsWidgetSettings['config'] = {
   position: { enabled: true },
   driverName: { enabled: true },
   pitStatus: { enabled: true },
-  displayOrder: sortableSettings.map(s => s.id)
+  displayOrder: sortableSettings.map(s => s.id),
+  sessionVisibility: { race: true, loneQualify: true, openQualify: true, practice: true, offlineTesting: false }
 };
 
 
@@ -164,7 +166,7 @@ const migrateConfig = (
     headerBar: {
       enabled: (config.headerBar as { enabled?: boolean })?.enabled ?? true,
       sessionName: { enabled: (config.headerBar as { sessionName?: { enabled?: boolean } })?.sessionName?.enabled ?? true },
-      sessionTime: { 
+      sessionTime: {
         enabled: (config.headerBar as { sessionTime?: { enabled?: boolean } })?.sessionTime?.enabled ?? true,
         mode: ((config.headerBar as { sessionTime?: { mode?: string } })?.sessionTime?.mode as 'Remaining' | 'Elapsed') ?? 'Remaining'
       },
@@ -208,10 +210,18 @@ const migrateConfig = (
       displayOrder: mergeDisplayOrder([...VALID_SESSION_BAR_ITEM_KEYS], (config.footerBar as { displayOrder?: string[] })?.displayOrder)
     },
     showOnlyWhenOnTrack: (config.showOnlyWhenOnTrack as boolean) ?? false,
+    sessionVisibility: {
+        race: (config.sessionVisibility?.race as boolean) ?? defaultConfig.sessionVisibility.race,
+        loneQualify: (config.sessionVisibility?.loneQualify as boolean) ?? defaultConfig.sessionVisibility.loneQualify,
+        openQualify: (config.sessionVisibility?.openQualify as boolean) ?? defaultConfig.sessionVisibility.openQualify,
+        practice: (config.sessionVisibility?.practice as boolean) ?? defaultConfig.sessionVisibility.practice,
+        offlineTesting: (config.sessionVisibility?.offlineTesting as boolean) ?? defaultConfig.sessionVisibility.offlineTesting,
+
+    },
     position: { enabled: (config.position as { enabled?: boolean })?.enabled ?? true },
     driverName: { enabled: (config.driverName as { enabled?: boolean })?.enabled ?? true },
     pitStatus: { enabled: (config.pitStatus as { enabled?: boolean })?.enabled ?? true },
-      displayOrder: mergeDisplayOrder(sortableSettings.map(s => s.id), config.displayOrder as string[]),
+    displayOrder: mergeDisplayOrder(sortableSettings.map(s => s.id), config.displayOrder as string[]),
   };
 };
 
@@ -764,6 +774,19 @@ export const StandingsSettings = () => {
                   handleConfigChange({ showOnlyWhenOnTrack: enabled })
                 }
               />
+            </div>
+
+            {/* Session Visibility Settings */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-medium text-slate-200">Session Visibility</h3>
+              </div>
+              <div className="space-y-3 pl-4">
+                <SessionVisibility
+                  sessionVisibility={settings.config.sessionVisibility}
+                  handleConfigChange={handleConfigChange}
+                />
+              </div>
             </div>
           </div>
         );

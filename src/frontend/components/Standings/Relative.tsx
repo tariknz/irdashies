@@ -8,6 +8,7 @@ import { TitleBar } from './components/TitleBar/TitleBar';
 import { usePitLabStoreUpdater } from '../../context/PitLapStore/PitLapStoreUpdater';
 import { useRelativeGapStoreUpdater } from '@irdashies/context';
 import { useWeekendInfoNumCarClasses } from '@irdashies/context';
+import { useCurrentSessionType } from '@irdashies/context';
 
 export const Relative = () => {
   const settings = useRelativeSettings();
@@ -17,6 +18,7 @@ export const Relative = () => {
   const highlightColor = useHighlightColor();
   const numCarClasses = useWeekendInfoNumCarClasses();
   const isMultiClass = (numCarClasses ?? 0) > 1;
+  const sessionType = useCurrentSessionType();
 
   // Update relative gap store with telemetry data
   useRelativeGapStoreUpdater();
@@ -165,6 +167,13 @@ export const Relative = () => {
     });
   }, [standings, playerIndex, totalRows, settings, isMultiClass, highlightColor]);
 
+  // Show only in selected sessions
+  if (sessionType === 'Race' && !settings?.sessionVisibility.race) return <></>;
+  if (sessionType === 'Lone Qualify' && !settings?.sessionVisibility.loneQualify) return <></>;
+  if (sessionType === 'Open Qualify' && !settings?.sessionVisibility.openQualify) return <></>;
+  if (sessionType === 'Practice' && !settings?.sessionVisibility.practice) return <></>;
+  if (sessionType === 'Offline Testing' && !settings?.sessionVisibility.offlineTesting) return <></>;
+  
   // Show only when on track setting
   if (settings?.showOnlyWhenOnTrack && !isDriving) {
     return <></>;

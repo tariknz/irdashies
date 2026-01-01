@@ -3,6 +3,14 @@ export interface BaseWidgetSettings<T = Record<string, unknown>> {
   config: T;
 }
 
+export interface SessionVisibilitySettings {
+  race: boolean;
+  loneQualify: boolean;
+  openQualify: boolean;
+  practice: boolean;
+  offlineTesting: boolean;
+}
+
 export interface StandingsWidgetSettings extends BaseWidgetSettings {
   config: {
     iratingChange: { enabled: boolean };
@@ -58,6 +66,7 @@ export interface StandingsWidgetSettings extends BaseWidgetSettings {
     driverName: { enabled: boolean };
     pitStatus: { enabled: boolean };
     displayOrder: string[];
+    sessionVisibility: SessionVisibilitySettings;
   };
 }
 
@@ -116,6 +125,7 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
       sampleInterval: number;
       maxLapHistory: number;
     };
+    sessionVisibility: SessionVisibilitySettings;
   };
 }
 
@@ -138,10 +148,11 @@ export interface WeatherWidgetSettings extends BaseWidgetSettings {
     humidity: {
       enabled: boolean
     };
-    wind: { 
-      enabled: boolean 
+    wind: {
+      enabled: boolean
     };
     units: 'auto' | 'Metric' | 'Imperial';
+    sessionVisibility: SessionVisibilitySettings;
   };
 };
 
@@ -155,6 +166,7 @@ export interface TrackMapWidgetSettings extends BaseWidgetSettings {
     trackLineWidth: number;
     trackOutlineWidth: number;
     useHighlightColor: boolean;
+    sessionVisibility: SessionVisibilitySettings;
   };
 }
 
@@ -195,6 +207,7 @@ export interface InputWidgetSettings extends BaseWidgetSettings {
     background: { opacity: number };
     displayOrder: string[];
     showOnlyWhenOnTrack: boolean;
+    sessionVisibility: SessionVisibilitySettings;
   };
 }
 
@@ -216,6 +229,7 @@ export interface FuelWidgetSettings extends BaseWidgetSettings {
     consumptionGraphType: 'line' | 'histogram';
     safetyMargin: number;
     background: { opacity: number };
+    sessionVisibility: SessionVisibilitySettings;
   };
 }
 
@@ -227,5 +241,6 @@ export interface BlindSpotMonitorWidgetSettings extends BaseWidgetSettings {
     distAhead: number;
     distBehind: number;
     width?: number;
+    sessionVisibility: SessionVisibilitySettings;
   };
 }

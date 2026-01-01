@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import { FuelWidgetSettings } from '../types';
 import { useDashboard } from '@irdashies/context';
+import { SessionVisibility } from '../components/SessionVisibility';
 
 const SETTING_ID = 'fuel';
 
@@ -22,6 +23,7 @@ const defaultConfig: FuelWidgetSettings['config'] = {
   consumptionGraphType: 'histogram',
   safetyMargin: 0.05,
   background: { opacity: 85 },
+  sessionVisibility: { race: true, loneQualify: true, openQualify: true, practice: true, offlineTesting: false }
 };
 
 const migrateConfig = (
@@ -48,6 +50,13 @@ const migrateConfig = (
     background: {
       opacity:
         (config.background as { opacity?: number })?.opacity ?? 85,
+    },
+    sessionVisibility: {
+      race: (config.sessionVisibility?.race as boolean) ?? defaultConfig.sessionVisibility.race,
+      loneQualify: (config.sessionVisibility?.loneQualify as boolean) ?? defaultConfig.sessionVisibility.loneQualify,
+      openQualify: (config.sessionVisibility?.openQualify as boolean) ?? defaultConfig.sessionVisibility.openQualify,
+      practice: (config.sessionVisibility?.practice as boolean) ?? defaultConfig.sessionVisibility.practice,
+      offlineTesting: (config.sessionVisibility?.offlineTesting as boolean) ?? defaultConfig.sessionVisibility.offlineTesting,
     },
   };
 };
@@ -364,6 +373,18 @@ export const FuelSettings = () => {
               <span className="text-xs text-slate-400 w-8">
                 {settings.config.background.opacity}%
               </span>
+            </div>
+          </div>
+          {/* Session Visibility Settings */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-medium text-slate-200">Session Visibility</h3>
+            </div>
+            <div className="space-y-3 pl-4">
+              <SessionVisibility
+                sessionVisibility={settings.config.sessionVisibility}
+                handleConfigChange={handleConfigChange}
+              />
             </div>
           </div>
         </div>
