@@ -4,6 +4,7 @@ import { useMemo } from 'react';
 
 const defaultConfig: GarageCoverWidgetSettings['config'] = {
   imageFilename: '',
+  showOnlyWhenOnTrack: true,
 };
 
 export const useGarageCoverSettings = () => {

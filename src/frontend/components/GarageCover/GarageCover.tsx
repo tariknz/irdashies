@@ -1,6 +1,7 @@
 import { useTelemetryValue, useDashboard } from '@irdashies/context';
 import { useGarageCoverSettings } from './hooks/useGarageCoverSettings';
 import { useState, useEffect } from 'react';
+import logoSvg from '../../../../docs/assets/icons/logo.svg';
 
 const LOCALSTORAGE_KEY = 'garagecover-image';
 
@@ -69,15 +70,12 @@ export const GarageCover = () => {
     }
 
     return (
-        <div className="w-full h-full flex items-center justify-center">
-            {!imageUrl && <h1>No image set</h1>}
-            {imageUrl && (
-                <img
-                    src={imageUrl}
-                    alt='Garage Cover'
-                    className="w-full h-full object-contain"
-                />
-            )}
+        <div className="w-full h-full flex items-center justify-center bg-black">
+            <img
+                src={imageUrl || logoSvg}
+                alt='Garage Cover'
+                className="w-full h-full object-contain"
+            />
         </div>
     );
 };

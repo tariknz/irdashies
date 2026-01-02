@@ -109,14 +109,7 @@ export const SettingsLayout = () => {
                 Blind Spot Monitor
               </Link>
             </li>
-            <li>
-              <Link
-                to="/settings/garagecover"
-                className={menuItemClass('/garagecover')}
-              >
-                Garage Cover
-              </Link>
-            </li>
+            
             <li>
               <Link
                 to="/settings/faster-cars"
@@ -164,6 +157,14 @@ export const SettingsLayout = () => {
                 className={menuItemClass('/weather')}
               >
                 Weather
+              </Link>
+            </li>
+            <li>
+              <Link
+                to="/settings/garagecover"
+                className={menuItemClass('/garagecover')}
+              >
+                Garage Cover
               </Link>
             </li>
           </ul>
