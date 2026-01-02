@@ -38,13 +38,6 @@ export const dashboardBridge: DashboardBridge = {
   },
   getCurrentDashboard: () => {
     const dashboard = getDashboard('default');
-    console.log('[Dashboard Bridge] getCurrentDashboard called');
-    if (dashboard?.widgets) {
-      const garageCoverWidget = dashboard.widgets.find(w => w.id === 'garagecover');
-      if (garageCoverWidget) {
-        console.log('[Dashboard Bridge] GarageCover widget config:', garageCoverWidget.config);
-      }
-    }
     return dashboard;
   },
   toggleDemoMode: () => {

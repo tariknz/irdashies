@@ -10,60 +10,50 @@ export const GarageCover = () => {
     const settings = useGarageCoverSettings();
     const { bridge } = useDashboard();
     const [imageUrl, setImageUrl] = useState<string | null>(null);
+    const isElectronMode = 'getGarageCoverImageAsDataUrl' in bridge;
 
     useEffect(() => {
-        // Try Electron bridge first
-        if ('getGarageCoverImageAsDataUrl' in bridge) {
-            // Electron mode - need filename
-            if (!settings.imageFilename) {
-                setTimeout(() => setImageUrl(null), 0); // force async update
-                return;
-            }
-            
-            (bridge.getGarageCoverImageAsDataUrl as (path: string) => Promise<string | null>)(settings.imageFilename)
-                .then(dataUrl => {
-                    if (dataUrl) {
+        // Skip loading in Electron mode
+        if (isElectronMode) {
+            return;
+        }
+
+        // Browser mode - fetch from API or localStorage
+        if (settings.imageFilename && settings.imageFilename !== 'browser-mode') {
+            // Fetch from server API
+            fetch(`http://localhost:3000/api/garage-cover-image?filename=${encodeURIComponent(settings.imageFilename)}`)
+                .then(res => {
+                    if (!res.ok) throw new Error(`API returned ${res.status}`);
+                    return res.json();
+                })
+                .then(data => {
+                    if (data.dataUrl) {
                         console.log('[GarageCover] Image loaded:', settings.imageFilename);
                     }
-                    setImageUrl(dataUrl);
+                    setImageUrl(data.dataUrl);
                 })
-                .catch((err) => {
-                    console.error('[GarageCover] Error loading image:', err);
-                    setImageUrl(null);
+                .catch(() => {
+                    // Fallback to localStorage
+                    const dataUrl = localStorage.getItem(LOCALSTORAGE_KEY);
+                    if (dataUrl) {
+                        console.log('[GarageCover] Image loaded from localStorage');
+                    }
+                    setImageUrl(dataUrl);
                 });
         } else {
-            // Browser mode - fetch from API or localStorage
-            if (settings.imageFilename && settings.imageFilename !== 'browser-mode') {
-                // Fetch from server API
-                fetch(`http://localhost:3000/api/garage-cover-image?filename=${encodeURIComponent(settings.imageFilename)}`)
-                    .then(res => {
-                        if (!res.ok) throw new Error(`API returned ${res.status}`);
-                        return res.json();
-                    })
-                    .then(data => {
-                        if (data.dataUrl) {
-                            console.log('[GarageCover] Image loaded:', settings.imageFilename);
-                        }
-                        setImageUrl(data.dataUrl);
-                    })
-                    .catch(() => {
-                        // Fallback to localStorage
-                        const dataUrl = localStorage.getItem(LOCALSTORAGE_KEY);
-                        if (dataUrl) {
-                            console.log('[GarageCover] Image loaded from localStorage');
-                        }
-                        setImageUrl(dataUrl);
-                    });
-            } else {
-                // Check localStorage for browser-uploaded images
-                const dataUrl = localStorage.getItem(LOCALSTORAGE_KEY);
-                if (dataUrl) {
-                    console.log('[GarageCover] Image loaded from localStorage');
-                }
-                setTimeout(() => setImageUrl(dataUrl), 0); // force async update
+            // Check localStorage for browser-uploaded images
+            const dataUrl = localStorage.getItem(LOCALSTORAGE_KEY);
+            if (dataUrl) {
+                console.log('[GarageCover] Image loaded from localStorage');
             }
+            setTimeout(() => setImageUrl(dataUrl), 0); // force async update
         }
-    }, [settings.imageFilename, bridge]);
+    }, [settings.imageFilename, bridge, isElectronMode]);
+
+    // Only show in browser mode (for streaming), never in Electron
+    if (isElectronMode) {
+        return null;
+    }
 
     if (!isInGarage) {
         return <></>;
