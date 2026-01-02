@@ -336,6 +336,7 @@ const RelativeWithReorderableConfig = () => {
         displayOrder: ['localTime', 'trackWetness', 'airTemperature', 'trackTemperature']
       },
       showOnlyWhenOnTrack: false,
+      useLivePosition: false,
       enhancedGapCalculation: {
         enabled: true,
         interpolationMethod: 'linear',
