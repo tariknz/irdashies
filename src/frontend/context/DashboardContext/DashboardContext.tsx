@@ -42,7 +42,14 @@ export const DashboardProvider: React.FC<{
   useEffect(() => {
     console.log('📊 DashboardProvider mounted');
     bridge.reloadDashboard();
-    bridge.dashboardUpdated((dashboard) => setDashboard(dashboard));
+    bridge.dashboardUpdated((dashboard) => {
+      console.log('[DashboardContext] Dashboard updated via bridge');
+      const garageCover = dashboard.widgets?.find(w => w.id === 'garagecover');
+      if (garageCover) {
+        console.log('[DashboardContext] GarageCover config in loaded dashboard:', garageCover.config);
+      }
+      setDashboard(dashboard);
+    });
     bridge.onEditModeToggled((editMode) => setEditMode(editMode));
     bridge.getAppVersion?.().then((version) => setVersion(version));
     bridge.onDemoModeChanged?.((demoMode) => setIsDemoMode(demoMode));

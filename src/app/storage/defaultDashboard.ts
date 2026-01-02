@@ -455,6 +455,19 @@ export const defaultDashboard: DashboardLayout = {
         },
         "width": 20
       }
+    },
+    {
+      "id": "garagecover",
+      "enabled": true,
+      "layout": {
+        "x": 0,
+        "y": 0,
+        "width": 3840,
+        "height": 2160
+      },
+      "config": {
+        "imageFilename": ""
+      }
     }
   ],
   "generalSettings": {

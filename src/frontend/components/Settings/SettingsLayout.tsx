@@ -16,8 +16,10 @@ import { FasterCarsFromBehindSettings } from './sections/FasterCarsFromBehindSet
 import { FuelSettings } from './sections/FuelSettings';
 import { GeneralSettings } from './sections/GeneralSettings';
 import { BlindSpotMonitorSettings } from './sections/BlindSpotMonitorSettings';
+import { GarageCoverSettings } from './sections/GarageCoverSettings';
 import { useDashboard } from '@irdashies/context';
 import { useState } from 'react';
+
 
 export const SettingsLayout = () => {
   const location = useLocation();
@@ -105,6 +107,14 @@ export const SettingsLayout = () => {
                 className={menuItemClass('/blindspotmonitor')}
               >
                 Blind Spot Monitor
+              </Link>
+            </li>
+            <li>
+              <Link
+                to="/settings/garagecover"
+                className={menuItemClass('/garagecover')}
+              >
+                Garage Cover
               </Link>
             </li>
             <li>
@@ -197,6 +207,7 @@ export const SettingsLayout = () => {
               path="blindspotmonitor"
               element={<BlindSpotMonitorSettings />}
             />
+            <Route path="garagecover" element={<GarageCoverSettings />} />
             <Route path="advanced" element={<AdvancedSettings />} />
             <Route path="about" element={<AboutSettings />} />
             <Route

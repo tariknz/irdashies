@@ -222,3 +222,8 @@ export interface BlindSpotMonitorWidgetSettings extends BaseWidgetSettings {
     width?: number;
   };
 }
+export interface GarageCoverWidgetSettings extends BaseWidgetSettings {
+  config: {
+    imageFilename: string;
+  };
+}

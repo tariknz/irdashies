@@ -1,7 +1,7 @@
 import { ipcMain } from 'electron';
 import type { DashboardBridge, DashboardLayout } from '@irdashies/types';
 import { onDashboardUpdated } from '../../storage/dashboardEvents';
-import { getDashboard, saveDashboard, resetDashboard } from '../../storage/dashboards';
+import { getDashboard, saveDashboard, resetDashboard, saveGarageCoverImage, getGarageCoverImage, getGarageCoverImageAsDataUrl } from '../../storage/dashboards';
 import { OverlayManager } from '../../overlayManager';
 
 // Store callbacks for dashboard updates
@@ -37,7 +37,15 @@ export const dashboardBridge: DashboardBridge = {
     demoModeCallbacks.add(callback);
   },
   getCurrentDashboard: () => {
-    return getDashboard('default');
+    const dashboard = getDashboard('default');
+    console.log('[Dashboard Bridge] getCurrentDashboard called');
+    if (dashboard?.widgets) {
+      const garageCoverWidget = dashboard.widgets.find(w => w.id === 'garagecover');
+      if (garageCoverWidget) {
+        console.log('[Dashboard Bridge] GarageCover widget config:', garageCoverWidget.config);
+      }
+    }
+    return dashboard;
   },
   toggleDemoMode: () => {
     return;
@@ -45,6 +53,15 @@ export const dashboardBridge: DashboardBridge = {
   stop: () => {
     return;
   },
+  saveGarageCoverImage: function (buffer: Uint8Array): Promise<string> {
+    throw new Error('Function not implemented.');
+  },
+  getGarageCoverImage: function (): Promise<string | null> {
+    throw new Error('Function not implemented.');
+  },
+  getGarageCoverImageAsDataUrl: function (imagePath: string): Promise<string | null> {
+    throw new Error('Function not implemented.');
+  }
 };
 
 export async function publishDashboardUpdates(overlayManager: OverlayManager) {
@@ -85,6 +102,40 @@ export async function publishDashboardUpdates(overlayManager: OverlayManager) {
 
   ipcMain.handle('getAppVersion', () => {
     return overlayManager.getVersion();
+  });
+
+  ipcMain.handle('saveGarageCoverImage', async (_, buffer: number[]) => {
+    try {
+      console.log('[Bridge] saveGarageCoverImage called with buffer length:', buffer.length);
+      const uint8Array = new Uint8Array(buffer);
+      console.log('[Bridge] Converted to Uint8Array, length:', uint8Array.length);
+      const imagePath = await saveGarageCoverImage(uint8Array);
+      console.log('[Bridge] Image saved successfully at:', imagePath);
+      return imagePath;
+    } catch (err) {
+      console.error('[Bridge] Error saving garage cover image:', err);
+      throw err;
+    }
+  });
+
+  ipcMain.handle('getGarageCoverImage', async () => {
+    try {
+      const dataUrl = await getGarageCoverImage();
+      return dataUrl;
+    } catch (err) {
+      console.error('Error getting garage cover image:', err);
+      throw err;
+    }
+  });
+
+  ipcMain.handle('getGarageCoverImageAsDataUrl', async (_, imagePath: string) => {
+    try {
+      const dataUrl = await getGarageCoverImageAsDataUrl(imagePath);
+      return dataUrl;
+    } catch (err) {
+      console.error('Error loading garage cover image as data URL:', err);
+      throw err;
+    }
   });
 }
 
