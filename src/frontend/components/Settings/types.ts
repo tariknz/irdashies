@@ -123,6 +123,7 @@ export interface WeatherWidgetSettings extends BaseWidgetSettings {
   config: {
     background: { opacity: number };
     displayOrder: string[];
+    showOnlyWhenOnTrack: boolean;
     airTemp: {
       enabled: boolean
     };
