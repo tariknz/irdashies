@@ -23,9 +23,7 @@ export const BROKEN_TRACKS: BrokenTrack[] = [
   { id: 388, name: 'Irwindale Figure 8', issue: 'non-continuous' },
   
   // Monza variants - non-continuous
-  { id: 239, name: 'Monza', issue: 'non-continuous' },
   { id: 240, name: 'Monza', issue: 'non-continuous' },
-  { id: 242, name: 'Monza', issue: 'non-continuous' },
   { id: 246, name: 'Monza', issue: 'non-continuous' },
   { id: 247, name: 'Monza', issue: 'non-continuous' },
   

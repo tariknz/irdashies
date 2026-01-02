@@ -104,7 +104,9 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
     showOnlyWhenOnTrack: boolean;
     badge: { enabled: boolean; badgeFormat: 'license-color-rating-bw' | 'license-color-rating-bw-no-license' | 'rating-color-no-license' | 'license-bw-rating-bw' | 'rating-only-bw-rating-bw' | 'license-bw-rating-bw-no-license' | 'rating-bw-no-license' };
     iratingChange: { enabled: boolean };
-    delta: { enabled: boolean };
+    delta: { enabled: boolean,
+      precision: number
+     };
     position: { enabled: boolean };
     driverName: { enabled: boolean };
     pitStatus: { enabled: boolean };
@@ -122,6 +124,7 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
 export interface WeatherWidgetSettings extends BaseWidgetSettings {
   config: {
     background: { opacity: number };
+    displayOrder: string[];
     airTemp: {
       enabled: boolean
     };
@@ -134,7 +137,12 @@ export interface WeatherWidgetSettings extends BaseWidgetSettings {
     trackState: {
       enabled: boolean
     };
-    wind: { enabled: boolean };
+    humidity: {
+      enabled: boolean
+    };
+    wind: { 
+      enabled: boolean 
+    };
     units: 'auto' | 'Metric' | 'Imperial';
   };
 };
@@ -161,6 +169,7 @@ export interface InputWidgetSettings extends BaseWidgetSettings {
       includeAbs: boolean;
       includeSteer?: boolean;
       strokeWidth?: number;
+      maxSamples?: number;
     };
     bar: {
       enabled: boolean;

@@ -464,7 +464,7 @@ export const StandingsSettings = () => {
 
   return (
     <BaseSettingsSection
-      title="Standings Settings"
+      title="Standings"
       description="Configure how the standings widget appears and behaves."
       settings={settings}
       onSettingsChange={setSettings}
@@ -481,7 +481,7 @@ export const StandingsSettings = () => {
             {/* Display Settings */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium text-slate-200">Display Settings</h3>
+                <h3 className="text-lg font-medium text-slate-200">Display</h3>
                 <button
                   onClick={() => {
                     const defaultOrder = sortableSettings.map(s => s.id);
