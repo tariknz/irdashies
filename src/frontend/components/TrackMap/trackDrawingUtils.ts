@@ -20,18 +20,24 @@ export const setupCanvasContext = (
 
 export const drawTrack = (
   ctx: CanvasRenderingContext2D,
-  path2DObjects: { inside: Path2D | null }
+  path2DObjects: { inside: Path2D | null },
+  invertTrackColors: boolean,
+  trackLineWidth: number,
+  trackOutlineWidth: number
 ) => {
   if (!path2DObjects.inside) return;
 
-  // Draw black outline first
-  ctx.strokeStyle = 'black';
-  ctx.lineWidth = 40;
+  const outlineColor = invertTrackColors ? 'white' : 'black';
+  const trackColor = invertTrackColors ? 'black' : 'white';
+
+  // Draw outline first
+  ctx.strokeStyle = outlineColor;
+  ctx.lineWidth = trackOutlineWidth;
   ctx.stroke(path2DObjects.inside);
 
-  // Draw white track on top
-  ctx.strokeStyle = 'white';
-  ctx.lineWidth = 20;
+  // Draw track on top
+  ctx.strokeStyle = trackColor;
+  ctx.lineWidth = trackLineWidth;
   ctx.stroke(path2DObjects.inside);
 };
 
@@ -81,22 +87,38 @@ export const drawTurnNames = (
 export const drawDrivers = (
   ctx: CanvasRenderingContext2D,
   calculatePositions: Record<number, TrackDriver & { position: { x: number; y: number } }>,
-  driverColors: Record<number, { fill: string; text: string }>
+  driverColors: Record<number, { fill: string; text: string }>,
+  driversOffTrack: boolean[],
+  driverCircleSize: number,
+  playerCircleSize: number,
+  showCarNumbers: boolean
 ) => {
   Object.values(calculatePositions)
     .sort((a, b) => Number(a.isPlayer) - Number(b.isPlayer)) // draws player last to be on top
-    .forEach(({ driver, position }) => {
+    .forEach(({ driver, position, isPlayer }) => {
       const color = driverColors[driver.CarIdx];
       if (!color) return;
 
+      const circleRadius = isPlayer ? playerCircleSize : driverCircleSize;
+      const fontSize = circleRadius * 0.75;
+
       ctx.fillStyle = color.fill;
       ctx.beginPath();
-      ctx.arc(position.x, position.y, 40, 0, 2 * Math.PI);
+      ctx.arc(position.x, position.y, circleRadius, 0, 2 * Math.PI);
       ctx.fill();
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillStyle = color.text;
-      ctx.font = '2rem sans-serif';
-      ctx.fillText(driver.CarNumber, position.x, position.y);
+
+      if (driversOffTrack[driver.CarIdx]) {
+        ctx.strokeStyle = getColor('yellow', 400);
+        ctx.lineWidth = 10;
+        ctx.stroke();
+      }
+
+      if (showCarNumbers) {
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = color.text;
+        ctx.font = `${fontSize}px sans-serif`;
+        ctx.fillText(driver.CarNumber, position.x, position.y);
+      }
     });
 }; 

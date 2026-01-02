@@ -31,7 +31,7 @@ export const BlindSpotMonitorSettings = () => {
 
   return (
     <BaseSettingsSection
-      title="Blind Spot Monitor Settings"
+      title="Blind Spot Monitor"
       description="Configure settings for the blind spot monitor widget that displays visual indicators when cars are detected on your left or right side."
       settings={settings}
       onSettingsChange={setSettings}

@@ -60,7 +60,7 @@ export const AdvancedSettings = () => {
   return (
     <div className="flex flex-col h-full space-y-4">
       <div>
-        <h2 className="text-xl mb-4">Advanced Settings</h2>
+        <h2 className="text-xl mb-4">Advanced</h2>
         <p className="text-slate-400 mb-4">Configure advanced system settings and preferences.</p>
       </div>
       

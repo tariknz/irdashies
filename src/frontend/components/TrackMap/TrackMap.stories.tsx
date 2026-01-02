@@ -9,6 +9,10 @@ export default {
 
 type Story = StoryObj<typeof TrackMap>;
 
+export const Primary: Story = {
+  decorators: [TelemetryDecorator()],
+};
+
 export const SupercarsRace: Story = {
   decorators: [TelemetryDecorator('/test-data/1732274253573')],
 };

@@ -116,6 +116,7 @@ export const Relative = () => {
             repair={false}
             penalty={false}
             slowdown={false}
+            deltaDecimalPlaces={settings?.delta?.precision}
           />
         );
       }
@@ -158,6 +159,7 @@ export const Relative = () => {
           repair={result.repair}
           penalty={result.penalty}
           slowdown={result.slowdown}
+          deltaDecimalPlaces={settings?.delta?.precision}
         />
       );
     });
