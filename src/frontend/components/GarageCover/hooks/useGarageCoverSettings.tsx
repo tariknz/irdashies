@@ -3,8 +3,7 @@ import { GarageCoverWidgetSettings } from '../../Settings/types';
 import { useMemo } from 'react';
 
 const defaultConfig: GarageCoverWidgetSettings['config'] = {
-  imageFilename: '',
-  showOnlyWhenOnTrack: true,
+    imageFilename: '',
 };
 
 export const useGarageCoverSettings = () => {

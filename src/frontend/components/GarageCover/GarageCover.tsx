@@ -52,7 +52,7 @@ export const GarageCover = () => {
 
     // Only show in browser mode (for streaming), never in Electron
     if (isElectronMode) {
-        return null;
+        return <></>;
     }
 
     if (!isInGarage) {

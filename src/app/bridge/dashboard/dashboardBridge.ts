@@ -46,12 +46,14 @@ export const dashboardBridge: DashboardBridge = {
   stop: () => {
     return;
   },
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   saveGarageCoverImage: function (buffer: Uint8Array): Promise<string> {
     throw new Error('Function not implemented.');
   },
   getGarageCoverImage: function (): Promise<string | null> {
     throw new Error('Function not implemented.');
   },
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   getGarageCoverImageAsDataUrl: function (imagePath: string): Promise<string | null> {
     throw new Error('Function not implemented.');
   }

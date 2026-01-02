@@ -16,11 +16,6 @@ export const Weather = () => {
   const displayUnits = useTelemetryValue('DisplayUnits'); // 0 = imperial, 1 = metric
   const isOnTrack = useTelemetryValue('IsOnTrack');
 
-  // Hide if showOnlyWhenOnTrack is enabled and player is not on track
-  if (settings?.showOnlyWhenOnTrack && !isOnTrack) {
-    return null;
-  }
-
   // Determine actual unit to use: auto uses iRacing's DisplayUnits setting
   const unitSetting = settings?.units ?? 'auto';
   const isMetric = unitSetting === 'auto'
@@ -103,6 +98,11 @@ export const Weather = () => {
     relativeWindDirection, 
     isMetric, 
     weather.humidity, weather.trackMoisture, trackRubbered, displayOrder]);
+
+  // Hide if showOnlyWhenOnTrack is enabled and player is not on track
+  if (settings?.showOnlyWhenOnTrack && !isOnTrack) {
+    return null;
+  }
 
   return (
     <div
