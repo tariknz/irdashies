@@ -19,7 +19,11 @@ const defaultConfig: WeatherWidgetSettings['config'] = {
   },
   wind: {
     enabled: true
-  }
+  },
+  humidity: {
+    enabled: true
+  },
+  displayOrder: []
 };
 
 export const useWeatherSettings = () => {
