@@ -400,7 +400,7 @@ export const defaultDashboard: DashboardLayout = {
         "showMax": true,
         "showPitWindow": true,
         "showEnduranceStrategy": false,
-        "showFuelSave": true,
+        "showFuelScenarios": true,
         "showFuelRequired": false,
         "showConsumptionGraph": true,
         "consumptionGraphType": "histogram",

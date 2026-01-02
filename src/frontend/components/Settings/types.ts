@@ -196,7 +196,7 @@ export interface FuelWidgetSettings extends BaseWidgetSettings {
     showMax: boolean;
     showPitWindow: boolean;
     showEnduranceStrategy: boolean;
-    showFuelSave: boolean;
+    showFuelScenarios: boolean;
     showFuelRequired: boolean;
     showConsumptionGraph: boolean;
     consumptionGraphType: 'line' | 'histogram';
