@@ -48,6 +48,7 @@ export const Primary: Story = {
       lastTime: { enabled: true },
       iratingChange: { enabled: true },
       badge: { enabled: true, badgeFormat: 'license-color-rating-bw' },
+      pitStatus: { enabled: true, showPitTime: true },
     } as StandingsWidgetSettings['config'],
     dnf: false,
     repair: false,
@@ -607,6 +608,7 @@ const AllFlagCombinations = () => {
                 lastTime: { enabled: true, timeFormat: 'full' },
                 iratingChange: { enabled: true },
                 badge: { enabled: true, badgeFormat: 'license-color-rating-bw' },
+                pitStatus: { enabled: true, showPitTime: true },
               } as StandingsWidgetSettings['config']}
             />
           ))}
