@@ -1,4 +1,5 @@
 import { memo } from 'react';
+import { formatTime } from '@irdashies/utils/time';
 
 interface PitStatusCellProps {
   hidden?: boolean;
@@ -12,6 +13,7 @@ interface PitStatusCellProps {
   repair?: boolean;
   penalty?: boolean;
   slowdown?: boolean;
+  pitStopDuration?: number | null;
 }
 
 interface StatusBadgeProps {
@@ -44,7 +46,8 @@ export const PitStatusCell = memo(
     dnf,
     repair,
     penalty,
-    slowdown
+    slowdown,
+    pitStopDuration
   }: PitStatusCellProps) => {
     const tow =
       carTrackSurface == 1 &&
@@ -118,7 +121,7 @@ export const PitStatusCell = memo(
         )}
         {lastPit && (
           <StatusBadge borderColorClass="border-yellow-500">
-            L {lastPitLap}
+            L {lastPitLap}{pitStopDuration != null && ` ${formatTime(pitStopDuration, 'minutes')}`}
           </StatusBadge>
         )}
         </div>

@@ -524,6 +524,8 @@ const AllFlagCombinations = () => {
     { name: 'PIT + Penalty', dnf: false, repair: false, penalty: true, slowdown: false, onPitRoad: true, lastPitLap: undefined, lastLap: undefined, carTrackSurface: 2, prevCarTrackSurface: undefined },
     { name: 'PIT + Slowdown', dnf: false, repair: false, penalty: false, slowdown: true, onPitRoad: true, lastPitLap: undefined, lastLap: undefined, carTrackSurface: 2, prevCarTrackSurface: undefined },
     { name: 'Pit Lap (L 5)', dnf: false, repair: false, penalty: false, slowdown: false, onPitRoad: false, lastPitLap: 5, lastLap: 10, carTrackSurface: 1, prevCarTrackSurface: undefined },
+    { name: 'Pit Lap with Time (L 5 1:24)', dnf: false, repair: false, penalty: false, slowdown: false, onPitRoad: false, lastPitLap: 5, lastLap: 10, carTrackSurface: 1, prevCarTrackSurface: undefined, pitStopDuration: 84 },
+    { name: 'Pit Lap with Time (L 5 0:34)', dnf: false, repair: false, penalty: false, slowdown: false, onPitRoad: false, lastPitLap: 5, lastLap: 10, carTrackSurface: 1, prevCarTrackSurface: undefined, pitStopDuration: 34 },
     { name: 'Pit Lap + DNF', dnf: true, repair: false, penalty: false, slowdown: false, onPitRoad: false, lastPitLap: 5, lastLap: 10, carTrackSurface: 1, prevCarTrackSurface: undefined },
     { name: 'Pit Lap + Repair', dnf: false, repair: true, penalty: false, slowdown: false, onPitRoad: false, lastPitLap: 5, lastLap: 10, carTrackSurface: 1, prevCarTrackSurface: undefined },
     { name: 'Pit Lap + Penalty', dnf: false, repair: false, penalty: true, slowdown: false, onPitRoad: false, lastPitLap: 5, lastLap: 10, carTrackSurface: 1, prevCarTrackSurface: undefined },
@@ -599,6 +601,7 @@ const AllFlagCombinations = () => {
               lastLap={combo.lastLap}
               carTrackSurface={combo.carTrackSurface}
               prevCarTrackSurface={combo.prevCarTrackSurface}
+              pitStopDuration={combo.pitStopDuration}
               config={{
                 fastestTime: { enabled: true, timeFormat: 'full' },
                 lastTime: { enabled: true, timeFormat: 'full' },
