@@ -23,7 +23,7 @@ const sortableSettings: SortableSetting[] = [
   { id: 'carNumber', label: 'Car Number', configKey: 'carNumber' },
   { id: 'countryFlags', label: 'Country Flags', configKey: 'countryFlags' },
   { id: 'driverName', label: 'Driver Name', configKey: 'driverName' },
-  { id: 'pitStatus', label: 'Pit Status', configKey: 'pitStatus' },
+  { id: 'pitStatus', label: 'Pit Status', configKey: 'pitStatus', hasSubSetting: true },
   { id: 'carManufacturer', label: 'Car Manufacturer', configKey: 'carManufacturer' },
   { id: 'badge', label: 'Driver Badge', configKey: 'badge' },
   { id: 'iratingChange', label: 'iRating Change', configKey: 'iratingChange' },
@@ -87,7 +87,7 @@ const defaultConfig: StandingsWidgetSettings['config'] = {
   lapTimeDeltas: { enabled: false, numLaps: 3 },
   position: { enabled: true },
   driverName: { enabled: true },
-  pitStatus: { enabled: true },
+  pitStatus: { enabled: true, showPitTime: false },
   displayOrder: sortableSettings.map(s => s.id)
 };
 
@@ -210,7 +210,10 @@ const migrateConfig = (
     showOnlyWhenOnTrack: (config.showOnlyWhenOnTrack as boolean) ?? false,
     position: { enabled: (config.position as { enabled?: boolean })?.enabled ?? true },
     driverName: { enabled: (config.driverName as { enabled?: boolean })?.enabled ?? true },
-    pitStatus: { enabled: (config.pitStatus as { enabled?: boolean })?.enabled ?? true },
+    pitStatus: {
+      enabled: (config.pitStatus as { enabled?: boolean })?.enabled ?? true,
+      showPitTime: (config.pitStatus as { showPitTime?: boolean })?.showPitTime ?? false,
+    },
       displayOrder: mergeDisplayOrder(sortableSettings.map(s => s.id), config.displayOrder as string[]),
   };
 };
@@ -286,6 +289,20 @@ const DisplaySettingsList = ({ itemsOrder, onReorder, settings, handleConfigChan
                   <option value={4}>4</option>
                   <option value={5}>5</option>
                 </select>
+              </div>
+            )}
+            {setting.hasSubSetting && setting.configKey === 'pitStatus' && settings.config.pitStatus.enabled && (
+              <div className="flex items-center justify-between pl-8 mt-2">
+                <span className="text-sm text-slate-300">Show Pit Time</span>
+                <ToggleSwitch
+                  enabled={settings.config.pitStatus.showPitTime ?? false}
+                  onToggle={(enabled) => {
+                    const cv = settings.config[setting.configKey] as { enabled: boolean; showPitTime?: boolean; [key: string]: unknown };
+                    handleConfigChange({
+                      [setting.configKey]: { ...cv, showPitTime: enabled }
+                    });
+                  }}
+                />
               </div>
             )}
             {setting.configKey === 'badge' && (configValue as { enabled: boolean }).enabled && (

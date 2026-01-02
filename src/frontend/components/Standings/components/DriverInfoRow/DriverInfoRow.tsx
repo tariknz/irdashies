@@ -215,6 +215,7 @@ export const DriverInfoRow = memo(
               penalty={penalty}
               slowdown={slowdown}
               pitStopDuration={pitStopDuration}
+              showPitTime={config?.pitStatus?.showPitTime ?? false}
             />
           ),
         },

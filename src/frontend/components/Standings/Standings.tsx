@@ -11,7 +11,7 @@ import {
   useHighlightColor,
 } from './hooks';
 import { useLapTimesStoreUpdater } from '../../context/LapTimesStore/LapTimesStoreUpdater';
-import { usePitLabStoreUpdater } from '../../context/PitLapStore/PitLapStoreUpdater';
+import { usePitLapStoreUpdater } from '../../context/PitLapStore/PitLapStoreUpdater';
 import { useDrivingState, useWeekendInfoNumCarClasses } from '@irdashies/context';
 
 export const Standings = () => {
@@ -22,7 +22,7 @@ export const Standings = () => {
   useLapTimesStoreUpdater();
 
   // Update pit laps
-  usePitLabStoreUpdater();
+  usePitLapStoreUpdater();
 
   const standings = useDriverStandings(settings);
   const classStats = useCarClassStats();
