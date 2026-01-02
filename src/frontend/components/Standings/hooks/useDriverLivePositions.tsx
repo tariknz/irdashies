@@ -12,7 +12,7 @@ import { useSessionStore, useTelemetryValues } from '@irdashies/context';
 export const useDriverLivePositions = (): Record<number, number> => {
   const carIdxLapCompleted = useTelemetryValues<number[]>('CarIdxLapCompleted');
   const carIdxLapDistPct = useTelemetryValues<number[]>('CarIdxLapDistPct');
-  const CarIdxClass = useTelemetryValues<number[]>('CarIdxClass');
+  const carIdxClass = useTelemetryValues<number[]>('CarIdxClass');
   const paceCarIdx =
       useSessionStore((s) => s.session?.DriverInfo?.PaceCarIdx) ?? -1;
 
@@ -21,12 +21,12 @@ export const useDriverLivePositions = (): Record<number, number> => {
     const driversByClass = new Map<number, { driverIdx: number; progress: number }[]>();
 
     // Calculate live position progress for each driver (excluding pace car)
-    if (carIdxLapCompleted.length > 0 && carIdxLapDistPct.length > 0 && CarIdxClass.length > 0) {
+    if (carIdxLapCompleted.length > 0 && carIdxLapDistPct.length > 0 && carIdxClass.length > 0) {
       carIdxLapCompleted.forEach((lapCompleted, driverIdx) => {
         // Skip the pace car
         if (driverIdx === paceCarIdx) return;
 
-        const classId = CarIdxClass[driverIdx] ?? -1;
+        const classId = carIdxClass[driverIdx] ?? -1;
         const distPct = carIdxLapDistPct[driverIdx] ?? 0;
         
         // Live position combines completed laps with current lap progress
@@ -54,5 +54,5 @@ export const useDriverLivePositions = (): Record<number, number> => {
     });
 
     return livePositions;
-  }, [carIdxLapCompleted, carIdxLapDistPct, CarIdxClass, paceCarIdx]);
+  }, [carIdxLapCompleted, carIdxLapDistPct, carIdxClass, paceCarIdx]);
 };
