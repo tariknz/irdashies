@@ -6,10 +6,15 @@ describe('PitLapStore', () => {
     usePitLapStore.setState({
       sessionUniqId: 0,
       sessionTime: 0,
+      sessionState: 0,
       pitLaps: [],
       carLaps: [],
       prevCarTrackSurface: [],
       actualCarTrackSurface: [],
+      pitEntryTime: [],
+      pitExitTime: [],
+      prevOnPitRoad: [],
+      entryLap: [],
     });
   });
 
@@ -24,7 +29,7 @@ describe('PitLapStore', () => {
   });
 
   it('should update pit laps when car enters pit road', () => {
-    const carIdxOnPitRoad = [0, 1, 0, 1];
+    const carIdxOnPitRoad = [false, true, false, true];
     const carIdxLap = [5, 10, 15, 20];
     const sessionUniqId = 123;
     const sessionTime = 100.5;
@@ -62,7 +67,7 @@ describe('PitLapStore', () => {
     const newSessionTime = 0;
 
     usePitLapStore.getState().updatePitLaps(
-      [0, 0, 0],
+      [false, false, false],
       [0, 0, 0],
       newSessionUniqId,
       newSessionTime,
@@ -90,7 +95,7 @@ describe('PitLapStore', () => {
     });
 
     usePitLapStore.getState().updatePitLaps(
-      [0, 0, 0],
+      [false, false, false],
       [0, 0, 0],
       100,
       25,
@@ -104,7 +109,7 @@ describe('PitLapStore', () => {
   });
 
   it('should track car track surface changes', () => {
-    const carIdxOnPitRoad = [0, 0];
+    const carIdxOnPitRoad = [false, false];
     const carIdxLap = [1, 1];
     const sessionUniqId = 123;
     const sessionTime = 100;
@@ -145,7 +150,7 @@ describe('PitLapStore', () => {
     });
 
     usePitLapStore.getState().updatePitLaps(
-      [0, 0],
+      [false, false],
       [1, 1],
       123,
       100,
@@ -165,7 +170,7 @@ describe('PitLapStore', () => {
     });
 
     usePitLapStore.getState().updatePitLaps(
-      [0, 0],
+      [false, false],
       [1, 1],
       123,
       100,

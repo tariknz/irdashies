@@ -171,28 +171,28 @@ describe('time', () => {
 
     describe('format: "duration-wlabels"', () => {
       it('should format with labels for seconds only', () => {
-        expect(formatTime(45.123, 'duration-wlabels')).toBe('45 Secs');
+        expect(formatTime(45.123, 'duration-wlabels')).toBe('45 secs');
       });
 
       it('should format with labels for minutes and seconds', () => {
-        expect(formatTime(75.123, 'duration-wlabels')).toBe('1 Min 15 Secs');
+        expect(formatTime(75.123, 'duration-wlabels')).toBe('1 min 15 secs');
       });
 
       it('should format with labels for minutes and seconds', () => {
-        expect(formatTime(122, 'duration-wlabels')).toBe('2 Mins 2 Secs');
+        expect(formatTime(122, 'duration-wlabels')).toBe('2 mins 2 secs');
       });
 
       it('should format with labels for single minute', () => {
-        expect(formatTime(60, 'duration-wlabels')).toBe('1 Min');
+        expect(formatTime(60, 'duration-wlabels')).toBe('1 min');
       });
 
       it('should format with labels for hours only', () => {
-        expect(formatTime(3600, 'duration-wlabels')).toBe('1 Hr');
-        expect(formatTime(7200, 'duration-wlabels')).toBe('2 Hrs');
+        expect(formatTime(3600, 'duration-wlabels')).toBe('1 hr');
+        expect(formatTime(7200, 'duration-wlabels')).toBe('2 hrs');
       });
 
       it('should format with labels for hours, minutes and seconds', () => {
-        expect(formatTime(3661.789, 'duration-wlabels')).toBe('1 Hr 1 Min 1 Sec');
+        expect(formatTime(3661.789, 'duration-wlabels')).toBe('1 hr 1 min 1 sec');
       });
 
       it('should return empty string for zero seconds', () => {
