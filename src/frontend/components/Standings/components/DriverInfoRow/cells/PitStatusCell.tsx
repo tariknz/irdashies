@@ -121,7 +121,7 @@ export const PitStatusCell = memo(
         )}
         {lastPit && (
           <StatusBadge borderColorClass="border-yellow-500">
-            L {lastPitLap}{showPitTime && <span className="text-xs text-yellow-500">{pitStopDuration && ` ${pitStopDuration} s`}</span>}
+            L {lastPitLap}{showPitTime && <span className="text-yellow-500">{pitStopDuration && ` ${pitStopDuration} s`}</span>}
           </StatusBadge>
         )}
         </div>
