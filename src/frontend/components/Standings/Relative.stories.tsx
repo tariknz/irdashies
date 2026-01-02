@@ -12,7 +12,7 @@ import { SessionBar } from './components/SessionBar/SessionBar';
 import { TitleBar } from './components/TitleBar/TitleBar';
 import { useDrivingState } from '@irdashies/context';
 import { useRelativeSettings, useDriverRelatives, useHighlightColor } from './hooks';
-import { usePitLabStoreUpdater } from '../../context/PitLapStore/PitLapStoreUpdater';
+import { usePitLapStoreUpdater } from '../../context/PitLapStore/PitLapStoreUpdater';
 import { useRelativeGapStoreUpdater } from '@irdashies/context';
 import { useWeekendInfoNumCarClasses } from '@irdashies/context';
 
@@ -28,7 +28,7 @@ const RelativeWithoutHeaderFooter = () => {
 
   // Update relative gap store with telemetry data
   useRelativeGapStoreUpdater();
-  usePitLabStoreUpdater();
+  usePitLapStoreUpdater();
 
   // Always render 2 * buffer + 1 rows (buffer above + player + buffer below)
   const totalRows = 2 * buffer + 1;
@@ -396,7 +396,7 @@ const RelativeWithoutHeader = () => {
 
   // Update relative gap store with telemetry data
   useRelativeGapStoreUpdater();
-  usePitLabStoreUpdater();
+  usePitLapStoreUpdater();
 
   // Always render 2 * buffer + 1 rows (buffer above + player + buffer below)
   const totalRows = 2 * buffer + 1;
@@ -603,7 +603,7 @@ const RelativeWithoutFooter = () => {
 
   // Update relative gap store with telemetry data
   useRelativeGapStoreUpdater();
-  usePitLabStoreUpdater();
+  usePitLapStoreUpdater();
 
   // Always render 2 * buffer + 1 rows (buffer above + player + buffer below)
   const totalRows = 2 * buffer + 1;

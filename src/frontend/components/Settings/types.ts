@@ -57,7 +57,7 @@ export interface StandingsWidgetSettings extends BaseWidgetSettings {
     useLivePosition: boolean;
     position: { enabled: boolean };
     driverName: { enabled: boolean };
-    pitStatus: { enabled: boolean };
+    pitStatus: { enabled: boolean; showPitTime?: boolean };
     displayOrder: string[];
   };
 }
@@ -109,7 +109,7 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
      };
     position: { enabled: boolean };
     driverName: { enabled: boolean };
-    pitStatus: { enabled: boolean };
+    pitStatus: { enabled: boolean, showPitTime?: boolean };
     displayOrder: string[];
     enhancedGapCalculation: {
       enabled: boolean;
