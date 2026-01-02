@@ -25,6 +25,8 @@ import {
   augmentStandingsWithInterval,
 } from '../createStandings';
 import type { StandingsWidgetSettings } from '../../Settings/types';
+import { useDriverLivePositions } from './useDriverLivePositions';
+import { useStandingsSettings } from './useStandingsSettings';
 
 export const useDriverStandings = (settings?: StandingsWidgetSettings['config']) => {
   const {
@@ -46,6 +48,9 @@ export const useDriverStandings = (settings?: StandingsWidgetSettings['config'])
   const sessionNum = useTelemetryValue('SessionNum');
   const sessionType = useSessionType(sessionNum);
   const positions = useSessionPositions(sessionNum);
+  const driverLivePositions = useDriverLivePositions();
+  const standingsSettings = useStandingsSettings();
+  const useLivePositionStandings = standingsSettings?.useLivePosition ?? false;
   const fastestLaps = useSessionFastestLaps(sessionNum);
   const carIdxF2Time = useTelemetry('CarIdxF2Time');
   const carIdxOnPitRoad = useTelemetry<boolean[]>('CarIdxOnPitRoad');
@@ -95,7 +100,25 @@ export const useDriverStandings = (settings?: StandingsWidgetSettings['config'])
       lapTimeDeltasEnabled ? numLapDeltas : undefined,
       lapDeltasForCalc,
     );
-    const groupedByClass = groupStandingsByClass(initialStandings);
+
+    if (useLivePositionStandings) {
+      // Apply live positions as per-class positions, then sort class arrays by class position
+      initialStandings.forEach((standing) => {
+        const livePosition = driverLivePositions[standing.carIdx];
+        if (livePosition !== undefined) {
+          standing.classPosition = livePosition;
+        }
+      });
+    }
+
+    // Group and *sort drivers inside each class by classPosition* (this respects live positions)
+    let groupedByClass = groupStandingsByClass(initialStandings);
+    if (useLivePositionStandings) {
+      groupedByClass = groupedByClass.map(([classId, classStandings]) => [
+        classId,
+        classStandings.slice().sort((a, b) => (a.classPosition ?? 999) - (b.classPosition ?? 999)),
+      ]) as [string, typeof initialStandings][];
+    }
 
     // Calculate iRating changes for race sessions
     const iratingAugmentedGroupedByClass =
@@ -145,7 +168,9 @@ export const useDriverStandings = (settings?: StandingsWidgetSettings['config'])
     prevCarTrackSurface,
     gapEnabled,
     intervalEnabled,
-    carIdxSessionFlags?.value
+    carIdxSessionFlags?.value,
+    useLivePositionStandings,
+    driverLivePositions,
   ]);
 
   return standingsWithGain;

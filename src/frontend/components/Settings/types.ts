@@ -54,6 +54,7 @@ export interface StandingsWidgetSettings extends BaseWidgetSettings {
       displayOrder: string[];
     };
     showOnlyWhenOnTrack: boolean;
+    useLivePosition: boolean;
     position: { enabled: boolean };
     driverName: { enabled: boolean };
     pitStatus: { enabled: boolean };
@@ -116,6 +117,7 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
       sampleInterval: number;
       maxLapHistory: number;
     };
+    useLivePosition: boolean;
   };
 }
 
