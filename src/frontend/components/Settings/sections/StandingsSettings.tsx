@@ -84,6 +84,7 @@ const defaultConfig: StandingsWidgetSettings['config'] = {
     displayOrder: DEFAULT_SESSION_BAR_DISPLAY_ORDER
   },
   showOnlyWhenOnTrack: false,
+  useLivePosition: false,
   lapTimeDeltas: { enabled: false, numLaps: 3 },
   position: { enabled: true },
   driverName: { enabled: true },
@@ -208,6 +209,7 @@ const migrateConfig = (
       displayOrder: mergeDisplayOrder([...VALID_SESSION_BAR_ITEM_KEYS], (config.footerBar as { displayOrder?: string[] })?.displayOrder)
     },
     showOnlyWhenOnTrack: (config.showOnlyWhenOnTrack as boolean) ?? false,
+    useLivePosition: (config.useLivePosition as boolean) ?? false,
     position: { enabled: (config.position as { enabled?: boolean })?.enabled ?? true },
     driverName: { enabled: (config.driverName as { enabled?: boolean })?.enabled ?? true },
     pitStatus: {
@@ -779,6 +781,22 @@ export const StandingsSettings = () => {
                 enabled={settings.config.showOnlyWhenOnTrack ?? false}
                 onToggle={(enabled) =>
                   handleConfigChange({ showOnlyWhenOnTrack: enabled })
+                }
+              />
+            </div>
+
+            {/* Use Live Position Standings */}
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="text-md font-medium text-slate-300">Use Live Position Standings</h4>
+                <p className="text-sm text-slate-400">
+                  If enabled, live telemetry will be used to compute driver positions. This may be less stable but will update live and not only on start/finish line.
+                </p>
+              </div>
+              <ToggleSwitch
+                enabled={settings.config.useLivePosition ?? false}
+                onToggle={(enabled) =>
+                  handleConfigChange({ useLivePosition: enabled })
                 }
               />
             </div>
