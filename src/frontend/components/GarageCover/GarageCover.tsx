@@ -65,7 +65,7 @@ export const GarageCover = () => {
         }
     }, [settings.imageFilename, bridge]);
 
-    if (isInGarage) {
+    if (!isInGarage) {
         return <></>;
     }
 

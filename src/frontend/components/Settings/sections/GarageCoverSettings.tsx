@@ -197,6 +197,17 @@ export const GarageCoverSettings = () => {
 
                 return (
                     <div className="space-y-4">
+                        {/* Info Banner */}
+                        <div className="bg-blue-900/30 border border-blue-700/50 rounded-md p-4 space-y-2">
+                            <p className="text-sm text-slate-300">
+                                <strong>Note:</strong> The garage cover is intended for use whilst streaming. 
+                                It only appears when you have the garage window open in iRacing.
+                            </p>
+                            <p className="text-sm text-slate-300">
+                                <strong>Browser Source URL:</strong> <code className="bg-slate-800 px-2 py-1 rounded">http://localhost:3000/component/garagecover</code>
+                            </p>
+                        </div>
+
                         {/* Image Upload */}
                         <div className="space-y-2">
                             <label className="text-slate-300">Garage Image</label>
