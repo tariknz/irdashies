@@ -1,0 +1,85 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 2  # Fetch the last 2 commits to compare changes
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+        cache: 'npm'
+
+    - name: Cache node_modules and native builds
+      uses: actions/cache@v4
+      id: cache-deps
+      with:
+        path: |
+          node_modules
+          .vite
+          **/node_modules
+          **/*.node
+          **/build/Release
+        key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('**/binding.gyp', '**/node_modules/**/*.node') }}
+        restore-keys: |
+          ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}-
+          ${{ runner.os }}-node-
+
+    - name: Install dependencies
+      if: steps.cache-deps.outputs.cache-hit != 'true'
+      run: npm ci
+
+    - name: Run linting
+      run: npm run lint
+
+    - name: Run tests with coverage
+      run: npm test
+
+    - name: Upload coverage report
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-report
+        path: coverage 
+
+    - name: Check if version changed
+      id: check_version
+      shell: pwsh
+      run: |
+        $currentVersion = (Get-Content package.json | ConvertFrom-Json).version
+        $previousVersion = (git show HEAD^:package.json | ConvertFrom-Json).version
+        if ($currentVersion -ne $previousVersion) {
+          echo "version_changed=true" >> $env:GITHUB_OUTPUT
+          echo "Version changed from $previousVersion to $currentVersion"
+        }
+
+    # - name: Generate assets
+    #   if: steps.check_version.outputs.version_changed == 'true'
+    #   run: npm run generate-assets
+    #   env:
+    #     IRACING_USERNAME: ${{ secrets.IRACING_USERNAME }}
+    #     IRACING_PASSWORD: ${{ secrets.IRACING_PASSWORD }}
+    #     APP_SECRET: ${{ secrets.APP_SECRET }}
+
+    - name: Make
+      if: steps.check_version.outputs.version_changed == 'true'
+      run: npm run make
+
+    - name: Publish
+      if: steps.check_version.outputs.version_changed == 'true'
+      run: npm run publish:ci
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

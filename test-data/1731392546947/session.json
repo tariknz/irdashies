@@ -1,0 +1,1321 @@
+{
+  "WeekendInfo": {
+    "TrackName": "oulton inthislop",
+    "TrackID": 184,
+    "TrackLength": "4.28 km",
+    "TrackLengthOfficial": "4.33 km",
+    "TrackDisplayName": "Oulton Park Circuit",
+    "TrackDisplayShortName": "Oulton",
+    "TrackConfigName": "International w/out Brittens",
+    "TrackCity": "Little Budworth",
+    "TrackCountry": "England",
+    "TrackAltitude": "69.47 m",
+    "TrackLatitude": "53.180009 m",
+    "TrackLongitude": "-2.612779 m",
+    "TrackNorthOffset": "3.0267 rad",
+    "TrackNumTurns": 14,
+    "TrackPitSpeedLimit": "49.97 kph",
+    "TrackType": "road course",
+    "TrackDirection": "neutral",
+    "TrackWeatherType": "Realistic",
+    "TrackSkies": "Dynamic",
+    "TrackSurfaceTemp": "21.52 C",
+    "TrackAirTemp": "18.52 C",
+    "TrackAirPressure": "29.08 Hg",
+    "TrackWindVel": "5.86 m/s",
+    "TrackWindDir": "2.49 rad",
+    "TrackRelativeHumidity": "100 %",
+    "TrackFogLevel": "11 %",
+    "TrackPrecipitation": "0 %",
+    "TrackCleanup": 1,
+    "TrackDynamicTrack": 1,
+    "TrackVersion": "2024.08.28.03",
+    "SeriesID": 112,
+    "SeasonID": 5033,
+    "SessionID": 255963080,
+    "SubSessionID": 72672980,
+    "LeagueID": 0,
+    "Official": 1,
+    "RaceWeek": 9,
+    "EventType": "Practice",
+    "Category": "SportsCar",
+    "SimMode": "full",
+    "TeamRacing": 0,
+    "MinDrivers": 0,
+    "MaxDrivers": 1,
+    "DCRuleSet": "None",
+    "QualifierMustStartRace": 0,
+    "NumCarClasses": 4,
+    "NumCarTypes": 4,
+    "HeatRacing": 0,
+    "BuildType": "Release",
+    "BuildTarget": "Members",
+    "BuildVersion": "2024.10.09.01",
+    "RaceFarm": "AU-Syd",
+    "WeekendOptions": {
+      "NumStarters": 40,
+      "StartingGrid": "2x2 inline pole on left",
+      "QualifyScoring": "best lap",
+      "CourseCautions": "off",
+      "StandingStart": 1,
+      "ShortParadeLap": 0,
+      "Restarts": "single file",
+      "WeatherType": "Realistic",
+      "Skies": "Dynamic",
+      "WindDirection": "N",
+      "WindSpeed": "3.22 km/h",
+      "WeatherTemp": "25.56 C",
+      "RelativeHumidity": "45 %",
+      "FogLevel": "0 %",
+      "TimeOfDay": "1:30 pm",
+      "Date": "2024-11-16T00:00:00.000Z",
+      "EarthRotationSpeedupFactor": 1,
+      "Unofficial": 0,
+      "CommercialMode": "consumer",
+      "NightMode": "variable",
+      "IsFixedSetup": 0,
+      "StrictLapsChecking": "default",
+      "HasOpenRegistration": 1,
+      "HardcoreLevel": 1,
+      "NumJokerLaps": 0,
+      "IncidentLimit": "unlimited",
+      "FastRepairsLimit": 1,
+      "GreenWhiteCheckeredLimit": 0
+    },
+    "TelemetryOptions": {
+      "TelemetryDiskFile": "C /Users/tarik/Documents/iRacing/telemetry/bmwm4gt4_oulton inthislop 2024-11-12 19-20-39.ibt"
+    }
+  },
+  "SessionInfo": {
+    "Sessions": [
+      {
+        "SessionNum": 0,
+        "SessionLaps": "unlimited",
+        "SessionTime": "3600.0000 sec",
+        "SessionNumLapsToAvg": 0,
+        "SessionType": "Practice",
+        "SessionTrackRubberState": "moderately low usage",
+        "SessionName": "PRACTICE",
+        "SessionSubType": null,
+        "SessionSkipped": 0,
+        "SessionRunGroupsUsed": 1,
+        "SessionEnforceTireCompoundChange": 0,
+        "ResultsPositions": [
+          {
+            "Position": 1,
+            "ClassPosition": 0,
+            "CarIdx": 3,
+            "Lap": 5,
+            "Time": 110.4799,
+            "FastestLap": 5,
+            "FastestTime": 110.4799,
+            "LastTime": 110.4799,
+            "LapsLed": 0,
+            "LapsComplete": 5,
+            "JokerLapsComplete": 0,
+            "LapsDriven": 0,
+            "Incidents": 0,
+            "ReasonOutId": 0,
+            "ReasonOutStr": "Running"
+          },
+          {
+            "Position": 2,
+            "ClassPosition": 1,
+            "CarIdx": 0,
+            "Lap": 1,
+            "Time": 114.1417,
+            "FastestLap": 1,
+            "FastestTime": 114.1417,
+            "LastTime": 114.1417,
+            "LapsLed": 0,
+            "LapsComplete": 1,
+            "JokerLapsComplete": 0,
+            "LapsDriven": 0,
+            "Incidents": 0,
+            "ReasonOutId": 0,
+            "ReasonOutStr": "Running"
+          },
+          {
+            "Position": 3,
+            "ClassPosition": 0,
+            "CarIdx": 1,
+            "Lap": 6,
+            "Time": 117.1487,
+            "FastestLap": 6,
+            "FastestTime": 117.1487,
+            "LastTime": 117.1487,
+            "LapsLed": 0,
+            "LapsComplete": 6,
+            "JokerLapsComplete": 0,
+            "LapsDriven": 0,
+            "Incidents": 0,
+            "ReasonOutId": 0,
+            "ReasonOutStr": "Running"
+          },
+          {
+            "Position": 4,
+            "ClassPosition": 1,
+            "CarIdx": 6,
+            "Lap": 2,
+            "Time": 119.2208,
+            "FastestLap": 2,
+            "FastestTime": 119.2208,
+            "LastTime": 119.2208,
+            "LapsLed": 0,
+            "LapsComplete": 2,
+            "JokerLapsComplete": 0,
+            "LapsDriven": 0,
+            "Incidents": 0,
+            "ReasonOutId": 0,
+            "ReasonOutStr": "Running"
+          },
+          {
+            "Position": 5,
+            "ClassPosition": 0,
+            "CarIdx": 5,
+            "Lap": 2,
+            "Time": 129.4409,
+            "FastestLap": 2,
+            "FastestTime": 129.4409,
+            "LastTime": 129.4409,
+            "LapsLed": 0,
+            "LapsComplete": 2,
+            "JokerLapsComplete": 0,
+            "LapsDriven": 0,
+            "Incidents": 0,
+            "ReasonOutId": 0,
+            "ReasonOutStr": "Running"
+          }
+        ],
+        "ResultsFastestLap": [
+          {
+            "CarIdx": 3,
+            "FastestLap": 5,
+            "FastestTime": 110.4799
+          }
+        ],
+        "ResultsAverageLapTime": -1,
+        "ResultsNumCautionFlags": 0,
+        "ResultsNumCautionLaps": 0,
+        "ResultsNumLeadChanges": 0,
+        "ResultsLapsComplete": -1,
+        "ResultsOfficial": 0
+      }
+    ]
+  },
+  "CameraInfo": {
+    "Groups": [
+      {
+        "GroupNum": 1,
+        "GroupName": "Nose",
+        "Cameras": [
+          {
+            "CameraNum": 1,
+            "CameraName": "CamNose"
+          }
+        ]
+      },
+      {
+        "GroupNum": 2,
+        "GroupName": "Gearbox",
+        "Cameras": [
+          {
+            "CameraNum": 1,
+            "CameraName": "CamGearbox"
+          }
+        ]
+      },
+      {
+        "GroupNum": 3,
+        "GroupName": "Roll Bar",
+        "Cameras": [
+          {
+            "CameraNum": 1,
+            "CameraName": "CamRoll Bar"
+          }
+        ]
+      },
+      {
+        "GroupNum": 4,
+        "GroupName": "LF Susp",
+        "Cameras": [
+          {
+            "CameraNum": 1,
+            "CameraName": "CamLF Susp"
+          }
+        ]
+      },
+      {
+        "GroupNum": 5,
+        "GroupName": "LR Susp",
+        "Cameras": [
+          {
+            "CameraNum": 1,
+            "CameraName": "CamLR Susp"
+          }
+        ]
+      },
+      {
+        "GroupNum": 6,
+        "GroupName": "Gyro",
+        "Cameras": [
+          {
+            "CameraNum": 1,
+            "CameraName": "CamGyro"
+          }
+        ]
+      },
+      {
+        "GroupNum": 7,
+        "GroupName": "RF Susp",
+        "Cameras": [
+          {
+            "CameraNum": 1,
+            "CameraName": "CamRF Susp"
+          }
+        ]
+      },
+      {
+        "GroupNum": 8,
+        "GroupName": "RR Susp",
+        "Cameras": [
+          {
+            "CameraNum": 1,
+            "CameraName": "CamRR Susp"
+          }
+        ]
+      },
+      {
+        "GroupNum": 9,
+        "GroupName": "Cockpit",
+        "Cameras": [
+          {
+            "CameraNum": 1,
+            "CameraName": "CamCockpit"
+          }
+        ]
+      },
+      {
+        "GroupNum": 10,
+        "GroupName": "Blimp",
+        "Cameras": [
+          {
+            "CameraNum": 1,
+            "CameraName": "CamBlimp"
+          }
+        ]
+      },
+      {
+        "GroupNum": 11,
+        "GroupName": "Chopper",
+        "Cameras": [
+          {
+            "CameraNum": 1,
+            "CameraName": "CamChopper"
+          }
+        ]
+      },
+      {
+        "GroupNum": 12,
+        "GroupName": "Chase",
+        "Cameras": [
+          {
+            "CameraNum": 1,
+            "CameraName": "CamChase"
+          }
+        ]
+      },
+      {
+        "GroupNum": 13,
+        "GroupName": "Far Chase",
+        "Cameras": [
+          {
+            "CameraNum": 1,
+            "CameraName": "CamFar Chase"
+          }
+        ]
+      },
+      {
+        "GroupNum": 14,
+        "GroupName": "Rear Chase",
+        "Cameras": [
+          {
+            "CameraNum": 1,
+            "CameraName": "CamRear Chase"
+          }
+        ]
+      },
+      {
+        "GroupNum": 15,
+        "GroupName": "Pit Lane",
+        "Cameras": [
+          {
+            "CameraNum": 1,
+            "CameraName": "CamPit Lane"
+          }
+        ]
+      },
+      {
+        "GroupNum": 16,
+        "GroupName": "Pit Lane 2",
+        "Cameras": [
+          {
+            "CameraNum": 1,
+            "CameraName": "CamPit Lane 2"
+          }
+        ]
+      },
+      {
+        "GroupNum": 17,
+        "GroupName": "Scenic",
+        "IsScenic": true,
+        "Cameras": [
+          {
+            "CameraNum": 1,
+            "CameraName": "Scenic_00"
+          },
+          {
+            "CameraNum": 2,
+            "CameraName": "Scenic_01"
+          },
+          {
+            "CameraNum": 3,
+            "CameraName": "Scenic_02"
+          },
+          {
+            "CameraNum": 4,
+            "CameraName": "Scenic_03"
+          },
+          {
+            "CameraNum": 5,
+            "CameraName": "Scenic_04"
+          },
+          {
+            "CameraNum": 6,
+            "CameraName": "Scenic_05"
+          },
+          {
+            "CameraNum": 7,
+            "CameraName": "Scenic_06"
+          },
+          {
+            "CameraNum": 8,
+            "CameraName": "Scenic_07"
+          },
+          {
+            "CameraNum": 9,
+            "CameraName": "Scenic_08"
+          },
+          {
+            "CameraNum": 10,
+            "CameraName": "Scenic_09"
+          },
+          {
+            "CameraNum": 11,
+            "CameraName": "Scenic_10"
+          }
+        ]
+      },
+      {
+        "GroupNum": 18,
+        "GroupName": "TV1",
+        "Cameras": [
+          {
+            "CameraNum": 1,
+            "CameraName": "CamTV1_00"
+          },
+          {
+            "CameraNum": 2,
+            "CameraName": "CamTV1_01"
+          },
+          {
+            "CameraNum": 3,
+            "CameraName": "CamTV1_02"
+          },
+          {
+            "CameraNum": 4,
+            "CameraName": "CamTV1_03"
+          },
+          {
+            "CameraNum": 5,
+            "CameraName": "CamTV1_04"
+          },
+          {
+            "CameraNum": 6,
+            "CameraName": "CamTV1_05"
+          },
+          {
+            "CameraNum": 7,
+            "CameraName": "CamTV1_06"
+          },
+          {
+            "CameraNum": 8,
+            "CameraName": "CamTV1_07"
+          },
+          {
+            "CameraNum": 9,
+            "CameraName": "CamTV1_08"
+          },
+          {
+            "CameraNum": 10,
+            "CameraName": "CamTV1_09"
+          },
+          {
+            "CameraNum": 11,
+            "CameraName": "CamTV1_10"
+          }
+        ]
+      },
+      {
+        "GroupNum": 19,
+        "GroupName": "TV2",
+        "Cameras": [
+          {
+            "CameraNum": 1,
+            "CameraName": "CamTV2_00"
+          },
+          {
+            "CameraNum": 2,
+            "CameraName": "CamTV2_01"
+          },
+          {
+            "CameraNum": 3,
+            "CameraName": "CamTV2_02"
+          },
+          {
+            "CameraNum": 4,
+            "CameraName": "CamTV2_03"
+          },
+          {
+            "CameraNum": 5,
+            "CameraName": "CamTV2_04"
+          },
+          {
+            "CameraNum": 6,
+            "CameraName": "CamTV2_05"
+          },
+          {
+            "CameraNum": 7,
+            "CameraName": "CamTV2_06"
+          },
+          {
+            "CameraNum": 8,
+            "CameraName": "CamTV2_07"
+          },
+          {
+            "CameraNum": 9,
+            "CameraName": "CamTV2_08"
+          },
+          {
+            "CameraNum": 10,
+            "CameraName": "CamTV2_09"
+          },
+          {
+            "CameraNum": 11,
+            "CameraName": "CamTV2_10"
+          },
+          {
+            "CameraNum": 12,
+            "CameraName": "CamTV2_11"
+          },
+          {
+            "CameraNum": 13,
+            "CameraName": "CamTV2_12"
+          },
+          {
+            "CameraNum": 14,
+            "CameraName": "CamTV2_13"
+          },
+          {
+            "CameraNum": 15,
+            "CameraName": "CamTV2_14"
+          }
+        ]
+      },
+      {
+        "GroupNum": 20,
+        "GroupName": "TV3",
+        "Cameras": [
+          {
+            "CameraNum": 1,
+            "CameraName": "CamTV3_00"
+          },
+          {
+            "CameraNum": 2,
+            "CameraName": "CamTV3_01"
+          },
+          {
+            "CameraNum": 3,
+            "CameraName": "CamTV3_02"
+          },
+          {
+            "CameraNum": 4,
+            "CameraName": "CamTV3_03"
+          },
+          {
+            "CameraNum": 5,
+            "CameraName": "CamTV3_04"
+          },
+          {
+            "CameraNum": 6,
+            "CameraName": "CamTV3_05"
+          },
+          {
+            "CameraNum": 7,
+            "CameraName": "CamTV3_06"
+          },
+          {
+            "CameraNum": 8,
+            "CameraName": "CamTV3_07"
+          },
+          {
+            "CameraNum": 9,
+            "CameraName": "CamTV3_08"
+          },
+          {
+            "CameraNum": 10,
+            "CameraName": "CamTV3_09"
+          },
+          {
+            "CameraNum": 11,
+            "CameraName": "CamTV3_10"
+          }
+        ]
+      }
+    ]
+  },
+  "RadioInfo": {
+    "SelectedRadioNum": 0,
+    "Radios": [
+      {
+        "RadioNum": 0,
+        "HopCount": 2,
+        "NumFrequencies": 6,
+        "TunedToFrequencyNum": 0,
+        "ScanningIsOn": 1,
+        "Frequencies": [
+          {
+            "FrequencyNum": 0,
+            "FrequencyName": "@ALLTEAMS",
+            "Priority": 12,
+            "CarIdx": -1,
+            "EntryIdx": -1,
+            "ClubID": 0,
+            "CanScan": 1,
+            "CanSquawk": 1,
+            "Muted": 0,
+            "IsMutable": 1,
+            "IsDeletable": 0
+          },
+          {
+            "FrequencyNum": 1,
+            "FrequencyName": "@DRIVERS",
+            "Priority": 15,
+            "CarIdx": -1,
+            "EntryIdx": -1,
+            "ClubID": 0,
+            "CanScan": 1,
+            "CanSquawk": 1,
+            "Muted": 0,
+            "IsMutable": 1,
+            "IsDeletable": 0
+          },
+          {
+            "FrequencyNum": 2,
+            "FrequencyName": "@TEAM",
+            "Priority": 60,
+            "CarIdx": 2,
+            "EntryIdx": -1,
+            "ClubID": 0,
+            "CanScan": 1,
+            "CanSquawk": 1,
+            "Muted": 0,
+            "IsMutable": 0,
+            "IsDeletable": 0
+          },
+          {
+            "FrequencyNum": 3,
+            "FrequencyName": "@CLUB",
+            "Priority": 20,
+            "CarIdx": -1,
+            "EntryIdx": -1,
+            "ClubID": 34,
+            "CanScan": 1,
+            "CanSquawk": 1,
+            "Muted": 0,
+            "IsMutable": 1,
+            "IsDeletable": 0
+          },
+          {
+            "FrequencyNum": 4,
+            "FrequencyName": "@RACECONTROL",
+            "Priority": 80,
+            "CarIdx": -1,
+            "EntryIdx": -1,
+            "ClubID": 0,
+            "CanScan": 1,
+            "CanSquawk": 0,
+            "Muted": 0,
+            "IsMutable": 0,
+            "IsDeletable": 0
+          },
+          {
+            "FrequencyNum": 5,
+            "FrequencyName": "@PRIVATE",
+            "Priority": 70,
+            "CarIdx": -1,
+            "EntryIdx": 2,
+            "ClubID": 0,
+            "CanScan": 1,
+            "CanSquawk": 1,
+            "Muted": 0,
+            "IsMutable": 0,
+            "IsDeletable": 0
+          }
+        ]
+      }
+    ]
+  },
+  "DriverInfo": {
+    "DriverCarIdx": 2,
+    "DriverUserID": 968989,
+    "PaceCarIdx": -1,
+    "DriverHeadPosX": -0.276,
+    "DriverHeadPosY": 0.355,
+    "DriverHeadPosZ": 0.722,
+    "DriverCarIsElectric": 0,
+    "DriverCarIdleRPM": 960,
+    "DriverCarRedLine": 7500,
+    "DriverCarEngCylinderCount": 6,
+    "DriverCarFuelKgPerLtr": 0.75,
+    "DriverCarFuelMaxLtr": 104,
+    "DriverCarMaxFuelPct": 1,
+    "DriverCarGearNumForward": 7,
+    "DriverCarGearNeutral": 1,
+    "DriverCarGearReverse": 1,
+    "DriverCarSLFirstRPM": 6400,
+    "DriverCarSLShiftRPM": 7400,
+    "DriverCarSLLastRPM": 7400,
+    "DriverCarSLBlinkRPM": 7425,
+    "DriverCarVersion": "2024.10.09.01",
+    "DriverPitTrkPct": 0.026954,
+    "DriverCarEstLapTime": 99.1851,
+    "DriverSetupName": "sprint_open.sto",
+    "DriverSetupIsModified": 1,
+    "DriverSetupLoadTypeName": "user",
+    "DriverSetupPassedTech": 1,
+    "DriverIncidentCount": 19,
+    "Drivers": [
+      {
+        "CarIdx": 0,
+        "UserName": "Mark A Moore",
+        "AbbrevName": "Moore, M",
+        "Initials": "MM",
+        "UserID": 1055601,
+        "TeamID": 0,
+        "TeamName": "Mark A Moore",
+        "CarNumber": "235",
+        "CarNumberRaw": 235,
+        "CarPath": "bmwm4gt4",
+        "CarClassID": 2264,
+        "CarID": 122,
+        "CarIsPaceCar": 0,
+        "CarIsAI": 0,
+        "CarIsElectric": 0,
+        "CarScreenName": "BMW M4 GT4",
+        "CarScreenNameShort": "BMW M4 GT4",
+        "CarClassShortName": "BMW M4 GT4",
+        "CarClassRelSpeed": 49,
+        "CarClassLicenseLevel": 0,
+        "CarClassMaxFuelPct": "1.000 %",
+        "CarClassWeightPenalty": "0.000 kg",
+        "CarClassPowerAdjust": "0.000 %",
+        "CarClassDryTireSetLimit": "0 %",
+        "CarClassColor": 16767577,
+        "CarClassEstLapTime": 99.1851,
+        "IRating": 996,
+        "LicLevel": 10,
+        "LicSubLevel": 237,
+        "LicString": "C 2.37",
+        "LicColor": 16706564,
+        "IsSpectator": 0,
+        "CarDesignStr": "13,ffffff,0233db,f51c00,ffffff",
+        "HelmetDesignStr": "9,f7ff00,ffffff,1aff00",
+        "SuitDesignStr": "4,fffcfc,000000,ffffff",
+        "BodyType": 0,
+        "FaceType": 4,
+        "HelmetType": 0,
+        "CarNumberDesignStr": "0,0,000000,ffffff,777777",
+        "CarSponsor_1": 188,
+        "CarSponsor_2": 49,
+        "ClubName": "Australia/NZ",
+        "ClubID": 34,
+        "DivisionName": "Division 6",
+        "DivisionID": 5,
+        "CurDriverIncidentCount": -1,
+        "TeamIncidentCount": -1
+      },
+      {
+        "CarIdx": 1,
+        "UserName": "Haiyan Xing",
+        "AbbrevName": "Xing, H",
+        "Initials": "HX",
+        "UserID": 922808,
+        "TeamID": 0,
+        "TeamName": "Haiyan Xing",
+        "CarNumber": "2",
+        "CarNumberRaw": 2,
+        "CarPath": "mx5 mx52016",
+        "CarClassID": 74,
+        "CarID": 67,
+        "CarIsPaceCar": 0,
+        "CarIsAI": 0,
+        "CarIsElectric": 0,
+        "CarScreenName": "Mazda MX-5 Cup",
+        "CarScreenNameShort": "MX-5 Cup",
+        "CarClassShortName": "MX5 Cup 2016",
+        "CarClassRelSpeed": 35,
+        "CarClassLicenseLevel": 0,
+        "CarClassMaxFuelPct": "1.000 %",
+        "CarClassWeightPenalty": "0.000 kg",
+        "CarClassPowerAdjust": "0.000 %",
+        "CarClassDryTireSetLimit": "0 %",
+        "CarClassColor": 11430911,
+        "CarClassEstLapTime": 107.6288,
+        "IRating": 5729,
+        "LicLevel": 15,
+        "LicSubLevel": 345,
+        "LicString": "B 3.45",
+        "LicColor": 50946,
+        "IsSpectator": 0,
+        "CarDesignStr": "16,000000,ffa800,ffffff,d0f324",
+        "HelmetDesignStr": "60,000000,c0f324,ffffff",
+        "SuitDesignStr": "23,000000,d0f324,ffffff",
+        "BodyType": 0,
+        "FaceType": 0,
+        "HelmetType": 0,
+        "CarNumberDesignStr": "0,0,d0f324,777777,000000",
+        "CarSponsor_1": 98,
+        "CarSponsor_2": 189,
+        "ClubName": "Australia/NZ",
+        "ClubID": 34,
+        "DivisionName": "Division 1",
+        "DivisionID": 0,
+        "CurDriverIncidentCount": -1,
+        "TeamIncidentCount": -1
+      },
+      {
+        "CarIdx": 2,
+        "UserName": "Tarik Alani",
+        "AbbrevName": "Alani, T",
+        "Initials": "TA",
+        "UserID": 968989,
+        "TeamID": 0,
+        "TeamName": "Tarik Alani",
+        "CarNumber": "3",
+        "CarNumberRaw": 3,
+        "CarPath": "bmwm4gt4",
+        "CarClassID": 2264,
+        "CarID": 122,
+        "CarIsPaceCar": 0,
+        "CarIsAI": 0,
+        "CarIsElectric": 0,
+        "CarScreenName": "BMW M4 GT4",
+        "CarScreenNameShort": "BMW M4 GT4",
+        "CarClassShortName": "BMW M4 GT4",
+        "CarClassRelSpeed": 49,
+        "CarClassLicenseLevel": 0,
+        "CarClassMaxFuelPct": "1.000 %",
+        "CarClassWeightPenalty": "0.000 kg",
+        "CarClassPowerAdjust": "0.000 %",
+        "CarClassDryTireSetLimit": "0 %",
+        "CarClassColor": 16767577,
+        "CarClassEstLapTime": 99.1851,
+        "IRating": 1536,
+        "LicLevel": 15,
+        "LicSubLevel": 396,
+        "LicString": "B 3.96",
+        "LicColor": 50946,
+        "IsSpectator": 0,
+        "CarDesignStr": "6,000000,ffffff,00107c",
+        "HelmetDesignStr": "7,000000,ffffff,00107c",
+        "SuitDesignStr": "30,000000,ffffff,00015d",
+        "BodyType": 0,
+        "FaceType": 0,
+        "HelmetType": 0,
+        "CarNumberDesignStr": "0,0,ffffff,777777,000000",
+        "CarSponsor_1": 0,
+        "CarSponsor_2": 0,
+        "ClubName": "Australia/NZ",
+        "ClubID": 34,
+        "DivisionName": "Division 5",
+        "DivisionID": 4,
+        "CurDriverIncidentCount": 19,
+        "TeamIncidentCount": 19
+      },
+      {
+        "CarIdx": 3,
+        "UserName": "Tom South3",
+        "AbbrevName": "South3, T",
+        "Initials": "TS",
+        "UserID": 772818,
+        "TeamID": 0,
+        "TeamName": "Tom South3",
+        "CarNumber": "4",
+        "CarNumberRaw": 4,
+        "CarPath": "bmwm4gt4",
+        "CarClassID": 2264,
+        "CarID": 122,
+        "CarIsPaceCar": 0,
+        "CarIsAI": 0,
+        "CarIsElectric": 0,
+        "CarScreenName": "BMW M4 GT4",
+        "CarScreenNameShort": "BMW M4 GT4",
+        "CarClassShortName": "BMW M4 GT4",
+        "CarClassRelSpeed": 49,
+        "CarClassLicenseLevel": 0,
+        "CarClassMaxFuelPct": "1.000 %",
+        "CarClassWeightPenalty": "0.000 kg",
+        "CarClassPowerAdjust": "0.000 %",
+        "CarClassDryTireSetLimit": "0 %",
+        "CarClassColor": 16767577,
+        "CarClassEstLapTime": 99.1851,
+        "IRating": 1539,
+        "LicLevel": 10,
+        "LicSubLevel": 244,
+        "LicString": "C 2.44",
+        "LicColor": 16706564,
+        "IsSpectator": 0,
+        "CarDesignStr": "15,0003ff,0003ff,ebff00",
+        "HelmetDesignStr": "22,0003ff,0003ff,ebff00",
+        "SuitDesignStr": "0,000000,000000,000000",
+        "BodyType": 0,
+        "FaceType": 2,
+        "HelmetType": 0,
+        "CarNumberDesignStr": "0,0,ffffff,777777,000000",
+        "CarSponsor_1": 0,
+        "CarSponsor_2": 0,
+        "ClubName": "Australia/NZ",
+        "ClubID": 34,
+        "DivisionName": "Division 4",
+        "DivisionID": 3,
+        "CurDriverIncidentCount": -1,
+        "TeamIncidentCount": -1
+      },
+      {
+        "CarIdx": 5,
+        "UserName": "Zac Cranston3",
+        "AbbrevName": "Cranston3, Z",
+        "Initials": "ZC",
+        "UserID": 1012561,
+        "TeamID": 0,
+        "TeamName": "Zac Cranston3",
+        "CarNumber": "6",
+        "CarNumberRaw": 6,
+        "CarPath": "toyotagr86",
+        "CarClassID": 4012,
+        "CarID": 160,
+        "CarIsPaceCar": 0,
+        "CarIsAI": 0,
+        "CarIsElectric": 0,
+        "CarScreenName": "Toyota GR86",
+        "CarScreenNameShort": "Toyota GR86",
+        "CarClassShortName": "Toyota GR86",
+        "CarClassRelSpeed": 36,
+        "CarClassLicenseLevel": 0,
+        "CarClassMaxFuelPct": "1.000 %",
+        "CarClassWeightPenalty": "0.000 kg",
+        "CarClassPowerAdjust": "0.000 %",
+        "CarClassDryTireSetLimit": "0 %",
+        "CarClassColor": 16734344,
+        "CarClassEstLapTime": 109.3494,
+        "IRating": 1515,
+        "LicLevel": 11,
+        "LicSubLevel": 303,
+        "LicString": "C 3.03",
+        "LicColor": 16706564,
+        "IsSpectator": 0,
+        "CarDesignStr": "18,b0e307,020202,000000,000000",
+        "HelmetDesignStr": "45,a5fd00,87ff00,000000",
+        "SuitDesignStr": "1,000000,000000,000000",
+        "BodyType": 0,
+        "FaceType": 0,
+        "HelmetType": 0,
+        "CarNumberDesignStr": "0,0,ffffff,777777,000000",
+        "CarSponsor_1": 175,
+        "CarSponsor_2": 83,
+        "ClubName": "Australia/NZ",
+        "ClubID": 34,
+        "DivisionName": "Division 6",
+        "DivisionID": 5,
+        "CurDriverIncidentCount": -1,
+        "TeamIncidentCount": -1
+      },
+      {
+        "CarIdx": 6,
+        "UserName": "Christopher Manns",
+        "AbbrevName": "Manns, C",
+        "Initials": "CM",
+        "UserID": 1108372,
+        "TeamID": 0,
+        "TeamName": "Christopher Manns",
+        "CarNumber": "7",
+        "CarNumberRaw": 7,
+        "CarPath": "mx5 mx52016",
+        "CarClassID": 74,
+        "CarID": 67,
+        "CarIsPaceCar": 0,
+        "CarIsAI": 0,
+        "CarIsElectric": 0,
+        "CarScreenName": "Mazda MX-5 Cup",
+        "CarScreenNameShort": "MX-5 Cup",
+        "CarClassShortName": "MX5 Cup 2016",
+        "CarClassRelSpeed": 35,
+        "CarClassLicenseLevel": 0,
+        "CarClassMaxFuelPct": "1.000 %",
+        "CarClassWeightPenalty": "0.000 kg",
+        "CarClassPowerAdjust": "0.000 %",
+        "CarClassDryTireSetLimit": "0 %",
+        "CarClassColor": 11430911,
+        "CarClassEstLapTime": 107.6288,
+        "IRating": 1523,
+        "LicLevel": 7,
+        "LicSubLevel": 334,
+        "LicString": "D 3.34",
+        "LicColor": 16550439,
+        "IsSpectator": 0,
+        "CarDesignStr": "1,0300c2,ffee47,111111",
+        "HelmetDesignStr": "64,0fa100,ffe500,111111",
+        "SuitDesignStr": "1,0300c2,ffee47,111111",
+        "BodyType": 0,
+        "FaceType": 0,
+        "HelmetType": 0,
+        "CarNumberDesignStr": "0,0,ffffff,777777,000000",
+        "CarSponsor_1": 0,
+        "CarSponsor_2": 0,
+        "ClubName": "Australia/NZ",
+        "ClubID": 34,
+        "DivisionName": "Rookie",
+        "DivisionID": 10,
+        "CurDriverIncidentCount": -1,
+        "TeamIncidentCount": -1
+      },
+      {
+        "CarIdx": 7,
+        "UserName": "Shota Morikubo",
+        "AbbrevName": "Morikubo, S",
+        "Initials": "SM",
+        "UserID": 548284,
+        "TeamID": 0,
+        "TeamName": "Shota Morikubo",
+        "CarNumber": "8",
+        "CarNumberRaw": 8,
+        "CarPath": "toyotagr86",
+        "CarClassID": 4012,
+        "CarID": 160,
+        "CarIsPaceCar": 0,
+        "CarIsAI": 0,
+        "CarIsElectric": 0,
+        "CarScreenName": "Toyota GR86",
+        "CarScreenNameShort": "Toyota GR86",
+        "CarClassShortName": "Toyota GR86",
+        "CarClassRelSpeed": 36,
+        "CarClassLicenseLevel": 0,
+        "CarClassMaxFuelPct": "1.000 %",
+        "CarClassWeightPenalty": "0.000 kg",
+        "CarClassPowerAdjust": "0.000 %",
+        "CarClassDryTireSetLimit": "0 %",
+        "CarClassColor": 16734344,
+        "CarClassEstLapTime": 109.3494,
+        "IRating": 2473,
+        "LicLevel": 18,
+        "LicSubLevel": 246,
+        "LicString": "A 2.46",
+        "LicColor": 87003,
+        "IsSpectator": 0,
+        "CarDesignStr": "1,ff0000,00ff00,0000ff",
+        "HelmetDesignStr": "1,111111,b82f37,284a94",
+        "SuitDesignStr": "1,111111,b82f37,284a94",
+        "BodyType": 0,
+        "FaceType": 0,
+        "HelmetType": 0,
+        "CarNumberDesignStr": "0,0,ffffff,777777,000000",
+        "CarSponsor_1": 0,
+        "CarSponsor_2": 0,
+        "ClubName": "Japan",
+        "ClubID": 48,
+        "DivisionName": "Division 2",
+        "DivisionID": 1,
+        "CurDriverIncidentCount": -1,
+        "TeamIncidentCount": -1
+      },
+      {
+        "CarIdx": 8,
+        "UserName": "Brandon Kemp",
+        "AbbrevName": "Kemp, B",
+        "Initials": "BK",
+        "UserID": 1134533,
+        "TeamID": 0,
+        "TeamName": "Brandon Kemp",
+        "CarNumber": "9",
+        "CarNumberRaw": 9,
+        "CarPath": "toyotagr86",
+        "CarClassID": 4012,
+        "CarID": 160,
+        "CarIsPaceCar": 0,
+        "CarIsAI": 0,
+        "CarIsElectric": 0,
+        "CarScreenName": "Toyota GR86",
+        "CarScreenNameShort": "Toyota GR86",
+        "CarClassShortName": "Toyota GR86",
+        "CarClassRelSpeed": 36,
+        "CarClassLicenseLevel": 0,
+        "CarClassMaxFuelPct": "1.000 %",
+        "CarClassWeightPenalty": "0.000 kg",
+        "CarClassPowerAdjust": "0.000 %",
+        "CarClassDryTireSetLimit": "0 %",
+        "CarClassColor": 16734344,
+        "CarClassEstLapTime": 109.3494,
+        "IRating": 1233,
+        "LicLevel": 6,
+        "LicSubLevel": 245,
+        "LicString": "D 2.45",
+        "LicColor": 16550439,
+        "IsSpectator": 0,
+        "CarDesignStr": "1,ff0000,00ff00,0000ff",
+        "HelmetDesignStr": "10,00ffff,03e2ff,17f0fd",
+        "SuitDesignStr": "1,00f0ff,00fff7,00ffff",
+        "BodyType": 0,
+        "FaceType": 0,
+        "HelmetType": 0,
+        "CarNumberDesignStr": "0,0,ffffff,777777,000000",
+        "CarSponsor_1": 0,
+        "CarSponsor_2": 0,
+        "ClubName": "Australia/NZ",
+        "ClubID": 34,
+        "DivisionName": "Division 6",
+        "DivisionID": 5,
+        "CurDriverIncidentCount": -1,
+        "TeamIncidentCount": -1
+      },
+      {
+        "CarIdx": 10,
+        "UserName": "James Eady2",
+        "AbbrevName": "Eady2, J",
+        "Initials": "JE",
+        "UserID": 1129427,
+        "TeamID": 0,
+        "TeamName": "James Eady2",
+        "CarNumber": "11",
+        "CarNumberRaw": 11,
+        "CarPath": "toyotagr86",
+        "CarClassID": 4012,
+        "CarID": 160,
+        "CarIsPaceCar": 0,
+        "CarIsAI": 0,
+        "CarIsElectric": 0,
+        "CarScreenName": "Toyota GR86",
+        "CarScreenNameShort": "Toyota GR86",
+        "CarClassShortName": "Toyota GR86",
+        "CarClassRelSpeed": 36,
+        "CarClassLicenseLevel": 0,
+        "CarClassMaxFuelPct": "1.000 %",
+        "CarClassWeightPenalty": "0.000 kg",
+        "CarClassPowerAdjust": "0.000 %",
+        "CarClassDryTireSetLimit": "0 %",
+        "CarClassColor": 16734344,
+        "CarClassEstLapTime": 109.3494,
+        "IRating": 1229,
+        "LicLevel": 6,
+        "LicSubLevel": 245,
+        "LicString": "D 2.45",
+        "LicColor": 16550439,
+        "IsSpectator": 0,
+        "CarDesignStr": "1,ff0000,00ff00,0000ff",
+        "HelmetDesignStr": "37,372a75,ffffff,f1732e",
+        "SuitDesignStr": "1,372a75,ffffff,f1732e",
+        "BodyType": 0,
+        "FaceType": 8,
+        "HelmetType": 0,
+        "CarNumberDesignStr": "0,0,ffffff,777777,000000",
+        "CarSponsor_1": 0,
+        "CarSponsor_2": 0,
+        "ClubName": "Australia/NZ",
+        "ClubID": 34,
+        "DivisionName": "Division 1",
+        "DivisionID": 0,
+        "CurDriverIncidentCount": -1,
+        "TeamIncidentCount": -1
+      },
+      {
+        "CarIdx": 12,
+        "UserName": "Rowan Goodwin",
+        "AbbrevName": "Goodwin, R",
+        "Initials": "RG",
+        "UserID": 666878,
+        "TeamID": 0,
+        "TeamName": "Rowan Goodwin",
+        "CarNumber": "13",
+        "CarNumberRaw": 13,
+        "CarPath": "bmwm4gt4",
+        "CarClassID": 2264,
+        "CarID": 122,
+        "CarIsPaceCar": 0,
+        "CarIsAI": 0,
+        "CarIsElectric": 0,
+        "CarScreenName": "BMW M4 GT4",
+        "CarScreenNameShort": "BMW M4 GT4",
+        "CarClassShortName": "BMW M4 GT4",
+        "CarClassRelSpeed": 49,
+        "CarClassLicenseLevel": 0,
+        "CarClassMaxFuelPct": "1.000 %",
+        "CarClassWeightPenalty": "0.000 kg",
+        "CarClassPowerAdjust": "0.000 %",
+        "CarClassDryTireSetLimit": "0 %",
+        "CarClassColor": 16767577,
+        "CarClassEstLapTime": 99.1851,
+        "IRating": 1429,
+        "LicLevel": 13,
+        "LicSubLevel": 119,
+        "LicString": "B 1.19",
+        "LicColor": 50946,
+        "IsSpectator": 0,
+        "CarDesignStr": "17,000000,575757,e4ec28",
+        "HelmetDesignStr": "36,ffffff,4f8519,9ce58c",
+        "SuitDesignStr": "1,000000,51d4d8,000000",
+        "BodyType": 0,
+        "FaceType": 8,
+        "HelmetType": 0,
+        "CarNumberDesignStr": "0,0,ffffff,777777,000000",
+        "CarSponsor_1": 49,
+        "CarSponsor_2": 148,
+        "ClubName": "Australia/NZ",
+        "ClubID": 34,
+        "DivisionName": "Division 4",
+        "DivisionID": 3,
+        "CurDriverIncidentCount": -1,
+        "TeamIncidentCount": -1
+      }
+    ]
+  },
+  "SplitTimeInfo": {
+    "Sectors": [
+      {
+        "SectorNum": 0,
+        "SectorStartPct": 0
+      },
+      {
+        "SectorNum": 1,
+        "SectorStartPct": 0.13758
+      },
+      {
+        "SectorNum": 2,
+        "SectorStartPct": 0.279413
+      },
+      {
+        "SectorNum": 3,
+        "SectorStartPct": 0.451816
+      },
+      {
+        "SectorNum": 4,
+        "SectorStartPct": 0.561025
+      },
+      {
+        "SectorNum": 5,
+        "SectorStartPct": 0.737456
+      },
+      {
+        "SectorNum": 6,
+        "SectorStartPct": 0.879438
+      }
+    ]
+  },
+  "CarSetup": {
+    "UpdateCount": 6,
+    "Tires": {
+      "TireType": {
+        "TireType": "Dry"
+      },
+      "LeftFront": {
+        "StartingPressure": "159 kPa",
+        "LastHotPressure": "159 kPa",
+        "LastTempsOMI": "47C, 47C, 47C",
+        "TreadRemaining": "100%, 100%, 100%"
+      },
+      "LeftRear": {
+        "StartingPressure": "165 kPa",
+        "LastHotPressure": "166 kPa",
+        "LastTempsOMI": "47C, 47C, 47C",
+        "TreadRemaining": "100%, 100%, 100%"
+      },
+      "RightFront": {
+        "StartingPressure": "159 kPa",
+        "LastHotPressure": "159 kPa",
+        "LastTempsIMO": "47C, 47C, 47C",
+        "TreadRemaining": "100%, 100%, 100%"
+      },
+      "RightRear": {
+        "StartingPressure": "165 kPa",
+        "LastHotPressure": "166 kPa",
+        "LastTempsIMO": "47C, 47C, 47C",
+        "TreadRemaining": "100%, 100%, 100%"
+      }
+    },
+    "Chassis": {
+      "Front": {
+        "ArbSetting": 1,
+        "ToeIn": "-2.8 mm",
+        "CrossWeight": "50.0%"
+      },
+      "LeftFront": {
+        "CornerWeight": "3835 N",
+        "RideHeight": "124.4 mm",
+        "SpringRate": "180 N/mm",
+        "SpringPerchOffset": "90.0 mm",
+        "BumpStiffness": "+10 clicks",
+        "ReboundStiffness": "+10 clicks",
+        "Camber": "-3.5 deg"
+      },
+      "LeftRear": {
+        "CornerWeight": "3742 N",
+        "RideHeight": "137.9 mm",
+        "SpringRate": "150 N/mm",
+        "SpringPerchOffset": "98.0 mm",
+        "BumpStiffness": "+10 clicks",
+        "ReboundStiffness": "+10 clicks",
+        "Camber": "-2.5 deg",
+        "ToeIn": "+0.1 mm"
+      },
+      "InCarDials": {
+        "BrakePressureBias": "59.0%",
+        "BrakePads": "Medium friction",
+        "DscSetting": "MDM",
+        "FdsSetting": 1
+      },
+      "RightFront": {
+        "CornerWeight": "3835 N",
+        "RideHeight": "124.4 mm",
+        "SpringRate": "180 N/mm",
+        "SpringPerchOffset": "90.0 mm",
+        "BumpStiffness": "+10 clicks",
+        "ReboundStiffness": "+10 clicks",
+        "Camber": "-3.5 deg"
+      },
+      "RightRear": {
+        "CornerWeight": "3742 N",
+        "RideHeight": "137.9 mm",
+        "SpringRate": "150 N/mm",
+        "SpringPerchOffset": "98.0 mm",
+        "BumpStiffness": "+10 clicks",
+        "ReboundStiffness": "+10 clicks",
+        "Camber": "-2.5 deg",
+        "ToeIn": "+0.1 mm"
+      },
+      "Rear": {
+        "FuelLevel": "50.0 L",
+        "ArbSetting": 2,
+        "WingSetting": 5
+      }
+    }
+  }
+}

@@ -1,0 +1,1762 @@
+{
+  "WeekendInfo": {
+    "TrackName": "oschersleben bcourse",
+    "TrackID": 455,
+    "TrackLength": "2.39 km",
+    "TrackLengthOfficial": "2.60 km",
+    "TrackDisplayName": "Motorsport Arena Oschersleben",
+    "TrackDisplayShortName": "B Course",
+    "TrackConfigName": "B Course",
+    "TrackCity": "Oschersleben",
+    "TrackCountry": "Germany",
+    "TrackAltitude": "86.81 m",
+    "TrackLatitude": "52.027088 m",
+    "TrackLongitude": "11.280429 m",
+    "TrackNorthOffset": "1.8851 rad",
+    "TrackNumTurns": 8,
+    "TrackPitSpeedLimit": "60.00 kph",
+    "TrackType": "road course",
+    "TrackDirection": "neutral",
+    "TrackWeatherType": "Realistic",
+    "TrackSkies": "Dynamic",
+    "TrackSurfaceTemp": "24.57 C",
+    "TrackAirTemp": "18.57 C",
+    "TrackAirPressure": "29.48 Hg",
+    "TrackWindVel": "1.80 m/s",
+    "TrackWindDir": "5.84 rad",
+    "TrackRelativeHumidity": "92 %",
+    "TrackFogLevel": "0 %",
+    "TrackPrecipitation": "0 %",
+    "TrackCleanup": 1,
+    "TrackDynamicTrack": 1,
+    "TrackVersion": "2024.08.22.02",
+    "SeriesID": 562,
+    "SeasonID": 5031,
+    "SessionID": 256385829,
+    "SubSessionID": 72760736,
+    "LeagueID": 0,
+    "Official": 1,
+    "RaceWeek": 9,
+    "EventType": "Race",
+    "Category": "SportsCar",
+    "SimMode": "full",
+    "TeamRacing": 0,
+    "MinDrivers": 0,
+    "MaxDrivers": 1,
+    "DCRuleSet": "None",
+    "QualifierMustStartRace": 0,
+    "NumCarClasses": 1,
+    "NumCarTypes": 2,
+    "HeatRacing": 0,
+    "BuildType": "Release",
+    "BuildTarget": "Members",
+    "BuildVersion": "2024.10.09.01",
+    "RaceFarm": "US-East-OH",
+    "WeekendOptions": {
+      "NumStarters": 16,
+      "StartingGrid": "2x2 inline pole on left",
+      "QualifyScoring": "best lap",
+      "CourseCautions": "off",
+      "StandingStart": 0,
+      "ShortParadeLap": 0,
+      "Restarts": "double file lapped cars behind",
+      "WeatherType": "Realistic",
+      "Skies": "Dynamic",
+      "WindDirection": "N",
+      "WindSpeed": "3.22 km/h",
+      "WeatherTemp": "25.56 C",
+      "RelativeHumidity": "45 %",
+      "FogLevel": "0 %",
+      "TimeOfDay": "8:05 am",
+      "Date": "2025-05-01T00:00:00.000Z",
+      "EarthRotationSpeedupFactor": 1,
+      "Unofficial": 0,
+      "CommercialMode": "consumer",
+      "NightMode": "variable",
+      "IsFixedSetup": 1,
+      "StrictLapsChecking": "default",
+      "HasOpenRegistration": 0,
+      "HardcoreLevel": 1,
+      "NumJokerLaps": 0,
+      "IncidentLimit": 17,
+      "FastRepairsLimit": 1,
+      "GreenWhiteCheckeredLimit": 0
+    },
+    "TelemetryOptions": {
+      "TelemetryDiskFile": ""
+    }
+  },
+  "SessionInfo": {
+    "Sessions": [
+      {
+        "SessionNum": 0,
+        "SessionLaps": "unlimited",
+        "SessionTime": "180.0000 sec",
+        "SessionNumLapsToAvg": 0,
+        "SessionType": "Practice",
+        "SessionTrackRubberState": "moderately low usage",
+        "SessionName": "PRACTICE",
+        "SessionSubType": null,
+        "SessionSkipped": 0,
+        "SessionRunGroupsUsed": 0,
+        "SessionEnforceTireCompoundChange": 0,
+        "ResultsPositions": [
+          {
+            "Position": 1,
+            "ClassPosition": 0,
+            "CarIdx": 1,
+            "Lap": 0,
+            "Time": -1,
+            "FastestLap": -1,
+            "FastestTime": -1,
+            "LastTime": -1,
+            "LapsLed": 0,
+            "LapsComplete": 0,
+            "JokerLapsComplete": 0,
+            "LapsDriven": 1.569,
+            "Incidents": 0,
+            "ReasonOutId": 0,
+            "ReasonOutStr": "Running"
+          },
+          {
+            "Position": 2,
+            "ClassPosition": 1,
+            "CarIdx": 2,
+            "Lap": 0,
+            "Time": -1,
+            "FastestLap": -1,
+            "FastestTime": -1,
+            "LastTime": -1,
+            "LapsLed": 0,
+            "LapsComplete": 0,
+            "JokerLapsComplete": 0,
+            "LapsDriven": 1.419,
+            "Incidents": 2,
+            "ReasonOutId": 0,
+            "ReasonOutStr": "Running"
+          },
+          {
+            "Position": 3,
+            "ClassPosition": 2,
+            "CarIdx": 3,
+            "Lap": 0,
+            "Time": -1,
+            "FastestLap": -1,
+            "FastestTime": -1,
+            "LastTime": -1,
+            "LapsLed": 0,
+            "LapsComplete": 0,
+            "JokerLapsComplete": 0,
+            "LapsDriven": 0.776,
+            "Incidents": 0,
+            "ReasonOutId": 0,
+            "ReasonOutStr": "Running"
+          },
+          {
+            "Position": 4,
+            "ClassPosition": 3,
+            "CarIdx": 4,
+            "Lap": 0,
+            "Time": -1,
+            "FastestLap": -1,
+            "FastestTime": -1,
+            "LastTime": -1,
+            "LapsLed": 0,
+            "LapsComplete": 0,
+            "JokerLapsComplete": 0,
+            "LapsDriven": 0,
+            "Incidents": 0,
+            "ReasonOutId": 0,
+            "ReasonOutStr": "Running"
+          },
+          {
+            "Position": 5,
+            "ClassPosition": 4,
+            "CarIdx": 5,
+            "Lap": 0,
+            "Time": -1,
+            "FastestLap": -1,
+            "FastestTime": -1,
+            "LastTime": -1,
+            "LapsLed": 0,
+            "LapsComplete": 0,
+            "JokerLapsComplete": 0,
+            "LapsDriven": 1.52,
+            "Incidents": 0,
+            "ReasonOutId": 0,
+            "ReasonOutStr": "Running"
+          },
+          {
+            "Position": 6,
+            "ClassPosition": 5,
+            "CarIdx": 6,
+            "Lap": 0,
+            "Time": -1,
+            "FastestLap": -1,
+            "FastestTime": -1,
+            "LastTime": -1,
+            "LapsLed": 0,
+            "LapsComplete": 0,
+            "JokerLapsComplete": 0,
+            "LapsDriven": 1.354,
+            "Incidents": 2,
+            "ReasonOutId": 0,
+            "ReasonOutStr": "Running"
+          },
+          {
+            "Position": 7,
+            "ClassPosition": 6,
+            "CarIdx": 7,
+            "Lap": 0,
+            "Time": -1,
+            "FastestLap": -1,
+            "FastestTime": -1,
+            "LastTime": -1,
+            "LapsLed": 0,
+            "LapsComplete": 0,
+            "JokerLapsComplete": 0,
+            "LapsDriven": 0,
+            "Incidents": 0,
+            "ReasonOutId": 0,
+            "ReasonOutStr": "Running"
+          },
+          {
+            "Position": 8,
+            "ClassPosition": 7,
+            "CarIdx": 8,
+            "Lap": 0,
+            "Time": -1,
+            "FastestLap": -1,
+            "FastestTime": -1,
+            "LastTime": -1,
+            "LapsLed": 0,
+            "LapsComplete": 0,
+            "JokerLapsComplete": 0,
+            "LapsDriven": 0,
+            "Incidents": 0,
+            "ReasonOutId": 0,
+            "ReasonOutStr": "Running"
+          },
+          {
+            "Position": 9,
+            "ClassPosition": 8,
+            "CarIdx": 9,
+            "Lap": 0,
+            "Time": -1,
+            "FastestLap": -1,
+            "FastestTime": -1,
+            "LastTime": -1,
+            "LapsLed": 0,
+            "LapsComplete": 0,
+            "JokerLapsComplete": 0,
+            "LapsDriven": 0,
+            "Incidents": 0,
+            "ReasonOutId": 0,
+            "ReasonOutStr": "Running"
+          },
+          {
+            "Position": 10,
+            "ClassPosition": 9,
+            "CarIdx": 10,
+            "Lap": 0,
+            "Time": -1,
+            "FastestLap": -1,
+            "FastestTime": -1,
+            "LastTime": -1,
+            "LapsLed": 0,
+            "LapsComplete": 0,
+            "JokerLapsComplete": 0,
+            "LapsDriven": 0.793,
+            "Incidents": 1,
+            "ReasonOutId": 0,
+            "ReasonOutStr": "Running"
+          }
+        ],
+        "ResultsFastestLap": [
+          {
+            "CarIdx": 255,
+            "FastestLap": 0,
+            "FastestTime": -1
+          }
+        ],
+        "ResultsAverageLapTime": -1,
+        "ResultsNumCautionFlags": 0,
+        "ResultsNumCautionLaps": 0,
+        "ResultsNumLeadChanges": 0,
+        "ResultsLapsComplete": -1,
+        "ResultsOfficial": 1
+      },
+      {
+        "SessionNum": 1,
+        "SessionLaps": 2,
+        "SessionTime": "480.0000 sec",
+        "SessionNumLapsToAvg": 0,
+        "SessionType": "Lone Qualify",
+        "SessionTrackRubberState": "carry over",
+        "SessionName": "QUALIFY",
+        "SessionSubType": null,
+        "SessionSkipped": 0,
+        "SessionRunGroupsUsed": 0,
+        "SessionEnforceTireCompoundChange": 0,
+        "ResultsPositions": [
+          {
+            "Position": 1,
+            "ClassPosition": 0,
+            "CarIdx": 1,
+            "Lap": 2,
+            "Time": 70.7849,
+            "FastestLap": 2,
+            "FastestTime": 70.7849,
+            "LastTime": 70.7849,
+            "LapsLed": 0,
+            "LapsComplete": 2,
+            "JokerLapsComplete": 0,
+            "LapsDriven": 0,
+            "Incidents": 0,
+            "ReasonOutId": 0,
+            "ReasonOutStr": "Running"
+          },
+          {
+            "Position": 2,
+            "ClassPosition": 1,
+            "CarIdx": 3,
+            "Lap": 2,
+            "Time": 70.7911,
+            "FastestLap": 2,
+            "FastestTime": 70.7911,
+            "LastTime": 70.7911,
+            "LapsLed": 0,
+            "LapsComplete": 2,
+            "JokerLapsComplete": 0,
+            "LapsDriven": 0,
+            "Incidents": 0,
+            "ReasonOutId": 0,
+            "ReasonOutStr": "Running"
+          },
+          {
+            "Position": 3,
+            "ClassPosition": 2,
+            "CarIdx": 8,
+            "Lap": 2,
+            "Time": 71.4914,
+            "FastestLap": 2,
+            "FastestTime": 71.4914,
+            "LastTime": 71.4914,
+            "LapsLed": 0,
+            "LapsComplete": 2,
+            "JokerLapsComplete": 0,
+            "LapsDriven": 0,
+            "Incidents": 0,
+            "ReasonOutId": 0,
+            "ReasonOutStr": "Running"
+          },
+          {
+            "Position": 4,
+            "ClassPosition": 3,
+            "CarIdx": 2,
+            "Lap": 1,
+            "Time": 71.8821,
+            "FastestLap": 1,
+            "FastestTime": 71.8821,
+            "LastTime": 71.8821,
+            "LapsLed": 0,
+            "LapsComplete": 1,
+            "JokerLapsComplete": 0,
+            "LapsDriven": 0,
+            "Incidents": 0,
+            "ReasonOutId": 0,
+            "ReasonOutStr": "Running"
+          },
+          {
+            "Position": 5,
+            "ClassPosition": 4,
+            "CarIdx": 5,
+            "Lap": 2,
+            "Time": 72.0068,
+            "FastestLap": 2,
+            "FastestTime": 72.0068,
+            "LastTime": 72.0068,
+            "LapsLed": 0,
+            "LapsComplete": 2,
+            "JokerLapsComplete": 0,
+            "LapsDriven": 0,
+            "Incidents": 0,
+            "ReasonOutId": 0,
+            "ReasonOutStr": "Running"
+          },
+          {
+            "Position": 6,
+            "ClassPosition": 5,
+            "CarIdx": 9,
+            "Lap": 2,
+            "Time": 74.4547,
+            "FastestLap": 2,
+            "FastestTime": 74.4547,
+            "LastTime": 74.4547,
+            "LapsLed": 0,
+            "LapsComplete": 2,
+            "JokerLapsComplete": 0,
+            "LapsDriven": 0,
+            "Incidents": 0,
+            "ReasonOutId": 0,
+            "ReasonOutStr": "Running"
+          }
+        ],
+        "ResultsFastestLap": [
+          {
+            "CarIdx": 1,
+            "FastestLap": 2,
+            "FastestTime": 70.7849
+          }
+        ],
+        "ResultsAverageLapTime": -1,
+        "ResultsNumCautionFlags": 0,
+        "ResultsNumCautionLaps": 0,
+        "ResultsNumLeadChanges": 0,
+        "ResultsLapsComplete": -1,
+        "ResultsOfficial": 0
+      },
+      {
+        "SessionNum": 2,
+        "SessionLaps": 13,
+        "SessionTime": "unlimited",
+        "SessionNumLapsToAvg": 0,
+        "SessionType": "Race",
+        "SessionTrackRubberState": "carry over",
+        "SessionName": "RACE",
+        "SessionSubType": null,
+        "SessionSkipped": 0,
+        "SessionRunGroupsUsed": 0,
+        "SessionEnforceTireCompoundChange": 0,
+        "ResultsPositions": null,
+        "ResultsFastestLap": [
+          {
+            "CarIdx": 255,
+            "FastestLap": 0,
+            "FastestTime": -1
+          }
+        ],
+        "ResultsAverageLapTime": -1,
+        "ResultsNumCautionFlags": 0,
+        "ResultsNumCautionLaps": 0,
+        "ResultsNumLeadChanges": 0,
+        "ResultsLapsComplete": -1,
+        "ResultsOfficial": 0
+      }
+    ]
+  },
+  "QualifyResultsInfo": {
+    "Results": [
+      {
+        "Position": 0,
+        "ClassPosition": 0,
+        "CarIdx": 1,
+        "FastestLap": 2,
+        "FastestTime": 70.7849
+      },
+      {
+        "Position": 1,
+        "ClassPosition": 1,
+        "CarIdx": 3,
+        "FastestLap": 2,
+        "FastestTime": 70.7911
+      },
+      {
+        "Position": 2,
+        "ClassPosition": 2,
+        "CarIdx": 8,
+        "FastestLap": 2,
+        "FastestTime": 71.4914
+      },
+      {
+        "Position": 3,
+        "ClassPosition": 3,
+        "CarIdx": 2,
+        "FastestLap": 1,
+        "FastestTime": 71.8821
+      },
+      {
+        "Position": 4,
+        "ClassPosition": 4,
+        "CarIdx": 5,
+        "FastestLap": 2,
+        "FastestTime": 72.0068
+      },
+      {
+        "Position": 5,
+        "ClassPosition": 5,
+        "CarIdx": 9,
+        "FastestLap": 2,
+        "FastestTime": 74.4547
+      },
+      {
+        "Position": 6,
+        "ClassPosition": 6,
+        "CarIdx": 6,
+        "FastestLap": 0,
+        "FastestTime": -1
+      },
+      {
+        "Position": 7,
+        "ClassPosition": 7,
+        "CarIdx": 7,
+        "FastestLap": 0,
+        "FastestTime": -1
+      },
+      {
+        "Position": 8,
+        "ClassPosition": 8,
+        "CarIdx": 10,
+        "FastestLap": 0,
+        "FastestTime": -1
+      },
+      {
+        "Position": 9,
+        "ClassPosition": 9,
+        "CarIdx": 4,
+        "FastestLap": 0,
+        "FastestTime": -1
+      }
+    ]
+  },
+  "CameraInfo": {
+    "Groups": [
+      {
+        "GroupNum": 1,
+        "GroupName": "Nose",
+        "Cameras": [
+          {
+            "CameraNum": 1,
+            "CameraName": "CamNose"
+          }
+        ]
+      },
+      {
+        "GroupNum": 2,
+        "GroupName": "Gearbox",
+        "Cameras": [
+          {
+            "CameraNum": 1,
+            "CameraName": "CamGearbox"
+          }
+        ]
+      },
+      {
+        "GroupNum": 3,
+        "GroupName": "Roll Bar",
+        "Cameras": [
+          {
+            "CameraNum": 1,
+            "CameraName": "CamRoll Bar"
+          }
+        ]
+      },
+      {
+        "GroupNum": 4,
+        "GroupName": "LF Susp",
+        "Cameras": [
+          {
+            "CameraNum": 1,
+            "CameraName": "CamLF Susp"
+          }
+        ]
+      },
+      {
+        "GroupNum": 5,
+        "GroupName": "LR Susp",
+        "Cameras": [
+          {
+            "CameraNum": 1,
+            "CameraName": "CamLR Susp"
+          }
+        ]
+      },
+      {
+        "GroupNum": 6,
+        "GroupName": "Gyro",
+        "Cameras": [
+          {
+            "CameraNum": 1,
+            "CameraName": "CamGyro"
+          }
+        ]
+      },
+      {
+        "GroupNum": 7,
+        "GroupName": "RF Susp",
+        "Cameras": [
+          {
+            "CameraNum": 1,
+            "CameraName": "CamRF Susp"
+          }
+        ]
+      },
+      {
+        "GroupNum": 8,
+        "GroupName": "RR Susp",
+        "Cameras": [
+          {
+            "CameraNum": 1,
+            "CameraName": "CamRR Susp"
+          }
+        ]
+      },
+      {
+        "GroupNum": 9,
+        "GroupName": "Cockpit",
+        "Cameras": [
+          {
+            "CameraNum": 1,
+            "CameraName": "CamCockpit"
+          }
+        ]
+      },
+      {
+        "GroupNum": 10,
+        "GroupName": "Scenic",
+        "IsScenic": true,
+        "Cameras": [
+          {
+            "CameraNum": 1,
+            "CameraName": "Scenic_01"
+          },
+          {
+            "CameraNum": 2,
+            "CameraName": "Scenic_02"
+          },
+          {
+            "CameraNum": 3,
+            "CameraName": "Scenic_03"
+          },
+          {
+            "CameraNum": 4,
+            "CameraName": "Scenic_04"
+          },
+          {
+            "CameraNum": 5,
+            "CameraName": "Scenic_05"
+          },
+          {
+            "CameraNum": 6,
+            "CameraName": "Scenic_06"
+          },
+          {
+            "CameraNum": 7,
+            "CameraName": "Scenic_07"
+          },
+          {
+            "CameraNum": 8,
+            "CameraName": "Scenic_08"
+          },
+          {
+            "CameraNum": 9,
+            "CameraName": "Scenic_09"
+          },
+          {
+            "CameraNum": 10,
+            "CameraName": "Scenic_10"
+          }
+        ]
+      },
+      {
+        "GroupNum": 11,
+        "GroupName": "TV1",
+        "Cameras": [
+          {
+            "CameraNum": 1,
+            "CameraName": "CamTV1_00"
+          },
+          {
+            "CameraNum": 2,
+            "CameraName": "CamTV1_01"
+          },
+          {
+            "CameraNum": 3,
+            "CameraName": "CamTV1_02"
+          },
+          {
+            "CameraNum": 4,
+            "CameraName": "CamTV1_03"
+          },
+          {
+            "CameraNum": 5,
+            "CameraName": "CamTV1_04"
+          },
+          {
+            "CameraNum": 6,
+            "CameraName": "CamTV1_05"
+          }
+        ]
+      },
+      {
+        "GroupNum": 12,
+        "GroupName": "TV2",
+        "Cameras": [
+          {
+            "CameraNum": 1,
+            "CameraName": "CamTV2_00"
+          },
+          {
+            "CameraNum": 2,
+            "CameraName": "CamTV2_01"
+          },
+          {
+            "CameraNum": 3,
+            "CameraName": "CamTV2_02"
+          },
+          {
+            "CameraNum": 4,
+            "CameraName": "CamTV2_03"
+          },
+          {
+            "CameraNum": 5,
+            "CameraName": "CamTV2_05"
+          },
+          {
+            "CameraNum": 6,
+            "CameraName": "CamTV2_06"
+          },
+          {
+            "CameraNum": 7,
+            "CameraName": "CamTV2_07"
+          },
+          {
+            "CameraNum": 8,
+            "CameraName": "CamTV2_04"
+          }
+        ]
+      },
+      {
+        "GroupNum": 13,
+        "GroupName": "TV3",
+        "Cameras": [
+          {
+            "CameraNum": 1,
+            "CameraName": "CamTV3_00"
+          },
+          {
+            "CameraNum": 2,
+            "CameraName": "CamTV3_05"
+          },
+          {
+            "CameraNum": 3,
+            "CameraName": "CamTV3_01"
+          },
+          {
+            "CameraNum": 4,
+            "CameraName": "CamTV3_02"
+          },
+          {
+            "CameraNum": 5,
+            "CameraName": "CamTV3_03"
+          },
+          {
+            "CameraNum": 6,
+            "CameraName": "CamTV3_04"
+          }
+        ]
+      },
+      {
+        "GroupNum": 14,
+        "GroupName": "TV Static",
+        "Cameras": [
+          {
+            "CameraNum": 1,
+            "CameraName": "CamTV4_00"
+          },
+          {
+            "CameraNum": 2,
+            "CameraName": "CamTV4_04"
+          },
+          {
+            "CameraNum": 3,
+            "CameraName": "CamTV4_05"
+          },
+          {
+            "CameraNum": 4,
+            "CameraName": "CamTV4_06"
+          },
+          {
+            "CameraNum": 5,
+            "CameraName": "CamTV4_07"
+          },
+          {
+            "CameraNum": 6,
+            "CameraName": "CamTV4_08"
+          },
+          {
+            "CameraNum": 7,
+            "CameraName": "CamTV4_09"
+          },
+          {
+            "CameraNum": 8,
+            "CameraName": "CamTV4_10"
+          },
+          {
+            "CameraNum": 9,
+            "CameraName": "CamTV4_01"
+          },
+          {
+            "CameraNum": 10,
+            "CameraName": "CamTV4_02"
+          },
+          {
+            "CameraNum": 11,
+            "CameraName": "CamTV4_03"
+          }
+        ]
+      },
+      {
+        "GroupNum": 15,
+        "GroupName": "TV Mixed",
+        "Cameras": [
+          {
+            "CameraNum": 1,
+            "CameraName": "CamTV1_00"
+          },
+          {
+            "CameraNum": 2,
+            "CameraName": "CamTV1_01"
+          },
+          {
+            "CameraNum": 3,
+            "CameraName": "CamTV1_02"
+          },
+          {
+            "CameraNum": 4,
+            "CameraName": "CamTV1_03"
+          },
+          {
+            "CameraNum": 5,
+            "CameraName": "CamTV1_04"
+          },
+          {
+            "CameraNum": 6,
+            "CameraName": "CamTV1_05"
+          },
+          {
+            "CameraNum": 7,
+            "CameraName": "CamTV2_00"
+          },
+          {
+            "CameraNum": 8,
+            "CameraName": "CamTV2_01"
+          },
+          {
+            "CameraNum": 9,
+            "CameraName": "CamTV2_02"
+          },
+          {
+            "CameraNum": 10,
+            "CameraName": "CamTV2_04"
+          },
+          {
+            "CameraNum": 11,
+            "CameraName": "CamTV2_05"
+          },
+          {
+            "CameraNum": 12,
+            "CameraName": "CamTV2_06"
+          },
+          {
+            "CameraNum": 13,
+            "CameraName": "CamTV2_07"
+          },
+          {
+            "CameraNum": 14,
+            "CameraName": "CamTV3_01"
+          },
+          {
+            "CameraNum": 15,
+            "CameraName": "CamTV3_02"
+          },
+          {
+            "CameraNum": 16,
+            "CameraName": "CamTV3_03"
+          },
+          {
+            "CameraNum": 17,
+            "CameraName": "CamTV3_04"
+          },
+          {
+            "CameraNum": 18,
+            "CameraName": "CamTV3_05"
+          },
+          {
+            "CameraNum": 19,
+            "CameraName": "CamTV4_00"
+          },
+          {
+            "CameraNum": 20,
+            "CameraName": "CamTV4_01"
+          },
+          {
+            "CameraNum": 21,
+            "CameraName": "CamTV4_02"
+          },
+          {
+            "CameraNum": 22,
+            "CameraName": "CamTV4_03"
+          },
+          {
+            "CameraNum": 23,
+            "CameraName": "CamTV4_04"
+          },
+          {
+            "CameraNum": 24,
+            "CameraName": "CamTV4_05"
+          },
+          {
+            "CameraNum": 25,
+            "CameraName": "CamTV4_06"
+          },
+          {
+            "CameraNum": 26,
+            "CameraName": "CamTV4_07"
+          },
+          {
+            "CameraNum": 27,
+            "CameraName": "CamTV4_08"
+          },
+          {
+            "CameraNum": 28,
+            "CameraName": "CamTV4_09"
+          },
+          {
+            "CameraNum": 29,
+            "CameraName": "CamTV4_10"
+          },
+          {
+            "CameraNum": 30,
+            "CameraName": "CamRoll Bar"
+          },
+          {
+            "CameraNum": 31,
+            "CameraName": "CamTV2_03"
+          },
+          {
+            "CameraNum": 32,
+            "CameraName": "CamTV3_00"
+          }
+        ]
+      },
+      {
+        "GroupNum": 16,
+        "GroupName": "Pit Lane",
+        "Cameras": [
+          {
+            "CameraNum": 1,
+            "CameraName": "CamPit Lane"
+          }
+        ]
+      },
+      {
+        "GroupNum": 17,
+        "GroupName": "Pit Lane 2",
+        "Cameras": [
+          {
+            "CameraNum": 1,
+            "CameraName": "CamPit Lane 2"
+          }
+        ]
+      },
+      {
+        "GroupNum": 18,
+        "GroupName": "Blimp",
+        "Cameras": [
+          {
+            "CameraNum": 1,
+            "CameraName": "CamBlimp"
+          }
+        ]
+      },
+      {
+        "GroupNum": 19,
+        "GroupName": "Chopper",
+        "Cameras": [
+          {
+            "CameraNum": 1,
+            "CameraName": "CamChopper"
+          }
+        ]
+      },
+      {
+        "GroupNum": 20,
+        "GroupName": "Chase",
+        "Cameras": [
+          {
+            "CameraNum": 1,
+            "CameraName": "CamChase"
+          }
+        ]
+      },
+      {
+        "GroupNum": 21,
+        "GroupName": "Far Chase",
+        "Cameras": [
+          {
+            "CameraNum": 1,
+            "CameraName": "CamFar Chase"
+          }
+        ]
+      },
+      {
+        "GroupNum": 22,
+        "GroupName": "Rear Chase",
+        "Cameras": [
+          {
+            "CameraNum": 1,
+            "CameraName": "CamRear Chase"
+          }
+        ]
+      }
+    ]
+  },
+  "RadioInfo": {
+    "SelectedRadioNum": 0,
+    "Radios": [
+      {
+        "RadioNum": 0,
+        "HopCount": 2,
+        "NumFrequencies": 6,
+        "TunedToFrequencyNum": 0,
+        "ScanningIsOn": 1,
+        "Frequencies": [
+          {
+            "FrequencyNum": 0,
+            "FrequencyName": "@ALLTEAMS",
+            "Priority": 12,
+            "CarIdx": -1,
+            "EntryIdx": -1,
+            "ClubID": 0,
+            "CanScan": 1,
+            "CanSquawk": 1,
+            "Muted": 0,
+            "IsMutable": 1,
+            "IsDeletable": 0
+          },
+          {
+            "FrequencyNum": 1,
+            "FrequencyName": "@DRIVERS",
+            "Priority": 15,
+            "CarIdx": -1,
+            "EntryIdx": -1,
+            "ClubID": 0,
+            "CanScan": 1,
+            "CanSquawk": 0,
+            "Muted": 0,
+            "IsMutable": 1,
+            "IsDeletable": 0
+          },
+          {
+            "FrequencyNum": 2,
+            "FrequencyName": "@TEAM",
+            "Priority": 60,
+            "CarIdx": 5,
+            "EntryIdx": -1,
+            "ClubID": 0,
+            "CanScan": 1,
+            "CanSquawk": 1,
+            "Muted": 0,
+            "IsMutable": 0,
+            "IsDeletable": 0
+          },
+          {
+            "FrequencyNum": 3,
+            "FrequencyName": "@CLUB",
+            "Priority": 20,
+            "CarIdx": -1,
+            "EntryIdx": -1,
+            "ClubID": 34,
+            "CanScan": 1,
+            "CanSquawk": 1,
+            "Muted": 0,
+            "IsMutable": 1,
+            "IsDeletable": 0
+          },
+          {
+            "FrequencyNum": 4,
+            "FrequencyName": "@RACECONTROL",
+            "Priority": 80,
+            "CarIdx": -1,
+            "EntryIdx": -1,
+            "ClubID": 0,
+            "CanScan": 1,
+            "CanSquawk": 0,
+            "Muted": 0,
+            "IsMutable": 0,
+            "IsDeletable": 0
+          },
+          {
+            "FrequencyNum": 5,
+            "FrequencyName": "@PRIVATE",
+            "Priority": 70,
+            "CarIdx": -1,
+            "EntryIdx": 5,
+            "ClubID": 0,
+            "CanScan": 1,
+            "CanSquawk": 1,
+            "Muted": 0,
+            "IsMutable": 0,
+            "IsDeletable": 0
+          }
+        ]
+      }
+    ]
+  },
+  "DriverInfo": {
+    "DriverCarIdx": 5,
+    "DriverUserID": 968989,
+    "PaceCarIdx": 0,
+    "DriverHeadPosX": -0.323,
+    "DriverHeadPosY": 0.065,
+    "DriverHeadPosZ": 0.68,
+    "DriverCarIsElectric": 0,
+    "DriverCarIdleRPM": 1000,
+    "DriverCarRedLine": 11000,
+    "DriverCarEngCylinderCount": 4,
+    "DriverCarFuelKgPerLtr": 0.75,
+    "DriverCarFuelMaxLtr": 20,
+    "DriverCarMaxFuelPct": 1,
+    "DriverCarGearNumForward": 5,
+    "DriverCarGearNeutral": 1,
+    "DriverCarGearReverse": 1,
+    "DriverCarSLFirstRPM": 9500,
+    "DriverCarSLShiftRPM": 10300,
+    "DriverCarSLLastRPM": 10300,
+    "DriverCarSLBlinkRPM": 11000,
+    "DriverCarVersion": "2024.08.22.02",
+    "DriverPitTrkPct": 0.083303,
+    "DriverCarEstLapTime": 68.3264,
+    "DriverSetupName": "road.sto",
+    "DriverSetupIsModified": 0,
+    "DriverSetupLoadTypeName": "fixed",
+    "DriverSetupPassedTech": 1,
+    "DriverIncidentCount": 0,
+    "Drivers": [
+      {
+        "CarIdx": 0,
+        "UserName": "Pace Car",
+        "AbbrevName": null,
+        "Initials": null,
+        "UserID": -1,
+        "TeamID": 0,
+        "TeamName": "Pace Car",
+        "CarNumber": "0",
+        "CarNumberRaw": 0,
+        "CarPath": "safety pcporsche911cup",
+        "CarClassID": 11,
+        "CarID": 108,
+        "CarIsPaceCar": 1,
+        "CarIsAI": 0,
+        "CarIsElectric": 0,
+        "CarScreenName": "safety pcporsche911cup",
+        "CarScreenNameShort": "safety pcporsche911cup",
+        "CarClassShortName": null,
+        "CarClassRelSpeed": 0,
+        "CarClassLicenseLevel": 0,
+        "CarClassMaxFuelPct": "1.000 %",
+        "CarClassWeightPenalty": "0.000 kg",
+        "CarClassPowerAdjust": "0.000 %",
+        "CarClassDryTireSetLimit": "0 %",
+        "CarClassColor": 16777215,
+        "CarClassEstLapTime": 60.5532,
+        "IRating": 0,
+        "LicLevel": 1,
+        "LicSubLevel": 0,
+        "LicString": "R 0.00",
+        "LicColor": 16777215,
+        "IsSpectator": 0,
+        "CarDesignStr": "0,ffffff,ffffff,ffffff",
+        "HelmetDesignStr": "0,ffffff,ffffff,ffffff",
+        "SuitDesignStr": "0,ffffff,ffffff,ffffff",
+        "BodyType": 0,
+        "FaceType": 0,
+        "HelmetType": 0,
+        "CarNumberDesignStr": "0,0,ffffff,ffffff,ffffff",
+        "CarSponsor_1": 0,
+        "CarSponsor_2": 0,
+        "ClubName": "-none-",
+        "ClubID": 0,
+        "DivisionName": "Division 1",
+        "DivisionID": 0,
+        "CurDriverIncidentCount": -1,
+        "TeamIncidentCount": -1
+      },
+      {
+        "CarIdx": 1,
+        "UserName": "Reynald Charest",
+        "AbbrevName": "Charest, R",
+        "Initials": "RC",
+        "UserID": 153433,
+        "TeamID": 0,
+        "TeamName": "Reynald Charest",
+        "CarNumber": "1",
+        "CarNumberRaw": 1,
+        "CarPath": "legends ford34c",
+        "CarClassID": 5,
+        "CarID": 5,
+        "CarIsPaceCar": 0,
+        "CarIsAI": 0,
+        "CarIsElectric": 0,
+        "CarScreenName": "Legends Ford  34 Coupe",
+        "CarScreenNameShort": "Ford 34C",
+        "CarClassShortName": "Legends",
+        "CarClassRelSpeed": 38,
+        "CarClassLicenseLevel": 3,
+        "CarClassMaxFuelPct": "1.000 %",
+        "CarClassWeightPenalty": "0.000 kg",
+        "CarClassPowerAdjust": "0.000 %",
+        "CarClassDryTireSetLimit": "0 %",
+        "CarClassColor": 16777215,
+        "CarClassEstLapTime": 68.3264,
+        "IRating": 3074,
+        "LicLevel": 16,
+        "LicSubLevel": 431,
+        "LicString": "B 4.31",
+        "LicColor": 50946,
+        "IsSpectator": 0,
+        "CarDesignStr": "13,314ae3,33d184,f1eb41",
+        "HelmetDesignStr": "2,fffb00,fffb00,fffb00",
+        "SuitDesignStr": "3,c43131,6e6363,e23232",
+        "BodyType": 0,
+        "FaceType": 0,
+        "HelmetType": 0,
+        "CarNumberDesignStr": "12,0,3e89cd,3e89cd,3e89cd",
+        "CarSponsor_1": 2,
+        "CarSponsor_2": 2,
+        "ClubName": "Canada",
+        "ClubID": 15,
+        "DivisionName": "Division 2",
+        "DivisionID": 1,
+        "CurDriverIncidentCount": -1,
+        "TeamIncidentCount": -1
+      },
+      {
+        "CarIdx": 2,
+        "UserName": "Brett Howe",
+        "AbbrevName": "Howe, B",
+        "Initials": "BH",
+        "UserID": 572426,
+        "TeamID": 0,
+        "TeamName": "Brett Howe",
+        "CarNumber": "2",
+        "CarNumberRaw": 2,
+        "CarPath": "legends ford34c",
+        "CarClassID": 5,
+        "CarID": 5,
+        "CarIsPaceCar": 0,
+        "CarIsAI": 0,
+        "CarIsElectric": 0,
+        "CarScreenName": "Legends Ford  34 Coupe",
+        "CarScreenNameShort": "Ford 34C",
+        "CarClassShortName": "Legends",
+        "CarClassRelSpeed": 38,
+        "CarClassLicenseLevel": 3,
+        "CarClassMaxFuelPct": "1.000 %",
+        "CarClassWeightPenalty": "0.000 kg",
+        "CarClassPowerAdjust": "0.000 %",
+        "CarClassDryTireSetLimit": "0 %",
+        "CarClassColor": 16777215,
+        "CarClassEstLapTime": 68.3264,
+        "IRating": 2219,
+        "LicLevel": 17,
+        "LicSubLevel": 190,
+        "LicString": "A 1.90",
+        "LicColor": 87003,
+        "IsSpectator": 0,
+        "CarDesignStr": "1,ff3d95,000000,ff3d95",
+        "HelmetDesignStr": "20,ffffff,ffffff,ffffff",
+        "SuitDesignStr": "4,cfcab3,cfcab3,ff0000",
+        "BodyType": 0,
+        "FaceType": 0,
+        "HelmetType": 0,
+        "CarNumberDesignStr": "0,0,000000,ff3d95,000000",
+        "CarSponsor_1": 189,
+        "CarSponsor_2": 158,
+        "ClubName": "California",
+        "ClubID": 6,
+        "DivisionName": "Division 3",
+        "DivisionID": 2,
+        "CurDriverIncidentCount": -1,
+        "TeamIncidentCount": -1
+      },
+      {
+        "CarIdx": 3,
+        "UserName": "Kent Augenstein",
+        "AbbrevName": "Augenstein, K",
+        "Initials": "KA",
+        "UserID": 533896,
+        "TeamID": 0,
+        "TeamName": "Kent Augenstein",
+        "CarNumber": "3",
+        "CarNumberRaw": 3,
+        "CarPath": "legends ford34c",
+        "CarClassID": 5,
+        "CarID": 5,
+        "CarIsPaceCar": 0,
+        "CarIsAI": 0,
+        "CarIsElectric": 0,
+        "CarScreenName": "Legends Ford  34 Coupe",
+        "CarScreenNameShort": "Ford 34C",
+        "CarClassShortName": "Legends",
+        "CarClassRelSpeed": 38,
+        "CarClassLicenseLevel": 3,
+        "CarClassMaxFuelPct": "1.000 %",
+        "CarClassWeightPenalty": "0.000 kg",
+        "CarClassPowerAdjust": "0.000 %",
+        "CarClassDryTireSetLimit": "0 %",
+        "CarClassColor": 16777215,
+        "CarClassEstLapTime": 68.3264,
+        "IRating": 2149,
+        "LicLevel": 10,
+        "LicSubLevel": 236,
+        "LicString": "C 2.36",
+        "LicColor": 16706564,
+        "IsSpectator": 0,
+        "CarDesignStr": "1,d7162d,efd600,111111;000000",
+        "HelmetDesignStr": "19,eb5515,ffffff,111111",
+        "SuitDesignStr": "1,e37729,f6f5f1,111111",
+        "BodyType": 0,
+        "FaceType": 0,
+        "HelmetType": 0,
+        "CarNumberDesignStr": "0,0,ffffff,777777,000000",
+        "CarSponsor_1": 0,
+        "CarSponsor_2": 0,
+        "ClubName": "California",
+        "ClubID": 6,
+        "DivisionName": "Division 3",
+        "DivisionID": 2,
+        "CurDriverIncidentCount": -1,
+        "TeamIncidentCount": -1
+      },
+      {
+        "CarIdx": 4,
+        "UserName": "Timothy Cook5",
+        "AbbrevName": null,
+        "Initials": null,
+        "UserID": 670550,
+        "TeamID": 0,
+        "TeamName": "Timothy Cook5",
+        "CarNumber": "4",
+        "CarNumberRaw": 4,
+        "CarPath": "legends ford34c",
+        "CarClassID": 5,
+        "CarID": 5,
+        "CarIsPaceCar": 0,
+        "CarIsAI": 0,
+        "CarIsElectric": 0,
+        "CarScreenName": "Legends Ford  34 Coupe",
+        "CarScreenNameShort": "Ford 34C",
+        "CarClassShortName": "Legends",
+        "CarClassRelSpeed": 38,
+        "CarClassLicenseLevel": 3,
+        "CarClassMaxFuelPct": "1.000 %",
+        "CarClassWeightPenalty": "0.000 kg",
+        "CarClassPowerAdjust": "0.000 %",
+        "CarClassDryTireSetLimit": "0 %",
+        "CarClassColor": 16777215,
+        "CarClassEstLapTime": 68.3264,
+        "IRating": 2145,
+        "LicLevel": 18,
+        "LicSubLevel": 287,
+        "LicString": "A 2.87",
+        "LicColor": 87003,
+        "IsSpectator": 0,
+        "CarDesignStr": "19,ffffff,372a75,f1732e",
+        "HelmetDesignStr": "1,ffffff,372a75,f1732e",
+        "SuitDesignStr": "1,ffffff,372a75,f1732e",
+        "BodyType": 0,
+        "FaceType": 0,
+        "HelmetType": 0,
+        "CarNumberDesignStr": "0,0,ffffff,777777,000000",
+        "CarSponsor_1": 0,
+        "CarSponsor_2": 0,
+        "ClubName": "Australia/NZ",
+        "ClubID": 34,
+        "DivisionName": "Division 4",
+        "DivisionID": 3,
+        "CurDriverIncidentCount": -1,
+        "TeamIncidentCount": -1
+      },
+      {
+        "CarIdx": 5,
+        "UserName": "Tarik Alani",
+        "AbbrevName": "Alani, T",
+        "Initials": "TA",
+        "UserID": 968989,
+        "TeamID": 0,
+        "TeamName": "Tarik Alani",
+        "CarNumber": "5",
+        "CarNumberRaw": 5,
+        "CarPath": "legends ford34c",
+        "CarClassID": 5,
+        "CarID": 5,
+        "CarIsPaceCar": 0,
+        "CarIsAI": 0,
+        "CarIsElectric": 0,
+        "CarScreenName": "Legends Ford  34 Coupe",
+        "CarScreenNameShort": "Ford 34C",
+        "CarClassShortName": "Legends",
+        "CarClassRelSpeed": 38,
+        "CarClassLicenseLevel": 3,
+        "CarClassMaxFuelPct": "1.000 %",
+        "CarClassWeightPenalty": "0.000 kg",
+        "CarClassPowerAdjust": "0.000 %",
+        "CarClassDryTireSetLimit": "0 %",
+        "CarClassColor": 16777215,
+        "CarClassEstLapTime": 68.3264,
+        "IRating": 1536,
+        "LicLevel": 15,
+        "LicSubLevel": 396,
+        "LicString": "B 3.96",
+        "LicColor": 50946,
+        "IsSpectator": 0,
+        "CarDesignStr": "1,391c83,ccff00,111111",
+        "HelmetDesignStr": "7,000000,ffffff,00107c",
+        "SuitDesignStr": "30,000000,ffffff,00015d",
+        "BodyType": 0,
+        "FaceType": 0,
+        "HelmetType": 0,
+        "CarNumberDesignStr": "0,0,ffffff,777777,000000",
+        "CarSponsor_1": 0,
+        "CarSponsor_2": 0,
+        "ClubName": "Australia/NZ",
+        "ClubID": 34,
+        "DivisionName": "Division 5",
+        "DivisionID": 4,
+        "CurDriverIncidentCount": 0,
+        "TeamIncidentCount": 0
+      },
+      {
+        "CarIdx": 6,
+        "UserName": "Felipe Lopes",
+        "AbbrevName": "Lopes, F",
+        "Initials": "FL",
+        "UserID": 673917,
+        "TeamID": 0,
+        "TeamName": "Felipe Lopes",
+        "CarNumber": "6",
+        "CarNumberRaw": 6,
+        "CarPath": "legends ford34c",
+        "CarClassID": 5,
+        "CarID": 5,
+        "CarIsPaceCar": 0,
+        "CarIsAI": 0,
+        "CarIsElectric": 0,
+        "CarScreenName": "Legends Ford  34 Coupe",
+        "CarScreenNameShort": "Ford 34C",
+        "CarClassShortName": "Legends",
+        "CarClassRelSpeed": 38,
+        "CarClassLicenseLevel": 3,
+        "CarClassMaxFuelPct": "1.000 %",
+        "CarClassWeightPenalty": "0.000 kg",
+        "CarClassPowerAdjust": "0.000 %",
+        "CarClassDryTireSetLimit": "0 %",
+        "CarClassColor": 16777215,
+        "CarClassEstLapTime": 68.3264,
+        "IRating": 1458,
+        "LicLevel": 13,
+        "LicSubLevel": 157,
+        "LicString": "B 1.57",
+        "LicColor": 50946,
+        "IsSpectator": 0,
+        "CarDesignStr": "9,d7162d,efd600,111111",
+        "HelmetDesignStr": "14,ff0008,00086b,ccff00",
+        "SuitDesignStr": "11,d3d3d3,6dd801,111111",
+        "BodyType": 0,
+        "FaceType": 0,
+        "HelmetType": 0,
+        "CarNumberDesignStr": "0,0,ffffff,777777,000000",
+        "CarSponsor_1": 0,
+        "CarSponsor_2": 0,
+        "ClubName": "New England",
+        "ClubID": 12,
+        "DivisionName": "Division 4",
+        "DivisionID": 3,
+        "CurDriverIncidentCount": -1,
+        "TeamIncidentCount": -1
+      },
+      {
+        "CarIdx": 7,
+        "UserName": "Trevor Fechner",
+        "AbbrevName": "Fechner, T",
+        "Initials": "TF",
+        "UserID": 1092489,
+        "TeamID": 0,
+        "TeamName": "Trevor Fechner",
+        "CarNumber": "7",
+        "CarNumberRaw": 7,
+        "CarPath": "legends ford34c",
+        "CarClassID": 5,
+        "CarID": 5,
+        "CarIsPaceCar": 0,
+        "CarIsAI": 0,
+        "CarIsElectric": 0,
+        "CarScreenName": "Legends Ford  34 Coupe",
+        "CarScreenNameShort": "Ford 34C",
+        "CarClassShortName": "Legends",
+        "CarClassRelSpeed": 38,
+        "CarClassLicenseLevel": 3,
+        "CarClassMaxFuelPct": "1.000 %",
+        "CarClassWeightPenalty": "0.000 kg",
+        "CarClassPowerAdjust": "0.000 %",
+        "CarClassDryTireSetLimit": "0 %",
+        "CarClassColor": 16777215,
+        "CarClassEstLapTime": 68.3264,
+        "IRating": 1420,
+        "LicLevel": 6,
+        "LicSubLevel": 246,
+        "LicString": "D 2.46",
+        "LicColor": 16550439,
+        "IsSpectator": 0,
+        "CarDesignStr": "1,11e9cf,5c06e8,7c7c7c",
+        "HelmetDesignStr": "35,00d3b4,cfcfcf,5b00f0",
+        "SuitDesignStr": "28,0bdab4,dddddd,5400f0",
+        "BodyType": 1,
+        "FaceType": 8,
+        "HelmetType": 0,
+        "CarNumberDesignStr": "0,0,ffffff,777777,000000",
+        "CarSponsor_1": 0,
+        "CarSponsor_2": 0,
+        "ClubName": "California",
+        "ClubID": 6,
+        "DivisionName": "Rookie",
+        "DivisionID": 10,
+        "CurDriverIncidentCount": -1,
+        "TeamIncidentCount": -1
+      },
+      {
+        "CarIdx": 8,
+        "UserName": "Ty Treverton",
+        "AbbrevName": "Treverton, T",
+        "Initials": "TT",
+        "UserID": 864092,
+        "TeamID": 0,
+        "TeamName": "Ty Treverton",
+        "CarNumber": "8",
+        "CarNumberRaw": 8,
+        "CarPath": "legends ford34c",
+        "CarClassID": 5,
+        "CarID": 5,
+        "CarIsPaceCar": 0,
+        "CarIsAI": 0,
+        "CarIsElectric": 0,
+        "CarScreenName": "Legends Ford  34 Coupe",
+        "CarScreenNameShort": "Ford 34C",
+        "CarClassShortName": "Legends",
+        "CarClassRelSpeed": 38,
+        "CarClassLicenseLevel": 3,
+        "CarClassMaxFuelPct": "1.000 %",
+        "CarClassWeightPenalty": "0.000 kg",
+        "CarClassPowerAdjust": "0.000 %",
+        "CarClassDryTireSetLimit": "0 %",
+        "CarClassColor": 16777215,
+        "CarClassEstLapTime": 68.3264,
+        "IRating": 1416,
+        "LicLevel": 11,
+        "LicSubLevel": 337,
+        "LicString": "C 3.37",
+        "LicColor": 16706564,
+        "IsSpectator": 0,
+        "CarDesignStr": "3,ffffff,e0d19e,000000;ffffff",
+        "HelmetDesignStr": "23,000000,ce8946,000000",
+        "SuitDesignStr": "21,000000,000000,ce8946",
+        "BodyType": 0,
+        "FaceType": 8,
+        "HelmetType": 0,
+        "CarNumberDesignStr": "0,0,ffffff,777777,000000",
+        "CarSponsor_1": 0,
+        "CarSponsor_2": 0,
+        "ClubName": "Canada",
+        "ClubID": 15,
+        "DivisionName": "Rookie",
+        "DivisionID": 10,
+        "CurDriverIncidentCount": -1,
+        "TeamIncidentCount": -1
+      },
+      {
+        "CarIdx": 9,
+        "UserName": "Guy Hoang",
+        "AbbrevName": "Hoang, G",
+        "Initials": "GH",
+        "UserID": 1066770,
+        "TeamID": 0,
+        "TeamName": "Guy Hoang",
+        "CarNumber": "9",
+        "CarNumberRaw": 9,
+        "CarPath": "legends ford34c",
+        "CarClassID": 5,
+        "CarID": 5,
+        "CarIsPaceCar": 0,
+        "CarIsAI": 0,
+        "CarIsElectric": 0,
+        "CarScreenName": "Legends Ford  34 Coupe",
+        "CarScreenNameShort": "Ford 34C",
+        "CarClassShortName": "Legends",
+        "CarClassRelSpeed": 38,
+        "CarClassLicenseLevel": 3,
+        "CarClassMaxFuelPct": "1.000 %",
+        "CarClassWeightPenalty": "0.000 kg",
+        "CarClassPowerAdjust": "0.000 %",
+        "CarClassDryTireSetLimit": "0 %",
+        "CarClassColor": 16777215,
+        "CarClassEstLapTime": 68.3264,
+        "IRating": 1089,
+        "LicLevel": 6,
+        "LicSubLevel": 260,
+        "LicString": "D 2.60",
+        "LicColor": 16550439,
+        "IsSpectator": 0,
+        "CarDesignStr": "1,ffffff,fc0706,111111",
+        "HelmetDesignStr": "1,ffffff,fc0706,111111",
+        "SuitDesignStr": "1,ffffff,fc0706,111111",
+        "BodyType": 0,
+        "FaceType": 0,
+        "HelmetType": 0,
+        "CarNumberDesignStr": "0,0,ffffff,777777,000000",
+        "CarSponsor_1": 0,
+        "CarSponsor_2": 0,
+        "ClubName": "California",
+        "ClubID": 6,
+        "DivisionName": "Division 6",
+        "DivisionID": 5,
+        "CurDriverIncidentCount": -1,
+        "TeamIncidentCount": -1
+      },
+      {
+        "CarIdx": 10,
+        "UserName": "Kyle Brandt6",
+        "AbbrevName": "Brandt6, K",
+        "Initials": "KB",
+        "UserID": 1118986,
+        "TeamID": 0,
+        "TeamName": "Kyle Brandt6",
+        "CarNumber": "10",
+        "CarNumberRaw": 10,
+        "CarPath": "legends ford34c",
+        "CarClassID": 5,
+        "CarID": 5,
+        "CarIsPaceCar": 0,
+        "CarIsAI": 0,
+        "CarIsElectric": 0,
+        "CarScreenName": "Legends Ford  34 Coupe",
+        "CarScreenNameShort": "Ford 34C",
+        "CarClassShortName": "Legends",
+        "CarClassRelSpeed": 38,
+        "CarClassLicenseLevel": 3,
+        "CarClassMaxFuelPct": "1.000 %",
+        "CarClassWeightPenalty": "0.000 kg",
+        "CarClassPowerAdjust": "0.000 %",
+        "CarClassDryTireSetLimit": "0 %",
+        "CarClassColor": 16777215,
+        "CarClassEstLapTime": 68.3264,
+        "IRating": 871,
+        "LicLevel": 6,
+        "LicSubLevel": 249,
+        "LicString": "D 2.49",
+        "LicColor": 16550439,
+        "IsSpectator": 0,
+        "CarDesignStr": "1,111111,03bbbd,184252",
+        "HelmetDesignStr": "12,000000,ff0000,ffffff",
+        "SuitDesignStr": "12,000000,ff0000,ffffff",
+        "BodyType": 0,
+        "FaceType": 4,
+        "HelmetType": 0,
+        "CarNumberDesignStr": "0,0,ffffff,777777,000000",
+        "CarSponsor_1": 0,
+        "CarSponsor_2": 0,
+        "ClubName": "Illinois",
+        "ClubID": 26,
+        "DivisionName": "Division 8",
+        "DivisionID": 7,
+        "CurDriverIncidentCount": -1,
+        "TeamIncidentCount": -1
+      }
+    ]
+  },
+  "SplitTimeInfo": {
+    "Sectors": [
+      {
+        "SectorNum": 0,
+        "SectorStartPct": 0
+      },
+      {
+        "SectorNum": 1,
+        "SectorStartPct": 0.600296
+      }
+    ]
+  },
+  "CarSetup": {
+    "UpdateCount": 3,
+    "Tires": {
+      "LeftFront": {
+        "ColdPressure": "172 kPa",
+        "LastHotPressure": "172 kPa",
+        "LastTempsOMI": "49C, 49C, 49C",
+        "TreadRemaining": "100%, 100%, 100%"
+      },
+      "LeftRear": {
+        "ColdPressure": "165 kPa",
+        "LastHotPressure": "165 kPa",
+        "LastTempsOMI": "49C, 49C, 49C",
+        "TreadRemaining": "100%, 100%, 100%"
+      },
+      "RightFront": {
+        "ColdPressure": "172 kPa",
+        "LastHotPressure": "172 kPa",
+        "LastTempsIMO": "49C, 49C, 49C",
+        "TreadRemaining": "100%, 100%, 100%",
+        "Stagger": "0 mm"
+      },
+      "RightRear": {
+        "ColdPressure": "165 kPa",
+        "LastHotPressure": "165 kPa",
+        "LastTempsIMO": "49C, 49C, 49C",
+        "TreadRemaining": "100%, 100%, 100%",
+        "Stagger": "0 mm"
+      }
+    },
+    "Chassis": {
+      "Front": {
+        "ToeIn": "-2 mm",
+        "SteeringOffset": "+0 deg",
+        "FrontBrakeBias": "67%",
+        "FrontWheelOffset": "+0 mm"
+      },
+      "LeftFront": {
+        "CornerWeight": "1525 N",
+        "RideHeight": "93 mm",
+        "ShockCollarOffset": "158 mm",
+        "SpringRate": "61 N/mm",
+        "Camber": "-2.6 deg",
+        "Caster": "+3.4 deg"
+      },
+      "LeftRear": {
+        "CornerWeight": "1442 N",
+        "RideHeight": "101 mm",
+        "ShockCollarOffset": "142 mm",
+        "SpringRate": "35 N/mm"
+      },
+      "RightFront": {
+        "CornerWeight": "1534 N",
+        "RideHeight": "92 mm",
+        "ShockCollarOffset": "159 mm",
+        "SpringRate": "61 N/mm",
+        "Camber": "-2.8 deg",
+        "Caster": "+3.6 deg"
+      },
+      "RightRear": {
+        "CornerWeight": "1451 N",
+        "RideHeight": "99 mm",
+        "ShockCollarOffset": "142 mm",
+        "SpringRate": "35 N/mm"
+      },
+      "Rear": {
+        "FuelFillTo": "16.0 L",
+        "CrossWeight": "50.0%",
+        "RearEndRatio": 2.93
+      }
+    }
+  }
+}

@@ -1,0 +1,12 @@
+[project]
+name = "carlogos"
+version = "0.1.0"
+description = "Car logos sprite sheet generator"
+requires-python = ">=3.8"
+dependencies = [
+    "pillow>=10.0.0",
+]
+
+[project.scripts]
+create-sprite-sheet = "create_sprite_sheet:create_sprite_sheet"
+
