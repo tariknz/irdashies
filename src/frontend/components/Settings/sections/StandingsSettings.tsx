@@ -61,6 +61,7 @@ const defaultConfig: StandingsWidgetSettings['config'] = {
     enabled: true,
     sessionName: { enabled: true },
     sessionTime: { enabled: true, mode: 'Remaining' },
+    sessionLaps: { enabled: true },
     incidentCount: { enabled: true },
     brakeBias: { enabled: false },
     localTime: { enabled: false },
@@ -75,6 +76,7 @@ const defaultConfig: StandingsWidgetSettings['config'] = {
     enabled: true,
     sessionName: { enabled: false },
     sessionTime: { enabled: false, mode: 'Remaining' },
+    sessionLaps: { enabled: false },
     incidentCount: { enabled: false },
     brakeBias: { enabled: false },
     localTime: { enabled: true },
@@ -172,6 +174,7 @@ const migrateConfig = (
         enabled: (config.headerBar as { sessionTime?: { enabled?: boolean } })?.sessionTime?.enabled ?? true,
         mode: ((config.headerBar as { sessionTime?: { mode?: string } })?.sessionTime?.mode as 'Remaining' | 'Elapsed') ?? 'Remaining'
       },
+      sessionLaps: { enabled: (config.headerBar as { sessionLaps?: { enabled?: boolean } })?.sessionLaps?.enabled ?? true },
       incidentCount: { enabled: (config.headerBar as { incidentCount?: { enabled?: boolean } })?.incidentCount?.enabled ?? true },
       brakeBias: { enabled: (config.headerBar as { brakeBias?: { enabled?: boolean } })?.brakeBias?.enabled ?? false },
       localTime: { enabled: (config.headerBar as { localTime?: { enabled?: boolean } })?.localTime?.enabled ?? false },
@@ -195,6 +198,7 @@ const migrateConfig = (
         enabled: (config.footerBar as { sessionTime?: { enabled?: boolean } })?.sessionTime?.enabled ?? false,
         mode: ((config.footerBar as { sessionTime?: { mode?: string } })?.sessionTime?.mode as 'Remaining' | 'Elapsed') ?? 'Remaining'
       },
+      sessionLaps: { enabled: (config.footerBar as { sessionLaps?: { enabled?: boolean } })?.sessionLaps?.enabled ?? true },
       incidentCount: { enabled: (config.footerBar as { incidentCount?: { enabled?: boolean } })?.incidentCount?.enabled ?? false },
       brakeBias: { enabled: (config.footerBar as { brakeBias?: { enabled?: boolean } })?.brakeBias?.enabled ?? false },
       localTime: { enabled: (config.footerBar as { localTime?: { enabled?: boolean } })?.localTime?.enabled ?? true },

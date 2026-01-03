@@ -8,6 +8,7 @@ import { useStandingsSettings, useRelativeSettings } from '../../hooks';
 import { ClockIcon, ClockUserIcon, CloudRainIcon, DropIcon, RoadHorizonIcon, ThermometerIcon, TireIcon } from '@phosphor-icons/react';
 import { useSessionCurrentTime } from '../../hooks/useSessionCurrentTime';
 import { usePrecipitation } from '../../hooks/usePrecipitation';
+import { useTotalRaceLaps } from '../../../../context/shared/useTotalRaceLaps';
 
 interface SessionBarProps {
   position?: 'header' | 'footer';
@@ -34,6 +35,7 @@ export const SessionBar = ({ position = 'header', variant = 'standings' }: Sessi
   });
   const localTime = useCurrentTime();
   const sessionClockTime = useSessionCurrentTime();
+  const totalRaceLaps = useTotalRaceLaps();
   // Define all possible items with their render functions
   const itemDefinitions = {
     sessionName: {
@@ -83,6 +85,14 @@ export const SessionBar = ({ position = 'header', variant = 'standings' }: Sessi
         }
 
         return null;
+      },
+    },
+    sessionLaps: {
+      enabled: effectiveBarSettings?.sessionLaps?.enabled ?? true,
+      render: () => {
+        if (totalRaceLaps !== null)
+          return <div className="flex justify-center">L{currentLap}/{totalRaceLaps.toFixed(1)}</div>;
+        return <div className="flex justify-center">L{currentLap}</div>;
       },
     },
     incidentCount: {
@@ -164,8 +174,8 @@ export const SessionBar = ({ position = 'header', variant = 'standings' }: Sessi
 
   // Get display order, fallback to default order
   const displayOrder = effectiveBarSettings?.displayOrder || (position === 'header'
-    ? ['sessionName', 'sessionTime', 'localTime', 'brakeBias', 'incidentCount']
-    : ['localTime', 'trackWetness', 'airTemperature', 'trackTemperature']
+    ? ['sessionName', 'sessionTime', 'sessionLaps', 'localTime', 'brakeBias', 'incidentCount']
+    : ['localTime', 'trackWetness', 'sessionLaps', 'airTemperature', 'trackTemperature']
   );
 
   // Filter and order items based on settings
