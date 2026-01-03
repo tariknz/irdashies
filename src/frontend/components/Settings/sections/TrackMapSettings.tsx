@@ -19,11 +19,32 @@ const defaultConfig: TrackMapWidgetSettings['config'] = {
   sessionVisibility: { race: true, loneQualify: true, openQualify: true, practice: true, offlineTesting: false }
 };
 
+const migrateConfig = (config: any): TrackMapWidgetSettings['config'] => {
+  return {
+    enableTurnNames: config.enableTurnNames ?? defaultConfig.enableTurnNames,
+    showCarNumbers: config.showCarNumbers ?? defaultConfig.showCarNumbers,
+    invertTrackColors: config.invertTrackColors ?? defaultConfig.invertTrackColors,
+    driverCircleSize: config.driverCircleSize ?? defaultConfig.driverCircleSize,
+    playerCircleSize: config.playerCircleSize ?? defaultConfig.playerCircleSize,
+    trackLineWidth: config.trackLineWidth ?? defaultConfig.trackLineWidth,
+    trackOutlineWidth: config.trackOutlineWidth ?? defaultConfig.trackOutlineWidth,
+    useHighlightColor: config.useHighlightColor ?? defaultConfig.useHighlightColor,
+    sessionVisibility: {
+      race: config.sessionVisibility?.race ?? defaultConfig.sessionVisibility.race,
+      loneQualify: config.sessionVisibility?.loneQualify ?? defaultConfig.sessionVisibility.loneQualify,
+      openQualify: config.sessionVisibility?.openQualify ?? defaultConfig.sessionVisibility.openQualify,
+      practice: config.sessionVisibility?.practice ?? defaultConfig.sessionVisibility.practice,
+      offlineTesting: config.sessionVisibility?.offlineTesting ?? defaultConfig.sessionVisibility.offlineTesting
+    }
+  };
+};
+
 export const TrackMapSettings = () => {
   const { currentDashboard } = useDashboard();
+  const savedSettings = currentDashboard?.widgets.find(w => w.id === SETTING_ID) as TrackMapWidgetSettings | undefined;
   const [settings, setSettings] = useState<TrackMapWidgetSettings>({
     enabled: currentDashboard?.widgets.find(w => w.id === SETTING_ID)?.enabled ?? false,
-    config: currentDashboard?.widgets.find(w => w.id === SETTING_ID)?.config as TrackMapWidgetSettings['config'] ?? defaultConfig,
+    config: migrateConfig(savedSettings?.config)
   });
 
   if (!currentDashboard) {
