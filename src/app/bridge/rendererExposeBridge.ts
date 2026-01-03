@@ -63,6 +63,15 @@ export function exposeBridge() {
         callback(value);
       });
     },
+    saveGarageCoverImage: (buffer: Uint8Array) => {
+      return ipcRenderer.invoke('saveGarageCoverImage', Array.from(buffer));
+    },
+    getGarageCoverImage: () => {
+      return ipcRenderer.invoke('getGarageCoverImage');
+    },
+    getGarageCoverImageAsDataUrl: (imagePath: string) => {
+      return ipcRenderer.invoke('getGarageCoverImageAsDataUrl', imagePath);
+    },
     stop: () => {
       ipcRenderer.removeAllListeners('editModeToggled');
       ipcRenderer.removeAllListeners('dashboardUpdated');

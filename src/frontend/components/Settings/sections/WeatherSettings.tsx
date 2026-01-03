@@ -46,7 +46,8 @@ const defaultConfig: WeatherWidgetSettings['config'] = {
   units: 'auto',
   humidity: {
     enabled: true
-  }
+  },
+  showOnlyWhenOnTrack: true,
 };
 
 const migrateConfig = (savedConfig: unknown): WeatherWidgetSettings['config'] => {
@@ -63,6 +64,7 @@ const migrateConfig = (savedConfig: unknown): WeatherWidgetSettings['config'] =>
     humidity: { enabled: (config.humidity as { enabled?: boolean })?.enabled ?? defaultConfig.humidity.enabled },
     wind: { enabled: (config.wind as { enabled?: boolean })?.enabled ?? defaultConfig.wind.enabled },
     units: (config.units as 'auto' | 'Metric' | 'Imperial') ?? 'auto',
+    showOnlyWhenOnTrack: (config.showOnlyWhenOnTrack as boolean) ?? true,
   };
 };
 
@@ -225,6 +227,22 @@ export const WeatherSettings = () => {
                   °F
                 </button>
               </div>
+            </div>
+
+            {/* Show Only When On Track Setting */}
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="text-md font-medium text-slate-300">Show Only When On Track</h4>
+                <p className="text-sm text-slate-400">
+                  If enabled, weather will only be shown when you are driving.
+                </p>
+              </div>
+              <ToggleSwitch
+                enabled={settings.config.showOnlyWhenOnTrack ?? true}
+                onToggle={(enabled) =>
+                  handleConfigChange({ showOnlyWhenOnTrack: enabled })
+                }
+              />
             </div>
           </div>
         );

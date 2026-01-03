@@ -14,8 +14,11 @@ const mockBridge: DashboardBridge = {
   resetDashboard: vi.fn().mockResolvedValue({}),
   stop: vi.fn(),
   onDemoModeChanged: vi.fn(),
-  toggleDemoMode: vi.fn(),  
+  toggleDemoMode: vi.fn(),
   getCurrentDashboard: vi.fn().mockResolvedValue({}),
+  saveGarageCoverImage: vi.fn(),
+  getGarageCoverImage: vi.fn(),
+  getGarageCoverImageAsDataUrl: vi.fn(),
 };
 
 const TestComponent: React.FC = () => {

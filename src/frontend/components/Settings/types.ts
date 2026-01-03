@@ -125,6 +125,7 @@ export interface WeatherWidgetSettings extends BaseWidgetSettings {
   config: {
     background: { opacity: number };
     displayOrder: string[];
+    showOnlyWhenOnTrack: boolean;
     airTemp: {
       enabled: boolean
     };
@@ -222,5 +223,10 @@ export interface BlindSpotMonitorWidgetSettings extends BaseWidgetSettings {
     distAhead: number;
     distBehind: number;
     width?: number;
+  };
+}
+export interface GarageCoverWidgetSettings extends BaseWidgetSettings {
+  config: {
+    imageFilename: string;
   };
 }
