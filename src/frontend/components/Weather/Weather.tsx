@@ -100,17 +100,14 @@ export const Weather = () => {
 
   return (
     <div
-      className="w-full h-full inline-flex gap-1 p-2 flex-row bg-slate-800/(--bg-opacity)"
+      className="w-full bg-slate-800/(--bg-opacity) rounded-sm p-2 text-white overflow-hidden flex flex-col gap-2"
       style={{
         ['--bg-opacity' as string]: `${settings?.background?.opacity ?? 80}%`,
       }}
     >
-      <div className="flex flex-col p-2 w-full rounded-sm gap-2">
-
-        {columnDefinitions.map((column) => (
-          <Fragment key={column.id}>{column.component}</Fragment>
-        ))}
-      </div>
+      {columnDefinitions.map((column) => (
+        <Fragment key={column.id}>{column.component}</Fragment>
+      ))}
     </div>
   );
 };
