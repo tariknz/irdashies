@@ -22,15 +22,30 @@ const defaultConfig: BlindSpotMonitorWidgetSettings['config'] = {
   },
 };
 
+const migrateConfig = (config: any): BlindSpotMonitorWidgetSettings['config'] => {
+  return {
+    distAhead: config.distAhead ?? defaultConfig.distAhead,
+    distBehind: config.distBehind ?? defaultConfig.distBehind,
+    background: {
+      opacity: config.background?.opacity ?? defaultConfig.background.opacity,
+    },
+    width: config.width ?? defaultConfig.width,
+    sessionVisibility: {
+      race: config.sessionVisibility?.race ?? defaultConfig.sessionVisibility.race,
+      loneQualify: config.sessionVisibility?.loneQualify ?? defaultConfig.sessionVisibility.loneQualify,
+      openQualify: config.sessionVisibility?.openQualify ?? defaultConfig.sessionVisibility.openQualify,
+      practice: config.sessionVisibility?.practice ?? defaultConfig.sessionVisibility.practice,
+      offlineTesting: config.sessionVisibility?.offlineTesting ?? defaultConfig.sessionVisibility.offlineTesting
+    }
+  };
+};
+
 export const BlindSpotMonitorSettings = () => {
   const { currentDashboard } = useDashboard();
+  const savedSettings = currentDashboard?.widgets.find(w => w.id === SETTING_ID) as BlindSpotMonitorWidgetSettings | undefined;
   const [settings, setSettings] = useState<BlindSpotMonitorWidgetSettings>({
-    enabled:
-      currentDashboard?.widgets.find((w) => w.id === SETTING_ID)?.enabled ?? false,
-    config:
-      (currentDashboard?.widgets.find((w) => w.id === SETTING_ID)?.config as
-        | BlindSpotMonitorWidgetSettings['config']
-        | undefined) ?? defaultConfig,
+    enabled: savedSettings?.enabled ?? false,
+    config: migrateConfig(savedSettings?.config),
   });
 
   if (!currentDashboard) {
