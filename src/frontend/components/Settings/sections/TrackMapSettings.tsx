@@ -1,25 +1,12 @@
 import { useState } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
+import { TrackMapWidgetSettings } from '../types';
 import { useDashboard } from '@irdashies/context';
 import { ToggleSwitch } from '../components/ToggleSwitch';
 
 const SETTING_ID = 'map';
 
-interface TrackMapSettings {
-  enabled: boolean;
-  config: {
-    enableTurnNames: boolean;
-    showCarNumbers: boolean;
-    invertTrackColors: boolean;
-    driverCircleSize: number;
-    playerCircleSize: number;
-    trackLineWidth: number;
-    trackOutlineWidth: number;
-    useHighlightColor: boolean;
-  };
-}
-
-const defaultConfig: TrackMapSettings['config'] = {
+const defaultConfig: TrackMapWidgetSettings['config'] = {
   enableTurnNames: false,
   showCarNumbers: true,
   invertTrackColors: false,
@@ -32,9 +19,9 @@ const defaultConfig: TrackMapSettings['config'] = {
 
 export const TrackMapSettings = () => {
   const { currentDashboard } = useDashboard();
-  const [settings, setSettings] = useState<TrackMapSettings>({
+  const [settings, setSettings] = useState<TrackMapWidgetSettings>({
     enabled: currentDashboard?.widgets.find(w => w.id === SETTING_ID)?.enabled ?? false,
-    config: currentDashboard?.widgets.find(w => w.id === SETTING_ID)?.config as TrackMapSettings['config'] ?? defaultConfig,
+    config: currentDashboard?.widgets.find(w => w.id === SETTING_ID)?.config as TrackMapWidgetSettings['config'] ?? defaultConfig,
   });
 
   if (!currentDashboard) {

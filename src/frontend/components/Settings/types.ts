@@ -148,6 +148,13 @@ export interface WeatherWidgetSettings extends BaseWidgetSettings {
 export interface TrackMapWidgetSettings extends BaseWidgetSettings {
   config: {
     enableTurnNames: boolean;
+    showCarNumbers: boolean;
+    invertTrackColors: boolean;
+    driverCircleSize: number;
+    playerCircleSize: number;
+    trackLineWidth: number;
+    trackOutlineWidth: number;
+    useHighlightColor: boolean;
   };
 }
 
