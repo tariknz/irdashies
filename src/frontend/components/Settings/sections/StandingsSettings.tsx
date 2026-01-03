@@ -310,7 +310,7 @@ const DisplaySettingsList = ({ itemsOrder, onReorder, settings, handleConfigChan
             )}
             {setting.hasSubSetting && setting.configKey === 'carManufacturer' && settings.config.carManufacturer.enabled && (
               <div className="flex items-center justify-between pl-8 mt-2">
-                <span className="text-sm text-slate-300">Hide if single make</span>
+                <span className="text-sm text-slate-300">Hide If Single Make</span>
                 <ToggleSwitch
                   enabled={settings.config.carManufacturer.hideIfSingleMake ?? false}
                   onToggle={(enabled) => {
