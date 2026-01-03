@@ -10,6 +10,7 @@ import { formatFuel } from './fuelCalculations';
 import { useFuelStore } from './FuelStore';
 import type { FuelCalculatorSettings } from './types';
 import { useCurrentSessionType } from '@irdashies/context';
+import { useFuelSettings } from '../Standings/hooks';
 
 type FuelCalculatorProps = Partial<FuelCalculatorSettings>;
 
@@ -31,6 +32,7 @@ export const FuelCalculator = ({
   safetyMargin = 0.05,
   background = { opacity: 85 },
 }: FuelCalculatorProps) => {
+  const settings = useFuelSettings();
   const fuelData = useFuelCalculation(safetyMargin);
   // Subscribe to lapHistory directly to trigger re-renders when it changes
   const lapHistory = useFuelStore((state) => state.lapHistory);
