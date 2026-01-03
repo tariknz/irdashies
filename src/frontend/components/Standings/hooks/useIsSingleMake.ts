@@ -12,7 +12,7 @@ export const useIsSingleMake = () => {
   const numCarClasses = useWeekendInfoNumCarClasses();
 
   return useMemo(() => {
-    if (!sessionDrivers || sessionDrivers.length === 0) return false;
+    if (!sessionDrivers?.length) return false;
 
     // If multi-class, always show manufacturers regardless of hideIfSingleMake
     if ((numCarClasses ?? 0) > 1) return false;
@@ -28,5 +28,3 @@ export const useIsSingleMake = () => {
     return manufacturers.size === 1;
   }, [sessionDrivers, numCarClasses]);
 };
-
-export default useIsSingleMake;
