@@ -2,6 +2,10 @@ import { OverlayManager } from 'src/app/overlayManager';
 import { TelemetrySink } from './telemetrySink';
 import { ipcMain } from 'electron';
 import type { IrSdkBridge } from '@irdashies/types';
+import { writeFile, mkdir } from 'node:fs/promises';
+import path from 'node:path';
+
+const DEBUG_LOG_DIR = 'C:\\Temp\\irdashies';
 
 let isDemoMode = false;
 let currentBridge: IrSdkBridge | undefined;
@@ -24,6 +28,19 @@ export async function iRacingSDKSetup(
   telemetrySink: TelemetrySink,
   overlayManager: OverlayManager
 ) {
+  // === DEBUG TELEMETRY LOGGING (temporary) ===
+  ipcMain.handle('writeDebugLog', async (_, filename: string, content: string) => {
+    try {
+      await mkdir(DEBUG_LOG_DIR, { recursive: true });
+      const filePath = path.join(DEBUG_LOG_DIR, filename);
+      await writeFile(filePath, content, 'utf-8');
+      return { success: true, path: filePath };
+    } catch (err) {
+      console.error('Failed to write debug log:', err);
+      return { success: false, error: String(err) };
+    }
+  });
+
   ipcMain.on('toggleDemoMode', async (_, value: boolean) => {
     isDemoMode = value;
     if (currentBridge) {
