@@ -106,7 +106,6 @@ export const Weather = () => {
       }}
     >
       <div className="flex flex-col w-full gap-2">
-
         {columnDefinitions.map((column) => (
           <Fragment key={column.id}>{column.component}</Fragment>
         ))}
