@@ -19,5 +19,5 @@ export const WIDGET_MAP: Record<string, (config: any) => React.JSX.Element> = {
   fastercarsfrombehind: FasterCarsFromBehind,
   fuel: FuelCalculator,
   blindspotmonitor: BlindSpotMonitor,
-  // rejoin: RejoinIndicator,
+  rejoin: RejoinIndicator,
 };

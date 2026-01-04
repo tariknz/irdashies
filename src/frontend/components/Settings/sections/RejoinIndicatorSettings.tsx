@@ -7,7 +7,6 @@ const SETTING_ID = "rejoin"
 
 const defaultConfig: RejoinIndicatorWidgetSettings['config'] = {
   showAtSpeed: 30,
-  clearGap: 3.5,
   careGap: 2,
   stopGap: 1,
 };
@@ -19,7 +18,6 @@ const migrateConfig = (
   const config = savedConfig as Record<string, unknown>;
   return {
     showAtSpeed: (config.showAtSpeed as number) ?? 30,
-    clearGap: (config.clearGap as number) ?? 3.5,
     careGap: (config.careGap as number) ?? 2,
     stopGap: (config.stopGap as number) ?? 1,
   };
@@ -51,7 +49,7 @@ export const RejoinIndicatorSettings = () => {
   return (
     <BaseSettingsSection
       title="Rejoin Indicator"
-      description="Configure settings for the Rejoin Indicator."
+      description="Configure settings for the Rejoin Indicator. Note: The widget automatically hides while you're in the garage, in a pit stall, or on pit road."
       settings={settings}
       onSettingsChange={setSettings}
       widgetId={SETTING_ID}
@@ -72,24 +70,11 @@ export const RejoinIndicatorSettings = () => {
               step="0.1"
             />
           </div>
-          {/* Clear gap to rejoin */}
-          <div className="space-y-2">
-            <span className="text-slate-300">Clear Gap</span>
-              <p className="text-slate-400">Distance to the car behind where it is clear to rejoin</p>
-            <input
-              type="number"
-              value={settings.config.clearGap}
-              onChange={(e) => handleConfigChange({
-                clearGap: parseFloat(e.target.value)
-              })}
-              className="w-full rounded border-gray-600 bg-gray-700 p-2 text-slate-300"
-              step="0.1"
-            />
-          </div>
+
           {/* Care gap to rejoin */}
           <div className="space-y-2">
             <span className="text-slate-300">Care Gap</span>
-              <p className="text-slate-400">Distance to the car behind where you need to be cautious when rejoining</p>
+              <p className="text-slate-400">Distance to the car behind where you need to be cautious when rejoining. Note: the clear status will show when next car is above this gap</p>
             <input
               type="number"
               value={settings.config.careGap}
