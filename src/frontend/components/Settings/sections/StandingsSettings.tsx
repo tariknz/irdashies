@@ -24,7 +24,7 @@ const sortableSettings: SortableSetting[] = [
   { id: 'countryFlags', label: 'Country Flags', configKey: 'countryFlags' },
   { id: 'driverName', label: 'Driver Name', configKey: 'driverName' },
   { id: 'pitStatus', label: 'Pit Status', configKey: 'pitStatus', hasSubSetting: true },
-  { id: 'carManufacturer', label: 'Car Manufacturer', configKey: 'carManufacturer' },
+  { id: 'carManufacturer', label: 'Car Manufacturer', configKey: 'carManufacturer', hasSubSetting: true },
   { id: 'badge', label: 'Driver Badge', configKey: 'badge' },
   { id: 'iratingChange', label: 'iRating Change', configKey: 'iratingChange' },
   { id: 'gap', label: 'Gap', configKey: 'gap' },
@@ -53,7 +53,7 @@ const defaultConfig: StandingsWidgetSettings['config'] = {
     numTopDrivers: 3,
   },
   compound: { enabled: true },
-  carManufacturer: { enabled: true },
+  carManufacturer: { enabled: true, hideIfSingleMake: false },
   titleBar: { enabled: true, progressBar: { enabled: true } },
   headerBar: {
     enabled: true,
@@ -151,6 +151,7 @@ const migrateConfig = (
     },
     carManufacturer: {
       enabled: (config.carManufacturer as { enabled?: boolean })?.enabled ?? true,
+      hideIfSingleMake: (config.carManufacturer as { hideIfSingleMake?: boolean })?.hideIfSingleMake ?? false,
     },
     lapTimeDeltas: {
       enabled: (config.lapTimeDeltas as { enabled?: boolean })?.enabled ?? false,
@@ -302,6 +303,20 @@ const DisplaySettingsList = ({ itemsOrder, onReorder, settings, handleConfigChan
                     const cv = settings.config[setting.configKey] as { enabled: boolean; showPitTime?: boolean; [key: string]: unknown };
                     handleConfigChange({
                       [setting.configKey]: { ...cv, showPitTime: enabled }
+                    });
+                  }}
+                />
+              </div>
+            )}
+            {setting.hasSubSetting && setting.configKey === 'carManufacturer' && settings.config.carManufacturer.enabled && (
+              <div className="flex items-center justify-between pl-8 mt-2">
+                <span className="text-sm text-slate-300">Hide If Single Make</span>
+                <ToggleSwitch
+                  enabled={settings.config.carManufacturer.hideIfSingleMake ?? false}
+                  onToggle={(enabled) => {
+                    const cv = settings.config[setting.configKey] as { enabled: boolean; hideIfSingleMake?: boolean; [key: string]: unknown };
+                    handleConfigChange({
+                      [setting.configKey]: { ...cv, hideIfSingleMake: enabled }
                     });
                   }}
                 />
