@@ -3,6 +3,14 @@ export interface BaseWidgetSettings<T = Record<string, unknown>> {
   config: T;
 }
 
+export interface SessionVisibilitySettings {
+  race: boolean;
+  loneQualify: boolean;
+  openQualify: boolean;
+  practice: boolean;
+  offlineTesting: boolean;
+}
+
 export interface StandingsWidgetSettings extends BaseWidgetSettings {
   config: {
     iratingChange: { enabled: boolean };
