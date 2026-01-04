@@ -48,7 +48,7 @@ export const GarageCover = () => {
             }
             setTimeout(() => setImageUrl(dataUrl), 0); // force async update
         }
-    }, [settings.imageFilename, bridge, isElectronMode]);
+    }, [settings.imageFilename, isElectronMode]);
 
     // Only show in browser mode (for streaming), never in Electron
     if (isElectronMode) {
