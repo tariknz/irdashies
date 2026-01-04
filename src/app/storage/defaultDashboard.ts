@@ -389,7 +389,8 @@ export const defaultDashboard: DashboardLayout = {
         },
         "wind": {
           "enabled": true
-        }
+        },
+        "sessionVisibility": { race: true, loneQualify: true, openQualify: true, practice: true, offlineTesting: true }
       }
     },
     {

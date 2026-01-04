@@ -149,6 +149,7 @@ export interface WeatherWidgetSettings extends BaseWidgetSettings {
       enabled: boolean
     };
     units: 'auto' | 'Metric' | 'Imperial';
+    sessionVisibility: SessionVisibilitySettings;
   };
 };
 
