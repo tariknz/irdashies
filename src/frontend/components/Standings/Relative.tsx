@@ -6,7 +6,6 @@ import { SessionBar } from './components/SessionBar/SessionBar';
 
 import { TitleBar } from './components/TitleBar/TitleBar';
 import { usePitLapStoreUpdater } from '../../context/PitLapStore/PitLapStoreUpdater';
-import { useRelativeGapStoreUpdater } from '@irdashies/context';
 import { useWeekendInfoNumCarClasses } from '@irdashies/context';
 
 export const Relative = () => {
@@ -18,8 +17,6 @@ export const Relative = () => {
   const numCarClasses = useWeekendInfoNumCarClasses();
   const isMultiClass = (numCarClasses ?? 0) > 1;
 
-  // Update relative gap store with telemetry data
-  useRelativeGapStoreUpdater();
   usePitLapStoreUpdater();
 
   // Always render 2 * buffer + 1 rows (buffer above + player + buffer below)
