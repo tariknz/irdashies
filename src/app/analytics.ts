@@ -45,6 +45,7 @@ export class Analytics {
   private initialize(): void {
     const optOut = getAnalyticsOptOut();
     if (optOut === true) {
+      console.warn('[Analytics] Analytics opt-out is enabled, skipping initialization');
       return;
     }
     // POSTHOG_KEY is defined at build time via Vite's define option
