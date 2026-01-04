@@ -193,7 +193,8 @@ export const defaultDashboard: DashboardLayout = {
           "opacity": 80
         },
         "showOnlyWhenOnTrack": true,
-        "displayOrder": ["trace", "bar", "gear", "steer"]
+        "displayOrder": ["trace", "bar", "gear", "steer"],
+        "sessionVisibility": { race: true, loneQualify: true, openQualify: true, practice: true, offlineTesting: true }
       }
     },
     {

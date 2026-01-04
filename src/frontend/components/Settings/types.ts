@@ -193,6 +193,7 @@ export interface InputWidgetSettings extends BaseWidgetSettings {
     background: { opacity: number };
     displayOrder: string[];
     showOnlyWhenOnTrack: boolean;
+    sessionVisibility: SessionVisibilitySettings;
   };
 }
 
