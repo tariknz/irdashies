@@ -64,6 +64,7 @@ interface DriverRowInfoProps {
   penalty: boolean;
   slowdown: boolean;
   deltaDecimalPlaces?: number;
+  hideCarManufacturer?: boolean;
 }
 
 export const DriverInfoRow = memo(
@@ -110,6 +111,7 @@ export const DriverInfoRow = memo(
     slowdown,
     deltaDecimalPlaces,
     pitStopDuration: pitStopDurationProp,
+    hideCarManufacturer,
   }: DriverRowInfoProps) => {
     const pitStopDurations = usePitStopDuration();
     const pitStopDuration =
@@ -223,7 +225,8 @@ export const DriverInfoRow = memo(
           id: 'carManufacturer',
           shouldRender:
             (displayOrder ? displayOrder.includes('carManufacturer') : true) &&
-            (config?.carManufacturer?.enabled ?? true),
+            (config?.carManufacturer?.enabled ?? true) &&
+            !hideCarManufacturer,
           component: (
             <CarManufacturerCell
               key="carManufacturer"
@@ -424,6 +427,7 @@ export const DriverInfoRow = memo(
       tireCompound,
       lapTimeDeltas,
       emptyLapDeltaPlaceholders,
+      hideCarManufacturer,
     ]);
 
     return (

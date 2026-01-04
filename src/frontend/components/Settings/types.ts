@@ -22,7 +22,7 @@ export interface StandingsWidgetSettings extends BaseWidgetSettings {
       numTopDrivers: number;
     };
     compound: { enabled: boolean };
-    carManufacturer: { enabled: boolean };
+    carManufacturer: { enabled: boolean; hideIfSingleMake?: boolean };
     lapTimeDeltas: { enabled: boolean; numLaps: number };
     titleBar: { enabled: boolean; progressBar: { enabled: boolean } };
     headerBar: {
@@ -71,7 +71,7 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
     lastTime: { enabled: boolean; timeFormat: 'full' | 'mixed' | 'minutes' | 'seconds-full' | 'seconds-mixed' | 'seconds' };
     fastestTime: { enabled: boolean; timeFormat: 'full' | 'mixed' | 'minutes' | 'seconds-full' | 'seconds-mixed' | 'seconds' };
     compound: { enabled: boolean };
-    carManufacturer: { enabled: boolean };
+    carManufacturer: { enabled: boolean, hideIfSingleMake?: boolean };
     titleBar: { enabled: boolean; progressBar: { enabled: boolean } };
     headerBar: {
       enabled: boolean;
