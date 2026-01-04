@@ -2,7 +2,7 @@ import type { DashboardLayout, DashboardWidget } from '@irdashies/types';
 import { emitDashboardUpdated } from './dashboardEvents';
 import { defaultDashboard } from './defaultDashboard';
 import { readData, writeData } from './storage';
-import { writeFile, mkdir, readFile } from 'node:fs/promises';
+import { writeFile, mkdir, readFile, readdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { app } from 'electron';
 
@@ -231,12 +231,35 @@ export const getGarageCoverImageAsDataUrl = async (imageFilenameOrPath: string):
   }
 };
 
+/**
+ * Legacy function that looks for any custom-cover file with supported extensions.
+ * Note: This function searches for any custom-cover.* file since saveGarageCoverImage
+ * saves with different extensions (png, jpg, gif, webp) based on the file signature.
+ * Prefer using getGarageCoverImageAsDataUrl with the actual filename from the dashboard config.
+ */
 export const getGarageCoverImage = async (): Promise<string | null> => {
   try {
     const userDataPath = app.getPath('userData');
-    const imagePath = resolve(userDataPath, 'frontend', 'assets', 'img', 'custom-cover.png');
+    const assetsPath = resolve(userDataPath, 'frontend', 'assets', 'img');
     
-    return await getGarageCoverImageAsDataUrl(imagePath);
+    // Check for custom-cover with any supported extension
+    const supportedExtensions = ['png', 'jpg', 'jpeg', 'gif', 'webp'];
+    
+    try {
+      const files = await readdir(assetsPath);
+      const customCoverFile = files.find(file => 
+        file.startsWith('custom-cover.') && 
+        supportedExtensions.some(ext => file.endsWith(`.${ext}`))
+      );
+      
+      if (customCoverFile) {
+        return await getGarageCoverImageAsDataUrl(customCoverFile);
+      }
+    } catch (dirErr) {
+      console.log('Assets directory does not exist or is empty:', dirErr);
+    }
+    
+    return null;
   } catch (err) {
     console.error('Error reading garage cover image:', err);
     return null;
