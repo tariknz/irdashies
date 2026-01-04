@@ -354,7 +354,8 @@ export const defaultDashboard: DashboardLayout = {
         "playerCircleSize": 40,
         "trackLineWidth": 20,
         "trackOutlineWidth": 40,
-        "useHighlightColor": false
+        "useHighlightColor": false,
+        "sessionVisibility": { race: true, loneQualify: true, openQualify: true, practice: true, offlineTesting: true }
       }
     },
     {

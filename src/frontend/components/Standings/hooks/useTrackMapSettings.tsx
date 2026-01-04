@@ -4,8 +4,9 @@ import { TrackMapWidgetSettings } from '../../Settings/types';
 export const useTrackMapSettings = () => {
   const { currentDashboard } = useDashboard();
 
-  const settings = currentDashboard?.widgets.find(
-    (widget) => widget.id === 'map'
+  const standingsSettings = currentDashboard?.widgets.find(
+    (widget) => widget.id === 'standings',
   )?.config;
-  return settings as TrackMapWidgetSettings['config'];
-};
+  
+  return standingsSettings as TrackMapWidgetSettings['config'];
+}; 
