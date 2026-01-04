@@ -41,4 +41,6 @@ export const mockDashboardBridge: DashboardBridge = {
   stop: () => {
     return;
   },
+  getAnalyticsOptOut: () => Promise.resolve(false),
+  setAnalyticsOptOut: () => Promise.resolve(),
 }; 

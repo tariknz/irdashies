@@ -63,6 +63,12 @@ export function exposeBridge() {
         callback(value);
       });
     },
+    getAnalyticsOptOut: () => {
+      return ipcRenderer.invoke('getAnalyticsOptOut');
+    },
+    setAnalyticsOptOut: (optOut: boolean) => {
+      return ipcRenderer.invoke('setAnalyticsOptOut', optOut);
+    },
     stop: () => {
       ipcRenderer.removeAllListeners('editModeToggled');
       ipcRenderer.removeAllListeners('dashboardUpdated');
