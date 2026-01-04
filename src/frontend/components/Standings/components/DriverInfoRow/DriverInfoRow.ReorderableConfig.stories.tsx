@@ -337,12 +337,6 @@ const RelativeWithReorderableConfig = () => {
       },
       showOnlyWhenOnTrack: false,
       useLivePosition: false,
-      enhancedGapCalculation: {
-        enabled: true,
-        interpolationMethod: 'linear',
-        sampleInterval: 0.01,
-        maxLapHistory: 5,
-      },
     }),
     [displayOrder]
   );

@@ -111,12 +111,6 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
     driverName: { enabled: boolean };
     pitStatus: { enabled: boolean, showPitTime?: boolean };
     displayOrder: string[];
-    enhancedGapCalculation: {
-      enabled: boolean;
-      interpolationMethod: 'linear' | 'cubic';
-      sampleInterval: number;
-      maxLapHistory: number;
-    };
     useLivePosition: boolean;
   };
 }

@@ -251,12 +251,6 @@ export const defaultDashboard: DashboardLayout = {
           "enabled": false
         },
         "displayOrder": ["position", "carNumber", "countryFlags", "driverName", "pitStatus", "carManufacturer", "badge", "iratingChange", "delta", "fastestTime", "lastTime", "compound"],
-        "enhancedGapCalculation": {
-          "enabled": true,
-          "interpolationMethod": "linear",
-          "sampleInterval": 0.01,
-          "maxLapHistory": 5
-        },
         "titleBar": {
           "enabled": false,
           "progressBar": {

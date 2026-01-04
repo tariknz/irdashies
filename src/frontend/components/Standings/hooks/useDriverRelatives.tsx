@@ -2,36 +2,25 @@ import { useMemo } from 'react';
 import {
   useSessionStore,
   useTelemetryValues,
-  useRelativeGapStore,
-  detectEdgeCases,
-  calculateRelativeGap,
   useFocusCarIdx,
 } from '@irdashies/context';
 import { useDriverStandings } from './useDriverPositions';
 import type { Standings } from '../createStandings';
 
-
-
 export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
   const driversGrouped = useDriverStandings();
   const drivers = driversGrouped as Standings[];
   const carIdxLapDistPct = useTelemetryValues('CarIdxLapDistPct');
-  const carIdxLap = useTelemetryValues('CarIdxLap');
-  const carIdxTrackSurface = useTelemetryValues('CarIdxTrackSurface');
-  const sessionTime = useTelemetryValues('SessionTime')?.[0] ?? 0;
+  // CarIdxEstTime - iRacing's native estimated time gap calculation
+  const carIdxEstTime = useTelemetryValues('CarIdxEstTime');
   // Use focus car index which handles spectator mode (uses CamCarIdx when spectating)
   const playerIndex = useFocusCarIdx();
   const paceCarIdx =
     useSessionStore((s) => s.session?.DriverInfo?.PaceCarIdx) ?? -1;
 
-  // Access RelativeGapStore config values individually to prevent infinite loops
-  const isEnhancedEnabled = useRelativeGapStore((state) => state.config.enabled);
-  const interpolationMethod = useRelativeGapStore((state) => state.config.interpolationMethod);
-
   const standings = useMemo(() => {
-    // Get store reference inside useMemo to access getCarHistory
-    const store = useRelativeGapStore.getState();
     const driversByCarIdx = new Map(drivers.map(driver => [driver.carIdx, driver]));
+
     const calculateRelativePct = (carIdx: number) => {
       if (playerIndex === undefined) {
         return NaN;
@@ -57,81 +46,77 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
 
     const calculateDelta = (otherCarIdx: number) => {
       const playerCarIdx = playerIndex ?? 0;
-
-      const playerDistPct = carIdxLapDistPct?.[playerCarIdx];
-      const otherDistPct = carIdxLapDistPct?.[otherCarIdx];
-      const playerLap = carIdxLap?.[playerCarIdx] ?? 0;
-      const otherLap = carIdxLap?.[otherCarIdx] ?? 0;
-
       const player = playerIndex !== undefined ? driversByCarIdx.get(playerIndex) : undefined;
       const other = driversByCarIdx.get(otherCarIdx);
 
-      // Get class estimated lap times (fallback for Tier 3)
-      const playerEstLapTime = player?.carClass?.estLapTime ?? 0;
+      // Get class info
+      const playerClassId = player?.carClass?.id;
+      const otherClassId = other?.carClass?.id;
+      const isSameClass = playerClassId !== undefined && playerClassId === otherClassId;
+
+      // Get lap times - use other car's class lap time for cross-class (more accurate for their position)
       const otherEstLapTime = other?.carClass?.estLapTime ?? 0;
+      const playerEstLapTime = player?.carClass?.estLapTime ?? 0;
+      // For cross-class, use the other car's lap time; for same-class, use the faster time
+      const baseLapTime = isSameClass
+        ? Math.min(playerEstLapTime, otherEstLapTime) || Math.max(playerEstLapTime, otherEstLapTime)
+        : otherEstLapTime || playerEstLapTime;
 
-      // Check if enhanced gap calculation is enabled
-      if (isEnhancedEnabled) {
-        // Get position history for both cars
-        const playerHistory = store.getCarHistory(playerCarIdx);
-        const otherHistory = store.getCarHistory(otherCarIdx);
+      // Calculate distance-based delta (always needed for sanity check and fallback)
+      const playerDistPct = carIdxLapDistPct?.[playerCarIdx];
+      const otherDistPct = carIdxLapDistPct?.[otherCarIdx];
 
-        // Detect edge cases
-        const otherTrackSurface = carIdxTrackSurface?.[otherCarIdx] ?? 0;
-        const isOffTrack = otherTrackSurface === -1 || otherTrackSurface === 0;
-        const isInPits = other?.onPitRoad ?? false;
-        const hasLapHistory = (otherHistory?.lapRecords?.length ?? 0) > 0;
-
-        const edgeCase = detectEdgeCases(
-          otherCarIdx,
-          isOffTrack,
-          isInPits,
-          otherLap,
-          hasLapHistory,
-        );
-
-        // Calculate relative gap using three-tier system
-        const gapResult = calculateRelativeGap(
-          playerHistory,
-          otherHistory,
-          {
-            playerCarIdx,
-            otherCarIdx,
-            playerPosition: playerDistPct ?? 0,
-            otherPosition: otherDistPct ?? 0,
-            playerLap,
-            otherLap,
-            sessionTime,
-          },
-          playerEstLapTime,
-          otherEstLapTime,
-          edgeCase,
-          interpolationMethod,
-        );
-
-        return gapResult.timeGap;
+      if (playerDistPct === undefined || otherDistPct === undefined) {
+        return 0;
       }
 
-      // Fallback to old simple distance-based calculation
-      const baseLapTime = Math.max(playerEstLapTime, otherEstLapTime);
-
       let distPctDifference = otherDistPct - playerDistPct;
-
       if (distPctDifference > 0.5) {
         distPctDifference -= 1.0;
       } else if (distPctDifference < -0.5) {
         distPctDifference += 1.0;
       }
+      const distanceBasedDelta = distPctDifference * baseLapTime;
 
-      const timeDelta = distPctDifference * baseLapTime;
+      // Check if either car is in pits - CarIdxEstTime is unreliable for pit cars
+      const playerInPits = player?.onPitRoad ?? false;
+      const otherInPits = other?.onPitRoad ?? false;
 
-      return timeDelta;
+      // Only use CarIdxEstTime for same-class cars on track
+      // It drifts for cross-class due to different lap speed assumptions
+      if (!isSameClass || playerInPits || otherInPits) {
+        return distanceBasedDelta;
+      }
+
+      // Use iRacing's native CarIdxEstTime for same-class gap calculation
+      const playerEstTime = carIdxEstTime?.[playerCarIdx];
+      const otherEstTime = carIdxEstTime?.[otherCarIdx];
+
+      if (playerEstTime === undefined || otherEstTime === undefined) {
+        return distanceBasedDelta;
+      }
+
+      const estTimeDelta = otherEstTime - playerEstTime;
+
+      // Sanity check: CarIdxEstTime can be wrong after pit exit, teleport, or at S/F crossing
+      // 1. Gap must be reasonable (not more than half a lap time)
+      // 2. Sign must match the distance-based calculation (both agree on who is ahead)
+      const maxReasonableGap = baseLapTime * 0.5;
+      const signsMatch = (estTimeDelta >= 0) === (distanceBasedDelta >= 0) ||
+                         Math.abs(distanceBasedDelta) < 0.5; // Allow small deltas where sign might flip
+      const estTimeIsSane = Math.abs(estTimeDelta) < maxReasonableGap && signsMatch;
+
+      if (!estTimeIsSane) {
+        return distanceBasedDelta;
+      }
+
+      return estTimeDelta;
     };
 
     const sortedDrivers = drivers
-      .filter((driver) => 
-        (driver.onTrack || driver.carIdx === playerIndex) && 
-        driver.carIdx > -1 && 
+      .filter((driver) =>
+        (driver.onTrack || driver.carIdx === playerIndex) &&
+        driver.carIdx > -1 &&
         driver.carIdx !== paceCarIdx
       )
       .map((result) => {
@@ -167,7 +152,7 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
       .slice(0, buffer);
 
     return [...driversAhead, player, ...driversBehind];
-  }, [buffer, playerIndex, carIdxLapDistPct, carIdxLap, carIdxTrackSurface, sessionTime, drivers, paceCarIdx, isEnhancedEnabled, interpolationMethod]);
+  }, [buffer, playerIndex, carIdxLapDistPct, drivers, paceCarIdx, carIdxEstTime]);
 
   return standings;
 };

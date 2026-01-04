@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
-import { useDashboard, useRelativeGapStore } from '@irdashies/context';
+import { useDashboard } from '@irdashies/context';
 import { RelativeWidgetSettings } from '../types';
 import { ToggleSwitch } from '../components/ToggleSwitch';
 import { useSortableList } from '../../SortableList';
@@ -49,12 +49,6 @@ const defaultConfig: RelativeWidgetSettings['config'] = {
   lastTime: { enabled: false, timeFormat: 'full' },
   compound: { enabled: false },
   displayOrder: sortableSettings.map(s => s.id),
-  enhancedGapCalculation: {
-    enabled: true,
-    interpolationMethod: 'linear',
-    sampleInterval: 0.01,
-    maxLapHistory: 5,
-  },
   titleBar: { enabled: true, progressBar: { enabled: true } },
   headerBar: {
     enabled: true,
@@ -93,7 +87,6 @@ const defaultConfig: RelativeWidgetSettings['config'] = {
 const migrateConfig = (savedConfig: unknown): RelativeWidgetSettings['config'] => {
   if (!savedConfig || typeof savedConfig !== 'object') return defaultConfig;
   const config = savedConfig as Record<string, unknown>;
-  const enhancedGap = config.enhancedGapCalculation as { enabled?: boolean; interpolationMethod?: 'linear' | 'cubic'; sampleInterval?: number; maxLapHistory?: number } | undefined;
   return {
     buffer: (config.buffer as number) ?? 3,
     background: { opacity: (config.background as { opacity?: number })?.opacity ?? 0 },
@@ -119,12 +112,6 @@ const migrateConfig = (savedConfig: unknown): RelativeWidgetSettings['config'] =
     lastTime: { enabled: (config.lastTime as { enabled?: boolean; timeFormat?: string })?.enabled ?? false, timeFormat: ((config.lastTime as { enabled?: boolean; timeFormat?: string })?.timeFormat as 'full' | 'mixed' | 'minutes' | 'seconds-full' | 'seconds-mixed' | 'seconds') ?? 'full' },
     compound: { enabled: (config.compound as { enabled?: boolean })?.enabled ?? false },
     displayOrder: mergeDisplayOrder(sortableSettings.map(s => s.id), config.displayOrder as string[]),
-    enhancedGapCalculation: {
-      enabled: enhancedGap?.enabled ?? true,
-      interpolationMethod: enhancedGap?.interpolationMethod ?? 'linear',
-      sampleInterval: enhancedGap?.sampleInterval ?? 0.01,
-      maxLapHistory: enhancedGap?.maxLapHistory ?? 5,
-    },
     titleBar: {
       enabled: (config.titleBar as { enabled?: boolean })?.enabled ?? true,
       progressBar: {
@@ -430,19 +417,6 @@ export const RelativeSettings = () => {
   });
   const [itemsOrder, setItemsOrder] = useState(settings.config.displayOrder);
 
-  const updateStoreConfig = useRelativeGapStore((state) => state.updateConfig);
-
-  useEffect(() => {
-    const config = settings.config.enhancedGapCalculation;
-    updateStoreConfig({
-      enabled: config.enabled,
-      interpolationMethod: config.interpolationMethod,
-      sampleInterval: config.sampleInterval,
-      maxLapHistory: config.maxLapHistory,
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   if (!currentDashboard) {
     return <>Loading...</>;
   }
@@ -685,118 +659,36 @@ export const RelativeSettings = () => {
               </div>
             </div>
 
-            {/* Enhanced Gap Calculation Section */}
+            {/* Relative Precision Settings */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium text-slate-200">Enhanced Gap Calculation</h3>
+                <h3 className="text-lg font-medium text-slate-200">Relative Time</h3>
               </div>
               <div className="space-y-3 px-4">
-                <div>
-                  <p className="text-xs text-slate-400 mb-3">
-                    Uses position/time records for accurate multi-class gaps instead of simple distance-based estimates
-                  </p>
-                </div>
-
                 <div className="flex items-center justify-between">
                   <div>
-                    <span className="text-sm text-slate-300">Enable Enhanced Calculation</span>
-                    <p className="text-xs text-slate-400">Uses lap data interpolation for accuracy</p>
+                    <span className="text-sm text-slate-300">Decimal places</span>
+                    <p className="text-xs text-slate-400">Number of decimal places to display</p>
                   </div>
-                  <ToggleSwitch
-                    enabled={settings.config.enhancedGapCalculation.enabled}
-                    onToggle={(enabled) => {
-                      const newConfig = {
-                        ...settings.config.enhancedGapCalculation,
-                        enabled,
-                      };
+                  <select
+                    value={settings.config.delta.precision}
+                    onChange={(e) => {
                       handleConfigChange({
-                        enhancedGapCalculation: newConfig,
+                        delta: {
+                          ...settings.config.delta,
+                          precision: parseInt(e.target.value),
+                        },
                       });
-                      updateStoreConfig(newConfig);
                     }}
-                  />
+                    className="bg-slate-700 text-slate-200 px-3 py-1 rounded border border-slate-600 focus:border-blue-500 focus:outline-none"
+                  >
+                    {[0, 1, 2, 3].map((num) => (
+                      <option key={num} value={num}>
+                        {num}
+                      </option>
+                    ))}
+                  </select>
                 </div>
-
-                {settings.config.enhancedGapCalculation.enabled && (
-                  <>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <span className="text-sm text-slate-300">Interpolation Method</span>
-                        <p className="text-xs text-slate-400">Linear is more stable, cubic is smoother</p>
-                      </div>
-                      <select
-                        value={settings.config.enhancedGapCalculation.interpolationMethod}
-                        onChange={(e) => {
-                          const newConfig = {
-                            ...settings.config.enhancedGapCalculation,
-                            interpolationMethod: e.target.value as 'linear' | 'cubic',
-                          };
-                          handleConfigChange({
-                            enhancedGapCalculation: newConfig,
-                          });
-                          updateStoreConfig(newConfig);
-                        }}
-                        className="bg-slate-700 text-slate-200 px-3 py-1 rounded border border-slate-600 focus:border-blue-500 focus:outline-none"
-                      >
-                        <option value="linear">Linear</option>
-                        <option value="cubic">Cubic Spline</option>
-                      </select>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <span className="text-sm text-slate-300">Max Lap History</span>
-                        <p className="text-xs text-slate-400">Number of recent laps to keep for each car</p>
-                      </div>
-                      <select
-                        value={settings.config.enhancedGapCalculation.maxLapHistory}
-                        onChange={(e) => {
-                          const newConfig = {
-                            ...settings.config.enhancedGapCalculation,
-                            maxLapHistory: parseInt(e.target.value),
-                          };
-                          handleConfigChange({
-                            enhancedGapCalculation: newConfig,
-                          });
-                          updateStoreConfig(newConfig);
-                        }}
-                        className="bg-slate-700 text-slate-200 px-3 py-1 rounded border border-slate-600 focus:border-blue-500 focus:outline-none"
-                      >
-                        {[3, 5, 7, 10].map((num) => (
-                          <option key={num} value={num}>
-                            {num} laps
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <span className="text-sm text-slate-300">Relative precision value</span>
-                        <p className="text-xs text-slate-400">Number of decimal places to display</p>
-                      </div>
-                      <select
-                        value={settings.config.delta.precision}
-                        onChange={(e) => {
-                          const newConfig = {
-                            ...settings.config.delta,
-                            precision: parseInt(e.target.value),
-                          };
-                          handleConfigChange({
-                            delta: newConfig,
-                          });
-                          updateStoreConfig(newConfig);
-                        }}
-                        className="bg-slate-700 text-slate-200 px-3 py-1 rounded border border-slate-600 focus:border-blue-500 focus:outline-none"
-                      >
-                        {[0, 1, 2, 3].map((num) => (
-                          <option key={num} value={num}>
-                            {num}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </>
-                )}
               </div>
             </div>
 
