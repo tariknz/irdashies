@@ -123,6 +123,7 @@ export async function publishDashboardUpdates(overlayManager: OverlayManager, an
       console.error('Error loading garage cover image as data URL:', err);
       throw err;
     }
+  });
   ipcMain.handle('getAnalyticsOptOut', () => {
     return getAnalyticsOptOutStorage();
   });
