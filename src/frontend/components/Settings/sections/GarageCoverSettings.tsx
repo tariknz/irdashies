@@ -73,6 +73,54 @@ export const GarageCoverSettings = () => {
         loadPreview(settings.config.imageFilename);
     }, [settings.config.imageFilename]);
 
+    // Helper to update imageFilename in config
+    const updateImageFilename = (filename: string) => {
+        if (configChangeHandlerRef.current) {
+            configChangeHandlerRef.current({ imageFilename: filename });
+        } else {
+            // Fallback to direct state update
+            setSettings(prev => ({
+                ...prev,
+                config: {
+                    ...prev.config,
+                    imageFilename: filename,
+                },
+            }));
+        }
+    };
+
+    // Common image processing logic
+    const processImageFile = (file: File) => {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const imageData = event.target?.result as string;
+            const imageBuffer = Uint8Array.from(atob(imageData.split(',')[1]), (c) => c.charCodeAt(0));
+
+            // Call bridge to save image file (Electron only)
+            if ('saveGarageCoverImage' in bridge) {
+                (bridge.saveGarageCoverImage as (buffer: Uint8Array) => Promise<string>)(imageBuffer)
+                    .then((filePath) => {
+                        console.log('[GarageCoverSettings] Image saved to:', filePath);
+                        // Extract just the filename from the path
+                        const filename = filePath.split(/[\\/]/).pop() || '';
+                        updateImageFilename(filename);
+                    })
+                    .catch((err) => {
+                        console.error('[GarageCoverSettings] Error saving image:', err);
+                        // Still save to localStorage as fallback
+                        localStorage.setItem(LOCALSTORAGE_KEY, imageData);
+                        updateImageFilename('browser-mode');
+                    });
+            } else {
+                // Browser mode - save to localStorage
+                console.log('[GarageCoverSettings] Browser mode - saving to localStorage, key:', LOCALSTORAGE_KEY, 'data length:', imageData.length);
+                localStorage.setItem(LOCALSTORAGE_KEY, imageData);
+                updateImageFilename('browser-mode');
+            }
+        };
+        reader.readAsDataURL(file);
+    };
+
     const handleImageDrop = (e: React.DragEvent<HTMLDivElement>) => {
         e.preventDefault();
         e.stopPropagation();
@@ -81,51 +129,7 @@ export const GarageCoverSettings = () => {
         if (files.length > 0) {
             const file = files[0];
             if (file.type.startsWith('image/')) {
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    const imageData = event.target?.result as string;
-                    const imageBuffer = Uint8Array.from(atob(imageData.split(',')[1]), (c) => c.charCodeAt(0));
-
-                    // Set imageFilename in config
-                    const setImageFilename = (filename: string) => {
-                        if (configChangeHandlerRef.current) {
-                            configChangeHandlerRef.current({ imageFilename: filename });
-                        } else {
-                            // Fallback to direct state update
-                            setSettings(prev => ({
-                                ...prev,
-                                config: {
-                                    ...prev.config,
-                                    imageFilename: filename,
-                                },
-                            }));
-                        }
-                    };
-
-                    // Call bridge to save image file (Electron only)
-                    if ('saveGarageCoverImage' in bridge) {
-                        (bridge.saveGarageCoverImage as (buffer: Uint8Array) => Promise<string>)(imageBuffer)
-                            .then((filePath) => {
-                                console.log('[GarageCoverSettings] Image saved to:', filePath);
-                                // Extract just the filename from the path
-                                const filename = filePath.split(/[\\/]/).pop() || '';
-                                setImageFilename(filename);
-                            })
-                            .catch((err) => {
-                                console.error('[GarageCoverSettings] Error saving image:', err);
-                                // Still save to localStorage as fallback
-                                localStorage.setItem(LOCALSTORAGE_KEY, imageData);
-                                setImageFilename('browser-mode');
-                            });
-                    } else {
-                        // Browser mode - save to localStorage
-                        console.log('[GarageCoverSettings] Browser mode (drag) - saving to localStorage, key:', LOCALSTORAGE_KEY, 'data length:', imageData.length);
-                        localStorage.setItem(LOCALSTORAGE_KEY, imageData);
-                        console.log('[GarageCoverSettings] Verification (drag) - localStorage now has:', localStorage.getItem(LOCALSTORAGE_KEY)?.substring(0, 50));
-                        setImageFilename('browser-mode');
-                    }
-                };
-                reader.readAsDataURL(file);
+                processImageFile(file);
             }
         }
     };
@@ -133,49 +137,7 @@ export const GarageCoverSettings = () => {
     const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files;
         if (files && files.length > 0) {
-            const file = files[0];
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                const imageData = event.target?.result as string;
-                const imageBuffer = Uint8Array.from(atob(imageData.split(',')[1]), (c) => c.charCodeAt(0));
-
-                // Set imageFilename in config
-                const setImageFilename = (filename: string) => {
-                    const filenameToSave = 'saveGarageCoverImage' in bridge ? filename : 'browser-mode';
-                    if (configChangeHandlerRef.current) {
-                        configChangeHandlerRef.current({ imageFilename: filenameToSave });
-                    } else {
-                        setSettings(prev => ({
-                            ...prev,
-                            config: {
-                                ...prev.config,
-                                imageFilename: filenameToSave,
-                            },
-                        }));
-                    }
-                };
-
-                // Call bridge to save image file (Electron only)
-                if ('saveGarageCoverImage' in bridge) {
-                    (bridge.saveGarageCoverImage as (buffer: Uint8Array) => Promise<string>)(imageBuffer)
-                        .then((filePath) => {
-                            const filename = filePath.split(/[\\/]/).pop() || '';
-                            console.log('[GarageCover] Image saved:', filename);
-                            setImageFilename(filename);
-                        })
-                        .catch((err) => {
-                            console.error('[GarageCover] Error saving image:', err);
-                            localStorage.setItem(LOCALSTORAGE_KEY, imageData);
-                            setImageFilename('browser-mode');
-                        });
-                } else {
-                    // Browser mode - save to localStorage
-                    localStorage.setItem(LOCALSTORAGE_KEY, imageData);
-                    console.log('[GarageCover] Image saved to browser storage');
-                    setImageFilename('browser-mode');
-                }
-            };
-            reader.readAsDataURL(file);
+            processImageFile(files[0]);
         }
     };
 
