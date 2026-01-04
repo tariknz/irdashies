@@ -64,6 +64,8 @@ const createMockBridge = (
   getCurrentDashboard: () => {
     return null;
   },
+  getAnalyticsOptOut: () => Promise.resolve(false),
+  setAnalyticsOptOut: () => Promise.resolve(),
   stop: () => {
     return;
   },

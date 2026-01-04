@@ -3,6 +3,8 @@ import type { DashboardBridge, DashboardLayout } from '@irdashies/types';
 import { onDashboardUpdated } from '../../storage/dashboardEvents';
 import { getDashboard, saveDashboard, resetDashboard, saveGarageCoverImage, getGarageCoverImageAsDataUrl } from '../../storage/dashboards';
 import { OverlayManager } from '../../overlayManager';
+import { getAnalyticsOptOut as getAnalyticsOptOutStorage, setAnalyticsOptOut as setAnalyticsOptOutStorage } from '../../storage/analytics';
+import { Analytics } from '../../analytics';
 
 // Store callbacks for dashboard updates
 const dashboardUpdateCallbacks: Set<(dashboard: DashboardLayout) => void> = new Set<(dashboard: DashboardLayout) => void>();
@@ -43,6 +45,12 @@ export const dashboardBridge: DashboardBridge = {
   toggleDemoMode: () => {
     return;
   },
+  getAnalyticsOptOut: async () => {
+    return getAnalyticsOptOutStorage();
+  },
+  setAnalyticsOptOut: async (optOut: boolean) => {
+    setAnalyticsOptOutStorage(optOut);
+  },
   stop: () => {
     return;
   },
@@ -56,7 +64,7 @@ export const dashboardBridge: DashboardBridge = {
   }
 };
 
-export async function publishDashboardUpdates(overlayManager: OverlayManager) {
+export async function publishDashboardUpdates(overlayManager: OverlayManager, analytics: Analytics) {
   onDashboardUpdated((dashboard) => {
     overlayManager.closeOrCreateWindows(dashboard);
     overlayManager.publishMessage('dashboardUpdated', dashboard);
@@ -115,6 +123,18 @@ export async function publishDashboardUpdates(overlayManager: OverlayManager) {
       console.error('Error loading garage cover image as data URL:', err);
       throw err;
     }
+  ipcMain.handle('getAnalyticsOptOut', () => {
+    return getAnalyticsOptOutStorage();
+  });
+
+  ipcMain.handle('setAnalyticsOptOut', (_, optOut: boolean) => {
+    setAnalyticsOptOutStorage(optOut);
+    analytics.capture({
+      event: 'analytics_opt_out_changed',
+      properties: {
+        opt_out: optOut,
+      },
+    });
   });
 }
 

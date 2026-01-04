@@ -68,6 +68,11 @@ export function exposeBridge() {
     },
     getGarageCoverImageAsDataUrl: (imagePath: string) => {
       return ipcRenderer.invoke('getGarageCoverImageAsDataUrl', imagePath);
+    getAnalyticsOptOut: () => {
+      return ipcRenderer.invoke('getAnalyticsOptOut');
+    },
+    setAnalyticsOptOut: (optOut: boolean) => {
+      return ipcRenderer.invoke('setAnalyticsOptOut', optOut);
     },
     stop: () => {
       ipcRenderer.removeAllListeners('editModeToggled');

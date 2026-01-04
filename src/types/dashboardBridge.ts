@@ -17,5 +17,7 @@ export interface DashboardBridge {
   getCurrentDashboard: () => DashboardLayout | null;
   saveGarageCoverImage: (buffer: Uint8Array) => Promise<string>;
   getGarageCoverImageAsDataUrl: (imagePath: string) => Promise<string | null>;
+  getAnalyticsOptOut: () => Promise<boolean>;
+  setAnalyticsOptOut: (optOut: boolean) => Promise<void>;
   stop: () => void;
 }

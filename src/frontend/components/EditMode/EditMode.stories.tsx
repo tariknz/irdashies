@@ -18,6 +18,8 @@ const mockDashboard: DashboardLayout = {
 };
 
 const mockBridge: (editMode: boolean) => DashboardBridge = (editMode) => ({
+  getAnalyticsOptOut: () => Promise.resolve(false),
+  setAnalyticsOptOut: () => Promise.resolve(),
   saveDashboard: () => {
     // noop
   },
