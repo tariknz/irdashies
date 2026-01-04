@@ -429,7 +429,8 @@ export const defaultDashboard: DashboardLayout = {
         "safetyMargin": 0.05,
         "background": {
           "opacity": 85
-        }
+        },
+        "sessionVisibility": { race: true, loneQualify: true, openQualify: true, practice: true, offlineTesting: true }
       }
     },
     {

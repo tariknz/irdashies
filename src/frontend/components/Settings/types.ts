@@ -143,8 +143,8 @@ export interface WeatherWidgetSettings extends BaseWidgetSettings {
     humidity: {
       enabled: boolean
     };
-    wind: { 
-      enabled: boolean 
+    wind: {
+      enabled: boolean
     };
     units: 'auto' | 'Metric' | 'Imperial';
   };
@@ -215,6 +215,7 @@ export interface FuelWidgetSettings extends BaseWidgetSettings {
     safetyMargin: number;
     background: { opacity: number };
     fuelRequiredMode: 'toFinish' | 'toAdd';
+    sessionVisibility: SessionVisibilitySettings;
   };
 }
 
