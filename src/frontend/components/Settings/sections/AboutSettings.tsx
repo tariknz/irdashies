@@ -75,13 +75,11 @@ export const AboutSettings = () => {
         <div className="flex flex-col gap-4 mb-2">
           <div>
             <h3 className="text-lg font-semibold">Privacy Policy</h3>
-            <p className="text-sm text-slate-400">
-              Last updated January 2026
-            </p>
+            <p className="text-sm text-slate-400">Last updated January 2026</p>
           </div>
 
           <div className="text-sm text-slate-400">
-            <div className='mb-2'>
+            <div className="mb-2">
               irDashies collects limited, anonymous usage data to help us
               improve the application, identify issues, and prioritise future
               development.
@@ -119,8 +117,10 @@ export const AboutSettings = () => {
                   </strong>
                   <br />
                   Used to understand active user counts, retention trends, and
-                  country-level usage to guide localisation and roadmap
-                  decisions. Location data is derived at a country level only.
+                  regional usage to guide localisation and roadmap decisions.
+                  Location is approximated using IP-based geolocation at a city
+                  level. IP addresses are not stored, and only approximate
+                  location data (such as city and country) is retained.
                 </li>
               </ul>
             </div>
@@ -182,7 +182,8 @@ export const AboutSettings = () => {
                 Your Choices
               </h2>
               <p>
-                You may disable analytics collection at any time by opting out below.
+                You may disable analytics collection at any time by opting out
+                below.
               </p>
             </div>
 
@@ -219,12 +220,16 @@ export const AboutSettings = () => {
               htmlFor="analytics-enabled"
               className="flex-1 text-sm text-slate-300 cursor-pointer"
             >
-              <span className="font-medium">Enable analytics data collection</span>
+              <span className="font-medium">
+                Enable analytics data collection
+              </span>
               <p className="mt-1 text-slate-400">
-                Help improve the application by sharing anonymous usage data. You can opt out at any time by unchecking this box.
+                Help improve the application by sharing anonymous usage data.
+                You can opt out at any time by unchecking this box.
               </p>
               <p className="mt-2 text-slate-400 font-bold">
-                Note: Please restart the application for this setting to take effect.
+                Note: Please restart the application for this setting to take
+                effect.
               </p>
             </label>
           </div>
