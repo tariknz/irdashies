@@ -66,9 +66,6 @@ export function exposeBridge() {
     saveGarageCoverImage: (buffer: Uint8Array) => {
       return ipcRenderer.invoke('saveGarageCoverImage', Array.from(buffer));
     },
-    getGarageCoverImage: () => {
-      return ipcRenderer.invoke('getGarageCoverImage');
-    },
     getGarageCoverImageAsDataUrl: (imagePath: string) => {
       return ipcRenderer.invoke('getGarageCoverImageAsDataUrl', imagePath);
     },

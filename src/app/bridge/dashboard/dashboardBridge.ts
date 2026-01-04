@@ -98,18 +98,15 @@ export async function publishDashboardUpdates(overlayManager: OverlayManager) {
 
   ipcMain.handle('saveGarageCoverImage', async (_, buffer: number[]) => {
     try {
-      console.log('[Bridge] saveGarageCoverImage called with buffer length:', buffer.length);
       const uint8Array = new Uint8Array(buffer);
-      console.log('[Bridge] Converted to Uint8Array, length:', uint8Array.length);
       const imagePath = await saveGarageCoverImage(uint8Array);
-      console.log('[Bridge] Image saved successfully at:', imagePath);
       return imagePath;
     } catch (err) {
       console.error('[Bridge] Error saving garage cover image:', err);
       throw err;
     }
   });
-  
+
   ipcMain.handle('getGarageCoverImageAsDataUrl', async (_, imagePath: string) => {
     try {
       const dataUrl = await getGarageCoverImageAsDataUrl(imagePath);

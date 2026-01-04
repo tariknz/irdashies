@@ -42,6 +42,5 @@ export const mockDashboardBridge: DashboardBridge = {
     return;
   },
   saveGarageCoverImage: () => Promise.resolve(''),
-  getGarageCoverImage: () => Promise.resolve(null),
   getGarageCoverImageAsDataUrl: () => Promise.resolve(null),
 }; 

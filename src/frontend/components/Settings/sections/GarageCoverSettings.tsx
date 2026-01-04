@@ -52,7 +52,6 @@ export const GarageCoverSettings = () => {
 
     // Initialize settings from current dashboard once on mount
     // hasInitializedRef prevents re-initialization if currentDashboard changes
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => {
         if (!currentDashboard || hasInitializedRef.current) return;
 
@@ -66,7 +65,7 @@ export const GarageCoverSettings = () => {
         };
         setTimeout(() => setSettings(newSettings), 0);
         // Preview will be loaded by the next effect when settings change
-    }, []);
+    }, [currentDashboard]);
 
     // Load preview when imageFilename changes
     useEffect(() => {

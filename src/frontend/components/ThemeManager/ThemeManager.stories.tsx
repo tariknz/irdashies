@@ -68,7 +68,6 @@ const createMockBridge = (
     return;
   },
   saveGarageCoverImage: () => Promise.resolve(''),
-  getGarageCoverImage: () => Promise.resolve(null),
   getGarageCoverImageAsDataUrl: () => Promise.resolve(null),
 });
 
