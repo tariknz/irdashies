@@ -1,6 +1,7 @@
 import { memo, useMemo } from 'react';
 import { getTailwindStyle } from '@irdashies/utils/colors';
 import { formatTime, type TimeFormat } from '@irdashies/utils/time';
+import { usePitStopDuration } from '@irdashies/context';
 import type { LastTimeState } from '../../createStandings';
 import type {
   RelativeWidgetSettings,
@@ -56,12 +57,14 @@ interface DriverRowInfoProps {
   prevCarTrackSurface?: number;
   carTrackSurface?: number;
   currentSessionType?: string;
+  pitStopDuration?: number | null;
   highlightColor?: number;
   dnf: boolean;
   repair: boolean;
   penalty: boolean;
   slowdown: boolean;
   deltaDecimalPlaces?: number;
+  hideCarManufacturer?: boolean;
 }
 
 export const DriverInfoRow = memo(
@@ -107,7 +110,13 @@ export const DriverInfoRow = memo(
     penalty,
     slowdown,
     deltaDecimalPlaces,
+    pitStopDuration: pitStopDurationProp,
+    hideCarManufacturer,
   }: DriverRowInfoProps) => {
+    const pitStopDurations = usePitStopDuration();
+    const pitStopDuration =
+      pitStopDurationProp ?? pitStopDurations[carIdx] ?? null;
+
     const lastTimeString = useMemo(() => {
       const format = config?.lastTime?.timeFormat ?? 'full';
       return formatTime(lastTime, format as TimeFormat);
@@ -207,6 +216,8 @@ export const DriverInfoRow = memo(
               repair={repair}
               penalty={penalty}
               slowdown={slowdown}
+              pitStopDuration={pitStopDuration}
+              showPitTime={config?.pitStatus?.showPitTime ?? false}
             />
           ),
         },
@@ -214,7 +225,8 @@ export const DriverInfoRow = memo(
           id: 'carManufacturer',
           shouldRender:
             (displayOrder ? displayOrder.includes('carManufacturer') : true) &&
-            (config?.carManufacturer?.enabled ?? true),
+            (config?.carManufacturer?.enabled ?? true) &&
+            !hideCarManufacturer,
           component: (
             <CarManufacturerCell
               key="carManufacturer"
@@ -257,7 +269,14 @@ export const DriverInfoRow = memo(
             (displayOrder ? displayOrder.includes('delta') : true) &&
             (config?.delta?.enabled ?? true) &&
             !(config && 'gap' in config),
-          component: <DeltaCell key="delta" hidden={hidden} delta={delta} decimalPlaces={deltaDecimalPlaces} />,
+          component: (
+            <DeltaCell
+              key="delta"
+              hidden={hidden}
+              delta={delta}
+              decimalPlaces={deltaDecimalPlaces}
+            />
+          ),
         },
         {
           id: 'gap',
@@ -270,7 +289,7 @@ export const DriverInfoRow = memo(
               key="gap"
               hidden={hidden}
               delta={gap}
-              showForUndefined={position === 1 ? "gap" : undefined}
+              showForUndefined={position === 1 ? 'gap' : undefined}
               decimalPlaces={deltaDecimalPlaces}
             />
           ),
@@ -288,7 +307,7 @@ export const DriverInfoRow = memo(
               key="interval"
               hidden={hidden}
               delta={interval}
-              showForUndefined={position === 1 ? "int" : undefined}
+              showForUndefined={position === 1 ? 'int' : undefined}
               decimalPlaces={deltaDecimalPlaces}
             />
           ),
@@ -371,42 +390,44 @@ export const DriverInfoRow = memo(
 
       return columns.filter((col) => col.shouldRender);
     }, [
-      displayOrder, 
-      config, 
-      hidden, 
-      position, 
-      isPlayer, 
-      offTrack, 
-      tailwindStyles, 
-      carNumber, 
-      flairId, 
-      name, 
-      radioActive, 
-      onPitRoad, 
-      carTrackSurface, 
-      prevCarTrackSurface, 
-      lastPitLap, 
-      lastLap, 
-      currentSessionType, 
-      dnf, 
-      repair, 
-      penalty, 
-      slowdown, 
-      carId, 
-      license, 
-      rating, 
-      iratingChangeValue, 
-      delta, 
-      deltaDecimalPlaces, 
-      gap, 
-      interval, 
-      fastestTimeString, 
-      hasFastestTime, 
-      lastTimeString, 
-      lastTimeState, 
-      tireCompound, 
-      lapTimeDeltas, 
+      displayOrder,
+      config,
+      hidden,
+      position,
+      isPlayer,
+      offTrack,
+      tailwindStyles,
+      carNumber,
+      flairId,
+      name,
+      radioActive,
+      onPitRoad,
+      carTrackSurface,
+      prevCarTrackSurface,
+      lastPitLap,
+      lastLap,
+      currentSessionType,
+      dnf,
+      repair,
+      penalty,
+      slowdown,
+      pitStopDuration,
+      carId,
+      license,
+      rating,
+      iratingChangeValue,
+      delta,
+      deltaDecimalPlaces,
+      gap,
+      interval,
+      fastestTimeString,
+      hasFastestTime,
+      lastTimeString,
+      lastTimeState,
+      tireCompound,
+      lapTimeDeltas,
       emptyLapDeltaPlaceholders,
+      hideCarManufacturer,
     ]);
 
     return (

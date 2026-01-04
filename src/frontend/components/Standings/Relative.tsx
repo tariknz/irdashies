@@ -5,9 +5,10 @@ import { useRelativeSettings, useDriverRelatives, useHighlightColor } from './ho
 import { SessionBar } from './components/SessionBar/SessionBar';
 
 import { TitleBar } from './components/TitleBar/TitleBar';
-import { usePitLabStoreUpdater } from '../../context/PitLapStore/PitLapStoreUpdater';
+import { usePitLapStoreUpdater } from '../../context/PitLapStore/PitLapStoreUpdater';
 import { useRelativeGapStoreUpdater } from '@irdashies/context';
 import { useWeekendInfoNumCarClasses } from '@irdashies/context';
+import { useIsSingleMake } from './hooks/useIsSingleMake';
 
 export const Relative = () => {
   const settings = useRelativeSettings();
@@ -20,7 +21,10 @@ export const Relative = () => {
 
   // Update relative gap store with telemetry data
   useRelativeGapStoreUpdater();
-  usePitLabStoreUpdater();
+  usePitLapStoreUpdater();
+
+  const isSingleMake = useIsSingleMake();
+  const hideCarManufacturer = !!(settings?.carManufacturer?.hideIfSingleMake && isSingleMake);
 
   // Always render 2 * buffer + 1 rows (buffer above + player + buffer below)
   const totalRows = 2 * buffer + 1;
@@ -68,6 +72,7 @@ export const Relative = () => {
           repair={false}
           penalty={false}
           slowdown={false}
+          hideCarManufacturer={hideCarManufacturer}
         />
       ));
     }
@@ -117,6 +122,7 @@ export const Relative = () => {
             penalty={false}
             slowdown={false}
             deltaDecimalPlaces={settings?.delta?.precision}
+            hideCarManufacturer={hideCarManufacturer}
           />
         );
       }
@@ -160,10 +166,11 @@ export const Relative = () => {
           penalty={result.penalty}
           slowdown={result.slowdown}
           deltaDecimalPlaces={settings?.delta?.precision}
+          hideCarManufacturer={hideCarManufacturer}
         />
       );
     });
-  }, [standings, playerIndex, totalRows, settings, isMultiClass, highlightColor]);
+  }, [standings, playerIndex, totalRows, settings, isMultiClass, highlightColor, hideCarManufacturer]);
 
   // Show only when on track setting
   if (settings?.showOnlyWhenOnTrack && !isDriving) {

@@ -14,7 +14,7 @@ import {
   useHighlightColor,
 } from './hooks';
 import { useLapTimesStoreUpdater } from '../../context/LapTimesStore/LapTimesStoreUpdater';
-import { usePitLabStoreUpdater } from '../../context/PitLapStore/PitLapStoreUpdater';
+import { usePitLapStoreUpdater } from '../../context/PitLapStore/PitLapStoreUpdater';
 import { useDrivingState, useWeekendInfoNumCarClasses, useTelemetryValue, useSessionName, useSessionLaps } from '@irdashies/context';
 import { useDriverIncidents, useSessionLapCount, useBrakeBias } from './hooks';
 import { useCurrentTime } from './hooks/useCurrentTime';
@@ -33,7 +33,7 @@ const StandingsWithoutHeaderFooter = () => {
   useLapTimesStoreUpdater();
 
   // Update pit laps
-  usePitLabStoreUpdater();
+  usePitLapStoreUpdater();
 
   const standings = useDriverStandings(settings);
   const classStats = useCarClassStats();
@@ -216,7 +216,7 @@ const StandingsWithoutHeader = () => {
   useLapTimesStoreUpdater();
 
   // Update pit laps
-  usePitLabStoreUpdater();
+  usePitLapStoreUpdater();
 
   const standings = useDriverStandings(settings);
   const classStats = useCarClassStats();
@@ -335,7 +335,7 @@ const StandingsWithoutFooter = () => {
   useLapTimesStoreUpdater();
 
   // Update pit laps
-  usePitLabStoreUpdater();
+  usePitLapStoreUpdater();
 
   const standings = useDriverStandings(settings);
   const classStats = useCarClassStats();
@@ -531,7 +531,7 @@ const StandingsWithFullHeader = () => {
   useLapTimesStoreUpdater();
 
   // Update pit laps
-  usePitLabStoreUpdater();
+  usePitLapStoreUpdater();
 
   const standings = useDriverStandings(settings);
   const classStats = useCarClassStats();

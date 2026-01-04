@@ -108,7 +108,7 @@ describe('PitStatusCell', () => {
     );
     
     const td = container.querySelector('td[data-column="pitStatus"]');
-    expect(td?.textContent).toBe('OUT');
+    expect(td?.textContent).contain('OUT');
   });
 
   it('renders PIT when car is on pit road', () => {

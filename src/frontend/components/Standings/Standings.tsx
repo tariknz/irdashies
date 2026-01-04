@@ -11,8 +11,9 @@ import {
   useHighlightColor,
 } from './hooks';
 import { useLapTimesStoreUpdater } from '../../context/LapTimesStore/LapTimesStoreUpdater';
-import { usePitLabStoreUpdater } from '../../context/PitLapStore/PitLapStoreUpdater';
+import { usePitLapStoreUpdater } from '../../context/PitLapStore/PitLapStoreUpdater';
 import { useDrivingState, useWeekendInfoNumCarClasses } from '@irdashies/context';
+import { useIsSingleMake } from './hooks/useIsSingleMake';
 
 export const Standings = () => {
   const settings = useStandingsSettings();
@@ -22,13 +23,17 @@ export const Standings = () => {
   useLapTimesStoreUpdater();
 
   // Update pit laps
-  usePitLabStoreUpdater();
+  usePitLapStoreUpdater();
 
   const standings = useDriverStandings(settings);
   const classStats = useCarClassStats();
   const numCarClasses = useWeekendInfoNumCarClasses();
   const isMultiClass = (numCarClasses ?? 0) > 1;
   const highlightColor = useHighlightColor();
+
+  // Determine whether we should hide the car manufacturer column
+  const isSingleMake = useIsSingleMake();
+  const hideCarManufacturer = !!(settings?.carManufacturer?.hideIfSingleMake && isSingleMake);
 
   // Show only when on track setting
   if (settings?.showOnlyWhenOnTrack && !isDriving) {
@@ -99,6 +104,7 @@ export const Standings = () => {
                     repair={result.repair}
                     penalty={result.penalty}
                     slowdown={result.slowdown}
+                    hideCarManufacturer={hideCarManufacturer}
                   />
                 ))}
                 {index < standings.length - 1 && <tr><td colSpan={12} className="h-2"></td></tr>}

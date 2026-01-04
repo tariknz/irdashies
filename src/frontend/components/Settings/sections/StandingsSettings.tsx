@@ -23,8 +23,8 @@ const sortableSettings: SortableSetting[] = [
   { id: 'carNumber', label: 'Car Number', configKey: 'carNumber' },
   { id: 'countryFlags', label: 'Country Flags', configKey: 'countryFlags' },
   { id: 'driverName', label: 'Driver Name', configKey: 'driverName' },
-  { id: 'pitStatus', label: 'Pit Status', configKey: 'pitStatus' },
-  { id: 'carManufacturer', label: 'Car Manufacturer', configKey: 'carManufacturer' },
+  { id: 'pitStatus', label: 'Pit Status', configKey: 'pitStatus', hasSubSetting: true },
+  { id: 'carManufacturer', label: 'Car Manufacturer', configKey: 'carManufacturer', hasSubSetting: true },
   { id: 'badge', label: 'Driver Badge', configKey: 'badge' },
   { id: 'iratingChange', label: 'iRating Change', configKey: 'iratingChange' },
   { id: 'gap', label: 'Gap', configKey: 'gap' },
@@ -53,7 +53,7 @@ const defaultConfig: StandingsWidgetSettings['config'] = {
     numTopDrivers: 3,
   },
   compound: { enabled: true },
-  carManufacturer: { enabled: true },
+  carManufacturer: { enabled: true, hideIfSingleMake: false },
   titleBar: { enabled: true, progressBar: { enabled: true } },
   headerBar: {
     enabled: true,
@@ -88,7 +88,7 @@ const defaultConfig: StandingsWidgetSettings['config'] = {
   lapTimeDeltas: { enabled: false, numLaps: 3 },
   position: { enabled: true },
   driverName: { enabled: true },
-  pitStatus: { enabled: true },
+  pitStatus: { enabled: true, showPitTime: false },
   displayOrder: sortableSettings.map(s => s.id)
 };
 
@@ -151,6 +151,7 @@ const migrateConfig = (
     },
     carManufacturer: {
       enabled: (config.carManufacturer as { enabled?: boolean })?.enabled ?? true,
+      hideIfSingleMake: (config.carManufacturer as { hideIfSingleMake?: boolean })?.hideIfSingleMake ?? false,
     },
     lapTimeDeltas: {
       enabled: (config.lapTimeDeltas as { enabled?: boolean })?.enabled ?? false,
@@ -212,7 +213,10 @@ const migrateConfig = (
     useLivePosition: (config.useLivePosition as boolean) ?? false,
     position: { enabled: (config.position as { enabled?: boolean })?.enabled ?? true },
     driverName: { enabled: (config.driverName as { enabled?: boolean })?.enabled ?? true },
-    pitStatus: { enabled: (config.pitStatus as { enabled?: boolean })?.enabled ?? true },
+    pitStatus: {
+      enabled: (config.pitStatus as { enabled?: boolean })?.enabled ?? true,
+      showPitTime: (config.pitStatus as { showPitTime?: boolean })?.showPitTime ?? false,
+    },
       displayOrder: mergeDisplayOrder(sortableSettings.map(s => s.id), config.displayOrder as string[]),
   };
 };
@@ -288,6 +292,34 @@ const DisplaySettingsList = ({ itemsOrder, onReorder, settings, handleConfigChan
                   <option value={4}>4</option>
                   <option value={5}>5</option>
                 </select>
+              </div>
+            )}
+            {setting.hasSubSetting && setting.configKey === 'pitStatus' && settings.config.pitStatus.enabled && (
+              <div className="flex items-center justify-between pl-8 mt-2">
+                <span className="text-sm text-slate-300">Show Pit Time</span>
+                <ToggleSwitch
+                  enabled={settings.config.pitStatus.showPitTime ?? false}
+                  onToggle={(enabled) => {
+                    const cv = settings.config[setting.configKey] as { enabled: boolean; showPitTime?: boolean; [key: string]: unknown };
+                    handleConfigChange({
+                      [setting.configKey]: { ...cv, showPitTime: enabled }
+                    });
+                  }}
+                />
+              </div>
+            )}
+            {setting.hasSubSetting && setting.configKey === 'carManufacturer' && settings.config.carManufacturer.enabled && (
+              <div className="flex items-center justify-between pl-8 mt-2">
+                <span className="text-sm text-slate-300">Hide If Single Make</span>
+                <ToggleSwitch
+                  enabled={settings.config.carManufacturer.hideIfSingleMake ?? false}
+                  onToggle={(enabled) => {
+                    const cv = settings.config[setting.configKey] as { enabled: boolean; hideIfSingleMake?: boolean; [key: string]: unknown };
+                    handleConfigChange({
+                      [setting.configKey]: { ...cv, hideIfSingleMake: enabled }
+                    });
+                  }}
+                />
               </div>
             )}
             {setting.configKey === 'badge' && (configValue as { enabled: boolean }).enabled && (
