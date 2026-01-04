@@ -447,7 +447,8 @@ export const defaultDashboard: DashboardLayout = {
         "background": {
           "opacity": 30
         },
-        "width": 20
+        "width": 20,
+        "sessionVisibility": { race: true, loneQualify: true, openQualify: true, practice: true, offlineTesting: true }
       }
     },
     {
