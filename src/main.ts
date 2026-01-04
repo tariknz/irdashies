@@ -40,7 +40,7 @@ app.on('ready', async () => {
 
   overlayManager.createOverlays(dashboard);
   setupTaskbar(telemetrySink, overlayManager);
-  publishDashboardUpdates(overlayManager);
+  publishDashboardUpdates(overlayManager, analytics);
   
   await analytics.init(overlayManager.getVersion(), dashboard);
 });

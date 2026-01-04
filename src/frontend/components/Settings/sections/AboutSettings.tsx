@@ -1,8 +1,35 @@
+import { useState, useEffect } from 'react';
 import { GithubLogoIcon, DiscordLogoIcon } from '@phosphor-icons/react';
 import { useDashboard } from '@irdashies/context';
 
 export const AboutSettings = () => {
-  const { version } = useDashboard();
+  const { version, bridge } = useDashboard();
+  const [analyticsEnabled, setAnalyticsEnabled] = useState<boolean>(true);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  useEffect(() => {
+    const loadOptOut = async () => {
+      try {
+        const optOut = await bridge.getAnalyticsOptOut();
+        setAnalyticsEnabled(optOut === false);
+      } catch (error) {
+        console.error('Failed to load analytics opt-out setting:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadOptOut();
+  }, [bridge]);
+
+  const handleAnalyticsChange = async (checked: boolean) => {
+    try {
+      await bridge.setAnalyticsOptOut(!checked);
+      setAnalyticsEnabled(checked);
+    } catch (error) {
+      console.error('Failed to update analytics opt-out setting:', error);
+    }
+  };
 
   return (
     <div className="h-full overflow-y-auto">
@@ -152,6 +179,15 @@ export const AboutSettings = () => {
 
             <div className="pt-2">
               <h2 className="text-sm font-medium mb-2 text-slate-300">
+                Your Choices
+              </h2>
+              <p>
+                You may disable analytics collection at any time by opting out below.
+              </p>
+            </div>
+
+            <div className="pt-2">
+              <h2 className="text-sm font-medium mb-2 text-slate-300">
                 Contact
               </h2>
               <p className="mb-2">
@@ -168,6 +204,29 @@ export const AboutSettings = () => {
                 https://github.com/tariknz/irdashies
               </a>
             </div>
+          </div>
+
+          <div className="flex items-start gap-3 p-4 bg-slate-800/50 rounded-lg border border-slate-700">
+            <input
+              type="checkbox"
+              id="analytics-enabled"
+              checked={analyticsEnabled}
+              onChange={(e) => handleAnalyticsChange(e.target.checked)}
+              disabled={isLoading}
+              className="mt-1 w-4 h-4 text-blue-600 bg-slate-700 border-slate-600 rounded focus:ring-blue-500 focus:ring-2 disabled:opacity-50"
+            />
+            <label
+              htmlFor="analytics-enabled"
+              className="flex-1 text-sm text-slate-300 cursor-pointer"
+            >
+              <span className="font-medium">Enable analytics data collection</span>
+              <p className="mt-1 text-slate-400">
+                Help improve the application by sharing anonymous usage data. You can opt out at any time by unchecking this box.
+              </p>
+              <p className="mt-2 text-slate-400 font-bold">
+                Note: Please restart the application for this setting to take effect.
+              </p>
+            </label>
           </div>
         </div>
       </div>

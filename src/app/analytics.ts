@@ -5,6 +5,7 @@ import os from 'node:os';
 import crypto from 'node:crypto';
 import type { DashboardLayout } from '@irdashies/types';
 import { readData, writeData } from './storage/storage';
+import { getAnalyticsOptOut } from './storage/analytics';
 
 declare const POSTHOG_KEY: string;
 
@@ -42,6 +43,10 @@ export class Analytics {
   }
 
   private initialize(): void {
+    const optOut = getAnalyticsOptOut();
+    if (optOut === true) {
+      return;
+    }
     // POSTHOG_KEY is defined at build time via Vite's define option
     const key: string = POSTHOG_KEY || '';
 

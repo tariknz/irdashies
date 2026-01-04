@@ -16,6 +16,8 @@ const mockBridge: DashboardBridge = {
   onDemoModeChanged: vi.fn(),
   toggleDemoMode: vi.fn(),  
   getCurrentDashboard: vi.fn().mockResolvedValue({}),
+  getAnalyticsOptOut: vi.fn().mockResolvedValue(false),
+  setAnalyticsOptOut: vi.fn(),
 };
 
 const TestComponent: React.FC = () => {
