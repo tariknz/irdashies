@@ -2,7 +2,7 @@ import type { DashboardLayout, DashboardWidget } from '@irdashies/types';
 import { emitDashboardUpdated } from './dashboardEvents';
 import { defaultDashboard } from './defaultDashboard';
 import { readData, writeData } from './storage';
-import { writeFile, mkdir, readFile, readdir } from 'node:fs/promises';
+import { writeFile, mkdir, readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { app } from 'electron';
 
@@ -155,19 +155,19 @@ export const saveGarageCoverImage = async (buffer: Uint8Array): Promise<string> 
   try {
     const userDataPath = app.getPath('userData');
     const assetsPath = resolve(userDataPath, 'frontend', 'assets', 'img');
-    
+
     console.log('[GarageCover] User data path:', userDataPath);
     console.log('[GarageCover] Assets path:', assetsPath);
     console.log('[GarageCover] Buffer size:', buffer.length);
-    
+
     // Create directory if it doesn't exist
     console.log('[GarageCover] Creating directory...');
     await mkdir(assetsPath, { recursive: true });
     console.log('[GarageCover] Directory created successfully');
-    
+
     // Detect image type from file signature (magic bytes)
     let extension = 'png'; // default
-    
+
     if (buffer.length >= 4) {
       // Check PNG signature: 89 50 4E 47
       if (buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4E && buffer[3] === 0x47) {
@@ -183,16 +183,16 @@ export const saveGarageCoverImage = async (buffer: Uint8Array): Promise<string> 
       }
       // Check WebP signature: RIFF...WEBP
       else if (buffer[0] === 0x52 && buffer[1] === 0x49 && buffer[2] === 0x46 && buffer[3] === 0x46 &&
-               buffer.length >= 12 && buffer[8] === 0x57 && buffer[9] === 0x45 && buffer[10] === 0x42 && buffer[11] === 0x50) {
+        buffer.length >= 12 && buffer[8] === 0x57 && buffer[9] === 0x45 && buffer[10] === 0x42 && buffer[11] === 0x50) {
         extension = 'webp';
       }
     }
-    
+
     const imagePath = resolve(assetsPath, `custom-cover.${extension}`);
     console.log('[GarageCover] Writing to:', imagePath, 'Extension detected:', extension);
     await writeFile(imagePath, buffer);
     console.log('[GarageCover] File written successfully');
-    
+
     // Return the file path so it can be persisted in the dashboard
     return imagePath;
   } catch (err) {
@@ -209,10 +209,10 @@ export const getGarageCoverImageAsDataUrl = async (imageFilenameOrPath: string):
       const userDataPath = app.getPath('userData');
       imagePath = resolve(userDataPath, 'frontend', 'assets', 'img', imageFilenameOrPath);
     }
-    
+
     const buffer = await readFile(imagePath);
     const base64 = Buffer.from(buffer).toString('base64');
-    
+
     // Detect MIME type from file extension
     const extension = imagePath.toLowerCase().split('.').pop() || 'png';
     const mimeTypeMap: Record<string, string> = {
@@ -223,47 +223,11 @@ export const getGarageCoverImageAsDataUrl = async (imageFilenameOrPath: string):
       'webp': 'image/webp'
     };
     const mimeType = mimeTypeMap[extension] || 'image/png';
-    
+
     return `data:${mimeType};base64,${base64}`;
   } catch (err) {
     console.error('Error reading garage cover image:', err);
     return null;
   }
 };
-
-/**
- * Legacy function that looks for any custom-cover file with supported extensions.
- * Note: This function searches for any custom-cover.* file since saveGarageCoverImage
- * saves with different extensions (png, jpg, gif, webp) based on the file signature.
- * Prefer using getGarageCoverImageAsDataUrl with the actual filename from the dashboard config.
- */
-export const getGarageCoverImage = async (): Promise<string | null> => {
-  try {
-    const userDataPath = app.getPath('userData');
-    const assetsPath = resolve(userDataPath, 'frontend', 'assets', 'img');
-    
-    // Check for custom-cover with any supported extension
-    const supportedExtensions = ['png', 'jpg', 'jpeg', 'gif', 'webp'];
-    
-    try {
-      const files = await readdir(assetsPath);
-      const customCoverFile = files.find(file => 
-        file.startsWith('custom-cover.') && 
-        supportedExtensions.some(ext => file.endsWith(`.${ext}`))
-      );
-      
-      if (customCoverFile) {
-        return await getGarageCoverImageAsDataUrl(customCoverFile);
-      }
-    } catch (dirErr) {
-      console.log('Assets directory does not exist or is empty:', dirErr);
-    }
-    
-    return null;
-  } catch (err) {
-    console.error('Error reading garage cover image:', err);
-    return null;
-  }
-};
-
 

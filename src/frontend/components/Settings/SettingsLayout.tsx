@@ -109,7 +109,6 @@ export const SettingsLayout = () => {
                 Blind Spot Monitor
               </Link>
             </li>
-            
             <li>
               <Link
                 to="/settings/faster-cars"

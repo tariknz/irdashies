@@ -1,7 +1,7 @@
 import { ipcMain } from 'electron';
 import type { DashboardBridge, DashboardLayout } from '@irdashies/types';
 import { onDashboardUpdated } from '../../storage/dashboardEvents';
-import { getDashboard, saveDashboard, resetDashboard, saveGarageCoverImage, getGarageCoverImage, getGarageCoverImageAsDataUrl } from '../../storage/dashboards';
+import { getDashboard, saveDashboard, resetDashboard, saveGarageCoverImage, getGarageCoverImageAsDataUrl } from '../../storage/dashboards';
 import { OverlayManager } from '../../overlayManager';
 
 // Store callbacks for dashboard updates
@@ -48,9 +48,6 @@ export const dashboardBridge: DashboardBridge = {
   },
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   saveGarageCoverImage: function (buffer: Uint8Array): Promise<string> {
-    throw new Error('Function not implemented.');
-  },
-  getGarageCoverImage: function (): Promise<string | null> {
     throw new Error('Function not implemented.');
   },
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
