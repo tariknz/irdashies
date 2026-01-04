@@ -120,6 +120,7 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
     pitStatus: { enabled: boolean, showPitTime?: boolean };
     displayOrder: string[];
     useLivePosition: boolean;
+    sessionVisibility: SessionVisibilitySettings;
   };
 }
 

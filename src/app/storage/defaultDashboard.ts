@@ -332,7 +332,8 @@ export const defaultDashboard: DashboardLayout = {
           },
           "displayOrder": ["sessionName", "sessionTime", "incidentCount", "brakeBias", "localTime", "sessionClockTime", "trackWetness", "precipitation", "airTemperature", "trackTemperature"]
         },
-        "showOnlyWhenOnTrack": false
+        "showOnlyWhenOnTrack": false,
+        "sessionVisibility": { race: true, loneQualify: true, openQualify: true, practice: true, offlineTesting: true }
       }
     },
     {
