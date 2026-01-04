@@ -4,11 +4,10 @@
  * Hidden until player is at a user defined speed (Default 30) and not in the pit lane. The gap thresholds are user configured as well
  */
 
-import React, { useMemo } from 'react';
 import { useTelemetryValues, useTelemetryValue, useFocusCarIdx, useCarIdxSpeed } from '@irdashies/context';
 import { useDriverRelatives } from '../Standings/hooks/useDriverRelatives';
 import { useRejoinSettings } from './hooks/useRejoinSettings';
-import { getTailwindStyle } from '@irdashies/utils/colors';
+import type { Standings } from '../Standings/createStandings';
 
 export const RejoinIndicator = () => {
   const settings = useRejoinSettings();
@@ -19,15 +18,15 @@ export const RejoinIndicator = () => {
   const playerInPitStall = useTelemetryValue<number>('PlayerCarInPitStall') === 1;
   const carIdxOnPitRoad = useTelemetryValues<boolean[]>('CarIdxOnPitRoad');
 
+  const drivers = useDriverRelatives({ buffer: 3 });
+
   // If we don't have dashboard settings or no focused player, hide
   if (!settings) return null;
   if (!settings.enabled) return null;
   if (playerIndex === undefined) return null;
-
-  const drivers = useDriverRelatives({ buffer: 3 });
   // Choose the first car behind the player that is not in the pit lane or off-track
-  let carBehind: any = undefined;
-  let behindList: any[] = [];
+  let carBehind: Standings | undefined = undefined;
+  let behindList: Standings[] = [];
   if (drivers && drivers.length) {
     const playerArrIndex = drivers.findIndex((d) => d.carIdx === playerIndex);
     if (playerArrIndex >= 0) {
@@ -64,11 +63,6 @@ export const RejoinIndicator = () => {
   // Exported helper below is used for unit testing the mapping
   const cfg = settings ? settings.config : { careGap: Number.POSITIVE_INFINITY, stopGap: Number.POSITIVE_INFINITY };
   const status = getStatusFromGap(gap, cfg);
-
-  // Hide if we don't have dashboard settings or settings says disabled
-  if (!settings) return null;
-  if (!settings.enabled) return null;
-  if (playerIndex === undefined) return null;
 
   // Player on pit road uses previously read telemetry
   const playerOnPitRoad = playerIndex !== undefined ? !!carIdxOnPitRoad?.[playerIndex] : false;

@@ -22,9 +22,9 @@ export const useRejoinSettings = () => {
     return {
       enabled: saved.enabled ?? DEFAULT_CONFIG.enabled,
       config: {
-        showAtSpeed: (saved.config as any)?.showAtSpeed ?? DEFAULT_CONFIG.config.showAtSpeed,
-        careGap: (saved.config as any)?.careGap ?? DEFAULT_CONFIG.config.careGap,
-        stopGap: (saved.config as any)?.stopGap ?? DEFAULT_CONFIG.config.stopGap,
+        showAtSpeed: (saved.config as RejoinIndicatorWidgetSettings['config'])?.showAtSpeed ?? DEFAULT_CONFIG.config.showAtSpeed,
+        careGap: (saved.config as RejoinIndicatorWidgetSettings['config'])?.careGap ?? DEFAULT_CONFIG.config.careGap,
+        stopGap: (saved.config as RejoinIndicatorWidgetSettings['config'])?.stopGap ?? DEFAULT_CONFIG.config.stopGap,
       },
     } as RejoinIndicatorWidgetSettings;
   }
