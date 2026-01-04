@@ -404,7 +404,8 @@ export const defaultDashboard: DashboardLayout = {
         "height": 43
       },
       "config": {
-        "distanceThreshold": -0.3
+        "distanceThreshold": -0.3,
+        "sessionVisibility": { race: true, loneQualify: true, openQualify: true, practice: true, offlineTesting: true }
       }
     },
     {

@@ -256,3 +256,9 @@ export interface GarageCoverWidgetSettings extends BaseWidgetSettings {
     imageFilename: string;
   };
 }
+export interface FasterCarsFromBehindWidgetSettings extends BaseWidgetSettings {
+  config: {
+    distanceThreshold: number;
+    sessionVisibility: SessionVisibilitySettings;
+  };
+}
