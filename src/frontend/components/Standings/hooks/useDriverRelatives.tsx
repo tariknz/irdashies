@@ -7,114 +7,12 @@ import {
 import { useDriverStandings } from './useDriverPositions';
 import type { Standings } from '../createStandings';
 
-// === TEMPORARY RAW TELEMETRY LOGGER ===
-// Captures raw iRacing telemetry to files in C:\Temp\irdashies
-// Files are written every 30 seconds with accumulated data
-// Set RAW_LOG_ENABLED = true to enable for debugging
-const RAW_LOG_ENABLED = false;
-const RAW_LOG_INTERVAL_MS = 30000; // Write to file every 30 seconds
-const RAW_LOG_SAMPLE_INTERVAL_MS = 1000; // Sample data every 1 second
-let lastRawLogTime = 0;
-let lastSampleTime = 0;
-let logBuffer: string[] = [];
-let fileIndex = 0;
-let sessionStartTime = 0;
-
-// Declare the debug bridge type for TypeScript
-declare global {
-  interface Window {
-    debugBridge?: {
-      writeLog: (filename: string, content: string) => Promise<{ success: boolean; path?: string; error?: string }>;
-    };
-  }
-}
-
-interface RawLogEntry {
-  sessionTime: number;
-  carIdx: number;
-  driver: string;
-  estTime: number;      // CarIdxEstTime - iRacing's estimated gap
-  lapDistPct: number;   // CarIdxLapDistPct - track position 0-1
-  lap: number;          // CarIdxLap
-  lastLapTime: number;  // CarIdxLastLapTime
-  bestLapTime: number;  // CarIdxBestLapTime
-  trackSurface: number; // CarIdxTrackSurface
-  f2Time: number;       // CarIdxF2Time - time behind leader
-  onPitRoad: boolean;
-  playerEstTime: number; // Player's CarIdxEstTime for comparison
-  playerDistPct: number; // Player's position
-  // Calculated for comparison
-  estTimeDelta: number;  // Difference in CarIdxEstTime (other - player)
-  simpleGap: number;     // Our simple calculation
-  currentGap: number;    // What we're currently showing
-}
-
-const CSV_HEADER = 'sessionTime,carIdx,driver,estTime,playerEstTime,estTimeDelta,lapDistPct,playerDistPct,lap,lastLap,bestLap,surface,f2Time,pitRoad,simpleGap,currentGap';
-
-function sampleTelemetry(
-  sessionTime: number,
-  playerIdx: number,
-  entries: RawLogEntry[]
-) {
-  if (!RAW_LOG_ENABLED) return;
-
-  const now = Date.now();
-
-  // Initialize session start time
-  if (sessionStartTime === 0) {
-    sessionStartTime = now;
-    fileIndex = 0;
-  }
-
-  // Only sample every SAMPLE_INTERVAL
-  if (now - lastSampleTime < RAW_LOG_SAMPLE_INTERVAL_MS) return;
-  lastSampleTime = now;
-
-  // Add entries to buffer
-  for (const e of entries) {
-    logBuffer.push(
-      `${e.sessionTime.toFixed(2)},${e.carIdx},"${e.driver.substring(0,20)}",${e.estTime.toFixed(3)},${e.playerEstTime.toFixed(3)},${e.estTimeDelta.toFixed(3)},${e.lapDistPct.toFixed(4)},${e.playerDistPct.toFixed(4)},${e.lap},${e.lastLapTime.toFixed(3)},${e.bestLapTime.toFixed(3)},${e.trackSurface},${e.f2Time.toFixed(3)},${e.onPitRoad},${e.simpleGap.toFixed(3)},${e.currentGap.toFixed(3)}`
-    );
-  }
-
-  // Write to file periodically
-  if (now - lastRawLogTime >= RAW_LOG_INTERVAL_MS && logBuffer.length > 0) {
-    lastRawLogTime = now;
-    const content = CSV_HEADER + '\n' + logBuffer.join('\n');
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const filename = `telemetry_${timestamp}_${fileIndex}.csv`;
-
-    // Write asynchronously via bridge
-    if (window.debugBridge) {
-      window.debugBridge.writeLog(filename, content).then((result) => {
-        if (result.success) {
-          console.log(`[DebugLog] Written ${logBuffer.length} entries to ${result.path}`);
-        } else {
-          console.error(`[DebugLog] Failed to write: ${result.error}`);
-        }
-      });
-    }
-
-    // Clear buffer and increment file index
-    logBuffer = [];
-    fileIndex++;
-  }
-}
-// === END TEMPORARY RAW TELEMETRY LOGGER ===
-
 export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
   const driversGrouped = useDriverStandings();
   const drivers = driversGrouped as Standings[];
   const carIdxLapDistPct = useTelemetryValues('CarIdxLapDistPct');
-  const carIdxLap = useTelemetryValues('CarIdxLap');
-  const carIdxTrackSurface = useTelemetryValues('CarIdxTrackSurface');
-  const sessionTime = useTelemetryValues('SessionTime')?.[0] ?? 0;
   // CarIdxEstTime - iRacing's native estimated time gap calculation
   const carIdxEstTime = useTelemetryValues('CarIdxEstTime');
-  // Raw telemetry values for logging only
-  const carIdxLastLapTime = useTelemetryValues('CarIdxLastLapTime');
-  const carIdxBestLapTime = useTelemetryValues('CarIdxBestLapTime');
-  const carIdxF2Time = useTelemetryValues('CarIdxF2Time');
   // Use focus car index which handles spectator mode (uses CamCarIdx when spectating)
   const playerIndex = useFocusCarIdx();
   const paceCarIdx =
@@ -216,9 +114,9 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
     };
 
     const sortedDrivers = drivers
-      .filter((driver) => 
-        (driver.onTrack || driver.carIdx === playerIndex) && 
-        driver.carIdx > -1 && 
+      .filter((driver) =>
+        (driver.onTrack || driver.carIdx === playerIndex) &&
+        driver.carIdx > -1 &&
         driver.carIdx !== paceCarIdx
       )
       .map((result) => {
@@ -253,46 +151,8 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
       .sort((a, b) => b.relativePct - a.relativePct) // sort descending (closest to player first)
       .slice(0, buffer);
 
-    const finalResult = [...driversAhead, player, ...driversBehind];
-
-    // === RAW TELEMETRY LOGGING ===
-    if (RAW_LOG_ENABLED && playerIndex !== undefined) {
-      const playerDistPct = carIdxLapDistPct?.[playerIndex] ?? 0;
-      const playerEstTime = carIdxEstTime?.[playerIndex] ?? 0;
-      const playerLapTime = driversByCarIdx.get(playerIndex)?.carClass?.estLapTime ?? 90;
-
-      const rawEntries: RawLogEntry[] = finalResult.map((d) => {
-        const otherDistPct = carIdxLapDistPct?.[d.carIdx] ?? 0;
-        const otherEstTime = carIdxEstTime?.[d.carIdx] ?? 0;
-        let distDiff = otherDistPct - playerDistPct;
-        if (distDiff > 0.5) distDiff -= 1.0;
-        else if (distDiff < -0.5) distDiff += 1.0;
-
-        return {
-          sessionTime,
-          carIdx: d.carIdx,
-          driver: d.driver?.name ?? `Car${d.carIdx}`,
-          estTime: otherEstTime,
-          playerEstTime,
-          estTimeDelta: otherEstTime - playerEstTime,
-          lapDistPct: carIdxLapDistPct?.[d.carIdx] ?? 0,
-          playerDistPct,
-          lap: carIdxLap?.[d.carIdx] ?? 0,
-          lastLapTime: carIdxLastLapTime?.[d.carIdx] ?? 0,
-          bestLapTime: carIdxBestLapTime?.[d.carIdx] ?? 0,
-          trackSurface: carIdxTrackSurface?.[d.carIdx] ?? 0,
-          f2Time: carIdxF2Time?.[d.carIdx] ?? 0,
-          onPitRoad: d.onPitRoad,
-          simpleGap: distDiff * playerLapTime,
-          currentGap: d.delta,
-        };
-      });
-
-      sampleTelemetry(sessionTime, playerIndex, rawEntries);
-    }
-
-    return finalResult;
-  }, [buffer, playerIndex, carIdxLapDistPct, carIdxLap, carIdxTrackSurface, sessionTime, drivers, paceCarIdx, carIdxEstTime, carIdxLastLapTime, carIdxBestLapTime, carIdxF2Time]);
+    return [...driversAhead, player, ...driversBehind];
+  }, [buffer, playerIndex, carIdxLapDistPct, drivers, paceCarIdx, carIdxEstTime]);
 
   return standings;
 };

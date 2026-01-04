@@ -29,12 +29,6 @@ export function exposeBridge() {
     },
   } as IrSdkBridge);
 
-  // === DEBUG TELEMETRY LOGGING (temporary) ===
-  contextBridge.exposeInMainWorld('debugBridge', {
-    writeLog: (filename: string, content: string) =>
-      ipcRenderer.invoke('writeDebugLog', filename, content),
-  });
-
   contextBridge.exposeInMainWorld('dashboardBridge', {
     onEditModeToggled: (callback: (value: boolean) => void) => {
       ipcRenderer.on('editModeToggled', (_, value) => {
