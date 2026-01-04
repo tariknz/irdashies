@@ -77,6 +77,8 @@ jobs:
     - name: Make
       if: steps.check_version.outputs.version_changed == 'true'
       run: npm run make
+      env:
+        POSTHOG_KEY: ${{ secrets.POSTHOG_KEY }}
 
     - name: Publish
       if: steps.check_version.outputs.version_changed == 'true'

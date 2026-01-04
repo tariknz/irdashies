@@ -2,6 +2,9 @@ import { defineConfig } from 'vite';
 import fs from 'fs';
 import path from 'path';
 import { execSync } from 'child_process';
+import { config } from 'dotenv';
+
+config();
 
 // Get git hash
 const getGitHash = () => {
@@ -32,6 +35,7 @@ export default defineConfig({
   },
   define: {
     APP_GIT_HASH: JSON.stringify(getGitHash()),
+    POSTHOG_KEY: JSON.stringify(process.env.POSTHOG_KEY || ''),
   },
 });
 
