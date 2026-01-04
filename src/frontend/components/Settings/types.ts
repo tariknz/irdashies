@@ -67,6 +67,7 @@ export interface StandingsWidgetSettings extends BaseWidgetSettings {
     driverName: { enabled: boolean };
     pitStatus: { enabled: boolean; showPitTime?: boolean };
     displayOrder: string[];
+    sessionVisibility: SessionVisibilitySettings;
   };
 }
 
