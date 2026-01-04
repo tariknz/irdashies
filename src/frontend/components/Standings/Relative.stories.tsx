@@ -13,7 +13,6 @@ import { TitleBar } from './components/TitleBar/TitleBar';
 import { useDrivingState } from '@irdashies/context';
 import { useRelativeSettings, useDriverRelatives, useHighlightColor } from './hooks';
 import { usePitLapStoreUpdater } from '../../context/PitLapStore/PitLapStoreUpdater';
-import { useRelativeGapStoreUpdater } from '@irdashies/context';
 import { useWeekendInfoNumCarClasses } from '@irdashies/context';
 
 // Custom component that renders relative standings without header/footer session bars
@@ -26,8 +25,6 @@ const RelativeWithoutHeaderFooter = () => {
   const numCarClasses = useWeekendInfoNumCarClasses();
   const isMultiClass = (numCarClasses ?? 0) > 1;
 
-  // Update relative gap store with telemetry data
-  useRelativeGapStoreUpdater();
   usePitLapStoreUpdater();
 
   // Always render 2 * buffer + 1 rows (buffer above + player + buffer below)
@@ -394,8 +391,6 @@ const RelativeWithoutHeader = () => {
   const numCarClasses = useWeekendInfoNumCarClasses();
   const isMultiClass = (numCarClasses ?? 0) > 1;
 
-  // Update relative gap store with telemetry data
-  useRelativeGapStoreUpdater();
   usePitLapStoreUpdater();
 
   // Always render 2 * buffer + 1 rows (buffer above + player + buffer below)
@@ -601,8 +596,6 @@ const RelativeWithoutFooter = () => {
   const numCarClasses = useWeekendInfoNumCarClasses();
   const isMultiClass = (numCarClasses ?? 0) > 1;
 
-  // Update relative gap store with telemetry data
-  useRelativeGapStoreUpdater();
   usePitLapStoreUpdater();
 
   // Always render 2 * buffer + 1 rows (buffer above + player + buffer below)

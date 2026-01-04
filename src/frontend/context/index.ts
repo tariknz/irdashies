@@ -5,7 +5,4 @@ export * from './SessionStore/SessionStore';
 export * from './TelemetryStore/TelemetryProvider';
 export * from './TelemetryStore/TelemetryStore';
 export * from './PitLapStore/PitLapStore';
-export * from './RelativeGapStore/RelativeGapStore';
-export * from './RelativeGapStore/RelativeGapStoreUpdater';
-export * from './RelativeGapStore/RelativeGapCalculator';
 export * from './shared';
