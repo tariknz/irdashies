@@ -26,8 +26,6 @@ export const GarageCoverSettings = () => {
     const hasInitializedRef = useRef(false);
 
     const loadPreview = (imageFilename: string) => {
-        console.log('[GarageCoverSettings] Loading preview, imageFilename:', imageFilename);
-
         if (!imageFilename) {
             setTimeout(() => setPreviewUrl(null), 0);
             return;
@@ -40,8 +38,7 @@ export const GarageCoverSettings = () => {
                 .then((dataUrl: string | null) => {
                     setPreviewUrl(dataUrl);
                 })
-                .catch((err: Error) => {
-                    console.error('[GarageCoverSettings] Error loading preview from Electron:', err);
+                .catch(() => {
                     // Fallback to localStorage
                     const dataUrl = localStorage.getItem(LOCALSTORAGE_KEY);
                     setTimeout(() => setPreviewUrl(dataUrl), 0);
@@ -103,20 +100,17 @@ export const GarageCoverSettings = () => {
             if ('saveGarageCoverImage' in bridge) {
                 (bridge.saveGarageCoverImage as (buffer: Uint8Array) => Promise<string>)(imageBuffer)
                     .then((filePath) => {
-                        console.log('[GarageCoverSettings] Image saved to:', filePath);
                         // Extract just the filename from the path
                         const filename = filePath.split(/[\\/]/).pop() || '';
                         updateImageFilename(filename);
                     })
-                    .catch((err) => {
-                        console.error('[GarageCoverSettings] Error saving image:', err);
+                    .catch(() => {
                         // Still save to localStorage as fallback
                         localStorage.setItem(LOCALSTORAGE_KEY, imageData);
                         updateImageFilename('browser-mode');
                     });
             } else {
                 // Browser mode - save to localStorage
-                console.log('[GarageCoverSettings] Browser mode - saving to localStorage, key:', LOCALSTORAGE_KEY, 'data length:', imageData.length);
                 localStorage.setItem(LOCALSTORAGE_KEY, imageData);
                 updateImageFilename('browser-mode');
             }

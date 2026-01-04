@@ -109,17 +109,7 @@ export async function publishDashboardUpdates(overlayManager: OverlayManager) {
       throw err;
     }
   });
-
-  ipcMain.handle('getGarageCoverImage', async () => {
-    try {
-      const dataUrl = await getGarageCoverImage();
-      return dataUrl;
-    } catch (err) {
-      console.error('Error getting garage cover image:', err);
-      throw err;
-    }
-  });
-
+  
   ipcMain.handle('getGarageCoverImageAsDataUrl', async (_, imagePath: string) => {
     try {
       const dataUrl = await getGarageCoverImageAsDataUrl(imagePath);
