@@ -219,7 +219,14 @@ export interface BlindSpotMonitorWidgetSettings extends BaseWidgetSettings {
     width?: number;
   };
 }
-export interface GarageCoverWidgetSettings extends BaseWidgetSettings {
+
+export interface RejoinIndicatorWidgetSettings extends BaseWidgetSettings {
+  config: {
+    showAtSpeed: number;
+    careGap: number;
+    stopGap: number;
+  }
+}export interface GarageCoverWidgetSettings extends BaseWidgetSettings {
   config: {
     imageFilename: string;
   };
