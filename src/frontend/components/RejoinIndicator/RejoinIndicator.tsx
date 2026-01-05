@@ -4,7 +4,7 @@
  * Hidden until player is at a user defined speed (Default 30) and not in the pit lane. The gap thresholds are user configured as well
  */
 
-import { useTelemetryValues, useTelemetryValue, useFocusCarIdx, useCarIdxSpeed } from '@irdashies/context';
+import { useTelemetryValues, useTelemetryValue, useFocusCarIdx } from '@irdashies/context';
 import { useDriverRelatives } from '../Standings/hooks/useDriverRelatives';
 import { useRejoinSettings } from './hooks/useRejoinSettings';
 import type { Standings } from '../Standings/createStandings';
@@ -12,11 +12,10 @@ import type { Standings } from '../Standings/createStandings';
 export const RejoinIndicator = () => {
   const settings = useRejoinSettings();
   const playerIndex = useFocusCarIdx();
-  const telemetrySpeed = useTelemetryValues('Speed');
-  const carSpeeds = useCarIdxSpeed();
   const isInGarage = useTelemetryValue<number>('IsInGarage') === 1;
   const playerInPitStall = useTelemetryValue<number>('PlayerCarInPitStall') === 1;
   const carIdxOnPitRoad = useTelemetryValues<boolean[]>('CarIdxOnPitRoad');
+  const carSpeedForPlayer = useTelemetryValue('Speed');
 
   const drivers = useDriverRelatives({ buffer: 3 });
 
@@ -46,23 +45,19 @@ export const RejoinIndicator = () => {
   }
 
   // Read telemetry and computed car speed for the focused car index
-  const telemetryPerCar = telemetrySpeed ?? [];
-  const telemetrySpeedForPlayer = telemetryPerCar?.[playerIndex]; // likely m/s in live telemetry
-  const carSpeedForPlayer = carSpeeds?.[playerIndex]; // km/h when available
-
-  // Prefer the computed car speed (km/h). If not available, fall back to telemetry converted to km/h.
-  const speedKmH = Number.isFinite(carSpeedForPlayer)
-    ? carSpeedForPlayer
-    : Number.isFinite(telemetrySpeedForPlayer)
-    ? telemetrySpeedForPlayer * 3.6
-    : 0;
+  const speedKmH = (carSpeedForPlayer ?? 0) * 3.6;
 
   const gap = Math.abs(carBehind?.delta ?? Number.POSITIVE_INFINITY);
   const gapLabel = Number.isFinite(gap) ? gap.toFixed(1) : '--';
 
-  // Exported helper below is used for unit testing the mapping
   const cfg = settings ? settings.config : { careGap: Number.POSITIVE_INFINITY, stopGap: Number.POSITIVE_INFINITY };
-  const status = getStatusFromGap(gap, cfg);
+  const status = !Number.isFinite(gap)
+    ? { label: 'Clear', color: 'green' }
+    : gap >= cfg.careGap
+    ? { label: 'Clear', color: 'green' }
+    : gap >= cfg.stopGap
+    ? { label: 'Caution', color: 'amber' }
+    : { label: 'Do Not Rejoin', color: 'red' };
 
   // Player on pit road uses previously read telemetry
   const playerOnPitRoad = playerIndex !== undefined ? !!carIdxOnPitRoad?.[playerIndex] : false;
@@ -90,14 +85,6 @@ export const RejoinIndicator = () => {
     </div>
   );
 };
-
-export function getStatusFromGap(gap: number, config: { careGap: number; stopGap: number }) {
-  // If no gap data, treat as clear/safe
-  if (!Number.isFinite(gap)) return { label: 'Clear', color: 'green' };
-  if (gap >= config.careGap) return { label: 'Clear', color: 'green' };
-  if (gap >= config.stopGap) return { label: 'Caution', color: 'amber' };
-  return { label: 'Do Not Rejoin', color: 'red' };
-}
 
 export const RejoinIndicatorDisplay = ({
   gap,

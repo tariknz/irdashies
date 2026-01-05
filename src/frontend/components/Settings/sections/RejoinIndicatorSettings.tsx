@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import { RejoinIndicatorWidgetSettings } from '../types';
 import { useDashboard } from '@irdashies/context';
@@ -32,25 +32,6 @@ export const RejoinIndicatorSettings = () => {
     enabled: savedSettings?.enabled ?? false,
     config: migrateConfig(savedSettings?.config),
   });
-
-  const settingsRef = useRef(settings);
-  useEffect(() => {
-    settingsRef.current = settings;
-  }, [settings]);
-
-  useEffect(() => {
-    if (!savedSettings) return;
-    const next = {
-      enabled: savedSettings.enabled,
-      config: migrateConfig(savedSettings.config),
-    };
-
-    const prev = settingsRef.current;
-    if (prev.enabled === next.enabled && JSON.stringify(prev.config) === JSON.stringify(next.config)) return;
-
-    const id = setTimeout(() => setSettings(next), 0);
-    return () => clearTimeout(id);
-  }, [savedSettings]);
 
   if (!currentDashboard) {
     return <>Loading...</>;
