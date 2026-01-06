@@ -78,6 +78,10 @@ export interface FuelCalculation {
     fuelPerLap: number;        // Required L/lap to achieve this (e.g., 2.63)
     isCurrentTarget: boolean;  // True for the middle/current value
   }[];
+  /** Earliest lap to pit while still being able to finish (for safety car strategy) */
+  earliestPitLap?: number;
+  /** Fuel tank capacity in liters (respecting session limits) */
+  fuelTankCapacity?: number;
 }
 
 /**
@@ -116,4 +120,6 @@ export interface FuelCalculatorSettings {
   safetyMargin: number;
   /** Background opacity (0-100) */
   background: { opacity: number };
+  /** Display mode for fuel required column: 'toFinish' shows total fuel needed, 'toAdd' shows fuel to add at stop */
+  fuelRequiredMode?: 'toFinish' | 'toAdd';
 }

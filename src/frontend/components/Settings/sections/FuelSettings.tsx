@@ -22,6 +22,7 @@ const defaultConfig: FuelWidgetSettings['config'] = {
   consumptionGraphType: 'histogram',
   safetyMargin: 0.05,
   background: { opacity: 85 },
+  fuelRequiredMode: 'toFinish',
 };
 
 const migrateConfig = (
@@ -49,6 +50,7 @@ const migrateConfig = (
       opacity:
         (config.background as { opacity?: number })?.opacity ?? 85,
     },
+    fuelRequiredMode: (config.fuelRequiredMode as 'toFinish' | 'toAdd') ?? 'toFinish',
   };
 };
 
@@ -225,6 +227,30 @@ export const FuelSettings = () => {
                   className="w-4 h-4 bg-slate-700 rounded"
                 />
               </div>
+              {settings.config.showFuelRequired && (
+                <div className="ml-4 mt-2 border-l-2 border-slate-600 pl-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-slate-400">
+                      Display Mode
+                      <span className="block text-[10px] text-slate-500">
+                        To Finish: Total fuel needed | To Add: Fuel to add at stop
+                      </span>
+                    </span>
+                    <select
+                      value={settings.config.fuelRequiredMode}
+                      onChange={(e) =>
+                        handleConfigChange({
+                          fuelRequiredMode: e.target.value as 'toFinish' | 'toAdd',
+                        })
+                      }
+                      className="px-3 py-1 bg-slate-700 text-slate-200 rounded text-sm"
+                    >
+                      <option value="toFinish">To Finish</option>
+                      <option value="toAdd">Fuel to Add</option>
+                    </select>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
