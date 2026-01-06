@@ -22,7 +22,7 @@ export interface StandingsWidgetSettings extends BaseWidgetSettings {
       numTopDrivers: number;
     };
     compound: { enabled: boolean };
-    carManufacturer: { enabled: boolean };
+    carManufacturer: { enabled: boolean; hideIfSingleMake?: boolean };
     lapTimeDeltas: { enabled: boolean; numLaps: number };
     titleBar: { enabled: boolean; progressBar: { enabled: boolean } };
     headerBar: {
@@ -71,7 +71,7 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
     lastTime: { enabled: boolean; timeFormat: 'full' | 'mixed' | 'minutes' | 'seconds-full' | 'seconds-mixed' | 'seconds' };
     fastestTime: { enabled: boolean; timeFormat: 'full' | 'mixed' | 'minutes' | 'seconds-full' | 'seconds-mixed' | 'seconds' };
     compound: { enabled: boolean };
-    carManufacturer: { enabled: boolean };
+    carManufacturer: { enabled: boolean, hideIfSingleMake?: boolean };
     titleBar: { enabled: boolean; progressBar: { enabled: boolean } };
     headerBar: {
       enabled: boolean;
@@ -111,12 +111,6 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
     driverName: { enabled: boolean };
     pitStatus: { enabled: boolean, showPitTime?: boolean };
     displayOrder: string[];
-    enhancedGapCalculation: {
-      enabled: boolean;
-      interpolationMethod: 'linear' | 'cubic';
-      sampleInterval: number;
-      maxLapHistory: number;
-    };
     useLivePosition: boolean;
   };
 }
@@ -211,6 +205,7 @@ export interface FuelWidgetSettings extends BaseWidgetSettings {
     consumptionGraphType: 'line' | 'histogram';
     safetyMargin: number;
     background: { opacity: number };
+    fuelRequiredMode: 'toFinish' | 'toAdd';
   };
 }
 
@@ -223,4 +218,12 @@ export interface BlindSpotMonitorWidgetSettings extends BaseWidgetSettings {
     distBehind: number;
     width?: number;
   };
+}
+
+export interface RejoinIndicatorWidgetSettings extends BaseWidgetSettings {
+  config: {
+    showAtSpeed: number;
+    careGap: number;
+    stopGap: number;
+  }
 }

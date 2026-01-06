@@ -251,12 +251,6 @@ export const defaultDashboard: DashboardLayout = {
           "enabled": false
         },
         "displayOrder": ["position", "carNumber", "countryFlags", "driverName", "pitStatus", "carManufacturer", "badge", "iratingChange", "delta", "fastestTime", "lastTime", "compound"],
-        "enhancedGapCalculation": {
-          "enabled": true,
-          "interpolationMethod": "linear",
-          "sampleInterval": 0.01,
-          "maxLapHistory": 5
-        },
         "titleBar": {
           "enabled": false,
           "progressBar": {
@@ -455,7 +449,24 @@ export const defaultDashboard: DashboardLayout = {
         },
         "width": 20
       }
-    }
+    },
+    {
+      "id": "rejoin",
+      "enabled": false,
+      "layout": {
+        "x": 378,
+        "y": 102,
+        "width": 800,
+        "height": 500
+      },
+      "config": {
+        "showAtSpeed": 30,
+        "clearGap": 3.5,
+        "careGap": 2,
+        "stopGap": 1,
+        "width": 20
+      },
+    },
   ],
   "generalSettings": {
     "fontSize": "sm",

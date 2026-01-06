@@ -9,6 +9,7 @@ import { startComponentServer } from './app/webserver/componentServer';
 import { updateElectronApp } from 'update-electron-app';
 // @ts-expect-error no types for squirrel
 import started from 'electron-squirrel-startup';
+import { Analytics } from './app/analytics';
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) app.quit();
@@ -17,6 +18,7 @@ updateElectronApp();
 
 const overlayManager = new OverlayManager();
 const telemetrySink = new TelemetrySink();
+const analytics = new Analytics();
 
 overlayManager.setupHardwareAcceleration();
 overlayManager.setupSingleInstanceLock();
@@ -38,7 +40,9 @@ app.on('ready', async () => {
 
   overlayManager.createOverlays(dashboard);
   setupTaskbar(telemetrySink, overlayManager);
-  publishDashboardUpdates(overlayManager);
+  publishDashboardUpdates(overlayManager, analytics);
+  
+  await analytics.init(overlayManager.getVersion(), dashboard);
 });
 
 let hideState = false;
@@ -68,4 +72,7 @@ app.on('will-quit', () => {
 });
 
 app.on('window-all-closed', () => app.quit());
-app.on('quit', () => console.warn('App quit'));
+app.on('quit', () => {
+  console.log('App quit');
+  analytics.shutdown();
+});
