@@ -123,8 +123,12 @@ export const NormalRaceSimulation: Story = {
     show10LapAvg: true,
     showMax: true,
     showPitWindow: true,
+    showEnduranceStrategy: true,
     showFuelScenarios: true,
     showFuelRequired: true,
+    fuelRequiredMode: 'toAdd',
+    showConsumptionGraph: true,
+    consumptionGraphType: 'histogram',
     safetyMargin: 0.05,
     background: { opacity: 85 },
   },
@@ -150,7 +154,9 @@ export const HorizontalLayout: Story = {
     showMax: true,
     showPitWindow: true,
     showEnduranceStrategy: true,
+    showFuelScenarios: true,
     showFuelRequired: true,
+    fuelRequiredMode: 'toAdd',
     showConsumptionGraph: true,
     consumptionGraphType: 'histogram',
     safetyMargin: 0.05,
@@ -173,9 +179,9 @@ const MockFuelDataProvider = ({ children }: { children: React.ReactNode }) => {
       // Create varied fuel usage with some above and below average (avg ~2.1)
       const baseUsage = 2.1;
       const variation = [
-        -0.3, 0, 0.05, -0.02, 0.02, -0.05, 0.08, 0, 0.01, -0.06,
-        0.15, -0.1, 0.03, -0.02, 0.05, -0.08, 0.1, -0.03, 0.02, -0.05,
-        0.12, -0.07, 0.04, -0.01, 0.06, -0.04, 0.09, -0.02, 0.03, -0.06
+        -0.3, 0, 0.05, -0.02, 0.02, -0.05, 0.08, 0, 0.01, -0.06, 0.15, -0.1,
+        0.03, -0.02, 0.05, -0.08, 0.1, -0.03, 0.02, -0.05, 0.12, -0.07, 0.04,
+        -0.01, 0.06, -0.04, 0.09, -0.02, 0.03, -0.06,
       ][i];
       return {
         lapNumber: i + 1,
@@ -188,7 +194,7 @@ const MockFuelDataProvider = ({ children }: { children: React.ReactNode }) => {
       };
     });
 
-    mockLaps.forEach(lap => addLapData(lap));
+    mockLaps.forEach((lap) => addLapData(lap));
 
     // Set current lap crossing state
     updateLapCrossing(0.1, 35.5, 2700, 31, false);
@@ -216,7 +222,9 @@ export const WithMockLapData: Story = {
     show10LapAvg: true,
     showMax: true,
     showPitWindow: true,
+    showEnduranceStrategy: true,
     showFuelRequired: true,
+    fuelRequiredMode: 'toAdd',
     showConsumptionGraph: true,
     consumptionGraphType: 'histogram',
     safetyMargin: 0.05,
@@ -292,8 +300,10 @@ export const FuelScenariosShowcase: Story = {
     show10LapAvg: true,
     showMax: true,
     showPitWindow: true,
+    showEnduranceStrategy: true,
     showFuelScenarios: true,
-    showFuelRequired: false,
+    showFuelRequired: true,
+    fuelRequiredMode: 'toFinish',
     showConsumptionGraph: true,
     consumptionGraphType: 'histogram',
     safetyMargin: 0.05,
@@ -315,7 +325,8 @@ export const FuelScenariosHorizontal: Story = {
     showPitWindow: true,
     showEnduranceStrategy: true,
     showFuelScenarios: true,
-    showFuelRequired: false,
+    showFuelRequired: true,
+    fuelRequiredMode: 'toFinish',
     showConsumptionGraph: true,
     consumptionGraphType: 'histogram',
     safetyMargin: 0.05,

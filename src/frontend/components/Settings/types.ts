@@ -206,6 +206,7 @@ export interface FuelWidgetSettings extends BaseWidgetSettings {
     consumptionGraphType: 'line' | 'histogram';
     safetyMargin: number;
     background: { opacity: number };
+    fuelRequiredMode: 'toFinish' | 'toAdd';
   };
 }
 
