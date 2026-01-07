@@ -227,7 +227,9 @@ export interface RejoinIndicatorWidgetSettings extends BaseWidgetSettings {
     careGap: number;
     stopGap: number;
   }
-}export interface GarageCoverWidgetSettings extends BaseWidgetSettings {
+}
+
+export interface GarageCoverWidgetSettings extends BaseWidgetSettings {
   config: {
     imageFilename: string;
   };
