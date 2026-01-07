@@ -54,14 +54,12 @@ export const dashboardBridge: DashboardBridge = {
   stop: () => {
     return;
   },
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  saveGarageCoverImage: function (buffer: Uint8Array): Promise<string> {
-    throw new Error('Function not implemented.');
+  saveGarageCoverImage: (buffer: Uint8Array) => {
+    return saveGarageCoverImage(buffer);
   },
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  getGarageCoverImageAsDataUrl: function (imagePath: string): Promise<string | null> {
-    throw new Error('Function not implemented.');
-  }
+  getGarageCoverImageAsDataUrl: (imagePath: string) => {
+    return getGarageCoverImageAsDataUrl(imagePath);
+  },
 };
 
 export async function publishDashboardUpdates(overlayManager: OverlayManager, analytics: Analytics) {
