@@ -11,7 +11,7 @@ import { RejoinIndicator } from './components/RejoinIndicator/RejoinIndicator';
 
 // TODO: type this better, right now the config comes from settings
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const WIDGET_MAP: Record<string, (config??: any) => React.JSX.Element | null | null> = {
+export const WIDGET_MAP: Record<string, (config?: any) => React.JSX.Element | null | null> = {
   standings: Standings,
   input: Input,
   relative: Relative,
