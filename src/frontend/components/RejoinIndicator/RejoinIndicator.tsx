@@ -12,7 +12,6 @@ import type { Standings } from '../Standings/createStandings';
 export const RejoinIndicator = () => {
   const settings = useRejoinSettings();
   const playerIndex = useFocusCarIdx();
-  const isInGarage = useTelemetryValue<number>('IsInGarage') === 1;
   const playerInPitStall = useTelemetryValue<number>('PlayerCarInPitStall') === 1;
   const carIdxOnPitRoad = useTelemetryValues<boolean[]>('CarIdxOnPitRoad');
   const carSpeedForPlayer = useTelemetryValue('Speed');
@@ -27,7 +26,6 @@ export const RejoinIndicator = () => {
   if (!settings.enabled) return null;
   if (playerIndex === undefined) return null;
   
-  // Hide when not on track (always on when driving)
   if (!isDriving) return null;
   // Choose the first car behind the player that is not in the pit lane or off-track
   let carBehind: Standings | undefined = undefined;
