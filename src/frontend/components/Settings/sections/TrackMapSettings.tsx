@@ -8,6 +8,7 @@ const SETTING_ID = 'map';
 interface TrackMapSettings {
   enabled: boolean;
   config: {
+    mapStyle: 'shape' | 'flat';
     enableTurnNames: boolean;
     showCarNumbers: boolean;
     invertTrackColors: boolean;
@@ -20,6 +21,7 @@ interface TrackMapSettings {
 }
 
 const defaultConfig: TrackMapSettings['config'] = {
+  mapStyle: 'shape',
   enableTurnNames: false,
   showCarNumbers: true,
   invertTrackColors: false,
@@ -51,11 +53,30 @@ export const TrackMapSettings = () => {
     >
       {(handleConfigChange) => (
         <div className="space-y-4">
+          <div className="space-y-2">
+            <label className="text-slate-300">Map Style</label>
+            <select
+              value={settings.config.mapStyle ?? 'shape'}
+              onChange={(e) =>
+                handleConfigChange({ mapStyle: e.target.value as 'shape' | 'flat' })
+              }
+              className="w-full bg-slate-700 text-slate-300 rounded px-3 py-2"
+            >
+              <option value="shape">Shape (Curved Track)</option>
+              <option value="flat">Flat (Linear Track)</option>
+            </select>
+            <p className="text-slate-400 text-sm">
+              Choose between curved track layout or horizontal linear representation
+            </p>
+          </div>
+
           <div className="flex items-center justify-between">
             <div>
               <span className="text-sm text-slate-300">Enable Turn Names</span>
               <p className="text-xs text-slate-400">
-                Show turn numbers and names on the track map
+                {settings.config.mapStyle === 'flat'
+                  ? 'Not available for flat map style'
+                  : 'Show turn numbers and names on the track map'}
               </p>
             </div>
             <ToggleSwitch
@@ -63,6 +84,7 @@ export const TrackMapSettings = () => {
               onToggle={(enabled) => handleConfigChange({
                 enableTurnNames: enabled
               })}
+              disabled={settings.config.mapStyle === 'flat'}
             />
           </div>
 
