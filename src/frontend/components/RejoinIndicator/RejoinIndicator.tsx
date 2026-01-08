@@ -16,6 +16,8 @@ export const RejoinIndicator = () => {
   const playerInPitStall = useTelemetryValue<number>('PlayerCarInPitStall') === 1;
   const carIdxOnPitRoad = useTelemetryValues<boolean[]>('CarIdxOnPitRoad');
   const carSpeedForPlayer = useTelemetryValue('Speed');
+  const sessionTime = useTelemetryValue<number>('SessionTime') ?? 0;
+  const sessionState = useTelemetryValue<number>('SessionState') ?? 0;
   const { isDriving } = useDrivingState();
 
   const drivers = useDriverRelatives({ buffer: 3 });
@@ -75,9 +77,14 @@ export const RejoinIndicator = () => {
   // Decide visibility when there is no valid on-track car behind
   const isHiddenByNoCarBehind = !Number.isFinite(gap);
 
+  // Hide during standing start: session state 2 (WarmUp) or session time < 3 seconds during racing
+  // SessionState 2 = WarmUp/ParadeLaps (pre-race), 3 = GetInCar (unlikely), 4 = Racing
+  const isHiddenBySessionStart = sessionState !== 4 || (sessionState === 4 && sessionTime < 3);
+
   if (isHiddenBySpeed) return null;
   if (isHiddenByLocation) return null;
   if (isHiddenByNoCarBehind) return null;
+  if (isHiddenBySessionStart) return null;
 
   const statusBg =
     status.color === 'green' ? 'bg-green-700' : status.color === 'amber' ? 'bg-amber-600' : 'bg-red-700';
