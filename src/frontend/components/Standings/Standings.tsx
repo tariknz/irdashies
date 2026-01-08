@@ -12,7 +12,7 @@ import {
 } from './hooks';
 import { useLapTimesStoreUpdater } from '../../context/LapTimesStore/LapTimesStoreUpdater';
 import { usePitLapStoreUpdater } from '../../context/PitLapStore/PitLapStoreUpdater';
-import { useDrivingState, useWeekendInfoNumCarClasses } from '@irdashies/context';
+import { useDrivingState, useWeekendInfoNumCarClasses, useWeekendInfoTeamRacing } from '@irdashies/context';
 import { useIsSingleMake } from './hooks/useIsSingleMake';
 
 export const Standings = () => {
@@ -34,6 +34,9 @@ export const Standings = () => {
   // Determine whether we should hide the car manufacturer column
   const isSingleMake = useIsSingleMake();
   const hideCarManufacturer = !!(settings?.carManufacturer?.hideIfSingleMake && isSingleMake);
+
+  // Check if this is a team racing session
+  const isTeamRacing = useWeekendInfoTeamRacing();
 
   // Show only when on track setting
   if (settings?.showOnlyWhenOnTrack && !isDriving) {
@@ -71,6 +74,7 @@ export const Standings = () => {
                     classColor={result.carClass.color}
                     carNumber={settings?.carNumber?.enabled ?? true ? result.driver?.carNum || '' : undefined}
                     name={result.driver?.name || ''}
+                    teamName={settings?.teamName?.enabled && isTeamRacing ? result.driver?.teamName || '' : undefined}
                     isPlayer={result.isPlayer}
                     hasFastestTime={result.hasFastestTime}
                     delta={settings?.delta?.enabled ? result.delta : undefined}

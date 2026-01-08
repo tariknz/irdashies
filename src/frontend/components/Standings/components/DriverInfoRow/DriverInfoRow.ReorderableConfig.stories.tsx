@@ -296,6 +296,7 @@ const RelativeWithReorderableConfig = () => {
       carNumber: { enabled: true },
       countryFlags: { enabled: true },
       driverName: { enabled: true },
+      teamName: { enabled: false },
       pitStatus: { enabled: true },
       carManufacturer: { enabled: true },
       badge: { enabled: true, badgeFormat: 'license-color-rating-bw' },

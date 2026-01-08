@@ -73,6 +73,9 @@ export const useWeekendInfoNumCarClasses = () =>
     (state) => state.session?.WeekendInfo?.NumCarClasses
   );
 
+export const useWeekendInfoTeamRacing = () =>
+  useStore(useSessionStore, (state) => state.session?.WeekendInfo?.TeamRacing);
+
 export const useDriverCarIdx = () =>
   useStore(useSessionStore, (state) => state.session?.DriverInfo?.DriverCarIdx);
 

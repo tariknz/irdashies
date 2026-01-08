@@ -48,6 +48,9 @@ export const defaultDashboard: DashboardLayout = {
         "driverName": {
           "enabled": true
         },
+        "teamName": {
+          "enabled": false
+        },
         "pitStatus": {
           "enabled": true
         },
@@ -145,7 +148,7 @@ export const defaultDashboard: DashboardLayout = {
           "displayOrder": ["sessionName", "sessionTime", "incidentCount", "brakeBias", "localTime", "sessionClockTime", "trackWetness", "airTemperature", "trackTemperature"]
         },
         "showOnlyWhenOnTrack": false,
-        "displayOrder": ["position", "carNumber", "countryFlags", "driverName", "pitStatus", "carManufacturer", "badge", "iratingChange", "gap", "interval", "fastestTime", "lastTime", "compound", "lapTimeDeltas"]
+        "displayOrder": ["position", "carNumber", "countryFlags", "driverName", "teamName", "pitStatus", "carManufacturer", "badge", "iratingChange", "gap", "interval", "fastestTime", "lastTime", "compound", "lapTimeDeltas"]
       }
     },
     {
@@ -222,6 +225,9 @@ export const defaultDashboard: DashboardLayout = {
         "driverName": {
           "enabled": true
         },
+        "teamName": {
+          "enabled": false
+        },
         "pitStatus": {
           "enabled": true
         },
@@ -250,7 +256,7 @@ export const defaultDashboard: DashboardLayout = {
         "compound": {
           "enabled": false
         },
-        "displayOrder": ["position", "carNumber", "countryFlags", "driverName", "pitStatus", "carManufacturer", "badge", "iratingChange", "delta", "fastestTime", "lastTime", "compound"],
+        "displayOrder": ["position", "carNumber", "countryFlags", "driverName", "teamName", "pitStatus", "carManufacturer", "badge", "iratingChange", "delta", "fastestTime", "lastTime", "compound"],
         "titleBar": {
           "enabled": false,
           "progressBar": {
