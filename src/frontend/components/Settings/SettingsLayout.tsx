@@ -17,8 +17,10 @@ import { FuelSettings } from './sections/FuelSettings';
 import { RejoinIndicatorSettings } from './sections/RejoinIndicatorSettings';
 import { GeneralSettings } from './sections/GeneralSettings';
 import { BlindSpotMonitorSettings } from './sections/BlindSpotMonitorSettings';
+import { GarageCoverSettings } from './sections/GarageCoverSettings';
 import { useDashboard } from '@irdashies/context';
 import { useState } from 'react';
+
 
 export const SettingsLayout = () => {
   const location = useLocation();
@@ -165,6 +167,14 @@ export const SettingsLayout = () => {
                 Rejoin Indicator
               </Link>
             </li>
+            <li>
+              <Link
+                to="/settings/garagecover"
+                className={menuItemClass('/garagecover')}
+              >
+                Garage Cover
+              </Link>
+            </li>
           </ul>
           {/* Advanced settings pushed to bottom */}
           <ul className="mt-auto pt-2 border-t border-slate-700 flex flex-col gap-2">
@@ -207,6 +217,7 @@ export const SettingsLayout = () => {
               path="blindspotmonitor"
               element={<BlindSpotMonitorSettings />}
             />
+            <Route path="garagecover" element={<GarageCoverSettings />} />
             <Route path="advanced" element={<AdvancedSettings />} />
             <Route path="about" element={<AboutSettings />} />
             <Route

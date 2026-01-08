@@ -6,6 +6,7 @@ import { Weather } from './components/Weather';
 import { FasterCarsFromBehind } from './components/FasterCarsFromBehind/FasterCarsFromBehind';
 import { FuelCalculator } from './components/FuelCalculator';
 import { BlindSpotMonitor } from './components/BlindSpotMonitor/BlindSpotMonitor';
+import { GarageCover } from './components/GarageCover/GarageCover';
 import { RejoinIndicator } from './components/RejoinIndicator/RejoinIndicator';
 
 // TODO: type this better, right now the config comes from settings
@@ -19,5 +20,6 @@ export const WIDGET_MAP: Record<string, (config?: any) => React.JSX.Element | nu
   fastercarsfrombehind: FasterCarsFromBehind,
   fuel: FuelCalculator,
   blindspotmonitor: BlindSpotMonitor,
+  garagecover: GarageCover,
   rejoin: RejoinIndicator,
 };

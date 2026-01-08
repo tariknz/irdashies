@@ -69,6 +69,8 @@ const createMockBridge = (
   stop: () => {
     return;
   },
+  saveGarageCoverImage: () => Promise.resolve(''),
+  getGarageCoverImageAsDataUrl: () => Promise.resolve(null),
 });
 
 const FONT_SIZES: FontSize[] = ['xs', 'sm', 'md', 'lg', 'xl', '2xl', '3xl'];

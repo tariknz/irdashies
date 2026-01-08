@@ -417,6 +417,34 @@ class WebSocketBridge implements IrSdkBridge {
     });
   }
 
+  async getGarageCoverImageAsDataUrl(imagePath: string): Promise<string | null> {
+    return new Promise((resolve) => {
+      if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+        const requestId = Math.random().toString(36).substring(7);
+        const handler = (event: MessageEvent) => {
+          try {
+            const message = JSON.parse(event.data);
+            if (message.type === 'getGarageCoverImageAsDataUrl' && message.requestId === requestId) {
+              this.socket?.removeEventListener('message', handler);
+              clearTimeout(timeout);
+              resolve(message.data);
+            }
+          } catch (e) {
+            console.error('Error in getGarageCoverImageAsDataUrl callback:', e);
+          }
+        };
+        const timeout = setTimeout(() => {
+          this.socket?.removeEventListener('message', handler);
+          resolve(null);
+        }, 5000);
+        this.socket.addEventListener('message', handler);
+        this.socket.send(JSON.stringify({ type: 'getGarageCoverImageAsDataUrl', requestId, data: { imagePath } }));
+      } else {
+        resolve(null);
+      }
+    });
+  }
+
   toggleDemoMode(value: boolean): void {
     if (this.socket && this.socket.readyState === WebSocket.OPEN) {
       this.socket.send(JSON.stringify({ type: 'toggleDemoMode', data: value }));

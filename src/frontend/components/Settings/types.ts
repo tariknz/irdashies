@@ -119,6 +119,7 @@ export interface WeatherWidgetSettings extends BaseWidgetSettings {
   config: {
     background: { opacity: number };
     displayOrder: string[];
+    showOnlyWhenOnTrack: boolean;
     airTemp: {
       enabled: boolean
     };
@@ -226,4 +227,10 @@ export interface RejoinIndicatorWidgetSettings extends BaseWidgetSettings {
     careGap: number;
     stopGap: number;
   }
+}
+
+export interface GarageCoverWidgetSettings extends BaseWidgetSettings {
+  config: {
+    imageFilename: string;
+  };
 }

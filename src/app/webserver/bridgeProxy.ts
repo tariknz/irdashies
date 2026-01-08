@@ -94,7 +94,7 @@ export function createBridgeProxy(
 
   wss.on('connection', (ws: WebSocket) => {
     clients.add(ws);
-    
+
     if (unsubscribeFunctions.length === 0) {
       console.log('🔌 No active subscriptions, subscribing to bridge...');
       subscribeToBridge(currentBridge || irsdkBridge);
@@ -111,10 +111,10 @@ export function createBridgeProxy(
       },
     }));
 
-    ws.on('message', (message: Buffer) => {
+    ws.on('message', async (message: Buffer) => {
       try {
         const parsed = JSON.parse(message.toString());
-        
+
         switch (parsed.type) {
           case 'getDashboard':
             ws.send(JSON.stringify({
@@ -125,12 +125,26 @@ export function createBridgeProxy(
           case 'reloadDashboard':
             dashboardBridge?.reloadDashboard();
             break;
-          case 'getAppVersion':
+          case 'getAppVersion': {
+            const { requestId } = parsed;
+            const result = await dashboardBridge?.getAppVersion();
             ws.send(JSON.stringify({
-              type: 'appVersion',
-              data: dashboardBridge?.getAppVersion(),
+              type: 'getAppVersion',
+              requestId,
+              data: result,
             }));
             break;
+          }
+          case 'getGarageCoverImageAsDataUrl': {
+            const { requestId, data } = parsed;
+            const result = await dashboardBridge?.getGarageCoverImageAsDataUrl(data.imagePath);
+            ws.send(JSON.stringify({
+              type: 'getGarageCoverImageAsDataUrl',
+              requestId,
+              data: result,
+            }));
+            break;
+          }
           default:
             console.log('🔄 Bridge proxy: Unknown message type:', parsed.type);
             break;
@@ -142,7 +156,7 @@ export function createBridgeProxy(
 
     ws.on('close', () => {
       clients.delete(ws);
-      
+
       if (clients.size === 0) {
         console.log('🔌 No clients connected, unsubscribing from bridge...');
         unsubscribeFromBridge();
