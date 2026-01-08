@@ -75,9 +75,9 @@ export const RejoinIndicator = () => {
   // Decide visibility when there is no valid on-track car behind
   const isHiddenByNoCarBehind = !Number.isFinite(gap);
 
-  // Hide during standing start: session state 2 (WarmUp) or session time < 3 seconds during racing
+  // Hide during standing start: pre-race session states (< 4) or session time < 3 seconds during racing
   // SessionState 2 = WarmUp/ParadeLaps (pre-race), 3 = GetInCar (unlikely), 4 = Racing
-  const isHiddenBySessionStart = sessionState !== 4 || (sessionState === 4 && sessionTime < 3);
+  const isHiddenBySessionStart = sessionState < 4 || (sessionState === 4 && sessionTime < 3);
 
   if (isHiddenBySpeed) return null;
   if (isHiddenByLocation) return null;
