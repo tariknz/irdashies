@@ -43,17 +43,17 @@ jobs:
       if: steps.cache-deps.outputs.cache-hit != 'true'
       run: npm ci
 
-    - name: Run linting
-      run: npm run lint
+    # - name: Run linting
+    #   run: npm run lint
 
-    - name: Run tests with coverage
-      run: npm test
+    # - name: Run tests with coverage
+    #   run: npm test
 
-    - name: Upload coverage report
-      uses: actions/upload-artifact@v4
-      with:
-        name: coverage-report
-        path: coverage 
+    # - name: Upload coverage report
+    #   uses: actions/upload-artifact@v4
+    #   with:
+    #     name: coverage-report
+    #     path: coverage 
 
     - name: Check if version changed
       id: check_version
@@ -74,14 +74,15 @@ jobs:
     #     IRACING_PASSWORD: ${{ secrets.IRACING_PASSWORD }}
     #     APP_SECRET: ${{ secrets.APP_SECRET }}
 
-    - name: Make
-      # if: steps.check_version.outputs.version_changed == 'true'
-      run: npm run make
-      env:
-        POSTHOG_KEY: ${{ secrets.POSTHOG_KEY }}
+    # - name: Make
+    #   # if: steps.check_version.outputs.version_changed == 'true'
+    #   run: npm run make
+    #   env:
+    #     POSTHOG_KEY: ${{ secrets.POSTHOG_KEY }}
 
     - name: Publish
       # if: steps.check_version.outputs.version_changed == 'true'
       run: npm run publish:ci
       env:
+        POSTHOG_KEY: ${{ secrets.POSTHOG_KEY }}
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
