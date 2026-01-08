@@ -75,13 +75,13 @@ jobs:
     #     APP_SECRET: ${{ secrets.APP_SECRET }}
 
     - name: Make
-      if: steps.check_version.outputs.version_changed == 'true'
+      # if: steps.check_version.outputs.version_changed == 'true'
       run: npm run make
       env:
         POSTHOG_KEY: ${{ secrets.POSTHOG_KEY }}
 
     - name: Publish
-      if: steps.check_version.outputs.version_changed == 'true'
+      # if: steps.check_version.outputs.version_changed == 'true'
       run: npm run publish:ci
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
