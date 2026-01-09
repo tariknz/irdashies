@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { TrackDriver, TrackDrawing } from '../TrackMap/TrackCanvas';
+import { TrackDriver, TrackDrawing } from './TrackCanvas';
 import { getColor, getTailwindStyle } from '@irdashies/utils/colors';
-import { useDriverOffTrack } from '../TrackMap/hooks/useDriverOffTrack';
+import { useDriverOffTrack } from './hooks/useDriverOffTrack';
 
 export interface FlatTrackMapCanvasProps {
   trackDrawing: TrackDrawing;

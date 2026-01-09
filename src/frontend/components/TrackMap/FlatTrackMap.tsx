@@ -1,10 +1,10 @@
-import { useDriverProgress } from '../TrackMap/hooks/useDriverProgress';
+import { useDriverProgress } from './hooks/useDriverProgress';
 import { useFlatTrackMapSettings } from './hooks/useFlatTrackMapSettings';
-import { useHighlightColor } from '../TrackMap/hooks/useHighlightColor';
-import { useTrackId } from '../TrackMap/hooks/useTrackId';
+import { useHighlightColor } from './hooks/useHighlightColor';
+import { useTrackId } from './hooks/useTrackId';
 import { FlatTrackMapCanvas } from './FlatTrackMapCanvas';
-import tracks from '../TrackMap/tracks/tracks.json';
-import { TrackDrawing } from '../TrackMap/TrackCanvas';
+import tracks from './tracks/tracks.json';
+import { TrackDrawing } from './TrackCanvas';
 
 const debug = import.meta.env.DEV || import.meta.env.MODE === 'storybook';
 

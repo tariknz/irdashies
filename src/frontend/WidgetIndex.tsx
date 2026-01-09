@@ -2,7 +2,7 @@ import { Standings } from './components/Standings/Standings';
 import { Input } from './components/Input';
 import { Relative } from './components/Standings/Relative';
 import { TrackMap } from './components/TrackMap/TrackMap';
-import { FlatTrackMap } from './components/FlatTrackMap/FlatTrackMap';
+import { FlatTrackMap } from './components/TrackMap/FlatTrackMap';
 import { Weather } from './components/Weather';
 import { FasterCarsFromBehind } from './components/FasterCarsFromBehind/FasterCarsFromBehind';
 import { FuelCalculator } from './components/FuelCalculator';
