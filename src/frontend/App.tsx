@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+// App.tsx
 import { createRoot } from 'react-dom/client';
 import { HashRouter, Route, Routes } from 'react-router-dom';
 import {
@@ -13,6 +13,7 @@ import { Settings } from './components/Settings/Settings';
 import { EditMode } from './components/EditMode/EditMode';
 import { ThemeManager } from './components/ThemeManager/ThemeManager';
 import { WIDGET_MAP } from './WidgetIndex';
+import { HideUIWrapper } from './components/HideUIWrapper';
 
 const AppRoutes = () => {
   const { currentDashboard } = useDashboard();
@@ -30,13 +31,7 @@ const AppRoutes = () => {
           <Route
             key={widget.id}
             path={`/${widget.id}`}
-            element={
-              running ? (
-                <WidgetComponent {...widget.config} />
-              ) : (
-                <></>
-              )
-            }
+            element={running ? <WidgetComponent {...widget.config} /> : <></>}
           />
         );
       })}
@@ -45,26 +40,9 @@ const AppRoutes = () => {
   );
 };
 
-declare global {
-  interface Window {
-    globalKey?: {
-      onToggle: (cb: (hide: boolean) => void) => () => void;
-    };
-  }
-}
-
 const App = () => {
-  const [hideUI, setHideUI] = useState(false);
-
-  useEffect(() => {
-    if (window.globalKey?.onToggle) {
-      const unsub = window.globalKey.onToggle((hide) => setHideUI(hide));
-      return () => unsub();
-    }
-  }, []);
-
   return (
-    <div className={hideUI ? 'hidden-ui' : ''}>
+    <HideUIWrapper>
       <DashboardProvider bridge={window.dashboardBridge}>
         <RunningStateProvider bridge={window.irsdkBridge}>
           <SessionProvider bridge={window.irsdkBridge} />
@@ -78,7 +56,7 @@ const App = () => {
           </HashRouter>
         </RunningStateProvider>
       </DashboardProvider>
-    </div>
+    </HideUIWrapper>
   );
 };
 
