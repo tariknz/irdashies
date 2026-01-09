@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { HashRouter, Route, Routes } from 'react-router-dom';
 import {
@@ -45,49 +44,26 @@ const AppRoutes = () => {
   );
 };
 
-declare global {
-  interface Window {
-    globalKey?: {
-      onToggle: (cb: (hide: boolean) => void) => () => void;
-    };
-  }
-}
-
-const App = () => {
-  const [hideUI, setHideUI] = useState(false);
-
-  useEffect(() => {
-    if (window.globalKey?.onToggle) {
-      const unsub = window.globalKey.onToggle((hide) => setHideUI(hide));
-      return () => unsub();
-    }
-  }, []);
-
-  return (
-    <div className={hideUI ? 'hidden-ui' : ''}>
-      <DashboardProvider bridge={window.dashboardBridge}>
-        <RunningStateProvider bridge={window.irsdkBridge}>
-          <SessionProvider bridge={window.irsdkBridge} />
-          <TelemetryProvider bridge={window.irsdkBridge} />
-          <HashRouter>
-            <EditMode>
-              <ThemeManager>
-                <AppRoutes />
-              </ThemeManager>
-            </EditMode>
-          </HashRouter>
-        </RunningStateProvider>
-      </DashboardProvider>
-    </div>
-  );
-};
+const App = () => (
+  <DashboardProvider bridge={window.dashboardBridge}>
+    <RunningStateProvider bridge={window.irsdkBridge}>
+      <SessionProvider bridge={window.irsdkBridge} />
+      <TelemetryProvider bridge={window.irsdkBridge} />
+      <HashRouter>
+        <EditMode>
+          <ThemeManager>
+            <AppRoutes />
+          </ThemeManager>
+        </EditMode>
+      </HashRouter>
+    </RunningStateProvider>
+  </DashboardProvider>
+);
 
 const el = document.getElementById('app');
 if (!el) {
   throw new Error('No #app element found');
 }
-
-export default App;
 
 const root = createRoot(el);
 root.render(<App />);

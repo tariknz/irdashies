@@ -1,4 +1,4 @@
-import { app, globalShortcut } from 'electron';
+import { app } from 'electron';
 import { iRacingSDKSetup, getCurrentBridge } from './app/bridge/iracingSdk/setup';
 import { getOrCreateDefaultDashboard } from './app/storage/dashboards';
 import { setupTaskbar } from './app';
@@ -43,32 +43,6 @@ app.on('ready', async () => {
   publishDashboardUpdates(overlayManager, analytics);
   
   await analytics.init(overlayManager.getVersion(), dashboard);
-});
-
-let hideState = false;
-
-app.whenReady().then(() => {
-
-  // Register a global accelerator. Recommended: use a modifier to avoid conflicts.
-  // Examples: 'Alt+H', 'CommandOrControl+R', 'Ctrl+Alt+H'
-  const accel = 'Alt+H';
-
-  const registered = globalShortcut.register(accel, () => {
-    // Toggle internal state and notify renderer
-    hideState = !hideState;
-    overlayManager.getOverlays().forEach(({ window }) => {
-    window.webContents.send('global-toggle-hide', hideState);
-  });
-  });
-
-  if (!registered) {
-    console.error(`Failed to register global shortcut: ${accel}`);
-  }
-});
-
-app.on('will-quit', () => {
-  globalShortcut.unregister('Alt+H');
-  globalShortcut.unregisterAll();
 });
 
 app.on('window-all-closed', () => app.quit());
