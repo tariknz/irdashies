@@ -1,4 +1,4 @@
-import { app } from 'electron';
+import { app, globalShortcut } from 'electron';
 import { iRacingSDKSetup, getCurrentBridge } from './app/bridge/iracingSdk/setup';
 import { getOrCreateDefaultDashboard } from './app/storage/dashboards';
 import { setupTaskbar } from './app';
@@ -10,7 +10,6 @@ import { updateElectronApp } from 'update-electron-app';
 // @ts-expect-error no types for squirrel
 import started from 'electron-squirrel-startup';
 import { Analytics } from './app/analytics';
-import { registerHideUiShortcut } from './frontend/utils/globalShortcuts';
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) app.quit();
@@ -44,9 +43,32 @@ app.on('ready', async () => {
   publishDashboardUpdates(overlayManager, analytics);
   
   await analytics.init(overlayManager.getVersion(), dashboard);
+});
 
-  // 🔽 Register the global hide UI shortcut once everything is set up
-  registerHideUiShortcut(overlayManager);
+let hideState = false;
+
+app.whenReady().then(() => {
+
+  // Register a global accelerator. Recommended: use a modifier to avoid conflicts.
+  // Examples: 'Alt+H', 'CommandOrControl+R', 'Ctrl+Alt+H'
+  const accel = 'Alt+H';
+
+  const registered = globalShortcut.register(accel, () => {
+    // Toggle internal state and notify renderer
+    hideState = !hideState;
+    overlayManager.getOverlays().forEach(({ window }) => {
+    window.webContents.send('global-toggle-hide', hideState);
+  });
+  });
+
+  if (!registered) {
+    console.error(`Failed to register global shortcut: ${accel}`);
+  }
+});
+
+app.on('will-quit', () => {
+  globalShortcut.unregister('Alt+H');
+  globalShortcut.unregisterAll();
 });
 
 app.on('window-all-closed', () => app.quit());
