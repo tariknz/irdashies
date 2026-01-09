@@ -74,9 +74,13 @@ export const listDashboards = () => {
 
 export const getDashboard = (id: string) => {
   const dashboards = readData<Record<string, DashboardLayout>>(DASHBOARDS_KEY);
+  console.log('[getDashboard] Looking for profile:', id);
+  console.log('[getDashboard] Available dashboard keys:', dashboards ? Object.keys(dashboards) : 'null');
   if (!dashboards) return null;
 
-  return dashboards[id];
+  const dashboard = dashboards[id];
+  console.log('[getDashboard] Found dashboard for', id, ':', dashboard ? 'yes' : 'no');
+  return dashboard;
 };
 
 export const updateDashboardWidget = (
@@ -120,7 +124,7 @@ export const saveDashboard = (
   if (isDashboardChanged(existingDashboard, mergedDashboard)) {
     dashboards[id] = mergedDashboard;
     writeData(DASHBOARDS_KEY, dashboards);
-    
+
     // Only emit dashboard updated event if this is the currently active profile
     // This prevents overlay refreshes when creating/modifying non-active profiles
     const currentProfileId = getCurrentProfileId();
@@ -246,21 +250,21 @@ export const getGarageCoverImageAsDataUrl = async (imageFilenameOrPath: string):
 // ============================================
 
 /**
- * Get or create the default profile if it doesn't exist
+ * Get or create the Default if it doesn't exist
  */
 const getOrCreateDefaultProfile = (): DashboardProfile => {
-  let profiles = readData<Record<string, DashboardProfile>>(PROFILES_KEY) || {};
-  
+  const profiles = readData<Record<string, DashboardProfile>>(PROFILES_KEY) || {};
+
   if (!profiles['default']) {
     profiles['default'] = {
       id: 'default',
-      name: 'Default Profile',
+      name: 'Default',
       createdAt: new Date().toISOString(),
       lastModified: new Date().toISOString(),
     };
     writeData(PROFILES_KEY, profiles);
   }
-  
+
   return profiles['default'];
 };
 
@@ -270,11 +274,11 @@ const getOrCreateDefaultProfile = (): DashboardProfile => {
 export const listProfiles = (): DashboardProfile[] => {
   const profiles = readData<Record<string, DashboardProfile>>(PROFILES_KEY);
   if (!profiles) {
-    // Ensure default profile exists
+    // Ensure Default exists
     getOrCreateDefaultProfile();
     return [getOrCreateDefaultProfile()];
   }
-  
+
   return Object.values(profiles);
 };
 
@@ -286,7 +290,7 @@ export const getProfile = (profileId: string): DashboardProfile | null => {
   if (!profiles) {
     return profileId === 'default' ? getOrCreateDefaultProfile() : null;
   }
-  
+
   return profiles[profileId] || null;
 };
 
@@ -296,20 +300,20 @@ export const getProfile = (profileId: string): DashboardProfile | null => {
 export const createProfile = (name: string): DashboardProfile => {
   const profiles = readData<Record<string, DashboardProfile>>(PROFILES_KEY) || {};
   const profileId = randomUUID();
-  
+
   const newProfile: DashboardProfile = {
     id: profileId,
     name,
     createdAt: new Date().toISOString(),
     lastModified: new Date().toISOString(),
   };
-  
+
   profiles[profileId] = newProfile;
   writeData(PROFILES_KEY, profiles);
-  
+
   // Create a new dashboard for this profile based on the default
   saveDashboard(profileId, { ...defaultDashboard });
-  
+
   return newProfile;
 };
 
@@ -318,23 +322,25 @@ export const createProfile = (name: string): DashboardProfile => {
  */
 export const deleteProfile = (profileId: string): void => {
   if (profileId === 'default') {
-    throw new Error('Cannot delete the default profile');
+    throw new Error('Cannot delete the Default');
   }
-  
+
   // Remove the profile
   const profiles = readData<Record<string, DashboardProfile>>(PROFILES_KEY);
   if (profiles && profiles[profileId]) {
-    delete profiles[profileId];
-    writeData(PROFILES_KEY, profiles);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { [profileId]: removed, ...remainingProfiles } = profiles;
+    writeData(PROFILES_KEY, remainingProfiles);
   }
-  
+
   // Remove the associated dashboard
   const dashboards = listDashboards();
   if (dashboards[profileId]) {
-    delete dashboards[profileId];
-    writeData(DASHBOARDS_KEY, dashboards);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { [profileId]: removed, ...remainingDashboards } = dashboards;
+    writeData(DASHBOARDS_KEY, remainingDashboards);
   }
-  
+
   // If this was the current profile, switch to default
   const currentProfileId = getCurrentProfileId();
   if (currentProfileId === profileId) {
@@ -349,20 +355,52 @@ export const deleteProfile = (profileId: string): void => {
 };
 
 /**
- * Rename a profile
+ * Update profile theme settings
  */
+export const updateProfileTheme = (profileId: string, themeSettings?: DashboardProfile['themeSettings']): void => {
+  console.log('[updateProfileTheme] Updating profile:', profileId, 'with themeSettings:', themeSettings);
+  const profiles = readData<Record<string, DashboardProfile>>(PROFILES_KEY);
+  if (!profiles || !profiles[profileId]) {
+    throw new Error(`Profile ${profileId} not found`);
+  }
+
+  profiles[profileId] = {
+    ...profiles[profileId],
+    themeSettings,
+    lastModified: new Date().toISOString(),
+  };
+
+  writeData(PROFILES_KEY, profiles);
+  console.log('[updateProfileTheme] Saved profile, checking if current...');
+
+  // Get the current profile ID and emit dashboard update if this is the active profile
+  const currentProfileId = getCurrentProfileId();
+  console.log('[updateProfileTheme] Current profile ID:', currentProfileId, 'Updated profile ID:', profileId);
+  if (profileId === currentProfileId) {
+    const dashboard = getDashboard(profileId);
+    console.log('[updateProfileTheme] This is the current profile, emitting dashboard update');
+    if (dashboard) {
+      emitDashboardUpdated(dashboard);
+      console.log('[updateProfileTheme] Dashboard update emitted');
+    } else {
+      console.log('[updateProfileTheme] No dashboard found for profile');
+    }
+  } else {
+    console.log('[updateProfileTheme] Not the current profile, skipping emit');
+  }
+};
 export const renameProfile = (profileId: string, newName: string): void => {
   const profiles = readData<Record<string, DashboardProfile>>(PROFILES_KEY);
   if (!profiles || !profiles[profileId]) {
     throw new Error(`Profile ${profileId} not found`);
   }
-  
+
   profiles[profileId] = {
     ...profiles[profileId],
     name: newName,
     lastModified: new Date().toISOString(),
   };
-  
+
   writeData(PROFILES_KEY, profiles);
 };
 
@@ -372,7 +410,7 @@ export const renameProfile = (profileId: string, newName: string): void => {
 export const getCurrentProfileId = (): string => {
   const currentProfileId = readData<string>(CURRENT_PROFILE_KEY);
   if (!currentProfileId) {
-    // Ensure default profile exists and set it as current
+    // Ensure Default exists and set it as current
     getOrCreateDefaultProfile();
     // Use silent mode to avoid emitting events during initialization
     setCurrentProfile('default', true);
@@ -391,9 +429,9 @@ export const setCurrentProfile = (profileId: string, silent = false): void => {
   if (!profile) {
     throw new Error(`Profile ${profileId} not found`);
   }
-  
+
   writeData(CURRENT_PROFILE_KEY, profileId);
-  
+
   // Reload the dashboard for this profile
   // Only emit update if not in silent mode
   if (!silent) {

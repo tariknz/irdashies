@@ -46,6 +46,11 @@ export interface DashboardProfile {
   createdAt?: string;
   /** ISO timestamp of when the profile was last modified */
   lastModified?: string;
+  /** Optional theme settings that override dashboard general settings */
+  themeSettings?: {
+    fontSize?: FontSize;
+    colorPalette?: GeneralSettingsType['colorPalette'];
+  };
 }
 
 export interface DashboardLayout {
