@@ -8,6 +8,7 @@ import { FuelCalculator } from './components/FuelCalculator';
 import { BlindSpotMonitor } from './components/BlindSpotMonitor/BlindSpotMonitor';
 import { GarageCover } from './components/GarageCover/GarageCover';
 import { RejoinIndicator } from './components/RejoinIndicator/RejoinIndicator';
+import { TelemetryInspector } from './components/TelemetryInspector/TelemetryInspector';
 
 // TODO: type this better, right now the config comes from settings
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -22,4 +23,5 @@ export const WIDGET_MAP: Record<string, (config?: any) => React.JSX.Element | nu
   blindspotmonitor: BlindSpotMonitor,
   garagecover: GarageCover,
   rejoin: RejoinIndicator,
+  telemetryinspector: TelemetryInspector,
 };
