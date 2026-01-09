@@ -362,20 +362,6 @@ export const SingleClass: Story = {
   },
 };
 
-export const WithoutCarNumbers: Story = {
-  args: {
-    trackDrawing,
-    drivers: sampleData,
-    showCarNumbers: false,
-    driverCircleSize: 40,
-    playerCircleSize: 40,
-    trackLineWidth: 20,
-    trackOutlineWidth: 40,
-    invertTrackColors: false,
-    highlightColor: undefined,
-  },
-};
-
 export const SingleDriver: Story = {
   argTypes: {
     progress: {
@@ -431,98 +417,6 @@ export const SingleDriver: Story = {
 } as Story;
 
 export const CirclingAround: Story = {
-  render: (args) => {
-    const [drivers, setDrivers] = useState(args.drivers);
-    useEffect(() => {
-      const interval = setInterval(() => {
-        const newDrivers = drivers.map((driver) => ({
-          ...driver,
-          progress: (driver.progress + 0.005) % 1,
-        }));
-
-        setDrivers(newDrivers);
-      }, 50);
-
-      return () => clearInterval(interval);
-    });
-
-    return (
-      <FlatTrackMapCanvas 
-        trackDrawing={trackDrawing}
-        drivers={drivers} 
-        showCarNumbers={args.showCarNumbers ?? true}
-        driverCircleSize={args.driverCircleSize ?? 40}
-        playerCircleSize={args.playerCircleSize ?? 40}
-        trackLineWidth={args.trackLineWidth ?? 20}
-        trackOutlineWidth={args.trackOutlineWidth ?? 40}
-        invertTrackColors={args.invertTrackColors ?? false}
-        highlightColor={args.highlightColor}
-      />
-    );
-  },
-  args: {
-    drivers: sampleData,
-  },
-};
-
-export const WideView: Story = {
-  decorators: [
-    (Story) => (
-      <div style={{ width: '100%', height: '150px' }}>
-        <Story />
-      </div>
-    ),
-  ],
-  args: {
-    trackDrawing,
-    drivers: sampleData,
-    showCarNumbers: true,
-    driverCircleSize: 40,
-    playerCircleSize: 40,
-    trackLineWidth: 20,
-    trackOutlineWidth: 40,
-    invertTrackColors: false,
-    highlightColor: undefined,
-  },
-};
-
-export const TallView: Story = {
-  decorators: [
-    (Story) => (
-      <div style={{ width: '100%', height: '300px' }}>
-        <Story />
-      </div>
-    ),
-  ],
-  args: {
-    trackDrawing,
-    drivers: sampleData,
-    showCarNumbers: true,
-    driverCircleSize: 40,
-    playerCircleSize: 40,
-    trackLineWidth: 20,
-    trackOutlineWidth: 40,
-    invertTrackColors: false,
-    highlightColor: undefined,
-  },
-};
-
-export const ResponsiveAnimation: Story = {
-  decorators: [
-    (Story) => (
-      <div style={{ width: '100%', height: '100vh', display: 'flex', flexDirection: 'column', gap: '20px', padding: '20px' }}>
-        <div style={{ flex: 1, border: '2px solid #666' }}>
-          <Story />
-        </div>
-        <div style={{ flex: 1, border: '2px solid #666' }}>
-          <Story />
-        </div>
-        <div style={{ flex: 2, border: '2px solid #666' }}>
-          <Story />
-        </div>
-      </div>
-    ),
-  ],
   render: (args) => {
     const [drivers, setDrivers] = useState(args.drivers);
     useEffect(() => {
