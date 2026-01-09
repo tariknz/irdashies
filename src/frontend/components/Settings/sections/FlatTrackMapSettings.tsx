@@ -114,6 +114,43 @@ export const FlatTrackMapSettings = () => {
             </p>
           </div>
 
+          <div className="flex items-center justify-between">
+            <div>
+              <span className="text-sm text-slate-300">
+                Use Highlight Color for Player
+              </span>
+              <p className="text-xs text-slate-400">
+                Use your custom highlight color for the player car instead of
+                class color
+              </p>
+            </div>
+            <ToggleSwitch
+              enabled={settings.config.useHighlightColor ?? false}
+              onToggle={(enabled) =>
+                handleConfigChange({
+                  useHighlightColor: enabled,
+                })
+              }
+            />
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div>
+              <span className="text-sm text-slate-300">Invert Track Colors</span>
+              <p className="text-xs text-slate-400">
+                Swap black and white colors for the track
+              </p>
+            </div>
+            <ToggleSwitch
+              enabled={settings.config.invertTrackColors ?? false}
+              onToggle={(enabled) =>
+                handleConfigChange({
+                  invertTrackColors: enabled,
+                })
+              }
+            />
+          </div>
+
           <div className="space-y-2">
             <label className="text-slate-300">
               Track Line Width: {settings.config.trackLineWidth ?? 20}px
@@ -156,43 +193,6 @@ export const FlatTrackMapSettings = () => {
             <p className="text-slate-400 text-sm">
               Thickness of the outline around the track
             </p>
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div>
-              <span className="text-sm text-slate-300">Invert Track Colors</span>
-              <p className="text-xs text-slate-400">
-                Swap black and white colors for the track
-              </p>
-            </div>
-            <ToggleSwitch
-              enabled={settings.config.invertTrackColors ?? false}
-              onToggle={(enabled) =>
-                handleConfigChange({
-                  invertTrackColors: enabled,
-                })
-              }
-            />
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div>
-              <span className="text-sm text-slate-300">
-                Use Highlight Color for Player
-              </span>
-              <p className="text-xs text-slate-400">
-                Use your custom highlight color for the player car instead of
-                class color
-              </p>
-            </div>
-            <ToggleSwitch
-              enabled={settings.config.useHighlightColor ?? false}
-              onToggle={(enabled) =>
-                handleConfigChange({
-                  useHighlightColor: enabled,
-                })
-              }
-            />
           </div>
         </div>
       )}
