@@ -11,11 +11,6 @@ export const ThemeManager = ({ children }: PropsWithChildren) => {
   const fontSize = currentProfile?.themeSettings?.fontSize ?? generalSettings?.fontSize ?? 'sm';
   const colorPalette = currentProfile?.themeSettings?.colorPalette ?? generalSettings?.colorPalette ?? 'default';
 
-  console.log('[ThemeManager] Full currentProfile:', currentProfile);
-  console.log('[ThemeManager] themeSettings:', currentProfile?.themeSettings);
-  console.log('[ThemeManager] generalSettings fontSize:', generalSettings?.fontSize, 'colorPalette:', generalSettings?.colorPalette);
-  console.log('[ThemeManager] Final fontSize:', fontSize, 'colorPalette:', colorPalette);
-
   // Don't apply theme changes to the settings page since
   // they share the same theme as the rest of the overlays
   if (location.pathname.startsWith('/settings')) {
