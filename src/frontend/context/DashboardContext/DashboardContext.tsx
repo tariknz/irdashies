@@ -115,8 +115,17 @@ export const DashboardProvider: React.FC<{
     if (profileId && bridge.getDashboardForProfile) {
       console.log('📊 Loading dashboard for specific profile:', profileId);
       bridge.getDashboardForProfile(profileId).then((dashboard) => {
-        console.log('📊 Got dashboard for profile:', dashboard);
-        if (dashboard) setDashboard(dashboard);
+        if (dashboard) {
+          setDashboard(dashboard);
+        } else {
+          console.warn('📊 No dashboard returned for profile:', profileId);
+          // Fall back to reloading the current dashboard
+          bridge.reloadDashboard();
+        }
+      }).catch((error) => {
+        console.error('📊 Error loading dashboard for profile:', profileId, error);
+        // Fall back to reloading the current dashboard
+        bridge.reloadDashboard();
       });
     } else {
       bridge.reloadDashboard();

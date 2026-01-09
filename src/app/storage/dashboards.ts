@@ -32,6 +32,7 @@ const isDashboardChanged = (oldDashboard: DashboardLayout | undefined, newDashbo
 export const getOrCreateDefaultDashboard = () => {
   const currentProfileId = getCurrentProfileId();
   const dashboard = getDashboard(currentProfileId);
+
   if (dashboard) {
     // check missing widgets
     const missingWidgets = defaultDashboard.widgets.filter(
@@ -106,6 +107,14 @@ export const saveDashboard = (
   id: string | 'default',
   value: DashboardLayout
 ) => {
+  console.log('[saveDashboard] Saving dashboard for profile:', id);
+  console.log('[saveDashboard] Dashboard widgets to save:', value?.widgets?.length || 0);
+  console.log('[saveDashboard] Dashboard structure:', JSON.stringify({
+    hasWidgets: !!value?.widgets,
+    widgetCount: value?.widgets?.length || 0,
+    hasGeneralSettings: !!value?.generalSettings
+  }));
+
   const dashboards = listDashboards();
   const existingDashboard = dashboards[id];
 
@@ -120,17 +129,26 @@ export const saveDashboard = (
     }
   };
 
+  console.log('[saveDashboard] Final merged dashboard widgets:', mergedDashboard?.widgets?.length || 0);
+
   // Only save and emit if there are actual changes
   if (isDashboardChanged(existingDashboard, mergedDashboard)) {
     dashboards[id] = mergedDashboard;
+    console.log('[saveDashboard] Writing to storage...');
     writeData(DASHBOARDS_KEY, dashboards);
+    console.log('[saveDashboard] Saved successfully');
 
     // Only emit dashboard updated event if this is the currently active profile
     // This prevents overlay refreshes when creating/modifying non-active profiles
     const currentProfileId = getCurrentProfileId();
     if (id === currentProfileId) {
+      console.log('[saveDashboard] Emitting dashboard update for current profile');
       emitDashboardUpdated(mergedDashboard);
+    } else {
+      console.log('[saveDashboard] Not emitting update - not current profile');
     }
+  } else {
+    console.log('[saveDashboard] Dashboard unchanged, not saving');
   }
 };
 

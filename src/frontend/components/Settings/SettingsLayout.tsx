@@ -56,7 +56,7 @@ export const SettingsLayout = () => {
             <h1 className="text-2xl font-bold">Overlay Settings</h1>
             {currentProfile && (
               <p className="text-sm text-gray-400">
-                {currentProfile.name} Profile Active
+                {currentProfile.name} Active
               </p>
             )}
           </div>

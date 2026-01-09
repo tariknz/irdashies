@@ -124,7 +124,7 @@ export function createBridgeProxy(
             break;
           case 'getDashboardForProfile': {
             const { requestId, data } = parsed;
-            const result = dashboardBridge?.getDashboardForProfile?.(data.profileId) || currentDashboard;
+            const result = await dashboardBridge?.getDashboardForProfile?.(data.profileId) || currentDashboard;
             ws.send(JSON.stringify({
               type: 'getDashboardForProfile',
               requestId,

@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect, useRef } from 'react';
 import { Rnd } from 'react-rnd';
 import { useDashboard } from '@irdashies/context';
 import { WIDGET_MAP } from '../../WidgetIndex';
+import { getWidgetName } from '../../constants/widgetNames';
 
 interface WidgetPosition {
   x: number;
@@ -11,23 +12,26 @@ interface WidgetPosition {
 }
 
 export const DashboardView = () => {
-  const { currentDashboard, currentProfile, bridge } = useDashboard();
+  const { currentDashboard, bridge } = useDashboard();
   const [widgetPositions, setWidgetPositions] = useState<Record<string, WidgetPosition>>({});
+  const [interactingWidget, setInteractingWidget] = useState<string | null>(null);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isSavingRef = useRef(false);
 
-  console.log('[DashboardView] Rendering, currentDashboard:', currentDashboard);
-  console.log('[DashboardView] currentProfile:', currentProfile);
 
   // Filter enabled widgets and deduplicate by ID
   const enabledWidgets = useMemo(() => {
-    if (!currentDashboard?.widgets) return [];
+    if (!currentDashboard?.widgets) {
+      console.log('[DashboardView] No widgets in dashboard');
+      return [];
+    }
     const seen = new Set<string>();
-    return currentDashboard.widgets.filter(w => {
+    const filtered = currentDashboard.widgets.filter(w => {
       if (!w.enabled || seen.has(w.id)) return false;
       seen.add(w.id);
       return true;
     });
+    return filtered;
   }, [currentDashboard]);
 
   // Initialize widget positions from dashboard config or use defaults
@@ -153,20 +157,30 @@ export const DashboardView = () => {
 
         const widgetConfig = widget.config as Record<string, unknown>;
         const bgOpacity = (widgetConfig?.background as { opacity?: number })?.opacity ?? 80;
+        const isInteracting = interactingWidget === widget.id;
+        const widgetName = getWidgetName(widget.id);
 
         return (
           <Rnd
             key={widget.id}
             position={{ x: position.x, y: position.y }}
             size={{ width: position.width, height: position.height }}
+            onDragStart={() => {
+              setInteractingWidget(widget.id);
+            }}
             onDragStop={(e, d) => {
+              setInteractingWidget(null);
               handlePositionChange(widget.id, {
                 ...position,
                 x: d.x,
                 y: d.y,
               });
             }}
+            onResizeStart={() => {
+              setInteractingWidget(widget.id);
+            }}
             onResizeStop={(e, direction, ref, delta, position) => {
+              setInteractingWidget(null);
               handlePositionChange(widget.id, {
                 x: position.x,
                 y: position.y,
@@ -178,12 +192,18 @@ export const DashboardView = () => {
             enableUserSelectHack={false}
           >
             <div 
-              className="w-full h-full cursor-move"
+              className={`w-full h-full cursor-move ${isInteracting ? 'border-2 border-dashed border-blue-400' : ''}`}
               style={{
                 backgroundColor: `rgba(30, 41, 59, ${bgOpacity / 100})`,
                 overflow: 'hidden',
               }}
             >
+              {/* Title overlay when interacting */}
+              {isInteracting && (
+                <div className="absolute top-0 left-0 right-0 bg-blue-500 text-white text-xs px-2 py-1 font-medium z-10">
+                  {widgetName}
+                </div>
+              )}
               {/* Widget content - scrollable but no scrollbars visible */}
               <div 
                 className="w-full h-full p-2"
@@ -191,6 +211,7 @@ export const DashboardView = () => {
                   overflow: 'auto',
                   scrollbarWidth: 'none',
                   msOverflowStyle: 'none',
+                  paddingTop: isInteracting ? '24px' : '8px', // Add space for title when interacting
                 }}
               >
                 <style>{`
