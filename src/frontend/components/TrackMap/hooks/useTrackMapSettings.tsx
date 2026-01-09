@@ -3,7 +3,6 @@ import { useDashboard } from '@irdashies/context';
 interface TrackMapSettings {
   enabled: boolean;
   config: {
-    mapStyle: 'shape' | 'flat';
     enableTurnNames: boolean;
     showCarNumbers: boolean;
     invertTrackColors: boolean;

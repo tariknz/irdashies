@@ -228,12 +228,8 @@ Displays a track map with the current position of the cars on track and the trac
 **Features:**
 - Real-time car positions on track
 - Track layout visualization
-- Map style options:
-  - Shape: Traditional curved track layout (default)
-  - Flat: Horizontal linear track representation
 - Optional turn numbers and names display
 - Multi-class support
-- Configurable driver and player circle sizes
 
 ![Track Map](./docs/assets/trackmap.png)
 

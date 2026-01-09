@@ -1,26 +1,32 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { TrackDriver, TrackDrawing } from './TrackCanvas';
+import { TrackDriver, TrackDrawing } from '../TrackMap/TrackCanvas';
 import { getColor, getTailwindStyle } from '@irdashies/utils/colors';
-import { useDriverOffTrack } from './hooks/useDriverOffTrack';
+import { useDriverOffTrack } from '../TrackMap/hooks/useDriverOffTrack';
 
-export interface FlatTrackMapProps {
+export interface FlatTrackMapCanvasProps {
   trackDrawing: TrackDrawing;
   drivers: TrackDriver[];
   highlightColor?: number;
   showCarNumbers?: boolean;
   driverCircleSize?: number;
   playerCircleSize?: number;
+  trackLineWidth?: number;
+  trackOutlineWidth?: number;
+  invertTrackColors?: boolean;
 }
 
-const PADDING_X = 40;
+const HORIZONTAL_PADDING = 40; // Fixed padding on each side
 
-export const FlatTrackMap = ({
+export const FlatTrackMapCanvas = ({
   drivers,
   highlightColor,
   showCarNumbers = true,
-  driverCircleSize = 20,
-  playerCircleSize = 25,
-}: FlatTrackMapProps) => {
+  driverCircleSize = 40,
+  playerCircleSize = 40,
+  trackLineWidth = 20,
+  trackOutlineWidth = 40,
+  invertTrackColors = false,
+}: FlatTrackMapCanvasProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
   const driversOffTrack = useDriverOffTrack();
@@ -71,6 +77,10 @@ export const FlatTrackMap = ({
     resize();
     const resizeObserver = new ResizeObserver(resize);
     resizeObserver.observe(canvas);
+    // Also observe the parent container
+    if (canvas.parentElement) {
+      resizeObserver.observe(canvas.parentElement);
+    }
     window.addEventListener('resize', resize);
 
     return () => {
@@ -87,32 +97,71 @@ export const FlatTrackMap = ({
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     const centerY = canvasSize.height / 2;
-    const usableWidth = canvasSize.width - PADDING_X * 2;
+    const usableWidth = canvasSize.width - HORIZONTAL_PADDING * 2;
+    const trackStartX = HORIZONTAL_PADDING;
+    const trackEndX = canvasSize.width - HORIZONTAL_PADDING;
 
-    // Draw horizontal track line
-    ctx.strokeStyle = getColor('slate', 600);
-    ctx.lineWidth = 20;
+    const outlineColor = invertTrackColors ? 'white' : 'black';
+    const trackColor = invertTrackColors ? 'black' : 'white';
+
+    // Draw horizontal track line with outline (matching curved track map)
+    const circleScale = 0.25; // Scale factor to match curved map coordinate space
+    const scaledTrackLineWidth = trackLineWidth * circleScale;
+    const scaledOutlineWidth = trackOutlineWidth * circleScale;
+    
+    // First draw outline
+    ctx.strokeStyle = outlineColor;
+    ctx.lineWidth = scaledOutlineWidth;
     ctx.lineCap = 'round';
     ctx.beginPath();
-    ctx.moveTo(PADDING_X, centerY);
-    ctx.lineTo(canvasSize.width - PADDING_X, centerY);
+    ctx.moveTo(trackStartX, centerY);
+    ctx.lineTo(trackEndX, centerY);
+    ctx.stroke();
+    
+    // Then draw track on top
+    ctx.strokeStyle = trackColor;
+    ctx.lineWidth = scaledTrackLineWidth;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(trackStartX, centerY);
+    ctx.lineTo(trackEndX, centerY);
     ctx.stroke();
 
     // Draw start/finish line
     ctx.strokeStyle = getColor('red');
-    ctx.lineWidth = 3;
+    ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.moveTo(PADDING_X, centerY - 30);
-    ctx.lineTo(PADDING_X, centerY + 30);
+    ctx.moveTo(HORIZONTAL_PADDING, centerY - 10);
+    ctx.lineTo(HORIZONTAL_PADDING, centerY + 10);
     ctx.stroke();
 
+    // Draw checkered flag above the line
+    const flagSize = 8;
+    const flagY = centerY - 25;
+    const flagX = HORIZONTAL_PADDING - flagSize;
+    
+    // Draw 2x2 checkered pattern
+    for (let row = 0; row < 2; row++) {
+      for (let col = 0; col < 2; col++) {
+        const isBlack = (row + col) % 2 === 0;
+        ctx.fillStyle = isBlack ? 'black' : 'white';
+        ctx.fillRect(flagX + col * flagSize, flagY + row * flagSize, flagSize, flagSize);
+      }
+    }
+    
+    // Add border around flag
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(flagX, flagY, flagSize * 2, flagSize * 2);
+
     // Draw drivers
+    // Apply scale factor to match curved track map proportions
     [...drivers].sort((a, b) => Number(a.isPlayer) - Number(b.isPlayer)).forEach(({ driver, progress, isPlayer }) => {
       const color = driverColors[driver.CarIdx];
       if (!color) return;
 
-      const x = PADDING_X + progress * usableWidth;
-      const radius = isPlayer ? playerCircleSize : driverCircleSize;
+      const x = HORIZONTAL_PADDING + progress * usableWidth;
+      const radius = (isPlayer ? playerCircleSize : driverCircleSize) * circleScale;
 
       ctx.fillStyle = color.fill;
       ctx.beginPath();
@@ -133,7 +182,7 @@ export const FlatTrackMap = ({
         ctx.fillText(driver.CarNumber, x, centerY);
       }
     });
-  }, [canvasSize, drivers, driverColors, driversOffTrack, showCarNumbers, driverCircleSize, playerCircleSize]);
+  }, [canvasSize, drivers, driverColors, driversOffTrack, showCarNumbers, driverCircleSize, playerCircleSize, trackLineWidth, trackOutlineWidth, invertTrackColors]);
 
   return <div className="w-full h-full"><canvas ref={canvasRef} className="w-full h-full" /></div>;
 };
