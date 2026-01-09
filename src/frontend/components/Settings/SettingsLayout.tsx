@@ -25,7 +25,7 @@ import { useState } from 'react';
 
 export const SettingsLayout = () => {
   const location = useLocation();
-  const { bridge, editMode, isDemoMode, toggleDemoMode, currentDashboard } =
+  const { bridge, editMode, isDemoMode, toggleDemoMode, currentDashboard, currentProfile } =
     useDashboard();
   const [isLocked, setIsLocked] = useState(!editMode);
 
@@ -52,7 +52,14 @@ export const SettingsLayout = () => {
       <div className="flex flex-row gap-4 items-center justify-between">
         <div className="flex flex-row gap-4 items-center">
           <GearIcon size={32} weight="bold" />
-          <h1 className="text-2xl font-bold">Overlay Settings</h1>
+          <div>
+            <h1 className="text-2xl font-bold">Overlay Settings</h1>
+            {currentProfile && (
+              <p className="text-sm text-gray-400">
+                {currentProfile.name} Profile Active
+              </p>
+            )}
+          </div>
         </div>
         <div className="flex flex-row gap-2">
           <button

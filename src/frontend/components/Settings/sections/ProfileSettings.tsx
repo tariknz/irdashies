@@ -1,258 +1,395 @@
 import { useState, useEffect } from 'react';
 import { useDashboard } from '@irdashies/context';
-import type { DashboardProfile } from '@irdashies/types';
+import type { DashboardProfile, GeneralSettingsType, FontSize } from '@irdashies/types';
+
+const FONT_SIZE_OPTIONS: { value: FontSize; label: string }[] = [
+    { value: 'xs', label: 'Extra Small' },
+    { value: 'sm', label: 'Small' },
+    { value: 'md', label: 'Medium' },
+    { value: 'lg', label: 'Large' },
+    { value: 'xl', label: 'Extra Large' },
+    { value: '2xl', label: '2X Large' },
+    { value: '3xl', label: '3X Large' },
+];
+
+const COLOR_PALETTES: { value: GeneralSettingsType['colorPalette']; label: string }[] = [
+    { value: undefined, label: 'Use Dashboard Default' },
+    { value: 'default', label: 'Slate (default)' },
+    { value: 'black', label: 'Black' },
+    { value: 'red', label: 'Red' },
+    { value: 'orange', label: 'Orange' },
+    { value: 'amber', label: 'Amber' },
+    { value: 'yellow', label: 'Yellow' },
+    { value: 'lime', label: 'Lime' },
+    { value: 'green', label: 'Green' },
+    { value: 'emerald', label: 'Emerald' },
+    { value: 'teal', label: 'Teal' },
+    { value: 'cyan', label: 'Cyan' },
+    { value: 'sky', label: 'Sky' },
+    { value: 'blue', label: 'Blue' },
+    { value: 'indigo', label: 'Indigo' },
+    { value: 'violet', label: 'Violet' },
+    { value: 'purple', label: 'Purple' },
+    { value: 'fuchsia', label: 'Fuchsia' },
+    { value: 'pink', label: 'Pink' },
+    { value: 'rose', label: 'Rose' },
+    { value: 'zinc', label: 'Zinc' },
+    { value: 'stone', label: 'Stone' },
+];
 
 export const ProfileSettings = () => {
-  const {
-    currentProfile,
-    profiles,
-    createProfile,
-    deleteProfile,
-    renameProfile,
-    switchProfile,
-    refreshProfiles,
-  } = useDashboard();
+    const {
+        currentProfile,
+        profiles,
+        createProfile,
+        deleteProfile,
+        renameProfile,
+        switchProfile,
+        refreshProfiles,
+        bridge,
+    } = useDashboard();
 
-  const [newProfileName, setNewProfileName] = useState('');
-  const [editingProfileId, setEditingProfileId] = useState<string | null>(null);
-  const [editingProfileName, setEditingProfileName] = useState('');
-  const [isCreating, setIsCreating] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+    const [newProfileName, setNewProfileName] = useState('');
+    const [editingProfileId, setEditingProfileId] = useState<string | null>(null);
+    const [editingProfileName, setEditingProfileName] = useState('');
+    const [isCreating, setIsCreating] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    refreshProfiles();
-  }, [refreshProfiles]);
+    useEffect(() => {
+        refreshProfiles();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
-  const handleCreateProfile = async () => {
-    if (!newProfileName.trim()) {
-      setError('Profile name cannot be empty');
-      return;
-    }
+    const handleCreateProfile = async () => {
+        if (!newProfileName.trim()) {
+            setError('Profile name cannot be empty');
+            return;
+        }
 
-    setIsCreating(true);
-    setError(null);
-    try {
-      await createProfile(newProfileName.trim());
-      setNewProfileName('');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create profile');
-    } finally {
-      setIsCreating(false);
-    }
-  };
+        setIsCreating(true);
+        setError(null);
+        try {
+            await createProfile(newProfileName.trim());
+            setNewProfileName('');
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Failed to create profile');
+        } finally {
+            setIsCreating(false);
+        }
+    };
 
-  const handleDeleteProfile = async (profileId: string) => {
-    if (profileId === 'default') {
-      setError('Cannot delete the default profile');
-      return;
-    }
+    const handleDeleteProfile = async (profileId: string) => {
+        if (profileId === 'default') {
+            setError('Cannot delete the Default');
+            return;
+        }
 
-    if (!confirm('Are you sure you want to delete this profile? This action cannot be undone.')) {
-      return;
-    }
+        if (!confirm('Are you sure you want to delete this profile? This action cannot be undone.')) {
+            return;
+        }
 
-    setError(null);
-    try {
-      await deleteProfile(profileId);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete profile');
-    }
-  };
+        setError(null);
+        try {
+            await deleteProfile(profileId);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Failed to delete profile');
+        }
+    };
 
-  const handleStartEdit = (profile: DashboardProfile) => {
-    setEditingProfileId(profile.id);
-    setEditingProfileName(profile.name);
-    setError(null);
-  };
+    const handleStartEdit = (profile: DashboardProfile) => {
+        setEditingProfileId(profile.id);
+        setEditingProfileName(profile.name);
+        setError(null);
+    };
 
-  const handleSaveEdit = async (profileId: string) => {
-    if (!editingProfileName.trim()) {
-      setError('Profile name cannot be empty');
-      return;
-    }
+    const handleSaveEdit = async (profileId: string) => {
+        if (!editingProfileName.trim()) {
+            setError('Profile name cannot be empty');
+            return;
+        }
 
-    setError(null);
-    try {
-      await renameProfile(profileId, editingProfileName.trim());
-      setEditingProfileId(null);
-      setEditingProfileName('');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to rename profile');
-    }
-  };
+        setError(null);
+        try {
+            await renameProfile(profileId, editingProfileName.trim());
+            setEditingProfileId(null);
+            setEditingProfileName('');
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Failed to rename profile');
+        }
+    };
 
-  const handleCancelEdit = () => {
-    setEditingProfileId(null);
-    setEditingProfileName('');
-    setError(null);
-  };
+    const handleCancelEdit = () => {
+        setEditingProfileId(null);
+        setEditingProfileName('');
+        setError(null);
+    };
 
-  const handleSwitchProfile = async (profileId: string) => {
-    setError(null);
-    try {
-      await switchProfile(profileId);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to switch profile');
-    }
-  };
+    const handleSwitchProfile = async (profileId: string) => {
+        setError(null);
+        try {
+            await switchProfile(profileId);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Failed to switch profile');
+        }
+    };
 
-  return (
-    <div className="p-6 space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold text-white mb-2">Configuration Profiles</h2>
-        <p className="text-gray-400 text-sm">
-          Manage different dashboard configurations for various scenarios. Each profile stores
-          separate widget configurations and layouts.
-        </p>
-      </div>
-
-      {error && (
-        <div className="bg-red-500/20 border border-red-500 text-red-200 px-4 py-3 rounded">
-          {error}
-        </div>
-      )}
-
-      {/* Create New Profile */}
-      <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4 space-y-3">
-        <h3 className="text-lg font-semibold text-white">Create New Profile</h3>
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={newProfileName}
-            onChange={(e) => setNewProfileName(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') handleCreateProfile();
-            }}
-            placeholder="Enter profile name..."
-            disabled={isCreating}
-            className="flex-1 bg-slate-900 border border-slate-600 text-white px-3 py-2 rounded focus:outline-none focus:border-blue-500 disabled:opacity-50"
-          />
-          <button
-            onClick={handleCreateProfile}
-            disabled={isCreating || !newProfileName.trim()}
-            className="bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 disabled:cursor-not-allowed text-white px-4 py-2 rounded font-medium transition-colors"
-          >
-            {isCreating ? 'Creating...' : 'Create'}
-          </button>
-        </div>
-      </div>
-
-      {/* Profiles List */}
-      <div className="bg-slate-800/50 border border-slate-700 rounded-lg overflow-hidden">
-        <div className="px-4 py-3 bg-slate-700/50 border-b border-slate-600">
-          <h3 className="text-lg font-semibold text-white">Your Profiles</h3>
-        </div>
-        <div className="divide-y divide-slate-700">
-          {profiles.length === 0 ? (
-            <div className="px-4 py-8 text-center text-gray-400">
-              No profiles found. Create your first profile above.
+    return (
+        <div className="p-6 space-y-6">
+            <div>
+                <h2 className="text-2xl font-bold text-white mb-2">Configuration Profiles</h2>
+                <p className="text-gray-400 text-sm">
+                    Manage different dashboard configurations for various scenarios. Each profile stores
+                    separate widget configurations and layouts.
+                </p>
             </div>
-          ) : (
-            profiles.map((profile) => {
-              const isActive = currentProfile?.id === profile.id;
-              const isEditing = editingProfileId === profile.id;
 
-              return (
-                <div
-                  key={profile.id}
-                  className={`px-4 py-3 flex items-center justify-between transition-colors ${
-                    isActive ? 'bg-blue-600/20' : 'hover:bg-slate-700/50'
-                  }`}
-                >
-                  <div className="flex-1 flex items-center gap-3">
-                    {isActive && (
-                      <div className="w-2 h-2 bg-blue-500 rounded-full" title="Active Profile" />
-                    )}
-                    {isEditing ? (
-                      <input
-                        type="text"
-                        value={editingProfileName}
-                        onChange={(e) => setEditingProfileName(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') handleSaveEdit(profile.id);
-                          if (e.key === 'Escape') handleCancelEdit();
-                        }}
-                        autoFocus
-                        className="flex-1 bg-slate-900 border border-slate-600 text-white px-2 py-1 rounded text-sm focus:outline-none focus:border-blue-500"
-                      />
-                    ) : (
-                      <div className="flex-1">
-                        <div className="text-white font-medium">
-                          {profile.name}
-                          {profile.id === 'default' && (
-                            <span className="ml-2 text-xs text-gray-400">(Default)</span>
-                          )}
-                        </div>
-                        {profile.lastModified && (
-                          <div className="text-xs text-gray-500">
-                            Modified: {new Date(profile.lastModified).toLocaleString()}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex gap-2">
-                    {isEditing ? (
-                      <>
-                        <button
-                          onClick={() => handleSaveEdit(profile.id)}
-                          className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm font-medium transition-colors"
-                        >
-                          Save
-                        </button>
-                        <button
-                          onClick={handleCancelEdit}
-                          className="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 rounded text-sm font-medium transition-colors"
-                        >
-                          Cancel
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        {!isActive && (
-                          <button
-                            onClick={() => handleSwitchProfile(profile.id)}
-                            className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm font-medium transition-colors"
-                          >
-                            Switch
-                          </button>
-                        )}
-                        <button
-                          onClick={() => handleStartEdit(profile)}
-                          className="bg-slate-600 hover:bg-slate-700 text-white px-3 py-1 rounded text-sm font-medium transition-colors"
-                        >
-                          Rename
-                        </button>
-                        {profile.id !== 'default' && (
-                          <button
-                            onClick={() => handleDeleteProfile(profile.id)}
-                            className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm font-medium transition-colors"
-                          >
-                            Delete
-                          </button>
-                        )}
-                      </>
-                    )}
-                  </div>
+            {error && (
+                <div className="bg-red-500/20 border border-red-500 text-red-200 px-4 py-3 rounded">
+                    {error}
                 </div>
-              );
-            })
-          )}
-        </div>
-      </div>
+            )}
 
-      {/* Info Box */}
-      <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
-        <h4 className="text-blue-300 font-semibold mb-2">💡 About Profiles</h4>
-        <ul className="text-sm text-blue-200 space-y-1 list-disc list-inside">
-          <li>Each profile has its own widget configurations and layouts</li>
-          <li>Profiles are identified by unique IDs used by the component renderer</li>
-          <li>Switch between profiles to use different dashboard setups</li>
-          <li>The default profile cannot be deleted</li>
-          <li>Profile changes are automatically saved</li>
-        </ul>
-      </div>
-    </div>
-  );
+            {/* Create New Profile */}
+            <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4 space-y-3">
+                <h3 className="text-lg font-semibold text-white">Create New Profile</h3>
+                <div className="flex gap-2">
+                    <input
+                        type="text"
+                        value={newProfileName}
+                        onChange={(e) => setNewProfileName(e.target.value)}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter') handleCreateProfile();
+                        }}
+                        placeholder="Enter profile name..."
+                        disabled={isCreating}
+                        className="flex-1 bg-slate-900 border border-slate-600 text-white px-3 py-2 rounded focus:outline-none focus:border-blue-500 disabled:opacity-50"
+                    />
+                    <button
+                        onClick={handleCreateProfile}
+                        disabled={isCreating || !newProfileName.trim()}
+                        className="bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 disabled:cursor-not-allowed text-white px-4 py-2 rounded font-medium transition-colors"
+                    >
+                        {isCreating ? 'Creating...' : 'Create'}
+                    </button>
+                </div>
+            </div>
+
+            {/* Profiles List */}
+            <div className="bg-slate-800/50 border border-slate-700 rounded-lg overflow-hidden">
+                <div className="px-4 py-3 bg-slate-700/50 border-b border-slate-600">
+                    <h3 className="text-lg font-semibold text-white">Your Profiles</h3>
+                </div>
+                <div className="divide-y divide-slate-700">
+                    {profiles.length === 0 ? (
+                        <div className="px-4 py-8 text-center text-gray-400">
+                            No profiles found. Create your first profile above.
+                        </div>
+                    ) : (
+                        profiles.map((profile) => {
+                            const isActive = currentProfile?.id === profile.id;
+                            const isEditing = editingProfileId === profile.id;
+
+                            return (
+                                <div
+                                    key={profile.id}
+                                    className={`px-4 py-3 flex items-center justify-between transition-colors ${isActive ? 'bg-blue-600/20' : 'hover:bg-slate-700/50'
+                                        }`}
+                                >
+                                    <div className="flex-1 flex items-center gap-3">
+                                        {isActive && (
+                                            <div className="w-2 h-2 bg-blue-500 rounded-full" title="Active Profile" />
+                                        )}
+                                        {isEditing ? (
+                                            <input
+                                                type="text"
+                                                value={editingProfileName}
+                                                onChange={(e) => setEditingProfileName(e.target.value)}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter') handleSaveEdit(profile.id);
+                                                    if (e.key === 'Escape') handleCancelEdit();
+                                                }}
+                                                autoFocus
+                                                className="flex-1 bg-slate-900 border border-slate-600 text-white px-2 py-1 rounded text-sm focus:outline-none focus:border-blue-500"
+                                            />
+                                        ) : (
+                                            <div className="flex-1">
+                                                <div className="text-white font-medium">
+                                                    {profile.name}
+                                                </div>
+                                                {profile.lastModified && (
+                                                    <div className="text-xs text-gray-500">
+                                                        Modified: {new Date(profile.lastModified).toLocaleString()}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="flex gap-2">
+                                        {isEditing ? (
+                                            <>
+                                                <button
+                                                    onClick={() => handleSaveEdit(profile.id)}
+                                                    className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm font-medium transition-colors"
+                                                >
+                                                    Save
+                                                </button>
+                                                <button
+                                                    onClick={handleCancelEdit}
+                                                    className="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 rounded text-sm font-medium transition-colors"
+                                                >
+                                                    Cancel
+                                                </button>
+                                            </>
+                                        ) : (
+                                            <>
+                                                {!isActive && (
+                                                    <button
+                                                        onClick={() => handleSwitchProfile(profile.id)}
+                                                        className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm font-medium transition-colors"
+                                                    >
+                                                        Switch
+                                                    </button>
+                                                )}
+
+                                                <button
+                                                    onClick={() => handleStartEdit(profile)}
+                                                    className="bg-slate-600 hover:bg-slate-700 text-white px-3 py-1 rounded text-sm font-medium transition-colors"
+                                                >
+                                                    Rename
+                                                </button>
+                                                {profile.id !== 'default' && (
+                                                    <button
+                                                        onClick={() => handleDeleteProfile(profile.id)}
+                                                        className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm font-medium transition-colors"
+                                                    >
+                                                        Delete
+                                                    </button>
+                                                )}
+                                                <button
+                                                    onClick={() => {
+                                                        const url = `http://localhost:3000/dashboard?profile=${profile.id}`;
+                                                        navigator.clipboard.writeText(url);
+                                                    }}
+                                                    className="bg-cyan-600 hover:bg-cyan-700 text-white px-3 py-1 rounded text-sm font-medium transition-colors"
+                                                    title="Copy browser URL for this profile"
+                                                >
+                                                    Copy URL
+                                                </button>
+                                            </>
+                                        )}
+                                    </div>
+                                </div>
+                            );
+                        })
+                    )}
+                </div>
+            </div>
+
+            {/* Theme Override Settings for Current Profile */}
+            {currentProfile && (
+                <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4 space-y-4">
+                    <div>
+                        <h3 className="text-lg font-semibold text-white mb-2">
+                            Theme Overrides for &quot;{currentProfile.name}&quot;
+                        </h3>
+                        <p className="text-sm text-gray-400">
+                            Customize theme settings for this profile. Leave unset to use dashboard defaults.
+                        </p>
+                    </div>
+
+                    {/* Font Size Override */}
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium text-slate-300">Font Size</label>
+                        <select
+                            value={currentProfile.themeSettings?.fontSize ?? ''}
+                            onChange={async (e) => {
+                                console.log('[ProfileSettings] !!! onChange triggered !!!', e.target.value);
+                                try {
+                                    const value = e.target.value as FontSize | '';
+                                    console.log('[ProfileSettings] Updating font size to:', value);
+
+                                    if (!bridge.updateProfileTheme) {
+                                        console.error('bridge.updateProfileTheme is not available');
+                                        setError('Theme update not available');
+                                        return;
+                                    }
+
+                                    console.log('[ProfileSettings] About to call bridge.updateProfileTheme');
+                                    await bridge.updateProfileTheme(currentProfile.id, {
+                                        ...currentProfile.themeSettings,
+                                        fontSize: value || undefined,
+                                    });
+                                    console.log('[ProfileSettings] Font size updated, calling refreshProfiles...');
+
+                                    // Refresh profiles to update the UI
+                                    await refreshProfiles();
+                                    console.log('[ProfileSettings] refreshProfiles complete');
+                                } catch (error) {
+                                    console.error('Failed to update font size:', error);
+                                    setError('Failed to update font size');
+                                }
+                            }}
+                            className="w-full bg-slate-900 border border-slate-600 text-white px-3 py-2 rounded focus:outline-none focus:border-blue-500"
+                        >
+                            <option value="">Use Dashboard Default</option>
+                            {FONT_SIZE_OPTIONS.map((opt) => (
+                                <option key={opt.value} value={opt.value}>
+                                    {opt.label}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+
+                    {/* Color Palette Override */}
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium text-slate-300">Color Palette</label>
+                        <select
+                            value={currentProfile.themeSettings?.colorPalette ?? ''}
+                            onChange={async (e) => {
+                                try {
+                                    const value = e.target.value as GeneralSettingsType['colorPalette'] | '';
+
+                                    if (!bridge.updateProfileTheme) {
+                                        console.error('bridge.updateProfileTheme is not available');
+                                        setError('Theme update not available');
+                                        return;
+                                    }
+
+                                    await bridge.updateProfileTheme(currentProfile.id, {
+                                        ...currentProfile.themeSettings,
+                                        colorPalette: value || undefined,
+                                    });
+
+                                    // Refresh profiles to update the UI
+                                    await refreshProfiles();
+                                } catch (error) {
+                                    console.error('Failed to update color palette:', error);
+                                    setError('Failed to update color palette');
+                                }
+                            }}
+                            className="w-full bg-slate-900 border border-slate-600 text-white px-3 py-2 rounded focus:outline-none focus:border-blue-500"
+                        >
+                            {COLOR_PALETTES.map((opt, idx) => (
+                                <option key={opt.value ?? `unset-${idx}`} value={opt.value ?? ''}>
+                                    {opt.label}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                </div>
+            )}
+
+            {/* Info Box */}
+            <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
+                <h4 className="text-blue-300 font-semibold mb-2">💡 About Profiles</h4>
+                <ul className="text-sm text-blue-200 space-y-1 list-disc list-inside">
+                    <li>Each profile has its own widget configurations and layouts</li>
+                    <li>Switch between profiles to use different dashboard setups</li>
+                    <li>The Default cannot be deleted</li>
+                    <li>Profile changes are automatically saved</li>
+                </ul>
+            </div>
+        </div>
+    );
 };
