@@ -1,12 +1,15 @@
-import type { DashboardLayout, DashboardWidget } from '@irdashies/types';
+import type { DashboardLayout, DashboardWidget, DashboardProfile } from '@irdashies/types';
 import { emitDashboardUpdated } from './dashboardEvents';
 import { defaultDashboard } from './defaultDashboard';
 import { readData, writeData } from './storage';
 import { writeFile, mkdir, readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { app } from 'electron';
+import { randomUUID } from 'node:crypto';
 
 const DASHBOARDS_KEY = 'dashboards';
+const PROFILES_KEY = 'profiles';
+const CURRENT_PROFILE_KEY = 'currentProfile';
 
 const isDashboardChanged = (oldDashboard: DashboardLayout | undefined, newDashboard: DashboardLayout): boolean => {
   if (!oldDashboard) return true;
@@ -27,7 +30,8 @@ const isDashboardChanged = (oldDashboard: DashboardLayout | undefined, newDashbo
 };
 
 export const getOrCreateDefaultDashboard = () => {
-  const dashboard = getDashboard('default');
+  const currentProfileId = getCurrentProfileId();
+  const dashboard = getDashboard(currentProfileId);
   if (dashboard) {
     // check missing widgets
     const missingWidgets = defaultDashboard.widgets.filter(
@@ -52,11 +56,11 @@ export const getOrCreateDefaultDashboard = () => {
       }),
     };
 
-    saveDashboard('default', updatedDashboard);
+    saveDashboard(currentProfileId, updatedDashboard);
     return updatedDashboard;
   }
 
-  saveDashboard('default', defaultDashboard);
+  saveDashboard(currentProfileId, defaultDashboard);
 
   return defaultDashboard;
 };
@@ -116,7 +120,13 @@ export const saveDashboard = (
   if (isDashboardChanged(existingDashboard, mergedDashboard)) {
     dashboards[id] = mergedDashboard;
     writeData(DASHBOARDS_KEY, dashboards);
-    emitDashboardUpdated(mergedDashboard);
+    
+    // Only emit dashboard updated event if this is the currently active profile
+    // This prevents overlay refreshes when creating/modifying non-active profiles
+    const currentProfileId = getCurrentProfileId();
+    if (id === currentProfileId) {
+      emitDashboardUpdated(mergedDashboard);
+    }
   }
 };
 
@@ -231,3 +241,163 @@ export const getGarageCoverImageAsDataUrl = async (imageFilenameOrPath: string):
   }
 };
 
+// ============================================
+// Profile Management Functions
+// ============================================
+
+/**
+ * Get or create the default profile if it doesn't exist
+ */
+const getOrCreateDefaultProfile = (): DashboardProfile => {
+  let profiles = readData<Record<string, DashboardProfile>>(PROFILES_KEY) || {};
+  
+  if (!profiles['default']) {
+    profiles['default'] = {
+      id: 'default',
+      name: 'Default Profile',
+      createdAt: new Date().toISOString(),
+      lastModified: new Date().toISOString(),
+    };
+    writeData(PROFILES_KEY, profiles);
+  }
+  
+  return profiles['default'];
+};
+
+/**
+ * List all available profiles
+ */
+export const listProfiles = (): DashboardProfile[] => {
+  const profiles = readData<Record<string, DashboardProfile>>(PROFILES_KEY);
+  if (!profiles) {
+    // Ensure default profile exists
+    getOrCreateDefaultProfile();
+    return [getOrCreateDefaultProfile()];
+  }
+  
+  return Object.values(profiles);
+};
+
+/**
+ * Get a specific profile by ID
+ */
+export const getProfile = (profileId: string): DashboardProfile | null => {
+  const profiles = readData<Record<string, DashboardProfile>>(PROFILES_KEY);
+  if (!profiles) {
+    return profileId === 'default' ? getOrCreateDefaultProfile() : null;
+  }
+  
+  return profiles[profileId] || null;
+};
+
+/**
+ * Create a new profile with a given name
+ */
+export const createProfile = (name: string): DashboardProfile => {
+  const profiles = readData<Record<string, DashboardProfile>>(PROFILES_KEY) || {};
+  const profileId = randomUUID();
+  
+  const newProfile: DashboardProfile = {
+    id: profileId,
+    name,
+    createdAt: new Date().toISOString(),
+    lastModified: new Date().toISOString(),
+  };
+  
+  profiles[profileId] = newProfile;
+  writeData(PROFILES_KEY, profiles);
+  
+  // Create a new dashboard for this profile based on the default
+  saveDashboard(profileId, { ...defaultDashboard });
+  
+  return newProfile;
+};
+
+/**
+ * Delete a profile and its associated dashboard
+ */
+export const deleteProfile = (profileId: string): void => {
+  if (profileId === 'default') {
+    throw new Error('Cannot delete the default profile');
+  }
+  
+  // Remove the profile
+  const profiles = readData<Record<string, DashboardProfile>>(PROFILES_KEY);
+  if (profiles && profiles[profileId]) {
+    delete profiles[profileId];
+    writeData(PROFILES_KEY, profiles);
+  }
+  
+  // Remove the associated dashboard
+  const dashboards = listDashboards();
+  if (dashboards[profileId]) {
+    delete dashboards[profileId];
+    writeData(DASHBOARDS_KEY, dashboards);
+  }
+  
+  // If this was the current profile, switch to default
+  const currentProfileId = getCurrentProfileId();
+  if (currentProfileId === profileId) {
+    // Don't emit events when auto-switching during deletion
+    setCurrentProfile('default', true);
+    // But do emit one update event for the new dashboard
+    const dashboard = getDashboard('default');
+    if (dashboard) {
+      emitDashboardUpdated(dashboard);
+    }
+  }
+};
+
+/**
+ * Rename a profile
+ */
+export const renameProfile = (profileId: string, newName: string): void => {
+  const profiles = readData<Record<string, DashboardProfile>>(PROFILES_KEY);
+  if (!profiles || !profiles[profileId]) {
+    throw new Error(`Profile ${profileId} not found`);
+  }
+  
+  profiles[profileId] = {
+    ...profiles[profileId],
+    name: newName,
+    lastModified: new Date().toISOString(),
+  };
+  
+  writeData(PROFILES_KEY, profiles);
+};
+
+/**
+ * Get the currently active profile ID
+ */
+export const getCurrentProfileId = (): string => {
+  const currentProfileId = readData<string>(CURRENT_PROFILE_KEY);
+  if (!currentProfileId) {
+    // Ensure default profile exists and set it as current
+    getOrCreateDefaultProfile();
+    // Use silent mode to avoid emitting events during initialization
+    setCurrentProfile('default', true);
+    return 'default';
+  }
+  return currentProfileId;
+};
+
+/**
+ * Set the current active profile
+ * @param profileId - The profile ID to set as current
+ * @param silent - If true, don't emit dashboard update events (used during initialization)
+ */
+export const setCurrentProfile = (profileId: string, silent = false): void => {
+  const profile = getProfile(profileId);
+  if (!profile) {
+    throw new Error(`Profile ${profileId} not found`);
+  }
+  
+  writeData(CURRENT_PROFILE_KEY, profileId);
+  
+  // Reload the dashboard for this profile
+  // Only emit update if not in silent mode
+  if (!silent) {
+    const dashboard = getDashboard(profileId) || defaultDashboard;
+    emitDashboardUpdated(dashboard);
+  }
+};

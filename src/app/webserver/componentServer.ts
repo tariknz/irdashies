@@ -197,11 +197,15 @@ export async function startComponentServer(irsdkBridge?: IrSdkBridge, dashboardB
 
       let componentRendererUrl: string;
       
+      // Get the current profile ID to pass to the component renderer
+      const { getCurrentProfileId } = await import('../storage/dashboards');
+      const profileId = getCurrentProfileId();
+      
       if (isDev) {
         const vitePort = process.env.VITE_PORT || '5173';
-        componentRendererUrl = `http://localhost:${vitePort}/index-component-renderer.html?component=${encodeURIComponent(componentName)}&wsUrl=${encodeURIComponent(wsUrl)}&configId=${configId}`;
+        componentRendererUrl = `http://localhost:${vitePort}/index-component-renderer.html?component=${encodeURIComponent(componentName)}&wsUrl=${encodeURIComponent(wsUrl)}&configId=${configId}&profileId=${encodeURIComponent(profileId)}`;
       } else {
-        componentRendererUrl = `http://localhost:${COMPONENT_PORT}/index-component-renderer.html?component=${encodeURIComponent(componentName)}&wsUrl=${encodeURIComponent(wsUrl)}&configId=${configId}`;
+        componentRendererUrl = `http://localhost:${COMPONENT_PORT}/index-component-renderer.html?component=${encodeURIComponent(componentName)}&wsUrl=${encodeURIComponent(wsUrl)}&configId=${configId}&profileId=${encodeURIComponent(profileId)}`;
       }
 
       const escapedName = componentName.replace(/[<>&"']/g, '');

@@ -513,10 +513,11 @@ export async function renderComponent(
   containerElement: HTMLElement,
   componentName: string,
   config: Record<string, any>,
-  wsUrl: string
+  wsUrl: string,
+  profileId?: string | null
 ): Promise<void> {
   try {
-    debugLog('renderComponent called with:', { componentName, wsUrl });
+    debugLog('renderComponent called with:', { componentName, wsUrl, profileId });
 
     await initializeMockStores();
 
@@ -566,6 +567,13 @@ export async function renderComponent(
           targetElement.classList.add(`overlay-theme-color-${settings.colorPalette}`);
         }
       }, [settings]);
+
+      // Store profileId in a data attribute for debugging/reference
+      React.useEffect(() => {
+        if (profileId) {
+          containerElement.setAttribute('data-profile-id', profileId);
+        }
+      }, []);
 
       return <ComponentFn {...config} />;
     };

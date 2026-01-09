@@ -1,7 +1,20 @@
 import { ipcMain } from 'electron';
 import type { DashboardBridge, DashboardLayout } from '@irdashies/types';
 import { onDashboardUpdated } from '../../storage/dashboardEvents';
-import { getDashboard, saveDashboard, resetDashboard, saveGarageCoverImage, getGarageCoverImageAsDataUrl } from '../../storage/dashboards';
+import { 
+  getDashboard, 
+  saveDashboard, 
+  resetDashboard, 
+  saveGarageCoverImage, 
+  getGarageCoverImageAsDataUrl,
+  listProfiles,
+  createProfile,
+  deleteProfile,
+  renameProfile,
+  getCurrentProfileId,
+  setCurrentProfile,
+  getProfile
+} from '../../storage/dashboards';
 import { OverlayManager } from '../../overlayManager';
 import { getAnalyticsOptOut as getAnalyticsOptOutStorage, setAnalyticsOptOut as setAnalyticsOptOutStorage } from '../../storage/analytics';
 import { Analytics } from '../../analytics';
@@ -24,10 +37,12 @@ export const dashboardBridge: DashboardBridge = {
     // Not used by component server
   },
   saveDashboard: (dashboard: DashboardLayout) => {
-    saveDashboard('default', dashboard);
+    const currentProfileId = getCurrentProfileId();
+    saveDashboard(currentProfileId, dashboard);
   },
   resetDashboard: async (resetEverything: boolean) => {
-    return resetDashboard(resetEverything, 'default');
+    const currentProfileId = getCurrentProfileId();
+    return resetDashboard(resetEverything, currentProfileId);
   },
   toggleLockOverlays: async () => {
     return false;
@@ -39,7 +54,8 @@ export const dashboardBridge: DashboardBridge = {
     demoModeCallbacks.add(callback);
   },
   getCurrentDashboard: () => {
-    const dashboard = getDashboard('default');
+    const currentProfileId = getCurrentProfileId();
+    const dashboard = getDashboard(currentProfileId);
     return dashboard;
   },
   toggleDemoMode: () => {
@@ -50,6 +66,26 @@ export const dashboardBridge: DashboardBridge = {
   },
   setAnalyticsOptOut: async (optOut: boolean) => {
     setAnalyticsOptOutStorage(optOut);
+  },
+  // Profile management
+  listProfiles: async () => {
+    return listProfiles();
+  },
+  createProfile: async (name: string) => {
+    return createProfile(name);
+  },
+  deleteProfile: async (profileId: string) => {
+    deleteProfile(profileId);
+  },
+  renameProfile: async (profileId: string, newName: string) => {
+    renameProfile(profileId, newName);
+  },
+  switchProfile: async (profileId: string) => {
+    setCurrentProfile(profileId);
+  },
+  getCurrentProfile: async () => {
+    const currentProfileId = getCurrentProfileId();
+    return getProfile(currentProfileId);
   },
   stop: () => {
     return;
@@ -76,20 +112,23 @@ export async function publishDashboardUpdates(overlayManager: OverlayManager, an
     });
   });
   ipcMain.on('saveDashboard', (_, dashboard, options) => {
-    saveDashboard('default', dashboard);
+    const currentProfileId = getCurrentProfileId();
+    saveDashboard(currentProfileId, dashboard);
     if (options?.forceReload) {
       overlayManager.forceRefreshOverlays(dashboard);
     }
   });
   ipcMain.on('reloadDashboard', () => {
-    const dashboard = getDashboard('default');
+    const currentProfileId = getCurrentProfileId();
+    const dashboard = getDashboard(currentProfileId);
     if (!dashboard) return;
     overlayManager.closeOrCreateWindows(dashboard);
     overlayManager.publishMessage('dashboardUpdated', dashboard);
   });
 
   ipcMain.handle('resetDashboard', (_, resetEverything: boolean) => {
-    const result = resetDashboard(resetEverything, 'default');
+    const currentProfileId = getCurrentProfileId();
+    const result = resetDashboard(resetEverything, currentProfileId);
     overlayManager.forceRefreshOverlays(result);
     return result;
   });
@@ -134,6 +173,37 @@ export async function publishDashboardUpdates(overlayManager: OverlayManager, an
         opt_out: optOut,
       },
     });
+  });
+
+  // Profile management IPC handlers
+  ipcMain.handle('listProfiles', () => {
+    return listProfiles();
+  });
+
+  ipcMain.handle('createProfile', (_, name: string) => {
+    return createProfile(name);
+  });
+
+  ipcMain.handle('deleteProfile', (_, profileId: string) => {
+    deleteProfile(profileId);
+  });
+
+  ipcMain.handle('renameProfile', (_, profileId: string, newName: string) => {
+    renameProfile(profileId, newName);
+  });
+
+  ipcMain.handle('switchProfile', (_, profileId: string) => {
+    setCurrentProfile(profileId);
+    // Force refresh overlays with the new profile's dashboard
+    const dashboard = getDashboard(profileId);
+    if (dashboard) {
+      overlayManager.forceRefreshOverlays(dashboard);
+    }
+  });
+
+  ipcMain.handle('getCurrentProfile', () => {
+    const currentProfileId = getCurrentProfileId();
+    return getProfile(currentProfileId);
   });
 }
 

@@ -75,6 +75,25 @@ export function exposeBridge() {
     setAnalyticsOptOut: (optOut: boolean) => {
       return ipcRenderer.invoke('setAnalyticsOptOut', optOut);
     },
+    // Profile management
+    listProfiles: () => {
+      return ipcRenderer.invoke('listProfiles');
+    },
+    createProfile: (name: string) => {
+      return ipcRenderer.invoke('createProfile', name);
+    },
+    deleteProfile: (profileId: string) => {
+      return ipcRenderer.invoke('deleteProfile', profileId);
+    },
+    renameProfile: (profileId: string, newName: string) => {
+      return ipcRenderer.invoke('renameProfile', profileId, newName);
+    },
+    switchProfile: (profileId: string) => {
+      return ipcRenderer.invoke('switchProfile', profileId);
+    },
+    getCurrentProfile: () => {
+      return ipcRenderer.invoke('getCurrentProfile');
+    },
     stop: () => {
       ipcRenderer.removeAllListeners('editModeToggled');
       ipcRenderer.removeAllListeners('dashboardUpdated');

@@ -14,6 +14,7 @@ const params = new URLSearchParams(window.location.search);
 const componentName = params.get('component');
 const wsUrl = params.get('wsUrl') || 'http://localhost:3000';
 const configId = params.get('configId');
+const profileId = params.get('profileId');
 const isDebugMode = params.get('debug') === 'true';
 
 // Make debug flag globally available
@@ -48,6 +49,7 @@ if (isDebugMode) {
   console.log('📋 URL Parameters:');
   console.log(`  Component: ${componentName}`);
   console.log(`  WebSocket URL: ${wsUrl}`);
+  console.log(`  Profile ID: ${profileId}`);
   console.log(`  Config:`, config);
 }
 
@@ -84,6 +86,7 @@ rootElement.innerHTML = `
     <div style="display: flex; flex-direction: column; gap: 10px; align-items: center;">
       <p style="margin: 0; color: #4ade80;">Component: <strong>${componentName || 'none'}</strong></p>
       <p style="margin: 0; color: #60a5fa;">WebSocket: <strong>${wsUrl}</strong></p>
+      <p style="margin: 0; color: #a78bfa;">Profile: <strong>${profileId || 'default'}</strong></p>
       <p style="margin: 0; color: #fbbf24;">Config: <strong>${Object.keys(config).length} keys</strong></p>
     </div>
     <div style="margin-top: 20px; padding: 20px; background: #374151; border-radius: 8px; max-width: 600px;">
@@ -106,10 +109,10 @@ rootElement.innerHTML = `
 // Render the component (wait for config to be fetched first)
 if (componentName) {
   configPromise.then(() => {
-    renderComponent(rootElement, componentName, config, wsUrl)
+    renderComponent(rootElement, componentName, config, wsUrl, profileId)
       .then(() => {
         if (isDebugMode) {
-          console.log('Component rendered successfully');
+          console.log('Component rendered successfully with profile:', profileId || 'default');
         }
       })
       .catch((err) => {

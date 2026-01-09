@@ -34,6 +34,20 @@ export interface GeneralSettingsType {
   disableHardwareAcceleration?: boolean;
 }
 
+/**
+ * Represents a configuration profile with a unique identifier and name.
+ */
+export interface DashboardProfile {
+  /** Unique identifier for the profile */
+  id: string;
+  /** User-friendly name for the profile */
+  name: string;
+  /** ISO timestamp of when the profile was created */
+  createdAt?: string;
+  /** ISO timestamp of when the profile was last modified */
+  lastModified?: string;
+}
+
 export interface DashboardLayout {
   widgets: DashboardWidget[];
   generalSettings?: GeneralSettingsType;
