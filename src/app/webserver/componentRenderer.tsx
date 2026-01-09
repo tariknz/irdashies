@@ -22,7 +22,7 @@ const debugLog = (...args: any[]) => {
 /**
  * Web-based bridge that connects to the WebSocket server
  */
-class WebSocketBridge implements IrSdkBridge {
+export class WebSocketBridge implements IrSdkBridge {
   private socket: WebSocket | null;
   private telemetryCallbacks: Set<(data: any) => void>;
   private sessionCallbacks: Set<(data: any) => void>;
@@ -460,6 +460,200 @@ class WebSocketBridge implements IrSdkBridge {
         console.error('Error in demo mode callback:', e);
       }
     }
+  }
+
+  // Profile management methods (stubs for component renderer)
+  async listProfiles(): Promise<any[]> {
+    return [{ id: 'default', name: 'Default' }];
+  }
+
+  async createProfile(): Promise<any> {
+    return { id: 'new', name: 'New Profile' };
+  }
+
+  async deleteProfile(): Promise<void> {
+    return;
+  }
+
+  async renameProfile(): Promise<void> {
+    return;
+  }
+
+  async switchProfile(): Promise<void> {
+    return;
+  }
+
+  async getCurrentProfile(): Promise<any> {
+    return new Promise((resolve) => {
+      if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+        const requestId = Math.random().toString(36).substring(7);
+        const handler = (event: MessageEvent) => {
+          try {
+            const message = JSON.parse(event.data);
+            if (message.type === 'getCurrentProfile' && message.requestId === requestId) {
+              this.socket?.removeEventListener('message', handler);
+              clearTimeout(timeout);
+              resolve(message.data);
+            }
+          } catch (e) {
+            console.error('Error in getCurrentProfile callback:', e);
+          }
+        };
+        const timeout = setTimeout(() => {
+          this.socket?.removeEventListener('message', handler);
+          resolve({ id: 'default', name: 'Default' });
+        }, 5000);
+        this.socket.addEventListener('message', handler);
+        this.socket.send(JSON.stringify({ type: 'getCurrentProfile', requestId }));
+      } else {
+        resolve({ id: 'default', name: 'Default' });
+      }
+    });
+  }
+
+  async updateProfileTheme(profileId: string, themeSettings: any): Promise<void> {
+    return new Promise((resolve) => {
+      if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+        const requestId = Math.random().toString(36).substring(7);
+        const handler = (event: MessageEvent) => {
+          try {
+            const message = JSON.parse(event.data);
+            if (message.type === 'updateProfileTheme' && message.requestId === requestId) {
+              this.socket?.removeEventListener('message', handler);
+              clearTimeout(timeout);
+              resolve();
+            }
+          } catch (e) {
+            console.error('Error in updateProfileTheme callback:', e);
+          }
+        };
+        const timeout = setTimeout(() => {
+          this.socket?.removeEventListener('message', handler);
+          resolve();
+        }, 5000);
+        this.socket.addEventListener('message', handler);
+        this.socket.send(JSON.stringify({ type: 'updateProfileTheme', requestId, data: { profileId, themeSettings } }));
+      } else {
+        resolve();
+      }
+    });
+  }
+
+  async getDashboardForProfile(profileId: string): Promise<any> {
+    return new Promise((resolve) => {
+      if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+        const requestId = Math.random().toString(36).substring(7);
+        const handler = (event: MessageEvent) => {
+          try {
+            const message = JSON.parse(event.data);
+            if (message.type === 'getDashboardForProfile' && message.requestId === requestId) {
+              this.socket?.removeEventListener('message', handler);
+              clearTimeout(timeout);
+              resolve(message.data);
+            }
+          } catch (e) {
+            console.error('Error in getDashboardForProfile callback:', e);
+          }
+        };
+        const timeout = setTimeout(() => {
+          this.socket?.removeEventListener('message', handler);
+          resolve(null);
+        }, 5000);
+        this.socket.addEventListener('message', handler);
+        this.socket.send(JSON.stringify({ type: 'getDashboardForProfile', requestId, data: { profileId } }));
+      } else {
+        resolve(null);
+      }
+    });
+  }
+
+  // Additional DashboardBridge methods
+  getCurrentDashboard(): any | null {
+    return this.lastDashboard;
+  }
+
+  async saveGarageCoverImage(buffer: Uint8Array): Promise<string> {
+    return new Promise((resolve) => {
+      if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+        const requestId = Math.random().toString(36).substring(7);
+        const handler = (event: MessageEvent) => {
+          try {
+            const message = JSON.parse(event.data);
+            if (message.type === 'saveGarageCoverImage' && message.requestId === requestId) {
+              this.socket?.removeEventListener('message', handler);
+              clearTimeout(timeout);
+              resolve(message.data);
+            }
+          } catch (e) {
+            console.error('Error in saveGarageCoverImage callback:', e);
+          }
+        };
+        const timeout = setTimeout(() => {
+          this.socket?.removeEventListener('message', handler);
+          resolve('');
+        }, 5000);
+        this.socket.addEventListener('message', handler);
+        this.socket.send(JSON.stringify({ type: 'saveGarageCoverImage', requestId, data: { buffer: Array.from(buffer) } }));
+      } else {
+        resolve('');
+      }
+    });
+  }
+
+  async getAnalyticsOptOut(): Promise<boolean> {
+    return new Promise((resolve) => {
+      if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+        const requestId = Math.random().toString(36).substring(7);
+        const handler = (event: MessageEvent) => {
+          try {
+            const message = JSON.parse(event.data);
+            if (message.type === 'getAnalyticsOptOut' && message.requestId === requestId) {
+              this.socket?.removeEventListener('message', handler);
+              clearTimeout(timeout);
+              resolve(message.data);
+            }
+          } catch (e) {
+            console.error('Error in getAnalyticsOptOut callback:', e);
+          }
+        };
+        const timeout = setTimeout(() => {
+          this.socket?.removeEventListener('message', handler);
+          resolve(false);
+        }, 5000);
+        this.socket.addEventListener('message', handler);
+        this.socket.send(JSON.stringify({ type: 'getAnalyticsOptOut', requestId }));
+      } else {
+        resolve(false);
+      }
+    });
+  }
+
+  async setAnalyticsOptOut(optOut: boolean): Promise<void> {
+    return new Promise((resolve) => {
+      if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+        const requestId = Math.random().toString(36).substring(7);
+        const handler = (event: MessageEvent) => {
+          try {
+            const message = JSON.parse(event.data);
+            if (message.type === 'setAnalyticsOptOut' && message.requestId === requestId) {
+              this.socket?.removeEventListener('message', handler);
+              clearTimeout(timeout);
+              resolve();
+            }
+          } catch (e) {
+            console.error('Error in setAnalyticsOptOut callback:', e);
+          }
+        };
+        const timeout = setTimeout(() => {
+          this.socket?.removeEventListener('message', handler);
+          resolve();
+        }, 5000);
+        this.socket.addEventListener('message', handler);
+        this.socket.send(JSON.stringify({ type: 'setAnalyticsOptOut', requestId, data: { optOut } }));
+      } else {
+        resolve();
+      }
+    });
   }
 }
 

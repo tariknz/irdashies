@@ -100,7 +100,7 @@ export async function startComponentServer(irsdkBridge?: IrSdkBridge, dashboardB
 
     if (!isDev && staticPath && pathname !== '/' && !pathname.startsWith('/health') && 
         !pathname.startsWith('/debug') && !pathname.startsWith('/component') && 
-        !pathname.startsWith('/components')) {
+        !pathname.startsWith('/components') && !pathname.startsWith('/dashboard')) {
       const filePath = path.join(staticPath, pathname);
       await serveStaticFile(filePath, res);
       return;
@@ -172,7 +172,6 @@ export async function startComponentServer(irsdkBridge?: IrSdkBridge, dashboardB
         return;
       }
 
-      const wsUrl = 'http://localhost:3000';
       const normalizedName = componentName.toLowerCase();
       let finalConfig = {};
       
@@ -195,27 +194,70 @@ export async function startComponentServer(irsdkBridge?: IrSdkBridge, dashboardB
         }
       }
 
-      let componentRendererUrl: string;
-      
-      // Get the current profile ID to pass to the component renderer
-      const { getCurrentProfileId } = await import('../storage/dashboards');
-      const profileId = getCurrentProfileId();
-      
-      if (isDev) {
-        const vitePort = process.env.VITE_PORT || '5173';
-        componentRendererUrl = `http://localhost:${vitePort}/index-component-renderer.html?component=${encodeURIComponent(componentName)}&wsUrl=${encodeURIComponent(wsUrl)}&configId=${configId}&profileId=${encodeURIComponent(profileId)}`;
-      } else {
-        componentRendererUrl = `http://localhost:${COMPONENT_PORT}/index-component-renderer.html?component=${encodeURIComponent(componentName)}&wsUrl=${encodeURIComponent(wsUrl)}&configId=${configId}&profileId=${encodeURIComponent(profileId)}`;
-      }
-
-      const escapedName = componentName.replace(/[<>&"']/g, '');
+      // Individual component rendering is no longer supported
+      // Use /dashboard route to view the full dashboard instead
       const html = `
       <!DOCTYPE html>
       <html>
       <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>${escapedName} Component</title>
+        <title>Component Rendering Deprecated</title>
+        <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          html, body { width: 100%; height: 100%; overflow: hidden; }
+          body { background: #1e293b; color: #e2e8f0; font-family: system-ui, -apple-system, sans-serif; display: flex; align-items: center; justify-content: center; }
+          .message { text-align: center; padding: 2rem; }
+          h1 { font-size: 1.5rem; margin-bottom: 1rem; }
+          p { margin-bottom: 0.5rem; }
+          code { background: #0f172a; padding: 0.25rem 0.5rem; border-radius: 0.25rem; }
+        </style>
+      </head>
+      <body>
+        <div class="message">
+          <h1>Individual Component Rendering Deprecated</h1>
+          <p>Please use the full dashboard view instead:</p>
+          <p><code>http://localhost:3000/dashboard</code></p>
+        </div>
+      </body>
+      </html>
+    `;
+
+      sendHTML(res, html);
+      return;
+    }
+
+    // Dashboard view - shows all overlays in one page
+    if (pathname === '/dashboard' && req.method === 'GET') {
+      const wsUrl = 'http://localhost:3000';
+      const debug = url.searchParams.get('debug') || 'false';
+      
+      // Get profile ID from URL param (check both 'profile' and 'profileId')
+      const profileIdParam = url.searchParams.get('profile') || url.searchParams.get('profileId');
+      let profileId = profileIdParam;
+      
+      if (!profileId) {
+        const { getCurrentProfileId } = await import('../storage/dashboards');
+        profileId = getCurrentProfileId();
+      }
+      
+      let dashboardViewUrl: string;
+      
+      if (isDev) {
+        const vitePort = process.env.VITE_PORT || '5173';
+        dashboardViewUrl = `http://localhost:${vitePort}/index-dashboard-view.html?wsUrl=${encodeURIComponent(wsUrl)}&profile=${encodeURIComponent(profileId)}&debug=${debug}`;
+      } else {
+        dashboardViewUrl = `http://localhost:${COMPONENT_PORT}/index-dashboard-view.html?wsUrl=${encodeURIComponent(wsUrl)}&profile=${encodeURIComponent(profileId)}&debug=${debug}`;
+      }
+
+      // Serve HTML with iframe to dashboard view
+      const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Dashboard</title>
         <style>
           * { margin: 0; padding: 0; box-sizing: border-box; }
           html, body, #root { width: 100%; height: 100%; overflow: hidden; }
@@ -224,7 +266,7 @@ export async function startComponentServer(irsdkBridge?: IrSdkBridge, dashboardB
         </style>
       </head>
       <body>
-        <iframe src="${componentRendererUrl}" scrolling="no"></iframe>
+        <iframe src="${dashboardViewUrl}" scrolling="no"></iframe>
       </body>
       </html>
     `;
