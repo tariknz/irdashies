@@ -1,10 +1,10 @@
 /**
  * Main Rejoin Indicator Component
- * Displays a widget showing the gap to the car behind and if its safe to rejoin, need to exercise caughtion or you should not rejoin until the car has passed
+ * Displays a widget showing the gap to the car behind and if its safe to rejoin, need to exercise caution or you should not rejoin until the car has passed
  * Hidden until player is at a user defined speed (Default 30) and not in the pit lane. The gap thresholds are user configured as well
  */
 
-import { useTelemetryValues, useTelemetryValue, useFocusCarIdx } from '@irdashies/context';
+import { useTelemetryValues, useTelemetryValue, useFocusCarIdx, useDrivingState } from '@irdashies/context';
 import { useDriverRelatives } from '../Standings/hooks/useDriverRelatives';
 import { useRejoinSettings } from './hooks/useRejoinSettings';
 import type { Standings } from '../Standings/createStandings';
@@ -12,10 +12,12 @@ import type { Standings } from '../Standings/createStandings';
 export const RejoinIndicator = () => {
   const settings = useRejoinSettings();
   const playerIndex = useFocusCarIdx();
-  const isInGarage = useTelemetryValue<number>('IsInGarage') === 1;
   const playerInPitStall = useTelemetryValue<number>('PlayerCarInPitStall') === 1;
   const carIdxOnPitRoad = useTelemetryValues<boolean[]>('CarIdxOnPitRoad');
   const carSpeedForPlayer = useTelemetryValue('Speed');
+  const sessionTime = useTelemetryValue<number>('SessionTime') ?? 0;
+  const sessionState = useTelemetryValue<number>('SessionState') ?? 0;
+  const { isDriving } = useDrivingState();
 
   const drivers = useDriverRelatives({ buffer: 3 });
 
@@ -23,6 +25,8 @@ export const RejoinIndicator = () => {
   if (!settings) return null;
   if (!settings.enabled) return null;
   if (playerIndex === undefined) return null;
+  
+  if (!isDriving) return null;
   // Choose the first car behind the player that is not in the pit lane or off-track
   let carBehind: Standings | undefined = undefined;
   let behindList: Standings[] = [];
@@ -66,14 +70,19 @@ export const RejoinIndicator = () => {
   const isHiddenBySpeed = speedKmH > settings.config.showAtSpeed;
 
   // Decide visibility based on player location (garage / pit stall / on pit road)
-  const isHiddenByLocation = isInGarage || playerInPitStall || playerOnPitRoad;
+  const isHiddenByLocation = playerInPitStall || playerOnPitRoad;
 
   // Decide visibility when there is no valid on-track car behind
   const isHiddenByNoCarBehind = !Number.isFinite(gap);
 
+  // Hide during standing start: pre-race session states (< 4) or session time < 3 seconds during racing
+  // SessionState 2 = WarmUp/ParadeLaps (pre-race), 3 = GetInCar (unlikely), 4 = Racing
+  const isHiddenBySessionStart = sessionState < 4 || (sessionState === 4 && sessionTime < 3);
+
   if (isHiddenBySpeed) return null;
   if (isHiddenByLocation) return null;
   if (isHiddenByNoCarBehind) return null;
+  if (isHiddenBySessionStart) return null;
 
   const statusBg =
     status.color === 'green' ? 'bg-green-700' : status.color === 'amber' ? 'bg-amber-600' : 'bg-red-700';
