@@ -90,20 +90,29 @@ export const DashboardProvider: React.FC<{
     bridge.dashboardUpdated((dashboard) => {
       console.log('📊 Dashboard received from bridge:', dashboard);
       console.log('📊 initialProfileIdRef.current at callback:', initialProfileIdRef.current);
-      console.log('📊 About to refresh profiles due to dashboard update...');
-
-      // If locked to a specific profile via URL, reload that profile's dashboard
+      
+      // For profile-specific URLs, we need to ensure we're getting the right profile's dashboard
       if (initialProfileIdRef.current && bridge.getDashboardForProfile) {
         console.log('📊 Locked to profile', initialProfileIdRef.current, '- reloading that profile\'s dashboard');
         bridge.getDashboardForProfile(initialProfileIdRef.current).then((profileDashboard) => {
           if (profileDashboard) {
-            console.log('📊 Updated dashboard for locked profile');
-            setDashboard(profileDashboard);
+            // Only update if the dashboard is actually different to avoid overwriting local optimistic updates
+            setDashboard(prev => {
+              if (JSON.stringify(prev) !== JSON.stringify(profileDashboard)) {
+                return profileDashboard;
+              }
+              return prev;
+            });
           }
         });
       } else {
-        console.log('📊 No locked profile, updating dashboard');
-        setDashboard(dashboard);
+        // Only update if the dashboard is actually different to avoid overwriting local optimistic updates
+        setDashboard(prev => {
+          if (JSON.stringify(prev) !== JSON.stringify(dashboard)) {
+            return dashboard;
+          }
+          return prev;
+        });
       }
 
       // Refresh profiles when dashboard updates to pick up theme changes
@@ -154,6 +163,10 @@ export const DashboardProvider: React.FC<{
     dashboard: DashboardLayout,
     options?: SaveDashboardOptions
   ) => {
+    // Immediately update local state for responsive UI
+    setDashboard(dashboard);
+    
+    // Then save to bridge
     bridge.saveDashboard(dashboard, options);
   };
 
