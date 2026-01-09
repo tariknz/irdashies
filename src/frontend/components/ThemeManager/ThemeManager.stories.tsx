@@ -71,6 +71,27 @@ const createMockBridge = (
   },
   saveGarageCoverImage: () => Promise.resolve(''),
   getGarageCoverImageAsDataUrl: () => Promise.resolve(null),
+  // Profile management mocks
+  listProfiles: () => Promise.resolve([
+    { id: 'default', name: 'Default', createdAt: new Date().toISOString(), lastModified: new Date().toISOString() }
+  ]),
+  createProfile: (name: string) => Promise.resolve({
+    id: 'mock-id',
+    name,
+    createdAt: new Date().toISOString(),
+    lastModified: new Date().toISOString()
+  }),
+  deleteProfile: () => Promise.resolve(),
+  renameProfile: () => Promise.resolve(),
+  switchProfile: () => Promise.resolve(),
+  getCurrentProfile: () => Promise.resolve({
+    id: 'default',
+    name: 'Default',
+    createdAt: new Date().toISOString(),
+    lastModified: new Date().toISOString()
+  }),
+  updateProfileTheme: async () => undefined,
+  getDashboardForProfile: async () => null,
 });
 
 const FONT_SIZES: FontSize[] = ['xs', 'sm', 'md', 'lg', 'xl', '2xl', '3xl'];

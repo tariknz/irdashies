@@ -38,11 +38,30 @@ export const mockDashboardBridge: DashboardBridge = {
   getCurrentDashboard: () => {
     return null;
   },
-  stop: () => {
-    return;
-  },
   saveGarageCoverImage: () => Promise.resolve(''),
   getGarageCoverImageAsDataUrl: () => Promise.resolve(null),
   getAnalyticsOptOut: () => Promise.resolve(false),
   setAnalyticsOptOut: () => Promise.resolve(),
+  // Profile management mocks
+  listProfiles: () => Promise.resolve([
+    { id: 'default', name: 'Default', createdAt: new Date().toISOString(), lastModified: new Date().toISOString() }
+  ]),
+  createProfile: (name: string) => Promise.resolve({
+    id: 'mock-id',
+    name,
+    createdAt: new Date().toISOString(),
+    lastModified: new Date().toISOString()
+  }),
+  deleteProfile: () => Promise.resolve(),
+  renameProfile: () => Promise.resolve(),
+  switchProfile: () => Promise.resolve(),
+  getCurrentProfile: () => Promise.resolve({
+    id: 'default',
+    name: 'Default',
+    createdAt: new Date().toISOString(),
+    lastModified: new Date().toISOString()
+  }),
+  updateProfileTheme: async () => undefined,
+  getDashboardForProfile: async () => null,
+  stop: () => undefined,
 }; 

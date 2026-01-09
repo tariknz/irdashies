@@ -6,7 +6,7 @@ export interface TelemetryProviderProps {
   bridge: IrSdkBridge | Promise<IrSdkBridge>;
 }
 
-export const TelemetryProvider = ({ bridge }: TelemetryProviderProps) => {
+export const TelemetryProvider = ({ bridge, children }: TelemetryProviderProps & { children?: React.ReactNode }) => {
   const setTelemetry = useTelemetryStore((state) => state.setTelemetry);
 
   useEffect(() => {
@@ -32,5 +32,5 @@ export const TelemetryProvider = ({ bridge }: TelemetryProviderProps) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bridge]);
 
-  return <></>;
+  return <>{children}</>;
 };
