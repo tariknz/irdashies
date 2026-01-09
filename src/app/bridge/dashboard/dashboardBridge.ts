@@ -1,5 +1,5 @@
 import { ipcMain } from 'electron';
-import type { DashboardBridge, DashboardLayout } from '@irdashies/types';
+import type { DashboardBridge, DashboardLayout, DashboardProfile } from '@irdashies/types';
 import { onDashboardUpdated } from '../../storage/dashboardEvents';
 import { 
   getDashboard, 
@@ -13,7 +13,9 @@ import {
   renameProfile,
   getCurrentProfileId,
   setCurrentProfile,
-  getProfile
+  getProfile,
+  updateProfileTheme,
+  getOrCreateDefaultDashboard
 } from '../../storage/dashboards';
 import { OverlayManager } from '../../overlayManager';
 import { getAnalyticsOptOut as getAnalyticsOptOutStorage, setAnalyticsOptOut as setAnalyticsOptOutStorage } from '../../storage/analytics';
@@ -58,6 +60,25 @@ export const dashboardBridge: DashboardBridge = {
     const dashboard = getDashboard(currentProfileId);
     return dashboard;
   },
+  getDashboardForProfile: async (profileId: string) => {
+    console.log('[dashboardBridge] getDashboardForProfile called with profileId:', profileId);
+    let dashboard = getDashboard(profileId);
+    console.log('[dashboardBridge] getDashboard returned:', dashboard ? 'dashboard exists' : 'null');
+    // If dashboard doesn't exist for this profile, create a default one
+    if (!dashboard) {
+      console.log('[dashboardBridge] Creating default dashboard for profile:', profileId);
+      // Temporarily switch to the profile to create its default dashboard
+      const originalProfileId = getCurrentProfileId();
+      console.log('[dashboardBridge] Original profile ID:', originalProfileId);
+      setCurrentProfile(profileId);
+      dashboard = getOrCreateDefaultDashboard();
+      console.log('[dashboardBridge] Created dashboard, switching back to original profile');
+      // Switch back to original profile
+      setCurrentProfile(originalProfileId);
+    }
+    console.log('[dashboardBridge] Returning dashboard for profile:', profileId);
+    return dashboard;
+  },
   toggleDemoMode: () => {
     return;
   },
@@ -86,6 +107,9 @@ export const dashboardBridge: DashboardBridge = {
   getCurrentProfile: async () => {
     const currentProfileId = getCurrentProfileId();
     return getProfile(currentProfileId);
+  },
+  updateProfileTheme: async (profileId: string, themeSettings: DashboardProfile['themeSettings']) => {
+    updateProfileTheme(profileId, themeSettings);
   },
   stop: () => {
     return;
@@ -204,6 +228,22 @@ export async function publishDashboardUpdates(overlayManager: OverlayManager, an
   ipcMain.handle('getCurrentProfile', () => {
     const currentProfileId = getCurrentProfileId();
     return getProfile(currentProfileId);
+  });
+
+  ipcMain.handle('updateProfileTheme', (_, profileId: string, themeSettings: DashboardProfile['themeSettings']) => {
+    console.log('[IPC] updateProfileTheme called with profileId:', profileId, 'themeSettings:', themeSettings);
+    updateProfileTheme(profileId, themeSettings);
+    console.log('[IPC] updateProfileTheme completed');
+    
+    // If updating the current profile, force refresh overlays
+    const currentProfileId = getCurrentProfileId();
+    if (profileId === currentProfileId) {
+      const dashboard = getDashboard(profileId);
+      if (dashboard) {
+        console.log('[IPC] Forcing overlay refresh for current profile');
+        overlayManager.forceRefreshOverlays(dashboard);
+      }
+    }
   });
 }
 

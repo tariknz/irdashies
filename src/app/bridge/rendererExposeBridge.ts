@@ -5,6 +5,7 @@ import type {
   IrSdkBridge,
   DashboardBridge,
   DashboardLayout,
+  DashboardProfile,
   SaveDashboardOptions,
 } from '@irdashies/types';
 
@@ -93,6 +94,9 @@ export function exposeBridge() {
     },
     getCurrentProfile: () => {
       return ipcRenderer.invoke('getCurrentProfile');
+    },
+    updateProfileTheme: (profileId: string, themeSettings: DashboardProfile['themeSettings']) => {
+      return ipcRenderer.invoke('updateProfileTheme', profileId, themeSettings);
     },
     stop: () => {
       ipcRenderer.removeAllListeners('editModeToggled');

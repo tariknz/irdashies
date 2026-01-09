@@ -19,12 +19,13 @@ export interface DashboardBridge {
   getGarageCoverImageAsDataUrl: (imagePath: string) => Promise<string | null>;
   getAnalyticsOptOut: () => Promise<boolean>;
   setAnalyticsOptOut: (optOut: boolean) => Promise<void>;
-  // Profile management
   listProfiles: () => Promise<DashboardProfile[]>;
   createProfile: (name: string) => Promise<DashboardProfile>;
   deleteProfile: (profileId: string) => Promise<void>;
   renameProfile: (profileId: string, newName: string) => Promise<void>;
   switchProfile: (profileId: string) => Promise<void>;
   getCurrentProfile: () => Promise<DashboardProfile | null>;
+  updateProfileTheme: (profileId: string, themeSettings: DashboardProfile['themeSettings']) => Promise<void>;
+  getDashboardForProfile: (profileId: string) => Promise<DashboardLayout | null>;
   stop: () => void;
 }
