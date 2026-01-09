@@ -41,7 +41,8 @@ const DashboardContext = createContext<DashboardContextProps | undefined>(
 export const DashboardProvider: React.FC<{
   bridge: DashboardBridge;
   children: ReactNode;
-}> = ({ bridge, children }) => {
+  profileId?: string;
+}> = ({ bridge, children, profileId }) => {
   const [dashboard, setDashboard] = useState<DashboardLayout>();
   const [editMode, setEditMode] = useState(false);
   const [version, setVersion] = useState('');
@@ -49,30 +50,96 @@ export const DashboardProvider: React.FC<{
   const [currentProfile, setCurrentProfile] = useState<DashboardProfile | null>(null);
   const [profiles, setProfiles] = useState<DashboardProfile[]>([]);
 
-  const loadProfiles = async () => {
+  // Store the initial profileId from URL to always use it
+  const initialProfileIdRef = React.useRef(profileId);
+
+  const loadProfiles = React.useCallback(async (specificProfileId?: string) => {
+    console.log('[DashboardContext] Loading profiles at', new Date().toISOString());
     const allProfiles = await bridge.listProfiles();
+    console.log('[DashboardContext] Loaded profiles:', JSON.stringify(allProfiles, null, 2));
     setProfiles(allProfiles);
-    const current = await bridge.getCurrentProfile();
-    setCurrentProfile(current);
-  };
+
+    // Always use the initial profileId from URL if it was provided
+    const profileIdToUse = specificProfileId || initialProfileIdRef.current;
+
+    // If a specific profile ID is provided, use that; otherwise get current profile
+    let profileToLoad: DashboardProfile | null;
+    if (profileIdToUse) {
+      console.log('[DashboardContext] Loading specific profile:', profileIdToUse);
+      profileToLoad = allProfiles.find(p => p.id === profileIdToUse) || null;
+      if (!profileToLoad) {
+        console.warn('[DashboardContext] Profile not found:', profileIdToUse, '- falling back to current');
+        // Profile doesn't exist - clear the ref so we don't stay locked
+        initialProfileIdRef.current = undefined;
+        profileToLoad = await bridge.getCurrentProfile();
+      }
+    } else {
+      profileToLoad = await bridge.getCurrentProfile();
+    }
+
+    console.log('[DashboardContext] Profile to load:', JSON.stringify(profileToLoad, null, 2));
+    // Deep clone to ensure React detects nested changes
+    setCurrentProfile(profileToLoad ? JSON.parse(JSON.stringify(profileToLoad)) : null);
+  }, [bridge]);
 
   useEffect(() => {
     console.log('📊 DashboardProvider mounted');
-    bridge.reloadDashboard();
+    console.log('📊 Initial profileId from URL:', profileId);
+    console.log('📊 initialProfileIdRef.current:', initialProfileIdRef.current);
+
     bridge.dashboardUpdated((dashboard) => {
-      setDashboard(dashboard);
+      console.log('📊 Dashboard received from bridge:', dashboard);
+      console.log('📊 initialProfileIdRef.current at callback:', initialProfileIdRef.current);
+      console.log('📊 About to refresh profiles due to dashboard update...');
+
+      // If locked to a specific profile via URL, reload that profile's dashboard
+      if (initialProfileIdRef.current && bridge.getDashboardForProfile) {
+        console.log('📊 Locked to profile', initialProfileIdRef.current, '- reloading that profile\'s dashboard');
+        bridge.getDashboardForProfile(initialProfileIdRef.current).then((profileDashboard) => {
+          if (profileDashboard) {
+            console.log('📊 Updated dashboard for locked profile');
+            setDashboard(profileDashboard);
+          }
+        });
+      } else {
+        console.log('📊 No locked profile, updating dashboard');
+        setDashboard(dashboard);
+      }
+
+      // Refresh profiles when dashboard updates to pick up theme changes
+      // Use the stored initial profileId to maintain the URL-specified profile
+      loadProfiles().catch((err) => console.error('Failed to refresh profiles on dashboard update:', err));
     });
+
+    // If we have a specific profileId from URL, load that profile's dashboard
+    if (profileId && bridge.getDashboardForProfile) {
+      console.log('📊 Loading dashboard for specific profile:', profileId);
+      bridge.getDashboardForProfile(profileId).then((dashboard) => {
+        console.log('📊 Got dashboard for profile:', dashboard);
+        if (dashboard) setDashboard(dashboard);
+      });
+    } else {
+      bridge.reloadDashboard();
+    }
+
     bridge.onEditModeToggled((editMode) => setEditMode(editMode));
     bridge.getAppVersion?.().then((version) => setVersion(version));
     bridge.onDemoModeChanged?.((demoMode) => setIsDemoMode(demoMode));
 
-    // Load profiles
-    loadProfiles();
-
     return () => {
       bridge.stop();
     };
-  }, [bridge]);
+  }, [bridge, profileId, loadProfiles]);
+
+  // Load profiles after mount to avoid cascading renders
+  useEffect(() => {
+    // Use setTimeout to defer setState calls and avoid cascading renders
+    const timeoutId = setTimeout(() => {
+      loadProfiles(profileId);
+    }, 0);
+
+    return () => clearTimeout(timeoutId);
+  }, [loadProfiles, profileId]);
 
   const saveDashboard = (
     dashboard: DashboardLayout,

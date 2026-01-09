@@ -1,12 +1,13 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { ThemeManager } from './ThemeManager';
-import { useGeneralSettings } from '@irdashies/context';
+import { useGeneralSettings, useDashboard } from '@irdashies/context';
 import { useLocation } from 'react-router-dom';
 
 // Mock the hooks
 vi.mock('@irdashies/context', () => ({
   useGeneralSettings: vi.fn(),
+  useDashboard: vi.fn(),
 }));
 
 vi.mock('react-router-dom', () => ({
@@ -20,6 +21,7 @@ describe('ThemeManager', () => {
     // Mock the hooks
     vi.mocked(useLocation).mockReturnValue({ pathname: '/settings/general', search: '', hash: '', state: null, key: '' });
     vi.mocked(useGeneralSettings).mockReturnValue({ fontSize: 'sm' });
+    vi.mocked(useDashboard).mockReturnValue({ currentProfile: null });
 
     const { container } = render(<ThemeManager>{mockChildren}</ThemeManager>);
 
@@ -32,6 +34,7 @@ describe('ThemeManager', () => {
     // Mock the hooks
     vi.mocked(useLocation).mockReturnValue({ pathname: '/dashboard', search: '', hash: '', state: null, key: '' });
     vi.mocked(useGeneralSettings).mockReturnValue({ fontSize: 'lg' });
+    vi.mocked(useDashboard).mockReturnValue({ currentProfile: null });
 
     const { container } = render(<ThemeManager>{mockChildren}</ThemeManager>);
 
@@ -46,6 +49,7 @@ describe('ThemeManager', () => {
     // Mock the hooks
     vi.mocked(useLocation).mockReturnValue({ pathname: '/dashboard', search: '', hash: '', state: null, key: '' });
     vi.mocked(useGeneralSettings).mockReturnValue({});
+    vi.mocked(useDashboard).mockReturnValue({ currentProfile: null });
 
     const { container } = render(<ThemeManager>{mockChildren}</ThemeManager>);
 
@@ -59,6 +63,7 @@ describe('ThemeManager', () => {
     // Mock the hooks
     vi.mocked(useLocation).mockReturnValue({ pathname: '/dashboard', search: '', hash: '', state: null, key: '' });
     vi.mocked(useGeneralSettings).mockReturnValue(undefined);
+    vi.mocked(useDashboard).mockReturnValue({ currentProfile: null });
 
     const { container } = render(<ThemeManager>{mockChildren}</ThemeManager>);
 
@@ -66,5 +71,27 @@ describe('ThemeManager', () => {
     const wrapper = container.querySelector('.overlay-window');
     expect(wrapper).toBeInTheDocument();
     expect(wrapper).toHaveClass('overlay-theme-sm');
+  });
+
+  it('uses profile theme settings when available', () => {
+    // Mock the hooks
+    vi.mocked(useLocation).mockReturnValue({ pathname: '/dashboard', search: '', hash: '', state: null, key: '' });
+    vi.mocked(useGeneralSettings).mockReturnValue({ fontSize: 'sm', colorPalette: 'default' });
+    vi.mocked(useDashboard).mockReturnValue({ 
+      currentProfile: { 
+        themeSettings: { 
+          fontSize: 'lg', 
+          colorPalette: 'dark' 
+        } 
+      } 
+    });
+
+    const { container } = render(<ThemeManager>{mockChildren}</ThemeManager>);
+
+    // Should render with profile theme settings overriding general settings
+    const wrapper = container.querySelector('.overlay-window');
+    expect(wrapper).toBeInTheDocument();
+    expect(wrapper).toHaveClass('overlay-theme-lg');
+    expect(wrapper).toHaveClass('overlay-theme-color-dark');
   });
 });

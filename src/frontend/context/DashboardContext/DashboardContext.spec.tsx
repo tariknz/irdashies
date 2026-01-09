@@ -20,6 +20,14 @@ const mockBridge: DashboardBridge = {
   getGarageCoverImageAsDataUrl: vi.fn(),
   getAnalyticsOptOut: vi.fn().mockResolvedValue(false),
   setAnalyticsOptOut: vi.fn(),
+  listProfiles: vi.fn(),
+  createProfile: vi.fn(),
+  deleteProfile: vi.fn(),
+  renameProfile: vi.fn(),
+  switchProfile: vi.fn(),
+  getCurrentProfile: vi.fn(),
+  updateProfileTheme: vi.fn(),
+  getDashboardForProfile: vi.fn(),
 };
 
 const TestComponent: React.FC = () => {
