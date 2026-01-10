@@ -5,4 +5,5 @@ export * from './TrackMapSettings';
 export * from './FuelSettings';
 export * from './GarageCoverSettings';
 export * from './RejoinIndicatorSettings';
+export * from './TelemetryInspectorSettings';
 export * from './AdvancedSettings'; 

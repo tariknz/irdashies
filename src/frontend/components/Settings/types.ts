@@ -276,6 +276,18 @@ export interface GarageCoverWidgetSettings extends BaseWidgetSettings {
     imageFilename: string;
   };
 }
+
+export interface TelemetryInspectorWidgetSettings extends BaseWidgetSettings {
+  config: {
+    background?: { opacity: number };
+    properties?: {
+      source: 'telemetry' | 'session';
+      path: string;
+      label?: string;
+    }[];
+  };
+}
+
 export interface FasterCarsFromBehindWidgetSettings extends BaseWidgetSettings {
   config: {
     distanceThreshold: number;
