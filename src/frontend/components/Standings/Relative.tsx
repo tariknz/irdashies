@@ -1,12 +1,11 @@
 import { useMemo } from 'react';
 import { DriverInfoRow } from './components/DriverInfoRow/DriverInfoRow';
-import { useDrivingState } from '@irdashies/context';
+import { useDrivingState, useWeekendInfoNumCarClasses, useWeekendInfoTeamRacing, useSessionVisibility } from '@irdashies/context';
 import { useRelativeSettings, useDriverRelatives, useHighlightColor } from './hooks';
 import { SessionBar } from './components/SessionBar/SessionBar';
 
 import { TitleBar } from './components/TitleBar/TitleBar';
 import { usePitLapStoreUpdater } from '../../context/PitLapStore/PitLapStoreUpdater';
-import { useWeekendInfoNumCarClasses } from '@irdashies/context';
 import { useIsSingleMake } from './hooks/useIsSingleMake';
 
 export const Relative = () => {
@@ -17,11 +16,15 @@ export const Relative = () => {
   const highlightColor = useHighlightColor();
   const numCarClasses = useWeekendInfoNumCarClasses();
   const isMultiClass = (numCarClasses ?? 0) > 1;
+  const isSessionVisible = useSessionVisibility(settings?.sessionVisibility);
 
   usePitLapStoreUpdater();
 
   const isSingleMake = useIsSingleMake();
   const hideCarManufacturer = !!(settings?.carManufacturer?.hideIfSingleMake && isSingleMake);
+
+  // Check if this is a team racing session
+  const isTeamRacing = useWeekendInfoTeamRacing();
 
   // Always render 2 * buffer + 1 rows (buffer above + player + buffer below)
   const totalRows = 2 * buffer + 1;
@@ -42,6 +45,7 @@ export const Relative = () => {
           carIdx={0}
           classColor={0}
           name="Franz Hermann"
+          teamName={settings?.teamName?.enabled && isTeamRacing ? '' : undefined}
           isPlayer={false}
           hasFastestTime={false}
           hidden={true}
@@ -90,6 +94,7 @@ export const Relative = () => {
             carIdx={0}
             classColor={0}
             name="Franz Hermann"
+            teamName={settings?.teamName?.enabled && isTeamRacing ? '' : undefined}
             isPlayer={false}
             hasFastestTime={false}
             hidden={true}
@@ -131,6 +136,7 @@ export const Relative = () => {
           classColor={result.carClass.color}
           carNumber={settings?.carNumber?.enabled ?? true ? result.driver?.carNum || '' : undefined}
           name={result.driver?.name || ''}
+          teamName={settings?.teamName?.enabled && isTeamRacing ? result.driver?.teamName || '' : undefined}
           isPlayer={result.isPlayer}
           hasFastestTime={result.hasFastestTime}
           position={result.classPosition}
@@ -167,8 +173,10 @@ export const Relative = () => {
         />
       );
     });
-  }, [standings, playerIndex, totalRows, settings, isMultiClass, highlightColor, hideCarManufacturer]);
+  }, [standings, playerIndex, totalRows, settings, isMultiClass, highlightColor, hideCarManufacturer, isTeamRacing]);
 
+  if (!isSessionVisible) return <></>;
+  
   // Show only when on track setting
   if (settings?.showOnlyWhenOnTrack && !isDriving) {
     return <></>;

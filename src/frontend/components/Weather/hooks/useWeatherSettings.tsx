@@ -1,40 +1,8 @@
 import { useDashboard } from '@irdashies/context';
 import { WeatherWidgetSettings } from '../../Settings/types';
-import { useMemo } from 'react';
-
-const defaultConfig: WeatherWidgetSettings['config'] = {
-  background: { opacity: 0 },
-  units: 'auto',
-  airTemp: {
-    enabled: true
-  },
-  trackTemp: {
-    enabled: true
-  },
-  wetness: {
-    enabled: true
-  },
-  trackState: {
-    enabled: true
-  },
-  wind: {
-    enabled: true
-  },
-  humidity: {
-    enabled: true
-  },
-  displayOrder: [],
-  showOnlyWhenOnTrack: true,
-};
 
 export const useWeatherSettings = () => {
   const { currentDashboard } = useDashboard();
-
-  return useMemo(() => {
-    const weatherSettings = currentDashboard?.widgets.find(
-      (widget) => widget.id === 'weather',
-    )?.config;
-
-    return { ...defaultConfig, ...(weatherSettings as WeatherWidgetSettings['config']) };
-  }, [currentDashboard]);
+  const widget = currentDashboard?.widgets.find(w => w.id === 'weather')?.config;
+  return widget as WeatherWidgetSettings['config'];
 }; 

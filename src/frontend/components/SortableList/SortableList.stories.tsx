@@ -119,6 +119,7 @@ const StringArrayDemo = () => {
   const [items, setItems] = useState([
     'sessionName',
     'sessionTime',
+    'sessionLaps',
     'incidentCount',
     'brakeBias',
   ]);

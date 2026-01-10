@@ -20,12 +20,14 @@ import { LapTimeDeltasCell } from './cells/LapTimeDeltasCell';
 import { LastTimeCell } from './cells/LastTimeCell';
 import { PitStatusCell } from './cells/PitStatusCell';
 import { PositionCell } from './cells/PositionCell';
+import { TeamNameCell } from './cells/TeamNameCell';
 
 interface DriverRowInfoProps {
   carIdx: number;
   classColor: number;
   carNumber?: string;
   name: string;
+  teamName?: string;
   isPlayer: boolean;
   hasFastestTime: boolean;
   delta?: number;
@@ -73,6 +75,7 @@ export const DriverInfoRow = memo(
     carNumber,
     classColor,
     name,
+    teamName,
     isPlayer,
     hasFastestTime,
     delta,
@@ -194,6 +197,20 @@ export const DriverInfoRow = memo(
               hidden={hidden}
               name={name}
               radioActive={radioActive}
+            />
+          ),
+        },
+        {
+          id: 'teamName',
+          shouldRender:
+            teamName !== undefined &&
+            (displayOrder ? displayOrder.includes('teamName') : false) &&
+            (config?.teamName?.enabled ?? false),
+          component: (
+            <TeamNameCell
+              key="teamName"
+              hidden={hidden}
+              teamName={teamName}
             />
           ),
         },
@@ -400,6 +417,7 @@ export const DriverInfoRow = memo(
       carNumber,
       flairId,
       name,
+      teamName,
       radioActive,
       onPitRoad,
       carTrackSurface,
@@ -434,9 +452,9 @@ export const DriverInfoRow = memo(
       <tr
         key={carIdx}
         className={[
-          `odd:bg-slate-800/70 even:bg-slate-900/70 text-sm`,
           !onTrack || onPitRoad ? 'text-white/60' : '',
           isPlayer ? 'text-amber-300' : '',
+          isPlayer ? 'bg-yellow-500/20' : 'odd:bg-slate-800/70 even:bg-slate-900/70 text-sm',
           !isPlayer && isLapped ? 'text-blue-400' : '',
           !isPlayer && isLappingAhead ? 'text-red-400' : '',
           hidden ? 'invisible' : '',

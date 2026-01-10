@@ -1,11 +1,5 @@
 import { useDashboard } from '@irdashies/context';
-
-interface FasterCarsFromBehindSettings {
-  enabled: boolean;
-  config: {
-    distanceThreshold: number;
-  };
-}
+import { FasterCarsFromBehindWidgetSettings } from '../../Settings/types';
 
 export const useFasterCarsSettings = () => {
   const { currentDashboard } = useDashboard();
@@ -20,7 +14,7 @@ export const useFasterCarsSettings = () => {
     'distanceThreshold' in settings &&
     typeof settings.distanceThreshold === 'number'
   ) {
-    return settings as FasterCarsFromBehindSettings['config'];
+    return settings as FasterCarsFromBehindWidgetSettings['config'];
   }
 
   return undefined;

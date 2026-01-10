@@ -4,11 +4,12 @@
  */
 
 import { useMemo } from 'react';
-import { useTelemetryValues } from '@irdashies/context';
+import { useTelemetryValues, useSessionVisibility } from '@irdashies/context';
 import { useFuelCalculation } from './useFuelCalculation';
 import { formatFuel } from './fuelCalculations';
 import { useFuelStore } from './FuelStore';
 import type { FuelCalculatorSettings } from './types';
+import { useFuelSettings } from '../Standings/hooks';
 
 type FuelCalculatorProps = Partial<FuelCalculatorSettings>;
 
@@ -31,6 +32,8 @@ export const FuelCalculator = ({
   background = { opacity: 85 },
   fuelRequiredMode = 'toFinish',
 }: FuelCalculatorProps) => {
+  const settings = useFuelSettings();
+  const isSessionVisible = useSessionVisibility(settings?.sessionVisibility);
   const fuelData = useFuelCalculation(safetyMargin);
   // Subscribe to lapHistory directly to trigger re-renders when it changes
   const lapHistory = useFuelStore((state) => state.lapHistory);
@@ -263,6 +266,8 @@ export const FuelCalculator = ({
   const headerFontSize = layout === 'horizontal'
     ? 'text-xl'
     : 'text-[2.5em]';
+
+  if (!isSessionVisible) return <></>;
 
   // Horizontal layout - single row design
   if (layout === 'horizontal') {

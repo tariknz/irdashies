@@ -1,36 +1,44 @@
-import { useTrackId } from './hooks/useTrackId';
 import { useDriverProgress } from './hooks/useDriverProgress';
-import { useTrackMapSettings } from './hooks/useTrackMapSettings';
+import { useFlatTrackMapSettings } from './hooks/useFlatTrackMapSettings';
 import { useHighlightColor } from './hooks/useHighlightColor';
-import { TrackCanvas } from './TrackCanvas';
+import { useTrackId } from './hooks/useTrackId';
+import { FlatTrackMapCanvas } from './FlatTrackMapCanvas';
+import tracks from './tracks/tracks.json';
+import { TrackDrawing } from './TrackCanvas';
 import { useSessionVisibility } from '@irdashies/context';
 
 const debug = import.meta.env.DEV || import.meta.env.MODE === 'storybook';
 
-export const TrackMap = () => {
+export const FlatTrackMap = () => {
   const trackId = useTrackId();
   const driversTrackData = useDriverProgress();
-  const settings = useTrackMapSettings();
+  const settings = useFlatTrackMapSettings();
   const highlightColor = useHighlightColor();
 
   if (!useSessionVisibility(settings?.sessionVisibility)) return <></>;
 
-  if (!trackId) return <></>;
+  const trackDrawing = trackId ? (tracks as unknown as TrackDrawing[])[trackId] : null;
+
+  if (!trackId || !trackDrawing) {
+    return debug ? (
+      <div className="w-full h-full flex items-center justify-center text-white">
+        <p>No track data available</p>
+      </div>
+    ) : <></>;
+  }
 
   return (
     <div className="w-full h-full">
-      <TrackCanvas
-        trackId={trackId}
+      <FlatTrackMapCanvas
+        trackDrawing={trackDrawing}
         drivers={driversTrackData}
-        enableTurnNames={settings?.enableTurnNames ?? false}
+        highlightColor={settings?.useHighlightColor ? highlightColor : undefined}
         showCarNumbers={settings?.showCarNumbers ?? true}
-        invertTrackColors={settings?.invertTrackColors ?? false}
         driverCircleSize={settings?.driverCircleSize ?? 40}
         playerCircleSize={settings?.playerCircleSize ?? 40}
         trackLineWidth={settings?.trackLineWidth ?? 20}
         trackOutlineWidth={settings?.trackOutlineWidth ?? 40}
-        highlightColor={settings?.useHighlightColor ? highlightColor : undefined}
-        debug={debug}
+        invertTrackColors={settings?.invertTrackColors ?? false}
       />
     </div>
   );

@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import { useDashboard } from '@irdashies/context';
-import { RelativeWidgetSettings } from '../types';
+import { RelativeWidgetSettings, SessionVisibilitySettings } from '../types';
 import { ToggleSwitch } from '../components/ToggleSwitch';
 import { useSortableList } from '../../SortableList';
 import { DotsSixVerticalIcon } from '@phosphor-icons/react';
 import { BadgeFormatPreview } from '../components/BadgeFormatPreview';
 import { VALID_SESSION_BAR_ITEM_KEYS, SESSION_BAR_ITEM_LABELS, DEFAULT_SESSION_BAR_DISPLAY_ORDER } from '../sessionBarConstants';
 import { mergeDisplayOrder } from '../../../utils/displayOrder';
+import { SessionVisibility } from '../components/SessionVisibility';
 
 const SETTING_ID = 'relative';
 
@@ -23,6 +24,7 @@ const sortableSettings: SortableSetting[] = [
   { id: 'carNumber', label: 'Car Number', configKey: 'carNumber' },
   { id: 'countryFlags', label: 'Country Flags', configKey: 'countryFlags' },
   { id: 'driverName', label: 'Driver Name', configKey: 'driverName' },
+  { id: 'teamName', label: 'Team Name', configKey: 'teamName' },
   { id: 'pitStatus', label: 'Pit Status', configKey: 'pitStatus', hasSubSetting: true },
   { id: 'carManufacturer', label: 'Car Manufacturer', configKey: 'carManufacturer', hasSubSetting: true },
   { id: 'badge', label: 'Driver Badge', configKey: 'badge' },
@@ -40,6 +42,7 @@ const defaultConfig: RelativeWidgetSettings['config'] = {
   carNumber: { enabled: true },
   countryFlags: { enabled: true },
   driverName: { enabled: true },
+  teamName: { enabled: false },
   pitStatus: { enabled: true, showPitTime: false },
   carManufacturer: { enabled: true, hideIfSingleMake: false },
   badge: { enabled: true, badgeFormat: 'license-color-rating-bw' },
@@ -54,6 +57,7 @@ const defaultConfig: RelativeWidgetSettings['config'] = {
     enabled: true,
     sessionName: { enabled: true },
     sessionTime: { enabled: true, mode: 'Remaining' },
+    sessionLaps: { enabled: true },
     incidentCount: { enabled: true },
     brakeBias: { enabled: true },
     localTime: { enabled: false },
@@ -68,6 +72,7 @@ const defaultConfig: RelativeWidgetSettings['config'] = {
     enabled: true,
     sessionName: { enabled: false },
     sessionTime: { enabled: false, mode: 'Remaining' },
+    sessionLaps: { enabled: false },
     incidentCount: { enabled: false },
     brakeBias: { enabled: false },
     localTime: { enabled: true },
@@ -80,6 +85,7 @@ const defaultConfig: RelativeWidgetSettings['config'] = {
   },
   showOnlyWhenOnTrack: false,
   useLivePosition: false,
+  sessionVisibility: { race: true, loneQualify: false, openQualify: true, practice: true, offlineTesting: false }
 };
 
 
@@ -94,6 +100,7 @@ const migrateConfig = (savedConfig: unknown): RelativeWidgetSettings['config'] =
     carNumber: { enabled: (config.carNumber as { enabled?: boolean })?.enabled ?? true },
     countryFlags: { enabled: (config.countryFlags as { enabled?: boolean })?.enabled ?? true },
     driverName: { enabled: (config.driverName as { enabled?: boolean })?.enabled ?? true },
+    teamName: { enabled: (config.teamName as { enabled?: boolean })?.enabled ?? false },
     pitStatus: {
       enabled: (config.pitStatus as { enabled?: boolean })?.enabled ?? true,
       showPitTime: (config.pitStatus as { showPitTime?: boolean })?.showPitTime ?? false,
@@ -125,6 +132,7 @@ const migrateConfig = (savedConfig: unknown): RelativeWidgetSettings['config'] =
         enabled: (config.headerBar as { sessionTime?: { enabled?: boolean } })?.sessionTime?.enabled ?? true,
         mode: ((config.headerBar as { sessionTime?: { mode?: string } })?.sessionTime?.mode as 'Remaining' | 'Elapsed') ?? 'Remaining'
       },
+      sessionLaps: { enabled: (config.headerBar as { sessionLaps?: { enabled?: boolean } })?.sessionLaps?.enabled ?? true },
       incidentCount: { enabled: (config.headerBar as { incidentCount?: { enabled?: boolean } })?.incidentCount?.enabled ?? true },
       brakeBias: { enabled: (config.headerBar as { brakeBias?: { enabled?: boolean } })?.brakeBias?.enabled ?? false },
       localTime: { enabled: (config.headerBar as { localTime?: { enabled?: boolean } })?.localTime?.enabled ?? false },
@@ -148,6 +156,7 @@ const migrateConfig = (savedConfig: unknown): RelativeWidgetSettings['config'] =
         enabled: (config.footerBar as { sessionTime?: { enabled?: boolean } })?.sessionTime?.enabled ?? false,
         mode: ((config.footerBar as { sessionTime?: { mode?: string } })?.sessionTime?.mode as 'Remaining' | 'Elapsed') ?? 'Remaining'
       },
+      sessionLaps: { enabled: (config.footerBar as { sessionLaps?: { enabled?: boolean } })?.sessionLaps?.enabled ?? true },
       incidentCount: { enabled: (config.footerBar as { incidentCount?: { enabled?: boolean } })?.incidentCount?.enabled ?? false },
       brakeBias: { enabled: (config.footerBar as { brakeBias?: { enabled?: boolean } })?.brakeBias?.enabled ?? false },
       localTime: { enabled: (config.footerBar as { localTime?: { enabled?: boolean } })?.localTime?.enabled ?? true },
@@ -166,6 +175,7 @@ const migrateConfig = (savedConfig: unknown): RelativeWidgetSettings['config'] =
     },
     showOnlyWhenOnTrack: (config.showOnlyWhenOnTrack as boolean) ?? false,
     useLivePosition: (config.useLivePosition as boolean) ?? false,
+    sessionVisibility: (config.sessionVisibility as SessionVisibilitySettings) ?? defaultConfig.sessionVisibility,
   };
 };
 
@@ -722,6 +732,19 @@ export const RelativeSettings = () => {
                   handleConfigChange({ useLivePosition: enabled })
                 }
               />
+            </div>
+
+            {/* Session Visibility Settings */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-medium text-slate-200">Session Visibility</h3>
+              </div>
+              <div className="space-y-3 pl-4">
+                <SessionVisibility
+                  sessionVisibility={settings.config.sessionVisibility}
+                  handleConfigChange={handleConfigChange}
+                />
+              </div>
             </div>
           </div>
         );
