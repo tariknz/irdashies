@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
-import { WeatherWidgetSettings } from '../types';
+import { SessionVisibilitySettings, WeatherWidgetSettings } from '../types';
 import { useDashboard } from '@irdashies/context';
 import { ToggleSwitch } from '../components/ToggleSwitch';
 import { mergeDisplayOrder } from '@irdashies/utils/displayOrder';
@@ -8,6 +8,7 @@ import { DotsSixVerticalIcon } from '@phosphor-icons/react';
 import { useSortableList } from '../../SortableList';
 // sortable list is not used right now — keep import commented until needed
 // import { useSortableList } from '../../SortableList';
+import { SessionVisibility } from '../components/SessionVisibility';
 
 const SETTING_ID = 'weather';
 
@@ -48,6 +49,7 @@ const defaultConfig: WeatherWidgetSettings['config'] = {
     enabled: true
   },
   showOnlyWhenOnTrack: true,
+  sessionVisibility: { race: true, loneQualify: true, openQualify: true, practice: true, offlineTesting: true }
 };
 
 const migrateConfig = (savedConfig: unknown): WeatherWidgetSettings['config'] => {
@@ -65,6 +67,7 @@ const migrateConfig = (savedConfig: unknown): WeatherWidgetSettings['config'] =>
     wind: { enabled: (config.wind as { enabled?: boolean })?.enabled ?? defaultConfig.wind.enabled },
     units: (config.units as 'auto' | 'Metric' | 'Imperial') ?? 'auto',
     showOnlyWhenOnTrack: (config.showOnlyWhenOnTrack as boolean) ?? true,
+    sessionVisibility: (config.sessionVisibility as SessionVisibilitySettings) ?? defaultConfig.sessionVisibility,
   };
 };
 
@@ -243,6 +246,19 @@ export const WeatherSettings = () => {
                   handleConfigChange({ showOnlyWhenOnTrack: enabled })
                 }
               />
+            </div>
+
+            {/* Session Visibility Settings */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-medium text-slate-200">Session Visibility</h3>
+              </div>
+              <div className="space-y-3 pl-4">
+                <SessionVisibility
+                  sessionVisibility={settings.config.sessionVisibility}
+                  handleConfigChange={handleConfigChange}
+                />
+              </div>
             </div>
           </div>
         );

@@ -145,7 +145,8 @@ export const defaultDashboard: DashboardLayout = {
           "displayOrder": ["sessionName", "sessionTime", "incidentCount", "brakeBias", "localTime", "sessionClockTime", "trackWetness", "airTemperature", "trackTemperature"]
         },
         "showOnlyWhenOnTrack": false,
-        "displayOrder": ["position", "carNumber", "countryFlags", "driverName", "pitStatus", "carManufacturer", "badge", "iratingChange", "gap", "interval", "fastestTime", "lastTime", "compound", "lapTimeDeltas"]
+        "displayOrder": ["position", "carNumber", "countryFlags", "driverName", "pitStatus", "carManufacturer", "badge", "iratingChange", "gap", "interval", "fastestTime", "lastTime", "compound", "lapTimeDeltas"],
+        "sessionVisibility": { race: true, loneQualify: true, openQualify: true, practice: true, offlineTesting: true }
       }
     },
     {
@@ -193,7 +194,8 @@ export const defaultDashboard: DashboardLayout = {
           "opacity": 80
         },
         "showOnlyWhenOnTrack": true,
-        "displayOrder": ["trace", "bar", "gear", "steer"]
+        "displayOrder": ["trace", "bar", "gear", "steer"],
+        "sessionVisibility": { race: true, loneQualify: true, openQualify: true, practice: true, offlineTesting: true }
       }
     },
     {
@@ -331,7 +333,8 @@ export const defaultDashboard: DashboardLayout = {
           },
           "displayOrder": ["sessionName", "sessionTime", "incidentCount", "brakeBias", "localTime", "sessionClockTime", "trackWetness", "precipitation", "airTemperature", "trackTemperature"]
         },
-        "showOnlyWhenOnTrack": false
+        "showOnlyWhenOnTrack": false,
+        "sessionVisibility": { race: true, loneQualify: true, openQualify: true, practice: true, offlineTesting: true }
       }
     },
     {
@@ -351,7 +354,8 @@ export const defaultDashboard: DashboardLayout = {
         "playerCircleSize": 40,
         "trackLineWidth": 20,
         "trackOutlineWidth": 40,
-        "useHighlightColor": false
+        "useHighlightColor": false,
+        "sessionVisibility": { race: true, loneQualify: true, openQualify: true, practice: true, offlineTesting: true }
       }
     },
     {
@@ -405,7 +409,8 @@ export const defaultDashboard: DashboardLayout = {
         },
         "wind": {
           "enabled": true
-        }
+        },
+        "sessionVisibility": { race: true, loneQualify: true, openQualify: true, practice: true, offlineTesting: true }
       }
     },
     {
@@ -418,7 +423,8 @@ export const defaultDashboard: DashboardLayout = {
         "height": 43
       },
       "config": {
-        "distanceThreshold": -0.3
+        "distanceThreshold": -0.3,
+        "sessionVisibility": { race: true, loneQualify: true, openQualify: true, practice: true, offlineTesting: true }
       }
     },
     {
@@ -448,7 +454,8 @@ export const defaultDashboard: DashboardLayout = {
         "safetyMargin": 0.05,
         "background": {
           "opacity": 85
-        }
+        },
+        "sessionVisibility": { race: true, loneQualify: true, openQualify: true, practice: true, offlineTesting: true }
       }
     },
     {
@@ -466,7 +473,8 @@ export const defaultDashboard: DashboardLayout = {
         "background": {
           "opacity": 30
         },
-        "width": 20
+        "width": 20,
+        "sessionVisibility": { race: true, loneQualify: true, openQualify: true, practice: true, offlineTesting: true }
       }
     },
     {

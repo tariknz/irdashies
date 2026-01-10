@@ -226,6 +226,7 @@ export const Primary: Story = {
       relative: {
         headerBar: { enabled: true },
         footerBar: { enabled: true },
+        sessionVisibility: { race: true, loneQualify: true, openQualify: true, practice: true, offlineTesting: true }
       },
     }),
   ],
