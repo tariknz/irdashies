@@ -22,5 +22,9 @@ export const HideUIWrapper = ({ children }: HideUIWrapperProps) => {
     return () => unsub();
   }, []);
 
-  return <div className={hideUI ? 'opacity-0 pointer-events-none transition-opacity duration-100 ease-linear' : ''}>{children}</div>;
+  if (hideUI) {
+    return <></>;
+  }
+
+  return children;
 };
