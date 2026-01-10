@@ -511,8 +511,41 @@ export const defaultDashboard: DashboardLayout = {
         "careGap": 2,
         "stopGap": 1,
         "width": 20
-      },
+      }
     },
+    {
+      "id": "pitlanehelper",
+      "enabled": false,
+      "layout": {
+        "x": 100,
+        "y": 100,
+        "width": 150,
+        "height": 200
+      },
+      "config": {
+        "showMode": "approaching",
+        "approachDistance": 200,
+        "enablePitLimiterWarning": true,
+        "enableEarlyPitboxWarning": true,
+        "earlyPitboxThreshold": 75,
+        "showPitlaneTraffic": true,
+        "background": { "opacity": 80 }
+      }
+    },
+    {
+      "id": "telemetryinspector",
+      "enabled": false,
+      "layout": {
+        "x": 100,
+        "y": 100,
+        "width": 400,
+        "height": 600
+      },
+      "config": {
+        "properties": [],
+        "background": { "opacity": 80 }
+      }
+    }
   ],
   "generalSettings": {
     "fontSize": "sm",

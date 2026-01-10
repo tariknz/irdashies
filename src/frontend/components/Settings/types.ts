@@ -278,3 +278,26 @@ export interface FasterCarsFromBehindWidgetSettings extends BaseWidgetSettings {
     sessionVisibility: SessionVisibilitySettings;
   };
 }
+
+export interface PitlaneHelperWidgetSettings extends BaseWidgetSettings {
+  config: {
+    showMode: 'approaching' | 'onPitRoad';
+    approachDistance: number;
+    enablePitLimiterWarning: boolean;
+    enableEarlyPitboxWarning: boolean;
+    earlyPitboxThreshold: number;
+    showPitlaneTraffic: boolean;
+    background: { opacity: number };
+  };
+}
+
+export interface TelemetryInspectorWidgetSettings extends BaseWidgetSettings {
+  config: {
+    properties?: {
+      source: 'telemetry' | 'session';
+      path: string;
+      label?: string;
+    }[];
+    background: { opacity: number };
+  };
+}
