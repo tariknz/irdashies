@@ -1,4 +1,4 @@
-import { useCurrentSessionType } from '@irdashies/context';
+import { useSessionVisibility } from '@irdashies/context';
 import { useCarBehind } from './hooks/useCarBehind';
 import { useFasterCarsSettings } from './hooks/useFasterCarsSettings';
 import { getTailwindStyle } from '@irdashies/utils/colors';
@@ -12,18 +12,11 @@ export interface FasterCarsFromBehindProps {
 
 export const FasterCarsFromBehind = () => {
   const settings = useFasterCarsSettings();
-  const sessionType = useCurrentSessionType();
   const carBehind = useCarBehind({
     distanceThreshold: settings?.distanceThreshold,
   });
 
-  
-  // Show only in selected sessions
-  if (sessionType === 'Race' && !settings?.sessionVisibility?.race) return <></>;
-  if (sessionType === 'Lone Qualify' && !settings?.sessionVisibility?.loneQualify) return <></>;
-  if (sessionType === 'Open Qualify' && !settings?.sessionVisibility?.openQualify) return <></>;
-  if (sessionType === 'Practice' && !settings?.sessionVisibility?.practice) return <></>;
-  if (sessionType === 'Offline Testing' && !settings?.sessionVisibility?.offlineTesting) return <></>;
+  if (!useSessionVisibility(settings?.sessionVisibility)) return <></>;
 
   return <FasterCarsFromBehindDisplay {...carBehind} />;
 };

@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
-import { RejoinIndicatorWidgetSettings } from '../types';
+import { RejoinIndicatorWidgetSettings, SessionVisibilitySettings } from '../types';
 import { useDashboard } from '@irdashies/context';
+import { SessionVisibility } from '../components/SessionVisibility';
 
 const SETTING_ID = "rejoin"
 
@@ -9,6 +10,7 @@ const defaultConfig: RejoinIndicatorWidgetSettings['config'] = {
   showAtSpeed: 30,
   careGap: 2,
   stopGap: 1,
+  sessionVisibility: { race: true, loneQualify: true, openQualify: true, practice: true, offlineTesting: false }
 };
 
 const migrateConfig = (
@@ -17,9 +19,10 @@ const migrateConfig = (
   if (!savedConfig || typeof savedConfig !== 'object') return defaultConfig;
   const config = savedConfig as Record<string, unknown>;
   return {
-    showAtSpeed: (config.showAtSpeed as number) ?? 30,
-    careGap: (config.careGap as number) ?? 2,
-    stopGap: (config.stopGap as number) ?? 1,
+    showAtSpeed: (config.showAtSpeed as number) ?? defaultConfig.showAtSpeed,
+    careGap: (config.careGap as number) ?? defaultConfig.careGap,
+    stopGap: (config.stopGap as number) ?? defaultConfig.stopGap,
+    sessionVisibility: (config.sessionVisibility as SessionVisibilitySettings) ?? defaultConfig.sessionVisibility,
   };
 };
 
@@ -89,6 +92,19 @@ export const RejoinIndicatorSettings = () => {
               className="w-full rounded border-gray-600 bg-gray-700 p-2 text-slate-300"
               step="0.1"
             />
+          </div>
+
+          {/* Session Visibility Settings */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-medium text-slate-200">Session Visibility</h3>
+            </div>
+            <div className="space-y-3 pl-4">
+              <SessionVisibility
+                sessionVisibility={settings.config.sessionVisibility}
+                handleConfigChange={handleConfigChange}
+              />
+            </div>
           </div>
         </div>
       )}

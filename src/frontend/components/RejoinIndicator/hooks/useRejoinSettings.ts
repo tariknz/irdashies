@@ -7,6 +7,7 @@ const DEFAULT_CONFIG: RejoinIndicatorWidgetSettings = {
     showAtSpeed: 30,
     careGap: 2,
     stopGap: 1,
+    sessionVisibility: { race: true, loneQualify: true, openQualify: true, practice: true, offlineTesting: false },
   },
 };
 
@@ -25,6 +26,7 @@ export const useRejoinSettings = () => {
         showAtSpeed: (saved.config as RejoinIndicatorWidgetSettings['config'])?.showAtSpeed ?? DEFAULT_CONFIG.config.showAtSpeed,
         careGap: (saved.config as RejoinIndicatorWidgetSettings['config'])?.careGap ?? DEFAULT_CONFIG.config.careGap,
         stopGap: (saved.config as RejoinIndicatorWidgetSettings['config'])?.stopGap ?? DEFAULT_CONFIG.config.stopGap,
+        sessionVisibility: (saved.config as RejoinIndicatorWidgetSettings['config'])?.sessionVisibility ?? DEFAULT_CONFIG.config.sessionVisibility,
       },
     } as RejoinIndicatorWidgetSettings;
   }

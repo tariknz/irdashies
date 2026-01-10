@@ -4,13 +4,14 @@
  * Hidden until player is at a user defined speed (Default 30) and not in the pit lane. The gap thresholds are user configured as well
  */
 
-import { useTelemetryValues, useTelemetryValue, useFocusCarIdx, useDrivingState } from '@irdashies/context';
+import { useTelemetryValues, useTelemetryValue, useFocusCarIdx, useDrivingState, useSessionVisibility } from '@irdashies/context';
 import { useDriverRelatives } from '../Standings/hooks/useDriverRelatives';
 import { useRejoinSettings } from './hooks/useRejoinSettings';
 import type { Standings } from '../Standings/createStandings';
 
 export const RejoinIndicator = () => {
   const settings = useRejoinSettings();
+  const isSessionVisible = useSessionVisibility(settings?.config?.sessionVisibility);
   const playerIndex = useFocusCarIdx();
   const playerInPitStall = useTelemetryValue<number>('PlayerCarInPitStall') === 1;
   const carIdxOnPitRoad = useTelemetryValues<boolean[]>('CarIdxOnPitRoad');
@@ -25,6 +26,8 @@ export const RejoinIndicator = () => {
   if (!settings) return null;
   if (!settings.enabled) return null;
   if (playerIndex === undefined) return null;
+  
+  if (!isSessionVisible) return null;
   
   if (!isDriving) return null;
   // Choose the first car behind the player that is not in the pit lane or off-track

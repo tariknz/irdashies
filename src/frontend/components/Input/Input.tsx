@@ -4,8 +4,7 @@ import { useInputs } from './hooks/useInputs';
 import { useTachometerData } from './hooks/useTachometerData';
 import { useTachometerSettings } from './hooks/useTachometerSettings';
 import { Tachometer } from './InputTachometer/InputTachometer';
-import { useDrivingState } from '@irdashies/context';
-import { useCurrentSessionType } from '@irdashies/context';
+import { useDrivingState, useSessionVisibility } from '@irdashies/context';
 
 export const Input = () => {
   const inputs = useInputs();
@@ -13,14 +12,8 @@ export const Input = () => {
   const { isDriving } = useDrivingState();
   const tachometerData = useTachometerData();
   const tachometerSettings = useTachometerSettings();
-  const sessionType = useCurrentSessionType();
 
-  // Show only in selected sessions
-  if (sessionType === 'Race' && !settings?.sessionVisibility?.race) return <></>;
-  if (sessionType === 'Lone Qualify' && !settings?.sessionVisibility?.loneQualify) return <></>;
-  if (sessionType === 'Open Qualify' && !settings?.sessionVisibility?.openQualify) return <></>;
-  if (sessionType === 'Practice' && !settings?.sessionVisibility?.practice) return <></>;
-  if (sessionType === 'Offline Testing' && !settings?.sessionVisibility?.offlineTesting) return <></>;
+  if (!useSessionVisibility(settings?.sessionVisibility)) return <></>;
   
   // Show only when on track setting
   if (settings?.showOnlyWhenOnTrack && !isDriving) {

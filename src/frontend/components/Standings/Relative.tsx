@@ -1,14 +1,12 @@
 import { useMemo } from 'react';
 import { DriverInfoRow } from './components/DriverInfoRow/DriverInfoRow';
-import { useDrivingState } from '@irdashies/context';
+import { useDrivingState, useWeekendInfoNumCarClasses, useWeekendInfoTeamRacing, useSessionVisibility } from '@irdashies/context';
 import { useRelativeSettings, useDriverRelatives, useHighlightColor } from './hooks';
 import { SessionBar } from './components/SessionBar/SessionBar';
 
 import { TitleBar } from './components/TitleBar/TitleBar';
 import { usePitLapStoreUpdater } from '../../context/PitLapStore/PitLapStoreUpdater';
-import { useWeekendInfoNumCarClasses, useWeekendInfoTeamRacing } from '@irdashies/context';
 import { useIsSingleMake } from './hooks/useIsSingleMake';
-import { useCurrentSessionType } from '@irdashies/context';
 
 export const Relative = () => {
   const settings = useRelativeSettings();
@@ -18,7 +16,7 @@ export const Relative = () => {
   const highlightColor = useHighlightColor();
   const numCarClasses = useWeekendInfoNumCarClasses();
   const isMultiClass = (numCarClasses ?? 0) > 1;
-  const sessionType = useCurrentSessionType();
+  const isSessionVisible = useSessionVisibility(settings?.sessionVisibility);
 
   usePitLapStoreUpdater();
 
@@ -177,12 +175,7 @@ export const Relative = () => {
     });
   }, [standings, playerIndex, totalRows, settings, isMultiClass, highlightColor, hideCarManufacturer, isTeamRacing]);
 
-  // Show only in selected sessions
-  if (sessionType === 'Race' && !settings?.sessionVisibility?.race) return <></>;
-  if (sessionType === 'Lone Qualify' && !settings?.sessionVisibility?.loneQualify) return <></>;
-  if (sessionType === 'Open Qualify' && !settings?.sessionVisibility?.openQualify) return <></>;
-  if (sessionType === 'Practice' && !settings?.sessionVisibility?.practice) return <></>;
-  if (sessionType === 'Offline Testing' && !settings?.sessionVisibility?.offlineTesting) return <></>;
+  if (!isSessionVisible) return <></>;
   
   // Show only when on track setting
   if (settings?.showOnlyWhenOnTrack && !isDriving) {
