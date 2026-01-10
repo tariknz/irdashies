@@ -88,6 +88,9 @@ export const defaultDashboard: DashboardLayout = {
             "enabled": true,
             "mode": "Remaining"
           },
+          "sessionLaps": {
+            "enabled": true
+          },
           "incidentCount": {
             "enabled": true
           },
@@ -111,7 +114,7 @@ export const defaultDashboard: DashboardLayout = {
             "enabled": false,
             "unit": "Metric"
           },
-          "displayOrder": ["sessionName", "sessionTime", "incidentCount", "brakeBias", "localTime", "sessionClockTime", "trackWetness", "airTemperature", "trackTemperature"]
+          "displayOrder": ["sessionName", "sessionTime", "sessionLaps", "incidentCount", "brakeBias", "localTime", "sessionClockTime", "trackWetness", "airTemperature", "trackTemperature"]
         },
         "footerBar": {
           "enabled": true,
@@ -122,6 +125,9 @@ export const defaultDashboard: DashboardLayout = {
             "enabled": false,
             "mode": "Remaining"
           },
+          "sessionLaps": {
+            "enabled": true
+          },
           "incidentCount": {
             "enabled": false
           },
@@ -145,7 +151,7 @@ export const defaultDashboard: DashboardLayout = {
             "enabled": true,
             "unit": "Metric"
           },
-          "displayOrder": ["sessionName", "sessionTime", "incidentCount", "brakeBias", "localTime", "sessionClockTime", "trackWetness", "airTemperature", "trackTemperature"]
+          "displayOrder": ["sessionName", "sessionTime", "sessionLaps", "incidentCount", "brakeBias", "localTime", "sessionClockTime", "trackWetness", "airTemperature", "trackTemperature"]
         },
         "showOnlyWhenOnTrack": false,
         "displayOrder": ["position", "carNumber", "countryFlags", "driverName", "teamName", "pitStatus", "carManufacturer", "badge", "iratingChange", "gap", "interval", "fastestTime", "lastTime", "compound", "lapTimeDeltas"],
@@ -274,6 +280,9 @@ export const defaultDashboard: DashboardLayout = {
             "enabled": true,
             "mode": "Remaining"
           },
+          "sessionLaps": {
+            "enabled": true
+          },
           "incidentCount": {
             "enabled": true
           },
@@ -300,7 +309,7 @@ export const defaultDashboard: DashboardLayout = {
             "enabled": false,
             "unit": "Metric"
           },
-          "displayOrder": ["sessionName", "sessionTime", "incidentCount", "brakeBias", "localTime", "sessionClockTime", "trackWetness", "precipitation", "airTemperature", "trackTemperature"]
+          "displayOrder": ["sessionName", "sessionTime", "sessionLaps", "incidentCount", "brakeBias", "localTime", "sessionClockTime", "trackWetness", "precipitation", "airTemperature", "trackTemperature"]
         },
         "footerBar": {
           "enabled": true,
@@ -311,6 +320,9 @@ export const defaultDashboard: DashboardLayout = {
             "enabled": false,
             "mode": "Remaining"
           },
+          "sessionLaps": {
+            "enabled": true
+          },
           "incidentCount": {
             "enabled": false
           },
@@ -337,7 +349,7 @@ export const defaultDashboard: DashboardLayout = {
             "enabled": true,
             "unit": "Metric"
           },
-          "displayOrder": ["sessionName", "sessionTime", "incidentCount", "brakeBias", "localTime", "sessionClockTime", "trackWetness", "precipitation", "airTemperature", "trackTemperature"]
+          "displayOrder": ["sessionName", "sessionTime", "sessionLaps", "incidentCount", "brakeBias", "localTime", "sessionClockTime", "trackWetness", "precipitation", "airTemperature", "trackTemperature"]
         },
         "showOnlyWhenOnTrack": false,
         "sessionVisibility": { race: true, loneQualify: true, openQualify: true, practice: true, offlineTesting: true }
