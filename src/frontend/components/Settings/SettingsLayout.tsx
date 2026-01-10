@@ -18,7 +18,6 @@ import { RejoinIndicatorSettings } from './sections/RejoinIndicatorSettings';
 import { GeneralSettings } from './sections/GeneralSettings';
 import { BlindSpotMonitorSettings } from './sections/BlindSpotMonitorSettings';
 import { GarageCoverSettings } from './sections/GarageCoverSettings';
-import { TelemetryInspectorSettings } from './sections/TelemetryInspectorSettings';
 import { useDashboard } from '@irdashies/context';
 import { useState } from 'react';
 
@@ -176,14 +175,6 @@ export const SettingsLayout = () => {
                 Garage Cover
               </Link>
             </li>
-            <li>
-              <Link
-                to="/settings/telemetryinspector"
-                className={menuItemClass('/telemetryinspector')}
-              >
-                Telemetry Inspector
-              </Link>
-            </li>
           </ul>
           {/* Advanced settings pushed to bottom */}
           <ul className="mt-auto pt-2 border-t border-slate-700 flex flex-col gap-2">
@@ -227,7 +218,6 @@ export const SettingsLayout = () => {
               element={<BlindSpotMonitorSettings />}
             />
             <Route path="garagecover" element={<GarageCoverSettings />} />
-            <Route path="telemetryinspector" element={<TelemetryInspectorSettings />} />
             <Route path="advanced" element={<AdvancedSettings />} />
             <Route path="about" element={<AboutSettings />} />
             <Route
