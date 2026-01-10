@@ -15,7 +15,7 @@ const defaultConfig: FlatTrackMapWidgetSettings['config'] = {
   trackOutlineWidth: 40,
   invertTrackColors: false,
   useHighlightColor: false,
-  sessionVisibility: { race: true, loneQualify: true, openQualify: true, practice: true, offlineTesting: false }
+  sessionVisibility: { race: true, loneQualify: true, openQualify: true, practice: true, offlineTesting: true }
 };
 
 const migrateConfig = (savedConfig: unknown): FlatTrackMapWidgetSettings['config'] => {

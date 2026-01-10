@@ -24,7 +24,7 @@ const defaultConfig: FuelWidgetSettings['config'] = {
   safetyMargin: 0.05,
   background: { opacity: 85 },
   fuelRequiredMode: 'toFinish',
-  sessionVisibility: { race: true, loneQualify: true, openQualify: true, practice: true, offlineTesting: false }
+  sessionVisibility: { race: true, loneQualify: true, openQualify: true, practice: true, offlineTesting: true }
 };
 
 const migrateConfig = (

@@ -350,7 +350,7 @@ const RelativeWithReorderableConfig = () => {
       },
       showOnlyWhenOnTrack: false,
       useLivePosition: false,
-      sessionVisibility: { race: true, loneQualify: false, openQualify: true, practice: true, offlineTesting: false }
+      sessionVisibility: { race: true, loneQualify: false, openQualify: true, practice: true, offlineTesting: true }
     }),
     [displayOrder]
   );
