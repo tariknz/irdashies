@@ -16,11 +16,11 @@ export const Input = () => {
   const sessionType = useCurrentSessionType();
 
   // Show only in selected sessions
-  if (sessionType === 'Race' && !settings?.sessionVisibility.race) return <></>;
-  if (sessionType === 'Lone Qualify' && !settings?.sessionVisibility.loneQualify) return <></>;
-  if (sessionType === 'Open Qualify' && !settings?.sessionVisibility.openQualify) return <></>;
-  if (sessionType === 'Practice' && !settings?.sessionVisibility.practice) return <></>;
-  if (sessionType === 'Offline Testing' && !settings?.sessionVisibility.offlineTesting) return <></>;
+  if (sessionType === 'Race' && !settings?.sessionVisibility?.race) return <></>;
+  if (sessionType === 'Lone Qualify' && !settings?.sessionVisibility?.loneQualify) return <></>;
+  if (sessionType === 'Open Qualify' && !settings?.sessionVisibility?.openQualify) return <></>;
+  if (sessionType === 'Practice' && !settings?.sessionVisibility?.practice) return <></>;
+  if (sessionType === 'Offline Testing' && !settings?.sessionVisibility?.offlineTesting) return <></>;
   
   // Show only when on track setting
   if (settings?.showOnlyWhenOnTrack && !isDriving) {
