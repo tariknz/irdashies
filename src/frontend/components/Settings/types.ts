@@ -250,7 +250,21 @@ export interface RejoinIndicatorWidgetSettings extends BaseWidgetSettings {
     showAtSpeed: number;
     careGap: number;
     stopGap: number;
+    sessionVisibility: SessionVisibilitySettings;
   }
+}
+
+export interface FlatTrackMapWidgetSettings extends BaseWidgetSettings {
+  config: {
+    showCarNumbers: boolean;
+    driverCircleSize: number;
+    playerCircleSize: number;
+    trackLineWidth: number;
+    trackOutlineWidth: number;
+    invertTrackColors: boolean;
+    useHighlightColor: boolean;
+    sessionVisibility: SessionVisibilitySettings;
+  };
 }
 
 export interface GarageCoverWidgetSettings extends BaseWidgetSettings {

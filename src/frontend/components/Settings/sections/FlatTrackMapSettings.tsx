@@ -2,23 +2,12 @@ import { useState } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import { useDashboard } from '@irdashies/context';
 import { ToggleSwitch } from '../components/ToggleSwitch';
+import { FlatTrackMapWidgetSettings, SessionVisibilitySettings } from '../types';
+import { SessionVisibility } from '../components/SessionVisibility';
 
 const SETTING_ID = 'flatmap';
 
-interface FlatTrackMapSettings {
-  enabled: boolean;
-  config: {
-    showCarNumbers: boolean;
-    driverCircleSize: number;
-    playerCircleSize: number;
-    trackLineWidth: number;
-    trackOutlineWidth: number;
-    invertTrackColors: boolean;
-    useHighlightColor: boolean;
-  };
-}
-
-const defaultConfig: FlatTrackMapSettings['config'] = {
+const defaultConfig: FlatTrackMapWidgetSettings['config'] = {
   showCarNumbers: true,
   driverCircleSize: 40,
   playerCircleSize: 40,
@@ -26,17 +15,33 @@ const defaultConfig: FlatTrackMapSettings['config'] = {
   trackOutlineWidth: 40,
   invertTrackColors: false,
   useHighlightColor: false,
+  sessionVisibility: { race: true, loneQualify: true, openQualify: true, practice: true, offlineTesting: false }
+};
+
+const migrateConfig = (savedConfig: unknown): FlatTrackMapWidgetSettings['config'] => {
+  if (!savedConfig || typeof savedConfig !== 'object') return defaultConfig;
+
+  const config = savedConfig as Record<string, unknown>;
+  return {
+    showCarNumbers: (config.showCarNumbers as boolean) ?? defaultConfig.showCarNumbers,
+    driverCircleSize: (config.driverCircleSize as number) ?? defaultConfig.driverCircleSize,
+    playerCircleSize: (config.playerCircleSize as number) ?? defaultConfig.playerCircleSize,
+    trackLineWidth: (config.trackLineWidth as number) ?? defaultConfig.trackLineWidth,
+    trackOutlineWidth: (config.trackOutlineWidth as number) ?? defaultConfig.trackOutlineWidth,
+    invertTrackColors: (config.invertTrackColors as boolean) ?? defaultConfig.invertTrackColors,
+    useHighlightColor: (config.useHighlightColor as boolean) ?? defaultConfig.useHighlightColor,
+    sessionVisibility: (config.sessionVisibility as SessionVisibilitySettings) ?? defaultConfig.sessionVisibility,
+  };
 };
 
 export const FlatTrackMapSettings = () => {
   const { currentDashboard } = useDashboard();
-  const [settings, setSettings] = useState<FlatTrackMapSettings>({
+  const savedSettings = currentDashboard?.widgets.find((w) => w.id === SETTING_ID) as FlatTrackMapWidgetSettings | undefined;
+  const [settings, setSettings] = useState<FlatTrackMapWidgetSettings>({
     enabled:
       currentDashboard?.widgets.find((w) => w.id === SETTING_ID)?.enabled ??
       false,
-    config:
-      (currentDashboard?.widgets.find((w) => w.id === SETTING_ID)
-        ?.config as FlatTrackMapSettings['config']) ?? defaultConfig,
+    config: migrateConfig(savedSettings?.config),
   });
 
   if (!currentDashboard) {
@@ -193,6 +198,19 @@ export const FlatTrackMapSettings = () => {
             <p className="text-slate-400 text-sm">
               Thickness of the outline around the track
             </p>
+          </div>
+
+          {/* Session Visibility Settings */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-medium text-slate-200">Session Visibility</h3>
+            </div>
+            <div className="space-y-3 pl-4">
+              <SessionVisibility
+                sessionVisibility={settings.config.sessionVisibility}
+                handleConfigChange={handleConfigChange}
+              />
+            </div>
           </div>
         </div>
       )}

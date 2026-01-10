@@ -5,6 +5,7 @@ import { useTrackId } from './hooks/useTrackId';
 import { FlatTrackMapCanvas } from './FlatTrackMapCanvas';
 import tracks from './tracks/tracks.json';
 import { TrackDrawing } from './TrackCanvas';
+import { useSessionVisibility } from '@irdashies/context';
 
 const debug = import.meta.env.DEV || import.meta.env.MODE === 'storybook';
 
@@ -13,6 +14,8 @@ export const FlatTrackMap = () => {
   const driversTrackData = useDriverProgress();
   const settings = useFlatTrackMapSettings();
   const highlightColor = useHighlightColor();
+
+  if (!useSessionVisibility(settings?.sessionVisibility)) return <></>;
 
   const trackDrawing = trackId ? (tracks as unknown as TrackDrawing[])[trackId] : null;
 
