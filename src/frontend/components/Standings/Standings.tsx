@@ -12,7 +12,7 @@ import {
 } from './hooks';
 import { useLapTimesStoreUpdater } from '../../context/LapTimesStore/LapTimesStoreUpdater';
 import { usePitLapStoreUpdater } from '../../context/PitLapStore/PitLapStoreUpdater';
-import { useDrivingState, useWeekendInfoNumCarClasses } from '@irdashies/context';
+import { useDrivingState, useWeekendInfoNumCarClasses, useWeekendInfoTeamRacing } from '@irdashies/context';
 import { useIsSingleMake } from './hooks/useIsSingleMake';
 import { useCurrentSessionType } from '@irdashies/context';
 
@@ -37,6 +37,9 @@ export const Standings = () => {
   const isSingleMake = useIsSingleMake();
   const hideCarManufacturer = !!(settings?.carManufacturer?.hideIfSingleMake && isSingleMake);
 
+  // Check if this is a team racing session
+  const isTeamRacing = useWeekendInfoTeamRacing();
+  
   // Show only in selected sessions
   if (sessionType === 'Race' && !settings?.sessionVisibility.race) return <></>;
   if (sessionType === 'Lone Qualify' && !settings?.sessionVisibility.loneQualify) return <></>;
@@ -80,6 +83,7 @@ export const Standings = () => {
                     classColor={result.carClass.color}
                     carNumber={settings?.carNumber?.enabled ?? true ? result.driver?.carNum || '' : undefined}
                     name={result.driver?.name || ''}
+                    teamName={settings?.teamName?.enabled && isTeamRacing ? result.driver?.teamName || '' : undefined}
                     isPlayer={result.isPlayer}
                     hasFastestTime={result.hasFastestTime}
                     delta={settings?.delta?.enabled ? result.delta : undefined}

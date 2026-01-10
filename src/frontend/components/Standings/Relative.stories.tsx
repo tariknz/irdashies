@@ -382,6 +382,33 @@ export const SuzukaGT3EnduranceRace: Story = {
   ],
 };
 
+export const TeamSession: Story = {
+  decorators: [
+    TelemetryDecoratorWithConfig('/test-data/1763227688917', {
+      relative: {
+        headerBar: { enabled: true },
+        footerBar: { enabled: true },
+        teamName: { enabled: true },
+        displayOrder: [
+          'position',
+          'carNumber',
+          'countryFlags',
+          'badge',
+          'teamName',
+          'driverName',
+          'pitStatus',
+          'carManufacturer',
+          'compound',
+          'iratingChange',
+          'delta',
+          'fastestTime',
+          'lastTime',
+        ],
+      },
+    }),
+  ],
+};
+
 // Component that renders relative standings without header bar but with footer
 const RelativeWithoutHeader = () => {
   const settings = useRelativeSettings();

@@ -1,6 +1,6 @@
 import { Meta, StoryObj } from '@storybook/react-vite';
 import { Standings } from './Standings';
-import { TelemetryDecorator, DynamicTelemetrySelector } from '@irdashies/storybook';
+import { TelemetryDecorator, DynamicTelemetrySelector, TelemetryDecoratorWithConfig } from '@irdashies/storybook';
 import { useState, Fragment } from 'react';
 import { DriverClassHeader } from './components/DriverClassHeader/DriverClassHeader';
 import { DriverInfoRow } from './components/DriverInfoRow/DriverInfoRow';
@@ -205,6 +205,33 @@ export const Pitstops: Story = {
 
 export const SuzukaGT3EnduranceRace: Story = {
   decorators: [TelemetryDecorator('/test-data/1763227688917')],
+};
+
+export const TeamSession: Story = {
+  decorators: [
+    TelemetryDecoratorWithConfig('/test-data/1763227688917', {
+      standings: {
+        teamName: { enabled: true },
+        displayOrder: [
+          'position',
+          'carNumber',
+          'countryFlags',
+          'badge',
+          'teamName',
+          'driverName',
+          'pitStatus',
+          'carManufacturer',
+          'compound',
+          'iratingChange',
+          'gap',
+          'interval',
+          'fastestTime',
+          'lastTime',
+          'lapTimeDeltas',
+        ],
+      },
+    }),
+  ],
 };
 
 // Component that renders standings without header bar but with footer

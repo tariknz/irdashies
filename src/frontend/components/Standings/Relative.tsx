@@ -6,7 +6,7 @@ import { SessionBar } from './components/SessionBar/SessionBar';
 
 import { TitleBar } from './components/TitleBar/TitleBar';
 import { usePitLapStoreUpdater } from '../../context/PitLapStore/PitLapStoreUpdater';
-import { useWeekendInfoNumCarClasses } from '@irdashies/context';
+import { useWeekendInfoNumCarClasses, useWeekendInfoTeamRacing } from '@irdashies/context';
 import { useIsSingleMake } from './hooks/useIsSingleMake';
 import { useCurrentSessionType } from '@irdashies/context';
 
@@ -24,6 +24,9 @@ export const Relative = () => {
 
   const isSingleMake = useIsSingleMake();
   const hideCarManufacturer = !!(settings?.carManufacturer?.hideIfSingleMake && isSingleMake);
+
+  // Check if this is a team racing session
+  const isTeamRacing = useWeekendInfoTeamRacing();
 
   // Always render 2 * buffer + 1 rows (buffer above + player + buffer below)
   const totalRows = 2 * buffer + 1;
@@ -44,6 +47,7 @@ export const Relative = () => {
           carIdx={0}
           classColor={0}
           name="Franz Hermann"
+          teamName={settings?.teamName?.enabled && isTeamRacing ? '' : undefined}
           isPlayer={false}
           hasFastestTime={false}
           hidden={true}
@@ -92,6 +96,7 @@ export const Relative = () => {
             carIdx={0}
             classColor={0}
             name="Franz Hermann"
+            teamName={settings?.teamName?.enabled && isTeamRacing ? '' : undefined}
             isPlayer={false}
             hasFastestTime={false}
             hidden={true}
@@ -133,6 +138,7 @@ export const Relative = () => {
           classColor={result.carClass.color}
           carNumber={settings?.carNumber?.enabled ?? true ? result.driver?.carNum || '' : undefined}
           name={result.driver?.name || ''}
+          teamName={settings?.teamName?.enabled && isTeamRacing ? result.driver?.teamName || '' : undefined}
           isPlayer={result.isPlayer}
           hasFastestTime={result.hasFastestTime}
           position={result.classPosition}
@@ -169,7 +175,7 @@ export const Relative = () => {
         />
       );
     });
-  }, [standings, playerIndex, totalRows, settings, isMultiClass, highlightColor, hideCarManufacturer]);
+  }, [standings, playerIndex, totalRows, settings, isMultiClass, highlightColor, hideCarManufacturer, isTeamRacing]);
 
   // Show only in selected sessions
   if (sessionType === 'Race' && !settings?.sessionVisibility.race) return <></>;
