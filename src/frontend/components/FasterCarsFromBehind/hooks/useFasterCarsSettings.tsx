@@ -1,6 +1,11 @@
 import { useDashboard } from '@irdashies/context';
 import { FasterCarsFromBehindWidgetSettings } from '../../Settings/types';
 
+const DEFAULT_CONFIG: FasterCarsFromBehindWidgetSettings['config'] = {
+  distanceThreshold: -0.3,
+  sessionVisibility: { race: true, loneQualify: false, openQualify: true, practice: true, offlineTesting: true },
+};
+
 export const useFasterCarsSettings = () => {
   const { currentDashboard } = useDashboard();
 
@@ -8,14 +13,8 @@ export const useFasterCarsSettings = () => {
     (widget) => widget.id === 'fastercarsfrombehind',
   )?.config;
 
-  // Add type guard to ensure settings matches expected shape
-  if (settings && 
-    typeof settings === 'object' &&
-    'distanceThreshold' in settings &&
-    typeof settings.distanceThreshold === 'number'
-  ) {
-    return settings as FasterCarsFromBehindWidgetSettings['config'];
-  }
-
-  return undefined;
+  return {
+    distanceThreshold: settings?.distanceThreshold ?? DEFAULT_CONFIG.distanceThreshold,
+    sessionVisibility: settings?.sessionVisibility ?? DEFAULT_CONFIG.sessionVisibility,
+  } as FasterCarsFromBehindWidgetSettings['config'];
 }; 

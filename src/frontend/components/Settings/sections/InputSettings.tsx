@@ -58,7 +58,7 @@ const defaultConfig: InputWidgetSettings['config'] = {
   background: { opacity: 0 },
   displayOrder: sortableSettings.map((s) => s.id),
   showOnlyWhenOnTrack: true,
-  sessionVisibility: { race: true, loneQualify: true, openQualify: true, practice: true, offlineTesting: false }
+  sessionVisibility: { race: true, loneQualify: true, openQualify: true, practice: true, offlineTesting: true }
 };
 
 

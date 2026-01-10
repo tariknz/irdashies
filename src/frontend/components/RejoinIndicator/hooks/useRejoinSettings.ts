@@ -7,7 +7,7 @@ const DEFAULT_CONFIG: RejoinIndicatorWidgetSettings = {
     showAtSpeed: 30,
     careGap: 2,
     stopGap: 1,
-    sessionVisibility: { race: true, loneQualify: true, openQualify: true, practice: true, offlineTesting: true },
+    sessionVisibility: { race: true, loneQualify: false, openQualify: true, practice: true, offlineTesting: true },
   },
 };
 

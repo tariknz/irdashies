@@ -93,7 +93,7 @@ const defaultConfig: StandingsWidgetSettings['config'] = {
   teamName: { enabled: false },
   pitStatus: { enabled: true, showPitTime: false },
   displayOrder: sortableSettings.map(s => s.id),
-  sessionVisibility: { race: true, loneQualify: true, openQualify: true, practice: true, offlineTesting: false }
+  sessionVisibility: { race: true, loneQualify: true, openQualify: true, practice: true, offlineTesting: true }
 };
 
 const migrateConfig = (
