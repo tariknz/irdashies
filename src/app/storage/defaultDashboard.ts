@@ -355,6 +355,25 @@ export const defaultDashboard: DashboardLayout = {
       }
     },
     {
+      "id": "flatmap",
+      "enabled": false,
+      "layout": {
+        "x": 622,
+        "y": 700,
+        "width": 800,
+        "height": 150
+      },
+      "config": {
+        "showCarNumbers": true,
+        "driverCircleSize": 40,
+        "playerCircleSize": 40,
+        "trackLineWidth": 20,
+        "trackOutlineWidth": 40,
+        "invertTrackColors": false,
+        "useHighlightColor": false
+      }
+    },
+    {
       "id": "weather",
       "enabled": true,
       "layout": {
