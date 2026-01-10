@@ -380,7 +380,8 @@ export const defaultDashboard: DashboardLayout = {
         "trackLineWidth": 20,
         "trackOutlineWidth": 40,
         "invertTrackColors": false,
-        "useHighlightColor": false
+        "useHighlightColor": false,
+        "sessionVisibility": { race: true, loneQualify: true, openQualify: true, practice: true, offlineTesting: true }
       }
     },
     {
@@ -510,7 +511,8 @@ export const defaultDashboard: DashboardLayout = {
         "clearGap": 3.5,
         "careGap": 2,
         "stopGap": 1,
-        "width": 20
+        "width": 20,
+        "sessionVisibility": { race: true, loneQualify: false, openQualify: true, practice: true, offlineTesting: true }
       },
     },
   ],
