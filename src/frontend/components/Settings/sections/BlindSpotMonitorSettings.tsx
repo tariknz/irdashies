@@ -18,7 +18,7 @@ const defaultConfig: BlindSpotMonitorWidgetSettings['config'] = {
     loneQualify: false,
     openQualify: true,
     practice: true,
-    offlineTesting: false,
+    offlineTesting: true,
   },
 };
 
