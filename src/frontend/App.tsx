@@ -1,3 +1,4 @@
+// App.tsx
 import { createRoot } from 'react-dom/client';
 import { HashRouter, Route, Routes } from 'react-router-dom';
 import {
@@ -12,6 +13,7 @@ import { Settings } from './components/Settings/Settings';
 import { EditMode } from './components/EditMode/EditMode';
 import { ThemeManager } from './components/ThemeManager/ThemeManager';
 import { WIDGET_MAP } from './WidgetIndex';
+import { HideUIWrapper } from './components/HideUIWrapper';
 
 const AppRoutes = () => {
   const { currentDashboard } = useDashboard();
@@ -29,13 +31,7 @@ const AppRoutes = () => {
           <Route
             key={widget.id}
             path={`/${widget.id}`}
-            element={
-              running ? (
-                <WidgetComponent {...widget.config} />
-              ) : (
-                <></>
-              )
-            }
+            element={running ? <WidgetComponent {...widget.config} /> : <></>}
           />
         );
       })}
@@ -44,26 +40,32 @@ const AppRoutes = () => {
   );
 };
 
-const App = () => (
-  <DashboardProvider bridge={window.dashboardBridge}>
-    <RunningStateProvider bridge={window.irsdkBridge}>
-      <SessionProvider bridge={window.irsdkBridge} />
-      <TelemetryProvider bridge={window.irsdkBridge} />
-      <HashRouter>
-        <EditMode>
-          <ThemeManager>
-            <AppRoutes />
-          </ThemeManager>
-        </EditMode>
-      </HashRouter>
-    </RunningStateProvider>
-  </DashboardProvider>
-);
+const App = () => {
+  return (
+    <HideUIWrapper>
+      <DashboardProvider bridge={window.dashboardBridge}>
+        <RunningStateProvider bridge={window.irsdkBridge}>
+          <SessionProvider bridge={window.irsdkBridge} />
+          <TelemetryProvider bridge={window.irsdkBridge} />
+          <HashRouter>
+            <EditMode>
+              <ThemeManager>
+                <AppRoutes />
+              </ThemeManager>
+            </EditMode>
+          </HashRouter>
+        </RunningStateProvider>
+      </DashboardProvider>
+    </HideUIWrapper>
+  );
+};
 
 const el = document.getElementById('app');
 if (!el) {
   throw new Error('No #app element found');
 }
+
+export default App;
 
 const root = createRoot(el);
 root.render(<App />);

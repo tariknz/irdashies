@@ -17,9 +17,13 @@ export const FasterCarsFromBehind = () => {
     distanceThreshold: settings?.distanceThreshold,
   });
 
-  if (sessionType === 'Lone Qualify') {
-    return <></>;
-  }
+  
+  // Show only in selected sessions
+  if (sessionType === 'Race' && !settings?.sessionVisibility.race) return <></>;
+  if (sessionType === 'Lone Qualify' && !settings?.sessionVisibility.loneQualify) return <></>;
+  if (sessionType === 'Open Qualify' && !settings?.sessionVisibility.openQualify) return <></>;
+  if (sessionType === 'Practice' && !settings?.sessionVisibility.practice) return <></>;
+  if (sessionType === 'Offline Testing' && !settings?.sessionVisibility.offlineTesting) return <></>;
 
   return <FasterCarsFromBehindDisplay {...carBehind} />;
 };

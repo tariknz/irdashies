@@ -3,6 +3,14 @@ export interface BaseWidgetSettings<T = Record<string, unknown>> {
   config: T;
 }
 
+export interface SessionVisibilitySettings {
+  race: boolean;
+  loneQualify: boolean;
+  openQualify: boolean;
+  practice: boolean;
+  offlineTesting: boolean;
+}
+
 export interface StandingsWidgetSettings extends BaseWidgetSettings {
   config: {
     iratingChange: { enabled: boolean };
@@ -60,6 +68,7 @@ export interface StandingsWidgetSettings extends BaseWidgetSettings {
     teamName: { enabled: boolean };
     pitStatus: { enabled: boolean; showPitTime?: boolean };
     displayOrder: string[];
+    sessionVisibility: SessionVisibilitySettings;
   };
 }
 
@@ -114,6 +123,7 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
     pitStatus: { enabled: boolean, showPitTime?: boolean };
     displayOrder: string[];
     useLivePosition: boolean;
+    sessionVisibility: SessionVisibilitySettings;
   };
 }
 
@@ -137,16 +147,25 @@ export interface WeatherWidgetSettings extends BaseWidgetSettings {
     humidity: {
       enabled: boolean
     };
-    wind: { 
-      enabled: boolean 
+    wind: {
+      enabled: boolean
     };
     units: 'auto' | 'Metric' | 'Imperial';
+    sessionVisibility: SessionVisibilitySettings;
   };
 };
 
 export interface TrackMapWidgetSettings extends BaseWidgetSettings {
   config: {
     enableTurnNames: boolean;
+    showCarNumbers: boolean;
+    invertTrackColors: boolean;
+    driverCircleSize: number;
+    playerCircleSize: number;
+    trackLineWidth: number;
+    trackOutlineWidth: number;
+    useHighlightColor: boolean;
+    sessionVisibility: SessionVisibilitySettings;
   };
 }
 
@@ -187,6 +206,7 @@ export interface InputWidgetSettings extends BaseWidgetSettings {
     background: { opacity: number };
     displayOrder: string[];
     showOnlyWhenOnTrack: boolean;
+    sessionVisibility: SessionVisibilitySettings;
   };
 }
 
@@ -209,6 +229,7 @@ export interface FuelWidgetSettings extends BaseWidgetSettings {
     safetyMargin: number;
     background: { opacity: number };
     fuelRequiredMode: 'toFinish' | 'toAdd';
+    sessionVisibility: SessionVisibilitySettings;
   };
 }
 
@@ -220,6 +241,7 @@ export interface BlindSpotMonitorWidgetSettings extends BaseWidgetSettings {
     distAhead: number;
     distBehind: number;
     width?: number;
+    sessionVisibility: SessionVisibilitySettings;
   };
 }
 
@@ -234,5 +256,11 @@ export interface RejoinIndicatorWidgetSettings extends BaseWidgetSettings {
 export interface GarageCoverWidgetSettings extends BaseWidgetSettings {
   config: {
     imageFilename: string;
+  };
+}
+export interface FasterCarsFromBehindWidgetSettings extends BaseWidgetSettings {
+  config: {
+    distanceThreshold: number;
+    sessionVisibility: SessionVisibilitySettings;
   };
 }

@@ -14,6 +14,7 @@ import { useLapTimesStoreUpdater } from '../../context/LapTimesStore/LapTimesSto
 import { usePitLapStoreUpdater } from '../../context/PitLapStore/PitLapStoreUpdater';
 import { useDrivingState, useWeekendInfoNumCarClasses, useWeekendInfoTeamRacing } from '@irdashies/context';
 import { useIsSingleMake } from './hooks/useIsSingleMake';
+import { useCurrentSessionType } from '@irdashies/context';
 
 export const Standings = () => {
   const settings = useStandingsSettings();
@@ -30,6 +31,7 @@ export const Standings = () => {
   const numCarClasses = useWeekendInfoNumCarClasses();
   const isMultiClass = (numCarClasses ?? 0) > 1;
   const highlightColor = useHighlightColor();
+  const sessionType = useCurrentSessionType();
 
   // Determine whether we should hide the car manufacturer column
   const isSingleMake = useIsSingleMake();
@@ -37,6 +39,13 @@ export const Standings = () => {
 
   // Check if this is a team racing session
   const isTeamRacing = useWeekendInfoTeamRacing();
+  
+  // Show only in selected sessions
+  if (sessionType === 'Race' && !settings?.sessionVisibility.race) return <></>;
+  if (sessionType === 'Lone Qualify' && !settings?.sessionVisibility.loneQualify) return <></>;
+  if (sessionType === 'Open Qualify' && !settings?.sessionVisibility.openQualify) return <></>;
+  if (sessionType === 'Practice' && !settings?.sessionVisibility.practice) return <></>;
+  if (sessionType === 'Offline Testing' && !settings?.sessionVisibility.offlineTesting) return <></>;
 
   // Show only when on track setting
   if (settings?.showOnlyWhenOnTrack && !isDriving) {

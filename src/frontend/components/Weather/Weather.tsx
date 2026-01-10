@@ -9,13 +9,15 @@ import { useTrackRubberedState } from './hooks/useTrackRubberedState';
 import { useWeatherSettings } from './hooks/useWeatherSettings';
 import { WeatherHumidity } from './WeatherHumidity/WeatherHumidity';
 import { Fragment, useMemo } from 'react';
+import { useCurrentSessionType } from '@irdashies/context';
 
 export const Weather = () => {
   const weather = useTrackWeather();
   const settings = useWeatherSettings();
   const displayUnits = useTelemetryValue('DisplayUnits'); // 0 = imperial, 1 = metric
   const isOnTrack = useTelemetryValue('IsOnTrack');
-
+  const sessionType = useCurrentSessionType();
+  
   // Determine actual unit to use: auto uses iRacing's DisplayUnits setting
   const unitSetting = settings?.units ?? 'auto';
   const isMetric = unitSetting === 'auto'
@@ -104,6 +106,13 @@ export const Weather = () => {
     return null;
   }
 
+  // Show only in selected sessions
+  if (sessionType === 'Race' && !settings?.sessionVisibility.race) return <></>;
+  if (sessionType === 'Lone Qualify' && !settings?.sessionVisibility.loneQualify) return <></>;
+  if (sessionType === 'Open Qualify' && !settings?.sessionVisibility.openQualify) return <></>;
+  if (sessionType === 'Practice' && !settings?.sessionVisibility.practice) return <></>;
+  if (sessionType === 'Offline Testing' && !settings?.sessionVisibility.offlineTesting) return <></>;
+  
   return (
     <div
       className="w-full rounded-sm p-2 bg-slate-800/(--bg-opacity)"

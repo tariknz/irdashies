@@ -233,6 +233,18 @@ Displays a track map with the current position of the cars on track and the trac
 
 ![Track Map](./docs/assets/trackmap.png)
 
+### Flat Track Map
+
+Displays a simplified horizontal track map showing driver positions along a flat line representation of the track. Similar to Track Map but uses a linear horizontal layout.
+
+**Features:**
+- Real-time car positions on horizontal track line
+- Start/finish line with checkered flag
+- Auto-scales to container width
+- Multi-class support
+
+![Flat Track Map](./docs/assets/flattrackmap.png)
+
 ### Weather
 
 Displays the weather information for the current session.

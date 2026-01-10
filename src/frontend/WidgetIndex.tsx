@@ -2,6 +2,7 @@ import { Standings } from './components/Standings/Standings';
 import { Input } from './components/Input';
 import { Relative } from './components/Standings/Relative';
 import { TrackMap } from './components/TrackMap/TrackMap';
+import { FlatTrackMap } from './components/TrackMap/FlatTrackMap';
 import { Weather } from './components/Weather';
 import { FasterCarsFromBehind } from './components/FasterCarsFromBehind/FasterCarsFromBehind';
 import { FuelCalculator } from './components/FuelCalculator';
@@ -16,6 +17,7 @@ export const WIDGET_MAP: Record<string, (config?: any) => React.JSX.Element | nu
   input: Input,
   relative: Relative,
   map: TrackMap,
+  flatmap: FlatTrackMap,
   weather: Weather,
   fastercarsfrombehind: FasterCarsFromBehind,
   fuel: FuelCalculator,

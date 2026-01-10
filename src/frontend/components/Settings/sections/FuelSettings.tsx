@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
-import { FuelWidgetSettings } from '../types';
+import { FuelWidgetSettings, SessionVisibilitySettings } from '../types';
 import { useDashboard } from '@irdashies/context';
+import { SessionVisibility } from '../components/SessionVisibility';
 
 const SETTING_ID = 'fuel';
 
@@ -23,6 +24,7 @@ const defaultConfig: FuelWidgetSettings['config'] = {
   safetyMargin: 0.05,
   background: { opacity: 85 },
   fuelRequiredMode: 'toFinish',
+  sessionVisibility: { race: true, loneQualify: true, openQualify: true, practice: true, offlineTesting: false }
 };
 
 const migrateConfig = (
@@ -51,6 +53,7 @@ const migrateConfig = (
         (config.background as { opacity?: number })?.opacity ?? 85,
     },
     fuelRequiredMode: (config.fuelRequiredMode as 'toFinish' | 'toAdd') ?? 'toFinish',
+    sessionVisibility: (config.sessionVisibility as SessionVisibilitySettings) ?? defaultConfig.sessionVisibility,
   };
 };
 
@@ -390,6 +393,18 @@ export const FuelSettings = () => {
               <span className="text-xs text-slate-400 w-8">
                 {settings.config.background.opacity}%
               </span>
+            </div>
+          </div>
+          {/* Session Visibility Settings */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-medium text-slate-200">Session Visibility</h3>
+            </div>
+            <div className="space-y-3 pl-4">
+              <SessionVisibility
+                sessionVisibility={settings.config.sessionVisibility}
+                handleConfigChange={handleConfigChange}
+              />
             </div>
           </div>
         </div>
