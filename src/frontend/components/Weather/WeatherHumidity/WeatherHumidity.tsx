@@ -15,7 +15,7 @@ export const WeatherHumidity: React.FC<Props> = ({ humidity }) => {
             <div className="flex flex-row gap-x-2 items-center text-sm">
                 {hasHumidity && (humidityPercent <= 50 ? <DropIcon /> : <DropHalfIcon />)}
         <span className="grow">Humidity</span>
-        <div className="text-center">{hasHumidity ? `${humidityPercent}%` : '- %'}</div>
+        <div className="text-center">{hasHumidity ? `${Math.round(humidityPercent)}%` : '- %'}</div>
       </div>
     </div>
     );
