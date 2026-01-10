@@ -25,3 +25,5 @@ export const WIDGET_MAP: Record<string, (config?: any) => React.JSX.Element | nu
   garagecover: GarageCover,
   rejoin: RejoinIndicator,
 };
+
+export type WidgetId = keyof typeof WIDGET_MAP;

@@ -13,7 +13,7 @@ import { Settings } from './components/Settings/Settings';
 import { EditMode } from './components/EditMode/EditMode';
 import { ThemeManager } from './components/ThemeManager/ThemeManager';
 import { WIDGET_MAP } from './WidgetIndex';
-import { HideUIWrapper } from './components/HideUIWrapper';
+import { HideUIWrapper } from './components/HideUIWrapper/HideUIWrapper';
 
 const AppRoutes = () => {
   const { currentDashboard } = useDashboard();
