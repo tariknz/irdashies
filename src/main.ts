@@ -10,6 +10,7 @@ import { updateElectronApp } from 'update-electron-app';
 // @ts-expect-error no types for squirrel
 import started from 'electron-squirrel-startup';
 import { Analytics } from './app/analytics';
+import { registerHideUiShortcut } from './frontend/utils/globalShortcuts';
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) app.quit();
@@ -43,6 +44,9 @@ app.on('ready', async () => {
   publishDashboardUpdates(overlayManager, analytics);
   
   await analytics.init(overlayManager.getVersion(), dashboard);
+
+  // 🔽 Register the global hide UI shortcut once everything is set up
+  registerHideUiShortcut(overlayManager);
 });
 
 app.on('window-all-closed', () => app.quit());
