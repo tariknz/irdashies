@@ -33,6 +33,7 @@ export const FuelCalculator = ({
   fuelRequiredMode = 'toFinish',
 }: FuelCalculatorProps) => {
   const settings = useFuelSettings();
+  const isSessionVisible = useSessionVisibility(settings?.sessionVisibility);
   const fuelData = useFuelCalculation(safetyMargin);
   // Subscribe to lapHistory directly to trigger re-renders when it changes
   const lapHistory = useFuelStore((state) => state.lapHistory);
@@ -266,7 +267,7 @@ export const FuelCalculator = ({
     ? 'text-xl'
     : 'text-[2.5em]';
 
-  if (!useSessionVisibility(settings?.sessionVisibility)) return <></>;
+  if (!isSessionVisible) return <></>;
 
   // Horizontal layout - single row design
   if (layout === 'horizontal') {

@@ -18,6 +18,7 @@ import { useIsSingleMake } from './hooks/useIsSingleMake';
 export const Standings = () => {
   const settings = useStandingsSettings();
   const { isDriving } = useDrivingState();
+  const isSessionVisible = useSessionVisibility(settings?.sessionVisibility);
 
   // Update lap times store with telemetry data (only for this overlay)
   useLapTimesStoreUpdater();
@@ -38,7 +39,7 @@ export const Standings = () => {
   // Check if this is a team racing session
   const isTeamRacing = useWeekendInfoTeamRacing();
   
-  if (!useSessionVisibility(settings?.sessionVisibility)) return <></>;
+  if (!isSessionVisible) return <></>;
 
   // Show only when on track setting
   if (settings?.showOnlyWhenOnTrack && !isDriving) {

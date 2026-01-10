@@ -16,6 +16,7 @@ export const Relative = () => {
   const highlightColor = useHighlightColor();
   const numCarClasses = useWeekendInfoNumCarClasses();
   const isMultiClass = (numCarClasses ?? 0) > 1;
+  const isSessionVisible = useSessionVisibility(settings?.sessionVisibility);
 
   usePitLapStoreUpdater();
 
@@ -174,7 +175,7 @@ export const Relative = () => {
     });
   }, [standings, playerIndex, totalRows, settings, isMultiClass, highlightColor, hideCarManufacturer, isTeamRacing]);
 
-  if (!useSessionVisibility(settings?.sessionVisibility)) return <></>;
+  if (!isSessionVisible) return <></>;
   
   // Show only when on track setting
   if (settings?.showOnlyWhenOnTrack && !isDriving) {

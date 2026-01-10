@@ -11,6 +11,7 @@ import type { Standings } from '../Standings/createStandings';
 
 export const RejoinIndicator = () => {
   const settings = useRejoinSettings();
+  const isSessionVisible = useSessionVisibility(settings?.config?.sessionVisibility);
   const playerIndex = useFocusCarIdx();
   const playerInPitStall = useTelemetryValue<number>('PlayerCarInPitStall') === 1;
   const carIdxOnPitRoad = useTelemetryValues<boolean[]>('CarIdxOnPitRoad');
@@ -26,7 +27,7 @@ export const RejoinIndicator = () => {
   if (!settings.enabled) return null;
   if (playerIndex === undefined) return null;
   
-  if (!useSessionVisibility(settings?.config?.sessionVisibility)) return null;
+  if (!isSessionVisible) return null;
   
   if (!isDriving) return null;
   // Choose the first car behind the player that is not in the pit lane or off-track

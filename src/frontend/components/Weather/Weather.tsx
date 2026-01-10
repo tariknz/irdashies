@@ -15,6 +15,7 @@ export const Weather = () => {
   const settings = useWeatherSettings();
   const displayUnits = useTelemetryValue('DisplayUnits'); // 0 = imperial, 1 = metric
   const isOnTrack = useTelemetryValue('IsOnTrack');
+  const isSessionVisible = useSessionVisibility(settings?.sessionVisibility);
   
   // Determine actual unit to use: auto uses iRacing's DisplayUnits setting
   const unitSetting = settings?.units ?? 'auto';
@@ -104,7 +105,7 @@ export const Weather = () => {
     return null;
   }
 
-  if (!useSessionVisibility(settings?.sessionVisibility)) return <></>;
+  if (!isSessionVisible) return <></>;
   
   return (
     <div
