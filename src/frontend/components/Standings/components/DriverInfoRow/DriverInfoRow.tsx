@@ -434,9 +434,9 @@ export const DriverInfoRow = memo(
       <tr
         key={carIdx}
         className={[
-          `odd:bg-slate-800/70 even:bg-slate-900/70 text-sm`,
           !onTrack || onPitRoad ? 'text-white/60' : '',
           isPlayer ? 'text-amber-300' : '',
+          isPlayer ? 'bg-yellow-500/20' : 'odd:bg-slate-800/70 even:bg-slate-900/70 text-sm',
           !isPlayer && isLapped ? 'text-blue-400' : '',
           !isPlayer && isLappingAhead ? 'text-red-400' : '',
           hidden ? 'invisible' : '',
