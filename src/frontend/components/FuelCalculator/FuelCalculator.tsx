@@ -4,12 +4,11 @@
  */
 
 import { useMemo } from 'react';
-import { useTelemetryValues } from '@irdashies/context';
+import { useTelemetryValues, useSessionVisibility } from '@irdashies/context';
 import { useFuelCalculation } from './useFuelCalculation';
 import { formatFuel } from './fuelCalculations';
 import { useFuelStore } from './FuelStore';
 import type { FuelCalculatorSettings } from './types';
-import { useCurrentSessionType } from '@irdashies/context';
 import { useFuelSettings } from '../Standings/hooks';
 
 type FuelCalculatorProps = Partial<FuelCalculatorSettings>;
@@ -267,14 +266,7 @@ export const FuelCalculator = ({
     ? 'text-xl'
     : 'text-[2.5em]';
 
-  const sessionType = useCurrentSessionType();
-
-  // Show only in selected sessions
-  if (sessionType === 'Race' && !settings?.sessionVisibility?.race) return <></>;
-  if (sessionType === 'Lone Qualify' && !settings?.sessionVisibility?.loneQualify) return <></>;
-  if (sessionType === 'Open Qualify' && !settings?.sessionVisibility?.openQualify) return <></>;
-  if (sessionType === 'Practice' && !settings?.sessionVisibility?.practice) return <></>;
-  if (sessionType === 'Offline Testing' && !settings?.sessionVisibility?.offlineTesting) return <></>;
+  if (!useSessionVisibility(settings?.sessionVisibility)) return <></>;
 
   // Horizontal layout - single row design
   if (layout === 'horizontal') {

@@ -1,4 +1,4 @@
-import { useTelemetryValue } from '@irdashies/context';
+import { useTelemetryValue, useSessionVisibility } from '@irdashies/context';
 import { useTrackTemperature } from '../Standings/hooks/useTrackTemperature';
 import { useTrackWeather } from './hooks/useTrackWeather';
 import { WeatherTemp } from './WeatherTemp/WeatherTemp';
@@ -9,14 +9,12 @@ import { useTrackRubberedState } from './hooks/useTrackRubberedState';
 import { useWeatherSettings } from './hooks/useWeatherSettings';
 import { WeatherHumidity } from './WeatherHumidity/WeatherHumidity';
 import { Fragment, useMemo } from 'react';
-import { useCurrentSessionType } from '@irdashies/context';
 
 export const Weather = () => {
   const weather = useTrackWeather();
   const settings = useWeatherSettings();
   const displayUnits = useTelemetryValue('DisplayUnits'); // 0 = imperial, 1 = metric
   const isOnTrack = useTelemetryValue('IsOnTrack');
-  const sessionType = useCurrentSessionType();
   
   // Determine actual unit to use: auto uses iRacing's DisplayUnits setting
   const unitSetting = settings?.units ?? 'auto';
@@ -106,12 +104,7 @@ export const Weather = () => {
     return null;
   }
 
-  // Show only in selected sessions
-  if (sessionType === 'Race' && !settings?.sessionVisibility?.race) return <></>;
-  if (sessionType === 'Lone Qualify' && !settings?.sessionVisibility?.loneQualify) return <></>;
-  if (sessionType === 'Open Qualify' && !settings?.sessionVisibility?.openQualify) return <></>;
-  if (sessionType === 'Practice' && !settings?.sessionVisibility?.practice) return <></>;
-  if (sessionType === 'Offline Testing' && !settings?.sessionVisibility?.offlineTesting) return <></>;
+  if (!useSessionVisibility(settings?.sessionVisibility)) return <></>;
   
   return (
     <div
