@@ -42,21 +42,21 @@ const AppRoutes = () => {
 
 const App = () => {
   return (
-    <HideUIWrapper>
-      <DashboardProvider bridge={window.dashboardBridge}>
-        <RunningStateProvider bridge={window.irsdkBridge}>
-          <SessionProvider bridge={window.irsdkBridge} />
-          <TelemetryProvider bridge={window.irsdkBridge} />
-          <HashRouter>
+    <DashboardProvider bridge={window.dashboardBridge}>
+      <RunningStateProvider bridge={window.irsdkBridge}>
+        <SessionProvider bridge={window.irsdkBridge} />
+        <TelemetryProvider bridge={window.irsdkBridge} />
+        <HashRouter>
+          <HideUIWrapper>
             <EditMode>
               <ThemeManager>
                 <AppRoutes />
               </ThemeManager>
             </EditMode>
-          </HashRouter>
-        </RunningStateProvider>
-      </DashboardProvider>
-    </HideUIWrapper>
+          </HideUIWrapper>
+        </HashRouter>
+      </RunningStateProvider>
+    </DashboardProvider>
   );
 };
 
