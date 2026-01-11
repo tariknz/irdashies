@@ -10,6 +10,8 @@ export interface PitSpeedResult {
   speedMph: number;
   colorClass: string;
   isPulsing: boolean;
+  isSpeeding: boolean; // Over limit at all
+  isSeverelyOver: boolean; // More than 1.5 km/h over limit
 }
 
 export const usePitSpeed = (): PitSpeedResult => {
@@ -51,6 +53,10 @@ export const usePitSpeed = (): PitSpeedResult => {
       colorClass = 'text-amber-500';
     }
 
+    // Speeding flags
+    const isSpeeding = deltaKph > 0;
+    const isSeverelyOver = deltaKph > 1.5;
+
     return {
       deltaKph,
       deltaMph,
@@ -60,6 +66,8 @@ export const usePitSpeed = (): PitSpeedResult => {
       speedMph,
       colorClass,
       isPulsing,
+      isSpeeding,
+      isSeverelyOver,
     };
   }, [speed, session?.WeekendInfo?.TrackPitSpeedLimit]);
 };

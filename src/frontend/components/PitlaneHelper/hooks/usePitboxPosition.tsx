@@ -7,6 +7,7 @@ export interface PitboxPositionResult {
   isApproaching: boolean;
   pitboxPct: number;
   playerPct: number;
+  isEarlyPitbox: boolean; // Pitbox is near pit entry (last 10% of track before start/finish)
 }
 
 export const usePitboxPosition = (approachDistance: number): PitboxPositionResult => {
@@ -53,12 +54,18 @@ export const usePitboxPosition = (approachDistance: number): PitboxPositionResul
       Math.min(100, ((approachDistance - distanceToPit) / approachDistance) * 100)
     );
 
+    // Early pitbox detection: if pitbox is in the last 10% of track (before start/finish),
+    // it's likely near pit entry. On most tracks, pit lane runs parallel to start/finish,
+    // so a pitbox at ~95% track position would be near the beginning of pit lane.
+    const isEarlyPitbox = pitboxPct > 0.90;
+
     return {
       distanceToPit,
       progressPercent,
       isApproaching,
       pitboxPct,
       playerPct,
+      isEarlyPitbox,
     };
   }, [focusCarIdx, carIdxLapDistPct, session, trackLength, approachDistance]);
 };

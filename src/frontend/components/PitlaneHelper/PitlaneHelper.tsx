@@ -4,9 +4,11 @@ import { usePitboxPosition } from './hooks/usePitboxPosition';
 import { usePitlaneVisibility } from './hooks/usePitlaneVisibility';
 import { usePitLimiterWarning } from './hooks/usePitLimiterWarning';
 import { usePitlaneTraffic } from './hooks/usePitlaneTraffic';
+import { useTelemetryValue } from '@irdashies/context';
 
 export const PitlaneHelper = () => {
   const config = usePitlaneHelperSettings();
+  const surface = (useTelemetryValue('PlayerTrackSurface') ?? 3) as number;
 
   // Core data hooks
   const speed = usePitSpeed();
@@ -23,11 +25,15 @@ export const PitlaneHelper = () => {
   // Determine which speed unit to display (prefer user's unit from limit)
   const displayKph = speed.limitKph > speed.limitMph;
 
-  // Early pitbox warning is disabled - iRacing doesn't provide pit entry/exit positions,
-  // so we cannot determine if a pitbox is actually "early" (near pit entry) in the pitlane.
-  // The DriverPitTrkPct only gives us the pitbox position on the entire track, not relative
-  // to pit entry/exit. This would require track-specific data to implement correctly.
-  const showEarlyPitboxWarning = false;
+  // Early pitbox warning: show when on pit road (surface=2), pitbox is early (>90% track),
+  // and we're within the threshold distance and haven't passed it yet
+  const onPitRoad = surface === 2;
+  const showEarlyPitboxWarning =
+    config.enableEarlyPitboxWarning &&
+    onPitRoad &&
+    position.isEarlyPitbox &&
+    position.distanceToPit > 0 &&
+    position.distanceToPit <= config.earlyPitboxThreshold;
 
   return (
     <div
@@ -38,19 +44,27 @@ export const PitlaneHelper = () => {
       }}
     >
       {/* Speed Delta */}
-      <div className="flex flex-col items-center">
+      <div
+        className={[
+          'flex flex-col items-center p-2 rounded transition-all',
+          speed.isSeverelyOver
+            ? 'bg-red-600 animate-pulse'
+            : speed.isSpeeding
+              ? 'bg-red-600/50'
+              : '',
+        ].join(' ')}
+      >
         <div
           className={[
             'text-2xl font-bold transition-colors',
-            speed.colorClass,
-            speed.isPulsing ? 'animate-pulse' : '',
+            speed.isSeverelyOver || speed.isSpeeding ? 'text-white' : speed.colorClass,
           ].join(' ')}
         >
           {speed.deltaKph > 0 ? '+' : ''}
           {displayKph ? speed.deltaKph.toFixed(1) : speed.deltaMph.toFixed(1)}{' '}
           {displayKph ? 'km/h' : 'mph'}
         </div>
-        <div className="text-xs text-slate-400">
+        <div className={speed.isSpeeding ? 'text-xs text-white/80' : 'text-xs text-slate-400'}>
           Limit: {displayKph ? speed.limitKph.toFixed(0) : speed.limitMph.toFixed(0)}{' '}
           {displayKph ? 'km/h' : 'mph'}
         </div>
