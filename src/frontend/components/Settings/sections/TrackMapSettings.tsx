@@ -16,6 +16,7 @@ const defaultConfig: TrackMapWidgetSettings['config'] = {
   trackLineWidth: 20,
   trackOutlineWidth: 40,
   useHighlightColor: false,
+  showOnlyWhenOnTrack: false,
   sessionVisibility: { race: true, loneQualify: true, openQualify: true, practice: true, offlineTesting: true }
 };
 
@@ -32,6 +33,7 @@ const migrateConfig = (savedConfig: unknown): TrackMapWidgetSettings['config'] =
     trackLineWidth: (config.trackLineWidth as number) ?? defaultConfig.trackLineWidth,
     trackOutlineWidth: (config.trackOutlineWidth as number) ?? defaultConfig.trackOutlineWidth,
     useHighlightColor: (config.useHighlightColor as boolean) ?? defaultConfig.useHighlightColor,
+    showOnlyWhenOnTrack: (config.showOnlyWhenOnTrack as boolean) ?? defaultConfig.showOnlyWhenOnTrack,
     sessionVisibility: (config.sessionVisibility as SessionVisibilitySettings) ?? defaultConfig.sessionVisibility,
   };
 };
@@ -197,6 +199,22 @@ export const TrackMapSettings = () => {
               Width of the track outline
             </p>
           </div>
+
+          <div className="flex items-center justify-between">
+            <div>
+              <span className="text-sm text-slate-300">Show Only When On Track</span>
+              <p className="text-xs text-slate-400">
+                Hide the track map when not actively driving on track
+              </p>
+            </div>
+            <ToggleSwitch
+              enabled={settings.config.showOnlyWhenOnTrack ?? false}
+              onToggle={(enabled) => handleConfigChange({
+                showOnlyWhenOnTrack: enabled
+              })}
+            />
+          </div>
+
           {/* Session Visibility Settings */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
