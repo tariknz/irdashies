@@ -141,14 +141,18 @@ const PitlaneHelperDocs = () => {
       </div>
 
       <div className="space-y-2 mt-6 p-4 bg-blue-900/30 rounded border border-blue-700">
-        <h3 className="text-lg font-semibold text-blue-400">Early Pitbox Detection</h3>
+        <h3 className="text-lg font-semibold text-blue-400">
+          Early Pitbox Detection
+        </h3>
+
         <p className="text-sm">
-          The widget uses a heuristic to detect "early" pitboxes: if your assigned pitbox
-          is in the last 10% of the track (DriverPitTrkPct &gt; 0.90), it's likely near
+          The widget uses a heuristic to detect &quot;early&quot; pitboxes: if your assigned
+          pitbox is in the last 10% of the track (DriverPitTrkPct &gt; 0.90), it&apos;s likely near
           pit entry. This works for most tracks where pit lane runs parallel to the
           start/finish straight.
         </p>
       </div>
+
 
       <div className="space-y-2 p-4 bg-amber-900/30 rounded border border-amber-700">
         <h3 className="text-lg font-semibold text-amber-400">Visibility Behavior</h3>
@@ -161,7 +165,7 @@ const PitlaneHelperDocs = () => {
           <li><strong>Surface 3:</strong> On track (widget hidden)</li>
         </ul>
         <p className="text-sm mt-2">
-          The "Approaching" mode attempts to show the overlay before entering pit lane,
+          The &quot;Approaching&quot; mode attempts to show the overlay before entering pit lane,
           but this depends on having accurate pit entry position data.
         </p>
       </div>
