@@ -5,7 +5,7 @@ import { useTrackId } from './hooks/useTrackId';
 import { FlatTrackMapCanvas } from './FlatTrackMapCanvas';
 import tracks from './tracks/tracks.json';
 import { TrackDrawing } from './TrackCanvas';
-import { useSessionVisibility } from '@irdashies/context';
+import { useSessionVisibility, useTelemetryValue } from '@irdashies/context';
 
 const debug = import.meta.env.DEV || import.meta.env.MODE === 'storybook';
 
@@ -14,8 +14,14 @@ export const FlatTrackMap = () => {
   const driversTrackData = useDriverProgress();
   const settings = useFlatTrackMapSettings();
   const highlightColor = useHighlightColor();
+  const isOnTrack = useTelemetryValue('IsOnTrack');
 
   if (!useSessionVisibility(settings?.sessionVisibility)) return <></>;
+
+  // Hide if showOnlyWhenOnTrack is enabled and player is not on track
+  if (settings?.showOnlyWhenOnTrack && !isOnTrack) {
+    return <></>;
+  }
 
   const trackDrawing = trackId ? (tracks as unknown as TrackDrawing[])[trackId] : null;
 

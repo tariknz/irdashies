@@ -15,6 +15,7 @@ const defaultConfig: FlatTrackMapWidgetSettings['config'] = {
   trackOutlineWidth: 40,
   invertTrackColors: false,
   useHighlightColor: false,
+  showOnlyWhenOnTrack: false,
   sessionVisibility: { race: true, loneQualify: true, openQualify: true, practice: true, offlineTesting: true }
 };
 
@@ -30,6 +31,7 @@ const migrateConfig = (savedConfig: unknown): FlatTrackMapWidgetSettings['config
     trackOutlineWidth: (config.trackOutlineWidth as number) ?? defaultConfig.trackOutlineWidth,
     invertTrackColors: (config.invertTrackColors as boolean) ?? defaultConfig.invertTrackColors,
     useHighlightColor: (config.useHighlightColor as boolean) ?? defaultConfig.useHighlightColor,
+    showOnlyWhenOnTrack: (config.showOnlyWhenOnTrack as boolean) ?? defaultConfig.showOnlyWhenOnTrack,
     sessionVisibility: (config.sessionVisibility as SessionVisibilitySettings) ?? defaultConfig.sessionVisibility,
   };
 };
@@ -198,6 +200,23 @@ export const FlatTrackMapSettings = () => {
             <p className="text-slate-400 text-sm">
               Thickness of the outline around the track
             </p>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div>
+              <span className="text-sm text-slate-300">Show Only When On Track</span>
+              <p className="text-xs text-slate-400">
+                Hide the flat track map when not actively driving on track
+              </p>
+            </div>
+            <ToggleSwitch
+              enabled={settings.config.showOnlyWhenOnTrack ?? false}
+              onToggle={(enabled) =>
+                handleConfigChange({
+                  showOnlyWhenOnTrack: enabled,
+                })
+              }
+            />
           </div>
 
           {/* Session Visibility Settings */}
