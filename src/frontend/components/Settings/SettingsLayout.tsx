@@ -9,6 +9,7 @@ import { StandingsSettings } from './sections/StandingsSettings';
 import { RelativeSettings } from './sections/RelativeSettings';
 import { WeatherSettings } from './sections/WeatherSettings';
 import { TrackMapSettings } from './sections/TrackMapSettings';
+import { FlatTrackMapSettings } from './sections/FlatTrackMapSettings';
 import { AdvancedSettings } from './sections/AdvancedSettings';
 import { InputSettings } from './sections/InputSettings';
 import { AboutSettings } from './sections/AboutSettings';
@@ -169,6 +170,14 @@ export const SettingsLayout = () => {
             </li>
             <li>
               <Link
+                to="/settings/flatmap"
+                className={menuItemClass('/flatmap')}
+              >
+                Flat Track Map
+              </Link>
+            </li>
+            <li>
+              <Link
                 to="/settings/weather"
                 className={menuItemClass('/weather')}
               >
@@ -224,6 +233,7 @@ export const SettingsLayout = () => {
             <Route path="weather" element={<WeatherSettings />} />
             <Route path="fuel" element={<FuelSettings />} />
             <Route path="map" element={<TrackMapSettings />} />
+            <Route path="flatmap" element={<FlatTrackMapSettings />} />
             <Route path="input" element={<InputSettings />} />
             <Route path="rejoin" element={<RejoinIndicatorSettings />} />
             <Route

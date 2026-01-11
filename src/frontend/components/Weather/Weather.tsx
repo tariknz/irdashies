@@ -1,4 +1,4 @@
-import { useTelemetryValue } from '@irdashies/context';
+import { useTelemetryValue, useSessionVisibility } from '@irdashies/context';
 import { useTrackTemperature } from '../Standings/hooks/useTrackTemperature';
 import { useTrackWeather } from './hooks/useTrackWeather';
 import { WeatherTemp } from './WeatherTemp/WeatherTemp';
@@ -15,7 +15,8 @@ export const Weather = () => {
   const settings = useWeatherSettings();
   const displayUnits = useTelemetryValue('DisplayUnits'); // 0 = imperial, 1 = metric
   const isOnTrack = useTelemetryValue('IsOnTrack');
-
+  const isSessionVisible = useSessionVisibility(settings?.sessionVisibility);
+  
   // Determine actual unit to use: auto uses iRacing's DisplayUnits setting
   const unitSetting = settings?.units ?? 'auto';
   const isMetric = unitSetting === 'auto'
@@ -104,6 +105,8 @@ export const Weather = () => {
     return null;
   }
 
+  if (!isSessionVisible) return <></>;
+  
   return (
     <div
       className="w-full rounded-sm p-2 bg-slate-800/(--bg-opacity)"

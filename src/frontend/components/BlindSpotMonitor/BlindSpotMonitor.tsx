@@ -1,6 +1,7 @@
 import { useBlindSpotMonitor, BlindSpotState } from './hooks/useBlindSpotMonitor';
 import { useBlindSpotMonitorSettings } from './hooks/useBlindSpotMonitorSettings';
 import { BlindSpotMonitorIndicator } from './components/BlindSpotMonitorIndicator';
+import { useSessionVisibility } from '@irdashies/context';
 
 export interface BlindSpotMonitorDisplayProps {
   show: boolean;
@@ -53,6 +54,8 @@ export const BlindSpotMonitorDisplay = ({
 export const BlindSpotMonitor = () => {
   const state = useBlindSpotMonitor();
   const settings = useBlindSpotMonitorSettings();
+
+  if (!useSessionVisibility(settings?.sessionVisibility)) return <></>;
 
   return (
     <BlindSpotMonitorDisplay

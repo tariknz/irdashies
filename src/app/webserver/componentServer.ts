@@ -5,6 +5,7 @@ import type { IrSdkBridge, DashboardBridge } from '@irdashies/types';
 import { currentDashboard } from './bridgeProxy';
 import { getGarageCoverImageAsDataUrl } from '../storage/dashboards';
 import crypto from 'crypto';
+import type { WidgetId } from '../../frontend/WidgetIndex';
 
 const PORT = 3000;
 const COMPONENT_PORT = process.env.COMPONENT_PORT || PORT;
@@ -276,7 +277,7 @@ export async function startComponentServer(irsdkBridge?: IrSdkBridge, dashboardB
     }
 
     if (pathname === '/components' && req.method === 'GET') {
-      const componentNames = [
+      const componentNames: WidgetId[] = [
         'standings',
         'input',
         'relative',
@@ -285,6 +286,8 @@ export async function startComponentServer(irsdkBridge?: IrSdkBridge, dashboardB
         'fastercarsfrombehind',
         'fuel',
         'blindspotmonitor',
+        'garagecover',
+        'rejoin',
       ];
 
       sendJSON(res, 200, {
