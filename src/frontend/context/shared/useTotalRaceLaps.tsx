@@ -8,10 +8,10 @@ import {
 } from '@irdashies/context';
 
 // Estimate the total number of laps that will be completed by the drivers car in a timed session.
-export function useTotalRaceLaps(): number | null {
+export const useTotalRaceLaps = () => {
   const carIdx = useFocusCarIdx() as number;
   const { timeRemaining, timeTotal, totalLaps } = useSessionLapCount();
-  const lap = useTelemetryValue("Lap") as number;
+  const lap = useTelemetryValues("CarIdxLap")?.[carIdx] as number;
   const sessionType = useCurrentSessionType();
   const lapDistPct = useTelemetryValue('LapDistPct');
   const carIdxLap = useTelemetryValues('CarIdxLap');
@@ -19,13 +19,20 @@ export function useTotalRaceLaps(): number | null {
   const carIdxLapDistPct = useTelemetryValues('CarIdxLapDistPct');
   // TODO: Switch to useCarIdxAverageLapTime()
   const avgLapTime = useCarIdxClassEstLapTime()?.[carIdx];
+  const isFixedLapRace = totalLaps > 0;
+  const result = {
+    isFixedLapRace: isFixedLapRace,
+    totalRaceLaps: 0
+  };
 
   // No race, no business
   if (sessionType != 'Race')
-    return null;
+    return result;
 
-  if (totalLaps > 0) {
+  if (isFixedLapRace) {
     // Easy case, fixed lap count. We just have to account for the race leader that might have lapped us
+    result.totalRaceLaps = totalLaps;
+
     let leaderLap = 0;
     let leaderLapDistPct = 0;
     for (let i = 0; i < carIdxPosition.length; i++) {
@@ -36,25 +43,19 @@ export function useTotalRaceLaps(): number | null {
       }
     }
     if (
-      leaderLap > 0 &&
-      lapDistPct !== undefined
+      lap !== undefined &&
+      leaderLap !== undefined &&
+      lapDistPct !== undefined &&
+      leaderLapDistPct !== undefined &&
+      lap > 0 &&
+      leaderLap > 0
     ) {
-      let lapDiff = leaderLap - lap;
-
-      // Sanity check
-      if ((lapDiff < 0) || (lapDiff > totalLaps)) {
-        return totalLaps;
+      const totalDist = lap + lapDistPct;
+      const totalLeaderDist = leaderLap + leaderLapDistPct;
+      if (totalLeaderDist > totalDist) {
+        result.totalRaceLaps -= Math.floor(totalLeaderDist - totalDist);
       }
-
-      // If the leader is n laps ahead, but behind us on track, he actually lapped us only n-1 times
-      if (lapDiff > 0) {
-        if (lapDistPct > leaderLapDistPct) {
-          lapDiff--;
-        }
-      }
-      return totalLaps - lapDiff;
     }
-    return totalLaps;
   }
   else {
     // Time-limited race, so we have to estimate based on remaining time and expected laptimes
@@ -63,13 +64,13 @@ export function useTotalRaceLaps(): number | null {
     if (avgLapTime !== undefined && avgLapTime > 1) {
       if (lap === 0) {
         // Race has not yet started
-        return (timeTotal / avgLapTime);
+        result.totalRaceLaps = (timeTotal / avgLapTime);
       }
-      if (lapDistPct !== undefined) {
+      else if (lapDistPct !== undefined) {
         // Race has started, so we have to add the number of completed laps and the percentage of the current lap
-        return ((timeRemaining / avgLapTime) + (lap - 1) + lapDistPct);
+        result.totalRaceLaps = ((timeRemaining / avgLapTime) + (lap - 1) + lapDistPct);
       }
     }
-    return null;
   }
+  return result;
 }
