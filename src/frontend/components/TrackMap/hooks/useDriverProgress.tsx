@@ -55,7 +55,7 @@ export const useDriverProgress = () => {
         driver: driver,
         progress: throttledLapDist[driver.CarIdx] ?? -1,
         isPlayer: driver.CarIdx === driverIdx,
-        position: carIdxClassPosition?.[driver.CarIdx],
+        classPosition: carIdxClassPosition?.[driver.CarIdx],
       }))
       .filter((d) => d.progress > -1) // ignore drivers not on track
       .filter((d) => d.driver.CarIdx !== paceCarIdx); // ignore pace car

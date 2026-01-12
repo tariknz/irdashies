@@ -33,7 +33,7 @@ export interface TrackDriver {
   driver: Driver;
   progress: number;
   isPlayer: boolean;
-  position?: number;
+  classPosition?: number;
 }
 
 export interface TrackDrawing {
@@ -146,7 +146,7 @@ export const TrackCanvas = ({
     const totalLength = trackDrawing.active.totalLength;
 
     return drivers.reduce<Record<number, TrackDriver & { position: { x: number; y: number }; sessionPosition?: number }>>(
-      (acc, { driver, progress, isPlayer, position: sessionPosition }) => {
+      (acc, { driver, progress, isPlayer, classPosition: sessionPosition }) => {
         // Calculate position based on progress
         const adjustedLength = (totalLength * progress) % totalLength;
         const length =

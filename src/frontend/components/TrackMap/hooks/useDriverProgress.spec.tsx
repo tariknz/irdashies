@@ -50,8 +50,13 @@ describe('useDriverProgress', () => {
 
     const { result } = renderHook(() => useDriverProgress());
 
-    // Eventually should have data after throttle
+    // Eventually should have data after throttle - just verify it returns an array with valid structure
     expect(Array.isArray(result.current)).toBe(true);
+    if (result.current.length > 0) {
+      expect(result.current[0]).toHaveProperty('driver');
+      expect(result.current[0]).toHaveProperty('progress');
+      expect(result.current[0]).toHaveProperty('classPosition');
+    }
   });
 
   it('should filter out drivers not on track', () => {
@@ -70,6 +75,9 @@ describe('useDriverProgress', () => {
 
     // Should filter out progress -1
     expect(Array.isArray(result.current)).toBe(true);
+    // All drivers with progress -1 should be filtered out
+    const allValid = result.current.every((d) => d.progress > -1);
+    expect(allValid).toBe(true);
   });
 
   it('should filter out pace car', () => {
@@ -88,5 +96,8 @@ describe('useDriverProgress', () => {
 
     // Should filter out pace car
     expect(Array.isArray(result.current)).toBe(true);
+    // Pace car (CarIdx 1, paceCarIdx is 1) should be filtered out
+    const noPaceCar = result.current.every((d) => d.driver.CarIdx !== 1);
+    expect(noPaceCar).toBe(true);
   });
 });

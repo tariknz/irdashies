@@ -55,7 +55,9 @@ describe('FlatTrackMap', () => {
 
   it('should hide when showOnlyWhenOnTrack is true and player is not on track', () => {
     vi.mocked(useFlatTrackMapSettings).mockReturnValue({
-      showCarNumbers: true,      displayMode: 'carNumber',      driverCircleSize: 40,
+      showCarNumbers: true,
+      displayMode: 'carNumber',
+      driverCircleSize: 40,
       playerCircleSize: 40,
       trackLineWidth: 20,
       trackOutlineWidth: 40,
@@ -73,7 +75,9 @@ describe('FlatTrackMap', () => {
 
   it('should show when showOnlyWhenOnTrack is true and player is on track', () => {
     vi.mocked(useFlatTrackMapSettings).mockReturnValue({
-      showCarNumbers: true,      displayMode: 'carNumber',      driverCircleSize: 40,
+      showCarNumbers: true,
+      displayMode: 'carNumber',
+      driverCircleSize: 40,
       playerCircleSize: 40,
       trackLineWidth: 20,
       trackOutlineWidth: 40,

@@ -158,7 +158,7 @@ export const FlatTrackMapCanvas = ({
 
     // Draw drivers
     // Apply scale factor to match curved track map proportions
-    [...drivers].sort((a, b) => Number(a.isPlayer) - Number(b.isPlayer)).forEach(({ driver, progress, isPlayer, position }) => {
+    [...drivers].sort((a, b) => Number(a.isPlayer) - Number(b.isPlayer)).forEach(({ driver, progress, isPlayer, classPosition }) => {
       const color = driverColors[driver.CarIdx];
       if (!color) return;
 
@@ -183,7 +183,7 @@ export const FlatTrackMapCanvas = ({
         ctx.textBaseline = 'middle';
         let displayText = '';
         if (displayMode === 'sessionPosition') {
-          displayText = position !== undefined && position > 0 ? position.toString() : '';
+          displayText = classPosition !== undefined && classPosition > 0 ? classPosition.toString() : '';
         } else {
           displayText = driver.CarNumber;
         }
