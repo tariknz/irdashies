@@ -58,15 +58,15 @@ export const formatTime = (seconds?: number, format: TimeFormat = 'full'): strin
     case 'duration-wlabels':
       formattedTime = '';
       if (hours > 0) {
-        formattedTime += `${hours} Hr${hours > 1 ? 's' : ''}`;
+        formattedTime += `${hours} hr${hours > 1 ? 's' : ''}`;
       }
       if (minutes > 0) {
         if (formattedTime) formattedTime += ' ';
-        formattedTime += `${minutes} Min${minutes > 1 ? 's' : ''}`;
+        formattedTime += `${minutes} min${minutes > 1 ? 's' : ''}`;
       }
       if (remainingSeconds > 0) {
         if (formattedTime) formattedTime += ' ';
-        formattedTime += `${remainingSeconds} Sec${remainingSeconds > 1 ? 's' : ''}`;
+        formattedTime += `${remainingSeconds} sec${remainingSeconds > 1 ? 's' : ''}`;
       }
       break;
 

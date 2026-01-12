@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useTelemetryValue, useTelemetryValues } from '../TelemetryStore/TelemetryStore';
 import { useLapTimesStore } from './LapTimesStore';
 import { useStandingsSettings } from '../../components/Standings/hooks/useStandingsSettings';
+import { useFocusCarIdx } from '../shared/useFocusCarIdx';
 
 /**
  * Hook that automatically updates the LapTimesStore with telemetry data.
@@ -12,12 +13,13 @@ import { useStandingsSettings } from '../../components/Standings/hooks/useStandi
 export const useLapTimesStoreUpdater = () => {
   const sessionNum = useTelemetryValue('SessionNum');
   const carIdxLastLapTime = useTelemetryValues('CarIdxLastLapTime');
+  const playerCarIdx = useFocusCarIdx();
   const updateLapTimes = useLapTimesStore(state => state.updateLapTimes);
   const standingsSettings = useStandingsSettings();
 
   useEffect(() => {
     if (carIdxLastLapTime && standingsSettings?.lapTimeDeltas?.enabled) {
-      updateLapTimes(carIdxLastLapTime, sessionNum ?? null);
+      updateLapTimes(carIdxLastLapTime, sessionNum ?? null, playerCarIdx ?? null);
     }
-  }, [carIdxLastLapTime, sessionNum, updateLapTimes, standingsSettings?.lapTimeDeltas?.enabled]);
+  }, [carIdxLastLapTime, sessionNum, playerCarIdx, updateLapTimes, standingsSettings?.lapTimeDeltas?.enabled]);
 };

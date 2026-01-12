@@ -1,6 +1,6 @@
 import { Meta, StoryObj } from '@storybook/react-vite';
 import { Standings } from './Standings';
-import { TelemetryDecorator, DynamicTelemetrySelector } from '@irdashies/storybook';
+import { TelemetryDecorator, DynamicTelemetrySelector, TelemetryDecoratorWithConfig } from '@irdashies/storybook';
 import { useState, Fragment } from 'react';
 import { DriverClassHeader } from './components/DriverClassHeader/DriverClassHeader';
 import { DriverInfoRow } from './components/DriverInfoRow/DriverInfoRow';
@@ -14,14 +14,15 @@ import {
   useHighlightColor,
 } from './hooks';
 import { useLapTimesStoreUpdater } from '../../context/LapTimesStore/LapTimesStoreUpdater';
-import { usePitLabStoreUpdater } from '../../context/PitLapStore/PitLapStoreUpdater';
+import { usePitLapStoreUpdater } from '../../context/PitLapStore/PitLapStoreUpdater';
 import { useDrivingState, useWeekendInfoNumCarClasses, useTelemetryValue, useSessionName, useSessionLaps } from '@irdashies/context';
 import { useDriverIncidents, useSessionLapCount, useBrakeBias } from './hooks';
 import { useCurrentTime } from './hooks/useCurrentTime';
 import { useTrackWetness } from './hooks/useTrackWetness';
+import { usePrecipitation } from './hooks/usePrecipitation';
 import { useTrackTemperature } from './hooks/useTrackTemperature';
 import { formatTime } from '../../utils/time';
-import { ClockIcon, DropIcon, RoadHorizonIcon, ThermometerIcon, TireIcon } from '@phosphor-icons/react';
+import { ClockIcon, CloudRainIcon, DropIcon, RoadHorizonIcon, ThermometerIcon, TireIcon } from '@phosphor-icons/react';
 
 // Custom component that renders standings without header/footer session bars
 const StandingsWithoutHeaderFooter = () => {
@@ -32,7 +33,7 @@ const StandingsWithoutHeaderFooter = () => {
   useLapTimesStoreUpdater();
 
   // Update pit laps
-  usePitLabStoreUpdater();
+  usePitLapStoreUpdater();
 
   const standings = useDriverStandings(settings);
   const classStats = useCarClassStats();
@@ -133,6 +134,7 @@ const StandingsWithoutHeaderFooter = () => {
 
 export default {
   component: Standings,
+  title: 'widgets/Standings',
 } as Meta;
 
 type Story = StoryObj<typeof Standings>;
@@ -205,6 +207,33 @@ export const SuzukaGT3EnduranceRace: Story = {
   decorators: [TelemetryDecorator('/test-data/1763227688917')],
 };
 
+export const TeamSession: Story = {
+  decorators: [
+    TelemetryDecoratorWithConfig('/test-data/1763227688917', {
+      standings: {
+        teamName: { enabled: true },
+        displayOrder: [
+          'position',
+          'carNumber',
+          'countryFlags',
+          'badge',
+          'teamName',
+          'driverName',
+          'pitStatus',
+          'carManufacturer',
+          'compound',
+          'iratingChange',
+          'gap',
+          'interval',
+          'fastestTime',
+          'lastTime',
+          'lapTimeDeltas',
+        ],
+      },
+    }),
+  ],
+};
+
 // Component that renders standings without header bar but with footer
 const StandingsWithoutHeader = () => {
   const settings = useStandingsSettings();
@@ -214,7 +243,7 @@ const StandingsWithoutHeader = () => {
   useLapTimesStoreUpdater();
 
   // Update pit laps
-  usePitLabStoreUpdater();
+  usePitLapStoreUpdater();
 
   const standings = useDriverStandings(settings);
   const classStats = useCarClassStats();
@@ -333,7 +362,7 @@ const StandingsWithoutFooter = () => {
   useLapTimesStoreUpdater();
 
   // Update pit laps
-  usePitLabStoreUpdater();
+  usePitLapStoreUpdater();
 
   const standings = useDriverStandings(settings);
   const classStats = useCarClassStats();
@@ -444,10 +473,11 @@ const FullHeaderBar = () => {
   const sessionName = useSessionName(sessionNum);
   const sessionLaps = useSessionLaps(sessionNum);
   const { incidentLimit, incidents } = useDriverIncidents();
-  const { total, current, timeElapsed, timeRemaining } = useSessionLapCount();
+  const { currentLap, totalLaps, timeTotal, timeRemaining } = useSessionLapCount();
   const brakeBias = useBrakeBias();
-  const time = useCurrentTime();
+  const localTime = useCurrentTime();
   const { trackWetness } = useTrackWetness();
+  const { precipitation } = usePrecipitation();
   const { trackTemp, airTemp } = useTrackTemperature();
 
   return (
@@ -455,18 +485,33 @@ const FullHeaderBar = () => {
       <div className="flex items-center gap-1">
         <span>{sessionName}</span>
       </div>
-      {current > 0 && (
+      {currentLap > 0 && (
         <div className="flex items-center gap-1">
-          <span>L {current} {total ? ` / ${total}` : ''}</span>
+          <span>L {currentLap} {totalLaps ? ` / ${totalLaps}` : ''}</span>
         </div>
       )}
       {sessionLaps == 'unlimited' && (
         <div className="flex items-center gap-1">
           <span>
             {(() => {
-              const elapsed = formatTime(timeElapsed, 'duration');
-              const remaining = formatTime(timeRemaining, 'duration-wlabels');
-              return elapsed ? `${elapsed} / ${remaining}` : (remaining ? `${remaining}` : '');
+              const mode = 'Elapsed';
+
+              const elapsedTime = Math.max(0, timeTotal - timeRemaining);
+              const remainingTime = Math.max(0, timeRemaining);
+              const totalTime = timeTotal;
+
+              const elapsedStr = (elapsedTime < totalTime) ? formatTime(elapsedTime, 'duration') : null;
+              const remainingStr = (remainingTime < totalTime) ? formatTime(remainingTime, 'duration') : null;
+              const totalStr = formatTime(totalTime, 'duration-wlabels');
+
+              let timeStr = '';
+              if (mode === 'Elapsed') {
+                timeStr = elapsedStr ? `${elapsedStr} / ${totalStr}` : totalStr || '';
+              } else if (mode === 'Remaining') {
+                timeStr = remainingStr ? `${remainingStr} / ${totalStr}` : totalStr || '';
+              }
+
+              return timeStr ? <div className="flex justify-center">{timeStr}</div> : null;
             })()}
           </span>
         </div>
@@ -482,11 +527,15 @@ const FullHeaderBar = () => {
       </div>
       <div className="flex items-center gap-1">
         <ClockIcon />
-        <span>{time}</span>
+        <span>{localTime}</span>
       </div>
       <div className="flex items-center gap-1">
         <DropIcon />
         <span>{trackWetness}</span>
+      </div>
+      <div className="flex items-center gap-1">
+        <CloudRainIcon />
+        <span>{precipitation}</span>
       </div>
       <div className="flex items-center gap-1">
         <ThermometerIcon />
@@ -509,7 +558,7 @@ const StandingsWithFullHeader = () => {
   useLapTimesStoreUpdater();
 
   // Update pit laps
-  usePitLabStoreUpdater();
+  usePitLapStoreUpdater();
 
   const standings = useDriverStandings(settings);
   const classStats = useCarClassStats();

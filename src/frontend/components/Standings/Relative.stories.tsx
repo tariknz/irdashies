@@ -12,8 +12,7 @@ import { SessionBar } from './components/SessionBar/SessionBar';
 import { TitleBar } from './components/TitleBar/TitleBar';
 import { useDrivingState } from '@irdashies/context';
 import { useRelativeSettings, useDriverRelatives, useHighlightColor } from './hooks';
-import { usePitLabStoreUpdater } from '../../context/PitLapStore/PitLapStoreUpdater';
-import { useRelativeGapStoreUpdater } from '@irdashies/context';
+import { usePitLapStoreUpdater } from '../../context/PitLapStore/PitLapStoreUpdater';
 import { useWeekendInfoNumCarClasses } from '@irdashies/context';
 
 // Custom component that renders relative standings without header/footer session bars
@@ -26,9 +25,7 @@ const RelativeWithoutHeaderFooter = () => {
   const numCarClasses = useWeekendInfoNumCarClasses();
   const isMultiClass = (numCarClasses ?? 0) > 1;
 
-  // Update relative gap store with telemetry data
-  useRelativeGapStoreUpdater();
-  usePitLabStoreUpdater();
+  usePitLapStoreUpdater();
 
   // Always render 2 * buffer + 1 rows (buffer above + player + buffer below)
   const totalRows = 2 * buffer + 1;
@@ -213,6 +210,7 @@ const RelativeWithoutHeaderFooter = () => {
 
 export default {
   component: Relative,
+  title: 'widgets/Relative',
   parameters: {
     controls: {
       exclude: ['telemetryPath'],
@@ -228,6 +226,7 @@ export const Primary: Story = {
       relative: {
         headerBar: { enabled: true },
         footerBar: { enabled: true },
+        sessionVisibility: { race: true, loneQualify: true, openQualify: true, practice: true, offlineTesting: true }
       },
     }),
   ],
@@ -383,6 +382,33 @@ export const SuzukaGT3EnduranceRace: Story = {
   ],
 };
 
+export const TeamSession: Story = {
+  decorators: [
+    TelemetryDecoratorWithConfig('/test-data/1763227688917', {
+      relative: {
+        headerBar: { enabled: true },
+        footerBar: { enabled: true },
+        teamName: { enabled: true },
+        displayOrder: [
+          'position',
+          'carNumber',
+          'countryFlags',
+          'badge',
+          'teamName',
+          'driverName',
+          'pitStatus',
+          'carManufacturer',
+          'compound',
+          'iratingChange',
+          'delta',
+          'fastestTime',
+          'lastTime',
+        ],
+      },
+    }),
+  ],
+};
+
 // Component that renders relative standings without header bar but with footer
 const RelativeWithoutHeader = () => {
   const settings = useRelativeSettings();
@@ -393,9 +419,7 @@ const RelativeWithoutHeader = () => {
   const numCarClasses = useWeekendInfoNumCarClasses();
   const isMultiClass = (numCarClasses ?? 0) > 1;
 
-  // Update relative gap store with telemetry data
-  useRelativeGapStoreUpdater();
-  usePitLabStoreUpdater();
+  usePitLapStoreUpdater();
 
   // Always render 2 * buffer + 1 rows (buffer above + player + buffer below)
   const totalRows = 2 * buffer + 1;
@@ -600,9 +624,7 @@ const RelativeWithoutFooter = () => {
   const numCarClasses = useWeekendInfoNumCarClasses();
   const isMultiClass = (numCarClasses ?? 0) > 1;
 
-  // Update relative gap store with telemetry data
-  useRelativeGapStoreUpdater();
-  usePitLabStoreUpdater();
+  usePitLapStoreUpdater();
 
   // Always render 2 * buffer + 1 rows (buffer above + player + buffer below)
   const totalRows = 2 * buffer + 1;

@@ -12,6 +12,8 @@ interface PitStatusCellProps {
   repair?: boolean;
   penalty?: boolean;
   slowdown?: boolean;
+  pitStopDuration?: number | null;
+  showPitTime?: boolean;
 }
 
 interface StatusBadgeProps {
@@ -44,7 +46,9 @@ export const PitStatusCell = memo(
     dnf,
     repair,
     penalty,
-    slowdown
+    slowdown,
+    pitStopDuration,
+    showPitTime = false
   }: PitStatusCellProps) => {
     const tow =
       carTrackSurface == 1 &&
@@ -67,7 +71,6 @@ export const PitStatusCell = memo(
       !onPitRoad &&
       !!lastPitLap &&
       lastPitLap > 1 &&
-      lastPitLap !== lastLap &&
       carTrackSurface != -1;
 
     if (hidden || (!repair && !dnf && !penalty && !slowdown && !tow && !out && !pit && !lastPit)) {
@@ -118,7 +121,7 @@ export const PitStatusCell = memo(
         )}
         {lastPit && (
           <StatusBadge borderColorClass="border-yellow-500">
-            L {lastPitLap}
+            L {lastPitLap}{showPitTime && <span className="text-yellow-500">{pitStopDuration && ` ${pitStopDuration} s`}</span>}
           </StatusBadge>
         )}
         </div>

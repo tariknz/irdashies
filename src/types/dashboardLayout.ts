@@ -31,6 +31,7 @@ export interface GeneralSettingsType {
   showOnlyWhenOnTrack?: boolean;
   highlightColor?: number;
   skipTaskbar?: boolean;
+  disableHardwareAcceleration?: boolean;
 }
 
 export interface DashboardLayout {

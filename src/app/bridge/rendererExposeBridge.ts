@@ -63,6 +63,18 @@ export function exposeBridge() {
         callback(value);
       });
     },
+    saveGarageCoverImage: (buffer: Uint8Array) => {
+      return ipcRenderer.invoke('saveGarageCoverImage', Array.from(buffer));
+    },
+    getGarageCoverImageAsDataUrl: (imagePath: string) => {
+      return ipcRenderer.invoke('getGarageCoverImageAsDataUrl', imagePath);
+    },
+    getAnalyticsOptOut: () => {
+      return ipcRenderer.invoke('getAnalyticsOptOut');
+    },
+    setAnalyticsOptOut: (optOut: boolean) => {
+      return ipcRenderer.invoke('setAnalyticsOptOut', optOut);
+    },
     stop: () => {
       ipcRenderer.removeAllListeners('editModeToggled');
       ipcRenderer.removeAllListeners('dashboardUpdated');

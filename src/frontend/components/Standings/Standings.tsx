@@ -11,24 +11,35 @@ import {
   useHighlightColor,
 } from './hooks';
 import { useLapTimesStoreUpdater } from '../../context/LapTimesStore/LapTimesStoreUpdater';
-import { usePitLabStoreUpdater } from '../../context/PitLapStore/PitLapStoreUpdater';
-import { useDrivingState, useWeekendInfoNumCarClasses } from '@irdashies/context';
+import { usePitLapStoreUpdater } from '../../context/PitLapStore/PitLapStoreUpdater';
+import { useDrivingState, useWeekendInfoNumCarClasses, useWeekendInfoTeamRacing, useSessionVisibility } from '@irdashies/context';
+import { useIsSingleMake } from './hooks/useIsSingleMake';
 
 export const Standings = () => {
   const settings = useStandingsSettings();
   const { isDriving } = useDrivingState();
+  const isSessionVisible = useSessionVisibility(settings?.sessionVisibility);
 
   // Update lap times store with telemetry data (only for this overlay)
   useLapTimesStoreUpdater();
 
   // Update pit laps
-  usePitLabStoreUpdater();
+  usePitLapStoreUpdater();
 
   const standings = useDriverStandings(settings);
   const classStats = useCarClassStats();
   const numCarClasses = useWeekendInfoNumCarClasses();
   const isMultiClass = (numCarClasses ?? 0) > 1;
   const highlightColor = useHighlightColor();
+
+  // Determine whether we should hide the car manufacturer column
+  const isSingleMake = useIsSingleMake();
+  const hideCarManufacturer = !!(settings?.carManufacturer?.hideIfSingleMake && isSingleMake);
+
+  // Check if this is a team racing session
+  const isTeamRacing = useWeekendInfoTeamRacing();
+  
+  if (!isSessionVisible) return <></>;
 
   // Show only when on track setting
   if (settings?.showOnlyWhenOnTrack && !isDriving) {
@@ -66,6 +77,7 @@ export const Standings = () => {
                     classColor={result.carClass.color}
                     carNumber={settings?.carNumber?.enabled ?? true ? result.driver?.carNum || '' : undefined}
                     name={result.driver?.name || ''}
+                    teamName={settings?.teamName?.enabled && isTeamRacing ? result.driver?.teamName || '' : undefined}
                     isPlayer={result.isPlayer}
                     hasFastestTime={result.hasFastestTime}
                     delta={settings?.delta?.enabled ? result.delta : undefined}
@@ -99,9 +111,10 @@ export const Standings = () => {
                     repair={result.repair}
                     penalty={result.penalty}
                     slowdown={result.slowdown}
+                    hideCarManufacturer={hideCarManufacturer}
                   />
                 ))}
-                {index < standings.length - 1 && <div className="h-2"></div>}
+                {index < standings.length - 1 && <tr><td colSpan={12} className="h-2"></td></tr>}
               </Fragment>
             ) : null
           ))}

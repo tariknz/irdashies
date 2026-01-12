@@ -5,11 +5,13 @@ export const useTrackWeather = () => {
   const windYaw = useTelemetryValue('YawNorth');
   const windDirection = useTelemetryValue('WindDir');
   const windVelocity = useTelemetryValue('WindVel');
+  const humidity = useTelemetryValue('RelativeHumidity');
 
   return {
     trackMoisture,
     windDirection,
     windVelocity,
+    humidity,
     windYaw,
   };
 };

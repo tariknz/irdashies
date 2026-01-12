@@ -13,6 +13,8 @@ import {
 
 import { Standings, type LastTimeState } from '../createStandings';
 import { GlobalFlags } from '../../../../app/irsdk/types';
+import { useDriverLivePositions } from './useDriverLivePositions';
+import { useRelativeSettings } from './useRelativeSettings';
 
 const getLastTimeState = (
   lastTime: number | undefined,
@@ -79,6 +81,7 @@ export const useDrivers = () => {
       license: driver.LicString,
       rating: driver.IRating,
       flairId: driver.FlairID,
+      teamName: driver.TeamName,
       carClass: {
         id: driver.CarClassID,
         color: driver.CarClassColor,
@@ -115,6 +118,9 @@ export const useCarState = () => {
 // currently there's still a few bugs to handle but is only used in relative right now
 export const useDriverStandings = () => {
   const driverPositions = useDriverPositions();
+  const driverLivePositions = useDriverLivePositions();
+  const relativeSettings = useRelativeSettings();
+  const useLivePositionStandings = relativeSettings?.useLivePosition ?? false;
   const drivers = useDrivers();
   const radioTransmitCarIdx = useTelemetryValue('RadioTransmitCarIdx');
   const carStates = useCarState();
@@ -134,7 +140,7 @@ export const useDriverStandings = () => {
     // Create Map lookups for O(1) access instead of O(n) find() calls
     const driverPositionsByCarIdx = new Map(driverPositions.map(pos => [pos.carIdx, pos]));
     const carStatesByCarIdx = new Map(carStates.map(state => [state.carIdx, state]));
-    const qualifyingPositionsByCarIdx = qualifyingPositions
+    const qualifyingPositionsByCarIdx = qualifyingPositions && Array.isArray(qualifyingPositions)
       ? new Map(qualifyingPositions.map(q => [q.CarIdx, q]))
       : new Map();
 
@@ -158,6 +164,13 @@ export const useDriverStandings = () => {
 
       // If the driver is not in the standings, use the qualifying position
       let classPosition: number | undefined = driverPos.classPosition;
+      
+      if(useLivePositionStandings) {
+        // Override position with live position based on telemetry
+        const livePosition = driverLivePositions[driver.carIdx];
+        classPosition = livePosition;
+      }
+
       if (classPosition <= 0) {
         const qualifyingPosition = qualifyingPositionsByCarIdx.get(driver.carIdx);
         classPosition = qualifyingPosition ? qualifyingPosition.Position + 1 : undefined;
@@ -181,6 +194,7 @@ export const useDriverStandings = () => {
           license: driver.license,
           rating: driver.rating,
           flairId: driver.flairId,
+          teamName: driver.teamName,
         },
         fastestTime: driverPos.bestLap,
         hasFastestTime,
@@ -209,15 +223,7 @@ export const useDriverStandings = () => {
     });
 
     return standings.filter((s) => !!s).sort((a, b) => a.position - b.position);
-  }, [
-    carStates,
-    driverPositions,
-    drivers,
-    playerCarIdx,
-    qualifyingPositions,
-    radioTransmitCarIdx,
-    sessionType,
-  ]);
+  }, [driverPositions, carStates, qualifyingPositions, playerCarIdx, drivers, sessionType, useLivePositionStandings, radioTransmitCarIdx, driverLivePositions]);
 
   return driverStandings;
 };

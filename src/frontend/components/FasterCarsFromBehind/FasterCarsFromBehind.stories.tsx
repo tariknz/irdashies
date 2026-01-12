@@ -4,6 +4,7 @@ import { TelemetryDecorator } from '@irdashies/storybook';
 
 export default {
   component: FasterCarsFromBehindDisplay,
+  title: 'widgets/FasterCarsFromBehind',
   argTypes: {
     classColor: {
       options: [undefined, 0xffda59, 0x33ceff, 0xff5888, 0xae6bff, 0xffffff],

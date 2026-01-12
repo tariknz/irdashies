@@ -1,6 +1,5 @@
 #include "./irsdk_node.h"
 #include "./lib/yaml_parser.h"
-#include "./lib/yaml_to_json.h"
 
 /*
 Nan::SetPrototypeMethod(tmpl, "getSessionData", GetSessionData);
@@ -50,7 +49,6 @@ iRacingSdkNode::iRacingSdkNode(const Napi::CallbackInfo &info)
   , _sessionStatusID(0)
   , _lastSessionCt(-1)
   , _sessionData(NULL)
-  , _sessionJson(nlohmann::json::object())
   , _loggingEnabled(false)
 {
   printf("Initializing cpp class instance...\n");
@@ -389,54 +387,22 @@ std::string ConvertToUTF8(const char* input) {
     return result;
 }
 
-// Helper function to convert nlohmann::json to Napi::Value
-Napi::Value JsonToNapiValue(const Napi::Env& env, const nlohmann::json& jsonValue) {
-    if (jsonValue.is_null()) {
-        return env.Null();
-    } else if (jsonValue.is_boolean()) {
-        return Napi::Boolean::New(env, jsonValue.get<bool>());
-    } else if (jsonValue.is_number_integer()) {
-        return Napi::Number::New(env, jsonValue.get<long long>());
-    } else if (jsonValue.is_number_float()) {
-        return Napi::Number::New(env, jsonValue.get<double>());
-    } else if (jsonValue.is_string()) {
-        return Napi::String::New(env, jsonValue.get<std::string>());
-    } else if (jsonValue.is_array()) {
-        Napi::Array array = Napi::Array::New(env, jsonValue.size());
-        for (size_t i = 0; i < jsonValue.size(); ++i) {
-            array.Set(i, JsonToNapiValue(env, jsonValue[i]));
-        }
-        return array;
-    } else if (jsonValue.is_object()) {
-        Napi::Object object = Napi::Object::New(env);
-        for (auto it = jsonValue.begin(); it != jsonValue.end(); ++it) {
-            object.Set(it.key(), JsonToNapiValue(env, it.value()));
-        }
-        return object;
-    } else {
-        // Fallback for any other type
-        return env.Undefined();
-    }
-}
-
 Napi::Value iRacingSdkNode::GetSessionData(const Napi::CallbackInfo &info)
 {
   int latestUpdate = irsdk_getSessionInfoStrUpdate();
-
   if (this->_lastSessionCt != latestUpdate) {
+    printf("Session data has been updated (prev: %d, new: %d)\n", this->_lastSessionCt, latestUpdate);
     this->_lastSessionCt = latestUpdate;
     this->_sessionData = irsdk_getSessionInfoStr();
-
-    // Convert to UTF-8 then to JSON
-    if (this->_sessionData != NULL) {
-      std::string utf8Session = ConvertToUTF8(this->_sessionData);
-      this->_sessionJson = yamlToJsonObject(utf8Session.c_str());
-    } else {
-      this->_sessionJson = nlohmann::json::object();
-    }
   }
-
-  return JsonToNapiValue(info.Env(), this->_sessionJson);
+  const char *session = this->_sessionData;
+  if (session == NULL) {
+    return Napi::String::New(info.Env(), "");
+  }
+  
+  // Convert Windows-1252 to UTF-8
+  std::string utf8Session = ConvertToUTF8(session);
+  return Napi::String::New(info.Env(), utf8Session.c_str());
 }
 
 Napi::Value iRacingSdkNode::GetTelemetryVar(const Napi::CallbackInfo &info)

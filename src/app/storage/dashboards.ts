@@ -2,6 +2,9 @@ import type { DashboardLayout, DashboardWidget } from '@irdashies/types';
 import { emitDashboardUpdated } from './dashboardEvents';
 import { defaultDashboard } from './defaultDashboard';
 import { readData, writeData } from './storage';
+import { writeFile, mkdir, readFile } from 'node:fs/promises';
+import { resolve } from 'node:path';
+import { app } from 'electron';
 
 const DASHBOARDS_KEY = 'dashboards';
 
@@ -147,3 +150,84 @@ export const resetDashboard = (resetEverything = false, dashboardId = 'default')
     return resetDashboard;
   }
 };
+
+export const saveGarageCoverImage = async (buffer: Uint8Array): Promise<string> => {
+  try {
+    const userDataPath = app.getPath('userData');
+    const assetsPath = resolve(userDataPath, 'frontend', 'assets', 'img');
+
+    console.log('[GarageCover] User data path:', userDataPath);
+    console.log('[GarageCover] Assets path:', assetsPath);
+    console.log('[GarageCover] Buffer size:', buffer.length);
+
+    // Create directory if it doesn't exist
+    console.log('[GarageCover] Creating directory...');
+    await mkdir(assetsPath, { recursive: true });
+    console.log('[GarageCover] Directory created successfully');
+
+    // Detect image type from file signature (magic bytes)
+    let extension = 'png'; // default
+
+    if (buffer.length >= 4) {
+      // Check PNG signature: 89 50 4E 47
+      if (buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4E && buffer[3] === 0x47) {
+        extension = 'png';
+      }
+      // Check JPEG signature: FF D8 FF
+      else if (buffer[0] === 0xFF && buffer[1] === 0xD8 && buffer[2] === 0xFF) {
+        extension = 'jpg';
+      }
+      // Check GIF signature: 47 49 46
+      else if (buffer[0] === 0x47 && buffer[1] === 0x49 && buffer[2] === 0x46) {
+        extension = 'gif';
+      }
+      // Check WebP signature: RIFF...WEBP
+      else if (buffer[0] === 0x52 && buffer[1] === 0x49 && buffer[2] === 0x46 && buffer[3] === 0x46 &&
+        buffer.length >= 12 && buffer[8] === 0x57 && buffer[9] === 0x45 && buffer[10] === 0x42 && buffer[11] === 0x50) {
+        extension = 'webp';
+      }
+    }
+
+    const imagePath = resolve(assetsPath, `custom-cover.${extension}`);
+    console.log('[GarageCover] Writing to:', imagePath, 'Extension detected:', extension);
+    await writeFile(imagePath, buffer);
+    console.log('[GarageCover] File written successfully');
+
+    // Return the file path so it can be persisted in the dashboard
+    return imagePath;
+  } catch (err) {
+    console.error('[GarageCover] Error saving image:', err);
+    throw err;
+  }
+};
+
+export const getGarageCoverImageAsDataUrl = async (imageFilenameOrPath: string): Promise<string | null> => {
+  try {
+    // If it's just a filename, construct the full path
+    let imagePath = imageFilenameOrPath;
+    if (!imageFilenameOrPath.includes('/') && !imageFilenameOrPath.includes('\\')) {
+      const userDataPath = app.getPath('userData');
+      imagePath = resolve(userDataPath, 'frontend', 'assets', 'img', imageFilenameOrPath);
+    }
+
+    const buffer = await readFile(imagePath);
+    const base64 = Buffer.from(buffer).toString('base64');
+
+    // Detect MIME type from file extension
+    const extension = imagePath.toLowerCase().split('.').pop() || 'png';
+    const mimeTypeMap: Record<string, string> = {
+      'png': 'image/png',
+      'jpg': 'image/jpeg',
+      'jpeg': 'image/jpeg',
+      'gif': 'image/gif',
+      'webp': 'image/webp'
+    };
+    const mimeType = mimeTypeMap[extension] || 'image/png';
+
+    return `data:${mimeType};base64,${base64}`;
+  } catch (err) {
+    console.error('Error reading garage cover image:', err);
+    return null;
+  }
+};
+

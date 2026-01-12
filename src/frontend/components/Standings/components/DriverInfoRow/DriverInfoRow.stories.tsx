@@ -2,9 +2,11 @@ import { Meta, StoryObj } from '@storybook/react-vite';
 import { DriverInfoRow } from './DriverInfoRow';
 import { useCurrentSessionType } from '@irdashies/context';
 import type { StandingsWidgetSettings } from '../../../Settings/types';
+import { CAR_ID_TO_CAR_MANUFACTURER } from '../CarManufacturer/carManufacturerMapping';
 
 export default {
   component: DriverInfoRow,
+  title: 'widgets/Standings/components/DriverInfoRow',
   decorators: [
     (Story) => (
       <table className="w-full">
@@ -46,6 +48,7 @@ export const Primary: Story = {
       lastTime: { enabled: true },
       iratingChange: { enabled: true },
       badge: { enabled: true, badgeFormat: 'license-color-rating-bw' },
+      pitStatus: { enabled: true, showPitTime: true },
     } as StandingsWidgetSettings['config'],
     dnf: false,
     repair: false,
@@ -144,6 +147,14 @@ export const IRatingNoChange: Story = {
     iratingChangeValue: 0,
   },
 };
+
+export const OffTrack: Story = {
+  args: {
+    ...Primary.args,
+    carTrackSurface: 0,
+  },
+};
+
 
 // Pre-generated mock data for Relative story (generated at module load, not during render)
 const mockRelativeData = (() => {
@@ -283,7 +294,7 @@ const Relative = () => {
         name: mockRelativeData.drivers[3].name,
         license: mockRelativeData.drivers[3].license,
         rating: mockRelativeData.drivers[3].rating,
-        flairId: 71, // France
+        flairId: 2, // iRacing
       },
       isPlayer: true,
       delta: 0,
@@ -514,6 +525,9 @@ const AllFlagCombinations = () => {
     { name: 'PIT + Penalty', dnf: false, repair: false, penalty: true, slowdown: false, onPitRoad: true, lastPitLap: undefined, lastLap: undefined, carTrackSurface: 2, prevCarTrackSurface: undefined },
     { name: 'PIT + Slowdown', dnf: false, repair: false, penalty: false, slowdown: true, onPitRoad: true, lastPitLap: undefined, lastLap: undefined, carTrackSurface: 2, prevCarTrackSurface: undefined },
     { name: 'Pit Lap (L 5)', dnf: false, repair: false, penalty: false, slowdown: false, onPitRoad: false, lastPitLap: 5, lastLap: 10, carTrackSurface: 1, prevCarTrackSurface: undefined },
+    { name: 'Pit Lap with Time (L 5 1:24)', dnf: false, repair: false, penalty: false, slowdown: false, onPitRoad: false, lastPitLap: 5, lastLap: 10, carTrackSurface: 1, prevCarTrackSurface: undefined, pitStopDuration: 84 },
+    { name: 'Pit Lap with Time (L 5 0:34)', dnf: false, repair: false, penalty: false, slowdown: false, onPitRoad: false, lastPitLap: 5, lastLap: 10, carTrackSurface: 1, prevCarTrackSurface: undefined, pitStopDuration: 34 },
+    { name: 'Pit Lap with Time (L 5 0:34)', dnf: false, repair: false, penalty: false, slowdown: false, onPitRoad: false, lastPitLap: 5, lastLap: 5, carTrackSurface: 1, prevCarTrackSurface: undefined, pitStopDuration: 34 },
     { name: 'Pit Lap + DNF', dnf: true, repair: false, penalty: false, slowdown: false, onPitRoad: false, lastPitLap: 5, lastLap: 10, carTrackSurface: 1, prevCarTrackSurface: undefined },
     { name: 'Pit Lap + Repair', dnf: false, repair: true, penalty: false, slowdown: false, onPitRoad: false, lastPitLap: 5, lastLap: 10, carTrackSurface: 1, prevCarTrackSurface: undefined },
     { name: 'Pit Lap + Penalty', dnf: false, repair: false, penalty: true, slowdown: false, onPitRoad: false, lastPitLap: 5, lastLap: 10, carTrackSurface: 1, prevCarTrackSurface: undefined },
@@ -589,11 +603,13 @@ const AllFlagCombinations = () => {
               lastLap={combo.lastLap}
               carTrackSurface={combo.carTrackSurface}
               prevCarTrackSurface={combo.prevCarTrackSurface}
+              pitStopDuration={combo.pitStopDuration}
               config={{
                 fastestTime: { enabled: true, timeFormat: 'full' },
                 lastTime: { enabled: true, timeFormat: 'full' },
                 iratingChange: { enabled: true },
                 badge: { enabled: true, badgeFormat: 'license-color-rating-bw' },
+                pitStatus: { enabled: true, showPitTime: true },
               } as StandingsWidgetSettings['config']}
             />
           ))}
@@ -605,4 +621,50 @@ const AllFlagCombinations = () => {
 
 export const AllFlagCombinationsStory: Story = {
   render: () => <AllFlagCombinations />,
+};
+
+const AllCarsComponent = () => {
+  const carEntries = Object.entries(CAR_ID_TO_CAR_MANUFACTURER)
+    .map(([id, data]) => ({ id: Number(id), ...data }))
+    .sort((a, b) => a.id - b.id);
+
+  return (
+    <div className="w-full h-full max-h-[90vh] overflow-y-auto">
+      <table className="w-full table-auto text-sm border-separate border-spacing-y-0.5 mb-3 mt-3">
+        <tbody>
+          {carEntries.map(({ id, name }, index) => (
+            <DriverInfoRow
+              key={id}
+              carIdx={index + 1}
+              carNumber={`${id}`}
+              name={name}
+              isPlayer={false}
+              hasFastestTime={false}
+              position={index + 1}
+              classColor={16777215}
+              isMultiClass={false}
+              flairId={2}
+              carId={id}
+              dnf={false}
+              repair={false}
+              penalty={false}
+              slowdown={false}
+              config={{
+                countryFlags: { enabled: false },
+                gap: { enabled: false },
+                badge: { enabled: false },
+              } as StandingsWidgetSettings['config']}
+            />
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+};
+
+export const AllCars: Story = {
+  render: () => <AllCarsComponent />,
+  parameters: {
+    layout: 'padded',
+  },
 };

@@ -260,7 +260,7 @@
     "unit": "",
     "varType": 1,
     "value": [
-      false
+      true
     ]
   },
   "IsReplayPlaying": {
@@ -271,7 +271,7 @@
     "unit": "",
     "varType": 1,
     "value": [
-      true
+      false
     ]
   },
   "ReplayFrameNum": {
@@ -786,7 +786,7 @@
       -1,
       0.841148853302002,
       -1,
-      -1,
+      0.02848,
       -1,
       -1,
       -1,
@@ -891,7 +891,7 @@
       3,
       3,
       -1,
-      3,
+      0,
       3,
       3,
       -1,
@@ -3133,7 +3133,7 @@
     "unit": "%",
     "varType": 4,
     "value": [
-      0
+      0.123
     ]
   },
   "SolarAltitude": {
@@ -3221,7 +3221,7 @@
     "unit": "irsdk_CarLeftRight",
     "varType": 2,
     "value": [
-      1
+      4
     ]
   },
   "PitsOpen": {
@@ -3518,7 +3518,7 @@
     "unit": "",
     "varType": 2,
     "value": [
-      5
+      4
     ]
   },
   "CamCameraNumber": {

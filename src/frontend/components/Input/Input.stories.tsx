@@ -4,6 +4,7 @@ import { TelemetryDecorator } from '@irdashies/storybook';
 
 const meta: Meta<typeof Input> = {
   component: Input,
+  title: 'widgets/Input',
   decorators: [TelemetryDecorator()],
 };
 export default meta;

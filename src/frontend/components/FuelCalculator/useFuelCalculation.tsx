@@ -470,6 +470,64 @@ export function useFuelCalculation(
       );
     }
 
+    // ========================================================================
+    // Calculate Target Consumption Scenarios
+    // ========================================================================
+    const targetScenarios: FuelCalculation['targetScenarios'] = [];
+
+    // Only show scenarios if we have meaningful fuel data
+    if (lapsWithFuel >= 0.5) {
+      const currentLapTarget = Math.round(lapsWithFuel);
+
+      // Determine which scenarios to show based on lapsWithFuel
+      const scenarios: number[] = [];
+
+      if (currentLapTarget > 1) {
+        scenarios.push(currentLapTarget - 1); // -1 lap
+      }
+      scenarios.push(currentLapTarget);        // current
+      scenarios.push(currentLapTarget + 1);    // +1 lap
+
+      // Calculate fuel per lap for each scenario
+      for (const lapCount of scenarios) {
+        if (lapCount > 0) {
+          targetScenarios.push({
+            laps: lapCount,
+            fuelPerLap: fuelLevel / lapCount,
+            isCurrentTarget: lapCount === currentLapTarget,
+          });
+        }
+      }
+    }
+
+    // ========================================================================
+    // Calculate Earliest Pit Lap (for safety car strategy)
+    // ========================================================================
+    let earliestPitLap: number | undefined;
+
+    if (stopsRemaining !== undefined && stopsRemaining > 0 && lapsPerStint !== undefined && lapsPerStint > 0) {
+      // Maximum laps coverable with all remaining stops (each fills full tank)
+      const maxLapsWithAllStops = lapsPerStint * stopsRemaining;
+
+      // Excess capacity = how much more we can cover than needed
+      const excessCapacity = maxLapsWithAllStops - lapsRemaining;
+
+      if (excessCapacity >= 0) {
+        // Can pit immediately on next lap
+        earliestPitLap = lap + 1;
+      } else {
+        // Must drive some laps first before we can pit
+        // Each lap we delay reduces how many laps we need to cover after pitting
+        const minLapsBeforePit = Math.ceil(-excessCapacity);
+        earliestPitLap = lap + Math.max(1, minLapsBeforePit);
+      }
+
+      // Ensure earliest pit doesn't exceed pit window close
+      if (earliestPitLap > pitWindowClose) {
+        earliestPitLap = Math.floor(pitWindowClose);
+      }
+    }
+
     const result: FuelCalculation = {
       fuelLevel,
       lastLapUsage,
@@ -494,6 +552,9 @@ export function useFuelCalculation(
       sessionTimeTotal,
       stopsRemaining,
       lapsPerStint,
+      targetScenarios,
+      earliestPitLap,
+      fuelTankCapacity,
     };
 
     // Only log when lap changes to avoid spam

@@ -11,6 +11,7 @@ import type { ComponentType } from 'react';
 
 const meta = {
   component: DriverInfoRow,
+  title: 'widgets/Standings/components/DriverInfoRow',
   decorators: [
     (Story: ComponentType) => (
       <table className="w-full">
@@ -30,6 +31,7 @@ const sortableSettings = [
   { id: 'position', label: 'Position' },
   { id: 'carNumber', label: 'Car Number' },
   { id: 'countryFlags', label: 'Country Flags' },
+  { id: 'teamName', label: 'Team Name' },
   { id: 'driverName', label: 'Driver Name' },
   { id: 'pitStatus', label: 'Pit Status' },
   { id: 'carManufacturer', label: 'Car Manufacturer' },
@@ -47,15 +49,16 @@ const mockReorderableConfigData = (() => {
     const x = Math.sin(seed) * 10000;
     return x - Math.floor(x);
   };
-  
+
   let seed = 123;
   const random = () => seededRandom(seed++);
-  
+
   const names = ['Alice', 'Bob', 'Charlie', 'David', 'Eve', 'Frank', 'Grace', 'Hank', 'Ivy', 'Jack'];
   const surnames = ['Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis', 'Rodriguez', 'Martinez'];
   const middleNames = ['James', 'Marie', 'Lee', 'Ann', 'Grace', 'John', 'Michael', 'Elizabeth', 'David', 'Rose'];
   const licenses = ['C', 'B', 'A'];
-  
+  const teamNames = ['Radical Racing', 'Lumen Motorsport', 'DFL Motorsport', 'RCKLSS ABNDN Racing', 'SRN Esports Red', 'Purple Reign Motorsports', 'Siroco Virtual Racing'];
+
   const getLicense = () => licenses[Math.floor(random() * licenses.length)];
   const getSafetyRating = () => parseFloat((random() * (4.5 - 1.5) + 1.5).toFixed(2));
   const getFullName = () => {
@@ -69,13 +72,14 @@ const mockReorderableConfigData = (() => {
     return `${firstName} ${surname}`;
   };
   const getCarNum = () => (Math.floor(random() * 35) + 1).toString();
-  
+
   return {
-    drivers: Array.from({ length: 7 }, () => ({
+    drivers: Array.from({ length: 7 }, (_, i) => ({
       name: getFullName(),
       license: getLicense(),
       rating: getSafetyRating(),
       carNum: getCarNum(),
+      teamName: teamNames[i],
     })),
   };
 })();
@@ -92,6 +96,7 @@ const RelativeWithReorderableConfig = () => {
         name: mockReorderableConfigData.drivers[0].name,
         license: mockReorderableConfigData.drivers[0].license,
         rating: mockReorderableConfigData.drivers[0].rating,
+        teamName: mockReorderableConfigData.drivers[0].teamName,
         flairId: 223,
       },
       isPlayer: false,
@@ -118,6 +123,7 @@ const RelativeWithReorderableConfig = () => {
         name: mockReorderableConfigData.drivers[1].name,
         license: mockReorderableConfigData.drivers[1].license,
         rating: mockReorderableConfigData.drivers[1].rating,
+        teamName: mockReorderableConfigData.drivers[1].teamName,
         flairId: 222,
       },
       isPlayer: false,
@@ -148,6 +154,7 @@ const RelativeWithReorderableConfig = () => {
         name: mockReorderableConfigData.drivers[2].name,
         license: mockReorderableConfigData.drivers[2].license,
         rating: mockReorderableConfigData.drivers[2].rating,
+        teamName: mockReorderableConfigData.drivers[2].teamName,
         flairId: 77,
       },
       isPlayer: false,
@@ -178,6 +185,7 @@ const RelativeWithReorderableConfig = () => {
         name: mockReorderableConfigData.drivers[3].name,
         license: mockReorderableConfigData.drivers[3].license,
         rating: mockReorderableConfigData.drivers[3].rating,
+        teamName: mockReorderableConfigData.drivers[3].teamName,
         flairId: 71,
       },
       isPlayer: true,
@@ -206,6 +214,7 @@ const RelativeWithReorderableConfig = () => {
         name: mockReorderableConfigData.drivers[4].name,
         license: mockReorderableConfigData.drivers[4].license,
         rating: mockReorderableConfigData.drivers[4].rating,
+        teamName: mockReorderableConfigData.drivers[4].teamName,
         flairId: 101,
       },
       isPlayer: false,
@@ -234,6 +243,7 @@ const RelativeWithReorderableConfig = () => {
         name: mockReorderableConfigData.drivers[5].name,
         license: mockReorderableConfigData.drivers[5].license,
         rating: mockReorderableConfigData.drivers[5].rating,
+        teamName: mockReorderableConfigData.drivers[5].teamName,
         flairId: 198,
       },
       isPlayer: false,
@@ -262,6 +272,7 @@ const RelativeWithReorderableConfig = () => {
         name: mockReorderableConfigData.drivers[6].name,
         license: mockReorderableConfigData.drivers[6].license,
         rating: mockReorderableConfigData.drivers[6].rating,
+        teamName: mockReorderableConfigData.drivers[6].teamName,
         flairId: 39,
       },
       isPlayer: false,
@@ -295,11 +306,12 @@ const RelativeWithReorderableConfig = () => {
       carNumber: { enabled: true },
       countryFlags: { enabled: true },
       driverName: { enabled: true },
+      teamName: { enabled: true },
       pitStatus: { enabled: true },
       carManufacturer: { enabled: true },
       badge: { enabled: true, badgeFormat: 'license-color-rating-bw' },
       iratingChange: { enabled: true },
-      delta: { enabled: true },
+      delta: { enabled: true, precision: 2 },
       fastestTime: { enabled: true, timeFormat: 'full' },
       lastTime: { enabled: true, timeFormat: 'full' },
       compound: { enabled: true },
@@ -309,34 +321,36 @@ const RelativeWithReorderableConfig = () => {
       headerBar: {
         enabled: true,
         sessionName: { enabled: true },
-        timeRemaining: { enabled: true },
+        sessionTime: { enabled: true, mode: 'Remaining' },
+        sessionLaps: { enabled: true },
         incidentCount: { enabled: true },
         brakeBias: { enabled: false },
         localTime: { enabled: true },
+        sessionClockTime: { enabled: false },
         trackWetness: { enabled: false },
-        airTemperature: { enabled: false },
-        trackTemperature: { enabled: false },
-        displayOrder: ['sessionName', 'timeRemaining', 'brakeBias', 'incidentCount']
+        precipitation: { enabled: false },
+        airTemperature: { enabled: false, unit: 'Metric' },
+        trackTemperature: { enabled: false, unit: 'Metric' },
+        displayOrder: ['sessionName', 'sessionTime', 'sessionLaps', 'brakeBias', 'incidentCount']
       },
       footerBar: {
         enabled: true,
         sessionName: { enabled: false },
-        timeRemaining: { enabled: false },
+        sessionTime: { enabled: false, mode: 'Remaining' },
+        sessionLaps: { enabled: true },
         incidentCount: { enabled: false },
         brakeBias: { enabled: true },
         localTime: { enabled: true },
+        sessionClockTime: { enabled: false },
         trackWetness: { enabled: true },
-        airTemperature: { enabled: true },
-        trackTemperature: { enabled: true },
-        displayOrder: ['localTime', 'trackWetness', 'airTemperature', 'trackTemperature']
+        precipitation: { enabled: false },
+        airTemperature: { enabled: true, unit: 'Metric' },
+        trackTemperature: { enabled: true, unit: 'Metric' },
+        displayOrder: ['localTime', 'trackWetness', 'sessionLaps','airTemperature', 'trackTemperature']
       },
       showOnlyWhenOnTrack: false,
-      enhancedGapCalculation: {
-        enabled: true,
-        interpolationMethod: 'linear',
-        sampleInterval: 0.01,
-        maxLapHistory: 5,
-      },
+      useLivePosition: false,
+      sessionVisibility: { race: true, loneQualify: false, openQualify: true, practice: true, offlineTesting: true }
     }),
     [displayOrder]
   );
@@ -364,6 +378,7 @@ const RelativeWithReorderableConfig = () => {
                 classColor={result.carClass.color}
                 carNumber={result.driver?.carNum || ''}
                 name={result.driver?.name || ''}
+                teamName={result.driver?.teamName || ''}
                 isPlayer={result.isPlayer}
                 hasFastestTime={result.hasFastestTime}
                 delta={result.delta}

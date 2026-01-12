@@ -23,6 +23,7 @@ export interface Standings {
     license: string;
     rating: number;
     flairId?: number;
+    teamName?: string;
   };
   fastestTime: number;
   hasFastestTime: boolean;
@@ -88,42 +89,6 @@ const getLastTimeState = (
 };
 
 /**
- * Calculate lap time deltas between a driver's recent laps and the player's recent laps
- * @param driverLapHistory - Array of driver's lap times (most recent last)
- * @param playerLapHistory - Array of player's lap times (most recent last)
- * @param numLaps - Number of recent laps to compare (1-5)
- * @returns Array of deltas (driver time - player time), most recent last. Positive = driver slower, negative = driver faster
- */
-const calculateLapTimeDeltas = (
-  driverLapHistory: number[],
-  playerLapHistory: number[],
-  numLaps: number
-): number[] | undefined => {
-  if (!driverLapHistory || !playerLapHistory || driverLapHistory.length === 0 || playerLapHistory.length === 0) {
-    return undefined;
-  }
-
-  const deltas: number[] = [];
-  const lapsToCompare = Math.min(numLaps, driverLapHistory.length, playerLapHistory.length);
-
-  // Compare the last N laps (most recent laps)
-  for (let i = 0; i < lapsToCompare; i++) {
-    const driverLapIndex = driverLapHistory.length - lapsToCompare + i;
-    const playerLapIndex = playerLapHistory.length - lapsToCompare + i;
-
-    const driverLapTime = driverLapHistory[driverLapIndex];
-    const playerLapTime = playerLapHistory[playerLapIndex];
-
-    // Only calculate delta if both lap times are valid
-    if (driverLapTime > 0 && playerLapTime > 0) {
-      deltas.push(driverLapTime - playerLapTime);
-    }
-  }
-
-  return deltas.length > 0 ? deltas : undefined;
-};
-
-/**
  * This method will create the driver standings for the current session
  * It will calculate the delta to the leader
  * It will also determine if the driver has the fastest time
@@ -156,17 +121,13 @@ export const createDriverStandings = (
   lastLap: number[],
   prevCarTrackSurface: number[],
   numLapsToShow?: number,
-  lapTimeHistory?: number[][],
+  lapDeltasVsPlayer?: number[][], // NEW: Pre-calculated deltas from LapTimesStore
 ): Standings[] => {
-  const results =
-    currentSession.resultsPositions ?? session.qualifyingResults ?? [];
+  const resultsPositions = Array.isArray(currentSession.resultsPositions) ? currentSession.resultsPositions : [];
+  const qualifyingResults = Array.isArray(session.qualifyingResults) ? session.qualifyingResults : [];
+  const results = resultsPositions.length > 0 ? resultsPositions : qualifyingResults;
   const fastestDriverIdx = currentSession.resultsFastestLap?.[0]?.CarIdx;
   const fastestDriver = results?.find((r) => r.CarIdx === fastestDriverIdx);
-
-  // Get player's lap history for delta calculations
-  const playerLapHistory = session.playerIdx !== undefined && lapTimeHistory
-    ? lapTimeHistory[session.playerIdx]
-    : undefined;
 
   return results
     .map((result) => {
@@ -193,6 +154,7 @@ export const createDriverStandings = (
           license: driver.LicString,
           rating: driver.IRating,
           flairId: driver.FlairID,
+          teamName: driver.TeamName,
         },
         fastestTime: result.FastestTime,
         hasFastestTime: result.CarIdx === fastestDriverIdx,
@@ -217,13 +179,9 @@ export const createDriverStandings = (
         carId: driver.CarID,
         lapTimeDeltas:
           result.CarIdx === session.playerIdx
-            ? undefined // Don't calculate deltas for player
-            : playerLapHistory && lapTimeHistory && numLapsToShow
-              ? calculateLapTimeDeltas(
-                  lapTimeHistory[result.CarIdx],
-                  playerLapHistory,
-                  numLapsToShow
-                )
+            ? undefined // Don't show deltas for player (comparing to themselves)
+            : lapDeltasVsPlayer && lapDeltasVsPlayer[result.CarIdx] && lapDeltasVsPlayer[result.CarIdx].length > 0
+              ? lapDeltasVsPlayer[result.CarIdx].slice(0, numLapsToShow) // Use pre-calculated deltas
               : undefined,
         lastPitLap: lastPitLap[result.CarIdx] ?? undefined,
         lastLap: lastLap[result.CarIdx] ?? undefined,
@@ -445,14 +403,28 @@ export const sliceRelevantDrivers = <T extends { isPlayer?: boolean }>(
       }
     }
 
-    // Ensure we have at least `minPlayerClassDrivers`
-    let lastIndex = end;
-    while (
-      relevantDrivers.size < minPlayerClassDrivers &&
-      lastIndex < standings.length
-    ) {
-      relevantDrivers.add(standings[lastIndex]);
-      lastIndex++;
+    // Ensure we have at least `minPlayerClassDrivers` by expanding from both ends of the buffer range
+    let expandBefore = start - 1;
+    let expandAfter = end;
+    while (relevantDrivers.size < minPlayerClassDrivers) {
+      let added = false;
+
+      // Try to add from before the buffer range
+      if (expandBefore >= 0 && standings[expandBefore]) {
+        relevantDrivers.add(standings[expandBefore]);
+        expandBefore--;
+        added = true;
+      }
+
+      // Try to add from after the buffer range
+      if (expandAfter < standings.length && standings[expandAfter]) {
+        relevantDrivers.add(standings[expandAfter]);
+        expandAfter++;
+        added = true;
+      }
+
+      // If we couldn't add in either direction, we're done
+      if (!added) break;
     }
 
     const sortedDrivers = standings.filter((driver) =>

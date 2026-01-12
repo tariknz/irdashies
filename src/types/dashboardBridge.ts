@@ -15,5 +15,9 @@ export interface DashboardBridge {
   toggleDemoMode: (value: boolean) => void;
   onDemoModeChanged: (callback: (value: boolean) => void) => void;
   getCurrentDashboard: () => DashboardLayout | null;
+  saveGarageCoverImage: (buffer: Uint8Array) => Promise<string>;
+  getGarageCoverImageAsDataUrl: (imagePath: string) => Promise<string | null>;
+  getAnalyticsOptOut: () => Promise<boolean>;
+  setAnalyticsOptOut: (optOut: boolean) => Promise<void>;
   stop: () => void;
 }

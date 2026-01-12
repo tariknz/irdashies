@@ -3,10 +3,6 @@ import { WeatherWidgetSettings } from '../../Settings/types';
 
 export const useWeatherSettings = () => {
   const { currentDashboard } = useDashboard();
-
-  const weatherSettings = currentDashboard?.widgets.find(
-    (widget) => widget.id === 'weather',
-  )?.config;
-  
-  return weatherSettings as WeatherWidgetSettings['config'];
+  const widget = currentDashboard?.widgets.find(w => w.id === 'weather')?.config;
+  return widget as WeatherWidgetSettings['config'];
 }; 

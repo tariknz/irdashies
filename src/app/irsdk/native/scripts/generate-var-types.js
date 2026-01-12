@@ -1,10 +1,24 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
-const NativeSDK = require("../build/Debug/irsdk_node.node").iRacingSdkNode;
 const path = require("path");
 const fs = require("fs");
 
+// Prefer Debug build but fall back to Release if Debug is not built.
+const debugBinary = path.resolve(__dirname, "../build/Debug/irsdk_node.node");
+const releaseBinary = path.resolve(__dirname, "../build/Release/irsdk_node.node");
+let nativeBinary = null;
+if (fs.existsSync(debugBinary)) nativeBinary = debugBinary;
+else if (fs.existsSync(releaseBinary)) nativeBinary = releaseBinary;
+else {
+  console.error("Native module not found. Build the native addon (run the build script) and try again.");
+  process.exit(1);
+}
+const NativeSDK = require(nativeBinary).iRacingSdkNode;
+
 const TARGET_FILE = "_GENERATED_telemetry.ts";
-const OUT_PATH = path.resolve(process.cwd(), "../types/", TARGET_FILE);
+const OUT_PATH = path.resolve(__dirname, "../../types/", TARGET_FILE);
+
+// Ensure the output directory exists (robust when script is run from different CWDs)
+fs.mkdirSync(path.dirname(OUT_PATH), { recursive: true });
 
 console.log("Generating iRacing telemetry variable types.");
 console.log("Make sure the sim is running!");
@@ -56,6 +70,10 @@ export interface TelemetryVariable<VarType = number[]> {
 }
 
 export interface TelemetryVarList {
+
+  // Manually added entries
+  dcPeakBrakeBias: TelemetryVariable<number[]>;
+
 ${Object.keys(types).map((varName) => 
   `  ${varName}: TelemetryVariable<${varTypes[types[varName]]}[]>`
 ).join(";\n")};

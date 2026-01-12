@@ -15,12 +15,13 @@ interface PositionCellProps {
 
 export const PositionCell = memo(({ hidden, position, isPlayer, offTrack, tailwindStyles }: PositionCellProps) => {
 
-  const positionColor = (offTrack) ? 'bg-yellow-300' : (isPlayer) ? tailwindStyles.classHeader : '';
+  const positionColor = (offTrack) ? 'bg-yellow-400' : (isPlayer) ? tailwindStyles.classHeader : '';
+  const textColor = (offTrack) ? 'text-yellow-900' : 'text-white';
 
   return (
     <td
       data-column="position"
-      className={`w-auto text-center text-white px-2 whitespace-nowrap ${positionColor}`}
+      className={`w-auto text-center px-2 whitespace-nowrap ${positionColor} ${textColor}`}
     >
       {hidden ? '' : position}
     </td>

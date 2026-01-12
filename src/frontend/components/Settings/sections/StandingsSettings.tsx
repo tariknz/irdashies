@@ -1,11 +1,14 @@
 import { useState } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
-import { StandingsWidgetSettings } from '../types';
+import { SessionVisibilitySettings, StandingsWidgetSettings } from '../types';
 import { useDashboard } from '@irdashies/context';
 import { ToggleSwitch } from '../components/ToggleSwitch';
 import { useSortableList } from '../../SortableList';
 import { DotsSixVerticalIcon } from '@phosphor-icons/react';
 import { BadgeFormatPreview } from '../components/BadgeFormatPreview';
+import { VALID_SESSION_BAR_ITEM_KEYS, SESSION_BAR_ITEM_LABELS, DEFAULT_SESSION_BAR_DISPLAY_ORDER } from '../sessionBarConstants';
+import { mergeDisplayOrder } from '../../../utils/displayOrder';
+import { SessionVisibility } from '../components/SessionVisibility';
 
 const SETTING_ID = 'standings';
 
@@ -21,8 +24,9 @@ const sortableSettings: SortableSetting[] = [
   { id: 'carNumber', label: 'Car Number', configKey: 'carNumber' },
   { id: 'countryFlags', label: 'Country Flags', configKey: 'countryFlags' },
   { id: 'driverName', label: 'Driver Name', configKey: 'driverName' },
-  { id: 'pitStatus', label: 'Pit Status', configKey: 'pitStatus' },
-  { id: 'carManufacturer', label: 'Car Manufacturer', configKey: 'carManufacturer' },
+  { id: 'teamName', label: 'Team Name', configKey: 'teamName' },
+  { id: 'pitStatus', label: 'Pit Status', configKey: 'pitStatus', hasSubSetting: true },
+  { id: 'carManufacturer', label: 'Car Manufacturer', configKey: 'carManufacturer', hasSubSetting: true },
   { id: 'badge', label: 'Driver Badge', configKey: 'badge' },
   { id: 'iratingChange', label: 'iRating Change', configKey: 'iratingChange' },
   { id: 'gap', label: 'Gap', configKey: 'gap' },
@@ -51,66 +55,47 @@ const defaultConfig: StandingsWidgetSettings['config'] = {
     numTopDrivers: 3,
   },
   compound: { enabled: true },
-  carManufacturer: { enabled: true },
+  carManufacturer: { enabled: true, hideIfSingleMake: false },
   titleBar: { enabled: true, progressBar: { enabled: true } },
   headerBar: {
     enabled: true,
     sessionName: { enabled: true },
-    timeRemaining: { enabled: true },
+    sessionTime: { enabled: true, mode: 'Remaining' },
+    sessionLaps: { enabled: true },
     incidentCount: { enabled: true },
     brakeBias: { enabled: false },
     localTime: { enabled: false },
+    sessionClockTime: { enabled: false },
     trackWetness: { enabled: false },
-    airTemperature: { enabled: false },
-    trackTemperature: { enabled: false },
-    displayOrder: ['sessionName', 'timeRemaining', 'brakeBias', 'incidentCount', 'localTime', 'trackWetness', 'airTemperature', 'trackTemperature']
+    precipitation: { enabled: false },
+    airTemperature: { enabled: false, unit: 'Metric' },
+    trackTemperature: { enabled: false, unit: 'Metric' },
+    displayOrder: DEFAULT_SESSION_BAR_DISPLAY_ORDER
   },
   footerBar: {
     enabled: true,
     sessionName: { enabled: false },
-    timeRemaining: { enabled: false },
+    sessionTime: { enabled: false, mode: 'Remaining' },
+    sessionLaps: { enabled: false },
     incidentCount: { enabled: false },
     brakeBias: { enabled: false },
     localTime: { enabled: true },
+    sessionClockTime: { enabled: false },
     trackWetness: { enabled: true },
-    airTemperature: { enabled: true },
-    trackTemperature: { enabled: true },
-    displayOrder: ['sessionName', 'timeRemaining', 'incidentCount', 'brakeBias', 'localTime', 'trackWetness', 'airTemperature', 'trackTemperature']
+    precipitation: { enabled: false },
+    airTemperature: { enabled: true, unit: 'Metric' },
+    trackTemperature: { enabled: true, unit: 'Metric' },
+    displayOrder: DEFAULT_SESSION_BAR_DISPLAY_ORDER
   },
   showOnlyWhenOnTrack: false,
+  useLivePosition: false,
   lapTimeDeltas: { enabled: false, numLaps: 3 },
   position: { enabled: true },
   driverName: { enabled: true },
-  pitStatus: { enabled: true },
-  displayOrder: sortableSettings.map(s => s.id)
-};
-
-const mergeDisplayOrder = (existingOrder?: string[]): string[] => {
-  if (!existingOrder) return defaultConfig.displayOrder;
-
-  const allIds = sortableSettings.map(s => s.id);
-  const merged = [...existingOrder];
-
-  const missingIds = allIds.filter(id => !merged.includes(id));
-
-  missingIds.forEach(missingId => {
-    const missingIndex = allIds.indexOf(missingId);
-
-    let insertIndex = merged.length;
-
-    for (let i = missingIndex + 1; i < allIds.length; i++) {
-      const existingItem = allIds[i];
-      const existingItemIndex = merged.indexOf(existingItem);
-      if (existingItemIndex !== -1) {
-        insertIndex = existingItemIndex;
-        break;
-      }
-    }
-
-    merged.splice(insertIndex, 0, missingId);
-  });
-
-  return merged;
+  teamName: { enabled: false },
+  pitStatus: { enabled: true, showPitTime: false },
+  displayOrder: sortableSettings.map(s => s.id),
+  sessionVisibility: { race: true, loneQualify: true, openQualify: true, practice: true, offlineTesting: true }
 };
 
 const migrateConfig = (
@@ -170,6 +155,7 @@ const migrateConfig = (
     },
     carManufacturer: {
       enabled: (config.carManufacturer as { enabled?: boolean })?.enabled ?? true,
+      hideIfSingleMake: (config.carManufacturer as { hideIfSingleMake?: boolean })?.hideIfSingleMake ?? false,
     },
     lapTimeDeltas: {
       enabled: (config.lapTimeDeltas as { enabled?: boolean })?.enabled ?? false,
@@ -184,45 +170,66 @@ const migrateConfig = (
     headerBar: {
       enabled: (config.headerBar as { enabled?: boolean })?.enabled ?? true,
       sessionName: { enabled: (config.headerBar as { sessionName?: { enabled?: boolean } })?.sessionName?.enabled ?? true },
-      timeRemaining: { enabled: (config.headerBar as { timeRemaining?: { enabled?: boolean } })?.timeRemaining?.enabled ?? true },
+      sessionTime: {
+        enabled: (config.headerBar as { sessionTime?: { enabled?: boolean } })?.sessionTime?.enabled ?? true,
+        mode: ((config.headerBar as { sessionTime?: { mode?: string } })?.sessionTime?.mode as 'Remaining' | 'Elapsed') ?? 'Remaining'
+      },
+      sessionLaps: { enabled: (config.headerBar as { sessionLaps?: { enabled?: boolean } })?.sessionLaps?.enabled ?? true },
       incidentCount: { enabled: (config.headerBar as { incidentCount?: { enabled?: boolean } })?.incidentCount?.enabled ?? true },
       brakeBias: { enabled: (config.headerBar as { brakeBias?: { enabled?: boolean } })?.brakeBias?.enabled ?? false },
       localTime: { enabled: (config.headerBar as { localTime?: { enabled?: boolean } })?.localTime?.enabled ?? false },
+      sessionClockTime: { enabled: (config.headerBar as { sessionClockTime?: { enabled?: boolean } })?.sessionClockTime?.enabled ?? false },
       trackWetness: { enabled: (config.headerBar as { trackWetness?: { enabled?: boolean } })?.trackWetness?.enabled ?? false },
-      airTemperature: { enabled: (config.headerBar as { airTemperature?: { enabled?: boolean } })?.airTemperature?.enabled ?? false },
-      trackTemperature: { enabled: (config.headerBar as { trackTemperature?: { enabled?: boolean } })?.trackTemperature?.enabled ?? false },
-      displayOrder: (config.headerBar as { displayOrder?: string[] })?.displayOrder ?? ['sessionName', 'timeRemaining', 'brakeBias', 'incidentCount', 'localTime', 'trackWetness', 'airTemperature', 'trackTemperature']
+      precipitation: { enabled: (config.headerBar as { precipitation?: { enabled?: boolean } })?.precipitation?.enabled ?? false },
+      airTemperature: {
+        enabled: (config.headerBar as { airTemperature?: { enabled?: boolean; unit?: string } })?.airTemperature?.enabled ?? false,
+        unit: ((config.headerBar as { airTemperature?: { unit?: string } })?.airTemperature?.unit as 'Metric' | 'Imperial') ?? 'Metric'
+      },
+      trackTemperature: {
+        enabled: (config.headerBar as { trackTemperature?: { enabled?: boolean; unit?: string } })?.trackTemperature?.enabled ?? false,
+        unit: ((config.headerBar as { trackTemperature?: { unit?: string } })?.trackTemperature?.unit as 'Metric' | 'Imperial') ?? 'Metric'
+      },
+      displayOrder: mergeDisplayOrder([...VALID_SESSION_BAR_ITEM_KEYS], (config.headerBar as { displayOrder?: string[] })?.displayOrder)
     },
     footerBar: {
       enabled: (config.footerBar as { enabled?: boolean })?.enabled ?? true,
       sessionName: { enabled: (config.footerBar as { sessionName?: { enabled?: boolean } })?.sessionName?.enabled ?? false },
-      timeRemaining: { enabled: (config.footerBar as { timeRemaining?: { enabled?: boolean } })?.timeRemaining?.enabled ?? false },
+      sessionTime: {
+        enabled: (config.footerBar as { sessionTime?: { enabled?: boolean } })?.sessionTime?.enabled ?? false,
+        mode: ((config.footerBar as { sessionTime?: { mode?: string } })?.sessionTime?.mode as 'Remaining' | 'Elapsed') ?? 'Remaining'
+      },
+      sessionLaps: { enabled: (config.footerBar as { sessionLaps?: { enabled?: boolean } })?.sessionLaps?.enabled ?? true },
       incidentCount: { enabled: (config.footerBar as { incidentCount?: { enabled?: boolean } })?.incidentCount?.enabled ?? false },
       brakeBias: { enabled: (config.footerBar as { brakeBias?: { enabled?: boolean } })?.brakeBias?.enabled ?? false },
       localTime: { enabled: (config.footerBar as { localTime?: { enabled?: boolean } })?.localTime?.enabled ?? true },
+      sessionClockTime: { enabled: (config.footerBar as { sessionClockTime?: { enabled?: boolean } })?.sessionClockTime?.enabled ?? false },
       trackWetness: { enabled: (config.footerBar as { trackWetness?: { enabled?: boolean } })?.trackWetness?.enabled ?? true },
-      airTemperature: { enabled: (config.footerBar as { airTemperature?: { enabled?: boolean } })?.airTemperature?.enabled ?? true },
-      trackTemperature: { enabled: (config.footerBar as { trackTemperature?: { enabled?: boolean } })?.trackTemperature?.enabled ?? true },
-      displayOrder: (config.footerBar as { displayOrder?: string[] })?.displayOrder ?? ['sessionName', 'timeRemaining', 'incidentCount', 'brakeBias', 'localTime', 'trackWetness', 'airTemperature', 'trackTemperature']
+      precipitation: { enabled: (config.footerBar as { precipitation?: { enabled?: boolean } })?.precipitation?.enabled ?? false },
+      airTemperature: {
+        enabled: (config.footerBar as { airTemperature?: { enabled?: boolean; unit?: string } })?.airTemperature?.enabled ?? true,
+        unit: ((config.footerBar as { airTemperature?: { unit?: string } })?.airTemperature?.unit as 'Metric' | 'Imperial') ?? 'Metric'
+      },
+      trackTemperature: {
+        enabled: (config.footerBar as { trackTemperature?: { enabled?: boolean; unit?: string } })?.trackTemperature?.enabled ?? true,
+        unit: ((config.footerBar as { trackTemperature?: { unit?: string } })?.trackTemperature?.unit as 'Metric' | 'Imperial') ?? 'Metric'
+      },
+      displayOrder: mergeDisplayOrder([...VALID_SESSION_BAR_ITEM_KEYS], (config.footerBar as { displayOrder?: string[] })?.displayOrder)
     },
     showOnlyWhenOnTrack: (config.showOnlyWhenOnTrack as boolean) ?? false,
+    useLivePosition: (config.useLivePosition as boolean) ?? false,
+    sessionVisibility: (config.sessionVisibility as SessionVisibilitySettings) ?? defaultConfig.sessionVisibility,
     position: { enabled: (config.position as { enabled?: boolean })?.enabled ?? true },
     driverName: { enabled: (config.driverName as { enabled?: boolean })?.enabled ?? true },
-    pitStatus: { enabled: (config.pitStatus as { enabled?: boolean })?.enabled ?? true },
-    displayOrder: mergeDisplayOrder(config.displayOrder as string[]),
+    teamName: { enabled: (config.teamName as { enabled?: boolean })?.enabled ?? false },
+    pitStatus: {
+      enabled: (config.pitStatus as { enabled?: boolean })?.enabled ?? true,
+      showPitTime: (config.pitStatus as { showPitTime?: boolean })?.showPitTime ?? false,
+    },
+      displayOrder: mergeDisplayOrder(sortableSettings.map(s => s.id), config.displayOrder as string[]),
   };
 };
 
-const barItemLabels: Record<string, string> = {
-  sessionName: 'Session Name',
-  timeRemaining: 'Time Remaining',
-  incidentCount: 'Incident Count',
-  brakeBias: 'Brake Bias',
-  localTime: 'Local Time',
-  trackWetness: 'Track Wetness',
-  airTemperature: 'Air Temperature',
-  trackTemperature: 'Track Temperature'
-};
+
 
 interface DisplaySettingsListProps {
   itemsOrder: string[];
@@ -293,6 +300,34 @@ const DisplaySettingsList = ({ itemsOrder, onReorder, settings, handleConfigChan
                   <option value={4}>4</option>
                   <option value={5}>5</option>
                 </select>
+              </div>
+            )}
+            {setting.hasSubSetting && setting.configKey === 'pitStatus' && settings.config.pitStatus.enabled && (
+              <div className="flex items-center justify-between pl-8 mt-2">
+                <span className="text-sm text-slate-300">Show Pit Time</span>
+                <ToggleSwitch
+                  enabled={settings.config.pitStatus.showPitTime ?? false}
+                  onToggle={(enabled) => {
+                    const cv = settings.config[setting.configKey] as { enabled: boolean; showPitTime?: boolean; [key: string]: unknown };
+                    handleConfigChange({
+                      [setting.configKey]: { ...cv, showPitTime: enabled }
+                    });
+                  }}
+                />
+              </div>
+            )}
+            {setting.hasSubSetting && setting.configKey === 'carManufacturer' && settings.config.carManufacturer.enabled && (
+              <div className="flex items-center justify-between pl-8 mt-2">
+                <span className="text-sm text-slate-300">Hide If Single Make</span>
+                <ToggleSwitch
+                  enabled={settings.config.carManufacturer.hideIfSingleMake ?? false}
+                  onToggle={(enabled) => {
+                    const cv = settings.config[setting.configKey] as { enabled: boolean; hideIfSingleMake?: boolean; [key: string]: unknown };
+                    handleConfigChange({
+                      [setting.configKey]: { ...cv, hideIfSingleMake: enabled }
+                    });
+                  }}
+                />
               </div>
             )}
             {setting.configKey === 'badge' && (configValue as { enabled: boolean }).enabled && (
@@ -367,7 +402,12 @@ const BarItemsList = ({ items, onReorder, barType, settings, handleConfigChange 
     <div className="space-y-3 pl-4">
       {displayItems.map((item) => {
         const { dragHandleProps, itemProps } = getItemProps(item);
-        const itemConfig = settings.config[barType][item.id as keyof typeof settings.config.headerBar] as { enabled: boolean };
+        const itemConfig = (settings.config[barType] as StandingsWidgetSettings['config']['headerBar'])?.[item.id as keyof StandingsWidgetSettings['config']['headerBar']] as { enabled: boolean; unit?: 'Metric' | 'Imperial' } | { enabled: boolean; mode?: 'Remaining' | 'Elapsed' } | undefined;
+
+        // Safety check: skip rendering if itemConfig is undefined
+        if (!itemConfig) {
+          return null;
+        }
 
         return (
           <div key={item.id} {...itemProps}>
@@ -379,20 +419,69 @@ const BarItemsList = ({ items, onReorder, barType, settings, handleConfigChange 
                 >
                   <DotsSixVerticalIcon size={16} className="text-slate-400" />
                 </div>
-                <span className="text-sm text-slate-300">{barItemLabels[item.id]}</span>
+                <span className="text-sm text-slate-300">{SESSION_BAR_ITEM_LABELS[item.id]}</span>
               </div>
               <ToggleSwitch
-                enabled={itemConfig.enabled}
+                enabled={itemConfig?.enabled ?? true}
                 onToggle={(enabled) => {
+                  const currentUnit = (itemConfig && 'unit' in itemConfig) ? itemConfig.unit : 'Metric';
                   handleConfigChange({
                     [barType]: {
                       ...settings.config[barType],
-                      [item.id]: { enabled }
+                      [item.id]: (item.id === 'airTemperature' || item.id === 'trackTemperature')
+                        ? { enabled, unit: currentUnit }
+                        : { enabled }
                     }
                   });
                 }}
               />
             </div>
+            {(item.id === 'airTemperature' || item.id === 'trackTemperature') && itemConfig && 'enabled' in itemConfig && itemConfig.enabled && (
+              <div className="flex items-center justify-between pl-8 mt-2">
+                <span></span>
+                <select
+                  value={(itemConfig && 'unit' in itemConfig) ? itemConfig.unit : 'Metric'}
+                  onChange={(e) => {
+                    handleConfigChange({
+                      [barType]: {
+                        ...settings.config[barType],
+                        [item.id]: {
+                          enabled: itemConfig && 'enabled' in itemConfig ? itemConfig.enabled : true,
+                          unit: e.target.value as 'Metric' | 'Imperial'
+                        }
+                      }
+                    });
+                  }}
+                  className="w-20 bg-slate-700 text-white rounded-md px-2 py-1"
+                >
+                  <option value="Metric">°C</option>
+                  <option value="Imperial">°F</option>
+                </select>
+              </div>
+            )}
+            {item.id === 'sessionTime' && itemConfig && 'enabled' in itemConfig && itemConfig.enabled && (
+              <div className="flex items-center justify-between pl-8 mt-2">
+                <span></span>
+                <select
+                  value={(itemConfig && 'mode' in itemConfig) ? itemConfig.mode : 'Remaining'}
+                  onChange={(e) => {
+                    handleConfigChange({
+                      [barType]: {
+                        ...settings.config[barType],
+                        [item.id]: {
+                          enabled: itemConfig && 'enabled' in itemConfig ? itemConfig.enabled : true,
+                          mode: e.target.value as 'Remaining' | 'Elapsed'
+                        }
+                      }
+                    });
+                  }}
+                  className="w-26 bg-slate-700 text-white rounded-md px-2 py-1"
+                >
+                  <option value="Remaining">Remaining</option>
+                  <option value="Elapsed">Elapsed</option>
+                </select>
+              </div>
+            )}
           </div>
         );
       })}
@@ -415,7 +504,7 @@ export const StandingsSettings = () => {
 
   return (
     <BaseSettingsSection
-      title="Standings Settings"
+      title="Standings"
       description="Configure how the standings widget appears and behaves."
       settings={settings}
       onSettingsChange={setSettings}
@@ -432,7 +521,7 @@ export const StandingsSettings = () => {
             {/* Display Settings */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium text-slate-200">Display Settings</h3>
+                <h3 className="text-lg font-medium text-slate-200">Display</h3>
                 <button
                   onClick={() => {
                     const defaultOrder = sortableSettings.map(s => s.id);
@@ -576,11 +665,10 @@ export const StandingsSettings = () => {
                 <h3 className="text-lg font-medium text-slate-200">Header Bar</h3>
                 <button
                   onClick={() => {
-                    const defaultOrder = ['sessionName', 'timeRemaining', 'brakeBias', 'incidentCount', 'localTime', 'trackWetness', 'airTemperature', 'trackTemperature'];
                     handleConfigChange({
                       headerBar: {
                         ...settings.config.headerBar,
-                        displayOrder: defaultOrder
+                        displayOrder: [...DEFAULT_SESSION_BAR_DISPLAY_ORDER]
                       }
                     });
                   }}
@@ -629,11 +717,10 @@ export const StandingsSettings = () => {
                 <h3 className="text-lg font-medium text-slate-200">Footer Bar</h3>
                 <button
                   onClick={() => {
-                    const defaultOrder = ['sessionName', 'timeRemaining', 'incidentCount', 'brakeBias', 'localTime', 'trackWetness', 'airTemperature', 'trackTemperature'];
                     handleConfigChange({
                       footerBar: {
                         ...settings.config.footerBar,
-                        displayOrder: defaultOrder
+                        displayOrder: [...DEFAULT_SESSION_BAR_DISPLAY_ORDER]
                       }
                     });
                   }}
@@ -719,6 +806,35 @@ export const StandingsSettings = () => {
                   handleConfigChange({ showOnlyWhenOnTrack: enabled })
                 }
               />
+            </div>
+
+            {/* Use Live Position Standings */}
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="text-md font-medium text-slate-300">Use Live Position Standings</h4>
+                <p className="text-sm text-slate-400">
+                  If enabled, live telemetry will be used to compute driver positions. This may be less stable but will update live and not only on start/finish line.
+                </p>
+              </div>
+              <ToggleSwitch
+                enabled={settings.config.useLivePosition ?? false}
+                onToggle={(enabled) =>
+                  handleConfigChange({ useLivePosition: enabled })
+                }
+              />
+            </div>
+
+            {/* Session Visibility Settings */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-medium text-slate-200">Session Visibility</h3>
+              </div>
+              <div className="space-y-3 pl-4">
+                <SessionVisibility
+                  sessionVisibility={settings.config.sessionVisibility}
+                  handleConfigChange={handleConfigChange}
+                />
+              </div>
             </div>
           </div>
         );
