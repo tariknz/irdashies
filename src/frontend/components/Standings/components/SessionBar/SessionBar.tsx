@@ -35,7 +35,7 @@ export const SessionBar = ({ position = 'header', variant = 'standings' }: Sessi
   });
   const localTime = useCurrentTime();
   const sessionClockTime = useSessionCurrentTime();
-  const totalRaceLaps = useTotalRaceLaps();
+  const { totalRaceLaps, isFixedLapRace } = useTotalRaceLaps();
   // Define all possible items with their render functions
   const itemDefinitions = {
     sessionName: {
@@ -90,9 +90,13 @@ export const SessionBar = ({ position = 'header', variant = 'standings' }: Sessi
     sessionLaps: {
       enabled: effectiveBarSettings?.sessionLaps?.enabled ?? true,
       render: () => {
-        if (totalRaceLaps !== null)
-          return <div className="flex justify-center">L{currentLap}/{totalRaceLaps.toFixed(1)}</div>;
-        return <div className="flex justify-center">L{currentLap}</div>;
+        if (totalRaceLaps > 0)
+          if (isFixedLapRace)
+            return <div className="flex justify-center">L{currentLap}/{totalRaceLaps.toFixed(0)}</div>;
+          else
+            return <div className="flex justify-center">L{currentLap}/{totalRaceLaps.toFixed(1)}</div>;
+        else
+          return <div className="flex justify-center">L{currentLap}</div>;
       },
     },
     incidentCount: {
