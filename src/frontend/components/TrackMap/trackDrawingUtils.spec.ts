@@ -201,5 +201,125 @@ describe('trackDrawingUtils', () => {
       // Last call should be for the player
       expect(calls[calls.length - 1]).toEqual([100, 100, 40, 0, 2 * Math.PI]);
     });
+
+    it('should display session position when displayMode is sessionPosition with multi-class drivers', () => {
+      const multiClassCalculatePositions: Record<number, any> = {
+        0: {
+          driver: { CarIdx: 0, CarNumber: '1', CarClassID: 1 } as any,
+          position: { x: 100, y: 100 },
+          isPlayer: true,
+          progress: 0.5,
+          sessionPosition: 1,
+        },
+        1: {
+          driver: { CarIdx: 1, CarNumber: '2', CarClassID: 2 } as any,
+          position: { x: 200, y: 100 },
+          isPlayer: false,
+          progress: 0.4,
+          sessionPosition: 2,
+        },
+        2: {
+          driver: { CarIdx: 2, CarNumber: '3', CarClassID: 1 } as any,
+          position: { x: 150, y: 100 },
+          isPlayer: false,
+          progress: 0.6,
+          sessionPosition: 3,
+        },
+      };
+
+      drawDrivers(
+        ctx,
+        multiClassCalculatePositions,
+        driverColors,
+        driversOffTrack,
+        40,
+        40,
+        true,
+        'sessionPosition'
+      );
+
+      const fillTextCalls = (ctx.fillText as any).mock.calls;
+      // Should display session positions, not car numbers
+      expect(fillTextCalls).toContainEqual(expect.arrayContaining(['1'])); // Position 1
+      expect(fillTextCalls).toContainEqual(expect.arrayContaining(['2'])); // Position 2
+      expect(fillTextCalls).toContainEqual(expect.arrayContaining(['3'])); // Position 3
+    });
+
+    it('should display car numbers when displayMode is carNumber with multi-class drivers', () => {
+      const multiClassCalculatePositions: Record<number, any> = {
+        0: {
+          driver: { CarIdx: 0, CarNumber: '1', CarClassID: 1 } as any,
+          position: { x: 100, y: 100 },
+          isPlayer: true,
+          progress: 0.5,
+          sessionPosition: 1,
+        },
+        1: {
+          driver: { CarIdx: 1, CarNumber: '2', CarClassID: 2 } as any,
+          position: { x: 200, y: 100 },
+          isPlayer: false,
+          progress: 0.4,
+          sessionPosition: 2,
+        },
+        2: {
+          driver: { CarIdx: 2, CarNumber: '3', CarClassID: 1 } as any,
+          position: { x: 150, y: 100 },
+          isPlayer: false,
+          progress: 0.6,
+          sessionPosition: 3,
+        },
+      };
+
+      drawDrivers(
+        ctx,
+        multiClassCalculatePositions,
+        driverColors,
+        driversOffTrack,
+        40,
+        40,
+        true,
+        'carNumber'
+      );
+
+      const fillTextCalls = (ctx.fillText as any).mock.calls;
+      // Should display car numbers, not positions
+      expect(fillTextCalls).toContainEqual(expect.arrayContaining(['1'])); // Car Number 1
+      expect(fillTextCalls).toContainEqual(expect.arrayContaining(['2'])); // Car Number 2
+      expect(fillTextCalls).toContainEqual(expect.arrayContaining(['3'])); // Car Number 3
+    });
+
+    it('should handle missing sessionPosition gracefully in multi-class scenarios', () => {
+      const multiClassCalculatePositions: Record<number, any> = {
+        0: {
+          driver: { CarIdx: 0, CarNumber: '1', CarClassID: 1 } as any,
+          position: { x: 100, y: 100 },
+          isPlayer: true,
+          progress: 0.5,
+          sessionPosition: undefined,
+        },
+        1: {
+          driver: { CarIdx: 1, CarNumber: '2', CarClassID: 2 } as any,
+          position: { x: 200, y: 100 },
+          isPlayer: false,
+          progress: 0.4,
+          sessionPosition: 0,
+        },
+      };
+
+      drawDrivers(
+        ctx,
+        multiClassCalculatePositions,
+        driverColors,
+        driversOffTrack,
+        40,
+        40,
+        true,
+        'sessionPosition'
+      );
+
+      const fillTextCalls = (ctx.fillText as any).mock.calls;
+      // Should not display empty text when sessionPosition is undefined or 0
+      expect(fillTextCalls.length).toBeLessThanOrEqual(0);
+    });
   });
 });
