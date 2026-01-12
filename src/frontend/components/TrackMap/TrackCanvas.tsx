@@ -145,7 +145,7 @@ export const TrackCanvas = ({
     const intersectionLength = trackDrawing.startFinish.point.length;
     const totalLength = trackDrawing.active.totalLength;
 
-    return drivers.reduce(
+    return drivers.reduce<Record<number, TrackDriver & { position: { x: number; y: number }; sessionPosition?: number }>>(
       (acc, { driver, progress, isPlayer, position: sessionPosition }) => {
         // Calculate position based on progress
         const adjustedLength = (totalLength * progress) % totalLength;
@@ -167,7 +167,7 @@ export const TrackCanvas = ({
         return {
           ...acc,
           [driver.CarIdx]: { position: canvasPosition, driver, isPlayer, progress, sessionPosition },
-        };
+        } as Record<number, TrackDriver & { position: { x: number; y: number }; sessionPosition?: number }>;
       },
       {} as Record<number, TrackDriver & { position: { x: number; y: number }; sessionPosition?: number }>
     );

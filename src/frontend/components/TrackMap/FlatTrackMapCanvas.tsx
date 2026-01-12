@@ -158,7 +158,7 @@ export const FlatTrackMapCanvas = ({
 
     // Draw drivers
     // Apply scale factor to match curved track map proportions
-    [...drivers].sort((a, b) => Number(a.isPlayer) - Number(b.isPlayer)).forEach(({ driver, progress, isPlayer, position, classPosition }) => {
+    [...drivers].sort((a, b) => Number(a.isPlayer) - Number(b.isPlayer)).forEach(({ driver, progress, isPlayer, position }) => {
       const color = driverColors[driver.CarIdx];
       if (!color) return;
 
