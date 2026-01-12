@@ -8,6 +8,7 @@ export interface FlatTrackMapCanvasProps {
   drivers: TrackDriver[];
   highlightColor?: number;
   showCarNumbers?: boolean;
+  displayMode?: 'carNumber' | 'sessionPosition';
   driverCircleSize?: number;
   playerCircleSize?: number;
   trackLineWidth?: number;
@@ -21,6 +22,7 @@ export const FlatTrackMapCanvas = ({
   drivers,
   highlightColor,
   showCarNumbers = true,
+  displayMode = 'carNumber',
   driverCircleSize = 40,
   playerCircleSize = 40,
   trackLineWidth = 20,
@@ -156,7 +158,7 @@ export const FlatTrackMapCanvas = ({
 
     // Draw drivers
     // Apply scale factor to match curved track map proportions
-    [...drivers].sort((a, b) => Number(a.isPlayer) - Number(b.isPlayer)).forEach(({ driver, progress, isPlayer }) => {
+    [...drivers].sort((a, b) => Number(a.isPlayer) - Number(b.isPlayer)).forEach(({ driver, progress, isPlayer, position, classPosition }) => {
       const color = driverColors[driver.CarIdx];
       if (!color) return;
 
@@ -179,10 +181,18 @@ export const FlatTrackMapCanvas = ({
         ctx.font = `${radius * 0.7}px sans-serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText(driver.CarNumber, x, centerY);
+        let displayText = '';
+        if (displayMode === 'sessionPosition') {
+          displayText = position !== undefined && position > 0 ? position.toString() : '';
+        } else {
+          displayText = driver.CarNumber;
+        }
+        if (displayText) {
+          ctx.fillText(displayText, x, centerY);
+        }
       }
     });
-  }, [canvasSize, drivers, driverColors, driversOffTrack, showCarNumbers, driverCircleSize, playerCircleSize, trackLineWidth, trackOutlineWidth, invertTrackColors]);
+  }, [canvasSize, drivers, driverColors, driversOffTrack, showCarNumbers, displayMode, driverCircleSize, playerCircleSize, trackLineWidth, trackOutlineWidth, invertTrackColors]);
 
   return <div className="w-full h-full"><canvas ref={canvasRef} className="w-full h-full" /></div>;
 };

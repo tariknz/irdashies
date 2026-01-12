@@ -19,6 +19,7 @@ export interface TrackProps {
   drivers: TrackDriver[];
   enableTurnNames?: boolean;
   showCarNumbers?: boolean;
+  displayMode?: 'carNumber' | 'sessionPosition';
   invertTrackColors?: boolean;
   driverCircleSize?: number;
   playerCircleSize?: number;
@@ -32,6 +33,7 @@ export interface TrackDriver {
   driver: Driver;
   progress: number;
   isPlayer: boolean;
+  position?: number;
 }
 
 export interface TrackDrawing {
@@ -62,6 +64,7 @@ export const TrackCanvas = ({
   drivers,
   enableTurnNames,
   showCarNumbers = true,
+  displayMode = 'carNumber',
   invertTrackColors = false,
   driverCircleSize = 40,
   playerCircleSize = 40,
@@ -143,7 +146,7 @@ export const TrackCanvas = ({
     const totalLength = trackDrawing.active.totalLength;
 
     return drivers.reduce(
-      (acc, { driver, progress, isPlayer }) => {
+      (acc, { driver, progress, isPlayer, position: sessionPosition }) => {
         // Calculate position based on progress
         const adjustedLength = (totalLength * progress) % totalLength;
         const length =
@@ -159,14 +162,14 @@ export const TrackCanvas = ({
           0,
           Math.min(pointIndex, trackPathPoints.length - 1)
         );
-        const position = trackPathPoints[clampedIndex];
+        const canvasPosition = trackPathPoints[clampedIndex];
 
         return {
           ...acc,
-          [driver.CarIdx]: { position, driver, isPlayer, progress },
+          [driver.CarIdx]: { position: canvasPosition, driver, isPlayer, progress, sessionPosition },
         };
       },
-      {} as Record<number, TrackDriver & { position: { x: number; y: number } }>
+      {} as Record<number, TrackDriver & { position: { x: number; y: number }; sessionPosition?: number }>
     );
   }, [
     drivers,
@@ -255,7 +258,7 @@ export const TrackCanvas = ({
     drawTrack(ctx, path2DObjects, invertTrackColors, trackLineWidth, trackOutlineWidth);
     drawStartFinishLine(ctx, startFinishLine);
     drawTurnNames(ctx, trackDrawing.turns, enableTurnNames);
-    drawDrivers(ctx, calculatePositions, driverColors, driversOffTrack, driverCircleSize, playerCircleSize, showCarNumbers);
+    drawDrivers(ctx, calculatePositions, driverColors, driversOffTrack, driverCircleSize, playerCircleSize, showCarNumbers, displayMode);
 
     // Restore context state
     ctx.restore();
@@ -267,6 +270,7 @@ export const TrackCanvas = ({
     canvasSize,
     enableTurnNames,
     showCarNumbers,
+    displayMode,
     invertTrackColors,
     trackLineWidth,
     trackOutlineWidth,

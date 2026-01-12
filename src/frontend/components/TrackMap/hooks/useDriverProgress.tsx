@@ -4,6 +4,7 @@ import {
   useSessionDrivers,
   useTelemetryValuesMapped,
   useSessionStore,
+  useTelemetryValues,
 } from '@irdashies/context';
 
 // Throttle updates to reduce processing load
@@ -17,6 +18,9 @@ export const useDriverProgress = () => {
     (val) => Math.round(val * 1000) / 1000 // Reduce precision to 2 decimal places to minimize unnecessary updates
   );
   const paceCarIdx = useSessionStore((s) => s.session?.DriverInfo?.PaceCarIdx) ?? -1;
+  
+  // Get class position data from telemetry (this is class-specific position, not overall)
+  const carIdxClassPosition = useTelemetryValues<number[]>('CarIdxClassPosition');
 
   // Throttled state to reduce update frequency
   const [throttledLapDist, setThrottledLapDist] = useState<number[]>([]);
@@ -51,10 +55,11 @@ export const useDriverProgress = () => {
         driver: driver,
         progress: throttledLapDist[driver.CarIdx] ?? -1,
         isPlayer: driver.CarIdx === driverIdx,
+        position: carIdxClassPosition?.[driver.CarIdx],
       }))
       .filter((d) => d.progress > -1) // ignore drivers not on track
       .filter((d) => d.driver.CarIdx !== paceCarIdx); // ignore pace car
-  }, [drivers, throttledLapDist, driverIdx, paceCarIdx]);
+  }, [drivers, throttledLapDist, driverIdx, paceCarIdx, carIdxClassPosition]);
 
   return driversTrackData;
 };
