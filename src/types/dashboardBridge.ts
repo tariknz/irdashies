@@ -1,5 +1,4 @@
 import type { DashboardLayout } from './dashboardLayout';
-import { waitForOptions } from '@testing-library/react';
 
 export interface SaveDashboardOptions {
   forceReload?: boolean;
