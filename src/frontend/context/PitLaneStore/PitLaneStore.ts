@@ -27,8 +27,6 @@ interface PitLaneState {
 // Track surface constants from iRacing SDK
 const SURFACE_NOT_IN_WORLD = -1;
 const SURFACE_IN_PIT_STALL = 1;
-const SURFACE_ON_PIT_ROAD = 2;
-const SURFACE_ON_TRACK = 3;
 
 const initialState = {
   currentTrackId: null,
@@ -78,7 +76,6 @@ export const usePitLaneStore = create<PitLaneState>((set, get) => ({
     // Skip if this is the first frame (no previous data)
     // Just store current state and return - we can't detect transitions without a previous frame
     if (previousOnPitRoad.length === 0) {
-      console.log(`[PitLaneStore] First frame - storing initial state (${carIdxOnPitRoad.length} cars)`);
       set({
         previousCarIdxOnPitRoad: [...carIdxOnPitRoad],
         previousCarIdxTrackSurface: [...carIdxTrackSurface],
@@ -91,7 +88,6 @@ export const usePitLaneStore = create<PitLaneState>((set, get) => ({
     for (let i = 0; i < carIdxOnPitRoad.length; i++) {
       const isOnPitRoad = carIdxOnPitRoad[i] ?? false;
       const wasOnPitRoad = previousOnPitRoad[i] ?? false;
-      const currentSurface = carIdxTrackSurface[i] ?? SURFACE_NOT_IN_WORLD;
       const previousSurface = previousTrackSurface[i] ?? SURFACE_NOT_IN_WORLD;
       const currentLapDistPct = carIdxLapDistPct[i];
       const prevLapDistPct = previousLapDistPct[i];
@@ -113,24 +109,17 @@ export const usePitLaneStore = create<PitLaneState>((set, get) => ({
         const wasInPitStall = previousSurface === SURFACE_IN_PIT_STALL;
 
         if (wasInPitStall) {
-          console.log(`[PitLaneStore] Skipping pit entry - car ${i} was in pit stall (prevSurface=${previousSurface})`);
           continue;
         }
 
         const hasPrevPos = prevLapDistPct !== undefined && prevLapDistPct >= 0;
         const entryPct = hasPrevPos ? prevLapDistPct : currentLapDistPct;
 
-        console.log(`[PitLaneStore] Pit entry transition: car ${i}, prev=${hasPrevPos ? (prevLapDistPct * 100).toFixed(4) : 'N/A'}%, current=${(currentLapDistPct * 100).toFixed(4)}%, prevSurface=${previousSurface}, currentSurface=${currentSurface}`);
-
         // Detect wrap-around: if both current and previous positions are low (<20%),
         // but we're detecting pit entry, the car likely entered from near end of lap.
         // The telemetry update rate wasn't fast enough to capture position before wrap-around.
         const bothPositionsLow = entryPct < 0.2 && currentLapDistPct < 0.2;
-        if (bothPositionsLow) {
-          // Skip this detection - wait for a better sample from another car
-          console.log(`[PitLaneStore] Skipping - both positions are low (wrapped around start/finish)`);
-        } else {
-          console.log(`[PitLaneStore] Pit entry detected: car ${i}, position ${(entryPct * 100).toFixed(4)}%`);
+        if (!bothPositionsLow) {
           get().updatePitEntry(entryPct);
         }
       }
@@ -139,7 +128,6 @@ export const usePitLaneStore = create<PitLaneState>((set, get) => ({
       // When this transition occurs, surface is still 2 (OnPitRoad/exit road)
       // Surface will change to 3 (OnTrack) shortly after, but we detect on OnPitRoad transition
       if (carExistedInPrevFrame && wasOnPitRoad && !isOnPitRoad && state.pitExitPct === null) {
-        console.log(`[PitLaneStore] Pit exit detected at ${(currentLapDistPct * 100).toFixed(2)}% (car ${i}, surface=${currentSurface})`);
         get().updatePitExit(currentLapDistPct);
       }
     }

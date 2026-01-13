@@ -18,7 +18,7 @@ export const readPitLaneData = (): Record<string, PitLaneTrackData> => {
   try {
     const data = fs.readFileSync(filePath, 'utf8');
     return JSON.parse(data);
-  } catch (error) {
+  } catch {
     // File doesn't exist or is invalid, return empty object
     return {};
   }
@@ -52,7 +52,6 @@ export const getPitLaneDataForTrack = (trackId: string): PitLaneTrackData | null
  * @param data Pit lane data to save
  */
 export const updatePitLaneDataForTrack = (trackId: string, data: Partial<PitLaneTrackData>) => {
-  console.log(`[pitLaneData] updatePitLaneDataForTrack called: trackId=${trackId}, data=`, data);
   const allData = readPitLaneData();
   const existing = allData[trackId] || { pitEntryPct: null, pitExitPct: null };
 
@@ -61,6 +60,5 @@ export const updatePitLaneDataForTrack = (trackId: string, data: Partial<PitLane
     ...data,
   };
 
-  console.log(`[pitLaneData] Writing to ${filePath}:`, allData[trackId]);
   writePitLaneData(allData);
 };

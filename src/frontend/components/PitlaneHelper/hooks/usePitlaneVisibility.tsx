@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { useTelemetryValue, useTelemetryValues, useFocusCarIdx, useTrackLength, usePitLaneStore, useSessionStore } from '@irdashies/context';
+import { useTelemetryValue, useTelemetryValues, useFocusCarIdx, useTrackLength, useSessionStore } from '@irdashies/context';
 import { usePitlaneHelperSettings } from './usePitlaneHelperSettings';
 
 export const usePitlaneVisibility = (): boolean => {

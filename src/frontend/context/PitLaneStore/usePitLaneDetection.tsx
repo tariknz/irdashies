@@ -40,11 +40,8 @@ export const usePitLaneDetection = () => {
 
     // Track changed
     if (trackId !== currentTrackId) {
-      console.log(`[PitLaneDetection] Track changed to ${trackId}, loading pit lane data...`);
-
       // Load from disk via IPC
       window.electron?.pitLane?.getPitLaneData(trackId).then((data) => {
-        console.log(`[PitLaneDetection] Loaded data:`, data);
         setCurrentTrack(trackId, data);
         persistenceRef.current = {
           trackId,
@@ -75,11 +72,9 @@ export const usePitLaneDetection = () => {
     const exitChanged = pitExitPct !== null && pitExitPct !== prev.exit;
 
     if (entryChanged || exitChanged) {
-      console.log(`[PitLaneDetection] Persisting to disk: entry=${pitEntryPct}, exit=${pitExitPct}`);
-
       const updates: { pitEntryPct?: number; pitExitPct?: number } = {};
-      if (entryChanged) updates.pitEntryPct = pitEntryPct!;
-      if (exitChanged) updates.pitExitPct = pitExitPct!;
+      if (entryChanged && pitEntryPct !== null) updates.pitEntryPct = pitEntryPct;
+      if (exitChanged && pitExitPct !== null) updates.pitExitPct = pitExitPct;
 
       window.electron?.pitLane?.updatePitLaneData(trackId, updates);
 
