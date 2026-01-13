@@ -60,6 +60,11 @@ export const dashboardBridge: DashboardBridge = {
   getGarageCoverImageAsDataUrl: (imagePath: string) => {
     return getGarageCoverImageAsDataUrl(imagePath);
   },
+  setAutoStart: async (enabled: boolean) => {
+    app.setLoginItemSettings({
+      openAtLogin: enabled,
+    });
+  }
 };
 
 export async function publishDashboardUpdates(overlayManager: OverlayManager, analytics: Analytics) {
