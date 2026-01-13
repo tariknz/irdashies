@@ -9,6 +9,7 @@ export const usePitlaneVisibility = (): boolean => {
   const surface = (useTelemetryValue('PlayerTrackSurface') ?? 3) as number;
   const focusCarIdx = useFocusCarIdx();
   const carIdxLapDistPct = useTelemetryValues('CarIdxLapDistPct');
+  const carIdxOnPitRoad = useTelemetryValues('CarIdxOnPitRoad') as boolean[] | undefined;
   const trackLength = useTrackLength() ?? 0;
 
   return useMemo(() => {
@@ -17,22 +18,33 @@ export const usePitlaneVisibility = (): boolean => {
       return false;
     }
 
-    // Surface values: 1 = in pitbox, 2 = on pit road, 3 = on track
-    const inPitlane = surface === 1 || surface === 2;
+    // Get player's OnPitRoad status
+    const playerOnPitRoad = focusCarIdx !== undefined ? (carIdxOnPitRoad?.[focusCarIdx] ?? false) : false;
 
-    // NEVER show if not in pitlane (surface must be 1 or 2)
-    if (!inPitlane) {
+    // Surface values: 1 = in pitbox, 2 = on pit road, 3 = on track
+    const onPitRoad = surface === 2;
+    const inPitbox = surface === 1;
+
+    // ALWAYS show when on pit road (surface=2) AND OnPitRoad flag is true
+    // This handles the pit lane and prevents showing after pit exit line
+    // After pit exit: OnPitRoad becomes false while surface is still 2 (exit road)
+    if (onPitRoad && playerOnPitRoad) {
+      return true;
+    }
+
+    // NEVER show if not in pitlane area (surface must be 1 or 2)
+    if (!inPitbox) {
       return false;
     }
 
-    // We're in pit lane - now determine if we should show based on mode
-    // Mode "onPitRoad": always show when in pit lane (already checked above)
-    // Mode "approaching": only show if approaching pitbox, even though in pit lane
+    // Surface=1 (in pitbox) - show based on mode
+    // Mode "onPitRoad": always show when in pitlane (includes pitbox)
+    // Mode "approaching": only show if approaching pitbox
     if (config.showMode === 'onPitRoad') {
       return true;
     }
 
-    // Mode is "approaching" - show only if within approach distance of pitbox
+    // Mode is "approaching" and in pitbox - check if within approach distance
     const playerPct = focusCarIdx !== undefined ? (carIdxLapDistPct?.[focusCarIdx] ?? 0) : 0;
     const pitboxPct = session?.DriverInfo?.DriverPitTrkPct ?? 0;
 
@@ -53,5 +65,5 @@ export const usePitlaneVisibility = (): boolean => {
 
     // Show if within approach distance and pitbox is ahead
     return distanceToPitbox > 0 && distanceToPitbox <= config.approachDistance;
-  }, [isOnTrack, surface, config.showMode, config.approachDistance, session, focusCarIdx, carIdxLapDistPct, trackLength]);
+  }, [isOnTrack, surface, config.showMode, config.approachDistance, session, focusCarIdx, carIdxLapDistPct, carIdxOnPitRoad, trackLength]);
 };
