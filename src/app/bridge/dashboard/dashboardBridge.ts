@@ -1,4 +1,4 @@
-import { ipcMain } from 'electron';
+import { app, ipcMain } from 'electron';
 import type { DashboardBridge, DashboardLayout } from '@irdashies/types';
 import { onDashboardUpdated } from '../../storage/dashboardEvents';
 import { getDashboard, saveDashboard, resetDashboard, saveGarageCoverImage, getGarageCoverImageAsDataUrl } from '../../storage/dashboards';
@@ -134,6 +134,18 @@ export async function publishDashboardUpdates(overlayManager: OverlayManager, an
         opt_out: optOut,
       },
     });
+  });
+
+  ipcMain.handle('autostart:set', (_event, enabled: boolean) => {
+    app.setLoginItemSettings({
+      openAtLogin: enabled,
+    });
+
+    return app.getLoginItemSettings().openAtLogin;
+  });
+
+  ipcMain.handle('autostart:get', () => {
+    return app.getLoginItemSettings().openAtLogin;
   });
 }
 
