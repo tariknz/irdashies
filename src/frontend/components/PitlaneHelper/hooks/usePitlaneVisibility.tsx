@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { useTelemetryValue, useTelemetryValues, useFocusCarIdx, useTrackLength, useSessionStore } from '@irdashies/context';
+import { useTelemetryValue, useTelemetryValues, useFocusCarIdx, useTrackLength, useSessionStore, usePitLaneStore } from '@irdashies/context';
 import { usePitlaneHelperSettings } from './usePitlaneHelperSettings';
 
 export const usePitlaneVisibility = (): boolean => {
@@ -11,6 +11,7 @@ export const usePitlaneVisibility = (): boolean => {
   const carIdxLapDistPct = useTelemetryValues('CarIdxLapDistPct');
   const carIdxOnPitRoad = useTelemetryValues('CarIdxOnPitRoad') as boolean[] | undefined;
   const trackLength = useTrackLength() ?? 0;
+  const pitExitPct = usePitLaneStore((state) => state.pitExitPct);
 
   return useMemo(() => {
     // Don't show if not on track (IsOnTrack: 1 = on track, 0 = off track)
@@ -18,17 +19,48 @@ export const usePitlaneVisibility = (): boolean => {
       return false;
     }
 
-    // Get player's OnPitRoad status
+    // Get player's OnPitRoad status and position
     const playerOnPitRoad = focusCarIdx !== undefined ? (carIdxOnPitRoad?.[focusCarIdx] ?? false) : false;
+    const playerPct = focusCarIdx !== undefined ? (carIdxLapDistPct?.[focusCarIdx] ?? 0) : 0;
 
     // Surface values: 1 = in pitbox, 2 = on pit road, 3 = on track
     const onPitRoad = surface === 2;
     const inPitbox = surface === 1;
 
+    // Handle surface=2 with OnPitRoad=false (either pit entry road OR pit exit road)
+    // We need to distinguish between:
+    // - Pit entry road: surface=2, OnPitRoad=false, BEFORE pit entry line → SHOW
+    // - Pit exit road: surface=2, OnPitRoad=false, AFTER pit exit line → HIDE
+    if (onPitRoad && !playerOnPitRoad && pitExitPct !== null) {
+      // Check if player is past the pit exit line (on exit road)
+      // Calculate distance from pit exit to player
+      let distanceFromExit = (playerPct - pitExitPct) * trackLength;
+
+      // Handle wrap-around
+      if (distanceFromExit < -trackLength * 0.5) {
+        distanceFromExit += trackLength;
+      } else if (distanceFromExit > trackLength * 0.5) {
+        distanceFromExit -= trackLength;
+      }
+
+      // If player is past pit exit (distance >= 0 and within ~200m), hide overlay
+      // This is the pit exit road scenario
+      if (distanceFromExit >= 0 && distanceFromExit <= 200) {
+        return false;
+      }
+
+      // Otherwise, player is on pit entry road (before pit entry line) → show overlay
+      return true;
+    }
+
     // ALWAYS show when on pit road (surface=2) AND OnPitRoad flag is true
-    // This handles the pit lane and prevents showing after pit exit line
-    // After pit exit: OnPitRoad becomes false while surface is still 2 (exit road)
+    // This handles the pit lane between pit entry and pit exit
     if (onPitRoad && playerOnPitRoad) {
+      return true;
+    }
+
+    // Surface=2 with no pit exit data yet - show overlay (conservative approach)
+    if (onPitRoad && !playerOnPitRoad && pitExitPct === null) {
       return true;
     }
 
@@ -37,7 +69,12 @@ export const usePitlaneVisibility = (): boolean => {
       return false;
     }
 
-    // Surface=1 (in pitbox) - show based on mode
+    // Surface=1 (in pitbox) - always show if OnPitRoad is true (committed to pitting)
+    // Only check mode/distance when NOT on pit road (approaching scenario)
+    if (playerOnPitRoad) {
+      return true;
+    }
+
     // Mode "onPitRoad": always show when in pitlane (includes pitbox)
     // Mode "approaching": only show if approaching pitbox
     if (config.showMode === 'onPitRoad') {
@@ -45,7 +82,6 @@ export const usePitlaneVisibility = (): boolean => {
     }
 
     // Mode is "approaching" and in pitbox - check if within approach distance
-    const playerPct = focusCarIdx !== undefined ? (carIdxLapDistPct?.[focusCarIdx] ?? 0) : 0;
     const pitboxPct = session?.DriverInfo?.DriverPitTrkPct ?? 0;
 
     // Calculate distance to pitbox
@@ -65,5 +101,5 @@ export const usePitlaneVisibility = (): boolean => {
 
     // Show if within approach distance and pitbox is ahead
     return distanceToPitbox > 0 && distanceToPitbox <= config.approachDistance;
-  }, [isOnTrack, surface, config.showMode, config.approachDistance, session, focusCarIdx, carIdxLapDistPct, carIdxOnPitRoad, trackLength]);
+  }, [isOnTrack, surface, config.showMode, config.approachDistance, session, focusCarIdx, carIdxLapDistPct, carIdxOnPitRoad, trackLength, pitExitPct]);
 };
