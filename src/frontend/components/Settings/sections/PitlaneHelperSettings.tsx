@@ -119,7 +119,7 @@ export const PitlaneHelperSettings = () => {
                     <input
                       type="range"
                       min="25"
-                      max="150"
+                      max="300"
                       step="5"
                       value={settings.config.earlyPitboxThreshold}
                       onChange={(e) =>
@@ -127,7 +127,7 @@ export const PitlaneHelperSettings = () => {
                       }
                       className="w-24 h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer"
                     />
-                    <span className="text-xs text-slate-400 w-10">
+                    <span className="text-xs text-slate-400 w-12">
                       {settings.config.earlyPitboxThreshold}m
                     </span>
                   </div>

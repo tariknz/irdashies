@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { useTelemetryValues, useSessionStore, useFocusCarIdx, useTrackLength } from '@irdashies/context';
+import { useTelemetryValues, useSessionStore, useFocusCarIdx, useTrackLength, usePitLaneStore } from '@irdashies/context';
 
 export interface PitboxPositionResult {
   distanceToPit: number;
@@ -10,11 +10,12 @@ export interface PitboxPositionResult {
   isEarlyPitbox: boolean; // Pitbox is near pit entry (last 10% of track before start/finish)
 }
 
-export const usePitboxPosition = (approachDistance: number): PitboxPositionResult => {
+export const usePitboxPosition = (approachDistance: number, earlyPitboxThreshold: number): PitboxPositionResult => {
   const session = useSessionStore((state) => state.session);
   const focusCarIdx = useFocusCarIdx();
   const carIdxLapDistPct = useTelemetryValues('CarIdxLapDistPct');
   const trackLength = useTrackLength() ?? 0;
+  const pitEntryPct = usePitLaneStore((state) => state.pitEntryPct);
 
   return useMemo(() => {
     // Get player's current position on track (as percentage)
@@ -54,10 +55,35 @@ export const usePitboxPosition = (approachDistance: number): PitboxPositionResul
       Math.min(100, ((approachDistance - distanceToPit) / approachDistance) * 100)
     );
 
-    // Early pitbox detection: if pitbox is in the last 10% of track (before start/finish),
-    // it's likely near pit entry. On most tracks, pit lane runs parallel to start/finish,
-    // so a pitbox at ~95% track position would be near the beginning of pit lane.
-    const isEarlyPitbox = pitboxPct > 0.90;
+    // Early pitbox detection:
+    // Purpose: Determine if pitbox is very close to pit entry so driver can be warned once on pit road.
+    // Example: Daytona's first pitbox is ~30m past pit entry - driver needs to know to brake hard immediately.
+    // Uses earlyPitboxThreshold setting (configurable up to 300m) to define "close to entry".
+    //
+    // If we have accurate pit entry data from detection, calculate distance from pit entry to pitbox.
+    // Otherwise, fall back to heuristic (pitbox in last 10% of track).
+    let isEarlyPitbox = false;
+
+    if (pitEntryPct !== null) {
+      // Calculate distance from pit entry to pitbox along pit lane direction
+      let entryToPitboxDist = (pitboxPct - pitEntryPct) * trackLength;
+
+      // Handle wrap-around (if pitbox is before start/finish but pit entry is after)
+      if (entryToPitboxDist < -trackLength * 0.5) {
+        entryToPitboxDist += trackLength;
+      } else if (entryToPitboxDist > trackLength * 0.5) {
+        entryToPitboxDist -= trackLength;
+      }
+
+      // Pitbox is "early" if it's ahead in pit lane (>= 0) and within the configured threshold
+      // Example: If threshold is 50m and pitbox is 40m past pit entry, isEarlyPitbox = true
+      isEarlyPitbox = entryToPitboxDist >= 0 && entryToPitboxDist <= earlyPitboxThreshold;
+    } else {
+      // Fallback heuristic: if pitbox is in the last 10% of track (before start/finish),
+      // it's likely near pit entry. On most tracks, pit lane runs parallel to start/finish,
+      // so a pitbox at ~95% track position would be near the beginning of pit lane.
+      isEarlyPitbox = pitboxPct > 0.90;
+    }
 
     return {
       distanceToPit,
@@ -67,5 +93,5 @@ export const usePitboxPosition = (approachDistance: number): PitboxPositionResul
       playerPct,
       isEarlyPitbox,
     };
-  }, [focusCarIdx, carIdxLapDistPct, session, trackLength, approachDistance]);
+  }, [focusCarIdx, carIdxLapDistPct, session, trackLength, approachDistance, pitEntryPct, earlyPitboxThreshold]);
 };

@@ -14,6 +14,7 @@ import { EditMode } from './components/EditMode/EditMode';
 import { ThemeManager } from './components/ThemeManager/ThemeManager';
 import { WIDGET_MAP } from './WidgetIndex';
 import { HideUIWrapper } from './components/HideUIWrapper/HideUIWrapper';
+import { PitLaneDetector } from './components/PitLaneDetector';
 
 const AppRoutes = () => {
   const { currentDashboard } = useDashboard();
@@ -46,6 +47,7 @@ const App = () => {
       <RunningStateProvider bridge={window.irsdkBridge}>
         <SessionProvider bridge={window.irsdkBridge} />
         <TelemetryProvider bridge={window.irsdkBridge} />
+        <PitLaneDetector />
         <HashRouter>
           <HideUIWrapper>
             <EditMode>

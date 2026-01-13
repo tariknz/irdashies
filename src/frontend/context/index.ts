@@ -5,4 +5,6 @@ export * from './SessionStore/SessionStore';
 export * from './TelemetryStore/TelemetryProvider';
 export * from './TelemetryStore/TelemetryStore';
 export * from './PitLapStore/PitLapStore';
+export * from './PitLaneStore/PitLaneStore';
+export * from './PitLaneStore/usePitLaneDetection';
 export * from './shared';

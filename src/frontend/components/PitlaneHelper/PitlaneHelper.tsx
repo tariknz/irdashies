@@ -12,7 +12,7 @@ export const PitlaneHelper = () => {
 
   // Core data hooks
   const speed = usePitSpeed();
-  const position = usePitboxPosition(config.approachDistance);
+  const position = usePitboxPosition(config.approachDistance, config.earlyPitboxThreshold);
   const isVisible = usePitlaneVisibility();
   const limiterWarning = usePitLimiterWarning(config.enablePitLimiterWarning);
   const traffic = usePitlaneTraffic(config.showPitlaneTraffic);
@@ -25,15 +25,15 @@ export const PitlaneHelper = () => {
   // Determine which speed unit to display (prefer user's unit from limit)
   const displayKph = speed.limitKph > speed.limitMph;
 
-  // Early pitbox warning: show when on pit road (surface=2), pitbox is early (>90% track),
-  // and we're within the threshold distance and haven't passed it yet
+  // Early pitbox warning: show when on pit road AND pitbox is within threshold of pit entry
+  // This alerts the driver once committed to pitting that their pitbox is very close to entry
+  // Examples: Daytona where first pitbox is ~30m past pit entry
+  // The warning appears when surface=2 (OnPitRoad) and pitbox is within the configured threshold
   const onPitRoad = surface === 2;
   const showEarlyPitboxWarning =
     config.enableEarlyPitboxWarning &&
     onPitRoad &&
-    position.isEarlyPitbox &&
-    position.distanceToPit > 0 &&
-    position.distanceToPit <= config.earlyPitboxThreshold;
+    position.isEarlyPitbox;
 
   return (
     <div
