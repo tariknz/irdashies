@@ -37,6 +37,10 @@ export const Input = () => {
               shiftRpm={tachometerData.shiftRpm}
               blinkRpm={tachometerData.blinkRpm}
               showRpmText={tachometerSettings.showRpmText}
+              gearRpmThresholds={tachometerData.gearRpmThresholds}
+              ledColors={tachometerData.carData?.ledColor}
+              carData={tachometerData.carData}
+              shiftPointSettings={tachometerSettings.shiftPointSettings}
             />
           </div>
         </div>

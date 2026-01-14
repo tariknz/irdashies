@@ -1,14 +1,16 @@
 import { useTelemetryValue } from '@irdashies/context';
 import type { Telemetry } from '@irdashies/types';
 import { useSessionStore } from '../../../context/SessionStore/SessionStore';
+import { useCarTachometerData } from './useCarTachometerData';
 
 /**
  * Hook for tachometer-specific telemetry data.
- * Encapsulates all RPM and shift light logic.
+ * Encapsulates all RPM and shift light logic with car-specific data integration.
  */
 export const useTachometerData = () => {
   const rpm = useTelemetryValue('RPM') ?? 0;
   const shiftGrindRpm = useTelemetryValue('ShiftGrindRPM') ?? 0;
+  const { carData, gearRpmThresholds, hasCarData } = useCarTachometerData();
 
   // Get car-specific redline from session data
   const driverCarRedLine = useSessionStore(state => state.session?.DriverInfo?.DriverCarRedLine);
@@ -28,5 +30,9 @@ export const useTachometerData = () => {
     maxRpm,
     shiftRpm,
     blinkRpm,
+    // Car-specific data
+    carData,
+    gearRpmThresholds,
+    hasCarData,
   };
 };
