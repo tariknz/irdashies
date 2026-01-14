@@ -16,6 +16,7 @@ export const DashboardView = () => {
   const [widgetPositions, setWidgetPositions] = useState<Record<string, WidgetPosition>>({});
   const [interactingWidget, setInteractingWidget] = useState<string | null>(null);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const pendingSaveRef = useRef<Record<string, WidgetPosition> | null>(null);
   const isSavingRef = useRef(false);
 
 
@@ -72,6 +73,53 @@ export const DashboardView = () => {
     return positions;
   }, [currentDashboard, enabledWidgets]);
 
+  const savePositions = async (positions: Record<string, WidgetPosition>) => {
+    if (!currentDashboard?.widgets) return;
+    
+    try {
+      const updatedWidgets = currentDashboard.widgets.map(widget => {
+        const widgetPosition = positions[widget.id];
+        if (!widgetPosition) return widget;
+
+        return {
+          ...widget,
+          config: {
+            ...widget.config,
+            browserPosition: widgetPosition,
+          },
+        };
+      });
+
+      const updatedDashboard = {
+        ...currentDashboard,
+        widgets: updatedWidgets,
+      };
+
+      await bridge.saveDashboard(updatedDashboard);
+      console.log('💾 Saved widget positions:', positions);
+    } catch (error) {
+      console.error('Failed to save widget positions:', error);
+    }
+  };
+
+  const processPendingSave = async () => {
+    if (isSavingRef.current || !pendingSaveRef.current) return;
+    
+    const positionsToSave = pendingSaveRef.current;
+    pendingSaveRef.current = null;
+    isSavingRef.current = true;
+    
+    try {
+      await savePositions(positionsToSave);
+    } finally {
+      isSavingRef.current = false;
+      // Process any new pending saves that came in while we were saving
+      if (pendingSaveRef.current) {
+        setTimeout(() => processPendingSave(), 0);
+      }
+    }
+  };
+
   const handlePositionChange = (widgetId: string, position: WidgetPosition) => {
     setWidgetPositions(prev => {
       // Initialize from initial positions if empty
@@ -81,40 +129,16 @@ export const DashboardView = () => {
         [widgetId]: position,
       };
 
-      // Debounce save to avoid too frequent updates
+      // Queue this save - it will be processed after debounce delay
+      pendingSaveRef.current = newPositions;
+
+      // Debounce the actual save operation
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
       }
 
       saveTimeoutRef.current = setTimeout(() => {
-        if (isSavingRef.current || !currentDashboard?.widgets) return; // Prevent overlapping saves
-        
-        isSavingRef.current = true;
-        const updatedWidgets = currentDashboard.widgets.map(widget => {
-          const widgetPosition = newPositions[widget.id];
-          if (!widgetPosition) return widget;
-
-          return {
-            ...widget,
-            config: {
-              ...widget.config,
-              browserPosition: widgetPosition,
-            },
-          };
-        });
-
-        const updatedDashboard = {
-          ...currentDashboard,
-          widgets: updatedWidgets,
-        };
-
-        // Save to dashboard via bridge
-        bridge.saveDashboard(updatedDashboard);
-        console.log('💾 Saved widget positions:', newPositions);
-        
-        setTimeout(() => {
-          isSavingRef.current = false;
-        }, 500);
+        processPendingSave();
       }, 1000); // Save after 1 second of no changes
 
       return newPositions;
