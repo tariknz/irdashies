@@ -2,6 +2,7 @@ import type { DashboardLayout, DashboardProfile } from './dashboardLayout';
 
 export interface SaveDashboardOptions {
   forceReload?: boolean;
+  profileId?: string;
 }
 
 export interface DashboardBridge {

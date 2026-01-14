@@ -154,7 +154,8 @@ export const ProfileSettings = () => {
     };
 
     return (
-        <div className="p-6 space-y-6">
+        <div className="h-full max-h-screen overflow-y-auto">
+            <div className="p-6 space-y-6">
             <div>
                 <h2 className="text-2xl font-bold text-white mb-2">Configuration Profiles</h2>
                 <p className="text-gray-400 text-sm">
@@ -199,7 +200,7 @@ export const ProfileSettings = () => {
                 <div className="px-4 py-3 bg-slate-700/50 border-b border-slate-600">
                     <h3 className="text-lg font-semibold text-white">Your Profiles</h3>
                 </div>
-                <div className="divide-y divide-slate-700">
+                <div className="divide-y divide-slate-700 overflow-y-auto min-h-0">
                     {profiles.length === 0 ? (
                         <div className="px-4 py-8 text-center text-gray-400">
                             No profiles found. Create your first profile above.
@@ -422,6 +423,7 @@ export const ProfileSettings = () => {
                 onCancel={handleCancelDelete}
                 variant="danger"
             />
+            </div>
         </div>
     );
 };

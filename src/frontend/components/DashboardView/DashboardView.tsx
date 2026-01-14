@@ -138,7 +138,7 @@ export const DashboardView = () => {
 
       saveTimeoutRef.current = setTimeout(() => {
         processPendingSave();
-      }, 1000); // Save after 1 second of no changes
+      }, 250); // Reduced delay for faster auto-saving
 
       return newPositions;
     });
@@ -178,10 +178,8 @@ export const DashboardView = () => {
           : initialPositions[widget.id];
         if (!position) return null;
 
-        const widgetConfig = widget.config as Record<string, unknown>;
-        const bgOpacity = (widgetConfig?.background as { opacity?: number })?.opacity ?? 80;
-        const isInteracting = interactingWidget === widget.id;
         const widgetName = getWidgetName(widget.id);
+        const isInteracting = interactingWidget === widget.id;
 
         return (
           <Rnd
@@ -193,23 +191,25 @@ export const DashboardView = () => {
             }}
             onDragStop={(e, d) => {
               setInteractingWidget(null);
-              handlePositionChange(widget.id, {
+              const newPosition = {
                 ...position,
                 x: d.x,
                 y: d.y,
-              });
+              };
+              handlePositionChange(widget.id, newPosition);
             }}
             onResizeStart={() => {
               setInteractingWidget(widget.id);
             }}
             onResizeStop={(e, direction, ref, delta, position) => {
               setInteractingWidget(null);
-              handlePositionChange(widget.id, {
+              const newPosition = {
                 x: position.x,
                 y: position.y,
                 width: parseInt(ref.style.width),
                 height: parseInt(ref.style.height),
-              });
+              };
+              handlePositionChange(widget.id, newPosition);
             }}
             bounds="parent"
             enableUserSelectHack={false}
@@ -217,7 +217,7 @@ export const DashboardView = () => {
             <div 
               className={`w-full h-full cursor-move ${isInteracting ? 'border-2 border-dashed border-blue-400' : ''}`}
               style={{
-                backgroundColor: `rgba(30, 41, 59, ${bgOpacity / 100})`,
+                backgroundColor: `rgba(30, 41, 59, 0.8)`,
                 overflow: 'hidden',
               }}
             >

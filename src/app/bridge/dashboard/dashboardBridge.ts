@@ -1,5 +1,5 @@
 import { ipcMain } from 'electron';
-import type { DashboardBridge, DashboardLayout, DashboardProfile } from '@irdashies/types';
+import type { DashboardBridge, DashboardLayout, DashboardProfile, SaveDashboardOptions } from '@irdashies/types';
 import { onDashboardUpdated } from '../../storage/dashboardEvents';
 import { 
   getDashboard, 
@@ -38,9 +38,20 @@ export const dashboardBridge: DashboardBridge = {
   reloadDashboard: () => {
     // Not used by component server
   },
-  saveDashboard: (dashboard: DashboardLayout) => {
-    const currentProfileId = getCurrentProfileId();
-    saveDashboard(currentProfileId, dashboard);
+  saveDashboard: (dashboard: DashboardLayout, options?: SaveDashboardOptions) => {
+    const targetProfileId = options?.profileId || getCurrentProfileId();
+    saveDashboard(targetProfileId, dashboard);
+    
+    // For browser views, manually trigger dashboard update callbacks
+    if (options?.profileId && dashboardUpdateCallbacks.size > 0) {
+      dashboardUpdateCallbacks.forEach(callback => {
+        try {
+          callback(dashboard);
+        } catch (err) {
+          console.error('Error in dashboard update callback:', err);
+        }
+      });
+    }
   },
   resetDashboard: async (resetEverything: boolean) => {
     const currentProfileId = getCurrentProfileId();

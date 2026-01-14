@@ -153,8 +153,14 @@ export const DashboardProvider: React.FC<{
     // Immediately update local state for responsive UI
     setDashboard(dashboard);
     
+    // Ensure we save to the current profile by adding profileId to options
+    const saveOptions = {
+      ...options,
+      profileId: currentProfile?.id || options?.profileId
+    };
+    
     // Then save to bridge
-    bridge.saveDashboard(dashboard, options);
+    bridge.saveDashboard(dashboard, saveOptions);
   };
 
   const resetDashboard = async (resetEverything: boolean) => {
@@ -182,6 +188,19 @@ export const DashboardProvider: React.FC<{
   const switchProfile = async (profileId: string) => {
     await bridge.switchProfile(profileId);
     await loadProfiles();
+    
+    // Force reload dashboard for the new profile
+    if (bridge.getDashboardForProfile) {
+      try {
+        const newDashboard = await bridge.getDashboardForProfile(profileId);
+        if (newDashboard) {
+          setDashboard(newDashboard);
+        }
+      } catch (error) {
+        console.error('Failed to load dashboard for profile:', profileId, error);
+      }
+    }
+    
     bridge.reloadDashboard();
   };
 
