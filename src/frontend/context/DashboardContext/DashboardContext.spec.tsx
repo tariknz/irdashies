@@ -1,6 +1,6 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
-import { describe, it, expect, vi } from 'vitest';
+import { render, screen, act, waitFor } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { DashboardProvider, useDashboard } from './DashboardContext';
 import type { DashboardBridge, DashboardLayout } from '@irdashies/types';
 
@@ -20,12 +20,12 @@ const mockBridge: DashboardBridge = {
   getGarageCoverImageAsDataUrl: vi.fn(),
   getAnalyticsOptOut: vi.fn().mockResolvedValue(false),
   setAnalyticsOptOut: vi.fn(),
-  listProfiles: vi.fn(),
+  listProfiles: vi.fn().mockResolvedValue([]),
   createProfile: vi.fn(),
   deleteProfile: vi.fn(),
   renameProfile: vi.fn(),
   switchProfile: vi.fn(),
-  getCurrentProfile: vi.fn(),
+  getCurrentProfile: vi.fn().mockResolvedValue(null),
   updateProfileTheme: vi.fn(),
   getDashboardForProfile: vi.fn(),
 };
@@ -59,11 +59,13 @@ const TestComponent: React.FC = () => {
 
 describe('DashboardContext', () => {
   it('provides the current dashboard', () => {
-    render(
-      <DashboardProvider bridge={mockBridge}>
-        <TestComponent />
-      </DashboardProvider>
-    );
+    act(() => {
+      render(
+        <DashboardProvider bridge={mockBridge}>
+          <TestComponent />
+        </DashboardProvider>
+      );
+    });
 
     expect(screen.getByTestId('current-dashboard').textContent).toBe(
       'No Dashboard'
@@ -77,7 +79,9 @@ describe('DashboardContext', () => {
       </DashboardProvider>
     );
 
-    screen.getByText('Update Dashboard').click();
+    act(() => {
+      screen.getByText('Update Dashboard').click();
+    });
 
     expect(mockBridge.saveDashboard).toHaveBeenCalledWith({
       widgets: [
@@ -87,15 +91,17 @@ describe('DashboardContext', () => {
           layout: { x: 0, y: 0, width: 1, height: 1 },
         },
       ],
-    }, undefined);
+    }, { profileId: undefined });
   });
 
   it('reloads the dashboard on mount', () => {
-    render(
-      <DashboardProvider bridge={mockBridge}>
-        <TestComponent />
-      </DashboardProvider>
-    );
+    act(() => {
+      render(
+        <DashboardProvider bridge={mockBridge}>
+          <TestComponent />
+        </DashboardProvider>
+      );
+    });
 
     expect(mockBridge.reloadDashboard).toHaveBeenCalled();
   });
@@ -112,11 +118,13 @@ describe('DashboardContext', () => {
     };
     mockBridge.dashboardUpdated = (callback) => callback(mockDashboard);
 
-    render(
-      <DashboardProvider bridge={mockBridge}>
-        <TestComponent />
-      </DashboardProvider>
-    );
+    act(() => {
+      render(
+        <DashboardProvider bridge={mockBridge}>
+          <TestComponent />
+        </DashboardProvider>
+      );
+    });
 
     expect(screen.getByTestId('current-dashboard').textContent).toBe(
       JSON.stringify(mockDashboard)
@@ -124,11 +132,15 @@ describe('DashboardContext', () => {
   });
 
   it('stops the bridge on unmount', () => {
-    render(
+    const { unmount } = render(
       <DashboardProvider bridge={mockBridge}>
         <TestComponent />
       </DashboardProvider>
     );
+
+    act(() => {
+      unmount();
+    });
 
     expect(mockBridge.stop).toHaveBeenCalled();
   });
