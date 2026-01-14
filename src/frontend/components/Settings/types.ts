@@ -245,6 +245,20 @@ export interface InputWidgetSettings extends BaseWidgetSettings {
     tachometer: {
       enabled: boolean;
       showRpmText: boolean;
+      shiftPointStyle?: 'glow' | 'pulse' | 'border';
+      customShiftPoints?: {
+        enabled: boolean;
+        indicatorType: 'glow' | 'pulse' | 'border';
+        indicatorColor: string;
+        carConfigs: Record<string, {
+          enabled: boolean;
+          carId: string;
+          carName: string;
+          gearCount: number;
+          redlineRpm: number;
+          gearShiftPoints: Record<string, { shiftRpm: number }>;
+        }>;
+      };
     };
     background: { opacity: number };
     displayOrder: string[];
@@ -349,4 +363,21 @@ export interface PitlaneHelperWidgetSettings extends BaseWidgetSettings {
     showPitlaneTraffic: boolean;
     background: { opacity: number };
   };
+}
+
+// Type for custom shift points - used in InputWidgetSettings tachometer config
+export interface ShiftPointSettings {
+  /** Whether custom shift points are enabled */
+  enabled: boolean;
+  /** Visual indicator type */
+  indicatorType: 'glow' | 'pulse' | 'border';
+  /** Indicator color */
+  indicatorColor: string;
+  /** Per-car shift configurations */
+  carConfigs: Record<string, {
+    carId: string;
+    carName: string;
+    gearCount: number;
+    gearShiftPoints: Record<string, { shiftRpm: number }>;
+  }>;
 }
