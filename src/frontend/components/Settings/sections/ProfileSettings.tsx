@@ -86,7 +86,7 @@ export const ProfileSettings = () => {
 
     const handleDeleteProfile = async (profileId: string) => {
         if (profileId === 'default') {
-            setError('Cannot delete the Default');
+            setError('Cannot delete the Default profile');
             return;
         }
 
