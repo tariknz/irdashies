@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useDashboard } from '@irdashies/context';
 import type { DashboardProfile, GeneralSettingsType, FontSize } from '@irdashies/types';
+import { ConfirmDialog } from '../../ui/ConfirmDialog';
 
 const FONT_SIZE_OPTIONS: { value: FontSize; label: string }[] = [
     { value: 'xs', label: 'Extra Small' },
@@ -54,6 +55,11 @@ export const ProfileSettings = () => {
     const [editingProfileName, setEditingProfileName] = useState('');
     const [isCreating, setIsCreating] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [confirmDelete, setConfirmDelete] = useState<{
+        isOpen: boolean;
+        profileId: string;
+        profileName: string;
+    }>({ isOpen: false, profileId: '', profileName: '' });
 
     useEffect(() => {
         refreshProfiles();
@@ -84,9 +90,19 @@ export const ProfileSettings = () => {
             return;
         }
 
-        if (!confirm('Are you sure you want to delete this profile? This action cannot be undone.')) {
-            return;
-        }
+        const profile = profiles.find(p => p.id === profileId);
+        if (!profile) return;
+
+        setConfirmDelete({
+            isOpen: true,
+            profileId: profileId,
+            profileName: profile.name
+        });
+    };
+
+    const handleConfirmDelete = async () => {
+        const { profileId } = confirmDelete;
+        setConfirmDelete({ isOpen: false, profileId: '', profileName: '' });
 
         setError(null);
         try {
@@ -94,6 +110,10 @@ export const ProfileSettings = () => {
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to delete profile');
         }
+    };
+
+    const handleCancelDelete = () => {
+        setConfirmDelete({ isOpen: false, profileId: '', profileName: '' });
     };
 
     const handleStartEdit = (profile: DashboardProfile) => {
@@ -390,6 +410,18 @@ export const ProfileSettings = () => {
                     <li>Profile changes are automatically saved</li>
                 </ul>
             </div>
+
+            {/* Confirmation Dialog */}
+            <ConfirmDialog
+                isOpen={confirmDelete.isOpen}
+                title="Delete Profile"
+                message={`Are you sure you want to delete the profile "${confirmDelete.profileName}"? This action cannot be undone and all widget configurations for this profile will be permanently lost.`}
+                confirmText="Delete Profile"
+                cancelText="Keep Profile"
+                onConfirm={handleConfirmDelete}
+                onCancel={handleCancelDelete}
+                variant="danger"
+            />
         </div>
     );
 };
