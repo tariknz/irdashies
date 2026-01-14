@@ -233,6 +233,10 @@ export async function publishDashboardUpdates(overlayManager: OverlayManager, an
     return getProfile(currentProfileId);
   });
 
+  ipcMain.handle('getDashboardForProfile', async (_, profileId: string) => {
+    return dashboardBridge.getDashboardForProfile(profileId);
+  });
+
   ipcMain.handle('updateProfileTheme', (_, profileId: string, themeSettings: DashboardProfile['themeSettings']) => {
     updateProfileTheme(profileId, themeSettings);
     

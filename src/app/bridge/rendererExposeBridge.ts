@@ -95,6 +95,9 @@ export function exposeBridge() {
     getCurrentProfile: () => {
       return ipcRenderer.invoke('getCurrentProfile');
     },
+    getDashboardForProfile: (profileId: string) => {
+      return ipcRenderer.invoke('getDashboardForProfile', profileId);
+    },
     updateProfileTheme: (profileId: string, themeSettings: DashboardProfile['themeSettings']) => {
       return ipcRenderer.invoke('updateProfileTheme', profileId, themeSettings);
     },
