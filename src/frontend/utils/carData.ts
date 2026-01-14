@@ -1,3 +1,13 @@
+/**
+ * Car tachometer data utilities
+ * 
+ * Data sourced from lovely-car-data repository:
+ * https://github.com/Lovely-Sim-Racing/lovely-car-data
+ * 
+ * This project provides comprehensive car telemetry data for various racing games,
+ * including RPM thresholds, LED configurations, and shift point information.
+ */
+
 export interface CarData {
   carName: string;
   carId: string;

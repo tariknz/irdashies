@@ -232,6 +232,12 @@ const DisplaySettingsList = ({ itemsOrder, onReorder, settings, handleConfigChan
   );
 };
 
+/**
+ * Custom shift points configuration section
+ * 
+ * Car data is sourced from the lovely-car-data project:
+ * https://github.com/Lovely-Sim-Racing/lovely-car-data
+ */
 const CustomShiftPointsSection = ({ config, handleConfigChange }: { config: InputWidgetSettings['config'], handleConfigChange: (changes: Partial<InputWidgetSettings['config']>) => void }) => {
   const [expanded, setExpanded] = useState(false);
   const [expandedCarId, setExpandedCarId] = useState<string | null>(null);

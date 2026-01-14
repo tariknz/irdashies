@@ -163,6 +163,9 @@ Displays the throttle, clutch, and brake input traces, as well as the current ge
 - Current gear display with speed (auto/mph/km/h units)
 - Steering wheel visualization with multiple styles (default, formula, LMP, NASCAR, U-shape) and color themes (light/dark)
 - Tachometer with optional RPM text display
+  - Car-specific LED color and RPM thresholds (powered by [lovely-car-data](https://github.com/Lovely-Sim-Racing/lovely-car-data))
+  - Custom shift points configuration per car and gear
+  - Multiple indicator styles (glow, pulse, border) with customizable colors
 - Customizable display order for all components
 - Adjustable background opacity
 - Option to show only when on track
@@ -416,12 +419,17 @@ A powerful tool for viewing live data coming from iRacing. While mostly used for
   - System autostart: Optionally have the app start automatically when your computer boots up.
   - Automatic updates: The app keeps itself up to date with the latest features and bug fixes.
 
+## Acknowledgments
+
+This project makes use of data and resources from the following projects:
+
+- **[lovely-car-data](https://github.com/Lovely-Sim-Racing/lovely-car-data)** - Comprehensive car telemetry data including RPM thresholds, LED configurations, and shift point information for various racing games.
+
 ## Contributing
 
 We welcome contributions to the IRDashies project! If you have any ideas, suggestions, or bug reports, please open an issue or submit a pull request.
 
 Join our discord here: https://discord.gg/YMAqduF2Ft
-
 ## License
 
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for more details.
