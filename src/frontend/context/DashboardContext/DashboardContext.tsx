@@ -54,9 +54,7 @@ export const DashboardProvider: React.FC<{
   const initialProfileIdRef = React.useRef(profileId);
 
   const loadProfiles = React.useCallback(async (specificProfileId?: string) => {
-    console.log('[DashboardContext] Loading profiles at', new Date().toISOString());
     const allProfiles = await bridge.listProfiles();
-    console.log('[DashboardContext] Loaded profiles:', JSON.stringify(allProfiles, null, 2));
     setProfiles(allProfiles);
 
     // Always use the initial profileId from URL if it was provided
@@ -65,7 +63,6 @@ export const DashboardProvider: React.FC<{
     // If a specific profile ID is provided, use that; otherwise get current profile
     let profileToLoad: DashboardProfile | null;
     if (profileIdToUse) {
-      console.log('[DashboardContext] Loading specific profile:', profileIdToUse);
       profileToLoad = allProfiles.find(p => p.id === profileIdToUse) || null;
       if (!profileToLoad) {
         console.warn('[DashboardContext] Profile not found:', profileIdToUse, '- falling back to current');
@@ -77,23 +74,14 @@ export const DashboardProvider: React.FC<{
       profileToLoad = await bridge.getCurrentProfile();
     }
 
-    console.log('[DashboardContext] Profile to load:', JSON.stringify(profileToLoad, null, 2));
     // Deep clone to ensure React detects nested changes
     setCurrentProfile(profileToLoad ? JSON.parse(JSON.stringify(profileToLoad)) : null);
   }, [bridge]);
 
   useEffect(() => {
-    console.log('📊 DashboardProvider mounted');
-    console.log('📊 Initial profileId from URL:', profileId);
-    console.log('📊 initialProfileIdRef.current:', initialProfileIdRef.current);
-
     bridge.dashboardUpdated((dashboard) => {
-      console.log('📊 Dashboard received from bridge:', dashboard);
-      console.log('📊 initialProfileIdRef.current at callback:', initialProfileIdRef.current);
-      
-      // For profile-specific URLs, we need to ensure we're getting the right profile's dashboard
+     // For profile-specific URLs, we need to ensure we're getting the right profile's dashboard
       if (initialProfileIdRef.current && bridge.getDashboardForProfile) {
-        console.log('📊 Locked to profile', initialProfileIdRef.current, '- reloading that profile\'s dashboard');
         bridge.getDashboardForProfile(initialProfileIdRef.current).then((profileDashboard) => {
           if (profileDashboard) {
             // Only update if the dashboard is actually different to avoid overwriting local optimistic updates
@@ -122,7 +110,6 @@ export const DashboardProvider: React.FC<{
 
     // If we have a specific profileId from URL, load that profile's dashboard
     if (profileId && bridge.getDashboardForProfile) {
-      console.log('📊 Loading dashboard for specific profile:', profileId);
       bridge.getDashboardForProfile(profileId).then((dashboard) => {
         if (dashboard) {
           setDashboard(dashboard);
