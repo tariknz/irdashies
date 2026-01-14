@@ -37,13 +37,7 @@ app.on('ready', async () => {
   const bridge = getCurrentBridge();
 
   // Start component server for browser components
-  console.log('🔧 About to start component server...');
-  try {
-    await startComponentServer(bridge, dashboardBridge);
-    console.log('✅ Component server start call completed');
-  } catch (error) {
-    console.error('❌ Failed to start component server:', error);
-  }
+  await startComponentServer(bridge, dashboardBridge);
 
   overlayManager.createOverlays(dashboard);
   setupTaskbar(telemetrySink, overlayManager);
