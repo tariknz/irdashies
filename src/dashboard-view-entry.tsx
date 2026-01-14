@@ -24,20 +24,16 @@ if (debugMode) {
 }
 
 async function initializeDashboardView() {
-  console.log('[DashboardView] Initializing...');
   const { WebSocketBridge } = await import('./app/webserver/componentRenderer');
   const bridge = new WebSocketBridge();
 
-  console.log('[DashboardView] Connecting to WebSocket...');
   await bridge.connect(wsUrl);
-  console.log('[DashboardView] Connected!');
 
   const rootElement = document.getElementById('root');
   if (!rootElement) {
     throw new Error('Root element not found');
   }
 
-  console.log('[DashboardView] Rendering React app...');
   const root = createRoot(rootElement);
 
   root.render(
@@ -55,7 +51,6 @@ async function initializeDashboardView() {
       </TelemetryProvider>
     </HashRouter>
   );
-  console.log('[DashboardView] React app rendered');
 }
 
 initializeDashboardView().catch(console.error);
