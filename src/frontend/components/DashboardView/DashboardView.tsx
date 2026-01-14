@@ -23,7 +23,6 @@ export const DashboardView = () => {
   // Filter enabled widgets and deduplicate by ID
   const enabledWidgets = useMemo(() => {
     if (!currentDashboard?.widgets) {
-      console.log('[DashboardView] No widgets in dashboard');
       return [];
     }
     const seen = new Set<string>();
