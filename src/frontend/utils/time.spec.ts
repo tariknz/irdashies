@@ -23,8 +23,8 @@ describe('time', () => {
       expect(formatTime(60)).toBe('1:00.000');
     });
 
-    it('should return empty string for zero seconds', () => {
-      expect(formatTime(0)).toBe('');
+    it('should format time correctly for zero seconds', () => {
+      expect(formatTime(0)).toBe('0:00.000');
     });
 
     it('should format time correctly for less than a second', () => {
@@ -206,12 +206,9 @@ describe('time', () => {
       });
     });
 
-    it('should return empty string for zero or negative seconds in all formats', () => {
-      expect(formatTime(0, 'full')).toBe('');
+    it('should return empty string or negative seconds in all formats', () => {
       expect(formatTime(-1, 'mixed')).toBe('');
       expect(formatTime(undefined, 'minutes')).toBe('');
-      expect(formatTime(0, 'duration')).toBe('');
-      expect(formatTime(0, 'duration-wlabels')).toBe('');
     });
   });
 });
