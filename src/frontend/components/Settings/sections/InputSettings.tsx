@@ -239,6 +239,7 @@ const CustomShiftPointsSection = ({ config, handleConfigChange }: { config: Inpu
   const [selectedCarId, setSelectedCarId] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [editingValues, setEditingValues] = useState<Record<string, string>>({});
 
   // Get values from config
   const customShiftPoints = config.tachometer.customShiftPoints ?? {
@@ -376,9 +377,6 @@ const CustomShiftPointsSection = ({ config, handleConfigChange }: { config: Inpu
     const car = customShiftPoints.carConfigs[carId];
     if (!car) return;
 
-    // Validate shift RPM
-    const validatedRpm = Math.max(MIN_SHIFT_RPM, Math.min(shiftRpm, car.redlineRpm));
-
     updateCustomShiftPoints({
       carConfigs: {
         ...customShiftPoints.carConfigs,
@@ -386,7 +384,7 @@ const CustomShiftPointsSection = ({ config, handleConfigChange }: { config: Inpu
           ...car,
           gearShiftPoints: {
             ...car.gearShiftPoints,
-            [gear]: { shiftRpm: validatedRpm }
+            [gear]: { shiftRpm }
           }
         }
       }
@@ -474,7 +472,10 @@ const CustomShiftPointsSection = ({ config, handleConfigChange }: { config: Inpu
               <option value="">
                 {loading ? 'Loading cars...' : 
                  availableCars.length === 0 ? 'No cars loaded' :
-                 `Select from ${availableCars.length} cars...`}
+                 (() => {
+                   const unselectedCount = availableCars.filter(car => !customShiftPoints.carConfigs[car.carId]).length;
+                   return `Select from ${unselectedCount} car${unselectedCount !== 1 ? 's' : ''}...`;
+                 })()}
               </option>
               {availableCars
                 .filter(car => !customShiftPoints.carConfigs[car.carId])
@@ -527,16 +528,37 @@ const CustomShiftPointsSection = ({ config, handleConfigChange }: { config: Inpu
                   {Array.from({ length: car.gearCount }, (_, i) => {
                     const gear = (i + 1).toString();
                     const rpm = car.gearShiftPoints[gear]?.shiftRpm || car.redlineRpm;
+                    const editKey = `${carId}-${gear}`;
+                    const displayValue = editingValues[editKey] !== undefined ? editingValues[editKey] : rpm.toString();
+                    
                     return (
                       <div key={gear} className="flex items-center gap-2">
                         <label className="text-xs text-slate-200 w-8">G{gear}:</label>
                         <input
-                          type="number"
-                          min={MIN_SHIFT_RPM}
-                          max={car.redlineRpm}
-                          step="50"
-                          value={rpm}
-                          onChange={(e) => updateShiftPoint(carId, gear, parseInt(e.target.value) || rpm)}
+                          type="text"
+                          inputMode="numeric"
+                          value={displayValue}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            // Allow empty or numeric input only
+                            if (value === '' || /^\d+$/.test(value)) {
+                              setEditingValues({ ...editingValues, [editKey]: value });
+                            }
+                          }}
+                          onBlur={() => {
+                            // Only update if the user actually edited the value
+                            const value = editingValues[editKey];
+                            if (value === undefined) return;
+                            
+                            // Validate and commit to config
+                            const numValue = parseInt(value) || MIN_SHIFT_RPM;
+                            const clampedValue = Math.max(MIN_SHIFT_RPM, Math.min(numValue, car.redlineRpm));
+                            updateShiftPoint(carId, gear, clampedValue);
+                            // Clear editing state
+                            const newEditingValues = { ...editingValues };
+                            delete newEditingValues[editKey];
+                            setEditingValues(newEditingValues);
+                          }}
                           className="flex-1 bg-slate-600 text-slate-200 rounded px-1 py-1 text-xs"
                         />
                         <span className="text-xs text-slate-400">RPM</span>
