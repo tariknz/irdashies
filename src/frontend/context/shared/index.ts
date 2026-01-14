@@ -4,3 +4,5 @@ export * from './useCurrentSessionType';
 export * from './useDrivingState';
 export * from './useFocusCarIdx';
 export * from './useSessionVisibility';
+export * from './useTotalRaceLaps'
+export * from './useTotalRaceTime'
