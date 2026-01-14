@@ -165,8 +165,11 @@ export class IRacingSDK {
 
     try {
       const seshString = this._sdk?.getSessionData();
-      // Remove leading and trailing commas
-      const fixedYaml = seshString?.replace(/(\w+):\s*,?((\w+,)*\w+)?,?\s*\n/g, '$1: $2 \n');
+      // Handle leading commas in YAML values. 
+      // First regex will drop the comma if no values follow (e.g. 'field: ,' => 'field: ')
+      // Second regex will put value in quotes, if leading comma is followed by values (e.g. 'field: ,data' => 'field: ",data"')
+      const fixedYaml = seshString?.replace(/(\w+: ) *, *\n/g, '$1 \n')
+                                   .replace(/(\w+: )(,.*)/g, '$1"$2" \n');
       this._sessionData = yaml.load(fixedYaml, { json: true }) as SessionData;
       return this._sessionData;
     } catch (err) {
