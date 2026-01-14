@@ -7,6 +7,7 @@ import { useSortableList } from '../../SortableList';
 import { DotsSixVerticalIcon } from '@phosphor-icons/react';
 import { mergeDisplayOrder } from '../../../utils/displayOrder';
 import { SessionVisibility } from '../components/SessionVisibility';
+import { fetchCarList } from '../../../utils/carData';
 
 const SETTING_ID = 'input';
 
@@ -15,12 +16,6 @@ const DEFAULT_SHIFT_RPM_RATIO = 0.9;
 const MIN_SHIFT_RPM = 1000;
 
 // TypeScript interfaces for GitHub API responses
-interface GitHubFile {
-  name: string;
-  path: string;
-  type: string;
-}
-
 interface CarListItem {
   carId: string;
   carName: string;
@@ -271,17 +266,7 @@ const CustomShiftPointsSection = ({ config, handleConfigChange }: { config: Inpu
       
       setLoading(true);
       try {
-        const response = await fetch('https://api.github.com/repos/Lovely-Sim-Racing/lovely-car-data/contents/data/IRacing');
-        
-        if (!response.ok) {
-          if (response.status === 403) {
-            const rateLimitReset = response.headers.get('X-RateLimit-Reset');
-            const resetTime = rateLimitReset ? new Date(parseInt(rateLimitReset) * 1000).toLocaleTimeString() : 'unknown';
-            throw new Error(`GitHub API rate limit exceeded. Resets at ${resetTime}`);
-          }
-          throw new Error(`GitHub API error: ${response.status} ${response.statusText}`);
-        }
-        const files: GitHubFile[] = await response.json();
+        const files = await fetchCarList('IRacing');
         const cars: CarListItem[] = files
           .filter((file) => file.name.endsWith('.json'))
           .map((file) => {
