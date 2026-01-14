@@ -15,7 +15,7 @@ import {
   setCurrentProfile,
   getProfile,
   updateProfileTheme,
-  getOrCreateDefaultDashboard
+  getOrCreateDefaultDashboardForProfile
 } from '../../storage/dashboards';
 import { OverlayManager } from '../../overlayManager';
 import { getAnalyticsOptOut as getAnalyticsOptOutStorage, setAnalyticsOptOut as setAnalyticsOptOutStorage } from '../../storage/analytics';
@@ -61,7 +61,6 @@ export const dashboardBridge: DashboardBridge = {
     return dashboard;
   },
   getDashboardForProfile: async (profileId: string) => {
-
     // Check if profile exists first
     const profile = getProfile(profileId);
     if (!profile) {
@@ -73,13 +72,9 @@ export const dashboardBridge: DashboardBridge = {
 
     // If dashboard doesn't exist for this profile, create a default one
     if (!dashboard) {
-      // Temporarily switch to the profile to create its default dashboard
-      const originalProfileId = getCurrentProfileId();
-      setCurrentProfile(profileId);
-      dashboard = getOrCreateDefaultDashboard();
-     // Switch back to original profile
-      setCurrentProfile(originalProfileId);
+      dashboard = getOrCreateDefaultDashboardForProfile(profileId);
     }
+    
     return dashboard;
   },
   toggleDemoMode: () => {

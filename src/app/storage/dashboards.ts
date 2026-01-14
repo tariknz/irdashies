@@ -31,7 +31,11 @@ const isDashboardChanged = (oldDashboard: DashboardLayout | undefined, newDashbo
 
 export const getOrCreateDefaultDashboard = () => {
   const currentProfileId = getCurrentProfileId();
-  const dashboard = getDashboard(currentProfileId);
+  return getOrCreateDefaultDashboardForProfile(currentProfileId);
+};
+
+export const getOrCreateDefaultDashboardForProfile = (profileId: string) => {
+  const dashboard = getDashboard(profileId);
 
   if (dashboard) {
     // check missing widgets
@@ -57,11 +61,11 @@ export const getOrCreateDefaultDashboard = () => {
       }),
     };
 
-    saveDashboard(currentProfileId, updatedDashboard);
+    saveDashboard(profileId, updatedDashboard);
     return updatedDashboard;
   }
 
-  saveDashboard(currentProfileId, defaultDashboard);
+  saveDashboard(profileId, defaultDashboard);
 
   return defaultDashboard;
 };
