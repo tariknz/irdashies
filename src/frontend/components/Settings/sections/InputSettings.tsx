@@ -554,9 +554,10 @@ const CustomShiftPointsSection = ({ config, handleConfigChange }: { config: Inpu
                             const numValue = parseInt(value) || MIN_SHIFT_RPM;
                             const clampedValue = Math.max(MIN_SHIFT_RPM, Math.min(numValue, car.redlineRpm));
                             updateShiftPoint(carId, gear, clampedValue);
-                            // Clear editing state
-                            const newEditingValues = { ...editingValues };
-                            delete newEditingValues[editKey];
+                            // Clear editing state by filtering out the editKey
+                            const newEditingValues = Object.fromEntries(
+                              Object.entries(editingValues).filter(([key]) => key !== editKey)
+                            );
                             setEditingValues(newEditingValues);
                           }}
                           className="flex-1 bg-slate-600 text-slate-200 rounded px-1 py-1 text-xs"
