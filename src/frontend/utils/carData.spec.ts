@@ -1,13 +1,37 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { loadCarData, getGearKey } from './carData';
+import { loadCarData, getGearKey, fetchCarList } from './carData';
 
-// Mock fetch
+// Mock fetch and localStorage
 const mockFetch = vi.fn();
 global.fetch = mockFetch;
+
+// Mock localStorage
+const localStorageMock = (() => {
+  let store: Record<string, string> = {};
+  return {
+    getItem: (key: string) => store[key] || null,
+    setItem: (key: string, value: string) => {
+      store[key] = value.toString();
+    },
+    removeItem: (key: string) => {
+      // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+      delete store[key];
+    },
+    clear: () => {
+      store = {};
+    }
+  };
+})();
+
+Object.defineProperty(window, 'localStorage', {
+  value: localStorageMock
+});
 
 describe('carData', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Clear localStorage before each test
+    localStorage.clear();
   });
 
   afterEach(() => {
@@ -149,6 +173,115 @@ describe('carData', () => {
       expect(mockFetch).toHaveBeenCalledWith(
         'https://raw.githubusercontent.com/Lovely-Sim-Racing/lovely-car-data/main/data/IRacing/testcar.json'
       );
+    });
+
+    it('caches car data and returns from cache on second call', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockCarData)
+      });
+
+      // First call should fetch from API
+      const result1 = await loadCarData('testcar');
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+
+      // Second call should return from cache without fetching
+      const result2 = await loadCarData('testcar');
+      expect(mockFetch).toHaveBeenCalledTimes(1); // Still 1, not 2
+      expect(result1).toEqual(result2);
+    });
+
+    it('caches results separately for different games', async () => {
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(mockCarData)
+      });
+
+      // Call for IRacing
+      await loadCarData('testcar', 'iracing');
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+
+      // Call for different game should fetch again
+      await loadCarData('testcar', 'assettocorsa');
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe('fetchCarList', () => {
+    const mockCarList = [
+      { name: 'car1.json', path: 'data/IRacing/car1.json' },
+      { name: 'car2.json', path: 'data/IRacing/car2.json' }
+    ];
+
+    it('fetches car list from GitHub API', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        headers: new Map(),
+        json: () => Promise.resolve(mockCarList)
+      });
+
+      const result = await fetchCarList('IRacing');
+      
+      expect(mockFetch).toHaveBeenCalledWith(
+        'https://api.github.com/repos/Lovely-Sim-Racing/lovely-car-data/contents/data/IRacing'
+      );
+      expect(result).toEqual(mockCarList);
+    });
+
+    it('caches car list and returns from cache on second call', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        headers: new Map(),
+        json: () => Promise.resolve(mockCarList)
+      });
+
+      // First call should fetch from API
+      const result1 = await fetchCarList('IRacing');
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+
+      // Second call should return from cache without fetching
+      const result2 = await fetchCarList('IRacing');
+      expect(mockFetch).toHaveBeenCalledTimes(1); // Still 1, not 2
+      expect(result1).toEqual(result2);
+    });
+
+    it('throws helpful error on rate limit', async () => {
+      const rateLimitReset = Math.floor(Date.now() / 1000) + 3600;
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 403,
+        statusText: 'Forbidden',
+        headers: new Map([['X-RateLimit-Reset', rateLimitReset.toString()]])
+      });
+
+      await expect(fetchCarList('IRacing')).rejects.toThrow('GitHub API rate limit exceeded');
+    });
+
+    it('throws error on other API errors', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        statusText: 'Internal Server Error',
+        headers: new Map()
+      });
+
+      await expect(fetchCarList('IRacing')).rejects.toThrow('GitHub API error');
+    });
+
+    it('caches results separately for different games', async () => {
+      mockFetch.mockResolvedValue({
+        ok: true,
+        headers: new Map(),
+        json: () => Promise.resolve(mockCarList)
+      });
+
+      // Call for IRacing
+      await fetchCarList('IRacing');
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+
+      // Call for different game should fetch again
+      await fetchCarList('F12025');
+      expect(mockFetch).toHaveBeenCalledTimes(2);
     });
   });
 });
