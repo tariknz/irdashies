@@ -120,35 +120,87 @@ describe('ProfileSettings', () => {
   });
 
   describe('Profile Deletion', () => {
-    it('should delete a non-Default', async () => {
+    it('should delete a non-Default profile when confirmed', async () => {
       mockDeleteProfile.mockResolvedValue(undefined);
-      
-      // Mock window.confirm
-      const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
       
       render(<ProfileSettings />);
       
       const deleteButtons = screen.getAllByText('Delete');
       fireEvent.click(deleteButtons[0]);
+      
+      // Confirmation dialog should appear
+      expect(screen.getByRole('heading', { name: 'Delete Profile' })).toBeInTheDocument();
+      expect(screen.getByText(/Are you sure you want to delete the profile "Test Profile"/)).toBeInTheDocument();
+      
+      // Click the confirm button
+      const confirmButton = screen.getByRole('button', { name: 'Delete Profile' });
+      fireEvent.click(confirmButton);
       
       await waitFor(() => {
         expect(mockDeleteProfile).toHaveBeenCalledWith('test-profile-1');
       });
-      
-      confirmSpy.mockRestore();
     });
 
     it('should not delete when user cancels confirmation', async () => {
-      const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
-      
       render(<ProfileSettings />);
       
       const deleteButtons = screen.getAllByText('Delete');
       fireEvent.click(deleteButtons[0]);
       
-      expect(mockDeleteProfile).not.toHaveBeenCalled();
+      // Confirmation dialog should appear
+      expect(screen.getByRole('heading', { name: 'Delete Profile' })).toBeInTheDocument();
       
-      confirmSpy.mockRestore();
+      // Click the cancel button
+      const cancelButton = screen.getByRole('button', { name: 'Keep Profile' });
+      fireEvent.click(cancelButton);
+      
+      // Dialog should be gone and delete should not have been called
+      await waitFor(() => {
+        expect(screen.queryByRole('heading', { name: 'Delete Profile' })).not.toBeInTheDocument();
+      });
+      
+      expect(mockDeleteProfile).not.toHaveBeenCalled();
+    });
+
+    it('should close dialog when clicking backdrop', async () => {
+      render(<ProfileSettings />);
+      
+      const deleteButtons = screen.getAllByText('Delete');
+      fireEvent.click(deleteButtons[0]);
+      
+      // Confirmation dialog should appear
+      expect(screen.getByRole('heading', { name: 'Delete Profile' })).toBeInTheDocument();
+      
+      // Click the backdrop (the div with bg-black bg-opacity-50)
+      const backdrop = document.querySelector('.bg-black.bg-opacity-50');
+      fireEvent.click(backdrop as Element);
+      
+      // Dialog should be gone and delete should not have been called
+      await waitFor(() => {
+        expect(screen.queryByRole('heading', { name: 'Delete Profile' })).not.toBeInTheDocument();
+      });
+      
+      expect(mockDeleteProfile).not.toHaveBeenCalled();
+    });
+
+    it('should close dialog when pressing Escape key', async () => {
+      render(<ProfileSettings />);
+      
+      const deleteButtons = screen.getAllByText('Delete');
+      fireEvent.click(deleteButtons[0]);
+      
+      // Confirmation dialog should appear
+      expect(screen.getByRole('heading', { name: 'Delete Profile' })).toBeInTheDocument();
+      
+      // Press Escape key
+      fireEvent.keyDown(document, { key: 'Escape' });
+      
+      // Dialog should be gone and delete should not have been called
+      await waitFor(() => {
+        expect(screen.queryByRole('heading', { name: 'Delete Profile' })).not.toBeInTheDocument();
+      });
+      
+      expect(mockDeleteProfile).not.toHaveBeenCalled();
     });
 
     it('should not show delete button for Default', () => {
