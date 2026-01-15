@@ -5,6 +5,8 @@ import type { ShiftPointSettings } from '../../Settings/types';
 interface TachometerProps {
   rpm: number;
   maxRpm: number;
+  /** Current gear */
+  gear: number;
   /** RPM when LEDs should turn purple (shift point) */
   shiftRpm?: number;
   /** RPM when LEDs should start blinking */
@@ -28,6 +30,7 @@ interface TachometerProps {
 export const Tachometer = ({ 
   rpm, 
   maxRpm,
+  gear,
   shiftRpm = 0,      // Optional shift RPM (DriverCarSLShiftRPM)
   blinkRpm = 0,      // Optional blink RPM (DriverCarSLBlinkRPM)
   numLights = 10,
@@ -40,8 +43,7 @@ export const Tachometer = ({
 }: TachometerProps) => {
   const [flash, setFlash] = useState(false);
   
-  // Get current gear from telemetry (default to 1 for safety)
-  const gear = 1; // Will be overridden by actual shift point logic
+  // Use the gear passed as prop
   
   // Ensure RPM is within valid range
   const clampedRpm = Math.max(0, Math.min(rpm || 0, maxRpm));

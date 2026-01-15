@@ -9,6 +9,7 @@ import { useCarTachometerData } from './useCarTachometerData';
  */
 export const useTachometerData = () => {
   const rpm = useTelemetryValue('RPM') ?? 0;
+  const gear = useTelemetryValue('Gear') ?? 1;
   const shiftGrindRpm = useTelemetryValue('ShiftGrindRPM') ?? 0;
   const { carData, gearRpmThresholds, hasCarData } = useCarTachometerData();
 
@@ -27,6 +28,7 @@ export const useTachometerData = () => {
 
   return {
     rpm,
+    gear,
     maxRpm,
     shiftRpm,
     blinkRpm,
