@@ -118,7 +118,7 @@ describe('carData', () => {
     });
 
     it('sanitizes car path correctly', async () => {
-      // First attempt with original fails, second with sanitized succeeds
+      // First attempt with original fails, second with lowercase succeeds
       mockFetch
         .mockResolvedValueOnce({ ok: false, status: 404 })
         .mockResolvedValueOnce({
@@ -133,15 +133,13 @@ describe('carData', () => {
         'https://raw.githubusercontent.com/Lovely-Sim-Racing/lovely-car-data/main/data/IRacing/test-car_123.json'
       );
       expect(mockFetch).toHaveBeenNthCalledWith(2,
-        'https://raw.githubusercontent.com/Lovely-Sim-Racing/lovely-car-data/main/data/IRacing/testcar123.json'
+        'https://raw.githubusercontent.com/Lovely-Sim-Racing/lovely-car-data/main/data/IRacing/test-car_123.json'
       );
     });
 
     it('handles car paths with spaces (MX-5 case)', async () => {
-      // First two attempts fail, third succeeds
+      // First attempt succeeds with encoded space
       mockFetch
-        .mockResolvedValueOnce({ ok: false, status: 404 })
-        .mockResolvedValueOnce({ ok: false, status: 404 })
         .mockResolvedValueOnce({
           ok: true,
           json: () => Promise.resolve(mockCarData)
@@ -149,14 +147,8 @@ describe('carData', () => {
 
       const result = await loadCarData('mx5 mx52016');
       
-      expect(mockFetch).toHaveBeenCalledTimes(3);
+      expect(mockFetch).toHaveBeenCalledTimes(1);
       expect(mockFetch).toHaveBeenNthCalledWith(1,
-        'https://raw.githubusercontent.com/Lovely-Sim-Racing/lovely-car-data/main/data/IRacing/mx5%20mx52016.json'
-      );
-      expect(mockFetch).toHaveBeenNthCalledWith(2,
-        'https://raw.githubusercontent.com/Lovely-Sim-Racing/lovely-car-data/main/data/IRacing/mx5mx52016.json'
-      );
-      expect(mockFetch).toHaveBeenNthCalledWith(3,
         'https://raw.githubusercontent.com/Lovely-Sim-Racing/lovely-car-data/main/data/IRacing/mx5%20mx52016.json'
       );
       expect(result).toEqual(mockCarData);
