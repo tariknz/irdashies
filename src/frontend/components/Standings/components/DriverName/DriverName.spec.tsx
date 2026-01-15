@@ -60,6 +60,8 @@ describe('DriverNameView', () => {
     expect(container.textContent).toBe('Leclerc');
   });
 
+// every driver should have a name but you never know. Delete it if you think it's useless
+
   it('handles empty fullName', () => {
     const { container } = render(
       <DriverNameView

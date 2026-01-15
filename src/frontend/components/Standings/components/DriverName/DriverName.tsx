@@ -4,7 +4,7 @@ export type DriverNameParts = {
   surname: string;
 };
 
-// Utility: capitalize the first letter of each word
+// Utility: capitalize the first letter of each word (some people use lower case for the fist letter of their name for strange reasons)
 const capitalizeWords = (str: string) =>
   str
     .split(' ')
@@ -64,7 +64,7 @@ export const DriverName = (
         .join(' ');
 
     case 'name-surname':
-      return [firstName, surname].join(' ');
+      return [firstName, surname].filter(Boolean).join(' ');
 
     case 'n.-surname':
       return `${firstName.charAt(0)}. ${surname}`;
