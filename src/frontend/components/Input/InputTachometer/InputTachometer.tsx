@@ -23,6 +23,8 @@ interface TachometerProps {
   ledColors?: string[] | null;
   /** Car data for LED count */
   carData?: CarData | null;
+  /** CarPath from iRacing session (for custom shift points) */
+  carPath?: string;
   /** Custom shift point settings */
   shiftPointSettings?: ShiftPointSettings;
 }
@@ -39,28 +41,38 @@ export const Tachometer = ({
   gearRpmThresholds = null,
   ledColors = null,
   carData = null,
+  carPath = undefined,
   shiftPointSettings = undefined
 }: TachometerProps) => {
   const [flash, setFlash] = useState(false);
-  
-  // Use the gear passed as prop
+  const [prevAtRedline, setPrevAtRedline] = useState(false);
   
   // Ensure RPM is within valid range
   const clampedRpm = Math.max(0, Math.min(rpm || 0, maxRpm));
   
-  // Use car-specific LED count if available
-  const effectiveNumLights = carData?.ledNumber || (ledColors ? ledColors.length - 1 : numLights);
-  
-  // Custom shift point logic
-  const carConfig = carData && shiftPointSettings?.carConfigs[carData.carId];
-  const customShiftPoint = carConfig?.gearShiftPoints[gear.toString()]?.shiftRpm;
-  const shouldShowCustomShift = !!(shiftPointSettings?.enabled && customShiftPoint && clampedRpm >= customShiftPoint && gear > 0);
-  const indicatorType = shiftPointSettings?.indicatorType || 'glow';
-  const indicatorColor = shiftPointSettings?.indicatorColor || '#00ff00';
-  
   // Calculate effective thresholds with fallbacks
   const effectiveShiftRpm = gearRpmThresholds ? gearRpmThresholds[0] : (shiftRpm || (maxRpm * 0.9));  // Use redline from car data
   const effectiveBlinkRpm = gearRpmThresholds ? gearRpmThresholds[0] : (blinkRpm || (maxRpm * 0.97)); // Use redline from car data
+  
+  // Redline hysteresis - stay at redline longer to give breathing room (derived state)
+  const atRedline = clampedRpm >= effectiveShiftRpm ? true : 
+                    clampedRpm < effectiveShiftRpm * 0.88 ? false : 
+                    prevAtRedline;
+  
+  // Update previous state when it changes
+  if (atRedline !== prevAtRedline) {
+    setPrevAtRedline(atRedline);
+  }
+  
+  // Use car-specific LED count if available
+  const effectiveNumLights = carData?.ledNumber || (ledColors ? ledColors.length - 1 : numLights);
+  
+  // Custom shift point logic - use CarPath from iRacing (matches lovely-car-data)
+  const carConfig = carPath && shiftPointSettings?.carConfigs[carPath];
+  const customShiftPoint = carConfig && typeof carConfig !== 'string' ? carConfig.gearShiftPoints[gear.toString()]?.shiftRpm : undefined;
+  const shouldShowCustomShift = !!(shiftPointSettings?.enabled && customShiftPoint && clampedRpm >= customShiftPoint && gear > 0);
+  const indicatorType = shiftPointSettings?.indicatorType || 'glow';
+  const indicatorColor = shiftPointSettings?.indicatorColor || '#00ff00';
   
   // Calculate activation thresholds for each light with distinct values
   const getActivationThreshold = (ledIndex: number) => {
@@ -92,6 +104,9 @@ export const Tachometer = ({
   const getActiveLights = () => {
     // Always show no lights when RPM is 0
     if (clampedRpm <= 0) return 0;
+    
+    // Always show all lights when at redline (with hysteresis)
+    if (atRedline) return effectiveNumLights;
     
     // Always show all lights when at or above shift point
     if (clampedRpm >= effectiveShiftRpm) return effectiveNumLights;
@@ -255,7 +270,7 @@ export const Tachometer = ({
           {Array.from({ length: effectiveNumLights }, (_, i) => (
             <div
               key={i}
-              className="rounded-full border border-gray-600 transition-all duration-200"
+              className="rounded-full border border-gray-600 transition-all duration-300"
               style={{
                 width: ledSize,
                 height: ledSize,

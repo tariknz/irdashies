@@ -41,6 +41,7 @@ export const Input = () => {
               gearRpmThresholds={tachometerData.gearRpmThresholds}
               ledColors={tachometerData.carData?.ledColor}
               carData={tachometerData.carData}
+              carPath={tachometerData.carPath}
               shiftPointSettings={tachometerSettings.shiftPointSettings}
             />
           </div>

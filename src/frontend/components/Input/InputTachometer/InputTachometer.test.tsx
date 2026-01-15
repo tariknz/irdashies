@@ -64,35 +64,41 @@ describe('Tachometer', () => {
     expect(screen.getByText('RPM')).toBeInTheDocument();
   });
 
-  it('shows SHIFT indicator when custom shift point is reached', () => {
+  it('shows visual indicator when custom shift point is reached', () => {
     render(
       <Tachometer
         rpm={7100} // Above 7000 RPM shift point
         maxRpm={8000}
         showRpmText={true}
+        gear={1}
         carData={mockCarData}
+        carPath="ferrari296gt3"
         shiftPointSettings={mockShiftSettings}
       />
     );
 
+    // Check that SHIFT text is shown when custom shift point is reached
     expect(screen.getByText('SHIFT')).toBeInTheDocument();
   });
 
-  it('does not show SHIFT indicator when below custom shift point', () => {
+  it('does not show visual indicator when below custom shift point', () => {
     render(
       <Tachometer
         rpm={6500} // Below 7000 RPM shift point
         maxRpm={8000}
         showRpmText={true}
+        gear={1}
         carData={mockCarData}
+        carPath="ferrari296gt3"
         shiftPointSettings={mockShiftSettings}
       />
     );
 
+    // Check that SHIFT text is not shown
     expect(screen.queryByText('SHIFT')).not.toBeInTheDocument();
   });
 
-  it('does not show SHIFT indicator when custom shift points are disabled', () => {
+  it('does not show visual indicator when custom shift points are disabled', () => {
     const disabledSettings = { ...mockShiftSettings, enabled: false };
     
     render(
@@ -100,11 +106,14 @@ describe('Tachometer', () => {
         rpm={7100} // Above 7000 RPM shift point
         maxRpm={8000}
         showRpmText={true}
+        gear={1}
         carData={mockCarData}
+        carPath="ferrari296gt3"
         shiftPointSettings={disabledSettings}
       />
     );
 
+    // Check that SHIFT text is not shown
     expect(screen.queryByText('SHIFT')).not.toBeInTheDocument();
   });
 });

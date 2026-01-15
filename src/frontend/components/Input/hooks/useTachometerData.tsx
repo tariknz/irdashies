@@ -15,6 +15,13 @@ export const useTachometerData = () => {
 
   // Get car-specific redline from session data
   const driverCarRedLine = useSessionStore(state => state.session?.DriverInfo?.DriverCarRedLine);
+  const driverCarIdx = useSessionStore(state => state.session?.DriverInfo?.DriverCarIdx);
+  const carPath = useSessionStore(state => {
+    const drivers = state.session?.DriverInfo?.Drivers;
+    if (!drivers || driverCarIdx === undefined) return undefined;
+    const driver = drivers.find(d => d.CarIdx === driverCarIdx);
+    return driver?.CarPath;
+  });
 
   // Use car-specific maximum RPM from multiple sources in order of preference
   const maxRpm =
@@ -36,5 +43,6 @@ export const useTachometerData = () => {
     carData,
     gearRpmThresholds,
     hasCarData,
+    carPath, // CarPath for custom shift points (matches lovely-car-data)
   };
 };

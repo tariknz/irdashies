@@ -100,9 +100,9 @@ export const loadCarData = async (carPath: string, gameId = 'iracing'): Promise<
     
     // Try multiple variations of the car ID
     const carIdVariations = [
-      carPath.toLowerCase(), // Original with spaces/special chars
+      carPath, // Original with exact casing and spaces
+      carPath.toLowerCase(), // Lowercase with spaces/special chars
       carPath.toLowerCase().replace(/[^a-z0-9]/g, ''), // Remove all non-alphanumeric
-      carPath.toLowerCase().replace(/[^a-z0-9 ]/g, '') // Keep spaces, remove other special chars
     ];
     
     // Try each variation

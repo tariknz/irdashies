@@ -426,6 +426,15 @@ const CustomShiftPointsSection = ({ config, handleConfigChange }: { config: Inpu
       
       {expanded && (
         <div className="space-y-4 pl-4 pt-3">
+          {/* Main Enable Toggle */}
+          <div className="flex items-center gap-3 pb-3 border-b border-slate-600">
+            <label className="text-sm text-slate-200">Enable Custom Shift Points:</label>
+            <ToggleSwitch
+              enabled={customShiftPoints.enabled}
+              onToggle={(enabled) => updateCustomShiftPoints({ enabled })}
+            />
+          </div>
+          
           <div className="flex items-center gap-3">
             <label className="text-sm text-slate-200">Indicator Type:</label>
             <select
