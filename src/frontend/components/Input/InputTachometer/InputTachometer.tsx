@@ -6,7 +6,7 @@ interface TachometerProps {
   rpm: number;
   maxRpm: number;
   /** Current gear */
-  gear: number;
+  gear?: number;
   /** RPM when LEDs should turn purple (shift point) */
   shiftRpm?: number;
   /** RPM when LEDs should start blinking */
@@ -30,7 +30,7 @@ interface TachometerProps {
 export const Tachometer = ({ 
   rpm, 
   maxRpm,
-  gear,
+  gear = 0,
   shiftRpm = 0,      // Optional shift RPM (DriverCarSLShiftRPM)
   blinkRpm = 0,      // Optional blink RPM (DriverCarSLBlinkRPM)
   numLights = 10,
