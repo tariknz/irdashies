@@ -20,6 +20,7 @@ const mockBridge: DashboardBridge = {
   getGarageCoverImageAsDataUrl: vi.fn(),
   getAnalyticsOptOut: vi.fn().mockResolvedValue(false),
   setAnalyticsOptOut: vi.fn(),
+  setAutoStart: vi.fn()
 };
 
 const TestComponent: React.FC = () => {

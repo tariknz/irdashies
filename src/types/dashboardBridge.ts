@@ -20,4 +20,5 @@ export interface DashboardBridge {
   getAnalyticsOptOut: () => Promise<boolean>;
   setAnalyticsOptOut: (optOut: boolean) => Promise<void>;
   stop: () => void;
+  setAutoStart: (autoStart: boolean) => Promise<void>;
 }

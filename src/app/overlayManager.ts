@@ -223,6 +223,13 @@ export class OverlayManager {
     }
   }
 
+  public setupAutoStart(): void {
+    const dashboard = getDashboard('default');
+    app.setLoginItemSettings({
+      openAtLogin: dashboard?.generalSettings?.enableAutoStart ?? false,
+    });
+  }
+
   /**
    * Setup a single instance lock for the application. If the application is already running, it will quit the new instance.
    * @returns true if the lock was obtained, false otherwise

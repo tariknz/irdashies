@@ -23,6 +23,7 @@ const analytics = new Analytics();
 
 overlayManager.setupHardwareAcceleration();
 overlayManager.setupSingleInstanceLock();
+overlayManager.setupAutoStart();
 
 app.on('ready', async () => {
   // Don't start services if we don't have the single instance lock
