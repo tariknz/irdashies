@@ -34,6 +34,7 @@ export const useDriverPositions = () => {
   const carIdxLastLapTime = useTelemetry('CarIdxLastLapTime');
   const carIdxF2Time = useTelemetry('CarIdxF2Time');
   const carIdxLapNum = useTelemetry('CarIdxLap');
+  const carIdxLapDstPct = useTelemetry('CarIdxLapDistPct')
   const carIdxTrackSurface = useTelemetry('CarIdxTrackSurface');
   const prevCarTrackSurface = usePrevCarTrackSurface()
   const lastPitLap = usePitLap()
@@ -50,6 +51,7 @@ export const useDriverPositions = () => {
       lastLap: lastLap[carIdx] ?? -1,
       lastLapTime: carIdxLastLapTime?.value?.[carIdx] ?? -1,
       lapNum: carIdxLapNum?.value?.[carIdx],
+      lapDstPct: carIdxLapDstPct?.value?.[carIdx],
       lastPitLap: lastPitLap[carIdx] ?? undefined,
       prevCarTrackSurface: prevCarTrackSurface[carIdx] ?? undefined,
       carTrackSurface: carIdxTrackSurface?.value?.[carIdx]
@@ -62,6 +64,7 @@ export const useDriverPositions = () => {
     lastLap,
     carIdxF2Time?.value,
     carIdxLapNum?.value,
+    carIdxLapDstPct?.value,
     lastPitLap,
     prevCarTrackSurface,
     carIdxTrackSurface?.value
@@ -147,6 +150,9 @@ export const useDriverStandings = () => {
     const playerLap = playerCarIdx !== undefined
       ? driverPositionsByCarIdx.get(playerCarIdx)?.lapNum ?? 0
       : 0;
+    const playerLapDistPct = playerCarIdx !== undefined
+      ? driverPositionsByCarIdx.get(playerCarIdx)?.lapDstPct ?? 0
+      : 0;
 
     const standings = drivers.map((driver) => {
       const driverPos = driverPositionsByCarIdx.get(driver.carIdx);
@@ -157,9 +163,10 @@ export const useDriverStandings = () => {
 
       let lappedState: 'ahead' | 'behind' | 'same' | undefined = undefined;
       if (sessionType === 'Race') {
-        if (driverPos.lapNum > playerLap) lappedState = 'ahead';
-        if (driverPos.lapNum < playerLap) lappedState = 'behind';
-        if (driverPos.lapNum === playerLap) lappedState = 'same';
+        const lapDiff = Math.round((driverPos.lapNum + driverPos.lapDstPct) - (playerLap + playerLapDistPct));
+        if (lapDiff > 0) lappedState = 'ahead';
+        if (lapDiff < 0) lappedState = 'behind';
+        if (lapDiff === 0) lappedState = 'same';
       }
 
       // If the driver is not in the standings, use the qualifying position
