@@ -286,10 +286,11 @@ export const Tachometer = ({
         {/* RPM display - shows when showRpmText is true OR when custom shift points exist */}
         {shouldShowRpmBox && (
           <div 
-            className="ml-3 text-sm font-mono font-bold text-white bg-black/50 px-2 py-1 rounded transition-all duration-200 whitespace-nowrap"
+            className="ml-3 text-sm font-mono font-bold text-white bg-black/50 px-2 rounded transition-all duration-200 whitespace-nowrap flex items-center"
             style={{
               ...getRpmBoxStyle(),
               minWidth: showRpmText ? '120px' : '60px', // Reserve space to prevent layout shift
+              height: '32px', // Fixed height to prevent vertical shift
             }}
           >
             {showRpmText && (
