@@ -194,6 +194,7 @@ export const DriverInfoRow = memo(
           component: (
             <DriverNameCell
               key="driverName"
+              radioActive={radioActive}
               hidden={hidden}
               fullName={name}
               nameFormat={config?.driverName?.nameFormat}

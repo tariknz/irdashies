@@ -9,6 +9,7 @@ import { BadgeFormatPreview } from '../components/BadgeFormatPreview';
 import { VALID_SESSION_BAR_ITEM_KEYS, SESSION_BAR_ITEM_LABELS, DEFAULT_SESSION_BAR_DISPLAY_ORDER } from '../sessionBarConstants';
 import { mergeDisplayOrder } from '../../../utils/displayOrder';
 import { SessionVisibility } from '../components/SessionVisibility';
+import { DriverNamePreview } from '../components/DriverNamePreview';
 
 const SETTING_ID = 'relative';
 
@@ -41,7 +42,7 @@ const defaultConfig: RelativeWidgetSettings['config'] = {
   position: { enabled: true },
   carNumber: { enabled: true },
   countryFlags: { enabled: true },
-  driverName: { enabled: true },
+  driverName: { enabled: true, nameFormat: 'name-surname' },
   teamName: { enabled: false },
   pitStatus: { enabled: true, showPitTime: false },
   carManufacturer: { enabled: true, hideIfSingleMake: false },
@@ -99,7 +100,10 @@ const migrateConfig = (savedConfig: unknown): RelativeWidgetSettings['config'] =
     position: { enabled: (config.position as { enabled?: boolean })?.enabled ?? true },
     carNumber: { enabled: (config.carNumber as { enabled?: boolean })?.enabled ?? true },
     countryFlags: { enabled: (config.countryFlags as { enabled?: boolean })?.enabled ?? true },
-    driverName: { enabled: (config.driverName as { enabled?: boolean })?.enabled ?? true },
+    driverName: {
+      enabled: (config.driverName as { enabled?: boolean })?.enabled ?? true,
+      nameFormat: ((config.driverName as { nameFormat?: 'name-middlename-surname' | 'name-m.-surname' | 'name-surname' | 'n.-surname' | 'surname-n.' | 'surname' })?.nameFormat) ?? 'name-middlename-surname',
+    },
     teamName: { enabled: (config.teamName as { enabled?: boolean })?.enabled ?? false },
     pitStatus: {
       enabled: (config.pitStatus as { enabled?: boolean })?.enabled ?? true,
@@ -241,6 +245,25 @@ const DisplaySettingsList = ({ itemsOrder, onReorder, settings, handleConfigChan
                         const cv = settings.config[setting.configKey] as { enabled: boolean; badgeFormat: string;[key: string]: unknown };
                         handleConfigChange({
                           [setting.configKey]: { ...cv, badgeFormat: format },
+                        });
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+            {setting.configKey === 'driverName' && (configValue as { enabled: boolean }).enabled && (
+              <div className="mt-3">
+                <div className="flex flex-wrap gap-3 justify-end">
+                  {(['name-middlename-surname', 'name-m.-surname', 'name-surname', 'n.-surname', 'surname-n.', 'surname'] as const).map((format) => (
+                    <DriverNamePreview
+                      key={format}
+                      format={format}
+                      selected={(configValue as { enabled: boolean; nameFormat: string }).nameFormat === format}
+                      onClick={() => {
+                        const cv = settings.config[setting.configKey] as { enabled: boolean; nameFormat: string; [key: string]: unknown };
+                        handleConfigChange({
+                          [setting.configKey]: { ...cv, nameFormat: format },
                         });
                       }}
                     />
