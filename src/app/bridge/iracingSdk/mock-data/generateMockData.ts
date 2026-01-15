@@ -66,6 +66,7 @@ export function generateMockData(sessionData?: {
             const brakeValue = prevTelemetry.Brake.value[0];
             
             // Simulate RPM and gear changes for demo mode
+            // Simulate RPM and gear changes for demo mode
             if (demoRpmIncreasing) {
               // Check if we're at or above shift RPM
               if (demoRpm >= shiftRpm) {
@@ -78,9 +79,9 @@ export function generateMockData(sessionData?: {
                   demoGear = Math.min(6, demoGear + 1);
                   demoRpm = minRpm + 1000; // Drop RPM after shift
                   holdAtRedlineCounter = 0; // Reset counter
-                  // After reaching 6th gear, start decreasing
+                  // After reaching 6th gear, loop back to 1st
                   if (demoGear >= 6) {
-                    demoRpmIncreasing = false;
+                    demoGear = 1;
                   }
                 }
               } else {
@@ -88,16 +89,8 @@ export function generateMockData(sessionData?: {
                 demoRpm += rpmStep;
               }
             } else {
-              demoRpm -= rpmStep;
-              if (demoRpm <= minRpm) {
-                // Shift down
-                demoGear = Math.max(1, demoGear - 1);
-                demoRpm = shiftRpm - 1000; // Increase RPM after downshift
-                // After reaching 1st gear, start increasing
-                if (demoGear <= 1) {
-                  demoRpmIncreasing = true;
-                }
-              }
+              // This branch is no longer used - always increasing
+              demoRpm += rpmStep;
             }
             
             t = {
