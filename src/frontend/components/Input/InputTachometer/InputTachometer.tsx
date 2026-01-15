@@ -189,8 +189,9 @@ export const Tachometer = ({
     }
   };
 
-  // Determine if RPM box should be shown
-  const shouldShowRpmBox = showRpmText || shouldShowCustomShift;
+  // Determine if RPM box should be shown - always show when custom shift points are configured
+  const hasCustomShiftPoints = !!(shiftPointSettings?.enabled && carConfig && typeof carConfig !== 'string');
+  const shouldShowRpmBox = showRpmText || hasCustomShiftPoints;
 
   // Flash effect when RPM exceeds blink threshold
   useEffect(() => {
@@ -286,7 +287,10 @@ export const Tachometer = ({
         {shouldShowRpmBox && (
           <div 
             className="ml-3 text-sm font-mono font-bold text-white bg-black/50 px-2 py-1 rounded transition-all duration-200 whitespace-nowrap"
-            style={getRpmBoxStyle()}
+            style={{
+              ...getRpmBoxStyle(),
+              minWidth: showRpmText ? '120px' : '60px', // Reserve space to prevent layout shift
+            }}
           >
             {showRpmText && (
               <>

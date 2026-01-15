@@ -39,7 +39,6 @@ export function generateMockData(sessionData?: {
   // Demo mode: Simulate RPM and gear changes for Mazda MX-5
   let demoRpm = 2000;
   let demoGear = 1;
-  let demoRpmIncreasing = true;
   let holdAtRedlineCounter = 0; // Counter to hold at redline
   const shiftRpm = 7400; // MX-5 shift point
   const minRpm = 2000;
@@ -66,30 +65,24 @@ export function generateMockData(sessionData?: {
             const brakeValue = prevTelemetry.Brake.value[0];
             
             // Simulate RPM and gear changes for demo mode
-            // Simulate RPM and gear changes for demo mode
-            if (demoRpmIncreasing) {
-              // Check if we're at or above shift RPM
-              if (demoRpm >= shiftRpm) {
-                // Hold at redline for a moment
-                if (holdAtRedlineCounter < holdAtRedlineTicks) {
-                  holdAtRedlineCounter++;
-                  demoRpm = shiftRpm; // Keep at exactly shift RPM
-                } else {
-                  // Shift up after holding
-                  demoGear = Math.min(6, demoGear + 1);
-                  demoRpm = minRpm + 1000; // Drop RPM after shift
-                  holdAtRedlineCounter = 0; // Reset counter
-                  // After reaching 6th gear, loop back to 1st
-                  if (demoGear >= 6) {
-                    demoGear = 1;
-                  }
-                }
+            // Check if we're at or above shift RPM
+            if (demoRpm >= shiftRpm) {
+              // Hold at redline for a moment
+              if (holdAtRedlineCounter < holdAtRedlineTicks) {
+                holdAtRedlineCounter++;
+                demoRpm = shiftRpm; // Keep at exactly shift RPM
               } else {
-                // Normal RPM increase
-                demoRpm += rpmStep;
+                // Shift up after holding
+                demoGear = Math.min(6, demoGear + 1);
+                demoRpm = minRpm + 1000; // Drop RPM after shift
+                holdAtRedlineCounter = 0; // Reset counter
+                // After reaching 6th gear, loop back to 1st
+                if (demoGear >= 6) {
+                  demoGear = 1;
+                }
               }
             } else {
-              // This branch is no longer used - always increasing
+              // Normal RPM increase
               demoRpm += rpmStep;
             }
             
