@@ -3,10 +3,12 @@ import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import { FuelWidgetSettings, SessionVisibilitySettings } from '../types';
 import { useDashboard } from '@irdashies/context';
 import { SessionVisibility } from '../components/SessionVisibility';
+import { ToggleSwitch } from '../components/ToggleSwitch';
 
 const SETTING_ID = 'fuel';
 
 const defaultConfig: FuelWidgetSettings['config'] = {
+  showOnlyWhenOnTrack: true,
   fuelUnits: 'L',
   layout: 'vertical',
   showConsumption: true,
@@ -24,15 +26,21 @@ const defaultConfig: FuelWidgetSettings['config'] = {
   safetyMargin: 0.05,
   background: { opacity: 85 },
   fuelRequiredMode: 'toFinish',
-  sessionVisibility: { race: true, loneQualify: true, openQualify: true, practice: true, offlineTesting: true }
+  sessionVisibility: {
+    race: true,
+    loneQualify: true,
+    openQualify: true,
+    practice: true,
+    offlineTesting: true,
+  },
 };
 
-const migrateConfig = (
-  savedConfig: unknown
-): FuelWidgetSettings['config'] => {
+const migrateConfig = (savedConfig: unknown): FuelWidgetSettings['config'] => {
   if (!savedConfig || typeof savedConfig !== 'object') return defaultConfig;
   const config = savedConfig as Record<string, unknown>;
   return {
+    showOnlyWhenOnTrack:
+      (config.isOnTrack as boolean) ?? defaultConfig.showOnlyWhenOnTrack,
     fuelUnits: (config.fuelUnits as 'L' | 'gal') ?? 'L',
     layout: (config.layout as 'vertical' | 'horizontal') ?? 'vertical',
     showConsumption: (config.showConsumption as boolean) ?? true,
@@ -43,17 +51,23 @@ const migrateConfig = (
     showMax: (config.showMax as boolean) ?? true,
     showPitWindow: (config.showPitWindow as boolean) ?? true,
     showEnduranceStrategy: (config.showEnduranceStrategy as boolean) ?? false,
-    showFuelScenarios: (config.showFuelScenarios as boolean) ?? (config.showFuelSave as boolean) ?? true,
+    showFuelScenarios:
+      (config.showFuelScenarios as boolean) ??
+      (config.showFuelSave as boolean) ??
+      true,
     showFuelRequired: (config.showFuelRequired as boolean) ?? false,
     showConsumptionGraph: (config.showConsumptionGraph as boolean) ?? true,
-    consumptionGraphType: (config.consumptionGraphType as 'line' | 'histogram') ?? 'histogram',
+    consumptionGraphType:
+      (config.consumptionGraphType as 'line' | 'histogram') ?? 'histogram',
     safetyMargin: (config.safetyMargin as number) ?? 0.05,
     background: {
-      opacity:
-        (config.background as { opacity?: number })?.opacity ?? 85,
+      opacity: (config.background as { opacity?: number })?.opacity ?? 85,
     },
-    fuelRequiredMode: (config.fuelRequiredMode as 'toFinish' | 'toAdd') ?? 'toFinish',
-    sessionVisibility: (config.sessionVisibility as SessionVisibilitySettings) ?? defaultConfig.sessionVisibility,
+    fuelRequiredMode:
+      (config.fuelRequiredMode as 'toFinish' | 'toAdd') ?? 'toFinish',
+    sessionVisibility:
+      (config.sessionVisibility as SessionVisibilitySettings) ??
+      defaultConfig.sessionVisibility,
   };
 };
 
@@ -150,9 +164,7 @@ export const FuelSettings = () => {
           {settings.config.showConsumption && (
             <div className="ml-4 space-y-2 border-l-2 border-slate-600 pl-4">
               <div className="flex items-center justify-between">
-                <span className="text-xs text-slate-400">
-                  Show Min
-                </span>
+                <span className="text-xs text-slate-400">Show Min</span>
                 <input
                   type="checkbox"
                   checked={settings.config.showMin}
@@ -163,9 +175,7 @@ export const FuelSettings = () => {
                 />
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-xs text-slate-400">
-                  Show Last Lap
-                </span>
+                <span className="text-xs text-slate-400">Show Last Lap</span>
                 <input
                   type="checkbox"
                   checked={settings.config.showLastLap}
@@ -202,9 +212,7 @@ export const FuelSettings = () => {
                 />
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-xs text-slate-400">
-                  Show Max
-                </span>
+                <span className="text-xs text-slate-400">Show Max</span>
                 <input
                   type="checkbox"
                   checked={settings.config.showMax}
@@ -236,14 +244,17 @@ export const FuelSettings = () => {
                     <span className="text-xs text-slate-400">
                       Display Mode
                       <span className="block text-[10px] text-slate-500">
-                        To Finish: Total fuel needed | To Add: Fuel to add at stop
+                        To Finish: Total fuel needed | To Add: Fuel to add at
+                        stop
                       </span>
                     </span>
                     <select
                       value={settings.config.fuelRequiredMode}
                       onChange={(e) =>
                         handleConfigChange({
-                          fuelRequiredMode: e.target.value as 'toFinish' | 'toAdd',
+                          fuelRequiredMode: e.target.value as
+                            | 'toFinish'
+                            | 'toAdd',
                         })
                       }
                       className="px-3 py-1 bg-slate-700 text-slate-200 rounded text-sm"
@@ -290,9 +301,7 @@ export const FuelSettings = () => {
 
           {/* Show Fuel Scenarios */}
           <div className="flex items-center justify-between">
-            <span className="text-sm text-slate-300">
-              Show Fuel Scenarios
-            </span>
+            <span className="text-sm text-slate-300">Show Fuel Scenarios</span>
             <input
               type="checkbox"
               checked={settings.config.showFuelScenarios}
@@ -332,7 +341,9 @@ export const FuelSettings = () => {
                   value={settings.config.consumptionGraphType}
                   onChange={(e) =>
                     handleConfigChange({
-                      consumptionGraphType: e.target.value as 'line' | 'histogram',
+                      consumptionGraphType: e.target.value as
+                        | 'line'
+                        | 'histogram',
                     })
                   }
                   className="px-3 py-1 bg-slate-700 text-slate-200 rounded text-sm"
@@ -349,7 +360,8 @@ export const FuelSettings = () => {
             <span className="text-sm text-slate-300">
               Safety Margin
               <span className="block text-xs text-slate-500">
-                Extra fuel buffer (affects &quot;To Finish&quot; and border colors)
+                Extra fuel buffer (affects &quot;To Finish&quot; and border
+                colors)
               </span>
             </span>
             <div className="flex items-center gap-2">
@@ -374,9 +386,7 @@ export const FuelSettings = () => {
 
           {/* Background Opacity */}
           <div className="flex items-center justify-between">
-            <span className="text-sm text-slate-300">
-              Background Opacity
-            </span>
+            <span className="text-sm text-slate-300">Background Opacity</span>
             <div className="flex items-center gap-2">
               <input
                 type="range"
@@ -395,10 +405,33 @@ export const FuelSettings = () => {
               </span>
             </div>
           </div>
+
+          {/* IsOnTrack Section */}
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className="text-md font-medium text-slate-300">
+                Show only when on track
+              </h4>
+              <span className="block text-xs text-slate-500">
+                If enabled, calculator will only be shown when you are driving.
+              </span>
+            </div>
+            <ToggleSwitch
+              enabled={settings.config.showOnlyWhenOnTrack}
+              onToggle={(newValue) =>
+                handleConfigChange({
+                  showOnlyWhenOnTrack: newValue,
+                })
+              }
+            />
+          </div>
+
           {/* Session Visibility Settings */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-medium text-slate-200">Session Visibility</h3>
+              <h3 className="text-lg font-medium text-slate-200">
+                Session Visibility
+              </h3>
             </div>
             <div className="space-y-3 pl-4">
               <SessionVisibility
