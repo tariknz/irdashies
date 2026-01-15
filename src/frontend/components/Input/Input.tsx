@@ -33,6 +33,7 @@ export const Input = () => {
           >
             <Tachometer
               rpm={tachometerData.rpm}
+              gear={tachometerData.gear}
               maxRpm={tachometerData.maxRpm}
               shiftRpm={tachometerData.shiftRpm}
               blinkRpm={tachometerData.blinkRpm}
