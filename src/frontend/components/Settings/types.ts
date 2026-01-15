@@ -84,7 +84,7 @@ export interface StandingsWidgetSettings extends BaseWidgetSettings {
     showOnlyWhenOnTrack: boolean;
     useLivePosition: boolean;
     position: { enabled: boolean };
-    driverName: { enabled: boolean; badgeFormat: 'license-color-fullrating-bw' | 'license-color-rating-bw' | 'license-color-rating-bw-no-license' | 'rating-color-no-license' | 'license-bw-rating-bw' | 'rating-only-bw-rating-bw' | 'license-bw-rating-bw-no-license' | 'rating-bw-no-license' };
+    driverName: { enabled: boolean; badgeFormat: 'name-middlename-surname' | 'name-m.-surname' | 'name-surname' | 'n.-surname' | 'surname-n.' | 'surname' };
     teamName: { enabled: boolean };
     pitStatus: { enabled: boolean; showPitTime?: boolean };
     displayOrder: string[];
