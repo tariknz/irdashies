@@ -6,6 +6,7 @@ import { ToggleSwitch } from '../components/ToggleSwitch';
 import { useSortableList } from '../../SortableList';
 import { DotsSixVerticalIcon } from '@phosphor-icons/react';
 import { BadgeFormatPreview } from '../components/BadgeFormatPreview';
+import { DriverNamePreview } from '../components/DriverNamePreview';
 import { VALID_SESSION_BAR_ITEM_KEYS, SESSION_BAR_ITEM_LABELS, DEFAULT_SESSION_BAR_DISPLAY_ORDER } from '../sessionBarConstants';
 import { mergeDisplayOrder } from '../../../utils/displayOrder';
 import { SessionVisibility } from '../components/SessionVisibility';
@@ -91,7 +92,7 @@ const defaultConfig: StandingsWidgetSettings['config'] = {
   useLivePosition: false,
   lapTimeDeltas: { enabled: false, numLaps: 3 },
   position: { enabled: true },
-  driverName: { enabled: true },
+  driverName: { enabled: true, badgeFormat: 'license-color-rating-bw' },
   teamName: { enabled: false },
   pitStatus: { enabled: true, showPitTime: false },
   displayOrder: sortableSettings.map(s => s.id),
@@ -219,7 +220,10 @@ const migrateConfig = (
     useLivePosition: (config.useLivePosition as boolean) ?? false,
     sessionVisibility: (config.sessionVisibility as SessionVisibilitySettings) ?? defaultConfig.sessionVisibility,
     position: { enabled: (config.position as { enabled?: boolean })?.enabled ?? true },
-    driverName: { enabled: (config.driverName as { enabled?: boolean })?.enabled ?? true },
+    driverName: {
+      enabled: (config.badge as { enabled?: boolean })?.enabled ?? true,
+      badgeFormat: ((config.badge as { badgeFormat?: string })?.badgeFormat as 'license-color-fullrating-bw' | 'license-color-rating-bw' | 'license-color-rating-bw-no-license' | 'rating-color-no-license' | 'license-bw-rating-bw' | 'rating-only-bw-rating-bw' | 'license-bw-rating-bw-no-license' | 'rating-bw-no-license') ?? 'license-color-rating-bw'
+    },
     teamName: { enabled: (config.teamName as { enabled?: boolean })?.enabled ?? false },
     pitStatus: {
       enabled: (config.pitStatus as { enabled?: boolean })?.enabled ?? true,
@@ -335,6 +339,25 @@ const DisplaySettingsList = ({ itemsOrder, onReorder, settings, handleConfigChan
                 <div className="flex flex-wrap gap-3 justify-end">
                   {(['license-color-fullrating-bw', 'license-color-rating-bw', 'rating-only-color-rating-bw', 'license-color-rating-bw-no-license', 'rating-color-no-license', 'license-bw-rating-bw', 'rating-only-bw-rating-bw', 'license-bw-rating-bw-no-license', 'rating-bw-no-license'] as const).map((format) => (
                     <BadgeFormatPreview
+                      key={format}
+                      format={format}
+                      selected={(configValue as { enabled: boolean; badgeFormat: string }).badgeFormat === format}
+                      onClick={() => {
+                        const cv = settings.config[setting.configKey] as { enabled: boolean; badgeFormat: string; [key: string]: unknown };
+                        handleConfigChange({
+                          [setting.configKey]: { ...cv, badgeFormat: format },
+                        });
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+                      {setting.configKey === 'driverName' && (configValue as { enabled: boolean }).enabled && (
+              <div className="mt-3">
+                <div className="flex flex-wrap gap-3 justify-end">
+                  {(['license-color-fullrating-bw', 'license-color-rating-bw', 'rating-only-color-rating-bw', 'license-color-rating-bw-no-license', 'rating-color-no-license', 'license-bw-rating-bw', 'rating-only-bw-rating-bw', 'license-bw-rating-bw-no-license', 'rating-bw-no-license'] as const).map((format) => (
+                    <DriverNamePreview
                       key={format}
                       format={format}
                       selected={(configValue as { enabled: boolean; badgeFormat: string }).badgeFormat === format}
