@@ -195,8 +195,8 @@ export const DriverInfoRow = memo(
             <DriverNameCell
               key="driverName"
               hidden={hidden}
-              name={name}
-              radioActive={radioActive}
+              fullName={name}
+              nameFormat={config?.driverName?.nameFormat}
             />
           ),
         },
