@@ -3,6 +3,7 @@ import { DriverRatingBadge } from './DriverRatingBadge';
 
 export default {
   component: DriverRatingBadge,
+  title: 'widgets/Standings/components/DriverRatingBadge',
 } as Meta;
 
 type Story = StoryObj<typeof DriverRatingBadge>;

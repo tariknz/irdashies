@@ -1,11 +1,17 @@
 import type { SessionResults, Driver } from '@irdashies/types';
-import { calculateIRatingGain, RaceResult, CalculationResult } from '@irdashies/utils/iratingGain';
+import {
+  calculateIRatingGain,
+  RaceResult,
+  CalculationResult,
+} from '@irdashies/utils/iratingGain';
 import { GlobalFlags } from '@irdashies/types';
-
 
 export type LastTimeState = 'session-fastest' | 'personal-best' | undefined;
 
-
+export interface Gap {
+  value: number | undefined;
+  laps: number;
+}
 
 export interface Standings {
   carIdx: number;
@@ -14,7 +20,7 @@ export interface Standings {
   lap?: number;
   lappedState?: 'ahead' | 'behind' | 'same';
   delta?: number;
-  gap?: number;
+  gap?: Gap;
   interval?: number;
   isPlayer: boolean;
   driver: {
@@ -23,6 +29,7 @@ export interface Standings {
     license: string;
     rating: number;
     flairId?: number;
+    teamName?: string;
   };
   fastestTime: number;
   hasFastestTime: boolean;
@@ -81,46 +88,14 @@ const getLastTimeState = (
   fastestTime: number | undefined,
   hasFastestTime: boolean
 ): LastTimeState => {
-  if (lastTime !== undefined && fastestTime !== undefined && lastTime === fastestTime) {
+  if (
+    lastTime !== undefined &&
+    fastestTime !== undefined &&
+    lastTime === fastestTime
+  ) {
     return hasFastestTime ? 'session-fastest' : 'personal-best';
   }
   return undefined;
-};
-
-/**
- * Calculate lap time deltas between a driver's recent laps and the player's recent laps
- * @param driverLapHistory - Array of driver's lap times (most recent last)
- * @param playerLapHistory - Array of player's lap times (most recent last)
- * @param numLaps - Number of recent laps to compare (1-5)
- * @returns Array of deltas (driver time - player time), most recent last. Positive = driver slower, negative = driver faster
- */
-const calculateLapTimeDeltas = (
-  driverLapHistory: number[],
-  playerLapHistory: number[],
-  numLaps: number
-): number[] | undefined => {
-  if (!driverLapHistory || !playerLapHistory || driverLapHistory.length === 0 || playerLapHistory.length === 0) {
-    return undefined;
-  }
-
-  const deltas: number[] = [];
-  const lapsToCompare = Math.min(numLaps, driverLapHistory.length, playerLapHistory.length);
-
-  // Compare the last N laps (most recent laps)
-  for (let i = 0; i < lapsToCompare; i++) {
-    const driverLapIndex = driverLapHistory.length - lapsToCompare + i;
-    const playerLapIndex = playerLapHistory.length - lapsToCompare + i;
-
-    const driverLapTime = driverLapHistory[driverLapIndex];
-    const playerLapTime = playerLapHistory[playerLapIndex];
-
-    // Only calculate delta if both lap times are valid
-    if (driverLapTime > 0 && playerLapTime > 0) {
-      deltas.push(driverLapTime - playerLapTime);
-    }
-  }
-
-  return deltas.length > 0 ? deltas : undefined;
 };
 
 /**
@@ -156,18 +131,18 @@ export const createDriverStandings = (
   lastLap: number[],
   prevCarTrackSurface: number[],
   numLapsToShow?: number,
-  lapTimeHistory?: number[][],
+  lapDeltasVsPlayer?: number[][] // NEW: Pre-calculated deltas from LapTimesStore
 ): Standings[] => {
-  const resultsPositions = Array.isArray(currentSession.resultsPositions) ? currentSession.resultsPositions : [];
-  const qualifyingResults = Array.isArray(session.qualifyingResults) ? session.qualifyingResults : [];
-  const results = resultsPositions.length > 0 ? resultsPositions : qualifyingResults;
+  const resultsPositions = Array.isArray(currentSession.resultsPositions)
+    ? currentSession.resultsPositions
+    : [];
+  const qualifyingResults = Array.isArray(session.qualifyingResults)
+    ? session.qualifyingResults
+    : [];
+  const results =
+    resultsPositions.length > 0 ? resultsPositions : qualifyingResults;
   const fastestDriverIdx = currentSession.resultsFastestLap?.[0]?.CarIdx;
   const fastestDriver = results?.find((r) => r.CarIdx === fastestDriverIdx);
-
-  // Get player's lap history for delta calculations
-  const playerLapHistory = session.playerIdx !== undefined && lapTimeHistory
-    ? lapTimeHistory[session.playerIdx]
-    : undefined;
 
   return results
     .map((result) => {
@@ -194,6 +169,7 @@ export const createDriverStandings = (
           license: driver.LicString,
           rating: driver.IRating,
           flairId: driver.FlairID,
+          teamName: driver.TeamName,
         },
         fastestTime: result.FastestTime,
         hasFastestTime: result.CarIdx === fastestDriverIdx,
@@ -218,23 +194,34 @@ export const createDriverStandings = (
         carId: driver.CarID,
         lapTimeDeltas:
           result.CarIdx === session.playerIdx
-            ? undefined // Don't calculate deltas for player
-            : playerLapHistory && lapTimeHistory && numLapsToShow
-              ? calculateLapTimeDeltas(
-                  lapTimeHistory[result.CarIdx],
-                  playerLapHistory,
-                  numLapsToShow
-                )
+            ? undefined // Don't show deltas for player (comparing to themselves)
+            : lapDeltasVsPlayer &&
+              lapDeltasVsPlayer[result.CarIdx] &&
+              lapDeltasVsPlayer[result.CarIdx].length > 0
+              ? lapDeltasVsPlayer[result.CarIdx].slice(0, numLapsToShow) // Use pre-calculated deltas
               : undefined,
         lastPitLap: lastPitLap[result.CarIdx] ?? undefined,
         lastLap: lastLap[result.CarIdx] ?? undefined,
         prevCarTrackSurface: prevCarTrackSurface[result.CarIdx] ?? undefined,
-        carTrackSurface: telemetry?.carIdxTrackSurfaceValue?.[result.CarIdx] ?? undefined,
+        carTrackSurface:
+          telemetry?.carIdxTrackSurfaceValue?.[result.CarIdx] ?? undefined,
         currentSessionType: currentSession.sessionType,
-        dnf: !!((telemetry?.carIdxSessionFlags?.[result.CarIdx] ?? 0) & GlobalFlags.Disqualify),
-        repair: !!((telemetry?.carIdxSessionFlags?.[result.CarIdx] ?? 0) & GlobalFlags.Repair),
-        penalty: !!((telemetry?.carIdxSessionFlags?.[result.CarIdx] ?? 0) & GlobalFlags.Black),
-        slowdown: !!((telemetry?.carIdxSessionFlags?.[result.CarIdx] ?? 0) & GlobalFlags.Furled),
+        dnf: !!(
+          (telemetry?.carIdxSessionFlags?.[result.CarIdx] ?? 0) &
+          GlobalFlags.Disqualify
+        ),
+        repair: !!(
+          (telemetry?.carIdxSessionFlags?.[result.CarIdx] ?? 0) &
+          GlobalFlags.Repair
+        ),
+        penalty: !!(
+          (telemetry?.carIdxSessionFlags?.[result.CarIdx] ?? 0) &
+          GlobalFlags.Black
+        ),
+        slowdown: !!(
+          (telemetry?.carIdxSessionFlags?.[result.CarIdx] ?? 0) &
+          GlobalFlags.Furled
+        ),
       };
     })
     .filter((s) => !!s);
@@ -272,15 +259,13 @@ export const augmentStandingsWithIRating = (
 ): [string, Standings[]][] => {
   return groupedStandings.map(([classId, classStandings]) => {
     const raceResultsInput: RaceResult<number>[] = classStandings
-      .filter(s => !!s.classPosition)  // Only include drivers with a class position, should not happen in races
-      .map(
-        (driverStanding) => ({
-          driver: driverStanding.carIdx,
-          finishRank: driverStanding.classPosition ?? 0,
-          startIRating: driverStanding.driver.rating,
-          started: true, // This is a critical assumption.
-        })
-      );
+      .filter((s) => !!s.classPosition) // Only include drivers with a class position, should not happen in races
+      .map((driverStanding) => ({
+        driver: driverStanding.carIdx,
+        finishRank: driverStanding.classPosition ?? 0,
+        startIRating: driverStanding.driver.rating,
+        started: true, // This is a critical assumption.
+      }));
 
     if (raceResultsInput.length === 0) {
       return [classId, classStandings];
@@ -289,16 +274,19 @@ export const augmentStandingsWithIRating = (
     const iratingCalculationResults = calculateIRatingGain(raceResultsInput);
 
     const iratingChangeMap = new Map<number, number>();
-    iratingCalculationResults.forEach((calcResult: CalculationResult<number>) => {
-      iratingChangeMap.set(calcResult.raceResult.driver, calcResult.iratingChange);
-    });
-
-    const augmentedClassStandings = classStandings.map(
-      (driverStanding) => ({
-        ...driverStanding,
-        iratingChange: iratingChangeMap.get(driverStanding.carIdx),
-      })
+    iratingCalculationResults.forEach(
+      (calcResult: CalculationResult<number>) => {
+        iratingChangeMap.set(
+          calcResult.raceResult.driver,
+          calcResult.iratingChange
+        );
+      }
     );
+
+    const augmentedClassStandings = classStandings.map((driverStanding) => ({
+      ...driverStanding,
+      iratingChange: iratingChangeMap.get(driverStanding.carIdx),
+    }));
     return [classId, augmentedClassStandings];
   });
 };
@@ -313,7 +301,7 @@ export const augmentStandingsWithGap = (
   return groupedStandings.map(([classId, classStandings]) => {
     // Find class leader (lowest class position)
     const sortedByClassPosition = classStandings
-      .filter(s => s.classPosition && s.classPosition > 0)
+      .filter((s) => s.classPosition && s.classPosition > 0)
       .sort((a, b) => (a.classPosition ?? 999) - (b.classPosition ?? 999));
 
     const classLeader = sortedByClassPosition[0];
@@ -325,22 +313,35 @@ export const augmentStandingsWithGap = (
     const augmentedClassStandings = classStandings.map((driverStanding) => {
       if (driverStanding.carIdx === classLeader.carIdx) {
         // Class leader shows as dash (undefined gap)
-        return { ...driverStanding, gap: undefined };
+        return { ...driverStanding, gap: { value: undefined, laps: 0 } };
       }
 
       // Gap is simply the difference between this driver's delta and the class leader's delta
-      const gap = driverStanding.delta !== undefined && classLeader.delta !== undefined
-        ? driverStanding.delta - classLeader.delta
-        : undefined;
+      const gapValue =
+        driverStanding.delta !== undefined && classLeader.delta !== undefined
+          ? driverStanding.delta - classLeader.delta
+          : undefined;
+
+      const gap = {
+        value: gapValue,
+        laps: 0,
+      };
+
+      if (gapValue && classLeader.fastestTime > 0) {
+        const lapsOfGap = -Math.floor(gapValue / classLeader.fastestTime);
+        gap.laps = lapsOfGap;
+      }
 
       // Only show positive gaps (drivers behind class leader)
-      return { ...driverStanding, gap: gap && gap > 0 ? gap : undefined };
+      return {
+        ...driverStanding,
+        gap: gapValue && gapValue > 0 ? gap : undefined,
+      };
     });
 
     return [classId, augmentedClassStandings];
   });
 };
-
 
 /**
  * This method will augment the standings with interval calculations to player
@@ -354,8 +355,8 @@ export const augmentStandingsWithInterval = (
   return groupedStandings.map(([classId, classStandings]) => {
     // Sort drivers by their gap values (ascending - smallest gaps first = closest to leader)
     const sortedByGap = classStandings
-      .filter(s => s.gap !== undefined && !s.isPlayer) // Only drivers with gap data
-      .sort((a, b) => (a.gap ?? 999) - (b.gap ?? 999));
+      .filter((s) => s.gap !== undefined && !s.isPlayer) // Only drivers with gap data
+      .sort((a, b) => (a.gap?.value ?? 999) - (b.gap?.value ?? 999));
 
     // Create a map of gap differences
     const intervalMap = new Map<number, number | undefined>();
@@ -365,21 +366,34 @@ export const augmentStandingsWithInterval = (
       const currentDriver = sortedByGap[i];
       const driverBehind = sortedByGap[i + 1];
 
-      if (currentDriver.gap !== undefined && driverBehind.gap !== undefined && driverBehind.carIdx) {
+      if (
+        currentDriver.gap?.value !== undefined &&
+        driverBehind.gap?.value !== undefined &&
+        driverBehind.carIdx
+      ) {
         // interval = gap_behind - gap_current (positive means behind is farther from leader)
-        intervalMap.set(driverBehind.carIdx, driverBehind.gap - currentDriver.gap);
+        intervalMap.set(
+          driverBehind.carIdx,
+          driverBehind.gap.value - currentDriver.gap.value
+        );
       }
     }
 
     // Set interval for the driver with the smallest gap (2nd place) to show how far behind P1 they are
-    if (sortedByGap.length > 0 && sortedByGap[0].gap !== undefined && sortedByGap[0].carIdx !== undefined) {
-      intervalMap.set(sortedByGap[0].carIdx, sortedByGap[0].gap);
+    if (
+      sortedByGap.length > 0 &&
+      sortedByGap[0].gap?.value !== undefined &&
+      sortedByGap[0].carIdx !== undefined
+    ) {
+      intervalMap.set(sortedByGap[0].carIdx, sortedByGap[0].gap.value);
     }
 
     // Apply intervals to all drivers in this class
     const augmentedClassStandings = classStandings.map((driverStanding) => {
       // Player shows as undefined (no interval)
-      const interval = driverStanding.isPlayer ? undefined : intervalMap.get(driverStanding.carIdx);
+      const interval = driverStanding.isPlayer
+        ? undefined
+        : intervalMap.get(driverStanding.carIdx);
 
       return { ...driverStanding, interval };
     });
@@ -446,18 +460,32 @@ export const sliceRelevantDrivers = <T extends { isPlayer?: boolean }>(
       }
     }
 
-    // Ensure we have at least `minPlayerClassDrivers`
-    let lastIndex = end;
-    while (
-      relevantDrivers.size < minPlayerClassDrivers &&
-      lastIndex < standings.length
-    ) {
-      relevantDrivers.add(standings[lastIndex]);
-      lastIndex++;
+    // Ensure we have at least `minPlayerClassDrivers` by expanding from both ends of the buffer range
+    let expandBefore = start - 1;
+    let expandAfter = end;
+    while (relevantDrivers.size < minPlayerClassDrivers) {
+      let added = false;
+
+      // Try to add from before the buffer range
+      if (expandBefore >= 0 && standings[expandBefore]) {
+        relevantDrivers.add(standings[expandBefore]);
+        expandBefore--;
+        added = true;
+      }
+
+      // Try to add from after the buffer range
+      if (expandAfter < standings.length && standings[expandAfter]) {
+        relevantDrivers.add(standings[expandAfter]);
+        expandAfter++;
+        added = true;
+      }
+
+      // If we couldn't add in either direction, we're done
+      if (!added) break;
     }
 
     const sortedDrivers = standings.filter((driver) =>
-      relevantDrivers.has(driver),
+      relevantDrivers.has(driver)
     );
 
     return [classIdx, sortedDrivers];

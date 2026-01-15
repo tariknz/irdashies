@@ -66,7 +66,7 @@ export function InputSteer({
   }, [angleRad]);
 
   return (
-    <div className="w-[120px] h-full flex fill-white relative">
+    <div className="w-full h-full flex fill-white relative">
       <div
         ref={wheelRef}
         className='w-full h-full flex'

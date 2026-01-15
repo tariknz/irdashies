@@ -41,4 +41,9 @@ export const mockDashboardBridge: DashboardBridge = {
   stop: () => {
     return;
   },
+  saveGarageCoverImage: () => Promise.resolve(''),
+  getGarageCoverImageAsDataUrl: () => Promise.resolve(null),
+  getAnalyticsOptOut: () => Promise.resolve(false),
+  setAnalyticsOptOut: () => Promise.resolve(),
+  setAutoStart:() => Promise.resolve()
 }; 

@@ -10,7 +10,7 @@ import {
   useTelemetryValue,
   useFocusCarIdx,
 } from '@irdashies/context';
-import { useLapTimeHistory } from '../../../context/LapTimesStore/LapTimesStore';
+import { useLapDeltasVsPlayer } from '../../../context/LapTimesStore/LapTimesStore';
 import {
   useCarLap,
   usePitLap,
@@ -25,6 +25,8 @@ import {
   augmentStandingsWithInterval,
 } from '../createStandings';
 import type { StandingsWidgetSettings } from '../../Settings/types';
+import { useDriverLivePositions } from './useDriverLivePositions';
+import { useStandingsSettings } from './useStandingsSettings';
 
 export const useDriverStandings = (settings?: StandingsWidgetSettings['config']) => {
   const {
@@ -46,6 +48,9 @@ export const useDriverStandings = (settings?: StandingsWidgetSettings['config'])
   const sessionNum = useTelemetryValue('SessionNum');
   const sessionType = useSessionType(sessionNum);
   const positions = useSessionPositions(sessionNum);
+  const driverLivePositions = useDriverLivePositions();
+  const standingsSettings = useStandingsSettings();
+  const useLivePositionStandings = standingsSettings?.useLivePosition ?? false;
   const fastestLaps = useSessionFastestLaps(sessionNum);
   const carIdxF2Time = useTelemetry('CarIdxF2Time');
   const carIdxOnPitRoad = useTelemetry<boolean[]>('CarIdxOnPitRoad');
@@ -62,12 +67,12 @@ export const useDriverStandings = (settings?: StandingsWidgetSettings['config'])
       (driver) => driver.CarIdx === driverCarIdx
     )?.CarClassID;
   }, [sessionDrivers, driverCarIdx]);
-  const lapTimeHistory = useLapTimeHistory();
+  const lapDeltasVsPlayer = useLapDeltasVsPlayer();
 
   // Note: gap and interval calculations are now purely delta-based, no telemetry needed
 
-  // Only pass lap history when feature is enabled to avoid unnecessary calculations
-  const lapTimeHistoryForCalc = lapTimeDeltasEnabled ? lapTimeHistory : undefined;
+  // Only pass deltas when feature is enabled to avoid unnecessary calculations
+  const lapDeltasForCalc = lapTimeDeltasEnabled ? lapDeltasVsPlayer : undefined;
 
   const standingsWithGain = useMemo(() => {
     const initialStandings = createDriverStandings(
@@ -93,9 +98,27 @@ export const useDriverStandings = (settings?: StandingsWidgetSettings['config'])
       lastLap,
       prevCarTrackSurface,
       lapTimeDeltasEnabled ? numLapDeltas : undefined,
-      lapTimeHistoryForCalc,
+      lapDeltasForCalc,
     );
-    const groupedByClass = groupStandingsByClass(initialStandings);
+
+    if (useLivePositionStandings) {
+      // Apply live positions as per-class positions, then sort class arrays by class position
+      initialStandings.forEach((standing) => {
+        const livePosition = driverLivePositions[standing.carIdx];
+        if (livePosition !== undefined) {
+          standing.classPosition = livePosition;
+        }
+      });
+    }
+
+    // Group and *sort drivers inside each class by classPosition* (this respects live positions)
+    let groupedByClass = groupStandingsByClass(initialStandings);
+    if (useLivePositionStandings) {
+      groupedByClass = groupedByClass.map(([classId, classStandings]) => [
+        classId,
+        classStandings.slice().sort((a, b) => (a.classPosition ?? 999) - (b.classPosition ?? 999)),
+      ]) as [string, typeof initialStandings][];
+    }
 
     // Calculate iRating changes for race sessions
     const iratingAugmentedGroupedByClass =
@@ -139,13 +162,15 @@ export const useDriverStandings = (settings?: StandingsWidgetSettings['config'])
     driverClass,
     lapTimeDeltasEnabled,
     numLapDeltas,
-    lapTimeHistoryForCalc,
+    lapDeltasForCalc,
     lastLap,
     lastPitLap,
     prevCarTrackSurface,
     gapEnabled,
     intervalEnabled,
-    carIdxSessionFlags?.value
+    carIdxSessionFlags?.value,
+    useLivePositionStandings,
+    driverLivePositions,
   ]);
 
   return standingsWithGain;

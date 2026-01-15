@@ -5,6 +5,7 @@ import { BlindSpotState } from './hooks/useBlindSpotMonitor';
 
 export default {
   component: BlindSpotMonitorDisplay,
+  title: 'widgets/BlindSpotMonitor',
   decorators: [
     (Story) => (
       <div className="w-[500px] m-5 h-[300px]">
@@ -96,28 +97,6 @@ export const CarsOnBothSides: Story = {
   },
 };
 
-export const CarAheadOnRight: Story = {
-  args: {
-    show: true,
-    leftState: 'Off',
-    rightState: 'CarRight',
-    leftPercent: 0,
-    rightPercent: 1.0,
-    bgOpacity: 30,
-  },
-};
-
-export const CarBehindOnLeft: Story = {
-  args: {
-    show: true,
-    leftState: 'CarLeft',
-    rightState: 'Off',
-    leftPercent: -1.0,
-    rightPercent: 0,
-    bgOpacity: 30,
-  },
-};
-
 export const NoBackground: Story = {
   args: {
     show: true,
@@ -200,6 +179,7 @@ const CarPassingAnimation = () => {
       rightState="Off"
       leftPercent={leftPercent}
       rightPercent={0}
+      disableTransition={false}
       bgOpacity={30}
     />
   );
@@ -232,6 +212,7 @@ const CarPassingFromBehindRightAnimation = () => {
       rightState="CarRight"
       leftPercent={0}
       rightPercent={rightPercent}
+      disableTransition={false}
       bgOpacity={30}
     />
   );
@@ -264,6 +245,7 @@ const YouPassingCarOnLeftAnimation = () => {
       rightState="Off"
       leftPercent={leftPercent}
       rightPercent={0}
+      disableTransition={false}
       bgOpacity={30}
     />
   );
@@ -296,6 +278,7 @@ const YouPassingCarOnRightAnimation = () => {
       rightState="CarRight"
       leftPercent={0}
       rightPercent={rightPercent}
+      disableTransition={false}
       bgOpacity={30}
     />
   );
@@ -339,6 +322,7 @@ const CarsPassingBothSidesAnimation = () => {
       rightState="CarRight"
       leftPercent={leftPercent}
       rightPercent={rightPercent}
+      disableTransition={false}
       bgOpacity={30}
     />
   );

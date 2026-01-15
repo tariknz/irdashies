@@ -4,6 +4,7 @@ import path from 'node:path';
 import { trackWindowMovement } from './trackWindowMovement';
 import { Notification } from 'electron';
 import { readData, writeData } from './storage/storage';
+import { getDashboard } from './storage/dashboards';
 
 // used for Hot Module Replacement
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string;
@@ -209,6 +210,24 @@ export class OverlayManager {
       this.currentSettingsWindow.show();
       this.currentSettingsWindow.focus();
     }
+  }
+
+  /**
+   * Check dashboard settings and disable hardware acceleration if configured.
+   * Must be called before the app is ready.
+   */
+  public setupHardwareAcceleration(): void {
+    const dashboard = getDashboard('default');
+    if (dashboard?.generalSettings?.disableHardwareAcceleration) {
+      app.disableHardwareAcceleration();
+    }
+  }
+
+  public setupAutoStart(): void {
+    const dashboard = getDashboard('default');
+    app.setLoginItemSettings({
+      openAtLogin: dashboard?.generalSettings?.enableAutoStart ?? false,
+    });
   }
 
   /**

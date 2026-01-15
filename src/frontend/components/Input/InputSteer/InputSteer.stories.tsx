@@ -3,6 +3,7 @@ import { InputSteer } from './InputSteer';
 
 export default {
   component: InputSteer,
+  title: 'widgets/Input/components/InputSteer',
   argTypes: {
     angleRad: {
       control: {

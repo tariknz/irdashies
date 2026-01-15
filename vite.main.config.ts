@@ -32,6 +32,7 @@ export default defineConfig({
   },
   define: {
     APP_GIT_HASH: JSON.stringify(getGitHash()),
+    POSTHOG_KEY: JSON.stringify(process.env.POSTHOG_KEY || ''),
   },
 });
 

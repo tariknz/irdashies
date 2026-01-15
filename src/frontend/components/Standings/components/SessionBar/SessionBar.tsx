@@ -6,8 +6,11 @@ import { useTrackWetness } from '../../hooks/useTrackWetness';
 import { useTrackTemperature } from '../../hooks/useTrackTemperature';
 import { useCurrentTime } from '../../hooks/useCurrentTime';
 import { useStandingsSettings, useRelativeSettings } from '../../hooks';
+import { ClockIcon, ClockUserIcon, CloudRainIcon, DropIcon, RoadHorizonIcon, ThermometerIcon, TireIcon } from '@phosphor-icons/react';
+import { useSessionCurrentTime } from '../../hooks/useSessionCurrentTime';
+import { usePrecipitation } from '../../hooks/usePrecipitation';
+import { useTotalRaceLaps } from '../../../../context/shared/useTotalRaceLaps';
 import { useLapTimeHistory } from '../../../../context/LapTimesStore/LapTimesStore';
-import { ClockIcon, DropIcon, RoadHorizonIcon, ThermometerIcon, TireIcon } from '@phosphor-icons/react';
 
 interface SessionBarProps {
   position?: 'header' | 'footer';
@@ -27,11 +30,14 @@ export const SessionBar = ({ position = 'header', variant = 'standings' }: Sessi
   const { state, currentLap, totalLaps, time, timeTotal, timeRemaining } = useSessionLapCount();
   const brakeBias = useBrakeBias();
   const { trackWetness } = useTrackWetness();
+  const { precipitation } = usePrecipitation();
   const { trackTemp, airTemp } = useTrackTemperature({
     airTempUnit: effectiveBarSettings?.airTemperature?.unit ?? 'Metric',
     trackTempUnit: effectiveBarSettings?.trackTemperature?.unit ?? 'Metric',
   });
   const localTime = useCurrentTime();
+  const sessionClockTime = useSessionCurrentTime();
+  const { totalRaceLaps, isFixedLapRace } = useTotalRaceLaps();
   const sessionDrivers = useSessionDrivers();
   const driverCarIdx = useFocusCarIdx();
   const qualifyingResults = useSessionQualifyingResults();
@@ -205,6 +211,18 @@ export const SessionBar = ({ position = 'header', variant = 'standings' }: Sessi
         return <div className="flex justify-center">{totalTimeStr ? `≈ ${totalTimeStr}` : ''}</div>;
       },
     },
+    sessionLaps: {
+      enabled: effectiveBarSettings?.sessionLaps?.enabled ?? true,
+      render: () => {
+        if (totalRaceLaps > 0)
+          if (isFixedLapRace)
+            return <div className="flex justify-center">L{currentLap}/{totalRaceLaps.toFixed(0)}</div>;
+          else
+            return <div className="flex justify-center">L{currentLap}/{totalRaceLaps.toFixed(1)}</div>;
+        else
+          return <div className="flex justify-center">L{currentLap}</div>;
+      },
+    },
     incidentCount: {
       enabled: effectiveBarSettings?.incidentCount?.enabled ?? (position === 'header' ? true : false),
       render: () => (
@@ -230,8 +248,17 @@ export const SessionBar = ({ position = 'header', variant = 'standings' }: Sessi
       enabled: effectiveBarSettings?.localTime?.enabled ?? (position === 'header' ? true : true),
       render: () => (
         <div className="flex justify-center gap-1 items-center">
-          <ClockIcon />
+          <ClockUserIcon />
           <span>{localTime}</span>
+        </div>
+      ),
+    },
+    sessionClockTime: {
+      enabled: effectiveBarSettings?.sessionClockTime?.enabled ?? false,
+      render: () => (
+        <div className="flex justify-center gap-1 items-center">
+          <ClockIcon />
+          <span>{sessionClockTime}</span>
         </div>
       ),
     },
@@ -241,6 +268,15 @@ export const SessionBar = ({ position = 'header', variant = 'standings' }: Sessi
         <div className="flex justify-center gap-1 items-center text-nowrap">
           <DropIcon />
           <span>{trackWetness}</span>
+        </div>
+      ),
+    },
+    precipitation: {
+      enabled: effectiveBarSettings?.precipitation?.enabled ?? (position === 'header' ? false : false),
+      render: () => (
+        <div className="flex justify-center gap-1 items-center text-nowrap">
+          <CloudRainIcon />
+          <span>{precipitation}</span>
         </div>
       ),
     },
@@ -266,8 +302,8 @@ export const SessionBar = ({ position = 'header', variant = 'standings' }: Sessi
 
   // Get display order, fallback to default order
   const displayOrder = effectiveBarSettings?.displayOrder || (position === 'header'
-    ? ['sessionName', 'sessionTime', 'localTime', 'brakeBias', 'incidentCount']
-    : ['localTime', 'trackWetness', 'airTemperature', 'trackTemperature']
+    ? ['sessionName', 'sessionTime', 'sessionLaps', 'localTime', 'brakeBias', 'incidentCount']
+    : ['localTime', 'trackWetness', 'sessionLaps', 'airTemperature', 'trackTemperature']
   );
 
   // Filter and order items based on settings

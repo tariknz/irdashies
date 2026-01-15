@@ -10,6 +10,7 @@ interface StoryProps {
 
 const meta: Meta<typeof SettingsLayout> = {
   component: SettingsLayout,
+  title: 'components/SettingsLayout',
   decorators: [
     (Story, context) => {
       const { initialPath = 'standings' } =
