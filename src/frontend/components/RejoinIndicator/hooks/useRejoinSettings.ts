@@ -4,7 +4,6 @@ import type { RejoinIndicatorWidgetSettings } from '../../Settings/types';
 const DEFAULT_CONFIG: RejoinIndicatorWidgetSettings = {
   enabled: false,
   config: {
-    showOnlyWhenOnTrack: true,
     showAtSpeed: 30,
     careGap: 2,
     stopGap: 1,
@@ -30,9 +29,6 @@ export const useRejoinSettings = () => {
     return {
       enabled: saved.enabled ?? DEFAULT_CONFIG.enabled,
       config: {
-        showOnlyWhenOnTrack:
-          (saved.config as RejoinIndicatorWidgetSettings['config'])
-            ?.showOnlyWhenOnTrack ?? DEFAULT_CONFIG.config.showOnlyWhenOnTrack,
         showAtSpeed:
           (saved.config as RejoinIndicatorWidgetSettings['config'])
             ?.showAtSpeed ?? DEFAULT_CONFIG.config.showAtSpeed,

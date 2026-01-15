@@ -311,7 +311,6 @@ export interface BlindSpotMonitorWidgetSettings extends BaseWidgetSettings {
 
 export interface RejoinIndicatorWidgetSettings extends BaseWidgetSettings {
   config: {
-    showOnlyWhenOnTrack: boolean;
     showAtSpeed: number;
     careGap: number;
     stopGap: number;
