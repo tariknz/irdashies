@@ -90,7 +90,7 @@ export const useDriverLivePositions = (): Record<number, number> => {
       else // race in progress
       {
         drivers.sort((a, b) => {
-          // if LapComleted -1, means car on the grid before green, use qualifying position
+          // if LapCompleted -1, means car on the grid before green, use qualifying position
           const aPositionToUse = a.lapCompleted < 0 ? a.qualifyPosition : a.iRacingPosition;
           const bPositionToUse = b.lapCompleted < 0 ? b.qualifyPosition : b.iRacingPosition;
 
