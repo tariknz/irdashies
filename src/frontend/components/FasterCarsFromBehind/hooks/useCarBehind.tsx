@@ -6,7 +6,10 @@ export const useCarBehind = ({
 }: {
   distanceThreshold?: number;
 }) => {
-  const drivers = useDriverRelatives({ buffer: 1 });
+  const allDrivers = useDriverRelatives({ buffer: 1 });
+  
+  // Filter out drivers who are in the pits
+  const drivers = allDrivers.filter(driver => !driver.onPitRoad);
   const carBehind = drivers[2];
   const myCar = drivers[1];
   const threshold = distanceThreshold ?? -3;
