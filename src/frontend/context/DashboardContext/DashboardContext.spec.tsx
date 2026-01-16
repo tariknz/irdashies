@@ -151,14 +151,14 @@ describe('DashboardContext', () => {
     });
   });
 
-  it('stops the bridge on unmount', async () => {
+  it('stops the bridge on unmount', () => {
     const { unmount } = render(
       <DashboardProvider bridge={mockBridge}>
         <TestComponent />
       </DashboardProvider>
     );
 
-    await act(async () => {
+    act(() => {
       unmount();
     });
 
