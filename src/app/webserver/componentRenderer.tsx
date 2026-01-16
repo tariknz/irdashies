@@ -254,7 +254,7 @@ export class WebSocketBridge implements IrSdkBridge {
           this.isConnected = false;
           this.socket = null;
           this.connectionPromise = null;
-          
+
           if (!this.isConnecting) {
             this.attemptReconnect();
           }
@@ -331,6 +331,11 @@ export class WebSocketBridge implements IrSdkBridge {
     if (this.socket && this.socket.readyState === WebSocket.OPEN) {
       this.socket.send(JSON.stringify({ type: 'saveDashboard', data: { dashboard, options } }));
     }
+  }
+
+  setAutoStart(): Promise<void> {
+    // Not supported by component browser
+    return new Promise<void>((resolve) => resolve());
   }
 
   async resetDashboard(resetEverything: boolean): Promise<any> {
