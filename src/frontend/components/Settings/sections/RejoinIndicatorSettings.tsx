@@ -6,10 +6,12 @@ import {
 } from '../types';
 import { useDashboard } from '@irdashies/context';
 import { SessionVisibility } from '../components/SessionVisibility';
+import { ToggleSwitch } from '../components/ToggleSwitch';
 
 const SETTING_ID = 'rejoin';
 
 const defaultConfig: RejoinIndicatorWidgetSettings['config'] = {
+  showOnlyWhenOnTrack: true,
   showAtSpeed: 30,
   careGap: 2,
   stopGap: 1,
@@ -28,6 +30,9 @@ const migrateConfig = (
   if (!savedConfig || typeof savedConfig !== 'object') return defaultConfig;
   const config = savedConfig as Record<string, unknown>;
   return {
+    showOnlyWhenOnTrack:
+      (config.showOnlyWhenOnTrack as boolean) ??
+      defaultConfig.showOnlyWhenOnTrack,
     showAtSpeed: (config.showAtSpeed as number) ?? defaultConfig.showAtSpeed,
     careGap: (config.careGap as number) ?? defaultConfig.careGap,
     stopGap: (config.stopGap as number) ?? defaultConfig.stopGap,
@@ -117,6 +122,27 @@ export const RejoinIndicatorSettings = () => {
               }
               className="w-full rounded border-gray-600 bg-gray-700 p-2 text-slate-300"
               step="0.1"
+            />
+          </div>
+
+          {/* IsOnTrack Section */}
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className="text-md font-medium text-slate-300">
+                Show only when on track
+              </h4>
+              <span className="block text-xs text-slate-500">
+                If enabled, rejoin indicator will only be shown when you are
+                driving.
+              </span>
+            </div>
+            <ToggleSwitch
+              enabled={settings.config.showOnlyWhenOnTrack}
+              onToggle={(newValue) =>
+                handleConfigChange({
+                  showOnlyWhenOnTrack: newValue,
+                })
+              }
             />
           </div>
 

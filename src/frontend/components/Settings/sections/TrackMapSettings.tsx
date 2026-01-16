@@ -10,6 +10,7 @@ const SETTING_ID = 'map';
 const defaultConfig: TrackMapWidgetSettings['config'] = {
   enableTurnNames: false,
   showCarNumbers: true,
+  displayMode: 'carNumber',
   invertTrackColors: false,
   driverCircleSize: 40,
   playerCircleSize: 40,
@@ -27,6 +28,7 @@ const migrateConfig = (savedConfig: unknown): TrackMapWidgetSettings['config'] =
   return {
     enableTurnNames: (config.enableTurnNames as boolean) ?? defaultConfig.enableTurnNames,
     showCarNumbers: (config.showCarNumbers as boolean) ?? defaultConfig.showCarNumbers,
+    displayMode: (config.displayMode as 'carNumber' | 'sessionPosition') ?? defaultConfig.displayMode,
     invertTrackColors: (config.invertTrackColors as boolean) ?? defaultConfig.invertTrackColors,
     driverCircleSize: (config.driverCircleSize as number) ?? defaultConfig.driverCircleSize,
     playerCircleSize: (config.playerCircleSize as number) ?? defaultConfig.playerCircleSize,
@@ -88,6 +90,30 @@ export const TrackMapSettings = () => {
                 showCarNumbers: enabled
               })}
             />
+          </div>
+
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-slate-300">Display Mode</span>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => handleConfigChange({ displayMode: 'carNumber' })}
+                className={`px-3 py-1 rounded text-sm transition-colors ${settings.config.displayMode === 'carNumber'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
+                  }`}
+              >
+                Car Number
+              </button>
+              <button
+                onClick={() => handleConfigChange({ displayMode: 'sessionPosition' })}
+                className={`px-3 py-1 rounded text-sm transition-colors ${settings.config.displayMode === 'sessionPosition'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
+                  }`}
+              >
+                Session Position
+              </button>
+            </div>
           </div>
 
           <div className="space-y-2">

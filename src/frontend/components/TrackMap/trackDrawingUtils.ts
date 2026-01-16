@@ -86,16 +86,17 @@ export const drawTurnNames = (
 
 export const drawDrivers = (
   ctx: CanvasRenderingContext2D,
-  calculatePositions: Record<number, TrackDriver & { position: { x: number; y: number } }>,
+  calculatePositions: Record<number, TrackDriver & { position: { x: number; y: number }; sessionPosition?: number }>,
   driverColors: Record<number, { fill: string; text: string }>,
   driversOffTrack: boolean[],
   driverCircleSize: number,
   playerCircleSize: number,
-  showCarNumbers: boolean
+  showCarNumbers: boolean,
+  displayMode: 'carNumber' | 'sessionPosition' = 'carNumber'
 ) => {
   Object.values(calculatePositions)
     .sort((a, b) => Number(a.isPlayer) - Number(b.isPlayer)) // draws player last to be on top
-    .forEach(({ driver, position, isPlayer }) => {
+    .forEach(({ driver, position, isPlayer, sessionPosition }) => {
       const color = driverColors[driver.CarIdx];
       if (!color) return;
 
@@ -118,7 +119,15 @@ export const drawDrivers = (
         ctx.textBaseline = 'middle';
         ctx.fillStyle = color.text;
         ctx.font = `${fontSize}px sans-serif`;
-        ctx.fillText(driver.CarNumber, position.x, position.y);
+        let displayText = '';
+        if (displayMode === 'sessionPosition') {
+          displayText = sessionPosition !== undefined && sessionPosition > 0 ? sessionPosition.toString() : '';
+        } else {
+          displayText = driver.CarNumber;
+        }
+        if (displayText) {
+          ctx.fillText(displayText, position.x, position.y);
+        }
       }
     });
 }; 
