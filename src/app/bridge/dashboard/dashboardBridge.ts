@@ -1,13 +1,11 @@
-import { ipcMain } from 'electron';
 import type { DashboardBridge, DashboardLayout, DashboardProfile, SaveDashboardOptions } from '@irdashies/types';
 import { app, ipcMain } from 'electron';
-import type { DashboardBridge, DashboardLayout } from '@irdashies/types';
 import { onDashboardUpdated } from '../../storage/dashboardEvents';
-import { 
-  getDashboard, 
-  saveDashboard, 
-  resetDashboard, 
-  saveGarageCoverImage, 
+import {
+  getDashboard,
+  saveDashboard,
+  resetDashboard,
+  saveGarageCoverImage,
   getGarageCoverImageAsDataUrl,
   listProfiles,
   createProfile,
@@ -43,7 +41,7 @@ export const dashboardBridge: DashboardBridge = {
   saveDashboard: (dashboard: DashboardLayout, options?: SaveDashboardOptions) => {
     const targetProfileId = options?.profileId || getCurrentProfileId();
     saveDashboard(targetProfileId, dashboard);
-    
+
     // For browser views, manually trigger dashboard update callbacks
     if (options?.profileId && dashboardUpdateCallbacks.size > 0) {
       dashboardUpdateCallbacks.forEach(callback => {
@@ -87,7 +85,7 @@ export const dashboardBridge: DashboardBridge = {
     if (!dashboard) {
       dashboard = getOrCreateDefaultDashboardForProfile(profileId);
     }
-    
+
     return dashboard;
   },
   toggleDemoMode: () => {
@@ -252,7 +250,7 @@ export async function publishDashboardUpdates(overlayManager: OverlayManager, an
 
   ipcMain.handle('updateProfileTheme', (_, profileId: string, themeSettings: DashboardProfile['themeSettings']) => {
     updateProfileTheme(profileId, themeSettings);
-    
+
     // If updating the current profile, force refresh overlays
     const currentProfileId = getCurrentProfileId();
     if (profileId === currentProfileId) {
@@ -261,18 +259,19 @@ export async function publishDashboardUpdates(overlayManager: OverlayManager, an
         overlayManager.forceRefreshOverlays(dashboard);
       }
     }
-  ipcMain.handle('autostart:set', (_event, enabled: boolean) => {
-    app.setLoginItemSettings({
-      openAtLogin: enabled,
+    ipcMain.handle('autostart:set', (_event, enabled: boolean) => {
+      app.setLoginItemSettings({
+        openAtLogin: enabled,
+      });
+
+      return app.getLoginItemSettings().openAtLogin;
     });
 
-    return app.getLoginItemSettings().openAtLogin;
+    ipcMain.handle('autostart:get', () => {
+      return app.getLoginItemSettings().openAtLogin;
+    });
   });
-
-  ipcMain.handle('autostart:get', () => {
-    return app.getLoginItemSettings().openAtLogin;
-  });
-}
+};
 
 /**
  * Notify all registered callbacks that demo mode has changed
@@ -288,3 +287,4 @@ export function notifyDemoModeChanged(isDemoMode: boolean) {
     }
   });
 }
+
