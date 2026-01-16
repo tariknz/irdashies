@@ -1,4 +1,3 @@
-// Badge preview component to show different formats
 export const DriverNamePreview = ({
   format,
   selected,

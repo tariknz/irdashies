@@ -1,4 +1,3 @@
-// DriverName.stories.tsx
 import { Meta, StoryObj } from '@storybook/react-vite';
 import { DriverNameView, DriverNameViewProps } from './DriverNameView';
 
