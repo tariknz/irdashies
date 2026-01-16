@@ -1,4 +1,4 @@
-export type DriverNameParts = {
+export interface DriverNameParts {
   firstName: string;
   middleName: string | null;
   surname: string;
@@ -13,7 +13,7 @@ const capitalizeWords = (str: string) =>
     .join(' ');
 
 export const extractDriverName = (
-  fullName: string = ''
+  fullName = ''
 ): DriverNameParts => {
   const parts = fullName.trim().split(/\s+/).filter(Boolean);
 
