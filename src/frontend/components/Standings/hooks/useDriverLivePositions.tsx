@@ -90,7 +90,7 @@ export const useDriverLivePositions = (): Record<number, number> => {
       else // race in progress
       {
         drivers.sort((a, b) => {
-          // if LapCompleted -1, means car on the grid before green, use qualifying position
+          // if LapCompleted -1, means before green, use qualifying position
           const aPositionToUse = a.lapCompleted < 0 ? a.qualifyPosition : a.iRacingPosition;
           const bPositionToUse = b.lapCompleted < 0 ? b.qualifyPosition : b.iRacingPosition;
 
@@ -105,14 +105,26 @@ export const useDriverLivePositions = (): Record<number, number> => {
           // from here on, both have completed same number of laps
 
           // lapCompleted = -1 | both on grid before green flag, use qualifying position
-          if (a.lapCompleted < 0) return a.qualifyPosition - b.qualifyPosition;
+          if (a.lapCompleted < 0) {
+            // treat positions <= 0 as unknown and put them at the end
+            if (a.qualifyPosition <= 0 && b.qualifyPosition <= 0) return 0;
+            if (a.qualifyPosition <= 0) return 1;
+            if (b.qualifyPosition <= 0) return -1;
+            return a.qualifyPosition - b.qualifyPosition;
+          }
 
           // checkered flag beats non-checkered
           if (a.checkered && !b.checkered) return -1;
           if (!a.checkered && b.checkered) return 1;
 
           // both checkered, use iRacingPosition 
-          if (a.checkered && b.checkered) return a.iRacingPosition - b.iRacingPosition;
+          if (a.checkered && b.checkered) {
+            // treat positions <= 0 as unknown and put them at the end
+            if (a.iRacingPosition <= 0 && b.iRacingPosition <= 0) return 0;
+            if (a.iRacingPosition <= 0) return 1;
+            if (b.iRacingPosition <= 0) return -1;
+            return a.iRacingPosition - b.iRacingPosition;
+          }
 
           // finally use progress for the rest
           return b.progress - a.progress;
