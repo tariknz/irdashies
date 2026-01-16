@@ -1,7 +1,7 @@
 export type TimeFormat = 'full' | 'mixed' | 'minutes' | 'seconds-full' | 'seconds-mixed' | 'seconds' | 'duration' | 'duration-wlabels';
 
 export const formatTime = (seconds?: number, format: TimeFormat = 'full'): string => {
-  if (!seconds) return '';
+  if (seconds === undefined) return '';
   if (seconds < 0) return '';
 
   const ms = Math.round((seconds % 1) * 1000); // Get milliseconds
