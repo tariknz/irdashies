@@ -1,28 +1,64 @@
 import { useState } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import { useDashboard } from '@irdashies/context';
-import { BlindSpotMonitorWidgetSettings } from '../types';
+import {
+  BlindSpotMonitorWidgetSettings,
+  SessionVisibilitySettings,
+} from '../types';
+import { SessionVisibility } from '../components/SessionVisibility';
+import { ToggleSwitch } from '../components/ToggleSwitch';
 
 const SETTING_ID = 'blindspotmonitor';
 
 const defaultConfig: BlindSpotMonitorWidgetSettings['config'] = {
+  showOnlyWhenOnTrack: true,
   distAhead: 4,
   distBehind: 4,
   background: {
     opacity: 30,
   },
   width: 20,
+  sessionVisibility: {
+    race: true,
+    loneQualify: false,
+    openQualify: true,
+    practice: true,
+    offlineTesting: true,
+  },
+};
+
+const migrateConfig = (
+  savedConfig: unknown
+): BlindSpotMonitorWidgetSettings['config'] => {
+  if (!savedConfig || typeof savedConfig !== 'object') return defaultConfig;
+
+  const config = savedConfig as Record<string, unknown>;
+  return {
+    showOnlyWhenOnTrack:
+      (config.showOnlyWhenOnTrack as boolean) ??
+      defaultConfig.showOnlyWhenOnTrack,
+    distAhead: (config.distAhead as number) ?? defaultConfig.distAhead,
+    distBehind: (config.distBehind as number) ?? defaultConfig.distBehind,
+    background: {
+      opacity:
+        (config.background as { opacity?: number })?.opacity ??
+        (defaultConfig.background?.opacity as number),
+    },
+    width: (config.width as number) ?? defaultConfig.width,
+    sessionVisibility:
+      (config.sessionVisibility as SessionVisibilitySettings) ??
+      defaultConfig.sessionVisibility,
+  };
 };
 
 export const BlindSpotMonitorSettings = () => {
   const { currentDashboard } = useDashboard();
+  const savedSettings = currentDashboard?.widgets.find(
+    (w) => w.id === SETTING_ID
+  ) as BlindSpotMonitorWidgetSettings | undefined;
   const [settings, setSettings] = useState<BlindSpotMonitorWidgetSettings>({
-    enabled:
-      currentDashboard?.widgets.find((w) => w.id === SETTING_ID)?.enabled ?? false,
-    config:
-      (currentDashboard?.widgets.find((w) => w.id === SETTING_ID)?.config as
-        | BlindSpotMonitorWidgetSettings['config']
-        | undefined) ?? defaultConfig,
+    enabled: savedSettings?.enabled ?? false,
+    config: migrateConfig(savedSettings?.config),
   });
 
   if (!currentDashboard) {
@@ -76,7 +112,8 @@ export const BlindSpotMonitorSettings = () => {
               className="w-full"
             />
             <p className="text-slate-400 text-sm">
-              Distance to car ahead in meters. Distance at which point line starts to appear at the top.
+              Distance to car ahead in meters. Distance at which point line
+              starts to appear at the top.
             </p>
           </div>
 
@@ -97,7 +134,8 @@ export const BlindSpotMonitorSettings = () => {
               className="w-full"
             />
             <p className="text-slate-400 text-sm">
-              Distance to car behind in meters. Distance at which point line starts to appear at the bottom.
+              Distance to car behind in meters. Distance at which point line
+              starts to appear at the bottom.
             </p>
           </div>
 
@@ -121,9 +159,44 @@ export const BlindSpotMonitorSettings = () => {
               Width of the blind spot indicator in pixels.
             </p>
           </div>
+
+          {/* IsOnTrack Section */}
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className="text-md font-medium text-slate-300">
+                Show only when on track
+              </h4>
+              <span className="block text-xs text-slate-500">
+                If enabled, blind spotter will only be shown when you are
+                driving.
+              </span>
+            </div>
+            <ToggleSwitch
+              enabled={settings.config.showOnlyWhenOnTrack}
+              onToggle={(newValue) =>
+                handleConfigChange({
+                  showOnlyWhenOnTrack: newValue,
+                })
+              }
+            />
+          </div>
+
+          {/* Session Visibility Settings */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-medium text-slate-200">
+                Session Visibility
+              </h3>
+            </div>
+            <div className="space-y-3 pl-4">
+              <SessionVisibility
+                sessionVisibility={settings.config.sessionVisibility}
+                handleConfigChange={handleConfigChange}
+              />
+            </div>
+          </div>
         </div>
       )}
     </BaseSettingsSection>
   );
 };
-

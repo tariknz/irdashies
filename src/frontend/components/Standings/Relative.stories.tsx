@@ -226,6 +226,7 @@ export const Primary: Story = {
       relative: {
         headerBar: { enabled: true },
         footerBar: { enabled: true },
+        sessionVisibility: { race: true, loneQualify: true, openQualify: true, practice: true, offlineTesting: true }
       },
     }),
   ],
@@ -376,6 +377,33 @@ export const SuzukaGT3EnduranceRace: Story = {
       relative: {
         headerBar: { enabled: true },
         footerBar: { enabled: true },
+      },
+    }),
+  ],
+};
+
+export const TeamSession: Story = {
+  decorators: [
+    TelemetryDecoratorWithConfig('/test-data/1763227688917', {
+      relative: {
+        headerBar: { enabled: true },
+        footerBar: { enabled: true },
+        teamName: { enabled: true },
+        displayOrder: [
+          'position',
+          'carNumber',
+          'countryFlags',
+          'badge',
+          'teamName',
+          'driverName',
+          'pitStatus',
+          'carManufacturer',
+          'compound',
+          'iratingChange',
+          'delta',
+          'fastestTime',
+          'lastTime',
+        ],
       },
     }),
   ],

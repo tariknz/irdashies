@@ -1,7 +1,7 @@
-import { ipcMain } from 'electron';
+import { app, ipcMain } from 'electron';
 import type { DashboardBridge, DashboardLayout } from '@irdashies/types';
 import { onDashboardUpdated } from '../../storage/dashboardEvents';
-import { getDashboard, saveDashboard, resetDashboard } from '../../storage/dashboards';
+import { getDashboard, saveDashboard, resetDashboard, saveGarageCoverImage, getGarageCoverImageAsDataUrl } from '../../storage/dashboards';
 import { OverlayManager } from '../../overlayManager';
 import { getAnalyticsOptOut as getAnalyticsOptOutStorage, setAnalyticsOptOut as setAnalyticsOptOutStorage } from '../../storage/analytics';
 import { Analytics } from '../../analytics';
@@ -39,7 +39,8 @@ export const dashboardBridge: DashboardBridge = {
     demoModeCallbacks.add(callback);
   },
   getCurrentDashboard: () => {
-    return getDashboard('default');
+    const dashboard = getDashboard('default');
+    return dashboard;
   },
   toggleDemoMode: () => {
     return;
@@ -53,6 +54,17 @@ export const dashboardBridge: DashboardBridge = {
   stop: () => {
     return;
   },
+  saveGarageCoverImage: (buffer: Uint8Array) => {
+    return saveGarageCoverImage(buffer);
+  },
+  getGarageCoverImageAsDataUrl: (imagePath: string) => {
+    return getGarageCoverImageAsDataUrl(imagePath);
+  },
+  setAutoStart: async (enabled: boolean) => {
+    app.setLoginItemSettings({
+      openAtLogin: enabled,
+    });
+  }
 };
 
 export async function publishDashboardUpdates(overlayManager: OverlayManager, analytics: Analytics) {
@@ -95,6 +107,26 @@ export async function publishDashboardUpdates(overlayManager: OverlayManager, an
     return overlayManager.getVersion();
   });
 
+  ipcMain.handle('saveGarageCoverImage', async (_, buffer: number[]) => {
+    try {
+      const uint8Array = new Uint8Array(buffer);
+      const imagePath = await saveGarageCoverImage(uint8Array);
+      return imagePath;
+    } catch (err) {
+      console.error('[Bridge] Error saving garage cover image:', err);
+      throw err;
+    }
+  });
+
+  ipcMain.handle('getGarageCoverImageAsDataUrl', async (_, imagePath: string) => {
+    try {
+      const dataUrl = await getGarageCoverImageAsDataUrl(imagePath);
+      return dataUrl;
+    } catch (err) {
+      console.error('Error loading garage cover image as data URL:', err);
+      throw err;
+    }
+  });
   ipcMain.handle('getAnalyticsOptOut', () => {
     return getAnalyticsOptOutStorage();
   });
@@ -107,6 +139,18 @@ export async function publishDashboardUpdates(overlayManager: OverlayManager, an
         opt_out: optOut,
       },
     });
+  });
+
+  ipcMain.handle('autostart:set', (_event, enabled: boolean) => {
+    app.setLoginItemSettings({
+      openAtLogin: enabled,
+    });
+
+    return app.getLoginItemSettings().openAtLogin;
+  });
+
+  ipcMain.handle('autostart:get', () => {
+    return app.getLoginItemSettings().openAtLogin;
   });
 }
 

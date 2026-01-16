@@ -3,9 +3,15 @@ import fs from 'fs';
 import path from 'path';
 import type { IrSdkBridge, DashboardBridge } from '@irdashies/types';
 import { currentDashboard } from './bridgeProxy';
+import { getGarageCoverImageAsDataUrl } from '../storage/dashboards';
+import crypto from 'crypto';
+import type { WidgetId } from '../../frontend/WidgetIndex';
 
 const PORT = 3000;
 const COMPONENT_PORT = process.env.COMPONENT_PORT || PORT;
+
+// Cache for widget configs to avoid passing large data in URL
+const configCache = new Map<string, unknown>();
 
 const isDev = process.env.NODE_ENV === 'development' || process.env.VITE_DEV_SERVER_URL;
 
@@ -120,6 +126,44 @@ export async function startComponentServer(irsdkBridge?: IrSdkBridge, dashboardB
       return;
     }
 
+    if (pathname === '/api/config' && req.method === 'GET') {
+      const configId = url.searchParams.get('id');
+      if (!configId) {
+        sendJSON(res, 400, { error: 'Missing config ID' });
+        return;
+      }
+      
+      const config = configCache.get(configId);
+      if (!config) {
+        sendJSON(res, 404, { error: 'Config not found' });
+        return;
+      }
+      
+      sendJSON(res, 200, { config });
+      return;
+    }
+
+    if (pathname === '/api/garage-cover-image' && req.method === 'GET') {
+      const filename = url.searchParams.get('filename');
+      if (!filename) {
+        sendJSON(res, 400, { error: 'Missing filename' });
+        return;
+      }
+      
+      try {
+        const dataUrl = await getGarageCoverImageAsDataUrl(filename);
+        if (!dataUrl) {
+          sendJSON(res, 404, { error: 'Image not found' });
+          return;
+        }
+        sendJSON(res, 200, { dataUrl });
+      } catch (err) {
+        console.error('[ComponentServer] Error loading garage cover image:', err);
+        sendJSON(res, 500, { error: 'Failed to load image' });
+      }
+      return;
+    }
+
     const componentMatch = pathname.match(/^\/component\/([a-zA-Z0-9_-]+)$/);
     if (componentMatch && req.method === 'GET') {
       const componentName = componentMatch[1];
@@ -130,7 +174,6 @@ export async function startComponentServer(irsdkBridge?: IrSdkBridge, dashboardB
       }
 
       const wsUrl = 'http://localhost:3000';
-      let configParam = '';
       const normalizedName = componentName.toLowerCase();
       let finalConfig = {};
       
@@ -141,17 +184,25 @@ export async function startComponentServer(irsdkBridge?: IrSdkBridge, dashboardB
         }
       }
       
-      if (Object.keys(finalConfig).length > 0) {
-        configParam = `&config=${encodeURIComponent(JSON.stringify(finalConfig))}`;
+      // Store config in cache and pass only the ID in URL to avoid 431 errors
+      const configId = crypto.randomBytes(16).toString('hex');
+      configCache.set(configId, finalConfig);
+      
+      // Clean up old cache entries (keep last 50)
+      if (configCache.size > 50) {
+        const keys = Array.from(configCache.keys());
+        for (let i = 0; i < keys.length - 50; i++) {
+          configCache.delete(keys[i]);
+        }
       }
 
       let componentRendererUrl: string;
       
       if (isDev) {
         const vitePort = process.env.VITE_PORT || '5173';
-        componentRendererUrl = `http://localhost:${vitePort}/index-component-renderer.html?component=${encodeURIComponent(componentName)}&wsUrl=${encodeURIComponent(wsUrl)}${configParam}`;
+        componentRendererUrl = `http://localhost:${vitePort}/index-component-renderer.html?component=${encodeURIComponent(componentName)}&wsUrl=${encodeURIComponent(wsUrl)}&configId=${configId}`;
       } else {
-        componentRendererUrl = `http://localhost:${COMPONENT_PORT}/index-component-renderer.html?component=${encodeURIComponent(componentName)}&wsUrl=${encodeURIComponent(wsUrl)}${configParam}`;
+        componentRendererUrl = `http://localhost:${COMPONENT_PORT}/index-component-renderer.html?component=${encodeURIComponent(componentName)}&wsUrl=${encodeURIComponent(wsUrl)}&configId=${configId}`;
       }
 
       const escapedName = componentName.replace(/[<>&"']/g, '');
@@ -180,7 +231,7 @@ export async function startComponentServer(irsdkBridge?: IrSdkBridge, dashboardB
     }
 
     if (pathname === '/components' && req.method === 'GET') {
-      const componentNames = [
+      const componentNames: WidgetId[] = [
         'standings',
         'input',
         'relative',
@@ -189,6 +240,8 @@ export async function startComponentServer(irsdkBridge?: IrSdkBridge, dashboardB
         'fastercarsfrombehind',
         'fuel',
         'blindspotmonitor',
+        'garagecover',
+        'rejoin',
       ];
 
       sendJSON(res, 200, {
