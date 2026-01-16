@@ -1,5 +1,7 @@
 import { ipcMain } from 'electron';
 import type { DashboardBridge, DashboardLayout, DashboardProfile, SaveDashboardOptions } from '@irdashies/types';
+import { app, ipcMain } from 'electron';
+import type { DashboardBridge, DashboardLayout } from '@irdashies/types';
 import { onDashboardUpdated } from '../../storage/dashboardEvents';
 import { 
   getDashboard, 
@@ -129,6 +131,11 @@ export const dashboardBridge: DashboardBridge = {
   getGarageCoverImageAsDataUrl: (imagePath: string) => {
     return getGarageCoverImageAsDataUrl(imagePath);
   },
+  setAutoStart: async (enabled: boolean) => {
+    app.setLoginItemSettings({
+      openAtLogin: enabled,
+    });
+  }
 };
 
 export async function publishDashboardUpdates(overlayManager: OverlayManager, analytics: Analytics) {
@@ -254,6 +261,16 @@ export async function publishDashboardUpdates(overlayManager: OverlayManager, an
         overlayManager.forceRefreshOverlays(dashboard);
       }
     }
+  ipcMain.handle('autostart:set', (_event, enabled: boolean) => {
+    app.setLoginItemSettings({
+      openAtLogin: enabled,
+    });
+
+    return app.getLoginItemSettings().openAtLogin;
+  });
+
+  ipcMain.handle('autostart:get', () => {
+    return app.getLoginItemSettings().openAtLogin;
   });
 }
 

@@ -28,6 +28,7 @@ const mockBridge: DashboardBridge = {
   getCurrentProfile: vi.fn().mockResolvedValue(null),
   updateProfileTheme: vi.fn(),
   getDashboardForProfile: vi.fn(),
+  setAutoStart: vi.fn()
 };
 
 const TestComponent: React.FC = () => {

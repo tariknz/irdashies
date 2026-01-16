@@ -2,7 +2,7 @@ import { memo, useMemo } from 'react';
 import { getTailwindStyle } from '@irdashies/utils/colors';
 import { formatTime, type TimeFormat } from '@irdashies/utils/time';
 import { usePitStopDuration } from '@irdashies/context';
-import type { LastTimeState } from '../../createStandings';
+import type { Gap, LastTimeState } from '../../createStandings';
 import type {
   RelativeWidgetSettings,
   StandingsWidgetSettings,
@@ -31,7 +31,7 @@ interface DriverRowInfoProps {
   isPlayer: boolean;
   hasFastestTime: boolean;
   delta?: number;
-  gap?: number;
+  gap?: Gap;
   interval?: number;
   position?: number;
   license?: string;
@@ -207,11 +207,7 @@ export const DriverInfoRow = memo(
             (displayOrder ? displayOrder.includes('teamName') : false) &&
             (config?.teamName?.enabled ?? false),
           component: (
-            <TeamNameCell
-              key="teamName"
-              hidden={hidden}
-              teamName={teamName}
-            />
+            <TeamNameCell key="teamName" hidden={hidden} teamName={teamName} />
           ),
         },
         {
@@ -454,7 +450,9 @@ export const DriverInfoRow = memo(
         className={[
           !onTrack || onPitRoad ? 'text-white/60' : '',
           isPlayer ? 'text-amber-300' : '',
-          isPlayer ? 'bg-yellow-500/20' : 'odd:bg-slate-800/70 even:bg-slate-900/70 text-sm',
+          isPlayer
+            ? 'bg-yellow-500/20'
+            : 'odd:bg-slate-800/70 even:bg-slate-900/70 text-sm',
           !isPlayer && isLapped ? 'text-blue-400' : '',
           !isPlayer && isLappingAhead ? 'text-red-400' : '',
           hidden ? 'invisible' : '',

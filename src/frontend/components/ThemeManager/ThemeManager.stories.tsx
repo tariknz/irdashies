@@ -92,6 +92,7 @@ const createMockBridge = (
   }),
   updateProfileTheme: async () => undefined,
   getDashboardForProfile: async () => null,
+  setAutoStart: () => Promise.resolve()
 });
 
 const FONT_SIZES: FontSize[] = ['xs', 'sm', 'md', 'lg', 'xl', '2xl', '3xl'];

@@ -106,5 +106,10 @@ export function exposeBridge() {
       ipcRenderer.removeAllListeners('dashboardUpdated');
       ipcRenderer.removeAllListeners('demoModeChanged');
     },
+
+    setAutoStart: (enabled: boolean) => {
+      ipcRenderer.invoke('autostart:set', enabled);
+    },
+
   } as DashboardBridge);
 }

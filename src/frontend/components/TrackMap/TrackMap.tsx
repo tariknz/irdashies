@@ -30,6 +30,7 @@ export const TrackMap = () => {
         drivers={driversTrackData}
         enableTurnNames={settings?.enableTurnNames ?? false}
         showCarNumbers={settings?.showCarNumbers ?? true}
+        displayMode={settings?.displayMode ?? 'carNumber'}
         invertTrackColors={settings?.invertTrackColors ?? false}
         driverCircleSize={settings?.driverCircleSize ?? 40}
         playerCircleSize={settings?.playerCircleSize ?? 40}

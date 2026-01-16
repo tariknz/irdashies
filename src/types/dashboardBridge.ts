@@ -29,4 +29,5 @@ export interface DashboardBridge {
   updateProfileTheme: (profileId: string, themeSettings: DashboardProfile['themeSettings']) => Promise<void>;
   getDashboardForProfile: (profileId: string) => Promise<DashboardLayout | null>;
   stop: () => void;
+  setAutoStart: (autoStart: boolean) => Promise<void>;
 }

@@ -74,6 +74,7 @@ const mockBridge: (editMode: boolean) => DashboardBridge = (editMode) => ({
   }),
   updateProfileTheme: async () => undefined,
   getDashboardForProfile: async () => null,
+  setAutoStart: () => Promise.resolve()
 });
 
 export const Primary = {

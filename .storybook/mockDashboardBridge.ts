@@ -64,4 +64,5 @@ export const mockDashboardBridge: DashboardBridge = {
   updateProfileTheme: async () => undefined,
   getDashboardForProfile: async () => null,
   stop: () => undefined,
+  setAutoStart:() => Promise.resolve()
 }; 
