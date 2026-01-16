@@ -12,13 +12,27 @@ export interface FasterCarsFromBehindProps {
 
 export const FasterCarsFromBehind = () => {
   const settings = useFasterCarsSettings();
-  const carBehind = useCarBehind({
+  const carsBehind = useCarBehind({
     distanceThreshold: settings?.distanceThreshold,
   });
 
   if (!useSessionVisibility(settings?.sessionVisibility)) return <></>;
 
-  return <FasterCarsFromBehindDisplay {...carBehind} />;
+  if (carsBehind.length === 0) return null;
+
+  // Apply alignment based on alignDriverBoxes setting
+  const containerAlignment = settings.alignDriverBoxes === 'Bottom' ? 'justify-end' : 'justify-start';
+
+  // Apply ordering based on closestDriverBox setting
+  const orderedCars = settings.closestDriverBox === 'Reverse' ? [...carsBehind].reverse() : carsBehind;
+
+  return (
+    <div className={`flex flex-col gap-1 h-full ${containerAlignment}`}>
+      {orderedCars.map((car, index) => (
+        <FasterCarsFromBehindDisplay key={index} {...car} />
+      ))}
+    </div>
+  );
 };
 
 export const FasterCarsFromBehindDisplay = ({

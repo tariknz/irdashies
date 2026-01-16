@@ -14,6 +14,9 @@ const SETTING_ID = 'fastercarsfrombehind';
 const defaultConfig: FasterCarsFromBehindWidgetSettings['config'] = {
   showOnlyWhenOnTrack: true,
   distanceThreshold: -0.3,
+  numberDriversBehind: 1,
+  alignDriverBoxes: 'Top',
+  closestDriverBox: 'Top',
   sessionVisibility: {
     race: true,
     loneQualify: false,
@@ -34,6 +37,12 @@ const migrateConfig = (
         defaultConfig.showOnlyWhenOnTrack,
       distanceThreshold:
         (config.distanceThreshold as number) ?? defaultConfig.distanceThreshold,
+      numberDriversBehind:
+        (config.numberDriversBehind as number) ?? defaultConfig.numberDriversBehind,
+      alignDriverBoxes:
+        (config.alignDriverBoxes as 'Top' | 'Bottom') ?? defaultConfig.alignDriverBoxes,
+      closestDriverBox:
+        (config.closestDriverBox as 'Top' | 'Reverse') ?? defaultConfig.closestDriverBox,
       sessionVisibility:
         (config.sessionVisibility as SessionVisibilitySettings) ??
         defaultConfig.sessionVisibility,
@@ -65,19 +74,78 @@ export const FasterCarsFromBehindSettings = () => {
     >
       {(handleConfigChange) => (
         <div className="space-y-4">
-          <div className="space-y-2">
-            <label className="text-slate-300">Distance Threshold</label>
-            <input
-              type="number"
-              value={settings.config.distanceThreshold}
-              onChange={(e) =>
-                handleConfigChange({
-                  distanceThreshold: parseFloat(e.target.value),
-                })
-              }
-              className="w-full rounded border-gray-600 bg-gray-700 p-2 text-slate-300"
-              step="0.1"
-            />
+          <div className="space-y-3 px-4">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-slate-300">Distance Threshold</span>
+              <input
+                type="number"
+                value={settings.config.distanceThreshold}
+                onChange={(e) =>
+                  handleConfigChange({
+                    distanceThreshold: parseFloat(e.target.value),
+                  })
+                }
+                className="w-20 bg-slate-700 text-white rounded-md px-2 py-1"
+                step="0.1"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-3 px-4">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-slate-300">Drivers Behind</span>
+              <select
+                value={settings.config.numberDriversBehind}
+                onChange={(e) =>
+                  handleConfigChange({
+                    numberDriversBehind: parseInt(e.target.value),
+                  })
+                }
+                className="w-20 bg-slate-700 text-white rounded-md px-2 py-1"
+              >
+                {Array.from({ length: 10 }, (_, i) => i + 1).map((num) => (
+                  <option key={num} value={num}>
+                    {num}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="space-y-3 px-4">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-slate-300">Align Driver Boxes</span>
+              <select
+                value={settings.config.alignDriverBoxes}
+                onChange={(e) =>
+                  handleConfigChange({
+                    alignDriverBoxes: e.target.value as 'Top' | 'Bottom',
+                  })
+                }
+                className="w-20 bg-slate-700 text-white rounded-md px-2 py-1"
+              >
+                <option value="Top">Top</option>
+                <option value="Bottom">Bottom</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="space-y-3 px-4">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-slate-300">Closest Driver</span>
+              <select
+                value={settings.config.closestDriverBox}
+                onChange={(e) =>
+                  handleConfigChange({
+                    closestDriverBox: e.target.value as 'Top' | 'Reverse',
+                  })
+                }
+                className="w-20 bg-slate-700 text-white rounded-md px-2 py-1"
+              >
+                <option value="Top">Top</option>
+                <option value="Reverse">Reverse</option>
+              </select>
+            </div>
           </div>
 
           {/* IsOnTrack Section */}
