@@ -34,6 +34,7 @@ interface DriverRowInfoProps {
   gap?: Gap;
   interval?: number;
   position?: number;
+  lap?: number;
   license?: string;
   rating?: number;
   iratingChangeValue?: number;
@@ -82,6 +83,7 @@ export const DriverInfoRow = memo(
     gap,
     interval,
     position,
+    lap,
     license,
     rating,
     iratingChangeValue,
@@ -140,7 +142,7 @@ export const DriverInfoRow = memo(
       if (!numLapDeltasToShow) return null;
       return Array.from({ length: numLapDeltasToShow }, (_, index) => index);
     }, [numLapDeltasToShow]);
-
+    
     const columnDefinitions = useMemo(() => {
       const columns = [
         {
@@ -194,9 +196,14 @@ export const DriverInfoRow = memo(
           component: (
             <DriverNameCell
               key="driverName"
-              hidden={hidden}
-              name={name}
               radioActive={radioActive}
+              repair={repair}
+              penalty={penalty}
+              slowdown={slowdown}
+              showStatusBadges={config?.driverName?.showStatusBadges ?? true}
+              hidden={hidden}
+              fullName={name}
+              nameFormat={config?.driverName?.nameFormat}
             />
           ),
         },
@@ -222,15 +229,14 @@ export const DriverInfoRow = memo(
               onPitRoad={onPitRoad}
               carTrackSurface={carTrackSurface}
               prevCarTrackSurface={prevCarTrackSurface}
+              lap={lap}
               lastPitLap={lastPitLap}
               lastLap={lastLap}
               currentSessionType={currentSessionType}
               dnf={dnf}
-              repair={repair}
-              penalty={penalty}
-              slowdown={slowdown}
               pitStopDuration={pitStopDuration}
               showPitTime={config?.pitStatus?.showPitTime ?? false}
+              pitLapDisplayMode={config?.pitStatus?.pitLapDisplayMode}
             />
           ),
         },
@@ -407,6 +413,7 @@ export const DriverInfoRow = memo(
       config,
       hidden,
       position,
+      lap,
       isPlayer,
       offTrack,
       tailwindStyles,

@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { DriverInfoRow } from './components/DriverInfoRow/DriverInfoRow';
-import { useDrivingState, useWeekendInfoNumCarClasses, useWeekendInfoTeamRacing, useSessionVisibility } from '@irdashies/context';
+import { useDrivingState, useWeekendInfoNumCarClasses, useWeekendInfoTeamRacing, useSessionVisibility, useGeneralSettings } from '@irdashies/context';
 import { useRelativeSettings, useDriverRelatives, useHighlightColor } from './hooks';
 import { SessionBar } from './components/SessionBar/SessionBar';
 
@@ -10,6 +10,7 @@ import { useIsSingleMake } from './hooks/useIsSingleMake';
 
 export const Relative = () => {
   const settings = useRelativeSettings();
+  const generalSettings = useGeneralSettings();
   const buffer = settings?.buffer ?? 3;
   const { isDriving } = useDrivingState();
   const standings = useDriverRelatives({ buffer });
@@ -25,6 +26,9 @@ export const Relative = () => {
 
   // Check if this is a team racing session
   const isTeamRacing = useWeekendInfoTeamRacing();
+
+  // Determine table border spacing based on compact mode
+  const tableBorderSpacing = generalSettings?.compactMode ? 'border-spacing-y-0' : 'border-spacing-y-0.5';
 
   // Always render 2 * buffer + 1 rows (buffer above + player + buffer below)
   const totalRows = 2 * buffer + 1;
@@ -140,6 +144,7 @@ export const Relative = () => {
           isPlayer={result.isPlayer}
           hasFastestTime={result.hasFastestTime}
           position={result.classPosition}
+          lap={result.lap}
           onPitRoad={result.onPitRoad}
           onTrack={result.onTrack}
           radioActive={result.radioActive}
@@ -188,7 +193,7 @@ export const Relative = () => {
       <div className="w-full h-full">
         <TitleBar titleBarSettings={settings?.titleBar} />
         {(settings?.headerBar?.enabled ?? false) && <SessionBar position="header" variant="relative" />}
-        <table className="w-full table-auto text-sm border-separate border-spacing-y-0.5">
+        <table className={`w-full table-auto text-sm border-separate ${tableBorderSpacing}`}>
           <tbody>{rows}</tbody>
         </table>
         {(settings?.footerBar?.enabled ?? true) && <SessionBar position="footer" variant="relative" />}
@@ -198,14 +203,14 @@ export const Relative = () => {
 
   return (
     <div
-      className="w-full bg-slate-800/(--bg-opacity) rounded-sm p-2"
+      className={`w-full bg-slate-800/(--bg-opacity) rounded-sm ${!generalSettings?.compactMode ? 'p-2' : ''} overflow-hidden`}
       style={{
         ['--bg-opacity' as string]: `${settings?.background?.opacity ?? 0}%`,
       }}
     >
       <TitleBar titleBarSettings={settings?.titleBar} />
       {(settings?.headerBar?.enabled ?? false) && <SessionBar position="header" variant="relative" />}
-      <table className="w-full table-auto text-sm border-separate border-spacing-y-0.5">
+      <table className={`w-full table-auto text-sm border-separate ${tableBorderSpacing}`}>
         <tbody>{rows}</tbody>
       </table>
       {(settings?.footerBar?.enabled ?? true) && <SessionBar position="footer" variant="relative" />}

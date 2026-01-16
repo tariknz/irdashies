@@ -4,10 +4,10 @@ import { HashRouter, Route, Routes } from 'react-router-dom';
 import {
   TelemetryProvider,
   DashboardProvider,
-  useDashboard,
   RunningStateProvider,
   useRunningState,
   SessionProvider,
+  PitLaneProvider,
 } from '@irdashies/context';
 import { Settings } from './components/Settings/Settings';
 import { EditMode } from './components/EditMode/EditMode';
@@ -16,25 +16,17 @@ import { WIDGET_MAP } from './WidgetIndex';
 import { HideUIWrapper } from './components/HideUIWrapper/HideUIWrapper';
 
 const AppRoutes = () => {
-  const { currentDashboard } = useDashboard();
   const { running } = useRunningState();
 
   return (
     <Routes>
-      {currentDashboard?.widgets.map((widget) => {
-        const WidgetComponent = WIDGET_MAP[widget.id];
-        if (!WidgetComponent) {
-          return null;
-        }
-
-        return (
-          <Route
-            key={widget.id}
-            path={`/${widget.id}`}
-            element={running ? <WidgetComponent {...widget.config} /> : <></>}
-          />
-        );
-      })}
+      {Object.entries(WIDGET_MAP).map(([widgetId, WidgetComponent]) => (
+        <Route
+          key={widgetId}
+          path={`/${widgetId}`}
+          element={running ? <WidgetComponent /> : <></>}
+        />
+      ))}
       <Route path="/settings/*" element={<Settings />} />
     </Routes>
   );
@@ -46,6 +38,7 @@ const App = () => {
       <RunningStateProvider bridge={window.irsdkBridge}>
         <SessionProvider bridge={window.irsdkBridge} />
         <TelemetryProvider bridge={window.irsdkBridge} />
+        <PitLaneProvider bridge={window.pitLaneBridge} />
         <HashRouter>
           <HideUIWrapper>
             <EditMode>

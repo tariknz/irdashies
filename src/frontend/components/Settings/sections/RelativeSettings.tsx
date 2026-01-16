@@ -9,6 +9,7 @@ import { BadgeFormatPreview } from '../components/BadgeFormatPreview';
 import { VALID_SESSION_BAR_ITEM_KEYS, SESSION_BAR_ITEM_LABELS, DEFAULT_SESSION_BAR_DISPLAY_ORDER } from '../sessionBarConstants';
 import { mergeDisplayOrder } from '../../../utils/displayOrder';
 import { SessionVisibility } from '../components/SessionVisibility';
+import { DriverNamePreview } from '../components/DriverNamePreview';
 
 const SETTING_ID = 'relative';
 
@@ -23,7 +24,7 @@ const sortableSettings: SortableSetting[] = [
   { id: 'position', label: 'Position', configKey: 'position' },
   { id: 'carNumber', label: 'Car Number', configKey: 'carNumber' },
   { id: 'countryFlags', label: 'Country Flags', configKey: 'countryFlags' },
-  { id: 'driverName', label: 'Driver Name', configKey: 'driverName' },
+  { id: 'driverName', label: 'Driver Name', configKey: 'driverName', hasSubSetting: true },
   { id: 'teamName', label: 'Team Name', configKey: 'teamName' },
   { id: 'pitStatus', label: 'Pit Status', configKey: 'pitStatus', hasSubSetting: true },
   { id: 'carManufacturer', label: 'Car Manufacturer', configKey: 'carManufacturer', hasSubSetting: true },
@@ -41,9 +42,9 @@ const defaultConfig: RelativeWidgetSettings['config'] = {
   position: { enabled: true },
   carNumber: { enabled: true },
   countryFlags: { enabled: true },
-  driverName: { enabled: true },
+  driverName: { enabled: true, showStatusBadges: true, nameFormat: 'name-surname' },
   teamName: { enabled: false },
-  pitStatus: { enabled: true, showPitTime: false },
+  pitStatus: { enabled: true, showPitTime: false, pitLapDisplayMode: 'lapsSinceLastPit' },
   carManufacturer: { enabled: true, hideIfSingleMake: false },
   badge: { enabled: true, badgeFormat: 'license-color-rating-bw' },
   iratingChange: { enabled: false },
@@ -85,7 +86,7 @@ const defaultConfig: RelativeWidgetSettings['config'] = {
   },
   showOnlyWhenOnTrack: false,
   useLivePosition: false,
-  sessionVisibility: { race: true, loneQualify: false, openQualify: true, practice: true, offlineTesting: true }
+  sessionVisibility: { race: true, loneQualify: true, openQualify: true, practice: true, offlineTesting: true }
 };
 
 
@@ -99,11 +100,18 @@ const migrateConfig = (savedConfig: unknown): RelativeWidgetSettings['config'] =
     position: { enabled: (config.position as { enabled?: boolean })?.enabled ?? true },
     carNumber: { enabled: (config.carNumber as { enabled?: boolean })?.enabled ?? true },
     countryFlags: { enabled: (config.countryFlags as { enabled?: boolean })?.enabled ?? true },
-    driverName: { enabled: (config.driverName as { enabled?: boolean })?.enabled ?? true },
+    driverName: {
+      enabled: (config.driverName as { enabled?: boolean })?.enabled ?? true,
+      showStatusBadges:
+        (config.driverName as { showStatusBadges?: boolean })?.showStatusBadges ??
+        true,
+      nameFormat: ((config.driverName as { nameFormat?: 'name-middlename-surname' | 'name-m.-surname' | 'name-surname' | 'n.-surname' | 'surname-n.' | 'surname' })?.nameFormat) ?? 'name-middlename-surname',
+    },
     teamName: { enabled: (config.teamName as { enabled?: boolean })?.enabled ?? false },
     pitStatus: {
       enabled: (config.pitStatus as { enabled?: boolean })?.enabled ?? true,
       showPitTime: (config.pitStatus as { showPitTime?: boolean })?.showPitTime ?? false,
+      pitLapDisplayMode: (config.pitStatus as { pitLapDisplayMode?: 'lastPitLap' | 'lapsSinceLastPit' })?.pitLapDisplayMode ?? 'lapsSinceLastPit',
     },
     carManufacturer: {
       enabled: (config.carManufacturer as { enabled?: boolean })?.enabled ?? true,
@@ -248,6 +256,25 @@ const DisplaySettingsList = ({ itemsOrder, onReorder, settings, handleConfigChan
                 </div>
               </div>
             )}
+            {setting.configKey === 'driverName' && (configValue as { enabled: boolean }).enabled && (
+              <div className="mt-3">
+                <div className="flex flex-wrap gap-3 justify-end">
+                  {(['name-middlename-surname', 'name-m.-surname', 'name-surname', 'n.-surname', 'surname-n.', 'surname'] as const).map((format) => (
+                    <DriverNamePreview
+                      key={format}
+                      format={format}
+                      selected={(configValue as { enabled: boolean; nameFormat: string }).nameFormat === format}
+                      onClick={() => {
+                        const cv = settings.config[setting.configKey] as { enabled: boolean; nameFormat: string;[key: string]: unknown };
+                        handleConfigChange({
+                          [setting.configKey]: { ...cv, nameFormat: format },
+                        });
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
             {(setting.configKey === 'fastestTime' || setting.configKey === 'lastTime') && (configValue as { enabled: boolean }).enabled && (
               <div className="flex items-center justify-between pl-8 mt-2">
                 <span className="text-sm text-slate-300"></span>
@@ -262,7 +289,7 @@ const DisplaySettingsList = ({ itemsOrder, onReorder, settings, handleConfigChan
                       },
                     });
                   }}
-                  className="w-26 bg-slate-700 text-white rounded-md px-2 py-1"
+                  className="bg-slate-700 text-white rounded-md px-2 py-1"
                 >
                   <option value="full">1:42.123</option>
                   <option value="mixed">1:42.1</option>
@@ -275,13 +302,41 @@ const DisplaySettingsList = ({ itemsOrder, onReorder, settings, handleConfigChan
             )}
             {setting.hasSubSetting && setting.configKey === 'pitStatus' && settings.config.pitStatus.enabled && (
               <div className="flex items-center justify-between pl-8 mt-2">
-                <span className="text-sm text-slate-300">Show Pit Time</span>
+                <span className="text-sm text-slate-300">Pit Time</span>
                 <ToggleSwitch
                   enabled={settings.config.pitStatus.showPitTime ?? false}
                   onToggle={(enabled) => {
-                    const cv = settings.config[setting.configKey] as { enabled: boolean; showPitTime?: boolean; [key: string]: unknown };
+                    const cv = settings.config[setting.configKey] as { enabled: boolean; showPitTime?: boolean; pitLapDisplayMode?: 'lastPitLap' | 'lapsSinceLastPit';[key: string]: unknown };
                     handleConfigChange({
                       [setting.configKey]: { ...cv, showPitTime: enabled }
+                    });
+                  }}
+                />
+                <span className="textP-sm text-slate-300">Pitlap display mode</span>
+                <select
+                  value={settings.config.pitStatus.pitLapDisplayMode}
+                  onChange={(e) => {
+                    const cv = settings.config[setting.configKey] as { enabled: boolean; showPitTime?: boolean; pitLapDisplayMode?: 'lastPitLap' | 'lapsSinceLastPit';[key: string]: unknown };
+                    handleConfigChange({
+                      [setting.configKey]: { ...cv, pitLapDisplayMode: e.target.value as 'lastPitLap' | 'lapsSinceLastPit' }
+                    })
+                  }}
+                  className="bg-slate-700 text-white rounded-md px-2 py-1"
+                >
+                  <option value="lastPitLap">Last pit lap</option>
+                  <option value="lapsSinceLastPit">Laps since last pit</option>
+                </select>
+              </div>
+            )}
+            {setting.hasSubSetting && setting.configKey === 'driverName' && settings.config.driverName.enabled && (
+              <div className="flex items-center justify-between pl-8 mt-2">
+                <span className="text-sm text-slate-300">Status Badges</span>
+                <ToggleSwitch
+                  enabled={settings.config.driverName.showStatusBadges}
+                  onToggle={(enabled) => {
+                    const cv = settings.config[setting.configKey] as { enabled: boolean; showStatusBadges: boolean;[key: string]: unknown };
+                    handleConfigChange({
+                      [setting.configKey]: { ...cv, showStatusBadges: enabled }
                     });
                   }}
                 />
@@ -293,7 +348,7 @@ const DisplaySettingsList = ({ itemsOrder, onReorder, settings, handleConfigChan
                 <ToggleSwitch
                   enabled={settings.config.carManufacturer.hideIfSingleMake ?? false}
                   onToggle={(enabled) => {
-                    const cv = settings.config[setting.configKey] as { enabled: boolean; hideIfSingleMake?: boolean; [key: string]: unknown };
+                    const cv = settings.config[setting.configKey] as { enabled: boolean; hideIfSingleMake?: boolean;[key: string]: unknown };
                     handleConfigChange({
                       [setting.configKey]: { ...cv, hideIfSingleMake: enabled }
                     });
@@ -379,7 +434,7 @@ const BarItemsList = ({ items, onReorder, barType, settings, handleConfigChange 
                       }
                     });
                   }}
-                  className="w-20 bg-slate-700 text-white rounded-md px-2 py-1"
+                  className="bg-slate-700 text-white rounded-md px-2 py-1"
                 >
                   <option value="Metric">°C</option>
                   <option value="Imperial">°F</option>
@@ -402,7 +457,7 @@ const BarItemsList = ({ items, onReorder, barType, settings, handleConfigChange 
                       }
                     });
                   }}
-                  className="w-26 bg-slate-700 text-white rounded-md px-2 py-1"
+                  className="bg-slate-700 text-white rounded-md px-2 py-1"
                 >
                   <option value="Remaining">Remaining</option>
                   <option value="Elapsed">Elapsed</option>
@@ -462,7 +517,7 @@ export const RelativeSettings = () => {
                   Reset to Default Order
                 </button>
               </div>
-              <div className="px-4">
+              <div className="pl-4">
                 <DisplaySettingsList
                   itemsOrder={itemsOrder}
                   onReorder={handleDisplayOrderChange}
@@ -477,7 +532,7 @@ export const RelativeSettings = () => {
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-medium text-slate-200">Driver Standings</h3>
               </div>
-              <div className="space-y-3 px-4">
+              <div className="space-y-3 pl-4">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-slate-300">Drivers to show around player</span>
                   <select
@@ -485,7 +540,7 @@ export const RelativeSettings = () => {
                     onChange={(e) =>
                       handleConfigChange({ buffer: parseInt(e.target.value) })
                     }
-                    className="w-20 bg-slate-700 text-white rounded-md px-2 py-1"
+                    className="bg-slate-700 text-white rounded-md px-2 py-1"
                   >
                     {Array.from({ length: 10 }, (_, i) => (
                       <option key={i} value={i + 1}>
@@ -554,7 +609,7 @@ export const RelativeSettings = () => {
                   Reset to Default Order
                 </button>
               </div>
-              <div className="space-y-3 px-4">
+              <div className="space-y-3 pl-4">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-slate-300">Show Header Bar</span>
                   <ToggleSwitch
@@ -606,7 +661,7 @@ export const RelativeSettings = () => {
                   Reset to Default Order
                 </button>
               </div>
-              <div className="space-y-3 px-4">
+              <div className="space-y-3 pl-4">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-slate-300">Show Footer Bar</span>
                   <ToggleSwitch
@@ -659,7 +714,7 @@ export const RelativeSettings = () => {
                           background: { opacity: parseInt(e.target.value) },
                         })
                       }
-                      className="w-20 h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer"
+                      className="h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer"
                     />
                     <span className="text-xs text-slate-400 w-8">
                       {settings.config.background.opacity}%
@@ -674,7 +729,7 @@ export const RelativeSettings = () => {
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-medium text-slate-200">Relative Time</h3>
               </div>
-              <div className="space-y-3 px-4">
+              <div className="space-y-3 pl-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <span className="text-sm text-slate-300">Decimal places</span>
@@ -719,7 +774,7 @@ export const RelativeSettings = () => {
             </div>
 
             {/* Use Live Position Standings */}
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-4">
               <div>
                 <h4 className="text-md font-medium text-slate-300">Use Live Position Standings</h4>
                 <p className="text-sm text-slate-400">

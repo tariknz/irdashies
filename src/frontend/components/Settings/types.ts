@@ -14,17 +14,7 @@ export interface SessionVisibilitySettings {
 export interface StandingsWidgetSettings extends BaseWidgetSettings {
   config: {
     iratingChange: { enabled: boolean };
-    badge: {
-      enabled: boolean;
-      badgeFormat:
-      | 'license-color-rating-bw'
-      | 'license-color-rating-bw-no-license'
-      | 'rating-color-no-license'
-      | 'license-bw-rating-bw'
-      | 'rating-only-bw-rating-bw'
-      | 'license-bw-rating-bw-no-license'
-      | 'rating-bw-no-license';
-    };
+    badge: { enabled: boolean; badgeFormat: 'license-color-fullrating-bw' | 'license-color-rating-bw' | 'license-color-rating-bw-no-license' | 'rating-color-no-license' | 'license-bw-rating-bw' | 'rating-only-bw-rating-bw' | 'license-bw-rating-bw-no-license' | 'rating-bw-no-license' };
     delta: { enabled: boolean };
     gap: { enabled: boolean };
     interval: { enabled: boolean };
@@ -94,9 +84,9 @@ export interface StandingsWidgetSettings extends BaseWidgetSettings {
     showOnlyWhenOnTrack: boolean;
     useLivePosition: boolean;
     position: { enabled: boolean };
-    driverName: { enabled: boolean };
+    driverName: { enabled: boolean; showStatusBadges: boolean; nameFormat: 'name-middlename-surname' | 'name-m.-surname' | 'name-surname' | 'n.-surname' | 'surname-n.' | 'surname' };
     teamName: { enabled: boolean };
-    pitStatus: { enabled: boolean; showPitTime?: boolean };
+    pitStatus: { enabled: boolean; showPitTime?: boolean; pitLapDisplayMode: 'lastPitLap' | 'lapsSinceLastPit' };
     displayOrder: string[];
     sessionVisibility: SessionVisibilitySettings;
   };
@@ -162,26 +152,16 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
       displayOrder: string[];
     };
     showOnlyWhenOnTrack: boolean;
-    badge: {
-      enabled: boolean;
-      badgeFormat:
-      | 'license-color-rating-bw'
-      | 'license-color-rating-bw-no-license'
-      | 'rating-color-no-license'
-      | 'license-bw-rating-bw'
-      | 'rating-only-bw-rating-bw'
-      | 'license-bw-rating-bw-no-license'
-      | 'rating-bw-no-license';
-    };
+    badge: { enabled: boolean; badgeFormat: 'license-color-fullrating-bw' | 'license-color-rating-bw' | 'license-color-rating-bw-no-license' | 'rating-color-no-license' | 'license-bw-rating-bw' | 'rating-only-bw-rating-bw' | 'license-bw-rating-bw-no-license' | 'rating-bw-no-license' };
     iratingChange: { enabled: boolean };
     delta: {
       enabled: boolean;
       precision: number;
     };
     position: { enabled: boolean };
-    driverName: { enabled: boolean };
+    driverName: { enabled: boolean; showStatusBadges: boolean; nameFormat: 'name-middlename-surname' | 'name-m.-surname' | 'name-surname' | 'n.-surname' | 'surname-n.' | 'surname' };
     teamName: { enabled: boolean };
-    pitStatus: { enabled: boolean; showPitTime?: boolean };
+    pitStatus: { enabled: boolean; showPitTime?: boolean; pitLapDisplayMode: 'lastPitLap' | 'lapsSinceLastPit' };
     displayOrder: string[];
     useLivePosition: boolean;
     sessionVisibility: SessionVisibilitySettings;
@@ -265,6 +245,20 @@ export interface InputWidgetSettings extends BaseWidgetSettings {
     tachometer: {
       enabled: boolean;
       showRpmText: boolean;
+      shiftPointStyle?: 'glow' | 'pulse' | 'border';
+      customShiftPoints?: {
+        enabled: boolean;
+        indicatorType: 'glow' | 'pulse' | 'border';
+        indicatorColor: string;
+        carConfigs: Record<string, {
+          enabled: boolean;
+          carId: string;
+          carName: string;
+          gearCount: number;
+          redlineRpm: number;
+          gearShiftPoints: Record<string, { shiftRpm: number }>;
+        }>;
+      };
     };
     background: { opacity: number };
     displayOrder: string[];
@@ -312,7 +306,6 @@ export interface BlindSpotMonitorWidgetSettings extends BaseWidgetSettings {
 
 export interface RejoinIndicatorWidgetSettings extends BaseWidgetSettings {
   config: {
-    showOnlyWhenOnTrack: boolean;
     showAtSpeed: number;
     careGap: number;
     stopGap: number;
@@ -358,4 +351,40 @@ export interface FasterCarsFromBehindWidgetSettings extends BaseWidgetSettings {
     distanceThreshold: number;
     sessionVisibility: SessionVisibilitySettings;
   };
+}
+
+export interface PitlaneHelperWidgetSettings extends BaseWidgetSettings {
+  config: {
+    showMode: 'approaching' | 'onPitRoad';
+    approachDistance: number;
+    enablePitLimiterWarning: boolean;
+    enableEarlyPitboxWarning: boolean;
+    earlyPitboxThreshold: number;
+    showPitlaneTraffic: boolean;
+    background: { opacity: number };
+    progressBarOrientation: 'horizontal' | 'vertical';
+    showPitExitInputs: boolean;
+    pitExitInputs: {
+      throttle: boolean;
+      clutch: boolean;
+    };
+    showInputsPhase: 'atPitbox' | 'afterPitbox' | 'always';
+  };
+}
+
+// Type for custom shift points - used in InputWidgetSettings tachometer config
+export interface ShiftPointSettings {
+  /** Whether custom shift points are enabled */
+  enabled: boolean;
+  /** Visual indicator type */
+  indicatorType: 'glow' | 'pulse' | 'border';
+  /** Indicator color */
+  indicatorColor: string;
+  /** Per-car shift configurations */
+  carConfigs: Record<string, {
+    carId: string;
+    carName: string;
+    gearCount: number;
+    gearShiftPoints: Record<string, { shiftRpm: number }>;
+  }>;
 }

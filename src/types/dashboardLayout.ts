@@ -33,6 +33,27 @@ export interface GeneralSettingsType {
   skipTaskbar?: boolean;
   disableHardwareAcceleration?: boolean;
   enableAutoStart?: boolean;
+  compactMode?: boolean;
+  overlayAlwaysOnTop?: boolean;
+}
+
+/**
+ * Represents a configuration profile with a unique identifier and name.
+ */
+export interface DashboardProfile {
+  /** Unique identifier for the profile */
+  id: string;
+  /** User-friendly name for the profile */
+  name: string;
+  /** ISO timestamp of when the profile was created */
+  createdAt?: string;
+  /** ISO timestamp of when the profile was last modified */
+  lastModified?: string;
+  /** Optional theme settings that override dashboard general settings */
+  themeSettings?: {
+    fontSize?: FontSize;
+    colorPalette?: GeneralSettingsType['colorPalette'];
+  };
 }
 
 export interface DashboardLayout {

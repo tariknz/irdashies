@@ -6,6 +6,10 @@ export interface TelemetryProviderProps {
   bridge: IrSdkBridge | Promise<IrSdkBridge>;
 }
 
+/**
+ * Provider that sets up telemetry listeners
+ * Returns null - does not render any UI, only initializes listeners
+ */
 export const TelemetryProvider = ({ bridge }: TelemetryProviderProps) => {
   const setTelemetry = useTelemetryStore((state) => state.setTelemetry);
 
@@ -32,5 +36,5 @@ export const TelemetryProvider = ({ bridge }: TelemetryProviderProps) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bridge]);
 
-  return <></>;
+  return null;
 };
