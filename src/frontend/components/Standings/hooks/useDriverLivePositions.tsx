@@ -84,7 +84,7 @@ export const useDriverLivePositions = (): Record<number, number> => {
           if (a.iRacingPosition <= 0) return 1;
           if (b.iRacingPosition <= 0) return -1;
           // both have valid positions, use iRacingPosition to sort
-          return a.iRacingPosition - b.iRacingPosition
+          return a.iRacingPosition - b.iRacingPosition;
         });
       }
       else // race in progress
