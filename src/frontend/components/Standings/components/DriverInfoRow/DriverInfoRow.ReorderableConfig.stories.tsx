@@ -305,7 +305,7 @@ const RelativeWithReorderableConfig = () => {
       position: { enabled: true },
       carNumber: { enabled: true },
       countryFlags: { enabled: true },
-      driverName: { enabled: true },
+      driverName: {enabled: true, nameFormat: 'name-surname'},
       teamName: { enabled: true },
       pitStatus: { enabled: true },
       carManufacturer: { enabled: true },
