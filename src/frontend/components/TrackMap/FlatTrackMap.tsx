@@ -40,6 +40,7 @@ export const FlatTrackMap = () => {
         drivers={driversTrackData}
         highlightColor={settings?.useHighlightColor ? highlightColor : undefined}
         showCarNumbers={settings?.showCarNumbers ?? true}
+        displayMode={settings?.displayMode ?? 'carNumber'}
         driverCircleSize={settings?.driverCircleSize ?? 40}
         playerCircleSize={settings?.playerCircleSize ?? 40}
         trackLineWidth={settings?.trackLineWidth ?? 20}

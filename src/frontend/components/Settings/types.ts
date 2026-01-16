@@ -220,6 +220,7 @@ export interface TrackMapWidgetSettings extends BaseWidgetSettings {
   config: {
     enableTurnNames: boolean;
     showCarNumbers: boolean;
+    displayMode: 'carNumber' | 'sessionPosition';
     invertTrackColors: boolean;
     driverCircleSize: number;
     playerCircleSize: number;
@@ -322,6 +323,7 @@ export interface RejoinIndicatorWidgetSettings extends BaseWidgetSettings {
 export interface FlatTrackMapWidgetSettings extends BaseWidgetSettings {
   config: {
     showCarNumbers: boolean;
+    displayMode: 'carNumber' | 'sessionPosition';
     driverCircleSize: number;
     playerCircleSize: number;
     trackLineWidth: number;

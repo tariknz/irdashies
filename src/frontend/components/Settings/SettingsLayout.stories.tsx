@@ -57,3 +57,9 @@ export const WeatherRoute: Story = {
     initialPath: '/settings/weather',
   },
 };
+
+export const FlatTrackMapRoute: Story = {
+  args: {
+    initialPath: '/settings/flatmap',
+  },
+};

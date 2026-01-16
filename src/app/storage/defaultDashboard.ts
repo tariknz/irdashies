@@ -388,6 +388,7 @@ export const defaultDashboard: DashboardLayout = {
       },
       "config": {
         "showCarNumbers": true,
+        "displayMode": "carNumber",
         "driverCircleSize": 40,
         "playerCircleSize": 40,
         "trackLineWidth": 20,
