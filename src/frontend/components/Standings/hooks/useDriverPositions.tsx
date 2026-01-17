@@ -128,6 +128,8 @@ export const useDriverStandings = () => {
   const playerCarIdx = useFocusCarIdx();
   const sessionType = useCurrentSessionType();
   const qualifyingPositions = useSessionQualifyingResults();
+  const numCarClasses = drivers.reduce((max, driver) => Math.max(max, driver.carClass.id), -1) + 1;
+  const isMultiClass = numCarClasses > 1;
 
   const driverStandings: Standings[] = useMemo(() => {
     const fastestTime = driverPositions.reduce((fastest, pos) => {
@@ -165,7 +167,11 @@ export const useDriverStandings = () => {
       // If the driver is not in the standings, use the qualifying position
       let classPosition: number | undefined = driverPos.classPosition;
       
-      if(useLivePositionStandings) {
+      // For multiclass in Race sessions, use live position to ensure correct class grouping
+      // In practice/qualifying, telemetry positions should be used as-is
+      const shouldUseLivePosition = (isMultiClass && sessionType === 'Race') || useLivePositionStandings;
+      
+      if(shouldUseLivePosition) {
         // Override position with live position based on telemetry
         const livePosition = driverLivePositions[driver.carIdx];
         classPosition = livePosition;
@@ -223,7 +229,7 @@ export const useDriverStandings = () => {
     });
 
     return standings.filter((s) => !!s).sort((a, b) => a.position - b.position);
-  }, [driverPositions, carStates, qualifyingPositions, playerCarIdx, drivers, sessionType, useLivePositionStandings, radioTransmitCarIdx, driverLivePositions]);
+  }, [driverPositions, carStates, qualifyingPositions, playerCarIdx, drivers, sessionType, useLivePositionStandings, radioTransmitCarIdx, driverLivePositions, isMultiClass]);
 
   return driverStandings;
 };
