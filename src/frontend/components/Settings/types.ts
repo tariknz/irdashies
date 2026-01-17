@@ -94,7 +94,7 @@ export interface StandingsWidgetSettings extends BaseWidgetSettings {
     showOnlyWhenOnTrack: boolean;
     useLivePosition: boolean;
     position: { enabled: boolean };
-    driverName: { enabled: boolean };
+    driverName: { enabled: boolean; showStatusBadges: boolean };
     teamName: { enabled: boolean };
     pitStatus: { enabled: boolean; showPitTime?: boolean };
     displayOrder: string[];
@@ -179,7 +179,7 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
       precision: number;
     };
     position: { enabled: boolean };
-    driverName: { enabled: boolean };
+    driverName: { enabled: boolean; showStatusBadges: boolean };
     teamName: { enabled: boolean };
     pitStatus: { enabled: boolean; showPitTime?: boolean };
     displayOrder: string[];

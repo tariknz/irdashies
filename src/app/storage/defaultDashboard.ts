@@ -46,7 +46,8 @@ export const defaultDashboard: DashboardLayout = {
           "enabled": true
         },
         "driverName": {
-          "enabled": true
+          "enabled": true,
+          "showStatusBadges": true
         },
         "teamName": {
           "enabled": false
@@ -231,7 +232,8 @@ export const defaultDashboard: DashboardLayout = {
           "enabled": true
         },
         "driverName": {
-          "enabled": true
+          "enabled": true,
+          "showStatusBadges": true
         },
         "teamName": {
           "enabled": false

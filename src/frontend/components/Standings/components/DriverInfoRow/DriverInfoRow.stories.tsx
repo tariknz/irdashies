@@ -103,6 +103,14 @@ export const RadioActive: Story = {
   },
 };
 
+export const RadioActiveWithStatus: Story = {
+  args: {
+    ...Primary.args,
+    radioActive: true,
+    penalty: true,
+  },
+};
+
 export const IsPlayer: Story = {
   args: {
     ...Primary.args,
