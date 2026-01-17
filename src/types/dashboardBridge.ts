@@ -1,7 +1,8 @@
-import type { DashboardLayout } from './dashboardLayout';
+import type { DashboardLayout, DashboardProfile } from './dashboardLayout';
 
 export interface SaveDashboardOptions {
   forceReload?: boolean;
+  profileId?: string;
 }
 
 export interface DashboardBridge {
@@ -19,6 +20,14 @@ export interface DashboardBridge {
   getGarageCoverImageAsDataUrl: (imagePath: string) => Promise<string | null>;
   getAnalyticsOptOut: () => Promise<boolean>;
   setAnalyticsOptOut: (optOut: boolean) => Promise<void>;
+  listProfiles: () => Promise<DashboardProfile[]>;
+  createProfile: (name: string) => Promise<DashboardProfile>;
+  deleteProfile: (profileId: string) => Promise<void>;
+  renameProfile: (profileId: string, newName: string) => Promise<void>;
+  switchProfile: (profileId: string) => Promise<void>;
+  getCurrentProfile: () => Promise<DashboardProfile | null>;
+  updateProfileTheme: (profileId: string, themeSettings: DashboardProfile['themeSettings']) => Promise<void>;
+  getDashboardForProfile: (profileId: string) => Promise<DashboardLayout | null>;
   stop: () => void;
   setAutoStart: (autoStart: boolean) => Promise<void>;
 }

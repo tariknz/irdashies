@@ -1,6 +1,6 @@
 import type { DashboardWidget } from '@irdashies/types';
 import { BrowserWindow } from 'electron';
-import { updateDashboardWidget, getDashboard } from './storage/dashboards';
+import { updateDashboardWidget, getDashboard, getCurrentProfileId } from './storage/dashboards';
 
 export const trackWindowMovement = (
   widget: DashboardWidget,
@@ -15,8 +15,9 @@ function updateWidgetLayout(
   browserWindow: BrowserWindow,
   widgetId: string
 ) {
-  // Get current dashboard to access latest widget state
-  const dashboard = getDashboard('default');
+  // Get current active profile instead of hardcoded default
+  const currentProfileId = getCurrentProfileId();
+  const dashboard = getDashboard(currentProfileId);
   if (!dashboard) return;
 
   // Find the current widget (with latest config)
@@ -38,5 +39,5 @@ function updateWidgetLayout(
     },
   };
 
-  updateDashboardWidget(updatedWidget, 'default');
+  updateDashboardWidget(updatedWidget, currentProfileId);
 }
