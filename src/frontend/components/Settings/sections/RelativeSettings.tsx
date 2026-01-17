@@ -23,7 +23,7 @@ const sortableSettings: SortableSetting[] = [
   { id: 'position', label: 'Position', configKey: 'position' },
   { id: 'carNumber', label: 'Car Number', configKey: 'carNumber' },
   { id: 'countryFlags', label: 'Country Flags', configKey: 'countryFlags' },
-  { id: 'driverName', label: 'Driver Name', configKey: 'driverName' },
+  { id: 'driverName', label: 'Driver Name', configKey: 'driverName', hasSubSetting: true },
   { id: 'teamName', label: 'Team Name', configKey: 'teamName' },
   { id: 'pitStatus', label: 'Pit Status', configKey: 'pitStatus', hasSubSetting: true },
   { id: 'carManufacturer', label: 'Car Manufacturer', configKey: 'carManufacturer', hasSubSetting: true },
@@ -41,7 +41,7 @@ const defaultConfig: RelativeWidgetSettings['config'] = {
   position: { enabled: true },
   carNumber: { enabled: true },
   countryFlags: { enabled: true },
-  driverName: { enabled: true },
+  driverName: { enabled: true, showStatusBadges: true },
   teamName: { enabled: false },
   pitStatus: { enabled: true, showPitTime: false },
   carManufacturer: { enabled: true, hideIfSingleMake: false },
@@ -99,7 +99,12 @@ const migrateConfig = (savedConfig: unknown): RelativeWidgetSettings['config'] =
     position: { enabled: (config.position as { enabled?: boolean })?.enabled ?? true },
     carNumber: { enabled: (config.carNumber as { enabled?: boolean })?.enabled ?? true },
     countryFlags: { enabled: (config.countryFlags as { enabled?: boolean })?.enabled ?? true },
-    driverName: { enabled: (config.driverName as { enabled?: boolean })?.enabled ?? true },
+    driverName: {
+      enabled: (config.driverName as { enabled?: boolean })?.enabled ?? true,
+      showStatusBadges:
+        (config.driverName as { showStatusBadges?: boolean })?.showStatusBadges ??
+        true,
+    },
     teamName: { enabled: (config.teamName as { enabled?: boolean })?.enabled ?? false },
     pitStatus: {
       enabled: (config.pitStatus as { enabled?: boolean })?.enabled ?? true,
@@ -282,6 +287,20 @@ const DisplaySettingsList = ({ itemsOrder, onReorder, settings, handleConfigChan
                     const cv = settings.config[setting.configKey] as { enabled: boolean; showPitTime?: boolean; [key: string]: unknown };
                     handleConfigChange({
                       [setting.configKey]: { ...cv, showPitTime: enabled }
+                    });
+                  }}
+                />
+              </div>
+            )}
+            {setting.hasSubSetting && setting.configKey === 'driverName' && settings.config.driverName.enabled && (
+              <div className="flex items-center justify-between pl-8 mt-2">
+                <span className="text-sm text-slate-300">Show Status Badges</span>
+                <ToggleSwitch
+                  enabled={settings.config.driverName.showStatusBadges}
+                  onToggle={(enabled) => {
+                    const cv = settings.config[setting.configKey] as { enabled: boolean; showStatusBadges: boolean; [key: string]: unknown };
+                    handleConfigChange({
+                      [setting.configKey]: { ...cv, showStatusBadges: enabled }
                     });
                   }}
                 />

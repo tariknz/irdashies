@@ -53,6 +53,7 @@ const mockBridge: (editMode: boolean) => DashboardBridge = (editMode) => ({
   saveGarageCoverImage: () => Promise.resolve(''),
   getGarageCoverImage: () => Promise.resolve(null),
   getGarageCoverImageAsDataUrl: () => Promise.resolve(null),
+  setAutoStart: () => Promise.resolve()
 });
 
 export const Primary = {
