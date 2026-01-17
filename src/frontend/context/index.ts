@@ -6,5 +6,6 @@ export * from './TelemetryStore/TelemetryProvider';
 export * from './TelemetryStore/TelemetryStore';
 export * from './PitLapStore/PitLapStore';
 export * from './PitLaneStore/PitLaneStore';
+export * from './PitLaneStore/PitLaneProvider';
 export * from './PitLaneStore/usePitLaneDetection';
 export * from './shared';

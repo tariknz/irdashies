@@ -2,13 +2,14 @@ import { useEffect, useRef } from 'react';
 import { usePitLaneStore } from './PitLaneStore';
 import { useTelemetryValues } from '../TelemetryStore/TelemetryStore';
 import { useSessionStore } from '../SessionStore/SessionStore';
+import type { PitLaneBridge } from '@irdashies/types';
 
 /**
  * Hook that monitors telemetry and detects pit entry/exit positions.
  * This should be mounted once at the app level to continuously track all cars.
  */
-export const usePitLaneDetection = () => {
-  const session = useSessionStore((state) => state.session);
+export const usePitLaneDetection = (bridge: PitLaneBridge | Promise<PitLaneBridge>) => {
+  const trackId = useSessionStore((state) => state.session?.WeekendInfo?.TrackID?.toString() ?? null);
   const carIdxOnPitRoad = useTelemetryValues('CarIdxOnPitRoad') as boolean[] | undefined;
   const carIdxTrackSurface = useTelemetryValues('CarIdxTrackSurface') as number[] | undefined;
   const carIdxLapDistPct = useTelemetryValues('CarIdxLapDistPct') as number[] | undefined;
@@ -28,9 +29,6 @@ export const usePitLaneDetection = () => {
     exit: null,
   });
 
-  // Track ID from session
-  const trackId = session?.WeekendInfo?.TrackID?.toString() ?? null;
-
   // Load pit lane data when track changes
   useEffect(() => {
     if (!trackId) {
@@ -40,17 +38,19 @@ export const usePitLaneDetection = () => {
 
     // Track changed
     if (trackId !== currentTrackId) {
-      // Load from disk via IPC
-      window.electron?.pitLane?.getPitLaneData(trackId).then((data) => {
+      const loadData = async () => {
+        const resolvedBridge = bridge instanceof Promise ? await bridge : bridge;
+        const data = await resolvedBridge.getPitLaneData(trackId);
         setCurrentTrack(trackId, data);
         persistenceRef.current = {
           trackId,
           entry: data?.pitEntryPct ?? null,
           exit: data?.pitExitPct ?? null,
         };
-      });
+      };
+      loadData();
     }
-  }, [trackId, currentTrackId, setCurrentTrack, reset]);
+  }, [trackId, currentTrackId, setCurrentTrack, reset, bridge]);
 
   // Detect pit entry/exit transitions
   useEffect(() => {
@@ -76,7 +76,11 @@ export const usePitLaneDetection = () => {
       if (entryChanged && pitEntryPct !== null) updates.pitEntryPct = pitEntryPct;
       if (exitChanged && pitExitPct !== null) updates.pitExitPct = pitExitPct;
 
-      window.electron?.pitLane?.updatePitLaneData(trackId, updates);
+      const updateData = async () => {
+        const resolvedBridge = bridge instanceof Promise ? await bridge : bridge;
+        await resolvedBridge.updatePitLaneData(trackId, updates);
+      };
+      updateData();
 
       // Update ref
       persistenceRef.current = {
@@ -85,5 +89,5 @@ export const usePitLaneDetection = () => {
         exit: pitExitPct,
       };
     }
-  }, [trackId, pitEntryPct, pitExitPct]);
+  }, [trackId, pitEntryPct, pitExitPct, bridge]);
 };

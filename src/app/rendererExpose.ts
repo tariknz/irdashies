@@ -16,7 +16,5 @@ const pitLaneBridge: PitLaneBridge = {
     ipcRenderer.invoke('pitLane:updateData', trackId, data),
 };
 
-contextBridge.exposeInMainWorld('electron', {
-  pitLane: pitLaneBridge,
-});
+contextBridge.exposeInMainWorld('pitLaneBridge', pitLaneBridge);
 }

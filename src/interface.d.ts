@@ -4,8 +4,6 @@ declare global {
   interface Window {
     irsdkBridge: IrSdkBridge;
     dashboardBridge: DashboardBridge;
-    electron?: {
-      pitLane: PitLaneBridge;
-    };
+    pitLaneBridge: PitLaneBridge;
   }
 }
