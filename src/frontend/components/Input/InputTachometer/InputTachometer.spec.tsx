@@ -26,6 +26,18 @@ describe('Tachometer', () => {
     expect(ledElements.length).toBe(10);
   });
 
+  it('renders car-specific number of LED lights', () => {
+    const { container } = render(
+      <Tachometer 
+        rpm={3000} 
+        maxRpm={8500} 
+        ledColors={['#FFFF0000', '#FF00FF00', '#FF00FF00', '#FFFFFF00', '#FFFFFF00', '#FFFF0000']}
+      />
+    );
+    const ledElements = container.querySelectorAll('.rounded-full');
+    expect(ledElements.length).toBe(5); // ledColors.length - 1 (subtract redline color)
+  });
+
   it('lights up correct number of LEDs based on RPM percentage', () => {
     const { container } = render(
       <Tachometer rpm={4250} maxRpm={8500} shiftRpm={7650} />
@@ -89,6 +101,26 @@ describe('Tachometer', () => {
     expect(ledElements.length).toBe(10);
     const firstLedColor = (ledElements[0] as HTMLElement).style.backgroundColor;
     expect(firstLedColor).toBeTruthy();
+  });
+
+  it('uses car-specific RPM thresholds when available', () => {
+    const gearRpmThresholds = [7500, 4500, 5000, 5500, 6000, 6500, 7000];
+    const { container } = render(
+      <Tachometer 
+        rpm={5250} 
+        maxRpm={8500} 
+        gearRpmThresholds={gearRpmThresholds}
+      />
+    );
+    const ledElements = container.querySelectorAll('.rounded-full');
+    
+    // At 5250 RPM, should light up LEDs with thresholds <= 5250
+    // That would be: 4500, 5000 (indices 1, 2 in the array, so LEDs 0, 1)
+    for (let i = 0; i < 2; i++) {
+      const bgColor = (ledElements[i] as HTMLElement).style.backgroundColor;
+      expect(bgColor).toBeTruthy();
+      expect(bgColor).not.toBe('rgb(31, 41, 55)');
+    }
   });
 
   it('renders RPM text display', () => {
