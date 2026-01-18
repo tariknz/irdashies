@@ -40,6 +40,8 @@ export class OverlayManager {
         if (!window.isVisible()) return;
         if (this.overlayAlwaysOnTop) {
           window.setAlwaysOnTop(true, 'screen-saver', 1);
+        } else {
+          window.setAlwaysOnTop(false);
         }
       });
     }, 5000);
