@@ -82,7 +82,7 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
         estTimeDelta += playerEstLapTime;
       }
 
-      // 4. Clamping (The C# Logic)
+      // 4. Clamping
       // This prevents 'ghosting' where the UI says a car is ahead when it's physically behind.
       // We use the relativePct logic to determine physical track order.
       let distPctDiff = otherDistPct - playerDistPct;
