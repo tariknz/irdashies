@@ -3,7 +3,7 @@
 export interface DriverRatingBadgeProps {
   license?: string;
   rating?: number;
-  format?: 'license-color-rating-bw' | 'license-color-rating-bw-no-license' | 'rating-color-no-license' | 'license-bw-rating-bw' | 'rating-only-bw-rating-bw' | 'license-bw-rating-bw-no-license' | 'rating-bw-no-license' | 'rating-only-color-rating-bw';
+  format?: 'license-color-fullrating-bw' |'license-color-rating-bw' | 'license-color-rating-bw-no-license' | 'rating-color-no-license' | 'license-bw-rating-bw' | 'rating-only-bw-rating-bw' | 'license-bw-rating-bw-no-license' | 'rating-bw-no-license' | 'rating-only-color-rating-bw';
 }
 
 export const DriverRatingBadge = ({
@@ -35,6 +35,21 @@ export const DriverRatingBadge = ({
   }) || license || 'R 0.0';
 
   switch (format) {
+    case 'license-color-fullrating-bw':
+      // License = colored badge, full irating (no 1.4k approx), rating in B&W
+      return (
+        <div className="flex gap-1 items-center">
+          <div
+            className={`text-white text-nowrap border-2 px-1 rounded-md text-xs leading-tight ${color}`}
+          >
+            {formattedLicense} {safetyRating}
+          </div>
+          <div className="bg-white/10 text-white border-2 border-transparent px-1 rounded-md text-xs leading-tight">
+            {rating}
+          </div>
+        </div>
+      );
+
     case 'license-color-rating-bw':
       // Default format: License + colored badge, rating in B&W
       return (
