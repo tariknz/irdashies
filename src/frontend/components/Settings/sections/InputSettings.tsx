@@ -28,6 +28,7 @@ const defaultConfig: InputWidgetSettings['config'] = {
     enabled: true,
     includeThrottle: true,
     includeBrake: true,
+    includeClutch: true,
     includeAbs: true,
     includeSteer: true,
     strokeWidth: 3,
@@ -58,10 +59,14 @@ const defaultConfig: InputWidgetSettings['config'] = {
   background: { opacity: 0 },
   displayOrder: sortableSettings.map((s) => s.id),
   showOnlyWhenOnTrack: true,
-  sessionVisibility: { race: true, loneQualify: true, openQualify: true, practice: true, offlineTesting: true }
+  sessionVisibility: {
+    race: true,
+    loneQualify: true,
+    openQualify: true,
+    practice: true,
+    offlineTesting: true,
+  },
 };
-
-
 
 const migrateConfig = (savedConfig: unknown): InputWidgetSettings['config'] => {
   if (!savedConfig || typeof savedConfig !== 'object') return defaultConfig;
@@ -79,6 +84,9 @@ const migrateConfig = (savedConfig: unknown): InputWidgetSettings['config'] => {
       includeBrake:
         (config.trace as { includeBrake?: boolean })?.includeBrake ??
         defaultConfig.trace.includeBrake,
+      includeClutch:
+        (config.trace as { includeClutch?: boolean })?.includeClutch ??
+        defaultConfig.trace.includeClutch,
       includeAbs:
         (config.trace as { includeAbs?: boolean })?.includeAbs ??
         defaultConfig.trace.includeAbs,
@@ -94,7 +102,8 @@ const migrateConfig = (savedConfig: unknown): InputWidgetSettings['config'] => {
     },
     bar: {
       enabled:
-        (config.bar as { enabled?: boolean })?.enabled ?? defaultConfig.bar.enabled,
+        (config.bar as { enabled?: boolean })?.enabled ??
+        defaultConfig.bar.enabled,
       includeClutch:
         (config.bar as { includeClutch?: boolean })?.includeClutch ??
         defaultConfig.bar.includeClutch,
@@ -122,11 +131,16 @@ const migrateConfig = (savedConfig: unknown): InputWidgetSettings['config'] => {
         defaultConfig.steer.enabled,
       config: {
         style:
-          ((config.steer as { config?: { style?: 'formula' | 'lmp' | 'nascar' | 'ushape' | 'default' } })?.config?.style) ??
-          defaultConfig.steer.config.style,
+          (
+            config.steer as {
+              config?: {
+                style?: 'formula' | 'lmp' | 'nascar' | 'ushape' | 'default';
+              };
+            }
+          )?.config?.style ?? defaultConfig.steer.config.style,
         color:
-          ((config.steer as { config?: { color?: 'dark' | 'light' } })?.config?.color) ??
-          defaultConfig.steer.config.color,
+          (config.steer as { config?: { color?: 'dark' | 'light' } })?.config
+            ?.color ?? defaultConfig.steer.config.color,
       },
     },
     tachometer: {
@@ -140,9 +154,14 @@ const migrateConfig = (savedConfig: unknown): InputWidgetSettings['config'] => {
     background: {
       opacity: (config.background as { opacity?: number })?.opacity ?? 0,
     },
-    displayOrder: mergeDisplayOrder(sortableSettings.map((s) => s.id), config.displayOrder as string[]),
+    displayOrder: mergeDisplayOrder(
+      sortableSettings.map((s) => s.id),
+      config.displayOrder as string[]
+    ),
     showOnlyWhenOnTrack: (config.showOnlyWhenOnTrack as boolean) ?? true,
-    sessionVisibility: (config.sessionVisibility as SessionVisibilitySettings) ?? defaultConfig.sessionVisibility,
+    sessionVisibility:
+      (config.sessionVisibility as SessionVisibilitySettings) ??
+      defaultConfig.sessionVisibility,
   };
 };
 
@@ -153,7 +172,12 @@ interface DisplaySettingsListProps {
   handleConfigChange: (changes: Partial<InputWidgetSettings['config']>) => void;
 }
 
-const DisplaySettingsList = ({ itemsOrder, onReorder, settings, handleConfigChange }: DisplaySettingsListProps) => {
+const DisplaySettingsList = ({
+  itemsOrder,
+  onReorder,
+  settings,
+  handleConfigChange,
+}: DisplaySettingsListProps) => {
   const items = itemsOrder
     .map((id) => {
       const setting = sortableSettings.find((s) => s.id === id);
@@ -189,7 +213,10 @@ const DisplaySettingsList = ({ itemsOrder, onReorder, settings, handleConfigChan
               <ToggleSwitch
                 enabled={isEnabled}
                 onToggle={(enabled) => {
-                  const cv = settings.config[setting.configKey] as { enabled: boolean; [key: string]: unknown };
+                  const cv = settings.config[setting.configKey] as {
+                    enabled: boolean;
+                    [key: string]: unknown;
+                  };
                   handleConfigChange({
                     [setting.configKey]: { ...cv, enabled },
                   });
@@ -206,7 +233,7 @@ const DisplaySettingsList = ({ itemsOrder, onReorder, settings, handleConfigChan
 export const InputSettings = () => {
   const { currentDashboard } = useDashboard();
   const savedSettings = currentDashboard?.widgets.find(
-    (w) => w.id === SETTING_ID,
+    (w) => w.id === SETTING_ID
   ) as InputWidgetSettings | undefined;
   const [settings, setSettings] = useState<InputWidgetSettings>({
     enabled: savedSettings?.enabled ?? false,
@@ -263,7 +290,9 @@ export const InputSettings = () => {
 
             {/* Background Settings */}
             <div className="flex items-center gap-3">
-              <label className="text-sm text-slate-200">Background Opacity:</label>
+              <label className="text-sm text-slate-200">
+                Background Opacity:
+              </label>
               <input
                 type="range"
                 min="0"
@@ -293,7 +322,9 @@ export const InputSettings = () => {
             {/* Show Only When On Track Settings */}
             <div className="flex items-center justify-between">
               <div>
-                <h4 className="text-md font-medium text-slate-300">Show Only When On Track</h4>
+                <h4 className="text-md font-medium text-slate-300">
+                  Show Only When On Track
+                </h4>
                 <p className="text-sm text-slate-400">
                   If enabled, inputs will only be shown when you are driving.
                 </p>
@@ -311,11 +342,15 @@ export const InputSettings = () => {
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-medium text-slate-200">Trace</h3>
                 <div className="flex items-center gap-3">
-                  <span className="text-sm text-slate-300">Enable Trace Display</span>
+                  <span className="text-sm text-slate-300">
+                    Enable Trace Display
+                  </span>
                   <ToggleSwitch
                     enabled={config.trace.enabled}
                     onToggle={(enabled) =>
-                      handleConfigChange({ trace: { ...config.trace, enabled } })
+                      handleConfigChange({
+                        trace: { ...config.trace, enabled },
+                      })
                     }
                   />
                 </div>
@@ -328,12 +363,17 @@ export const InputSettings = () => {
                       checked={config.trace.includeThrottle}
                       onChange={(e) =>
                         handleConfigChange({
-                          trace: { ...config.trace, includeThrottle: e.target.checked },
+                          trace: {
+                            ...config.trace,
+                            includeThrottle: e.target.checked,
+                          },
                         })
                       }
                       className="form-checkbox h-4 w-4 text-blue-500 rounded border-slate-500 bg-slate-700"
                     />
-                    <span className="text-sm text-slate-200">Show Throttle Trace</span>
+                    <span className="text-sm text-slate-200">
+                      Show Throttle Trace
+                    </span>
                   </label>
                   <label className="flex items-center space-x-2">
                     <input
@@ -341,12 +381,17 @@ export const InputSettings = () => {
                       checked={config.trace.includeBrake}
                       onChange={(e) =>
                         handleConfigChange({
-                          trace: { ...config.trace, includeBrake: e.target.checked },
+                          trace: {
+                            ...config.trace,
+                            includeBrake: e.target.checked,
+                          },
                         })
                       }
                       className="form-checkbox h-4 w-4 text-blue-500 rounded border-slate-500 bg-slate-700"
                     />
-                    <span className="text-sm text-slate-200">Show Brake Trace</span>
+                    <span className="text-sm text-slate-200">
+                      Show Brake Trace
+                    </span>
                   </label>
                   <label className="flex items-center space-x-2">
                     <input
@@ -354,12 +399,17 @@ export const InputSettings = () => {
                       checked={config.trace.includeAbs}
                       onChange={(e) =>
                         handleConfigChange({
-                          trace: { ...config.trace, includeAbs: e.target.checked },
+                          trace: {
+                            ...config.trace,
+                            includeAbs: e.target.checked,
+                          },
                         })
                       }
                       className="form-checkbox h-4 w-4 text-blue-500 rounded border-slate-500 bg-slate-700"
                     />
-                    <span className="text-sm text-slate-200">Show ABS Visual Indicator</span>
+                    <span className="text-sm text-slate-200">
+                      Show ABS Visual Indicator
+                    </span>
                   </label>
                   <label className="flex items-center space-x-2">
                     <input
@@ -367,15 +417,22 @@ export const InputSettings = () => {
                       checked={config.trace.includeSteer ?? true}
                       onChange={(e) =>
                         handleConfigChange({
-                          trace: { ...config.trace, includeSteer: e.target.checked },
+                          trace: {
+                            ...config.trace,
+                            includeSteer: e.target.checked,
+                          },
                         })
                       }
                       className="form-checkbox h-4 w-4 text-blue-500 rounded border-slate-500 bg-slate-700"
                     />
-                    <span className="text-sm text-slate-200">Show Steering Trace</span>
+                    <span className="text-sm text-slate-200">
+                      Show Steering Trace
+                    </span>
                   </label>
                   <div className="flex items-center gap-3 pt-2">
-                    <label className="text-sm text-slate-200">Stroke Width:</label>
+                    <label className="text-sm text-slate-200">
+                      Stroke Width:
+                    </label>
                     <input
                       type="range"
                       min="1"
@@ -383,7 +440,10 @@ export const InputSettings = () => {
                       value={config.trace.strokeWidth ?? 3}
                       onChange={(e) =>
                         handleConfigChange({
-                          trace: { ...config.trace, strokeWidth: parseInt(e.target.value) },
+                          trace: {
+                            ...config.trace,
+                            strokeWidth: parseInt(e.target.value),
+                          },
                         })
                       }
                       className="flex-1 h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer slider"
@@ -395,14 +455,19 @@ export const InputSettings = () => {
                       value={config.trace.strokeWidth ?? 3}
                       onChange={(e) =>
                         handleConfigChange({
-                          trace: { ...config.trace, strokeWidth: parseInt(e.target.value) },
+                          trace: {
+                            ...config.trace,
+                            strokeWidth: parseInt(e.target.value),
+                          },
                         })
                       }
                       className="w-20 bg-slate-700 text-slate-200 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
                   <div className="flex items-center gap-3">
-                    <label className="text-sm text-slate-200">Max Samples:</label>
+                    <label className="text-sm text-slate-200">
+                      Max Samples:
+                    </label>
                     <input
                       type="range"
                       min="50"
@@ -411,7 +476,10 @@ export const InputSettings = () => {
                       value={config.trace.maxSamples}
                       onChange={(e) =>
                         handleConfigChange({
-                          trace: { ...config.trace, maxSamples: parseInt(e.target.value) },
+                          trace: {
+                            ...config.trace,
+                            maxSamples: parseInt(e.target.value),
+                          },
                         })
                       }
                       className="flex-1 h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer slider"
@@ -423,7 +491,10 @@ export const InputSettings = () => {
                       value={config.trace.maxSamples}
                       onChange={(e) =>
                         handleConfigChange({
-                          trace: { ...config.trace, maxSamples: parseInt(e.target.value) },
+                          trace: {
+                            ...config.trace,
+                            maxSamples: parseInt(e.target.value),
+                          },
                         })
                       }
                       className="w-20 bg-slate-700 text-slate-200 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -438,7 +509,9 @@ export const InputSettings = () => {
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-medium text-slate-200">Bar</h3>
                 <div className="flex items-center gap-3">
-                  <span className="text-sm text-slate-300">Enable Bar Display</span>
+                  <span className="text-sm text-slate-300">
+                    Enable Bar Display
+                  </span>
                   <ToggleSwitch
                     enabled={config.bar.enabled}
                     onToggle={(enabled) =>
@@ -455,12 +528,17 @@ export const InputSettings = () => {
                       checked={config.bar.includeClutch}
                       onChange={(e) =>
                         handleConfigChange({
-                          bar: { ...config.bar, includeClutch: e.target.checked },
+                          bar: {
+                            ...config.bar,
+                            includeClutch: e.target.checked,
+                          },
                         })
                       }
                       className="form-checkbox h-4 w-4 text-blue-500 rounded border-slate-500 bg-slate-700"
                     />
-                    <span className="text-sm text-slate-200">Show Clutch Bar</span>
+                    <span className="text-sm text-slate-200">
+                      Show Clutch Bar
+                    </span>
                   </label>
                   <label className="flex items-center space-x-2">
                     <input
@@ -468,12 +546,17 @@ export const InputSettings = () => {
                       checked={config.bar.includeBrake}
                       onChange={(e) =>
                         handleConfigChange({
-                          bar: { ...config.bar, includeBrake: e.target.checked },
+                          bar: {
+                            ...config.bar,
+                            includeBrake: e.target.checked,
+                          },
                         })
                       }
                       className="form-checkbox h-4 w-4 text-blue-500 rounded border-slate-500 bg-slate-700"
                     />
-                    <span className="text-sm text-slate-200">Show Brake Bar</span>
+                    <span className="text-sm text-slate-200">
+                      Show Brake Bar
+                    </span>
                   </label>
                   <label className="flex items-center space-x-2">
                     <input
@@ -481,12 +564,17 @@ export const InputSettings = () => {
                       checked={config.bar.includeThrottle}
                       onChange={(e) =>
                         handleConfigChange({
-                          bar: { ...config.bar, includeThrottle: e.target.checked },
+                          bar: {
+                            ...config.bar,
+                            includeThrottle: e.target.checked,
+                          },
                         })
                       }
                       className="form-checkbox h-4 w-4 text-blue-500 rounded border-slate-500 bg-slate-700"
                     />
-                    <span className="text-sm text-slate-200">Show Throttle Bar</span>
+                    <span className="text-sm text-slate-200">
+                      Show Throttle Bar
+                    </span>
                   </label>
                   <label className="flex items-center space-x-2">
                     <input
@@ -499,7 +587,9 @@ export const InputSettings = () => {
                       }
                       className="form-checkbox h-4 w-4 text-blue-500 rounded border-slate-500 bg-slate-700"
                     />
-                    <span className="text-sm text-slate-200">Show ABS Visual Indicator</span>
+                    <span className="text-sm text-slate-200">
+                      Show ABS Visual Indicator
+                    </span>
                   </label>
                 </div>
               )}
@@ -508,9 +598,7 @@ export const InputSettings = () => {
             {/* Steer Settings */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium text-slate-200">
-                  Steer
-                </h3>
+                <h3 className="text-lg font-medium text-slate-200">Steer</h3>
                 <div className="flex items-center gap-3">
                   <span className="text-sm text-slate-300">
                     Enable Steer Display
@@ -518,7 +606,9 @@ export const InputSettings = () => {
                   <ToggleSwitch
                     enabled={config.steer.enabled}
                     onToggle={(enabled) =>
-                      handleConfigChange({ steer: { ...config.steer, enabled } })
+                      handleConfigChange({
+                        steer: { ...config.steer, enabled },
+                      })
                     }
                   />
                 </div>
@@ -526,7 +616,9 @@ export const InputSettings = () => {
               {config.steer.enabled && (
                 <div className="space-y-3 pl-4 pt-2">
                   <div className="flex items-center gap-3">
-                    <label className="text-sm text-slate-200">Wheel Style:</label>
+                    <label className="text-sm text-slate-200">
+                      Wheel Style:
+                    </label>
                     <select
                       value={config.steer.config.style}
                       onChange={(e) =>
@@ -535,7 +627,12 @@ export const InputSettings = () => {
                             ...config.steer,
                             config: {
                               ...config.steer.config,
-                              style: e.target.value as 'formula' | 'lmp' | 'nascar' | 'ushape' | 'default',
+                              style: e.target.value as
+                                | 'formula'
+                                | 'lmp'
+                                | 'nascar'
+                                | 'ushape'
+                                | 'default',
                             },
                           },
                         })
@@ -550,7 +647,9 @@ export const InputSettings = () => {
                     </select>
                   </div>
                   <div className="flex items-center gap-3">
-                    <label className="text-sm text-slate-200">Wheel Color:</label>
+                    <label className="text-sm text-slate-200">
+                      Wheel Color:
+                    </label>
                     <select
                       value={config.steer.config.color}
                       onChange={(e) =>
@@ -579,7 +678,9 @@ export const InputSettings = () => {
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-medium text-slate-200">Gear</h3>
                 <div className="flex items-center gap-3">
-                  <span className="text-sm text-slate-300">Enable Gear Display</span>
+                  <span className="text-sm text-slate-300">
+                    Enable Gear Display
+                  </span>
                   <ToggleSwitch
                     enabled={config.gear.enabled}
                     onToggle={(enabled) =>
@@ -653,13 +754,19 @@ export const InputSettings = () => {
             {/* Tachometer Settings */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium text-slate-200">Tachometer</h3>
+                <h3 className="text-lg font-medium text-slate-200">
+                  Tachometer
+                </h3>
                 <div className="flex items-center gap-3">
-                  <span className="text-sm text-slate-300">Enable Tachometer Display</span>
+                  <span className="text-sm text-slate-300">
+                    Enable Tachometer Display
+                  </span>
                   <ToggleSwitch
                     enabled={config.tachometer.enabled}
                     onToggle={(enabled) =>
-                      handleConfigChange({ tachometer: { ...config.tachometer, enabled } })
+                      handleConfigChange({
+                        tachometer: { ...config.tachometer, enabled },
+                      })
                     }
                   />
                 </div>
@@ -667,11 +774,15 @@ export const InputSettings = () => {
               {config.tachometer.enabled && (
                 <div className="space-y-3 pl-4 pt-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-slate-300">Show RPM Text</span>
+                    <span className="text-sm text-slate-300">
+                      Show RPM Text
+                    </span>
                     <ToggleSwitch
                       enabled={config.tachometer.showRpmText}
                       onToggle={(showRpmText) =>
-                        handleConfigChange({ tachometer: { ...config.tachometer, showRpmText } })
+                        handleConfigChange({
+                          tachometer: { ...config.tachometer, showRpmText },
+                        })
                       }
                     />
                   </div>
@@ -681,7 +792,9 @@ export const InputSettings = () => {
             {/* Session Visibility Settings */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium text-slate-200">Session Visibility</h3>
+                <h3 className="text-lg font-medium text-slate-200">
+                  Session Visibility
+                </h3>
               </div>
               <div className="space-y-3 pl-4">
                 <SessionVisibility
