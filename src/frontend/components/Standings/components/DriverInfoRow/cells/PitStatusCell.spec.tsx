@@ -45,4 +45,30 @@ describe('PitStatusCell', () => {
     const td = container.querySelector('td[data-column="pitStatus"]');
     expect(td?.className).toContain('w-[7rem]');
   });
+
+  it('shows OUT status when conditions are met', () => {
+    const { container } = renderInTable(
+      <PitStatusCell
+        onPitRoad={false}
+        lastPitLap={3}
+        lastLap={3}
+        carTrackSurface={1}
+      />
+    );
+
+    expect(container.textContent).toContain('OUT');
+  });
+
+  it('does not show OUT when car is off track', () => {
+    const { container } = renderInTable(
+      <PitStatusCell
+        onPitRoad={false}
+        lastPitLap={3}
+        lastLap={3}
+        carTrackSurface={-1}
+      />
+    );
+
+    expect(container.textContent).not.toContain('OUT');
+  });
 });

@@ -30,49 +30,6 @@ describe('DriverNameCell', () => {
     expect(container.textContent).not.toContain('Driver A');
   });
 
-  it('shows OUT status when conditions are met', () => {
-    const { container } = renderInTable(
-      <DriverNameCell
-        name="Driver A"
-        onPitRoad={false}
-        lastPitLap={3}
-        lastLap={3}
-        carTrackSurface={1}
-      />
-    );
-
-    expect(container.textContent).toContain('OUT');
-  });
-
-  it('does not show OUT when showStatusBadges is false', () => {
-    const { container } = renderInTable(
-      <DriverNameCell
-        name="Driver A"
-        showStatusBadges={false}
-        onPitRoad={false}
-        lastPitLap={3}
-        lastLap={3}
-        carTrackSurface={1}
-      />
-    );
-
-    expect(container.textContent).not.toContain('OUT');
-  });
-
-  it('does not show OUT when car is off track', () => {
-    const { container } = renderInTable(
-      <DriverNameCell
-        name="Driver A"
-        onPitRoad={false}
-        lastPitLap={3}
-        lastLap={3}
-        carTrackSurface={-1}
-      />
-    );
-
-    expect(container.textContent).not.toContain('OUT');
-  });
-
   it('toggles radio icon visibility based on radioActive', () => {
     const { container, rerender } = renderInTable(
       <DriverNameCell name="Driver A" radioActive />
