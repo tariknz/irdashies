@@ -576,6 +576,7 @@ export const defaultDashboard: DashboardLayout = {
     "colorPalette": "black",
     "highlightColor": 960745,
     "skipTaskbar": true,
-    "disableHardwareAcceleration": false
+    "disableHardwareAcceleration": false,
+    "overlayAlwaysOnTop": true
   }
 };
