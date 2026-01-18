@@ -68,6 +68,8 @@ export const DriverStatusBadges = memo(
       return null;
     }
 
+    const pitDuration = <>{showPitTime && lastPitLap && lastPitLap > 1 && pitStopDuration && <span className="text-yellow-500">{pitStopDuration} s</span>}</>;
+
     return (
       <div className={`flex flex-row-reverse items-center gap-0.5 ${className}`}>
         {penalty && (
@@ -97,7 +99,7 @@ export const DriverStatusBadges = memo(
         )}
         {out && (
           <StatusBadge borderColorClass="border-green-700">
-            OUT{showPitTime && pitStopDuration && <span className="text-green-500"> {pitStopDuration} s</span>}
+            OUT {pitDuration}
           </StatusBadge>
         )}
         {pit && (
@@ -107,7 +109,7 @@ export const DriverStatusBadges = memo(
         )}
         {lastPit && !out && (
           <StatusBadge borderColorClass="border-yellow-500">
-            L {lastPitLap}{showPitTime && <span className="text-yellow-500">{pitStopDuration && ` ${pitStopDuration} s`}</span>}
+            L {lastPitLap} {pitDuration}
           </StatusBadge>
         )}
       </div>
