@@ -9,6 +9,7 @@ const SETTING_ID = 'flatmap';
 
 const defaultConfig: FlatTrackMapWidgetSettings['config'] = {
   showCarNumbers: true,
+  displayMode: 'carNumber',
   driverCircleSize: 40,
   playerCircleSize: 40,
   trackLineWidth: 20,
@@ -25,6 +26,7 @@ const migrateConfig = (savedConfig: unknown): FlatTrackMapWidgetSettings['config
   const config = savedConfig as Record<string, unknown>;
   return {
     showCarNumbers: (config.showCarNumbers as boolean) ?? defaultConfig.showCarNumbers,
+    displayMode: (config.displayMode as 'carNumber' | 'sessionPosition') ?? defaultConfig.displayMode,
     driverCircleSize: (config.driverCircleSize as number) ?? defaultConfig.driverCircleSize,
     playerCircleSize: (config.playerCircleSize as number) ?? defaultConfig.playerCircleSize,
     trackLineWidth: (config.trackLineWidth as number) ?? defaultConfig.trackLineWidth,
@@ -75,6 +77,30 @@ export const FlatTrackMapSettings = () => {
                 })
               }
             />
+          </div>
+
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-slate-300">Display Mode</span>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => handleConfigChange({ displayMode: 'carNumber' })}
+                className={`px-3 py-1 rounded text-sm transition-colors ${settings.config.displayMode === 'carNumber'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
+                  }`}
+              >
+                Car Number
+              </button>
+              <button
+                onClick={() => handleConfigChange({ displayMode: 'sessionPosition' })}
+                className={`px-3 py-1 rounded text-sm transition-colors ${settings.config.displayMode === 'sessionPosition'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
+                  }`}
+              >
+                Session Position
+              </button>
+            </div>
           </div>
 
           <div className="space-y-2">

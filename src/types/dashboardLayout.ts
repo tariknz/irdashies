@@ -32,6 +32,8 @@ export interface GeneralSettingsType {
   highlightColor?: number;
   skipTaskbar?: boolean;
   disableHardwareAcceleration?: boolean;
+  enableAutoStart?: boolean;
+  compactMode?: boolean;
 }
 
 export interface DashboardLayout {
