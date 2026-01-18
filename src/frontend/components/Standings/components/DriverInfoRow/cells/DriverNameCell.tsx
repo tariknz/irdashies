@@ -6,10 +6,6 @@ interface DriverNameCellProps {
   hidden?: boolean;
   name: string;
   radioActive?: boolean;
-  onPitRoad?: boolean;
-  carTrackSurface?: number;
-  lastPitLap?: number;
-  lastLap?: number;
   repair?: boolean;
   penalty?: boolean;
   slowdown?: boolean;
@@ -21,21 +17,11 @@ export const DriverNameCell = memo(
     hidden,
     name,
     radioActive,
-    onPitRoad,
-    carTrackSurface,
-    lastPitLap,
-    lastLap,
     repair,
     penalty,
     slowdown,
     showStatusBadges = true,
   }: DriverNameCellProps) => {
-    const out =
-      !onPitRoad &&
-      !!lastPitLap &&
-      lastPitLap == lastLap &&
-      carTrackSurface != -1;
-
     return (
       <td 
         data-column="driverName" 
@@ -56,7 +42,6 @@ export const DriverNameCell = memo(
               repair={repair}
               penalty={penalty}
               slowdown={slowdown}
-              out={out}
               className="shrink-0"
             />
           )}

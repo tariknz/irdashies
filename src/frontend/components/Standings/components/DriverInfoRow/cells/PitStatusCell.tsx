@@ -45,6 +45,11 @@ export const PitStatusCell = memo(
       !!lastPitLap &&
       lastPitLap > 1 &&
       carTrackSurface != -1;
+    const out =
+      !onPitRoad &&
+      !!lastPitLap &&
+      lastPitLap == lastLap &&
+      carTrackSurface != -1;
 
     return (
       <td
@@ -59,6 +64,7 @@ export const PitStatusCell = memo(
             dnf={dnf}
             tow={tow}
             pit={pit}
+            out={out}
             lastPit={lastPit}
             lastPitLap={lastPitLap}
             pitStopDuration={pitStopDuration}
