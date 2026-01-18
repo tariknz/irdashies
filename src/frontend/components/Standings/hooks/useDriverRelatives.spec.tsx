@@ -19,7 +19,8 @@ vi.mock('./useDriverPositions', () => ({
 }));
 
 // Import mocked functions after vi.mock
-const { useFocusCarIdx, useTelemetryValues, useSessionStore } = await import('@irdashies/context');
+const { useFocusCarIdx, useTelemetryValues, useSessionStore } =
+  await import('@irdashies/context');
 const { useDriverStandings } = await import('./useDriverPositions');
 
 describe('useDriverRelatives', () => {
@@ -47,7 +48,7 @@ describe('useDriverRelatives', () => {
         relativeSpeed: 1.0,
         estLapTime: 100,
       },
-      currentSessionType: "Race",
+      currentSessionType: 'Race',
       dnf: false,
       repair: false,
       penalty: false,
@@ -76,11 +77,11 @@ describe('useDriverRelatives', () => {
         relativeSpeed: 1.0,
         estLapTime: 100,
       },
-      currentSessionType: "Race",
+      currentSessionType: 'Race',
       dnf: false,
       repair: false,
       penalty: false,
-      slowdown: false
+      slowdown: false,
     },
     {
       carIdx: 2,
@@ -105,11 +106,11 @@ describe('useDriverRelatives', () => {
         relativeSpeed: 1.0,
         estLapTime: 100,
       },
-      currentSessionType: "Race",
+      currentSessionType: 'Race',
       dnf: false,
       repair: false,
       penalty: false,
-      slowdown: false
+      slowdown: false,
     },
   ];
 
@@ -272,5 +273,98 @@ describe('useDriverRelatives', () => {
     // Should not include the off-track car
     expect(result.current).toHaveLength(2);
     expect(result.current.some((driver) => driver.carIdx === 1)).toBe(false);
+  });
+
+  it('should scale delta correctly for multiclass (faster car behind)', () => {
+    const playerGT3 = {
+      ...mockDrivers[0],
+      carClass: { ...mockDrivers[0].carClass, estLapTime: 100 },
+    };
+    const opponentLMP2 = {
+      ...mockDrivers[2],
+      carClass: { ...mockDrivers[2].carClass, estLapTime: 80 },
+    }; // Faster class
+
+    vi.mocked(useDriverStandings).mockReturnValue([
+      playerGT3,
+      mockDrivers[1],
+      opponentLMP2,
+    ]);
+
+    // Opponent (car 2) is physically 10% behind
+    // DistPct: Player = 0.5, Opponent = 0.4
+    // Raw EstTime: Player = 100, Opponent = 92
+    // Calculation: 92 * (100 / 80) = 115. Gap = 115 - 100 = +15 seconds?
+    // Wait, if they are behind, the gap should be negative.
+    // Raw EstTime for behind usually is lower than player. Let's use:
+    // Player = 50, Opponent = 40.
+    // Scaled Opponent = 40 * (100 / 80) = 50.
+    // If the opponent is slower or further back, the math should result in a negative delta.
+
+    vi.mocked(useTelemetryValues).mockImplementation((key: string) => {
+      if (key === 'CarIdxLapDistPct') return [0.5, 0.6, 0.4];
+      if (key === 'CarIdxEstTime') return [50, 60, 32]; // Opponent raw gap is -18s in THEIR class
+      return [];
+    });
+
+    const { result } = renderHook(() => useDriverRelatives({ buffer: 2 }));
+    const opponent = result.current.find((d) => d.carIdx === 2);
+
+    // Scaling: 32 * (100 / 80) = 40.
+    // Delta: 40 - 50 = -10.
+    // In player seconds, the 10% distance gap = 10s (since lap is 100s).
+    expect(opponent?.delta).toBeCloseTo(-10);
+  });
+
+  it('should clamp delta when EstTime suggests a car is ahead but it is physically behind', () => {
+    // Scenario: iRacing's EstTime is jittering (e.g., car just exited pits)
+    // Physically: Car 2 is at 0.4 (BEHIND player at 0.5)
+    // Telemetry: Car 2 EstTime is 110, Player EstTime is 100 (Suggests Car 2 is 10s AHEAD)
+
+    vi.mocked(useTelemetryValues).mockImplementation((key: string) => {
+      if (key === 'CarIdxLapDistPct') return [0.5, 0.6, 0.4];
+      if (key === 'CarIdxEstTime') return [100, 110, 110]; // Car 2 has higher EstTime than player
+      return [];
+    });
+
+    const { result } = renderHook(() => useDriverRelatives({ buffer: 2 }));
+    const opponentBehind = result.current.find((d) => d.carIdx === 2);
+
+    // Clamping logic: If physically behind, delta must be <= 0.
+    expect(opponentBehind?.delta).toBeLessThanOrEqual(0);
+  });
+
+  it('should normalize delta when crossing the Start/Finish line', () => {
+    // Player has just crossed (0.01), Opponent is just about to cross (0.99)
+    // Opponent is actually ~2 seconds behind.
+    // Raw EstTime: Player = 1.0, Opponent = 99.0 (Lap is 100s)
+
+    vi.mocked(useTelemetryValues).mockImplementation((key: string) => {
+      if (key === 'CarIdxLapDistPct') return [0.01, 0.05, 0.99];
+      if (key === 'CarIdxEstTime') return [1.0, 5.0, 99.0];
+      return [];
+    });
+
+    const { result } = renderHook(() => useDriverRelatives({ buffer: 2 }));
+    const opponentBehind = result.current.find((d) => d.carIdx === 2);
+
+    // Raw delta would be 99 - 1 = 98s.
+    // Normalized delta (98 - 100) = -2s.
+    expect(opponentBehind?.delta).toBeCloseTo(-2);
+  });
+
+  it('should fallback to distance-based delta if EstTime is wildly inaccurate', () => {
+    // EstTime data is garbage (e.g., 500s difference), but Pct shows they are close
+    vi.mocked(useTelemetryValues).mockImplementation((key: string) => {
+      if (key === 'CarIdxLapDistPct') return [0.5, 0.6, 0.4];
+      if (key === 'CarIdxEstTime') return [100, 110, 1000];
+      return [];
+    });
+
+    const { result } = renderHook(() => useDriverRelatives({ buffer: 2 }));
+    const opponentBehind = result.current.find((d) => d.carIdx === 2);
+
+    // 10% of 100s lap = 10s.
+    expect(opponentBehind?.delta).toBeCloseTo(-10);
   });
 });

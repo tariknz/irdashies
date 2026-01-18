@@ -19,7 +19,9 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
     useSessionStore((s) => s.session?.DriverInfo?.PaceCarIdx) ?? -1;
 
   const standings = useMemo(() => {
-    const driversByCarIdx = new Map(drivers.map(driver => [driver.carIdx, driver]));
+    const driversByCarIdx = new Map(
+      drivers.map((driver) => [driver.carIdx, driver])
+    );
 
     const calculateRelativePct = (carIdx: number) => {
       if (playerIndex === undefined) {
@@ -46,67 +48,60 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
 
     const calculateDelta = (otherCarIdx: number) => {
       const playerCarIdx = playerIndex ?? 0;
-      const player = playerIndex !== undefined ? driversByCarIdx.get(playerIndex) : undefined;
+      const player = driversByCarIdx.get(playerCarIdx);
       const other = driversByCarIdx.get(otherCarIdx);
 
-      // Get class info
-      const playerClassId = player?.carClass?.id;
-      const otherClassId = other?.carClass?.id;
-      const isSameClass = playerClassId !== undefined && playerClassId === otherClassId;
+      if (!player || !other) return 0;
 
-      // Get lap times - use other car's class lap time for cross-class (more accurate for their position)
-      const otherEstLapTime = other?.carClass?.estLapTime ?? 0;
-      const playerEstLapTime = player?.carClass?.estLapTime ?? 0;
-      // For cross-class, use the other car's lap time; for same-class, use the faster time
-      const baseLapTime = isSameClass
-        ? Math.min(playerEstLapTime, otherEstLapTime) || Math.max(playerEstLapTime, otherEstLapTime)
-        : otherEstLapTime || playerEstLapTime;
+      // Use the player's estimated lap time as the "Gold Standard" for all gap display
+      const playerEstLapTime = player.carClass?.estLapTime ?? 0;
+      const otherEstLapTime = other.carClass?.estLapTime ?? 0;
 
-      // Calculate distance-based delta (always needed for sanity check and fallback)
-      const playerDistPct = carIdxLapDistPct?.[playerCarIdx];
-      const otherDistPct = carIdxLapDistPct?.[otherCarIdx];
+      if (playerEstLapTime === 0 || otherEstLapTime === 0) return 0;
 
-      if (playerDistPct === undefined || otherDistPct === undefined) {
-        return 0;
+      // 1. Physical Position (Percent)
+      const playerDistPct = carIdxLapDistPct?.[playerCarIdx] ?? 0;
+      const otherDistPct = carIdxLapDistPct?.[otherCarIdx] ?? 0;
+
+      // 2. Multi-Class Scaling (Even for same class, this normalizes pace-based drift)
+      const playerEstTime = carIdxEstTime?.[playerCarIdx] ?? 0;
+      const otherEstTime = carIdxEstTime?.[otherCarIdx] ?? 0;
+
+      // Scale the opponent's raw time into the player's car's speed units
+      const scaledOtherEstTime =
+        otherEstTime * (playerEstLapTime / otherEstLapTime);
+
+      // 3. Handle the Start/Finish Line Crossing
+      // If one driver has crossed and the other hasn't, the raw EstTime
+      // difference will be ~1 full lap. We must normalize this.
+      let estTimeDelta = scaledOtherEstTime - playerEstTime;
+
+      if (estTimeDelta > playerEstLapTime * 0.5) {
+        estTimeDelta -= playerEstLapTime;
+      } else if (estTimeDelta < -playerEstLapTime * 0.5) {
+        estTimeDelta += playerEstLapTime;
       }
 
-      let distPctDifference = otherDistPct - playerDistPct;
-      if (distPctDifference > 0.5) {
-        distPctDifference -= 1.0;
-      } else if (distPctDifference < -0.5) {
-        distPctDifference += 1.0;
-      }
-      const distanceBasedDelta = distPctDifference * baseLapTime;
+      // 4. Clamping (The C# Logic)
+      // This prevents 'ghosting' where the UI says a car is ahead when it's physically behind.
+      // We use the relativePct logic to determine physical track order.
+      let distPctDiff = otherDistPct - playerDistPct;
+      if (distPctDiff > 0.5) distPctDiff -= 1.0;
+      else if (distPctDiff < -0.5) distPctDiff += 1.0;
 
-      // Check if either car is in pits - CarIdxEstTime is unreliable for pit cars
-      const playerInPits = player?.onPitRoad ?? false;
-      const otherInPits = other?.onPitRoad ?? false;
-
-      // Only use CarIdxEstTime for same-class cars on track
-      // It drifts for cross-class due to different lap speed assumptions
-      if (!isSameClass || playerInPits || otherInPits) {
-        return distanceBasedDelta;
+      if (distPctDiff < 0) {
+        // Other is physically behind: ensure delta is negative (or at most 0)
+        estTimeDelta = Math.min(0, estTimeDelta);
+      } else {
+        // Other is physically ahead: ensure delta is positive (or at least 0)
+        estTimeDelta = Math.max(0, estTimeDelta);
       }
 
-      // Use iRacing's native CarIdxEstTime for same-class gap calculation
-      const playerEstTime = carIdxEstTime?.[playerCarIdx];
-      const otherEstTime = carIdxEstTime?.[otherCarIdx];
-
-      if (playerEstTime === undefined || otherEstTime === undefined) {
-        return distanceBasedDelta;
-      }
-
-      const estTimeDelta = otherEstTime - playerEstTime;
-
-      // Sanity check: CarIdxEstTime can be wrong after pit exit, teleport, or at S/F crossing
-      // 1. Gap must be reasonable (not more than half a lap time)
-      // 2. Sign must match the distance-based calculation (both agree on who is ahead)
-      const maxReasonableGap = baseLapTime * 0.5;
-      const signsMatch = (estTimeDelta >= 0) === (distanceBasedDelta >= 0) ||
-                         Math.abs(distanceBasedDelta) < 0.5; // Allow small deltas where sign might flip
-      const estTimeIsSane = Math.abs(estTimeDelta) < maxReasonableGap && signsMatch;
-
-      if (!estTimeIsSane) {
+      // 5. Emergency Fallback
+      // If EstTime is still wildly different from distance-based time,
+      // someone likely just teleported or the data is stale.
+      const distanceBasedDelta = distPctDiff * playerEstLapTime;
+      if (Math.abs(estTimeDelta - distanceBasedDelta) > 5.0) {
         return distanceBasedDelta;
       }
 
@@ -114,10 +109,11 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
     };
 
     const sortedDrivers = drivers
-      .filter((driver) =>
-        (driver.onTrack || driver.carIdx === playerIndex) &&
-        driver.carIdx > -1 &&
-        driver.carIdx !== paceCarIdx
+      .filter(
+        (driver) =>
+          (driver.onTrack || driver.carIdx === playerIndex) &&
+          driver.carIdx > -1 &&
+          driver.carIdx !== paceCarIdx
       )
       .map((result) => {
         const relativePct = calculateRelativePct(result.carIdx);
@@ -130,7 +126,7 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
       .filter((result) => !isNaN(result.relativePct) && !isNaN(result.delta));
 
     const playerArrIndex = sortedDrivers.findIndex(
-      (result) => result.carIdx === playerIndex,
+      (result) => result.carIdx === playerIndex
     );
 
     // if the player is not in the list, return an empty array
@@ -152,7 +148,14 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
       .slice(0, buffer);
 
     return [...driversAhead, player, ...driversBehind];
-  }, [buffer, playerIndex, carIdxLapDistPct, drivers, paceCarIdx, carIdxEstTime]);
+  }, [
+    buffer,
+    playerIndex,
+    carIdxLapDistPct,
+    drivers,
+    paceCarIdx,
+    carIdxEstTime,
+  ]);
 
   return standings;
 };
