@@ -97,7 +97,7 @@ export const DriverStatusBadges = memo(
         )}
         {out && (
           <StatusBadge borderColorClass="border-green-700">
-            OUT
+            OUT{showPitTime && pitStopDuration && <span className="text-green-500"> {pitStopDuration} s</span>}
           </StatusBadge>
         )}
         {pit && (
@@ -105,7 +105,7 @@ export const DriverStatusBadges = memo(
             PIT
           </StatusBadge>
         )}
-        {lastPit && (
+        {lastPit && !out && (
           <StatusBadge borderColorClass="border-yellow-500">
             L {lastPitLap}{showPitTime && <span className="text-yellow-500">{pitStopDuration && ` ${pitStopDuration} s`}</span>}
           </StatusBadge>
