@@ -94,7 +94,7 @@ export interface StandingsWidgetSettings extends BaseWidgetSettings {
     showOnlyWhenOnTrack: boolean;
     useLivePosition: boolean;
     position: { enabled: boolean };
-    driverName: { enabled: boolean };
+    driverName: { enabled: boolean; showStatusBadges: boolean };
     teamName: { enabled: boolean };
     pitStatus: { enabled: boolean; showPitTime?: boolean };
     displayOrder: string[];
@@ -179,7 +179,7 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
       precision: number;
     };
     position: { enabled: boolean };
-    driverName: { enabled: boolean };
+    driverName: { enabled: boolean; showStatusBadges: boolean };
     teamName: { enabled: boolean };
     pitStatus: { enabled: boolean; showPitTime?: boolean };
     displayOrder: string[];
@@ -220,6 +220,7 @@ export interface TrackMapWidgetSettings extends BaseWidgetSettings {
   config: {
     enableTurnNames: boolean;
     showCarNumbers: boolean;
+    displayMode: 'carNumber' | 'sessionPosition';
     invertTrackColors: boolean;
     driverCircleSize: number;
     playerCircleSize: number;
@@ -322,6 +323,7 @@ export interface RejoinIndicatorWidgetSettings extends BaseWidgetSettings {
 export interface FlatTrackMapWidgetSettings extends BaseWidgetSettings {
   config: {
     showCarNumbers: boolean;
+    displayMode: 'carNumber' | 'sessionPosition';
     driverCircleSize: number;
     playerCircleSize: number;
     trackLineWidth: number;
@@ -355,5 +357,17 @@ export interface FasterCarsFromBehindWidgetSettings extends BaseWidgetSettings {
     showOnlyWhenOnTrack: boolean;
     distanceThreshold: number;
     sessionVisibility: SessionVisibilitySettings;
+  };
+}
+
+export interface PitlaneHelperWidgetSettings extends BaseWidgetSettings {
+  config: {
+    showMode: 'approaching' | 'onPitRoad';
+    approachDistance: number;
+    enablePitLimiterWarning: boolean;
+    enableEarlyPitboxWarning: boolean;
+    earlyPitboxThreshold: number;
+    showPitlaneTraffic: boolean;
+    background: { opacity: number };
   };
 }

@@ -23,7 +23,7 @@ const sortableSettings: SortableSetting[] = [
   { id: 'position', label: 'Position', configKey: 'position' },
   { id: 'carNumber', label: 'Car Number', configKey: 'carNumber' },
   { id: 'countryFlags', label: 'Country Flags', configKey: 'countryFlags' },
-  { id: 'driverName', label: 'Driver Name', configKey: 'driverName' },
+  { id: 'driverName', label: 'Driver Name', configKey: 'driverName', hasSubSetting: true },
   { id: 'teamName', label: 'Team Name', configKey: 'teamName' },
   { id: 'pitStatus', label: 'Pit Status', configKey: 'pitStatus', hasSubSetting: true },
   { id: 'carManufacturer', label: 'Car Manufacturer', configKey: 'carManufacturer', hasSubSetting: true },
@@ -91,7 +91,7 @@ const defaultConfig: StandingsWidgetSettings['config'] = {
   useLivePosition: false,
   lapTimeDeltas: { enabled: false, numLaps: 3 },
   position: { enabled: true },
-  driverName: { enabled: true },
+  driverName: { enabled: true, showStatusBadges: true },
   teamName: { enabled: false },
   pitStatus: { enabled: true, showPitTime: false },
   displayOrder: sortableSettings.map(s => s.id),
@@ -219,7 +219,12 @@ const migrateConfig = (
     useLivePosition: (config.useLivePosition as boolean) ?? false,
     sessionVisibility: (config.sessionVisibility as SessionVisibilitySettings) ?? defaultConfig.sessionVisibility,
     position: { enabled: (config.position as { enabled?: boolean })?.enabled ?? true },
-    driverName: { enabled: (config.driverName as { enabled?: boolean })?.enabled ?? true },
+    driverName: {
+      enabled: (config.driverName as { enabled?: boolean })?.enabled ?? true,
+      showStatusBadges:
+        (config.driverName as { showStatusBadges?: boolean })?.showStatusBadges ??
+        true,
+    },
     teamName: { enabled: (config.teamName as { enabled?: boolean })?.enabled ?? false },
     pitStatus: {
       enabled: (config.pitStatus as { enabled?: boolean })?.enabled ?? true,
@@ -292,7 +297,7 @@ const DisplaySettingsList = ({ itemsOrder, onReorder, settings, handleConfigChan
                       },
                     })
                   }
-                  className="w-20 bg-slate-700 text-white rounded-md px-2 py-1"
+                  className="bg-slate-700 text-white rounded-md px-2 py-1"
                 >
                   <option value={1}>1</option>
                   <option value={2}>2</option>
@@ -311,6 +316,20 @@ const DisplaySettingsList = ({ itemsOrder, onReorder, settings, handleConfigChan
                     const cv = settings.config[setting.configKey] as { enabled: boolean; showPitTime?: boolean; [key: string]: unknown };
                     handleConfigChange({
                       [setting.configKey]: { ...cv, showPitTime: enabled }
+                    });
+                  }}
+                />
+              </div>
+            )}
+            {setting.hasSubSetting && setting.configKey === 'driverName' && settings.config.driverName.enabled && (
+              <div className="flex items-center justify-between pl-8 mt-2">
+                <span className="text-sm text-slate-300">Show Status Badges</span>
+                <ToggleSwitch
+                  enabled={settings.config.driverName.showStatusBadges}
+                  onToggle={(enabled) => {
+                    const cv = settings.config[setting.configKey] as { enabled: boolean; showStatusBadges: boolean; [key: string]: unknown };
+                    handleConfigChange({
+                      [setting.configKey]: { ...cv, showStatusBadges: enabled }
                     });
                   }}
                 />
@@ -363,7 +382,7 @@ const DisplaySettingsList = ({ itemsOrder, onReorder, settings, handleConfigChan
                       },
                     });
                   }}
-                  className="w-26 bg-slate-700 text-white rounded-md px-2 py-1"
+                  className="bg-slate-700 text-white rounded-md px-2 py-1"
                 >
                   <option value="full">1:42.123</option>
                   <option value="mixed">1:42.1</option>
@@ -452,7 +471,7 @@ const BarItemsList = ({ items, onReorder, barType, settings, handleConfigChange 
                       }
                     });
                   }}
-                  className="w-20 bg-slate-700 text-white rounded-md px-2 py-1"
+                  className="bg-slate-700 text-white rounded-md px-2 py-1"
                 >
                   <option value="Metric">°C</option>
                   <option value="Imperial">°F</option>
@@ -475,7 +494,7 @@ const BarItemsList = ({ items, onReorder, barType, settings, handleConfigChange 
                       }
                     });
                   }}
-                  className="w-26 bg-slate-700 text-white rounded-md px-2 py-1"
+                  className="bg-slate-700 text-white rounded-md px-2 py-1"
                 >
                   <option value="Remaining">Remaining</option>
                   <option value="Elapsed">Elapsed</option>
@@ -563,7 +582,7 @@ export const StandingsSettings = () => {
                         },
                       })
                     }
-                    className="w-20 bg-slate-700 text-white rounded-md px-2 py-1"
+                    className="bg-slate-700 text-white rounded-md px-2 py-1"
                   />
                 </div>
                 <div className="flex items-center justify-between">
@@ -580,7 +599,7 @@ export const StandingsSettings = () => {
                         },
                       })
                     }
-                    className="w-20 bg-slate-700 text-white rounded-md px-2 py-1"
+                    className="bg-slate-700 text-white rounded-md px-2 py-1"
                   />
                 </div>
                 <div className="flex items-center justify-between">
@@ -597,7 +616,7 @@ export const StandingsSettings = () => {
                         },
                       })
                     }
-                    className="w-20 bg-slate-700 text-white rounded-md px-2 py-1"
+                    className="bg-slate-700 text-white rounded-md px-2 py-1"
                   />
                 </div>
                 <div className="flex items-center justify-between">
@@ -614,7 +633,7 @@ export const StandingsSettings = () => {
                         },
                       })
                     }
-                    className="w-20 bg-slate-700 text-white rounded-md px-2 py-1"
+                    className="bg-slate-700 text-white rounded-md px-2 py-1"
                   />
                 </div>
               </div>
@@ -782,7 +801,7 @@ export const StandingsSettings = () => {
                           background: { opacity: parseInt(e.target.value) },
                         })
                       }
-                      className="w-20 h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer"
+                      className="h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer"
                     />
                     <span className="text-xs text-slate-400 w-8">
                       {settings.config.background.opacity}%
