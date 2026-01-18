@@ -30,6 +30,7 @@ export class OverlayManager {
   private currentSettingsWindow: BrowserWindow | undefined;
   private isLocked = true;
   private skipTaskbar = true;
+  private overlayAlwaysOnTop = true;
   private hasSingleInstanceLock = false;
 
   constructor() {
@@ -37,7 +38,9 @@ export class OverlayManager {
       this.getOverlays().forEach(({ window }) => {
         if (window.isDestroyed()) return;
         if (!window.isVisible()) return;
-        window.setAlwaysOnTop(true, 'screen-saver', 1);
+        if (this.overlayAlwaysOnTop) {
+          window.setAlwaysOnTop(true, 'screen-saver', 1);
+        }
       });
     }, 5000);
   }
@@ -55,6 +58,7 @@ export class OverlayManager {
   public createOverlays(dashboardLayout: DashboardLayout): void {
     const { widgets, generalSettings } = dashboardLayout;
     this.skipTaskbar = generalSettings?.skipTaskbar ?? true;
+    this.overlayAlwaysOnTop = generalSettings?.overlayAlwaysOnTop ?? true;
     widgets.forEach((widget) => {
       if (!widget.enabled) return; // skip disabled widgets
       const window = this.createOverlayWindow(widget);
@@ -95,7 +99,9 @@ export class OverlayManager {
     browserWindow.setVisibleOnAllWorkspaces(true, {
       visibleOnFullScreen: true,
     });
-    browserWindow.setAlwaysOnTop(true, 'screen-saver', 1);
+    if (this.overlayAlwaysOnTop) {
+      browserWindow.setAlwaysOnTop(true, 'screen-saver', 1);
+    }
     // and load the index.html of the app.
     if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
       browserWindow.loadURL(`${MAIN_WINDOW_VITE_DEV_SERVER_URL}#/${id}`);
