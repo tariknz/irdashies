@@ -10,6 +10,7 @@ import {
   useStandingsSettings,
   useHighlightColor,
 } from './hooks';
+import { useGeneralSettings } from '@irdashies/context';
 import { useLapTimesStoreUpdater } from '../../context/LapTimesStore/LapTimesStoreUpdater';
 import { usePitLapStoreUpdater } from '../../context/PitLapStore/PitLapStoreUpdater';
 import {
@@ -22,6 +23,7 @@ import { useIsSingleMake } from './hooks/useIsSingleMake';
 
 export const Standings = () => {
   const settings = useStandingsSettings();
+  const generalSettings = useGeneralSettings();
   const { isDriving } = useDrivingState();
   const isSessionVisible = useSessionVisibility(settings?.sessionVisibility);
 
@@ -46,6 +48,9 @@ export const Standings = () => {
   // Check if this is a team racing session
   const isTeamRacing = useWeekendInfoTeamRacing();
 
+  // Determine table border spacing based on compact mode
+  const tableBorderSpacing = generalSettings?.compactMode ? 'border-spacing-y-0' : 'border-spacing-y-0.5';
+
   if (!isSessionVisible) return <></>;
 
   // Show only when on track setting
@@ -55,7 +60,7 @@ export const Standings = () => {
 
   return (
     <div
-      className={`w-full bg-slate-800/(--bg-opacity) rounded-sm p-2 text-white overflow-hidden`}
+      className={`w-full bg-slate-800/(--bg-opacity) rounded-sm ${!generalSettings?.compactMode ? 'p-2' : ''} text-white overflow-hidden`}
       style={{
         ['--bg-opacity' as string]: `${settings?.background?.opacity ?? 0}%`,
       }}
@@ -64,7 +69,7 @@ export const Standings = () => {
       {(settings?.headerBar?.enabled ?? true) && (
         <SessionBar position="header" variant="standings" />
       )}
-      <table className="w-full table-auto text-sm border-separate border-spacing-y-0.5">
+      <table className={`w-full table-auto text-sm border-separate ${tableBorderSpacing}`}>
         <tbody>
           {standings.map(([classId, classStandings], index) =>
             classStandings.length > 0 ? (
@@ -161,7 +166,7 @@ export const Standings = () => {
                     hideCarManufacturer={hideCarManufacturer}
                   />
                 ))}
-                {index < standings.length - 1 && (
+                {index < standings.length - 1 && !generalSettings?.compactMode && (
                   <tr>
                     <td colSpan={12} className="h-2"></td>
                   </tr>

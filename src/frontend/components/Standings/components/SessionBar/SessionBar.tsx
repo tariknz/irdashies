@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useSessionName, useSessionLaps, useTelemetryValue, useTelemetryValues, useSessionQualifyingResults, useSessionPositions } from '@irdashies/context';
+import { useSessionName, useSessionLaps, useTelemetryValue, useTelemetryValues, useSessionQualifyingResults, useSessionPositions, useGeneralSettings } from '@irdashies/context';
 import { formatTime } from '@irdashies/utils/time';
 import { useDriverIncidents, useSessionLapCount, useBrakeBias } from '../../hooks';
 import { useTrackWetness } from '../../hooks/useTrackWetness';
@@ -21,6 +21,7 @@ export const SessionBar = ({ position = 'header', variant = 'standings' }: Sessi
   // Use settings hook directly for reactivity
   const standingsSettings = useStandingsSettings();
   const relativeSettings = useRelativeSettings();
+  const generalSettings = useGeneralSettings();
   const settings = variant === 'relative' ? relativeSettings : standingsSettings;
   const effectiveBarSettings = position === 'footer' ? settings?.footerBar : settings?.headerBar;
   const sessionNum = useTelemetryValue('SessionNum');
@@ -293,7 +294,7 @@ export const SessionBar = ({ position = 'header', variant = 'standings' }: Sessi
     .filter(Boolean);
 
   return (
-    <div className={`bg-slate-900/70 text-sm px-3 py-1 flex justify-between ${position === 'header' ? 'mb-3' : 'mt-3'}`}>
+    <div className={`bg-slate-900/70 text-sm px-3 py-1 flex justify-between ${!generalSettings?.compactMode ? (position === 'header' ? 'mb-3' : 'mt-3') : ''}`}>
       {itemsToRender}
     </div>
   );
