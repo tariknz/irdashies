@@ -52,7 +52,7 @@ export const InputTrace = ({ input, settings }: InputTraceProps) => {
   const [throttleArray, setThrottleArray] = useState<number[]>(
     Array.from({ length: bufferSize }, () => 0)
   );
-  const [cluthArray, setClutchArray] = useState<number[]>(
+  const [clutchArray, setClutchArray] = useState<number[]>(
     Array.from({ length: bufferSize }, () => 0)
   );
   const [steerArray, setSteerArray] = useState<number[]>(
@@ -137,7 +137,7 @@ export const InputTrace = ({ input, settings }: InputTraceProps) => {
         color: THROTTLE_COLOR,
       });
     if (includeClutch)
-      valueArrayWithColors.push({ values: cluthArray, color: CLUTCH_COLOR });
+      valueArrayWithColors.push({ values: clutchArray, color: CLUTCH_COLOR });
     if (includeBrake) {
       valueArrayWithColors.push({
         values: brakeArray,
@@ -167,6 +167,8 @@ export const InputTrace = ({ input, settings }: InputTraceProps) => {
     includeSteer,
     strokeWidth,
     bufferSize,
+    includeClutch,
+    clutchArray,
   ]);
 
   return (
