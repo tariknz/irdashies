@@ -88,7 +88,7 @@ export const findIntersectionPoint = (
 // Function to find the direction of the track based on the order of turns
 // looks at the position of the first two turns to determine the direction
 export const findDirection = (trackId: number) => {
-  // Track IDs that run anticlockwise
+  // Track IDs that run anticlockwise (in reference to the SVG path, not necessarily the real track's direction)
   const anticlockwiseTracks = [
     3, 8, 11, 12, 14, 16, 17, 18, 19, 23, 26, 27, 28, 30, 31, 33, 37, 39, 40,
     46, 47, 49, 50, 94, 99, 100, 103, 104, 105, 110, 113, 114, 116, 120, 121,
