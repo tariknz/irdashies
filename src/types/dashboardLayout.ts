@@ -34,6 +34,7 @@ export interface GeneralSettingsType {
   disableHardwareAcceleration?: boolean;
   enableAutoStart?: boolean;
   compactMode?: boolean;
+  overlayAlwaysOnTop?: boolean;
 }
 
 export interface DashboardLayout {
