@@ -179,8 +179,12 @@ Displays standings information for the current session.
   - Country flags: Support for 250+ countries, can be enabled/disabled, shows iRacing flag for unaffiliated drivers
   - Pit status indicators: DNF (red), TOW (orange, animated), OUT (green), PIT (yellow, animated), last pit lap number, repair/meatball flag (orange dot), penalty/black flag (orange), slowdown (orange, animated)
   - Optional pit time display
+  - Compact Mode: A streamlined UI option for a cleaner look
+  - Incidents & Off-tracks: Driver rows highlight in yellow when they go off-track
+  - Spectator Support: Automatically follows the driver you are watching in iRacing
 - Car details: manufacturer (with option to hide if single-make series), tire compound
 - Driver badges with multiple format options (license/rating combinations)
+  - Full iRating: Option to display the full iRating value instead of just the badge
 - Timing information: gap, interval, best lap time, last lap time (multiple time format options)
 - iRating change display
 - Lap time deltas (configurable number of laps: 1-5)
@@ -211,6 +215,9 @@ Displays drive relative delta information for the current session.
   - Country flags: Support for 250+ countries, can be enabled/disabled, shows iRacing flag for unaffiliated drivers
   - Pit status indicators: DNF (red), TOW (orange, animated), OUT (green), PIT (yellow, animated), last pit lap number, repair/meatball flag (orange dot), penalty/black flag (orange), slowdown (orange, animated)
   - Optional pit time display
+  - Compact Mode: A streamlined UI option for a cleaner look
+  - Incidents & Off-tracks: Driver rows highlight in yellow when they go off-track
+  - Spectator Support: Automatically follows the driver you are watching in iRacing
 - Car details: manufacturer (with option to hide if single-make series), tire compound
 - Driver badges with multiple format options (license/rating combinations)
 - Relative delta timing display with configurable precision
@@ -249,6 +256,8 @@ Displays a track map with the current position of the cars on track and the trac
 - Option to use highlight color for player circle
 - Multi-class support
 - Session visibility settings (Race, Lone Qualify, Open Qualify, Practice, Offline Testing)
+- Race positions: Driver circles can display their current race position
+- Off-track highlighting: Car markers highlight when a driver goes off the track (yellow outline)
 
 ![Track Map](./docs/assets/trackmap.png)
 
@@ -316,6 +325,9 @@ Displays comprehensive fuel management information including current fuel level,
   - Histogram (30 laps)
 - Configurable safety margin (0-20%) for fuel calculations
 - Adjustable background opacity
+- Earliest pit lap: Shows the earliest possible lap you can pit and still finish the race
+- Fuel-to-add mode: Toggle between showing total fuel needed or just what's needed at the next stop
+- Target consumption: Shows what fuel saving is required to reach specific lap targets (±1 from current estimate)
 
 <img src="./docs/assets/fuelcalculator.png" alt="Fuel Calculator" width="250px">
 
@@ -343,7 +355,7 @@ Displays a custom image overlay when you are in the garage. Perfect for streamin
 
 **Features:**
 - Custom image upload (drag and drop or file selection)
-- Only displays when in garage (`IsInGarage` is true)
+- Only displays when in garage
 - Browser source compatible for OBS and other streaming software
 - Accessible via browser at `http://localhost:3000/component/garagecover`
 - Image preview in settings
@@ -367,6 +379,38 @@ Displays a safety indicator showing the gap to the car behind and whether it's s
   - No valid on-track car is detected behind
   - During standing start (pre-race session states)
 - Only displays when driving and on track
+
+### Pitlane Helper
+
+Helps you manage your pit stops with clear visual guidance. It assists with speed limits, finding your pit box, and monitoring pitlane traffic.
+
+**Features:**
+- Speed Limit Assistant: Color-coded warnings (Green/Amber/Red) show how close you are to the pit speed limit.
+- Pitbox Countdown: A distance tracker and progress bar show exactly how far you are from your pit stall.
+- Traffic Monitor: See how many cars are currently ahead or behind you in the pitlane.
+- Early Warning: Alerts you if your pitbox is located near the pit entry.
+- Pit limiter alerts: Flashing warnings if you enter the pits without your limiter active.
+
+### Telemetry Inspector
+
+A powerful tool for viewing live data coming from iRacing. While mostly used for debugging, it's great for seeing exactly what data the app is receiving in real-time.
+
+### Other Features
+
+**Features:**
+- Streamer & OBS Ready
+  - Built-in Web Server: Every overlay can be used as a browser source in OBS. Just use `http://localhost:3000/component/<name>`.
+  - Garage Cover: Automatically hide your screen with a custom image when you enter the garage to keep your car setup private.
+  - Transparent backgrounds: All overlays are designed to look great on top of your game or stream.
+- Customization & Themes
+  - Color themes: Choose from built-in themes or create your own custom look.
+  - Highlight color: Pick a custom color that is used across all widgets to match your branding or preference.
+  - Font sizes: Multiple font size options to ensure readability on any screen.
+- Ease of Use
+  - Global toggle (Alt+H): Quickly hide or show all your overlays with a single keyboard shortcut.
+  - Always on top: Keep your overlays visible even when clicking on other windows.
+  - System autostart: Optionally have the app start automatically when your computer boots up.
+  - Automatic updates: The app keeps itself up to date with the latest features and bug fixes.
 
 ## Contributing
 
