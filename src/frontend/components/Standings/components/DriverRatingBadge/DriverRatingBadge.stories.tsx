@@ -105,3 +105,11 @@ export const FormatRatingOnlyColorRatingBw: Story = {
     format: 'rating-only-color-rating-bw',
   },
 };
+
+export const FormatLicenseColorFullRatingBw: Story = {
+  args: {
+    license: 'A 4.99',
+    rating: 4999,
+    format: 'license-color-fullrating-bw',
+  },
+};

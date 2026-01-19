@@ -197,6 +197,10 @@ export const DriverInfoRow = memo(
               hidden={hidden}
               name={name}
               radioActive={radioActive}
+              repair={repair}
+              penalty={penalty}
+              slowdown={slowdown}
+              showStatusBadges={config?.driverName?.showStatusBadges ?? true}
             />
           ),
         },
@@ -226,9 +230,6 @@ export const DriverInfoRow = memo(
               lastLap={lastLap}
               currentSessionType={currentSessionType}
               dnf={dnf}
-              repair={repair}
-              penalty={penalty}
-              slowdown={slowdown}
               pitStopDuration={pitStopDuration}
               showPitTime={config?.pitStatus?.showPitTime ?? false}
             />

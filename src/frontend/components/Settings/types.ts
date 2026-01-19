@@ -14,17 +14,7 @@ export interface SessionVisibilitySettings {
 export interface StandingsWidgetSettings extends BaseWidgetSettings {
   config: {
     iratingChange: { enabled: boolean };
-    badge: {
-      enabled: boolean;
-      badgeFormat:
-      | 'license-color-rating-bw'
-      | 'license-color-rating-bw-no-license'
-      | 'rating-color-no-license'
-      | 'license-bw-rating-bw'
-      | 'rating-only-bw-rating-bw'
-      | 'license-bw-rating-bw-no-license'
-      | 'rating-bw-no-license';
-    };
+    badge: { enabled: boolean; badgeFormat: 'license-color-fullrating-bw' | 'license-color-rating-bw' | 'license-color-rating-bw-no-license' | 'rating-color-no-license' | 'license-bw-rating-bw' | 'rating-only-bw-rating-bw' | 'license-bw-rating-bw-no-license' | 'rating-bw-no-license' };
     delta: { enabled: boolean };
     gap: { enabled: boolean };
     interval: { enabled: boolean };
@@ -94,7 +84,7 @@ export interface StandingsWidgetSettings extends BaseWidgetSettings {
     showOnlyWhenOnTrack: boolean;
     useLivePosition: boolean;
     position: { enabled: boolean };
-    driverName: { enabled: boolean };
+    driverName: { enabled: boolean; showStatusBadges: boolean };
     teamName: { enabled: boolean };
     pitStatus: { enabled: boolean; showPitTime?: boolean };
     displayOrder: string[];
@@ -162,24 +152,14 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
       displayOrder: string[];
     };
     showOnlyWhenOnTrack: boolean;
-    badge: {
-      enabled: boolean;
-      badgeFormat:
-      | 'license-color-rating-bw'
-      | 'license-color-rating-bw-no-license'
-      | 'rating-color-no-license'
-      | 'license-bw-rating-bw'
-      | 'rating-only-bw-rating-bw'
-      | 'license-bw-rating-bw-no-license'
-      | 'rating-bw-no-license';
-    };
+    badge: { enabled: boolean; badgeFormat: 'license-color-fullrating-bw' | 'license-color-rating-bw' | 'license-color-rating-bw-no-license' | 'rating-color-no-license' | 'license-bw-rating-bw' | 'rating-only-bw-rating-bw' | 'license-bw-rating-bw-no-license' | 'rating-bw-no-license' };
     iratingChange: { enabled: boolean };
     delta: {
       enabled: boolean;
       precision: number;
     };
     position: { enabled: boolean };
-    driverName: { enabled: boolean };
+    driverName: { enabled: boolean; showStatusBadges: boolean };
     teamName: { enabled: boolean };
     pitStatus: { enabled: boolean; showPitTime?: boolean };
     displayOrder: string[];
@@ -312,7 +292,6 @@ export interface BlindSpotMonitorWidgetSettings extends BaseWidgetSettings {
 
 export interface RejoinIndicatorWidgetSettings extends BaseWidgetSettings {
   config: {
-    showOnlyWhenOnTrack: boolean;
     showAtSpeed: number;
     careGap: number;
     stopGap: number;
@@ -359,6 +338,22 @@ export interface FasterCarsFromBehindWidgetSettings extends BaseWidgetSettings {
     numberDriversBehind: number;
     alignDriverBoxes: 'Top' | 'Bottom';
     closestDriverBox: 'Top' | 'Reverse';
+    showName: boolean;
+    showDistance: boolean;
+    showBadge: boolean;
+    badgeFormat: string;
     sessionVisibility: SessionVisibilitySettings;
+  };
+}
+
+export interface PitlaneHelperWidgetSettings extends BaseWidgetSettings {
+  config: {
+    showMode: 'approaching' | 'onPitRoad';
+    approachDistance: number;
+    enablePitLimiterWarning: boolean;
+    enableEarlyPitboxWarning: boolean;
+    earlyPitboxThreshold: number;
+    showPitlaneTraffic: boolean;
+    background: { opacity: number };
   };
 }

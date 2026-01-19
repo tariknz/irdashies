@@ -8,6 +8,7 @@ import {
   RunningStateProvider,
   useRunningState,
   SessionProvider,
+  PitLaneProvider,
 } from '@irdashies/context';
 import { Settings } from './components/Settings/Settings';
 import { EditMode } from './components/EditMode/EditMode';
@@ -46,6 +47,7 @@ const App = () => {
       <RunningStateProvider bridge={window.irsdkBridge}>
         <SessionProvider bridge={window.irsdkBridge} />
         <TelemetryProvider bridge={window.irsdkBridge} />
+        <PitLaneProvider bridge={window.pitLaneBridge} />
         <HashRouter>
           <HideUIWrapper>
             <EditMode>
