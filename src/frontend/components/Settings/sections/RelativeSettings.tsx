@@ -44,7 +44,7 @@ const defaultConfig: RelativeWidgetSettings['config'] = {
   countryFlags: { enabled: true },
   driverName: { enabled: true, showStatusBadges: true, nameFormat: 'name-surname' },
   teamName: { enabled: false },
-  pitStatus: { enabled: true, showPitTime: false },
+  pitStatus: { enabled: true, showPitTime: false, pitLapDisplayMode: 'lapsSinceLastPit' },
   carManufacturer: { enabled: true, hideIfSingleMake: false },
   badge: { enabled: true, badgeFormat: 'license-color-rating-bw' },
   iratingChange: { enabled: false },
@@ -111,6 +111,7 @@ const migrateConfig = (savedConfig: unknown): RelativeWidgetSettings['config'] =
     pitStatus: {
       enabled: (config.pitStatus as { enabled?: boolean })?.enabled ?? true,
       showPitTime: (config.pitStatus as { showPitTime?: boolean })?.showPitTime ?? false,
+      pitLapDisplayMode: (config.pitStatus as { pitLapDisplayMode?: 'lastPitLap' | 'lapsSinceLastPit' })?.pitLapDisplayMode ?? 'lapsSinceLastPit',
     },
     carManufacturer: {
       enabled: (config.carManufacturer as { enabled?: boolean })?.enabled ?? true,
@@ -264,7 +265,7 @@ const DisplaySettingsList = ({ itemsOrder, onReorder, settings, handleConfigChan
                       format={format}
                       selected={(configValue as { enabled: boolean; nameFormat: string }).nameFormat === format}
                       onClick={() => {
-                        const cv = settings.config[setting.configKey] as { enabled: boolean; nameFormat: string; [key: string]: unknown };
+                        const cv = settings.config[setting.configKey] as { enabled: boolean; nameFormat: string;[key: string]: unknown };
                         handleConfigChange({
                           [setting.configKey]: { ...cv, nameFormat: format },
                         });
@@ -305,12 +306,26 @@ const DisplaySettingsList = ({ itemsOrder, onReorder, settings, handleConfigChan
                 <ToggleSwitch
                   enabled={settings.config.pitStatus.showPitTime ?? false}
                   onToggle={(enabled) => {
-                    const cv = settings.config[setting.configKey] as { enabled: boolean; showPitTime?: boolean; [key: string]: unknown };
+                    const cv = settings.config[setting.configKey] as { enabled: boolean; showPitTime?: boolean; pitLapDisplayMode?: 'lastPitLap' | 'lapsSinceLastPit';[key: string]: unknown };
                     handleConfigChange({
                       [setting.configKey]: { ...cv, showPitTime: enabled }
                     });
                   }}
                 />
+                <span className="textP-sm text-slate-300">Pitlap display mode</span>
+                <select
+                  value={settings.config.pitStatus.pitLapDisplayMode}
+                  onChange={(e) => {
+                    const cv = settings.config[setting.configKey] as { enabled: boolean; showPitTime?: boolean; pitLapDisplayMode?: 'lastPitLap' | 'lapsSinceLastPit';[key: string]: unknown };
+                    handleConfigChange({
+                      [setting.configKey]: { ...cv, pitLapDisplayMode: e.target.value as 'lastPitLap' | 'lapsSinceLastPit' }
+                    })
+                  }}
+                  className="bg-slate-700 text-white rounded-md px-2 py-1"
+                >
+                  <option value="lastPitLap">Last pit lap</option>
+                  <option value="lapsSinceLastPit">Laps since last pit</option>
+                </select>
               </div>
             )}
             {setting.hasSubSetting && setting.configKey === 'driverName' && settings.config.driverName.enabled && (
@@ -319,7 +334,7 @@ const DisplaySettingsList = ({ itemsOrder, onReorder, settings, handleConfigChan
                 <ToggleSwitch
                   enabled={settings.config.driverName.showStatusBadges}
                   onToggle={(enabled) => {
-                    const cv = settings.config[setting.configKey] as { enabled: boolean; showStatusBadges: boolean; [key: string]: unknown };
+                    const cv = settings.config[setting.configKey] as { enabled: boolean; showStatusBadges: boolean;[key: string]: unknown };
                     handleConfigChange({
                       [setting.configKey]: { ...cv, showStatusBadges: enabled }
                     });
@@ -333,7 +348,7 @@ const DisplaySettingsList = ({ itemsOrder, onReorder, settings, handleConfigChan
                 <ToggleSwitch
                   enabled={settings.config.carManufacturer.hideIfSingleMake ?? false}
                   onToggle={(enabled) => {
-                    const cv = settings.config[setting.configKey] as { enabled: boolean; hideIfSingleMake?: boolean; [key: string]: unknown };
+                    const cv = settings.config[setting.configKey] as { enabled: boolean; hideIfSingleMake?: boolean;[key: string]: unknown };
                     handleConfigChange({
                       [setting.configKey]: { ...cv, hideIfSingleMake: enabled }
                     });

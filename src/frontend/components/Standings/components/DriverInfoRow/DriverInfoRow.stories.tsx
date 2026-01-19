@@ -29,6 +29,7 @@ export const Primary: Story = {
     hasFastestTime: false,
     delta: 0.1,
     position: 1,
+    lap: 2,
     classColor: 16777215,
     fastestTime: 111.111,
     lastTime: 112.225,
@@ -223,6 +224,7 @@ const Relative = () => {
       isPlayer: false,
       delta: 12,
       classPosition: 1,
+      lap: 2,
       hasFastestTime: false,
       lastTime: 112.225,
       fastestTime: 111.111,
@@ -414,6 +416,7 @@ const Relative = () => {
               hasFastestTime={result.hasFastestTime}
               delta={result.delta}
               position={result.classPosition}
+              lap={result.lap}
               onPitRoad={result.onPitRoad}
               onTrack={result.onTrack}
               radioActive={result.radioActive}
@@ -470,6 +473,7 @@ const AllBadgeFormats = () => {
               hasFastestTime={false}
               delta={0.1}
               position={index + 1}
+              lap={2}
               classColor={16777215}
               fastestTime={111.111}
               lastTime={112.225}
@@ -589,6 +593,7 @@ const AllFlagCombinations = () => {
               hasFastestTime={false}
               delta={0.1}
               position={index + 1}
+              lap={2}
               classColor={16777215}
               fastestTime={111.111}
               lastTime={112.225}
@@ -649,6 +654,7 @@ const AllCarsComponent = () => {
               isPlayer={false}
               hasFastestTime={false}
               position={index + 1}
+              lap={2}
               classColor={16777215}
               isMultiClass={false}
               flairId={2}
@@ -710,6 +716,7 @@ const IMSACarsComponent = () => {
               isPlayer={false}
               hasFastestTime={false}
               position={index + 1}
+              lap={2}
               classColor={16777215}
               isMultiClass={false}
               flairId={2}

@@ -103,6 +103,7 @@ const StandingsWithoutHeaderFooter = () => {
                     gap={settings?.gap?.enabled ? result.gap : undefined}
                     interval={settings?.interval?.enabled ? result.interval : undefined}
                     position={result.classPosition}
+                    lap={result.lap}
                     iratingChangeValue={
                       settings?.iratingChange?.enabled ? result.iratingChange : undefined
                     }
@@ -313,6 +314,7 @@ const StandingsWithoutHeader = () => {
                     gap={settings?.gap?.enabled ? result.gap : undefined}
                     interval={settings?.interval?.enabled ? result.interval : undefined}
                     position={result.classPosition}
+                    lap={result.lap}
                     iratingChangeValue={
                       settings?.iratingChange?.enabled ? result.iratingChange : undefined
                     }
@@ -433,6 +435,7 @@ const StandingsWithoutFooter = () => {
                     gap={settings?.gap?.enabled ? result.gap : undefined}
                     interval={settings?.interval?.enabled ? result.interval : undefined}
                     position={result.classPosition}
+                    lap={result.lap}
                     iratingChangeValue={
                       settings?.iratingChange?.enabled ? result.iratingChange : undefined
                     }
@@ -629,6 +632,7 @@ const StandingsWithFullHeader = () => {
                     gap={settings?.gap?.enabled ? result.gap : undefined}
                     interval={settings?.interval?.enabled ? result.interval : undefined}
                     position={result.classPosition}
+                    lap={result.lap}
                     iratingChangeValue={
                       settings?.iratingChange?.enabled ? result.iratingChange : undefined
                     }

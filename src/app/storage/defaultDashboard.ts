@@ -53,7 +53,8 @@ export const defaultDashboard: DashboardLayout = {
           "enabled": false
         },
         "pitStatus": {
-          "enabled": true
+          "enabled": true,
+          "pitLapDisplayMode": "lapsSinceLastPit"
         },
         "position": {
           "enabled": true
@@ -239,7 +240,8 @@ export const defaultDashboard: DashboardLayout = {
           "enabled": false
         },
         "pitStatus": {
-          "enabled": true
+          "enabled": true,
+          "pitLapDisplayMode": "lapsSinceLastPit"
         },
         "carManufacturer": {
           "enabled": true
