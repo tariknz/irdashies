@@ -43,6 +43,20 @@ export const SurnameOnly: Story = {
   },
 };
 
+export const NameOnly_SingleName: Story = {
+  args: {
+    fullName: 'Charles',
+    format: 'name-surname',
+  },
+};
+
+export const SurnameOnly_SingleName: Story = {
+  args: {
+    fullName: 'Charles',
+    format: 'surname',
+  },
+};
+
 export const AllFormats: Story = {
   args: {
     fullName: 'Charles Marc Hervé Perceval Leclerc',

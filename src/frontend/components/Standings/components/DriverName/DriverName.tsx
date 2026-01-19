@@ -54,14 +54,17 @@ export const DriverName = (
   const { firstName, middleName, surname } = name;
   const middleInitial = middleName?.charAt(0);
 
+  // needed to display the name in case the driver has no surname i.e fullname is 'Charles'
+  if (!surname) {
+    return firstName;
+  }
+
   switch (format) {
     case 'name-middlename-surname':
       return [firstName, middleName, surname].filter(Boolean).join(' ');
 
     case 'name-m.-surname':
-      return [firstName, middleInitial && `${middleInitial}.`, surname]
-        .filter(Boolean)
-        .join(' ');
+      return [firstName, middleInitial && `${middleInitial}.`, surname].filter(Boolean).join(' ');
 
     case 'name-surname':
       return [firstName, surname].filter(Boolean).join(' ');

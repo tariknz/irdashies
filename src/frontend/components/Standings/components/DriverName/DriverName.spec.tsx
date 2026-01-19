@@ -72,4 +72,72 @@ describe('DriverNameView', () => {
 
     expect(container.textContent).toBe('');
   });
+
+// tests for drivers with single name
+
+  it('renders single name, name-surname format', () => {
+    const { container } = render(
+      <DriverNameView
+        fullName="Max"
+        format="name-surname"
+      />
+    );
+
+    expect(container.textContent).toBe('Max');
+  });
+
+  it('renders single name, name-middlename-surname format', () => {
+    const { container } = render(
+      <DriverNameView
+        fullName="Max"
+        format="name-middlename-surname"
+      />
+    );
+
+    expect(container.textContent).toBe('Max');
+  });
+
+ it('renders single name, name-m.-surname format', () => {
+    const { container } = render(
+      <DriverNameView
+        fullName="Max"
+        format="name-m.-surname"
+      />
+    );
+
+    expect(container.textContent).toBe('Max');
+  });
+
+  it('renders single name, n.-surname format', () => {
+    const { container } = render(
+      <DriverNameView
+        fullName="Max"
+        format="n.-surname"
+      />
+    );
+
+    expect(container.textContent).toBe('Max');
+  });
+
+ it('renders single name, surname-n. format', () => {
+    const { container } = render(
+      <DriverNameView
+        fullName="Max"
+        format="surname-n."
+      />
+    );
+
+    expect(container.textContent).toBe('Max');
+  });
+
+ it('renders single name, surname format', () => {
+    const { container } = render(
+      <DriverNameView
+        fullName="Max"
+        format="surname"
+      />
+    );
+
+    expect(container.textContent).toBe('Max');
+  });
 });
