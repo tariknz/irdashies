@@ -72,4 +72,28 @@ describe('DriverNameView', () => {
 
     expect(container.textContent).toBe('');
   });
+
+// tests for drivers with single name
+
+  it('handles single name, name format', () => {
+    const { container } = render(
+      <DriverNameView
+        fullName="Max"
+        format="name-surname"
+      />
+    );
+
+    expect(container.textContent).toBe('Max');
+  });
+
+ it('handles single name, surname format', () => {
+    const { container } = render(
+      <DriverNameView
+        fullName="Max"
+        format="surname"
+      />
+    );
+
+    expect(container.textContent).toBe('Max');
+  });
 });

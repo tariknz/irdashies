@@ -10,7 +10,7 @@ export const DriverNamePreview = ({
   const renderPreview = () => {
     switch (format) {
       case 'name-middlename-surname':
-        return <div> Max Emilian Vertappen </div>;
+        return <div> Max Emilian Verstappen </div>;
       case 'name-m.-surname':
         return <div> Max E. Verstappen </div>;
       case 'name-surname':
