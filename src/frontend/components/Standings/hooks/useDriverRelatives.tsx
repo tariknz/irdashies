@@ -6,6 +6,7 @@ import {
 } from '@irdashies/context';
 import { useDriverStandings } from './useDriverPositions';
 import type { Standings } from '../createStandings';
+import { ReferenceLap, useReferenceRegistry } from './useReferenceRegistry';
 
 export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
   const driversGrouped = useDriverStandings();
@@ -17,11 +18,33 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
   const playerIndex = useFocusCarIdx();
   const paceCarIdx =
     useSessionStore((s) => s.session?.DriverInfo?.PaceCarIdx) ?? -1;
+  const { processDriver, getReferenceLap } = useReferenceRegistry();
 
   const standings = useMemo(() => {
     const driversByCarIdx = new Map(
       drivers.map((driver) => [driver.carIdx, driver])
     );
+
+    const interpolateTimeFromRef = (
+      currTrackPct: number,
+      refLap: ReferenceLap
+    ): number => {
+      const { points, totalLapTime } = refLap;
+      if (!points) return currTrackPct * totalLapTime;
+
+      // Find the segment the percentage falls into
+      for (let i = 0; i < points.length - 1; i++) {
+        const point1 = points[i];
+        const point2 = points[i + 1];
+
+        if (currTrackPct >= point1.pct && currTrackPct <= point2.pct) {
+          const ratio = (currTrackPct - point1.pct) / (point2.pct - point1.pct);
+          return point1.time + ratio * (point2.time - point1.time);
+        }
+      }
+
+      return currTrackPct * totalLapTime;
+    };
 
     const calculateRelativePct = (carIdx: number) => {
       if (playerIndex === undefined) {
@@ -46,66 +69,157 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
       return relativePct;
     };
 
-    const calculateDelta = (otherCarIdx: number) => {
+    const getEstTimeScaled = (
+      driverAhead: { estTime: number; classEstTime: number; trackPct: number },
+      driverBehind: { estTime: number; classEstTime: number; trackPct: number }
+    ): number => {
+      // Scale opponent estimated time to player's car class
+      let estTimeScaled =
+        (driverAhead.estTime * driverBehind.classEstTime) /
+        driverAhead.classEstTime;
+
+      // Make sure opponent time is not ahead when behind on track, and not behind when ahead on track.
+      if (driverAhead.trackPct < driverBehind.trackPct) {
+        estTimeScaled = Math.min(driverBehind.estTime, estTimeScaled);
+      } else if (driverAhead.trackPct > driverBehind.trackPct) {
+        estTimeScaled = Math.max(driverBehind.estTime, estTimeScaled);
+      }
+
+      return estTimeScaled;
+    };
+
+    const getEstTimeDiff = (
+      estLapTime: number,
+      opponentEstTime: number,
+      playerEstTime: number
+    ): number => {
+      const SECONDS_EPSILON = 0.0001;
+
+      if (
+        estLapTime < SECONDS_EPSILON ||
+        playerEstTime < SECONDS_EPSILON ||
+        opponentEstTime < SECONDS_EPSILON
+      ) {
+        return 0.0;
+      }
+
+      let timeDiff = opponentEstTime - playerEstTime;
+
+      if (timeDiff < -0.5 * estLapTime) {
+        timeDiff += estLapTime;
+      } else if (timeDiff > 0.5 * estLapTime) {
+        timeDiff -= estLapTime;
+      }
+
+      return timeDiff;
+    };
+
+    const calculateFallbackDelta = (otherCarIdx: number) => {
       const playerCarIdx = playerIndex ?? 0;
-      const player = driversByCarIdx.get(playerCarIdx);
+      const player =
+        playerIndex !== undefined
+          ? driversByCarIdx.get(playerIndex)
+          : undefined;
       const other = driversByCarIdx.get(otherCarIdx);
 
-      if (!player || !other) return 0;
+      // Get lap times - use other car's class lap time for cross-class (more accurate for their position)
+      const playerEstTime = carIdxEstTime?.[playerCarIdx];
+      const otherEstTime = carIdxEstTime?.[otherCarIdx];
+      const otherClassEstTime = other?.carClass?.estLapTime ?? 0;
+      const playerClassEstTime = player?.carClass?.estLapTime ?? 0;
+      const playerDistPct = carIdxLapDistPct?.[playerCarIdx];
+      const otherDistPct = carIdxLapDistPct?.[otherCarIdx];
 
-      // Use the player's estimated lap time as the "Gold Standard" for all gap display
-      const playerEstLapTime = player.carClass?.estLapTime ?? 0;
-      const otherEstLapTime = other.carClass?.estLapTime ?? 0;
+      const otherDriverData = {
+        estTime: otherEstTime,
+        classEstTime: otherClassEstTime,
+        trackPct: otherDistPct,
+      };
 
-      if (playerEstLapTime === 0 || otherEstLapTime === 0) return 0;
+      const playerDriverData = {
+        estTime: playerEstTime,
+        classEstTime: playerClassEstTime,
+        trackPct: playerDistPct,
+      };
 
-      // 1. Physical Position (Percent)
-      const playerDistPct = carIdxLapDistPct?.[playerCarIdx] ?? 0;
-      const otherDistPct = carIdxLapDistPct?.[otherCarIdx] ?? 0;
-
-      // 2. Multi-Class Scaling (Even for same class, this normalizes pace-based drift)
-      const playerEstTime = carIdxEstTime?.[playerCarIdx] ?? 0;
-      const otherEstTime = carIdxEstTime?.[otherCarIdx] ?? 0;
-
-      // Scale the opponent's raw time into the player's car's speed units
-      const scaledOtherEstTime =
-        otherEstTime * (playerEstLapTime / otherEstLapTime);
-
-      // 3. Handle the Start/Finish Line Crossing
-      // If one driver has crossed and the other hasn't, the raw EstTime
-      // difference will be ~1 full lap. We must normalize this.
-      let estTimeDelta = scaledOtherEstTime - playerEstTime;
-
-      if (estTimeDelta > playerEstLapTime * 0.5) {
-        estTimeDelta -= playerEstLapTime;
-      } else if (estTimeDelta < -playerEstLapTime * 0.5) {
-        estTimeDelta += playerEstLapTime;
+      // Calculate distance-based delta (always needed for sanity check and fallback)
+      if (playerDistPct === undefined || otherDistPct === undefined) {
+        return 0;
       }
 
-      // 4. Clamping
-      // This prevents 'ghosting' where the UI says a car is ahead when it's physically behind.
-      // We use the relativePct logic to determine physical track order.
-      let distPctDiff = otherDistPct - playerDistPct;
-      if (distPctDiff > 0.5) distPctDiff -= 1.0;
-      else if (distPctDiff < -0.5) distPctDiff += 1.0;
+      let delta = 0;
+      if (otherDistPct > playerDistPct) {
+        const scaledEstTime = getEstTimeScaled(
+          otherDriverData,
+          playerDriverData
+        );
 
-      if (distPctDiff < 0) {
-        // Other is physically behind: ensure delta is negative (or at most 0)
-        estTimeDelta = Math.min(0, estTimeDelta);
+        delta = getEstTimeDiff(
+          playerDriverData.classEstTime,
+          scaledEstTime,
+          playerEstTime
+        );
+      } else if (otherDistPct < playerDistPct) {
+        const scaledEstTime = getEstTimeScaled(
+          playerDriverData,
+          otherDriverData
+        );
+
+        delta = getEstTimeDiff(
+          otherDriverData.classEstTime,
+          otherDriverData.estTime,
+          scaledEstTime
+        );
+      }
+
+      return delta;
+    };
+
+    const calculateDelta = (otherCarIdx: number) => {
+      const playerIdx = playerIndex ?? 0;
+      const playerRef = getReferenceLap(playerIdx); // Get from our new hook
+      const otherRef = getReferenceLap(otherCarIdx); // Get from our new hook
+
+      // Fallback if no reference exists yet
+      if (!otherRef || !playerRef) {
+        return calculateFallbackDelta(otherCarIdx);
+      }
+
+      const playerTrckPct = carIdxLapDistPct?.[playerIdx] ?? 0;
+      const otherTrckPct = carIdxLapDistPct?.[otherCarIdx] ?? 0;
+      let delta = 0;
+
+      if (playerTrckPct > otherTrckPct) {
+        // Player is ahead
+        const timeWhenOpponentReachesPlayerPosition = interpolateTimeFromRef(
+          playerTrckPct,
+          otherRef
+        );
+        const timeOpponentIsAtNow = interpolateTimeFromRef(
+          otherTrckPct,
+          otherRef
+        );
+
+        delta = timeWhenOpponentReachesPlayerPosition - timeOpponentIsAtNow;
       } else {
-        // Other is physically ahead: ensure delta is positive (or at least 0)
-        estTimeDelta = Math.max(0, estTimeDelta);
+        // Opponent is ahead
+        const timeWhenPlayerReachesOpponentPosition = interpolateTimeFromRef(
+          otherTrckPct,
+          playerRef
+        );
+        const timePlayerIsAtNow = interpolateTimeFromRef(
+          playerTrckPct,
+          playerRef
+        );
+
+        delta = timeWhenPlayerReachesOpponentPosition - timePlayerIsAtNow;
       }
 
-      // 5. Emergency Fallback
-      // If EstTime is still wildly different from distance-based time,
-      // someone likely just teleported or the data is stale.
-      const distanceBasedDelta = distPctDiff * playerEstLapTime;
-      if (Math.abs(estTimeDelta - distanceBasedDelta) > 5.0) {
-        return distanceBasedDelta;
-      }
+      const halfLap = otherRef.totalLapTime * 0.5;
+      if (delta > halfLap) delta -= otherRef.totalLapTime;
+      else if (delta < -halfLap) delta += otherRef.totalLapTime;
 
-      return estTimeDelta;
+      return delta;
     };
 
     const sortedDrivers = drivers
@@ -117,6 +231,12 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
       )
       .map((result) => {
         const relativePct = calculateRelativePct(result.carIdx);
+        processDriver(
+          result.carIdx,
+          carIdxLapDistPct[result.carIdx],
+          carIdxEstTime[result.carIdx],
+          result.onPitRoad
+        );
         return {
           ...result,
           relativePct,
@@ -149,11 +269,13 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
 
     return [...driversAhead, player, ...driversBehind];
   }, [
+    drivers,
     buffer,
     playerIndex,
     carIdxLapDistPct,
-    drivers,
+    getReferenceLap,
     paceCarIdx,
+    processDriver,
     carIdxEstTime,
   ]);
 
