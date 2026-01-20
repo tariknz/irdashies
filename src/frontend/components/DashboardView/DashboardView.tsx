@@ -45,7 +45,7 @@ export const DashboardView = () => {
     enabledWidgets.forEach((widget) => {
       const widgetConfig = widget.config as Record<string, unknown>;
       const browserPos = widgetConfig?.browserPosition as WidgetPosition | undefined;
-      
+
       // Use saved browserPosition if available, otherwise use layout dimensions from Electron config
       if (browserPos && typeof browserPos.x === 'number') {
         positions[widget.id] = browserPos;
@@ -60,7 +60,7 @@ export const DashboardView = () => {
         // Cascade widgets slightly if no saved position
         offsetX += 30;
         offsetY += 30;
-        
+
         // Wrap to top if too far down
         if (offsetY > 500) {
           offsetX += 450;
@@ -74,7 +74,7 @@ export const DashboardView = () => {
 
   const savePositions = async (positions: Record<string, WidgetPosition>) => {
     if (!currentDashboard?.widgets) return;
-    
+
     try {
       const updatedWidgets = currentDashboard.widgets.map(widget => {
         const widgetPosition = positions[widget.id];
@@ -103,11 +103,11 @@ export const DashboardView = () => {
 
   const processPendingSave = async () => {
     if (isSavingRef.current || !pendingSaveRef.current) return;
-    
+
     const positionsToSave = pendingSaveRef.current;
     pendingSaveRef.current = null;
     isSavingRef.current = true;
-    
+
     try {
       await savePositions(positionsToSave);
     } finally {
@@ -173,8 +173,8 @@ export const DashboardView = () => {
           return null;
         }
 
-        const position = Object.keys(widgetPositions).length > 0 
-          ? widgetPositions[widget.id] 
+        const position = Object.keys(widgetPositions).length > 0
+          ? widgetPositions[widget.id]
           : initialPositions[widget.id];
         if (!position) return null;
 
@@ -214,12 +214,8 @@ export const DashboardView = () => {
             bounds="parent"
             enableUserSelectHack={false}
           >
-            <div 
-              className={`w-full h-full cursor-move ${isInteracting ? 'border-2 border-dashed border-blue-400' : ''}`}
-              style={{
-                backgroundColor: `rgba(30, 41, 59, 0.8)`,
-                overflow: 'hidden',
-              }}
+            <div
+              className={`w-full h-full cursor-move overflow-hidden ${isInteracting ? 'border-2 border-dashed border-blue-400' : ''}`}
             >
               {/* Title overlay when interacting */}
               {isInteracting && (
@@ -228,7 +224,7 @@ export const DashboardView = () => {
                 </div>
               )}
               {/* Widget content - scrollable but no scrollbars visible */}
-              <div 
+              <div
                 className="w-full h-full p-2"
                 style={{
                   overflow: 'auto',
