@@ -380,6 +380,8 @@ Displays a safety indicator showing the gap to the car behind and whether it's s
   - During standing start (pre-race session states)
 - Only displays when driving and on track
 
+<img src="./docs/assets/rejoin-indicator.png" alt="Rejoin Indicator" width="300px">
+
 ### Pitlane Helper
 
 Helps you manage your pit stops with clear visual guidance. It assists with speed limits, finding your pit box, and monitoring pitlane traffic.
@@ -390,6 +392,8 @@ Helps you manage your pit stops with clear visual guidance. It assists with spee
 - Traffic Monitor: See how many cars are currently ahead or behind you in the pitlane.
 - Early Warning: Alerts you if your pitbox is located near the pit entry.
 - Pit limiter alerts: Flashing warnings if you enter the pits without your limiter active.
+
+![Pitlane Helper](./docs/assets/pitlanehelper.png)
 
 ### Telemetry Inspector
 
