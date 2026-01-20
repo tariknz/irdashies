@@ -1,62 +1,74 @@
 import { useRef, useCallback } from 'react';
 
-interface ReferencePoint {
-  pct: number; // 0.0 to 1.0 (track distance percentage)
-  time: number; // Seconds elapsed since S/F line at this point
-}
-
 export interface ReferenceLap {
-  points: ReferencePoint[]; // Array of ~200 points
-  totalLapTime: number;
+  points: number[]; // Array of ~200 points
 }
 
-const SAMPLE_SIZE_LIMIT = 185;
 const REFERENCE_INTERVAL = 0.005;
+
+export function findClosest(sortedArray: number[], target: number): number {
+  let left = 0;
+  let right = sortedArray.length - 1;
+
+  if (target <= sortedArray[left]) return sortedArray[left];
+  if (target >= sortedArray[right]) return sortedArray[right];
+
+  while (left < right) {
+    const mid = Math.floor((left + right) / 2);
+
+    if (sortedArray[mid] === target) {
+      return sortedArray[mid];
+    }
+
+    if (sortedArray[mid] < target) {
+      left = mid + 1;
+    } else {
+      right = mid - 1;
+    }
+  }
+
+  // Since we can be before the closest point, we return the last point that we've passed.
+  return sortedArray[left];
+}
+
+const seedKeys = (refPoints: Map<number, number>): Map<number, number> => {
+  for (let i = 0; i < 200; i++) {
+    refPoints.set(i * REFERENCE_INTERVAL, 0);
+  }
+
+  return refPoints;
+};
 
 export const useReferenceRegistry = () => {
   // Persistence for 63 drivers
-  const bestLaps = useRef<Map<number, ReferenceLap>>(new Map());
-  const lapBuffers = useRef<Map<number, ReferencePoint[]>>(new Map());
-  const lastRecordedPcts = useRef<Map<number, number>>(new Map());
+  //                          carIdx      trkPct  time
+  const bestLaps = useRef<Map<number, Map<number, number>>>(new Map());
 
   const processDriver = useCallback(
-    (carIdx: number, pct: number, estTime: number, isOnPitRoad: boolean) => {
-      if (!lapBuffers.current.has(carIdx)) {
-        lapBuffers.current.set(carIdx, []);
-        lastRecordedPcts.current.set(carIdx, 0);
+    (carIdx: number, trackPct: number, sessionTime: number) => {
+      let refPoints = bestLaps.current.get(carIdx);
+
+      if (refPoints === undefined) {
+        refPoints = new Map();
+        refPoints = seedKeys(refPoints);
       }
 
-      const buf = lapBuffers.current.get(carIdx) ?? [];
-      const lastPct = lastRecordedPcts.current.get(carIdx) ?? 0;
+      const testTestKey = trackPct - (trackPct % REFERENCE_INTERVAL);
+      // if key below zero, set to zero
+      console.log(`TEST KEY: ${testTestKey}`);
 
-      // Detect Lap Reset
-      if (pct < lastPct) {
-        if (buf.length > SAMPLE_SIZE_LIMIT && !isOnPitRoad) {
-          const totalTime = buf[buf.length - 1].time;
-          const currentBest = bestLaps.current.get(carIdx);
-          if (!currentBest || totalTime < currentBest.totalLapTime) {
-            console.log(
-              `-------------------- Updating best lap: ${totalTime}, ${carIdx} -----------------------`
-            );
+      const closestKey = findClosest(
+        [...refPoints.keys()] as number[],
+        trackPct
+      );
 
-            const lastRefPoint = { pct, time: totalTime + estTime };
-
-            console.log(`Last ref point for new lap: ${lastRefPoint.time}`);
-
-            bestLaps.current.set(carIdx, {
-              points: [...buf, lastRefPoint],
-              totalLapTime: totalTime,
-            });
-          }
-        }
-        buf.length = 0;
-        lastRecordedPcts.current.set(carIdx, 0);
-      }
-      // Record at 0.5% intervals
-      else if (!isOnPitRoad && pct >= lastPct + REFERENCE_INTERVAL) {
-        buf.push({ pct, time: estTime });
-        lastRecordedPcts.current.set(carIdx, pct);
-      }
+      refPoints.set(closestKey, sessionTime);
+      bestLaps.current.set(carIdx, refPoints);
+      // console.log(`------------ SessionTime: ${sessionTime}`);
+      // console.log(`------------ Ref points count: ${refPoints.size}`);
+      // console.log(`------------ Closest key: ${closestKey}`);
+      // console.log(`------------ Track Pct: ${trackPct}`);
+      // console.log(`--- Points Times: ${[...refPoints.values()].join(', ')}`);
     },
     []
   );
