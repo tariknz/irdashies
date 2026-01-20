@@ -4,9 +4,14 @@ import { TelemetryDecorator } from '@irdashies/storybook';
 
 export default {
   component: TrackMap,
+  title: 'widgets/TrackMap',
 } as Meta;
 
 type Story = StoryObj<typeof TrackMap>;
+
+export const Primary: Story = {
+  decorators: [TelemetryDecorator()],
+};
 
 export const SupercarsRace: Story = {
   decorators: [TelemetryDecorator('/test-data/1732274253573')],

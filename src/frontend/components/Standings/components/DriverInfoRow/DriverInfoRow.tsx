@@ -1,7 +1,8 @@
 import { memo, useMemo } from 'react';
 import { getTailwindStyle } from '@irdashies/utils/colors';
 import { formatTime, type TimeFormat } from '@irdashies/utils/time';
-import type { LastTimeState } from '../../createStandings';
+import { usePitStopDuration } from '@irdashies/context';
+import type { Gap, LastTimeState } from '../../createStandings';
 import type {
   RelativeWidgetSettings,
   StandingsWidgetSettings,
@@ -19,20 +20,23 @@ import { LapTimeDeltasCell } from './cells/LapTimeDeltasCell';
 import { LastTimeCell } from './cells/LastTimeCell';
 import { PitStatusCell } from './cells/PitStatusCell';
 import { PositionCell } from './cells/PositionCell';
+import { TeamNameCell } from './cells/TeamNameCell';
 
 interface DriverRowInfoProps {
   carIdx: number;
   classColor: number;
   carNumber?: string;
   name: string;
+  teamName?: string;
   isPlayer: boolean;
   hasFastestTime: boolean;
   delta?: number;
-  gap?: number;
+  gap?: Gap;
   interval?: number;
   position?: number;
-  badge?: React.ReactNode;
-  iratingChange?: React.ReactNode;
+  license?: string;
+  rating?: number;
+  iratingChangeValue?: number;
   lastTime?: number;
   fastestTime?: number;
   lastTimeState?: LastTimeState;
@@ -55,7 +59,14 @@ interface DriverRowInfoProps {
   prevCarTrackSurface?: number;
   carTrackSurface?: number;
   currentSessionType?: string;
+  pitStopDuration?: number | null;
   highlightColor?: number;
+  dnf: boolean;
+  repair: boolean;
+  penalty: boolean;
+  slowdown: boolean;
+  deltaDecimalPlaces?: number;
+  hideCarManufacturer?: boolean;
 }
 
 export const DriverInfoRow = memo(
@@ -64,13 +75,16 @@ export const DriverInfoRow = memo(
     carNumber,
     classColor,
     name,
+    teamName,
     isPlayer,
     hasFastestTime,
     delta,
     gap,
     interval,
     position,
-    badge,
+    license,
+    rating,
+    iratingChangeValue,
     lastTime,
     fastestTime,
     lastTimeState,
@@ -79,7 +93,6 @@ export const DriverInfoRow = memo(
     radioActive,
     isLapped,
     isLappingAhead,
-    iratingChange,
     hidden,
     flairId,
     tireCompound,
@@ -94,8 +107,19 @@ export const DriverInfoRow = memo(
     prevCarTrackSurface,
     carTrackSurface,
     currentSessionType,
-    highlightColor = 960745
-   }: DriverRowInfoProps) => {
+    highlightColor = 960745,
+    dnf,
+    repair,
+    penalty,
+    slowdown,
+    deltaDecimalPlaces,
+    pitStopDuration: pitStopDurationProp,
+    hideCarManufacturer,
+  }: DriverRowInfoProps) => {
+    const pitStopDurations = usePitStopDuration();
+    const pitStopDuration =
+      pitStopDurationProp ?? pitStopDurations[carIdx] ?? null;
+
     const lastTimeString = useMemo(() => {
       const format = config?.lastTime?.timeFormat ?? 'full';
       return formatTime(lastTime, format as TimeFormat);
@@ -105,6 +129,8 @@ export const DriverInfoRow = memo(
       const format = config?.fastestTime?.timeFormat ?? 'full';
       return formatTime(fastestTime, format as TimeFormat);
     }, [fastestTime, config?.fastestTime?.timeFormat]);
+
+    const offTrack = carTrackSurface === 0 ? true : false;
 
     const tailwindStyles = useMemo(() => {
       return getTailwindStyle(classColor, highlightColor, isMultiClass);
@@ -128,6 +154,7 @@ export const DriverInfoRow = memo(
               hidden={hidden}
               position={position}
               isPlayer={isPlayer}
+              offTrack={offTrack}
               tailwindStyles={tailwindStyles}
             />
           ),
@@ -167,10 +194,25 @@ export const DriverInfoRow = memo(
           component: (
             <DriverNameCell
               key="driverName"
-              hidden={hidden}
-              name={name}
               radioActive={radioActive}
+              repair={repair}
+              penalty={penalty}
+              slowdown={slowdown}
+              showStatusBadges={config?.driverName?.showStatusBadges ?? true}
+              hidden={hidden}
+              fullName={name}
+              nameFormat={config?.driverName?.nameFormat}
             />
+          ),
+        },
+        {
+          id: 'teamName',
+          shouldRender:
+            teamName !== undefined &&
+            (displayOrder ? displayOrder.includes('teamName') : false) &&
+            (config?.teamName?.enabled ?? false),
+          component: (
+            <TeamNameCell key="teamName" hidden={hidden} teamName={teamName} />
           ),
         },
         {
@@ -188,6 +230,9 @@ export const DriverInfoRow = memo(
               lastPitLap={lastPitLap}
               lastLap={lastLap}
               currentSessionType={currentSessionType}
+              dnf={dnf}
+              pitStopDuration={pitStopDuration}
+              showPitTime={config?.pitStatus?.showPitTime ?? false}
             />
           ),
         },
@@ -195,7 +240,8 @@ export const DriverInfoRow = memo(
           id: 'carManufacturer',
           shouldRender:
             (displayOrder ? displayOrder.includes('carManufacturer') : true) &&
-            (config?.carManufacturer?.enabled ?? true),
+            (config?.carManufacturer?.enabled ?? true) &&
+            !hideCarManufacturer,
           component: (
             <CarManufacturerCell
               key="carManufacturer"
@@ -209,7 +255,15 @@ export const DriverInfoRow = memo(
           shouldRender:
             (displayOrder ? displayOrder.includes('badge') : true) &&
             (config?.badge?.enabled ?? true),
-          component: <BadgeCell key="badge" hidden={hidden} badge={badge} />,
+          component: (
+            <BadgeCell
+              key="badge"
+              hidden={hidden}
+              license={license}
+              rating={rating}
+              badgeFormat={config?.badge?.badgeFormat}
+            />
+          ),
         },
         {
           id: 'iratingChange',
@@ -220,7 +274,7 @@ export const DriverInfoRow = memo(
             <IratingChangeCell
               key="iratingChange"
               hidden={hidden}
-              iratingChange={iratingChange}
+              iratingChangeValue={iratingChangeValue}
             />
           ),
         },
@@ -230,7 +284,14 @@ export const DriverInfoRow = memo(
             (displayOrder ? displayOrder.includes('delta') : true) &&
             (config?.delta?.enabled ?? true) &&
             !(config && 'gap' in config),
-          component: <DeltaCell key="delta" hidden={hidden} delta={delta} />,
+          component: (
+            <DeltaCell
+              key="delta"
+              hidden={hidden}
+              delta={delta}
+              decimalPlaces={deltaDecimalPlaces}
+            />
+          ),
         },
         {
           id: 'gap',
@@ -238,15 +299,33 @@ export const DriverInfoRow = memo(
             (displayOrder ? displayOrder.includes('gap') : true) &&
             (config && 'gap' in config ? config.gap.enabled : false) &&
             currentSessionType?.toLowerCase() === 'race',
-          component: <DeltaCell key="gap" hidden={hidden} delta={gap} showDashForUndefined={true} />,
+          component: (
+            <DeltaCell
+              key="gap"
+              hidden={hidden}
+              delta={gap}
+              showForUndefined={position === 1 ? 'gap' : undefined}
+              decimalPlaces={deltaDecimalPlaces}
+            />
+          ),
         },
         {
           id: 'interval',
           shouldRender:
             (displayOrder ? displayOrder.includes('interval') : true) &&
-            (config && 'interval' in config ? config.interval.enabled : false) &&
+            (config && 'interval' in config
+              ? config.interval.enabled
+              : false) &&
             currentSessionType?.toLowerCase() === 'race',
-          component: <DeltaCell key="interval" hidden={hidden} delta={interval} showDashForUndefined={true} />,
+          component: (
+            <DeltaCell
+              key="interval"
+              hidden={hidden}
+              delta={interval}
+              showForUndefined={position === 1 ? 'int' : undefined}
+              decimalPlaces={deltaDecimalPlaces}
+            />
+          ),
         },
         {
           id: 'fastestTime',
@@ -331,16 +410,30 @@ export const DriverInfoRow = memo(
       hidden,
       position,
       isPlayer,
+      offTrack,
       tailwindStyles,
       carNumber,
       flairId,
       name,
+      teamName,
       radioActive,
       onPitRoad,
+      carTrackSurface,
+      prevCarTrackSurface,
+      lastPitLap,
+      lastLap,
+      currentSessionType,
+      dnf,
+      repair,
+      penalty,
+      slowdown,
+      pitStopDuration,
       carId,
-      badge,
-      iratingChange,
+      license,
+      rating,
+      iratingChangeValue,
       delta,
+      deltaDecimalPlaces,
       gap,
       interval,
       fastestTimeString,
@@ -350,20 +443,18 @@ export const DriverInfoRow = memo(
       tireCompound,
       lapTimeDeltas,
       emptyLapDeltaPlaceholders,
-      carTrackSurface,
-      currentSessionType,
-      lastLap,
-      lastPitLap,
-      prevCarTrackSurface
+      hideCarManufacturer,
     ]);
 
     return (
       <tr
         key={carIdx}
         className={[
-          `odd:bg-slate-800/70 even:bg-slate-900/70 text-sm`,
           !onTrack || onPitRoad ? 'text-white/60' : '',
           isPlayer ? 'text-amber-300' : '',
+          isPlayer
+            ? 'bg-yellow-500/20'
+            : 'odd:bg-slate-800/70 even:bg-slate-900/70 text-sm',
           !isPlayer && isLapped ? 'text-blue-400' : '',
           !isPlayer && isLappingAhead ? 'text-red-400' : '',
           hidden ? 'invisible' : '',

@@ -1,5 +1,5 @@
-import { useAutoAnimate } from '@formkit/auto-animate/react';
-import { useTrackTemperature } from './hooks/useTrackTemperature';
+import { useTelemetryValue, useSessionVisibility } from '@irdashies/context';
+import { useTrackTemperature } from '../Standings/hooks/useTrackTemperature';
 import { useTrackWeather } from './hooks/useTrackWeather';
 import { WeatherTemp } from './WeatherTemp/WeatherTemp';
 import { WeatherTrackWetness } from './WeatherTrackWetness/WeatherTrackWetness';
@@ -7,32 +7,117 @@ import { WeatherTrackRubbered } from './WeatherTrackRubbered/WeatherTrackRubbere
 import { WindDirection } from './WindDirection/WindDirection';
 import { useTrackRubberedState } from './hooks/useTrackRubberedState';
 import { useWeatherSettings } from './hooks/useWeatherSettings';
-import { useTelemetryValue } from '@irdashies/context';
+import { WeatherHumidity } from './WeatherHumidity/WeatherHumidity';
+import { Fragment, useMemo } from 'react';
 
 export const Weather = () => {
-  const [parent] = useAutoAnimate();
   const weather = useTrackWeather();
-  const trackTemp = useTrackTemperature();
-  const windSpeed = weather.windVelocity;
-  const relativeWindDirection =  (weather.windDirection ?? 0) - (weather.windYaw ?? 0);
-  const trackRubbered = useTrackRubberedState();
   const settings = useWeatherSettings();
-  const unit = useTelemetryValue('DisplayUnits');
+  const displayUnits = useTelemetryValue('DisplayUnits'); // 0 = imperial, 1 = metric
+  const isOnTrack = useTelemetryValue('IsOnTrack');
+  const isSessionVisible = useSessionVisibility(settings?.sessionVisibility);
+  
+  // Determine actual unit to use: auto uses iRacing's DisplayUnits setting
+  const unitSetting = settings?.units ?? 'auto';
+  const isMetric = unitSetting === 'auto'
+    ? displayUnits === 1
+    : unitSetting === 'Metric';
+  const actualUnit = isMetric ? 'Metric' : 'Imperial';
 
+  const { trackTemp, airTemp } = useTrackTemperature({
+    airTempUnit: actualUnit,
+    trackTempUnit: actualUnit,
+  });
+  const windSpeed = weather.windVelocity;
+  const relativeWindDirection = (weather.windDirection ?? 0) - (weather.windYaw ?? 0);
+  const trackRubbered = useTrackRubberedState();
+  const displayOrder = settings?.displayOrder as string[] | undefined;
+
+  const columnDefinitions = useMemo(() => {
+    const columns = [
+      {
+        id: 'trackTemp' as const,
+        shouldRender: settings?.trackTemp?.enabled ?? true,
+        component: (
+          <WeatherTemp title="Track" value={trackTemp} />
+        ),
+      },
+      {
+        id: 'airTemp' as const,
+        shouldRender: settings?.airTemp?.enabled ?? true,
+        component: (
+          <WeatherTemp title="Air" value={airTemp} />
+        )
+      },
+      {
+        id: 'wind' as const,
+        shouldRender: settings?.wind?.enabled ?? true,
+        component: (<WindDirection speedMs={windSpeed} direction={relativeWindDirection} metric={isMetric} />)
+      },
+      {
+        id: 'humidity' as const,
+        shouldRender: settings?.humidity?.enabled ?? true,
+        component: (<WeatherHumidity humidity={weather.humidity} />)
+      },
+      {
+        id: 'wetness' as const,
+        shouldRender: settings?.wetness?.enabled ?? true,
+        component: (<WeatherTrackWetness trackMoisture={weather.trackMoisture} />)
+      },
+      {
+        id: 'trackState' as const,
+        shouldRender: settings?.trackState?.enabled ?? true,
+        component: (<WeatherTrackRubbered trackRubbered={trackRubbered} />)
+      },
+    ];
+
+    if (!displayOrder) {
+      return columns.filter((column) => column.shouldRender);
+    }
+
+    const orderedColumns = displayOrder
+      .map((orderId) => columns.find((column) => column.id === orderId))
+      .filter(
+        (column): column is NonNullable<typeof column> =>
+          column !== undefined && column.shouldRender
+      );
+
+    const remainingColumns = columns.filter(
+      (column) => column.shouldRender && !displayOrder.includes(column.id)
+    );
+
+    return [...orderedColumns, ...remainingColumns];
+  }, [settings?.trackTemp?.enabled, 
+    settings?.airTemp?.enabled, 
+    settings?.wind?.enabled, 
+    settings?.humidity?.enabled, 
+    settings?.wetness?.enabled, 
+    settings?.trackState?.enabled, 
+    trackTemp, 
+    airTemp, 
+    windSpeed, 
+    relativeWindDirection, 
+    isMetric, 
+    weather.humidity, weather.trackMoisture, trackRubbered, displayOrder]);
+
+  // Hide if showOnlyWhenOnTrack is enabled and player is not on track
+  if (settings?.showOnlyWhenOnTrack && !isOnTrack) {
+    return null;
+  }
+
+  if (!isSessionVisible) return <></>;
+  
   return (
     <div
-      className="w-full inline-flex flex-row bg-slate-800/[var(--bg-opacity)] rounded-sm"
+      className="w-full rounded-sm p-2 bg-slate-800/(--bg-opacity)"
       style={{
-        ['--bg-opacity' as string]: `${settings?.background?.opacity ?? 25}%`,
+        ['--bg-opacity' as string]: `${settings?.background?.opacity ?? 80}%`,
       }}
-      ref={parent}
     >
-      <div className="flex flex-col p-2 w-full rounded-sm gap-2">
-        <WeatherTemp title="Track" value={trackTemp.trackTemp} />
-        <WeatherTemp title="Air" value={trackTemp.airTemp} />
-        <WindDirection speedMs={windSpeed} direction={relativeWindDirection} metric={unit === 1} />
-        <WeatherTrackWetness trackMoisture={weather.trackMoisture} />
-        <WeatherTrackRubbered trackRubbered={trackRubbered} />
+      <div className="flex flex-col w-full gap-2">
+        {columnDefinitions.map((column) => (
+          <Fragment key={column.id}>{column.component}</Fragment>
+        ))}
       </div>
     </div>
   );

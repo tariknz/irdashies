@@ -24,9 +24,9 @@ export function generateMockData(sessionData?: {
   telemetry: Telemetry | Telemetry[];
   sessionInfo: Session | Session[];
 }): IrSdkBridge {
-  let telemetryInterval: NodeJS.Timeout;
-  let sessionInfoInterval: NodeJS.Timeout;
-  let runningStateInterval: NodeJS.Timeout;
+  let telemetryInterval: NodeJS.Timeout | null = null;
+  let sessionInfoInterval: NodeJS.Timeout | null = null;
+  let runningStateInterval: NodeJS.Timeout | null = null;
 
   const telemetry = sessionData?.telemetry;
   const sessionInfo = sessionData?.sessionInfo;
@@ -36,43 +36,67 @@ export function generateMockData(sessionData?: {
 
   let prevTelemetry = mockTelemetry as unknown as Telemetry;
 
+  // Use Sets to support multiple subscribers
+  const telemetryCallbacks = new Set<(value: Telemetry) => void>();
+  const sessionCallbacks = new Set<(value: Session) => void>();
+  const runningStateCallbacks = new Set<(value: boolean) => void>();
+
   return {
     onTelemetry: (callback: (value: Telemetry) => void) => {
-      telemetryInterval = setInterval(() => {
-        let t = Array.isArray(telemetry)
-          ? telemetry[telemetryIdx % telemetry.length]
-          : telemetry;
-        if (!t) {
-          const throttleValue = prevTelemetry.Throttle.value[0];
-          const brakeValue = prevTelemetry.Brake.value[0];
-          t = {
-            ...prevTelemetry,
-            Brake: {
-              ...prevTelemetry.Brake,
-              value: [jitterValue(brakeValue)],
-            },
-            Throttle: {
-              ...prevTelemetry.Throttle,
-              value: [jitterValue(throttleValue)],
-            },
-            Gear: {
-              ...prevTelemetry.Gear,
-              value: [3],
-            },
-            Speed: {
-              ...prevTelemetry.Speed,
-              value: [44],
-            },
-          };
-          prevTelemetry = t;
-        }
+      telemetryCallbacks.add(callback);
+      
+      // Start interval only once
+      if (!telemetryInterval) {
+        telemetryInterval = setInterval(() => {
+          let t = Array.isArray(telemetry)
+            ? telemetry[telemetryIdx % telemetry.length]
+            : telemetry;
+          if (!t) {
+            const throttleValue = prevTelemetry.Throttle.value[0];
+            const brakeValue = prevTelemetry.Brake.value[0];
+            t = {
+              ...prevTelemetry,
+              Brake: {
+                ...prevTelemetry.Brake,
+                value: [jitterValue(brakeValue)],
+              },
+              Throttle: {
+                ...prevTelemetry.Throttle,
+                value: [jitterValue(throttleValue)],
+              },
+              Gear: {
+                ...prevTelemetry.Gear,
+                value: [3],
+              },
+              Speed: {
+                ...prevTelemetry.Speed,
+                value: [44],
+              },
+            };
+            prevTelemetry = t;
+          }
 
-        telemetryIdx = telemetryIdx + 1;
-        callback({ ...t });
-      }, 1000 / 60);
+          telemetryIdx = telemetryIdx + 1;
+          const data = { ...t };
+          
+          // Call all registered callbacks
+          telemetryCallbacks.forEach(cb => cb(data));
+        }, 1000 / 60);
+      }
+      
+      // Return unsubscribe function
+      return () => {
+        telemetryCallbacks.delete(callback);
+        // Stop interval if no more callbacks
+        if (telemetryCallbacks.size === 0 && telemetryInterval) {
+          clearInterval(telemetryInterval);
+          telemetryInterval = null;
+        }
+      };
     },
     onSessionData: (callback: (value: Session) => void) => {
-      // callback({ ...sessionInfo });
+      sessionCallbacks.add(callback);
+      
       const updateSessionData = () => {
         let s = Array.isArray(sessionInfo)
           ? sessionInfo[sessionIdx % sessionInfo.length]
@@ -81,21 +105,59 @@ export function generateMockData(sessionData?: {
         if (!s) s = mockSessionInfo as unknown as Session;
         sessionIdx = sessionIdx + 1;
 
-        callback(s);
+        // Call all registered callbacks
+        sessionCallbacks.forEach(cb => cb(s));
       };
+      
+      // Send initial data immediately
       updateSessionData();
-      sessionInfoInterval = setInterval(updateSessionData, 2000);
+      
+      // Start interval only once
+      if (!sessionInfoInterval) {
+        sessionInfoInterval = setInterval(updateSessionData, 2000);
+      }
+      
+      // Return unsubscribe function
+      return () => {
+        sessionCallbacks.delete(callback);
+        // Stop interval if no more callbacks
+        if (sessionCallbacks.size === 0 && sessionInfoInterval) {
+          clearInterval(sessionInfoInterval);
+          sessionInfoInterval = null;
+        }
+      };
     },
     onRunningState: (callback: (value: boolean) => void) => {
-      callback(true); // Set initial state
-      runningStateInterval = setInterval(() => {
-        callback(true);
-      }, 1000);
+      runningStateCallbacks.add(callback);
+      
+      // Send initial state immediately
+      callback(true);
+      
+      // Start interval only once
+      if (!runningStateInterval) {
+        runningStateInterval = setInterval(() => {
+          runningStateCallbacks.forEach(cb => cb(true));
+        }, 1000);
+      }
+      
+      // Return unsubscribe function
+      return () => {
+        runningStateCallbacks.delete(callback);
+        // Stop interval if no more callbacks
+        if (runningStateCallbacks.size === 0 && runningStateInterval) {
+          clearInterval(runningStateInterval);
+          runningStateInterval = null;
+        }
+      };
     },
     stop: () => {
-      clearInterval(telemetryInterval);
-      clearInterval(sessionInfoInterval);
-      clearInterval(runningStateInterval);
+      console.log('🛑 Mock bridge: Stopping all intervals');
+      if (telemetryInterval) clearInterval(telemetryInterval);
+      if (sessionInfoInterval) clearInterval(sessionInfoInterval);
+      if (runningStateInterval) clearInterval(runningStateInterval);
+      telemetryCallbacks.clear();
+      sessionCallbacks.clear();
+      runningStateCallbacks.clear();
     },
   };
 }

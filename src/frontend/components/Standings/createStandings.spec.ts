@@ -282,6 +282,8 @@ describe('createStandings', () => {
             { name: '1. Bob' },
             { name: '2. Alice' },
             { name: '3. Charlie' },
+            { name: '6. Nico' },
+            { name: '7. Eve' },
             { name: '8. Frank' },
             { name: '9. Max' },
             { name: '10. George' },
@@ -406,9 +408,9 @@ describe('createStandings', () => {
       const filteredDrivers = sliceRelevantDrivers(results, 'GT3', {
         numTopDrivers: 1,
       });
-      expect(filteredDrivers[0][1].length).toBe(9);
+      expect(filteredDrivers[0][1].length).toBe(10);
       expect(filteredDrivers[0][1][0].name).toBe('1. Bob');
-      expect(filteredDrivers[0][1][1].name).toBe('4. David');
+      expect(filteredDrivers[0][1][1].name).toBe('3. Charlie');
     });
   });
 });
@@ -453,7 +455,7 @@ function createStandings(
     [],
     [],
     undefined,
-    undefined
+    undefined,
   );
   const driverClass = session?.DriverInfo?.Drivers?.find(
     (driver) => driver.CarIdx === session?.DriverInfo?.DriverCarIdx

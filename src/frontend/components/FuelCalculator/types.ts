@@ -16,6 +16,8 @@ export interface FuelLapData {
   isGreenFlag: boolean;
   /** Whether this lap is valid for calculations (outlier filtering) */
   isValidForCalc: boolean;
+  /** Whether the car started this lap from pit road (out-lap) */
+  isOutLap: boolean;
   /** Timestamp when lap was completed */
   timestamp: number;
 }
@@ -62,14 +64,35 @@ export interface FuelCalculation {
   confidence: 'high' | 'medium' | 'low';
   /** Estimated fuel remaining at race finish (can be negative if insufficient fuel) */
   fuelAtFinish: number;
+  /** Average lap time in seconds (for time until empty calculation) */
+  avgLapTime: number;
+  /** Total session time in seconds (for endurance strategy) */
+  sessionTimeTotal?: number;
+  /** Estimated number of pit stops remaining in the session */
+  stopsRemaining?: number;
+  /** Estimated laps per fuel stint (on a full tank) */
+  lapsPerStint?: number;
+  /** Target scenarios for making current fuel last different lap counts */
+  targetScenarios?: {
+    laps: number; // Target lap count (e.g., 19, 20, 21)
+    fuelPerLap: number; // Required L/lap to achieve this (e.g., 2.63)
+    isCurrentTarget: boolean; // True for the middle/current value
+  }[];
+  /** Earliest lap to pit while still being able to finish (for safety car strategy) */
+  earliestPitLap?: number;
+  /** Fuel tank capacity in liters (respecting session limits) */
+  fuelTankCapacity?: number;
 }
 
 /**
  * Fuel calculator widget settings
  */
 export interface FuelCalculatorSettings {
+  showOnlyWhenOnTrack: boolean;
   /** Fuel units to display */
   fuelUnits: 'L' | 'gal';
+  /** Layout style */
+  layout?: 'vertical' | 'horizontal';
   /** Show detailed consumption breakdown */
   showConsumption: boolean;
   /** Show minimum fuel consumption */
@@ -84,10 +107,20 @@ export interface FuelCalculatorSettings {
   showMax: boolean;
   /** Show pit window information */
   showPitWindow: boolean;
-  /** Show fuel save indicator */
-  showFuelSave: boolean;
+  /** Show endurance strategy (total pit stops for entire session) */
+  showEnduranceStrategy?: boolean;
+  /** Show fuel scenarios (target consumption for different lap counts) */
+  showFuelScenarios: boolean;
+  /** Show fuel required for min/avg/max consumption */
+  showFuelRequired?: boolean;
+  /** Show consumption history graph */
+  showConsumptionGraph?: boolean;
+  /** Consumption graph type */
+  consumptionGraphType?: 'line' | 'histogram';
   /** Safety margin percentage (0-1) */
   safetyMargin: number;
   /** Background opacity (0-100) */
   background: { opacity: number };
+  /** Display mode for fuel required column: 'toFinish' shows total fuel needed, 'toAdd' shows fuel to add at stop */
+  fuelRequiredMode?: 'toFinish' | 'toAdd';
 }

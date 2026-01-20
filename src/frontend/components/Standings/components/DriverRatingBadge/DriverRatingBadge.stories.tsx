@@ -3,6 +3,7 @@ import { DriverRatingBadge } from './DriverRatingBadge';
 
 export default {
   component: DriverRatingBadge,
+  title: 'widgets/Standings/components/DriverRatingBadge',
 } as Meta;
 
 type Story = StoryObj<typeof DriverRatingBadge>;
@@ -29,7 +30,8 @@ export const AllRatings: Story = {
   },
   render: (args) => (
     <div className="flex flex-col gap-1">
-      <DriverRatingBadge {...args} license="P 4.99" rating={12999} />
+      <DriverRatingBadge {...args} license="W 4.99" rating={12999} />
+      <DriverRatingBadge {...args} license="P 4.99" rating={11999} />
       <DriverRatingBadge {...args} license="A 4.99" rating={4999} />
       <DriverRatingBadge {...args} license="B 3.99" rating={3999} />
       <DriverRatingBadge {...args} license="C 2.99" rating={2999} />
@@ -101,5 +103,13 @@ export const FormatRatingOnlyColorRatingBw: Story = {
     license: 'A 4.99',
     rating: 4999,
     format: 'rating-only-color-rating-bw',
+  },
+};
+
+export const FormatLicenseColorFullRatingBw: Story = {
+  args: {
+    license: 'A 4.99',
+    rating: 4999,
+    format: 'license-color-fullrating-bw',
   },
 };

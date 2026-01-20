@@ -12,11 +12,20 @@ import {
   drawTurnNames,
   drawDrivers,
 } from './trackDrawingUtils';
+import { useDriverOffTrack } from './hooks/useDriverOffTrack';
 
 export interface TrackProps {
   trackId: number;
   drivers: TrackDriver[];
   enableTurnNames?: boolean;
+  showCarNumbers?: boolean;
+  displayMode?: 'carNumber' | 'sessionPosition';
+  invertTrackColors?: boolean;
+  driverCircleSize?: number;
+  playerCircleSize?: number;
+  trackLineWidth?: number;
+  trackOutlineWidth?: number;
+  highlightColor?: number;
   debug?: boolean;
 }
 
@@ -24,6 +33,7 @@ export interface TrackDriver {
   driver: Driver;
   progress: number;
   isPlayer: boolean;
+  classPosition?: number;
 }
 
 export interface TrackDrawing {
@@ -53,6 +63,14 @@ export const TrackCanvas = ({
   trackId,
   drivers,
   enableTurnNames,
+  showCarNumbers = true,
+  displayMode = 'carNumber',
+  invertTrackColors = false,
+  driverCircleSize = 40,
+  playerCircleSize = 40,
+  trackLineWidth = 20,
+  trackOutlineWidth = 40,
+  highlightColor,
   debug,
 }: TrackProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -61,21 +79,27 @@ export const TrackCanvas = ({
   const trackDrawing = (tracks as unknown as TrackDrawing[])[trackId];
   const shouldShow = shouldShowTrack(trackId, trackDrawing);
 
+  const driversOffTrack = useDriverOffTrack();
+
   // Memoize Path2D objects to avoid re-creating them on every render
   // this is used to draw the track and start/finish line
+  const insidePath = trackDrawing?.active?.inside;
+  const startFinishLinePath = trackDrawing?.startFinish?.line;
   const path2DObjects = useMemo(() => {
-    if (!trackDrawing?.active?.inside || !trackDrawing?.startFinish?.line)
-      return null;
+    if (!insidePath || !startFinishLinePath) return null;
 
     return {
-      inside: trackDrawing.active.inside
-        ? new Path2D(trackDrawing.active.inside)
-        : null,
-      startFinish: trackDrawing.startFinish.line
-        ? new Path2D(trackDrawing.startFinish.line)
-        : null,
+      inside: new Path2D(insidePath),
+      startFinish: new Path2D(startFinishLinePath),
     };
-  }, [trackDrawing?.active?.inside, trackDrawing?.startFinish?.line]);
+  }, [insidePath, startFinishLinePath]);
+
+  // Calculate if this is a multi-class race by counting unique CarClassID values
+  const isMultiClass = useMemo(() => {
+    if (!drivers || drivers.length === 0) return false;
+    const uniqueClassIds = new Set(drivers.map(({ driver }) => driver.CarClassID));
+    return uniqueClassIds.size > 1;
+  }, [drivers]);
 
   // Memoize color calculations
   const driverColors = useMemo(() => {
@@ -83,15 +107,22 @@ export const TrackCanvas = ({
 
     drivers?.forEach(({ driver, isPlayer }) => {
       if (isPlayer) {
-        colors[driver.CarIdx] = { fill: getColor('yellow'), text: 'white' };
+        if (highlightColor) {
+          // Convert highlight color number to hex string for canvas
+          const highlightColorHex = `#${highlightColor.toString(16).padStart(6, '0')}`;
+          colors[driver.CarIdx] = { fill: highlightColorHex, text: 'white' };
+        } else {
+          // Default to amber when highlightColor is undefined
+          colors[driver.CarIdx] = { fill: getColor('amber'), text: 'white' };
+        }
       } else {
-        const style = getTailwindStyle(driver.CarClassColor);
+        const style = getTailwindStyle(driver.CarClassColor, undefined, isMultiClass);
         colors[driver.CarIdx] = { fill: style.canvasFill, text: 'white' };
       }
     });
 
     return colors;
-  }, [drivers]);
+  }, [drivers, isMultiClass, highlightColor]);
 
   // Get start/finish line calculations
   const startFinishLine = useStartFinishLine({
@@ -114,8 +145,8 @@ export const TrackCanvas = ({
     const intersectionLength = trackDrawing.startFinish.point.length;
     const totalLength = trackDrawing.active.totalLength;
 
-    return drivers.reduce(
-      (acc, { driver, progress, isPlayer }) => {
+    return drivers.reduce<Record<number, TrackDriver & { position: { x: number; y: number }; sessionPosition?: number }>>(
+      (acc, { driver, progress, isPlayer, classPosition: sessionPosition }) => {
         // Calculate position based on progress
         const adjustedLength = (totalLength * progress) % totalLength;
         const length =
@@ -131,14 +162,14 @@ export const TrackCanvas = ({
           0,
           Math.min(pointIndex, trackPathPoints.length - 1)
         );
-        const position = trackPathPoints[clampedIndex];
+        const canvasPosition = trackPathPoints[clampedIndex];
 
         return {
           ...acc,
-          [driver.CarIdx]: { position, driver, isPlayer, progress },
-        };
+          [driver.CarIdx]: { position: canvasPosition, driver, isPlayer, progress, sessionPosition },
+        } as Record<number, TrackDriver & { position: { x: number; y: number }; sessionPosition?: number }>;
       },
-      {} as Record<number, TrackDriver & { position: { x: number; y: number } }>
+      {} as Record<number, TrackDriver & { position: { x: number; y: number }; sessionPosition?: number }>
     );
   }, [
     drivers,
@@ -191,8 +222,12 @@ export const TrackCanvas = ({
     // Observe the canvas element itself
     resizeObserver.observe(canvas);
 
+    // Add window resize listener as fallback
+    window.addEventListener('resize', resize);
+
     return () => {
       resizeObserver.disconnect();
+      window.removeEventListener('resize', resize);
     };
   }, [trackId]);
 
@@ -220,10 +255,10 @@ export const TrackCanvas = ({
     setupCanvasContext(ctx, scale, offsetX, offsetY);
 
     // Draw all elements
-    drawTrack(ctx, path2DObjects);
+    drawTrack(ctx, path2DObjects, invertTrackColors, trackLineWidth, trackOutlineWidth);
     drawStartFinishLine(ctx, startFinishLine);
     drawTurnNames(ctx, trackDrawing.turns, enableTurnNames);
-    drawDrivers(ctx, calculatePositions, driverColors);
+    drawDrivers(ctx, calculatePositions, driverColors, driversOffTrack, driverCircleSize, playerCircleSize, showCarNumbers, displayMode);
 
     // Restore context state
     ctx.restore();
@@ -234,9 +269,17 @@ export const TrackCanvas = ({
     driverColors,
     canvasSize,
     enableTurnNames,
+    showCarNumbers,
+    displayMode,
+    invertTrackColors,
+    trackLineWidth,
+    trackOutlineWidth,
     trackDrawing?.startFinish?.point,
     trackDrawing?.active?.trackPathPoints,
     startFinishLine,
+    driversOffTrack,
+    driverCircleSize,
+    playerCircleSize,
   ]);
 
   // Development/Storybook mode - show debug info and canvas

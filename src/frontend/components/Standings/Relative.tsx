@@ -1,33 +1,34 @@
 import { useMemo } from 'react';
-import { useAutoAnimate } from '@formkit/auto-animate/react';
 import { DriverInfoRow } from './components/DriverInfoRow/DriverInfoRow';
-import { useDrivingState } from '@irdashies/context';
-import { useRelativeSettings, useDriverRelatives, useDriverStandings, useHighlightColor } from './hooks';
-import { DriverRatingBadge } from './components/DriverRatingBadge/DriverRatingBadge';
-import { RatingChange } from './components/RatingChange/RatingChange';
+import { useDrivingState, useWeekendInfoNumCarClasses, useWeekendInfoTeamRacing, useSessionVisibility, useGeneralSettings } from '@irdashies/context';
+import { useRelativeSettings, useDriverRelatives, useHighlightColor } from './hooks';
 import { SessionBar } from './components/SessionBar/SessionBar';
-import { SessionFooter } from './components/SessionFooter/SessionFooter';
+
 import { TitleBar } from './components/TitleBar/TitleBar';
-import { usePitLabStoreUpdater } from '../../context/PitLapStore/PitLapStoreUpdater';
-import { useRelativeGapStoreUpdater } from '@irdashies/context';
+import { usePitLapStoreUpdater } from '../../context/PitLapStore/PitLapStoreUpdater';
+import { useIsSingleMake } from './hooks/useIsSingleMake';
 
 export const Relative = () => {
   const settings = useRelativeSettings();
+  const generalSettings = useGeneralSettings();
   const buffer = settings?.buffer ?? 3;
   const { isDriving } = useDrivingState();
   const standings = useDriverRelatives({ buffer });
-  const [parent] = useAutoAnimate();
-  const activeDrivers = useDriverStandings();
   const highlightColor = useHighlightColor();
-  const isMultiClass = useMemo(() => {
-    const uniqueClasses = new Set(activeDrivers.flatMap(([, drivers]) => drivers.map(d => d.carClass.id)));
-    return uniqueClasses.size > 1;
-  }, [activeDrivers]);
+  const numCarClasses = useWeekendInfoNumCarClasses();
+  const isMultiClass = (numCarClasses ?? 0) > 1;
+  const isSessionVisible = useSessionVisibility(settings?.sessionVisibility);
 
+  usePitLapStoreUpdater();
 
-  // Update relative gap store with telemetry data
-  useRelativeGapStoreUpdater();
-  usePitLabStoreUpdater();
+  const isSingleMake = useIsSingleMake();
+  const hideCarManufacturer = !!(settings?.carManufacturer?.hideIfSingleMake && isSingleMake);
+
+  // Check if this is a team racing session
+  const isTeamRacing = useWeekendInfoTeamRacing();
+
+  // Determine table border spacing based on compact mode
+  const tableBorderSpacing = generalSettings?.compactMode ? 'border-spacing-y-0' : 'border-spacing-y-0.5';
 
   // Always render 2 * buffer + 1 rows (buffer above + player + buffer below)
   const totalRows = 2 * buffer + 1;
@@ -48,6 +49,7 @@ export const Relative = () => {
           carIdx={0}
           classColor={0}
           name="Franz Hermann"
+          teamName={settings?.teamName?.enabled && isTeamRacing ? '' : undefined}
           isPlayer={false}
           hasFastestTime={false}
           hidden={true}
@@ -57,19 +59,10 @@ export const Relative = () => {
           carNumber={settings?.carNumber?.enabled ?? true ? '' : undefined}
           flairId={settings?.countryFlags?.enabled ?? true ? 0 : undefined}
           carId={settings?.carManufacturer?.enabled ?? true ? 0 : undefined}
-          badge={settings?.badge?.enabled ? (
-            <DriverRatingBadge
-              license={undefined}
-              rating={undefined}
-              format={settings.badge.badgeFormat}
-            />
-          ) : undefined}
+          license={undefined}
+          rating={undefined}
           currentSessionType=""
-          iratingChange={
-            settings?.iratingChange?.enabled ? (
-              <RatingChange value={undefined} />
-            ) : undefined
-          }
+          iratingChangeValue={undefined}
           delta={settings?.delta?.enabled ?? true ? 0 : undefined}
           fastestTime={settings?.fastestTime?.enabled ? undefined : undefined}
           lastTime={settings?.lastTime?.enabled ? undefined : undefined}
@@ -80,6 +73,11 @@ export const Relative = () => {
           radioActive={false}
           tireCompound={settings?.compound?.enabled ? 0 : undefined}
           highlightColor={highlightColor}
+          dnf={false}
+          repair={false}
+          penalty={false}
+          slowdown={false}
+          hideCarManufacturer={hideCarManufacturer}
         />
       ));
     }
@@ -100,6 +98,7 @@ export const Relative = () => {
             carIdx={0}
             classColor={0}
             name="Franz Hermann"
+            teamName={settings?.teamName?.enabled && isTeamRacing ? '' : undefined}
             isPlayer={false}
             hasFastestTime={false}
             hidden={true}
@@ -109,13 +108,10 @@ export const Relative = () => {
             carNumber={settings?.carNumber?.enabled ?? true ? '' : undefined}
             flairId={settings?.countryFlags?.enabled ?? true ? 0 : undefined}
             carId={settings?.carManufacturer?.enabled ?? true ? 0 : undefined}
-            badge={settings?.badge?.enabled ? <></> : undefined}
+            license={undefined}
+            rating={undefined}
             currentSessionType=""
-            iratingChange={
-              settings?.iratingChange?.enabled ? (
-                <RatingChange value={undefined} />
-              ) : undefined
-            }
+            iratingChangeValue={undefined}
             delta={settings?.delta?.enabled ?? true ? 0 : undefined}
             fastestTime={settings?.fastestTime?.enabled ? undefined : undefined}
             lastTime={settings?.lastTime?.enabled ? undefined : undefined}
@@ -127,6 +123,12 @@ export const Relative = () => {
             tireCompound={settings?.compound?.enabled ? 0 : undefined}
             lastLap={undefined}
             highlightColor={highlightColor}
+            dnf={false}
+            repair={false}
+            penalty={false}
+            slowdown={false}
+            deltaDecimalPlaces={settings?.delta?.precision}
+            hideCarManufacturer={hideCarManufacturer}
           />
         );
       }
@@ -134,10 +136,11 @@ export const Relative = () => {
       return (
         <DriverInfoRow
           key={result.carIdx}
-          carIdx={ result.carIdx}
+          carIdx={result.carIdx}
           classColor={result.carClass.color}
           carNumber={settings?.carNumber?.enabled ?? true ? result.driver?.carNum || '' : undefined}
           name={result.driver?.name || ''}
+          teamName={settings?.teamName?.enabled && isTeamRacing ? result.driver?.teamName || '' : undefined}
           isPlayer={result.isPlayer}
           hasFastestTime={result.hasFastestTime}
           position={result.classPosition}
@@ -158,29 +161,26 @@ export const Relative = () => {
           prevCarTrackSurface={result.prevCarTrackSurface}
           isMultiClass={isMultiClass}
           currentSessionType={result.currentSessionType}
-          badge={
-            settings?.badge?.enabled ? (
-              <DriverRatingBadge
-                license={result.driver?.license}
-                rating={result.driver?.rating}
-                format={settings.badge.badgeFormat}
-              />
-            ) : undefined
-          }
-          iratingChange={
-            settings?.iratingChange?.enabled ? (
-              <RatingChange value={result.iratingChange} />
-            ) : undefined
-          }
+          license={result.driver?.license}
+          rating={result.driver?.rating}
+          iratingChangeValue={result.iratingChange}
           delta={settings?.delta?.enabled ?? true ? result.delta : undefined}
           displayOrder={settings?.displayOrder}
           config={settings}
           highlightColor={highlightColor}
+          dnf={result.dnf}
+          repair={result.repair}
+          penalty={result.penalty}
+          slowdown={result.slowdown}
+          deltaDecimalPlaces={settings?.delta?.precision}
+          hideCarManufacturer={hideCarManufacturer}
         />
       );
     });
-  }, [standings, playerIndex, totalRows, settings, isMultiClass, highlightColor]);
+  }, [standings, playerIndex, totalRows, settings, isMultiClass, highlightColor, hideCarManufacturer, isTeamRacing]);
 
+  if (!isSessionVisible) return <></>;
+  
   // Show only when on track setting
   if (settings?.showOnlyWhenOnTrack && !isDriving) {
     return <></>;
@@ -191,28 +191,28 @@ export const Relative = () => {
     return (
       <div className="w-full h-full">
         <TitleBar titleBarSettings={settings?.titleBar} />
-        <SessionBar />
-        <table className="w-full table-auto text-sm border-separate border-spacing-y-0.5 mb-3 mt-3">
-          <tbody ref={parent}>{rows}</tbody>
+        {(settings?.headerBar?.enabled ?? false) && <SessionBar position="header" variant="relative" />}
+        <table className={`w-full table-auto text-sm border-separate ${tableBorderSpacing}`}>
+          <tbody>{rows}</tbody>
         </table>
-        <SessionFooter />
+        {(settings?.footerBar?.enabled ?? true) && <SessionBar position="footer" variant="relative" />}
       </div>
     );
   }
 
   return (
     <div
-      className="w-full bg-slate-800/(--bg-opacity) rounded-sm p-2"
+      className={`w-full bg-slate-800/(--bg-opacity) rounded-sm ${!generalSettings?.compactMode ? 'p-2' : ''} overflow-hidden`}
       style={{
         ['--bg-opacity' as string]: `${settings?.background?.opacity ?? 0}%`,
       }}
     >
       <TitleBar titleBarSettings={settings?.titleBar} />
-      <SessionBar />
-      <table className="w-full table-auto text-sm border-separate border-spacing-y-0.5 mb-3 mt-3">
-        <tbody ref={parent}>{rows}</tbody>
+      {(settings?.headerBar?.enabled ?? false) && <SessionBar position="header" variant="relative" />}
+      <table className={`w-full table-auto text-sm border-separate ${tableBorderSpacing}`}>
+        <tbody>{rows}</tbody>
       </table>
-      <SessionFooter />
+      {(settings?.footerBar?.enabled ?? true) && <SessionBar position="footer" variant="relative" />}
     </div>
   );
 };

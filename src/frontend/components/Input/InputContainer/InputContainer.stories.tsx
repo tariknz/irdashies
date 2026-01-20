@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 
 const meta: Meta<typeof InputContainer> = {
   component: InputContainer,
+  title: 'widgets/Input/components/InputContainer',
 };
 export default meta;
 
@@ -55,6 +56,8 @@ const RandomTraces = () => {
           includeBrake: true,
           includeAbs: true,
           includeSteer: true,
+          strokeWidth: 3,
+          maxSamples: 400,
         },
         bar: {
           enabled: true,
@@ -74,6 +77,16 @@ const RandomTraces = () => {
             color: 'light',
           },
         },
+        tachometer: {
+          enabled: true,
+          showRpmText: true,
+        },
+        displayOrder: ['trace', 'bar', 'gear', 'steer'],
+        showOnlyWhenOnTrack: true,
+        background: {
+          opacity: 80,
+        },
+        sessionVisibility: { race: true, loneQualify: true, openQualify: true, practice: true, offlineTesting: true }
       }}
     />
   );

@@ -3,6 +3,7 @@ import { create, useStore } from 'zustand';
 export interface LapTimeBuffer {
   lastLapTimes: number[];
   lapTimeHistory: number[][]; // [carIdx][sample]
+  lapDeltasVsPlayer: number[][]; // [carIdx][sample] - deltas vs player's corresponding laps
   version: number; // Incremented when lapTimeHistory changes
 }
 
@@ -10,7 +11,8 @@ interface LapTimesState {
   lapTimeBuffer: LapTimeBuffer | null;
   lapTimes: number[];
   sessionNum: number | null;
-  updateLapTimes: (carIdxLastLapTime: number[], sessionNum: number | null) => void;
+  playerCarIdx: number | null;
+  updateLapTimes: (carIdxLastLapTime: number[], sessionNum: number | null, playerCarIdx: number | null) => void;
   reset: () => void;
 }
 
@@ -60,16 +62,21 @@ export const useLapTimesStore = create<LapTimesState>((set, get) => ({
   lapTimeBuffer: null,
   lapTimes: [],
   sessionNum: null,
-  updateLapTimes: (carIdxLastLapTime, sessionNum) => {
-    const { lapTimeBuffer, sessionNum: prevSessionNum } = get();
+  playerCarIdx: null,
+  updateLapTimes: (carIdxLastLapTime, sessionNum, playerCarIdx) => {
+    const { lapTimeBuffer, sessionNum: prevSessionNum, playerCarIdx: prevPlayerCarIdx } = get();
 
-    // Auto-reset if session changed
-    if (prevSessionNum !== null && sessionNum !== null && sessionNum !== prevSessionNum) {
-      console.log(`[LapTimesStore] Session changed from ${prevSessionNum} to ${sessionNum}, resetting`);
+    // Auto-reset if session changed or player changed
+    if (
+      (prevSessionNum !== null && sessionNum !== null && sessionNum !== prevSessionNum) ||
+      (prevPlayerCarIdx !== null && playerCarIdx !== null && playerCarIdx !== prevPlayerCarIdx)
+    ) {
+      console.log(`[LapTimesStore] Session/Player changed, resetting`);
       set({
         lapTimeBuffer: null,
         lapTimes: [],
         sessionNum,
+        playerCarIdx,
       });
       return;
     }
@@ -77,12 +84,17 @@ export const useLapTimesStore = create<LapTimesState>((set, get) => ({
     if (!carIdxLastLapTime.length) {
       set({
         lapTimes: carIdxLastLapTime.map(() => 0),
+        playerCarIdx,
       });
       return;
     }
 
     const newHistory: number[][] = lapTimeBuffer?.lapTimeHistory
       ? lapTimeBuffer.lapTimeHistory.map(arr => [...arr])
+      : carIdxLastLapTime.map(() => []);
+
+    const newDeltas: number[][] = lapTimeBuffer?.lapDeltasVsPlayer
+      ? lapTimeBuffer.lapDeltasVsPlayer.map(arr => [...arr])
       : carIdxLastLapTime.map(() => []);
 
     let historyChanged = false;
@@ -95,6 +107,24 @@ export const useLapTimesStore = create<LapTimesState>((set, get) => ({
           if (!newHistory[idx]) newHistory[idx] = [];
           newHistory[idx].push(lapTime);
           if (newHistory[idx].length > LAP_TIME_AVG_WINDOW) newHistory[idx].shift();
+
+          // Calculate delta vs player's corresponding lap (if available and not the player themselves)
+          if (playerCarIdx !== null && idx !== playerCarIdx) {
+            const playerHistory = newHistory[playerCarIdx];
+            if (playerHistory && playerHistory.length > 0) {
+              // Get the corresponding player lap time (align by index in history)
+              const playerLapIndex = playerHistory.length - 1; // Most recent player lap
+              const playerLapTime = playerHistory[playerLapIndex];
+
+              if (playerLapTime > 0) {
+                if (!newDeltas[idx]) newDeltas[idx] = [];
+                const delta = lapTime - playerLapTime;
+                newDeltas[idx].push(delta);
+                if (newDeltas[idx].length > LAP_TIME_AVG_WINDOW) newDeltas[idx].shift();
+              }
+            }
+          }
+
           historyChanged = true;
         }
       });
@@ -104,6 +134,7 @@ export const useLapTimesStore = create<LapTimesState>((set, get) => ({
         if (lapTime > 0) {
           newHistory[idx] = [lapTime];
           historyChanged = true;
+          // No deltas on first run (need at least player's first lap)
         }
       });
     }
@@ -125,10 +156,12 @@ export const useLapTimesStore = create<LapTimesState>((set, get) => ({
       lapTimeBuffer: {
         lastLapTimes: [...carIdxLastLapTime],
         lapTimeHistory: newHistory,
+        lapDeltasVsPlayer: newDeltas,
         version: historyChanged ? (lapTimeBuffer?.version ?? 0) + 1 : (lapTimeBuffer?.version ?? 0),
       },
       lapTimes: avgLapTimes,
       sessionNum,
+      playerCarIdx,
     });
   },
   reset: () => {
@@ -137,6 +170,7 @@ export const useLapTimesStore = create<LapTimesState>((set, get) => ({
       lapTimeBuffer: null,
       lapTimes: [],
       sessionNum: null,
+      playerCarIdx: null,
     });
   },
 }));
@@ -178,6 +212,42 @@ export const useLapTimeHistory = (): number[][] => {
       lastSeenVersion = currentVersion;
       lastSeenHistory = buffer.lapTimeHistory;
       return buffer.lapTimeHistory;
+    }
+  );
+};
+
+// Separate cache for deltas
+let lastSeenDeltasVersion = -1;
+let lastSeenDeltas: number[][] = EMPTY_LAP_HISTORY;
+
+/**
+ * @returns Pre-calculated lap time deltas vs player for each car. Returns array of arrays where [carIdx][lapIndex] contains delta in seconds.
+ * Delta = opponent lap time - player lap time. Positive = opponent slower, negative = opponent faster.
+ * Most recent delta is at the end of each car's array. Returns up to LAP_TIME_AVG_WINDOW deltas per car.
+ *
+ * IMPORTANT: Deltas are calculated ONCE when laps complete and never recalculated, preventing retroactive changes
+ * due to asynchronous lap time updates from iRacing SDK.
+ *
+ * Performance: Uses version-based equality checking for O(1) comparison instead of deep array comparison.
+ */
+export const useLapDeltasVsPlayer = (): number[][] => {
+  return useStore(
+    useLapTimesStore,
+    (state: LapTimesState) => {
+      const buffer = state.lapTimeBuffer;
+      if (!buffer) return EMPTY_LAP_HISTORY;
+
+      const currentVersion = buffer.version;
+
+      // If version hasn't changed, return the cached reference
+      if (currentVersion === lastSeenDeltasVersion) {
+        return lastSeenDeltas;
+      }
+
+      // Version changed, update cache
+      lastSeenDeltasVersion = currentVersion;
+      lastSeenDeltas = buffer.lapDeltasVsPlayer;
+      return buffer.lapDeltasVsPlayer;
     }
   );
 }; 

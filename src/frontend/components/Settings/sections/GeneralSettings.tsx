@@ -41,11 +41,16 @@ const COLOR_THEME_PRESETS: Record<string, string> = {
 };
 
 export const GeneralSettings = () => {
-  const { currentDashboard, onDashboardUpdated } = useDashboard();
+  const { bridge, currentDashboard, onDashboardUpdated } = useDashboard();
   const [settings, setSettings] = useState<GeneralSettingsType>({
     fontSize: currentDashboard?.generalSettings?.fontSize ?? 'sm',
     colorPalette: currentDashboard?.generalSettings?.colorPalette ?? 'default',
-    highlightColor: currentDashboard?.generalSettings?.highlightColor ?? 960745
+    highlightColor: currentDashboard?.generalSettings?.highlightColor ?? 960745,
+    skipTaskbar: currentDashboard?.generalSettings?.skipTaskbar ?? true,
+    disableHardwareAcceleration: currentDashboard?.generalSettings?.disableHardwareAcceleration ?? false,
+    enableAutoStart: currentDashboard?.generalSettings?.enableAutoStart ?? false,
+    compactMode: currentDashboard?.generalSettings?.compactMode ?? false,
+    overlayAlwaysOnTop: currentDashboard?.generalSettings?.overlayAlwaysOnTop ?? true
   });
 
   if (!currentDashboard || !onDashboardUpdated) {
@@ -95,15 +100,47 @@ export const GeneralSettings = () => {
     updateDashboard(newSettings); 
   };
 
+  const handleSkipTaskbarChange = (enabled: boolean) => {
+    const newSettings = { ...settings, skipTaskbar: enabled };
+    setSettings(newSettings);
+    updateDashboard(newSettings);
+  };
+
+  const handleDisableHardwareAccelerationChange = (enabled: boolean) => {
+    const newSettings = { ...settings, disableHardwareAcceleration: enabled };
+    setSettings(newSettings);
+    updateDashboard(newSettings);
+  };
+
+  const handleAutoStartChange = (enabled: boolean) => {
+    const newSettings = { ...settings, enableAutoStart: enabled };
+    setSettings(newSettings);
+    updateDashboard(newSettings);
+    bridge.setAutoStart(enabled);
+  };
+
+  const handleCompactModeChange = (enabled: boolean) => {
+    const newSettings = { ...settings, compactMode: enabled };
+    setSettings(newSettings);
+    updateDashboard(newSettings);
+  };
+
+  const handleOverlayAlwaysOnTopChange = (enabled: boolean) => {
+    const newSettings = { ...settings, overlayAlwaysOnTop: enabled };
+    setSettings(newSettings);
+    updateDashboard(newSettings);
+  };
+
 
 
   return (
-    <div className="flex flex-col h-full space-y-6">
-      <div>
-        <h2 className="text-xl mb-4">General Settings</h2>
+    <div className="flex flex-col h-full">
+      <div className="flex-none">
+        <h2 className="text-xl mb-4">General</h2>
         <p className="text-slate-400 mb-4">Configure general application settings and preferences.</p>
       </div>
 
+      <div className="flex-1 overflow-y-auto min-h-0 space-y-6">
       {/* Font Size Settings */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
@@ -124,6 +161,25 @@ export const GeneralSettings = () => {
             onChange={handleSliderChange}
             className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer slider accent-blue-500"
           />
+        </div>
+      </div>
+
+      {/* Compact Mode Setting */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-medium text-slate-200">Compact Mode</h3>
+            <p className="text-sm text-slate-400">When enabled, visual spacing is minimized, reducing the vertical space between drivers and class headers in the standings and relatives.</p>
+          </div>
+          <label className="relative inline-flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              checked={settings.compactMode ?? false}
+              onChange={(e) => handleCompactModeChange(e.target.checked)}
+              className="sr-only peer"
+            />
+            <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+          </label>
         </div>
       </div>
 
@@ -183,7 +239,84 @@ export const GeneralSettings = () => {
         </div> 
       </div>
 
+      {/* Hide from Taskbar Setting */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-medium text-slate-200">Hide Overlays from Taskbar</h3>
+            <p className="text-sm text-slate-400">When enabled, overlay windows won&apos;t appear in the taskbar. The app is still accessible via the system tray. (requires restart)</p>
+          </div>
+          <label className="relative inline-flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              checked={settings.skipTaskbar ?? true}
+              onChange={(e) => handleSkipTaskbarChange(e.target.checked)}
+              className="sr-only peer"
+            />
+            <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+          </label>
+        </div>
+      </div>
 
+      {/* Overlay Always On Top Setting */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-medium text-slate-200">Keep Overlays Always On Top</h3>
+            <p className="text-sm text-slate-400">When enabled, overlay windows will always stay on top of other applications. (requires restart)</p>
+          </div>
+          <label className="relative inline-flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              checked={settings.overlayAlwaysOnTop ?? true}
+              onChange={(e) => handleOverlayAlwaysOnTopChange(e.target.checked)}
+              className="sr-only peer"
+            />
+            <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+          </label>
+        </div>
+      </div>
+
+      {/* Disable Hardware Acceleration Setting */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-medium text-slate-200">Disable Hardware Acceleration</h3>
+            <p className="text-sm text-slate-400">When enabled, disables GPU hardware acceleration and uses software rendering instead. This may help with compatibility issues on some systems. (requires restart)</p>
+          </div>
+          <label className="relative inline-flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              checked={settings.disableHardwareAcceleration ?? false}
+              onChange={(e) => handleDisableHardwareAccelerationChange(e.target.checked)}
+              className="sr-only peer"
+            />
+            <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+          </label>
+        </div>
+      </div>
+
+        {/* Autostart Setting */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-medium text-slate-200">Start on system startup</h3>
+              <p className="text-sm text-slate-400">If enabled, irDashies will start automatically on system start up.</p>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={settings.enableAutoStart ?? true}
+                onChange={(e) => handleAutoStartChange(e.target.checked)}
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+            </label>
+          </div>
+        </div>
+
+      </div>
     </div>
   );
 };
+

@@ -8,6 +8,7 @@ import { Standings } from '../Standings/Standings';
 
 const meta: Meta<typeof EditMode> = {
   component: EditMode,
+  title: 'components/EditMode',
   decorators: [TelemetryDecorator()],
 };
 export default meta;
@@ -17,6 +18,8 @@ const mockDashboard: DashboardLayout = {
 };
 
 const mockBridge: (editMode: boolean) => DashboardBridge = (editMode) => ({
+  getAnalyticsOptOut: () => Promise.resolve(false),
+  setAnalyticsOptOut: () => Promise.resolve(),
   saveDashboard: () => {
     // noop
   },
@@ -32,6 +35,25 @@ const mockBridge: (editMode: boolean) => DashboardBridge = (editMode) => ({
   },
   toggleLockOverlays: () => Promise.resolve(true),
   getAppVersion: () => Promise.resolve('1.0.0'),
+  toggleDemoMode: () => {
+    return;
+  },
+  onDemoModeChanged: (callback) => {
+    callback(false);
+    return () => {
+      return;
+    };
+  },
+  getCurrentDashboard: () => {
+    return null;
+  },
+  stop: () => {
+    return;
+  },
+  saveGarageCoverImage: () => Promise.resolve(''),
+  getGarageCoverImage: () => Promise.resolve(null),
+  getGarageCoverImageAsDataUrl: () => Promise.resolve(null),
+  setAutoStart: () => Promise.resolve()
 });
 
 export const Primary = {
@@ -46,16 +68,16 @@ export const Primary = {
   },
   args: {
     editMode: true,
-  },
+  } as { editMode: boolean },
 };
 
 export const WithInput = {
   render: (args: { editMode: boolean }) => {
     return (
-      <div className="h-[80px] w-[400px]">
+      <div className="h-[140px] w-[420px]">
         <DashboardProvider bridge={mockBridge(args.editMode)}>
           <EditMode>
-            <Input />
+            <Input/>
           </EditMode>
         </DashboardProvider>
       </div>
@@ -63,7 +85,7 @@ export const WithInput = {
   },
   args: {
     editMode: true,
-  },
+  } as { editMode: boolean },
 };
 
 export const WithStandings = {
@@ -78,5 +100,5 @@ export const WithStandings = {
   },
   args: {
     editMode: true,
-  },
+  } as { editMode: boolean },
 };

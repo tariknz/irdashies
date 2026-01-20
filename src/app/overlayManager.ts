@@ -4,6 +4,7 @@ import path from 'node:path';
 import { trackWindowMovement } from './trackWindowMovement';
 import { Notification } from 'electron';
 import { readData, writeData } from './storage/storage';
+import { getDashboard } from './storage/dashboards';
 
 // used for Hot Module Replacement
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string;
@@ -25,16 +26,23 @@ function getIconPath(): string {
 }
 
 export class OverlayManager {
-  private overlayWindows: Record<string, DashboardWidgetWithWindow> = {};
+  private overlayWindows = new Map<string, DashboardWidgetWithWindow>();
   private currentSettingsWindow: BrowserWindow | undefined;
   private isLocked = true;
+  private skipTaskbar = true;
+  private overlayAlwaysOnTop = true;
+  private hasSingleInstanceLock = false;
 
   constructor() {
     setInterval(() => {
       this.getOverlays().forEach(({ window }) => {
         if (window.isDestroyed()) return;
         if (!window.isVisible()) return;
-        window.setAlwaysOnTop(true, 'screen-saver', 1);
+        if (this.overlayAlwaysOnTop) {
+          window.setAlwaysOnTop(true, 'screen-saver', 1);
+        } else {
+          window.setAlwaysOnTop(false);
+        }
       });
     }, 5000);
   }
@@ -46,11 +54,13 @@ export class OverlayManager {
   }
 
   public getOverlays(): { widget: DashboardWidget; window: BrowserWindow }[] {
-    return Object.values(this.overlayWindows);
+    return Array.from(this.overlayWindows.values());
   }
 
   public createOverlays(dashboardLayout: DashboardLayout): void {
-    const { widgets } = dashboardLayout;
+    const { widgets, generalSettings } = dashboardLayout;
+    this.skipTaskbar = generalSettings?.skipTaskbar ?? true;
+    this.overlayAlwaysOnTop = generalSettings?.overlayAlwaysOnTop ?? true;
     widgets.forEach((widget) => {
       if (!widget.enabled) return; // skip disabled widgets
       const window = this.createOverlayWindow(widget);
@@ -73,6 +83,7 @@ export class OverlayManager {
       title: `iRacing Dashies - ${title}`,
       transparent: true,
       frame: false,
+      skipTaskbar: this.skipTaskbar,
       focusable: true, //for OpenKneeeboard/VR
       resizable: false,
       movable: false,
@@ -90,7 +101,9 @@ export class OverlayManager {
     browserWindow.setVisibleOnAllWorkspaces(true, {
       visibleOnFullScreen: true,
     });
-    browserWindow.setAlwaysOnTop(true, 'screen-saver', 1);
+    if (this.overlayAlwaysOnTop) {
+      browserWindow.setAlwaysOnTop(true, 'screen-saver', 1);
+    }
     // and load the index.html of the app.
     if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
       browserWindow.loadURL(`${MAIN_WINDOW_VITE_DEV_SERVER_URL}#/${id}`);
@@ -101,7 +114,15 @@ export class OverlayManager {
       );
     }
 
-    this.overlayWindows[id] = { widget, window: browserWindow };
+    this.overlayWindows.set(id, { widget, window: browserWindow });
+
+    browserWindow.on('closed', () => {
+      const closedWindow = this.overlayWindows.get(id);
+      if (closedWindow) {
+        console.log('Closing window', closedWindow.widget.id);
+      }
+      this.overlayWindows.delete(id);
+    });
 
     return browserWindow;
   }
@@ -123,9 +144,19 @@ export class OverlayManager {
     this.getOverlays().forEach(({ window }) => {
       if (window.isDestroyed()) return;
       // notifies the overlay windows that there's a dashboard settings/layout update
-      window.webContents.send(key, value);
+      try {
+        window.webContents.send(key, value);
+      } catch (e) {
+        console.error(`Failed to send message ${key} to window`, e);
+      }
     });
-    this.currentSettingsWindow?.webContents.send(key, value);
+    if (this.currentSettingsWindow && !this.currentSettingsWindow.isDestroyed()) {
+      try {
+        this.currentSettingsWindow.webContents.send(key, value);
+      } catch (e) {
+        console.error(`Failed to send message ${key} to settings window`, e);
+      }
+    }
   }
 
   public closeAllOverlays(): void {
@@ -134,7 +165,7 @@ export class OverlayManager {
         window.close();
       }
     });
-    this.overlayWindows = {};
+    this.overlayWindows.clear();
   }
 
   public closeOrCreateWindows(dashboardLayout: DashboardLayout): void {
@@ -152,9 +183,7 @@ export class OverlayManager {
       // const dashboardWidget = widgetsById[widget.id];
       if (!widgetsById[widget.id]?.enabled) {
         window.close();
-        this.overlayWindows = Object.fromEntries(
-          Object.entries(this.overlayWindows).filter(([key]) => key !== widget.id)
-        );
+        this.overlayWindows.delete(widget.id);
       }
     });
 
@@ -162,7 +191,7 @@ export class OverlayManager {
       if (!widget.enabled) {
         return;
       }
-      if (!this.overlayWindows[widget.id]) {
+      if (!this.overlayWindows.has(widget.id)) {
         const window = this.createOverlayWindow(widget);
         trackWindowMovement(widget, window);
       } else {
@@ -192,19 +221,49 @@ export class OverlayManager {
   }
 
   /**
-   * Setup a single instance lock for the application. If the application is already running, it will quit the new instance.
+   * Check dashboard settings and disable hardware acceleration if configured.
+   * Must be called before the app is ready.
    */
-  public setupSingleInstanceLock(): void {
+  public setupHardwareAcceleration(): void {
+    const dashboard = getDashboard('default');
+    if (dashboard?.generalSettings?.disableHardwareAcceleration) {
+      app.disableHardwareAcceleration();
+    }
+  }
+
+  public setupAutoStart(): void {
+    const dashboard = getDashboard('default');
+    app.setLoginItemSettings({
+      openAtLogin: dashboard?.generalSettings?.enableAutoStart ?? false,
+    });
+  }
+
+  /**
+   * Setup a single instance lock for the application. If the application is already running, it will quit the new instance.
+   * @returns true if the lock was obtained, false otherwise
+   */
+  public setupSingleInstanceLock(): boolean {
     const gotTheLock = app.requestSingleInstanceLock();
 
     if (!gotTheLock) {
       app.quit();
-      return;
+      this.hasSingleInstanceLock = false;
+      return false;
     }
 
+    this.hasSingleInstanceLock = true;
     app.on('second-instance', () => {
       this.focusSettingsWindow();
     });
+    return true;
+  }
+
+  /**
+   * Check if the application has obtained the single instance lock.
+   * This should be checked before starting services that require exclusive access (like servers).
+   */
+  public hasLock(): boolean {
+    return this.hasSingleInstanceLock;
   }
 
   public createSettingsWindow(): BrowserWindow {

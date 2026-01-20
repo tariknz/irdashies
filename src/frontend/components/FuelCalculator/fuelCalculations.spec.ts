@@ -6,12 +6,27 @@ import { describe, it, expect } from 'vitest';
 import {
   validateLapData,
   calculateWeightedAverage,
+  calculateSimpleAverage,
+  calculateAvgLapTime,
+  findFuelMinMax,
+  findFirstLapNumber,
+  getFullRacingLaps,
+  getGreenFlagLaps,
   litersToGallons,
   gallonsToLiters,
   formatFuel,
   detectLapCrossing,
   isGreenFlag,
+  isWhiteFlag,
+  isCheckeredFlag,
+  isFinalLap,
   calculateConfidence,
+  FLAG_GREEN,
+  FLAG_WHITE,
+  FLAG_CHECKERED,
+  FLAG_YELLOW,
+  FLAG_CAUTION,
+  FLAG_RED,
 } from './fuelCalculations';
 import type { FuelLapData } from './types';
 
@@ -67,6 +82,102 @@ describe('fuelCalculations', () => {
       // Recent lap (3.0) should have more weight
       expect(avg).toBeGreaterThan(2.5);
       expect(avg).toBeLessThan(3.0);
+    });
+  });
+
+  describe('calculateSimpleAverage', () => {
+    it('should return 0 for empty array', () => {
+      expect(calculateSimpleAverage([])).toBe(0);
+    });
+
+    it('should calculate correct average', () => {
+      const laps = [
+        mockLap(1, 2.0, 90),
+        mockLap(2, 2.5, 90),
+        mockLap(3, 3.0, 90),
+      ];
+      expect(calculateSimpleAverage(laps)).toBe(2.5);
+    });
+  });
+
+  describe('calculateAvgLapTime', () => {
+    it('should return 0 for empty array', () => {
+      expect(calculateAvgLapTime([])).toBe(0);
+    });
+
+    it('should calculate correct average lap time', () => {
+      const laps = [
+        mockLap(1, 2.0, 88),
+        mockLap(2, 2.5, 90),
+        mockLap(3, 3.0, 92),
+      ];
+      expect(calculateAvgLapTime(laps)).toBe(90);
+    });
+  });
+
+  describe('findFuelMinMax', () => {
+    it('should return 0,0 for empty array', () => {
+      expect(findFuelMinMax([])).toEqual({ min: 0, max: 0 });
+    });
+
+    it('should find correct min and max', () => {
+      const laps = [
+        mockLap(1, 2.0, 90),
+        mockLap(2, 3.5, 90),
+        mockLap(3, 1.5, 90),
+        mockLap(4, 2.8, 90),
+      ];
+      expect(findFuelMinMax(laps)).toEqual({ min: 1.5, max: 3.5 });
+    });
+
+    it('should handle single lap', () => {
+      const laps = [mockLap(1, 2.5, 90)];
+      expect(findFuelMinMax(laps)).toEqual({ min: 2.5, max: 2.5 });
+    });
+  });
+
+  describe('findFirstLapNumber', () => {
+    it('should return 0 for empty array', () => {
+      expect(findFirstLapNumber([])).toBe(0);
+    });
+
+    it('should find the lowest lap number', () => {
+      const laps = [
+        mockLap(5, 2.0, 90),
+        mockLap(3, 2.5, 90),
+        mockLap(7, 2.8, 90),
+        mockLap(2, 2.3, 90),
+      ];
+      expect(findFirstLapNumber(laps)).toBe(2);
+    });
+  });
+
+  describe('getFullRacingLaps', () => {
+    it('should filter out out-laps and first lap', () => {
+      const laps = [
+        mockLap(1, 2.0, 90), // First lap - excluded
+        mockLap(2, 2.5, 90, { isOutLap: true }), // Out-lap - excluded
+        mockLap(3, 2.3, 90), // Valid
+        mockLap(4, 2.4, 90), // Valid
+      ];
+      const result = getFullRacingLaps(laps, 1);
+      expect(result.length).toBe(2);
+      expect(result[0].lapNumber).toBe(3);
+      expect(result[1].lapNumber).toBe(4);
+    });
+  });
+
+  describe('getGreenFlagLaps', () => {
+    it('should filter to green flag laps only', () => {
+      const laps = [
+        mockLap(1, 2.0, 90, { isGreenFlag: true }),
+        mockLap(2, 2.5, 90, { isGreenFlag: false }),
+        mockLap(3, 2.3, 90, { isGreenFlag: true }),
+      ];
+      const result = getGreenFlagLaps(laps);
+      expect(result.length).toBe(2);
+      expect(result[0].lapNumber).toBe(1);
+      expect(result[1].lapNumber).toBe(3);
     });
   });
 
@@ -127,31 +238,53 @@ describe('fuelCalculations', () => {
     });
   });
 
-  describe('isGreenFlag', () => {
-    it('should detect green flag (no caution flags)', () => {
-      const GREEN_FLAG = 0x00000004; // 1 << 2
-      expect(isGreenFlag(GREEN_FLAG)).toBe(true);
-      expect(isGreenFlag(0)).toBe(true); // No flags at all
+  describe('session flags', () => {
+    describe('isGreenFlag', () => {
+      it('should detect green flag (no caution flags)', () => {
+        expect(isGreenFlag(FLAG_GREEN)).toBe(true);
+        expect(isGreenFlag(0)).toBe(true); // No flags at all
+      });
+
+      it('should detect yellow flag', () => {
+        expect(isGreenFlag(FLAG_YELLOW)).toBe(false);
+      });
+
+      it('should detect caution flag', () => {
+        expect(isGreenFlag(FLAG_CAUTION)).toBe(false);
+      });
+
+      it('should detect red flag', () => {
+        expect(isGreenFlag(FLAG_RED)).toBe(false);
+      });
+
+      it('should handle combined flags', () => {
+        const YELLOW_AND_GREEN = FLAG_YELLOW | FLAG_GREEN;
+        expect(isGreenFlag(YELLOW_AND_GREEN)).toBe(false);
+      });
     });
 
-    it('should detect yellow flag', () => {
-      const YELLOW_FLAG = 0x00004000; // 1 << 14
-      expect(isGreenFlag(YELLOW_FLAG)).toBe(false);
+    describe('isWhiteFlag', () => {
+      it('should detect white flag', () => {
+        expect(isWhiteFlag(FLAG_WHITE)).toBe(true);
+        expect(isWhiteFlag(0)).toBe(false);
+      });
     });
 
-    it('should detect caution flag', () => {
-      const CAUTION_FLAG = 0x00008000; // 1 << 15
-      expect(isGreenFlag(CAUTION_FLAG)).toBe(false);
+    describe('isCheckeredFlag', () => {
+      it('should detect checkered flag', () => {
+        expect(isCheckeredFlag(FLAG_CHECKERED)).toBe(true);
+        expect(isCheckeredFlag(0)).toBe(false);
+      });
     });
 
-    it('should detect red flag', () => {
-      const RED_FLAG = 0x00010000; // 1 << 16
-      expect(isGreenFlag(RED_FLAG)).toBe(false);
-    });
-
-    it('should handle combined flags', () => {
-      const YELLOW_AND_GREEN = 0x00004004;
-      expect(isGreenFlag(YELLOW_AND_GREEN)).toBe(false);
+    describe('isFinalLap', () => {
+      it('should detect white or checkered flag', () => {
+        expect(isFinalLap(FLAG_WHITE)).toBe(true);
+        expect(isFinalLap(FLAG_CHECKERED)).toBe(true);
+        expect(isFinalLap(FLAG_WHITE | FLAG_CHECKERED)).toBe(true);
+        expect(isFinalLap(0)).toBe(false);
+        expect(isFinalLap(FLAG_GREEN)).toBe(false);
+      });
     });
   });
 
@@ -180,7 +313,8 @@ describe('fuelCalculations', () => {
 function mockLap(
   lapNumber: number,
   fuelUsed: number,
-  lapTime: number
+  lapTime: number,
+  overrides?: Partial<FuelLapData>
 ): FuelLapData {
   return {
     lapNumber,
@@ -188,6 +322,8 @@ function mockLap(
     lapTime,
     isGreenFlag: true,
     isValidForCalc: true,
+    isOutLap: false,
     timestamp: Date.now(),
+    ...overrides,
   };
 }

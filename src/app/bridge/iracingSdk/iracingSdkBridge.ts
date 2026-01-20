@@ -12,10 +12,16 @@ export async function publishIRacingSDKEvents(
   console.log('Loading iRacing SDK bridge...');
 
   let shouldStop = false;
+  const telemetryCallbacks: ((value: Telemetry) => void)[] = [];
+  const sessionCallbacks: ((value: Session) => void)[] = [];
+  const runningStateCallbacks: ((value: boolean) => void)[] = [];
+
   const runningStateInterval = setInterval(async () => {
     const isSimRunning = await IRacingSDK.IsSimRunning();
     console.log('Sending running state to window', isSimRunning);
     overlayManager.publishMessage('runningState', isSimRunning);
+    // Notify all subscribers
+    runningStateCallbacks.forEach(callback => callback(isSimRunning));
   }, 5000);
 
   // Start the telemetry loop in the background
@@ -31,16 +37,20 @@ export async function publishIRacingSDKEvents(
         while (!shouldStop && sdk.waitForData(TIMEOUT)) {
           const telemetry = sdk.getTelemetry();
           const session = sdk.getSessionData();
-          await new Promise((resolve) => setTimeout(resolve, 1000 / 60));
+          await new Promise((resolve) => setTimeout(resolve, 1000 / 25)); // 25Hz update rate
 
           if (telemetry) {
             overlayManager.publishMessage('telemetry', telemetry);
             telemetrySink.addTelemetry(telemetry);
+            // Notify all subscribers
+            telemetryCallbacks.forEach(callback => callback(telemetry));
           }
 
           if (session) {
             overlayManager.publishMessage('sessionData', session);
             telemetrySink.addSession(session);
+            // Notify all subscribers
+            sessionCallbacks.forEach(callback => callback(session));
           }
         }
 
@@ -54,9 +64,27 @@ export async function publishIRacingSDKEvents(
   })();
 
   return {
-    onTelemetry: (callback: (value: Telemetry) => void) => callback({} as Telemetry),
-    onSessionData: (callback: (value: Session) => void) => callback({} as Session),
-    onRunningState: (callback: (value: boolean) => void) => callback(false),
+    onTelemetry: (callback: (value: Telemetry) => void) => {
+      telemetryCallbacks.push(callback);
+      return () => {
+        const index = telemetryCallbacks.indexOf(callback);
+        if (index > -1) telemetryCallbacks.splice(index, 1);
+      };
+    },
+    onSessionData: (callback: (value: Session) => void) => {
+      sessionCallbacks.push(callback);
+      return () => {
+        const index = sessionCallbacks.indexOf(callback);
+        if (index > -1) sessionCallbacks.splice(index, 1);
+      };
+    },
+    onRunningState: (callback: (value: boolean) => void) => {
+      runningStateCallbacks.push(callback);
+      return () => {
+        const index = runningStateCallbacks.indexOf(callback);
+        if (index > -1) runningStateCallbacks.splice(index, 1);
+      };
+    },
     stop: () => {
       shouldStop = true;
       clearInterval(runningStateInterval);

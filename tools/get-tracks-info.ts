@@ -1,14 +1,15 @@
 import fs, { existsSync, mkdirSync } from 'fs';
+import { getAccessToken } from './auth';
 
 export const getTracksInfo = async () => {
-  const cookie = fs.readFileSync('./asset-data/cookie-jar.txt', 'utf8');
+  const accessToken = getAccessToken();
 
   try {
     const response = await fetch(
       'https://members-ng.iracing.com/data/track/get',
       {
         headers: {
-          cookie,
+          Authorization: `Bearer ${accessToken}`,
         },
       }
     );

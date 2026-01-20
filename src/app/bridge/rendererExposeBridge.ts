@@ -58,5 +58,32 @@ export function exposeBridge() {
     toggleDemoMode: (value: boolean) => {
       ipcRenderer.send('toggleDemoMode', value);
     },
+    onDemoModeChanged: (callback: (value: boolean) => void) => {
+      ipcRenderer.on('demoModeChanged', (_, value) => {
+        callback(value);
+      });
+    },
+    saveGarageCoverImage: (buffer: Uint8Array) => {
+      return ipcRenderer.invoke('saveGarageCoverImage', Array.from(buffer));
+    },
+    getGarageCoverImageAsDataUrl: (imagePath: string) => {
+      return ipcRenderer.invoke('getGarageCoverImageAsDataUrl', imagePath);
+    },
+    getAnalyticsOptOut: () => {
+      return ipcRenderer.invoke('getAnalyticsOptOut');
+    },
+    setAnalyticsOptOut: (optOut: boolean) => {
+      return ipcRenderer.invoke('setAnalyticsOptOut', optOut);
+    },
+    stop: () => {
+      ipcRenderer.removeAllListeners('editModeToggled');
+      ipcRenderer.removeAllListeners('dashboardUpdated');
+      ipcRenderer.removeAllListeners('demoModeChanged');
+    },
+
+    setAutoStart: (enabled: boolean) => {
+      ipcRenderer.invoke('autostart:set', enabled);
+    },
+
   } as DashboardBridge);
 }

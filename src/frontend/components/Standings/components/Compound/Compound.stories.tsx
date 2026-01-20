@@ -3,6 +3,7 @@ import { Compound } from './Compound';
 
 const meta: Meta<typeof Compound> = {
   component: Compound,
+  title: 'widgets/Standings/components/Compound',
   parameters: {
     layout: 'centered',
   },

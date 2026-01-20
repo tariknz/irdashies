@@ -20,6 +20,11 @@ export default defineConfig({
       '.vite/build/Release/'
     ),
   ],
+  build: {
+    rollupOptions: {
+      external: ['bufferutil', 'utf-8-validate'],
+    },
+  },
   resolve: {
     // Some dependencies have Node.js specific imports
     // This ensures they are properly resolved in Electron
@@ -27,6 +32,7 @@ export default defineConfig({
   },
   define: {
     APP_GIT_HASH: JSON.stringify(getGitHash()),
+    POSTHOG_KEY: JSON.stringify(process.env.POSTHOG_KEY || ''),
   },
 });
 

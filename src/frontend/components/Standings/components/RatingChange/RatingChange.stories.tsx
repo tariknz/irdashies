@@ -3,6 +3,7 @@ import { RatingChange } from './RatingChange';
 
 const meta: Meta<typeof RatingChange> = {
   component: RatingChange,
+  title: 'widgets/Standings/components/RatingChange',
 };
 
 export default meta;

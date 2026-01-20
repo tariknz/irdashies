@@ -97,11 +97,12 @@ test-data/unused
 src/**/tracks/*.svg
 asset-data
 
-# should be generated with script
-src/**/tracks/tracks.json
-
 # native build
 build/
 bin/
 docs/features/
 docs/reference/relatives.js
+COMMIT_REVIEW.md
+LAP_TIME_DELTA_BUG_ANALYSIS.md
+.vs/
+docs/pitlane-helper-design.md

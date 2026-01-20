@@ -26,4 +26,24 @@ export const mockDashboardBridge: DashboardBridge = {
   },
   toggleLockOverlays: () => Promise.resolve(true),
   getAppVersion: () => Promise.resolve('0.0.7+mock'),
+  toggleDemoMode: () => {
+    return;
+  },
+  onDemoModeChanged: (callback) => {
+    callback(false);
+    return () => {
+      return;
+    };
+  },
+  getCurrentDashboard: () => {
+    return null;
+  },
+  stop: () => {
+    return;
+  },
+  saveGarageCoverImage: () => Promise.resolve(''),
+  getGarageCoverImageAsDataUrl: () => Promise.resolve(null),
+  getAnalyticsOptOut: () => Promise.resolve(false),
+  setAnalyticsOptOut: () => Promise.resolve(),
+  setAutoStart:() => Promise.resolve()
 }; 

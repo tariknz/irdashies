@@ -3,6 +3,7 @@ import { RotationIndicator } from './RotationIndicator';
 
 const meta: Meta<typeof RotationIndicator> = {
   component: RotationIndicator,
+  title: 'widgets/Input/components/RotationIndicator',
   parameters: {
     layout: 'centered',
   },

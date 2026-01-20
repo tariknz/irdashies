@@ -11,9 +11,6 @@ vi.mock('@irdashies/context', async (importOriginal) => {
     useFocusCarIdx: vi.fn(),
     useTelemetryValues: vi.fn(),
     useSessionStore: vi.fn(),
-    useRelativeGapStore: vi.fn(),
-    detectEdgeCases: vi.fn(() => ({ isLapping: false, isBeingLapped: false, isMultiClass: false })),
-    calculateRelativeGap: vi.fn(() => null),
   };
 });
 
@@ -21,11 +18,8 @@ vi.mock('./useDriverPositions', () => ({
   useDriverStandings: vi.fn(),
 }));
 
-// Note: detectEdgeCases and calculateRelativeGap are now exported from @irdashies/context
-// We need to mock them in the context mock above
-
 // Import mocked functions after vi.mock
-const { useFocusCarIdx, useTelemetryValues, useSessionStore, useRelativeGapStore } = await import('@irdashies/context');
+const { useFocusCarIdx, useTelemetryValues, useSessionStore } = await import('@irdashies/context');
 const { useDriverStandings } = await import('./useDriverPositions');
 
 describe('useDriverRelatives', () => {
@@ -53,7 +47,11 @@ describe('useDriverRelatives', () => {
         relativeSpeed: 1.0,
         estLapTime: 100,
       },
-      currentSessionType: "Race"
+      currentSessionType: "Race",
+      dnf: false,
+      repair: false,
+      penalty: false,
+      slowdown: false,
     },
     {
       carIdx: 1,
@@ -78,7 +76,11 @@ describe('useDriverRelatives', () => {
         relativeSpeed: 1.0,
         estLapTime: 100,
       },
-      currentSessionType: "Race"
+      currentSessionType: "Race",
+      dnf: false,
+      repair: false,
+      penalty: false,
+      slowdown: false
     },
     {
       carIdx: 2,
@@ -103,12 +105,19 @@ describe('useDriverRelatives', () => {
         relativeSpeed: 1.0,
         estLapTime: 100,
       },
-      currentSessionType: "Race"
+      currentSessionType: "Race",
+      dnf: false,
+      repair: false,
+      penalty: false,
+      slowdown: false
     },
   ];
 
   const mockCarIdxLapDistPct = [0.5, 0.6, 0.4]; // Player, Ahead, Behind
-  const mockCarIdxEstTime = [99, 100, 90]; // Player, Same class, Faster class
+  // CarIdxEstTime: same class cars, delta = otherEstTime - playerEstTime
+  // For car 1 (ahead): 109 - 99 = +10 seconds ahead
+  // For car 2 (behind): 89 - 99 = -10 seconds behind
+  const mockCarIdxEstTime = [99, 109, 89]; // Player, Ahead (+10), Behind (-10)
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -174,54 +183,6 @@ describe('useDriverRelatives', () => {
         setSession: vi.fn(),
       })
     );
-    // @ts-expect-error - Mock implementation doesn't need full type safety for test purposes
-    vi.mocked(useRelativeGapStore).mockImplementation((selector?: (state: unknown) => unknown) => {
-      const mockState = {
-        carHistories: new Map(),
-        config: {
-          enabled: false,
-          interpolationMethod: 'linear' as const,
-          sampleInterval: 0.01,
-          maxLapHistory: 5,
-          smoothingFactor: 0.3,
-        },
-        sessionNum: -1,
-        trackLength: 0,
-        getCarHistory: vi.fn(() => ({ lapRecords: [] })),
-        initializeCarHistory: vi.fn(),
-        addPositionSample: vi.fn(),
-        completeLap: vi.fn(),
-        clearAllData: vi.fn(),
-        updateConfig: vi.fn(),
-        updateSessionInfo: vi.fn(),
-        processPositionUpdates: vi.fn(() => new Map()),
-      };
-      return selector ? selector(mockState) : mockState;
-    });
-    // Mock getState for store access
-    interface StoreWithGetState {
-      getState?: () => unknown;
-    }
-    (useRelativeGapStore as StoreWithGetState).getState = vi.fn(() => ({
-      carHistories: new Map(),
-      config: {
-        enabled: false,
-        interpolationMethod: 'linear' as const,
-        sampleInterval: 0.01,
-        maxLapHistory: 5,
-        smoothingFactor: 0.3,
-      },
-      sessionNum: -1,
-      trackLength: 0,
-      getCarHistory: vi.fn(() => ({ lapRecords: [] })),
-      initializeCarHistory: vi.fn(),
-      addPositionSample: vi.fn(),
-      completeLap: vi.fn(),
-      clearAllData: vi.fn(),
-      updateConfig: vi.fn(),
-      updateSessionInfo: vi.fn(),
-      processPositionUpdates: vi.fn(() => new Map()),
-    }));
   });
 
   it('should return empty array when no player is found', () => {
@@ -270,7 +231,9 @@ describe('useDriverRelatives', () => {
 
       vi.mocked(useTelemetryValues).mockImplementation((key: string) => {
         if (key === 'CarIdxLapDistPct') return mockCarIdxLapDistPctWithCrossing;
-        if (key === 'CarIdxEstTime') return mockCarIdxEstTime;
+        // Same-class cars use CarIdxEstTime for gap calculation
+        // Player=99, Ahead=109 (+10s), Behind=69 (-30s to match expected test values)
+        if (key === 'CarIdxEstTime') return [99, 109, 69];
         return [];
       });
 
@@ -279,6 +242,7 @@ describe('useDriverRelatives', () => {
       // Car ahead should still be ahead by 10%
       expect(result.current[0].carIdx).toBe(1);
       expect(result.current[0].relativePct).toBeCloseTo(0.1);
+      // Delta uses CarIdxEstTime: 109 - 99 = +10
       expect(result.current[0].delta).toBeCloseTo(10);
 
       // Player should be in the middle
@@ -286,9 +250,10 @@ describe('useDriverRelatives', () => {
       expect(result.current[1].relativePct).toBe(0);
       expect(result.current[1].delta).toBe(0);
 
-      // Car behind should be behind by 20%
+      // Car behind should be behind by 30%
       expect(result.current[2].carIdx).toBe(2);
       expect(result.current[2].relativePct).toBeCloseTo(-0.3);
+      // Delta uses CarIdxEstTime: 69 - 99 = -30
       expect(result.current[2].delta).toBeCloseTo(-30);
     }
   );
