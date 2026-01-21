@@ -10,13 +10,23 @@ import {
   useFocusCarIdx,
   useDrivingState,
   useSessionVisibility,
+  useDashboard,
 } from '@irdashies/context';
 import { useDriverRelatives } from '../Standings/hooks/useDriverRelatives';
 import { useRejoinSettings } from './hooks/useRejoinSettings';
+import { getDemoRejoinData } from './demoData';
 import type { Standings } from '../Standings/createStandings';
 
 export const RejoinIndicator = () => {
+  const { isDemoMode } = useDashboard();
   const settings = useRejoinSettings();
+
+  // Generate demo data when in demo mode
+  if (isDemoMode) {
+    const demoData = getDemoRejoinData(settings);
+    return <RejoinIndicatorDisplay gap={demoData.gap} status={demoData.status as 'Clear' | 'Caution' | 'Do Not Rejoin'} />;
+  }
+
   const isSessionVisible = useSessionVisibility(
     settings?.config?.sessionVisibility
   );
@@ -118,6 +128,8 @@ export const RejoinIndicator = () => {
     </div>
   );
 };
+
+
 
 export const RejoinIndicatorDisplay = ({
   gap,
