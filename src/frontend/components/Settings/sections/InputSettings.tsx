@@ -251,7 +251,7 @@ export const InputSettings = () => {
                   Reset to Default Order
                 </button>
               </div>
-              <div className="px-4">
+              <div className="pl-4">
                 <DisplaySettingsList
                   itemsOrder={itemsOrder}
                   onReorder={handleDisplayOrderChange}
