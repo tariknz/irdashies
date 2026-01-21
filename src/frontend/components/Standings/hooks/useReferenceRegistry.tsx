@@ -31,13 +31,22 @@ export function findClosest(sortedArray: number[], target: number): number {
   return sortedArray[left];
 }
 
-const seedKeys = (refPoints: Map<number, number>): Map<number, number> => {
-  for (let i = 0; i < 200; i++) {
-    refPoints.set(i * REFERENCE_INTERVAL, 0);
-  }
+// const seedKeys = (refPoints: Map<number, number>): Map<number, number> => {
+//   for (let i = 0; i < 200; i++) {
+//     refPoints.set(i * REFERENCE_INTERVAL, 0);
+//   }
+//
+//   return refPoints;
+// };
 
-  return refPoints;
-};
+export function normalizeKey(key: number): number {
+  const testKey = parseFloat((key - (key % REFERENCE_INTERVAL)).toFixed(3));
+  console.log(`TEST KEY: ${testKey}`);
+  return testKey;
+  // return parseFloat(
+  //   (Math.round(key / REFERENCE_INTERVAL) * REFERENCE_INTERVAL).toFixed(3)
+  // );
+}
 
 export const useReferenceRegistry = () => {
   // Persistence for 63 drivers
@@ -50,24 +59,25 @@ export const useReferenceRegistry = () => {
 
       if (refPoints === undefined) {
         refPoints = new Map();
-        refPoints = seedKeys(refPoints);
+        // refPoints = seedKeys(refPoints);
       }
 
-      const testTestKey = trackPct - (trackPct % REFERENCE_INTERVAL);
+      const testTestKey = normalizeKey(trackPct);
       // if key below zero, set to zero
-      console.log(`TEST KEY: ${testTestKey}`);
+      // console.log(`TEST KEY: ${testTestKey}`);
 
-      const closestKey = findClosest(
-        [...refPoints.keys()] as number[],
-        trackPct
-      );
+      // const closestKey = findClosest(
+      //   [...refPoints.keys()] as number[],
+      //   trackPct
+      // );
 
-      refPoints.set(closestKey, sessionTime);
+      refPoints.set(testTestKey, sessionTime);
       bestLaps.current.set(carIdx, refPoints);
       // console.log(`------------ SessionTime: ${sessionTime}`);
       // console.log(`------------ Ref points count: ${refPoints.size}`);
       // console.log(`------------ Closest key: ${closestKey}`);
       // console.log(`------------ Track Pct: ${trackPct}`);
+      // console.log(`--- Keys: ${[...refPoints.keys()].join(', ')}`);
       // console.log(`--- Points Times: ${[...refPoints.values()].join(', ')}`);
     },
     []

@@ -7,7 +7,7 @@ import {
 } from '@irdashies/context';
 import { useDriverStandings } from './useDriverPositions';
 import type { Standings } from '../createStandings';
-import { findClosest, useReferenceRegistry } from './useReferenceRegistry';
+import { normalizeKey, useReferenceRegistry } from './useReferenceRegistry';
 
 export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
   const driversGrouped = useDriverStandings();
@@ -66,32 +66,40 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
       const otherCarTrckPct = carIdxLapDistPct[otherCarIdx];
       const activeCarTrckPct = carIdxLapDistPct[activeIdx];
 
+      // const closestPointActiveCar = findClosest(
+      //   [...activeCarRefs.keys()],
+      //   activeCarTrckPct
+      // );
+      // const closestPointOtherCar = findClosest(
+      //   [...otherCarRefs.keys()],
+      //   otherCarTrckPct
+      // );
+      const closestPointActiveCar = normalizeKey(activeCarTrckPct);
+
       // we are behind
       if (activeCarTrckPct < otherCarTrckPct) {
-        const closestPointActiveCar = findClosest(
-          [...activeCarRefs.keys()],
-          activeCarTrckPct
-        );
+        const timeAtLastPointOther =
+          otherCarRefs.get(closestPointActiveCar) ?? sessionTime;
+        const timeAtLastPoint =
+          activeCarRefs.get(closestPointActiveCar) ?? sessionTime;
+        // console.log(`CarIdx: ${activeCarIdx}`);
+        // console.log(`Time at last point: ${timeAtLastPoint}`);
+        // console.log(`Session Time: ${sessionTime}`);
 
-        const timeAtLastPoint = activeCarRefs.get(closestPointActiveCar);
-        console.log(`CarIdx: ${activeCarIdx}`);
-        console.log(`Time at last point: ${timeAtLastPoint}`);
-        console.log(`Session Time: ${sessionTime}`);
-
-        return -timeAtLastPoint + sessionTime;
+        return timeAtLastPoint - timeAtLastPointOther;
       }
 
-      const closestPointOtherCar = findClosest(
-        [...otherCarRefs.keys()],
-        otherCarTrckPct
-      );
+      const closestPointOtherCar = normalizeKey(otherCarTrckPct);
 
-      const timeAtLastPoint = otherCarRefs.get(closestPointOtherCar);
-      console.log(`CarIdx: ${otherCarIdx}`);
-      console.log(`Time at last point: ${timeAtLastPoint}`);
-      console.log(`Session Time: ${sessionTime}`);
+      const timeAtLastPointOther =
+        otherCarRefs.get(closestPointOtherCar) ?? sessionTime;
+      const timeAtLastPoint =
+        activeCarRefs.get(closestPointOtherCar) ?? sessionTime;
+      // console.log(`CarIdx: ${otherCarIdx}`);
+      // console.log(`Time at last point: ${timeAtLastPoint}`);
+      // console.log(`Session Time: ${sessionTime}`);
 
-      return timeAtLastPoint - sessionTime;
+      return timeAtLastPoint - timeAtLastPointOther;
     };
 
     const sortedDrivers = drivers
