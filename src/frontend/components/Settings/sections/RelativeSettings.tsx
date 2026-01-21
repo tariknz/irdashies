@@ -301,7 +301,7 @@ const DisplaySettingsList = ({ itemsOrder, onReorder, settings, handleConfigChan
             )}
             {setting.hasSubSetting && setting.configKey === 'pitStatus' && settings.config.pitStatus.enabled && (
               <div className="flex items-center justify-between pl-8 mt-2">
-                <span className="text-sm text-slate-300">Show Pit Time</span>
+                <span className="text-sm text-slate-300">Pit Time</span>
                 <ToggleSwitch
                   enabled={settings.config.pitStatus.showPitTime ?? false}
                   onToggle={(enabled) => {
@@ -315,7 +315,7 @@ const DisplaySettingsList = ({ itemsOrder, onReorder, settings, handleConfigChan
             )}
             {setting.hasSubSetting && setting.configKey === 'driverName' && settings.config.driverName.enabled && (
               <div className="flex items-center justify-between pl-8 mt-2">
-                <span className="text-sm text-slate-300">Show Status Badges</span>
+                <span className="text-sm text-slate-300">Status Badges</span>
                 <ToggleSwitch
                   enabled={settings.config.driverName.showStatusBadges}
                   onToggle={(enabled) => {
@@ -502,7 +502,7 @@ export const RelativeSettings = () => {
                   Reset to Default Order
                 </button>
               </div>
-              <div className="px-4">
+              <div className="pl-4">
                 <DisplaySettingsList
                   itemsOrder={itemsOrder}
                   onReorder={handleDisplayOrderChange}
@@ -517,7 +517,7 @@ export const RelativeSettings = () => {
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-medium text-slate-200">Driver Standings</h3>
               </div>
-              <div className="space-y-3 px-4">
+              <div className="space-y-3 pl-4">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-slate-300">Drivers to show around player</span>
                   <select
@@ -594,7 +594,7 @@ export const RelativeSettings = () => {
                   Reset to Default Order
                 </button>
               </div>
-              <div className="space-y-3 px-4">
+              <div className="space-y-3 pl-4">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-slate-300">Show Header Bar</span>
                   <ToggleSwitch
@@ -646,7 +646,7 @@ export const RelativeSettings = () => {
                   Reset to Default Order
                 </button>
               </div>
-              <div className="space-y-3 px-4">
+              <div className="space-y-3 pl-4">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-slate-300">Show Footer Bar</span>
                   <ToggleSwitch
@@ -714,7 +714,7 @@ export const RelativeSettings = () => {
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-medium text-slate-200">Relative Time</h3>
               </div>
-              <div className="space-y-3 px-4">
+              <div className="space-y-3 pl-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <span className="text-sm text-slate-300">Decimal places</span>
@@ -759,7 +759,7 @@ export const RelativeSettings = () => {
             </div>
 
             {/* Use Live Position Standings */}
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-4">
               <div>
                 <h4 className="text-md font-medium text-slate-300">Use Live Position Standings</h4>
                 <p className="text-sm text-slate-400">

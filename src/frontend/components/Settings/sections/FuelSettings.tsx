@@ -150,98 +150,84 @@ export const FuelSettings = () => {
             <span className="text-sm text-slate-300">
               Show Consumption Details
             </span>
-            <input
-              type="checkbox"
-              checked={settings.config.showConsumption}
-              onChange={(e) =>
-                handleConfigChange({ showConsumption: e.target.checked })
+            <ToggleSwitch
+              enabled={settings.config.showConsumption}
+              onToggle={(newValue) =>
+                handleConfigChange({ showConsumption: newValue })
               }
-              className="w-4 h-4 bg-slate-700 rounded"
             />
           </div>
 
           {/* Consumption Details (when enabled) */}
           {settings.config.showConsumption && (
-            <div className="ml-4 space-y-2 border-l-2 border-slate-600 pl-4">
+            <div className="ml-4 space-y-2 pl-4">
               <div className="flex items-center justify-between">
-                <span className="text-xs text-slate-400">Show Min</span>
-                <input
-                  type="checkbox"
-                  checked={settings.config.showMin}
-                  onChange={(e) =>
-                    handleConfigChange({ showMin: e.target.checked })
+                <span className="text-xs text-slate-300">Show Min</span>
+                <ToggleSwitch
+                  enabled={settings.config.showMin}
+                  onToggle={(newValue) =>
+                    handleConfigChange({ showMin: newValue })
                   }
-                  className="w-4 h-4 bg-slate-700 rounded"
                 />
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-xs text-slate-400">Show Last Lap</span>
-                <input
-                  type="checkbox"
-                  checked={settings.config.showLastLap}
-                  onChange={(e) =>
-                    handleConfigChange({ showLastLap: e.target.checked })
+                <span className="text-xs text-slate-300">Show Last Lap</span>
+                <ToggleSwitch
+                  enabled={settings.config.showLastLap}
+                  onToggle={(newValue) =>
+                    handleConfigChange({ showLastLap: newValue })
                   }
-                  className="w-4 h-4 bg-slate-700 rounded"
                 />
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-xs text-slate-400">
+                <span className="text-xs text-slate-300">
                   Show 3 Lap Average
                 </span>
-                <input
-                  type="checkbox"
-                  checked={settings.config.show3LapAvg}
-                  onChange={(e) =>
-                    handleConfigChange({ show3LapAvg: e.target.checked })
+                <ToggleSwitch
+                  enabled={settings.config.show3LapAvg}
+                  onToggle={(newValue) =>
+                    handleConfigChange({ show3LapAvg: newValue })
                   }
-                  className="w-4 h-4 bg-slate-700 rounded"
                 />
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-xs text-slate-400">
+                <span className="text-xs text-slate-300">
                   Show 10 Lap Average
                 </span>
-                <input
-                  type="checkbox"
-                  checked={settings.config.show10LapAvg}
-                  onChange={(e) =>
-                    handleConfigChange({ show10LapAvg: e.target.checked })
+                <ToggleSwitch
+                  enabled={settings.config.show10LapAvg}
+                  onToggle={(newValue) =>
+                    handleConfigChange({ show10LapAvg: newValue })
                   }
-                  className="w-4 h-4 bg-slate-700 rounded"
                 />
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-xs text-slate-400">Show Max</span>
-                <input
-                  type="checkbox"
-                  checked={settings.config.showMax}
-                  onChange={(e) =>
-                    handleConfigChange({ showMax: e.target.checked })
+                <span className="text-xs text-slate-300">Show Max</span>
+                <ToggleSwitch
+                  enabled={settings.config.showMax}
+                  onToggle={(newValue) =>
+                    handleConfigChange({ showMax: newValue })
                   }
-                  className="w-4 h-4 bg-slate-700 rounded"
                 />
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-xs text-slate-400">
+                <span className="text-xs text-slate-300">
                   Show Fuel Required
                   <span className="block text-[10px] text-slate-500">
                     Fuel needed for min/avg/max
                   </span>
                 </span>
-                <input
-                  type="checkbox"
-                  checked={settings.config.showFuelRequired}
-                  onChange={(e) =>
-                    handleConfigChange({ showFuelRequired: e.target.checked })
+                <ToggleSwitch
+                  enabled={settings.config.showFuelRequired}
+                  onToggle={(newValue) =>
+                    handleConfigChange({ showFuelRequired: newValue })
                   }
-                  className="w-4 h-4 bg-slate-700 rounded"
                 />
               </div>
               {settings.config.showFuelRequired && (
-                <div className="ml-4 mt-2 border-l-2 border-slate-600 pl-4">
+                <div className="ml-4 mt-2 pl-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-slate-400">
+                    <span className="text-xs text-slate-300">
                       Display Mode
                       <span className="block text-[10px] text-slate-500">
                         To Finish: Total fuel needed | To Add: Fuel to add at
@@ -271,13 +257,11 @@ export const FuelSettings = () => {
           {/* Show Pit Window */}
           <div className="flex items-center justify-between">
             <span className="text-sm text-slate-300">Show Pit Window</span>
-            <input
-              type="checkbox"
-              checked={settings.config.showPitWindow}
-              onChange={(e) =>
-                handleConfigChange({ showPitWindow: e.target.checked })
+            <ToggleSwitch
+              enabled={settings.config.showPitWindow}
+              onToggle={(newValue) =>
+                handleConfigChange({ showPitWindow: newValue })
               }
-              className="w-4 h-4 bg-slate-700 rounded"
             />
           </div>
 
@@ -289,26 +273,22 @@ export const FuelSettings = () => {
                 Total pit stops and stint info for long races
               </span>
             </span>
-            <input
-              type="checkbox"
-              checked={settings.config.showEnduranceStrategy}
-              onChange={(e) =>
-                handleConfigChange({ showEnduranceStrategy: e.target.checked })
+            <ToggleSwitch
+              enabled={settings.config.showEnduranceStrategy}
+              onToggle={(newValue) =>
+                handleConfigChange({ showEnduranceStrategy: newValue })
               }
-              className="w-4 h-4 bg-slate-700 rounded"
             />
           </div>
 
           {/* Show Fuel Scenarios */}
           <div className="flex items-center justify-between">
             <span className="text-sm text-slate-300">Show Fuel Scenarios</span>
-            <input
-              type="checkbox"
-              checked={settings.config.showFuelScenarios}
-              onChange={(e) =>
-                handleConfigChange({ showFuelScenarios: e.target.checked })
+            <ToggleSwitch
+              enabled={settings.config.showFuelScenarios}
+              onToggle={(newValue) =>
+                handleConfigChange({ showFuelScenarios: newValue })
               }
-              className="w-4 h-4 bg-slate-700 rounded"
             />
           </div>
 
@@ -317,21 +297,19 @@ export const FuelSettings = () => {
             <span className="text-sm text-slate-300">
               Show Consumption Graph
             </span>
-            <input
-              type="checkbox"
-              checked={settings.config.showConsumptionGraph}
-              onChange={(e) =>
-                handleConfigChange({ showConsumptionGraph: e.target.checked })
+            <ToggleSwitch
+              enabled={settings.config.showConsumptionGraph}
+              onToggle={(newValue) =>
+                handleConfigChange({ showConsumptionGraph: newValue })
               }
-              className="w-4 h-4 bg-slate-700 rounded"
             />
           </div>
 
           {/* Graph Type (when enabled) */}
           {settings.config.showConsumptionGraph && (
-            <div className="ml-4 border-l-2 border-slate-600 pl-4">
+            <div className="ml-4 pl-4">
               <div className="flex items-center justify-between">
-                <span className="text-xs text-slate-400">
+                <span className="text-xs text-slate-300">
                   Graph Type
                   <span className="block text-[10px] text-slate-500">
                     Line: 5 laps, Histogram: 30 laps
@@ -378,7 +356,7 @@ export const FuelSettings = () => {
                 }
                 className="w-20 h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer"
               />
-              <span className="text-xs text-slate-400 w-8">
+              <span className="text-xs text-slate-300 w-8">
                 {Math.round(settings.config.safetyMargin * 100)}%
               </span>
             </div>
@@ -400,7 +378,7 @@ export const FuelSettings = () => {
                 }
                 className="w-20 h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer"
               />
-              <span className="text-xs text-slate-400 w-8">
+              <span className="text-xs text-slate-300 w-8">
                 {settings.config.background.opacity}%
               </span>
             </div>
