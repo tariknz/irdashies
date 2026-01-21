@@ -5,6 +5,10 @@ import {
   DynamicTelemetrySelector,
   TelemetryDecoratorWithConfig,
 } from '@irdashies/storybook';
+import { DashboardProvider, SessionProvider, TelemetryProvider } from '@irdashies/context';
+import { mockDashboardBridge } from '../../../../.storybook/mockDashboardBridge';
+import { generateMockDataFromPath } from '../../../app/bridge/iracingSdk/mock-data/generateMockData';
+import type { DashboardBridge } from '@irdashies/types';
 import { useState, useMemo } from 'react';
 import { DriverInfoRow } from './components/DriverInfoRow/DriverInfoRow';
 import { SessionBar } from './components/SessionBar/SessionBar';
@@ -14,6 +18,70 @@ import { useDrivingState } from '@irdashies/context';
 import { useRelativeSettings, useDriverRelatives, useHighlightColor } from './hooks';
 import { usePitLapStoreUpdater } from '../../context/PitLapStore/PitLapStoreUpdater';
 import { useWeekendInfoNumCarClasses } from '@irdashies/context';
+
+// Create a custom decorator that combines TelemetryDecoratorWithConfig with generalSettings override
+function TelemetryDecoratorWithConfigAndGeneralSettings(
+  path?: string,
+  widgetConfigOverrides?: Record<string, Record<string, unknown>>,
+  generalSettingsOverride?: Record<string, unknown>
+) {
+  const decorator = function TelemetryDecoratorWithConfigAndGeneralSettingsInner(Story: React.ComponentType) {
+    const mockBridge: DashboardBridge = {
+    ...mockDashboardBridge,
+    resetDashboard: async (resetEverything: boolean) => {
+      const baseDashboard = await mockDashboardBridge.resetDashboard(resetEverything);
+      return {
+        ...baseDashboard,
+        generalSettings: {
+          ...baseDashboard.generalSettings,
+          ...generalSettingsOverride,
+        },
+      };
+    },
+    dashboardUpdated: (callback) => {
+      mockDashboardBridge.dashboardUpdated((dashboard) => {
+        const modifiedWidgets = dashboard.widgets.map((widget) => {
+          const configOverride = widgetConfigOverrides?.[widget.id];
+          if (configOverride) {
+            return {
+              ...widget,
+              config: {
+                ...widget.config,
+                ...configOverride,
+              },
+            };
+          }
+          return widget;
+        });
+
+        callback({
+          ...dashboard,
+          widgets: modifiedWidgets,
+          generalSettings: {
+            ...dashboard.generalSettings,
+            ...generalSettingsOverride,
+          },
+        });
+      });
+      return () => {
+        // No-op cleanup function
+      };
+    },
+  };
+
+  return (
+    <>
+      <SessionProvider bridge={generateMockDataFromPath(path)} />
+      <TelemetryProvider bridge={generateMockDataFromPath(path)} />
+      <DashboardProvider bridge={mockBridge}>
+        <Story />
+      </DashboardProvider>
+    </>
+  );
+  };
+  decorator.displayName = 'TelemetryDecoratorWithConfigAndGeneralSettings';
+  return decorator;
+}
 
 // Custom component that renders relative standings without header/footer session bars
 const RelativeWithoutHeaderFooter = () => {
@@ -812,4 +880,18 @@ const RelativeWithoutFooter = () => {
 export const NoFooter: Story = {
   render: () => <RelativeWithoutFooter />,
   decorators: [TelemetryDecorator()],
+};
+
+export const CompactMode: Story = {
+  decorators: [
+    TelemetryDecoratorWithConfigAndGeneralSettings(undefined, {
+      relative: {
+        headerBar: { enabled: true },
+        footerBar: { enabled: true },
+        sessionVisibility: { race: true, loneQualify: true, openQualify: true, practice: true, offlineTesting: true },
+      },
+    }, {
+      compactMode: true,
+    }),
+  ],
 };

@@ -135,12 +135,12 @@ export const GeneralSettings = () => {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex-none">
+      <div className="flex-none p-4 bg-slate-700 rounded">
         <h2 className="text-xl mb-4">General</h2>
         <p className="text-slate-400 mb-4">Configure general application settings and preferences.</p>
       </div>
 
-      <div className="flex-1 overflow-y-auto min-h-0 space-y-6">
+      <div className="flex-1 overflow-y-auto min-h-0 space-y-6 p-4 mt-4">
       {/* Font Size Settings */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
@@ -166,7 +166,7 @@ export const GeneralSettings = () => {
 
       {/* Compact Mode Setting */}
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-4">
           <div>
             <h3 className="text-lg font-medium text-slate-200">Compact Mode</h3>
             <p className="text-sm text-slate-400">When enabled, visual spacing is minimized, reducing the vertical space between drivers and class headers in the standings and relatives.</p>
@@ -241,7 +241,7 @@ export const GeneralSettings = () => {
 
       {/* Hide from Taskbar Setting */}
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-4">
           <div>
             <h3 className="text-lg font-medium text-slate-200">Hide Overlays from Taskbar</h3>
             <p className="text-sm text-slate-400">When enabled, overlay windows won&apos;t appear in the taskbar. The app is still accessible via the system tray. (requires restart)</p>
@@ -260,7 +260,7 @@ export const GeneralSettings = () => {
 
       {/* Overlay Always On Top Setting */}
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-4">
           <div>
             <h3 className="text-lg font-medium text-slate-200">Keep Overlays Always On Top</h3>
             <p className="text-sm text-slate-400">When enabled, overlay windows will always stay on top of other applications. (requires restart)</p>
@@ -279,7 +279,7 @@ export const GeneralSettings = () => {
 
       {/* Disable Hardware Acceleration Setting */}
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-4">
           <div>
             <h3 className="text-lg font-medium text-slate-200">Disable Hardware Acceleration</h3>
             <p className="text-sm text-slate-400">When enabled, disables GPU hardware acceleration and uses software rendering instead. This may help with compatibility issues on some systems. (requires restart)</p>
@@ -298,7 +298,7 @@ export const GeneralSettings = () => {
 
         {/* Autostart Setting */}
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-4">
             <div>
               <h3 className="text-lg font-medium text-slate-200">Start on system startup</h3>
               <p className="text-sm text-slate-400">If enabled, irDashies will start automatically on system start up.</p>
