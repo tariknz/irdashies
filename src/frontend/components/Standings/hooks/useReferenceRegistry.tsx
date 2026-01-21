@@ -4,7 +4,8 @@ export interface ReferenceLap {
   points: number[]; // Array of ~200 points
 }
 
-const REFERENCE_INTERVAL = 0.005;
+export const REFERENCE_INTERVAL = 0.00025;
+const DECIMAL_PLACES = 5;
 
 export function findClosest(sortedArray: number[], target: number): number {
   let left = 0;
@@ -40,7 +41,9 @@ export function findClosest(sortedArray: number[], target: number): number {
 // };
 
 export function normalizeKey(key: number): number {
-  const testKey = parseFloat((key - (key % REFERENCE_INTERVAL)).toFixed(3));
+  const testKey = parseFloat(
+    (key - (key % REFERENCE_INTERVAL)).toFixed(DECIMAL_PLACES)
+  );
   console.log(`TEST KEY: ${testKey}`);
   return testKey;
   // return parseFloat(

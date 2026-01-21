@@ -7,7 +7,11 @@ import {
 } from '@irdashies/context';
 import { useDriverStandings } from './useDriverPositions';
 import type { Standings } from '../createStandings';
-import { normalizeKey, useReferenceRegistry } from './useReferenceRegistry';
+import {
+  normalizeKey,
+  REFERENCE_INTERVAL,
+  useReferenceRegistry,
+} from './useReferenceRegistry';
 
 export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
   const driversGrouped = useDriverStandings();
@@ -85,6 +89,37 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
         // console.log(`CarIdx: ${activeCarIdx}`);
         // console.log(`Time at last point: ${timeAtLastPoint}`);
         // console.log(`Session Time: ${sessionTime}`);
+        const nextPointActive = closestPointActiveCar + REFERENCE_INTERVAL;
+        console.log(`LAST POINT ACTIVE: ${closestPointActiveCar}`);
+        console.log(`NEXT POINT ACTIVE: ${nextPointActive}`);
+        const secondTimeOther =
+          otherCarRefs.get(nextPointActive) ?? sessionTime;
+        const secondTime = activeCarRefs.get(nextPointActive) ?? sessionTime;
+
+        if (secondTimeOther > timeAtLastPointOther) {
+          const timeDiffOther =
+            (secondTimeOther - timeAtLastPointOther) *
+            (activeCarTrckPct - closestPointActiveCar) *
+            100;
+          const timeAtCurrentPosOther = timeAtLastPointOther + timeDiffOther;
+
+          const timeDiffActive =
+            (secondTime - timeAtLastPoint) *
+            (activeCarTrckPct - closestPointActiveCar) *
+            100;
+
+          const timeAtCurrentPos = timeAtLastPoint + timeDiffActive;
+
+          if (isNaN(timeAtCurrentPos)) {
+            console.log(`Time at last point ACTIVE:${timeAtLastPoint}`);
+            console.log(`Time diff ACTIVE:${timeDiffActive}`);
+          }
+
+          console.log(`INTERPOLATED TIME OTHER: ${timeAtCurrentPosOther}`);
+          console.log(`INTERPOLATED TIME ACTIVE: ${timeAtCurrentPos}`);
+
+          return timeAtCurrentPos - timeAtCurrentPosOther;
+        }
 
         return timeAtLastPoint - timeAtLastPointOther;
       }
