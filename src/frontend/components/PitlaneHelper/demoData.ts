@@ -34,6 +34,12 @@ export interface PitlaneTrafficResult {
   totalCars: number;
 }
 
+export interface PitlaneHelperSettings {
+  background: { opacity: number };
+  enableEarlyPitboxWarning: boolean;
+  showPitlaneTraffic: boolean;
+}
+
 export interface PitlaneHelperDemoData {
   speed: PitSpeedResult;
   position: PitboxPositionResult;

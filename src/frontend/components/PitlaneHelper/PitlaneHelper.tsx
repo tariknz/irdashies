@@ -5,26 +5,25 @@ import { usePitlaneVisibility } from './hooks/usePitlaneVisibility';
 import { usePitLimiterWarning } from './hooks/usePitLimiterWarning';
 import { usePitlaneTraffic } from './hooks/usePitlaneTraffic';
 import { useTelemetryValue, useDashboard } from '@irdashies/context';
-import { getDemoPitlaneData } from './demoData';
+import { getDemoPitlaneData, PitlaneHelperSettings, PitSpeedResult, PitboxPositionResult, PitLimiterWarningResult, PitlaneTrafficResult } from './demoData';
 
 export const PitlaneHelper = () => {
   const { isDemoMode } = useDashboard();
   const config = usePitlaneHelperSettings();
+  const surface = (useTelemetryValue('PlayerTrackSurface') ?? 3) as number;
+
+  // Core data hooks - must be called in same order every render
+  const speed = usePitSpeed();
+  const position = usePitboxPosition(config.approachDistance, config.earlyPitboxThreshold);
+  const isVisible = usePitlaneVisibility();
+  const limiterWarning = usePitLimiterWarning(config.enablePitLimiterWarning);
+  const traffic = usePitlaneTraffic(config.showPitlaneTraffic);
 
   // Generate demo data when in demo mode
   if (isDemoMode) {
     const demoData = getDemoPitlaneData();
     return <PitlaneHelperDisplay {...demoData} config={config} />;
   }
-
-  const surface = (useTelemetryValue('PlayerTrackSurface') ?? 3) as number;
-
-  // Core data hooks
-  const speed = usePitSpeed();
-  const position = usePitboxPosition(config.approachDistance, config.earlyPitboxThreshold);
-  const isVisible = usePitlaneVisibility();
-  const limiterWarning = usePitLimiterWarning(config.enablePitLimiterWarning);
-  const traffic = usePitlaneTraffic(config.showPitlaneTraffic);
 
   // Don't render if not visible
   if (!isVisible) {
@@ -135,13 +134,13 @@ export const PitlaneHelper = () => {
 
 // Display component for demo data
 interface PitlaneHelperDisplayProps {
-  speed: any;
-  position: any;
+  speed: PitSpeedResult;
+  position: PitboxPositionResult;
   isVisible: boolean;
-  limiterWarning: any;
-  traffic: any;
+  limiterWarning: PitLimiterWarningResult;
+  traffic: PitlaneTrafficResult;
   surface: number;
-  config: any;
+  config: PitlaneHelperSettings;
 }
 
 const PitlaneHelperDisplay = ({

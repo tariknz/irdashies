@@ -21,12 +21,7 @@ export const RejoinIndicator = () => {
   const { isDemoMode } = useDashboard();
   const settings = useRejoinSettings();
 
-  // Generate demo data when in demo mode
-  if (isDemoMode) {
-    const demoData = getDemoRejoinData(settings);
-    return <RejoinIndicatorDisplay gap={demoData.gap} status={demoData.status as 'Clear' | 'Caution' | 'Do Not Rejoin'} />;
-  }
-
+  // Must call all hooks in same order every render
   const isSessionVisible = useSessionVisibility(
     settings?.config?.sessionVisibility
   );
@@ -38,8 +33,13 @@ export const RejoinIndicator = () => {
   const sessionTime = useTelemetryValue<number>('SessionTime') ?? 0;
   const sessionState = useTelemetryValue<number>('SessionState') ?? 0;
   const { isDriving } = useDrivingState();
-
   const drivers = useDriverRelatives({ buffer: 3 });
+
+  // Generate demo data when in demo mode
+  if (isDemoMode) {
+    const demoData = getDemoRejoinData(settings);
+    return <RejoinIndicatorDisplay gap={demoData.gap} status={demoData.status as 'Clear' | 'Caution' | 'Do Not Rejoin'} />;
+  }
 
   // If we don't have dashboard settings or no focused player, hide
   if (!settings) return null;
