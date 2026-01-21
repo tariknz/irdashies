@@ -80,7 +80,7 @@ export const InputBar = ({
           className="flex flex-col relative min-w-0 h-full"
           style={{ aspectRatio: '1 / 4', width: 'auto' }}
         >
-          <div className={`text-xs text-center h-4 flex justify-center ${value === 0 ? 'text-gray-400' : 'text-white'}`}>
+          <div className={`text-xs text-center h-4 mb-2 flex justify-center ${value === 0 ? 'text-gray-400' : 'text-white'}`}>
             {(value * 100).toFixed(0)}
           </div>
           <div className="flex-1 flex flex-col justify-end relative min-h-0">
