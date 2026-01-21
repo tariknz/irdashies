@@ -69,7 +69,7 @@ export function InputSteer({
     <div className="w-full h-full flex fill-white relative">
       <div
         ref={wheelRef}
-        className='w-full h-full flex'
+        className='w-full h-full flex justify-center'
         style={{
           transform: 'rotate(var(--wheel-rotation, 0rad))',
           transformBox: 'fill-box',
