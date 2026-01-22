@@ -76,13 +76,14 @@ export const SessionBar = ({ position = 'header', variant = 'standings' }: Sessi
     sessionLaps: {
       enabled: effectiveBarSettings?.sessionLaps?.enabled ?? true,
       render: () => {
+        const lapDisplay = Math.max(currentLap, 0);
         if (totalRaceLaps > 0)
           if (isFixedLapRace)
-            return <div className="flex justify-center">L{currentLap}/{totalRaceLaps.toFixed(0)}</div>;
+            return <div className="flex justify-center">L{lapDisplay}/{totalRaceLaps.toFixed(0)}</div>;
           else
-            return <div className="flex justify-center">L{currentLap}/{totalRaceLaps.toFixed(1)}</div>;
+            return <div className="flex justify-center">L{lapDisplay}/{totalRaceLaps.toFixed(1)}</div>;
         else
-          return <div className="flex justify-center">L{currentLap}</div>;
+          return <div className="flex justify-center">L{lapDisplay}</div>;
       },
     },
     incidentCount: {
