@@ -1,17 +1,10 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { usePitLaneStore } from './PitLaneStore';
+import { usePitLaneStore, detectPitTransitions } from './PitLaneStore';
 
 describe('PitLaneStore', () => {
   beforeEach(() => {
-    // Reset store state before each test
-    usePitLaneStore.setState({
-      currentTrackId: null,
-      pitEntryPct: null,
-      pitExitPct: null,
-      previousCarIdxOnPitRoad: [],
-      previousCarIdxTrackSurface: [],
-      previousCarIdxLapDistPct: [],
-    });
+    // Reset store state and module-level previous frame data before each test
+    usePitLaneStore.getState().reset();
   });
 
   describe('setCurrentTrack', () => {
@@ -45,21 +38,22 @@ describe('PitLaneStore', () => {
         currentTrackId: '47',
         pitEntryPct: null,
         pitExitPct: null,
-        previousCarIdxOnPitRoad: [false, false],
-        previousCarIdxTrackSurface: [3, 3], // Both on track
-        previousCarIdxLapDistPct: [0.90, 0.85],
       });
     });
 
     it('should detect pit entry when car transitions from track to pit road', () => {
-      const carIdxOnPitRoad = [true, false];
-      const carIdxTrackSurface = [2, 3]; // Car 0 now on pit road
-      const carIdxLapDistPct = [0.91, 0.86];
+      // First frame: establish previous state (both cars on track)
+      detectPitTransitions(
+        [false, false], // carIdxOnPitRoad
+        [3, 3], // carIdxTrackSurface - both on track
+        [0.90, 0.85] // carIdxLapDistPct
+      );
 
-      usePitLaneStore.getState().detectTransitions(
-        carIdxOnPitRoad,
-        carIdxTrackSurface,
-        carIdxLapDistPct
+      // Second frame: car 0 enters pit road
+      detectPitTransitions(
+        [true, false], // carIdxOnPitRoad - car 0 now on pit road
+        [2, 3], // carIdxTrackSurface - car 0 on pit road surface
+        [0.91, 0.86] // carIdxLapDistPct
       );
 
       const state = usePitLaneStore.getState();
@@ -67,20 +61,18 @@ describe('PitLaneStore', () => {
     });
 
     it('should NOT detect pit entry when car leaves pitbox (surface 1→2)', () => {
-      usePitLaneStore.setState({
-        previousCarIdxOnPitRoad: [false],
-        previousCarIdxTrackSurface: [1], // Was in pitbox
-        previousCarIdxLapDistPct: [0.93],
-      });
+      // First frame: car in pitbox
+      detectPitTransitions(
+        [false], // carIdxOnPitRoad
+        [1], // carIdxTrackSurface - in pitbox
+        [0.93] // carIdxLapDistPct
+      );
 
-      const carIdxOnPitRoad = [true];
-      const carIdxTrackSurface = [2]; // Now on pit road
-      const carIdxLapDistPct = [0.93];
-
-      usePitLaneStore.getState().detectTransitions(
-        carIdxOnPitRoad,
-        carIdxTrackSurface,
-        carIdxLapDistPct
+      // Second frame: car leaving pitbox onto pit road
+      detectPitTransitions(
+        [true], // carIdxOnPitRoad - now true
+        [2], // carIdxTrackSurface - now on pit road
+        [0.93] // carIdxLapDistPct
       );
 
       const state = usePitLaneStore.getState();
@@ -88,20 +80,18 @@ describe('PitLaneStore', () => {
     });
 
     it('should skip detection when both positions are wrapped (< 20%)', () => {
-      usePitLaneStore.setState({
-        previousCarIdxOnPitRoad: [false],
-        previousCarIdxTrackSurface: [3],
-        previousCarIdxLapDistPct: [0.10], // Low position
-      });
+      // First frame: car on track at low position
+      detectPitTransitions(
+        [false], // carIdxOnPitRoad
+        [3], // carIdxTrackSurface - on track
+        [0.10] // carIdxLapDistPct - low position
+      );
 
-      const carIdxOnPitRoad = [true];
-      const carIdxTrackSurface = [2];
-      const carIdxLapDistPct = [0.12]; // Still low position
-
-      usePitLaneStore.getState().detectTransitions(
-        carIdxOnPitRoad,
-        carIdxTrackSurface,
-        carIdxLapDistPct
+      // Second frame: car enters pit at still low position (wrapped)
+      detectPitTransitions(
+        [true], // carIdxOnPitRoad
+        [2], // carIdxTrackSurface - on pit road
+        [0.12] // carIdxLapDistPct - still low position
       );
 
       const state = usePitLaneStore.getState();
@@ -109,20 +99,18 @@ describe('PitLaneStore', () => {
     });
 
     it('should handle wrap-around at start/finish line', () => {
-      usePitLaneStore.setState({
-        previousCarIdxOnPitRoad: [false],
-        previousCarIdxTrackSurface: [3],
-        previousCarIdxLapDistPct: [0.99], // Near end of lap
-      });
+      // First frame: car on track near end of lap
+      detectPitTransitions(
+        [false], // carIdxOnPitRoad
+        [3], // carIdxTrackSurface - on track
+        [0.99] // carIdxLapDistPct - near end of lap
+      );
 
-      const carIdxOnPitRoad = [true];
-      const carIdxTrackSurface = [2];
-      const carIdxLapDistPct = [0.995]; // Still high position
-
-      usePitLaneStore.getState().detectTransitions(
-        carIdxOnPitRoad,
-        carIdxTrackSurface,
-        carIdxLapDistPct
+      // Second frame: car enters pit still at high position
+      detectPitTransitions(
+        [true], // carIdxOnPitRoad
+        [2], // carIdxTrackSurface - on pit road
+        [0.995] // carIdxLapDistPct - still high position
       );
 
       const state = usePitLaneStore.getState();
@@ -136,21 +124,22 @@ describe('PitLaneStore', () => {
         currentTrackId: '47',
         pitEntryPct: 0.92,
         pitExitPct: null,
-        previousCarIdxOnPitRoad: [true],
-        previousCarIdxTrackSurface: [2], // On pit road
-        previousCarIdxLapDistPct: [0.04],
       });
     });
 
     it('should detect pit exit when car transitions from pit road to track', () => {
-      const carIdxOnPitRoad = [false];
-      const carIdxTrackSurface = [2]; // Still surface 2 (pit exit road)
-      const carIdxLapDistPct = [0.05];
+      // First frame: car on pit road
+      detectPitTransitions(
+        [true], // carIdxOnPitRoad
+        [2], // carIdxTrackSurface - on pit road
+        [0.04] // carIdxLapDistPct
+      );
 
-      usePitLaneStore.getState().detectTransitions(
-        carIdxOnPitRoad,
-        carIdxTrackSurface,
-        carIdxLapDistPct
+      // Second frame: car exits pit road
+      detectPitTransitions(
+        [false], // carIdxOnPitRoad - now false
+        [2], // carIdxTrackSurface - still surface 2 (pit exit road)
+        [0.05] // carIdxLapDistPct
       );
 
       const state = usePitLaneStore.getState();
@@ -158,37 +147,38 @@ describe('PitLaneStore', () => {
     });
 
     it('should only detect once per track', () => {
-      const carIdxOnPitRoad = [false];
-      const carIdxTrackSurface = [2];
-      const carIdxLapDistPct = [0.05];
+      // First car pit exit: establish previous frame
+      detectPitTransitions(
+        [true], // carIdxOnPitRoad
+        [2], // carIdxTrackSurface
+        [0.04] // carIdxLapDistPct
+      );
 
-      // First detection
-      usePitLaneStore.getState().detectTransitions(
-        carIdxOnPitRoad,
-        carIdxTrackSurface,
-        carIdxLapDistPct
+      // First car pit exit: detect transition
+      detectPitTransitions(
+        [false], // carIdxOnPitRoad
+        [2], // carIdxTrackSurface
+        [0.05] // carIdxLapDistPct
       );
 
       expect(usePitLaneStore.getState().pitExitPct).toBe(0.05);
 
-      // Try to detect again with different car
-      usePitLaneStore.setState({
-        previousCarIdxOnPitRoad: [false, true],
-        previousCarIdxTrackSurface: [3, 2],
-        previousCarIdxLapDistPct: [0.10, 0.04],
-      });
-
-      const carIdxOnPitRoad2 = [false, false];
-      const carIdxTrackSurface2 = [3, 2];
-      const carIdxLapDistPct2 = [0.11, 0.06];
-
-      usePitLaneStore.getState().detectTransitions(
-        carIdxOnPitRoad2,
-        carIdxTrackSurface2,
-        carIdxLapDistPct2
+      // Try to detect again with different car (second car)
+      // Establish previous frame with car 0 on track, car 1 on pit road
+      detectPitTransitions(
+        [false, true], // carIdxOnPitRoad
+        [3, 2], // carIdxTrackSurface
+        [0.10, 0.04] // carIdxLapDistPct
       );
 
-      // Should still be the first detected value
+      // Second car pit exit
+      detectPitTransitions(
+        [false, false], // carIdxOnPitRoad - car 1 now exits
+        [3, 2], // carIdxTrackSurface
+        [0.11, 0.06] // carIdxLapDistPct
+      );
+
+      // Should still be the first detected value (first detection wins)
       expect(usePitLaneStore.getState().pitExitPct).toBe(0.05);
     });
   });
@@ -223,7 +213,7 @@ describe('PitLaneStore', () => {
     it('should handle empty telemetry arrays', () => {
       usePitLaneStore.setState({ currentTrackId: '47' });
 
-      usePitLaneStore.getState().detectTransitions([], [], []);
+      detectPitTransitions([], [], []);
 
       const state = usePitLaneStore.getState();
       expect(state.pitEntryPct).toBeNull();
@@ -233,13 +223,17 @@ describe('PitLaneStore', () => {
     it('should handle missing telemetry values gracefully', () => {
       usePitLaneStore.setState({
         currentTrackId: '47',
-        previousCarIdxOnPitRoad: [false],
-        previousCarIdxTrackSurface: [3],
-        previousCarIdxLapDistPct: [0.50],
       });
 
-      // Pass empty arrays instead of undefined
-      usePitLaneStore.getState().detectTransitions([], [], []);
+      // Establish a previous frame
+      detectPitTransitions(
+        [false], // carIdxOnPitRoad
+        [3], // carIdxTrackSurface
+        [0.50] // carIdxLapDistPct
+      );
+
+      // Pass empty arrays (simulating missing telemetry)
+      detectPitTransitions([], [], []);
 
       const state = usePitLaneStore.getState();
       expect(state.pitEntryPct).toBeNull();
@@ -250,19 +244,20 @@ describe('PitLaneStore', () => {
       usePitLaneStore.setState({
         currentTrackId: '47',
         pitEntryPct: null,
-        previousCarIdxOnPitRoad: [false],
-        previousCarIdxTrackSurface: [-1], // NotInWorld
-        previousCarIdxLapDistPct: [0.50],
       });
 
-      const carIdxOnPitRoad = [true];
-      const carIdxTrackSurface = [2];
-      const carIdxLapDistPct = [0.51];
+      // First frame: car not in world (spectating or loading)
+      detectPitTransitions(
+        [false], // carIdxOnPitRoad
+        [-1], // carIdxTrackSurface - NotInWorld
+        [0.50] // carIdxLapDistPct
+      );
 
-      usePitLaneStore.getState().detectTransitions(
-        carIdxOnPitRoad,
-        carIdxTrackSurface,
-        carIdxLapDistPct
+      // Second frame: car enters pit road
+      detectPitTransitions(
+        [true], // carIdxOnPitRoad
+        [2], // carIdxTrackSurface - on pit road
+        [0.51] // carIdxLapDistPct
       );
 
       // Should detect because NotInWorld is not InPitStall
