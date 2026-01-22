@@ -13,7 +13,7 @@ export const mockDashboardBridge: DashboardBridge = {
     return defaultDashboard;
   },
   dashboardUpdated: (callback) => {
-    callback(defaultDashboard);
+    callback(defaultDashboard, undefined);
     return () => {
       // noop
     };

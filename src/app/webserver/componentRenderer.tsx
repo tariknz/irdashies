@@ -37,7 +37,7 @@ export class WebSocketBridge implements IrSdkBridge {
   private reconnectDelay: number;
   private reconnectDelayMax: number;
 
-  private dashboardUpdateCallbacks: Set<(value: any) => void>;
+  private dashboardUpdateCallbacks: Set<(value: any, profileId?: string) => void>;
   private demoModeCallbacks: Set<(value: boolean) => void>;
   private lastDashboard: any = null;
   private currentIsDemoMode = false;
@@ -146,7 +146,7 @@ export class WebSocketBridge implements IrSdkBridge {
             }
           });
           break;
-        case 'dashboardUpdated':
+        case 'dashboardUpdated': {
           const { dashboard: updatedDashboard, profileId: updatedProfileId } = data || {};
           if (updatedDashboard) {
             this.lastDashboard = updatedDashboard;
@@ -159,6 +159,7 @@ export class WebSocketBridge implements IrSdkBridge {
             });
           }
           break;
+        }
         case 'demoModeChanged':
           this.currentIsDemoMode = data;
           this.demoModeCallbacks.forEach((cb) => {

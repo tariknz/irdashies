@@ -52,8 +52,6 @@ export const DashboardProvider: React.FC<{
 
   // Store the initial profileId from URL to always use it
   const initialProfileIdRef = React.useRef(profileId);
-  
-  console.log('[DashboardContext] Initialized with profileId from props:', profileId, 'initialProfileIdRef:', initialProfileIdRef.current);
 
   const loadProfiles = React.useCallback(async (specificProfileId?: string) => {
     const allProfiles = await bridge.listProfiles();
@@ -61,19 +59,15 @@ export const DashboardProvider: React.FC<{
 
     // Always use the initial profileId from URL if it was provided
     const profileIdToUse = specificProfileId || initialProfileIdRef.current;
-    
-    console.log('[DashboardContext.loadProfiles] Loading profiles. specificProfileId:', specificProfileId, 'initialProfileIdRef.current:', initialProfileIdRef.current, 'profileIdToUse:', profileIdToUse);
 
     // If a specific profile ID is provided, use that; otherwise get current profile
     let profileToLoad: DashboardProfile | null;
     if (profileIdToUse) {
       profileToLoad = allProfiles.find(p => p.id === profileIdToUse) || null;
       if (!profileToLoad) {
-        console.warn('[DashboardContext] Profile not found in list:', profileIdToUse, '- it may be a non-active profile, but we will still use it');
         // For browser views with a specific profileId, create a minimal profile object
         // The profile exists, but might not be in the active list
         if (initialProfileIdRef.current === profileIdToUse) {
-          console.log('[DashboardContext] Using profileId from URL despite not being in active list:', profileIdToUse);
           profileToLoad = {
             id: profileIdToUse,
             name: profileIdToUse, // Use ID as name until we can fetch the real name
@@ -90,7 +84,6 @@ export const DashboardProvider: React.FC<{
     }
 
     // Deep clone to ensure React detects nested changes
-    console.log('[DashboardContext.loadProfiles] Setting currentProfile to:', profileToLoad?.id);
     setCurrentProfile(profileToLoad ? JSON.parse(JSON.stringify(profileToLoad)) : null);
   }, [bridge]);
 
@@ -144,19 +137,13 @@ export const DashboardProvider: React.FC<{
 
   // Load profiles after mount to avoid cascading renders
   useEffect(() => {
-    // For browser views with a profileId, load profiles immediately to ensure currentProfile is available
-    // For main app, load after a tick to avoid cascading renders
-    if (profileId) {
-      // Browser view: load synchronously since we know the profileId
+    // Use setTimeout for all cases to avoid cascading renders
+    // For browser views, use immediate tick (0ms), for main app use deferred
+    const timeoutId = setTimeout(() => {
       loadProfiles(profileId);
-    } else {
-      // Main app: use setTimeout to defer setState calls and avoid cascading renders
-      const timeoutId = setTimeout(() => {
-        loadProfiles();
-      }, 0);
+    }, 0);
 
-      return () => clearTimeout(timeoutId);
-    }
+    return () => clearTimeout(timeoutId);
   }, [loadProfiles, profileId]);
 
   const saveDashboard = (

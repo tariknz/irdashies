@@ -32,7 +32,7 @@ export const dashboardBridge: DashboardBridge = {
   onEditModeToggled: () => {
     // Not used by component server, but required by interface
   },
-  dashboardUpdated: (callback: (dashboard: DashboardLayout, profileId: string) => void) => {
+  dashboardUpdated: (callback: (dashboard: DashboardLayout, profileId?: string) => void) => {
     dashboardUpdateCallbacks.add(callback);
   },
   reloadDashboard: () => {

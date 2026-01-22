@@ -34,7 +34,7 @@ const createMockBridge = (
     callback({
       widgets,
       generalSettings: { fontSize, colorPalette },
-    });
+    }, undefined);
     return () => {
       return;
     };
