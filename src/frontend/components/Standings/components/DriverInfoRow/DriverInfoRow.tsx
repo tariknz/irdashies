@@ -194,9 +194,14 @@ export const DriverInfoRow = memo(
           component: (
             <DriverNameCell
               key="driverName"
-              hidden={hidden}
-              name={name}
               radioActive={radioActive}
+              repair={repair}
+              penalty={penalty}
+              slowdown={slowdown}
+              showStatusBadges={config?.driverName?.showStatusBadges ?? true}
+              hidden={hidden}
+              fullName={name}
+              nameFormat={config?.driverName?.nameFormat}
             />
           ),
         },
@@ -226,9 +231,6 @@ export const DriverInfoRow = memo(
               lastLap={lastLap}
               currentSessionType={currentSessionType}
               dnf={dnf}
-              repair={repair}
-              penalty={penalty}
-              slowdown={slowdown}
               pitStopDuration={pitStopDuration}
               showPitTime={config?.pitStatus?.showPitTime ?? false}
             />

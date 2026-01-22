@@ -3,6 +3,7 @@ import { iRacingSDKSetup, getCurrentBridge } from './app/bridge/iracingSdk/setup
 import { getOrCreateDefaultDashboard } from './app/storage/dashboards';
 import { setupTaskbar } from './app';
 import { publishDashboardUpdates, dashboardBridge } from './app/bridge/dashboard/dashboardBridge';
+import { setupPitLaneBridge } from './app/bridge/pitLaneBridge';
 import { TelemetrySink } from './app/bridge/iracingSdk/telemetrySink';
 import { OverlayManager } from './app/overlayManager';
 import { startComponentServer } from './app/webserver/componentServer';
@@ -37,13 +38,16 @@ app.on('ready', async () => {
   const dashboard = getOrCreateDefaultDashboard();
   const bridge = getCurrentBridge();
 
+  // Setup IPC bridges
+  setupPitLaneBridge();
+
   // Start component server for browser components
   await startComponentServer(bridge, dashboardBridge);
 
   overlayManager.createOverlays(dashboard);
   setupTaskbar(telemetrySink, overlayManager);
   publishDashboardUpdates(overlayManager, analytics);
-  
+
   await analytics.init(overlayManager.getVersion(), dashboard);
 
   // 🔽 Register the global hide UI shortcut once everything is set up
