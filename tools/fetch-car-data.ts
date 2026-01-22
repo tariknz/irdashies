@@ -3,8 +3,8 @@
  * 
  * This script:
  * 1. Checks if the bundle already exists and is recent (< 7 days old)
- * 2. If needed, fetches the manifest.json to get list of all cars
- * 3. Downloads each car's JSON file
+ * 2. If needed, fetches the master manifest.json (all games)
+ * 3. Filters iRacing cars, then downloads each car's JSON file
  * 4. Bundles all car data into a single file
  * 5. Saves it to src/data/cars-bundle.json for inclusion in the built app
  * 
@@ -27,7 +27,7 @@ interface CarManifestEntry {
 }
 
 interface CarDataManifest {
-  cars: CarManifestEntry[];
+  cars: Record<string, CarManifestEntry[]>;
 }
 
 interface CarData {
@@ -47,7 +47,7 @@ interface CarDataBundle {
 }
 
 const GITHUB_RAW_BASE = 'https://raw.githubusercontent.com/Lovely-Sim-Racing/lovely-car-data/main/data';
-const GAME_FOLDER = 'IRacing';
+const TARGET_GAME = 'IRacing';
 const DATA_DIR = path.join(process.cwd(), 'src', 'data');
 const OUTPUT_FILE = path.join(DATA_DIR, 'cars-bundle.json');
 
@@ -119,23 +119,29 @@ function fetchJson<T>(url: string): Promise<T> {
  * Fetch the manifest to get list of all cars
  */
 async function fetchManifest(): Promise<CarManifestEntry[]> {
-  console.log(`📋 Fetching manifest for ${GAME_FOLDER}...`);
-  const url = `${GITHUB_RAW_BASE}/${GAME_FOLDER}/manifest.json`;
+  console.log(`📋 Fetching manifest for ${TARGET_GAME}...`);
+  const url = `${GITHUB_RAW_BASE}/manifest.json`;
   const manifest = await fetchJson<CarDataManifest>(url);
-  console.log(`✓ Found ${manifest.cars.length} cars`);
-  return manifest.cars;
+  const cars = manifest.cars?.[TARGET_GAME] ?? [];
+
+  if (!cars.length) {
+    throw new Error(`No cars found for ${TARGET_GAME} in manifest`);
+  }
+
+  console.log(`✓ Found ${cars.length} cars for ${TARGET_GAME}`);
+  return cars;
 }
 
 /**
  * Fetch a single car's data
  */
-async function fetchCarData(carId: string): Promise<CarData | null> {
+async function fetchCarData(entry: CarManifestEntry): Promise<CarData | null> {
   try {
-    const url = `${GITHUB_RAW_BASE}/${GAME_FOLDER}/${encodeURIComponent(carId)}.json`;
+    const url = `${GITHUB_RAW_BASE}/${encodeURI(entry.path)}`;
     const carData = await fetchJson<CarData>(url);
     return carData;
   } catch (error) {
-    console.warn(`⚠ Failed to fetch car ${carId}:`, (error as Error).message);
+    console.warn(`⚠ Failed to fetch car ${entry.carId} (${entry.path}):`, (error as Error).message);
     return null;
   }
 }
@@ -150,7 +156,7 @@ async function fetchAllCarData(manifest: CarManifestEntry[]): Promise<CarData[]>
 
   for (let i = 0; i < manifest.length; i++) {
     const entry = manifest[i];
-    const carData = await fetchCarData(entry.carId);
+    const carData = await fetchCarData(entry);
     
     if (carData) {
       cars.push(carData);
