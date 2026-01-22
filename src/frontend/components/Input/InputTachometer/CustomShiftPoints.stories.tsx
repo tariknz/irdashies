@@ -112,6 +112,8 @@ const AnimatedRPM = ({
         <TachometerForStorybook 
           rpm={rpm} 
           maxRpm={7360} 
+          gear={1}
+          carPath="ferrari296gt3"
           showRpmText={showRpmText}
           gearRpmThresholds={testGearRpm}
           ledColors={testCarData.ledColor}

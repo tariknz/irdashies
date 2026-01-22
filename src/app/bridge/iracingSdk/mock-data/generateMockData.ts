@@ -77,7 +77,7 @@ export function generateMockData(sessionData?: {
                 demoRpm = minRpm + 1000; // Drop RPM after shift
                 holdAtRedlineCounter = 0; // Reset counter
                 // After reaching 6th gear, loop back to 1st
-                if (demoGear >= 6) {
+                if (demoGear > 6) {
                   demoGear = 1;
                 }
               }
@@ -117,7 +117,7 @@ export function generateMockData(sessionData?: {
           
           // Call all registered callbacks
           telemetryCallbacks.forEach(cb => cb(data));
-        }, 100); // Update every 100ms instead of 60Hz for slower, smoother demo
+        }, 1000 / 60); // Update at 60Hz for smooth telemetry simulation
       }
       
       // Return unsubscribe function

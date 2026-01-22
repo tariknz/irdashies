@@ -45,7 +45,7 @@ export const Tachometer = ({
   shiftPointSettings = undefined
 }: TachometerProps) => {
   const [flash, setFlash] = useState(false);
-  const [prevAtRedline, setPrevAtRedline] = useState(false);
+  const [customShiftFlash, setCustomShiftFlash] = useState(false);
   
   // Ensure RPM is within valid range
   const clampedRpm = Math.max(0, Math.min(rpm || 0, maxRpm));
@@ -53,16 +53,6 @@ export const Tachometer = ({
   // Calculate effective thresholds with fallbacks
   const effectiveShiftRpm = gearRpmThresholds ? gearRpmThresholds[0] : (shiftRpm || (maxRpm * 0.9));  // Use redline from car data
   const effectiveBlinkRpm = gearRpmThresholds ? gearRpmThresholds[0] : (blinkRpm || (maxRpm * 0.97)); // Use redline from car data
-  
-  // Redline hysteresis - stay at redline longer to give breathing room (derived state)
-  const atRedline = clampedRpm >= effectiveShiftRpm ? true : 
-                    clampedRpm < effectiveShiftRpm * 0.88 ? false : 
-                    prevAtRedline;
-  
-  // Update previous state when it changes
-  if (atRedline !== prevAtRedline) {
-    setPrevAtRedline(atRedline);
-  }
   
   // Use car-specific LED count if available
   const effectiveNumLights = carData?.ledNumber || (ledColors ? ledColors.length - 1 : numLights);
@@ -104,9 +94,6 @@ export const Tachometer = ({
   const getActiveLights = () => {
     // Always show no lights when RPM is 0
     if (clampedRpm <= 0) return 0;
-    
-    // Always show all lights when at redline (with hysteresis)
-    if (atRedline) return effectiveNumLights;
     
     // Always show all lights when at or above shift point
     if (clampedRpm >= effectiveShiftRpm) return effectiveNumLights;
@@ -180,8 +167,8 @@ export const Tachometer = ({
         return {
           ...baseStyle,
           boxShadow: `0 0 15px ${indicatorColor}`,
-          backgroundColor: flash ? indicatorColor : 'rgba(0,0,0,0.8)',
-          color: flash ? '#000000' : '#ffffff',
+          backgroundColor: customShiftFlash ? indicatorColor : 'rgba(0,0,0,0.8)',
+          color: customShiftFlash ? '#000000' : '#ffffff',
           border: `2px solid ${indicatorColor}`,
         };
       default:
@@ -214,12 +201,13 @@ export const Tachometer = ({
   useEffect(() => {
     if (shouldShowCustomShift && indicatorType === 'pulse') {
       const interval = setInterval(() => {
-        setFlash(prevFlash => !prevFlash);
+        setCustomShiftFlash(prevFlash => !prevFlash);
       }, 500);
-      return () => clearInterval(interval);
+      return () => {
+        clearInterval(interval);
+        setCustomShiftFlash(false);
+      };
     }
-    // Reset flash state when not pulsing
-    return () => setFlash(false);
   }, [shouldShowCustomShift, indicatorType]);
 
   // Determine the color for each LED
