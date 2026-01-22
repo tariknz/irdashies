@@ -79,9 +79,9 @@ export function createBridgeProxy(
   };
 
   if (dashboardBridge) {
-    dashboardBridge.dashboardUpdated((dashboard: DashboardLayout) => {
+    dashboardBridge.dashboardUpdated((dashboard: DashboardLayout, profileId?: string) => {
       currentDashboard = dashboard;
-      broadcast('dashboardUpdated', dashboard);
+      broadcast('dashboardUpdated', { dashboard, profileId });
     });
 
     if (dashboardBridge.onDemoModeChanged) {

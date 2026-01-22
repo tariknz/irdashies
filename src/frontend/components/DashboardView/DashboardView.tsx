@@ -12,7 +12,7 @@ interface WidgetPosition {
 }
 
 export const DashboardView = () => {
-  const { currentDashboard, bridge } = useDashboard();
+  const { currentDashboard, bridge, currentProfile } = useDashboard();
   const [widgetPositions, setWidgetPositions] = useState<Record<string, WidgetPosition>>({});
   const [interactingWidget, setInteractingWidget] = useState<string | null>(null);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -73,7 +73,7 @@ export const DashboardView = () => {
   }, [currentDashboard, enabledWidgets]);
 
   const savePositions = async (positions: Record<string, WidgetPosition>) => {
-    if (!currentDashboard?.widgets) return;
+    if (!currentDashboard?.widgets || !currentProfile) return;
 
     try {
       const updatedWidgets = currentDashboard.widgets.map(widget => {
@@ -94,7 +94,8 @@ export const DashboardView = () => {
         widgets: updatedWidgets,
       };
 
-      await bridge.saveDashboard(updatedDashboard);
+      console.log('💾 Saving widget positions for profile:', currentProfile.id, 'with positions:', positions);
+      bridge.saveDashboard(updatedDashboard, { profileId: currentProfile.id });
       console.log('💾 Saved widget positions:', positions);
     } catch (error) {
       console.error('Failed to save widget positions:', error);
@@ -153,7 +154,7 @@ export const DashboardView = () => {
     };
   }, []);
 
-  if (!currentDashboard) {
+  if (!currentDashboard || !currentProfile) {
     return (
       <div className="flex items-center justify-center h-screen bg-slate-900 text-white">
         <div className="text-center">

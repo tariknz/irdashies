@@ -147,14 +147,17 @@ export class WebSocketBridge implements IrSdkBridge {
           });
           break;
         case 'dashboardUpdated':
-          this.lastDashboard = data;
-          this.dashboardUpdateCallbacks.forEach((cb) => {
-            try {
-              cb(data);
-            } catch (e) {
-              console.error('Error in dashboard update callback:', e);
-            }
-          });
+          const { dashboard: updatedDashboard, profileId: updatedProfileId } = data || {};
+          if (updatedDashboard) {
+            this.lastDashboard = updatedDashboard;
+            this.dashboardUpdateCallbacks.forEach((cb) => {
+              try {
+                cb(updatedDashboard, updatedProfileId);
+              } catch (e) {
+                console.error('Error in dashboard update callback:', e);
+              }
+            });
+          }
           break;
         case 'demoModeChanged':
           this.currentIsDemoMode = data;
@@ -308,11 +311,16 @@ export class WebSocketBridge implements IrSdkBridge {
     // Edit mode is not supported in browser clients
   }
 
-  dashboardUpdated(callback: (value: any) => void): void {
+  dashboardUpdated(callback: (value: any, profileId?: string) => void): void {
     this.dashboardUpdateCallbacks.add(callback);
     if (this.lastDashboard) {
       try {
-        callback(this.lastDashboard);
+        // Handle both old and new formats for backward compatibility
+        if (typeof this.lastDashboard === 'object' && 'dashboard' in this.lastDashboard && 'profileId' in this.lastDashboard) {
+          callback(this.lastDashboard.dashboard, this.lastDashboard.profileId);
+        } else {
+          callback(this.lastDashboard);
+        }
       } catch (e) {
         console.error('Error in dashboard callback:', e);
       }

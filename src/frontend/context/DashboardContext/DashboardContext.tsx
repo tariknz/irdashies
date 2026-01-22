@@ -52,6 +52,8 @@ export const DashboardProvider: React.FC<{
 
   // Store the initial profileId from URL to always use it
   const initialProfileIdRef = React.useRef(profileId);
+  
+  console.log('[DashboardContext] Initialized with profileId from props:', profileId, 'initialProfileIdRef:', initialProfileIdRef.current);
 
   const loadProfiles = React.useCallback(async (specificProfileId?: string) => {
     const allProfiles = await bridge.listProfiles();
@@ -59,78 +61,82 @@ export const DashboardProvider: React.FC<{
 
     // Always use the initial profileId from URL if it was provided
     const profileIdToUse = specificProfileId || initialProfileIdRef.current;
+    
+    console.log('[DashboardContext.loadProfiles] Loading profiles. specificProfileId:', specificProfileId, 'initialProfileIdRef.current:', initialProfileIdRef.current, 'profileIdToUse:', profileIdToUse);
 
     // If a specific profile ID is provided, use that; otherwise get current profile
     let profileToLoad: DashboardProfile | null;
     if (profileIdToUse) {
       profileToLoad = allProfiles.find(p => p.id === profileIdToUse) || null;
       if (!profileToLoad) {
-        console.warn('[DashboardContext] Profile not found:', profileIdToUse, '- falling back to current');
-        // Profile doesn't exist - clear the ref so we don't stay locked
-        initialProfileIdRef.current = undefined;
-        profileToLoad = await bridge.getCurrentProfile();
+        console.warn('[DashboardContext] Profile not found in list:', profileIdToUse, '- it may be a non-active profile, but we will still use it');
+        // For browser views with a specific profileId, create a minimal profile object
+        // The profile exists, but might not be in the active list
+        if (initialProfileIdRef.current === profileIdToUse) {
+          console.log('[DashboardContext] Using profileId from URL despite not being in active list:', profileIdToUse);
+          profileToLoad = {
+            id: profileIdToUse,
+            name: profileIdToUse, // Use ID as name until we can fetch the real name
+            createdAt: new Date().toISOString(),
+            lastModified: new Date().toISOString(),
+          };
+        } else {
+          // This is a different profile, fall back to current
+          profileToLoad = await bridge.getCurrentProfile();
+        }
       }
     } else {
       profileToLoad = await bridge.getCurrentProfile();
     }
 
     // Deep clone to ensure React detects nested changes
+    console.log('[DashboardContext.loadProfiles] Setting currentProfile to:', profileToLoad?.id);
     setCurrentProfile(profileToLoad ? JSON.parse(JSON.stringify(profileToLoad)) : null);
   }, [bridge]);
 
   useEffect(() => {
-    bridge.dashboardUpdated((dashboard) => {
-     // For profile-specific URLs, we need to ensure we're getting the right profile's dashboard
-      if (initialProfileIdRef.current && bridge.getDashboardForProfile) {
-        bridge.getDashboardForProfile(initialProfileIdRef.current).then((profileDashboard) => {
-          if (profileDashboard) {
-            // Only update if the dashboard is actually different to avoid overwriting local optimistic updates
-            setDashboard(prev => {
-              if (JSON.stringify(prev) !== JSON.stringify(profileDashboard)) {
-                return profileDashboard;
-              }
-              return prev;
-            });
-          }
-        });
-      } else {
-        // Only update if the dashboard is actually different to avoid overwriting local optimistic updates
-        setDashboard(prev => {
-          if (JSON.stringify(prev) !== JSON.stringify(dashboard)) {
-            return dashboard;
-          }
-          return prev;
-        });
-      }
+    bridge.dashboardUpdated((dashboard, updatedProfileId) => {
+      const contextProfileId = initialProfileIdRef.current;
 
-      // Refresh profiles when dashboard updates to pick up theme changes
-      // Use the stored initial profileId to maintain the URL-specified profile
+      // If this context is for a specific profile (i.e., a browser view)
+      if (contextProfileId) {
+        // Only accept updates that are specifically for our profile
+        if (updatedProfileId === contextProfileId) {
+          setDashboard(dashboard);
+        }
+      } else {
+        // Otherwise, this is the main Electron app context, so we should accept any update
+        setDashboard(dashboard);
+      }
+      
+      // Refresh profiles to pick up on theme changes etc.
       loadProfiles().catch((err) => console.error('Failed to refresh profiles on dashboard update:', err));
     });
 
-    // If we have a specific profileId from URL, load that profile's dashboard
+    // Initial load logic
     if (profileId && bridge.getDashboardForProfile) {
       bridge.getDashboardForProfile(profileId).then((dashboard) => {
         if (dashboard) {
           setDashboard(dashboard);
         } else {
-          console.warn('📊 No dashboard returned for profile:', profileId);
-          // Fall back to reloading the current dashboard
+          // Fallback for safety, should not be hit in normal operation
           bridge.reloadDashboard();
         }
       }).catch((error) => {
-        console.error('📊 Error loading dashboard for profile:', profileId, error);
-        // Fall back to reloading the current dashboard
+        console.error('Error loading dashboard for profile:', profileId, error);
         bridge.reloadDashboard();
       });
     } else {
+      // This is the path for the main Electron app, which doesn't have a profileId prop
       bridge.reloadDashboard();
     }
 
+    // Set up other listeners
     bridge.onEditModeToggled((editMode) => setEditMode(editMode));
     bridge.getAppVersion?.().then((version) => setVersion(version));
     bridge.onDemoModeChanged?.((demoMode) => setIsDemoMode(demoMode));
 
+    // Cleanup
     return () => {
       bridge.stop();
     };
@@ -138,12 +144,19 @@ export const DashboardProvider: React.FC<{
 
   // Load profiles after mount to avoid cascading renders
   useEffect(() => {
-    // Use setTimeout to defer setState calls and avoid cascading renders
-    const timeoutId = setTimeout(() => {
+    // For browser views with a profileId, load profiles immediately to ensure currentProfile is available
+    // For main app, load after a tick to avoid cascading renders
+    if (profileId) {
+      // Browser view: load synchronously since we know the profileId
       loadProfiles(profileId);
-    }, 0);
+    } else {
+      // Main app: use setTimeout to defer setState calls and avoid cascading renders
+      const timeoutId = setTimeout(() => {
+        loadProfiles();
+      }, 0);
 
-    return () => clearTimeout(timeoutId);
+      return () => clearTimeout(timeoutId);
+    }
   }, [loadProfiles, profileId]);
 
   const saveDashboard = (
@@ -156,7 +169,7 @@ export const DashboardProvider: React.FC<{
     // Ensure we save to the current profile by adding profileId to options
     const saveOptions = {
       ...options,
-      profileId: currentProfile?.id || options?.profileId
+      profileId: options?.profileId || currentProfile?.id
     };
     
     // Then save to bridge

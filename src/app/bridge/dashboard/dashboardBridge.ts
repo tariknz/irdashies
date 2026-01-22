@@ -22,7 +22,7 @@ import { getAnalyticsOptOut as getAnalyticsOptOutStorage, setAnalyticsOptOut as 
 import { Analytics } from '../../analytics';
 
 // Store callbacks for dashboard updates
-const dashboardUpdateCallbacks: Set<(dashboard: DashboardLayout) => void> = new Set<(dashboard: DashboardLayout) => void>();
+const dashboardUpdateCallbacks: Set<(dashboard: DashboardLayout, profileId?: string) => void> = new Set<(dashboard: DashboardLayout, profileId?: string) => void>();
 const demoModeCallbacks: Set<(isDemoMode: boolean) => void> = new Set<(isDemoMode: boolean) => void>();
 
 /**
@@ -32,7 +32,7 @@ export const dashboardBridge: DashboardBridge = {
   onEditModeToggled: () => {
     // Not used by component server, but required by interface
   },
-  dashboardUpdated: (callback: (value: DashboardLayout) => void) => {
+  dashboardUpdated: (callback: (dashboard: DashboardLayout, profileId: string) => void) => {
     dashboardUpdateCallbacks.add(callback);
   },
   reloadDashboard: () => {
@@ -40,13 +40,14 @@ export const dashboardBridge: DashboardBridge = {
   },
   saveDashboard: (dashboard: DashboardLayout, options?: SaveDashboardOptions) => {
     const targetProfileId = options?.profileId || getCurrentProfileId();
+    console.log('[dashboardBridge.saveDashboard] Saving to profile:', targetProfileId, 'Current profile:', getCurrentProfileId(), 'Options:', options);
     saveDashboard(targetProfileId, dashboard);
 
     // For browser views, manually trigger dashboard update callbacks
     if (options?.profileId && dashboardUpdateCallbacks.size > 0) {
       dashboardUpdateCallbacks.forEach(callback => {
         try {
-          callback(dashboard);
+          callback(dashboard, targetProfileId);
         } catch (err) {
           console.error('Error in dashboard update callback:', err);
         }
@@ -143,7 +144,8 @@ export async function publishDashboardUpdates(overlayManager: OverlayManager, an
     // Notify component server bridge subscribers
     dashboardUpdateCallbacks.forEach((callback) => {
       try {
-        callback(dashboard);
+        // We don't know the profileId here, so we pass undefined
+        callback(dashboard, undefined);
       } catch (err) {
         console.error('Error in dashboard update callback:', err);
       }

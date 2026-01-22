@@ -113,6 +113,7 @@ export const saveDashboard = (
 ) => {
   console.log('[saveDashboard] Saving dashboard for profile:', id);
   console.log('[saveDashboard] Dashboard widgets to save:', value?.widgets?.length || 0);
+  console.log('[saveDashboard] First widget config:', value?.widgets?.[0]?.config ? JSON.stringify(value.widgets[0].config) : 'N/A');
   console.log('[saveDashboard] Dashboard structure:', JSON.stringify({
     hasWidgets: !!value?.widgets,
     widgetCount: value?.widgets?.length || 0,
@@ -134,13 +135,14 @@ export const saveDashboard = (
   };
 
   console.log('[saveDashboard] Final merged dashboard widgets:', mergedDashboard?.widgets?.length || 0);
+  console.log('[saveDashboard] First merged widget config:', mergedDashboard?.widgets?.[0]?.config ? JSON.stringify(mergedDashboard.widgets[0].config) : 'N/A');
 
   // Only save and emit if there are actual changes
   if (isDashboardChanged(existingDashboard, mergedDashboard)) {
     dashboards[id] = mergedDashboard;
-    console.log('[saveDashboard] Writing to storage...');
+    console.log('[saveDashboard] Writing to storage for profile:', id);
     writeData(DASHBOARDS_KEY, dashboards);
-    console.log('[saveDashboard] Saved successfully');
+    console.log('[saveDashboard] Saved successfully to storage');
 
     // Only emit dashboard updated event if this is the currently active profile
     // This prevents overlay refreshes when creating/modifying non-active profiles
@@ -149,7 +151,7 @@ export const saveDashboard = (
       console.log('[saveDashboard] Emitting dashboard update for current profile');
       emitDashboardUpdated(mergedDashboard);
     } else {
-      console.log('[saveDashboard] Not emitting update - not current profile');
+      console.log('[saveDashboard] Not emitting update - not current profile (saved:', id, ', current:', currentProfileId, ')');
     }
   } else {
     console.log('[saveDashboard] Dashboard unchanged, not saving');
