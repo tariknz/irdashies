@@ -8,7 +8,6 @@ import { loadCarData, getGearKey, type CarData } from '../../../utils/carData';
  */
 export const useCarTachometerData = () => {
   const [carData, setCarData] = useState<CarData | null>(null);
-  const [loading, setLoading] = useState(false);
   
   const driverCarIdx = useDriverCarIdx();
   const session = useSessionStore((state) => state.session);
@@ -24,27 +23,21 @@ export const useCarTachometerData = () => {
   const gameId = 'iracing'; // TODO: Get from session data when available
 
   // Memoized load function
-  const loadData = useCallback(async (path: string, game: string) => {
-    setLoading(true);
-    try {
-      const data = await loadCarData(path, game);
-      setCarData(data);
-    } catch {
-      setCarData(null);
-    } finally {
-      setLoading(false);
-    }
+  const loadData = useCallback((path: string, game: string) => {
+    const data = loadCarData(path, game);
+    return data;
   }, []);
 
   // Load car data when car path changes
   useEffect(() => {
     if (!carPath) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setCarData(null);
-      setLoading(false);
       return;
     }
 
-    loadData(carPath, gameId);
+    const data = loadData(carPath, gameId);
+    setCarData(data);
   }, [carPath, gameId, loadData]);
 
   // Get gear-specific RPM thresholds
@@ -59,7 +52,6 @@ export const useCarTachometerData = () => {
 
   return {
     carData,
-    loading,
     gearRpmThresholds: getGearRpmThresholds(),
     hasCarData: !!carData,
   };

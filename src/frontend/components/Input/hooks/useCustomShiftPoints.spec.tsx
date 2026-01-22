@@ -33,7 +33,7 @@ describe('useCustomShiftPoints', () => {
         ledColor: [],
         ledRpm: []
       },
-      loading: false,
+
       gearRpmThresholds: null,
       hasCarData: true,
     });

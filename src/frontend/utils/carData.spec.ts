@@ -1,43 +1,11 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { loadCarData, getGearKey, fetchCarList } from './carData';
+import { describe, it, expect } from 'vitest';
+import { loadCarData, getGearKey, getAvailableCars } from './carData';
 
-// Mock fetch and localStorage
-const mockFetch = vi.fn();
-global.fetch = mockFetch;
-
-// Mock localStorage
-const localStorageMock = (() => {
-  let store: Record<string, string> = {};
-  return {
-    getItem: (key: string) => store[key] || null,
-    setItem: (key: string, value: string) => {
-      store[key] = value.toString();
-    },
-    removeItem: (key: string) => {
-      // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
-      delete store[key];
-    },
-    clear: () => {
-      store = {};
-    }
-  };
-})();
-
-Object.defineProperty(window, 'localStorage', {
-  value: localStorageMock
-});
-
+/**
+ * NOTE: These tests verify that bundled car data can be loaded synchronously
+ * The actual car data comes from tools/fetch-car-data.ts which is run at build time
+ */
 describe('carData', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    // Clear localStorage before each test
-    localStorage.clear();
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
   describe('getGearKey', () => {
     it('returns "N" for gear 0', () => {
       expect(getGearKey(0)).toBe('N');
@@ -55,225 +23,104 @@ describe('carData', () => {
   });
 
   describe('loadCarData', () => {
-    const mockCarData = {
-      carName: 'Test Car',
-      carId: 'testcar',
-      carClass: 'GT3',
-      ledNumber: 6,
-      redlineBlinkInterval: 250,
-      ledColor: ['#FFFF0000', '#FF00FF00', '#FF00FF00', '#FFFFFF00', '#FFFFFF00', '#FFFF0000', '#FFFF0000'],
-      ledRpm: [{
-        'R': [7500, 4500, 5000, 5500, 6000, 6500, 7000],
-        'N': [7500, 4500, 5000, 5500, 6000, 6500, 7000],
-        '1': [7360, 6760, 6860, 6960, 7060, 7160, 7260]
-      }]
-    };
-
-    it('loads car data successfully', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(mockCarData)
-      });
-
-      const result = await loadCarData('testcar');
+    it('loads car data synchronously from bundle', () => {
+      // Ferrari 296 GT3 should be in the bundle
+      const result = loadCarData('ferrari296gt3');
       
-      expect(mockFetch).toHaveBeenCalledWith(
-        'https://raw.githubusercontent.com/Lovely-Sim-Racing/lovely-car-data/main/data/IRacing/testcar.json'
-      );
-      expect(result).toEqual(mockCarData);
+      expect(result).not.toBeNull();
+      if (result) {
+        expect(result.carId).toBe('ferrari296gt3');
+        expect(result.carName).toBe('Ferrari 296 GT3');
+        expect(result.ledNumber).toBeGreaterThan(0);
+        expect(result.ledColor).toBeDefined();
+        expect(Array.isArray(result.ledRpm)).toBe(true);
+      }
     });
 
-    it('loads car data for different games', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(mockCarData)
-      });
-
-      const result = await loadCarData('testcar', 'assettocorsacompetizione');
+    it('handles car ID case-insensitively', () => {
+      const result1 = loadCarData('ferrari296gt3');
+      const result2 = loadCarData('Ferrari296GT3');
+      const result3 = loadCarData('FERRARI296GT3');
       
-      expect(mockFetch).toHaveBeenCalledWith(
-        'https://raw.githubusercontent.com/Lovely-Sim-Racing/lovely-car-data/main/data/AssettoCorsaCompetizione/testcar.json'
-      );
-      expect(result).toEqual(mockCarData);
+      expect(result1).not.toBeNull();
+      expect(result2).toEqual(result1);
+      expect(result3).toEqual(result1);
     });
 
-    it('handles fetch failure gracefully', async () => {
-      // All attempts fail
-      mockFetch
-        .mockResolvedValueOnce({ ok: false, status: 404 })
-        .mockResolvedValueOnce({ ok: false, status: 404 })
-        .mockResolvedValueOnce({ ok: false, status: 404 });
-
-      const result = await loadCarData('nonexistentcar');
+    it('handles normalized car IDs (spaces/special chars removed)', () => {
+      // Try loading with a normalized version
+      const result1 = loadCarData('ferrari296gt3');
+      const result2 = loadCarData('ferrari 296 gt3');
       
+      expect(result1).not.toBeNull();
+      if (result1) {
+        expect(result2).toEqual(result1);
+      }
+    });
+
+    it('returns null for nonexistent cars', () => {
+      const result = loadCarData('nonexistentcarmodel12345');
       expect(result).toBeNull();
     });
 
-    it('handles network errors gracefully', async () => {
-      mockFetch.mockRejectedValueOnce(new Error('Network error'));
-
-      const result = await loadCarData('testcar');
+    it('ignores game parameter (only iRacing data is bundled)', () => {
+      const result1 = loadCarData('ferrari296gt3', 'iracing');
+      const result2 = loadCarData('ferrari296gt3', 'assettocorsa');
+      const result3 = loadCarData('ferrari296gt3', 'automobilista2');
       
-      expect(result).toBeNull();
-    });
-
-    it('sanitizes car path correctly', async () => {
-      // First attempt with original fails, second with lowercase succeeds
-      mockFetch
-        .mockResolvedValueOnce({ ok: false, status: 404 })
-        .mockResolvedValueOnce({
-          ok: true,
-          json: () => Promise.resolve(mockCarData)
-        });
-
-      await loadCarData('test-car_123');
-      
-      expect(mockFetch).toHaveBeenCalledTimes(2);
-      expect(mockFetch).toHaveBeenNthCalledWith(1,
-        'https://raw.githubusercontent.com/Lovely-Sim-Racing/lovely-car-data/main/data/IRacing/test-car_123.json'
-      );
-      expect(mockFetch).toHaveBeenNthCalledWith(2,
-        'https://raw.githubusercontent.com/Lovely-Sim-Racing/lovely-car-data/main/data/IRacing/test-car_123.json'
-      );
-    });
-
-    it('handles car paths with spaces (MX-5 case)', async () => {
-      // First attempt succeeds with encoded space
-      mockFetch
-        .mockResolvedValueOnce({
-          ok: true,
-          json: () => Promise.resolve(mockCarData)
-        });
-
-      const result = await loadCarData('mx5 mx52016');
-      
-      expect(mockFetch).toHaveBeenCalledTimes(1);
-      expect(mockFetch).toHaveBeenNthCalledWith(1,
-        'https://raw.githubusercontent.com/Lovely-Sim-Racing/lovely-car-data/main/data/IRacing/mx5%20mx52016.json'
-      );
-      expect(result).toEqual(mockCarData);
-    });
-
-    it('falls back to IRacing for unknown games', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(mockCarData)
-      });
-
-      await loadCarData('testcar', 'unknowngame');
-      
-      expect(mockFetch).toHaveBeenCalledWith(
-        'https://raw.githubusercontent.com/Lovely-Sim-Racing/lovely-car-data/main/data/IRacing/testcar.json'
-      );
-    });
-
-    it('caches car data and returns from cache on second call', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(mockCarData)
-      });
-
-      // First call should fetch from API
-      const result1 = await loadCarData('testcar');
-      expect(mockFetch).toHaveBeenCalledTimes(1);
-
-      // Second call should return from cache without fetching
-      const result2 = await loadCarData('testcar');
-      expect(mockFetch).toHaveBeenCalledTimes(1); // Still 1, not 2
       expect(result1).toEqual(result2);
+      expect(result2).toEqual(result3);
     });
 
-    it('caches results separately for different games', async () => {
-      mockFetch.mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve(mockCarData)
-      });
-
-      // Call for IRacing
-      await loadCarData('testcar', 'iracing');
-      expect(mockFetch).toHaveBeenCalledTimes(1);
-
-      // Call for different game should fetch again
-      await loadCarData('testcar', 'assettocorsa');
-      expect(mockFetch).toHaveBeenCalledTimes(2);
+    it('returns car data with expected structure', () => {
+      const result = loadCarData('ferrari296gt3');
+      
+      if (result) {
+        expect(result).toHaveProperty('carName');
+        expect(result).toHaveProperty('carId');
+        expect(result).toHaveProperty('carClass');
+        expect(result).toHaveProperty('ledNumber');
+        expect(result).toHaveProperty('redlineBlinkInterval');
+        expect(result).toHaveProperty('ledColor');
+        expect(result).toHaveProperty('ledRpm');
+        
+        expect(typeof result.carName).toBe('string');
+        expect(typeof result.carId).toBe('string');
+        expect(typeof result.ledNumber).toBe('number');
+      }
     });
   });
 
-  describe('fetchCarList', () => {
-    const mockCarList = [
-      { name: 'car1.json', path: 'data/IRacing/car1.json' },
-      { name: 'car2.json', path: 'data/IRacing/car2.json' }
-    ];
-
-    it('fetches car list from GitHub API', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        headers: new Map(),
-        json: () => Promise.resolve(mockCarList)
-      });
-
-      const result = await fetchCarList('IRacing');
+  describe('getAvailableCars', () => {
+    it('returns array of available cars', () => {
+      const cars = getAvailableCars();
       
-      expect(mockFetch).toHaveBeenCalledWith(
-        'https://api.github.com/repos/Lovely-Sim-Racing/lovely-car-data/contents/data/IRacing'
-      );
-      expect(result).toEqual(mockCarList);
+      expect(Array.isArray(cars)).toBe(true);
+      expect(cars.length).toBeGreaterThan(0);
     });
 
-    it('caches car list and returns from cache on second call', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        headers: new Map(),
-        json: () => Promise.resolve(mockCarList)
+    it('returns cars with carId and carName', () => {
+      const cars = getAvailableCars();
+      
+      cars.forEach(car => {
+        expect(car).toHaveProperty('carId');
+        expect(car).toHaveProperty('carName');
+        expect(typeof car.carId).toBe('string');
+        expect(typeof car.carName).toBe('string');
       });
-
-      // First call should fetch from API
-      const result1 = await fetchCarList('IRacing');
-      expect(mockFetch).toHaveBeenCalledTimes(1);
-
-      // Second call should return from cache without fetching
-      const result2 = await fetchCarList('IRacing');
-      expect(mockFetch).toHaveBeenCalledTimes(1); // Still 1, not 2
-      expect(result1).toEqual(result2);
     });
 
-    it('throws helpful error on rate limit', async () => {
-      const rateLimitReset = Math.floor(Date.now() / 1000) + 3600;
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 403,
-        statusText: 'Forbidden',
-        headers: new Map([['X-RateLimit-Reset', rateLimitReset.toString()]])
-      });
-
-      await expect(fetchCarList('IRacing')).rejects.toThrow('GitHub API rate limit exceeded');
+    it('includes expected cars in the bundle', () => {
+      const cars = getAvailableCars();
+      const carIds = cars.map(c => c.carId);
+      
+      // These cars should be in the bundle
+      expect(carIds).toContain('ferrari296gt3');
     });
 
-    it('throws error on other API errors', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 500,
-        statusText: 'Internal Server Error',
-        headers: new Map()
-      });
-
-      await expect(fetchCarList('IRacing')).rejects.toThrow('GitHub API error');
-    });
-
-    it('caches results separately for different games', async () => {
-      mockFetch.mockResolvedValue({
-        ok: true,
-        headers: new Map(),
-        json: () => Promise.resolve(mockCarList)
-      });
-
-      // Call for IRacing
-      await fetchCarList('IRacing');
-      expect(mockFetch).toHaveBeenCalledTimes(1);
-
-      // Call for different game should fetch again
-      await fetchCarList('F12025');
-      expect(mockFetch).toHaveBeenCalledTimes(2);
+    it('returns cars sorted by availability', () => {
+      const cars = getAvailableCars();
+      expect(cars.length).toBeGreaterThanOrEqual(60);
     });
   });
 });

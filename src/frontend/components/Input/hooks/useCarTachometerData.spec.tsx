@@ -36,7 +36,6 @@ describe('useCarTachometerData', () => {
     const { result } = renderHook(() => useCarTachometerData());
 
     expect(result.current.carData).toBeNull();
-    expect(result.current.loading).toBe(false);
     expect(result.current.hasCarData).toBe(false);
     expect(result.current.gearRpmThresholds).toBeNull();
   });
@@ -54,7 +53,6 @@ describe('useCarTachometerData', () => {
     const { result } = renderHook(() => useCarTachometerData());
 
     expect(result.current.carData).toBeNull();
-    expect(result.current.loading).toBe(false);
     expect(result.current.hasCarData).toBe(false);
     expect(result.current.gearRpmThresholds).toBeNull();
   });
@@ -68,7 +66,6 @@ describe('useCarTachometerData', () => {
     const { result } = renderHook(() => useCarTachometerData());
 
     expect(result.current.carData).toBeNull();
-    expect(result.current.loading).toBe(false);
     expect(result.current.hasCarData).toBe(false);
     expect(result.current.gearRpmThresholds).toBeNull();
   });

@@ -6,7 +6,12 @@
  * 
  * This project provides comprehensive car telemetry data for various racing games,
  * including RPM thresholds, LED configurations, and shift point information.
+ * 
+ * NOTE: Car data is bundled at build time using tools/fetch-car-data.ts
+ * This eliminates runtime dependencies on GitHub API and ensures data is always available offline.
  */
+
+import carDataBundle from '../../data/cars-bundle.json';
 
 export interface CarData {
   carName: string;
@@ -18,111 +23,82 @@ export interface CarData {
   ledRpm: Record<string, number[]>[];
 }
 
-interface CacheEntry<T> {
-  data: T;
+interface CarDataBundleType {
+  version: string;
   timestamp: number;
+  cars: Record<string, CarData>;
 }
 
 /**
- * Maps game identifiers to lovely-car-data folder names
+ * Map of car ID variations to normalized car ID for lookup
+ * This helps handle cases where the car ID in the game might differ slightly from the data
  */
-const GAME_FOLDER_MAP: Record<string, string> = {
-  'iracing': 'IRacing',
-  'assettocorsa': 'AssettoCorsa', 
-  'assettocorsacompetizione': 'AssettoCorsaCompetizione',
-  'automobilista2': 'Automobilista2',
-  'f12024': 'F12024',
-  'f12025': 'F12025', 
-  'lmu': 'LMU',
-  'rrre': 'RRRE'
-};
+let carIdNormalizations: Record<string, string> | null = null;
 
 /**
- * Cache TTL: 7 days in milliseconds
- * Car data rarely changes in iRacing once added to lovely-car-data
+ * Initialize the car ID normalization map
+ * Maps various car ID formats to the canonical ID from the bundle
  */
-const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
-
-/**
- * Gets a value from cache if it exists and hasn't expired
- * @param key Cache key
- * @returns Cached value or null if expired/missing
- */
-const getFromCache = <T,>(key: string): T | null => {
-  try {
-    const cached = localStorage.getItem(key);
-    if (!cached) return null;
+function initializeNormalizations(): void {
+  if (carIdNormalizations !== null) return;
+  
+  carIdNormalizations = {};
+  const bundle = carDataBundle as CarDataBundleType;
+  
+  for (const carId of Object.keys(bundle.cars)) {
+    // Store original
+    carIdNormalizations[carId] = carId;
     
-    const entry: CacheEntry<T> = JSON.parse(cached);
-    const now = Date.now();
+    // Store lowercase
+    carIdNormalizations[carId.toLowerCase()] = carId;
     
-    if (now - entry.timestamp > CACHE_TTL_MS) {
-      // Cache expired, remove it
-      localStorage.removeItem(key);
-      return null;
-    }
-    
-    return entry.data;
-  } catch {
-    // Ignore cache errors and fall through to fresh fetch
-    return null;
+    // Store normalized (lowercase, no special chars)
+    const normalized = carId.toLowerCase().replace(/[^a-z0-9]/g, '');
+    carIdNormalizations[normalized] = carId;
   }
-};
+}
 
 /**
- * Stores a value in cache with timestamp
- * @param key Cache key
- * @param data Value to cache
- */
-const setInCache = <T,>(key: string, data: T): void => {
-  try {
-    const entry: CacheEntry<T> = {
-      data,
-      timestamp: Date.now()
-    };
-    localStorage.setItem(key, JSON.stringify(entry));
-  } catch {
-    // Ignore cache errors - fall back to always fetching
-  }
-};
-
-/**
- * Loads car-specific tachometer data from lovely-car-data
- * Caches results for 7 days to avoid GitHub API rate limiting
+ * Normalizes a car ID to find the matching bundled data
  * @param carPath The car path from the game
- * @param gameId The current game identifier (optional, defaults to 'iracing')
- * @returns Promise<CarData | null>
+ * @returns The normalized car ID or null if not found
  */
-export const loadCarData = async (carPath: string, gameId = 'iracing'): Promise<CarData | null> => {
+function normalizeCarId(carPath: string): string | null {
+  initializeNormalizations();
+  
+  if (!carIdNormalizations) return null;
+  
+  // Try the variations in order of likelihood
+  const variations = [
+    carPath,
+    carPath.toLowerCase(),
+    carPath.toLowerCase().replace(/[^a-z0-9]/g, '')
+  ];
+  
+  for (const variation of variations) {
+    if (variation in carIdNormalizations) {
+      return carIdNormalizations[variation];
+    }
+  }
+  
+  return null;
+}
+
+/**
+ * Loads car-specific tachometer data from the bundled data
+ * This loads instantly from the bundled data without any network requests
+ * @param carPath The car path from the game
+ * @param _gameId The current game identifier (ignored, only iRacing data is bundled currently)
+ * @returns The car data or null if not found
+ */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export const loadCarData = (carPath: string, _gameId?: string): CarData | null => {
   try {
-    // Get the appropriate folder for the game
-    const gameFolder = GAME_FOLDER_MAP[gameId.toLowerCase()] || 'IRacing';
+    const bundle = carDataBundle as CarDataBundleType;
+    const normalizedId = normalizeCarId(carPath);
     
-    // Try multiple variations of the car ID
-    const carIdVariations = [
-      carPath, // Original with exact casing and spaces
-      carPath.toLowerCase(), // Lowercase with spaces/special chars
-      carPath.toLowerCase().replace(/[^a-z0-9]/g, ''), // Remove all non-alphanumeric
-    ];
-    
-    // Try each variation
-    for (const carId of carIdVariations) {
-      const cacheKey = `car-data:${gameFolder}:${carId}`;
-      
-      // Check cache first
-      const cached = getFromCache<CarData>(cacheKey);
-      if (cached) {
-        return cached;
-      }
-      
-      const url = `https://raw.githubusercontent.com/Lovely-Sim-Racing/lovely-car-data/main/data/${gameFolder}/${encodeURIComponent(carId)}.json`;
-      const response = await fetch(url);
-      
-      if (response.ok) {
-        const data: CarData = await response.json();
-        setInCache(cacheKey, data);
-        return data;
-      }
+    if (normalizedId && normalizedId in bundle.cars) {
+      return bundle.cars[normalizedId];
     }
     
     return null;
@@ -144,32 +120,13 @@ export const getGearKey = (gear: number): string => {
 };
 
 /**
- * Fetches the list of available cars from lovely-car-data GitHub repository
- * Caches the list for 7 days to avoid GitHub API rate limiting
- * @param gameFolder The game folder name (e.g., 'IRacing')
- * @returns Promise with array of file objects
+ * Gets the list of all available cars from the bundled data
+ * @returns Array of car IDs and names
  */
-export const fetchCarList = async (gameFolder: string): Promise<{ name: string; path: string }[]> => {
-  const cacheKey = `car-list:${gameFolder}`;
-  
-  // Check cache first
-  const cached = getFromCache<{ name: string; path: string }[]>(cacheKey);
-  if (cached) {
-    return cached;
-  }
-  
-  const response = await fetch(`https://api.github.com/repos/Lovely-Sim-Racing/lovely-car-data/contents/data/${gameFolder}`);
-  
-  if (!response.ok) {
-    if (response.status === 403) {
-      const rateLimitReset = response.headers.get('X-RateLimit-Reset');
-      const resetTime = rateLimitReset ? new Date(parseInt(rateLimitReset) * 1000).toLocaleTimeString() : 'unknown';
-      throw new Error(`GitHub API rate limit exceeded. Resets at ${resetTime}`);
-    }
-    throw new Error(`GitHub API error: ${response.status} ${response.statusText}`);
-  }
-  
-  const files = await response.json();
-  setInCache(cacheKey, files);
-  return files;
+export const getAvailableCars = (): { carId: string; carName: string }[] => {
+  const bundle = carDataBundle as CarDataBundleType;
+  return Object.values(bundle.cars).map((car) => ({
+    carId: car.carId,
+    carName: car.carName
+  }));
 };

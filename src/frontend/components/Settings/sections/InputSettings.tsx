@@ -7,7 +7,7 @@ import { useSortableList } from '../../SortableList';
 import { DotsSixVerticalIcon } from '@phosphor-icons/react';
 import { mergeDisplayOrder } from '../../../utils/displayOrder';
 import { SessionVisibility } from '../components/SessionVisibility';
-import { fetchCarList } from '../../../utils/carData';
+import { getAvailableCars } from '../../../utils/carData';
 
 const SETTING_ID = 'input';
 
@@ -268,23 +268,19 @@ const CustomShiftPointsSection = ({ config, handleConfigChange }: { config: Inpu
   };
 
   useEffect(() => {
-    const loadAvailableCars = async () => {
+    const loadAvailableCars = () => {
       if (!expanded || availableCars.length > 0) return;
       
       setLoading(true);
       try {
-        const files = await fetchCarList('IRacing');
-        const cars: CarListItem[] = files
-          .filter((file) => file.name.endsWith('.json'))
-          .map((file) => {
-            const carId = file.name.replace('.json', '');
-            return {
-              carId,
-              carName: carId.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/^./, (str) => str.toUpperCase()),
-              ledNumber: 0,
-              ledRpm: [{}]
-            };
-          })
+        const allCars = getAvailableCars();
+        const cars: CarListItem[] = allCars
+          .map((car) => ({
+            carId: car.carId,
+            carName: car.carName,
+            ledNumber: 0,
+            ledRpm: [{}]
+          }))
           .sort((a, b) => a.carName.localeCompare(b.carName));
         
         setAvailableCars(cars);
