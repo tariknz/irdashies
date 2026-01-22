@@ -4,8 +4,8 @@ export interface ReferenceLap {
   points: number[]; // Array of ~200 points
 }
 
-export const REFERENCE_INTERVAL = 0.00025;
-const DECIMAL_PLACES = 5;
+export const REFERENCE_INTERVAL = 0.004;
+const DECIMAL_PLACES = 3;
 
 export function findClosest(sortedArray: number[], target: number): number {
   let left = 0;
@@ -44,11 +44,8 @@ export function normalizeKey(key: number): number {
   const testKey = parseFloat(
     (key - (key % REFERENCE_INTERVAL)).toFixed(DECIMAL_PLACES)
   );
-  console.log(`TEST KEY: ${testKey}`);
+  // console.log(`TEST KEY: ${testKey}`);
   return testKey;
-  // return parseFloat(
-  //   (Math.round(key / REFERENCE_INTERVAL) * REFERENCE_INTERVAL).toFixed(3)
-  // );
 }
 
 export const useReferenceRegistry = () => {
@@ -62,10 +59,10 @@ export const useReferenceRegistry = () => {
 
       if (refPoints === undefined) {
         refPoints = new Map();
-        // refPoints = seedKeys(refPoints);
       }
 
-      const testTestKey = normalizeKey(trackPct);
+      const pctKey = normalizeKey(trackPct);
+      const key = pctKey < 0 ? 0 : pctKey;
       // if key below zero, set to zero
       // console.log(`TEST KEY: ${testTestKey}`);
 
@@ -74,8 +71,16 @@ export const useReferenceRegistry = () => {
       //   trackPct
       // );
 
-      refPoints.set(testTestKey, sessionTime);
-      bestLaps.current.set(carIdx, refPoints);
+      const lastTime = refPoints.get(pctKey) ?? 0;
+
+      if (sessionTime - lastTime > 10) {
+        refPoints.set(key, sessionTime);
+        bestLaps.current.set(carIdx, refPoints);
+        console.log(`Updating key: ${key} with value: ${sessionTime}`);
+        console.log(`Old value: ${lastTime}`);
+      } else {
+        console.log(`Key: ${pctKey} keeps value: ${lastTime}`);
+      }
       // console.log(`------------ SessionTime: ${sessionTime}`);
       // console.log(`------------ Ref points count: ${refPoints.size}`);
       // console.log(`------------ Closest key: ${closestKey}`);

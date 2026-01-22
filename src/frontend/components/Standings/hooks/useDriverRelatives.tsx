@@ -7,18 +7,14 @@ import {
 } from '@irdashies/context';
 import { useDriverStandings } from './useDriverPositions';
 import type { Standings } from '../createStandings';
-import {
-  normalizeKey,
-  REFERENCE_INTERVAL,
-  useReferenceRegistry,
-} from './useReferenceRegistry';
+import { normalizeKey, useReferenceRegistry } from './useReferenceRegistry';
 
 export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
   const driversGrouped = useDriverStandings();
   const drivers = driversGrouped as Standings[];
   const carIdxLapDistPct = useTelemetryValues('CarIdxLapDistPct');
   // CarIdxEstTime - iRacing's native estimated time gap calculation
-  // const carIdxEstTime = useTelemetryValues('CarIdxEstTime');
+  const carIdxEstTime = useTelemetryValues('CarIdxEstTime');
   // Use focus car index which handles spectator mode (uses CamCarIdx when spectating)
   const activeCarIdx = useFocusCarIdx();
   const paceCarIdx =
@@ -64,77 +60,55 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
     const calculateDelta = (otherCarIdx: number) => {
       const activeIdx = activeCarIdx ?? 0;
 
+      if (activeIdx === otherCarIdx) {
+        return 0;
+      }
+
       const otherCarRefs = getReferenceLap(otherCarIdx) ?? new Map();
       const activeCarRefs = getReferenceLap(activeIdx) ?? new Map();
 
       const otherCarTrckPct = carIdxLapDistPct[otherCarIdx];
       const activeCarTrckPct = carIdxLapDistPct[activeIdx];
 
-      // const closestPointActiveCar = findClosest(
-      //   [...activeCarRefs.keys()],
-      //   activeCarTrckPct
-      // );
-      // const closestPointOtherCar = findClosest(
-      //   [...otherCarRefs.keys()],
-      //   otherCarTrckPct
-      // );
       const closestPointActiveCar = normalizeKey(activeCarTrckPct);
 
-      // we are behind
+      // we are behind, if car ahead crosses finish line we dont come in here :(
       if (activeCarTrckPct < otherCarTrckPct) {
-        const timeAtLastPointOther =
-          otherCarRefs.get(closestPointActiveCar) ?? sessionTime;
-        const timeAtLastPoint =
-          activeCarRefs.get(closestPointActiveCar) ?? sessionTime;
-        // console.log(`CarIdx: ${activeCarIdx}`);
-        // console.log(`Time at last point: ${timeAtLastPoint}`);
-        // console.log(`Session Time: ${sessionTime}`);
-        const nextPointActive = closestPointActiveCar + REFERENCE_INTERVAL;
-        console.log(`LAST POINT ACTIVE: ${closestPointActiveCar}`);
-        console.log(`NEXT POINT ACTIVE: ${nextPointActive}`);
-        const secondTimeOther =
-          otherCarRefs.get(nextPointActive) ?? sessionTime;
-        const secondTime = activeCarRefs.get(nextPointActive) ?? sessionTime;
+        const timeAtLastPointOther = otherCarRefs.get(closestPointActiveCar);
 
-        if (secondTimeOther > timeAtLastPointOther) {
-          const timeDiffOther =
-            (secondTimeOther - timeAtLastPointOther) *
-            (activeCarTrckPct - closestPointActiveCar) *
-            100;
-          const timeAtCurrentPosOther = timeAtLastPointOther + timeDiffOther;
+        if (!timeAtLastPointOther) {
+          const estTimeActive = carIdxEstTime[activeIdx];
+          const estTimeOther = carIdxEstTime[otherCarIdx];
 
-          const timeDiffActive =
-            (secondTime - timeAtLastPoint) *
-            (activeCarTrckPct - closestPointActiveCar) *
-            100;
-
-          const timeAtCurrentPos = timeAtLastPoint + timeDiffActive;
-
-          if (isNaN(timeAtCurrentPos)) {
-            console.log(`Time at last point ACTIVE:${timeAtLastPoint}`);
-            console.log(`Time diff ACTIVE:${timeDiffActive}`);
-          }
-
-          console.log(`INTERPOLATED TIME OTHER: ${timeAtCurrentPosOther}`);
-          console.log(`INTERPOLATED TIME ACTIVE: ${timeAtCurrentPos}`);
-
-          return timeAtCurrentPos - timeAtCurrentPosOther;
+          return estTimeOther - estTimeActive;
         }
 
-        return timeAtLastPoint - timeAtLastPointOther;
+        // if last data we have is too old revert to class est?
+
+        const delta = sessionTime - timeAtLastPointOther;
+        if (delta < 0) {
+          console.log(`DELTA IS NEGATIVE!! FocusCarPct: ${activeCarTrckPct}`);
+          console.log(`DELTA IS NEGATIVE!! OtherCarPct: ${otherCarTrckPct}`);
+          console.log(`DELTA IS NEGATIVE!! Key used: ${closestPointActiveCar}`);
+          console.log(
+            `DELTA IS NEGATIVE!! Value used: ${timeAtLastPointOther}`
+          );
+        }
       }
 
       const closestPointOtherCar = normalizeKey(otherCarTrckPct);
 
-      const timeAtLastPointOther =
-        otherCarRefs.get(closestPointOtherCar) ?? sessionTime;
       const timeAtLastPoint =
         activeCarRefs.get(closestPointOtherCar) ?? sessionTime;
-      // console.log(`CarIdx: ${otherCarIdx}`);
-      // console.log(`Time at last point: ${timeAtLastPoint}`);
-      // console.log(`Session Time: ${sessionTime}`);
 
-      return timeAtLastPoint - timeAtLastPointOther;
+      if (!timeAtLastPoint) {
+        const estTimeActive = carIdxEstTime[activeIdx];
+        const estTimeOther = carIdxEstTime[otherCarIdx];
+
+        return estTimeActive - estTimeOther;
+      }
+
+      return timeAtLastPoint - sessionTime;
     };
 
     const sortedDrivers = drivers
@@ -189,6 +163,7 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
     carIdxLapDistPct,
     getReferenceLap,
     sessionTime,
+    carIdxEstTime,
     paceCarIdx,
     processDriver,
   ]);
