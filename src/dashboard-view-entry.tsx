@@ -38,17 +38,15 @@ async function initializeDashboardView() {
 
   root.render(
     <HashRouter>
-      <TelemetryProvider bridge={bridge}>
-        <SessionProvider bridge={bridge}>
-          <RunningStateProvider bridge={bridge}>
-            <DashboardProvider bridge={bridge as DashboardBridge} profileId={profileId}>
-              <ThemeManager>
-                <DashboardView />
-              </ThemeManager>
-            </DashboardProvider>
-          </RunningStateProvider>
-        </SessionProvider>
-      </TelemetryProvider>
+      <DashboardProvider bridge={bridge as DashboardBridge} profileId={profileId}>
+        <RunningStateProvider bridge={bridge}>
+          <SessionProvider bridge={bridge} />
+          <TelemetryProvider bridge={bridge} />
+          <ThemeManager>
+            <DashboardView />
+          </ThemeManager>
+        </RunningStateProvider>
+      </DashboardProvider>
     </HashRouter>
   );
 }
