@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { usePitLaneStore } from './PitLaneStore';
+import { usePitLaneStore, detectPitTransitions } from './PitLaneStore';
 import { useTelemetryValues } from '../TelemetryStore/TelemetryStore';
 import { useSessionStore } from '../SessionStore/SessionStore';
 import type { PitLaneBridge } from '@irdashies/types';
@@ -19,9 +19,16 @@ export const usePitLaneDetection = (bridge: PitLaneBridge | Promise<PitLaneBridg
     pitEntryPct,
     pitExitPct,
     setCurrentTrack,
-    detectTransitions,
     reset,
   } = usePitLaneStore();
+
+  // Use refs to track previous values and only call detectPitTransitions when data actually changes
+  // This prevents running expensive operations at 60 FPS when nothing has changed
+  const prevTelemetryRef = useRef<{
+    carIdxOnPitRoad?: boolean[];
+    carIdxTrackSurface?: number[];
+    carIdxLapDistPct?: number[];
+  }>({});
 
   const persistenceRef = useRef<{ trackId: string; entry: number | null; exit: number | null }>({
     trackId: '',
@@ -33,6 +40,7 @@ export const usePitLaneDetection = (bridge: PitLaneBridge | Promise<PitLaneBridg
   useEffect(() => {
     if (!trackId) {
       reset();
+      prevTelemetryRef.current = {};
       return;
     }
 
@@ -42,6 +50,7 @@ export const usePitLaneDetection = (bridge: PitLaneBridge | Promise<PitLaneBridg
         const resolvedBridge = bridge instanceof Promise ? await bridge : bridge;
         const data = await resolvedBridge.getPitLaneData(trackId);
         setCurrentTrack(trackId, data);
+        prevTelemetryRef.current = {};
         persistenceRef.current = {
           trackId,
           entry: data?.pitEntryPct ?? null,
@@ -58,8 +67,22 @@ export const usePitLaneDetection = (bridge: PitLaneBridge | Promise<PitLaneBridg
       return;
     }
 
-    detectTransitions(carIdxOnPitRoad, carIdxTrackSurface, carIdxLapDistPct);
-  }, [carIdxOnPitRoad, carIdxTrackSurface, carIdxLapDistPct, trackId, detectTransitions]);
+    // Only run detection if the telemetry arrays have actually changed (by reference)
+    // This prevents running expensive operations at 60 FPS when nothing has changed
+    const prev = prevTelemetryRef.current;
+    if (
+      prev.carIdxOnPitRoad !== carIdxOnPitRoad ||
+      prev.carIdxTrackSurface !== carIdxTrackSurface ||
+      prev.carIdxLapDistPct !== carIdxLapDistPct
+    ) {
+      detectPitTransitions(carIdxOnPitRoad, carIdxTrackSurface, carIdxLapDistPct);
+      prevTelemetryRef.current = {
+        carIdxOnPitRoad,
+        carIdxTrackSurface,
+        carIdxLapDistPct,
+      };
+    }
+  }, [carIdxOnPitRoad, carIdxTrackSurface, carIdxLapDistPct, trackId]);
 
   // Persist to disk when values change
   useEffect(() => {

@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { useCurrentSessionType, useSessionStore, useSessionDrivers, useTelemetryValue, useTelemetryValues, useSessionQualifyingResults } from '@irdashies/context';
+import { useCurrentSessionType, useSessionStore, useTelemetryValue, useTelemetryValues, useSessionQualifyingResults } from '@irdashies/context';
 import { GlobalFlags } from '@irdashies/types';
 
 interface DriverData {
@@ -21,7 +21,6 @@ interface DriverData {
 */
 export const useDriverLivePositions = (): Record<number, number> => {
   const sessionQualifyingResults = useSessionQualifyingResults();
-  const sessionDrivers = useSessionDrivers();
   const sessionType = useCurrentSessionType();
   const sessionState = useTelemetryValue('SessionState') ?? 0;
   const carIdxLapCompleted = useTelemetryValues<number[]>('CarIdxLapCompleted');
@@ -31,6 +30,12 @@ export const useDriverLivePositions = (): Record<number, number> => {
   const carIdxSessionFlags = useTelemetryValues<number[]>('CarIdxSessionFlags');
   const paceCarIdx = useSessionStore((s) => s.session?.DriverInfo?.PaceCarIdx) ?? -1;
 
+  // Memoize the qualifying results map separately to avoid recreating it 60 times per second
+  const qualifyingResultsMap = useMemo(() =>
+    new Map(sessionQualifyingResults?.map(result => [result.CarIdx, result]) ?? []),
+    [sessionQualifyingResults]
+  );
+
   return useMemo(() => {
     // To group drivers by class
     const driversByClass = new Map<number, DriverData[]>();
@@ -38,28 +43,25 @@ export const useDriverLivePositions = (): Record<number, number> => {
     // Ensure all necessary data is available
     if (carIdxLapCompleted.length > 0 && carIdxLapDistPct.length > 0 && carIdxClass.length > 0 && carIdxClassPosition.length > 0 && carIdxSessionFlags.length > 0) {
 
-      // Create a map for O(1) lookup instead of O(n) find
-      const qualifyingResultsMap = new Map(sessionQualifyingResults?.map(result => [result.CarIdx, result]) ?? []);
-
-      sessionDrivers?.forEach((driver) => {
+      // Use index-based iteration for better performance (60 FPS)
+      carIdxLapCompleted.forEach((lapCompleted, driverIdx) => {
 
         // Skip the pace car
-        if (driver.CarIdx === paceCarIdx) return;
+        if (driverIdx === paceCarIdx) return;
 
         // Collect necessary data
-        const qualifyingResult = qualifyingResultsMap.get(driver.CarIdx);
-        const classId = carIdxClass[driver.CarIdx] ?? -1;
-        const distPct = carIdxLapDistPct[driver.CarIdx] ?? 0;
-        const lapCompleted = carIdxLapCompleted[driver.CarIdx] ?? 0;
+        const qualifyingResult = qualifyingResultsMap.get(driverIdx);
+        const classId = carIdxClass[driverIdx] ?? -1;
+        const distPct = carIdxLapDistPct[driverIdx] ?? 0;
 
         // Create driver data object
         const driverData = {
-          driverIdx: driver.CarIdx,
+          driverIdx,
           progress: lapCompleted + distPct,
           lapCompleted,
-          iRacingPosition: carIdxClassPosition[driver.CarIdx] ?? -1,
+          iRacingPosition: carIdxClassPosition[driverIdx] ?? -1,
           qualifyPosition: qualifyingResult ? qualifyingResult.ClassPosition + 1 : -1,
-          checkered: !!((carIdxSessionFlags[driver.CarIdx] ?? 0) & GlobalFlags.Checkered),
+          checkered: !!((carIdxSessionFlags[driverIdx] ?? 0) & GlobalFlags.Checkered),
         };
 
         // Group drivers by their class
@@ -139,5 +141,5 @@ export const useDriverLivePositions = (): Record<number, number> => {
     });
 
     return livePositions;
-  }, [sessionQualifyingResults, sessionDrivers, sessionType, sessionState, carIdxLapCompleted, carIdxLapDistPct, carIdxClass, carIdxClassPosition, carIdxSessionFlags, paceCarIdx]);
+  }, [qualifyingResultsMap, sessionType, sessionState, carIdxLapCompleted, carIdxLapDistPct, carIdxClass, carIdxClassPosition, carIdxSessionFlags, paceCarIdx]);
 };
