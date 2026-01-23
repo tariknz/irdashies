@@ -3,8 +3,8 @@ import { useRef, useCallback } from 'react';
 /**
  * The interval step used for normalizing track percentage keys.
  */
-export const REFERENCE_INTERVAL = 0.003;
-const DECIMAL_PLACES = 3;
+export const REFERENCE_INTERVAL = 0.0015;
+const DECIMAL_PLACES = 4;
 
 /**
  * Quantizes a raw track percentage value into a normalized key based on the reference interval.
@@ -16,10 +16,10 @@ const DECIMAL_PLACES = 3;
  * @returns The normalized key suitable for map lookups.
  */
 export function normalizeKey(key: number): number {
-  const testKey = parseFloat(
+  const normalizedKey = parseFloat(
     (key - (key % REFERENCE_INTERVAL)).toFixed(DECIMAL_PLACES)
   );
-  return testKey;
+  return normalizedKey;
 }
 
 /**
@@ -58,8 +58,11 @@ export const useReferenceRegistry = () => {
 
       const lastTime = refPoints.get(pctKey) ?? 0;
 
+      const diff = sessionTime - lastTime;
+      // console.log(`CARIDX ${carIdx} --- KEY ${pctKey} TIME DIFF: ${diff}`);
+
       // TODO: Find a better way to update
-      if (sessionTime - lastTime > 2) {
+      if (diff > 1) {
         refPoints.set(key, sessionTime);
         bestLaps.current.set(carIdx, refPoints);
       }
