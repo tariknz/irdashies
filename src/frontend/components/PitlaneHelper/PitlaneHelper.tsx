@@ -36,11 +36,11 @@ export const PitlaneHelper = () => {
   // Determine which speed unit to display (prefer user's unit from limit)
   const displayKph = speed.limitKph > speed.limitMph;
 
-  // Determine if we're on pit road - use both surface and OnPitRoad telemetry
-  // OnPitRoad can be true while in pit entry blend zone (before pit entry line)
-  // PlayerTrackSurface=2 means actually on pit road surface
-  const onPitRoad = surface === 2;
-  const approachingPitEntry = onPitRoadTelemetry && !onPitRoad; // In blend zone
+  // Determine if we're on pit road
+  // Surface=2 means in pit blend zone (before pit entry line)
+  // OnPitRoad=true means past the pit entry line (actually on pit road)
+  const inBlendZone = surface === 2 && !onPitRoadTelemetry;
+  const onPitRoad = onPitRoadTelemetry;
 
   // Early pitbox warning: show when on pit road AND pitbox is within threshold of pit entry
   // This alerts the driver once committed to pitting that their pitbox is very close to entry
@@ -103,59 +103,66 @@ export const PitlaneHelper = () => {
         </div>
       </div>
 
-      {/* Pit Entry Countdown (when approaching or in blend zone but not yet on pit road surface) */}
-      {!onPitRoad && position.distanceToPitEntry > 0 && position.distanceToPitEntry <= config.approachDistance && (
-        <PitCountdownBar
-          distance={position.distanceToPitEntry}
-          maxDistance={config.approachDistance}
-          orientation={config.progressBarOrientation}
-          color={getCountdownColor(position.distanceToPitEntry, config.approachDistance)}
-          targetName="Pit Entry"
-        />
-      )}
-
-      {/* Blend Zone Message (OnPitRoad=true but not on surface yet, no pit entry detection) */}
-      {approachingPitEntry && position.distanceToPitEntry === 0 && (
-        <div className="text-center text-sm font-bold py-2 px-3 bg-amber-600 rounded">
-          Entering Pit Lane
-        </div>
-      )}
-
-      {/* Pitbox Distance Display (when on pit road) */}
-      {onPitRoad && (
-        <>
-          {Math.abs(position.distanceToPit) < 5 ? (
-            /* At Pitbox - Static Display */
-            <div className="text-center text-sm font-bold py-2 px-3 bg-green-600 rounded">
-              At Pitbox
-            </div>
-          ) : (
-            /* Countdown to or past pitbox */
+      {/* Countdown Bars Container - displays bars side by side */}
+      <div className="flex gap-2">
+        {/* Pit Entry Countdown (when approaching or in blend zone) */}
+        {!onPitRoad && position.distanceToPitEntry > 0 && position.distanceToPitEntry <= config.approachDistance && (
+          <div className="flex-1">
             <PitCountdownBar
-              distance={Math.abs(position.distanceToPit)}
-              maxDistance={100}
+              distance={position.distanceToPitEntry}
+              maxDistance={config.approachDistance}
               orientation={config.progressBarOrientation}
-              color={
-                position.distanceToPit > 0
-                  ? getCountdownColor(position.distanceToPit, 100)  // Approaching pitbox
-                  : 'rgb(34, 197, 94)'  // Past pitbox (green)
-              }
-              targetName={position.distanceToPit > 0 ? 'Pitbox' : 'Past Pitbox'}
+              color={getCountdownColor(position.distanceToPitEntry, config.approachDistance)}
+              targetName="Pit Entry"
             />
-          )}
-        </>
-      )}
+          </div>
+        )}
 
-      {/* Pit Exit Countdown (when on pit road and past pitbox) */}
-      {onPitRoad && position.distanceToPit < -5 && position.distanceToPitExit > 0 && position.distanceToPitExit <= 150 && (
-        <PitCountdownBar
-          distance={position.distanceToPitExit}
-          maxDistance={150}
-          orientation={config.progressBarOrientation}
-          color={getCountdownColor(position.distanceToPitExit, 150)}
-          targetName="Pit Exit"
-        />
-      )}
+        {/* Blend Zone Message (Surface=2 but OnPitRoad still false, no pit entry detection available) */}
+        {inBlendZone && position.distanceToPitEntry === 0 && (
+          <div className="flex-1 text-center text-sm font-bold py-2 px-3 bg-amber-600 rounded">
+            Entering Pit Lane
+          </div>
+        )}
+
+        {/* Pitbox Distance Display (when on pit road) */}
+        {onPitRoad && (
+          <div className="flex-1">
+            {Math.abs(position.distanceToPit) < 5 ? (
+              /* At Pitbox - Static Display */
+              <div className="text-center text-sm font-bold py-2 px-3 bg-green-600 rounded">
+                At Pitbox
+              </div>
+            ) : (
+              /* Countdown to or past pitbox */
+              <PitCountdownBar
+                distance={Math.abs(position.distanceToPit)}
+                maxDistance={100}
+                orientation={config.progressBarOrientation}
+                color={
+                  position.distanceToPit > 0
+                    ? getCountdownColor(position.distanceToPit, 100)  // Approaching pitbox
+                    : 'rgb(34, 197, 94)'  // Past pitbox (green)
+                }
+                targetName={position.distanceToPit > 0 ? 'Pitbox' : 'Past Pitbox'}
+              />
+            )}
+          </div>
+        )}
+
+        {/* Pit Exit Countdown (when on pit road and past pitbox) */}
+        {onPitRoad && position.distanceToPit < -5 && position.distanceToPitExit > 0 && position.distanceToPitExit <= 150 && (
+          <div className="flex-1">
+            <PitCountdownBar
+              distance={position.distanceToPitExit}
+              maxDistance={150}
+              orientation={config.progressBarOrientation}
+              color={getCountdownColor(position.distanceToPitExit, 150)}
+              targetName="Pit Exit"
+            />
+          </div>
+        )}
+      </div>
 
       {/* Pit Exit Inputs (throttle/clutch assistance) */}
       {shouldShowInputs && (
