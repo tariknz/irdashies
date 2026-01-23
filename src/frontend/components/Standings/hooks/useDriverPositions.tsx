@@ -256,6 +256,7 @@ export const useDriverStandings = () => {
         repair: carState?.repair ?? false,
         penalty: carState?.penalty ?? false,
         slowdown: carState?.slowdown ?? false,
+        relativePct: 0,
       };
     });
 
