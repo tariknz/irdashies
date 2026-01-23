@@ -86,7 +86,7 @@ const defaultConfig: RelativeWidgetSettings['config'] = {
   },
   showOnlyWhenOnTrack: false,
   useLivePosition: false,
-  sessionVisibility: { race: true, loneQualify: false, openQualify: true, practice: true, offlineTesting: true }
+  sessionVisibility: { race: true, loneQualify: true, openQualify: true, practice: true, offlineTesting: true }
 };
 
 
