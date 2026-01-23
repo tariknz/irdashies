@@ -1,19 +1,9 @@
 /**
- * Build-time script to fetch and bundle car data from lovely-car-data repository
- * 
- * This script:
- * 1. Checks if the bundle already exists and is recent (< 7 days old)
- * 2. If needed, fetches the master manifest.json (all games)
- * 3. Filters iRacing cars, then downloads each car's JSON file
- * 4. Bundles all car data into a single file
- * 5. Saves it to src/data/cars-bundle.json for inclusion in the built app
+ * Fetch and bundle iRacing car data from lovely-car-data repository
  * 
  * Usage:
- *   npm run fetch-car-data          # Fetches only if missing or stale
- *   npm run fetch-car-data -- --force  # Forces fresh fetch regardless
- * 
- * The bundle is automatically fetched before production builds (package/make/publish)
- * but skipped for dev commands (start/test/storybook) to avoid unnecessary delays.
+ *   npm run fetch-lovely-data          # Fetches only if missing or stale
+ *   npm run fetch-lovely-data -- --force  # Forces fresh fetch
  */
 
 import fs from 'fs';

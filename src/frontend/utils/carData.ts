@@ -7,8 +7,8 @@
  * This project provides comprehensive car telemetry data for various racing games,
  * including RPM thresholds, LED configurations, and shift point information.
  * 
- * NOTE: Car data is bundled at build time using tools/fetch-car-data.ts
- * This eliminates runtime dependencies on GitHub API and ensures data is always available offline.
+ * Car data sourced from lovely-car-data repository and bundled in src/data/cars-bundle.json
+ * Update with: npm run fetch-lovely-data
  */
 
 import carDataBundle from '../../data/cars-bundle.json';

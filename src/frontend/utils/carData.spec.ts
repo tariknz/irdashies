@@ -3,7 +3,6 @@ import { loadCarData, getGearKey, getAvailableCars } from './carData';
 
 /**
  * NOTE: These tests verify that bundled car data can be loaded synchronously
- * The actual car data comes from tools/fetch-car-data.ts which is run at build time
  */
 describe('carData', () => {
   describe('getGearKey', () => {
