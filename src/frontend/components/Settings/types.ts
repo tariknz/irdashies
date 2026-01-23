@@ -362,6 +362,13 @@ export interface PitlaneHelperWidgetSettings extends BaseWidgetSettings {
     earlyPitboxThreshold: number;
     showPitlaneTraffic: boolean;
     background: { opacity: number };
+    progressBarOrientation: 'horizontal' | 'vertical';
+    showPitExitInputs: boolean;
+    pitExitInputs: {
+      throttle: boolean;
+      clutch: boolean;
+    };
+    showInputsPhase: 'atPitbox' | 'afterPitbox' | 'always';
   };
 }
 
