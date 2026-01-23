@@ -15,6 +15,8 @@ export interface PitSpeedResult {
 
 export interface PitboxPositionResult {
   distanceToPit: number;
+  distanceToPitEntry: number;
+  distanceToPitExit: number;
   progressPercent: number;
   isApproaching: boolean;
   pitboxPct: number;
@@ -35,9 +37,20 @@ export interface PitlaneTrafficResult {
 }
 
 export interface PitlaneHelperSettings {
-  background: { opacity: number };
+  showMode: 'approaching' | 'onPitRoad';
+  approachDistance: number;
+  progressBarOrientation: 'vertical' | 'horizontal';
+  showPitExitInputs: boolean;
+  pitExitInputs: {
+    throttle: boolean;
+    clutch: boolean;
+  };
+  showInputsPhase: 'always' | 'atPitbox' | 'afterPitbox';
+  enablePitLimiterWarning: boolean;
   enableEarlyPitboxWarning: boolean;
+  earlyPitboxThreshold: number;
   showPitlaneTraffic: boolean;
+  background: { opacity: number };
 }
 
 export interface PitlaneHelperDemoData {
@@ -66,6 +79,8 @@ export const getDemoPitlaneData = (): PitlaneHelperDemoData => {
     },
     position: {
       distanceToPit: 45,
+      distanceToPitEntry: 0,
+      distanceToPitExit: 85,
       progressPercent: 75,
       isApproaching: true,
       pitboxPct: 0.85,

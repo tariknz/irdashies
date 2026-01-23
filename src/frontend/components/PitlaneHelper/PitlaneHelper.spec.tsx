@@ -43,6 +43,7 @@ import { usePitlaneTraffic } from './hooks/usePitlaneTraffic';
 
 describe('PitlaneHelper', () => {
   const defaultConfig = {
+    showMode: 'approaching' as const,
     approachDistance: 200,
     earlyPitboxThreshold: 75,
     progressBarOrientation: 'vertical' as const,
@@ -58,9 +59,12 @@ describe('PitlaneHelper', () => {
   const defaultSpeedResult = {
     limitKph: 72,
     limitMph: 45,
+    speedKph: 67,
+    speedMph: 41.6,
     deltaKph: -5.0,
     deltaMph: -3.1,
     colorClass: 'text-green-500',
+    isPulsing: false,
     isSpeeding: false,
     isSeverelyOver: false,
   };
@@ -69,6 +73,10 @@ describe('PitlaneHelper', () => {
     distanceToPitEntry: 0,
     distanceToPit: 0,
     distanceToPitExit: 0,
+    progressPercent: 0,
+    isApproaching: false,
+    pitboxPct: 0,
+    playerPct: 0,
     isEarlyPitbox: false,
   };
 
@@ -90,7 +98,14 @@ describe('PitlaneHelper', () => {
     // Default mock implementations
     vi.mocked(context.useDashboard).mockReturnValue({
       isDemoMode: false,
-    } as any);
+      editMode: false,
+      currentDashboard: undefined,
+      onDashboardUpdated: vi.fn(),
+      resetDashboard: vi.fn(),
+      bridge: {} as never,
+      version: '0.0.0',
+      toggleDemoMode: vi.fn(),
+    });
 
     vi.mocked(usePitlaneHelperSettings).mockReturnValue(defaultConfig);
     vi.mocked(usePitSpeed).mockReturnValue(defaultSpeedResult);
@@ -318,9 +333,12 @@ describe('PitlaneHelper', () => {
       vi.mocked(usePitSpeed).mockReturnValue({
         limitKph: 72,
         limitMph: 45,
+        speedKph: 67,
+        speedMph: 41.6,
         deltaKph: -5.0,
         deltaMph: -3.1,
         colorClass: 'text-green-500',
+        isPulsing: false,
         isSpeeding: false,
         isSeverelyOver: false,
       });
@@ -335,9 +353,12 @@ describe('PitlaneHelper', () => {
       vi.mocked(usePitSpeed).mockReturnValue({
         limitKph: 45,
         limitMph: 72,
+        speedKph: 41.6,
+        speedMph: 67,
         deltaKph: -3.1,
         deltaMph: -5.0,
         colorClass: 'text-green-500',
+        isPulsing: false,
         isSpeeding: false,
         isSeverelyOver: false,
       });

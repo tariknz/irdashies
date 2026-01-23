@@ -1,5 +1,5 @@
 import { render } from '@testing-library/react';
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { PitExitInputs } from './PitExitInputs';
 import * as context from '@irdashies/context';
 
