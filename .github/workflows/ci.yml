@@ -43,16 +43,6 @@ jobs:
       if: steps.cache-deps.outputs.cache-hit != 'true'
       run: npm ci
 
-    - name: Ensure car data bundle
-      shell: pwsh
-      run: |
-        if (-Not (Test-Path "src/data/cars-bundle.json")) {
-          Write-Host "cars-bundle.json missing; fetching..."
-          npm run fetch-car-data -- --force
-        } else {
-          Write-Host "cars-bundle.json present; skipping fetch"
-        }
-
     - name: Run linting
       run: npm run lint
 
