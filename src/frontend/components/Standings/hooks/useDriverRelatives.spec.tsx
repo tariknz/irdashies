@@ -53,6 +53,7 @@ describe('useDriverRelatives', () => {
       repair: false,
       penalty: false,
       slowdown: false,
+      relativePct: 0,
     },
     {
       carIdx: 1,
@@ -82,6 +83,7 @@ describe('useDriverRelatives', () => {
       repair: false,
       penalty: false,
       slowdown: false,
+      relativePct: 0,
     },
     {
       carIdx: 2,
@@ -111,6 +113,7 @@ describe('useDriverRelatives', () => {
       repair: false,
       penalty: false,
       slowdown: false,
+      relativePct: 0,
     },
   ];
 

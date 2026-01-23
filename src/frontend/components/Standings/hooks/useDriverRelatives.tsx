@@ -59,7 +59,7 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
 
       return calculateRelativeDist(playerDistPct, otherDistPct);
     },
-    [focusCarIdx, carIdxLapDistPct]
+    [focusCarIdx, carIdxLapDistPct, calculateRelativeDist]
   );
 
   const calculateDelta = useCallback(
