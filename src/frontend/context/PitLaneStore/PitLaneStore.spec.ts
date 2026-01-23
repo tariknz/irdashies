@@ -200,12 +200,22 @@ describe('PitLaneStore', () => {
       expect(usePitLaneStore.getState().pitExitPct).toBe(0.05);
     });
 
-    it('should not update if value is already set (first detection wins)', () => {
+    it('should update if new value is outside tolerance threshold (2%)', () => {
       usePitLaneStore.setState({ currentTrackId: '47', pitEntryPct: 0.92 });
 
-      usePitLaneStore.getState().updatePitEntry(0.95); // Try to update with different value
+      // 0.95 is 3% away from 0.92, which exceeds the 2% tolerance
+      usePitLaneStore.getState().updatePitEntry(0.95);
 
-      expect(usePitLaneStore.getState().pitEntryPct).toBe(0.92); // Should still be original value
+      expect(usePitLaneStore.getState().pitEntryPct).toBe(0.95); // Should update to new value
+    });
+
+    it('should not update if new value is within tolerance threshold (2%)', () => {
+      usePitLaneStore.setState({ currentTrackId: '47', pitEntryPct: 0.92 });
+
+      // 0.93 is 1% away from 0.92, which is within the 2% tolerance
+      usePitLaneStore.getState().updatePitEntry(0.93);
+
+      expect(usePitLaneStore.getState().pitEntryPct).toBe(0.92); // Should keep original value
     });
   });
 

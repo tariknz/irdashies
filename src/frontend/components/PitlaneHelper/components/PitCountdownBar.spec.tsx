@@ -31,7 +31,7 @@ describe('PitCountdownBar', () => {
     });
 
     it('displays target name when distance is 0', () => {
-      const { getByText } = render(
+      const { getAllByText } = render(
         <PitCountdownBar
           distance={0}
           maxDistance={200}
@@ -40,7 +40,9 @@ describe('PitCountdownBar', () => {
           targetName="Pit Entry"
         />
       );
-      expect(getByText('Pit Entry')).toBeInTheDocument();
+      // When distance is 0, target name appears in both top label and bottom label
+      const labels = getAllByText('Pit Entry');
+      expect(labels.length).toBe(2);
     });
 
     it('displays target label at bottom', () => {
