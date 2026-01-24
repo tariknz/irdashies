@@ -12,12 +12,18 @@ export async function publishIRacingSDKEvents(
   console.log('Loading iRacing SDK bridge...');
 
   let shouldStop = false;
+  let lastRunningState: boolean | undefined = undefined;
+
   const telemetryCallbacks = new Set<(value: Telemetry) => void>();
   const sessionCallbacks = new Set<(value: Session) => void>();
   const runningStateCallbacks = new Set<(value: boolean) => void>();
 
   const runningStateInterval = setInterval(async () => {
     const isSimRunning = await IRacingSDK.IsSimRunning();
+    if (isSimRunning === lastRunningState) {
+      return;
+    }
+    lastRunningState = isSimRunning;
     console.log('Sending running state to window', isSimRunning);
     overlayManager.publishMessage('runningState', isSimRunning);
     // Notify all subscribers
