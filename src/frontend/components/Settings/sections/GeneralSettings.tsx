@@ -57,6 +57,7 @@ export const GeneralSettings = () => {
     disableHardwareAcceleration: currentDashboard?.generalSettings?.disableHardwareAcceleration ?? false,
     enableAutoStart: currentDashboard?.generalSettings?.enableAutoStart ?? false,
     compactMode: currentDashboard?.generalSettings?.compactMode ?? false,
+    boldText: currentDashboard?.generalSettings?.boldText ?? false,
     overlayAlwaysOnTop: currentDashboard?.generalSettings?.overlayAlwaysOnTop ?? true
   });
 
@@ -138,6 +139,13 @@ export const GeneralSettings = () => {
     updateDashboard(newSettings);
   };
 
+    const handleBoldTextChange = (enabled: boolean) => {
+    const newSettings = { ...settings, boldText: enabled };
+    setSettings(newSettings);
+    updateDashboard(newSettings);
+  };
+
+
   const handleOverlayAlwaysOnTopChange = (enabled: boolean) => {
     const newSettings = { ...settings, overlayAlwaysOnTop: enabled };
     setSettings(newSettings);
@@ -215,7 +223,7 @@ export const GeneralSettings = () => {
           </label>
         </div>
       </div>
-
+      
       {/* Color Theme Settings */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
