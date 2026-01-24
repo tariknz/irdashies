@@ -152,6 +152,15 @@ export function useFuelCalculation(
     }
   }, [sessionState, trackId, clearAllData]);
 
+  // Update session flags state to avoid setState during render
+  const lastSessionFlagsRef = useRef<number | undefined>(undefined);
+  useEffect(() => {
+    if (sessionFlags !== undefined && lastSessionFlagsRef.current !== sessionFlags) {
+        useFuelStore.setState({ lastSessionFlags: sessionFlags });
+        lastSessionFlagsRef.current = sessionFlags;
+    }
+  }, [sessionFlags]);
+
   // Detect lap crossings and process fuel data
   useEffect(() => {
     if (
@@ -323,16 +332,13 @@ export function useFuelCalculation(
       // Set to 1 lap remaining to show fuel to finish line, ignore any time extensions
 
       // Only log when flag state changes to avoid spam
-      const state = useFuelStore.getState();
-      const flagChanged = state.lastSessionFlags !== sessionFlags;
+      const flagChanged = lastSessionFlagsRef.current !== sessionFlags;
       if (flagChanged) {
         if (DEBUG_LOGGING) {
           console.log(
             `[FuelCalculator] ${isCheckeredFlag(sessionFlags) ? 'Checkered' : 'White'} flag detected - final lap (ignoring sessionTimeRemain: ${sessionTimeRemain}, sessionLapsRemain: ${sessionLapsRemain})`
           );
         }
-        // Update stored flag state
-        useFuelStore.setState({ lastSessionFlags: sessionFlags });
       }
 
       lapsRemaining = 1;

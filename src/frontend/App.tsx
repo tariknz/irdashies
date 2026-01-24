@@ -23,7 +23,8 @@ const AppRoutes = () => {
   return (
     <Routes>
       {currentDashboard?.widgets.map((widget) => {
-        const WidgetComponent = WIDGET_MAP[widget.id];
+        const componentType = widget.type || widget.id;
+        const WidgetComponent = WIDGET_MAP[componentType];
         if (!WidgetComponent) {
           return null;
         }

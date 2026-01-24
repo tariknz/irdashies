@@ -95,6 +95,10 @@ export interface FuelCalculatorSettings {
   layout?: 'vertical' | 'horizontal';
   /** Show detailed consumption breakdown */
   showConsumption: boolean;
+  /** Show fuel level */
+  showFuelLevel: boolean;
+  /** Show laps remaining */
+  showLapsRemaining: boolean;
   /** Show minimum fuel consumption */
   showMin: boolean;
   /** Show consumption for last lap */
@@ -123,4 +127,33 @@ export interface FuelCalculatorSettings {
   background: { opacity: number };
   /** Display mode for fuel required column: 'toFinish' shows total fuel needed, 'toAdd' shows fuel to add at stop */
   fuelRequiredMode?: 'toFinish' | 'toAdd';
+  
+  /** 
+   * Box Layout Configuration 
+   * Defines the structure of boxes and which widgets they contain
+   */
+  layoutConfig?: BoxConfig[];
+  /** Recursive Layout Tree (Supersedes layoutConfig) */
+  layoutTree?: any; // Using any for now to match actual usage in FuelCalculator.tsx, but should be LayoutNode
 }
+
+export interface BoxConfig {
+  id: string;
+  /** Layout flow for widgets in this box */
+  flow?: 'vertical' | 'horizontal';
+  /** Width of the box relative to container */
+  width?: '1/1' | '1/2' | '1/3' | '1/4';
+  /** Widgets contained in this box, in order */
+  widgets: string[];
+}
+
+/** Available widgets for the Fuel Calculator */
+export type FuelWidgetType = 
+  | 'fuelLevel' 
+  | 'lapsRemaining' 
+  | 'consumption' 
+  | 'pitWindow' 
+  | 'endurance' 
+  | 'scenarios' 
+  | 'graph' 
+  | 'confidence';

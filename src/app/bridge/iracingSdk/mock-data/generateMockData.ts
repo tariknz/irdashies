@@ -85,6 +85,50 @@ export function generateMockData(sessionData?: {
               // Normal RPM increase
               demoRpm += rpmStep;
             }
+
+            // --- Fuel Calculator Mock Logic Start ---
+            // Constants for simulation
+            const FUEL_TANK_MAX = 60.0;
+            const FUEL_START = 45.0;
+            const FUEL_PER_LAP = 2.2;
+            const LAP_DISTANCE_INC = 0.0007; // Increment per tick for ~24s lap at 60Hz (fast mock lap)
+            const SESSION_TIME_INC = 1/60; // Seconds per tick
+
+            // Initialize state if not present on prevTelemetry (using existing fields as state holders if needed, or just vars)
+            // leveraging global vars defined outside this scope would be cleaner but for now extending the closure vars
+            if (typeof (prevTelemetry as any)._mockState === 'undefined') {
+               (prevTelemetry as any)._mockState = {
+                 fuelLevel: FUEL_START,
+                 lapDistPct: 0.1, // Start a bit into the lap
+                 currentLap: 3,
+                 sessionTime: 600.0, // Start 10 mins in
+                 sessionLaps: 15,
+                 sessionLapsRemain: 12
+               };
+            }
+            
+            const state = (prevTelemetry as any)._mockState;
+
+            // Update Lap Distance
+            state.lapDistPct += LAP_DISTANCE_INC;
+
+            // Handle Lap Completion
+            if (state.lapDistPct >= 1.0) {
+              state.lapDistPct = 0.0;
+              state.currentLap += 1;
+              state.sessionLapsRemain = Math.max(0, state.sessionLapsRemain - 1);
+            }
+
+            // Update Fuel (consume based on distance)
+            // Fuel consumed = (Fuel Per Lap) * (Distance Fraction traveled this tick)
+            // Since we increment dist by LAP_DISTANCE_INC, we consume that fraction of a lap's fuel
+            const fuelConsumedThisTick = FUEL_PER_LAP * LAP_DISTANCE_INC;
+            state.fuelLevel = Math.max(0, state.fuelLevel - fuelConsumedThisTick);
+
+            // Update Session Time
+            state.sessionTime += SESSION_TIME_INC;
+
+            // --- Fuel Calculator Mock Logic End ---
             
             t = {
               ...prevTelemetry,
@@ -108,6 +152,43 @@ export function generateMockData(sessionData?: {
                 ...prevTelemetry.RPM,
                 value: [demoRpm],
               },
+              // Inject Fuel Calculator Mock Values
+              FuelLevel: {
+                ...prevTelemetry.FuelLevel,
+                value: [state.fuelLevel]
+              },
+              FuelLevelPct: {
+                ...prevTelemetry.FuelLevelPct,
+                value: [state.fuelLevel / FUEL_TANK_MAX]
+              },
+              Lap: {
+                ...prevTelemetry.Lap,
+                value: [state.currentLap]
+              },
+              LapDistPct: {
+                ...prevTelemetry.LapDistPct,
+                value: [state.lapDistPct]
+              },
+              SessionTime: {
+                ...prevTelemetry.SessionTime,
+                value: [state.sessionTime]
+              },
+              SessionLapsRemain: {
+                ...prevTelemetry.SessionLapsRemain,
+                value: [state.sessionLapsRemain]
+              },
+              SessionTimeRemain: {
+                 ...prevTelemetry.SessionTimeRemain,
+                 value: [state.sessionLapsRemain * 90] // Roughly 1.5 min laps
+              },
+               IsOnTrack: {
+                ...prevTelemetry.IsOnTrack, // Ensure this field exists or mock it if missing types might be tricky but assuming existing
+                value: [true]
+              },
+              OnPitRoad: {
+                 ...prevTelemetry.OnPitRoad,
+                 value: [false]
+              }
             };
             prevTelemetry = t;
           }

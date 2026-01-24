@@ -8,36 +8,86 @@ import {
   useTelemetryValues,
   useSessionVisibility,
   useTelemetryValue,
+  useDashboard,
 } from '@irdashies/context';
 import { useFuelCalculation } from './useFuelCalculation';
 import { formatFuel } from './fuelCalculations';
-import { useFuelStore } from './FuelStore';
-import type { FuelCalculatorSettings } from './types';
+import type { FuelCalculatorSettings, BoxConfig } from './types';
+import type { LayoutNode } from '../Settings/types';
 import { useFuelSettings } from '../Standings/hooks';
+import { useFuelStore } from './FuelStore';
+import { Box } from '../Box/Box';
+import {
+  FuelLevelWidget,
+  LapsRemainingWidget,
+  FuelHeaderCombinedWidget,
+} from './widgets/FuelHeaderWidgets';
+import { ConsumptionWidget } from './widgets/ConsumptionWidget';
+import { KeyInfoWidget } from './widgets/KeyInfoWidget';
+import {
+  EnduranceStrategyWidget,
+  PitWindowWidget,
+} from './widgets/StrategyWidgets';
+import { FuelScenariosWidget } from './widgets/FuelScenariosWidget';
+import { ConsumptionGraphWidget } from './widgets/ConsumptionGraphWidget';
+import { ConfidenceWidget } from './widgets/ConfidenceWidget';
 
 type FuelCalculatorProps = Partial<FuelCalculatorSettings>;
 
-export const FuelCalculator = ({
-  fuelUnits = 'L',
-  layout = 'vertical',
-  showConsumption = true,
-  showMin = true,
-  showLastLap = true,
-  show3LapAvg = true,
-  show10LapAvg = true,
-  showMax = true,
-  showPitWindow = true,
-  showEnduranceStrategy = false,
-  showFuelScenarios = true,
-  showFuelRequired = false,
-  showConsumptionGraph = true,
-  consumptionGraphType = 'histogram',
-  safetyMargin = 0.05,
-  background = { opacity: 85 },
-  fuelRequiredMode = 'toFinish',
-}: FuelCalculatorProps) => {
-  const settings = useFuelSettings();
-  const isSessionVisible = useSessionVisibility(settings?.sessionVisibility);
+export const FuelCalculator = (props: FuelCalculatorProps) => {
+  const globalSettings = useFuelSettings();
+  
+  // Merge props with global settings, prioritizing props
+  const settings = useMemo(() => {
+    return {
+      fuelUnits: props.fuelUnits ?? globalSettings?.fuelUnits ?? 'L',
+      layout: props.layout ?? globalSettings?.layout ?? 'vertical',
+      showConsumption: props.showConsumption ?? globalSettings?.showConsumption ?? true,
+      showMin: props.showMin ?? globalSettings?.showMin ?? true,
+      showLastLap: props.showLastLap ?? globalSettings?.showLastLap ?? true,
+      show3LapAvg: props.show3LapAvg ?? globalSettings?.show3LapAvg ?? true,
+      show10LapAvg: props.show10LapAvg ?? globalSettings?.show10LapAvg ?? true,
+      showPitWindow: props.showPitWindow ?? globalSettings?.showPitWindow ?? true,
+      showEnduranceStrategy: props.showEnduranceStrategy ?? globalSettings?.showEnduranceStrategy ?? false,
+      showFuelScenarios: props.showFuelScenarios ?? globalSettings?.showFuelScenarios ?? true,
+      showFuelRequired: props.showFuelRequired ?? globalSettings?.showFuelRequired ?? false,
+      showConsumptionGraph: props.showConsumptionGraph ?? globalSettings?.showConsumptionGraph ?? true,
+      consumptionGraphType: props.consumptionGraphType ?? globalSettings?.consumptionGraphType ?? 'histogram',
+      safetyMargin: props.safetyMargin ?? globalSettings?.safetyMargin ?? 0.05,
+      background: { 
+        opacity: props.background?.opacity ?? globalSettings?.background?.opacity ?? 85 
+      },
+      fuelRequiredMode: props.fuelRequiredMode ?? globalSettings?.fuelRequiredMode ?? 'toFinish',
+      showOnlyWhenOnTrack: props.showOnlyWhenOnTrack ?? globalSettings?.showOnlyWhenOnTrack ?? true,
+      showFuelLevel: props.showFuelLevel ?? globalSettings?.showFuelLevel ?? true,
+      showLapsRemaining: props.showLapsRemaining ?? globalSettings?.showLapsRemaining ?? true,
+      layoutTree: (props as any).layoutTree ?? globalSettings?.layoutTree,
+      layoutConfig: (props as any).layoutConfig ?? globalSettings?.layoutConfig,
+      sessionVisibility: (props as any).sessionVisibility ?? globalSettings?.sessionVisibility,
+    };
+  }, [props, globalSettings]);
+
+  const {
+    fuelUnits,
+    layout,
+    showConsumption,
+    showMin,
+    showLastLap,
+    show3LapAvg,
+    show10LapAvg,
+    showPitWindow,
+    showEnduranceStrategy,
+    showFuelScenarios,
+    showFuelRequired,
+    showConsumptionGraph,
+    consumptionGraphType,
+    safetyMargin,
+    fuelRequiredMode,
+    showFuelLevel,
+    showLapsRemaining,
+  } = settings;
+
+  const isSessionVisible = useSessionVisibility(settings.sessionVisibility);
   const fuelData = useFuelCalculation(safetyMargin);
   // Subscribe to lapHistory directly to trigger re-renders when it changes
   const lapHistory = useFuelStore((state) => state.lapHistory);
@@ -45,6 +95,9 @@ export const FuelCalculator = ({
   // Get current fuel level from telemetry even when no lap data
   const currentFuelLevel = useTelemetryValues('FuelLevel')?.[0] || 0;
   const isOnTrack = useTelemetryValue<boolean>('IsOnTrack') ?? false;
+
+  // Visual Edit Mode: Get editMode from dashboard context
+  const { editMode } = useDashboard();
 
   // Get laps of fuel consumption for the graph
   const graphData = useMemo(() => {
@@ -55,7 +108,6 @@ export const FuelCalculator = ({
     );
 
     // Filter to valid laps (not out-laps) and take last N
-    // Note: Lap 0 and 1 are already excluded during recording, so no need to filter first lap here
     const validLaps = history
       .filter((lap) => !lap.isOutLap && lap.fuelUsed > 0)
       .slice(0, lapCount)
@@ -84,1012 +136,187 @@ export const FuelCalculator = ({
 
     const lapsUntilPit = fuelData.pitWindowClose - fuelData.currentLap;
     const isLastStint = fuelData.stopsRemaining === 0;
-    const fuelIsTight = fuelData.fuelAtFinish < fuelData.fuelToFinish * 0.1; // Less than 10% buffer
+    const fuelIsTight = fuelData.fuelAtFinish < fuelData.fuelToFinish * 0.1;
 
-    // Red: Must pit within 1 lap
     if (lapsUntilPit <= 1) {
       return 'border-red-500 shadow-[0_0_15px_rgba(255,48,48,0.3)]';
     }
-
-    // Orange: Within 5 laps of pit, OR on last stint with tight fuel
     if (lapsUntilPit <= 5 || (isLastStint && fuelIsTight)) {
       return 'border-orange-500 shadow-[0_0_15px_rgba(255,165,0,0.2)]';
     }
-
-    // Green: Normal operation
     return 'border-green-500 shadow-[0_0_15px_rgba(0,255,0,0.2)]';
   }, [fuelData]);
-
-  // Determine text color for header numbers based on fuel status
+  
   const headerTextClasses = useMemo(() => {
     if (!fuelData)
       return 'text-white [text-shadow:_0_0_10px_rgba(255,255,255,0.3)]';
 
     const lapsUntilPit = fuelData.pitWindowClose - fuelData.currentLap;
     const isLastStint = fuelData.stopsRemaining === 0;
-    const fuelIsTight = fuelData.fuelAtFinish < fuelData.fuelToFinish * 0.1; // Less than 10% buffer
+    const fuelIsTight = fuelData.fuelAtFinish < fuelData.fuelToFinish * 0.1;
 
-    // Red: Must pit within 1 lap
     if (lapsUntilPit <= 1) {
       return 'text-red-400 [text-shadow:_0_0_10px_rgba(255,48,48,0.5)]';
     }
-
-    // Orange: Within 5 laps of pit, OR on last stint with tight fuel
     if (lapsUntilPit <= 5 || (isLastStint && fuelIsTight)) {
       return 'text-orange-400 [text-shadow:_0_0_10px_rgba(255,165,0,0.5)]';
     }
-
-    // Green: Normal operation
     return 'text-green-400 [text-shadow:_0_0_10px_rgba(0,255,0,0.5)]';
   }, [fuelData]);
 
-  // Create display data - use fuelData if available, otherwise show current fuel
   const displayData = useMemo(() => {
     if (!fuelData) {
-      // No lap data yet - just show current fuel level
       return {
-        fuelLevel: currentFuelLevel,
-        lastLapUsage: 0,
-        avg3Laps: 0,
-        avg10Laps: 0,
-        avgAllGreenLaps: 0,
-        minLapUsage: 0,
-        maxLapUsage: 0,
-        lapsWithFuel: 0,
-        lapsRemaining: 0,
-        totalLaps: 0,
-        fuelToFinish: 0,
-        fuelToAdd: 0,
-        canFinish: false,
-        targetConsumption: 0,
-        confidence: 'low' as const,
-        pitWindowOpen: 0,
-        pitWindowClose: 0,
-        currentLap: 0,
-        fuelAtFinish: 0,
-        avgLapTime: 0,
-        targetScenarios: undefined,
+        fuelLevel: currentFuelLevel, lastLapUsage: 0, avg3Laps: 0, avg10Laps: 0,
+        avgAllGreenLaps: 0, minLapUsage: 0, maxLapUsage: 0, lapsWithFuel: 0,
+        lapsRemaining: 0, totalLaps: 0, fuelToFinish: 0, fuelToAdd: 0,
+        canFinish: false, targetConsumption: 0, confidence: 'low' as const,
+        pitWindowOpen: 0, pitWindowClose: 0, currentLap: 0, fuelAtFinish: 0,
+        avgLapTime: 0, targetScenarios: undefined,
       };
     }
 
-    // If fuel level changed (e.g., in garage), recalculate laps with new fuel
     if (Math.abs(fuelData.fuelLevel - currentFuelLevel) > 0.1) {
       const avgFuelPerLap = fuelData.avg3Laps || fuelData.lastLapUsage;
-      const lapsWithFuel =
-        avgFuelPerLap > 0 ? currentFuelLevel / avgFuelPerLap : 0;
-      const fuelAtFinish =
-        currentFuelLevel - fuelData.lapsRemaining * avgFuelPerLap;
-
-      // Recalculate target scenarios with new fuel level
+      const lapsWithFuel = avgFuelPerLap > 0 ? currentFuelLevel / avgFuelPerLap : 0;
+      const fuelAtFinish = currentFuelLevel - fuelData.lapsRemaining * avgFuelPerLap;
       const targetScenarios: typeof fuelData.targetScenarios = [];
       if (lapsWithFuel >= 0.5) {
         const currentLapTarget = Math.round(lapsWithFuel);
-        const scenarios: number[] = [];
-
-        if (currentLapTarget > 1) {
-          scenarios.push(currentLapTarget - 1);
-        }
-        scenarios.push(currentLapTarget);
-        scenarios.push(currentLapTarget + 1);
-
+        const scenarios = [currentLapTarget - 1, currentLapTarget, currentLapTarget + 1].filter(n => n > 0);
         for (const lapCount of scenarios) {
-          if (lapCount > 0) {
-            targetScenarios.push({
-              laps: lapCount,
-              fuelPerLap: currentFuelLevel / lapCount,
-              isCurrentTarget: lapCount === currentLapTarget,
-            });
-          }
+            targetScenarios.push({ laps: lapCount, fuelPerLap: currentFuelLevel / lapCount, isCurrentTarget: lapCount === currentLapTarget });
         }
       }
-
-      return {
-        ...fuelData,
-        fuelLevel: currentFuelLevel,
-        lapsWithFuel,
-        pitWindowClose: fuelData.currentLap + lapsWithFuel - 1,
-        fuelAtFinish,
-        targetScenarios,
-      };
+      return { ...fuelData, fuelLevel: currentFuelLevel, lapsWithFuel, pitWindowClose: fuelData.currentLap + lapsWithFuel - 1, fuelAtFinish, targetScenarios };
     }
-
     return fuelData;
   }, [fuelData, currentFuelLevel]);
 
-  // Calculate fuel metrics (both toFinish and toAdd) for different consumption rates
   const fuelMetrics = useMemo(() => {
     if (!fuelData || fuelData.lapsRemaining <= 0) return null;
-
-    const rates = {
-      min: fuelData.minLapUsage,
-      last: displayData.lastLapUsage,
-      avg3: displayData.avg3Laps,
-      avg: fuelData.avg10Laps || fuelData.avg3Laps,
-      max: fuelData.maxLapUsage,
-    };
-
+    const rates = { min: fuelData.minLapUsage, last: displayData.lastLapUsage, avg3: displayData.avg3Laps, avg: fuelData.avg10Laps || fuelData.avg3Laps, max: fuelData.maxLapUsage };
     const tankCapacity = fuelData.fuelTankCapacity ?? 60;
     const currentFuel = displayData.fuelLevel;
     const stopsRemaining = fuelData.stopsRemaining ?? 0;
-
     const metrics: Record<string, { toFinish: number; toAdd: number }> = {};
-
     for (const [key, rate] of Object.entries(rates)) {
-      // Fuel needed to finish at this consumption rate (with safety margin)
       const toFinish = rate * fuelData.lapsRemaining * (1 + safetyMargin);
-
-      // Fuel to add calculation - context-aware
-      let toAdd: number;
-      if (stopsRemaining > 1) {
-        // Not last stop - fill tank
-        toAdd = Math.max(0, tankCapacity - currentFuel);
-      } else {
-        // Last stop or no stops - add exact amount to finish
-        toAdd = Math.max(0, toFinish - currentFuel);
-      }
-
+      let toAdd = stopsRemaining > 1 ? Math.max(0, tankCapacity - currentFuel) : Math.max(0, toFinish - currentFuel);
       metrics[key] = { toFinish, toAdd };
     }
-
     return metrics;
-  }, [
-    fuelData,
-    displayData.lastLapUsage,
-    displayData.avg3Laps,
-    displayData.fuelLevel,
-    safetyMargin,
-  ]);
+  }, [fuelData, safetyMargin, displayData]);
 
-  // Determine color class for "To Finish" values based on fuel status
-  // eslint-disable-next-line react-hooks/preserve-manual-memoization
   const getToFinishColorClass = useMemo(() => {
     if (!fuelData) return () => 'text-white/70';
-
     return (fuelNeeded: number) => {
       const currentFuel = displayData.fuelLevel;
       const lapsUntilPit = fuelData.pitWindowClose - fuelData.currentLap;
       const isLastStint = fuelData.stopsRemaining === 0;
-
-      // Apply safety margin to comparison (same as main calculation)
-      const fuelNeededWithMargin = fuelNeeded * (1 + safetyMargin);
-      const fuelIsTight = currentFuel < fuelNeededWithMargin;
-
-      // Red: Must pit within 1 lap and this consumption rate won't make it
-      if (lapsUntilPit <= 1 && fuelIsTight) {
-        return 'text-red-400/70';
-      }
-
-      // Orange: Within 5 laps of pit OR (on last stint and fuel is tight)
-      if (lapsUntilPit <= 5 || (isLastStint && fuelIsTight)) {
-        return 'text-orange-400/70';
-      }
-
-      // Green: Normal operation
+      const fuelIsTight = currentFuel < fuelNeeded * (1 + safetyMargin);
+      if (lapsUntilPit <= 1 && fuelIsTight) return 'text-red-400/70';
+      if (lapsUntilPit <= 5 || (isLastStint && fuelIsTight)) return 'text-orange-400/70';
       return 'text-green-400/70';
     };
   }, [fuelData, displayData.fuelLevel, safetyMargin]);
 
-  // Determine base classes based on layout
-  const containerClasses =
-    layout === 'horizontal' ? 'w-full min-w-[900px]' : 'w-full';
+  // Determine effective layout tree
+  const layoutTree = useMemo(() => {
+     let tree: any = settings.layoutTree;
+     
+     if (!tree) {
+         const layoutConfig = settings.layoutConfig;
+         if (layoutConfig && layoutConfig.length > 0) {
+             const legacyWidgetOrder = ['fuelLevel', 'lapsRemaining', 'consumption', 'keyInfo', 'endurance', 'pitWindow', 'scenarios', 'graph', 'confidence'];
+             const isLegacyDefault = layoutConfig.length === 1 && layoutConfig[0].widgets.length === legacyWidgetOrder.length;
+             if (isLegacyDefault) {
+                  return {
+                    id: 'root-auto-upgraded', type: 'split' as const, direction: 'col' as const,
+                    children: [
+                        { id: 'header-box', type: 'box' as const, direction: 'row' as const, widgets: ['fuelHeader'], weight: 1 },
+                        { id: 'main-box', type: 'box' as const, direction: 'col' as const, widgets: legacyWidgetOrder.slice(2), weight: 4 }
+                    ]
+                  };
+             }
+             const children: LayoutNode[] = layoutConfig.map((box: BoxConfig) => {
+                if (!box.widgets || box.widgets.length === 0) return null;
+                return { id: box.id, type: 'box' as const, widgets: box.widgets, direction: box.flow === 'horizontal' ? 'row' : 'col', weight: 1 };
+             }).filter(Boolean) as LayoutNode[];
+             if (children.length === 1) tree = children[0];
+             else tree = { id: 'root-migrated', type: 'split' as const, direction: 'col' as const, children };
+         }
+     }
 
-  const textSizeClasses = layout === 'horizontal' ? 'text-xs' : 'text-base';
+     if (!tree) return null;
 
-  const headerFontSize = layout === 'horizontal' ? 'text-xl' : 'text-[2.5em]';
+     // CLONE tree to avoid mutating the settings object
+     let workingTree = JSON.parse(JSON.stringify(tree));
 
-  // Hide if showOnlyWhenOnTrack is enabled and player is not on track
-  if (settings?.showOnlyWhenOnTrack && !isOnTrack) {
+     const normalizeNode = (node: any): LayoutNode => {
+         if (!node) return node;
+         if (node.type === 'widget') return { id: node.id, type: 'box' as const, widgets: [node.widgetId], direction: 'col' as const, weight: node.weight };
+         if (node.type === 'split') return { ...node, children: node.children?.map(normalizeNode).filter(Boolean) || [] };
+         return node;
+     };
+     
+     return normalizeNode(workingTree);
+  }, [settings.layoutTree, settings.layoutConfig]);
+
+  if (!editMode && settings?.showOnlyWhenOnTrack && !isOnTrack) return null;
+  if (!editMode && !isSessionVisible) return <></>;
+
+  const renderWidget = (widgetId: string) => {
+    switch (widgetId) {
+      case 'fuelLevel': return showFuelLevel ? <FuelLevelWidget key="fuelLevel" fuelLevel={displayData.fuelLevel} fuelUnits={fuelUnits} layout={layout || 'vertical'} headerFontSize={layout === 'horizontal' ? 'text-xl' : 'text-3xl'} headerTextClasses={headerTextClasses} /> : null;
+      case 'fuelHeader': return <FuelHeaderCombinedWidget key="fuelHeader" fuelLevel={displayData.fuelLevel} lapsRemaining={displayData.lapsWithFuel} fuelUnits={fuelUnits} headerFontSize={layout === 'horizontal' ? 'text-xl' : 'text-3xl'} headerTextClasses={headerTextClasses} showFuelLevel={showFuelLevel} showLapsRemaining={showLapsRemaining} />;
+      case 'lapsRemaining': return showLapsRemaining ? <LapsRemainingWidget key="lapsRemaining" lapsRemaining={displayData.lapsWithFuel} headerFontSize={layout === 'horizontal' ? 'text-xl' : 'text-3xl'} headerTextClasses={headerTextClasses} /> : null;
+      case 'consumption': return <ConsumptionWidget key="consumption" displayData={displayData} fuelMetrics={fuelMetrics} fuelUnits={fuelUnits} settings={settings} getToFinishColorClass={getToFinishColorClass} />;
+      case 'keyInfo': return <KeyInfoWidget key="keyInfo" displayData={displayData} fuelUnits={fuelUnits} />;
+      case 'pitWindow': return <PitWindowWidget key="pitWindow" displayData={displayData} fuelData={fuelData} showPitWindow={showPitWindow} editMode={editMode} />;
+      case 'endurance': return <EnduranceStrategyWidget key="endurance" fuelData={fuelData} displayData={displayData} showEnduranceStrategy={showEnduranceStrategy} editMode={editMode} />;
+      case 'scenarios': return <FuelScenariosWidget key="scenarios" displayData={displayData} showFuelScenarios={showFuelScenarios} fuelUnits={fuelUnits} editMode={editMode} />;
+      case 'graph': return <ConsumptionGraphWidget key="graph" graphData={graphData} consumptionGraphType={consumptionGraphType || 'histogram'} fuelUnits={fuelUnits} showConsumptionGraph={showConsumptionGraph} editMode={editMode} />;
+      case 'confidence': return <ConfidenceWidget key="confidence" fuelData={fuelData} confidence={displayData.confidence} />;
+      default: return null;
+    }
+  };
+
+  const RecursiveWidgetRenderer = ({ node }: { node: LayoutNode }) => {
+    if (!node || !node.type) return null;
+    if (node.type === 'box') {
+      return (
+        <div 
+          className="flex-1 flex flex-col m-0.5 min-h-[50px]"
+          style={{ flexGrow: node.weight || 1 }}
+        >
+           <div className={`flex flex-1 ${node.direction === 'row' ? 'flex-row' : 'flex-col'} gap-1 p-1`}>
+             {node.widgets?.map(widgetId => <div key={widgetId} data-widget-id={widgetId} className="flex-1 min-w-0">{renderWidget(widgetId)}</div>)}
+           </div>
+        </div>
+      );
+    }
+    if (node.type === 'split') {
+        return (
+          <div className={`flex flex-1 gap-1 ${node.direction === 'row' ? 'flex-row' : 'flex-col'}`}>
+            {node.children?.map((child: LayoutNode) => <RecursiveWidgetRenderer key={child.id} node={child} />)}
+          </div>
+        );
+    }
     return null;
-  }
+  };
 
-  if (!isSessionVisible) return <></>;
-
-  // Horizontal layout - single row design
-  if (layout === 'horizontal') {
-    return (
-      <div
-        className={`${containerClasses} bg-slate-800/[var(--bg-opacity)] rounded-sm px-3 py-2 text-white ${textSizeClasses} border-2 transition-all duration-300 ${statusClasses}`}
-        style={
-          {
-            '--bg-opacity': `${background.opacity}%`,
-          } as React.CSSProperties
-        }
-      >
-        <div className="flex items-center gap-4 h-full">
-          {/* Main Metrics: Fuel and Laps */}
-          <div className="flex items-center gap-3 pr-3 border-r border-slate-600/50">
-            <div className="flex flex-col items-center min-w-[60px]">
-              <div className="text-[9px] text-slate-400 uppercase tracking-wide">
-                Fuel
-              </div>
-              <div className="flex items-baseline gap-1">
-                <span
-                  className={`${headerFontSize} font-bold ${headerTextClasses} leading-none`}
-                >
-                  {
-                    formatFuel(displayData.fuelLevel, fuelUnits, 1).split(
-                      ' '
-                    )[0]
-                  }
-                </span>
-                <span className="text-[9px] text-slate-500">{fuelUnits}</span>
-              </div>
-            </div>
-            <div className="flex flex-col items-center min-w-[50px]">
-              <div className="text-[9px] text-slate-400 uppercase tracking-wide">
-                Laps
-              </div>
-              <span
-                className={`${headerFontSize} font-bold ${headerTextClasses} leading-none`}
-              >
-                {displayData.lapsWithFuel.toFixed(1)}
-              </span>
-            </div>
-          </div>
-
-          {/* Consumption Stats */}
-          {showConsumption && (
-            <div className="flex items-center gap-2 pr-3 border-r border-slate-600/50">
-              {showMin && (
-                <div className="flex flex-col items-center min-w-[50px]">
-                  <div className="text-[8px] text-slate-400 uppercase">Min</div>
-                  <div className="text-xs font-semibold text-green-400">
-                    {formatFuel(displayData.minLapUsage, fuelUnits)}
-                  </div>
-                  {showFuelRequired && fuelMetrics && (
-                    <div
-                      className={`text-[9px] font-medium ${getToFinishColorClass(fuelMetrics.min.toFinish)}`}
-                    >
-                      {formatFuel(
-                        fuelRequiredMode === 'toAdd'
-                          ? fuelMetrics.min.toAdd
-                          : fuelMetrics.min.toFinish,
-                        fuelUnits,
-                        1
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
-              {showLastLap && (
-                <div className="flex flex-col items-center min-w-[50px]">
-                  <div className="text-[8px] text-slate-400 uppercase">
-                    Last
-                  </div>
-                  <div className="text-xs font-semibold text-white">
-                    {formatFuel(displayData.lastLapUsage, fuelUnits)}
-                  </div>
-                  {showFuelRequired && fuelMetrics && (
-                    <div
-                      className={`text-[9px] font-medium ${getToFinishColorClass(fuelMetrics.last.toFinish)}`}
-                    >
-                      {formatFuel(
-                        fuelRequiredMode === 'toAdd'
-                          ? fuelMetrics.last.toAdd
-                          : fuelMetrics.last.toFinish,
-                        fuelUnits,
-                        1
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
-              {show3LapAvg && (
-                <div className="flex flex-col items-center min-w-[50px]">
-                  <div className="text-[8px] text-slate-400 uppercase">
-                    3 Avg
-                  </div>
-                  <div className="text-xs font-semibold text-white">
-                    {formatFuel(displayData.avg3Laps, fuelUnits)}
-                  </div>
-                  {showFuelRequired && fuelMetrics && (
-                    <div
-                      className={`text-[9px] font-medium ${getToFinishColorClass(fuelMetrics.avg3.toFinish)}`}
-                    >
-                      {formatFuel(
-                        fuelRequiredMode === 'toAdd'
-                          ? fuelMetrics.avg3.toAdd
-                          : fuelMetrics.avg3.toFinish,
-                        fuelUnits,
-                        1
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
-              {show10LapAvg && (
-                <div className="flex flex-col items-center min-w-[50px]">
-                  <div className="text-[8px] text-slate-400 uppercase">
-                    10 Avg
-                  </div>
-                  <div className="text-xs font-semibold text-white">
-                    {formatFuel(displayData.avg10Laps, fuelUnits)}
-                  </div>
-                  {showFuelRequired && fuelMetrics && (
-                    <div
-                      className={`text-[9px] font-medium ${getToFinishColorClass(fuelMetrics.avg.toFinish)}`}
-                    >
-                      {formatFuel(
-                        fuelRequiredMode === 'toAdd'
-                          ? fuelMetrics.avg.toAdd
-                          : fuelMetrics.avg.toFinish,
-                        fuelUnits,
-                        1
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
-              {showMax && (
-                <div className="flex flex-col items-center min-w-[50px]">
-                  <div className="text-[8px] text-slate-400 uppercase">Max</div>
-                  <div className="text-xs font-semibold text-orange-400">
-                    {formatFuel(displayData.maxLapUsage, fuelUnits)}
-                  </div>
-                  {showFuelRequired && fuelMetrics && (
-                    <div
-                      className={`text-[9px] font-medium ${getToFinishColorClass(fuelMetrics.max.toFinish)}`}
-                    >
-                      {formatFuel(
-                        fuelRequiredMode === 'toAdd'
-                          ? fuelMetrics.max.toAdd
-                          : fuelMetrics.max.toFinish,
-                        fuelUnits,
-                        1
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Key Info */}
-          <div className="flex items-center gap-2 pr-3 border-r border-slate-600/50">
-            <div className="flex flex-col items-center min-w-[50px]">
-              <div className="text-[8px] text-slate-400 uppercase">
-                To Finish
-              </div>
-              <div className="text-xs font-semibold text-green-400">
-                {formatFuel(displayData.fuelToFinish, fuelUnits, 1)}
-              </div>
-            </div>
-            <div className="flex flex-col items-center min-w-[50px]">
-              <div className="text-[8px] text-slate-400 uppercase">
-                At Finish
-              </div>
-              <div
-                className={`text-xs font-semibold ${displayData.fuelAtFinish >= 0 ? 'text-green-400' : 'text-red-400'}`}
-              >
-                {displayData.fuelAtFinish >= 0 ? '+' : ''}
-                {formatFuel(Math.abs(displayData.fuelAtFinish), fuelUnits, 1)}
-              </div>
-            </div>
-            {displayData.fuelToAdd > 0 && (
-              <div className="flex flex-col items-center min-w-[50px]">
-                <div className="text-[8px] text-slate-400 uppercase">Add</div>
-                <div className="text-xs font-semibold text-cyan-400">
-                  {formatFuel(displayData.fuelToAdd, fuelUnits, 1)}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Endurance Strategy */}
-          {showEnduranceStrategy &&
-            fuelData &&
-            fuelData.stopsRemaining !== undefined &&
-            fuelData.lapsPerStint !== undefined && (
-              <div className="flex items-center gap-2 pr-3 border-r border-slate-600/50">
-                <div className="flex flex-col items-center min-w-[45px]">
-                  <div className="text-[8px] text-slate-400 uppercase">
-                    Stops
-                  </div>
-                  <div className="text-xs font-semibold text-blue-400">
-                    {fuelData.stopsRemaining}
-                  </div>
-                </div>
-                <div className="flex flex-col items-center min-w-[50px]">
-                  <div className="text-[8px] text-slate-400 uppercase">
-                    L/Stint
-                  </div>
-                  <div className="text-xs font-semibold text-blue-400">
-                    {fuelData.lapsPerStint.toFixed(1)}
-                  </div>
-                </div>
-                {fuelData.earliestPitLap !== undefined &&
-                  !displayData.canFinish && (
-                    <div className="flex flex-col items-center min-w-[55px]">
-                      <div className="text-[8px] text-slate-400 uppercase">
-                        Early Pit
-                      </div>
-                      <div className="text-xs font-semibold text-cyan-400">
-                        L{fuelData.earliestPitLap}
-                      </div>
-                    </div>
-                  )}
-              </div>
-            )}
-
-          {/* Pit Window Indicator */}
-          {showPitWindow && fuelData && (
-            <div className="flex flex-col justify-center min-w-[100px] pr-3 border-r border-slate-600/50">
-              <div className="text-[8px] text-slate-400 uppercase mb-0.5">
-                Pit Window
-              </div>
-              <div className="h-3 bg-slate-900/80 rounded-full relative border border-slate-600/50 overflow-hidden">
-                <div
-                  className="absolute h-full bg-gradient-to-r from-orange-500/30 to-orange-500/60 rounded-full"
-                  style={{
-                    left: `${((displayData.pitWindowOpen - displayData.currentLap) / (fuelData.lapsRemaining || 1)) * 100}%`,
-                    width: `${((displayData.pitWindowClose - displayData.pitWindowOpen) / (fuelData.lapsRemaining || 1)) * 100}%`,
-                  }}
-                />
-                <div
-                  className="absolute w-0.5 h-full bg-green-400 shadow-[0_0_5px_rgba(0,255,0,0.8)]"
-                  style={{ left: '0%' }}
-                />
-              </div>
-              <div className="text-[8px] text-slate-400 text-center mt-0.5">
-                {displayData.canFinish
-                  ? 'No stop'
-                  : `L${displayData.pitWindowOpen}-${displayData.pitWindowClose.toFixed(1)}`}
-              </div>
-            </div>
-          )}
-
-          {/* Target Consumption */}
-          {showFuelScenarios &&
-            displayData.targetScenarios &&
-            displayData.targetScenarios.length > 0 && (
-              <div className="flex flex-col justify-center min-w-[120px] pr-3 border-r border-slate-600/50">
-                <div className="text-[8px] text-slate-400 uppercase mb-1">
-                  Target
-                </div>
-                <div className="flex gap-1.5">
-                  {displayData.targetScenarios.map((scenario) => (
-                    <div
-                      key={scenario.laps}
-                      className="flex flex-col items-center"
-                    >
-                      <div
-                        className={`text-[9px] ${scenario.isCurrentTarget
-                            ? 'text-blue-400'
-                            : 'text-slate-400'
-                          }`}
-                      >
-                        {scenario.laps}L
-                      </div>
-                      <div
-                        className={`text-xs font-semibold ${scenario.isCurrentTarget
-                            ? 'text-blue-400'
-                            : 'text-white'
-                          }`}
-                      >
-                        {
-                          formatFuel(scenario.fuelPerLap, fuelUnits, 2).split(
-                            ' '
-                          )[0]
-                        }
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-          {/* Consumption Graph */}
-          {showConsumptionGraph && graphData && (
-            <div className="flex-1 flex flex-col justify-center min-w-[120px]">
-              <div className="text-[8px] text-slate-400 uppercase mb-0.5">
-                History
-              </div>
-              <div className="h-8 relative">
-                {consumptionGraphType === 'histogram'
-                  ? (() => {
-                    const yMax = graphData.maxFuel * 1.15;
-                    const avgYPct = (graphData.avgFuel / yMax) * 100;
-                    return (
-                      <div className="w-full h-full flex items-end justify-center gap-[1px] relative">
-                        <div
-                          className="absolute left-0 right-0 border-t border-dashed border-yellow-400/80"
-                          style={{ bottom: `${avgYPct}%` }}
-                        />
-                        {graphData.fuelValues.slice(0, 20).map((fuel, i) => {
-                          const heightPct = (fuel / yMax) * 100;
-                          const isAboveAvg = fuel > graphData.avgFuel;
-                          return (
-                            <div
-                              key={i}
-                              className={`w-[2px] ${isAboveAvg ? 'bg-red-400' : 'bg-green-400'}`}
-                              style={{ height: `${heightPct}%` }}
-                            />
-                          );
-                        })}
-                      </div>
-                    );
-                  })()
-                  : (() => {
-                    const yMax = graphData.maxFuel * 1.15;
-                    const points = graphData.fuelValues
-                      .slice(0, 10)
-                      .map((fuel, i) => {
-                        const xPct =
-                          (i /
-                            (Math.min(10, graphData.fuelValues.length) - 1)) *
-                          100;
-                        const yPct = (fuel / yMax) * 100;
-                        return { xPct, yPct };
-                      });
-                    return (
-                      <svg
-                        viewBox="0 0 100 100"
-                        className="absolute inset-0 w-full h-full"
-                        preserveAspectRatio="none"
-                      >
-                        <polyline
-                          points={points
-                            .map((p) => `${p.xPct},${100 - p.yPct}`)
-                            .join(' ')}
-                          fill="none"
-                          stroke="rgba(74, 222, 128, 0.8)"
-                          strokeWidth="2"
-                        />
-                      </svg>
-                    );
-                  })()}
-              </div>
-              <div className="text-[8px] text-slate-400 text-center mt-0.5">
-                Avg: {formatFuel(graphData.avgFuel, fuelUnits)}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Confidence Indicator */}
-        {fuelData && displayData.confidence !== 'high' && (
-          <div className="mt-1 px-1 py-0.5 bg-orange-500/10 border-l-2 border-orange-500 text-[9px] text-orange-400 text-center rounded">
-            {displayData.confidence === 'low'
-              ? 'Low confidence - need more laps'
-              : 'Medium confidence'}
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  // Vertical layout - original design
   return (
-    <div
-      className={`${containerClasses} bg-slate-800/[var(--bg-opacity)] rounded-sm p-3 text-white ${textSizeClasses} border-2 transition-all duration-300 ${statusClasses} overflow-hidden`}
-      style={
-        {
-          '--bg-opacity': `${background.opacity}%`,
-        } as React.CSSProperties
-      }
-    >
-      {/* Header: Current Fuel Level and Laps */}
-      <div className="flex flex-col items-center pb-3 mb-3 border-b border-slate-600/50 gap-2">
-        <div className="flex justify-around w-full gap-4">
-          {/* Fuel Level */}
-          <div className="flex flex-col items-center flex-1">
-            <div className="text-xs text-slate-400 uppercase tracking-wider mb-1">
-              Fuel
-            </div>
-            <div className="flex items-baseline gap-1.5">
-              <span
-                className={`${headerFontSize} font-semibold ${headerTextClasses} leading-none transition-all duration-300`}
-              >
-                {formatFuel(displayData.fuelLevel, fuelUnits, 1).split(' ')[0]}
-              </span>
-              <span className="text-xs text-slate-500">{fuelUnits}</span>
-            </div>
-          </div>
-          {/* Laps Remaining */}
-          <div className="flex flex-col items-center flex-1">
-            <div className="text-xs text-slate-400 uppercase tracking-wider mb-1">
-              Laps
-            </div>
-            <div className="flex items-baseline gap-1.5">
-              <span
-                className={`${headerFontSize} font-semibold ${headerTextClasses} leading-none transition-all duration-300`}
-              >
-                {displayData.lapsWithFuel.toFixed(1)}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Fuel Consumption & Required Table */}
-      {showConsumption && (
-        <div className="mb-3 pb-2 border-b border-slate-600/30">
-          {/* Table Header */}
-          <div className="grid grid-cols-3 gap-1 mb-1">
-            <span className="text-xs text-slate-500 uppercase tracking-wide"></span>
-            <span className="text-xs text-slate-500 uppercase tracking-wide text-right">
-              Per Lap
-            </span>
-            {showFuelRequired && fuelMetrics && (
-              <span className="text-xs text-slate-500 uppercase tracking-wide text-right">
-                {fuelRequiredMode === 'toAdd' ? 'Fuel to Add' : 'To Finish'}
-              </span>
-            )}
-          </div>
-          {/* Table Rows */}
-          {showMin && (
-            <div className="grid grid-cols-3 gap-1 py-1 hover:bg-white/5 hover:mx-[-4px] hover:px-1 rounded transition-colors">
-              <span className="text-slate-400 text-xs">Min</span>
-              <span className="text-white text-sm font-medium text-right">
-                {formatFuel(displayData.minLapUsage, fuelUnits)}
-              </span>
-              {showFuelRequired && fuelMetrics && (
-                <span
-                  className={`text-sm font-medium text-right ${getToFinishColorClass(fuelMetrics.min.toFinish).replace('/70', '')}`}
-                >
-                  {formatFuel(
-                    fuelRequiredMode === 'toAdd'
-                      ? fuelMetrics.min.toAdd
-                      : fuelMetrics.min.toFinish,
-                    fuelUnits,
-                    1
-                  )}
-                </span>
-              )}
-            </div>
-          )}
-          {showLastLap && (
-            <div className="grid grid-cols-3 gap-1 py-1 hover:bg-white/5 hover:mx-[-4px] hover:px-1 rounded transition-colors">
-              <span className="text-slate-400 text-xs">Last Lap</span>
-              <span className="text-white text-sm font-medium text-right">
-                {formatFuel(displayData.lastLapUsage, fuelUnits)}
-              </span>
-              {showFuelRequired && fuelMetrics && (
-                <span
-                  className={`text-sm font-medium text-right ${getToFinishColorClass(fuelMetrics.last.toFinish).replace('/70', '')}`}
-                >
-                  {formatFuel(
-                    fuelRequiredMode === 'toAdd'
-                      ? fuelMetrics.last.toAdd
-                      : fuelMetrics.last.toFinish,
-                    fuelUnits,
-                    1
-                  )}
-                </span>
-              )}
-            </div>
-          )}
-          {show3LapAvg && (
-            <div className="grid grid-cols-3 gap-1 py-1 hover:bg-white/5 hover:mx-[-4px] hover:px-1 rounded transition-colors">
-              <span className="text-slate-400 text-xs">3 Lap Avg</span>
-              <span className="text-white text-sm font-medium text-right">
-                {formatFuel(displayData.avg3Laps, fuelUnits)}
-              </span>
-              {showFuelRequired && fuelMetrics && (
-                <span
-                  className={`text-sm font-medium text-right ${getToFinishColorClass(fuelMetrics.avg3.toFinish).replace('/70', '')}`}
-                >
-                  {formatFuel(
-                    fuelRequiredMode === 'toAdd'
-                      ? fuelMetrics.avg3.toAdd
-                      : fuelMetrics.avg3.toFinish,
-                    fuelUnits,
-                    1
-                  )}
-                </span>
-              )}
-            </div>
-          )}
-          {show10LapAvg && (
-            <div className="grid grid-cols-3 gap-1 py-1 hover:bg-white/5 hover:mx-[-4px] hover:px-1 rounded transition-colors">
-              <span className="text-slate-400 text-xs">10 Lap Avg</span>
-              <span className="text-white text-sm font-medium text-right">
-                {formatFuel(displayData.avg10Laps, fuelUnits)}
-              </span>
-              {showFuelRequired && fuelMetrics && (
-                <span
-                  className={`text-sm font-medium text-right ${getToFinishColorClass(fuelMetrics.avg.toFinish).replace('/70', '')}`}
-                >
-                  {formatFuel(
-                    fuelRequiredMode === 'toAdd'
-                      ? fuelMetrics.avg.toAdd
-                      : fuelMetrics.avg.toFinish,
-                    fuelUnits,
-                    1
-                  )}
-                </span>
-              )}
-            </div>
-          )}
-          {showMax && (
-            <div className="grid grid-cols-3 gap-1 py-1 hover:bg-white/5 hover:mx-[-4px] hover:px-1 rounded transition-colors">
-              <span className="text-slate-400 text-xs">Max</span>
-              <span className="text-white text-sm font-medium text-right">
-                {formatFuel(displayData.maxLapUsage, fuelUnits)}
-              </span>
-              {showFuelRequired && fuelMetrics && (
-                <span
-                  className={`text-sm font-medium text-right ${getToFinishColorClass(fuelMetrics.max.toFinish).replace('/70', '')}`}
-                >
-                  {formatFuel(
-                    fuelRequiredMode === 'toAdd'
-                      ? fuelMetrics.max.toAdd
-                      : fuelMetrics.max.toFinish,
-                    fuelUnits,
-                    1
-                  )}
-                </span>
-              )}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Pit Window */}
-      {showPitWindow && fuelData && (
-        <div className="mb-3 pb-2 border-b border-slate-600/30">
-          <div className="text-xs text-slate-500 uppercase tracking-wide mb-1">
-            Pit Window
-          </div>
-          <div className="mt-2">
-            <div className="h-6 bg-slate-900/80 rounded-xl relative mb-1.5 border border-slate-600/50 overflow-hidden">
-              <div
-                className="absolute h-full bg-gradient-to-r from-orange-500/30 to-orange-500/60 rounded-xl transition-all duration-300"
-                style={{
-                  left: `${((displayData.pitWindowOpen - displayData.currentLap) / (fuelData.lapsRemaining || 1)) * 100}%`,
-                  width: `${((displayData.pitWindowClose - displayData.pitWindowOpen) / (fuelData.lapsRemaining || 1)) * 100}%`,
-                }}
-              />
-              <div
-                className="absolute w-0.5 h-full bg-green-400 shadow-[0_0_10px_rgba(0,255,0,0.8)] z-10"
-                style={{ left: '0%' }}
-              />
-            </div>
-            <div className="text-center text-xs text-slate-400">
-              {displayData.canFinish
-                ? 'No pit stop needed'
-                : `Lap ${displayData.pitWindowOpen} - ${displayData.pitWindowClose.toFixed(1)}`}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Endurance Strategy */}
-      {showEnduranceStrategy &&
-        fuelData &&
-        fuelData.stopsRemaining !== undefined &&
-        fuelData.lapsPerStint !== undefined && (
-          <div className="mb-3 pb-2 border-b border-slate-600/30">
-            <div className="text-xs text-slate-500 uppercase tracking-wide mb-1">
-              Race Strategy
-            </div>
-            <div
-              className={`grid ${fuelData.earliestPitLap !== undefined && !displayData.canFinish ? 'grid-cols-3' : 'grid-cols-2'} gap-3 mt-2`}
-            >
-              <div className="flex flex-col items-center px-3 py-2 bg-slate-900/50 rounded border border-slate-600/30">
-                <span className="text-xs text-slate-400 mb-1">Stops</span>
-                <span className="text-lg font-semibold text-blue-400">
-                  {fuelData.stopsRemaining}
-                </span>
-              </div>
-              <div className="flex flex-col items-center px-3 py-2 bg-slate-900/50 rounded border border-slate-600/30">
-                <span className="text-xs text-slate-400 mb-1">Laps/Stint</span>
-                <span className="text-lg font-semibold text-blue-400">
-                  {fuelData.lapsPerStint.toFixed(1)}
-                </span>
-              </div>
-              {fuelData.earliestPitLap !== undefined &&
-                !displayData.canFinish && (
-                  <div className="flex flex-col items-center px-3 py-2 bg-slate-900/50 rounded border border-slate-600/30">
-                    <span className="text-xs text-slate-400 mb-1">
-                      Earliest Pit
-                    </span>
-                    <span className="text-lg font-semibold text-cyan-400">
-                      L{fuelData.earliestPitLap}
-                    </span>
-                  </div>
-                )}
-            </div>
-          </div>
-        )}
-
-      {/* Fuel Consumption Graph */}
-      {showConsumptionGraph && (
-        <div className="mb-3 pb-2 border-b border-slate-600/30">
-          <div className="text-xs text-slate-500 uppercase tracking-wide mb-1.5">
-            Consumption History
-          </div>
-          {graphData ? (
-            <>
-              <div className="h-12 relative">
-                {consumptionGraphType === 'histogram'
-                  ? // Histogram view - bars for each lap
-                  (() => {
-                    // Scale from 0 with 15% headroom above max
-                    const yMax = graphData.maxFuel * 1.15;
-                    const avgYPct = (graphData.avgFuel / yMax) * 100;
-
-                    return (
-                      <div className="w-full h-full flex items-end justify-center gap-[1px] relative">
-                        {/* Average line */}
-                        <div
-                          className="absolute left-0 right-0 border-t border-dashed border-yellow-400/80"
-                          style={{ bottom: `${avgYPct}%` }}
-                        />
-                        {/* Bars */}
-                        {graphData.fuelValues.map((fuel, i) => {
-                          const heightPct = (fuel / yMax) * 100;
-                          const isAboveAvg = fuel > graphData.avgFuel;
-                          return (
-                            <div
-                              key={i}
-                              className={`w-[2px] ${isAboveAvg ? 'bg-red-400' : 'bg-green-400'}`}
-                              style={{ height: `${heightPct}%` }}
-                            />
-                          );
-                        })}
-                      </div>
-                    );
-                  })()
-                  : // Line chart view
-                  (() => {
-                    // Scale from 0 with 15% headroom above max (same as histogram)
-                    const yMax = graphData.maxFuel * 1.15;
-                    const avgYPct = (graphData.avgFuel / yMax) * 100;
-                    const points = graphData.fuelValues.map((fuel, i) => {
-                      const xPct =
-                        (i / (graphData.fuelValues.length - 1)) * 100;
-                      const yPct = (fuel / yMax) * 100;
-                      return { xPct, yPct };
-                    });
-
-                    return (
-                      <>
-                        {/* SVG for lines only - stretched to fill */}
-                        <svg
-                          viewBox="0 0 100 100"
-                          className="absolute inset-0 w-full h-full"
-                          preserveAspectRatio="none"
-                        >
-                          {/* Average line */}
-                          <line
-                            x1="0"
-                            y1={100 - avgYPct}
-                            x2="100"
-                            y2={100 - avgYPct}
-                            stroke="rgba(251, 191, 36, 0.8)"
-                            strokeWidth="1"
-                            strokeDasharray="4,3"
-                          />
-                          {/* Data line */}
-                          <polyline
-                            points={points
-                              .map((p) => `${p.xPct},${100 - p.yPct}`)
-                              .join(' ')}
-                            fill="none"
-                            stroke="rgba(74, 222, 128, 0.8)"
-                            strokeWidth="1.5"
-                          />
-                        </svg>
-                        {/* Circles positioned absolutely to maintain shape */}
-                        {points.map((p, i) => (
-                          <div
-                            key={i}
-                            className="absolute w-2 h-2 bg-green-400 rounded-full border border-green-300 transform -translate-x-1/2 -translate-y-1/2"
-                            style={{
-                              left: `${p.xPct}%`,
-                              top: `${100 - p.yPct}%`,
-                            }}
-                          />
-                        ))}
-                      </>
-                    );
-                  })()}
-              </div>
-              <div className="flex justify-between text-xs text-slate-400 mt-1">
-                <span>L{graphData.laps[0]?.lapNumber}</span>
-                <span className="text-yellow-400">
-                  Avg: {formatFuel(graphData.avgFuel, fuelUnits)}
-                </span>
-                <span>
-                  L{graphData.laps[graphData.laps.length - 1]?.lapNumber}
-                </span>
-              </div>
-            </>
+    <div className="w-full h-full flex flex-col bg-[#0f172a] text-white">
+      <div className="flex-1 overflow-y-auto min-h-0 bg-black/40">
+          {layoutTree ? (
+             <RecursiveWidgetRenderer node={layoutTree} />
           ) : (
-            <div className="h-12 flex items-center justify-center text-xs text-slate-500">
-              Waiting for lap data...
-            </div>
+             <div className="p-4 flex items-center justify-center h-full text-slate-500 italic text-xs">
+                No layout defined. Use the editor in Settings.
+             </div>
           )}
-        </div>
-      )}
-
-      {/* Target Consumption */}
-      {showFuelScenarios &&
-        displayData.targetScenarios &&
-        displayData.targetScenarios.length > 0 && (
-          <div className="mb-3 pb-2 border-b border-slate-600/30">
-            <div className="text-xs text-slate-500 uppercase tracking-wide mb-2">
-              Target Consumption
-            </div>
-            <div className="grid gap-2">
-              {displayData.targetScenarios.map((scenario) => (
-                <div
-                  key={scenario.laps}
-                  className={`flex justify-between items-center px-2 py-1.5 rounded ${scenario.isCurrentTarget
-                      ? 'bg-blue-500/20 border border-blue-500/40'
-                      : 'bg-slate-900/50'
-                    }`}
-                >
-                  <span className="text-xs text-slate-400">
-                    {scenario.laps} {scenario.laps === 1 ? 'Lap' : 'Laps'}
-                  </span>
-                  <span
-                    className={`text-sm font-semibold ${scenario.isCurrentTarget ? 'text-blue-400' : 'text-white'
-                      }`}
-                  >
-                    {formatFuel(scenario.fuelPerLap, fuelUnits)}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-      {/* Footer: Key Information */}
-      <div className="flex justify-around pt-3 mt-2 border-t border-slate-600/50 gap-3">
-        <div className="flex flex-col items-center gap-1 flex-1">
-          <span className="text-xs text-slate-400 uppercase">At Finish</span>
-          <span
-            className={`text-sm font-semibold ${displayData.fuelAtFinish >= 0 ? 'text-green-400' : 'text-red-400'}`}
-          >
-            {displayData.fuelAtFinish >= 0 ? '+' : ''}
-            {formatFuel(Math.abs(displayData.fuelAtFinish), fuelUnits, 1)}
-          </span>
-        </div>
-        {displayData.fuelToAdd > 0 && (
-          <div className="flex flex-col items-center gap-1 flex-1">
-            <span className="text-xs text-slate-400 uppercase">
-              Add at Stop
-            </span>
-            <span className="text-sm font-semibold text-green-400">
-              {formatFuel(displayData.fuelToAdd, fuelUnits, 1)}
-            </span>
-          </div>
-        )}
-        {displayData.avgLapTime > 0 && displayData.lapsWithFuel > 0 && (
-          <div className="flex flex-col items-center gap-1 flex-1">
-            <span className="text-xs text-slate-400 uppercase">Time Empty</span>
-            <span className="text-sm font-semibold text-cyan-400">
-              {(() => {
-                const totalSeconds = Math.floor(
-                  displayData.lapsWithFuel * displayData.avgLapTime
-                );
-                const minutes = Math.floor(totalSeconds / 60);
-                const seconds = totalSeconds % 60;
-                return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-              })()}
-            </span>
-          </div>
-        )}
       </div>
-
-      {/* Confidence Indicator - only show when we have actual data */}
-      {fuelData && displayData.confidence !== 'high' && (
-        <div className="mt-2 px-1.5 py-1.5 bg-orange-500/10 border-l-2 border-orange-500 text-xs text-orange-400 text-center rounded">
-          {displayData.confidence === 'low'
-            ? 'Low confidence - need more laps'
-            : 'Medium confidence'}
-        </div>
-      )}
-
-      {/* Garage Preview Indicator - show when we have lap data but fuel changed */}
-      {fuelData && Math.abs(fuelData.fuelLevel - currentFuelLevel) > 0.1 && (
-        <div className="mt-2 px-2 py-2 bg-blue-500/15 border-2 border-blue-500 text-xs font-semibold text-blue-400 text-center rounded-md animate-pulse">
-          🔧 Garage Preview - Fuel adjusted to{' '}
-          {formatFuel(currentFuelLevel, fuelUnits, 1)}
-        </div>
-      )}
     </div>
   );
 };

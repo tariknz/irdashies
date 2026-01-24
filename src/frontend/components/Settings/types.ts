@@ -273,6 +273,8 @@ export interface FuelWidgetSettings extends BaseWidgetSettings {
     fuelUnits: 'L' | 'gal';
     layout: 'vertical' | 'horizontal';
     showConsumption: boolean;
+    showFuelLevel: boolean;
+    showLapsRemaining: boolean;
     showMin: boolean;
     showLastLap: boolean;
     show3LapAvg: boolean;
@@ -288,8 +290,44 @@ export interface FuelWidgetSettings extends BaseWidgetSettings {
     background: { opacity: number };
     fuelRequiredMode: 'toFinish' | 'toAdd';
     sessionVisibility: SessionVisibilitySettings;
+    /** 
+    * Box Layout Configuration 
+    * Defines the structure of boxes and which widgets they contain
+    */
+    layoutConfig?: BoxConfig[];
+    /** Recursive Layout Tree (Supersedes layoutConfig) */
+    layoutTree?: LayoutNode;
   };
 }
+
+export interface BoxConfig {
+  id: string;
+  /** Layout flow for widgets in this box */
+  flow?: 'vertical' | 'horizontal';
+  /** Width of the box relative to container */
+  width?: '1/1' | '1/2' | '1/3' | '1/4';
+  /** Widgets contained in this box, in order */
+  widgets: string[];
+}
+
+export type LayoutDirection = 'row' | 'col';
+
+export type LayoutNode = 
+  | { id: string; type: 'box'; widgets: string[]; direction: LayoutDirection; weight?: number }
+  | { id: string; type: 'split'; direction: LayoutDirection; children: LayoutNode[]; weight?: number };
+
+/** Available widgets for the Fuel Calculator */
+export type FuelWidgetType = 
+  | 'fuelLevel' 
+  | 'lapsRemaining' 
+  | 'fuelHeader'
+  | 'consumption' 
+  | 'pitWindow' 
+  | 'endurance' 
+  | 'scenarios' 
+  | 'graph' 
+  | 'confidence'
+  | 'keyInfo';
 
 export interface BlindSpotMonitorWidgetSettings extends BaseWidgetSettings {
   config: {

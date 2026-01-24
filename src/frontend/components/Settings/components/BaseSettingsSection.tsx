@@ -11,6 +11,7 @@ interface BaseSettingsSectionProps<T> {
   widgetId: string;
   children?: ((handleConfigChange: (config: Partial<T>) => void) => ReactNode) | ReactNode;
   onConfigChange?: (config: Partial<T>) => void;
+  disableInternalScroll?: boolean;
 }
 
 export const BaseSettingsSection = <T,>({
@@ -21,6 +22,7 @@ export const BaseSettingsSection = <T,>({
   widgetId,
   children,
   onConfigChange,
+  disableInternalScroll = false,
 }: BaseSettingsSectionProps<T>) => {
   const { currentDashboard, onDashboardUpdated } = useDashboard();
 
@@ -62,7 +64,7 @@ export const BaseSettingsSection = <T,>({
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <div className={`flex flex-col ${disableInternalScroll ? '' : 'h-full'}`}>
       <div className="flex-none space-y-6 p-4 bg-slate-700 rounded">
         <div>
           <div className="flex justify-between items-center mb-1">
@@ -77,7 +79,7 @@ export const BaseSettingsSection = <T,>({
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto min-h-0 mt-4">
+      <div className={`${disableInternalScroll ? '' : 'flex-1 overflow-y-auto min-h-0'} mt-4`}>
         {children && (
           <div className="space-y-4 p-4">
             {typeof children === 'function' ? children(handleConfigChange) : children}

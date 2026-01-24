@@ -1,26 +1,30 @@
-import { useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
-import { FuelWidgetSettings, SessionVisibilitySettings } from '../types';
+import { FuelWidgetSettings, SessionVisibilitySettings, BoxConfig, FuelWidgetType, LayoutNode } from '../types';
 import { useDashboard } from '@irdashies/context';
 import { SessionVisibility } from '../components/SessionVisibility';
 import { ToggleSwitch } from '../components/ToggleSwitch';
+import { PlusIcon } from '@phosphor-icons/react';
+import { LayoutVisualizer, migrateToTree } from './LayoutVisualizer';
 
-const SETTING_ID = 'fuel';
+const generateId = () => Math.random().toString(36).substring(2, 9);
 
 const defaultConfig: FuelWidgetSettings['config'] = {
   showOnlyWhenOnTrack: true,
   fuelUnits: 'L',
   layout: 'vertical',
   showConsumption: true,
+  showFuelLevel: true,
+  showLapsRemaining: true,
   showMin: true,
   showLastLap: true,
   show3LapAvg: true,
   show10LapAvg: true,
   showMax: true,
   showPitWindow: true,
-  showEnduranceStrategy: false,
+  showEnduranceStrategy: true,
   showFuelScenarios: true,
-  showFuelRequired: false,
+  showFuelRequired: true,
   showConsumptionGraph: true,
   consumptionGraphType: 'histogram',
   safetyMargin: 0.05,
@@ -33,393 +37,562 @@ const defaultConfig: FuelWidgetSettings['config'] = {
     practice: true,
     offlineTesting: true,
   },
+  layoutConfig: [], // Default empty
+  layoutTree: undefined, // Will be migrated on load
 };
 
 const migrateConfig = (savedConfig: unknown): FuelWidgetSettings['config'] => {
   if (!savedConfig || typeof savedConfig !== 'object') return defaultConfig;
   const config = savedConfig as Record<string, unknown>;
   return {
-    showOnlyWhenOnTrack:
-      (config.isOnTrack as boolean) ?? defaultConfig.showOnlyWhenOnTrack,
-    fuelUnits: (config.fuelUnits as 'L' | 'gal') ?? 'L',
-    layout: (config.layout as 'vertical' | 'horizontal') ?? 'vertical',
-    showConsumption: (config.showConsumption as boolean) ?? true,
-    showMin: (config.showMin as boolean) ?? true,
-    showLastLap: (config.showLastLap as boolean) ?? true,
-    show3LapAvg: (config.show3LapAvg as boolean) ?? true,
-    show10LapAvg: (config.show10LapAvg as boolean) ?? true,
-    showMax: (config.showMax as boolean) ?? true,
-    showPitWindow: (config.showPitWindow as boolean) ?? true,
-    showEnduranceStrategy: (config.showEnduranceStrategy as boolean) ?? false,
-    showFuelScenarios:
-      (config.showFuelScenarios as boolean) ??
-      (config.showFuelSave as boolean) ??
-      true,
-    showFuelRequired: (config.showFuelRequired as boolean) ?? false,
-    showConsumptionGraph: (config.showConsumptionGraph as boolean) ?? true,
-    consumptionGraphType:
-      (config.consumptionGraphType as 'line' | 'histogram') ?? 'histogram',
-    safetyMargin: (config.safetyMargin as number) ?? 0.05,
-    background: {
-      opacity: (config.background as { opacity?: number })?.opacity ?? 85,
-    },
-    fuelRequiredMode:
-      (config.fuelRequiredMode as 'toFinish' | 'toAdd') ?? 'toFinish',
+    ...defaultConfig, 
+    ...config,
+    // Ensure deep merge for nested objects if needed, but simple spread usually enough for flat flags
     sessionVisibility:
       (config.sessionVisibility as SessionVisibilitySettings) ??
       defaultConfig.sessionVisibility,
+    layoutConfig: (config.layoutConfig as BoxConfig[]) ?? [],
+    layoutTree: (config.layoutTree && (config.layoutTree as any).type ? (config.layoutTree as LayoutNode) : undefined),
   };
 };
 
-export const FuelSettings = () => {
+// Available Widgets definition
+const AVAILABLE_WIDGETS: { id: FuelWidgetType; label: string }[] = [
+  { id: 'fuelLevel', label: 'Fuel Level Header' },
+  { id: 'lapsRemaining', label: 'Laps Remaining Header' },
+  { id: 'fuelHeader', label: 'Combined Header (Fuel + Laps)' },
+  { id: 'consumption', label: 'Consumption Table' },
+  { id: 'keyInfo', label: 'Key Info (To Finish/Add)' },
+  { id: 'pitWindow', label: 'Pit Window' },
+  { id: 'endurance', label: 'Endurance Info' },
+  { id: 'scenarios', label: 'Target Scenarios' },
+  { id: 'graph', label: 'Consumption Graph' },
+  { id: 'confidence', label: 'Confidence Indicator' },
+];
+
+const DEFAULT_TREE: LayoutNode = {
+  id: 'root-default',
+  type: 'split',
+  direction: 'col',
+  children: [
+    { 
+      id: 'header-box', 
+      type: 'box', 
+      direction: 'row', 
+      widgets: ['fuelHeader'], 
+      weight: 1 
+    },
+    { 
+      id: 'main-box', 
+      type: 'box', 
+      direction: 'col', 
+      widgets: [
+        'consumption',
+        'keyInfo',
+        'endurance',
+        'pitWindow',
+        'scenarios',
+        'graph',
+        'confidence'
+      ], 
+      weight: 4 
+    }
+  ]
+};
+
+const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => {
   const { currentDashboard } = useDashboard();
   const savedSettings = currentDashboard?.widgets.find(
-    (w) => w.id === SETTING_ID
+    (w) => w.id === widgetId
   ) as FuelWidgetSettings | undefined;
-  const [settings, setSettings] = useState<FuelWidgetSettings>({
-    enabled: savedSettings?.enabled ?? false,
-    config: migrateConfig(savedSettings?.config),
+  
+  const [settings, setSettings] = useState<FuelWidgetSettings>(() => {
+      const initialConfig = migrateConfig(savedSettings?.config);
+      
+      // Use DEFAULT_TREE if no layout is defined
+      if ((!initialConfig.layoutConfig || initialConfig.layoutConfig.length === 0) && !initialConfig.layoutTree) {
+          initialConfig.layoutTree = DEFAULT_TREE;
+      }
+      return {
+        enabled: savedSettings?.enabled ?? false,
+        config: initialConfig,
+      };
   });
 
-  // Sync settings when dashboard changes (e.g., after layout edit)
-  useEffect(() => {
-    if (savedSettings) {
-      setSettings({
-        enabled: savedSettings.enabled,
-        config: migrateConfig(savedSettings.config),
-      });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentDashboard]); // savedSettings derived from currentDashboard
+  // Calculate tree state from settings (migrating if needed)
+  const currentTree = useMemo(() => {
+      // Validate that the tree has a type before using it
+      if (settings.config.layoutTree && settings.config.layoutTree.type) return settings.config.layoutTree;
+      // Auto-migrate legacy list to tree for the visualizer
+      return migrateToTree(settings.config.layoutConfig || [], AVAILABLE_WIDGETS);
+  }, [settings.config.layoutTree, settings.config.layoutConfig]);
 
-  if (!currentDashboard) {
-    return <>Loading...</>;
+  if (!currentDashboard || !savedSettings) {
+    return <div className="p-4 text-slate-400">Widget not found or loading...</div>;
   }
 
   return (
     <BaseSettingsSection
-      title="Fuel Calculator"
-      description="Configure fuel consumption tracking and pit stop calculations."
+      title={`Fuel Calculator Configuration`}
+      description="Configure fuel consumption tracking, pit stop calculations, and custom layout."
       settings={settings}
       onSettingsChange={setSettings}
-      widgetId={SETTING_ID}
+      widgetId={widgetId}
+      disableInternalScroll={true}
     >
-      {(handleConfigChange) => (
-        <div className="space-y-4">
-          {/* Fuel Units */}
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-slate-300">Fuel Units</span>
-            <select
-              value={settings.config.fuelUnits}
-              onChange={(e) =>
-                handleConfigChange({
-                  fuelUnits: e.target.value as 'L' | 'gal',
-                })
-              }
-              className="px-3 py-1 bg-slate-700 text-slate-200 rounded text-sm"
-            >
-              <option value="L">Liters (L)</option>
-              <option value="gal">Gallons (gal)</option>
-            </select>
+      {(handleConfigChange) => {
+        const handleTreeUpdate = (newTree: LayoutNode) => {
+            handleConfigChange({ layoutTree: newTree });
+        };
+
+        return (
+        <div className="space-y-6">
+          {/* Main Visual Layout Editor */}
+          <div className="space-y-2">
+             <div className="flex justify-between items-center">
+                <h3 className="text-md font-medium text-slate-200">Layout Editor</h3>
+                <span className="text-xs text-slate-500">Drag to Split (Right/Bottom)</span>
+             </div>
+             <LayoutVisualizer 
+                tree={currentTree}
+                onChange={handleTreeUpdate}
+                availableWidgets={AVAILABLE_WIDGETS}
+             />
           </div>
 
-          {/* Layout Style */}
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-slate-300">
-              Layout Style
-              <span className="block text-xs text-slate-500">
-                Horizontal: wide bar for top/bottom of screen
-              </span>
-            </span>
-            <select
-              value={settings.config.layout}
-              onChange={(e) =>
-                handleConfigChange({
-                  layout: e.target.value as 'vertical' | 'horizontal',
-                })
-              }
-              className="px-3 py-1 bg-slate-700 text-slate-200 rounded text-sm"
-            >
-              <option value="vertical">Vertical</option>
-              <option value="horizontal">Horizontal</option>
-            </select>
-          </div>
-
-          {/* Show Consumption Section */}
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-slate-300">
-              Show Consumption Details
-            </span>
-            <ToggleSwitch
-              enabled={settings.config.showConsumption}
-              onToggle={(newValue) =>
-                handleConfigChange({ showConsumption: newValue })
-              }
-            />
-          </div>
-
-          {/* Consumption Details (when enabled) */}
-          {settings.config.showConsumption && (
-            <div className="ml-4 space-y-2 pl-4">
+          <div className="border-t border-slate-600/50 pt-6 space-y-4">
+              <h3 className="text-md font-medium text-slate-200">Widget Settings</h3>
+              
+              {/* Fuel Units */}
               <div className="flex items-center justify-between">
-                <span className="text-xs text-slate-300">Show Min</span>
-                <ToggleSwitch
-                  enabled={settings.config.showMin}
-                  onToggle={(newValue) =>
-                    handleConfigChange({ showMin: newValue })
-                  }
-                />
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-slate-300">Show Last Lap</span>
-                <ToggleSwitch
-                  enabled={settings.config.showLastLap}
-                  onToggle={(newValue) =>
-                    handleConfigChange({ showLastLap: newValue })
-                  }
-                />
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-slate-300">
-                  Show 3 Lap Average
-                </span>
-                <ToggleSwitch
-                  enabled={settings.config.show3LapAvg}
-                  onToggle={(newValue) =>
-                    handleConfigChange({ show3LapAvg: newValue })
-                  }
-                />
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-slate-300">
-                  Show 10 Lap Average
-                </span>
-                <ToggleSwitch
-                  enabled={settings.config.show10LapAvg}
-                  onToggle={(newValue) =>
-                    handleConfigChange({ show10LapAvg: newValue })
-                  }
-                />
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-slate-300">Show Max</span>
-                <ToggleSwitch
-                  enabled={settings.config.showMax}
-                  onToggle={(newValue) =>
-                    handleConfigChange({ showMax: newValue })
-                  }
-                />
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-slate-300">
-                  Show Fuel Required
-                  <span className="block text-[10px] text-slate-500">
-                    Fuel needed for min/avg/max
-                  </span>
-                </span>
-                <ToggleSwitch
-                  enabled={settings.config.showFuelRequired}
-                  onToggle={(newValue) =>
-                    handleConfigChange({ showFuelRequired: newValue })
-                  }
-                />
-              </div>
-              {settings.config.showFuelRequired && (
-                <div className="ml-4 mt-2 pl-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-slate-300">
-                      Display Mode
-                      <span className="block text-[10px] text-slate-500">
-                        To Finish: Total fuel needed | To Add: Fuel to add at
-                        stop
-                      </span>
-                    </span>
-                    <select
-                      value={settings.config.fuelRequiredMode}
-                      onChange={(e) =>
-                        handleConfigChange({
-                          fuelRequiredMode: e.target.value as
-                            | 'toFinish'
-                            | 'toAdd',
-                        })
-                      }
-                      className="px-3 py-1 bg-slate-700 text-slate-200 rounded text-sm"
-                    >
-                      <option value="toFinish">To Finish</option>
-                      <option value="toAdd">Fuel to Add</option>
-                    </select>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Show Pit Window */}
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-slate-300">Show Pit Window</span>
-            <ToggleSwitch
-              enabled={settings.config.showPitWindow}
-              onToggle={(newValue) =>
-                handleConfigChange({ showPitWindow: newValue })
-              }
-            />
-          </div>
-
-          {/* Show Endurance Strategy */}
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-slate-300">
-              Show Endurance Strategy
-              <span className="block text-xs text-slate-500">
-                Total pit stops and stint info for long races
-              </span>
-            </span>
-            <ToggleSwitch
-              enabled={settings.config.showEnduranceStrategy}
-              onToggle={(newValue) =>
-                handleConfigChange({ showEnduranceStrategy: newValue })
-              }
-            />
-          </div>
-
-          {/* Show Fuel Scenarios */}
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-slate-300">Show Fuel Scenarios</span>
-            <ToggleSwitch
-              enabled={settings.config.showFuelScenarios}
-              onToggle={(newValue) =>
-                handleConfigChange({ showFuelScenarios: newValue })
-              }
-            />
-          </div>
-
-          {/* Show Consumption Graph */}
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-slate-300">
-              Show Consumption Graph
-            </span>
-            <ToggleSwitch
-              enabled={settings.config.showConsumptionGraph}
-              onToggle={(newValue) =>
-                handleConfigChange({ showConsumptionGraph: newValue })
-              }
-            />
-          </div>
-
-          {/* Graph Type (when enabled) */}
-          {settings.config.showConsumptionGraph && (
-            <div className="ml-4 pl-4">
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-slate-300">
-                  Graph Type
-                  <span className="block text-[10px] text-slate-500">
-                    Line: 5 laps, Histogram: 30 laps
-                  </span>
-                </span>
+                <span className="text-sm text-slate-300">Fuel Units</span>
                 <select
-                  value={settings.config.consumptionGraphType}
+                  value={settings.config.fuelUnits}
                   onChange={(e) =>
                     handleConfigChange({
-                      consumptionGraphType: e.target.value as
-                        | 'line'
-                        | 'histogram',
+                      fuelUnits: e.target.value as 'L' | 'gal',
                     })
                   }
                   className="px-3 py-1 bg-slate-700 text-slate-200 rounded text-sm"
                 >
-                  <option value="line">Line Chart</option>
-                  <option value="histogram">Histogram</option>
+                  <option value="L">Liters (L)</option>
+                  <option value="gal">Gallons (gal)</option>
                 </select>
               </div>
-            </div>
-          )}
 
-          {/* Safety Margin */}
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-slate-300">
-              Safety Margin
-              <span className="block text-xs text-slate-500">
-                Extra fuel buffer (affects &quot;To Finish&quot; and border
-                colors)
-              </span>
-            </span>
-            <div className="flex items-center gap-2">
-              <input
-                type="range"
-                min="0"
-                max="20"
-                step="1"
-                value={settings.config.safetyMargin * 100}
-                onChange={(e) =>
-                  handleConfigChange({
-                    safetyMargin: parseInt(e.target.value) / 100,
-                  })
-                }
-                className="w-20 h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer"
-              />
-              <span className="text-xs text-slate-300 w-8">
-                {Math.round(settings.config.safetyMargin * 100)}%
-              </span>
-            </div>
-          </div>
+              {/* Layout Style - Global Preference */}
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-slate-300">
+                  Global Layout Style
+                  <span className="block text-xs text-slate-500">
+                    Controls font sizes and basic widget orientation (Vertical/Horizontal)
+                  </span>
+                </span>
+                <select
+                  value={settings.config.layout}
+                  onChange={(e) =>
+                    handleConfigChange({
+                      layout: e.target.value as 'vertical' | 'horizontal',
+                    })
+                  }
+                  className="px-3 py-1 bg-slate-700 text-slate-200 rounded text-sm"
+                >
+                  <option value="vertical">Vertical</option>
+                  <option value="horizontal">Horizontal</option>
+                </select>
+              </div>
 
-          {/* Background Opacity */}
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-slate-300">Background Opacity</span>
-            <div className="flex items-center gap-2">
-              <input
-                type="range"
-                min="0"
-                max="100"
-                value={settings.config.background.opacity}
-                onChange={(e) =>
-                  handleConfigChange({
-                    background: { opacity: parseInt(e.target.value) },
-                  })
-                }
-                className="w-20 h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer"
-              />
-              <span className="text-xs text-slate-300 w-8">
-                {settings.config.background.opacity}%
-              </span>
-            </div>
-          </div>
+              {/* Header Visibility Toggles */}
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-slate-300">Show Fuel Level Header</span>
+                <ToggleSwitch
+                  enabled={settings.config.showFuelLevel}
+                  onToggle={(newValue) =>
+                    handleConfigChange({ showFuelLevel: newValue })
+                  }
+                />
+              </div>
 
-          {/* IsOnTrack Section */}
-          <div className="flex items-center justify-between">
-            <div>
-              <h4 className="text-md font-medium text-slate-300">
-                Show only when on track
-              </h4>
-              <span className="block text-xs text-slate-500">
-                If enabled, calculator will only be shown when you are driving.
-              </span>
-            </div>
-            <ToggleSwitch
-              enabled={settings.config.showOnlyWhenOnTrack}
-              onToggle={(newValue) =>
-                handleConfigChange({
-                  showOnlyWhenOnTrack: newValue,
-                })
-              }
-            />
-          </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-slate-300">Show Laps Remaining Header</span>
+                <ToggleSwitch
+                  enabled={settings.config.showLapsRemaining}
+                  onToggle={(newValue) =>
+                    handleConfigChange({ showLapsRemaining: newValue })
+                  }
+                />
+              </div>
 
-          {/* Session Visibility Settings */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-medium text-slate-200">
-                Session Visibility
-              </h3>
-            </div>
-            <div className="space-y-3 pl-4">
-              <SessionVisibility
-                sessionVisibility={settings.config.sessionVisibility}
-                handleConfigChange={handleConfigChange}
-              />
-            </div>
+              {/* Show Consumption Section */}
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-slate-300">
+                  Show Consumption Details
+                </span>
+                <ToggleSwitch
+                  enabled={settings.config.showConsumption}
+                  onToggle={(newValue) =>
+                    handleConfigChange({ showConsumption: newValue })
+                  }
+                />
+              </div>
+
+              {/* Consumption Details (when enabled) */}
+              {settings.config.showConsumption && (
+                <div className="ml-4 space-y-2 pl-4 border-l border-slate-700">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-slate-300">Show Min</span>
+                    <ToggleSwitch
+                      enabled={settings.config.showMin}
+                      onToggle={(newValue) =>
+                        handleConfigChange({ showMin: newValue })
+                      }
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-slate-300">Show Last Lap</span>
+                    <ToggleSwitch
+                      enabled={settings.config.showLastLap}
+                      onToggle={(newValue) =>
+                        handleConfigChange({ showLastLap: newValue })
+                      }
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-slate-300">
+                      Show 3 Lap Average
+                    </span>
+                    <ToggleSwitch
+                      enabled={settings.config.show3LapAvg}
+                      onToggle={(newValue) =>
+                        handleConfigChange({ show3LapAvg: newValue })
+                      }
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-slate-300">
+                      Show 10 Lap Average
+                    </span>
+                    <ToggleSwitch
+                      enabled={settings.config.show10LapAvg}
+                      onToggle={(newValue) =>
+                        handleConfigChange({ show10LapAvg: newValue })
+                      }
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-slate-300">Show Max</span>
+                    <ToggleSwitch
+                      enabled={settings.config.showMax}
+                      onToggle={(newValue) =>
+                        handleConfigChange({ showMax: newValue })
+                      }
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-slate-300">
+                      Show Fuel Required
+                      <span className="block text-[10px] text-slate-500">
+                        Fuel needed for min/avg/max
+                      </span>
+                    </span>
+                    <ToggleSwitch
+                      enabled={settings.config.showFuelRequired}
+                      onToggle={(newValue) =>
+                        handleConfigChange({ showFuelRequired: newValue })
+                      }
+                    />
+                  </div>
+                  {settings.config.showFuelRequired && (
+                    <div className="ml-4 mt-2 pl-4">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-slate-300">
+                          Display Mode
+                          <span className="block text-[10px] text-slate-500">
+                            To Finish: Total fuel needed | To Add: Fuel to add at
+                            stop
+                          </span>
+                        </span>
+                        <select
+                          value={settings.config.fuelRequiredMode}
+                          onChange={(e) =>
+                            handleConfigChange({
+                              fuelRequiredMode: e.target.value as
+                                | 'toFinish'
+                                | 'toAdd',
+                            })
+                          }
+                          className="px-3 py-1 bg-slate-700 text-slate-200 rounded text-sm"
+                        >
+                          <option value="toFinish">To Finish</option>
+                          <option value="toAdd">Fuel to Add</option>
+                        </select>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Show Pit Window */}
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-slate-300">Show Pit Window</span>
+                <ToggleSwitch
+                  enabled={settings.config.showPitWindow}
+                  onToggle={(newValue) =>
+                    handleConfigChange({ showPitWindow: newValue })
+                  }
+                />
+              </div>
+
+              {/* Show Endurance Strategy */}
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-slate-300">
+                  Show Endurance Strategy
+                  <span className="block text-xs text-slate-500">
+                    Total pit stops and stint info for long races
+                  </span>
+                </span>
+                <ToggleSwitch
+                  enabled={settings.config.showEnduranceStrategy}
+                  onToggle={(newValue) =>
+                    handleConfigChange({ showEnduranceStrategy: newValue })
+                  }
+                />
+              </div>
+
+              {/* Show Fuel Scenarios */}
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-slate-300">Show Fuel Scenarios</span>
+                <ToggleSwitch
+                  enabled={settings.config.showFuelScenarios}
+                  onToggle={(newValue) =>
+                    handleConfigChange({ showFuelScenarios: newValue })
+                  }
+                />
+              </div>
+
+              {/* Show Consumption Graph */}
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-slate-300">
+                  Show Consumption Graph
+                </span>
+                <ToggleSwitch
+                  enabled={settings.config.showConsumptionGraph}
+                  onToggle={(newValue) =>
+                    handleConfigChange({ showConsumptionGraph: newValue })
+                  }
+                />
+              </div>
+
+              {/* Graph Type (when enabled) */}
+              {settings.config.showConsumptionGraph && (
+                <div className="ml-4 pl-4 border-l border-slate-700">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-slate-300">
+                      Graph Type
+                      <span className="block text-[10px] text-slate-500">
+                        Line: 5 laps, Histogram: 30 laps
+                      </span>
+                    </span>
+                    <select
+                      value={settings.config.consumptionGraphType}
+                      onChange={(e) =>
+                        handleConfigChange({
+                          consumptionGraphType: e.target.value as
+                            | 'line'
+                            | 'histogram',
+                        })
+                      }
+                      className="px-3 py-1 bg-slate-700 text-slate-200 rounded text-sm"
+                    >
+                      <option value="line">Line Chart</option>
+                      <option value="histogram">Histogram</option>
+                    </select>
+                  </div>
+                </div>
+              )}
+
+              {/* Safety Margin */}
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-slate-300">
+                  Safety Margin
+                  <span className="block text-xs text-slate-500">
+                    Extra fuel buffer (affects &quot;To Finish&quot; and border
+                    colors)
+                  </span>
+                </span>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="range"
+                    min="0"
+                    max="20"
+                    step="1"
+                    value={settings.config.safetyMargin * 100}
+                    onChange={(e) =>
+                      handleConfigChange({
+                        safetyMargin: parseInt(e.target.value) / 100,
+                      })
+                    }
+                    className="w-20 h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer slider"
+                  />
+                  <span className="text-xs text-slate-300 w-8">
+                    {Math.round(settings.config.safetyMargin * 100)}%
+                  </span>
+                </div>
+              </div>
+
+              {/* Background Opacity */}
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-slate-300">Background Opacity</span>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={settings.config.background.opacity}
+                    onChange={(e) =>
+                      handleConfigChange({
+                        background: { opacity: parseInt(e.target.value) },
+                      })
+                    }
+                    className="w-20 h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer slider"
+                  />
+                  <span className="text-xs text-slate-300 w-8">
+                    {settings.config.background.opacity}%
+                  </span>
+                </div>
+              </div>
+
+              {/* IsOnTrack Section */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="text-md font-medium text-slate-300">
+                    Show only when on track
+                  </h4>
+                  <span className="block text-xs text-slate-500">
+                    If enabled, calculator will only be shown when you are driving.
+                  </span>
+                </div>
+                <ToggleSwitch
+                  enabled={settings.config.showOnlyWhenOnTrack}
+                  onToggle={(newValue) =>
+                    handleConfigChange({
+                      showOnlyWhenOnTrack: newValue,
+                    })
+                  }
+                />
+              </div>
+
+              {/* Session Visibility Settings */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-medium text-slate-200">
+                    Session Visibility
+                  </h3>
+                </div>
+                <div className="space-y-3 pl-4">
+                  <SessionVisibility
+                    sessionVisibility={settings.config.sessionVisibility}
+                    handleConfigChange={handleConfigChange}
+                  />
+                </div>
+              </div>
           </div>
         </div>
-      )}
+      )}}
     </BaseSettingsSection>
+  );
+};
+
+export const FuelSettings = () => {
+  const { currentDashboard, onDashboardUpdated } = useDashboard();
+  const [selectedId, setSelectedId] = useState('fuel');
+
+  // Identify all Fuel widgets (legacy 'fuel' id OR type 'fuel')
+  const fuelWidgets = currentDashboard?.widgets.filter(
+    (w) => w.id === 'fuel' || w.type === 'fuel'
+  ) || [];
+
+  const handleAddWidget = () => {
+    if (!currentDashboard || !onDashboardUpdated) return;
+    
+    // Create new widget ID
+    const newId = `fuel-${generateId()}`;
+    // Create new widget structure
+    const newWidget = {
+      id: newId,
+      type: 'fuel',
+      enabled: true,
+      layout: { x: 50, y: 50, width: 300, height: 400 }, // Default window size
+      config: defaultConfig, // Start with default config
+    };
+
+    // Update Dashboard
+    onDashboardUpdated(
+      {
+        ...currentDashboard,
+        widgets: [...currentDashboard.widgets, newWidget],
+      }
+    );
+    
+    // Select the new widget
+    setSelectedId(newId);
+  };
+
+  const handleDeleteWidget = () => {
+    if (!currentDashboard || !onDashboardUpdated) return;
+    if (selectedId === 'fuel') return; // Protect main widget for now? Or allow full deletion. Let's protect 'fuel'.
+
+    const newWidgets = currentDashboard.widgets.filter((w) => w.id !== selectedId);
+    
+    onDashboardUpdated(
+      {
+        ...currentDashboard,
+        widgets: newWidgets,
+      }
+    );
+
+    setSelectedId('fuel');
+  };
+
+  return (
+    <div className="space-y-4 h-full overflow-y-auto p-1">
+      {/* Top Manager Bar */}
+      <div className="bg-slate-800 p-3 rounded flex items-center justify-between border border-slate-700">
+        <div className="flex items-center gap-3">
+          <span className="text-sm font-bold text-slate-200">Editing Widget:</span>
+          <select 
+            value={selectedId}
+            onChange={(e) => setSelectedId(e.target.value)}
+            className="bg-slate-900 border border-slate-600 text-white text-sm rounded px-2 py-1"
+          >
+            {fuelWidgets.map(w => (
+              <option key={w.id} value={w.id}>
+                {w.id === 'fuel' ? 'Main Fuel Calculator' : `Custom Fuel Layout (${w.id})`}
+              </option>
+            ))}
+          </select>
+        </div>
+        
+        <div className="flex items-center gap-2">
+          {selectedId !== 'fuel' && (
+            <button 
+              onClick={handleDeleteWidget}
+              className="px-3 py-1 bg-red-900/50 hover:bg-red-900 text-red-200 text-xs rounded border border-red-800 transition-colors"
+            >
+              Delete Layout
+            </button>
+          )}
+          <button 
+            onClick={handleAddWidget}
+            className="flex items-center gap-1 px-3 py-1 bg-green-700 hover:bg-green-600 text-white text-xs rounded transition-colors"
+          >
+            <PlusIcon /> New Layout
+          </button>
+        </div>
+      </div>
+
+      {/* Render settings for selected ID */}
+      <SingleFuelWidgetSettings key={selectedId} widgetId={selectedId} />
+    </div>
   );
 };
