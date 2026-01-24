@@ -12,9 +12,9 @@ export async function publishIRacingSDKEvents(
   console.log('Loading iRacing SDK bridge...');
 
   let shouldStop = false;
-  const telemetryCallbacks: ((value: Telemetry) => void)[] = [];
-  const sessionCallbacks: ((value: Session) => void)[] = [];
-  const runningStateCallbacks: ((value: boolean) => void)[] = [];
+  const telemetryCallbacks = new Set<(value: Telemetry) => void>();
+  const sessionCallbacks = new Set<(value: Session) => void>();
+  const runningStateCallbacks = new Set<(value: boolean) => void>();
 
   const runningStateInterval = setInterval(async () => {
     const isSimRunning = await IRacingSDK.IsSimRunning();
@@ -65,24 +65,21 @@ export async function publishIRacingSDKEvents(
 
   return {
     onTelemetry: (callback: (value: Telemetry) => void) => {
-      telemetryCallbacks.push(callback);
+      telemetryCallbacks.add(callback);
       return () => {
-        const index = telemetryCallbacks.indexOf(callback);
-        if (index > -1) telemetryCallbacks.splice(index, 1);
+        telemetryCallbacks.delete(callback);
       };
     },
     onSessionData: (callback: (value: Session) => void) => {
-      sessionCallbacks.push(callback);
+      sessionCallbacks.add(callback);
       return () => {
-        const index = sessionCallbacks.indexOf(callback);
-        if (index > -1) sessionCallbacks.splice(index, 1);
+        sessionCallbacks.delete(callback);
       };
     },
     onRunningState: (callback: (value: boolean) => void) => {
-      runningStateCallbacks.push(callback);
+      runningStateCallbacks.add(callback);
       return () => {
-        const index = runningStateCallbacks.indexOf(callback);
-        if (index > -1) runningStateCallbacks.splice(index, 1);
+        runningStateCallbacks.delete(callback);
       };
     },
     stop: () => {

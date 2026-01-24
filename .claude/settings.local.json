@@ -5,7 +5,13 @@
       "Bash(npm run test:*)",
       "Bash(git checkout:*)",
       "Bash(npx tsc:*)",
-      "Bash(npm test:*)"
+      "Bash(npm test:*)",
+      "Bash(while read f)",
+      "Bash(do head -30 \"$f\")",
+      "Bash(echo:*)",
+      "Bash(done)",
+      "Bash(xargs cat:*)",
+      "Bash(ls:*)"
     ],
     "deny": [],
     "ask": []
