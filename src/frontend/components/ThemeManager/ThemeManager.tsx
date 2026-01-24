@@ -3,7 +3,7 @@ import { useGeneralSettings } from '@irdashies/context';
 import { useLocation } from 'react-router-dom';
 
 export const ThemeManager = ({ children }: PropsWithChildren) => {
-  const { fontSize, colorPalette } = useGeneralSettings() || {};
+  const { fontSize, colorPalette,fontWeight } = useGeneralSettings() || {};
   const location = useLocation();
 
   // Don't apply theme changes to the settings page since
@@ -18,6 +18,7 @@ export const ThemeManager = ({ children }: PropsWithChildren) => {
         relative w-full h-full overflow-hidden overlay-window 
         overlay-theme-${fontSize ?? 'sm'} 
         overlay-theme-color-${colorPalette ?? 'default'}
+        overlay-theme-font-weight-${fontWeight ?? 'normal'}
       `}
     >
       {children}

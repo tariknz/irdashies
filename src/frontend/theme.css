@@ -2,6 +2,18 @@
 layer(base);
 @import 'tailwindcss';
 
+.overlay-window.overlay-theme-font-weight-normal {
+  font-weight: var(--font-weight-normal);
+}
+
+.overlay-window.overlay-theme-font-weight-bold {
+  font-weight: var(--font-weight-bold);
+}
+
+.overlay-window.overlay-theme-font-weight-extrabold {
+  font-weight: var(--font-weight-extrabold);
+}
+
 @theme {
   --font-sans: 'Lato', sans-serif;
   --animate-pulse-border: pulse-border 1s infinite;
