@@ -209,17 +209,20 @@ export class IRacingSDK {
    * @returns {SessionData}
    */
   public getSessionData(): SessionData | null {
-    if (this._sessionData && this._dataVer === this.currDataVersion) return this._sessionData;
     if (!this._sdk) return null;
 
     try {
       const seshString = this._sdk?.getSessionData();
+      // currDataVersion is only updated after getSessionData is called
+      if (this._sessionData && this._dataVer === this.currDataVersion) return this._sessionData;
+
       // Handle leading commas in YAML values. 
       // First regex will drop the comma if no values follow (e.g. 'field: ,' => 'field: ')
       // Second regex will put value in quotes, if leading comma is followed by values (e.g. 'field: ,data' => 'field: ",data"')
       const fixedYaml = seshString?.replace(/(\w+: ) *, *\n/g, '$1 \n')
                                    .replace(/(\w+: )(,.*)/g, '$1"$2" \n');
       this._sessionData = yaml.load(fixedYaml, { json: true }) as SessionData;
+      this._dataVer = this.currDataVersion;
       return this._sessionData;
     } catch (err) {
       console.error('There was an error getting session data:', err);
