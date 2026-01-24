@@ -145,7 +145,6 @@ export const GeneralSettings = () => {
     updateDashboard(newSettings);
   };
 
-
   const handleOverlayAlwaysOnTopChange = (enabled: boolean) => {
     const newSettings = { ...settings, overlayAlwaysOnTop: enabled };
     setSettings(newSettings);
