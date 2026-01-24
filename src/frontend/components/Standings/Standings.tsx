@@ -110,6 +110,7 @@ export const Standings = () => {
                       settings?.interval?.enabled ? result.interval : undefined
                     }
                     position={result.classPosition}
+                    lap={result.lastLap}
                     iratingChangeValue={result.iratingChange}
                     lastTime={
                       settings?.lastTime?.enabled ? result.lastTime : undefined
