@@ -19,13 +19,31 @@ export const usePitLimiterWarning = (enabled: boolean): PitLimiterWarningResult 
   // Check if pit speed limiter is actively engaged (manual OR auto)
   const limiterEngaged = (engineWarnings & EngineWarnings.PitSpeedLimiter) !== 0;
 
-  // Detect auto-limiter series: limiter is engaged but player hasn't manually toggled
-  const isAutoLimiterSeries = limiterEngaged && !limiterActive;
+  // Track if we detected auto-limiter on entry to pit road
+  const [autoLimiterDetected, setAutoLimiterDetected] = useState(false);
+  const prevOnPitRoad = useRef(onPitRoad);
 
   // Track previous pitstop state for team race warning
   const prevPitstopActive = useRef(pitstopActive);
   const [teamRaceWarningActive, setTeamRaceWarningActive] = useState(false);
   const teamRaceWarningTimer = useRef<NodeJS.Timeout | null>(null);
+
+  // Detect auto-limiter when entering pit road
+  useEffect(() => {
+    // Detect transition to pit road
+    const justEnteredPitRoad = !prevOnPitRoad.current && onPitRoad;
+    prevOnPitRoad.current = onPitRoad;
+
+    if (justEnteredPitRoad) {
+      // Check if limiter engaged but player didn't toggle = auto-limiter series
+      setAutoLimiterDetected(limiterEngaged && !limiterActive);
+    }
+
+    // Reset when leaving pit road
+    if (!onPitRoad) {
+      setAutoLimiterDetected(false);
+    }
+  }, [onPitRoad, limiterEngaged, limiterActive]);
 
   // Detect pitstop completion and manage warning state
   useEffect(() => {
@@ -97,7 +115,7 @@ export const usePitLimiterWarning = (enabled: boolean): PitLimiterWarningResult 
 
     // Auto-limiter series: warn if player manually engaged limiter
     // (Game won't auto-disengage if player manually engaged)
-    if (onPitRoad && isAutoLimiterSeries && limiterActive) {
+    if (onPitRoad && autoLimiterDetected && limiterActive) {
       return {
         showWarning: true,
         isTeamRaceWarning: false,
@@ -119,5 +137,5 @@ export const usePitLimiterWarning = (enabled: boolean): PitLimiterWarningResult 
       isTeamRaceWarning: false,
       warningText: '',
     };
-  }, [enabled, teamRaceWarningActive, onPitRoad, limiterActive, limiterEngaged, isAutoLimiterSeries]);
+  }, [enabled, teamRaceWarningActive, onPitRoad, limiterActive, limiterEngaged, autoLimiterDetected]);
 };

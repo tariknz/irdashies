@@ -43,16 +43,43 @@ describe('usePitLimiterWarning', () => {
     });
 
     it('shows DISABLE LIMITER warning when player manually engages in auto-limiter series', () => {
+      // Start off pit road
       vi.mocked(context.useTelemetryValue).mockImplementation((key) => {
-        if (key === 'OnPitRoad') return true;
-        if (key === 'dcPitSpeedLimiterToggle') return true; // Player manually engaged
-        if (key === 'EngineWarnings') return EngineWarnings.PitSpeedLimiter; // Auto-limiter also engaged
+        if (key === 'OnPitRoad') return false;
+        if (key === 'dcPitSpeedLimiterToggle') return false;
+        if (key === 'EngineWarnings') return 0;
         if (key === 'PitstopActive') return false;
         return undefined;
       });
 
-      const { result } = renderHook(() => usePitLimiterWarning(true));
+      const { result, rerender } = renderHook(() => usePitLimiterWarning(true));
 
+      // Enter pit road with auto-limiter
+      vi.mocked(context.useTelemetryValue).mockImplementation((key) => {
+        if (key === 'OnPitRoad') return true;
+        if (key === 'dcPitSpeedLimiterToggle') return false; // Auto-limiter, no manual toggle
+        if (key === 'EngineWarnings') return EngineWarnings.PitSpeedLimiter;
+        if (key === 'PitstopActive') return false;
+        return undefined;
+      });
+
+      rerender();
+
+      // No warning yet (auto-limiter working correctly)
+      expect(result.current.showWarning).toBe(false);
+
+      // Player manually engages limiter
+      vi.mocked(context.useTelemetryValue).mockImplementation((key) => {
+        if (key === 'OnPitRoad') return true;
+        if (key === 'dcPitSpeedLimiterToggle') return true; // Player manually engaged
+        if (key === 'EngineWarnings') return EngineWarnings.PitSpeedLimiter;
+        if (key === 'PitstopActive') return false;
+        return undefined;
+      });
+
+      rerender();
+
+      // Now should warn to disable
       expect(result.current.showWarning).toBe(true);
       expect(result.current.warningText).toBe('⚠ DISABLE LIMITER');
       expect(result.current.isTeamRaceWarning).toBe(false);
@@ -136,7 +163,18 @@ describe('usePitLimiterWarning', () => {
     });
 
     it('shows team race warning after pitstop completion when limiter not engaged', () => {
-      // First render: pitstop active
+      // Start off pit road
+      vi.mocked(context.useTelemetryValue).mockImplementation((key) => {
+        if (key === 'OnPitRoad') return false;
+        if (key === 'dcPitSpeedLimiterToggle') return false;
+        if (key === 'EngineWarnings') return 0x00;
+        if (key === 'PitstopActive') return false;
+        return undefined;
+      });
+
+      const { result, rerender } = renderHook(() => usePitLimiterWarning(true));
+
+      // Enter pit road, pitstop active
       vi.mocked(context.useTelemetryValue).mockImplementation((key) => {
         if (key === 'OnPitRoad') return true;
         if (key === 'dcPitSpeedLimiterToggle') return false;
@@ -145,10 +183,12 @@ describe('usePitLimiterWarning', () => {
         return undefined;
       });
 
-      const { result, rerender } = renderHook(() => usePitLimiterWarning(true));
+      rerender();
 
-      // No warning during pitstop
-      expect(result.current.showWarning).toBe(false);
+      // Should show "activate limiter" warning during pitstop (not the team race warning yet)
+      expect(result.current.showWarning).toBe(true);
+      expect(result.current.warningText).toBe('⚠ ACTIVATE LIMITER');
+      expect(result.current.isTeamRaceWarning).toBe(false);
 
       // Second render: pitstop completed
       vi.mocked(context.useTelemetryValue).mockImplementation((key) => {
@@ -219,16 +259,40 @@ describe('usePitLimiterWarning', () => {
     });
 
     it('detects limiter when combined with other warnings', () => {
+      // Start off pit road
       vi.mocked(context.useTelemetryValue).mockImplementation((key) => {
-        if (key === 'OnPitRoad') return true;
-        if (key === 'dcPitSpeedLimiterToggle') return true;
-        // EngineWarnings.PitSpeedLimiter (limiter) + 0x01 (water temp) = EngineWarnings.PitSpeedLimiter | EngineWarnings.WaterTempWarning
-        if (key === 'EngineWarnings') return EngineWarnings.PitSpeedLimiter | EngineWarnings.WaterTempWarning;
+        if (key === 'OnPitRoad') return false;
+        if (key === 'dcPitSpeedLimiterToggle') return false;
+        if (key === 'EngineWarnings') return EngineWarnings.WaterTempWarning;
         if (key === 'PitstopActive') return false;
         return undefined;
       });
 
-      const { result } = renderHook(() => usePitLimiterWarning(true));
+      const { result, rerender } = renderHook(() => usePitLimiterWarning(true));
+
+      // Enter pit road with auto-limiter + water temp warning
+      vi.mocked(context.useTelemetryValue).mockImplementation((key) => {
+        if (key === 'OnPitRoad') return true;
+        if (key === 'dcPitSpeedLimiterToggle') return false;
+        if (key === 'EngineWarnings')
+          return EngineWarnings.PitSpeedLimiter | EngineWarnings.WaterTempWarning;
+        if (key === 'PitstopActive') return false;
+        return undefined;
+      });
+
+      rerender();
+
+      // Player manually engages limiter
+      vi.mocked(context.useTelemetryValue).mockImplementation((key) => {
+        if (key === 'OnPitRoad') return true;
+        if (key === 'dcPitSpeedLimiterToggle') return true;
+        if (key === 'EngineWarnings')
+          return EngineWarnings.PitSpeedLimiter | EngineWarnings.WaterTempWarning;
+        if (key === 'PitstopActive') return false;
+        return undefined;
+      });
+
+      rerender();
 
       // Auto-limiter + manual toggle in auto series should warn to disable
       expect(result.current.showWarning).toBe(true);
