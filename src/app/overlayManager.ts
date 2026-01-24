@@ -33,20 +33,6 @@ export class OverlayManager {
   private overlayAlwaysOnTop = true;
   private hasSingleInstanceLock = false;
 
-  constructor() {
-    setInterval(() => {
-      this.getOverlays().forEach(({ window }) => {
-        if (window.isDestroyed()) return;
-        if (!window.isVisible()) return;
-        if (this.overlayAlwaysOnTop) {
-          window.setAlwaysOnTop(true, 'screen-saver', 1);
-        } else {
-          window.setAlwaysOnTop(false);
-        }
-      });
-    }, 5000);
-  }
-
   public getVersion(): string {
     const version = app.getVersion();
     const gitHash = typeof APP_GIT_HASH !== 'undefined' ? APP_GIT_HASH : 'dev';
