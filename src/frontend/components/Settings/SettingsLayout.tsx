@@ -35,8 +35,7 @@ export const SettingsLayout = () => {
   };
 
   const menuItemClass = (path: string) =>
-    `block w-full p-2 rounded cursor-pointer ${
-      isActive(path) ? 'bg-slate-700' : 'hover:bg-slate-700'
+    `block w-full p-2 rounded cursor-pointer ${isActive(path) ? 'bg-slate-700' : 'hover:bg-slate-700'
     }`;
 
   const handleToggleLock = async () => {
@@ -134,6 +133,11 @@ export const SettingsLayout = () => {
               </Link>
             </li>
             <li>
+              <Link to="/settings/fuel2" className={menuItemClass('/fuel2')}>
+                Fuel Calculator 2
+              </Link>
+            </li>
+            <li>
               <Link
                 to="/settings/garagecover"
                 className={menuItemClass('/garagecover')}
@@ -223,7 +227,8 @@ export const SettingsLayout = () => {
             <Route path="standings" element={<StandingsSettings />} />
             <Route path="relative" element={<RelativeSettings />} />
             <Route path="weather" element={<WeatherSettings />} />
-            <Route path="fuel" element={<FuelSettings />} />
+            <Route path="fuel" element={<FuelSettings key="fuel" />} />
+            <Route path="fuel2" element={<FuelSettings key="fuel2" widgetType="fuel2" />} />
             <Route path="map" element={<TrackMapSettings />} />
             <Route path="flatmap" element={<FlatTrackMapSettings />} />
             <Route path="input" element={<InputSettings />} />

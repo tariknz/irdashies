@@ -1,4 +1,6 @@
 export interface BaseWidgetSettings<T = Record<string, unknown>> {
+  id?: string;
+  type?: string;
   enabled: boolean;
   config: T;
 }
@@ -312,20 +314,20 @@ export interface BoxConfig {
 
 export type LayoutDirection = 'row' | 'col';
 
-export type LayoutNode = 
+export type LayoutNode =
   | { id: string; type: 'box'; widgets: string[]; direction: LayoutDirection; weight?: number }
   | { id: string; type: 'split'; direction: LayoutDirection; children: LayoutNode[]; weight?: number };
 
 /** Available widgets for the Fuel Calculator */
-export type FuelWidgetType = 
-  | 'fuelLevel' 
-  | 'lapsRemaining' 
+export type FuelWidgetType =
+  | 'fuelLevel'
+  | 'lapsRemaining'
   | 'fuelHeader'
-  | 'consumption' 
-  | 'pitWindow' 
-  | 'endurance' 
-  | 'scenarios' 
-  | 'graph' 
+  | 'consumption'
+  | 'pitWindow'
+  | 'endurance'
+  | 'scenarios'
+  | 'graph'
   | 'confidence'
   | 'keyInfo';
 

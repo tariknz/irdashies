@@ -1,6 +1,7 @@
 /**
  * Type definitions for Fuel Calculator
  */
+import type { SessionVisibilitySettings } from '../Settings/types';
 
 /**
  * Data for a single lap's fuel consumption
@@ -127,7 +128,8 @@ export interface FuelCalculatorSettings {
   background: { opacity: number };
   /** Display mode for fuel required column: 'toFinish' shows total fuel needed, 'toAdd' shows fuel to add at stop */
   fuelRequiredMode?: 'toFinish' | 'toAdd';
-  
+
+  sessionVisibility: SessionVisibilitySettings;
   /** 
    * Box Layout Configuration 
    * Defines the structure of boxes and which widgets they contain
@@ -148,12 +150,12 @@ export interface BoxConfig {
 }
 
 /** Available widgets for the Fuel Calculator */
-export type FuelWidgetType = 
-  | 'fuelLevel' 
-  | 'lapsRemaining' 
-  | 'consumption' 
-  | 'pitWindow' 
-  | 'endurance' 
-  | 'scenarios' 
-  | 'graph' 
+export type FuelWidgetType =
+  | 'fuelLevel'
+  | 'lapsRemaining'
+  | 'consumption'
+  | 'pitWindow'
+  | 'endurance'
+  | 'scenarios'
+  | 'graph'
   | 'confidence';

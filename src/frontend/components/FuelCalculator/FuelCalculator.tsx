@@ -32,6 +32,7 @@ import { FuelScenariosWidget } from './widgets/FuelScenariosWidget';
 import { ConsumptionGraphWidget } from './widgets/ConsumptionGraphWidget';
 import { ConfidenceWidget } from './widgets/ConfidenceWidget';
 
+
 type FuelCalculatorProps = Partial<FuelCalculatorSettings>;
 
 export const FuelCalculator = (props: FuelCalculatorProps) => {
@@ -47,6 +48,7 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
       showLastLap: props.showLastLap ?? globalSettings?.showLastLap ?? true,
       show3LapAvg: props.show3LapAvg ?? globalSettings?.show3LapAvg ?? true,
       show10LapAvg: props.show10LapAvg ?? globalSettings?.show10LapAvg ?? true,
+      showMax: props.showMax ?? globalSettings?.showMax ?? true,
       showPitWindow: props.showPitWindow ?? globalSettings?.showPitWindow ?? true,
       showEnduranceStrategy: props.showEnduranceStrategy ?? globalSettings?.showEnduranceStrategy ?? false,
       showFuelScenarios: props.showFuelScenarios ?? globalSettings?.showFuelScenarios ?? true,

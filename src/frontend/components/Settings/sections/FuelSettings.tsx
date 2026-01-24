@@ -45,7 +45,7 @@ const migrateConfig = (savedConfig: unknown): FuelWidgetSettings['config'] => {
   if (!savedConfig || typeof savedConfig !== 'object') return defaultConfig;
   const config = savedConfig as Record<string, unknown>;
   return {
-    ...defaultConfig, 
+    ...defaultConfig,
     ...config,
     // Ensure deep merge for nested objects if needed, but simple spread usually enough for flat flags
     sessionVisibility:
@@ -56,7 +56,7 @@ const migrateConfig = (savedConfig: unknown): FuelWidgetSettings['config'] => {
   };
 };
 
-// Available Widgets definition
+// Available Widgets for Legacy Fuel Calculator
 const AVAILABLE_WIDGETS: { id: FuelWidgetType; label: string }[] = [
   { id: 'fuelLevel', label: 'Fuel Level Header' },
   { id: 'lapsRemaining', label: 'Laps Remaining Header' },
@@ -70,22 +70,31 @@ const AVAILABLE_WIDGETS: { id: FuelWidgetType; label: string }[] = [
   { id: 'confidence', label: 'Confidence Indicator' },
 ];
 
+// Available Widgets for Fuel Calculator 2
+const AVAILABLE_WIDGETS_FUEL2: { id: string; label: string }[] = [
+  { id: 'fuel2Header', label: 'Header (Stops/Window/Confidence)' },
+  { id: 'fuel2Gauge', label: 'Fuel Gauge' },
+  { id: 'fuel2Grid', label: 'Consumption Grid' },
+  { id: 'fuel2Scenarios', label: 'Pit Scenarios' },
+  { id: 'fuel2TimeEmpty', label: 'Time Until Empty' },
+];
+
 const DEFAULT_TREE: LayoutNode = {
   id: 'root-default',
   type: 'split',
   direction: 'col',
   children: [
-    { 
-      id: 'header-box', 
-      type: 'box', 
-      direction: 'row', 
-      widgets: ['fuelHeader'], 
-      weight: 1 
+    {
+      id: 'header-box',
+      type: 'box',
+      direction: 'row',
+      widgets: ['fuelHeader'],
+      weight: 1
     },
-    { 
-      id: 'main-box', 
-      type: 'box', 
-      direction: 'col', 
+    {
+      id: 'main-box',
+      type: 'box',
+      direction: 'col',
       widgets: [
         'consumption',
         'keyInfo',
@@ -94,8 +103,22 @@ const DEFAULT_TREE: LayoutNode = {
         'scenarios',
         'graph',
         'confidence'
-      ], 
-      weight: 4 
+      ],
+      weight: 4
+    }
+  ]
+};
+
+const DEFAULT_TREE_FUEL2: LayoutNode = {
+  id: 'root-fuel2-default',
+  type: 'split',
+  direction: 'col',
+  children: [
+    {
+      id: 'box-1',
+      type: 'box',
+      direction: 'col',
+      widgets: ['fuel2Header', 'fuel2Gauge', 'fuel2Grid', 'fuel2Scenarios', 'fuel2TimeEmpty'],
     }
   ]
 };
@@ -105,27 +128,31 @@ const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => {
   const savedSettings = currentDashboard?.widgets.find(
     (w) => w.id === widgetId
   ) as FuelWidgetSettings | undefined;
-  
+
+  const isFuel2 = savedSettings?.type === 'fuel2';
+
   const [settings, setSettings] = useState<FuelWidgetSettings>(() => {
-      const initialConfig = migrateConfig(savedSettings?.config);
-      
-      // Use DEFAULT_TREE if no layout is defined
-      if ((!initialConfig.layoutConfig || initialConfig.layoutConfig.length === 0) && !initialConfig.layoutTree) {
-          initialConfig.layoutTree = DEFAULT_TREE;
-      }
-      return {
-        enabled: savedSettings?.enabled ?? false,
-        config: initialConfig,
-      };
+    const initialConfig = migrateConfig(savedSettings?.config);
+
+    // Use DEFAULT_TREE if no layout is defined
+    if ((!initialConfig.layoutConfig || initialConfig.layoutConfig.length === 0) && !initialConfig.layoutTree) {
+      initialConfig.layoutTree = isFuel2 ? DEFAULT_TREE_FUEL2 : DEFAULT_TREE;
+    }
+    return {
+      enabled: savedSettings?.enabled ?? false,
+      config: initialConfig,
+    };
   });
+
+  const availableWidgets = isFuel2 ? AVAILABLE_WIDGETS_FUEL2 : AVAILABLE_WIDGETS;
 
   // Calculate tree state from settings (migrating if needed)
   const currentTree = useMemo(() => {
-      // Validate that the tree has a type before using it
-      if (settings.config.layoutTree && settings.config.layoutTree.type) return settings.config.layoutTree;
-      // Auto-migrate legacy list to tree for the visualizer
-      return migrateToTree(settings.config.layoutConfig || [], AVAILABLE_WIDGETS);
-  }, [settings.config.layoutTree, settings.config.layoutConfig]);
+    // Validate that the tree has a type before using it
+    if (settings.config.layoutTree && settings.config.layoutTree.type) return settings.config.layoutTree;
+    // Auto-migrate legacy list to tree for the visualizer
+    return migrateToTree(settings.config.layoutConfig || [], availableWidgets as any);
+  }, [settings.config.layoutTree, settings.config.layoutConfig, availableWidgets, isFuel2]);
 
   if (!currentDashboard || !savedSettings) {
     return <div className="p-4 text-slate-400">Widget not found or loading...</div>;
@@ -133,8 +160,8 @@ const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => {
 
   return (
     <BaseSettingsSection
-      title={`Fuel Calculator Configuration`}
-      description="Configure fuel consumption tracking, pit stop calculations, and custom layout."
+      title={isFuel2 ? "Fuel Calculator 2 Settings" : "Fuel Calculator Configuration"}
+      description={isFuel2 ? "Configure the Fuel Calculator 2 layout." : "Configure fuel consumption tracking, pit stop calculations, and custom layout."}
       settings={settings}
       onSettingsChange={setSettings}
       widgetId={widgetId}
@@ -142,27 +169,29 @@ const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => {
     >
       {(handleConfigChange) => {
         const handleTreeUpdate = (newTree: LayoutNode) => {
-            handleConfigChange({ layoutTree: newTree });
+          handleConfigChange({ layoutTree: newTree });
         };
 
         return (
-        <div className="space-y-6">
-          {/* Main Visual Layout Editor */}
-          <div className="space-y-2">
-             <div className="flex justify-between items-center">
+          <div className="space-y-6">
+            {/* Main Visual Layout Editor */}
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
                 <h3 className="text-md font-medium text-slate-200">Layout Editor</h3>
                 <span className="text-xs text-slate-500">Drag to Split (Right/Bottom)</span>
-             </div>
-             <LayoutVisualizer 
-                tree={currentTree}
-                onChange={handleTreeUpdate}
-                availableWidgets={AVAILABLE_WIDGETS}
-             />
-          </div>
+              </div>
+              {currentTree && (
+                <LayoutVisualizer
+                  tree={currentTree}
+                  onChange={handleTreeUpdate}
+                  availableWidgets={availableWidgets as any}
+                />
+              )}
+            </div>
 
-          <div className="border-t border-slate-600/50 pt-6 space-y-4">
+            <div className={`${isFuel2 ? '' : 'border-t border-slate-600/50 pt-6'} space-y-4`}>
               <h3 className="text-md font-medium text-slate-200">Widget Settings</h3>
-              
+
               {/* Fuel Units */}
               <div className="flex items-center justify-between">
                 <span className="text-sm text-slate-300">Fuel Units</span>
@@ -180,53 +209,61 @@ const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => {
                 </select>
               </div>
 
-              {/* Layout Style - Global Preference */}
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-300">
-                  Global Layout Style
-                  <span className="block text-xs text-slate-500">
-                    Controls font sizes and basic widget orientation (Vertical/Horizontal)
+              {/* Global Layout Style - Legacy Only */}
+              {!isFuel2 && (
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-300">
+                    Global Layout Style
+                    <span className="block text-xs text-slate-500">
+                      Controls font sizes and basic widget orientation (Vertical/Horizontal)
+                    </span>
                   </span>
-                </span>
-                <select
-                  value={settings.config.layout}
-                  onChange={(e) =>
-                    handleConfigChange({
-                      layout: e.target.value as 'vertical' | 'horizontal',
-                    })
-                  }
-                  className="px-3 py-1 bg-slate-700 text-slate-200 rounded text-sm"
-                >
-                  <option value="vertical">Vertical</option>
-                  <option value="horizontal">Horizontal</option>
-                </select>
-              </div>
+                  <select
+                    value={settings.config.layout}
+                    onChange={(e) =>
+                      handleConfigChange({
+                        layout: e.target.value as 'vertical' | 'horizontal',
+                      })
+                    }
+                    className="px-3 py-1 bg-slate-700 text-slate-200 rounded text-sm"
+                  >
+                    <option value="vertical">Vertical</option>
+                    <option value="horizontal">Horizontal</option>
+                  </select>
+                </div>
+              )}
 
-              {/* Header Visibility Toggles */}
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-300">Show Fuel Level Header</span>
-                <ToggleSwitch
-                  enabled={settings.config.showFuelLevel}
-                  onToggle={(newValue) =>
-                    handleConfigChange({ showFuelLevel: newValue })
-                  }
-                />
-              </div>
+              {/* Display Options */}
+              {/* Header Visibility Toggles - Legacy Only (Modern has fixed headers in widgets) */}
+              {!isFuel2 && (
+                <>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-slate-300">Show Fuel Level Header</span>
+                    <ToggleSwitch
+                      enabled={settings.config.showFuelLevel}
+                      onToggle={(newValue) =>
+                        handleConfigChange({ showFuelLevel: newValue })
+                      }
+                    />
+                  </div>
 
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-300">Show Laps Remaining Header</span>
-                <ToggleSwitch
-                  enabled={settings.config.showLapsRemaining}
-                  onToggle={(newValue) =>
-                    handleConfigChange({ showLapsRemaining: newValue })
-                  }
-                />
-              </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-slate-300">Show Laps Remaining Header</span>
+                    <ToggleSwitch
+                      enabled={settings.config.showLapsRemaining}
+                      onToggle={(newValue) =>
+                        handleConfigChange({ showLapsRemaining: newValue })
+                      }
+                    />
+                  </div>
+                </>
+              )}
 
-              {/* Show Consumption Section */}
+              {/* Show Consumption Section - Available for BOTH */}
               <div className="flex items-center justify-between">
                 <span className="text-sm text-slate-300">
                   Show Consumption Details
+                  {isFuel2 && <span className="block text-xs text-slate-500">Configures rows in Consumption Grid</span>}
                 </span>
                 <ToggleSwitch
                   enabled={settings.config.showConsumption}
@@ -260,6 +297,7 @@ const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => {
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-slate-300">
                       Show 3 Lap Average
+                      {isFuel2 && <span className="block text-[10px] text-slate-500">Controls AVG row</span>}
                     </span>
                     <ToggleSwitch
                       enabled={settings.config.show3LapAvg}
@@ -268,17 +306,19 @@ const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => {
                       }
                     />
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-slate-300">
-                      Show 10 Lap Average
-                    </span>
-                    <ToggleSwitch
-                      enabled={settings.config.show10LapAvg}
-                      onToggle={(newValue) =>
-                        handleConfigChange({ show10LapAvg: newValue })
-                      }
-                    />
-                  </div>
+                  {!isFuel2 && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-slate-300">
+                        Show 10 Lap Average
+                      </span>
+                      <ToggleSwitch
+                        enabled={settings.config.show10LapAvg}
+                        onToggle={(newValue) =>
+                          handleConfigChange({ show10LapAvg: newValue })
+                        }
+                      />
+                    </div>
+                  )}
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-slate-300">Show Max</span>
                     <ToggleSwitch
@@ -288,21 +328,23 @@ const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => {
                       }
                     />
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-slate-300">
-                      Show Fuel Required
-                      <span className="block text-[10px] text-slate-500">
-                        Fuel needed for min/avg/max
+                  {!isFuel2 && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-slate-300">
+                        Show Fuel Required
+                        <span className="block text-[10px] text-slate-500">
+                          Fuel needed for min/avg/max
+                        </span>
                       </span>
-                    </span>
-                    <ToggleSwitch
-                      enabled={settings.config.showFuelRequired}
-                      onToggle={(newValue) =>
-                        handleConfigChange({ showFuelRequired: newValue })
-                      }
-                    />
-                  </div>
-                  {settings.config.showFuelRequired && (
+                      <ToggleSwitch
+                        enabled={settings.config.showFuelRequired}
+                        onToggle={(newValue) =>
+                          handleConfigChange({ showFuelRequired: newValue })
+                        }
+                      />
+                    </div>
+                  )}
+                  {settings.config.showFuelRequired && !isFuel2 && (
                     <div className="ml-4 mt-2 pl-4">
                       <div className="flex items-center justify-between">
                         <span className="text-xs text-slate-300">
@@ -344,20 +386,22 @@ const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => {
               </div>
 
               {/* Show Endurance Strategy */}
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-300">
-                  Show Endurance Strategy
-                  <span className="block text-xs text-slate-500">
-                    Total pit stops and stint info for long races
+              {!isFuel2 && (
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-300">
+                    Show Endurance Strategy
+                    <span className="block text-xs text-slate-500">
+                      Total pit stops and stint info for long races
+                    </span>
                   </span>
-                </span>
-                <ToggleSwitch
-                  enabled={settings.config.showEnduranceStrategy}
-                  onToggle={(newValue) =>
-                    handleConfigChange({ showEnduranceStrategy: newValue })
-                  }
-                />
-              </div>
+                  <ToggleSwitch
+                    enabled={settings.config.showEnduranceStrategy}
+                    onToggle={(newValue) =>
+                      handleConfigChange({ showEnduranceStrategy: newValue })
+                    }
+                  />
+                </div>
+              )}
 
               {/* Show Fuel Scenarios */}
               <div className="flex items-center justify-between">
@@ -370,45 +414,48 @@ const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => {
                 />
               </div>
 
-              {/* Show Consumption Graph */}
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-300">
-                  Show Consumption Graph
-                </span>
-                <ToggleSwitch
-                  enabled={settings.config.showConsumptionGraph}
-                  onToggle={(newValue) =>
-                    handleConfigChange({ showConsumptionGraph: newValue })
-                  }
-                />
-              </div>
-
-              {/* Graph Type (when enabled) */}
-              {settings.config.showConsumptionGraph && (
-                <div className="ml-4 pl-4 border-l border-slate-700">
+              {/* Show Consumption Graph - Legacy Only */}
+              {!isFuel2 && (
+                <>
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-slate-300">
-                      Graph Type
-                      <span className="block text-[10px] text-slate-500">
-                        Line: 5 laps, Histogram: 30 laps
-                      </span>
+                    <span className="text-sm text-slate-300">
+                      Show Consumption Graph
                     </span>
-                    <select
-                      value={settings.config.consumptionGraphType}
-                      onChange={(e) =>
-                        handleConfigChange({
-                          consumptionGraphType: e.target.value as
-                            | 'line'
-                            | 'histogram',
-                        })
+                    <ToggleSwitch
+                      enabled={settings.config.showConsumptionGraph}
+                      onToggle={(newValue) =>
+                        handleConfigChange({ showConsumptionGraph: newValue })
                       }
-                      className="px-3 py-1 bg-slate-700 text-slate-200 rounded text-sm"
-                    >
-                      <option value="line">Line Chart</option>
-                      <option value="histogram">Histogram</option>
-                    </select>
+                    />
                   </div>
-                </div>
+
+                  {settings.config.showConsumptionGraph && (
+                    <div className="ml-4 pl-4 border-l border-slate-700">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-slate-300">
+                          Graph Type
+                          <span className="block text-[10px] text-slate-500">
+                            Line: 5 laps, Histogram: 30 laps
+                          </span>
+                        </span>
+                        <select
+                          value={settings.config.consumptionGraphType}
+                          onChange={(e) =>
+                            handleConfigChange({
+                              consumptionGraphType: e.target.value as
+                                | 'line'
+                                | 'histogram',
+                            })
+                          }
+                          className="px-3 py-1 bg-slate-700 text-slate-200 rounded text-sm"
+                        >
+                          <option value="line">Line Chart</option>
+                          <option value="histogram">Histogram</option>
+                        </select>
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
 
               {/* Safety Margin */}
@@ -496,31 +543,36 @@ const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => {
                   />
                 </div>
               </div>
+            </div>
           </div>
-        </div>
-      )}}
+        );
+      }}
     </BaseSettingsSection>
   );
 };
 
-export const FuelSettings = () => {
+export const FuelSettings = ({ widgetType = 'fuel' }: { widgetType?: 'fuel' | 'fuel2' }) => {
   const { currentDashboard, onDashboardUpdated } = useDashboard();
-  const [selectedId, setSelectedId] = useState('fuel');
 
-  // Identify all Fuel widgets (legacy 'fuel' id OR type 'fuel')
+  // Identify widgets of the target type
   const fuelWidgets = currentDashboard?.widgets.filter(
-    (w) => w.id === 'fuel' || w.type === 'fuel'
+    (w) => w.type === widgetType || (widgetType === 'fuel' && w.id === 'fuel')
   ) || [];
+
+  const [selectedId, setSelectedId] = useState(() => {
+    if (fuelWidgets.length > 0) return fuelWidgets[0].id;
+    return widgetType === 'fuel' ? 'fuel' : '';
+  });
 
   const handleAddWidget = () => {
     if (!currentDashboard || !onDashboardUpdated) return;
-    
+
     // Create new widget ID
-    const newId = `fuel-${generateId()}`;
+    const newId = `${widgetType}-${generateId()}`;
     // Create new widget structure
     const newWidget = {
       id: newId,
-      type: 'fuel',
+      type: widgetType,
       enabled: true,
       layout: { x: 50, y: 50, width: 300, height: 400 }, // Default window size
       config: defaultConfig, // Start with default config
@@ -533,17 +585,17 @@ export const FuelSettings = () => {
         widgets: [...currentDashboard.widgets, newWidget],
       }
     );
-    
+
     // Select the new widget
     setSelectedId(newId);
   };
 
   const handleDeleteWidget = () => {
     if (!currentDashboard || !onDashboardUpdated) return;
-    if (selectedId === 'fuel') return; // Protect main widget for now? Or allow full deletion. Let's protect 'fuel'.
+    if (selectedId === 'fuel') return; // Protect main widget
 
     const newWidgets = currentDashboard.widgets.filter((w) => w.id !== selectedId);
-    
+
     onDashboardUpdated(
       {
         ...currentDashboard,
@@ -551,8 +603,27 @@ export const FuelSettings = () => {
       }
     );
 
-    setSelectedId('fuel');
+    // Reset selection
+    const remaining = newWidgets.filter(w => w.type === widgetType || (widgetType === 'fuel' && w.id === 'fuel'));
+    if (remaining.length > 0) setSelectedId(remaining[0].id);
+    else setSelectedId('');
   };
+
+  // If no widgets and we're in fuel2 mode, show create button prominently or handle empty state
+  if (fuelWidgets.length === 0 && widgetType === 'fuel2') {
+    return (
+      <div className="flex flex-col items-center justify-center h-full p-8 text-center space-y-4">
+        <h3 className="text-xl font-bold text-slate-200">Fuel Calculator 2</h3>
+        <p className="text-slate-400">No modern fuel calculator widgets added yet.</p>
+        <button
+          onClick={handleAddWidget}
+          className="flex items-center gap-2 px-4 py-2 bg-green-700 hover:bg-green-600 text-white rounded transition-colors"
+        >
+          <PlusIcon size={20} /> Create New Widget
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4 h-full overflow-y-auto p-1">
@@ -560,29 +631,29 @@ export const FuelSettings = () => {
       <div className="bg-slate-800 p-3 rounded flex items-center justify-between border border-slate-700">
         <div className="flex items-center gap-3">
           <span className="text-sm font-bold text-slate-200">Editing Widget:</span>
-          <select 
+          <select
             value={selectedId}
             onChange={(e) => setSelectedId(e.target.value)}
             className="bg-slate-900 border border-slate-600 text-white text-sm rounded px-2 py-1"
           >
             {fuelWidgets.map(w => (
               <option key={w.id} value={w.id}>
-                {w.id === 'fuel' ? 'Main Fuel Calculator' : `Custom Fuel Layout (${w.id})`}
+                {w.id === 'fuel' ? 'Main Fuel Calculator' : `${w.id}`}
               </option>
             ))}
           </select>
         </div>
-        
+
         <div className="flex items-center gap-2">
           {selectedId !== 'fuel' && (
-            <button 
+            <button
               onClick={handleDeleteWidget}
               className="px-3 py-1 bg-red-900/50 hover:bg-red-900 text-red-200 text-xs rounded border border-red-800 transition-colors"
             >
               Delete Layout
             </button>
           )}
-          <button 
+          <button
             onClick={handleAddWidget}
             className="flex items-center gap-1 px-3 py-1 bg-green-700 hover:bg-green-600 text-white text-xs rounded transition-colors"
           >
@@ -592,7 +663,7 @@ export const FuelSettings = () => {
       </div>
 
       {/* Render settings for selected ID */}
-      <SingleFuelWidgetSettings key={selectedId} widgetId={selectedId} />
+      {selectedId && <SingleFuelWidgetSettings key={selectedId} widgetId={selectedId} />}
     </div>
   );
 };

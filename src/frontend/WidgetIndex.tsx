@@ -5,7 +5,7 @@ import { TrackMap } from './components/TrackMap/TrackMap';
 import { FlatTrackMap } from './components/TrackMap/FlatTrackMap';
 import { Weather } from './components/Weather';
 import { FasterCarsFromBehind } from './components/FasterCarsFromBehind/FasterCarsFromBehind';
-import { FuelCalculator } from './components/FuelCalculator';
+import { FuelCalculator, FuelCalculator2 } from './components/FuelCalculator';
 import { BlindSpotMonitor } from './components/BlindSpotMonitor/BlindSpotMonitor';
 import { GarageCover } from './components/GarageCover/GarageCover';
 import { RejoinIndicator } from './components/RejoinIndicator/RejoinIndicator';
@@ -28,6 +28,10 @@ export const WIDGET_MAP: Record<string, (config?: any) => React.JSX.Element | nu
   rejoin: RejoinIndicator,
   telemetryinspector: TelemetryInspector,
   pitlanehelper: PitlaneHelper,
+  'fuel-calculator': FuelCalculator,
+  'modern-fuel-calculator': FuelCalculator2, // Legacy compatibility
+  'fuel-calculator-2': FuelCalculator2,
+  'fuel2': FuelCalculator2, // Alias used by settings generator
 };
 
 export type WidgetId = keyof typeof WIDGET_MAP;
