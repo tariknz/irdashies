@@ -11,6 +11,7 @@ interface PitLaneState {
   setCurrentTrack: (trackId: string, data: PitLaneTrackData | null) => void;
   updatePitEntry: (pct: number) => void;
   updatePitExit: (pct: number) => void;
+  clearPitData: () => void;
   reset: () => void;
 }
 
@@ -48,18 +49,41 @@ export const usePitLaneStore = create<PitLaneState>((set, get) => ({
 
   updatePitEntry: (pct) => {
     const state = get();
-    // Only update if not already set (first detection wins)
-    if (state.pitEntryPct === null) {
+    const TOLERANCE = 0.02; // 2% of lap distance
+
+    // Update if:
+    // 1. Not set yet (null), OR
+    // 2. New detection is significantly different from stored value
+    if (state.pitEntryPct === null ||
+        Math.abs(state.pitEntryPct - pct) > TOLERANCE) {
       set({ pitEntryPct: pct });
     }
   },
 
   updatePitExit: (pct) => {
     const state = get();
-    // Only update if not already set (first detection wins)
-    if (state.pitExitPct === null) {
+    const TOLERANCE = 0.02; // 2% of lap distance
+
+    // Update if:
+    // 1. Not set yet (null), OR
+    // 2. New detection is significantly different from stored value
+    if (state.pitExitPct === null ||
+        Math.abs(state.pitExitPct - pct) > TOLERANCE) {
       set({ pitExitPct: pct });
     }
+  },
+
+  clearPitData: () => {
+    // Clear pit entry/exit data but keep track ID
+    // Reset module-level previous frame data
+    previousCarIdxOnPitRoad = [];
+    previousCarIdxTrackSurface = [];
+    previousCarIdxLapDistPct = [];
+
+    set({
+      pitEntryPct: null,
+      pitExitPct: null,
+    });
   },
 
   reset: () => {

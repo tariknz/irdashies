@@ -6,11 +6,14 @@ import { usePitLimiterWarning } from './hooks/usePitLimiterWarning';
 import { usePitlaneTraffic } from './hooks/usePitlaneTraffic';
 import { useTelemetryValue, useDashboard } from '@irdashies/context';
 import { getDemoPitlaneData, PitlaneHelperSettings, PitSpeedResult, PitboxPositionResult, PitLimiterWarningResult, PitlaneTrafficResult } from './demoData';
+import { PitCountdownBar } from './components/PitCountdownBar';
+import { PitExitInputs } from './components/PitExitInputs';
 
 export const PitlaneHelper = () => {
   const { isDemoMode } = useDashboard();
   const config = usePitlaneHelperSettings();
   const surface = (useTelemetryValue('PlayerTrackSurface') ?? 3) as number;
+  const onPitRoadTelemetry = useTelemetryValue<boolean>('OnPitRoad') ?? false;
 
   // Core data hooks - must be called in same order every render
   const speed = usePitSpeed();
@@ -33,15 +36,37 @@ export const PitlaneHelper = () => {
   // Determine which speed unit to display (prefer user's unit from limit)
   const displayKph = speed.limitKph > speed.limitMph;
 
+  // Determine if we're on pit road
+  // Surface=2 means in pit blend zone (before pit entry line)
+  // OnPitRoad=true means past the pit entry line (actually on pit road)
+  const inBlendZone = surface === 2 && !onPitRoadTelemetry;
+  const onPitRoad = onPitRoadTelemetry;
+
   // Early pitbox warning: show when on pit road AND pitbox is within threshold of pit entry
   // This alerts the driver once committed to pitting that their pitbox is very close to entry
   // Examples: Daytona where first pitbox is ~30m past pit entry
   // The warning appears when surface=2 (OnPitRoad) and pitbox is within the configured threshold
-  const onPitRoad = surface === 2;
   const showEarlyPitboxWarning =
     config.enableEarlyPitboxWarning &&
     onPitRoad &&
     position.isEarlyPitbox;
+
+  // Determine if we should show the pit exit inputs based on distance
+  const atPitbox = Math.abs(position.distanceToPit) < 10;
+  const afterPitbox = position.distanceToPit < -10;
+  const shouldShowInputs = config.showPitExitInputs && onPitRoad && (
+    config.showInputsPhase === 'always' ||
+    (config.showInputsPhase === 'atPitbox' && atPitbox) ||
+    (config.showInputsPhase === 'afterPitbox' && afterPitbox)
+  );
+
+  // Calculate color for countdown bars based on distance
+  const getCountdownColor = (distance: number, maxDistance: number): string => {
+    const percent = (distance / maxDistance) * 100;
+    if (percent > 50) return 'rgb(34, 197, 94)'; // green-500 - Far
+    if (percent > 25) return 'rgb(234, 179, 8)'; // yellow-500 - Medium
+    return 'rgb(59, 130, 246)'; // blue-500 - Close
+  };
 
   return (
     <div
@@ -78,23 +103,74 @@ export const PitlaneHelper = () => {
         </div>
       </div>
 
-      {/* Position Display */}
-      <div className="flex flex-col gap-1">
-        <div className="text-center text-sm">
-          {Math.abs(position.distanceToPit) < 5
-            ? 'At pitbox'
-            : position.distanceToPit > 0
-              ? `${Math.abs(position.distanceToPit).toFixed(0)}m to pit`
-              : `${Math.abs(position.distanceToPit).toFixed(0)}m past pit`}
-        </div>
-        {/* Progress bar */}
-        <div className="w-full bg-slate-700 rounded-full h-2 overflow-hidden">
-          <div
-            className="bg-blue-500 h-full transition-all duration-300"
-            style={{ width: `${position.progressPercent}%` }}
-          />
-        </div>
+      {/* Countdown Bars Container - displays bars side by side */}
+      <div className="flex gap-2">
+        {/* Pit Entry Countdown (when approaching or in blend zone) */}
+        {!onPitRoad && position.distanceToPitEntry > 0 && position.distanceToPitEntry <= config.approachDistance && (
+          <div className="flex-1">
+            <PitCountdownBar
+              distance={position.distanceToPitEntry}
+              maxDistance={config.approachDistance}
+              orientation={config.progressBarOrientation}
+              color={getCountdownColor(position.distanceToPitEntry, config.approachDistance)}
+              targetName="Pit Entry"
+            />
+          </div>
+        )}
+
+        {/* Blend Zone Message (Surface=2 but OnPitRoad still false, no pit entry detection available) */}
+        {inBlendZone && position.distanceToPitEntry === 0 && (
+          <div className="flex-1 text-center text-sm font-bold py-2 px-3 bg-amber-600 rounded">
+            Entering Pit Lane
+          </div>
+        )}
+
+        {/* Pitbox Distance Display (when on pit road) */}
+        {onPitRoad && (
+          <div className="flex-1">
+            {Math.abs(position.distanceToPit) < 5 ? (
+              /* At Pitbox - Static Display */
+              <div className="text-center text-sm font-bold py-2 px-3 bg-green-600 rounded">
+                At Pitbox
+              </div>
+            ) : (
+              /* Countdown to or past pitbox */
+              <PitCountdownBar
+                distance={Math.abs(position.distanceToPit)}
+                maxDistance={100}
+                orientation={config.progressBarOrientation}
+                color={
+                  position.distanceToPit > 0
+                    ? getCountdownColor(position.distanceToPit, 100)  // Approaching pitbox
+                    : 'rgb(34, 197, 94)'  // Past pitbox (green)
+                }
+                targetName={position.distanceToPit > 0 ? 'Pitbox' : 'Past Pitbox'}
+              />
+            )}
+          </div>
+        )}
+
+        {/* Pit Exit Countdown (when on pit road and past pitbox) */}
+        {onPitRoad && position.distanceToPit < -5 && position.distanceToPitExit > 0 && position.distanceToPitExit <= 150 && (
+          <div className="flex-1">
+            <PitCountdownBar
+              distance={position.distanceToPitExit}
+              maxDistance={150}
+              orientation={config.progressBarOrientation}
+              color={getCountdownColor(position.distanceToPitExit, 150)}
+              targetName="Pit Exit"
+            />
+          </div>
+        )}
       </div>
+
+      {/* Pit Exit Inputs (throttle/clutch assistance) */}
+      {shouldShowInputs && (
+        <PitExitInputs
+          showThrottle={config.pitExitInputs.throttle}
+          showClutch={config.pitExitInputs.clutch}
+        />
+      )}
 
       {/* Warnings */}
       <div className="flex flex-col gap-1">
@@ -167,6 +243,23 @@ const PitlaneHelperDisplay = ({
     onPitRoad &&
     position.isEarlyPitbox;
 
+  // Determine if we should show the pit exit inputs based on distance
+  const atPitbox = Math.abs(position.distanceToPit) < 10;
+  const afterPitbox = position.distanceToPit < -10;
+  const shouldShowInputs = config.showPitExitInputs && onPitRoad && (
+    config.showInputsPhase === 'always' ||
+    (config.showInputsPhase === 'atPitbox' && atPitbox) ||
+    (config.showInputsPhase === 'afterPitbox' && afterPitbox)
+  );
+
+  // Calculate color for countdown bars based on distance
+  const getCountdownColor = (distance: number, maxDistance: number): string => {
+    const percent = (distance / maxDistance) * 100;
+    if (percent > 50) return 'rgb(34, 197, 94)'; // green-500 - Far
+    if (percent > 25) return 'rgb(234, 179, 8)'; // yellow-500 - Medium
+    return 'rgb(59, 130, 246)'; // blue-500 - Close
+  };
+
   return (
     <div
       className="flex flex-col gap-2 p-3 rounded text-white font-medium"
@@ -202,23 +295,60 @@ const PitlaneHelperDisplay = ({
         </div>
       </div>
 
-      {/* Position Display */}
-      <div className="flex flex-col gap-1">
-        <div className="text-center text-sm">
-          {Math.abs(position.distanceToPit) < 5
-            ? 'At pitbox'
-            : position.distanceToPit > 0
-              ? `${Math.abs(position.distanceToPit).toFixed(0)}m to pit`
-              : `${Math.abs(position.distanceToPit).toFixed(0)}m past pit`}
-        </div>
-        {/* Progress bar */}
-        <div className="w-full bg-slate-700 rounded-full h-2 overflow-hidden">
-          <div
-            className="bg-blue-500 h-full transition-all duration-300"
-            style={{ width: `${position.progressPercent}%` }}
-          />
-        </div>
-      </div>
+      {/* Pit Entry Countdown (when approaching but not yet on pit road) */}
+      {!onPitRoad && position.distanceToPitEntry > 0 && position.distanceToPitEntry <= config.approachDistance && (
+        <PitCountdownBar
+          distance={position.distanceToPitEntry}
+          maxDistance={config.approachDistance}
+          orientation={config.progressBarOrientation}
+          color={getCountdownColor(position.distanceToPitEntry, config.approachDistance)}
+          targetName="Pit Entry"
+        />
+      )}
+
+      {/* Pitbox Distance Display (when on pit road) */}
+      {onPitRoad && (
+        <>
+          {Math.abs(position.distanceToPit) < 5 ? (
+            /* At Pitbox - Static Display */
+            <div className="text-center text-sm font-bold py-2 px-3 bg-green-600 rounded">
+              At Pitbox
+            </div>
+          ) : (
+            /* Countdown to or past pitbox */
+            <PitCountdownBar
+              distance={Math.abs(position.distanceToPit)}
+              maxDistance={100}
+              orientation={config.progressBarOrientation}
+              color={
+                position.distanceToPit > 0
+                  ? getCountdownColor(position.distanceToPit, 100)  // Approaching pitbox
+                  : 'rgb(34, 197, 94)'  // Past pitbox (green)
+              }
+              targetName={position.distanceToPit > 0 ? 'Pitbox' : 'Past Pitbox'}
+            />
+          )}
+        </>
+      )}
+
+      {/* Pit Exit Countdown (when on pit road and past pitbox) */}
+      {onPitRoad && position.distanceToPit < -5 && position.distanceToPitExit > 0 && position.distanceToPitExit <= 150 && (
+        <PitCountdownBar
+          distance={position.distanceToPitExit}
+          maxDistance={150}
+          orientation={config.progressBarOrientation}
+          color={getCountdownColor(position.distanceToPitExit, 150)}
+          targetName="Pit Exit"
+        />
+      )}
+
+      {/* Pit Exit Inputs (throttle/clutch assistance) */}
+      {shouldShowInputs && (
+        <PitExitInputs
+          showThrottle={config.pitExitInputs.throttle}
+          showClutch={config.pitExitInputs.clutch}
+        />
+      )}
 
       {/* Warnings */}
       <div className="flex flex-col gap-1">
