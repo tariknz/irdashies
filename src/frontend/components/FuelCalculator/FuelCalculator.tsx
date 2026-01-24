@@ -228,23 +228,99 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
     if (!tree) {
       const layoutConfig = settings.layoutConfig;
       if (layoutConfig && layoutConfig.length > 0) {
-        const legacyWidgetOrder = ['fuelLevel', 'lapsRemaining', 'consumption', 'keyInfo', 'endurance', 'pitWindow', 'scenarios', 'graph', 'confidence'];
-        const isLegacyDefault = layoutConfig.length === 1 && layoutConfig[0].widgets.length === legacyWidgetOrder.length;
+        const legacyWidgetOrder = [
+          'fuelLevel',
+          'lapsRemaining',
+          'consumption',
+          'keyInfo',
+          'endurance',
+          'pitWindow',
+          'scenarios',
+          'graph',
+          'confidence',
+        ];
+        const isLegacyDefault =
+          layoutConfig.length === 1 &&
+          layoutConfig[0].widgets.length === legacyWidgetOrder.length;
         if (isLegacyDefault) {
+          if (layout === 'horizontal') {
+            // Horizontal Default Layout
+            const children: LayoutNode[] = [
+              { id: 'header-box', type: 'box' as const, direction: 'col' as const, widgets: ['fuelHeader'], weight: 1 },
+              { id: 'main-stats-box', type: 'box' as const, direction: 'row' as const, widgets: ['consumption', 'pitWindow', 'endurance', 'confidence'], weight: 3 },
+              { id: 'scenarios-box', type: 'box' as const, direction: 'col' as const, widgets: ['scenarios'], weight: 1.5 },
+            ];
+
+            if (showConsumptionGraph) {
+              children.push({ id: 'graph-box', type: 'box' as const, direction: 'col' as const, widgets: ['graph'], weight: 1.5 });
+            }
+
+            return {
+              id: 'root-horizontal-default',
+              type: 'split' as const,
+              direction: 'row' as const,
+              children,
+            };
+          }
+
           return {
-            id: 'root-auto-upgraded', type: 'split' as const, direction: 'col' as const,
+            id: 'root-auto-upgraded',
+            type: 'split' as const,
+            direction: 'col' as const,
             children: [
-              { id: 'header-box', type: 'box' as const, direction: 'row' as const, widgets: ['fuelHeader'], weight: 1 },
-              { id: 'main-box', type: 'box' as const, direction: 'col' as const, widgets: legacyWidgetOrder.slice(2), weight: 4 }
-            ]
+              {
+                id: 'header-box',
+                type: 'box' as const,
+                direction: 'row' as const,
+                widgets: ['fuelHeader'],
+                weight: 1,
+              },
+              {
+                id: 'main-box',
+                type: 'box' as const,
+                direction: 'col' as const,
+                widgets: legacyWidgetOrder.slice(2),
+                weight: 4,
+              },
+            ],
           };
         }
-        const children: LayoutNode[] = layoutConfig.map((box: BoxConfig) => {
-          if (!box.widgets || box.widgets.length === 0) return null;
-          return { id: box.id, type: 'box' as const, widgets: box.widgets, direction: box.flow === 'horizontal' ? 'row' : 'col', weight: 1 };
-        }).filter(Boolean) as LayoutNode[];
+        const children: LayoutNode[] = layoutConfig
+          .map((box: BoxConfig) => {
+            if (!box.widgets || box.widgets.length === 0) return null;
+            return {
+              id: box.id,
+              type: 'box' as const,
+              widgets: box.widgets,
+              direction: box.flow === 'horizontal' ? 'row' : 'col',
+              weight: 1,
+            };
+          })
+          .filter(Boolean) as LayoutNode[];
         if (children.length === 1) tree = children[0];
-        else tree = { id: 'root-migrated', type: 'split' as const, direction: 'col' as const, children };
+        else
+          tree = {
+            id: 'root-migrated',
+            type: 'split' as const,
+            direction: layout === 'horizontal' ? 'row' : 'col',
+            children,
+          };
+      }
+    }
+
+    if (!tree) {
+      // Fallback default if nothing else is defined
+      if (layout === 'horizontal') {
+        return {
+          id: 'root-horizontal-fallback',
+          type: 'split' as const,
+          direction: 'row' as const,
+          children: [
+            { id: 'header-box', type: 'box' as const, direction: 'col' as const, widgets: ['fuelHeader'], weight: 1 },
+            { id: 'main-stats-box', type: 'box' as const, direction: 'row' as const, widgets: ['consumption', 'pitWindow', 'endurance'], weight: 3 },
+            { id: 'scenarios-box', type: 'box' as const, direction: 'col' as const, widgets: ['scenarios'], weight: 1.5 }
+          ]
+        };
       }
     }
 
@@ -255,13 +331,25 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
 
     const normalizeNode = (node: any): LayoutNode => {
       if (!node) return node;
-      if (node.type === 'widget') return { id: node.id, type: 'box' as const, widgets: [node.widgetId], direction: 'col' as const, weight: node.weight };
-      if (node.type === 'split') return { ...node, children: node.children?.map(normalizeNode).filter(Boolean) || [] };
+      if (node.type === 'widget')
+        return {
+          id: node.id,
+          type: 'box' as const,
+          widgets: [node.widgetId],
+          direction: 'col' as const,
+          weight: node.weight,
+        };
+      if (node.type === 'split')
+        return {
+          ...node,
+          children: node.children?.map(normalizeNode).filter(Boolean) || [],
+        };
       return node;
     };
 
     return normalizeNode(workingTree);
-  }, [settings.layoutTree, settings.layoutConfig]);
+  }, [settings.layoutTree, settings.layoutConfig, layout, showConsumptionGraph]);
+
 
   if (!editMode && settings?.showOnlyWhenOnTrack && !isOnTrack) return null;
   if (!editMode && !isSessionVisible) return <></>;
@@ -271,7 +359,7 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
       case 'fuelLevel': return showFuelLevel ? <FuelLevelWidget key="fuelLevel" fuelLevel={displayData.fuelLevel} fuelUnits={fuelUnits} layout={layout || 'vertical'} headerFontSize={layout === 'horizontal' ? 'text-xl' : 'text-3xl'} headerTextClasses={headerTextClasses} /> : null;
       case 'fuelHeader': return <FuelHeaderCombinedWidget key="fuelHeader" fuelLevel={displayData.fuelLevel} lapsRemaining={displayData.lapsWithFuel} fuelUnits={fuelUnits} headerFontSize={layout === 'horizontal' ? 'text-xl' : 'text-3xl'} headerTextClasses={headerTextClasses} showFuelLevel={showFuelLevel} showLapsRemaining={showLapsRemaining} />;
       case 'lapsRemaining': return showLapsRemaining ? <LapsRemainingWidget key="lapsRemaining" lapsRemaining={displayData.lapsWithFuel} headerFontSize={layout === 'horizontal' ? 'text-xl' : 'text-3xl'} headerTextClasses={headerTextClasses} /> : null;
-      case 'consumption': return <ConsumptionWidget key="consumption" displayData={displayData} fuelMetrics={fuelMetrics} fuelUnits={fuelUnits} settings={settings} getToFinishColorClass={getToFinishColorClass} />;
+      case 'consumption': return <ConsumptionWidget key="consumption" displayData={displayData} fuelMetrics={fuelMetrics} fuelUnits={fuelUnits} settings={settings} getToFinishColorClass={getToFinishColorClass} layout={layout || 'vertical'} />;
       case 'keyInfo': return <KeyInfoWidget key="keyInfo" displayData={displayData} fuelUnits={fuelUnits} />;
       case 'pitWindow': return <PitWindowWidget key="pitWindow" displayData={displayData} fuelData={fuelData} showPitWindow={showPitWindow} editMode={editMode} />;
       case 'endurance': return <EnduranceStrategyWidget key="endurance" fuelData={fuelData} displayData={displayData} showEnduranceStrategy={showEnduranceStrategy} editMode={editMode} />;
@@ -285,20 +373,25 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
   const RecursiveWidgetRenderer = ({ node }: { node: LayoutNode }) => {
     if (!node || !node.type) return null;
     if (node.type === 'box') {
+      const isHorizontalBox = node.direction === 'row';
       return (
         <div
-          className="flex-1 flex flex-col m-0.5 min-h-[50px]"
+          className="flex-1 flex flex-col m-0.5 min-h-[50px] justify-center"
           style={{ flexGrow: node.weight || 1 }}
         >
-          <div className={`flex flex-1 ${node.direction === 'row' ? 'flex-row' : 'flex-col'} gap-1 p-1`}>
-            {node.widgets?.map(widgetId => <div key={widgetId} data-widget-id={widgetId} className="flex-1 min-w-0">{renderWidget(widgetId)}</div>)}
+          <div className={`flex flex-1 ${isHorizontalBox ? 'flex-row items-center justify-around' : 'flex-col'} gap-1 p-1`}>
+            {node.widgets?.map(widgetId => (
+              <div key={widgetId} data-widget-id={widgetId} className="flex-1 min-w-0 flex flex-col items-center justify-center">
+                {renderWidget(widgetId)}
+              </div>
+            ))}
           </div>
         </div>
       );
     }
     if (node.type === 'split') {
       return (
-        <div className={`flex flex-1 gap-1 ${node.direction === 'row' ? 'flex-row' : 'flex-col'}`}>
+        <div className={`flex flex-1 gap-1 ${node.direction === 'row' ? 'flex-row items-center' : 'flex-col'} h-full`}>
           {node.children?.map((child: LayoutNode) => <RecursiveWidgetRenderer key={child.id} node={child} />)}
         </div>
       );
@@ -313,7 +406,7 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
         ['--bg-opacity' as string]: `${settings.background?.opacity ?? 85}%`,
       }}
     >
-      <div className="flex-1 overflow-y-auto min-h-0">
+      <div className={`flex-1 overflow-y-auto min-h-0 ${layout === 'horizontal' ? 'flex items-center' : ''}`}>
         {layoutTree ? (
           <RecursiveWidgetRenderer node={layoutTree} />
         ) : (
@@ -325,3 +418,4 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
     </div>
   );
 };
+
