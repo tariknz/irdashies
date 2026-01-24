@@ -34,9 +34,10 @@ function copyTelemData<
   // Check if we have a cached entry to reuse
   const cached = cache?.[key];
   const useCache = cached && cached.value && Array.isArray(cached.value);
-
   if (!useCache) {
-    dest[key] = { value: src.value } as TelemetryVarList[K];
+    dest[key] = { value: src?.value ?? [] } as TelemetryVarList[K];
+  } else {
+    dest[key] = cached;
   }
 
   // bool
@@ -327,13 +328,11 @@ export class IRacingSDK {
   public getTelemetryVariable<T extends boolean | number | string>(telemVar: number | keyof TelemetryVarList): TelemetryVariable<T[]> | null {
     if (!this._sdk) return null;
 
-    // @todo Need to fix this type.
     const rawData = this._sdk?.getTelemetryVariable(telemVar as string);
     const parsed: Partial<TelemetryVarList> = {};
 
-    // @todo good grief these types need to be fixed asap
     copyTelemData(
-      rawData as TelemetryVariable<any>, // eslint-disable-line
+      rawData as TelemetryVariable,
       rawData.name as keyof TelemetryVarList,
       parsed as TelemetryVarList,
     );
