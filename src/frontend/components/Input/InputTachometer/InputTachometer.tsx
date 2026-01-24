@@ -283,7 +283,7 @@ export const Tachometer = ({
           >
             {showRpmText && (
               <>
-                {Math.round(clampedRpm).toLocaleString()}
+                {Math.round(clampedRpm).toLocaleString('en-US')}
                 <span className="text-xs text-gray-300 ml-1">RPM</span>
                 {shouldShowCustomShift && <span className="text-xs ml-2 font-bold">SHIFT</span>}
               </>
