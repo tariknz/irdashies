@@ -360,6 +360,24 @@ export const InputSettings = () => {
                   <label className="flex items-center space-x-2">
                     <input
                       type="checkbox"
+                      checked={config.trace.includeClutch}
+                      onChange={(e) =>
+                        handleConfigChange({
+                          trace: {
+                            ...config.trace,
+                            includeClutch: e.target.checked,
+                          },
+                        })
+                      }
+                      className="form-checkbox h-4 w-4 text-blue-500 rounded border-slate-500 bg-slate-700"
+                    />
+                    <span className="text-sm text-slate-200">
+                      Show Clutch Trace
+                    </span>
+                  </label>
+                  <label className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
                       checked={config.trace.includeThrottle}
                       onChange={(e) =>
                         handleConfigChange({
