@@ -57,7 +57,6 @@ export const GeneralSettings = () => {
     disableHardwareAcceleration: currentDashboard?.generalSettings?.disableHardwareAcceleration ?? false,
     enableAutoStart: currentDashboard?.generalSettings?.enableAutoStart ?? false,
     compactMode: currentDashboard?.generalSettings?.compactMode ?? false,
-    boldText: currentDashboard?.generalSettings?.boldText ?? false,
     overlayAlwaysOnTop: currentDashboard?.generalSettings?.overlayAlwaysOnTop ?? true
   });
 
