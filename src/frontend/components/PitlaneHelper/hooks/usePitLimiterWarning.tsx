@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useTelemetryValue, useSessionStore } from '@irdashies/context';
+import { EngineWarnings } from '@irdashies/types';
 
 export interface PitLimiterWarningResult {
   showWarning: boolean;
@@ -12,7 +13,14 @@ export const usePitLimiterWarning = (enabled: boolean): PitLimiterWarningResult 
   const onPitRoad = useTelemetryValue('OnPitRoad') ?? false;
   const limiterActive = useTelemetryValue('dcPitSpeedLimiterToggle') ?? false;
   const pitstopActive = useTelemetryValue('PitstopActive') ?? false;
+  const engineWarnings = useTelemetryValue('EngineWarnings') ?? 0;
   const isTeamRacing = (session?.WeekendInfo?.TeamRacing ?? 0) === 1;
+
+  // Check if pit speed limiter is actively engaged (manual OR auto)
+  const limiterEngaged = (engineWarnings & EngineWarnings.PitSpeedLimiter) !== 0;
+
+  // Detect auto-limiter series: limiter is engaged but player hasn't manually toggled
+  const isAutoLimiterSeries = limiterEngaged && !limiterActive;
 
   // Track previous pitstop state for team race warning
   const prevPitstopActive = useRef(pitstopActive);
@@ -87,8 +95,18 @@ export const usePitLimiterWarning = (enabled: boolean): PitLimiterWarningResult 
       };
     }
 
-    // Standard warning: entering pit without limiter
-    if (onPitRoad && !limiterActive) {
+    // Auto-limiter series: warn if player manually engaged limiter
+    // (Game won't auto-disengage if player manually engaged)
+    if (onPitRoad && isAutoLimiterSeries && limiterActive) {
+      return {
+        showWarning: true,
+        isTeamRaceWarning: false,
+        warningText: '⚠ DISABLE LIMITER',
+      };
+    }
+
+    // Standard warning: entering pit without limiter (non-auto series)
+    if (onPitRoad && !limiterEngaged) {
       return {
         showWarning: true,
         isTeamRaceWarning: false,
@@ -101,5 +119,5 @@ export const usePitLimiterWarning = (enabled: boolean): PitLimiterWarningResult 
       isTeamRaceWarning: false,
       warningText: '',
     };
-  }, [enabled, teamRaceWarningActive, onPitRoad, limiterActive]);
+  }, [enabled, teamRaceWarningActive, onPitRoad, limiterActive, limiterEngaged, isAutoLimiterSeries]);
 };
