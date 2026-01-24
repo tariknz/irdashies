@@ -139,12 +139,6 @@ export const GeneralSettings = () => {
     updateDashboard(newSettings);
   };
 
-    const handleBoldTextChange = (enabled: boolean) => {
-    const newSettings = { ...settings, boldText: enabled };
-    setSettings(newSettings);
-    updateDashboard(newSettings);
-  };
-
   const handleOverlayAlwaysOnTopChange = (enabled: boolean) => {
     const newSettings = { ...settings, overlayAlwaysOnTop: enabled };
     setSettings(newSettings);
