@@ -156,8 +156,8 @@ export function useFuelCalculation(
   const lastSessionFlagsRef = useRef<number | undefined>(undefined);
   useEffect(() => {
     if (sessionFlags !== undefined && lastSessionFlagsRef.current !== sessionFlags) {
-        useFuelStore.setState({ lastSessionFlags: sessionFlags });
-        lastSessionFlagsRef.current = sessionFlags;
+      useFuelStore.setState({ lastSessionFlags: sessionFlags });
+      lastSessionFlagsRef.current = sessionFlags;
     }
   }, [sessionFlags]);
 
@@ -187,9 +187,9 @@ export function useFuelCalculation(
         );
       }
 
-      // Skip lap 0 and lap 1 (standing/rolling start laps are too short and unreliable)
-      // Validate and store lap data only from lap 2 onwards
-      if (completedLap >= 2 && fuelUsed > 0 && lapTime > 0) {
+      // Skip lap 0 (standing/rolling start laps are typically incomplete)
+      // Validate and store lap data only from lap 1 onwards
+      if (completedLap >= 1 && fuelUsed > 0 && lapTime > 0) {
         const recentLaps = state.getRecentLaps(10);
         const isValid = validateLapData(fuelUsed, lapTime, recentLaps);
 
@@ -575,9 +575,9 @@ export function useFuelCalculation(
         if (result.stopsRemaining !== undefined) {
           console.log(
             `[Endurance] LapsRemaining: ${result.lapsRemaining}, Fuel/lap: ${avgFuelPerLap.toFixed(2)}L, ` +
-              `Needed: ${result.fuelToFinish.toFixed(1)}L (inc ${(safetyMargin * 100).toFixed(0)}% margin), ` +
-              `Current: ${result.fuelLevel.toFixed(1)}L, Tank: ${fuelTankCapacity.toFixed(1)}L, ` +
-              `Stops: ${result.stopsRemaining}, Laps/stint: ${result.lapsPerStint?.toFixed(1) ?? 'N/A'}`
+            `Needed: ${result.fuelToFinish.toFixed(1)}L (inc ${(safetyMargin * 100).toFixed(0)}% margin), ` +
+            `Current: ${result.fuelLevel.toFixed(1)}L, Tank: ${fuelTankCapacity.toFixed(1)}L, ` +
+            `Stops: ${result.stopsRemaining}, Laps/stint: ${result.lapsPerStint?.toFixed(1) ?? 'N/A'}`
           );
         }
       }
