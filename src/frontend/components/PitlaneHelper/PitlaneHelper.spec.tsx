@@ -425,6 +425,18 @@ describe('PitlaneHelper', () => {
       expect(getByText('⚠ ACTIVATE LIMITER')).toBeInTheDocument();
     });
 
+    it('shows disable limiter warning in auto-limiter series', () => {
+      vi.mocked(usePitLimiterWarning).mockReturnValue({
+        showWarning: true,
+        warningText: '⚠ DISABLE LIMITER',
+        isTeamRaceWarning: false,
+      });
+
+      const { getByText } = render(<PitlaneHelper />);
+
+      expect(getByText('⚠ DISABLE LIMITER')).toBeInTheDocument();
+    });
+
     it('shows team race warning with pulsing animation', () => {
       vi.mocked(usePitLimiterWarning).mockReturnValue({
         showWarning: true,
