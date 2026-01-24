@@ -132,7 +132,6 @@ export const GeneralSettings = () => {
     updateDashboard(newSettings);
   };
 
-
   const handleOverlayAlwaysOnTopChange = (enabled: boolean) => {
     const newSettings = { ...settings, overlayAlwaysOnTop: enabled };
     setSettings(newSettings);
@@ -177,7 +176,7 @@ export const GeneralSettings = () => {
         <div className="flex items-center justify-between gap-4">
           <div>
             <h3 className="text-lg font-medium text-slate-200">Bold Text</h3>
-            <p className="text-sm text-slate-400">When enabled, all text in the overlay will be displayed in bold.</p>
+            <p className="text-sm text-slate-400">When enabled, all text in the overlays will be displayed in bold.</p>
           </div>
           <label className="relative inline-flex items-center cursor-pointer">
             <input
