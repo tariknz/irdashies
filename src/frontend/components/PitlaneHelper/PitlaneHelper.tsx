@@ -9,6 +9,14 @@ import { getDemoPitlaneData, PitlaneHelperSettings, PitSpeedResult, PitboxPositi
 import { PitCountdownBar } from './components/PitCountdownBar';
 import { PitExitInputs } from './components/PitExitInputs';
 
+// Calculate color for countdown bars based on distance
+const getCountdownColor = (distance: number, maxDistance: number): string => {
+  const percent = (distance / maxDistance) * 100;
+  if (percent > 50) return 'rgb(34, 197, 94)'; // green-500 - Far
+  if (percent > 25) return 'rgb(234, 179, 8)'; // yellow-500 - Medium
+  return 'rgb(59, 130, 246)'; // blue-500 - Close
+};
+
 export const PitlaneHelper = () => {
   const { isDemoMode } = useDashboard();
   const config = usePitlaneHelperSettings();
@@ -59,14 +67,6 @@ export const PitlaneHelper = () => {
     (config.showInputsPhase === 'atPitbox' && atPitbox) ||
     (config.showInputsPhase === 'afterPitbox' && afterPitbox)
   );
-
-  // Calculate color for countdown bars based on distance
-  const getCountdownColor = (distance: number, maxDistance: number): string => {
-    const percent = (distance / maxDistance) * 100;
-    if (percent > 50) return 'rgb(34, 197, 94)'; // green-500 - Far
-    if (percent > 25) return 'rgb(234, 179, 8)'; // yellow-500 - Medium
-    return 'rgb(59, 130, 246)'; // blue-500 - Close
-  };
 
   return (
     <div
@@ -251,14 +251,6 @@ const PitlaneHelperDisplay = ({
     (config.showInputsPhase === 'atPitbox' && atPitbox) ||
     (config.showInputsPhase === 'afterPitbox' && afterPitbox)
   );
-
-  // Calculate color for countdown bars based on distance
-  const getCountdownColor = (distance: number, maxDistance: number): string => {
-    const percent = (distance / maxDistance) * 100;
-    if (percent > 50) return 'rgb(34, 197, 94)'; // green-500 - Far
-    if (percent > 25) return 'rgb(234, 179, 8)'; // yellow-500 - Medium
-    return 'rgb(59, 130, 246)'; // blue-500 - Close
-  };
 
   return (
     <div
