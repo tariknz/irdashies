@@ -118,36 +118,45 @@ Napi::Value iRacingSdkNode::WaitForData(const Napi::CallbackInfo &info)
     return Napi::Boolean::New(info.Env(), false);
   }
 
-  // Wait for start of session or new data
-  if (irsdk_waitForDataReady(timeout, this->_data) && irsdk_getHeader())
+  const irsdk_header* header = irsdk_getHeader();
+
+  // Allocate buffer before waiting (so waitForDataReady can populate it)
+  if (header && !this->_data) {
+    if (this->_loggingEnabled) printf("Initial buffer allocation\n");
+    this->_data = new char[header->bufLen];
+    this->_bufLineLen = header->bufLen;
+  }
+
+  // Wait for start of session or new data (buffer will be populated here)
+  bool dataReady = irsdk_waitForDataReady(timeout, this->_data);
+  if (dataReady && header)
   {
     if (this->_loggingEnabled) printf("Got data from iRacing SDK\n");
-    const irsdk_header *header = irsdk_getHeader();
 
-    // New connection or data changed length
-    if (!this->_data || this->_bufLineLen != header->bufLen)
+    // Check if data changed length (need to reallocate)
+    if (this->_bufLineLen != header->bufLen)
     {
-      if (this->_loggingEnabled) printf("Connection started / data changed length\n");
+      if (this->_loggingEnabled) printf("Data changed length, reallocating\n");
 
-      // Reset memory to hold incoming data
+      // Reallocate buffer for new size
       if (this->_data) delete[] this->_data;
       this->_bufLineLen = header->bufLen;
       this->_data = new char[this->_bufLineLen];
 
-      // Increment connection and reset info string
+      // Increment connection counter
       this->_sessionStatusID++;
       this->_lastSessionCt = -1;
 
-      // Try to fill in the new data
+      // Fetch data into the newly allocated buffer
       if (irsdk_getNewData(this->_data))
       {
-        if (this->_loggingEnabled) printf("New data retrieved successfully\n");
+        if (this->_loggingEnabled) printf("New data retrieved after reallocation\n");
         return Napi::Boolean::New(info.Env(), true);
       }
     }
     else if (this->_data)
     {
-      if (this->_loggingEnabled) printf("Data already available, ready for processing\n");
+      if (this->_loggingEnabled) printf("Data ready for processing\n");
       return Napi::Boolean::New(info.Env(), true);
     }
   }
