@@ -21,7 +21,7 @@ export async function publishIRacingSDKEvents(
     console.log('Sending running state to window', isSimRunning);
     overlayManager.publishMessage('runningState', isSimRunning);
     // Notify all subscribers
-    runningStateCallbacks.forEach(callback => callback(isSimRunning));
+    runningStateCallbacks.forEach((callback) => callback(isSimRunning));
   }, 5000);
 
   // Start the telemetry loop in the background
@@ -43,14 +43,14 @@ export async function publishIRacingSDKEvents(
             overlayManager.publishMessage('telemetry', telemetry);
             telemetrySink.addTelemetry(telemetry);
             // Notify all subscribers
-            telemetryCallbacks.forEach(callback => callback(telemetry));
+            telemetryCallbacks.forEach((callback) => callback(telemetry));
           }
 
           if (session) {
             overlayManager.publishMessage('sessionData', session);
             telemetrySink.addSession(session);
             // Notify all subscribers
-            sessionCallbacks.forEach(callback => callback(session));
+            sessionCallbacks.forEach((callback) => callback(session));
           }
         }
 
@@ -88,6 +88,6 @@ export async function publishIRacingSDKEvents(
     stop: () => {
       shouldStop = true;
       clearInterval(runningStateInterval);
-    }
+    },
   };
 }
