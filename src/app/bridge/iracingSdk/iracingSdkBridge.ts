@@ -3,7 +3,7 @@ import { TelemetrySink } from './telemetrySink';
 import { OverlayManager } from '../../overlayManager';
 import type { IrSdkBridge, Session, Telemetry } from '@irdashies/types';
 
-const WAIT_TIMEOUT = 16; // Wait up to 16ms for new data
+const TIMEOUT = 1000;
 
 export async function publishIRacingSDKEvents(
   telemetrySink: TelemetrySink,
@@ -20,6 +20,7 @@ export async function publishIRacingSDKEvents(
     const isSimRunning = await IRacingSDK.IsSimRunning();
     console.log('Sending running state to window', isSimRunning);
     overlayManager.publishMessage('runningState', isSimRunning);
+    // Notify all subscribers
     runningStateCallbacks.forEach(callback => callback(isSimRunning));
   }, 5000);
 
@@ -33,46 +34,32 @@ export async function publishIRacingSDKEvents(
 
         await sdk.ready();
 
-        let lastSessionVersion = -1;
-
-        while (!shouldStop && sdk.waitForData(WAIT_TIMEOUT)) {
+        while (!shouldStop && sdk.waitForData(TIMEOUT)) {
           const telemetry = sdk.getTelemetry();
+          const session = sdk.getSessionData();
+          await new Promise((resolve) => setTimeout(resolve, 1000 / 25)); // 25Hz update rate
 
-          // Only fetch session data when it actually changes
-          let session: Session | null = null;
-          if (sdk.currDataVersion !== lastSessionVersion) {
-            session = sdk.getSessionData();
-            lastSessionVersion = sdk.currDataVersion;
-          }
-
-          // Batch IPC: single message with both telemetry and session (if changed)
           if (telemetry) {
-            overlayManager.publishMessage('sdkData', {
-              telemetry,
-              session: session || undefined
-            });
-
+            overlayManager.publishMessage('telemetry', telemetry);
             telemetrySink.addTelemetry(telemetry);
+            // Notify all subscribers
             telemetryCallbacks.forEach(callback => callback(telemetry));
-
-            // Only notify session callbacks when session actually changed
-            if (session) {
-              telemetrySink.addSession(session);
-              sessionCallbacks.forEach(callback => callback(session));
-            }
           }
 
-          // Throttle to ~25Hz to give browser time to render
-          await new Promise((resolve) => setTimeout(resolve, 1000 / 25));
+          if (session) {
+            overlayManager.publishMessage('sessionData', session);
+            telemetrySink.addSession(session);
+            // Notify all subscribers
+            sessionCallbacks.forEach(callback => callback(session));
+          }
         }
 
         console.log('iRacing is no longer publishing telemetry');
-        sdk.stopSDK();
       } else {
         console.log('iRacing is not running');
       }
 
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, TIMEOUT));
     }
   })();
 

@@ -9,38 +9,22 @@ import type {
 } from '@irdashies/types';
 
 export function exposeBridge() {
-  // Store callbacks to handle batched sdkData message
-  const telemetryCallbacks = new Set<(value: Telemetry) => void>();
-  const sessionCallbacks = new Set<(value: Session) => void>();
-
-  // Listen to batched sdkData message and distribute to individual callbacks
-  ipcRenderer.on('sdkData', (_, data: { telemetry: Telemetry; session?: Session }) => {
-    if (data.telemetry) {
-      telemetryCallbacks.forEach(callback => callback(data.telemetry));
-    }
-    if (data.session) {
-      const session = data.session;
-      sessionCallbacks.forEach(callback => callback(session));
-    }
-  });
-
   contextBridge.exposeInMainWorld('irsdkBridge', {
-    onTelemetry: (callback: (value: Telemetry) => void) => {
-      telemetryCallbacks.add(callback);
-      return () => telemetryCallbacks.delete(callback);
-    },
-    onSessionData: (callback: (value: Session) => void) => {
-      sessionCallbacks.add(callback);
-      return () => sessionCallbacks.delete(callback);
-    },
+    onTelemetry: (callback: (value: Telemetry) => void) =>
+      ipcRenderer.on('telemetry', (_, value) => {
+        callback(value);
+      }),
+    onSessionData: (callback: (value: Session) => void) =>
+      ipcRenderer.on('sessionData', (_, value) => {
+        callback(value);
+      }),
     onRunningState: (callback: (value: boolean) => void) =>
       ipcRenderer.on('runningState', (_, value) => {
         callback(value);
       }),
     stop: () => {
-      telemetryCallbacks.clear();
-      sessionCallbacks.clear();
-      ipcRenderer.removeAllListeners('sdkData');
+      ipcRenderer.removeAllListeners('telemetry');
+      ipcRenderer.removeAllListeners('sessionData');
       ipcRenderer.removeAllListeners('runningState');
     },
   } as IrSdkBridge);
