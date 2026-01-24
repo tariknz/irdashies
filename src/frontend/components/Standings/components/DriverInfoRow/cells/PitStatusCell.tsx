@@ -6,12 +6,14 @@ interface PitStatusCellProps {
   onPitRoad?: boolean;
   carTrackSurface?: number;
   prevCarTrackSurface?: number;
+  lap?: number;
   lastPitLap?: number;
   lastLap?: number;
   currentSessionType?: string;
   dnf?: boolean;
   pitStopDuration?: number | null;
   showPitTime?: boolean;
+  pitLapDisplayMode?: string;
 }
 
 export const PitStatusCell = memo(
@@ -20,12 +22,14 @@ export const PitStatusCell = memo(
     onPitRoad,
     carTrackSurface,
     prevCarTrackSurface,
+    lap,
     lastPitLap,
     lastLap,
     currentSessionType,
     dnf,
     pitStopDuration,
-    showPitTime = false
+    showPitTime = false,
+    pitLapDisplayMode
   }: PitStatusCellProps) => {
     const widthClass = showPitTime ? 'w-[7rem]' : 'w-[4.5rem]';
     const tow =
@@ -65,10 +69,12 @@ export const PitStatusCell = memo(
             tow={tow}
             pit={pit}
             out={out}
+            lap={lap}
             lastPit={lastPit}
             lastPitLap={lastPitLap}
             pitStopDuration={pitStopDuration}
             showPitTime={showPitTime}
+            pitLapDisplayMode={pitLapDisplayMode}
           />
         )}
       </td>

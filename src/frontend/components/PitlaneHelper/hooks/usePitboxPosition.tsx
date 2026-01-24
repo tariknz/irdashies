@@ -8,6 +8,8 @@ export interface PitboxPositionResult {
   pitboxPct: number;
   playerPct: number;
   isEarlyPitbox: boolean; // Pitbox is near pit entry (last 10% of track before start/finish)
+  distanceToPitEntry: number; // Distance to pit entry line (meters)
+  distanceToPitExit: number;  // Distance to pit exit line (meters)
 }
 
 export const usePitboxPosition = (approachDistance: number, earlyPitboxThreshold: number): PitboxPositionResult => {
@@ -15,7 +17,7 @@ export const usePitboxPosition = (approachDistance: number, earlyPitboxThreshold
   const focusCarIdx = useFocusCarIdx();
   const carIdxLapDistPct = useTelemetryValues('CarIdxLapDistPct');
   const trackLength = useTrackLength() ?? 0;
-  const pitEntryPct = usePitLaneStore((state) => state.pitEntryPct);
+  const { pitEntryPct, pitExitPct } = usePitLaneStore();
 
   return useMemo(() => {
     // Get player's current position on track (as percentage)
@@ -85,6 +87,30 @@ export const usePitboxPosition = (approachDistance: number, earlyPitboxThreshold
       isEarlyPitbox = pitboxPct > 0.90;
     }
 
+    // Calculate distance to pit entry
+    let distanceToPitEntry = 0;
+    if (pitEntryPct !== null) {
+      distanceToPitEntry = (pitEntryPct - playerPct) * trackLength;
+      // Handle wrap-around
+      if (Math.abs(distanceToPitEntry) > wrapThreshold) {
+        distanceToPitEntry = distanceToPitEntry > 0
+          ? distanceToPitEntry - trackLength
+          : distanceToPitEntry + trackLength;
+      }
+    }
+
+    // Calculate distance to pit exit
+    let distanceToPitExit = 0;
+    if (pitExitPct !== null) {
+      distanceToPitExit = (pitExitPct - playerPct) * trackLength;
+      // Handle wrap-around
+      if (Math.abs(distanceToPitExit) > wrapThreshold) {
+        distanceToPitExit = distanceToPitExit > 0
+          ? distanceToPitExit - trackLength
+          : distanceToPitExit + trackLength;
+      }
+    }
+
     return {
       distanceToPit,
       progressPercent,
@@ -92,6 +118,8 @@ export const usePitboxPosition = (approachDistance: number, earlyPitboxThreshold
       pitboxPct,
       playerPct,
       isEarlyPitbox,
+      distanceToPitEntry,
+      distanceToPitExit,
     };
-  }, [focusCarIdx, carIdxLapDistPct, session, trackLength, approachDistance, pitEntryPct, earlyPitboxThreshold]);
+  }, [focusCarIdx, carIdxLapDistPct, session, trackLength, approachDistance, pitEntryPct, pitExitPct, earlyPitboxThreshold]);
 };
