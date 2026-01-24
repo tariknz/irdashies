@@ -2,6 +2,11 @@
 layer(base);
 @import 'tailwindcss';
 
+/* Toggle bold for all overlay text when class is applied */
+.overlay-window.bold-text * {
+  font-weight: 800;
+}
+
 @theme {
   --font-sans: 'Lato', sans-serif;
   --animate-pulse-border: pulse-border 1s infinite;
@@ -390,3 +395,4 @@ html {
   --color-slate-900: var(--color-stone-900);
   --color-slate-950: var(--color-stone-950);
 }
+

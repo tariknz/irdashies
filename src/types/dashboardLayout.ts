@@ -35,6 +35,7 @@ export interface GeneralSettingsType {
   enableAutoStart?: boolean;
   compactMode?: boolean;
   overlayAlwaysOnTop?: boolean;
+  boldText?: boolean;
 }
 
 export interface DashboardLayout {
