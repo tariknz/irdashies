@@ -3,8 +3,7 @@ import { TelemetrySink } from './telemetrySink';
 import { OverlayManager } from '../../overlayManager';
 import type { IrSdkBridge, Session, Telemetry } from '@irdashies/types';
 
-const WAIT_TIMEOUT = 16; // 60Hz SDK polling for low latency
-const RENDER_INTERVAL = 1000 / 25; // 25Hz render updates (40ms) - browser can handle this
+const WAIT_TIMEOUT = 16; // Wait up to 16ms for new data
 
 export async function publishIRacingSDKEvents(
   telemetrySink: TelemetrySink,
@@ -35,45 +34,36 @@ export async function publishIRacingSDKEvents(
         await sdk.ready();
 
         let lastSessionVersion = -1;
-        let lastRenderTime = 0;
-        let latestTelemetry: Telemetry | null = null;
-        let latestSession: Session | null = null;
 
         while (!shouldStop && sdk.waitForData(WAIT_TIMEOUT)) {
-          // Always get latest telemetry (60Hz) - low latency
-          latestTelemetry = sdk.getTelemetry();
+          const telemetry = sdk.getTelemetry();
 
           // Only fetch session data when it actually changes
+          let session: Session | null = null;
           if (sdk.currDataVersion !== lastSessionVersion) {
-            latestSession = sdk.getSessionData();
+            session = sdk.getSessionData();
             lastSessionVersion = sdk.currDataVersion;
           }
 
-          // Throttle rendering updates to prevent browser lockup
-          const now = Date.now();
-          if (now - lastRenderTime >= RENDER_INTERVAL) {
-            lastRenderTime = now;
+          // Batch IPC: single message with both telemetry and session (if changed)
+          if (telemetry) {
+            overlayManager.publishMessage('sdkData', {
+              telemetry,
+              session: session || undefined
+            });
 
-            if (latestTelemetry) {
-              // Batch IPC: single message with both telemetry and session (if changed)
-              overlayManager.publishMessage('sdkData', {
-                telemetry: latestTelemetry,
-                session: latestSession || undefined
-              });
+            telemetrySink.addTelemetry(telemetry);
+            telemetryCallbacks.forEach(callback => callback(telemetry));
 
-              const telemetry = latestTelemetry;
-              telemetrySink.addTelemetry(telemetry);
-              telemetryCallbacks.forEach(callback => callback(telemetry));
-
-              // Only notify session callbacks when session actually changed
-              if (latestSession) {
-                const session = latestSession;
-                telemetrySink.addSession(session);
-                sessionCallbacks.forEach(callback => callback(session));
-                latestSession = null; // Clear so we don't send it again
-              }
+            // Only notify session callbacks when session actually changed
+            if (session) {
+              telemetrySink.addSession(session);
+              sessionCallbacks.forEach(callback => callback(session));
             }
           }
+
+          // Throttle to ~25Hz to give browser time to render
+          await new Promise((resolve) => setTimeout(resolve, 1000 / 25));
         }
 
         console.log('iRacing is no longer publishing telemetry');
