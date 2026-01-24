@@ -1,3 +1,4 @@
+// App.tsx
 import { createRoot } from 'react-dom/client';
 import { HashRouter, Route, Routes } from 'react-router-dom';
 import {
@@ -8,7 +9,6 @@ import {
   useRunningState,
   SessionProvider,
   PitLaneProvider,
-  useGeneralSettings,
 } from '@irdashies/context';
 import { Settings } from './components/Settings/Settings';
 import { EditMode } from './components/EditMode/EditMode';
@@ -19,31 +19,20 @@ import { HideUIWrapper } from './components/HideUIWrapper/HideUIWrapper';
 const AppRoutes = () => {
   const { currentDashboard } = useDashboard();
   const { running } = useRunningState();
-  const generalSettings = useGeneralSettings(); 
 
   return (
     <Routes>
       {currentDashboard?.widgets.map((widget) => {
         const WidgetComponent = WIDGET_MAP[widget.id];
-        if (!WidgetComponent) return null;
+        if (!WidgetComponent) {
+          return null;
+        }
 
         return (
           <Route
             key={widget.id}
             path={`/${widget.id}`}
-            element={
-              running ? (
-                <div
-                  className={`overlay-window ${
-                    generalSettings?.boldText ? 'bold-text' : ''
-                  }`}
-                >
-                  <WidgetComponent {...widget.config} />
-                </div>
-              ) : (
-                <></>
-              )
-            }
+            element={running ? <WidgetComponent {...widget.config} /> : <></>}
           />
         );
       })}
@@ -74,7 +63,9 @@ const App = () => {
 };
 
 const el = document.getElementById('app');
-if (!el) throw new Error('No #app element found');
+if (!el) {
+  throw new Error('No #app element found');
+}
 
 export default App;
 
