@@ -28,70 +28,28 @@ import { getSimStatus } from './utils';
 import { getSdkOrMock } from './get-sdk';
 
 function copyTelemData<
-K extends keyof TelemetryVarList = keyof TelemetryVarList,
-T extends TelemetryVarList[K] = TelemetryVarList[K]
->(src: T, key: K, dest: TelemetryVarList, cache?: Partial<TelemetryVarList>): void {
-  // Check if we have a cached entry to reuse
-  const cached = cache?.[key];
-  const useCache = cached && cached.value && Array.isArray(cached.value);
-
-  if (!useCache) {
-    dest[key] = { ...src };
-  } else {
-    // Reuse existing object structure and update metadata
-    const cachedVar = cached as TelemetryVarList[K];
-    // Copy all properties from src except value (which we'll update below)
-    Object.assign(cachedVar, { ...src, value: cachedVar.value });
-    dest[key] = cachedVar;
-  }
-
+  K extends keyof TelemetryVarList = keyof TelemetryVarList,
+  T extends TelemetryVarList[K] = TelemetryVarList[K]
+>(src: T, key: K, dest: TelemetryVarList): void {
+  dest[key] = { value: src.value } as TelemetryVarList[K];
   // bool
   if (src.varType === 1) {
+    dest[key].value = [];
     const arr = new Int8Array(src.value as number[]);
-    const targetArray = useCache ? (dest[key].value as boolean[]) : [];
-    if (!useCache) {
-      dest[key].value = targetArray;
-    }
-    // Reuse array by updating in-place
-    for (let i = 0; i < arr.length; i++) {
-      targetArray[i] = !!arr[i];
-    }
+    arr.forEach((val, i) => {
+      dest[key].value[i] = !!val;
+    });
     return;
   }
   // numbers
   if (src.varType === 2 || src.varType === 3) { // int
-    const srcArray = new Int32Array(src.value as number[]);
-    if (useCache) {
-      const targetArray = dest[key].value as number[];
-      for (let i = 0; i < srcArray.length; i++) {
-        targetArray[i] = srcArray[i];
-      }
-    } else {
-      dest[key].value = [...srcArray];
-    }
+    dest[key].value = [...new Int32Array(src.value as number[])];
   } else if (src.varType === 4) { // float
-    const srcArray = new Float32Array(src.value as number[]);
-    if (useCache) {
-      const targetArray = dest[key].value as number[];
-      for (let i = 0; i < srcArray.length; i++) {
-        targetArray[i] = srcArray[i];
-      }
-    } else {
-      dest[key].value = [...srcArray];
-    }
+    dest[key].value = [...new Float32Array(src.value as number[])];
   } else if (src.varType === 5) { // double
-    const srcArray = new Float64Array(src.value as number[]);
-    if (useCache) {
-      const targetArray = dest[key].value as number[];
-      for (let i = 0; i < srcArray.length; i++) {
-        targetArray[i] = srcArray[i];
-      }
-    } else {
-      dest[key].value = [...srcArray];
-    }
+    dest[key].value = [...new Float64Array(src.value as number[])];
   }
 }
-
 export class IRacingSDK {
   // Public
   /**
@@ -220,7 +178,7 @@ export class IRacingSDK {
       // First regex will drop the comma if no values follow (e.g. 'field: ,' => 'field: ')
       // Second regex will put value in quotes, if leading comma is followed by values (e.g. 'field: ,data' => 'field: ",data"')
       const fixedYaml = seshString?.replace(/(\w+: ) *, *\n/g, '$1 \n')
-                                   .replace(/(\w+: )(,.*)/g, '$1"$2" \n');
+                                  .replace(/(\w+: )(,.*)/g, '$1"$2" \n');
       this._sessionData = yaml.load(fixedYaml, { json: true }) as SessionData;
       this._dataVer = this.currDataVersion;
       return this._sessionData;
@@ -307,11 +265,8 @@ export class IRacingSDK {
           rawData[dataKey as keyof TelemetryVarList],
           dataKey as keyof TelemetryVarList,
           data as TelemetryVarList,
-          this._telemetryCache,
         );
       });
-      // Update cache with the new data
-      this._telemetryCache = data;
     }
 
     return data as TelemetryVarList;

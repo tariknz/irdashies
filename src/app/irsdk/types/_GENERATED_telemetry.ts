@@ -7,17 +7,17 @@
  */
 export interface TelemetryVariable<VarType = number[]> {
   /** The name of the variable. */
-  name: string;
+  name?: string;
   /** The description. */
-  description: string;
+  description?: string;
   /** The unit of the value (ex. "kg/m^2") */
-  unit: string;
+  unit?: string;
   /** Should it be treated as a time? */
-  countAsTime: boolean;
+  countAsTime?: boolean;
   /** The number of values provided. */
-  length: number;
+  length?: number;
   /** The native variable type */
-  varType: number;
+  varType?: number;
   /** The current value of this variable. */
   value: VarType;
 }
