@@ -113,7 +113,6 @@ Napi::Value iRacingSdkNode::WaitForData(const Napi::CallbackInfo &info)
     timeout = info[0].As<Napi::Number>();
   }
 
-  // Try to start SDK if not connected
   if (!irsdk_isConnected() && !irsdk_startup()) {
     return Napi::Boolean::New(info.Env(), false);
   }
