@@ -3,7 +3,8 @@ import { TelemetrySink } from './telemetrySink';
 import { OverlayManager } from '../../overlayManager';
 import type { IrSdkBridge, Session, Telemetry } from '@irdashies/types';
 
-const WAIT_TIMEOUT = 16; // 60Hz max (SDK publishes at 60Hz)
+const WAIT_TIMEOUT = 16; // 60Hz SDK polling for low latency
+const RENDER_INTERVAL = 1000 / 25; // 25Hz render updates (40ms) - browser can handle this
 
 export async function publishIRacingSDKEvents(
   telemetrySink: TelemetrySink,
@@ -34,32 +35,44 @@ export async function publishIRacingSDKEvents(
         await sdk.ready();
 
         let lastSessionVersion = -1;
+        let lastRenderTime = 0;
+        let latestTelemetry: Telemetry | null = null;
+        let latestSession: Session | null = null;
 
         while (!shouldStop && sdk.waitForData(WAIT_TIMEOUT)) {
-          const telemetry = sdk.getTelemetry();
+          // Always get latest telemetry (60Hz) - low latency
+          latestTelemetry = sdk.getTelemetry();
 
           // Only fetch session data when it actually changes
-          let session: Session | null = null;
           if (sdk.currDataVersion !== lastSessionVersion) {
-            session = sdk.getSessionData();
+            latestSession = sdk.getSessionData();
             lastSessionVersion = sdk.currDataVersion;
           }
 
-          if (telemetry) {
-            // Batch IPC: single message with both telemetry and session (if changed)
-            overlayManager.publishMessage('sdkData', {
-              telemetry,
-              session: session || undefined
-            });
+          // Throttle rendering updates to prevent browser lockup
+          const now = Date.now();
+          if (now - lastRenderTime >= RENDER_INTERVAL) {
+            lastRenderTime = now;
 
-            telemetrySink.addTelemetry(telemetry);
-            telemetryCallbacks.forEach(callback => callback(telemetry));
-          }
+            if (latestTelemetry) {
+              // Batch IPC: single message with both telemetry and session (if changed)
+              overlayManager.publishMessage('sdkData', {
+                telemetry: latestTelemetry,
+                session: latestSession || undefined
+              });
 
-          // Only notify session callbacks when session actually changed
-          if (session) {
-            telemetrySink.addSession(session);
-            sessionCallbacks.forEach(callback => callback(session));
+              const telemetry = latestTelemetry;
+              telemetrySink.addTelemetry(telemetry);
+              telemetryCallbacks.forEach(callback => callback(telemetry));
+
+              // Only notify session callbacks when session actually changed
+              if (latestSession) {
+                const session = latestSession;
+                telemetrySink.addSession(session);
+                sessionCallbacks.forEach(callback => callback(session));
+                latestSession = null; // Clear so we don't send it again
+              }
+            }
           }
         }
 
