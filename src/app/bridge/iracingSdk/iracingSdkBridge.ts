@@ -30,6 +30,7 @@ export async function publishIRacingSDKEvents(
       if (await IRacingSDK.IsSimRunning()) {
         console.log('iRacing is running');
         const sdk = new IRacingSDK();
+        let lastSessionVersion = -1;
         sdk.autoEnableTelemetry = true;
 
         await sdk.ready();
@@ -46,7 +47,8 @@ export async function publishIRacingSDKEvents(
             telemetryCallbacks.forEach(callback => callback(telemetry));
           }
 
-          if (session) {
+          if (session && sdk.currDataVersion !== lastSessionVersion) {
+            lastSessionVersion = sdk.currDataVersion;
             overlayManager.publishMessage('sessionData', session);
             telemetrySink.addSession(session);
             // Notify all subscribers
