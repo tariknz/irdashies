@@ -151,12 +151,26 @@ Napi::Value iRacingSdkNode::WaitForData(const Napi::CallbackInfo &info)
       if (irsdk_getNewData(this->_data))
       {
         if (this->_loggingEnabled) printf("New data retrieved after reallocation\n");
+
+        // Update session version on successful data retrieval
+        int latestUpdate = irsdk_getSessionInfoStrUpdate();
+        if (this->_lastSessionCt != latestUpdate) {
+          this->_lastSessionCt = latestUpdate;
+        }
+
         return Napi::Boolean::New(info.Env(), true);
       }
     }
     else if (this->_data)
     {
       if (this->_loggingEnabled) printf("Data ready for processing\n");
+
+      // Update session version when new data arrives
+      int latestUpdate = irsdk_getSessionInfoStrUpdate();
+      if (this->_lastSessionCt != latestUpdate) {
+        this->_lastSessionCt = latestUpdate;
+      }
+
       return Napi::Boolean::New(info.Env(), true);
     }
   }
