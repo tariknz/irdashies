@@ -6,6 +6,7 @@ import {
   extractDriverName,
   type DriverNameFormat,
 } from '../../DriverName/DriverName';
+import { getPresetTag } from '../../../../../constants/driverTagBadges';
 import type { DriverTagSettings } from '@irdashies/types';
 
 interface DriverNameCellProps {
@@ -21,7 +22,6 @@ interface DriverNameCellProps {
   tagSettings?: DriverTagSettings | undefined;
   widgetTagEnabled?: boolean | undefined;
   widgetTagBeforeName?: boolean | undefined;
-  widgetTagWidthPx?: number | undefined;
   skipWidgetTag?: boolean | undefined;
 }
 
@@ -39,7 +39,6 @@ export const DriverNameCell = memo(
     tagSettings,
     widgetTagEnabled,
     widgetTagBeforeName,
-    widgetTagWidthPx,
     skipWidgetTag = false,
   }: DriverNameCellProps) => {
     const displayName = hidden
@@ -61,20 +60,19 @@ export const DriverNameCell = memo(
       const key = fullName ?? name ?? '';
       const groupId = tagSettings.mapping?.[key] ?? tagSettings.mapping?.[name ?? ''];
       if (!groupId) return undefined;
-      const group = tagSettings.groups?.find((g) => g.id === groupId);
-      return group;
+      return getPresetTag(groupId);
     };
 
     const tag = getTagForDriver();
 
     const renderTagStrip = () => {
       if (!tag) return null;
-      const color = `#${tag.color.toString(16).padStart(6, '0')}`;
-      const width = widgetTagWidthPx ?? tagSettings?.display?.widthPx ?? 6;
+      const preset = getPresetTag(tag.id);
+      const icon = preset?.icon ?? '';
       return (
-        <span
-          style={{ width, height: 18, backgroundColor: color, display: 'inline-block', borderRadius: 1, marginRight: 6 }}
-        />
+        <span style={{ display: 'inline-block', width: 20, height: 18, lineHeight: '18px', textAlign: 'center', borderRadius: 2, marginRight: 6 }}>
+          <span className="align-middle">{icon}</span>
+        </span>
       );
     };
 

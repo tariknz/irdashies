@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { useDashboard } from '@irdashies/context';
-import type { TagGroup, DriverTagSettings } from '@irdashies/types';
+import type { DriverTagSettings } from '@irdashies/types';
+import { PRESET_DRIVER_TAGS } from '../../../constants/driverTagBadges';
 
-const colorNumberToHex = (n: number) => `#${n.toString(16).padStart(6, '0')}`;
-const hexToNumber = (h: string) => parseInt(h.replace('#', ''), 16) || 0;
+// Preset badge groups are provided by code; colors and dynamic groups removed.
 
 export const TagGroupsSettings = () => {
   const { currentDashboard, onDashboardUpdated } = useDashboard();
@@ -48,24 +48,7 @@ export const TagGroupsSettings = () => {
     onDashboardUpdated(updated);
   };
 
-  const addGroup = () => {
-    const id = `group-${Date.now()}`;
-    const group: TagGroup = { id, name: 'New Group', color: 0xff0000 };
-    updateDashboard({ ...settings, groups: [...settings.groups, group] });
-  };
-
-  const updateGroup = (id: string, patch: Partial<TagGroup>) => {
-    const groups = settings.groups.map(g => (g.id === id ? { ...g, ...patch } : g));
-    updateDashboard({ ...settings, groups });
-  };
-
-  const removeGroup = (id: string) => {
-    const groups = settings.groups.filter((g) => g.id !== id);
-    const mapping = Object.fromEntries(
-      Object.entries(settings.mapping).filter(([, v]) => v !== id)
-    );
-    updateDashboard({ ...settings, groups, mapping });
-  };
+  // Groups are fixed presets; no runtime group editing supported.
 
   const addMapping = () => {
     const tmpKey = `__new__:${Date.now()}`;
@@ -105,17 +88,15 @@ export const TagGroupsSettings = () => {
       <div className="flex-1 overflow-y-auto min-h-0 p-4 space-y-4 mt-4">
         <div className="flex items-center justify-between">
           <h3 className="text-lg">Groups</h3>
-          <button onClick={addGroup} className="px-3 py-1 bg-blue-600 rounded">Add Group</button>
         </div>
 
         <div className="space-y-2">
-          {settings.groups.map(g => (
-            <div key={g.id} className="flex items-center gap-2">
-              <input value={g.name} onChange={e => updateGroup(g.id, { name: e.target.value })} className="px-2 py-1 bg-slate-700 rounded" />
-              <input type="color" value={colorNumberToHex(g.color)} onChange={e => updateGroup(g.id, { color: hexToNumber(e.target.value) })} />
-              <button onClick={() => removeGroup(g.id)} className="px-2 py-1 bg-red-600 rounded">Delete</button>
-            </div>
-          ))}
+          <div className="flex flex-wrap gap-2">
+            {/* Preset badge groups (fixed) - display only */}
+            {/** Using constants from code, not editable by user */}
+            {/** Rendered below in driver assignments selector as well */}
+            <div className="text-sm text-slate-300">Preset groups:</div>
+          </div>
         </div>
 
         <div className="pt-4">
@@ -130,16 +111,17 @@ export const TagGroupsSettings = () => {
                 className={`px-3 py-1 rounded font-medium transition-colors shadow-sm ${activeGroupFilter === null ? 'bg-sky-500 text-white ring-2 ring-sky-300' : 'bg-slate-700 text-slate-200 hover:bg-slate-600'}`}>
                 All
               </button>
-              {settings.groups.map((g) => (
+              {/** Use preset groups from constants */}
+              {PRESET_DRIVER_TAGS.map((g: { id: string; name: string; icon: string }) => (
                 <button
                   key={g.id}
                   onClick={() => setActiveGroupFilter(activeGroupFilter === g.id ? null : g.id)}
                   aria-pressed={activeGroupFilter === g.id}
                   title={g.name}
-                  style={{ borderColor: colorNumberToHex(g.color) }}
-                  className={`px-3 py-1 rounded border-2 font-medium transition-colors shadow-sm ${activeGroupFilter === g.id ? 'bg-sky-500 text-white ring-2 ring-sky-300 border-sky-500' : 'bg-slate-700 text-slate-200 border-slate-600 hover:bg-slate-600'}`}>
-                  <span className="inline-block w-3 h-3 mr-2 align-middle" style={{ backgroundColor: colorNumberToHex(g.color) }} />
-                  {g.name}
+                  aria-label={g.name}
+                  className={`px-3 py-1 rounded inline-flex items-center gap-2 transition-colors shadow-sm text-sm ${activeGroupFilter === g.id ? 'bg-sky-500 text-white ring-2 ring-sky-300 border-sky-500' : 'bg-slate-700 text-slate-200 border border-slate-600 hover:bg-slate-600'}`}>
+                  <span className="text-lg leading-none" aria-hidden="true">{g.icon}</span>
+                  <span className="align-middle">{g.name}</span>
                 </button>
               ))}
             </div>
@@ -176,7 +158,7 @@ export const TagGroupsSettings = () => {
                   />
 
                   <select value={gid} onChange={e => updateMapping(driverKey, e.target.value)} className="px-2 py-1 bg-slate-700 rounded">
-                    {settings.groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+                    {PRESET_DRIVER_TAGS.map((g: { id: string; name: string; icon: string }) => <option key={g.id} value={g.id}>{g.name}</option>)}
                   </select>
                   <button onClick={() => removeMapping(driverKey)} className="px-2 py-1 bg-red-600 rounded">Remove</button>
                 </div>
