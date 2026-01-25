@@ -124,19 +124,8 @@ export const SettingsLayout = () => {
               </Link>
             </li>
             <li>
-              <Link
-                to="/settings/profiles"
-                className={menuItemClass('/profiles')}
-              >
-                Profiles
-              </Link>
-            </li>
-            <li>
-              <Link
-                to="/settings/car-setup"
-                className={menuItemClass('/car-setup')}
-              >
-                Setup Comparison Tool
+              <Link to="/settings/driver-tags" className={menuItemClass('/driver-tags')}>
+                Driver Tags
               </Link>
             </li>
           </ul>
@@ -230,11 +219,7 @@ export const SettingsLayout = () => {
                 Weather
               </Link>
             </li>
-            <li>
-              <Link to="/settings/tag-groups" className={menuItemClass('/tag-groups')}>
-                Tag Groups
-              </Link>
-            </li>
+            
           </ul>
           {/* Advanced settings pushed to bottom */}
           <ul className="mt-auto pt-2 border-t border-slate-700 flex flex-col gap-2">
