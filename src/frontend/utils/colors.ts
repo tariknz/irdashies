@@ -156,3 +156,8 @@ export const getColor = (color?: string, value = 500) => {
   const computedColor = styles.getPropertyValue(`--color-${color}-${value}`);
   return computedColor;
 };
+
+export const colorNumToHex = (colorNum?: number) => {
+  if (colorNum === undefined || colorNum === null) return undefined;
+  return `#${(colorNum & 0xffffff).toString(16).padStart(6, '0')}`;
+};

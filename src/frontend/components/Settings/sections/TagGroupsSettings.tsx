@@ -97,7 +97,7 @@ export const TagGroupsSettings = () => {
 
   const addMapping = () => {
     const tmpKey = `__new__:${Date.now()}`;
-    const mapping = { ...settings.mapping, [tmpKey]: activeGroupFilter ?? settings.groups[0]?.id ?? '' };
+    const mapping = { ...settings.mapping, [tmpKey]: activeGroupFilter ?? PRESET_DRIVER_TAGS[0]?.id ?? settings.groups[0]?.id ?? '' };
     setEditingNames(prev => ({ ...prev, [tmpKey]: '' }));
     updateDashboard({ ...settings, mapping });
     setLastAddedKey(tmpKey);
@@ -105,6 +105,9 @@ export const TagGroupsSettings = () => {
   const renameMapping = (oldName: string, newName: string) => {
     const name = newName?.trim();
     if (!name) return;
+    // Prevent renaming to an existing driver name which would overwrite that entry.
+    if (name === oldName) return;
+    if (Object.prototype.hasOwnProperty.call(settings.mapping, name)) return;
     const entries = Object.entries(settings.mapping).map(([k, v]) => [k === oldName ? name : k, v] as [string, string]);
     const mapping = Object.fromEntries(entries);
     updateDashboard({ ...settings, mapping });
