@@ -108,6 +108,7 @@ export interface StandingsWidgetSettings extends BaseWidgetSettings {
         | 'surname-n.'
         | 'surname';
     };
+    driverTag?: { enabled: boolean; position: 'before-name' | 'after-name' | 'before-logo' | 'after-logo'; widthPx: number };
     teamName: { enabled: boolean };
     pitStatus: {
       enabled: boolean;
@@ -197,6 +198,7 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
       precision: number;
     };
     position: { enabled: boolean };
+    driverTag?: { enabled: boolean; position: 'before-name' | 'after-name' | 'before-logo' | 'after-logo'; widthPx: number };
     driverName: {
       enabled: boolean;
       showStatusBadges: boolean;
