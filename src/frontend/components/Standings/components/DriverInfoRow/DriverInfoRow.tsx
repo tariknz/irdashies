@@ -2,6 +2,7 @@ import { memo, useMemo } from 'react';
 import { getTailwindStyle } from '@irdashies/utils/colors';
 import { formatTime, type TimeFormat } from '@irdashies/utils/time';
 import { usePitStopDuration, useDashboard } from '@irdashies/context';
+import { getPresetTag } from '../../../../constants/driverTagBadges';
 import type { Gap, LastTimeState } from '../../createStandings';
 import type {
   RelativeWidgetSettings,
@@ -216,7 +217,6 @@ export const DriverInfoRow = memo(
           ? idxDriverTag < idxDriverName
           : widgetDriverTag?.position === 'before-name';
       const widgetTagEnabled = widgetDriverTag?.enabled;
-      const widgetTagWidthPx = widgetDriverTag?.widthPx;
       const hasDriverTagColumn = (displayOrder ?? []).includes('driverTag');
 
       const columns = [
@@ -259,22 +259,13 @@ export const DriverInfoRow = memo(
                 const key = name ?? '';
                 const groupId = tagSettings?.mapping?.[key];
                 if (!groupId) return null;
-                const group = tagSettings?.groups?.find((g) => g.id === groupId);
-                if (!group) return null;
-                const colorHex = `#${(group.color ?? 0).toString(16).padStart(6, '0')}`;
-                const width = widgetTagWidthPx ?? tagSettings?.display?.widthPx ?? 6;
+                const preset = getPresetTag(groupId);
+                if (!preset) return null;
+                const icon = preset.icon ?? '';
                 return (
-                  <span
-                    style={{
-                      display: 'inline-block',
-                      width,
-                      height: 18,
-                      backgroundColor: colorHex,
-                      borderRadius: 1,
-                      verticalAlign: 'middle',
-                      marginRight: 0,
-                    }}
-                  />
+                  <span style={{ display: 'inline-block', width: 18, height: 18, lineHeight: '18px', textAlign: 'center', verticalAlign: 'middle', marginRight: 0 }}>
+                    <span className="align-middle">{icon}</span>
+                  </span>
                 );
               })()}
             </td>
@@ -310,7 +301,6 @@ export const DriverInfoRow = memo(
               tagSettings={tagSettings}
               widgetTagEnabled={widgetTagEnabled}
               widgetTagBeforeName={driverTagBeforeName}
-              widgetTagWidthPx={widgetTagWidthPx}
               skipWidgetTag={hasDriverTagColumn}
             />
           ),
