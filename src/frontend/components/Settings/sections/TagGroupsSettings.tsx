@@ -13,7 +13,7 @@ export const TagGroupsSettings = () => {
     existing ?? {
       groups: [],
       mapping: {},
-      display: { enabled: false, position: 'before-name', widthPx: 6 },
+      display: { enabled: false, position: 'before-name', widthPx: 6, displayStyle: 'badge' },
     }
   );
 
@@ -22,6 +22,10 @@ export const TagGroupsSettings = () => {
   const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
   const [editingGroupName, setEditingGroupName] = useState<string>('');
   const [editingGroupIcon, setEditingGroupIcon] = useState<string | undefined>(undefined);
+  const [editingGroupColor, setEditingGroupColor] = useState<number | undefined>(undefined);
+  const [editingPresetId, setEditingPresetId] = useState<string | null>(null);
+  const [editingPresetIcon, setEditingPresetIcon] = useState<string | undefined>(undefined);
+  const [editingPresetColor, setEditingPresetColor] = useState<number | undefined>(undefined);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [lastAddedKey, setLastAddedKey] = useState<string | null>(null);
   const inputRefs = useRef<Record<string, HTMLInputElement | null>>({});
@@ -63,8 +67,28 @@ export const TagGroupsSettings = () => {
   };
 
   const updateGroup = (id: string, patch: Partial<{ name: string; color?: number; icon?: string }>) => {
-    const groups = (settings.groups ?? []).map(g => (g.id === id ? { ...g, ...patch } : g));
+    const groups = [...(settings.groups ?? [])];
+    const idx = groups.findIndex(g => g.id === id);
+    if (idx !== -1) {
+      groups[idx] = { ...groups[idx], ...patch };
+    } else {
+      groups.push({ id, name: patch.name ?? 'Custom', color: patch.color ?? 0xff0000, icon: patch.icon });
+    }
     updateDashboard({ ...settings, groups });
+  };
+
+  const setPresetOverride = (id: string, patch: Partial<{ name?: string; color?: number; icon?: string }>) => {
+    const overrides = { ...(settings.presetOverrides ?? {}) };
+    overrides[id] = { ...(overrides[id] ?? {}), ...patch };
+    updateDashboard({ ...settings, presetOverrides: overrides });
+  };
+
+  const removePresetOverride = (id: string) => {
+    if (!settings.presetOverrides) return;
+    const overrides = { ...(settings.presetOverrides ?? {}) };
+    const { [id]: removed, ...rest } = overrides;
+    void removed;
+    updateDashboard({ ...settings, presetOverrides: Object.keys(rest).length ? rest : undefined });
   };
 
   const removeGroup = (id: string) => {
@@ -117,14 +141,86 @@ export const TagGroupsSettings = () => {
         </div>
 
           <div className="space-y-2">
+            <div className="flex items-center gap-3">
+              <label className="text-sm text-slate-300">Display style:</label>
+              <select
+                value={settings.display?.displayStyle ?? 'badge'}
+                onChange={e => updateDashboard({ ...settings, display: { ...(settings.display ?? {}), displayStyle: e.target.value as 'badge' | 'tag' } })}
+                className="px-2 py-1 bg-slate-700 rounded text-sm"
+              >
+                <option value="badge">Badges (icons)</option>
+                <option value="tag">Tags (colored pills)</option>
+              </select>
+            </div>
             <div className="flex flex-wrap items-center gap-3">
             <div className="text-sm text-slate-300">Preset groups:</div>
-            {PRESET_DRIVER_TAGS.map((g: { id: string; name: string; icon: string }) => (
-              <div key={g.id} className="inline-flex items-center gap-2 px-2 py-1 rounded bg-slate-800 text-sm text-slate-100">
-                <span className="text-lg leading-none" aria-hidden="true">{g.icon}</span>
-                <span className="whitespace-nowrap">{g.name}</span>
-              </div>
-            ))}
+            {PRESET_DRIVER_TAGS.map((preset) => {
+              const override = settings.presetOverrides?.[preset.id];
+              if (editingPresetId === preset.id) {
+                return (
+                      <div key={preset.id} className="inline-flex items-center gap-2 px-2 py-1 rounded bg-slate-800 text-sm text-slate-100">
+                    <span className="whitespace-nowrap">{preset.name}</span>
+                    {settings.display?.displayStyle === 'tag' ? (
+                      <>
+                        <input
+                          type="color"
+                          value={editingPresetColor ? `#${(editingPresetColor & 0xffffff).toString(16).padStart(6,'0')}` : '#ff0000'}
+                          onChange={e => setEditingPresetColor(parseInt(e.target.value.replace('#',''), 16))}
+                          className="w-10 h-6 p-0 border-0"
+                        />
+                        <span style={{ display: 'inline-block', width: 20, height: 20, borderRadius: 6, background: editingPresetColor ? `#${(editingPresetColor & 0xffffff).toString(16).padStart(6,'0')}` : '#ff0000' }} />
+                      </>
+                    ) : (
+                      <>
+                        <input
+                          ref={el => { fileInputRef.current = el; }}
+                          type="file"
+                          accept="image/*"
+                          onChange={e => {
+                            const f = e.target.files?.[0];
+                            if (!f) return;
+                            const reader = new FileReader();
+                            reader.onload = () => setEditingPresetIcon(reader.result as string);
+                            reader.readAsDataURL(f);
+                          }}
+                          className="hidden"
+                        />
+                        <button onClick={() => fileInputRef.current?.click()} className="px-2 py-1 bg-slate-600 rounded text-xs">Add custom badge</button>
+                        {editingPresetIcon ? <img src={editingPresetIcon} alt="preview" className="w-6 h-6 object-contain rounded" /> : null}
+                      </>
+                    )}
+                    <button onClick={() => { setPresetOverride(preset.id, { icon: editingPresetIcon, color: editingPresetColor }); setEditingPresetId(null); setEditingPresetIcon(undefined); setEditingPresetColor(undefined); }} className="px-2 py-1 bg-sky-600 rounded text-xs">Save</button>
+                    <button onClick={() => { setEditingPresetId(null); setEditingPresetIcon(undefined); setEditingPresetColor(undefined); }} className="px-2 py-1 bg-slate-600 rounded text-xs">Cancel</button>
+                  </div>
+                );
+              }
+              return (
+                <div key={preset.id} className="inline-flex items-center gap-2 px-2 py-1 rounded bg-slate-800 text-sm text-slate-100">
+                  {settings.display?.displayStyle === 'tag' ? (
+                    <span style={{ display: 'inline-block', width: 16, height: 16, borderRadius: 6, background: `#${(((override?.color ?? preset.color) ?? 0) & 0xffffff).toString(16).padStart(6,'0')}` }} />
+                  ) : (
+                    <span className="inline-flex items-center justify-center w-6 h-6 text-lg leading-none" aria-hidden="true">{override?.icon ?? preset.icon}</span>
+                  )}
+                  <span className="whitespace-nowrap">{preset.name}</span>
+                  <div className="ml-2 inline-flex items-center gap-1">
+                    <button
+                      onClick={() => {
+                        setEditingPresetId(preset.id);
+                        setEditingPresetName(override?.name ?? preset.name);
+                        setEditingPresetIcon(override?.icon ?? undefined);
+                        setEditingPresetColor(override?.color ?? preset.color);
+                      }}
+                      className="text-xs text-slate-300 px-1"
+                    >
+                      Edit
+                    </button>
+                    {override ? (
+                      <button onClick={() => removePresetOverride(preset.id)} className="text-xs text-red-400 px-1">Remove override</button>
+                    ) : null}
+                  </div>
+                </div>
+              );
+            })}
           </div>
 
           {(settings.groups ?? []).length > 0 && (
@@ -136,41 +232,59 @@ export const TagGroupsSettings = () => {
                     {editingGroupId === g.id ? (
                       <div className="flex items-center gap-2">
                         <input value={editingGroupName} onChange={e => setEditingGroupName(e.target.value)} className="px-2 py-1 bg-slate-600 rounded text-sm" />
-                        <input
-                          ref={el => { fileInputRef.current = el; }}
-                          type="file"
-                          accept="image/*"
-                          onChange={e => {
-                            const f = e.target.files?.[0];
-                            if (!f) return;
-                            const reader = new FileReader();
-                            reader.onload = () => setEditingGroupIcon(reader.result as string);
-                            reader.readAsDataURL(f);
-                          }}
-                          className="hidden"
-                        />
-                        <button
-                          onClick={() => fileInputRef.current?.click()}
-                          className="px-2 py-1 bg-slate-600 rounded text-xs"
-                        >
-                          Add custom badge
-                        </button>
-                        {editingGroupIcon ? (
-                          <img src={editingGroupIcon} alt="preview" className="w-6 h-6 object-contain rounded" />
-                        ) : null}
-                        <button onClick={() => { updateGroup(g.id, { name: editingGroupName, icon: editingGroupIcon }); setEditingGroupId(null); setEditingGroupIcon(undefined); }} className="px-2 py-1 bg-sky-600 rounded text-xs">Save</button>
-                        <button onClick={() => { setEditingGroupId(null); setEditingGroupIcon(undefined); }} className="px-2 py-1 bg-slate-600 rounded text-xs">Cancel</button>
+                        {settings.display?.displayStyle === 'tag' ? (
+                          <>
+                            <input
+                              type="color"
+                              value={editingGroupColor ? `#${(editingGroupColor & 0xffffff).toString(16).padStart(6,'0')}` : '#ff0000'}
+                              onChange={e => setEditingGroupColor(parseInt(e.target.value.replace('#',''), 16))}
+                              className="w-10 h-6 p-0 border-0"
+                            />
+                            <span style={{ display: 'inline-block', width: 20, height: 20, borderRadius: 6, background: editingGroupColor ? `#${(editingGroupColor & 0xffffff).toString(16).padStart(6,'0')}` : '#ff0000' }} />
+                          </>
+                        ) : (
+                          <>
+                            <input
+                              ref={el => { fileInputRef.current = el; }}
+                              type="file"
+                              accept="image/*"
+                              onChange={e => {
+                                const f = e.target.files?.[0];
+                                if (!f) return;
+                                const reader = new FileReader();
+                                reader.onload = () => setEditingGroupIcon(reader.result as string);
+                                reader.readAsDataURL(f);
+                              }}
+                              className="hidden"
+                            />
+                            <button
+                              onClick={() => fileInputRef.current?.click()}
+                              className="px-2 py-1 bg-slate-600 rounded text-xs"
+                            >
+                              Add custom badge
+                            </button>
+                            {editingGroupIcon ? (
+                              <img src={editingGroupIcon} alt="preview" className="w-6 h-6 object-contain rounded" />
+                            ) : null}
+                          </>
+                        )}
+                        <button onClick={() => { updateGroup(g.id, { name: editingGroupName, icon: editingGroupIcon, color: editingGroupColor }); setEditingGroupId(null); setEditingGroupIcon(undefined); setEditingGroupColor(undefined); }} className="px-2 py-1 bg-sky-600 rounded text-xs">Save</button>
+                        <button onClick={() => { setEditingGroupId(null); setEditingGroupIcon(undefined); setEditingGroupColor(undefined); }} className="px-2 py-1 bg-slate-600 rounded text-xs">Cancel</button>
                       </div>
                     ) : (
                       <>
-                        {g.icon && (typeof g.icon === 'string' && g.icon.startsWith('data:')) ? (
-                          <img src={g.icon} alt={g.name} className="w-5 h-5 object-contain" />
+                        {settings.display?.displayStyle === 'tag' ? (
+                          <span style={{ display: 'inline-block', width: 16, height: 16, borderRadius: 6, background: g.color ? `#${(g.color & 0xffffff).toString(16).padStart(6,'0')}` : '#888' }} />
                         ) : (
-                          <span className="text-lg leading-none" aria-hidden="true">{g.icon ?? '🔖'}</span>
+                          g.icon && (typeof g.icon === 'string' && g.icon.startsWith('data:')) ? (
+                            <img src={g.icon} alt={g.name} className="w-5 h-5 object-contain" />
+                          ) : (
+                            <span className="inline-flex items-center justify-center w-6 h-6 text-lg leading-none" aria-hidden="true">{g.icon ?? '🔖'}</span>
+                          )
                         )}
                         <span className="whitespace-nowrap">{g.name}</span>
                         <div className="ml-auto flex-none inline-flex items-center gap-2">
-                          <button onClick={() => { setEditingGroupId(g.id); setEditingGroupName(g.name); setEditingGroupIcon(g.icon); }} className="flex-none w-auto px-2 py-0.5 text-xs text-slate-300">Edit</button>
+                          <button onClick={() => { setEditingGroupId(g.id); setEditingGroupName(g.name); setEditingGroupIcon(g.icon); setEditingGroupColor(g.color); }} className="flex-none w-auto px-2 py-0.5 text-xs text-slate-300">Edit</button>
                           <button onClick={() => removeGroup(g.id)} className="flex-none w-auto px-2 py-0.5 text-xs text-red-400">Delete</button>
                         </div>
                       </>
@@ -195,18 +309,28 @@ export const TagGroupsSettings = () => {
                 All
               </button>
               {/** Use preset groups from constants */}
-              {PRESET_DRIVER_TAGS.map((g: { id: string; name: string; icon: string }) => (
-                <button
-                  key={g.id}
-                  onClick={() => setActiveGroupFilter(activeGroupFilter === g.id ? null : g.id)}
-                  aria-pressed={activeGroupFilter === g.id}
-                  title={g.name}
-                  aria-label={g.name}
-                  className={`px-3 py-1 rounded inline-flex items-center gap-2 transition-colors shadow-sm text-sm ${activeGroupFilter === g.id ? 'bg-sky-500 text-white ring-2 ring-sky-300 border-sky-500' : 'bg-slate-700 text-slate-200 border border-slate-600 hover:bg-slate-600'}`}>
-                  <span className="text-lg leading-none" aria-hidden="true">{g.icon}</span>
-                  <span className="align-middle">{g.name}</span>
-                </button>
-              ))}
+              {PRESET_DRIVER_TAGS.map((g: { id: string; name: string; icon: string; color?: number }) => {
+                const override = settings.presetOverrides?.[g.id];
+                const colorNum = override?.color ?? g.color;
+                const icon = override?.icon ?? g.icon;
+                const name = override?.name ?? g.name;
+                return (
+                  <button
+                    key={g.id}
+                    onClick={() => setActiveGroupFilter(activeGroupFilter === g.id ? null : g.id)}
+                    aria-pressed={activeGroupFilter === g.id}
+                    title={name}
+                    aria-label={name}
+                    className={`px-3 py-1 rounded inline-flex items-center gap-2 transition-colors shadow-sm text-sm ${activeGroupFilter === g.id ? 'bg-sky-500 text-white ring-2 ring-sky-300 border-sky-500' : 'bg-slate-700 text-slate-200 border border-slate-600 hover:bg-slate-600'}`}>
+                    {settings.display?.displayStyle === 'tag' ? (
+                      <span style={{ display: 'inline-block', width: 16, height: 16, borderRadius: 6, background: `#${((colorNum ?? 0) & 0xffffff).toString(16).padStart(6,'0')}` }} />
+                    ) : (
+                      <span className="inline-flex items-center justify-center w-6 h-6 text-lg leading-none" aria-hidden="true">{icon}</span>
+                    )}
+                    <span className="align-middle">{name}</span>
+                  </button>
+                );
+              })}
               {(settings.groups ?? []).map((g) => (
                 <button
                   key={g.id}
@@ -215,10 +339,14 @@ export const TagGroupsSettings = () => {
                   title={g.name}
                   aria-label={g.name}
                   className={`px-3 py-1 rounded inline-flex items-center gap-2 transition-colors shadow-sm text-sm ${activeGroupFilter === g.id ? 'bg-sky-500 text-white ring-2 ring-sky-300 border-sky-500' : 'bg-slate-700 text-slate-200 border border-slate-600 hover:bg-slate-600'}`}>
-                  {g.icon && (typeof g.icon === 'string' && g.icon.startsWith('data:')) ? (
-                    <img src={g.icon} alt={g.name} className="w-5 h-5 object-contain" />
+                  {settings.display?.displayStyle === 'tag' ? (
+                    <span style={{ display: 'inline-block', width: 16, height: 16, borderRadius: 6, background: g.color ? `#${(g.color & 0xffffff).toString(16).padStart(6,'0')}` : '#888' }} />
                   ) : (
-                    <span className="text-lg leading-none" aria-hidden="true">{g.icon ?? '🔖'}</span>
+                    g.icon && (typeof g.icon === 'string' && g.icon.startsWith('data:')) ? (
+                      <img src={g.icon} alt={g.name} className="w-5 h-5 object-contain" />
+                    ) : (
+                      <span className="text-lg leading-none" aria-hidden="true">{g.icon ?? '🔖'}</span>
+                    )
                   )}
                   <span className="align-middle">{g.name}</span>
                 </button>
