@@ -28,26 +28,62 @@ import { getSimStatus } from './utils';
 import { getSdkOrMock } from './get-sdk';
 
 function copyTelemData<
-K extends keyof TelemetryVarList = keyof TelemetryVarList,
-T extends TelemetryVarList[K] = TelemetryVarList[K]
->(src: T, key: K, dest: TelemetryVarList): void {
-  dest[key] = { ...src };
+  K extends keyof TelemetryVarList = keyof TelemetryVarList,
+  T extends TelemetryVarList[K] = TelemetryVarList[K]
+>(src: T, key: K, dest: TelemetryVarList, cache?: Partial<TelemetryVarList>): void {
+  // Check if we have a cached entry to reuse
+  const cached = cache?.[key];
+  const useCache = cached && cached.value && Array.isArray(cached.value);
+  if (!useCache) {
+    dest[key] = { value: src?.value ?? [] } as TelemetryVarList[K];
+  } else {
+    dest[key] = cached;
+  }
+
   // bool
   if (src.varType === 1) {
-    dest[key].value = [];
     const arr = new Int8Array(src.value as number[]);
-    arr.forEach((val, i) => {
-      dest[key].value[i] = !!val;
-    });
+    const targetArray = useCache ? (dest[key].value as boolean[]) : [];
+    if (!useCache) {
+      dest[key].value = targetArray;
+    }
+    // Reuse array by updating in-place
+    for (let i = 0; i < arr.length; i++) {
+      targetArray[i] = !!arr[i];
+    }
     return;
   }
   // numbers
   if (src.varType === 2 || src.varType === 3) { // int
-    dest[key].value = [...new Int32Array(src.value as number[])];
+    const srcArray = new Int32Array(src.value as number[]);
+    if (useCache) {
+      const targetArray = dest[key].value as number[];
+      for (let i = 0; i < srcArray.length; i++) {
+        targetArray[i] = srcArray[i];
+      }
+    } else {
+      dest[key].value = [...srcArray];
+    }
   } else if (src.varType === 4) { // float
-    dest[key].value = [...new Float32Array(src.value as number[])];
+    const srcArray = new Float32Array(src.value as number[]);
+    if (useCache) {
+      const targetArray = dest[key].value as number[];
+      for (let i = 0; i < srcArray.length; i++) {
+        targetArray[i] = srcArray[i];
+      }
+    } else {
+      dest[key].value = [...srcArray];
+    }
   } else if (src.varType === 5) { // double
-    dest[key].value = [...new Float64Array(src.value as number[])];
+    const srcArray = new Float64Array(src.value as number[]);
+    if (useCache) {
+      const targetArray = dest[key].value as number[];
+      for (let i = 0; i < srcArray.length; i++) {
+        targetArray[i] = srcArray[i];
+      }
+    } else {
+      dest[key].value = [...srcArray];
+    }
   }
 }
 
@@ -67,6 +103,9 @@ export class IRacingSDK {
   private _sdk?: INativeSDK;
 
   private _sdkReq: Promise<void>;
+
+  // Cache for telemetry data to avoid repeated array allocations
+  private _telemetryCache: Partial<TelemetryVarList> = {};
 
   constructor() {
     this._sdkReq = this._loadSDK();
@@ -152,7 +191,12 @@ export class IRacingSDK {
    * @param {number} timeout Timeout (in ms). Max is 60fps (1/60)
    */
   public waitForData(timeout?: number): boolean {
-    return this._sdk?.waitForData(timeout) ?? false;
+    const result = this._sdk?.waitForData(timeout) ?? false;
+    if (!result && this._sdk?.currDataVersion === -1) {
+      this._dataVer = -1;
+      this._sessionData = null;
+    }
+    return result;
   }
 
   /**
@@ -160,14 +204,20 @@ export class IRacingSDK {
    * @returns {SessionData}
    */
   public getSessionData(): SessionData | null {
-    if (this._sessionData && this._dataVer === this.currDataVersion) return this._sessionData;
     if (!this._sdk) return null;
 
     try {
       const seshString = this._sdk?.getSessionData();
-      // Remove leading and trailing commas
-      const fixedYaml = seshString?.replace(/(\w+):\s*,?((\w+,)*\w+)?,?\s*\n/g, '$1: $2 \n');
+      // currDataVersion is only updated after getSessionData is called
+      if (this._sessionData && this._dataVer === this.currDataVersion) return this._sessionData;
+
+      // Handle leading commas in YAML values. 
+      // First regex will drop the comma if no values follow (e.g. 'field: ,' => 'field: ')
+      // Second regex will put value in quotes, if leading comma is followed by values (e.g. 'field: ,data' => 'field: ",data"')
+      const fixedYaml = seshString?.replace(/(\w+: ) *, *\n/g, '$1 \n')
+        .replace(/(\w+: )(,.*)/g, '$1"$2" \n');
       this._sessionData = yaml.load(fixedYaml, { json: true }) as SessionData;
+      this._dataVer = this.currDataVersion;
       return this._sessionData;
     } catch (err) {
       console.error('There was an error getting session data:', err);
@@ -252,8 +302,11 @@ export class IRacingSDK {
           rawData[dataKey as keyof TelemetryVarList],
           dataKey as keyof TelemetryVarList,
           data as TelemetryVarList,
+          this._telemetryCache,
         );
       });
+      // Update cache with the new data
+      this._telemetryCache = data;
     }
 
     return data as TelemetryVarList;
@@ -275,13 +328,11 @@ export class IRacingSDK {
   public getTelemetryVariable<T extends boolean | number | string>(telemVar: number | keyof TelemetryVarList): TelemetryVariable<T[]> | null {
     if (!this._sdk) return null;
 
-    // @todo Need to fix this type.
     const rawData = this._sdk?.getTelemetryVariable(telemVar as string);
     const parsed: Partial<TelemetryVarList> = {};
 
-    // @todo good grief these types need to be fixed asap
     copyTelemData(
-      rawData as TelemetryVariable<any>, // eslint-disable-line
+      rawData as TelemetryVariable,
       rawData.name as keyof TelemetryVarList,
       parsed as TelemetryVarList,
     );

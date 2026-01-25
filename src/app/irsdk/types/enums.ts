@@ -41,6 +41,16 @@ export enum GlobalFlags {
   StartGo = 0x80000000,
 }
 
+export enum EngineWarnings {
+  WaterTempWarning = 0x01,
+  FuelPressureWarning = 0x02,
+  OilPressureWarning = 0x04,
+  EngineStalled = 0x08,
+  PitSpeedLimiter = 0x10,
+  RevLimiterActive = 0x20,
+  OilTempWarning = 0x40,
+}
+
 export enum PitSvFlags {
   LFTireChange = 0x0001,
   RFTireChange = 0x0002,

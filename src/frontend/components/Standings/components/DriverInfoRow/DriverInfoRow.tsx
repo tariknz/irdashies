@@ -2,7 +2,7 @@ import { memo, useMemo } from 'react';
 import { getTailwindStyle } from '@irdashies/utils/colors';
 import { formatTime, type TimeFormat } from '@irdashies/utils/time';
 import { usePitStopDuration } from '@irdashies/context';
-import type { LastTimeState } from '../../createStandings';
+import type { Gap, LastTimeState } from '../../createStandings';
 import type {
   RelativeWidgetSettings,
   StandingsWidgetSettings,
@@ -31,9 +31,10 @@ interface DriverRowInfoProps {
   isPlayer: boolean;
   hasFastestTime: boolean;
   delta?: number;
-  gap?: number;
+  gap?: Gap;
   interval?: number;
   position?: number;
+  lap?: number;
   license?: string;
   rating?: number;
   iratingChangeValue?: number;
@@ -82,6 +83,7 @@ export const DriverInfoRow = memo(
     gap,
     interval,
     position,
+    lap,
     license,
     rating,
     iratingChangeValue,
@@ -140,7 +142,7 @@ export const DriverInfoRow = memo(
       if (!numLapDeltasToShow) return null;
       return Array.from({ length: numLapDeltasToShow }, (_, index) => index);
     }, [numLapDeltasToShow]);
-
+    
     const columnDefinitions = useMemo(() => {
       const columns = [
         {
@@ -194,9 +196,14 @@ export const DriverInfoRow = memo(
           component: (
             <DriverNameCell
               key="driverName"
-              hidden={hidden}
-              name={name}
               radioActive={radioActive}
+              repair={repair}
+              penalty={penalty}
+              slowdown={slowdown}
+              showStatusBadges={config?.driverName?.showStatusBadges ?? true}
+              hidden={hidden}
+              fullName={name}
+              nameFormat={config?.driverName?.nameFormat}
             />
           ),
         },
@@ -207,11 +214,7 @@ export const DriverInfoRow = memo(
             (displayOrder ? displayOrder.includes('teamName') : false) &&
             (config?.teamName?.enabled ?? false),
           component: (
-            <TeamNameCell
-              key="teamName"
-              hidden={hidden}
-              teamName={teamName}
-            />
+            <TeamNameCell key="teamName" hidden={hidden} teamName={teamName} />
           ),
         },
         {
@@ -226,15 +229,14 @@ export const DriverInfoRow = memo(
               onPitRoad={onPitRoad}
               carTrackSurface={carTrackSurface}
               prevCarTrackSurface={prevCarTrackSurface}
+              lap={lap}
               lastPitLap={lastPitLap}
               lastLap={lastLap}
               currentSessionType={currentSessionType}
               dnf={dnf}
-              repair={repair}
-              penalty={penalty}
-              slowdown={slowdown}
               pitStopDuration={pitStopDuration}
               showPitTime={config?.pitStatus?.showPitTime ?? false}
+              pitLapDisplayMode={config?.pitStatus?.pitLapDisplayMode}
             />
           ),
         },
@@ -411,6 +413,7 @@ export const DriverInfoRow = memo(
       config,
       hidden,
       position,
+      lap,
       isPlayer,
       offTrack,
       tailwindStyles,
@@ -454,7 +457,9 @@ export const DriverInfoRow = memo(
         className={[
           !onTrack || onPitRoad ? 'text-white/60' : '',
           isPlayer ? 'text-amber-300' : '',
-          isPlayer ? 'bg-yellow-500/20' : 'odd:bg-slate-800/70 even:bg-slate-900/70 text-sm',
+          isPlayer
+            ? 'bg-yellow-500/20'
+            : 'odd:bg-slate-800/70 even:bg-slate-900/70 text-sm',
           !isPlayer && isLapped ? 'text-blue-400' : '',
           !isPlayer && isLappingAhead ? 'text-red-400' : '',
           hidden ? 'invisible' : '',

@@ -18,10 +18,10 @@ interface DashboardWidgetWithWindow {
 
 function getIconPath(): string {
   const isDev = !!MAIN_WINDOW_VITE_DEV_SERVER_URL;
-  const basePath = isDev 
+  const basePath = isDev
     ? path.join(__dirname, '../../docs/assets/icons')
     : path.join(process.resourcesPath, 'icons');
-  
+
   return path.join(basePath, 'logo.png');
 }
 
@@ -30,17 +30,9 @@ export class OverlayManager {
   private currentSettingsWindow: BrowserWindow | undefined;
   private isLocked = true;
   private skipTaskbar = true;
+  private overlayAlwaysOnTop = true;
   private hasSingleInstanceLock = false;
-
-  constructor() {
-    setInterval(() => {
-      this.getOverlays().forEach(({ window }) => {
-        if (window.isDestroyed()) return;
-        if (!window.isVisible()) return;
-        window.setAlwaysOnTop(true, 'screen-saver', 1);
-      });
-    }, 5000);
-  }
+  private onWindowReadyCallbacks = new Set<(windowId: string) => void>();
 
   public getVersion(): string {
     const version = app.getVersion();
@@ -55,6 +47,7 @@ export class OverlayManager {
   public createOverlays(dashboardLayout: DashboardLayout): void {
     const { widgets, generalSettings } = dashboardLayout;
     this.skipTaskbar = generalSettings?.skipTaskbar ?? true;
+    this.overlayAlwaysOnTop = generalSettings?.overlayAlwaysOnTop ?? true;
     widgets.forEach((widget) => {
       if (!widget.enabled) return; // skip disabled widgets
       const window = this.createOverlayWindow(widget);
@@ -95,7 +88,9 @@ export class OverlayManager {
     browserWindow.setVisibleOnAllWorkspaces(true, {
       visibleOnFullScreen: true,
     });
-    browserWindow.setAlwaysOnTop(true, 'screen-saver', 1);
+    if (this.overlayAlwaysOnTop) {
+      browserWindow.setAlwaysOnTop(true, 'screen-saver', 1);
+    }
     // and load the index.html of the app.
     if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
       browserWindow.loadURL(`${MAIN_WINDOW_VITE_DEV_SERVER_URL}#/${id}`);
@@ -114,6 +109,12 @@ export class OverlayManager {
         console.log('Closing window', closedWindow.widget.id);
       }
       this.overlayWindows.delete(id);
+    });
+
+    browserWindow.webContents.once('did-finish-load', () => {
+      if (!browserWindow.isDestroyed()) {
+        this.onWindowReadyCallbacks.forEach((cb) => cb(id));
+      }
     });
 
     return browserWindow;
@@ -149,6 +150,21 @@ export class OverlayManager {
         console.error(`Failed to send message ${key} to settings window`, e);
       }
     }
+  }
+
+  public publishMessageToOverlay(id: string, key: string, value: unknown): void {
+    const overlay = this.overlayWindows.get(id);
+    if (!overlay || overlay.window.isDestroyed()) return;
+    try {
+      overlay.window.webContents.send(key, value);
+    } catch (e) {
+      console.error(`Failed to send message ${key} to overlay ${id}`, e);
+    }
+  }
+
+  public onOverlayReady(callback: (id: string) => void) {
+    this.onWindowReadyCallbacks.add(callback);
+    return () => this.onWindowReadyCallbacks.delete(callback);
   }
 
   public closeAllOverlays(): void {
@@ -221,6 +237,13 @@ export class OverlayManager {
     if (dashboard?.generalSettings?.disableHardwareAcceleration) {
       app.disableHardwareAcceleration();
     }
+  }
+
+  public setupAutoStart(): void {
+    const dashboard = getDashboard('default');
+    app.setLoginItemSettings({
+      openAtLogin: dashboard?.generalSettings?.enableAutoStart ?? false,
+    });
   }
 
   /**

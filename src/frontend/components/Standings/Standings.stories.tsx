@@ -1,6 +1,10 @@
 import { Meta, StoryObj } from '@storybook/react-vite';
 import { Standings } from './Standings';
 import { TelemetryDecorator, DynamicTelemetrySelector, TelemetryDecoratorWithConfig } from '@irdashies/storybook';
+import { DashboardProvider, SessionProvider, TelemetryProvider } from '@irdashies/context';
+import { mockDashboardBridge } from '../../../../.storybook/mockDashboardBridge';
+import { generateMockDataFromPath } from '../../../app/bridge/iracingSdk/mock-data/generateMockData';
+import type { DashboardBridge } from '@irdashies/types';
 import { useState, Fragment } from 'react';
 import { DriverClassHeader } from './components/DriverClassHeader/DriverClassHeader';
 import { DriverInfoRow } from './components/DriverInfoRow/DriverInfoRow';
@@ -23,6 +27,22 @@ import { usePrecipitation } from './hooks/usePrecipitation';
 import { useTrackTemperature } from './hooks/useTrackTemperature';
 import { formatTime } from '../../utils/time';
 import { ClockIcon, CloudRainIcon, DropIcon, RoadHorizonIcon, ThermometerIcon, TireIcon } from '@phosphor-icons/react';
+
+// Create a mock bridge with custom generalSettings for compact mode
+const createMockBridgeWithCompactMode = (): DashboardBridge => ({
+  ...mockDashboardBridge,
+  dashboardUpdated: (callback) => {
+    callback({
+      widgets: [],
+      generalSettings: {
+        compactMode: true,
+      },
+    });
+    return () => {
+      // No-op cleanup function
+    };
+  },
+});
 
 // Custom component that renders standings without header/footer session bars
 const StandingsWithoutHeaderFooter = () => {
@@ -83,6 +103,7 @@ const StandingsWithoutHeaderFooter = () => {
                     gap={settings?.gap?.enabled ? result.gap : undefined}
                     interval={settings?.interval?.enabled ? result.interval : undefined}
                     position={result.classPosition}
+                    lap={result.lap}
                     iratingChangeValue={
                       settings?.iratingChange?.enabled ? result.iratingChange : undefined
                     }
@@ -293,6 +314,7 @@ const StandingsWithoutHeader = () => {
                     gap={settings?.gap?.enabled ? result.gap : undefined}
                     interval={settings?.interval?.enabled ? result.interval : undefined}
                     position={result.classPosition}
+                    lap={result.lap}
                     iratingChangeValue={
                       settings?.iratingChange?.enabled ? result.iratingChange : undefined
                     }
@@ -413,6 +435,7 @@ const StandingsWithoutFooter = () => {
                     gap={settings?.gap?.enabled ? result.gap : undefined}
                     interval={settings?.interval?.enabled ? result.interval : undefined}
                     position={result.classPosition}
+                    lap={result.lap}
                     iratingChangeValue={
                       settings?.iratingChange?.enabled ? result.iratingChange : undefined
                     }
@@ -609,6 +632,7 @@ const StandingsWithFullHeader = () => {
                     gap={settings?.gap?.enabled ? result.gap : undefined}
                     interval={settings?.interval?.enabled ? result.interval : undefined}
                     position={result.classPosition}
+                    lap={result.lap}
                     iratingChangeValue={
                       settings?.iratingChange?.enabled ? result.iratingChange : undefined
                     }
@@ -661,4 +685,16 @@ const StandingsWithFullHeader = () => {
 export const HeaderOnlyAllVisible: Story = {
   render: () => <StandingsWithFullHeader />,
   decorators: [TelemetryDecorator()],
+};
+
+export const CompactMode: Story = {
+  decorators: [(Story) => (
+    <>
+      <SessionProvider bridge={generateMockDataFromPath()} />
+      <TelemetryProvider bridge={generateMockDataFromPath()} />
+      <DashboardProvider bridge={createMockBridgeWithCompactMode()}>
+        <Story />
+      </DashboardProvider>
+    </>
+  )],
 };

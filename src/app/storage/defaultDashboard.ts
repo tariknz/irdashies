@@ -46,13 +46,15 @@ export const defaultDashboard: DashboardLayout = {
           "enabled": true
         },
         "driverName": {
-          "enabled": true
+          "enabled": true,
+          "showStatusBadges": true
         },
         "teamName": {
           "enabled": false
         },
         "pitStatus": {
-          "enabled": true
+          "enabled": true,
+          "pitLapDisplayMode": "lapsSinceLastPit"
         },
         "position": {
           "enabled": true
@@ -231,13 +233,15 @@ export const defaultDashboard: DashboardLayout = {
           "enabled": true
         },
         "driverName": {
-          "enabled": true
+          "enabled": true,
+          "showStatusBadges": true
         },
         "teamName": {
           "enabled": false
         },
         "pitStatus": {
-          "enabled": true
+          "enabled": true,
+          "pitLapDisplayMode": "lapsSinceLastPit"
         },
         "carManufacturer": {
           "enabled": true
@@ -388,6 +392,7 @@ export const defaultDashboard: DashboardLayout = {
       },
       "config": {
         "showCarNumbers": true,
+        "displayMode": "carNumber",
         "driverCircleSize": 40,
         "playerCircleSize": 40,
         "trackLineWidth": 20,
@@ -527,7 +532,7 @@ export const defaultDashboard: DashboardLayout = {
         "stopGap": 1,
         "width": 20,
         "sessionVisibility": { race: true, loneQualify: false, openQualify: true, practice: true, offlineTesting: true }
-      },
+      }
     },
     {
       "id": "telemetryinspector",
@@ -548,12 +553,32 @@ export const defaultDashboard: DashboardLayout = {
         ]
       }
     },
+    {
+      "id": "pitlanehelper",
+      "enabled": false,
+      "layout": {
+        "x": 100,
+        "y": 100,
+        "width": 150,
+        "height": 200
+      },
+      "config": {
+        "showMode": "approaching",
+        "approachDistance": 200,
+        "enablePitLimiterWarning": true,
+        "enableEarlyPitboxWarning": true,
+        "earlyPitboxThreshold": 75,
+        "showPitlaneTraffic": true,
+        "background": { "opacity": 80 }
+      }
+    }
   ],
   "generalSettings": {
     "fontSize": "sm",
     "colorPalette": "black",
     "highlightColor": 960745,
     "skipTaskbar": true,
-    "disableHardwareAcceleration": false
+    "disableHardwareAcceleration": false,
+    "overlayAlwaysOnTop": true
   }
 };

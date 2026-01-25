@@ -7,20 +7,20 @@ export async function publishIRacingSDKEvents(
   overlayManager: OverlayManager
 ) {
   const bridge = generateMockData();
-  
+
   bridge.onSessionData((session) => {
     overlayManager.publishMessage('sessionData', session);
     telemetrySink.addSession(session);
   });
-  
+
   bridge.onTelemetry((telemetry) => {
     overlayManager.publishMessage('telemetry', telemetry);
     telemetrySink.addTelemetry(telemetry);
   });
-  
+
   bridge.onRunningState((running) => {
     overlayManager.publishMessage('runningState', running);
   });
-  
+
   return bridge;
 }
