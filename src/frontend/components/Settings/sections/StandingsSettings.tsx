@@ -94,7 +94,7 @@ const defaultConfig: StandingsWidgetSettings['config'] = {
   lapTimeDeltas: { enabled: false, numLaps: 3 },
   position: { enabled: true },
   driverName: { enabled: true, showStatusBadges: true, nameFormat: 'name-surname' },
-  driverTag: { enabled: false, position: 'before-name', widthPx: 6 },
+  driverTag: { enabled: false, widthPx: 6 },
   teamName: { enabled: false },
   pitStatus: { enabled: true, showPitTime: false, pitLapDisplayMode: 'lapsSinceLastPit' },
   displayOrder: sortableSettings.map(s => s.id),
@@ -231,7 +231,6 @@ const migrateConfig = (
     },
     driverTag: {
       enabled: (config.driverTag as { enabled?: boolean })?.enabled ?? false,
-      position: ((config.driverTag as { position?: string })?.position as 'before-name' | 'after-name' | 'before-logo' | 'after-logo') ?? 'before-name',
       widthPx: (config.driverTag as { widthPx?: number })?.widthPx ?? 6,
     },
     teamName: { enabled: (config.teamName as { enabled?: boolean })?.enabled ?? false },
