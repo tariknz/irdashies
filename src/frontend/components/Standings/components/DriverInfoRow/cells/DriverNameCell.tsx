@@ -78,20 +78,17 @@ export const DriverNameCell = memo(
     return (
       <td data-column="driverName" className="w-full max-w-0 px-1 py-0.5">
         <div className="flex items-center overflow-hidden">
-          <span
-            className={`animate-pulse transition-[width] duration-300 ${
-              radioActive ? 'w-4 mr-1' : 'w-0 overflow-hidden'
-            }`}
-          >
+          <span className={`animate-pulse transition-[width] duration-300 ${radioActive ? 'w-4 mr-1' : 'w-0 overflow-hidden'}`}>
             <SpeakerHighIcon className="mt-px" size={16} />
-            {(widgetTagBeforeName ?? (tagSettings?.display?.position === 'before-name')) && renderTagStrip()}
           </span>
+
+          {(widgetTagBeforeName ?? (tagSettings?.display?.position === 'before-name')) && renderTagStrip()}
 
           <div className="flex-1 min-w-0 overflow-hidden mask-[linear-gradient(90deg,#000_90%,transparent)]">
             <span className="block truncate">{displayName}</span>
           </div>
 
-            {!(widgetTagBeforeName ?? (tagSettings?.display?.position === 'before-name')) && renderTagStrip()}
+          {!(widgetTagBeforeName ?? (tagSettings?.display?.position === 'before-name')) && renderTagStrip()}
           {showStatusBadges && (
             <DriverStatusBadges
               hidden={hidden}
