@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { Tachometer } from './InputTachometer';
+import { Tachometer } from './TachometerComponent';
 import { useEffect, useState } from 'react';
 import type { ShiftPointSettings } from '../../Settings/types';
 
@@ -10,7 +10,7 @@ const TachometerForStorybook = (props: Parameters<typeof Tachometer>[0]) => {
 
 const meta: Meta<typeof Tachometer> = {
   component: Tachometer,
-  title: 'widgets/Input/components/CustomShiftPoints',
+  title: 'widgets/Tachometer/components/CustomShiftPoints',
   argTypes: {
     shiftPointSettings: { table: { disable: true } },
     gearRpmThresholds: { table: { disable: true } },
@@ -60,9 +60,11 @@ const AnimatedRPM = ({
     indicatorColor: color,
     carConfigs: {
       'ferrari296gt3': {
+        enabled: true,
         carId: 'ferrari296gt3',
         carName: 'Ferrari 296 GT3',
         gearCount: 6,
+        redlineRpm: 8000,
         gearShiftPoints: {
           '1': { shiftRpm }
         }
@@ -181,62 +183,6 @@ export const WithRpmText: Story = {
         color="#00ff00"
         showRpmText={true}
       />
-    </div>
-  ),
-};
-
-export const Comparison: Story = {
-  render: () => (
-    <div className="space-y-6">
-      <div className="text-white text-xl font-bold mb-6">Shift Point Alert Styles Comparison</div>
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <AnimatedRPM 
-          indicatorType="border"
-          title="Border Glow"
-          color="#ffff00"
-        />
-        <AnimatedRPM 
-          indicatorType="glow"
-          title="Glow Effect"
-          color="#00ff00"
-        />
-        <AnimatedRPM 
-          indicatorType="pulse"
-          title="Pulse Effect"
-          color="#ff0066"
-        />
-      </div>
-    </div>
-  ),
-};
-
-export const DifferentShiftPoints: Story = {
-  render: () => (
-    <div className="space-y-6">
-      <div className="text-white text-xl font-bold mb-6">Different Shift Points</div>
-      <div className="grid grid-cols-1 gap-6">
-        <AnimatedRPM 
-          indicatorType="glow"
-          shiftRpm={6800}
-          title="Early Shift Point (6800 RPM) - Glow - With RPM Text"
-          color="#00ff00"
-          showRpmText={true}
-        />
-        <AnimatedRPM 
-          indicatorType="border"
-          shiftRpm={7000}
-          title="Medium Shift Point (7000 RPM) - Border - RPM Text OFF"
-          color="#ff6600"
-          showRpmText={false}
-        />
-        <AnimatedRPM 
-          indicatorType="pulse"
-          shiftRpm={7200}
-          title="Late Shift Point (7200 RPM) - Pulse - With RPM Text"
-          color="#ff0066"
-          showRpmText={true}
-        />
-      </div>
     </div>
   ),
 };

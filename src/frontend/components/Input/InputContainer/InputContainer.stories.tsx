@@ -77,10 +77,6 @@ const RandomTraces = () => {
             color: 'light',
           },
         },
-        tachometer: {
-          enabled: true,
-          showRpmText: true,
-        },
         displayOrder: ['trace', 'bar', 'gear', 'steer'],
         showOnlyWhenOnTrack: true,
         background: {

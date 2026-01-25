@@ -571,6 +571,29 @@ export const defaultDashboard: DashboardLayout = {
         "showPitlaneTraffic": true,
         "background": { "opacity": 80 }
       }
+    },
+    {
+      "id": "tachometer",
+      "enabled": false,
+      "layout": {
+        "x": 622,
+        "y": 750,
+        "width": 396,
+        "height": 100
+      },
+      "config": {
+        "enabled": true,
+        "showRpmText": false,
+        "shiftPointSettings": {
+          "enabled": false,
+          "indicatorType": "glow",
+          "indicatorColor": "#00ff00",
+          "carConfigs": {}
+        },
+        "background": { "opacity": 80 },
+        "showOnlyWhenOnTrack": true,
+        "sessionVisibility": { "race": true, "loneQualify": true, "openQualify": true, "practice": true, "offlineTesting": true }
+      }
     }
   ],
   "generalSettings": {

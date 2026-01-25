@@ -17,6 +17,7 @@ import { FasterCarsFromBehindSettings } from './sections/FasterCarsFromBehindSet
 import { FuelSettings } from './sections/FuelSettings';
 import { RejoinIndicatorSettings } from './sections/RejoinIndicatorSettings';
 import { PitlaneHelperSettings } from './sections/PitlaneHelperSettings';
+import { TachometerSettings } from './sections/TachometerSettings';
 import { GeneralSettings } from './sections/GeneralSettings';
 import { BlindSpotMonitorSettings } from './sections/BlindSpotMonitorSettings';
 import { GarageCoverSettings } from './sections/GarageCoverSettings';
@@ -172,6 +173,14 @@ export const SettingsLayout = () => {
             </li>
             <li>
               <Link
+                to="/settings/tachometer"
+                className={menuItemClass('/tachometer')}
+              >
+                Tachometer
+              </Link>
+            </li>
+            <li>
+              <Link
                 to="/settings/standings"
                 className={menuItemClass('/standings')}
               >
@@ -229,6 +238,7 @@ export const SettingsLayout = () => {
             <Route path="input" element={<InputSettings />} />
             <Route path="pitlanehelper" element={<PitlaneHelperSettings />} />
             <Route path="rejoin" element={<RejoinIndicatorSettings />} />
+            <Route path="tachometer" element={<TachometerSettings />} />
             <Route
               path="faster-cars"
               element={<FasterCarsFromBehindSettings />}
