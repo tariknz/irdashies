@@ -13,7 +13,7 @@ export const TagGroupsSettings = () => {
     existing ?? {
       groups: [],
       mapping: {},
-      display: { enabled: false, position: 'before-name', widthPx: 6, displayStyle: 'badge' },
+      display: { enabled: false, widthPx: 6, displayStyle: 'badge' },
     }
   );
 

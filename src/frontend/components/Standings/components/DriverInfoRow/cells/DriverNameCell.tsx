@@ -104,13 +104,13 @@ export const DriverNameCell = memo(
             <SpeakerHighIcon className="mt-px" size={16} />
           </span>
 
-          {(widgetTagBeforeName ?? (tagSettings?.display?.position === 'before-name')) && renderTagStrip()}
+          {(widgetTagBeforeName ?? false) && renderTagStrip()}
 
           <div className="flex-1 min-w-0 overflow-hidden mask-[linear-gradient(90deg,#000_90%,transparent)]">
             <span className="block truncate">{displayName}</span>
           </div>
 
-          {!(widgetTagBeforeName ?? (tagSettings?.display?.position === 'before-name')) && renderTagStrip()}
+          {!(widgetTagBeforeName ?? false) && renderTagStrip()}
           {showStatusBadges && (
             <DriverStatusBadges
               hidden={hidden}

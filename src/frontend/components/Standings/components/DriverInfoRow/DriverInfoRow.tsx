@@ -153,7 +153,7 @@ export const DriverInfoRow = memo(
       const driverTagBeforeName =
         idxDriverTag !== -1 && idxDriverName !== -1
           ? idxDriverTag < idxDriverName
-          : (tagSettings?.display?.position ?? 'before-name') === 'before-name';
+          : false;
       const widgetTagEnabled = widgetDriverTag?.enabled;
       const hasDriverTagColumn = (displayOrder ?? []).includes('driverTag');
 

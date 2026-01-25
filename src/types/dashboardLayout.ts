@@ -64,8 +64,6 @@ export interface DriverTagSettings {
   /** Display config for the tag strip */
   display: {
     enabled: boolean;
-    /** Placement of the tag strip relative to elements */
-    position: 'before-name' | 'after-name' | 'before-logo' | 'after-logo';
     /** Width in pixels for the vertical tag strip */
     widthPx: number;
     /** Visual style for tags: 'badge' shows an icon, 'tag' shows a colored pill */
