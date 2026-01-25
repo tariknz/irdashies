@@ -27,6 +27,7 @@ export type FontSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl';
 
 export interface GeneralSettingsType {
   fontSize?: FontSize;
+  fontWeight?:  'normal' | 'bold' | 'extrabold';
   colorPalette?: 'default' | 'black' | 'red' | 'orange' | 'amber' | 'yellow' | 'lime' | 'green' | 'emerald' | 'teal' | 'cyan' | 'sky' | 'blue' | 'indigo' | 'violet' | 'purple' | 'fuchsia' | 'pink' | 'rose' | 'zinc' | 'stone';
   showOnlyWhenOnTrack?: boolean;
   highlightColor?: number;
@@ -34,6 +35,7 @@ export interface GeneralSettingsType {
   disableHardwareAcceleration?: boolean;
   enableAutoStart?: boolean;
   compactMode?: boolean;
+  overlayAlwaysOnTop?: boolean;
 }
 
 export interface DashboardLayout {

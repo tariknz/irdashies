@@ -10,6 +10,16 @@ export default meta;
 
 type Story = StoryObj<typeof RejoinIndicatorDisplay>;
 
+export const AllStates: Story = {
+  render: () => (
+    <div className="flex flex-col gap-4 w-64">
+      <RejoinIndicatorDisplay gap="4.0s" status="Clear" />
+      <RejoinIndicatorDisplay gap="2.3s" status="Caution" />
+      <RejoinIndicatorDisplay gap="0.6s" status="Do Not Rejoin" />
+    </div>
+  ),
+};
+
 export const Clear: Story = {
   args: {
     gap: '4.0s',

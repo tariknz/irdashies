@@ -1,5 +1,4 @@
 import path from 'node:path';
-import { EventEmitter } from 'node:events';
 import { writeFile, mkdir } from 'node:fs/promises';
 import { app } from 'electron';
 import type { Session, Telemetry } from '@irdashies/types';
@@ -11,21 +10,8 @@ import { streamArray } from 'stream-json/streamers/StreamArray';
 export class TelemetrySink {
   private isRecording = false;
   private currentPath = '';
-  private sessionEmitter = new EventEmitter();
-  private telemetryEmitter = new EventEmitter();
   private telemetry: Telemetry[] = [];
   private session: Session[] = [];
-
-  constructor() {
-    this.sessionEmitter.on('session', (data) => {
-      if (!this.isRecording) return;
-      this.session.push(data);
-    });
-    this.telemetryEmitter.on('telemetry', (data) => {
-      if (!this.isRecording) return;
-      this.telemetry.push(data);
-    });
-  }
 
   async startRecording(timeout = 5000) {
     if (this.isRecording) return;
@@ -55,13 +41,15 @@ export class TelemetrySink {
   }
 
   addTelemetry(data: Telemetry) {
-    if (!this.isRecording || !this.currentPath) return;
-    this.telemetryEmitter.emit('telemetry', data);
+    if (this.isRecording) {
+      this.telemetry.push(data);
+    }
   }
 
   addSession(data: Session) {
-    if (!this.isRecording || !this.currentPath) return;
-    this.sessionEmitter.emit('session', data);
+    if (this.isRecording) {
+      this.session.push(data);
+    }
   }
 }
 

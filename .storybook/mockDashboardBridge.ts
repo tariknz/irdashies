@@ -8,7 +8,8 @@ export const mockDashboardBridge: DashboardBridge = {
   saveDashboard: () => {
     // noop
   },
-  resetDashboard: async () => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  resetDashboard: async (_resetEverything: boolean) => {
     // For mock, just return the default dashboard
     return defaultDashboard;
   },
@@ -46,4 +47,4 @@ export const mockDashboardBridge: DashboardBridge = {
   getAnalyticsOptOut: () => Promise.resolve(false),
   setAnalyticsOptOut: () => Promise.resolve(),
   setAutoStart:() => Promise.resolve()
-}; 
+};

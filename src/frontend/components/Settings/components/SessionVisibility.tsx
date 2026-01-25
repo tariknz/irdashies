@@ -16,7 +16,7 @@ export const SessionVisibility = ({
       <div className="flex items-center justify-between">
         <div>
           <h4 className="text-md font-medium text-slate-300">
-            Show In Race Session
+            Race
           </h4>
         </div>
         <ToggleSwitch
@@ -33,7 +33,7 @@ export const SessionVisibility = ({
       <div className="flex items-center justify-between">
         <div>
           <h4 className="text-md font-medium text-slate-300">
-            Show In Lone Qualify Session
+            Lone Qualify
           </h4>
         </div>
         <ToggleSwitch
@@ -50,7 +50,7 @@ export const SessionVisibility = ({
       <div className="flex items-center justify-between">
         <div>
           <h4 className="text-md font-medium text-slate-300">
-            Show In Open Qualify Session
+            Open Qualify
           </h4>
         </div>
         <ToggleSwitch
@@ -67,7 +67,7 @@ export const SessionVisibility = ({
       <div className="flex items-center justify-between">
         <div>
           <h4 className="text-md font-medium text-slate-300">
-            Show In Practice Session
+            Practice
           </h4>
         </div>
         <ToggleSwitch
@@ -84,7 +84,7 @@ export const SessionVisibility = ({
       <div className="flex items-center justify-between">
         <div>
           <h4 className="text-md font-medium text-slate-300">
-            Show In Offline Testing Session
+            Offline Testing
           </h4>
         </div>
         <ToggleSwitch

@@ -36,12 +36,14 @@ interface DriverStatusBadgesProps {
   dnf?: boolean;
   tow?: boolean;
   out?: boolean;
+  lap?:number;
   pit?: boolean;
   lastPit?: boolean;
   lastPitLap?: number;
   pitStopDuration?: number | null;
   showPitTime?: boolean;
   className?: string;
+  pitLapDisplayMode?: string;
 }
 
 export const DriverStatusBadges = memo(
@@ -54,11 +56,13 @@ export const DriverStatusBadges = memo(
     tow,
     out,
     pit,
+    lap,
     lastPit,
     lastPitLap,
     pitStopDuration,
     showPitTime = false,
     className = '',
+    pitLapDisplayMode
   }: DriverStatusBadgesProps) => {
     const hasStatus =
       !hidden &&
@@ -69,6 +73,16 @@ export const DriverStatusBadges = memo(
     }
 
     const pitDuration = <>{showPitTime && lastPitLap && lastPitLap > 1 && pitStopDuration && <span className="text-yellow-500">{pitStopDuration} s</span>}</>;
+    let pitLap = lastPitLap;
+
+    if (pitLapDisplayMode == 'lapsSinceLastPit')
+    {
+      if (lap && lastPitLap)
+      {
+        pitLap = lap - lastPitLap + 1;
+      }
+    }
+
 
     return (
       <div className={`flex flex-row-reverse items-center gap-0.5 ${className}`}>
@@ -109,7 +123,7 @@ export const DriverStatusBadges = memo(
         )}
         {lastPit && !out && (
           <StatusBadge borderColorClass="border-yellow-500">
-            L {lastPitLap} {pitDuration}
+             L {pitLap} {pitDuration}
           </StatusBadge>
         )}
       </div>
