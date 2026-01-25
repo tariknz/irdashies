@@ -14,14 +14,30 @@ export const useIsSingleMake = () => {
   return useMemo(() => {
     if (!sessionDrivers?.length) return false;
 
-    // If multi-class, always show manufacturers regardless of hideIfSingleMake
+    // Multi-class = never single make
     if ((numCarClasses ?? 0) > 1) return false;
 
     const manufacturers = new Set<string>();
+
     for (const driver of sessionDrivers) {
+      // Skip non-competitors
+      if (
+        driver.CarIsPaceCar ||
+        driver.IsSpectator ||
+        driver.CarID == null
+      ) {
+        continue;
+      }
+
       const manufacturer =
-        CAR_ID_TO_CAR_MANUFACTURER[driver.CarID]?.manufacturer ?? 'unknown';
+        CAR_ID_TO_CAR_MANUFACTURER[driver.CarID]?.manufacturer;
+
+      //Skip unknown mappings
+      if (!manufacturer) continue;
+
       manufacturers.add(manufacturer);
+
+      // More than one real manufacturer = not single-make
       if (manufacturers.size > 1) return false;
     }
 

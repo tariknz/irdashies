@@ -28,21 +28,16 @@ import { getSimStatus } from './utils';
 import { getSdkOrMock } from './get-sdk';
 
 function copyTelemData<
-K extends keyof TelemetryVarList = keyof TelemetryVarList,
-T extends TelemetryVarList[K] = TelemetryVarList[K]
+  K extends keyof TelemetryVarList = keyof TelemetryVarList,
+  T extends TelemetryVarList[K] = TelemetryVarList[K]
 >(src: T, key: K, dest: TelemetryVarList, cache?: Partial<TelemetryVarList>): void {
   // Check if we have a cached entry to reuse
   const cached = cache?.[key];
   const useCache = cached && cached.value && Array.isArray(cached.value);
-
   if (!useCache) {
-    dest[key] = { ...src };
+    dest[key] = { value: src?.value ?? [] } as TelemetryVarList[K];
   } else {
-    // Reuse existing object structure and update metadata
-    const cachedVar = cached as TelemetryVarList[K];
-    // Copy all properties from src except value (which we'll update below)
-    Object.assign(cachedVar, { ...src, value: cachedVar.value });
-    dest[key] = cachedVar;
+    dest[key] = cached;
   }
 
   // bool
@@ -220,7 +215,7 @@ export class IRacingSDK {
       // First regex will drop the comma if no values follow (e.g. 'field: ,' => 'field: ')
       // Second regex will put value in quotes, if leading comma is followed by values (e.g. 'field: ,data' => 'field: ",data"')
       const fixedYaml = seshString?.replace(/(\w+: ) *, *\n/g, '$1 \n')
-                                   .replace(/(\w+: )(,.*)/g, '$1"$2" \n');
+        .replace(/(\w+: )(,.*)/g, '$1"$2" \n');
       this._sessionData = yaml.load(fixedYaml, { json: true }) as SessionData;
       this._dataVer = this.currDataVersion;
       return this._sessionData;
@@ -333,13 +328,11 @@ export class IRacingSDK {
   public getTelemetryVariable<T extends boolean | number | string>(telemVar: number | keyof TelemetryVarList): TelemetryVariable<T[]> | null {
     if (!this._sdk) return null;
 
-    // @todo Need to fix this type.
     const rawData = this._sdk?.getTelemetryVariable(telemVar as string);
     const parsed: Partial<TelemetryVarList> = {};
 
-    // @todo good grief these types need to be fixed asap
     copyTelemData(
-      rawData as TelemetryVariable<any>, // eslint-disable-line
+      rawData as TelemetryVariable,
       rawData.name as keyof TelemetryVarList,
       parsed as TelemetryVarList,
     );
