@@ -206,7 +206,6 @@ export const TagGroupsSettings = () => {
                     <button
                       onClick={() => {
                         setEditingPresetId(preset.id);
-                        setEditingPresetName(override?.name ?? preset.name);
                         setEditingPresetIcon(override?.icon ?? undefined);
                         setEditingPresetColor(override?.color ?? preset.color);
                       }}
