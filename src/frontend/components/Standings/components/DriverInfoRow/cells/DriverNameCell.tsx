@@ -59,18 +59,25 @@ export const DriverNameCell = memo(
       const found = Object.entries(tagSettings.mapping).find(([k]) => k.toLowerCase() === rawKey.toLowerCase());
       const groupId = found?.[1];
       if (!groupId) return undefined;
-      return getPresetTag(groupId);
+      const preset = getPresetTag(groupId);
+      if (preset) return preset;
+      const custom = tagSettings.groups?.find(g => g.id === groupId);
+      if (custom) return { id: custom.id, name: custom.name, icon: custom.icon } as { id: string; name?: string; icon?: string };
+      return undefined;
     };
 
     const tag = getTagForDriver();
 
     const renderTagStrip = () => {
       if (!tag) return null;
-      const preset = getPresetTag(tag.id);
-      const icon = preset?.icon ?? '';
+      const icon = tag.icon ?? (typeof tag.id === 'string' ? getPresetTag(tag.id)?.icon : undefined) ?? '';
       return (
-        <span style={{ display: 'inline-block', width: 20, height: 18, lineHeight: '18px', textAlign: 'center', borderRadius: 2, marginRight: 6 }}>
-          <span className="align-middle">{icon}</span>
+        <span style={{ display: 'inline-block', minWidth: 20, height: 18, lineHeight: '18px', textAlign: 'center', borderRadius: 2, marginRight: 6 }}>
+          {typeof icon === 'string' && icon.startsWith('data:') ? (
+            <img src={icon} alt="tag" style={{ height: 16, width: 16, objectFit: 'contain' }} />
+          ) : (
+            <span className="align-middle">{icon}</span>
+          )}
         </span>
       );
     };
