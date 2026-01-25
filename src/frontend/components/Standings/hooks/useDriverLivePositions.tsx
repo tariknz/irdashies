@@ -88,7 +88,7 @@ export const useDriverLivePositions = (): Record<number, number> => {
       if (p1carIdx !== 0) lastLapSnapshotRef.current.set(p1carIdx, (lastLapSnapshotRef.current.get(p1carIdx) ?? 0) - 1);
     }
 
-    console.log('lastLapSnapshot:', lastLapSnapshotRef.current ? JSON.stringify(Object.fromEntries(lastLapSnapshotRef.current), ) : undefined, lastLapSnapshotRef.current, p1CarRef.current, p1Car?.CarIdx);
+    // console.log('lastLapSnapshot:', lastLapSnapshotRef.current ? JSON.stringify(Object.fromEntries(lastLapSnapshotRef.current), ) : undefined, lastLapSnapshotRef.current, p1CarRef.current, p1Car?.CarIdx);
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionState, p1LapCompleted, p1Car]);
