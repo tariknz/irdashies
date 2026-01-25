@@ -1,7 +1,7 @@
 import { memo, useMemo } from 'react';
 import { getTailwindStyle } from '@irdashies/utils/colors';
 import { formatTime, type TimeFormat } from '@irdashies/utils/time';
-import { usePitStopDuration } from '@irdashies/context';
+import { usePitStopDuration, useDashboard } from '@irdashies/context';
 import type { Gap, LastTimeState } from '../../createStandings';
 import type {
   RelativeWidgetSettings,
@@ -132,7 +132,7 @@ export const DriverInfoRow = memo(
   (props: DriverRowInfoProps) => {
     // Transform props for hidden rows
     const displayProps = getDisplayProps(props);
-    
+
     const {
       carIdx,
       carNumber,
@@ -180,6 +180,9 @@ export const DriverInfoRow = memo(
       pitStopDuration: pitStopDurationProp,
       hideCarManufacturer,
     } = displayProps;
+    const { currentDashboard } = useDashboard();
+    const tagSettings = currentDashboard?.generalSettings?.driverTagSettings;
+    const widgetDriverTag = config?.driverTag;
     const pitStopDurations = usePitStopDuration();
     const pitStopDuration =
       pitStopDurationProp ?? pitStopDurations[carIdx] ?? null;
@@ -206,6 +209,15 @@ export const DriverInfoRow = memo(
     }, [numLapDeltasToShow]);
     
     const columnDefinitions = useMemo(() => {
+      const idxDriverTag = (displayOrder ?? []).indexOf('driverTag');
+      const idxDriverName = (displayOrder ?? []).indexOf('driverName');
+      const driverTagBeforeName =
+        idxDriverTag !== -1 && idxDriverName !== -1
+          ? idxDriverTag < idxDriverName
+          : widgetDriverTag?.position === 'before-name';
+      const widgetTagEnabled = widgetDriverTag?.enabled;
+      const widgetTagWidthPx = widgetDriverTag?.widthPx;
+
       const columns = [
         {
           id: 'position',
@@ -253,7 +265,7 @@ export const DriverInfoRow = memo(
             (displayOrder ? displayOrder.includes('driverName') : true) &&
             (config?.driverName?.enabled ?? true),
           component: (
-            <DriverNameCell
+                <DriverNameCell
               key="driverName"
               radioActive={radioActive}
               repair={repair}
@@ -262,6 +274,10 @@ export const DriverInfoRow = memo(
               showStatusBadges={config?.driverName?.showStatusBadges ?? true}
               fullName={name}
               nameFormat={config?.driverName?.nameFormat}
+              tagSettings={tagSettings}
+              widgetTagEnabled={widgetTagEnabled}
+              widgetTagBeforeName={driverTagBeforeName}
+              widgetTagWidthPx={widgetTagWidthPx}
             />
           ),
         },
@@ -497,6 +513,8 @@ export const DriverInfoRow = memo(
       lapTimeDeltas,
       emptyLapDeltaPlaceholders,
       hideCarManufacturer,
+      tagSettings,
+      widgetDriverTag,
     ]);
 
     return (

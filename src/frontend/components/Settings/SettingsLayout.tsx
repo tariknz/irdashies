@@ -25,6 +25,7 @@ import { FuelSettings } from './sections/FuelSettings';
 import { RejoinIndicatorSettings } from './sections/RejoinIndicatorSettings';
 import { PitlaneHelperSettings } from './sections/PitlaneHelperSettings';
 import { GeneralSettings } from './sections/GeneralSettings';
+import { TagGroupsSettings } from './sections/TagGroupsSettings';
 import { BlindSpotMonitorSettings } from './sections/BlindSpotMonitorSettings';
 import { GarageCoverSettings } from './sections/GarageCoverSettings';
 import { ProfileSettings } from './sections/ProfileSettings';
@@ -227,6 +228,11 @@ export const SettingsLayout = () => {
                 className={menuItemClass('/weather')}
               >
                 Weather
+              </Link>
+            </li>
+            <li>
+              <Link to="/settings/tag-groups" className={menuItemClass('/tag-groups')}>
+                Tag Groups
               </Link>
             </li>
           </ul>
