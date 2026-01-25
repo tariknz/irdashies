@@ -1,11 +1,11 @@
-import { useMemo } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import { getPresetTag } from '../../../../constants/driverTagBadges';
 import type { DriverTagSettings } from '@irdashies/types';
 
 export interface ResolvedDriverTag {
   id: string;
   name?: string;
-  icon?: string;
+  icon?: ReactNode | string | unknown;
   color?: number;
 }
 
@@ -28,7 +28,7 @@ export const useDriverTag = (
   }, [tagSettings?.mapping]);
 
   const groupsById = useMemo(() => {
-    const map = new Map<string, { id: string; name?: string; icon?: string; color?: number }>();
+    const map = new Map<string, { id: string; name?: string; icon?: unknown; color?: number }>();
     const g = tagSettings?.groups;
     if (g) {
       for (const grp of g) {
