@@ -1,6 +1,9 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { formatFuel } from '../fuelCalculations';
 import type { FuelCalculation, FuelCalculatorSettings } from '../types';
+import { useFuelStore } from '../FuelStore';
+import { useDashboard } from '@irdashies/context';
+import { ConsumptionGraphWidget } from './ConsumptionGraphWidget';
 
 interface FuelCalculator2WidgetProps {
     fuelData: FuelCalculation | null;
@@ -262,6 +265,7 @@ export const FuelCalculator2PitScenarios: React.FC<FuelCalculator2WidgetProps> =
                     const lapsToCover = fuelData.lapsRemaining; // Rough estimate, technically depends on when we pit
                     const fuelNeeded = lapsToCover * fuelPerLap;
                     const toAdd = Math.max(0, fuelNeeded - displayData.fuelLevel);
+                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
                     const finishBuffer = displayData.fuelLevel + toAdd - fuelNeeded; // Should be ~0 if we add exact
 
                     // NOTE: The calculation in mockup implies "Add" to reach a certain comfortable Finish buffer?
@@ -353,6 +357,60 @@ export const FuelCalculator2TimeEmpty: React.FC<FuelCalculator2WidgetProps> = ({
                     {formatTime(secondsLeft)}
                 </span>
             </div>
+        </div>
+    );
+};
+
+export const FuelCalculator2HistoryGraph: React.FC<FuelCalculator2WidgetProps> = ({ settings, fuelUnits }) => {
+    // Access store directly to be self-contained
+    const lapHistory = useFuelStore((state) => state.lapHistory);
+    const { isDemoMode } = useDashboard();
+
+    // Default to histogram if not specified in settings
+    const consumptionGraphType = settings?.consumptionGraphType || 'histogram';
+
+    const graphData = useMemo(() => {
+        const lapCount = consumptionGraphType === 'line' ? 30 : 15; // default to fewer for compact
+        // Convert Map to array and sort by lap number descending
+        const history = Array.from(lapHistory.values()).sort(
+            (a, b) => b.lapNumber - a.lapNumber
+        );
+
+        // Filter to valid laps (not out-laps) and take last N
+        const validLaps = history
+            .filter((lap) => !lap.isOutLap && lap.fuelUsed > 0)
+            .slice(0, lapCount)
+            .reverse(); // Oldest to newest for graph
+
+        if (validLaps.length < 2) return null;
+
+        const fuelValues = validLaps.map((lap) => lap.fuelUsed);
+        const avgFuel =
+            fuelValues.reduce((sum, v) => sum + v, 0) / fuelValues.length;
+        const minFuel = Math.min(...fuelValues);
+        const maxFuel = Math.max(...fuelValues);
+
+        return {
+            laps: validLaps,
+            fuelValues,
+            avgFuel,
+            minFuel,
+            maxFuel,
+        };
+    }, [lapHistory, consumptionGraphType]);
+
+    // Reuse the existing widget!
+    if (settings && settings.showConsumptionGraph === false) return null;
+
+    return (
+        <div className="mt-2 mb-1 w-full flex-1 min-h-[60px] flex flex-col">
+            <ConsumptionGraphWidget
+                graphData={isDemoMode ? null : graphData}
+                consumptionGraphType={consumptionGraphType}
+                fuelUnits={fuelUnits}
+                showConsumptionGraph={true}
+                editMode={false}
+            />
         </div>
     );
 };

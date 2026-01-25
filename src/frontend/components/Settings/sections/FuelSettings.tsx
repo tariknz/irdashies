@@ -76,6 +76,7 @@ const AVAILABLE_WIDGETS_FUEL2: { id: string; label: string }[] = [
   { id: 'fuel2Gauge', label: 'Fuel Gauge' },
   { id: 'fuel2Grid', label: 'Consumption Grid' },
   { id: 'fuel2Scenarios', label: 'Pit Scenarios' },
+  { id: 'fuel2Graph', label: 'Consumption History' },
   { id: 'fuel2TimeEmpty', label: 'Time Until Empty' },
 ];
 
@@ -118,18 +119,19 @@ const DEFAULT_TREE_FUEL2: LayoutNode = {
       id: 'box-1',
       type: 'box',
       direction: 'col',
-      widgets: ['fuel2Header', 'fuel2Gauge', 'fuel2Grid', 'fuel2Scenarios', 'fuel2TimeEmpty'],
+      widgets: ['fuel2Header', 'fuel2Gauge', 'fuel2Grid', 'fuel2Scenarios', 'fuel2Graph', 'fuel2TimeEmpty'],
     }
   ]
 };
 
-const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => {
+const SingleFuelWidgetSettings = ({ widgetId, isFuel2 }: { widgetId: string, isFuel2: boolean }) => {
   const { currentDashboard } = useDashboard();
   const savedSettings = currentDashboard?.widgets.find(
     (w) => w.id === widgetId
   ) as FuelWidgetSettings | undefined;
 
-  const isFuel2 = savedSettings?.type === 'fuel2';
+  // Uses isFuel2 passed from parent to avoid race condition with savedSettings being undefined on first render
+  // const isFuel2 = savedSettings?.type === 'fuel2'; 
 
   const [settings, setSettings] = useState<FuelWidgetSettings>(() => {
     const initialConfig = migrateConfig(savedSettings?.config);
@@ -145,6 +147,8 @@ const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => {
   });
 
   const availableWidgets = isFuel2 ? AVAILABLE_WIDGETS_FUEL2 : AVAILABLE_WIDGETS;
+
+
 
   // Calculate tree state from settings (migrating if needed)
   const currentTree = useMemo(() => {
@@ -663,7 +667,13 @@ export const FuelSettings = ({ widgetType = 'fuel' }: { widgetType?: 'fuel' | 'f
       </div>
 
       {/* Render settings for selected ID */}
-      {selectedId && <SingleFuelWidgetSettings key={selectedId} widgetId={selectedId} />}
+      {selectedId && (() => {
+        const selectedWidget = fuelWidgets.find(w => w.id === selectedId);
+        // Infer type if widget not yet in list (race condition) or use widget property
+        const isSelectedFuel2 = selectedWidget ? selectedWidget.type === 'fuel2' : (selectedId.startsWith('fuel2') || widgetType === 'fuel2');
+
+        return <SingleFuelWidgetSettings key={selectedId} widgetId={selectedId} isFuel2={isSelectedFuel2} />;
+      })()}
     </div>
   );
 };

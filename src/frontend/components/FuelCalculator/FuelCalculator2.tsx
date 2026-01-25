@@ -12,6 +12,7 @@ import {
     FuelCalculator2ConsumptionGrid,
     FuelCalculator2PitScenarios,
     FuelCalculator2TimeEmpty,
+    FuelCalculator2HistoryGraph,
 } from './widgets/FuelCalculator2Widgets';
 import type { FuelCalculatorSettings } from './types';
 import type { LayoutNode } from '../Settings/types';
@@ -214,7 +215,7 @@ export const FuelCalculator2 = (props: FuelCalculatorProps) => {
                         id: 'box-1',
                         type: 'box' as const,
                         direction: 'col' as const,
-                        widgets: ['fuel2Header', 'fuel2Gauge', 'fuel2Grid', 'fuel2Scenarios', 'fuel2TimeEmpty'],
+                        widgets: ['fuel2Header', 'fuel2Gauge', 'fuel2Grid', 'fuel2Scenarios', 'fuel2Graph', 'fuel2TimeEmpty'],
                         weight: 1
                     }
                 ]
@@ -265,6 +266,9 @@ export const FuelCalculator2 = (props: FuelCalculatorProps) => {
             case 'fuel2TimeEmpty':
             case 'modernTimeEmpty':
                 return <FuelCalculator2TimeEmpty key={widgetId} fuelData={fuelData} displayData={displayData} fuelUnits={fuelUnits} settings={settings} />;
+            case 'fuel2Graph':
+            case 'historyGraph':
+                return <FuelCalculator2HistoryGraph key={widgetId} fuelData={fuelData} displayData={displayData} fuelUnits={fuelUnits} settings={settings} />;
             default: return null;
         }
     };
