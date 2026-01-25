@@ -44,11 +44,21 @@ export const InputTrace = ({ input, settings }: InputTraceProps) => {
   const bufferSize = maxSamples;
 
   // Circular buffers - pre-allocated arrays that are reused
-  const brakeArray = useRef<number[]>(Array.from({ length: bufferSize }, () => 0));
-  const brakeABSArray = useRef<boolean[]>(Array.from({ length: bufferSize }, () => false));
-  const throttleArray = useRef<number[]>(Array.from({ length: bufferSize }, () => 0));
-  const steerArray = useRef<number[]>(Array.from({ length: bufferSize }, () => 0.5));
-  const clutchArray = useRef<number[]>(Array.from({ length: bufferSize }, () => 0));
+  const brakeArray = useRef<number[]>(
+    Array.from({ length: bufferSize }, () => 0)
+  );
+  const brakeABSArray = useRef<boolean[]>(
+    Array.from({ length: bufferSize }, () => false)
+  );
+  const throttleArray = useRef<number[]>(
+    Array.from({ length: bufferSize }, () => 0)
+  );
+  const steerArray = useRef<number[]>(
+    Array.from({ length: bufferSize }, () => 0.5)
+  );
+  const clutchArray = useRef<number[]>(
+    Array.from({ length: bufferSize }, () => 0)
+  );
 
   // Write index for circular buffer (oldest data point position)
   const writeIndex = useRef<number>(0);
@@ -76,7 +86,10 @@ export const InputTrace = ({ input, settings }: InputTraceProps) => {
       }
       if (includeSteer) {
         const angleRad = input.steer ?? 0;
-        const normalizedValue = Math.max(0, Math.min(1, (angleRad / (2 * Math.PI)) + 0.5));
+        const normalizedValue = Math.max(
+          0,
+          Math.min(1, angleRad / (2 * Math.PI) + 0.5)
+        );
         steerArray.current[idx] = normalizedValue;
       }
 
@@ -89,20 +102,36 @@ export const InputTrace = ({ input, settings }: InputTraceProps) => {
         valueArrayWithColors.push({
           values: steerArray.current,
           color: STEER_COLOR,
-          isCentered: true
+          isCentered: true,
         });
       }
-      if (includeThrottle) valueArrayWithColors.push({ values: throttleArray.current, color: THROTTLE_COLOR });
+      if (includeClutch)
+        valueArrayWithColors.push({
+          values: clutchArray.current,
+          color: CLUTCH_COLOR,
+        });
+      if (includeThrottle)
+        valueArrayWithColors.push({
+          values: throttleArray.current,
+          color: THROTTLE_COLOR,
+        });
       if (includeBrake) {
         valueArrayWithColors.push({
           values: brakeArray.current,
           color: BRAKE_COLOR,
           absStates: includeAbs ? brakeABSArray.current : undefined,
-          absColor: includeAbs ? BRAKE_ABS_COLOR : undefined
+          absColor: includeAbs ? BRAKE_ABS_COLOR : undefined,
         });
       }
-      if (includeClutch) valueArrayWithColors.push({ values: clutchArray.current, color: CLUTCH_COLOR });
-      drawGraph(svgRef.current, valueArrayWithColors, width, height, strokeWidth, bufferSize, writeIndex.current);
+      drawGraph(
+        svgRef.current,
+        valueArrayWithColors,
+        width,
+        height,
+        strokeWidth,
+        bufferSize,
+        writeIndex.current
+      );
     });
 
     return () => {
@@ -110,7 +139,18 @@ export const InputTrace = ({ input, settings }: InputTraceProps) => {
         cancelAnimationFrame(rafRef.current);
       }
     };
-  }, [input, includeThrottle, includeBrake, includeAbs, includeSteer, includeClutch, bufferSize, width, height, strokeWidth]);
+  }, [
+    input,
+    includeThrottle,
+    includeBrake,
+    includeAbs,
+    includeSteer,
+    includeClutch,
+    bufferSize,
+    width,
+    height,
+    strokeWidth,
+  ]);
 
   return (
     <svg
@@ -123,7 +163,12 @@ export const InputTrace = ({ input, settings }: InputTraceProps) => {
 };
 
 // Helper to read from circular buffer at logical index
-function getCircularValue<T>(array: T[], logicalIndex: number, writeIndex: number, bufferSize: number): T {
+function getCircularValue<T>(
+  array: T[],
+  logicalIndex: number,
+  writeIndex: number,
+  bufferSize: number
+): T {
   const physicalIndex = (writeIndex + logicalIndex) % bufferSize;
   return array[physicalIndex];
 }
@@ -171,15 +216,46 @@ function drawGraph(
   drawYAxis(svg, yScale, width);
 
   // Draw directly from circular buffers using index mapper
-  valueArrayWithColors.forEach(({ values, color, absStates, absColor, isCentered }) => {
-    if (absStates && absColor) {
-      drawABSAwareLine(svg, values as number[], absStates, xScale, yScale, color, absColor, strokeWidth, writeIndex, bufferSize);
-    } else if (isCentered) {
-      drawCenteredLine(svg, values as number[], xScale, yScale, color, height, writeIndex, bufferSize);
-    } else {
-      drawLine(svg, values as number[], xScale, yScale, color, strokeWidth, writeIndex, bufferSize);
+  valueArrayWithColors.forEach(
+    ({ values, color, absStates, absColor, isCentered }) => {
+      if (absStates && absColor) {
+        drawABSAwareLine(
+          svg,
+          values as number[],
+          absStates,
+          xScale,
+          yScale,
+          color,
+          absColor,
+          strokeWidth,
+          writeIndex,
+          bufferSize
+        );
+      } else if (isCentered) {
+        drawCenteredLine(
+          svg,
+          values as number[],
+          xScale,
+          yScale,
+          color,
+          height,
+          writeIndex,
+          bufferSize
+        );
+      } else {
+        drawLine(
+          svg,
+          values as number[],
+          xScale,
+          yScale,
+          color,
+          strokeWidth,
+          writeIndex,
+          bufferSize
+        );
+      }
     }
-  });
+  );
 }
 
 function drawYAxis(
@@ -282,7 +358,10 @@ function drawABSAwareLine(
   bufferSize: number
 ) {
   // Group consecutive points by ABS state, reading from circular buffer
-  const segments: { values: { value: number; index: number }[]; isABS: boolean }[] = [];
+  const segments: {
+    values: { value: number; index: number }[];
+    isABS: boolean;
+  }[] = [];
   let currentSegment: { value: number; index: number }[] = [];
   let currentIsABS = getCircularValue(absStates, 0, writeIndex, bufferSize);
 
@@ -299,7 +378,10 @@ function drawABSAwareLine(
       }
 
       // Start new segment with overlap point for continuity
-      currentSegment = [currentSegment[currentSegment.length - 1], { value, index: i }];
+      currentSegment = [
+        currentSegment[currentSegment.length - 1],
+        { value, index: i },
+      ];
       currentIsABS = isABS;
     }
   }
