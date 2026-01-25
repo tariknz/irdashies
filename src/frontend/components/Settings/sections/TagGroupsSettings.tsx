@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useDashboard, useSessionDrivers } from '@irdashies/context';
+import { useDashboard } from '@irdashies/context';
 import type { TagGroup, DriverTagSettings } from '@irdashies/types';
 
 const colorNumberToHex = (n: number) => `#${n.toString(16).padStart(6, '0')}`;
@@ -51,12 +51,10 @@ export const TagGroupsSettings = () => {
     updateDashboard({ ...settings, groups, mapping });
   };
 
-  const sessionDrivers = useSessionDrivers();
-
   const addMapping = () => {
-    const defaultName = sessionDrivers && sessionDrivers.length > 0 ? sessionDrivers[0].UserName : '';
-    const name = defaultName ?? '';
-    const mapping = { ...settings.mapping, [name]: settings.groups[0]?.id ?? '' };
+    const tmpKey = `__new__:${Date.now()}`;
+    const mapping = { ...settings.mapping, [tmpKey]: settings.groups[0]?.id ?? '' };
+    setEditingNames(prev => ({ ...prev, [tmpKey]: '' }));
     updateDashboard({ ...settings, mapping });
   };
 
@@ -115,57 +113,32 @@ export const TagGroupsSettings = () => {
           <p className="text-sm text-slate-400">Assign drivers by their iRacing display name. Each driver may belong to one group.</p>
 
           <div className="space-y-2 mt-2">
-            {Object.entries(settings.mapping).map(([driver, gid]) => {
-              const telemetryNames = sessionDrivers?.map(d => d.UserName) ?? [];
-              const isTelemetryName = telemetryNames.includes(driver);
-              const selectValue = isTelemetryName ? driver : '__custom__';
+            {Object.entries(settings.mapping).map(([driverKey, gid], idx) => {
+              const inputValue = editingNames[driverKey] ?? (driverKey.startsWith('__new__:') ? '' : driverKey);
               return (
-                <div key={driver || '__empty'} className="flex items-center gap-2">
-                  <select
-                    value={selectValue}
-                    onChange={e => {
-                      const v = e.target.value;
-                      if (v === '__custom__') {
-                        // open custom input
-                        setEditingNames(prev => ({ ...prev, [driver]: driver }));
-                        return;
+                <div key={driverKey || `mapping-${idx}`} className="flex items-center gap-2">
+                  <input
+                    value={inputValue}
+                    onChange={e => setEditingNames(prev => ({ ...prev, [driverKey]: e.target.value }))}
+                    onBlur={() => {
+                      const newName = (editingNames[driverKey] ?? inputValue).trim();
+                      if (!newName) {
+                        if (driverKey.startsWith('__new__:')) removeMapping(driverKey);
+                      } else if (newName !== driverKey) {
+                        renameMapping(driverKey, newName);
                       }
-                      if (v !== driver) renameMapping(driver, v);
+                      setEditingNames(prev => { const copy = { ...prev }; delete copy[driverKey]; return copy; });
                     }}
+                    onKeyDown={e => { if (e.key === 'Enter') (e.currentTarget as HTMLInputElement).blur(); }}
+                    placeholder="Enter iRacing display name"
                     className="px-2 py-1 bg-slate-700 rounded w-64"
-                  >
-                    <option value="">(select driver)</option>
-                    {/* show current mapping key first if it isn't in telemetry */}
-                    {driver && !isTelemetryName ? <option key="current" value={driver}>{driver}</option> : null}
-                    {telemetryNames.map((n) => (
-                      <option key={n} value={n}>{n}</option>
-                    ))}
-                    <option value="__custom__">Custom...</option>
-                  </select>
+                  />
 
-                  {/* custom input shown when user selects Custom... or when mapping key isn't in telemetry */}
-                  {((!isTelemetryName) || editingNames[driver]) && (
-                    <input
-                      value={editingNames[driver] ?? driver}
-                      onChange={e => setEditingNames(prev => ({ ...prev, [driver]: e.target.value }))}
-                      onBlur={() => {
-                        const newName = editingNames[driver] ?? driver;
-                        if ((newName ?? '').trim() && newName !== driver) {
-                          renameMapping(driver, newName);
-                        }
-                        setEditingNames(prev => { const copy = { ...prev }; delete copy[driver]; return copy; });
-                      }}
-                      onKeyDown={e => { if (e.key === 'Enter') (e.currentTarget as HTMLInputElement).blur(); }}
-                      placeholder="Driver display name"
-                      className="px-2 py-1 bg-slate-700 rounded w-64"
-                    />
-                  )}
-
-                  <select value={gid} onChange={e => updateMapping(driver, e.target.value)} className="px-2 py-1 bg-slate-700 rounded">
+                  <select value={gid} onChange={e => updateMapping(driverKey, e.target.value)} className="px-2 py-1 bg-slate-700 rounded">
                     <option value="">(none)</option>
                     {settings.groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
                   </select>
-                  <button onClick={() => removeMapping(driver)} className="px-2 py-1 bg-red-600 rounded">Remove</button>
+                  <button onClick={() => removeMapping(driverKey)} className="px-2 py-1 bg-red-600 rounded">Remove</button>
                 </div>
               );
             })}
@@ -173,80 +146,6 @@ export const TagGroupsSettings = () => {
 
           <div className="mt-2 flex gap-2">
             <button onClick={addMapping} className="px-3 py-1 bg-green-600 rounded">Add Mapping</button>
-          </div>
-
-          <div className="mt-4 p-3 bg-slate-700 rounded">
-            <h4 className="text-sm mb-2">Diagnostics</h4>
-            <p className="text-xs text-slate-400 mb-2">Compare iRacing telemetry `UserName` values with your saved mapping keys.</p>
-            {sessionDrivers && sessionDrivers.length > 0 ? (
-              (() => {
-                const telemetryNames = sessionDrivers.map(d => d.UserName);
-                const mappingKeys = Object.keys(settings.mapping);
-                const matched = mappingKeys.filter(k => telemetryNames.includes(k));
-                const unmatched = mappingKeys.filter(k => !telemetryNames.includes(k));
-                const unmappedTelemetry = telemetryNames.filter(n => !mappingKeys.includes(n));
-                return (
-                  <div className="text-xs">
-                    <div className="mb-1">Telemetry drivers: <strong>{telemetryNames.length}</strong></div>
-                    <div className="mb-1">Mapped keys: <strong>{mappingKeys.length}</strong> — matched: <strong>{matched.length}</strong>, unmatched: <strong>{unmatched.length}</strong></div>
-                    {unmatched.length > 0 && (
-                      <div className="mb-2">
-                        <div className="font-medium">Unmatched mapping keys</div>
-                        <ul className="list-disc ml-5">
-                          {unmatched.map(k => <li key={k} className="break-all">{k}</li>)}
-                        </ul>
-                      </div>
-                    )}
-                    {unmappedTelemetry.length > 0 && (
-                      <div>
-                        <div className="font-medium">Telemetry names not mapped</div>
-                        <ul className="list-disc ml-5">
-                          {unmappedTelemetry.slice(0, 20).map(n => <li key={n} className="break-all">{n}</li>)}
-                          {unmappedTelemetry.length > 20 && <li>and {unmappedTelemetry.length - 20} more...</li>}
-                        </ul>
-                      </div>
-                    )}
-                    <div className="mt-2">
-                      <button
-                        onClick={() => console.log('TagGroups diagnostics', { telemetryNames, mappingKeys, matched, unmatched, unmappedTelemetry })}
-                        className="px-2 py-1 bg-slate-600 rounded text-xs"
-                      >
-                        Log diagnostics to console
-                      </button>
-                    </div>
-                    {/* Widget-level diagnostics */}
-                    <div className="mt-3 border-t border-slate-600 pt-3">
-                      <div className="font-medium">Widget driverTag status</div>
-                      {(() => {
-                        const standingsWidget = currentDashboard?.widgets.find(w => w.id === 'standings');
-                        const relativeWidget = currentDashboard?.widgets.find(w => w.id === 'relative');
-                        const renderWidget = (w: any, label: string) => {
-                          if (!w) return <div key={label} className="text-xs text-slate-400">{label}: not present</div>;
-                          const cfg = w.config ?? {};
-                          const drvTag = cfg.driverTag ?? {};
-                          const displayOrder = cfg.displayOrder ?? [];
-                          const inDisplay = Array.isArray(displayOrder) ? displayOrder.includes('driverTag') : false;
-                          return (
-                            <div key={label} className="text-xs">
-                              <div>{label}: enabled={String(drvTag.enabled ?? false)}, position={drvTag.position ?? 'before-name'}, widthPx={drvTag.widthPx ?? 6}, inDisplayOrder={String(inDisplay)}</div>
-                            </div>
-                          );
-                        };
-
-                        return (
-                          <div className="text-xs mt-2">
-                            {renderWidget(standingsWidget, 'Standings')}
-                            {renderWidget(relativeWidget, 'Relative')}
-                          </div>
-                        );
-                      })()}
-                    </div>
-                  </div>
-                );
-              })()
-            ) : (
-              <div className="text-xs text-slate-400">No telemetry drivers available in this session.</div>
-            )}
           </div>
         </div>
 
