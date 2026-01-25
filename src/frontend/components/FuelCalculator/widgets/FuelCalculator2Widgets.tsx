@@ -10,6 +10,7 @@ interface FuelCalculator2WidgetProps {
     displayData: any; // Using the displayData from FuelCalculator which has some derived fields
     fuelUnits: 'L' | 'gal';
     settings?: FuelCalculatorSettings;
+    widgetId?: string;
 }
 
 // Map confidence to colors and text
@@ -43,7 +44,21 @@ const getConfidenceConfig = (confidence: string) => {
     }
 };
 
-export const FuelCalculator2Header: React.FC<FuelCalculator2WidgetProps> = ({ fuelData, fuelUnits }) => {
+const useWidgetStyles = (settings?: FuelCalculatorSettings, widgetId?: string) => {
+    return useMemo(() => {
+        if (!settings?.widgetStyles || !widgetId) return {};
+        const styles = settings.widgetStyles[widgetId];
+        if (!styles) return {};
+
+        return {
+            fontSize: styles.fontSize ? `${styles.fontSize}px` : undefined,
+        };
+    }, [settings, widgetId]);
+};
+
+export const FuelCalculator2Header: React.FC<FuelCalculator2WidgetProps> = ({ fuelData, fuelUnits, settings, widgetId }) => {
+    const styles = useWidgetStyles(settings, widgetId);
+
     if (!fuelData) return null;
 
     const stopsRemaining = fuelData.stopsRemaining ?? 0;
@@ -62,28 +77,30 @@ export const FuelCalculator2Header: React.FC<FuelCalculator2WidgetProps> = ({ fu
     if (confidence === 'low') lapsText = `${Math.floor(fuelData.lapsRemaining)}-${Math.ceil(fuelData.lapsRemaining + 2)} LAPS`;
 
     return (
-        <div className="flex items-center justify-between mb-1 pb-2 border-b border-slate-600/50">
+        <div style={styles} className="flex items-center justify-between mb-1 pb-2 border-b border-slate-600/50">
             <div className="flex items-center gap-6">
                 <div className="flex items-center">
-                    <span className="text-slate-500 text-xs font-semibold tracking-wider">STOPS</span>
-                    <span className="text-white font-bold text-sm ml-2">{stopsRemaining}</span>
+                    <span className="text-slate-500 text-[0.75em] font-semibold tracking-wider">STOPS</span>
+                    <span className="text-white font-bold text-[0.875em] ml-2">{stopsRemaining}</span>
                 </div>
                 <div className="flex items-center">
-                    <span className="text-slate-500 text-xs font-semibold tracking-wider">EARLIEST</span>
-                    <span className="text-green-400 font-bold text-sm ml-2">L{pitWindowOpen}</span>
+                    <span className="text-slate-500 text-[0.75em] font-semibold tracking-wider">EARLIEST</span>
+                    <span className="text-green-400 font-bold text-[0.875em] ml-2">L{pitWindowOpen}</span>
                 </div>
             </div>
             <div className="flex items-center">
                 <div className="flex items-center gap-2" title={`${confidence} confidence`}>
                     <div className={`w-2 h-2 rounded-full ${confConfig.bg} ${confConfig.pulse}`}></div>
-                    <span className={`${confConfig.color} text-xs font-bold`}>{lapsText}</span>
+                    <span className={`${confConfig.color} text-[0.75em] font-bold`}>{lapsText}</span>
                 </div>
             </div>
         </div>
     );
 };
 
-export const FuelCalculator2Gauge: React.FC<FuelCalculator2WidgetProps> = ({ fuelData, displayData, fuelUnits }) => {
+export const FuelCalculator2Gauge: React.FC<FuelCalculator2WidgetProps> = ({ fuelData, displayData, fuelUnits, settings, widgetId }) => {
+    const styles = useWidgetStyles(settings, widgetId);
+
     if (!fuelData) return null;
 
     const currentFuel = displayData.fuelLevel;
@@ -103,10 +120,10 @@ export const FuelCalculator2Gauge: React.FC<FuelCalculator2WidgetProps> = ({ fue
     const tankString = formatFuel(tankCapacity, fuelUnits, 0);
 
     return (
-        <div className="mb-4">
-            <div className="flex justify-between text-xs text-slate-400 mb-2 font-medium items-end">
+        <div style={styles} className="mb-4">
+            <div className="flex justify-between text-[0.75em] text-slate-400 mb-2 font-medium items-end">
                 <span className="mb-0.5">E</span>
-                <span className="text-white text-lg font-bold tracking-wide">{fuelString} / {lapsString} laps</span>
+                <span className="text-white text-[1.125em] font-bold tracking-wide">{fuelString} / {lapsString} laps</span>
                 <span className="mb-0.5">{tankString}</span>
             </div>
             <div className="h-2 bg-slate-700 rounded-full overflow-hidden shadow-inner border border-slate-600/50">
@@ -122,7 +139,9 @@ export const FuelCalculator2Gauge: React.FC<FuelCalculator2WidgetProps> = ({ fue
     );
 };
 
-export const FuelCalculator2ConsumptionGrid: React.FC<FuelCalculator2WidgetProps> = ({ fuelData, displayData, settings }) => {
+export const FuelCalculator2ConsumptionGrid: React.FC<FuelCalculator2WidgetProps> = ({ fuelData, displayData, settings, widgetId }) => {
+    const styles = useWidgetStyles(settings, widgetId);
+
     if (!fuelData) return null;
 
     // Master visibility toggle
@@ -179,7 +198,7 @@ export const FuelCalculator2ConsumptionGrid: React.FC<FuelCalculator2WidgetProps
     const refuelColor = 'text-cyan-400'; // Mockup uses cyan for refuel
 
     return (
-        <div className="grid grid-cols-5 gap-1 text-xs mb-2">
+        <div style={styles} className="grid grid-cols-5 gap-1 text-[0.75em] mb-2">
             <div className="text-slate-500"></div>
             <div className="text-slate-500 text-center">USE</div>
             <div className="text-slate-500 text-center">LAPS</div>
@@ -233,27 +252,29 @@ export const FuelCalculator2ConsumptionGrid: React.FC<FuelCalculator2WidgetProps
     );
 };
 
-export const FuelCalculator2PitScenarios: React.FC<FuelCalculator2WidgetProps> = ({ fuelData, displayData, settings }) => {
+export const FuelCalculator2PitScenarios: React.FC<FuelCalculator2WidgetProps> = ({ fuelData, displayData, settings, widgetId }) => {
+    const styles = useWidgetStyles(settings, widgetId);
+
     // Determine visibility based on settings (default true if missing)
     if (settings && settings.showFuelScenarios === false) return null;
 
     if (!fuelData || !displayData.targetScenarios || displayData.targetScenarios.length === 0) {
         // Show "Pit scenarios available after more laps" placeholder if empty
         return (
-            <>
+            <div style={styles}>
                 <div className="border-t border-slate-600/30 mb-2"></div>
-                <div className="text-xs text-center text-slate-400 mb-3 py-2 bg-slate-900/40 rounded">
+                <div className="text-[0.75em] text-center text-slate-400 mb-3 py-2 bg-slate-900/40 rounded">
                     Pit scenarios available after more laps
                 </div>
-            </>
+            </div>
         );
     }
 
     return (
-        <>
+        <div style={styles}>
             <div className="border-t border-slate-600/30 mb-2"></div>
 
-            <div className="grid grid-cols-4 gap-1 text-xs mb-3">
+            <div className="grid grid-cols-4 gap-1 text-[0.75em] mb-3">
                 <div className="text-slate-500 text-center">PIT @</div>
                 <div className="text-slate-500 text-center">ADD</div>
                 <div className="text-slate-500 text-center">FINISH</div>
@@ -323,11 +344,13 @@ export const FuelCalculator2PitScenarios: React.FC<FuelCalculator2WidgetProps> =
                     );
                 })}
             </div>
-        </>
+        </div>
     );
 };
 
-export const FuelCalculator2TimeEmpty: React.FC<FuelCalculator2WidgetProps> = ({ fuelData, displayData }) => {
+export const FuelCalculator2TimeEmpty: React.FC<FuelCalculator2WidgetProps> = ({ fuelData, displayData, settings, widgetId }) => {
+    const styles = useWidgetStyles(settings, widgetId);
+
     if (!fuelData) return null;
 
     // Calculate time until empty
@@ -350,10 +373,10 @@ export const FuelCalculator2TimeEmpty: React.FC<FuelCalculator2WidgetProps> = ({
     if (confidence === 'high') borderColor = 'border-green-500/50';
 
     return (
-        <div className={`bg-slate-900/80 rounded px-3 py-2 border ${borderColor}`}>
+        <div style={styles} className={`bg-slate-900/80 rounded px-3 py-2 border ${borderColor}`}>
             <div className="flex items-center justify-between">
-                <span className="text-slate-400 text-xs uppercase">Time Empty</span>
-                <span className="font-mono text-2xl font-bold text-white tracking-widest">
+                <span className="text-slate-400 text-[0.75em] uppercase">Time Empty</span>
+                <span className="font-mono text-[1.5em] font-bold text-white tracking-widest">
                     {formatTime(secondsLeft)}
                 </span>
             </div>
@@ -361,7 +384,9 @@ export const FuelCalculator2TimeEmpty: React.FC<FuelCalculator2WidgetProps> = ({
     );
 };
 
-export const FuelCalculator2HistoryGraph: React.FC<FuelCalculator2WidgetProps> = ({ settings, fuelUnits }) => {
+export const FuelCalculator2HistoryGraph: React.FC<FuelCalculator2WidgetProps> = ({ settings, fuelUnits, widgetId }) => {
+    const styles = useWidgetStyles(settings, widgetId);
+
     // Access store directly to be self-contained
     const lapHistory = useFuelStore((state) => state.lapHistory);
     const { isDemoMode } = useDashboard();
@@ -403,7 +428,7 @@ export const FuelCalculator2HistoryGraph: React.FC<FuelCalculator2WidgetProps> =
     if (settings && settings.showConsumptionGraph === false) return null;
 
     return (
-        <div className="mt-2 mb-1 w-full flex-1 min-h-[60px] flex flex-col">
+        <div style={styles} className="mt-2 mb-1 w-full flex-1 min-h-[60px] flex flex-col">
             <ConsumptionGraphWidget
                 graphData={isDemoMode ? null : graphData}
                 consumptionGraphType={consumptionGraphType}

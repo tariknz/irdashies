@@ -124,6 +124,41 @@ const DEFAULT_TREE_FUEL2: LayoutNode = {
   ]
 };
 
+const FontSizeInput = ({ widgetId, settings, onChange }: { widgetId: string, settings: FuelWidgetSettings, onChange: (change: Partial<FuelWidgetSettings['config']>) => void }) => {
+  const style = settings.config.widgetStyles?.[widgetId];
+  // Default values per widget type if we wanted, but for now undefined implies CSS default
+  // Just show empty if undefined
+  const fontSize = style?.fontSize;
+
+  return (
+    <div className="flex items-center gap-2">
+      <input
+        type="number"
+        min="8"
+        max="48"
+        placeholder="Def"
+        value={fontSize ?? ''}
+        onChange={(e) => {
+          const val = e.target.value ? parseInt(e.target.value) : undefined;
+          const newStyles = { ...settings.config.widgetStyles };
+          if (val) {
+            newStyles[widgetId] = { ...newStyles[widgetId], fontSize: val };
+          } else {
+            if (newStyles[widgetId]) {
+              const { fontSize: _, ...rest } = newStyles[widgetId];
+              if (Object.keys(rest).length === 0) delete newStyles[widgetId];
+              else newStyles[widgetId] = rest;
+            }
+          }
+          onChange({ widgetStyles: newStyles });
+        }}
+        className="w-14 px-1 py-0.5 bg-slate-700 text-slate-200 rounded text-xs text-center borderBorder-slate-600 focus:border-blue-500 focus:outline-none"
+      />
+      <span className="text-[10px] text-slate-500">px</span>
+    </div>
+  );
+};
+
 const SingleFuelWidgetSettings = ({ widgetId, isFuel2 }: { widgetId: string, isFuel2: boolean }) => {
   const { currentDashboard } = useDashboard();
   const savedSettings = currentDashboard?.widgets.find(
@@ -195,6 +230,24 @@ const SingleFuelWidgetSettings = ({ widgetId, isFuel2 }: { widgetId: string, isF
 
             <div className={`${isFuel2 ? '' : 'border-t border-slate-600/50 pt-6'} space-y-4`}>
               <h3 className="text-md font-medium text-slate-200">Widget Settings</h3>
+
+              {/* Widget Styles for Fuel 2 specific components without toggles */}
+              {isFuel2 && (
+                <div className="space-y-4 pb-4 mb-4 border-b border-slate-700">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-slate-300">Header</span>
+                    <FontSizeInput widgetId="fuel2Header" settings={settings} onChange={handleConfigChange} />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-slate-300">Fuel Gauge</span>
+                    <FontSizeInput widgetId="fuel2Gauge" settings={settings} onChange={handleConfigChange} />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-slate-300">Time Until Empty</span>
+                    <FontSizeInput widgetId="fuel2TimeEmpty" settings={settings} onChange={handleConfigChange} />
+                  </div>
+                </div>
+              )}
 
               {/* Fuel Units */}
               <div className="flex items-center justify-between">
@@ -269,12 +322,15 @@ const SingleFuelWidgetSettings = ({ widgetId, isFuel2 }: { widgetId: string, isF
                   Show Consumption Details
                   {isFuel2 && <span className="block text-xs text-slate-500">Configures rows in Consumption Grid</span>}
                 </span>
-                <ToggleSwitch
-                  enabled={settings.config.showConsumption}
-                  onToggle={(newValue) =>
-                    handleConfigChange({ showConsumption: newValue })
-                  }
-                />
+                <div className="flex items-center gap-4">
+                  {isFuel2 && <FontSizeInput widgetId="fuel2Grid" settings={settings} onChange={handleConfigChange} />}
+                  <ToggleSwitch
+                    enabled={settings.config.showConsumption}
+                    onToggle={(newValue) =>
+                      handleConfigChange({ showConsumption: newValue })
+                    }
+                  />
+                </div>
               </div>
 
               {/* Consumption Details (when enabled) */}
@@ -410,12 +466,15 @@ const SingleFuelWidgetSettings = ({ widgetId, isFuel2 }: { widgetId: string, isF
               {/* Show Fuel Scenarios */}
               <div className="flex items-center justify-between">
                 <span className="text-sm text-slate-300">Show Fuel Scenarios</span>
-                <ToggleSwitch
-                  enabled={settings.config.showFuelScenarios}
-                  onToggle={(newValue) =>
-                    handleConfigChange({ showFuelScenarios: newValue })
-                  }
-                />
+                <div className="flex items-center gap-4">
+                  {isFuel2 && <FontSizeInput widgetId="fuel2Scenarios" settings={settings} onChange={handleConfigChange} />}
+                  <ToggleSwitch
+                    enabled={settings.config.showFuelScenarios}
+                    onToggle={(newValue) =>
+                      handleConfigChange({ showFuelScenarios: newValue })
+                    }
+                  />
+                </div>
               </div>
 
               {/* Show Consumption Graph - Legacy Only */}
@@ -449,6 +508,46 @@ const SingleFuelWidgetSettings = ({ widgetId, isFuel2 }: { widgetId: string, isF
                               consumptionGraphType: e.target.value as
                                 | 'line'
                                 | 'histogram',
+                            })
+                          }
+                          className="px-3 py-1 bg-slate-700 text-slate-200 rounded text-sm"
+                        >
+                          <option value="line">Line Chart</option>
+                          <option value="histogram">Histogram</option>
+                        </select>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {/* Show Consumption Graph - Fuel 2 */}
+              {isFuel2 && (
+                <>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-slate-300">
+                      Show Consumption Graph
+                    </span>
+                    <div className="flex items-center gap-4">
+                      <FontSizeInput widgetId="fuel2Graph" settings={settings} onChange={handleConfigChange} />
+                      <ToggleSwitch
+                        enabled={settings.config.showConsumptionGraph !== false}
+                        onToggle={(newValue) =>
+                          handleConfigChange({ showConsumptionGraph: newValue })
+                        }
+                      />
+                    </div>
+                  </div>
+                  {/* Allow configuring graph type for Fuel 2 as well */}
+                  {settings.config.showConsumptionGraph !== false && (
+                    <div className="ml-4 pl-4 border-l border-slate-700">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-slate-300">Graph Type</span>
+                        <select
+                          value={settings.config.consumptionGraphType}
+                          onChange={(e) =>
+                            handleConfigChange({
+                              consumptionGraphType: e.target.value as 'line' | 'histogram',
                             })
                           }
                           className="px-3 py-1 bg-slate-700 text-slate-200 rounded text-sm"
@@ -547,6 +646,8 @@ const SingleFuelWidgetSettings = ({ widgetId, isFuel2 }: { widgetId: string, isF
                   />
                 </div>
               </div>
+
+
             </div>
           </div>
         );

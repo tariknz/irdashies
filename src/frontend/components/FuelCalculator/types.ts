@@ -137,6 +137,8 @@ export interface FuelCalculatorSettings {
   layoutConfig?: BoxConfig[];
   /** Recursive Layout Tree (Supersedes layoutConfig) */
   layoutTree?: any; // Using any for now to match actual usage in FuelCalculator.tsx, but should be LayoutNode
+  /** Per-widget styling overrides (e.g. fontSize) */
+  widgetStyles?: Record<string, { fontSize?: number }>;
 }
 
 export interface BoxConfig {

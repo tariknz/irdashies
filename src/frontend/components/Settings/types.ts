@@ -299,6 +299,8 @@ export interface FuelWidgetSettings extends BaseWidgetSettings {
     layoutConfig?: BoxConfig[];
     /** Recursive Layout Tree (Supersedes layoutConfig) */
     layoutTree?: LayoutNode;
+    /** Per-widget styling overrides (e.g. fontSize) */
+    widgetStyles?: Record<string, { fontSize?: number }>;
   };
 }
 

@@ -252,23 +252,23 @@ export const FuelCalculator2 = (props: FuelCalculatorProps) => {
         switch (widgetId) {
             case 'fuel2Header':
             case 'modernHeader':
-                return <FuelCalculator2Header key={widgetId} fuelData={fuelData} displayData={displayData} fuelUnits={fuelUnits} settings={settings} />;
+                return <FuelCalculator2Header key={widgetId} widgetId={widgetId} fuelData={fuelData} displayData={displayData} fuelUnits={fuelUnits} settings={settings} />;
             case 'fuel2Gauge':
             case 'modernGauge':
-                return <FuelCalculator2Gauge key={widgetId} fuelData={fuelData} displayData={displayData} fuelUnits={fuelUnits} settings={settings} />;
+                return <FuelCalculator2Gauge key={widgetId} widgetId={widgetId} fuelData={fuelData} displayData={displayData} fuelUnits={fuelUnits} settings={settings} />;
             case 'fuel2Grid':
             case 'modernGrid':
                 // Use frozen data for grid to avoid values jumping during lap
-                return <FuelCalculator2ConsumptionGrid key={widgetId} fuelData={frozenFuelData} displayData={frozenFuelData} fuelUnits={fuelUnits} settings={settings} />;
+                return <FuelCalculator2ConsumptionGrid key={widgetId} widgetId={widgetId} fuelData={frozenFuelData} displayData={frozenFuelData} fuelUnits={fuelUnits} settings={settings} />;
             case 'fuel2Scenarios':
             case 'modernScenarios':
-                return <FuelCalculator2PitScenarios key={widgetId} fuelData={fuelData} displayData={displayData} fuelUnits={fuelUnits} settings={settings} />;
+                return <FuelCalculator2PitScenarios key={widgetId} widgetId={widgetId} fuelData={fuelData} displayData={displayData} fuelUnits={fuelUnits} settings={settings} />;
             case 'fuel2TimeEmpty':
             case 'modernTimeEmpty':
-                return <FuelCalculator2TimeEmpty key={widgetId} fuelData={fuelData} displayData={displayData} fuelUnits={fuelUnits} settings={settings} />;
+                return <FuelCalculator2TimeEmpty key={widgetId} widgetId={widgetId} fuelData={fuelData} displayData={displayData} fuelUnits={fuelUnits} settings={settings} />;
             case 'fuel2Graph':
             case 'historyGraph':
-                return <FuelCalculator2HistoryGraph key={widgetId} fuelData={fuelData} displayData={displayData} fuelUnits={fuelUnits} settings={settings} />;
+                return <FuelCalculator2HistoryGraph key={widgetId} widgetId={widgetId} fuelData={fuelData} displayData={displayData} fuelUnits={fuelUnits} settings={settings} />;
             default: return null;
         }
     };
