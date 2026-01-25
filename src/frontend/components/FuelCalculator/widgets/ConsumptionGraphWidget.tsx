@@ -6,6 +6,7 @@ interface ConsumptionGraphWidgetProps {
   fuelUnits: 'L' | 'gal';
   showConsumptionGraph: boolean;
   editMode?: boolean;
+  manualTarget?: number;
 }
 
 export const ConsumptionGraphWidget = ({
@@ -13,7 +14,8 @@ export const ConsumptionGraphWidget = ({
   consumptionGraphType,
   fuelUnits,
   showConsumptionGraph,
-  editMode
+  editMode,
+  manualTarget
 }: ConsumptionGraphWidgetProps) => {
   if (!showConsumptionGraph) return null;
 
@@ -29,6 +31,10 @@ export const ConsumptionGraphWidget = ({
 
   const { maxFuel, avgFuel, fuelValues } = effectiveGraphData;
 
+  // Calculate Y Max based on max fuel and potentially manual target
+  const rawYMax = Math.max(maxFuel * 1.15, 0.1);
+  const yMax = manualTarget ? Math.max(rawYMax, manualTarget * 1.15) : rawYMax;
+
   return (
     <div
       data-widget-id="history-graph"
@@ -42,8 +48,8 @@ export const ConsumptionGraphWidget = ({
       <div className="h-16 relative bg-black/40 rounded border border-slate-700/50 mx-1 overflow-hidden">
         {consumptionGraphType === 'histogram'
           ? (() => {
-            const yMax = Math.max(maxFuel * 1.15, 0.1);
             const avgYPct = (avgFuel / yMax) * 100;
+            const targetYPct = manualTarget ? (manualTarget / yMax) * 100 : 0;
             const displayValues = fuelValues.slice(-30);
 
             return (
@@ -56,16 +62,28 @@ export const ConsumptionGraphWidget = ({
                   <span className="absolute right-1 bottom-0.5 text-[7px] text-yellow-400 font-bold opacity-80 uppercase">avg</span>
                 </div>
 
+                {/* Target Line */}
+                {manualTarget && manualTarget > 0 && (
+                  <div
+                    className="absolute left-0 right-0 border-t border-cyan-400/80 z-20 pointer-events-none"
+                    style={{ bottom: `${targetYPct}%` }}
+                  >
+                    <span className="absolute left-1 bottom-0.5 text-[7px] text-cyan-400 font-bold opacity-80 uppercase">tgt</span>
+                  </div>
+                )}
+
                 {/* Histogram Bars */}
                 {displayValues.map((fuel: number, i: number) => {
                   const heightPct = Math.max((fuel / yMax) * 100, 4);
-                  const isAboveAvg = fuel > avgFuel;
+                  // Use target for color comparison if available, else average
+                  const isHigh = manualTarget ? fuel > manualTarget : fuel > avgFuel;
+
                   return (
                     <div
                       key={`${i}-${fuel}-${heightPct}`}
-                      className={`flex-1 min-w-[3px] max-w-[12px] rounded-t-[1px] transition-all duration-300 ${isAboveAvg
-                          ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.4)]'
-                          : 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]'
+                      className={`flex-1 min-w-[3px] max-w-[12px] rounded-t-[1px] transition-all duration-300 ${isHigh
+                        ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.4)]'
+                        : 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]'
                         }`}
                       style={{ height: `${heightPct}%` }}
                     >
@@ -77,7 +95,6 @@ export const ConsumptionGraphWidget = ({
             );
           })()
           : (() => {
-            const yMax = Math.max(maxFuel * 1.15, 0.1);
             const displayValues = fuelValues.slice(-10);
             if (displayValues.length < 2) {
               return <div className="h-full w-full flex items-center justify-center text-[10px] text-slate-500 italic">Recording lap data...</div>;
@@ -97,6 +114,14 @@ export const ConsumptionGraphWidget = ({
                   className="absolute left-0 right-0 border-t border-dashed border-yellow-400/30 z-0"
                   style={{ bottom: `${(avgFuel / yMax) * 100}%` }}
                 />
+                {/* Target Line - Line Chart */}
+                {manualTarget && manualTarget > 0 && (
+                  <div
+                    className="absolute left-0 right-0 border-t border-cyan-400/50 z-0"
+                    style={{ bottom: `${(manualTarget / yMax) * 100}%` }}
+                  />
+                )}
+
                 <svg
                   viewBox="0 0 100 100"
                   className="absolute inset-0 w-full h-full p-2"
@@ -120,6 +145,13 @@ export const ConsumptionGraphWidget = ({
       <div className="text-[11px] font-bold text-slate-200 text-center mt-1.5 flex items-center justify-center gap-1.5">
         <span className="text-slate-500 font-normal uppercase text-[9px]">Avg</span>
         {formatFuel(avgFuel, fuelUnits)}
+        {manualTarget && manualTarget > 0 && (
+          <>
+            <span className="text-slate-600">|</span>
+            <span className="text-cyan-500 font-normal uppercase text-[9px]">Tgt</span>
+            <span className="text-cyan-400">{formatFuel(manualTarget, fuelUnits)}</span>
+          </>
+        )}
       </div>
     </div>
   );

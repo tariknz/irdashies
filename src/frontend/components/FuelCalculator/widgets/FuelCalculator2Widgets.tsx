@@ -422,7 +422,7 @@ export const FuelCalculator2HistoryGraph: React.FC<FuelCalculator2WidgetProps> =
             minFuel,
             maxFuel,
         };
-    }, [lapHistory, consumptionGraphType]);
+    }, [lapHistory, lapHistory.size, consumptionGraphType]);
 
     // Reuse the existing widget!
     if (settings && settings.showConsumptionGraph === false) return null;
@@ -435,6 +435,7 @@ export const FuelCalculator2HistoryGraph: React.FC<FuelCalculator2WidgetProps> =
                 fuelUnits={fuelUnits}
                 showConsumptionGraph={true}
                 editMode={false}
+                manualTarget={settings?.manualTarget}
             />
         </div>
     );

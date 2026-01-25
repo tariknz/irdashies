@@ -124,6 +124,7 @@ export interface FuelCalculatorSettings {
   consumptionGraphType?: 'line' | 'histogram';
   /** Safety margin percentage (0-1) */
   safetyMargin: number;
+  manualTarget?: number;
   /** Background opacity (0-100) */
   background: { opacity: number };
   /** Display mode for fuel required column: 'toFinish' shows total fuel needed, 'toAdd' shows fuel to add at stop */

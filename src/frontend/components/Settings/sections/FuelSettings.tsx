@@ -538,9 +538,10 @@ const SingleFuelWidgetSettings = ({ widgetId, isFuel2 }: { widgetId: string, isF
                       />
                     </div>
                   </div>
+
                   {/* Allow configuring graph type for Fuel 2 as well */}
                   {settings.config.showConsumptionGraph !== false && (
-                    <div className="ml-4 pl-4 border-l border-slate-700">
+                    <div className="ml-4 pl-4 border-l border-slate-700 space-y-2">
                       <div className="flex items-center justify-between">
                         <span className="text-xs text-slate-300">Graph Type</span>
                         <select
@@ -555,6 +556,30 @@ const SingleFuelWidgetSettings = ({ widgetId, isFuel2 }: { widgetId: string, isF
                           <option value="line">Line Chart</option>
                           <option value="histogram">Histogram</option>
                         </select>
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-slate-300">
+                          Target Line
+                          <span className="block text-[10px] text-slate-500">
+                            Optional target ref (0 to hide)
+                          </span>
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.1"
+                            placeholder="None"
+                            value={settings.config.manualTarget ?? ''}
+                            onChange={(e) => {
+                              const val = e.target.value ? parseFloat(e.target.value) : undefined;
+                              handleConfigChange({ manualTarget: val });
+                            }}
+                            className="w-16 px-2 py-1 bg-slate-700 text-slate-200 rounded text-xs text-right focus:border-blue-500 focus:outline-none"
+                          />
+                          <span className="text-[10px] text-slate-500">{settings.config.fuelUnits}</span>
+                        </div>
                       </div>
                     </div>
                   )}
@@ -652,7 +677,7 @@ const SingleFuelWidgetSettings = ({ widgetId, isFuel2 }: { widgetId: string, isF
           </div>
         );
       }}
-    </BaseSettingsSection>
+    </BaseSettingsSection >
   );
 };
 
