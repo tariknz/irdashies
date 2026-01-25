@@ -56,14 +56,13 @@ export const TagGroupsSettings = () => {
     onDashboardUpdated(updated);
   };
 
+  const userGroups = settings.groups ?? [];
+
   // Groups: presets (from code) + user-created groups stored in `settings.groups`.
   const addGroup = () => {
     const id = `group-${Date.now()}`;
     const group = { id, name: 'New Group', color: 0xff0000 };
-    updateDashboard({ ...settings, groups: [...(settings.groups ?? []), group] });
-    setTimeout(() => {
-      // focus new mapping input when user adds a mapping afterwards
-    }, 0);
+    updateDashboard({ ...settings, groups: [...userGroups, group] });
   };
 
   const updateGroup = (id: string, patch: Partial<{ name: string; color?: number; icon?: string }>) => {
@@ -86,8 +85,7 @@ export const TagGroupsSettings = () => {
   const removePresetOverride = (id: string) => {
     if (!settings.presetOverrides) return;
     const overrides = { ...(settings.presetOverrides ?? {}) };
-    const { [id]: removed, ...rest } = overrides;
-    void removed;
+    const rest = Object.fromEntries(Object.entries(overrides).filter(([k]) => k !== id));
     updateDashboard({ ...settings, presetOverrides: Object.keys(rest).length ? rest : undefined });
   };
 
