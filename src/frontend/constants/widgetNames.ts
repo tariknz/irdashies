@@ -16,6 +16,9 @@ export const WIDGET_NAMES: Record<WidgetId, string> = {
   blindspotmonitor: 'Blind Spot Monitor',
   garagecover: 'Garage Cover',
   rejoin: 'Rejoin Indicator',
+  telemetryinspector: 'Telemetry Inspector',
+  pitlanehelper: 'Pitlane Helper',
+  tachometer: 'Tachometer',
 };
 
 /**

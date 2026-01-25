@@ -1,11 +1,11 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { Tachometer } from './InputTachometer';
+import { Tachometer } from './TachometerComponent';
 import { useEffect, useState } from 'react';
 import type { ShiftPointSettings } from '../../Settings/types';
 
 const meta: Meta<typeof Tachometer> = {
   component: Tachometer,
-  title: 'widgets/Input/components/InputTachometer',
+  title: 'widgets/Tachometer',
 };
 export default meta;
 
@@ -293,9 +293,11 @@ const CustomShiftPointDemos = () => {
     indicatorColor: '#00ff00',
     carConfigs: {
       'ferrari296gt3': {
+        enabled: true,
         carId: 'ferrari296gt3',
         carName: 'Ferrari 296 GT3',
         gearCount: 6,
+        redlineRpm: 8000,
         gearShiftPoints: { '1': { shiftRpm: 7000 } }
       }
     }

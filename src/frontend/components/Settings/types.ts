@@ -242,24 +242,6 @@ export interface InputWidgetSettings extends BaseWidgetSettings {
       unit: 'mph' | 'km/h' | 'auto';
     };
     steer: SteerWidgetSettings;
-    tachometer: {
-      enabled: boolean;
-      showRpmText: boolean;
-      shiftPointStyle?: 'glow' | 'pulse' | 'border';
-      customShiftPoints?: {
-        enabled: boolean;
-        indicatorType: 'glow' | 'pulse' | 'border';
-        indicatorColor: string;
-        carConfigs: Record<string, {
-          enabled: boolean;
-          carId: string;
-          carName: string;
-          gearCount: number;
-          redlineRpm: number;
-          gearShiftPoints: Record<string, { shiftRpm: number }>;
-        }>;
-      };
-    };
     background: { opacity: number };
     displayOrder: string[];
     showOnlyWhenOnTrack: boolean;
@@ -382,9 +364,22 @@ export interface ShiftPointSettings {
   indicatorColor: string;
   /** Per-car shift configurations */
   carConfigs: Record<string, {
+    enabled: boolean;
     carId: string;
     carName: string;
     gearCount: number;
+    redlineRpm: number;
     gearShiftPoints: Record<string, { shiftRpm: number }>;
   }>;
+}
+
+export interface TachometerWidgetSettings extends BaseWidgetSettings {
+  config: {
+    enabled: boolean;
+    showRpmText: boolean;
+    shiftPointSettings?: ShiftPointSettings;
+    background: { opacity: number };
+    showOnlyWhenOnTrack: boolean;
+    sessionVisibility: SessionVisibilitySettings;
+  };
 }

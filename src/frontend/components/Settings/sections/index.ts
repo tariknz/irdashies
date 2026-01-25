@@ -7,4 +7,5 @@ export * from './GarageCoverSettings';
 export * from './RejoinIndicatorSettings';
 export * from './TelemetryInspectorSettings';
 export * from './PitlaneHelperSettings';
+export * from './TachometerSettings';
 export * from './AdvancedSettings'; 
