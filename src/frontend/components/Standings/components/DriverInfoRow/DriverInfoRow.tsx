@@ -217,6 +217,7 @@ export const DriverInfoRow = memo(
           : widgetDriverTag?.position === 'before-name';
       const widgetTagEnabled = widgetDriverTag?.enabled;
       const widgetTagWidthPx = widgetDriverTag?.widthPx;
+      const hasDriverTagColumn = (displayOrder ?? []).includes('driverTag');
 
       const columns = [
         {
@@ -245,6 +246,29 @@ export const DriverInfoRow = memo(
               carNumber={carNumber}
               tailwindStyles={tailwindStyles}
             />
+          ),
+        },
+        {
+          id: 'driverTag',
+          shouldRender:
+            (displayOrder ? displayOrder.includes('driverTag') : true) &&
+            (widgetTagEnabled ?? tagSettings?.display?.enabled),
+          component: (
+            <td key="driverTag" data-column="driverTag" className="w-auto px-1 py-0.5 whitespace-nowrap">
+              {hidden ? null : (
+                <span
+                  style={{
+                    display: 'inline-block',
+                    width: widgetTagWidthPx ?? tagSettings?.display?.widthPx ?? 6,
+                    height: 18,
+                    backgroundColor: `#${(tagSettings?.groups?.find(g => g.id === (tagSettings?.mapping?.[name ?? ''] ))?.color ?? 0).toString(16).padStart(6, '0')}`,
+                    borderRadius: 1,
+                    verticalAlign: 'middle',
+                    marginRight: 4,
+                  }}
+                />
+              )}
+            </td>
           ),
         },
         {
@@ -278,6 +302,7 @@ export const DriverInfoRow = memo(
               widgetTagEnabled={widgetTagEnabled}
               widgetTagBeforeName={driverTagBeforeName}
               widgetTagWidthPx={widgetTagWidthPx}
+              skipWidgetTag={hasDriverTagColumn}
             />
           ),
         },
@@ -462,17 +487,17 @@ export const DriverInfoRow = memo(
           .map((orderId) => columns.find((col) => col.id === orderId))
           .filter(
             (col): col is NonNullable<typeof col> =>
-              col !== undefined && col.shouldRender
+              col !== undefined && !!col.shouldRender
           );
 
         const remainingColumns = columns.filter(
-          (col) => col.shouldRender && !displayOrder.includes(col.id)
+          (col) => !!col.shouldRender && !displayOrder.includes(col.id)
         );
 
         return [...orderedColumns, ...remainingColumns];
       }
 
-      return columns.filter((col) => col.shouldRender);
+      return columns.filter((col) => !!col.shouldRender);
     }, [
       displayOrder,
       config,

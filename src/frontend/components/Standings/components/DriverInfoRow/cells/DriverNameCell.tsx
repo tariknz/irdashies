@@ -21,6 +21,7 @@ interface DriverNameCellProps {
   widgetTagEnabled?: boolean | undefined;
   widgetTagBeforeName?: boolean | undefined;
   widgetTagWidthPx?: number | undefined;
+  skipWidgetTag?: boolean | undefined;
 }
 
 export const DriverNameCell = memo(
@@ -37,6 +38,7 @@ export const DriverNameCell = memo(
     widgetTagEnabled,
     widgetTagBeforeName,
     widgetTagWidthPx,
+    skipWidgetTag = false,
   }: DriverNameCellProps) => {
     const displayName = fullName
       ? formatDriverName(
@@ -48,6 +50,7 @@ export const DriverNameCell = memo(
     // `tagSettings` is received via props when available; tests render this component without a provider, so it may be undefined.
 
     const getTagForDriver = () => {
+      if (skipWidgetTag) return undefined;
       if (!tagSettings) return undefined;
       const displayEnabled = widgetTagEnabled ?? tagSettings.display?.enabled;
       if (!displayEnabled) return undefined;
