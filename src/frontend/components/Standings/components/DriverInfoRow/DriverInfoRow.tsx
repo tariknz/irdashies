@@ -2,7 +2,8 @@ import { memo, useMemo } from 'react';
 import { getTailwindStyle } from '@irdashies/utils/colors';
 import { formatTime, type TimeFormat } from '@irdashies/utils/time';
 import { usePitStopDuration, useDashboard } from '@irdashies/context';
-import { getPresetTag } from '../../../../constants/driverTagBadges';
+import { useDriverTag } from './useDriverTag';
+import DriverTagBadge from './DriverTagBadge';
 import type { Gap, LastTimeState } from '../../createStandings';
 import type {
   RelativeWidgetSettings,
@@ -184,6 +185,8 @@ export const DriverInfoRow = memo(
     const { currentDashboard } = useDashboard();
     const tagSettings = currentDashboard?.generalSettings?.driverTagSettings;
     const widgetDriverTag = config?.driverTag;
+    const widgetTagEnabled = widgetDriverTag?.enabled;
+    const resolvedTag = useDriverTag(name ?? '', tagSettings, widgetTagEnabled, false);
     const pitStopDurations = usePitStopDuration();
     const pitStopDuration =
       pitStopDurationProp ?? pitStopDurations[carIdx] ?? null;
@@ -255,38 +258,9 @@ export const DriverInfoRow = memo(
             (widgetTagEnabled ?? tagSettings?.display?.enabled),
             component: (
             <td key="driverTag" data-column="driverTag" className="w-auto px-0 py-0.5 whitespace-nowrap">
-              {hidden ? null : (() => {
-                const key = name ?? '';
-                if (!tagSettings?.mapping) return null;
-                const found = Object.entries(tagSettings.mapping).find(([k]) => k.toLowerCase() === key.toLowerCase());
-                const groupId = found?.[1];
-                if (!groupId) return null;
-                // prefer user-created groups, then preset overrides, then built-in presets
-                const custom = tagSettings.groups?.find(g => g.id === groupId);
-                const presetOverride = tagSettings.presetOverrides?.[groupId];
-                const preset = getPresetTag(groupId);
-                const displayStyle = tagSettings?.display?.displayStyle ?? 'badge';
-                if (displayStyle === 'tag') {
-                  const colorNum = custom?.color ?? presetOverride?.color ?? preset?.color ?? undefined;
-                  const colorHex = colorNum !== undefined ? `#${(colorNum & 0xffffff).toString(16).padStart(6, '0')}` : undefined;
-                  if (!colorHex) return null;
-                  return (
-                    <span style={{ display: 'inline-block', width: 6, height: 18, borderRadius: 2, background: colorHex, verticalAlign: 'middle', marginRight: 8 }} />
-                  );
-                }
-
-                const icon = custom?.icon ?? presetOverride?.icon ?? preset?.icon ?? '';
-                if (!icon) return null;
-                return (
-                  <span style={{ display: 'inline-block', width: 18, height: 18, lineHeight: '18px', textAlign: 'center', verticalAlign: 'middle', marginRight: 0 }}>
-                    {typeof icon === 'string' && icon.startsWith('data:') ? (
-                      <img src={icon} alt="tag" style={{ height: 16, width: 16, objectFit: 'contain' }} />
-                    ) : (
-                      <span className="align-middle">{icon}</span>
-                    )}
-                  </span>
-                );
-              })()}
+              {hidden ? null : (
+                <DriverTagBadge tag={resolvedTag} widthPx={tagSettings?.display?.widthPx} displayStyle={tagSettings?.display?.displayStyle ?? 'badge'} />
+              )}
             </td>
           ),
         },
@@ -558,6 +532,7 @@ export const DriverInfoRow = memo(
       hideCarManufacturer,
       tagSettings,
       widgetDriverTag,
+      resolvedTag,
     ]);
 
     return (

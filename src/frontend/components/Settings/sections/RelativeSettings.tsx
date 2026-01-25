@@ -318,7 +318,7 @@ const DisplaySettingsList = ({ itemsOrder, onReorder, settings, handleConfigChan
                     });
                   }}
                 />
-                <span className="textP-sm text-slate-300">Pitlap display mode</span>
+                <span className="text-sm text-slate-300">Pitlap display mode</span>
                 <select
                   value={settings.config.pitStatus.pitLapDisplayMode}
                   onChange={(e) => {
@@ -523,7 +523,7 @@ export const RelativeSettings = () => {
                   Reset to Default Order
                 </button>
               </div>
-                <div className="pl-4">
+              <div className="pl-4">
                 <DisplaySettingsList
                   itemsOrder={itemsOrder}
                   onReorder={handleDisplayOrderChange}

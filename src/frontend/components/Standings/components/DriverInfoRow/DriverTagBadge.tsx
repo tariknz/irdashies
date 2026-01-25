@@ -1,0 +1,72 @@
+import { memo, useMemo } from 'react';
+import type { CSSProperties } from 'react';
+import type { ResolvedDriverTag } from './useDriverTag';
+import { colorNumToHex } from '@irdashies/utils/colors';
+
+interface DriverTagBadgeProps {
+  tag?: ResolvedDriverTag | null;
+  widthPx?: number;
+  displayStyle?: 'badge' | 'tag';
+}
+
+export const DriverTagBadge = memo(function DriverTagBadge({ tag, widthPx, displayStyle = 'badge' }: DriverTagBadgeProps) {
+  const name = tag?.name ?? '';
+  const defaultBadgeSize = 22;
+  const minBadgeSize = 18;
+  const tagThicknessDefault = 6;
+  const size = widthPx ?? (displayStyle === 'tag' ? tagThicknessDefault : defaultBadgeSize);
+
+  const colorHex = useMemo(() => colorNumToHex(tag?.color), [tag?.color]);
+
+  // tagStyle: small vertical pill used when displayStyle === 'tag'
+  const tagStyle = useMemo<CSSProperties | undefined>(() => {
+    if (displayStyle !== 'tag') return undefined;
+    if (!colorHex) return undefined;
+    return { display: 'inline-block', width: size, height: 18, borderRadius: 2, background: colorHex, verticalAlign: 'middle', marginRight: 8 };
+  }, [displayStyle, size, colorHex]);
+
+  // For badge/icon display, ensure a sensible minimum size so uploaded images aren't tiny.
+  const badgeSize = Math.max(displayStyle === 'tag' ? tagThicknessDefault : (widthPx ?? defaultBadgeSize), minBadgeSize);
+
+  const containerStyle = useMemo<CSSProperties | undefined>(() => {
+    if (displayStyle === 'tag') return undefined;
+    return {
+      display: 'inline-flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      width: badgeSize,
+      height: badgeSize,
+      minWidth: badgeSize,
+      minHeight: badgeSize,
+      lineHeight: `${badgeSize}px`,
+      marginRight: 8,
+    };
+  }, [displayStyle, badgeSize]);
+
+  const imgStyle = useMemo<CSSProperties | undefined>(() => ({ height: badgeSize - 4, width: badgeSize - 4, objectFit: 'contain', maxWidth: '100%', maxHeight: '100%' }), [badgeSize]);
+  const emojiStyle = useMemo<CSSProperties | undefined>(() => ({ fontSize: `${badgeSize - 4}px`, lineHeight: `${badgeSize}px`, display: 'inline-block' }), [badgeSize]);
+
+  if (!tag) return null;
+
+  if (displayStyle === 'tag') {
+    if (!tagStyle) return null;
+    return <span role="img" aria-label={`Driver tagged as ${name}`} style={tagStyle} />;
+  }
+
+  const icon = tag.icon ?? '';
+  if (!icon) return null;
+
+  return (
+    <span role="img" aria-label={`Driver tagged as ${name}`} style={containerStyle}>
+      {typeof icon === 'string' && icon.startsWith('data:') ? (
+        <img src={icon} alt={name || 'tag'} style={imgStyle} />
+      ) : (
+        <span style={emojiStyle} className="align-middle">{icon}</span>
+      )}
+    </span>
+  );
+});
+
+DriverTagBadge.displayName = 'DriverTagBadge';
+
+export default DriverTagBadge;
