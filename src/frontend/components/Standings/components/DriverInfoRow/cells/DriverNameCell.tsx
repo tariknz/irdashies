@@ -63,10 +63,13 @@ export const DriverNameCell = memo(
       const found = Object.entries(tagSettings.mapping).find(([k]) => k.toLowerCase() === rawKey.toLowerCase());
       const groupId = found?.[1];
       if (!groupId) return undefined;
-      const preset = getPresetTag(groupId);
-      if (preset) return preset;
+      // prefer user-created groups, then preset overrides, then built-in presets
       const custom = tagSettings.groups?.find(g => g.id === groupId);
-      if (custom) return { id: custom.id, name: custom.name, icon: custom.icon } as { id: string; name?: string; icon?: string };
+      if (custom) return { id: custom.id, name: custom.name, icon: custom.icon, color: custom.color } as { id: string; name?: string; icon?: string; color?: number };
+      const presetOverride = tagSettings.presetOverrides?.[groupId];
+      const preset = getPresetTag(groupId);
+      if (presetOverride) return { id: groupId, name: presetOverride.name ?? preset?.name, icon: presetOverride.icon ?? preset?.icon, color: presetOverride.color ?? preset?.color } as { id: string; name?: string; icon?: string; color?: number };
+      if (preset) return preset;
       return undefined;
     };
 
@@ -74,6 +77,14 @@ export const DriverNameCell = memo(
 
     const renderTagStrip = () => {
       if (!tag) return null;
+      const displayStyle = tagSettings?.display?.displayStyle ?? 'badge';
+      if (displayStyle === 'tag') {
+        const colorNum = (tag as { color?: number })?.color ?? (typeof tag.id === 'string' ? getPresetTag(tag.id)?.color : undefined);
+        const colorHex = colorNum !== undefined ? `#${(colorNum & 0xffffff).toString(16).padStart(6, '0')}` : undefined;
+        if (!colorHex) return null;
+        return <span style={{ display: 'inline-block', minWidth: 6, width: 6, height: 18, borderRadius: 2, background: colorHex, marginRight: 8, verticalAlign: 'middle' }} />;
+      }
+
       const icon = tag.icon ?? (typeof tag.id === 'string' ? getPresetTag(tag.id)?.icon : undefined) ?? '';
       return (
         <span style={{ display: 'inline-block', minWidth: 20, height: 18, lineHeight: '18px', textAlign: 'center', borderRadius: 2, marginRight: 6 }}>

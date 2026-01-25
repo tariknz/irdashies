@@ -201,9 +201,21 @@ export const DriverInfoRow = memo(
                 const found = Object.entries(tagSettings.mapping).find(([k]) => k.toLowerCase() === key.toLowerCase());
                 const groupId = found?.[1];
                 if (!groupId) return null;
-                const preset = getPresetTag(groupId);
+                // prefer user-created groups, then preset overrides, then built-in presets
                 const custom = tagSettings.groups?.find(g => g.id === groupId);
-                const icon = custom?.icon ?? preset?.icon ?? '';
+                const presetOverride = tagSettings.presetOverrides?.[groupId];
+                const preset = getPresetTag(groupId);
+                const displayStyle = tagSettings?.display?.displayStyle ?? 'badge';
+                if (displayStyle === 'tag') {
+                  const colorNum = custom?.color ?? presetOverride?.color ?? preset?.color ?? undefined;
+                  const colorHex = colorNum !== undefined ? `#${(colorNum & 0xffffff).toString(16).padStart(6, '0')}` : undefined;
+                  if (!colorHex) return null;
+                  return (
+                    <span style={{ display: 'inline-block', width: 6, height: 18, borderRadius: 2, background: colorHex, verticalAlign: 'middle', marginRight: 8 }} />
+                  );
+                }
+
+                const icon = custom?.icon ?? presetOverride?.icon ?? preset?.icon ?? '';
                 if (!icon) return null;
                 return (
                   <span style={{ display: 'inline-block', width: 18, height: 18, lineHeight: '18px', textAlign: 'center', verticalAlign: 'middle', marginRight: 0 }}>
