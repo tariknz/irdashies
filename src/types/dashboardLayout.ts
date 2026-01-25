@@ -99,6 +99,8 @@ export interface TagGroup {
   name: string;
   /** Color represented as a 24-bit integer (e.g., 0xff0000) */
   color: number;
+  /** Optional custom icon (data URL or emoji) */
+  icon?: string;
 }
 
 export interface DriverTagSettings {

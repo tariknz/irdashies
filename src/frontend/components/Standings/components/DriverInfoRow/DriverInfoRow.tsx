@@ -262,11 +262,16 @@ export const DriverInfoRow = memo(
                 const groupId = found?.[1];
                 if (!groupId) return null;
                 const preset = getPresetTag(groupId);
-                if (!preset) return null;
-                const icon = preset.icon ?? '';
+                const custom = tagSettings.groups?.find(g => g.id === groupId);
+                const icon = custom?.icon ?? preset?.icon ?? '';
+                if (!icon) return null;
                 return (
                   <span style={{ display: 'inline-block', width: 18, height: 18, lineHeight: '18px', textAlign: 'center', verticalAlign: 'middle', marginRight: 0 }}>
-                    <span className="align-middle">{icon}</span>
+                    {typeof icon === 'string' && icon.startsWith('data:') ? (
+                      <img src={icon} alt="tag" style={{ height: 16, width: 16, objectFit: 'contain' }} />
+                    ) : (
+                      <span className="align-middle">{icon}</span>
+                    )}
                   </span>
                 );
               })()}
