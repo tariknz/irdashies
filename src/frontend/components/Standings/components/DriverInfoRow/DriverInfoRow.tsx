@@ -193,8 +193,8 @@ export const DriverInfoRow = memo(
           shouldRender:
             (displayOrder ? displayOrder.includes('driverTag') : true) &&
             (widgetTagEnabled ?? tagSettings?.display?.enabled),
-          component: (
-            <td key="driverTag" data-column="driverTag" className="w-auto px-1 py-0.5 whitespace-nowrap">
+            component: (
+            <td key="driverTag" data-column="driverTag" className="w-auto px-0 py-0.5 whitespace-nowrap">
               {hidden ? null : (() => {
                 const key = name ?? '';
                 const groupId = tagSettings?.mapping?.[key];
@@ -212,7 +212,7 @@ export const DriverInfoRow = memo(
                       backgroundColor: colorHex,
                       borderRadius: 1,
                       verticalAlign: 'middle',
-                      marginRight: 4,
+                      marginRight: 0,
                     }}
                   />
                 );
