@@ -197,7 +197,9 @@ export const DriverInfoRow = memo(
             <td key="driverTag" data-column="driverTag" className="w-auto px-0 py-0.5 whitespace-nowrap">
               {hidden ? null : (() => {
                 const key = name ?? '';
-                const groupId = tagSettings?.mapping?.[key];
+                if (!tagSettings?.mapping) return null;
+                const found = Object.entries(tagSettings.mapping).find(([k]) => k.toLowerCase() === key.toLowerCase());
+                const groupId = found?.[1];
                 if (!groupId) return null;
                 const preset = getPresetTag(groupId);
                 if (!preset) return null;
