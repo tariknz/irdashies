@@ -255,19 +255,28 @@ export const DriverInfoRow = memo(
             (widgetTagEnabled ?? tagSettings?.display?.enabled),
           component: (
             <td key="driverTag" data-column="driverTag" className="w-auto px-1 py-0.5 whitespace-nowrap">
-              {hidden ? null : (
-                <span
-                  style={{
-                    display: 'inline-block',
-                    width: widgetTagWidthPx ?? tagSettings?.display?.widthPx ?? 6,
-                    height: 18,
-                    backgroundColor: `#${(tagSettings?.groups?.find(g => g.id === (tagSettings?.mapping?.[name ?? ''] ))?.color ?? 0).toString(16).padStart(6, '0')}`,
-                    borderRadius: 1,
-                    verticalAlign: 'middle',
-                    marginRight: 4,
-                  }}
-                />
-              )}
+              {hidden ? null : (() => {
+                const key = name ?? '';
+                const groupId = tagSettings?.mapping?.[key];
+                if (!groupId) return null;
+                const group = tagSettings?.groups?.find((g) => g.id === groupId);
+                if (!group) return null;
+                const colorHex = `#${(group.color ?? 0).toString(16).padStart(6, '0')}`;
+                const width = widgetTagWidthPx ?? tagSettings?.display?.widthPx ?? 6;
+                return (
+                  <span
+                    style={{
+                      display: 'inline-block',
+                      width,
+                      height: 18,
+                      backgroundColor: colorHex,
+                      borderRadius: 1,
+                      verticalAlign: 'middle',
+                      marginRight: 4,
+                    }}
+                  />
+                );
+              })()}
             </td>
           ),
         },
