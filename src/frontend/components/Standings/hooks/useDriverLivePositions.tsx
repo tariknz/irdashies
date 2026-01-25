@@ -12,32 +12,34 @@ interface DriverData {
 }
 
 /**
- * Computes live positions for each driver within their class during race sessions.
+ * Computes live in-class positions from telemetry during race sessions.
  *
- * Returns empty object for non-race sessions, replays, or when not in Racing/Checkered state,
- * falling back to the default position system.
+ * Returns {} when the session is not a race or not in Racing/Checkered, so consumers
+ * fall back to the default position feed. Uses lap count + lap distance percent for
+ * ordering and groups cars by `CarIdxClass`.
  *
- * During active racing or checkered flag, drivers are ordered using live track progress:
- * - `CarIdxLapCompleted` (stored as `lapCompleted`)
- * - `CarIdxLapDistPct` (stored as `progress`)
+ * During checkered, freezes a snapshot when P1 finishes to keep finishers ahead of
+ * cars still running; finished cars tie-break with session class position. Sorting per class:
+ * 1) Higher completed laps (falling back to session laps if lap telemetry is -1)
+ * 2) Checkered separation of finished vs unfinished
+ * 3) Lap progress (lap + dist pct) for cars on the same lap
  *
- * Cars are grouped by `CarIdxClass`, then sorted within each class using:
- * 1. Completed laps (higher = better position)
- * 2. Special handling during checkered flag to separate finished vs unfinished cars
- * 3. Track progress percentage for cars on the same lap
- *
- * @returns Record<driverId, position> where position is an integer (1-based)
- *          relative to the driver's class. Empty object when not applicable.
+ * @returns Record of driverIdx -> 1-based class position; empty when not applicable.
  */
 export const useDriverLivePositions = (): Record<number, number> => {
 
   // Old variables, not used anymore. Left here for reference.
   // const carIdxClassPosition = useTelemetryValues<number[]>('CarIdxClassPosition');
+  // const sessionDrivers = useSessionDrivers();
+  //const carIdxSessionFlags = useTelemetryValues<number[]>('CarIdxSessionFlags');
+  //const isReplayPlaying = useTelemetryValue<boolean>('IsReplayPlaying') ?? false;
+  //const sessionQualifyingResults = useSessionQualifyingResults();
 
+  // Refs to hold persistent state across renders
   const lastLapSnapshotRef = useRef<Map<number, number> | undefined>(undefined);
   const p1LapCompletedRef = useRef<number | undefined>(undefined);
   const p1CarRef = useRef<number | undefined>(undefined);
-  // const sessionDrivers = useSessionDrivers();
+
   const sessionType = useCurrentSessionType();
   const sessionNum = useTelemetryValue('SessionNum');
   const sessionPositions = useSessionPositions(sessionNum);
@@ -45,10 +47,7 @@ export const useDriverLivePositions = (): Record<number, number> => {
   const carIdxLapCompleted = useTelemetryValues<number[]>('CarIdxLapCompleted');
   const carIdxLapDistPct = useTelemetryValues<number[]>('CarIdxLapDistPct');
   const carIdxClass = useTelemetryValues<number[]>('CarIdxClass');
-  //const carIdxSessionFlags = useTelemetryValues<number[]>('CarIdxSessionFlags');
   const paceCarIdx = useSessionStore((s) => s.session?.DriverInfo?.PaceCarIdx) ?? -1;
-  //const isReplayPlaying = useTelemetryValue<boolean>('IsReplayPlaying') ?? false;
-  //const sessionQualifyingResults = useSessionQualifyingResults();
   const p1Car = sessionPositions?.find(pos => pos.Position === 1); // Position is 1-based
   const p1LapCompleted = p1Car ? (carIdxLapCompleted[p1Car.CarIdx] ?? 0) : 0;
 
@@ -76,7 +75,7 @@ export const useDriverLivePositions = (): Record<number, number> => {
 
       //console.log('set p1 lap');
 
-      // Capture last lap snapshot when p1 completes a lap after checkered flag
+      // Capture last lap array snapshot when p1 completes a lap after checkered flag
     } else if (lastLapSnapshotRef.current === undefined &&
       p1LapCompletedRef.current !== undefined &&
       p1LapCompleted > (p1LapCompletedRef.current ?? -1)) {
@@ -167,9 +166,11 @@ export const useDriverLivePositions = (): Record<number, number> => {
 
         // if(a.driverIdx === 39) {
         //   // console.log('Debug 39', lastLapSnapshotRef.current?.get(a.driverIdx));
-        //   console.log('Debug 39', JSON.stringify(lastLapSnapshotRef.current));
+        //   // console.log('Debug 39', JSON.stringify(lastLapSnapshotRef.current));
         // }
 
+        // After the race has ended, if a driver gets out of the car, their lapCompleted
+        // telemetry can go to -1. In that case, use sessionLapsCompleted for comparison.
         const driverALapsCompleted = a.lapCompleted === -1 && a.sessionLapsCompleted > -1 
           ? a.sessionLapsCompleted 
           : a.lapCompleted;
@@ -184,12 +185,16 @@ export const useDriverLivePositions = (): Record<number, number> => {
         // during checkered flag, handle finished vs unfinished cars
         if (sessionState === SessionState.Checkered && lastLapSnapshotRef.current !== undefined) { // Tower is showing checkered flag, not all cars have finished
 
+          // If cars are on the same lap, the one that has crossed the finish line is behind.
+          // Yes, behind, it's counter-intuitive.
           if ((driverALapsCompleted > (lastLapSnapshotRef.current?.get(a.driverIdx) ?? 0)) &&
             (driverBLapsCompleted <= (lastLapSnapshotRef.current?.get(b.driverIdx) ?? 0))) { // a finished, b didn't
             // if (a.lapCompleted > b.lapCompleted) return -1;
             return 1;
           }
 
+          // If cars are on the same lap, the one that has crossed the finish line is behind.
+          // Yes, behind, it's counter-intuitive.
           if ((driverBLapsCompleted > (lastLapSnapshotRef.current?.get(b.driverIdx) ?? 0)) &&
             (driverALapsCompleted <= (lastLapSnapshotRef.current?.get(a.driverIdx) ?? 0))) { // b finished, a didn't
             // if (b.lapCompleted > a.lapCompleted) return 1;

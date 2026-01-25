@@ -177,6 +177,10 @@ export const useDriverStandings = () => {
       }
 
       if (classPosition <= 0) {
+        // Class position can become 0 or negative in some edge cases
+        // Before race start it seems to be fine to default to qualifying position
+        // During the race class position should be available
+        // After the race we can fallback to session position
         if(sessionState !== SessionState.CoolDown){
           const qualifyingPosition = qualifyingPositionsByCarIdx.get(driver.carIdx);
           classPosition = qualifyingPosition ? qualifyingPosition.Position + 1 : undefined;
