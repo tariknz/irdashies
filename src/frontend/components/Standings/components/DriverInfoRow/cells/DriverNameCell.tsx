@@ -53,8 +53,11 @@ export const DriverNameCell = memo(
       if (!tagSettings) return undefined;
       const displayEnabled = widgetTagEnabled ?? tagSettings.display?.enabled;
       if (!displayEnabled) return undefined;
-      const key = fullName ?? name ?? '';
-      const groupId = tagSettings.mapping?.[key] ?? tagSettings.mapping?.[name ?? ''];
+      const rawKey = fullName ?? name ?? '';
+      if (!rawKey) return undefined;
+      if (!tagSettings.mapping) return undefined;
+      const found = Object.entries(tagSettings.mapping).find(([k]) => k.toLowerCase() === rawKey.toLowerCase());
+      const groupId = found?.[1];
       if (!groupId) return undefined;
       return getPresetTag(groupId);
     };
