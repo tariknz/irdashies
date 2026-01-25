@@ -18,6 +18,7 @@ import { FuelSettings } from './sections/FuelSettings';
 import { RejoinIndicatorSettings } from './sections/RejoinIndicatorSettings';
 import { PitlaneHelperSettings } from './sections/PitlaneHelperSettings';
 import { GeneralSettings } from './sections/GeneralSettings';
+import { TagGroupsSettings } from './sections/TagGroupsSettings';
 import { BlindSpotMonitorSettings } from './sections/BlindSpotMonitorSettings';
 import { GarageCoverSettings } from './sections/GarageCoverSettings';
 import { useDashboard } from '@irdashies/context';
@@ -193,6 +194,11 @@ export const SettingsLayout = () => {
                 Weather
               </Link>
             </li>
+            <li>
+              <Link to="/settings/tag-groups" className={menuItemClass('/tag-groups')}>
+                Tag Groups
+              </Link>
+            </li>
           </ul>
           {/* Advanced settings pushed to bottom */}
           <ul className="mt-auto pt-2 border-t border-slate-700 flex flex-col gap-2">
@@ -220,6 +226,7 @@ export const SettingsLayout = () => {
               element={<Navigate to="/settings/general" replace />}
             />
             <Route path="general" element={<GeneralSettings />} />
+            <Route path="tag-groups" element={<TagGroupsSettings />} />
             <Route path="standings" element={<StandingsSettings />} />
             <Route path="relative" element={<RelativeSettings />} />
             <Route path="weather" element={<WeatherSettings />} />

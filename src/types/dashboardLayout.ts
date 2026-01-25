@@ -36,9 +36,35 @@ export interface GeneralSettingsType {
   enableAutoStart?: boolean;
   compactMode?: boolean;
   overlayAlwaysOnTop?: boolean;
+  /** Driver tag groups and mappings for overlays */
+  driverTagSettings?: DriverTagSettings;
 }
 
 export interface DashboardLayout {
   widgets: DashboardWidget[];
   generalSettings?: GeneralSettingsType;
+}
+
+export interface TagGroup {
+  /** Unique id for the group */
+  id: string;
+  /** Display name for the group */
+  name: string;
+  /** Color represented as a 24-bit integer (e.g., 0xff0000) */
+  color: number;
+}
+
+export interface DriverTagSettings {
+  /** Array of user-created tag groups */
+  groups: TagGroup[];
+  /** Mapping from iRacing driver name (string) to group id */
+  mapping: Record<string, string>;
+  /** Display config for the tag strip */
+  display: {
+    enabled: boolean;
+    /** Placement of the tag strip relative to elements */
+    position: 'before-name' | 'after-name' | 'before-logo' | 'after-logo';
+    /** Width in pixels for the vertical tag strip */
+    widthPx: number;
+  };
 }
