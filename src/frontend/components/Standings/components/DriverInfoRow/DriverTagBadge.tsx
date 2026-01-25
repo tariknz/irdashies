@@ -1,7 +1,8 @@
-import { memo, useMemo } from 'react';
+﻿import { memo, useMemo } from 'react';
 import type { CSSProperties } from 'react';
 import type { ResolvedDriverTag } from './useDriverTag';
 import { colorNumToHex } from '@irdashies/utils/colors';
+import { renderDriverIcon } from '@irdashies/utils/driverIcons';
 
 interface DriverTagBadgeProps {
   tag?: ResolvedDriverTag | null;
@@ -11,21 +12,19 @@ interface DriverTagBadgeProps {
 
 export const DriverTagBadge = memo(function DriverTagBadge({ tag, widthPx, displayStyle = 'badge' }: DriverTagBadgeProps) {
   const name = tag?.name ?? '';
-  const defaultBadgeSize = 22;
-  const minBadgeSize = 18;
+  const defaultBadgeSize = 28;
+  const minBadgeSize = 22;
   const tagThicknessDefault = 6;
   const size = widthPx ?? (displayStyle === 'tag' ? tagThicknessDefault : defaultBadgeSize);
 
   const colorHex = useMemo(() => colorNumToHex(tag?.color), [tag?.color]);
 
-  // tagStyle: small vertical pill used when displayStyle === 'tag'
   const tagStyle = useMemo<CSSProperties | undefined>(() => {
     if (displayStyle !== 'tag') return undefined;
     if (!colorHex) return undefined;
     return { display: 'inline-block', width: size, height: 18, borderRadius: 2, background: colorHex, verticalAlign: 'middle', marginRight: 8 };
   }, [displayStyle, size, colorHex]);
 
-  // For badge/icon display, ensure a sensible minimum size so uploaded images aren't tiny.
   const badgeSize = Math.max(displayStyle === 'tag' ? tagThicknessDefault : (widthPx ?? defaultBadgeSize), minBadgeSize);
 
   const containerStyle = useMemo<CSSProperties | undefined>(() => {
@@ -58,11 +57,7 @@ export const DriverTagBadge = memo(function DriverTagBadge({ tag, widthPx, displ
 
   return (
     <span role="img" aria-label={`Driver tagged as ${name}`} style={containerStyle}>
-      {typeof icon === 'string' && icon.startsWith('data:') ? (
-        <img src={icon} alt={name || 'tag'} style={imgStyle} />
-      ) : (
-        <span style={emojiStyle} className="align-middle">{icon}</span>
-      )}
+      {renderDriverIcon(icon, badgeSize - 4, undefined, tag?.color, imgStyle, emojiStyle)}
     </span>
   );
 });

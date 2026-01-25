@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
+// colorNumToHex is handled by the shared renderer
 import { useDashboard } from '@irdashies/context';
 import type { DriverTagSettings } from '@irdashies/types';
 import { PRESET_DRIVER_TAGS } from '../../../constants/driverTagBadges';
+import { renderDriverIcon } from '../../../utils/driverIcons';
 
 // Preset badge groups are provided by code; colors and dynamic groups removed.
 
@@ -21,10 +23,10 @@ export const TagGroupsSettings = () => {
   const [activeGroupFilter, setActiveGroupFilter] = useState<string | null>(null);
   const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
   const [editingGroupName, setEditingGroupName] = useState<string>('');
-  const [editingGroupIcon, setEditingGroupIcon] = useState<string | undefined>(undefined);
+  const [editingGroupIcon, setEditingGroupIcon] = useState<unknown>(undefined);
   const [editingGroupColor, setEditingGroupColor] = useState<number | undefined>(undefined);
   const [editingPresetId, setEditingPresetId] = useState<string | null>(null);
-  const [editingPresetIcon, setEditingPresetIcon] = useState<string | undefined>(undefined);
+  const [editingPresetIcon, setEditingPresetIcon] = useState<unknown>(undefined);
   const [editingPresetColor, setEditingPresetColor] = useState<number | undefined>(undefined);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [lastAddedKey, setLastAddedKey] = useState<string | null>(null);
@@ -57,6 +59,9 @@ export const TagGroupsSettings = () => {
   };
 
   const userGroups = settings.groups ?? [];
+
+  // use shared renderer
+  const renderIcon = renderDriverIcon;
 
   // Groups: presets (from code) + user-created groups stored in `settings.groups`.
   const addGroup = () => {
@@ -187,10 +192,14 @@ export const TagGroupsSettings = () => {
                           className="hidden"
                         />
                         <button onClick={() => fileInputRef.current?.click()} className="px-2 py-1 bg-slate-600 rounded text-xs">Add custom badge</button>
-                        {editingPresetIcon ? <img src={editingPresetIcon} alt="preview" className="w-6 h-6 object-contain rounded" /> : null}
+                        {typeof editingPresetIcon === 'string' && editingPresetIcon.startsWith('data:') ? (
+                          <img src={editingPresetIcon} alt="preview" className="w-8 h-8 object-contain rounded" />
+                        ) : (
+                          renderIcon(editingPresetIcon, 24)
+                        )}
                       </>
                     )}
-                    <button onClick={() => { setPresetOverride(preset.id, { icon: editingPresetIcon, color: editingPresetColor }); setEditingPresetId(null); setEditingPresetIcon(undefined); setEditingPresetColor(undefined); }} className="px-2 py-1 bg-sky-600 rounded text-xs">Save</button>
+                    <button onClick={() => { setPresetOverride(preset.id, { icon: (typeof editingPresetIcon === 'string' && editingPresetIcon.startsWith('data:')) ? editingPresetIcon : undefined, color: editingPresetColor }); setEditingPresetId(null); setEditingPresetIcon(undefined); setEditingPresetColor(undefined); }} className="px-2 py-1 bg-sky-600 rounded text-xs">Save</button>
                     <button onClick={() => { setEditingPresetId(null); setEditingPresetIcon(undefined); setEditingPresetColor(undefined); }} className="px-2 py-1 bg-slate-600 rounded text-xs">Cancel</button>
                   </div>
                 );
@@ -199,8 +208,8 @@ export const TagGroupsSettings = () => {
                 <div key={preset.id} className="inline-flex items-center gap-2 px-2 py-1 rounded bg-slate-800 text-sm text-slate-100">
                   {settings.display?.displayStyle === 'tag' ? (
                     <span style={{ display: 'inline-block', width: 16, height: 16, borderRadius: 6, background: `#${(((override?.color ?? preset.color) ?? 0) & 0xffffff).toString(16).padStart(6,'0')}` }} />
-                  ) : (
-                    <span className="inline-flex items-center justify-center w-6 h-6 text-lg leading-none" aria-hidden="true">{override?.icon ?? preset.icon}</span>
+                    ) : (
+                    <span className="inline-flex items-center justify-center w-8 h-8 text-xl leading-none" aria-hidden="true">{override?.icon ? renderIcon(override.icon, 24, undefined, override?.color ?? preset.color) : renderIcon(preset.icon, 24, undefined, override?.color ?? preset.color)}</span>
                   )}
                   <span className="whitespace-nowrap">{preset.name}</span>
                   <div className="ml-2 inline-flex items-center gap-1">
@@ -263,12 +272,14 @@ export const TagGroupsSettings = () => {
                             >
                               Add custom badge
                             </button>
-                            {editingGroupIcon ? (
-                              <img src={editingGroupIcon} alt="preview" className="w-6 h-6 object-contain rounded" />
-                            ) : null}
+                            {typeof editingGroupIcon === 'string' && editingGroupIcon.startsWith('data:') ? (
+                              <img src={editingGroupIcon as string} alt="preview" className="w-8 h-8 object-contain rounded" />
+                            ) : (
+                              renderIcon(editingGroupIcon, 24)
+                            )}
                           </>
                         )}
-                        <button onClick={() => { updateGroup(g.id, { name: editingGroupName, icon: editingGroupIcon, color: editingGroupColor }); setEditingGroupId(null); setEditingGroupIcon(undefined); setEditingGroupColor(undefined); }} className="px-2 py-1 bg-sky-600 rounded text-xs">Save</button>
+                        <button onClick={() => { updateGroup(g.id, { name: editingGroupName, icon: (typeof editingGroupIcon === 'string' && editingGroupIcon.startsWith('data:')) ? editingGroupIcon : undefined, color: editingGroupColor }); setEditingGroupId(null); setEditingGroupIcon(undefined); setEditingGroupColor(undefined); }} className="px-2 py-1 bg-sky-600 rounded text-xs">Save</button>
                         <button onClick={() => { setEditingGroupId(null); setEditingGroupIcon(undefined); setEditingGroupColor(undefined); }} className="px-2 py-1 bg-slate-600 rounded text-xs">Cancel</button>
                       </div>
                     ) : (
@@ -277,9 +288,9 @@ export const TagGroupsSettings = () => {
                           <span style={{ display: 'inline-block', width: 16, height: 16, borderRadius: 6, background: g.color ? `#${(g.color & 0xffffff).toString(16).padStart(6,'0')}` : '#888' }} />
                         ) : (
                           g.icon && (typeof g.icon === 'string' && g.icon.startsWith('data:')) ? (
-                            <img src={g.icon} alt={g.name} className="w-5 h-5 object-contain" />
+                            <img src={g.icon} alt={g.name} className="w-7 h-7 object-contain" />
                           ) : (
-                            <span className="inline-flex items-center justify-center w-6 h-6 text-lg leading-none" aria-hidden="true">{g.icon ?? '🔖'}</span>
+                            <span className="inline-flex items-center justify-center w-8 h-8 text-xl leading-none" aria-hidden="true">{renderIcon(g.icon, 24, undefined, g.color) ?? '🔖'}</span>
                           )
                         )}
                         <span className="whitespace-nowrap">{g.name}</span>
@@ -309,7 +320,7 @@ export const TagGroupsSettings = () => {
                 All
               </button>
               {/** Use preset groups from constants */}
-              {PRESET_DRIVER_TAGS.map((g: { id: string; name: string; icon: string; color?: number }) => {
+              {PRESET_DRIVER_TAGS.map((g) => {
                 const override = settings.presetOverrides?.[g.id];
                 const colorNum = override?.color ?? g.color;
                 const icon = override?.icon ?? g.icon;
@@ -325,7 +336,7 @@ export const TagGroupsSettings = () => {
                     {settings.display?.displayStyle === 'tag' ? (
                       <span style={{ display: 'inline-block', width: 16, height: 16, borderRadius: 6, background: `#${((colorNum ?? 0) & 0xffffff).toString(16).padStart(6,'0')}` }} />
                     ) : (
-                      <span className="inline-flex items-center justify-center w-6 h-6 text-lg leading-none" aria-hidden="true">{icon}</span>
+                      <span className="inline-flex items-center justify-center w-8 h-8 text-xl leading-none" aria-hidden="true">{renderIcon(icon, 24, undefined, colorNum)}</span>
                     )}
                     <span className="align-middle">{name}</span>
                   </button>
@@ -342,13 +353,9 @@ export const TagGroupsSettings = () => {
                   {settings.display?.displayStyle === 'tag' ? (
                     <span style={{ display: 'inline-block', width: 16, height: 16, borderRadius: 6, background: g.color ? `#${(g.color & 0xffffff).toString(16).padStart(6,'0')}` : '#888' }} />
                   ) : (
-                    g.icon && (typeof g.icon === 'string' && g.icon.startsWith('data:')) ? (
-                      <img src={g.icon} alt={g.name} className="w-5 h-5 object-contain" />
-                    ) : (
-                      <span className="text-lg leading-none" aria-hidden="true">{g.icon ?? '🔖'}</span>
-                    )
-                  )}
-                  <span className="align-middle">{g.name}</span>
+                      <span className="text-lg leading-none" aria-hidden="true">{renderIcon(g.icon, 24, undefined, g.color) ?? '🔖'}</span>
+                    )}
+                    <span className="align-middle">{g.name}</span>
                 </button>
               ))}
             </div>
@@ -385,7 +392,7 @@ export const TagGroupsSettings = () => {
                   />
 
                   <select value={gid} onChange={e => updateMapping(driverKey, e.target.value)} className="px-2 py-1 bg-slate-700 rounded">
-                    {PRESET_DRIVER_TAGS.map((g: { id: string; name: string; icon: string }) => <option key={g.id} value={g.id}>{g.name}</option>)}
+                    {PRESET_DRIVER_TAGS.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
                     {(settings.groups ?? []).map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
                   </select>
                   <button onClick={() => removeMapping(driverKey)} className="px-2 py-1 bg-red-600 rounded">Remove</button>
