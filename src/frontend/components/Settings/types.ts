@@ -278,6 +278,7 @@ export interface FuelWidgetSettings extends BaseWidgetSettings {
     showFuelLevel: boolean;
     showLapsRemaining: boolean;
     showMin: boolean;
+    showCurrentLap: boolean;
     showLastLap: boolean;
     show3LapAvg: boolean;
     show10LapAvg: boolean;

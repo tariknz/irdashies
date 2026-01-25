@@ -14,6 +14,7 @@ import {
     FuelCalculator2TimeEmpty,
     FuelCalculator2HistoryGraph,
 } from './widgets/FuelCalculator2Widgets';
+import { useFuelStore } from './FuelStore';
 import type { FuelCalculatorSettings } from './types';
 import type { LayoutNode } from '../Settings/types';
 
@@ -89,7 +90,8 @@ export const FuelCalculator2 = (props: FuelCalculatorProps) => {
             { laps: 13, fuelPerLap: 3.50, isCurrentTarget: false },
             { laps: 14, fuelPerLap: 3.25, isCurrentTarget: true },
             { laps: 15, fuelPerLap: 3.03, isCurrentTarget: false },
-        ]
+        ],
+        lastFinishedLap: 14
     };
 
     // Scenario 2: High Confidence (Good flow, clear prediction)
@@ -159,7 +161,8 @@ export const FuelCalculator2 = (props: FuelCalculatorProps) => {
         stopsRemaining: 0,
         lapsPerStint: 0,
         fuelTankCapacity: 60,
-        targetScenarios: [] as { laps: number; fuelPerLap: number; isCurrentTarget: boolean; }[]
+        targetScenarios: [] as { laps: number; fuelPerLap: number; isCurrentTarget: boolean; }[],
+        lastFinishedLap: 0,
     };
 
     const mocks = [mockMedium, mockHigh, mockCritical];
@@ -234,16 +237,77 @@ export const FuelCalculator2 = (props: FuelCalculatorProps) => {
         return normalizeNode(workingTree);
     }, [settings]);
 
+    // Store subscription for synchronization
+    const storeLastLap = useFuelStore((state) => state.lastLap);
+
     // Snapshot for Consumption Grid (updates only on lap change)
+    // We restore this to keep AVG/MAX/LAST rows static during the lap, as requested.
     const [frozenFuelData, setFrozenFuelData] = React.useState(fuelData);
 
     React.useEffect(() => {
-        // Update snapshot if lap changes or if we were using empty data (totalLaps 0)
-        // This ensures we switch from placeholder to real data, and then only update on lap structure changes
-        if (fuelData.currentLap !== frozenFuelData.currentLap || (frozenFuelData.totalLaps === 0 && fuelData.totalLaps > 0)) {
+        if (!fuelData) return;
+
+        // Initialize if empty
+        if (!frozenFuelData) {
             setFrozenFuelData(fuelData);
+            return;
         }
-    }, [fuelData, frozenFuelData.currentLap, frozenFuelData.totalLaps]);
+
+        const currentTelemetryLap = fuelData.currentLap;
+        const frozenLap = frozenFuelData.currentLap;
+
+        // Check if we have moved to a new lap
+        if (currentTelemetryLap !== frozenLap || (frozenFuelData.totalLaps === 0 && fuelData.totalLaps > 0)) {
+            // Check if calculation backend has caught up
+
+            // 1. Happy path: The calculation has a lastFinishedLap that matches the previous lap
+            const isHistoryCaughtUp = fuelData.lastFinishedLap === currentTelemetryLap - 1;
+
+            // 2. Fallback path: The store explicitly says it's on the new lap (meaning processing finished),
+            // even if history didn't update (e.g. invalid lap where lastFinishedLap remains old)
+            const isStoreCaughtUp = storeLastLap === currentTelemetryLap;
+
+            // 3. Early lap edge cases (L0/L1) where history might be empty/initial
+            const isEarlyLap = currentTelemetryLap <= 1;
+
+            if (isHistoryCaughtUp || isStoreCaughtUp || isEarlyLap) {
+                setFrozenFuelData(fuelData);
+            }
+        }
+    }, [fuelData, frozenFuelData, storeLastLap]);
+
+    // Frozen Display Data (for Grid)
+    // Uses the frozen fuel level from the snapshot, NOT the live fuel level
+    // This ensures Laps/Refuel/Finish calculations in the grid are static
+    const frozenDisplayData = useMemo(() => {
+        if (!frozenFuelData) {
+            return {
+                fuelLevel: 0, lastLapUsage: 0, avg3Laps: 0, avg10Laps: 0,
+                avgAllGreenLaps: 0, minLapUsage: 0, maxLapUsage: 0, lapsWithFuel: 0,
+                lapsRemaining: 0, totalLaps: 0, fuelToFinish: 0, fuelToAdd: 0,
+                canFinish: false, targetConsumption: 0, confidence: 'low' as const,
+                pitWindowOpen: 0, pitWindowClose: 0, currentLap: 0, fuelAtFinish: 0,
+                avgLapTime: 0, targetScenarios: undefined,
+            };
+        }
+
+        // We use frozenFuelData.fuelLevel effectively
+        // The logic below mirrors displayData but doesn't override with live currentFuelLevel
+        const level = frozenFuelData.fuelLevel;
+        const avgFuelPerLap = frozenFuelData.avg3Laps || frozenFuelData.lastLapUsage;
+        const lapsWithFuel = avgFuelPerLap > 0 ? level / avgFuelPerLap : 0;
+        const fuelAtFinish = level - frozenFuelData.lapsRemaining * avgFuelPerLap;
+
+        // We don't really need accurate scenarios for the grid, but let's keep shape consistent
+        return {
+            ...frozenFuelData,
+            fuelLevel: level,
+            lapsWithFuel,
+            pitWindowClose: frozenFuelData.currentLap + lapsWithFuel - 1,
+            fuelAtFinish,
+            targetScenarios: []
+        };
+    }, [frozenFuelData]);
 
     if (!editMode && settings?.showOnlyWhenOnTrack && !isOnTrack) return null;
     if (!editMode && !isSessionVisible) return <></>;
@@ -258,8 +322,8 @@ export const FuelCalculator2 = (props: FuelCalculatorProps) => {
                 return <FuelCalculator2Gauge key={widgetId} widgetId={widgetId} fuelData={fuelData} displayData={displayData} fuelUnits={fuelUnits} settings={settings} />;
             case 'fuel2Grid':
             case 'modernGrid':
-                // Use frozen data for grid to avoid values jumping during lap
-                return <FuelCalculator2ConsumptionGrid key={widgetId} widgetId={widgetId} fuelData={frozenFuelData} displayData={frozenFuelData} fuelUnits={fuelUnits} settings={settings} />;
+                // Use frozen data for grid (static rows) but pass live data for CURR row
+                return <FuelCalculator2ConsumptionGrid key={widgetId} widgetId={widgetId} fuelData={frozenFuelData} liveFuelData={fuelData} displayData={frozenDisplayData} fuelUnits={fuelUnits} settings={settings} />;
             case 'fuel2Scenarios':
             case 'modernScenarios':
                 return <FuelCalculator2PitScenarios key={widgetId} widgetId={widgetId} fuelData={fuelData} displayData={displayData} fuelUnits={fuelUnits} settings={settings} />;

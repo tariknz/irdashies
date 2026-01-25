@@ -2,11 +2,13 @@ import React, { useMemo } from 'react';
 import { formatFuel } from '../fuelCalculations';
 import type { FuelCalculation, FuelCalculatorSettings } from '../types';
 import { useFuelStore } from '../FuelStore';
-import { useDashboard } from '@irdashies/context';
+import { useDashboard, useSessionStore, useTelemetryValue } from '@irdashies/context';
 import { ConsumptionGraphWidget } from './ConsumptionGraphWidget';
+import { useStore } from 'zustand';
 
 interface FuelCalculator2WidgetProps {
     fuelData: FuelCalculation | null;
+    liveFuelData?: FuelCalculation | null; // Added for live updates in grid
     displayData: any; // Using the displayData from FuelCalculator which has some derived fields
     fuelUnits: 'L' | 'gal';
     settings?: FuelCalculatorSettings;
@@ -139,7 +141,7 @@ export const FuelCalculator2Gauge: React.FC<FuelCalculator2WidgetProps> = ({ fue
     );
 };
 
-export const FuelCalculator2ConsumptionGrid: React.FC<FuelCalculator2WidgetProps> = ({ fuelData, displayData, settings, widgetId }) => {
+export const FuelCalculator2ConsumptionGrid: React.FC<FuelCalculator2WidgetProps> = ({ fuelData, liveFuelData, displayData, settings, widgetId }) => {
     const styles = useWidgetStyles(settings, widgetId);
 
     if (!fuelData) return null;
@@ -151,6 +153,7 @@ export const FuelCalculator2ConsumptionGrid: React.FC<FuelCalculator2WidgetProps
     const showAvg = settings ? (settings.show3LapAvg || settings.show10LapAvg) : true;
     const showMax = settings ? settings.showMax : true;
     const showLast = settings ? settings.showLastLap : true;
+    const showCurrent = settings ? settings.showCurrentLap : true;
     const showMin = settings ? settings.showMin : false; // Default off for compact modern layout unless enabled
 
     // Grid Data
@@ -159,6 +162,16 @@ export const FuelCalculator2ConsumptionGrid: React.FC<FuelCalculator2WidgetProps
     const last = displayData.lastLapUsage;
     // Add min data
     const min = displayData.minLapUsage || 0;
+
+    // Check if we are in a testing/practice session
+    // We need the current SessionNum to look up the SessionType in the SessionInfo array
+    const sessionNum = useTelemetryValue('SessionNum');
+    const sessionType = useStore(useSessionStore, (state) =>
+        state.session?.SessionInfo?.Sessions?.find((s) => s.SessionNum === sessionNum)?.SessionType
+    );
+
+    // Check for "Offline Testing" or "Practice"
+    const isTesting = sessionType === 'Offline Testing' || sessionType === 'Practice';
 
     // Calculate derivates (Laps, Refuel, Finish) for each column
     // This duplicates some logic but ensures consistent display as per mockup
@@ -174,6 +187,15 @@ export const FuelCalculator2ConsumptionGrid: React.FC<FuelCalculator2WidgetProps
 
         // Refuel (Fuel to add) - simplified logic for display
         const toAdd = Math.max(0, fuelNeeded - displayData.fuelLevel);
+
+        // If testing, hide Refuel and Finish
+        if (isTesting) {
+            return {
+                laps: laps.toFixed(2),
+                refuel: '--',
+                finish: '--'
+            };
+        }
 
         return {
             laps: laps.toFixed(2),
@@ -204,6 +226,17 @@ export const FuelCalculator2ConsumptionGrid: React.FC<FuelCalculator2WidgetProps
             <div className="text-slate-500 text-center">LAPS</div>
             <div className="text-slate-500 text-center">REFUEL</div>
             <div className="text-slate-500 text-center">FINISH</div>
+
+            {/* CURR ROW */}
+            {showCurrent && (
+                <>
+                    <div className="text-slate-400 py-0.5">CURR</div>
+                    <div className="text-white text-center py-0.5 font-bold">{(liveFuelData?.projectedLapUsage ?? fuelData.projectedLapUsage ?? 0).toFixed(2)}</div>
+                    <div className="text-slate-500 text-center py-0.5 opacity-50">--</div>
+                    <div className="text-slate-500 text-center py-0.5 opacity-50">--</div>
+                    <div className="text-slate-500 text-center py-0.5 opacity-50">--</div>
+                </>
+            )}
 
             {/* AVG ROW */}
             {showAvg && (
@@ -389,6 +422,7 @@ export const FuelCalculator2HistoryGraph: React.FC<FuelCalculator2WidgetProps> =
 
     // Access store directly to be self-contained
     const lapHistory = useFuelStore((state) => state.lapHistory);
+    const lastLap = useFuelStore((state) => state.lastLap);
     const { isDemoMode } = useDashboard();
 
     // Default to histogram if not specified in settings
@@ -402,8 +436,9 @@ export const FuelCalculator2HistoryGraph: React.FC<FuelCalculator2WidgetProps> =
         );
 
         // Filter to valid laps (not out-laps) and take last N
+        // Allow Lap 1 even if it's an out-lap (e.g. standing start) as long as it has valid fuel data
         const validLaps = history
-            .filter((lap) => !lap.isOutLap && lap.fuelUsed > 0)
+            .filter((lap) => (!lap.isOutLap || lap.lapNumber >= 1) && lap.fuelUsed > 0)
             .slice(0, lapCount)
             .reverse(); // Oldest to newest for graph
 
@@ -422,7 +457,7 @@ export const FuelCalculator2HistoryGraph: React.FC<FuelCalculator2WidgetProps> =
             minFuel,
             maxFuel,
         };
-    }, [lapHistory, lapHistory.size, consumptionGraphType]);
+    }, [lapHistory, lapHistory.size, lastLap, consumptionGraphType]);
 
     // Reuse the existing widget!
     if (settings && settings.showConsumptionGraph === false) return null;

@@ -31,8 +31,11 @@ export interface FuelCalculation {
   fuelLevel: number;
   /** Fuel used on the most recent completed lap (liters) */
   lastLapUsage: number;
-  /** Average fuel consumption over last 3 laps (liters) */
-  avg3Laps: number;
+  /** Fuel used so far in the current lap (liters) */
+  currentLapUsage?: number;
+  /** Projected fuel usage for the current lap (liters) */
+  projectedLapUsage?: number;
+  /** Average fuel consumption over last 3 laps (liters) */  avg3Laps: number;
   /** Average fuel consumption over last 10 laps (liters) */
   avg10Laps: number;
   /** Average fuel consumption for all green flag laps (liters) */
@@ -83,6 +86,8 @@ export interface FuelCalculation {
   earliestPitLap?: number;
   /** Fuel tank capacity in liters (respecting session limits) */
   fuelTankCapacity?: number;
+  /** The lap number of the last finished lap included in the calculation */
+  lastFinishedLap?: number;
 }
 
 /**
@@ -102,6 +107,8 @@ export interface FuelCalculatorSettings {
   showLapsRemaining: boolean;
   /** Show minimum fuel consumption */
   showMin: boolean;
+  /** Show live current lap consumption */
+  showCurrentLap: boolean;
   /** Show consumption for last lap */
   showLastLap: boolean;
   /** Show average over last 3 laps */

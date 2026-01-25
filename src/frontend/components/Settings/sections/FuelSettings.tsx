@@ -17,6 +17,7 @@ const defaultConfig: FuelWidgetSettings['config'] = {
   showFuelLevel: true,
   showLapsRemaining: true,
   showMin: true,
+  showCurrentLap: true,
   showLastLap: true,
   show3LapAvg: true,
   show10LapAvg: true,
@@ -351,6 +352,15 @@ const SingleFuelWidgetSettings = ({ widgetId, isFuel2 }: { widgetId: string, isF
                       enabled={settings.config.showLastLap}
                       onToggle={(newValue) =>
                         handleConfigChange({ showLastLap: newValue })
+                      }
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-slate-300">Show Current Lap</span>
+                    <ToggleSwitch
+                      enabled={settings.config.showCurrentLap}
+                      onToggle={(newValue) =>
+                        handleConfigChange({ showCurrentLap: newValue })
                       }
                     />
                   </div>
