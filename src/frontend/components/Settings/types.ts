@@ -85,7 +85,7 @@ export interface StandingsWidgetSettings extends BaseWidgetSettings {
     useLivePosition: boolean;
     position: { enabled: boolean };
     driverName: { enabled: boolean; showStatusBadges: boolean; nameFormat: 'name-middlename-surname' | 'name-m.-surname' | 'name-surname' | 'n.-surname' | 'surname-n.' | 'surname' };
-    driverTag?: { enabled: boolean; position?: 'before-name' | 'after-name' | 'before-logo' | 'after-logo'; widthPx: number };
+    driverTag?: { enabled: boolean; widthPx: number };
     teamName: { enabled: boolean };
     pitStatus: { enabled: boolean; showPitTime?: boolean; pitLapDisplayMode: 'lastPitLap' | 'lapsSinceLastPit' };
     displayOrder: string[];
@@ -161,7 +161,7 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
     };
     position: { enabled: boolean };
     driverName: { enabled: boolean; showStatusBadges: boolean; nameFormat: 'name-middlename-surname' | 'name-m.-surname' | 'name-surname' | 'n.-surname' | 'surname-n.' | 'surname' };
-    driverTag?: { enabled: boolean; position?: 'before-name' | 'after-name' | 'before-logo' | 'after-logo'; widthPx: number };
+    driverTag?: { enabled: boolean; widthPx: number };
     teamName: { enabled: boolean };
     pitStatus: { enabled: boolean; showPitTime?: boolean; pitLapDisplayMode: 'lastPitLap' | 'lapsSinceLastPit' };
     displayOrder: string[];
