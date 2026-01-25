@@ -357,96 +357,84 @@ export const InputSettings = () => {
               </div>
               {config.trace.enabled && (
                 <div className="space-y-2 pl-4 pt-2">
-                  <label className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      checked={config.trace.includeClutch}
-                      onChange={(e) =>
-                        handleConfigChange({
-                          trace: {
-                            ...config.trace,
-                            includeClutch: e.target.checked,
-                          },
-                        })
-                      }
-                      className="form-checkbox h-4 w-4 text-blue-500 rounded border-slate-500 bg-slate-700"
-                    />
+                  <div className="flex items-center justify-between gap-3">
                     <span className="text-sm text-slate-200">
                       Show Clutch Trace
                     </span>
-                  </label>
-                  <label className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      checked={config.trace.includeThrottle}
-                      onChange={(e) =>
+                    <ToggleSwitch
+                      enabled={config.trace.includeClutch}
+                      onToggle={(newValue) =>
                         handleConfigChange({
                           trace: {
                             ...config.trace,
-                            includeThrottle: e.target.checked,
+                            includeClutch: newValue,
                           },
                         })
                       }
-                      className="form-checkbox h-4 w-4 text-blue-500 rounded border-slate-500 bg-slate-700"
                     />
+                  </div>
+                  <div className="flex items-center justify-between gap-3">
                     <span className="text-sm text-slate-200">
                       Show Throttle Trace
                     </span>
-                  </label>
-                  <label className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      checked={config.trace.includeBrake}
-                      onChange={(e) =>
+                    <ToggleSwitch
+                      enabled={config.trace.includeThrottle}
+                      onToggle={(newValue) =>
                         handleConfigChange({
                           trace: {
                             ...config.trace,
-                            includeBrake: e.target.checked,
+                            includeThrottle: newValue,
                           },
                         })
                       }
-                      className="form-checkbox h-4 w-4 text-blue-500 rounded border-slate-500 bg-slate-700"
                     />
+                  </div>
+                  <div className="flex items-center justify-between gap-3">
                     <span className="text-sm text-slate-200">
                       Show Brake Trace
                     </span>
-                  </label>
-                  <label className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      checked={config.trace.includeAbs}
-                      onChange={(e) =>
+                    <ToggleSwitch
+                      enabled={config.trace.includeBrake}
+                      onToggle={(newValue) =>
                         handleConfigChange({
                           trace: {
                             ...config.trace,
-                            includeAbs: e.target.checked,
+                            includeBrake: newValue,
                           },
                         })
                       }
-                      className="form-checkbox h-4 w-4 text-blue-500 rounded border-slate-500 bg-slate-700"
                     />
-                    <span className="text-sm text-slate-200">
-                      Show ABS Visual Indicator
-                    </span>
-                  </label>
-                  <label className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      checked={config.trace.includeSteer ?? true}
-                      onChange={(e) =>
+                  </div>
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-sm text-slate-200">Show ABS</span>
+                    <ToggleSwitch
+                      enabled={config.trace.includeAbs}
+                      onToggle={(newValue) =>
                         handleConfigChange({
                           trace: {
                             ...config.trace,
-                            includeSteer: e.target.checked,
+                            includeAbs: newValue,
                           },
                         })
                       }
-                      className="form-checkbox h-4 w-4 text-blue-500 rounded border-slate-500 bg-slate-700"
                     />
+                  </div>
+                  <div className="flex items-center justify-between gap-3">
                     <span className="text-sm text-slate-200">
                       Show Steering Trace
                     </span>
-                  </label>
+                    <ToggleSwitch
+                      enabled={config.trace.includeSteer ?? true}
+                      onToggle={(newValue) =>
+                        handleConfigChange({
+                          trace: {
+                            ...config.trace,
+                            includeSteer: newValue,
+                          },
+                        })
+                      }
+                    />
+                  </div>
                   <div className="flex items-center gap-3 pt-2">
                     <label className="text-sm text-slate-200">
                       Stroke Width:
@@ -540,75 +528,70 @@ export const InputSettings = () => {
               </div>
               {config.bar.enabled && (
                 <div className="space-y-2 pl-4 pt-2">
-                  <label className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      checked={config.bar.includeClutch}
-                      onChange={(e) =>
-                        handleConfigChange({
-                          bar: {
-                            ...config.bar,
-                            includeClutch: e.target.checked,
-                          },
-                        })
-                      }
-                      className="form-checkbox h-4 w-4 text-blue-500 rounded border-slate-500 bg-slate-700"
-                    />
+                  <div className="flex items-center justify-between gap-3">
                     <span className="text-sm text-slate-200">
                       Show Clutch Bar
                     </span>
-                  </label>
-                  <label className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      checked={config.bar.includeBrake}
-                      onChange={(e) =>
+                    <ToggleSwitch
+                      enabled={config.bar.includeClutch}
+                      onToggle={(newValue) =>
                         handleConfigChange({
                           bar: {
                             ...config.bar,
-                            includeBrake: e.target.checked,
+                            includeClutch: newValue,
                           },
                         })
                       }
-                      className="form-checkbox h-4 w-4 text-blue-500 rounded border-slate-500 bg-slate-700"
                     />
+                  </div>
+                  <div className="flex items-center justify-between gap-3">
                     <span className="text-sm text-slate-200">
                       Show Brake Bar
                     </span>
-                  </label>
-                  <label className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      checked={config.bar.includeThrottle}
-                      onChange={(e) =>
+                    <ToggleSwitch
+                      enabled={config.bar.includeBrake}
+                      onToggle={(newValue) =>
                         handleConfigChange({
                           bar: {
                             ...config.bar,
-                            includeThrottle: e.target.checked,
+                            includeBrake: newValue,
                           },
                         })
                       }
-                      className="form-checkbox h-4 w-4 text-blue-500 rounded border-slate-500 bg-slate-700"
                     />
+                  </div>
+                  <div className="flex items-center justify-between gap-3">
                     <span className="text-sm text-slate-200">
                       Show Throttle Bar
                     </span>
-                  </label>
-                  <label className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      checked={config.bar.includeAbs}
-                      onChange={(e) =>
+                    <ToggleSwitch
+                      enabled={config.bar.includeThrottle}
+                      onToggle={(newValue) =>
                         handleConfigChange({
-                          bar: { ...config.bar, includeAbs: e.target.checked },
+                          bar: {
+                            ...config.bar,
+                            includeThrottle: newValue,
+                          },
                         })
                       }
-                      className="form-checkbox h-4 w-4 text-blue-500 rounded border-slate-500 bg-slate-700"
                     />
+                  </div>
+                  <div className="flex items-center justify-between gap-3">
                     <span className="text-sm text-slate-200">
-                      Show ABS Visual Indicator
+                      Show ABS Indicator
                     </span>
-                  </label>
+                    <ToggleSwitch
+                      enabled={config.bar.includeAbs}
+                      onToggle={(newValue) =>
+                        handleConfigChange({
+                          bar: {
+                            ...config.bar,
+                            includeAbs: newValue,
+                          },
+                        })
+                      }
+                    />
+                  </div>
                 </div>
               )}
             </div>
