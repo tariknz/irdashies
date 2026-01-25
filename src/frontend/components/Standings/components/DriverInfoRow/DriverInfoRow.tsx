@@ -1,7 +1,8 @@
 import { memo, useMemo } from 'react';
 import { getTailwindStyle } from '@irdashies/utils/colors';
 import { formatTime, type TimeFormat } from '@irdashies/utils/time';
-import { usePitStopDuration } from '@irdashies/context';
+import { usePitStopDuration, useDashboard } from '@irdashies/context';
+import { getPresetTag } from '../../../../constants/driverTagBadges';
 import type { Gap, LastTimeState } from '../../createStandings';
 import type {
   RelativeWidgetSettings,
@@ -118,6 +119,9 @@ export const DriverInfoRow = memo(
     pitStopDuration: pitStopDurationProp,
     hideCarManufacturer,
   }: DriverRowInfoProps) => {
+    const { currentDashboard } = useDashboard();
+    const tagSettings = currentDashboard?.generalSettings?.driverTagSettings;
+    const widgetDriverTag = config?.driverTag;
     const pitStopDurations = usePitStopDuration();
     const pitStopDuration =
       pitStopDurationProp ?? pitStopDurations[carIdx] ?? null;
@@ -144,6 +148,15 @@ export const DriverInfoRow = memo(
     }, [numLapDeltasToShow]);
     
     const columnDefinitions = useMemo(() => {
+      const idxDriverTag = (displayOrder ?? []).indexOf('driverTag');
+      const idxDriverName = (displayOrder ?? []).indexOf('driverName');
+      const driverTagBeforeName =
+        idxDriverTag !== -1 && idxDriverName !== -1
+          ? idxDriverTag < idxDriverName
+          : widgetDriverTag?.position === 'before-name';
+      const widgetTagEnabled = widgetDriverTag?.enabled;
+      const hasDriverTagColumn = (displayOrder ?? []).includes('driverTag');
+
       const columns = [
         {
           id: 'position',
@@ -176,6 +189,29 @@ export const DriverInfoRow = memo(
           ),
         },
         {
+          id: 'driverTag',
+          shouldRender:
+            (displayOrder ? displayOrder.includes('driverTag') : true) &&
+            (widgetTagEnabled ?? tagSettings?.display?.enabled),
+            component: (
+            <td key="driverTag" data-column="driverTag" className="w-auto px-0 py-0.5 whitespace-nowrap">
+              {hidden ? null : (() => {
+                const key = name ?? '';
+                const groupId = tagSettings?.mapping?.[key];
+                if (!groupId) return null;
+                const preset = getPresetTag(groupId);
+                if (!preset) return null;
+                const icon = preset.icon ?? '';
+                return (
+                  <span style={{ display: 'inline-block', width: 18, height: 18, lineHeight: '18px', textAlign: 'center', verticalAlign: 'middle', marginRight: 0 }}>
+                    <span className="align-middle">{icon}</span>
+                  </span>
+                );
+              })()}
+            </td>
+          ),
+        },
+        {
           id: 'countryFlags',
           shouldRender:
             (displayOrder ? displayOrder.includes('countryFlags') : true) &&
@@ -194,7 +230,7 @@ export const DriverInfoRow = memo(
             (displayOrder ? displayOrder.includes('driverName') : true) &&
             (config?.driverName?.enabled ?? true),
           component: (
-            <DriverNameCell
+                <DriverNameCell
               key="driverName"
               radioActive={radioActive}
               repair={repair}
@@ -204,6 +240,10 @@ export const DriverInfoRow = memo(
               hidden={hidden}
               fullName={name}
               nameFormat={config?.driverName?.nameFormat}
+              tagSettings={tagSettings}
+              widgetTagEnabled={widgetTagEnabled}
+              widgetTagBeforeName={driverTagBeforeName}
+              skipWidgetTag={hasDriverTagColumn}
             />
           ),
         },
@@ -397,17 +437,17 @@ export const DriverInfoRow = memo(
           .map((orderId) => columns.find((col) => col.id === orderId))
           .filter(
             (col): col is NonNullable<typeof col> =>
-              col !== undefined && col.shouldRender
+              col !== undefined && !!col.shouldRender
           );
 
         const remainingColumns = columns.filter(
-          (col) => col.shouldRender && !displayOrder.includes(col.id)
+          (col) => !!col.shouldRender && !displayOrder.includes(col.id)
         );
 
         return [...orderedColumns, ...remainingColumns];
       }
 
-      return columns.filter((col) => col.shouldRender);
+      return columns.filter((col) => !!col.shouldRender);
     }, [
       displayOrder,
       config,
@@ -449,6 +489,8 @@ export const DriverInfoRow = memo(
       lapTimeDeltas,
       emptyLapDeltaPlaceholders,
       hideCarManufacturer,
+      tagSettings,
+      widgetDriverTag,
     ]);
 
     return (

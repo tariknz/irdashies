@@ -25,6 +25,7 @@ const sortableSettings: SortableSetting[] = [
   { id: 'carNumber', label: 'Car Number', configKey: 'carNumber' },
   { id: 'countryFlags', label: 'Country Flags', configKey: 'countryFlags' },
   { id: 'driverName', label: 'Driver Name', configKey: 'driverName', hasSubSetting: true },
+  { id: 'driverTag', label: 'Driver Tag', configKey: 'driverTag' },
   { id: 'teamName', label: 'Team Name', configKey: 'teamName' },
   { id: 'pitStatus', label: 'Pit Status', configKey: 'pitStatus', hasSubSetting: true },
   { id: 'carManufacturer', label: 'Car Manufacturer', configKey: 'carManufacturer', hasSubSetting: true },
@@ -93,6 +94,7 @@ const defaultConfig: StandingsWidgetSettings['config'] = {
   lapTimeDeltas: { enabled: false, numLaps: 3 },
   position: { enabled: true },
   driverName: { enabled: true, showStatusBadges: true, nameFormat: 'name-surname' },
+  driverTag: { enabled: false, position: 'before-name', widthPx: 6 },
   teamName: { enabled: false },
   pitStatus: { enabled: true, showPitTime: false, pitLapDisplayMode: 'lapsSinceLastPit' },
   displayOrder: sortableSettings.map(s => s.id),
@@ -226,6 +228,11 @@ const migrateConfig = (
         (config.driverName as { showStatusBadges?: boolean })?.showStatusBadges ??
         true,
       nameFormat: ((config.driverName as { nameFormat?: 'name-middlename-surname' | 'name-m.-surname' | 'name-surname' | 'n.-surname' | 'surname-n.' | 'surname' })?.nameFormat) ?? 'name-middlename-surname',
+    },
+    driverTag: {
+      enabled: (config.driverTag as { enabled?: boolean })?.enabled ?? false,
+      position: ((config.driverTag as { position?: string })?.position as 'before-name' | 'after-name' | 'before-logo' | 'after-logo') ?? 'before-name',
+      widthPx: (config.driverTag as { widthPx?: number })?.widthPx ?? 6,
     },
     teamName: { enabled: (config.teamName as { enabled?: boolean })?.enabled ?? false },
     pitStatus: {
@@ -588,7 +595,7 @@ export const StandingsSettings = () => {
                   Reset to Default Order
                 </button>
               </div>
-              <div className="pl-4">
+                <div className="pl-4">
                 <DisplaySettingsList
                   itemsOrder={itemsOrder}
                   onReorder={handleDisplayOrderChange}
