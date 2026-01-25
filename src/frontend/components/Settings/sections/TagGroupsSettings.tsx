@@ -57,6 +57,19 @@ export const TagGroupsSettings = () => {
     updateDashboard({ ...settings, mapping });
   };
 
+  const [editingNames, setEditingNames] = useState<Record<string, string>>({});
+
+  const renameMapping = (oldName: string, newName: string) => {
+    const name = newName?.trim();
+    if (!name) return;
+    const mapping = { ...settings.mapping };
+    const value = mapping[oldName];
+    if (value === undefined) return;
+    mapping[name] = value;
+    if (oldName in mapping) delete mapping[oldName];
+    updateDashboard({ ...settings, mapping });
+  };
+
   const updateMapping = (driverName: string, groupId: string) => {
     const mapping = { ...settings.mapping };
     if (!driverName) return;
@@ -100,8 +113,21 @@ export const TagGroupsSettings = () => {
 
           <div className="space-y-2 mt-2">
             {Object.entries(settings.mapping).map(([driver, gid]) => (
-              <div key={driver} className="flex items-center gap-2">
-                <input value={driver} readOnly className="px-2 py-1 bg-slate-700 rounded w-64" />
+              <div key={driver || '__empty'} className="flex items-center gap-2">
+                <input
+                  value={editingNames[driver] ?? driver}
+                  onChange={e => setEditingNames(prev => ({ ...prev, [driver]: e.target.value }))}
+                  onBlur={() => {
+                    const newName = editingNames[driver] ?? driver;
+                    if ((newName ?? '').trim() && newName !== driver) {
+                      renameMapping(driver, newName);
+                    }
+                    setEditingNames(prev => { const copy = { ...prev }; delete copy[driver]; return copy; });
+                  }}
+                  onKeyDown={e => { if (e.key === 'Enter') (e.currentTarget as HTMLInputElement).blur(); }}
+                  placeholder="Driver display name"
+                  className="px-2 py-1 bg-slate-700 rounded w-64"
+                />
                 <select value={gid} onChange={e => updateMapping(driver, e.target.value)} className="px-2 py-1 bg-slate-700 rounded">
                   <option value="">(none)</option>
                   {settings.groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
