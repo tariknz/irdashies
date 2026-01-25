@@ -103,6 +103,11 @@ export const SettingsLayout = () => {
                 General
               </Link>
             </li>
+            <li>
+              <Link to="/settings/driver-tags" className={menuItemClass('/driver-tags')}>
+                Driver Tags
+              </Link>
+            </li>
           </ul>
           <ul className="flex flex-col gap-2 flex-1 mb-2">
             <li>
@@ -194,11 +199,7 @@ export const SettingsLayout = () => {
                 Weather
               </Link>
             </li>
-            <li>
-              <Link to="/settings/tag-groups" className={menuItemClass('/tag-groups')}>
-                Tag Groups
-              </Link>
-            </li>
+            
           </ul>
           {/* Advanced settings pushed to bottom */}
           <ul className="mt-auto pt-2 border-t border-slate-700 flex flex-col gap-2">
@@ -226,7 +227,7 @@ export const SettingsLayout = () => {
               element={<Navigate to="/settings/general" replace />}
             />
             <Route path="general" element={<GeneralSettings />} />
-            <Route path="tag-groups" element={<TagGroupsSettings />} />
+            <Route path="driver-tags" element={<TagGroupsSettings />} />
             <Route path="standings" element={<StandingsSettings />} />
             <Route path="relative" element={<RelativeSettings />} />
             <Route path="weather" element={<WeatherSettings />} />
