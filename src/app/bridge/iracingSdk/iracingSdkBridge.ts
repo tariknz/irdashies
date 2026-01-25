@@ -1,6 +1,7 @@
 import { IRacingSDK } from '../../irsdk';
 import { TelemetrySink } from './telemetrySink';
 import { OverlayManager } from '../../overlayManager';
+import { onDashboardUpdated } from '../../storage/dashboardEvents';
 import type { IrSdkBridge, Session, Telemetry } from '@irdashies/types';
 
 const TIMEOUT = 1000;
@@ -13,10 +14,14 @@ export async function publishIRacingSDKEvents(
 
   let shouldStop = false;
   let lastRunningState: boolean | undefined = undefined;
+  let lastSessionVersion = -1;
 
   const telemetryCallbacks = new Set<(value: Telemetry) => void>();
   const sessionCallbacks = new Set<(value: Session) => void>();
   const runningStateCallbacks = new Set<(value: boolean) => void>();
+
+  // Reset session version when dashboard is updated
+  onDashboardUpdated(() => lastSessionVersion = -1);
 
   const runningStateInterval = setInterval(async () => {
     const isSimRunning = await IRacingSDK.IsSimRunning();
@@ -36,7 +41,6 @@ export async function publishIRacingSDKEvents(
       if (await IRacingSDK.IsSimRunning()) {
         console.log('iRacing is running');
         const sdk = new IRacingSDK();
-        let lastSessionVersion = -1;
         sdk.autoEnableTelemetry = true;
 
         await sdk.ready();
