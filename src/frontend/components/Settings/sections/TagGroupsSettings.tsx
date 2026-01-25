@@ -9,7 +9,6 @@ export const TagGroupsSettings = () => {
   const { currentDashboard, onDashboardUpdated } = useDashboard();
 
   const existing = currentDashboard?.generalSettings?.driverTagSettings;
-
   const [settings, setSettings] = useState<DriverTagSettings>(
     existing ?? {
       groups: [],
@@ -17,6 +16,23 @@ export const TagGroupsSettings = () => {
       display: { enabled: false, position: 'before-name', widthPx: 6 },
     }
   );
+
+  const [editingNames, setEditingNames] = useState<Record<string, string>>({});
+  const [activeGroupFilter, setActiveGroupFilter] = useState<string | null>(null);
+  const [lastAddedKey, setLastAddedKey] = useState<string | null>(null);
+  const inputRefs = useRef<Record<string, HTMLInputElement | null>>({});
+
+  useEffect(() => {
+    if (!lastAddedKey) return;
+    // wait for DOM to update
+    const el = inputRefs.current[lastAddedKey];
+    if (el) {
+      el.focus();
+      el.select();
+      // defer clearing to avoid synchronous state update in the effect
+      setTimeout(() => setLastAddedKey(null), 0);
+    }
+  }, [lastAddedKey, settings.mapping]);
 
   if (!currentDashboard || !onDashboardUpdated) return <>Loading...</>;
 
@@ -58,20 +74,11 @@ export const TagGroupsSettings = () => {
     updateDashboard({ ...settings, mapping });
     setLastAddedKey(tmpKey);
   };
-
-  const [editingNames, setEditingNames] = useState<Record<string, string>>({});
-  const [activeGroupFilter, setActiveGroupFilter] = useState<string | null>(null);
-  const [lastAddedKey, setLastAddedKey] = useState<string | null>(null);
-  const inputRefs = useRef<Record<string, HTMLInputElement | null>>({});
-
   const renameMapping = (oldName: string, newName: string) => {
     const name = newName?.trim();
     if (!name) return;
-    const mapping = { ...settings.mapping };
-    const value = mapping[oldName];
-    if (value === undefined) return;
-    mapping[name] = value;
-    if (oldName in mapping) delete mapping[oldName];
+    const entries = Object.entries(settings.mapping).map(([k, v]) => [k === oldName ? name : k, v] as [string, string]);
+    const mapping = Object.fromEntries(entries);
     updateDashboard({ ...settings, mapping });
   };
 
@@ -81,18 +88,6 @@ export const TagGroupsSettings = () => {
     mapping[driverName] = groupId;
     updateDashboard({ ...settings, mapping });
   };
-
-  useEffect(() => {
-    if (!lastAddedKey) return;
-    // wait for DOM to update
-    const el = inputRefs.current[lastAddedKey];
-    if (el) {
-      el.focus();
-      el.select();
-      setLastAddedKey(null);
-    }
-  }, [lastAddedKey, settings.mapping]);
-
   const removeMapping = (driverName: string) => {
     const mapping = Object.fromEntries(
       Object.entries(settings.mapping).filter(([k]) => k !== driverName)
@@ -154,7 +149,7 @@ export const TagGroupsSettings = () => {
             </div>
 
             {Object.entries(settings.mapping)
-              .filter(([driverKey, gid]) => (activeGroupFilter ? gid === activeGroupFilter : true))
+              .filter(([, gid]) => (activeGroupFilter ? gid === activeGroupFilter : true))
               .map(([driverKey, gid], idx) => {
               const inputValue = editingNames[driverKey] ?? (driverKey.startsWith('__new__:') ? '' : driverKey);
               return (
@@ -170,7 +165,10 @@ export const TagGroupsSettings = () => {
                       } else if (newName !== driverKey) {
                         renameMapping(driverKey, newName);
                       }
-                      setEditingNames(prev => { const copy = { ...prev }; delete copy[driverKey]; return copy; });
+                      setEditingNames(prev => {
+                        const rest = Object.fromEntries(Object.entries(prev).filter(([k]) => k !== driverKey));
+                        return rest;
+                      });
                     }}
                     onKeyDown={e => { if (e.key === 'Enter') (e.currentTarget as HTMLInputElement).blur(); }}
                     placeholder="Enter iRacing display name"
