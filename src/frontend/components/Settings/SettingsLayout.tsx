@@ -81,17 +81,8 @@ export const SettingsLayout = () => {
             onClick={toggleDemoMode}
             className="flex flex-row gap-2 items-center px-3 py-2 rounded bg-slate-800 hover:bg-slate-600 transition-colors"
           >
-            {isDemoMode ? (
-              <>
-                <PresentationChartIcon size={20} weight="bold" />
-                <span>Exit Demo</span>
-              </>
-            ) : (
-              <>
-                <PresentationChartIcon size={20} weight="bold" />
-                <span>Demo Mode</span>
-              </>
-            )}
+            <PresentationChartIcon size={20} weight="bold" />
+            <span>{isDemoMode ? 'Exit Demo' : 'Demo Mode'}</span>
           </button>
           <button
             onClick={handleToggleLock}

@@ -44,7 +44,7 @@ const defaultConfig: RelativeWidgetSettings['config'] = {
   carNumber: { enabled: true },
   countryFlags: { enabled: true },
   driverName: { enabled: true, showStatusBadges: true, nameFormat: 'name-surname' },
-  driverTag: { enabled: false, position: 'before-name', widthPx: 6 },
+  driverTag: { enabled: false, widthPx: 6 },
   teamName: { enabled: false },
   pitStatus: { enabled: true, showPitTime: false, pitLapDisplayMode: 'lapsSinceLastPit' },
   carManufacturer: { enabled: true, hideIfSingleMake: false },
@@ -111,7 +111,6 @@ const migrateConfig = (savedConfig: unknown): RelativeWidgetSettings['config'] =
     },
     driverTag: {
       enabled: (config.driverTag as { enabled?: boolean })?.enabled ?? false,
-      position: ((config.driverTag as { position?: string })?.position as 'before-name' | 'after-name' | 'before-logo' | 'after-logo') ?? 'before-name',
       widthPx: (config.driverTag as { widthPx?: number })?.widthPx ?? 6,
     },
     teamName: { enabled: (config.teamName as { enabled?: boolean })?.enabled ?? false },
