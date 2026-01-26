@@ -24,7 +24,7 @@ describe('DriverNameCell', () => {
 
   it('hides the driver name when hidden', () => {
     const { container } = renderInTable(
-      <DriverNameCell name="Driver A" hidden />
+      <DriverNameCell name="Driver A" />
     );
 
     expect(container.textContent).not.toContain('Driver A');

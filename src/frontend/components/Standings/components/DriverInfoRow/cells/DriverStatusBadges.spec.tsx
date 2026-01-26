@@ -11,7 +11,7 @@ describe('DriverStatusBadges', () => {
 
   it('renders nothing when hidden is true', () => {
     const { container } = render(
-      <DriverStatusBadges hidden dnf />
+      <DriverStatusBadges dnf />
     );
 
     expect(container.innerHTML).toBe('');

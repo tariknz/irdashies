@@ -29,7 +29,6 @@ const StatusBadge = ({
 };
 
 interface DriverStatusBadgesProps {
-  hidden?: boolean;
   repair?: boolean;
   penalty?: boolean;
   slowdown?: boolean;
@@ -48,7 +47,6 @@ interface DriverStatusBadgesProps {
 
 export const DriverStatusBadges = memo(
   ({
-    hidden,
     repair,
     penalty,
     slowdown,
@@ -65,7 +63,6 @@ export const DriverStatusBadges = memo(
     pitLapDisplayMode
   }: DriverStatusBadgesProps) => {
     const hasStatus =
-      !hidden &&
       (penalty || slowdown || repair || dnf || tow || out || pit || lastPit);
 
     if (!hasStatus) {
