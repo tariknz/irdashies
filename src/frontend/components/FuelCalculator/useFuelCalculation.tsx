@@ -310,6 +310,7 @@ export function useFuelCalculation(
       targetScenarios: [],
       earliestPitLap: undefined,
       fuelTankCapacity: 60, // Default fallback
+      fuelStatus: 'safe',
     };
 
     if (

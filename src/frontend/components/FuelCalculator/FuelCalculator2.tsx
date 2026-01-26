@@ -15,6 +15,7 @@ import {
     FuelCalculator2HistoryGraph,
     FuelCalculator2TargetMessage,
     FuelCalculator2Confidence,
+    getFuelStatusColors,
 } from './widgets/FuelCalculator2Widgets';
 import { useFuelStore } from './FuelStore';
 import type { FuelCalculatorSettings } from './types';
@@ -428,6 +429,15 @@ export const FuelCalculator2 = (props: FuelCalculatorProps) => {
     // Background opacity configuration
     const bgAlpha = (settings?.background?.opacity ?? 95) / 100;
 
+    const fuelStatusBasis = displayData.fuelStatus || 'safe';
+
+    // Extract hex codes for inline style
+    const borderColorValue = fuelStatusBasis === 'caution' ? '#f97316' :
+        fuelStatusBasis === 'danger' ? '#ef4444' : '#22c55e';
+
+    const shadowColorValue = fuelStatusBasis === 'caution' ? 'rgba(249, 115, 22, 0.3)' :
+        fuelStatusBasis === 'danger' ? 'rgba(239, 68, 68, 0.3)' : 'rgba(34, 197, 94, 0.3)';
+
     return (
         <div
             className="w-full h-full flex flex-col text-white"
@@ -435,14 +445,11 @@ export const FuelCalculator2 = (props: FuelCalculatorProps) => {
                 fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
             }}
         >
-            <div className="border-2 w-full h-full flex flex-col box-border px-3"
+            <div className={`border-2 w-full h-full flex flex-col box-border px-3 transition-colors duration-500`}
                 style={{
                     backgroundColor: `rgba(30, 30, 50, ${bgAlpha})`,
-                    borderColor: displayData.fuelStatus === 'safe' ? '#22c55e' :
-                        displayData.fuelStatus === 'caution' ? '#f97316' : '#ef4444',
-                    boxShadow: displayData.fuelStatus === 'safe' ? '0 0 15px rgba(34, 197, 94, 0.3) inset' :
-                        displayData.fuelStatus === 'caution' ? '0 0 15px rgba(249, 115, 22, 0.3) inset' :
-                            '0 0 15px rgba(239, 68, 68, 0.3) inset'
+                    borderColor: borderColorValue,
+                    boxShadow: `0 0 15px ${shadowColorValue} inset`
                 }}
             >
                 {layoutTree ? (

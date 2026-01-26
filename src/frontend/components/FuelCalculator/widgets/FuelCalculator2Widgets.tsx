@@ -47,7 +47,7 @@ const getConfidenceConfig = (confidence: string) => {
     }
 };
 
-const getFuelStatusColors = (status: 'safe' | 'caution' | 'danger' = 'safe') => {
+export const getFuelStatusColors = (status: 'safe' | 'caution' | 'danger' = 'safe') => {
     switch (status) {
         case 'safe':
             return {
