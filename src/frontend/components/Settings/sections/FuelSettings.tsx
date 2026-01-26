@@ -44,6 +44,9 @@ const defaultConfig: FuelWidgetSettings['config'] = {
   layoutConfig: [], // Default empty
   layoutTree: undefined, // Will be migrated on load
   consumptionGridOrder: ['curr', 'avg', 'max', 'last', 'min'],
+  fuelStatusThresholds: { green: 60, amber: 30, red: 10 },
+  fuelStatusBasis: 'avg',
+  fuelStatusRedLaps: 3,
 };
 
 const migrateConfig = (savedConfig: unknown): FuelWidgetSettings['config'] => {
@@ -61,6 +64,9 @@ const migrateConfig = (savedConfig: unknown): FuelWidgetSettings['config'] => {
     consumptionGridOrder: (config.consumptionGridOrder as string[]) ?? defaultConfig.consumptionGridOrder,
     enableTargetPitLap: (config.enableTargetPitLap as boolean) ?? defaultConfig.enableTargetPitLap,
     targetPitLap: (config.targetPitLap as number) ?? defaultConfig.targetPitLap,
+    fuelStatusThresholds: (config.fuelStatusThresholds as any) ?? defaultConfig.fuelStatusThresholds,
+    fuelStatusBasis: (config.fuelStatusBasis as any) ?? defaultConfig.fuelStatusBasis,
+    fuelStatusRedLaps: (config.fuelStatusRedLaps as any) ?? defaultConfig.fuelStatusRedLaps,
   };
 };
 
@@ -81,6 +87,7 @@ const AVAILABLE_WIDGETS: { id: FuelWidgetType; label: string }[] = [
 // Available Widgets for Fuel Calculator 2
 const AVAILABLE_WIDGETS_FUEL2: { id: string; label: string }[] = [
   { id: 'fuel2Header', label: 'Header (Stops/Window/Confidence)' },
+  { id: 'fuel2Confidence', label: 'Confidence Messages' },
   { id: 'fuel2Gauge', label: 'Fuel Gauge' },
   { id: 'fuel2Grid', label: 'Consumption Grid' },
   { id: 'fuel2Scenarios', label: 'Pit Scenarios' },
@@ -128,7 +135,7 @@ const DEFAULT_TREE_FUEL2: LayoutNode = {
       id: 'box-1',
       type: 'box',
       direction: 'col',
-      widgets: ['fuel2Header', 'fuel2TargetMessage', 'fuel2Gauge', 'fuel2Grid', 'fuel2Scenarios', 'fuel2Graph', 'fuel2TimeEmpty'],
+      widgets: ['fuel2Header', 'fuel2Confidence', 'fuel2TargetMessage', 'fuel2Gauge', 'fuel2Grid', 'fuel2Scenarios', 'fuel2Graph', 'fuel2TimeEmpty'],
     }
   ]
 };
@@ -353,12 +360,121 @@ const SingleFuelWidgetSettings = ({ widgetId, isFuel2 }: { widgetId: string, isF
                     <DualFontSizeInput widgetId="fuel2Header" settings={settings} onChange={handleConfigChange} />
                   </div>
                   <div className="flex items-center justify-between pr-20">
+                    <span className="text-sm text-slate-300">Confidence Messages</span>
+                    <DualFontSizeInput widgetId="fuel2Confidence" settings={settings} onChange={handleConfigChange} />
+                  </div>
+                  <div className="flex items-center justify-between pr-20">
                     <span className="text-sm text-slate-300">Fuel Gauge</span>
                     <DualFontSizeInput widgetId="fuel2Gauge" settings={settings} onChange={handleConfigChange} />
                   </div>
                   <div className="flex items-center justify-between pr-20">
                     <span className="text-sm text-slate-300">Time Until Empty</span>
                     <DualFontSizeInput widgetId="fuel2TimeEmpty" settings={settings} onChange={handleConfigChange} />
+                  </div>
+                </div>
+              )}
+
+              {/* Fuel Status Alerts */}
+              {isFuel2 && (
+                <div className="space-y-4 pb-4 mb-4 border-b border-slate-700">
+                  <h4 className="text-sm font-medium text-slate-300">Fuel Status Alerts</h4>
+
+                  <div className="space-y-3">
+                    {/* Green Threshold */}
+                    <div className="flex items-center justify-between pr-20">
+                      <span className="text-xs text-slate-400">Green Threshold (%)</span>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="range" min="0" max="100" step="1"
+                          value={settings.config.fuelStatusThresholds?.green ?? 60}
+                          onChange={(e) => {
+                            const val = parseInt(e.target.value);
+                            handleConfigChange({
+                              fuelStatusThresholds: {
+                                ...defaultConfig.fuelStatusThresholds,
+                                ...settings.config.fuelStatusThresholds,
+                                green: val
+                              } as any
+                            });
+                          }}
+                          className="w-32 h-1.5 bg-slate-600 rounded-lg appearance-none cursor-pointer"
+                        />
+                        <span className="text-xs text-slate-300 w-8 text-right">{settings.config.fuelStatusThresholds?.green ?? 60}%</span>
+                      </div>
+                    </div>
+
+                    {/* Amber Threshold */}
+                    <div className="flex items-center justify-between pr-20">
+                      <span className="text-xs text-slate-400">Amber Threshold (%)</span>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="range" min="0" max="100" step="1"
+                          value={settings.config.fuelStatusThresholds?.amber ?? 30}
+                          onChange={(e) => {
+                            const val = parseInt(e.target.value);
+                            handleConfigChange({
+                              fuelStatusThresholds: {
+                                ...defaultConfig.fuelStatusThresholds,
+                                ...settings.config.fuelStatusThresholds,
+                                amber: val
+                              } as any
+                            });
+                          }}
+                          className="w-32 h-1.5 bg-slate-600 rounded-lg appearance-none cursor-pointer"
+                        />
+                        <span className="text-xs text-slate-300 w-8 text-right">{settings.config.fuelStatusThresholds?.amber ?? 30}%</span>
+                      </div>
+                    </div>
+
+                    {/* Red Threshold */}
+                    <div className="flex items-center justify-between pr-20">
+                      <span className="text-xs text-slate-400">Red Threshold (%)</span>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="range" min="0" max="100" step="1"
+                          value={settings.config.fuelStatusThresholds?.red ?? 10}
+                          onChange={(e) => {
+                            const val = parseInt(e.target.value);
+                            handleConfigChange({
+                              fuelStatusThresholds: {
+                                ...defaultConfig.fuelStatusThresholds,
+                                ...settings.config.fuelStatusThresholds,
+                                red: val
+                              } as any
+                            });
+                          }}
+                          className="w-32 h-1.5 bg-slate-600 rounded-lg appearance-none cursor-pointer"
+                        />
+                        <span className="text-xs text-slate-300 w-8 text-right">{settings.config.fuelStatusThresholds?.red ?? 10}%</span>
+                      </div>
+                    </div>
+
+                    {/* Consumption Basis */}
+                    <div className="flex items-center justify-between pr-20 mt-4">
+                      <span className="text-xs text-slate-400">
+                        Alert Basis (Override)
+                        <span className="block text-[10px] text-slate-500">Triggers Red if below lap threshold</span>
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <select
+                          value={settings.config.fuelStatusBasis ?? 'avg'}
+                          onChange={(e) => handleConfigChange({ fuelStatusBasis: e.target.value as any })}
+                          className="px-2 py-1 bg-slate-700 text-slate-200 rounded text-xs w-24"
+                        >
+                          <option value="last">Last Lap</option>
+                          <option value="avg">Average</option>
+                          <option value="min">Minimum</option>
+                          <option value="max">Maximum</option>
+                        </select>
+                        <input
+                          type="number" min="0" max="20" step="0.1"
+                          value={settings.config.fuelStatusRedLaps ?? 3}
+                          onChange={(e) => handleConfigChange({ fuelStatusRedLaps: parseFloat(e.target.value) })}
+                          className="w-12 px-1 py-1 bg-slate-700 text-slate-200 rounded text-xs text-center ml-2"
+                        />
+                        <span className="text-[10px] text-slate-500">Laps</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}

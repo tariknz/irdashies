@@ -31,11 +31,11 @@ const getConfidenceConfig = (confidence: string) => {
             return {
                 color: 'text-amber-400',
                 bg: 'bg-amber-500',
-                border: 'border-orange-500', // Mockup uses orange for medium? check css. .status-orange
+                border: 'border-orange-500',
                 shadow: 'shadow-[0_0_15px_rgba(249,115,22,0.3)]',
                 pulse: 'animate-pulse'
             };
-        case 'low': // using red for low
+        case 'low':
         default:
             return {
                 color: 'text-red-400',
@@ -43,6 +43,43 @@ const getConfidenceConfig = (confidence: string) => {
                 border: 'border-red-500',
                 shadow: 'shadow-[0_0_15px_rgba(239,68,68,0.3)]',
                 pulse: 'animate-pulse'
+            };
+    }
+};
+
+const getFuelStatusColors = (status: 'safe' | 'caution' | 'danger' = 'safe') => {
+    switch (status) {
+        case 'safe':
+            return {
+                text: 'text-green-400',
+                bar: 'from-green-500 to-green-400',
+                border: 'border-green-500/50',
+                bg: 'bg-green-500/10',
+                borderSolid: 'border-green-500/50'
+            };
+        case 'caution':
+            return {
+                text: 'text-amber-400',
+                bar: 'from-amber-500 to-amber-400',
+                border: 'border-amber-500/50',
+                bg: 'bg-amber-500/10',
+                borderSolid: 'border-amber-500/50'
+            };
+        case 'danger':
+            return {
+                text: 'text-red-400',
+                bar: 'from-red-500 to-red-400',
+                border: 'border-red-500/50',
+                bg: 'bg-red-500/10',
+                borderSolid: 'border-red-500/50'
+            };
+        default:
+            return {
+                text: 'text-green-400',
+                bar: 'from-green-500 to-green-400',
+                border: 'border-green-500/50',
+                bg: 'bg-green-500/10',
+                borderSolid: 'border-green-500/50'
             };
     }
 };
@@ -113,13 +150,9 @@ export const FuelCalculator2Gauge: React.FC<FuelCalculator2WidgetProps> = ({ fue
     const tankCapacity = fuelData.fuelTankCapacity ?? 60;
     const fuelPct = Math.min(100, Math.max(0, (currentFuel / tankCapacity) * 100));
 
-    // Color based on level (optional, mockup uses green gradient mostly, or amber/red if low confidence/fuel?)
-    // Mockup uses specific gradients per status. Let's stick to green for now or dynamic.
-    // Actually mockup couples border color to status. Gauge seems to follow too.
-    const confidence = fuelData.confidence || 'low';
-    let gradient = 'from-green-500 to-green-400';
-    if (confidence === 'medium') gradient = 'from-amber-500 to-amber-400';
-    if (confidence === 'low') gradient = 'from-red-500 to-red-400';
+    const status = fuelData.fuelStatus || 'safe';
+    const statusColors = getFuelStatusColors(status);
+    const gradient = statusColors.bar;
 
     const fuelString = formatFuel(currentFuel, fuelUnits, 1);
     const lapsString = displayData.lapsWithFuel.toFixed(1);
@@ -134,7 +167,7 @@ export const FuelCalculator2Gauge: React.FC<FuelCalculator2WidgetProps> = ({ fue
                 </span>
                 <span className="mb-0.5" style={{ fontSize: labelFontSize }}>{tankString}</span>
             </div>
-            <div className="h-2 bg-slate-700 rounded-full overflow-hidden shadow-inner border border-slate-600/50">
+            <div className={`h-2 bg-slate-700 rounded-full overflow-hidden shadow-inner`}>
                 <div
                     className={`h-full bg-gradient-to-r ${gradient} rounded-full transition-all duration-500 relative`}
                     style={{ width: `${fuelPct}%` }}
@@ -570,11 +603,10 @@ export const FuelCalculator2TimeEmpty: React.FC<FuelCalculator2WidgetProps> = ({
         return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
     };
 
-    // Confidence border color
-    const confidence = fuelData.confidence || 'low';
-    let borderColor = 'border-red-500/50';
-    if (confidence === 'medium') borderColor = 'border-amber-500/50';
-    if (confidence === 'high') borderColor = 'border-green-500/50';
+    // Fuel status border color
+    const status = fuelData.fuelStatus || 'safe';
+    const statusColors = getFuelStatusColors(status);
+    const borderColor = statusColors.border;
 
     return (
         <div className={`bg-slate-900/80 rounded px-3 py-2 border ${borderColor}`}>
@@ -644,6 +676,51 @@ export const FuelCalculator2HistoryGraph: React.FC<FuelCalculator2WidgetProps> =
                 editMode={false}
                 manualTarget={settings?.manualTarget}
             />
+        </div>
+    );
+};
+
+export const FuelCalculator2Confidence: React.FC<FuelCalculator2WidgetProps> = ({ fuelData, settings, widgetId }) => {
+    if (!fuelData) return null;
+
+    const confidence = fuelData.confidence || 'low';
+    const lapsRange = fuelData.lapsRange || [0, 0];
+    const fuelForLaps = lapsRange[1];
+
+    // Custom style handling
+    const widgetStyle = (widgetId && settings?.widgetStyles?.[widgetId]) || {};
+    const labelFontSize = widgetStyle.labelFontSize ? `${widgetStyle.labelFontSize}px` : (widgetStyle.fontSize ? `${widgetStyle.fontSize}px` : '10px');
+    const valueFontSize = widgetStyle.valueFontSize ? `${widgetStyle.valueFontSize}px` : (widgetStyle.fontSize ? `${widgetStyle.fontSize}px` : '12px');
+
+    if (confidence === 'low') {
+        return (
+            <div className="mb-2 py-1.5 px-2 bg-red-500/10 border border-red-500/30 rounded">
+                <div className="text-center" style={{ fontSize: labelFontSize }}>
+                    <span className="text-red-400">⚠ Low confidence - need more lap data</span>
+                </div>
+                <div className="text-center mt-0.5" style={{ fontSize: valueFontSize }}>
+                    <span className="text-slate-400">Fuelling for <span className="text-white font-medium">{fuelForLaps}</span> laps (worst case)</span>
+                </div>
+            </div>
+        );
+    }
+
+    if (confidence === 'medium') {
+        return (
+            <div className="mb-2 py-1.5 px-2 bg-amber-500/10 border border-amber-500/30 rounded">
+                <div className="text-center" style={{ fontSize: valueFontSize }}>
+                    <span className="text-slate-400">Fuelling for <span className="text-white font-medium">{fuelForLaps}</span> laps (worst case) <span className="text-amber-400">⚠ Lap count uncertain</span></span>
+                </div>
+            </div>
+        );
+    }
+
+    // High confidence
+    return (
+        <div className="mb-2 py-1.5 px-2 bg-green-500/5 border border-green-500/20 rounded">
+            <div className="text-center" style={{ fontSize: valueFontSize }}>
+                <span className="text-slate-400">Fuelling for <span className="text-white font-medium">{fuelForLaps}</span> laps (worst case)</span>
+            </div>
         </div>
     );
 };

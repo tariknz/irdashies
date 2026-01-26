@@ -88,6 +88,10 @@ export interface FuelCalculation {
   fuelTankCapacity?: number;
   /** The lap number of the last finished lap included in the calculation */
   lastFinishedLap?: number;
+  /** Fuel safety status based on current level vs required */
+  fuelStatus?: 'safe' | 'caution' | 'danger';
+  /** Minimum and maximum number of laps estimated in the session at the current pace */
+  lapsRange?: [number, number];
 }
 
 /**
@@ -151,6 +155,16 @@ export interface FuelCalculatorSettings {
   widgetStyles?: Record<string, { fontSize?: number; labelFontSize?: number; valueFontSize?: number }>;
   /** Order of rows in the consumption grid (curr, avg, max, last, min) */
   consumptionGridOrder?: string[];
+  /** Percentage thresholds for fuel status colors (0-100) */
+  fuelStatusThresholds?: {
+    green: number;
+    amber: number;
+    red: number;
+  };
+  /** Basis for fuel status coloring consumption calculation */
+  fuelStatusBasis?: 'last' | 'avg' | 'min' | 'max';
+  /** Number of laps remaining that triggers Red status regardless of percentage */
+  fuelStatusRedLaps?: number;
 }
 
 export interface BoxConfig {

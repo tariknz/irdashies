@@ -12,7 +12,7 @@ import {
 } from '@irdashies/context';
 import { useStore } from 'zustand';
 import { useFuelStore, selectLapHistorySize } from './FuelStore';
-import type { FuelCalculation, FuelLapData } from './types';
+import type { FuelCalculation, FuelLapData, FuelCalculatorSettings } from './types';
 import {
   validateLapData,
   calculateWeightedAverage,
@@ -42,7 +42,8 @@ const DEFAULT_TANK_CAPACITY = 60;
 const MAX_REASONABLE_LAPS = 10000;
 
 export function useFuelCalculation(
-  safetyMargin = 0.05
+  safetyMargin = 0.05,
+  settings?: FuelCalculatorSettings
 ): FuelCalculation | null {
   const fuelLevel = useTelemetryValue('FuelLevel');
   const fuelLevelPct = useTelemetryValue('FuelLevelPct');
@@ -476,8 +477,67 @@ export function useFuelCalculation(
     // Calculate fuel at finish (current fuel - fuel needed for remaining laps)
     const fuelAtFinish = fuelLevel - lapsRemaining * avgFuelPerLap;
 
-    // Calculate confidence
-    const confidence = calculateConfidence(validLaps.length);
+    // ========================================================================
+    // Calculate Confidence and Lap Range (Mockup Step 4-5)
+    // ========================================================================
+    // Check if we've observed a pit stop (any out-lap after the start of session)
+    const hasObservedPitStop = lapHistory.some(l => l.isOutLap && l.lapNumber > 1);
+
+    let confidence: 'low' | 'medium' | 'high' = 'low';
+    let lapsRange: [number, number] = [0, 0];
+
+    if (hasObservedPitStop && validLaps.length >= 5) {
+      confidence = 'high';
+      lapsRange = [Math.ceil(lapsRemaining), Math.ceil(lapsRemaining)];
+    } else if (validLaps.length >= 5) {
+      confidence = 'medium';
+      lapsRange = [Math.floor(lapsRemaining), Math.ceil(lapsRemaining) + 1];
+    } else {
+      confidence = 'low';
+      // Low confidence: ±2-3 laps uncertainty
+      lapsRange = [
+        Math.max(0, Math.floor(lapsRemaining) - 2),
+        Math.ceil(lapsRemaining) + 2
+      ];
+    }
+
+    // Always fuel for the worst case (top of the range)
+    const fuelForLaps = lapsRange[1];
+
+    // ========================================================================
+    // Calculate Fuel Status (Custom logic for Gauge/Borders)
+    // ========================================================================
+    const statusThresholds = settings?.fuelStatusThresholds || { green: 60, amber: 30, red: 10 };
+    const statusBasis = settings?.fuelStatusBasis || 'avg';
+    const redLapsThreshold = settings?.fuelStatusRedLaps ?? 3;
+
+    let fuelStatus: 'safe' | 'caution' | 'danger' = 'safe';
+
+
+    // Percentage based thresholds
+    const currentFuelPctValue = (fuelLevelPct ?? 0) * 100;
+
+    if (currentFuelPctValue >= statusThresholds.green) {
+      fuelStatus = 'safe';
+    } else if (currentFuelPctValue >= statusThresholds.amber) {
+      fuelStatus = 'caution';
+    } else {
+      fuelStatus = 'danger';
+    }
+
+    // Laps remaining override logic (quantity remaining check)
+    // Select consumption based on user setting
+    const basisUsageValue = statusBasis === 'max' ? maxLapUsage :
+      statusBasis === 'min' ? minLapUsage :
+        statusBasis === 'last' ? lastLapUsage :
+          avgFuelPerLap;
+
+    const lapsLeftOnBasis = basisUsageValue > 0 ? fuelLevel / basisUsageValue : 0;
+
+    // If laps remaining is below threshold, force "danger" (Red)
+    if (lapsLeftOnBasis < redLapsThreshold && lapsLeftOnBasis > 0) {
+      fuelStatus = 'danger';
+    }
 
     // ========================================================================
     // Calculate Stops Remaining (pit stops needed from current position)
@@ -664,6 +724,8 @@ export function useFuelCalculation(
       earliestPitLap,
       fuelTankCapacity,
       lastFinishedLap: lapsToUse.length > 0 ? lapsToUse[0].lapNumber : undefined,
+      fuelStatus,
+      lapsRange,
     };
 
     // Only log when lap changes to avoid spam
@@ -701,7 +763,8 @@ export function useFuelCalculation(
     // Use lapHistorySize instead of the full Map for efficient change detection
     lapHistorySize,
     // Also re-calc when lapStartFuel changes (via start of new lap)
-    lapStartFuel
+    lapStartFuel,
+    settings,
   ]);
 
   return calculation;

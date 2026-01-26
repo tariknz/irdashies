@@ -14,6 +14,7 @@ import {
     FuelCalculator2TimeEmpty,
     FuelCalculator2HistoryGraph,
     FuelCalculator2TargetMessage,
+    FuelCalculator2Confidence,
 } from './widgets/FuelCalculator2Widgets';
 import { useFuelStore } from './FuelStore';
 import type { FuelCalculatorSettings } from './types';
@@ -46,7 +47,7 @@ export const FuelCalculator2 = (props: FuelCalculatorProps) => {
     const { editMode, isDemoMode } = useDashboard();
 
     // Real Data
-    const realFuelData = useFuelCalculation(safetyMargin);
+    const realFuelData = useFuelCalculation(safetyMargin, settings);
     const realCurrentFuelLevel = useTelemetryValues('FuelLevel')?.[0] || 0;
     const realIsOnTrack = useTelemetryValue<boolean>('IsOnTrack') ?? false;
 
@@ -93,7 +94,9 @@ export const FuelCalculator2 = (props: FuelCalculatorProps) => {
             { laps: 15, fuelPerLap: 3.03, isCurrentTarget: false },
         ],
         lastFinishedLap: 14,
-        projectedLapUsage: 1.35
+        projectedLapUsage: 1.35,
+        fuelStatus: 'danger',
+        lapsRange: [13, 15]
     };
 
     // Scenario 2: High Confidence (Good flow, clear prediction)
@@ -114,7 +117,9 @@ export const FuelCalculator2 = (props: FuelCalculatorProps) => {
             { laps: 18, fuelPerLap: 3.22, isCurrentTarget: false },
             { laps: 19, fuelPerLap: 3.05, isCurrentTarget: true },
             { laps: 20, fuelPerLap: 2.90, isCurrentTarget: false },
-        ]
+        ],
+        fuelStatus: 'safe',
+        lapsRange: [19, 19]
     };
 
     // Scenario 3: Low Confidence / Critical (Pit window open, fuel tight)
@@ -135,7 +140,9 @@ export const FuelCalculator2 = (props: FuelCalculatorProps) => {
             { laps: 1, fuelPerLap: 5.5, isCurrentTarget: true },
             { laps: 2, fuelPerLap: 5.5, isCurrentTarget: false }, // Placeholder to keep layout stable
             { laps: 3, fuelPerLap: 5.5, isCurrentTarget: false }, // Placeholder to keep layout stable
-        ]
+        ],
+        fuelStatus: 'danger',
+        lapsRange: [0, 2]
     };
 
     // Empty/Default Data for when calculation is not yet available
@@ -166,6 +173,8 @@ export const FuelCalculator2 = (props: FuelCalculatorProps) => {
         targetScenarios: [] as { laps: number; fuelPerLap: number; isCurrentTarget: boolean; }[],
         lastFinishedLap: 0,
         projectedLapUsage: 0,
+        fuelStatus: 'safe' as const,
+        lapsRange: [0, 0] as [number, number],
     };
 
     const mocks = [mockMedium, mockHigh, mockCritical];
@@ -185,6 +194,7 @@ export const FuelCalculator2 = (props: FuelCalculatorProps) => {
                 canFinish: false, targetConsumption: 0, confidence: 'low' as const,
                 pitWindowOpen: 0, pitWindowClose: 0, currentLap: 0, fuelAtFinish: 0,
                 avgLapTime: 0, targetScenarios: undefined,
+                fuelStatus: 'safe' as const, lapsRange: [0, 0] as [number, number],
             };
         }
 
@@ -193,14 +203,16 @@ export const FuelCalculator2 = (props: FuelCalculatorProps) => {
             const lapsWithFuel = avgFuelPerLap > 0 ? currentFuelLevel / avgFuelPerLap : 0;
             const fuelAtFinish = currentFuelLevel - fuelData.lapsRemaining * avgFuelPerLap;
             const targetScenarios: typeof fuelData.targetScenarios = [];
-            if (lapsWithFuel >= 0.5) {
-                const currentLapTarget = Math.round(lapsWithFuel);
-                const scenarios = [currentLapTarget - 1, currentLapTarget, currentLapTarget + 1].filter(n => n > 0);
-                for (const lapCount of scenarios) {
-                    targetScenarios.push({ laps: lapCount, fuelPerLap: currentFuelLevel / lapCount, isCurrentTarget: lapCount === currentLapTarget });
-                }
-            }
-            return { ...fuelData, fuelLevel: currentFuelLevel, lapsWithFuel, pitWindowClose: fuelData.currentLap + lapsWithFuel - 1, fuelAtFinish, targetScenarios };
+            return {
+                ...fuelData,
+                fuelLevel: currentFuelLevel,
+                lapsWithFuel,
+                pitWindowClose: fuelData.currentLap + lapsWithFuel - 1,
+                fuelAtFinish,
+                targetScenarios,
+                fuelStatus: fuelData.fuelStatus,
+                lapsRange: fuelData.lapsRange
+            };
         }
         return fuelData;
     }, [fuelData, currentFuelLevel]);
@@ -221,7 +233,7 @@ export const FuelCalculator2 = (props: FuelCalculatorProps) => {
                         id: 'box-1',
                         type: 'box' as const,
                         direction: 'col' as const,
-                        widgets: ['fuel2Header', 'fuel2Gauge', 'fuel2Grid', 'fuel2Scenarios', 'fuel2Graph', 'fuel2TimeEmpty'],
+                        widgets: ['fuel2Header', 'fuel2Confidence', 'fuel2Gauge', 'fuel2Grid', 'fuel2Scenarios', 'fuel2Graph', 'fuel2TimeEmpty'],
                         weight: 1
                     }
                 ]
@@ -378,6 +390,8 @@ export const FuelCalculator2 = (props: FuelCalculatorProps) => {
                 return <FuelCalculator2HistoryGraph key={widgetId} widgetId={widgetId} fuelData={fuelData} displayData={displayData} fuelUnits={fuelUnits} settings={settings} />;
             case 'fuel2TargetMessage':
                 return <FuelCalculator2TargetMessage key={widgetId} widgetId={widgetId} fuelData={fuelData} displayData={displayData} fuelUnits={fuelUnits} settings={settings} />;
+            case 'fuel2Confidence':
+                return <FuelCalculator2Confidence key={widgetId} widgetId={widgetId} fuelData={fuelData} displayData={displayData} fuelUnits={fuelUnits} settings={settings} />;
             default: return null;
         }
     };
@@ -424,10 +438,10 @@ export const FuelCalculator2 = (props: FuelCalculatorProps) => {
             <div className="border-2 w-full h-full flex flex-col box-border px-3"
                 style={{
                     backgroundColor: `rgba(30, 30, 50, ${bgAlpha})`,
-                    borderColor: displayData.confidence === 'high' ? '#22c55e' :
-                        displayData.confidence === 'medium' ? '#f97316' : '#ef4444',
-                    boxShadow: displayData.confidence === 'high' ? '0 0 15px rgba(34, 197, 94, 0.3) inset' :
-                        displayData.confidence === 'medium' ? '0 0 15px rgba(249, 115, 22, 0.3) inset' :
+                    borderColor: displayData.fuelStatus === 'safe' ? '#22c55e' :
+                        displayData.fuelStatus === 'caution' ? '#f97316' : '#ef4444',
+                    boxShadow: displayData.fuelStatus === 'safe' ? '0 0 15px rgba(34, 197, 94, 0.3) inset' :
+                        displayData.fuelStatus === 'caution' ? '0 0 15px rgba(249, 115, 22, 0.3) inset' :
                             '0 0 15px rgba(239, 68, 68, 0.3) inset'
                 }}
             >
