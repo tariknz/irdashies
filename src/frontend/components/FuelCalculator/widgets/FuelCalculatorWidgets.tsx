@@ -5,5 +5,5 @@ export * from './FuelCalculatorConsumptionGrid';
 export * from './FuelCalculatorPitScenarios';
 export * from './FuelCalculatorTargetMessage';
 export * from './FuelCalculatorTimeEmpty';
-export * from './FuelCalculatorHistoryGraph';
+export * from './FuelHistory';
 export * from './FuelCalculatorConfidence';

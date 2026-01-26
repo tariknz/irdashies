@@ -47,6 +47,16 @@ const defaultConfig: FuelWidgetSettings['config'] = {
   fuelStatusThresholds: { green: 60, amber: 30, red: 10 },
   fuelStatusBasis: 'avg',
   fuelStatusRedLaps: 3,
+  widgetStyles: {
+    'fuel2Graph': { height: 64, labelFontSize: 10, valueFontSize: 12, barFontSize: 8 },
+    'fuel2Header': { labelFontSize: 10, valueFontSize: 14 },
+    'fuel2Confidence': { labelFontSize: 10, valueFontSize: 12 },
+    'fuel2Gauge': { labelFontSize: 10, valueFontSize: 12 },
+    'fuel2TimeEmpty': { labelFontSize: 10, valueFontSize: 14 },
+    'fuel2Grid': { labelFontSize: 10, valueFontSize: 12 },
+    'fuel2Scenarios': { labelFontSize: 10, valueFontSize: 12 },
+    'fuel2TargetMessage': { labelFontSize: 10, valueFontSize: 12 },
+  }
 };
 
 const migrateConfig = (savedConfig: unknown): FuelWidgetSettings['config'] => {
@@ -166,6 +176,59 @@ const DualFontSizeInput = ({ widgetId, settings, onChange }: { widgetId: string,
 };
 
 
+
+
+
+const BarFontSizeInput = ({ widgetId, settings, onChange }: { widgetId: string, settings: FuelWidgetSettings, onChange: (change: Partial<FuelWidgetSettings['config']>) => void }) => {
+  const style = settings.config.widgetStyles?.[widgetId];
+  const fontSize = style?.barFontSize;
+
+  return (
+    <div className="flex items-center gap-2">
+      <span className="text-[10px] text-slate-400 w-8">Inside</span>
+      <input
+        type="range"
+        min="6"
+        max="32"
+        step="1"
+        value={fontSize ?? 8}
+        onChange={(e) => {
+          const val = parseInt(e.target.value);
+          const newStyles = { ...settings.config.widgetStyles };
+          newStyles[widgetId] = { ...newStyles[widgetId], barFontSize: val };
+          onChange({ widgetStyles: newStyles });
+        }}
+        className="flex-1 h-1.5 bg-slate-600 rounded-lg appearance-none cursor-pointer slider w-[60px]" // Reduced width to fit
+      />
+      <span className="text-[10px] text-slate-300 w-4 text-right">{fontSize ?? 8}</span>
+    </div>
+  );
+};
+
+const HeightInput = ({ widgetId, settings, onChange }: { widgetId: string, settings: FuelWidgetSettings, onChange: (change: Partial<FuelWidgetSettings['config']>) => void }) => {
+  const style = settings.config.widgetStyles?.[widgetId];
+  const height = style?.height;
+
+  return (
+    <div className="flex items-center gap-2">
+      <input
+        type="range"
+        min="40"
+        max="300"
+        step="5"
+        value={height ?? 64}
+        onChange={(e) => {
+          const val = parseInt(e.target.value);
+          const newStyles = { ...settings.config.widgetStyles };
+          newStyles[widgetId] = { ...newStyles[widgetId], height: val };
+          onChange({ widgetStyles: newStyles });
+        }}
+        className="w-24 h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer slider"
+      />
+      <span className="text-xs text-slate-300 w-8 text-right">{height ?? 64}px</span>
+    </div>
+  );
+};
 
 interface SortableRow {
   id: string;
@@ -311,19 +374,19 @@ const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => {
 
               {/* Widget Styles for Fuel 2 specific components without toggles */}
               <div className="space-y-4 pb-4 mb-4 border-b border-slate-700">
-                <div className="flex items-center justify-between pr-20">
-                  <span className="text-sm text-slate-300">(Stops/Window/Confidence)</span>
+                <div className="flex items-center justify-between pr-20 pb-4 border-b border-white/5">
+                  <span className="text-sm text-slate-300">Header</span>
                   <DualFontSizeInput widgetId="fuel2Header" settings={settings} onChange={handleConfigChange} />
                 </div>
-                <div className="flex items-center justify-between pr-20">
+                <div className="flex items-center justify-between pr-20 py-4 border-b border-white/5">
                   <span className="text-sm text-slate-300">Confidence Messages</span>
                   <DualFontSizeInput widgetId="fuel2Confidence" settings={settings} onChange={handleConfigChange} />
                 </div>
-                <div className="flex items-center justify-between pr-20">
+                <div className="flex items-center justify-between pr-20 py-4 border-b border-white/5">
                   <span className="text-sm text-slate-300">Fuel Gauge</span>
                   <DualFontSizeInput widgetId="fuel2Gauge" settings={settings} onChange={handleConfigChange} />
                 </div>
-                <div className="flex items-center justify-between pr-20">
+                <div className="flex items-center justify-between pr-20 py-4 border-b border-white/5">
                   <span className="text-sm text-slate-300">Time Until Empty</span>
                   <DualFontSizeInput widgetId="fuel2TimeEmpty" settings={settings} onChange={handleConfigChange} />
                 </div>
@@ -454,7 +517,7 @@ const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => {
 
 
             {/* Show Consumption Section - Available for BOTH */}
-            <div className="flex items-center justify-between pr-20">
+            <div className="flex items-center justify-between pr-20 py-4 border-b border-white/5">
               <span className="text-sm text-slate-300">
                 Consumption Details
                 <span className="block text-xs text-slate-500">Configures rows in Consumption Grid</span>
@@ -477,7 +540,7 @@ const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => {
 
 
             {/* Fuel Scenarios */}
-            <div className="flex items-center justify-between pr-20">
+            <div className="flex items-center justify-between pr-20 py-4 border-b border-white/5">
               <span className="text-sm text-slate-300">Fuel Scenarios</span>
               <div className="flex items-center gap-4">
                 <DualFontSizeInput widgetId="fuel2Scenarios" settings={settings} onChange={handleConfigChange} />
@@ -487,60 +550,66 @@ const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => {
 
 
             {/* Fuel History */}
-            <div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-300">
-                  Fuel History
-                </span>
-                <div className="flex items-center gap-4">
-                  {/* Slider removed as requested */}
-                </div>
+            <div className="py-4 border-b border-white/5">
+              <div className="flex items-center justify-between pr-20 mb-2">
+                <span className="text-sm text-slate-300">Fuel History</span>
+                <DualFontSizeInput widgetId="fuel2Graph" settings={settings} onChange={handleConfigChange} />
               </div>
 
-              {/* Allow configuring graph type for Fuel 2 as well */}
-              {settings.config.showFuelHistory !== false && (
-                <div className="ml-4 pl-4 border-l border-slate-700 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-slate-300">Graph Type</span>
-                    <select
-                      value={settings.config.fuelHistoryType}
-                      onChange={(e) =>
-                        handleConfigChange({
-                          fuelHistoryType: e.target.value as 'line' | 'histogram',
-                        })
-                      }
-                      className="px-3 py-1 bg-slate-700 text-slate-200 rounded text-sm"
-                    >
-                      <option value="line">Line Chart</option>
-                      <option value="histogram">Histogram</option>
-                    </select>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-slate-300">
-                      Target Line
-                      <span className="block text-[10px] text-slate-500">
-                        Optional target ref (0 to hide)
-                      </span>
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="number"
-                        min="0"
-                        step="0.1"
-                        placeholder="None"
-                        value={settings.config.manualTarget ?? ''}
-                        onChange={(e) => {
-                          const val = e.target.value ? parseFloat(e.target.value) : undefined;
-                          handleConfigChange({ manualTarget: val });
-                        }}
-                        className="w-16 px-2 py-1 bg-slate-700 text-slate-200 rounded text-xs text-right focus:border-blue-500 focus:outline-none"
-                      />
-                      <span className="text-[10px] text-slate-500">{settings.config.fuelUnits}</span>
-                    </div>
+              {/* Sub-settings container */}
+              <div className="ml-1 pl-3 border-l border-slate-700/50 space-y-3">
+                <div className="flex items-center justify-between pr-20">
+                  <span className="text-xs text-slate-400">Graph Properties</span>
+                  <div className="flex items-center gap-4">
+                    <BarFontSizeInput widgetId="fuel2Graph" settings={settings} onChange={handleConfigChange} />
+                    <HeightInput widgetId="fuel2Graph" settings={settings} onChange={handleConfigChange} />
                   </div>
                 </div>
-              )}
+
+                {/* Allow configuring graph type for Fuel 2 as well */}
+                {settings.config.showFuelHistory !== false && (
+                  <div className="space-y-3">
+                    {/* Graph Type & Target Wrapper */}
+                    <div className="flex items-center justify-between pr-20">
+                      <span className="text-xs text-slate-400">Graph Type</span>
+                      <select
+                        value={settings.config.fuelHistoryType}
+                        onChange={(e) =>
+                          handleConfigChange({
+                            fuelHistoryType: e.target.value as 'line' | 'histogram',
+                          })
+                        }
+                        className="px-2 py-0.5 bg-slate-700 text-slate-200 rounded text-xs"
+                      >
+                        <option value="line">Line Chart</option>
+                        <option value="histogram">Histogram</option>
+                      </select>
+                    </div>
+
+                    <div className="flex items-center justify-between pr-20">
+                      <div className="flex flex-col">
+                        <span className="text-xs text-slate-400">Target Line</span>
+                        <span className="text-[10px] text-slate-500">Optional ref (0 to hide)</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.1"
+                          placeholder="None"
+                          value={settings.config.manualTarget ?? ''}
+                          onChange={(e) => {
+                            const val = e.target.value ? parseFloat(e.target.value) : undefined;
+                            handleConfigChange({ manualTarget: val });
+                          }}
+                          className="w-16 px-2 py-1 bg-slate-700 text-slate-200 rounded text-xs text-right focus:border-blue-500 focus:outline-none"
+                        />
+                        <span className="text-[10px] text-slate-500">{settings.config.fuelUnits}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Safety Margin */}

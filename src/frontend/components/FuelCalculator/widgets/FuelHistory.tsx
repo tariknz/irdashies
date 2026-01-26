@@ -24,7 +24,7 @@ const useWidgetStyles = (settings?: FuelCalculatorSettings, widgetId?: string) =
     }, [settings, widgetId]);
 };
 
-export const FuelCalculatorHistoryGraph: React.FC<FuelCalculatorWidgetProps> = ({ settings, fuelUnits, widgetId }) => {
+export const FuelHistory: React.FC<FuelCalculatorWidgetProps> = ({ settings, fuelUnits, widgetId }) => {
     const styles = useWidgetStyles(settings, widgetId);
 
     // Access store directly to be self-contained
@@ -79,6 +79,10 @@ export const FuelCalculatorHistoryGraph: React.FC<FuelCalculatorWidgetProps> = (
                 showConsumptionGraph={true}
                 editMode={false}
                 manualTarget={settings?.manualTarget}
+                height={settings?.widgetStyles?.[widgetId || '']?.height}
+                labelFontSize={settings?.widgetStyles?.[widgetId || '']?.labelFontSize || settings?.widgetStyles?.[widgetId || '']?.fontSize}
+                valueFontSize={settings?.widgetStyles?.[widgetId || '']?.valueFontSize || settings?.widgetStyles?.[widgetId || '']?.fontSize}
+                barFontSize={settings?.widgetStyles?.[widgetId || '']?.barFontSize}
             />
         </div>
     );
