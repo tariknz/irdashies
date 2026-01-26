@@ -444,7 +444,10 @@ export function useFuelCalculation(
       if (leaderLapsRemaining > 0 && leaderLapsRemaining < MAX_REASONABLE_LAPS) {
         // Use the minimum of your laps remaining or leader's laps remaining
         // This accounts for being lapped - race ends when leader finishes
-        lapsRemaining = Math.min(lapsRemaining, leaderLapsRemaining);
+        if (leaderLapsRemaining < lapsRemaining) {
+          lapsRemaining = leaderLapsRemaining;
+          totalLaps = lap + lapsRemaining;
+        }
       }
     }
 
@@ -611,7 +614,7 @@ export function useFuelCalculation(
 
     // Only show scenarios if we have meaningful fuel data
     if (lapsWithFuel >= 0.5) {
-      const currentLapTarget = Math.round(lapsWithFuel);
+      const currentLapTarget = Math.floor(lapsWithFuel);
 
       // Determine which scenarios to show based on lapsWithFuel
       const scenarios: number[] = [];

@@ -101,24 +101,13 @@ export const FuelCalculatorPitScenarios: React.FC<FuelCalculatorWidgetProps> = (
                     const fuelBurnedToFinish = lapsLeftAfterPit * (displayData.avg10Laps || 0);
                     const estimatedFinishFuel = Math.max(0, fuelToAddHypothetical - fuelBurnedToFinish);
 
-                    // Window Status Logic  
-                    const lapsPerStintVal = fuelData.lapsPerStint || 0;
-                    const hasValidStint = lapsPerStintVal > 0;
-
-                    const strategicWindowOpen = Math.max(1, Math.floor(fuelData.totalLaps - lapsPerStintVal));
-                    const windowClose = Math.floor(fuelData.currentLap + fuelData.lapsWithFuel);
-
                     let windowStatus = '';
-                    if (!hasValidStint) {
-                        windowStatus = '--';
-                    } else if (pitLap >= strategicWindowOpen && pitLap <= windowClose) {
-                        windowStatus = 'OK';
-                    } else if (pitLap === strategicWindowOpen - 1) {
-                        windowStatus = '+1';
-                    } else if (pitLap < strategicWindowOpen) {
-                        windowStatus = 'Early';
+                    if (scenario.isCurrentTarget) {
+                        windowStatus = 'Ideal';
+                    } else if (scenario.laps < (displayData.lapsWithFuel || 0)) {
+                        windowStatus = '-1 Lap';
                     } else {
-                        windowStatus = 'Late';
+                        windowStatus = '+1 Lap';
                     }
 
                     const addDisplay = isTesting ? '--' : `+${fuelToAddHypothetical.toFixed(1)}`;
@@ -127,8 +116,9 @@ export const FuelCalculatorPitScenarios: React.FC<FuelCalculatorWidgetProps> = (
 
                     // Row Color Logic determines the color for ALL text in the row
                     let rowColor = 'text-cyan-400'; // Default
-                    if (windowStatus === 'OK') rowColor = 'text-green-400 font-bold';
-                    else if (windowStatus === 'Early' || windowStatus === '+1' || windowStatus === 'Late') rowColor = 'text-yellow-400';
+                    if (windowStatus === 'Ideal') rowColor = 'text-green-400 font-bold';
+                    else if (windowStatus === '+1 Lap') rowColor = 'text-cyan-400 font-bold';
+                    else rowColor = 'text-yellow-400';
 
                     return (
                         <React.Fragment key={scenario.laps}>
