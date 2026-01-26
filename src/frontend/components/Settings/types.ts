@@ -287,8 +287,8 @@ export interface FuelWidgetSettings extends BaseWidgetSettings {
     showEnduranceStrategy: boolean;
     showFuelScenarios: boolean;
     showFuelRequired: boolean;
-    showConsumptionGraph: boolean;
-    consumptionGraphType: 'line' | 'histogram';
+    showFuelHistory: boolean;
+    fuelHistoryType: 'line' | 'histogram';
     safetyMargin: number;
     manualTarget?: number;
     background: { opacity: number };
@@ -302,7 +302,9 @@ export interface FuelWidgetSettings extends BaseWidgetSettings {
     /** Recursive Layout Tree (Supersedes layoutConfig) */
     layoutTree?: LayoutNode;
     /** Per-widget styling overrides (e.g. fontSize) */
-    widgetStyles?: Record<string, { fontSize?: number }>;
+    widgetStyles?: Record<string, { fontSize?: number; labelFontSize?: number; valueFontSize?: number }>;
+    /** Order of rows in the consumption grid (curr, avg, max, last, min) */
+    consumptionGridOrder?: string[];
   };
 }
 

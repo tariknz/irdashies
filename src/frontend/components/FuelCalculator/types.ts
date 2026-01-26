@@ -125,10 +125,10 @@ export interface FuelCalculatorSettings {
   showFuelScenarios: boolean;
   /** Show fuel required for min/avg/max consumption */
   showFuelRequired?: boolean;
-  /** Show consumption history graph */
-  showConsumptionGraph?: boolean;
-  /** Consumption graph type */
-  consumptionGraphType?: 'line' | 'histogram';
+  /** Show fuel history graph */
+  showFuelHistory?: boolean;
+  /** Fuel history graph type */
+  fuelHistoryType?: 'line' | 'histogram';
   /** Safety margin percentage (0-1) */
   safetyMargin: number;
   manualTarget?: number;
@@ -146,7 +146,9 @@ export interface FuelCalculatorSettings {
   /** Recursive Layout Tree (Supersedes layoutConfig) */
   layoutTree?: any; // Using any for now to match actual usage in FuelCalculator.tsx, but should be LayoutNode
   /** Per-widget styling overrides (e.g. fontSize) */
-  widgetStyles?: Record<string, { fontSize?: number }>;
+  widgetStyles?: Record<string, { fontSize?: number; labelFontSize?: number; valueFontSize?: number }>;
+  /** Order of rows in the consumption grid (curr, avg, max, last, min) */
+  consumptionGridOrder?: string[];
 }
 
 export interface BoxConfig {

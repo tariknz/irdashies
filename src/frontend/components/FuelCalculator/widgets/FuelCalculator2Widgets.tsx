@@ -60,7 +60,10 @@ const useWidgetStyles = (settings?: FuelCalculatorSettings, widgetId?: string) =
 };
 
 export const FuelCalculator2Header: React.FC<FuelCalculator2WidgetProps> = ({ fuelData, fuelUnits, settings, widgetId }) => {
-    const styles = useWidgetStyles(settings, widgetId);
+    // Custom style handling for separate label/value sizes
+    const widgetStyle = (widgetId && settings?.widgetStyles?.[widgetId]) || {};
+    const labelFontSize = widgetStyle.labelFontSize ? `${widgetStyle.labelFontSize}px` : (widgetStyle.fontSize ? `${widgetStyle.fontSize}px` : '10px');
+    const valueFontSize = widgetStyle.valueFontSize ? `${widgetStyle.valueFontSize}px` : (widgetStyle.fontSize ? `${widgetStyle.fontSize}px` : '14px');
 
     if (!fuelData) return null;
 
@@ -72,29 +75,26 @@ export const FuelCalculator2Header: React.FC<FuelCalculator2WidgetProps> = ({ fu
     const confConfig = getConfidenceConfig(confidence);
 
     // Format laps remaining for confidence pill
-    // If high confidence, exact number. If not, range (mocked for now as +/- is not in core yet, but we can fake range or just show val)
-    // Mockup shows: "24 LAPS" (High), "23-24 LAPS" (Medium), "22-25 LAPS" (Low)
-    // We'll just show the estimated laps for now to be safe, or a small range if medium/low
     let lapsText = `${Math.ceil(fuelData.lapsRemaining)} LAPS`;
     if (confidence === 'medium') lapsText = `~${Math.ceil(fuelData.lapsRemaining)} LAPS`;
     if (confidence === 'low') lapsText = `${Math.floor(fuelData.lapsRemaining)}-${Math.ceil(fuelData.lapsRemaining + 2)} LAPS`;
 
     return (
-        <div style={styles} className="flex items-center justify-between mb-1 pb-2 border-b border-slate-600/50">
+        <div className="flex items-center justify-between mb-1 pb-2 border-b border-slate-600/50">
             <div className="flex items-center gap-6">
-                <div className="flex items-center">
-                    <span className="text-slate-500 text-[0.75em] font-semibold tracking-wider">STOPS</span>
-                    <span className="text-white font-bold text-[0.875em] ml-2">{stopsRemaining}</span>
+                <div className="flex items-center gap-2">
+                    <span className="text-slate-500 font-semibold tracking-wider" style={{ fontSize: labelFontSize }}>STOPS</span>
+                    <span className="text-white font-bold" style={{ fontSize: valueFontSize }}>{stopsRemaining}</span>
                 </div>
-                <div className="flex items-center">
-                    <span className="text-slate-500 text-[0.75em] font-semibold tracking-wider">EARLIEST</span>
-                    <span className="text-green-400 font-bold text-[0.875em] ml-2">L{pitWindowOpen}</span>
+                <div className="flex items-center gap-2">
+                    <span className="text-slate-500 font-semibold tracking-wider" style={{ fontSize: labelFontSize }}>EARLIEST</span>
+                    <span className="text-green-400 font-bold" style={{ fontSize: valueFontSize }}>L{pitWindowOpen}</span>
                 </div>
             </div>
             <div className="flex items-center">
                 <div className="flex items-center gap-2" title={`${confidence} confidence`}>
                     <div className={`w-2 h-2 rounded-full ${confConfig.bg} ${confConfig.pulse}`}></div>
-                    <span className={`${confConfig.color} text-[0.75em] font-bold`}>{lapsText}</span>
+                    <span className={`${confConfig.color} font-bold`} style={{ fontSize: valueFontSize }}>{lapsText}</span>
                 </div>
             </div>
         </div>
@@ -102,7 +102,10 @@ export const FuelCalculator2Header: React.FC<FuelCalculator2WidgetProps> = ({ fu
 };
 
 export const FuelCalculator2Gauge: React.FC<FuelCalculator2WidgetProps> = ({ fuelData, displayData, fuelUnits, settings, widgetId }) => {
-    const styles = useWidgetStyles(settings, widgetId);
+    // Custom style handling for separate label/value sizes
+    const widgetStyle = (widgetId && settings?.widgetStyles?.[widgetId]) || {};
+    const labelFontSize = widgetStyle.labelFontSize ? `${widgetStyle.labelFontSize}px` : (widgetStyle.fontSize ? `${widgetStyle.fontSize}px` : '10px');
+    const valueFontSize = widgetStyle.valueFontSize ? `${widgetStyle.valueFontSize}px` : (widgetStyle.fontSize ? `${widgetStyle.fontSize}px` : '18px');
 
     if (!fuelData) return null;
 
@@ -123,11 +126,13 @@ export const FuelCalculator2Gauge: React.FC<FuelCalculator2WidgetProps> = ({ fue
     const tankString = formatFuel(tankCapacity, fuelUnits, 0);
 
     return (
-        <div style={styles} className="mb-4">
+        <div className="mb-4">
             <div className="flex justify-between text-[0.75em] text-slate-400 mb-2 font-medium items-end">
-                <span className="mb-0.5">E</span>
-                <span className="text-white text-[1.125em] font-bold tracking-wide">{fuelString} / {lapsString} laps</span>
-                <span className="mb-0.5">{tankString}</span>
+                <span className="mb-0.5" style={{ fontSize: labelFontSize }}>E</span>
+                <span className="text-white font-bold tracking-wide" style={{ fontSize: valueFontSize }}>
+                    {fuelString} / {lapsString} laps
+                </span>
+                <span className="mb-0.5" style={{ fontSize: labelFontSize }}>{tankString}</span>
             </div>
             <div className="h-2 bg-slate-700 rounded-full overflow-hidden shadow-inner border border-slate-600/50">
                 <div
@@ -143,8 +148,16 @@ export const FuelCalculator2Gauge: React.FC<FuelCalculator2WidgetProps> = ({ fue
 };
 
 export const FuelCalculator2ConsumptionGrid: React.FC<FuelCalculator2WidgetProps> = ({ fuelData, liveFuelData, predictiveUsage, displayData, settings, widgetId }) => {
-    const styles = useWidgetStyles(settings, widgetId);
+    // Custom style handling for separate label/value sizes
+    const widgetStyle = (widgetId && settings?.widgetStyles?.[widgetId]) || {};
+    const labelFontSize = widgetStyle.labelFontSize ? `${widgetStyle.labelFontSize}px` : (widgetStyle.fontSize ? `${widgetStyle.fontSize}px` : '10px');
+    const valueFontSize = widgetStyle.valueFontSize ? `${widgetStyle.valueFontSize}px` : (widgetStyle.fontSize ? `${widgetStyle.fontSize}px` : '12px');
 
+    // Container style for other props like padding/margins if needed, but font size is handled per element now
+    const containerStyle: React.CSSProperties = {
+        ...(((widgetId && settings?.widgetStyles?.[widgetId]) as any) || {}),
+        fontSize: undefined // Don't set parent font size to avoid inheritance issues
+    };
     if (!fuelData) return null;
 
     // Master visibility toggle
@@ -239,73 +252,96 @@ export const FuelCalculator2ConsumptionGrid: React.FC<FuelCalculator2WidgetProps
     const refuelColor = 'text-cyan-400'; // Mockup uses cyan for refuel
 
     return (
-        <div style={styles} className="grid grid-cols-5 gap-1 text-[0.75em] mb-2">
-            <div className="text-slate-500"></div>
-            <div className="text-slate-500 text-center">USE</div>
-            <div className="text-slate-500 text-center">LAPS</div>
-            <div className="text-slate-500 text-center">REFUEL</div>
-            <div className="text-slate-500 text-center">FINISH</div>
+        <div style={containerStyle} className="grid grid-cols-5 gap-0.5 select-none overflow-hidden h-full content-start">
+            {/* Grid Header */}
+            <div className="text-center font-bold text-slate-400 border-b border-slate-600/50 pb-1 mb-1" style={{ fontSize: labelFontSize }}></div>
+            <div className="text-center font-bold text-slate-400 border-b border-slate-600/50 pb-1 mb-1" style={{ fontSize: labelFontSize }}>USE</div>
+            <div className="text-center font-bold text-slate-400 border-b border-slate-600/50 pb-1 mb-1" style={{ fontSize: labelFontSize }}>LAPS</div>
+            <div className="text-center font-bold text-slate-400 border-b border-slate-600/50 pb-1 mb-1" style={{ fontSize: labelFontSize }}>REFUEL</div>
+            <div className="text-center font-bold text-slate-400 border-b border-slate-600/50 pb-1 mb-1" style={{ fontSize: labelFontSize }}>FINISH</div>
 
-            {/* CURR ROW */}
-            {showCurrent && (
-                <>
-                    <div className="text-slate-400 py-0.5">CURR</div>
-                    <div className="text-white text-center py-0.5 font-bold">{currentUsage > 0 ? currentUsage.toFixed(2) : '--'}</div>
-                    <div className="text-white text-center py-0.5 opacity-90">{currentData.laps}</div>
-                    <div className={`${refuelColor} text-center py-0.5 opacity-90`}>{currentData.refuel}</div>
-                    <div className={`${finishColor(currentData.finish)} text-center py-0.5 opacity-90`}>{currentData.finish}</div>
-                </>
-            )}
+            {/* Spacer for header bottom margin if needed (or handle via border/padding in cells) */}
 
-            {/* AVG ROW */}
-            {showAvg && (
-                <>
-                    <div className="text-slate-400 py-0.5">AVG</div>
-                    <div className="text-white text-center py-0.5">{avg.toFixed(2)}</div>
-                    <div className="text-white text-center py-0.5">{avgData.laps}</div>
-                    <div className={`${refuelColor} text-center py-0.5`}>{avgData.refuel}</div>
-                    <div className={`${finishColor(avgData.finish)} text-center py-0.5`}>{avgData.finish}</div>
-                </>
-            )}
+            {/* Dynamic Rows based on Order */}
+            {(() => {
+                const defaultOrder = ['curr', 'avg', 'max', 'last', 'min'];
+                const order = settings?.consumptionGridOrder || defaultOrder;
 
-            {/* MAX ROW */}
-            {showMax && (
-                <>
-                    <div className="text-slate-400 py-0.5">MAX</div>
-                    <div className="text-orange-400 text-center py-0.5">{max.toFixed(2)}</div>
-                    <div className="text-white text-center py-0.5">{maxData.laps}</div>
-                    <div className={`${refuelColor} text-center py-0.5`}>{maxData.refuel}</div>
-                    <div className={`${finishColor(maxData.finish)} text-center py-0.5`}>{maxData.finish}</div>
-                </>
-            )}
+                const renderRow = (type: string) => {
+                    switch (type) {
+                        case 'curr':
+                            if (!showCurrent) return null;
+                            return (
+                                <React.Fragment key="curr">
+                                    <div className="text-slate-400 py-0.5" style={{ fontSize: labelFontSize }}>CURR</div>
+                                    <div className="text-white text-center py-0.5 font-bold" style={{ fontSize: valueFontSize }}>{currentUsage > 0 ? currentUsage.toFixed(2) : '--'}</div>
+                                    <div className="text-white text-center py-0.5 opacity-90" style={{ fontSize: valueFontSize }}>{currentData.laps}</div>
+                                    <div className={`${refuelColor} text-center py-0.5 opacity-90`} style={{ fontSize: valueFontSize }}>{currentData.refuel}</div>
+                                    <div className={`${finishColor(currentData.finish)} text-center py-0.5 opacity-90`} style={{ fontSize: valueFontSize }}>{currentData.finish}</div>
+                                </React.Fragment>
+                            );
+                        case 'avg':
+                            if (!showAvg) return null;
+                            return (
+                                <React.Fragment key="avg">
+                                    <div className="text-slate-400 py-0.5" style={{ fontSize: labelFontSize }}>AVG</div>
+                                    <div className="text-white text-center py-0.5" style={{ fontSize: valueFontSize }}>{avg.toFixed(2)}</div>
+                                    <div className="text-white text-center py-0.5" style={{ fontSize: valueFontSize }}>{avgData.laps}</div>
+                                    <div className={`${refuelColor} text-center py-0.5`} style={{ fontSize: valueFontSize }}>{avgData.refuel}</div>
+                                    <div className={`${finishColor(avgData.finish)} text-center py-0.5`} style={{ fontSize: valueFontSize }}>{avgData.finish}</div>
+                                </React.Fragment>
+                            );
+                        case 'max':
+                            if (!showMax) return null;
+                            return (
+                                <React.Fragment key="max">
+                                    <div className="text-slate-400 py-0.5" style={{ fontSize: labelFontSize }}>MAX</div>
+                                    <div className="text-orange-400 text-center py-0.5" style={{ fontSize: valueFontSize }}>{max.toFixed(2)}</div>
+                                    <div className="text-white text-center py-0.5" style={{ fontSize: valueFontSize }}>{maxData.laps}</div>
+                                    <div className={`${refuelColor} text-center py-0.5`} style={{ fontSize: valueFontSize }}>{maxData.refuel}</div>
+                                    <div className={`${finishColor(maxData.finish)} text-center py-0.5`} style={{ fontSize: valueFontSize }}>{maxData.finish}</div>
+                                </React.Fragment>
+                            );
+                        case 'last':
+                            if (!showLast) return null;
+                            return (
+                                <React.Fragment key="last">
+                                    <div className="text-slate-400 py-0.5" style={{ fontSize: labelFontSize }}>LAST</div>
+                                    <div className="text-white text-center py-0.5" style={{ fontSize: valueFontSize }}>{last.toFixed(2)}</div>
+                                    <div className="text-white text-center py-0.5" style={{ fontSize: valueFontSize }}>{lastData.laps}</div>
+                                    <div className={`${refuelColor} text-center py-0.5`} style={{ fontSize: valueFontSize }}>{lastData.refuel}</div>
+                                    <div className={`${finishColor(lastData.finish)} text-center py-0.5`} style={{ fontSize: valueFontSize }}>{lastData.finish}</div>
+                                </React.Fragment>
+                            );
+                        case 'min':
+                            if (!showMin) return null;
+                            return (
+                                <React.Fragment key="min">
+                                    <div className="text-slate-400 py-0.5" style={{ fontSize: labelFontSize }}>MIN</div>
+                                    <div className="text-green-400 text-center py-0.5" style={{ fontSize: valueFontSize }}>{min.toFixed(2)}</div>
+                                    <div className="text-white text-center py-0.5" style={{ fontSize: valueFontSize }}>{minData.laps}</div>
+                                    <div className={`${refuelColor} text-center py-0.5`} style={{ fontSize: valueFontSize }}>{minData.refuel}</div>
+                                    <div className={`${finishColor(minData.finish)} text-center py-0.5`} style={{ fontSize: valueFontSize }}>{minData.finish}</div>
+                                </React.Fragment>
+                            );
+                        default:
+                            return null;
+                    }
+                };
 
-            {/* LAST ROW */}
-            {showLast && (
-                <>
-                    <div className="text-slate-400 py-0.5">LAST</div>
-                    <div className="text-white text-center py-0.5">{last.toFixed(2)}</div>
-                    <div className="text-white text-center py-0.5">{lastData.laps}</div>
-                    <div className={`${refuelColor} text-center py-0.5`}>{lastData.refuel}</div>
-                    <div className={`${finishColor(lastData.finish)} text-center py-0.5`}>{lastData.finish}</div>
-                </>
-            )}
-
-            {/* MIN ROW */}
-            {showMin && (
-                <>
-                    <div className="text-slate-400 py-0.5">MIN</div>
-                    <div className="text-green-400 text-center py-0.5">{min.toFixed(2)}</div>
-                    <div className="text-white text-center py-0.5">{minData.laps}</div>
-                    <div className={`${refuelColor} text-center py-0.5`}>{minData.refuel}</div>
-                    <div className={`${finishColor(minData.finish)} text-center py-0.5`}>{minData.finish}</div>
-                </>
-            )}
+                // Filter unique valid IDs to avoid duplicates if config is messed up
+                const uniqueOrder = Array.from(new Set(order));
+                return uniqueOrder.map(id => renderRow(id));
+            })()}
         </div>
     );
 };
 
 export const FuelCalculator2PitScenarios: React.FC<FuelCalculator2WidgetProps> = ({ fuelData, displayData, settings, widgetId }) => {
-    const styles = useWidgetStyles(settings, widgetId);
+    // Custom style handling for separate label/value sizes
+    const widgetStyle = (widgetId && settings?.widgetStyles?.[widgetId]) || {};
+    const labelFontSize = widgetStyle.labelFontSize ? `${widgetStyle.labelFontSize}px` : (widgetStyle.fontSize ? `${widgetStyle.fontSize}px` : '10px');
+    const valueFontSize = widgetStyle.valueFontSize ? `${widgetStyle.valueFontSize}px` : (widgetStyle.fontSize ? `${widgetStyle.fontSize}px` : '12px');
 
     // Determine visibility based on settings (default true if missing)
     if (settings && settings.showFuelScenarios === false) return null;
@@ -313,9 +349,9 @@ export const FuelCalculator2PitScenarios: React.FC<FuelCalculator2WidgetProps> =
     if (!fuelData || !displayData.targetScenarios || displayData.targetScenarios.length === 0) {
         // Show "Pit scenarios available after more laps" placeholder if empty
         return (
-            <div style={styles}>
+            <div>
                 <div className="border-t border-slate-600/30 mb-2"></div>
-                <div className="text-[0.75em] text-center text-slate-400 mb-3 py-2 bg-slate-900/40 rounded">
+                <div className="text-[0.75em] text-center text-slate-400 mb-3 py-2 bg-slate-900/40 rounded" style={{ fontSize: labelFontSize }}>
                     Pit scenarios available after more laps
                 </div>
             </div>
@@ -323,14 +359,14 @@ export const FuelCalculator2PitScenarios: React.FC<FuelCalculator2WidgetProps> =
     }
 
     return (
-        <div style={styles}>
+        <div>
             <div className="border-t border-slate-600/30 mb-2"></div>
 
-            <div className="grid grid-cols-4 gap-1 text-[0.75em] mb-3">
-                <div className="text-slate-500 text-center">PIT @</div>
-                <div className="text-slate-500 text-center">ADD</div>
-                <div className="text-slate-500 text-center">FINISH</div>
-                <div className="text-slate-500 text-center">WINDOW</div>
+            <div className="grid grid-cols-4 gap-1 mb-3">
+                <div className="text-slate-500 text-center" style={{ fontSize: labelFontSize }}>PIT @</div>
+                <div className="text-slate-500 text-center" style={{ fontSize: labelFontSize }}>ADD</div>
+                <div className="text-slate-500 text-center" style={{ fontSize: labelFontSize }}>FINISH</div>
+                <div className="text-slate-500 text-center" style={{ fontSize: labelFontSize }}>WINDOW</div>
 
                 {displayData.targetScenarios.map((scenario: any) => {
                     // Calculate values for this scenario
@@ -387,11 +423,11 @@ export const FuelCalculator2PitScenarios: React.FC<FuelCalculator2WidgetProps> =
 
                     return (
                         <React.Fragment key={scenario.laps}>
-                            <div className={`${colorClass} py-0.5 text-center`}>L{pitLap}</div>
-                            <div className={`${colorClass} text-center py-0.5`}>+{fuelToAddHypothetical.toFixed(1)}</div>
-                            <div className={`${colorClass} text-center py-0.5`}>1.3</div>
+                            <div className={`${colorClass} py-0.5 text-center`} style={{ fontSize: valueFontSize }}>L{pitLap}</div>
+                            <div className={`${colorClass} text-center py-0.5`} style={{ fontSize: valueFontSize }}>+{fuelToAddHypothetical.toFixed(1)}</div>
+                            <div className={`${colorClass} text-center py-0.5`} style={{ fontSize: valueFontSize }}>1.3</div>
                             {/* Fixed 1.3 buffer for now as we don't have per-scenario buffer calc */}
-                            <div className={`${colorClass}/50 text-center py-0.5`}>{scenario.isCurrentTarget ? 'OK' : ''}</div>
+                            <div className={`${colorClass}/50 text-center py-0.5`} style={{ fontSize: valueFontSize }}>{scenario.isCurrentTarget ? 'OK' : ''}</div>
                         </React.Fragment>
                     );
                 })}
@@ -401,7 +437,10 @@ export const FuelCalculator2PitScenarios: React.FC<FuelCalculator2WidgetProps> =
 };
 
 export const FuelCalculator2TimeEmpty: React.FC<FuelCalculator2WidgetProps> = ({ fuelData, displayData, settings, widgetId }) => {
-    const styles = useWidgetStyles(settings, widgetId);
+    // Custom style handling for separate label/value sizes
+    const widgetStyle = (widgetId && settings?.widgetStyles?.[widgetId]) || {};
+    const labelFontSize = widgetStyle.labelFontSize ? `${widgetStyle.labelFontSize}px` : (widgetStyle.fontSize ? `${widgetStyle.fontSize}px` : '10px');
+    const valueFontSize = widgetStyle.valueFontSize ? `${widgetStyle.valueFontSize}px` : (widgetStyle.fontSize ? `${widgetStyle.fontSize}px` : '24px');
 
     if (!fuelData) return null;
 
@@ -425,10 +464,10 @@ export const FuelCalculator2TimeEmpty: React.FC<FuelCalculator2WidgetProps> = ({
     if (confidence === 'high') borderColor = 'border-green-500/50';
 
     return (
-        <div style={styles} className={`bg-slate-900/80 rounded px-3 py-2 border ${borderColor}`}>
+        <div className={`bg-slate-900/80 rounded px-3 py-2 border ${borderColor}`}>
             <div className="flex items-center justify-between">
-                <span className="text-slate-400 text-[0.75em] uppercase">Time Empty</span>
-                <span className="font-mono text-[1.5em] font-bold text-white tracking-widest">
+                <span className="text-slate-400 uppercase" style={{ fontSize: labelFontSize }}>Time Empty</span>
+                <span className="font-mono font-bold text-white tracking-widest" style={{ fontSize: valueFontSize }}>
                     {formatTime(secondsLeft)}
                 </span>
             </div>
@@ -445,10 +484,10 @@ export const FuelCalculator2HistoryGraph: React.FC<FuelCalculator2WidgetProps> =
     const { isDemoMode } = useDashboard();
 
     // Default to histogram if not specified in settings
-    const consumptionGraphType = settings?.consumptionGraphType || 'histogram';
+    const fuelHistoryType = settings?.fuelHistoryType || 'histogram';
 
     const graphData = useMemo(() => {
-        const lapCount = consumptionGraphType === 'line' ? 30 : 15; // default to fewer for compact
+        const lapCount = fuelHistoryType === 'line' ? 30 : 15; // default to fewer for compact
         // Convert Map to array and sort by lap number descending
         const history = Array.from(lapHistory.values()).sort(
             (a, b) => b.lapNumber - a.lapNumber
@@ -476,16 +515,17 @@ export const FuelCalculator2HistoryGraph: React.FC<FuelCalculator2WidgetProps> =
             minFuel,
             maxFuel,
         };
-    }, [lapHistory, lapHistory.size, lastLap, consumptionGraphType]);
+    }, [lapHistory, lapHistory.size, lastLap, fuelHistoryType]);
+
 
     // Reuse the existing widget!
-    if (settings && settings.showConsumptionGraph === false) return null;
+    if (settings && settings.showFuelHistory === false) return null;
 
     return (
         <div style={styles} className="mt-2 mb-1 w-full flex-1 min-h-[60px] flex flex-col">
             <ConsumptionGraphWidget
                 graphData={isDemoMode ? null : graphData}
-                consumptionGraphType={consumptionGraphType}
+                consumptionGraphType={fuelHistoryType}
                 fuelUnits={fuelUnits}
                 showConsumptionGraph={true}
                 editMode={false}

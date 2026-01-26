@@ -4,8 +4,9 @@ import { FuelWidgetSettings, SessionVisibilitySettings, BoxConfig, FuelWidgetTyp
 import { useDashboard } from '@irdashies/context';
 import { SessionVisibility } from '../components/SessionVisibility';
 import { ToggleSwitch } from '../components/ToggleSwitch';
-import { PlusIcon } from '@phosphor-icons/react';
+import { PlusIcon, DotsSixVerticalIcon } from '@phosphor-icons/react';
 import { LayoutVisualizer, migrateToTree } from './LayoutVisualizer';
+import { useSortableList } from '../../SortableList';
 
 const generateId = () => Math.random().toString(36).substring(2, 9);
 
@@ -26,8 +27,8 @@ const defaultConfig: FuelWidgetSettings['config'] = {
   showEnduranceStrategy: true,
   showFuelScenarios: true,
   showFuelRequired: true,
-  showConsumptionGraph: true,
-  consumptionGraphType: 'histogram',
+  showFuelHistory: true,
+  fuelHistoryType: 'histogram',
   safetyMargin: 0.05,
   background: { opacity: 85 },
   fuelRequiredMode: 'toFinish',
@@ -40,6 +41,7 @@ const defaultConfig: FuelWidgetSettings['config'] = {
   },
   layoutConfig: [], // Default empty
   layoutTree: undefined, // Will be migrated on load
+  consumptionGridOrder: ['curr', 'avg', 'max', 'last', 'min'],
 };
 
 const migrateConfig = (savedConfig: unknown): FuelWidgetSettings['config'] => {
@@ -54,6 +56,7 @@ const migrateConfig = (savedConfig: unknown): FuelWidgetSettings['config'] => {
       defaultConfig.sessionVisibility,
     layoutConfig: (config.layoutConfig as BoxConfig[]) ?? [],
     layoutTree: (config.layoutTree && (config.layoutTree as any).type ? (config.layoutTree as LayoutNode) : undefined),
+    consumptionGridOrder: (config.consumptionGridOrder as string[]) ?? defaultConfig.consumptionGridOrder,
   };
 };
 
@@ -77,7 +80,7 @@ const AVAILABLE_WIDGETS_FUEL2: { id: string; label: string }[] = [
   { id: 'fuel2Gauge', label: 'Fuel Gauge' },
   { id: 'fuel2Grid', label: 'Consumption Grid' },
   { id: 'fuel2Scenarios', label: 'Pit Scenarios' },
-  { id: 'fuel2Graph', label: 'Consumption History' },
+  { id: 'fuel2Graph', label: 'Fuel History' },
   { id: 'fuel2TimeEmpty', label: 'Time Until Empty' },
 ];
 
@@ -134,28 +137,133 @@ const FontSizeInput = ({ widgetId, settings, onChange }: { widgetId: string, set
   return (
     <div className="flex items-center gap-2">
       <input
-        type="number"
+        type="range"
         min="8"
         max="48"
-        placeholder="Def"
-        value={fontSize ?? ''}
+        step="1"
+        value={fontSize ?? 16}
         onChange={(e) => {
-          const val = e.target.value ? parseInt(e.target.value) : undefined;
+          const val = parseInt(e.target.value);
           const newStyles = { ...settings.config.widgetStyles };
-          if (val) {
-            newStyles[widgetId] = { ...newStyles[widgetId], fontSize: val };
-          } else {
-            if (newStyles[widgetId]) {
-              const { fontSize: _, ...rest } = newStyles[widgetId];
-              if (Object.keys(rest).length === 0) delete newStyles[widgetId];
-              else newStyles[widgetId] = rest;
-            }
-          }
+
+          newStyles[widgetId] = { ...newStyles[widgetId], fontSize: val };
           onChange({ widgetStyles: newStyles });
         }}
-        className="w-14 px-1 py-0.5 bg-slate-700 text-slate-200 rounded text-xs text-center borderBorder-slate-600 focus:border-blue-500 focus:outline-none"
+        className="w-24 h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer slider"
       />
-      <span className="text-[10px] text-slate-500">px</span>
+      <span className="text-xs text-slate-300 w-8 text-right">{fontSize ?? 16}px</span>
+    </div>
+  );
+};
+
+const DualFontSizeInput = ({ widgetId, settings, onChange }: { widgetId: string, settings: FuelWidgetSettings, onChange: (change: Partial<FuelWidgetSettings['config']>) => void }) => {
+  const style = settings.config.widgetStyles?.[widgetId] || {};
+  const labelSize = style.labelFontSize ?? style.fontSize ?? 12; // Default label smaller
+  const valueSize = style.valueFontSize ?? style.fontSize ?? 20; // Default value larger
+
+  const updateStyle = (key: 'labelFontSize' | 'valueFontSize', val: number) => {
+    const newStyles = { ...settings.config.widgetStyles };
+    newStyles[widgetId] = { ...newStyles[widgetId], [key]: val };
+    onChange({ widgetStyles: newStyles });
+  };
+
+  return (
+    <div className="flex flex-col gap-1 w-full max-w-[160px]">
+      <div className="flex items-center gap-2">
+        <span className="text-[10px] text-slate-400 w-8">Label</span>
+        <input
+          type="range" min="8" max="48" step="1"
+          value={labelSize}
+          onChange={(e) => updateStyle('labelFontSize', parseInt(e.target.value))}
+          className="flex-1 h-1.5 bg-slate-600 rounded-lg appearance-none cursor-pointer slider"
+        />
+        <span className="text-[10px] text-slate-300 w-4 text-right">{labelSize}</span>
+      </div>
+      <div className="flex items-center gap-2">
+        <span className="text-[10px] text-slate-400 w-8">Value</span>
+        <input
+          type="range" min="8" max="64" step="1"
+          value={valueSize}
+          onChange={(e) => updateStyle('valueFontSize', parseInt(e.target.value))}
+          className="flex-1 h-1.5 bg-slate-600 rounded-lg appearance-none cursor-pointer slider"
+        />
+        <span className="text-[10px] text-slate-300 w-4 text-right">{valueSize}</span>
+      </div>
+    </div>
+  );
+};
+
+
+
+interface SortableRow {
+  id: string;
+  label: string;
+  configKey: keyof FuelWidgetSettings['config'];
+}
+
+const sortableRows: SortableRow[] = [
+  { id: 'curr', label: 'Current Lap', configKey: 'showCurrentLap' },
+  { id: 'avg', label: 'Average (3 Lap)', configKey: 'show3LapAvg' },
+  { id: 'max', label: 'Max Consumption', configKey: 'showMax' },
+  { id: 'last', label: 'Last Lap', configKey: 'showLastLap' },
+  { id: 'min', label: 'Min Consumption', configKey: 'showMin' },
+];
+
+const GridOrderSettingsList = ({ itemsOrder, onReorder, settings, handleConfigChange }: {
+  itemsOrder: string[];
+  onReorder: (newOrder: string[]) => void;
+  settings: FuelWidgetSettings;
+  handleConfigChange: (changes: Partial<FuelWidgetSettings['config']>) => void;
+}) => {
+  // Filter out any invalid IDs potentially saved in old configs
+  const validIds = sortableRows.map(r => r.id);
+  const items = itemsOrder
+    .filter(id => validIds.includes(id))
+    .map((id) => {
+      const row = sortableRows.find((r) => r.id === id);
+      return row ? { ...row } : null;
+    })
+    .filter((r): r is SortableRow => r !== null);
+
+  // If some default rows are missing (e.g. migration), append them
+  sortableRows.forEach(def => {
+    if (!items.find(i => i.id === def.id)) items.push(def);
+  });
+
+  const { getItemProps, displayItems } = useSortableList({
+    items,
+    onReorder: (newItems) => onReorder(newItems.map((i) => i.id)),
+    getItemId: (item) => item.id,
+  });
+
+  return (
+    <div className="space-y-2 mt-2">
+      {displayItems.map((row) => {
+        const { dragHandleProps, itemProps } = getItemProps(row);
+        const isEnabled = settings.config[row.configKey] as boolean;
+
+        return (
+          <div key={row.id} {...itemProps}>
+            <div className="flex items-center justify-between group bg-slate-800/50 p-1.5 rounded border border-transparent hover:border-slate-600 transition-colors">
+              <div className="flex items-center gap-2 flex-1">
+                <div
+                  {...dragHandleProps}
+                  className="cursor-grab opacity-60 hover:opacity-100 transition-opacity p-1 hover:bg-slate-600 rounded text-slate-400"
+                >
+                  <DotsSixVerticalIcon size={14} />
+                </div>
+                <span className="text-xs text-slate-300 font-medium">{row.label}</span>
+              </div>
+              <ToggleSwitch
+                enabled={isEnabled}
+                onToggle={(val) => {
+                  handleConfigChange({ [row.configKey]: val });
+                }}
+              />
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 };
@@ -236,16 +344,16 @@ const SingleFuelWidgetSettings = ({ widgetId, isFuel2 }: { widgetId: string, isF
               {isFuel2 && (
                 <div className="space-y-4 pb-4 mb-4 border-b border-slate-700">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-slate-300">Header</span>
-                    <FontSizeInput widgetId="fuel2Header" settings={settings} onChange={handleConfigChange} />
+                    <span className="text-sm text-slate-300">(Stops/Window/Confidence)</span>
+                    <DualFontSizeInput widgetId="fuel2Header" settings={settings} onChange={handleConfigChange} />
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-slate-300">Fuel Gauge</span>
-                    <FontSizeInput widgetId="fuel2Gauge" settings={settings} onChange={handleConfigChange} />
+                    <DualFontSizeInput widgetId="fuel2Gauge" settings={settings} onChange={handleConfigChange} />
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-slate-300">Time Until Empty</span>
-                    <FontSizeInput widgetId="fuel2TimeEmpty" settings={settings} onChange={handleConfigChange} />
+                    <DualFontSizeInput widgetId="fuel2TimeEmpty" settings={settings} onChange={handleConfigChange} />
                   </div>
                 </div>
               )}
@@ -320,22 +428,36 @@ const SingleFuelWidgetSettings = ({ widgetId, isFuel2 }: { widgetId: string, isF
               {/* Show Consumption Section - Available for BOTH */}
               <div className="flex items-center justify-between">
                 <span className="text-sm text-slate-300">
-                  Show Consumption Details
+                  Consumption Details
                   {isFuel2 && <span className="block text-xs text-slate-500">Configures rows in Consumption Grid</span>}
                 </span>
                 <div className="flex items-center gap-4">
-                  {isFuel2 && <FontSizeInput widgetId="fuel2Grid" settings={settings} onChange={handleConfigChange} />}
-                  <ToggleSwitch
-                    enabled={settings.config.showConsumption}
-                    onToggle={(newValue) =>
-                      handleConfigChange({ showConsumption: newValue })
-                    }
-                  />
+                  {isFuel2 && <DualFontSizeInput widgetId="fuel2Grid" settings={settings} onChange={handleConfigChange} />}
+                  {!isFuel2 && (
+                    <ToggleSwitch
+                      enabled={settings.config.showConsumption}
+                      onToggle={(newValue) =>
+                        handleConfigChange({ showConsumption: newValue })
+                      }
+                    />
+                  )}
                 </div>
+
+                {/* Fuel 2 Grid Reordering */}
+                {isFuel2 && (
+                  <div className="pl-2 pr-1">
+                    <GridOrderSettingsList
+                      itemsOrder={settings.config.consumptionGridOrder || defaultConfig.consumptionGridOrder!}
+                      onReorder={(newOrder) => handleConfigChange({ consumptionGridOrder: newOrder })}
+                      settings={settings}
+                      handleConfigChange={handleConfigChange}
+                    />
+                  </div>
+                )}
               </div>
 
               {/* Consumption Details (when enabled) */}
-              {settings.config.showConsumption && (
+              {settings.config.showConsumption && !isFuel2 && (
                 <div className="ml-4 space-y-2 pl-4 border-l border-slate-700">
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-slate-300">Show Min</span>
@@ -447,12 +569,14 @@ const SingleFuelWidgetSettings = ({ widgetId, isFuel2 }: { widgetId: string, isF
               {/* Show Pit Window */}
               <div className="flex items-center justify-between">
                 <span className="text-sm text-slate-300">Show Pit Window</span>
-                <ToggleSwitch
-                  enabled={settings.config.showPitWindow}
-                  onToggle={(newValue) =>
-                    handleConfigChange({ showPitWindow: newValue })
-                  }
-                />
+                {!isFuel2 && (
+                  <ToggleSwitch
+                    enabled={settings.config.showPitWindow}
+                    onToggle={(newValue) =>
+                      handleConfigChange({ showPitWindow: newValue })
+                    }
+                  />
+                )}
               </div>
 
               {/* Show Endurance Strategy */}
@@ -473,36 +597,38 @@ const SingleFuelWidgetSettings = ({ widgetId, isFuel2 }: { widgetId: string, isF
                 </div>
               )}
 
-              {/* Show Fuel Scenarios */}
+              {/* Fuel Scenarios */}
               <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-300">Show Fuel Scenarios</span>
+                <span className="text-sm text-slate-300">Fuel Scenarios</span>
                 <div className="flex items-center gap-4">
-                  {isFuel2 && <FontSizeInput widgetId="fuel2Scenarios" settings={settings} onChange={handleConfigChange} />}
-                  <ToggleSwitch
-                    enabled={settings.config.showFuelScenarios}
-                    onToggle={(newValue) =>
-                      handleConfigChange({ showFuelScenarios: newValue })
-                    }
-                  />
+                  {isFuel2 && <DualFontSizeInput widgetId="fuel2Scenarios" settings={settings} onChange={handleConfigChange} />}
+                  {!isFuel2 && (
+                    <ToggleSwitch
+                      enabled={settings.config.showFuelScenarios}
+                      onToggle={(newValue) =>
+                        handleConfigChange({ showFuelScenarios: newValue })
+                      }
+                    />
+                  )}
                 </div>
               </div>
 
-              {/* Show Consumption Graph - Legacy Only */}
+              {/* Fuel History - Legacy Only */}
               {!isFuel2 && (
                 <>
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-slate-300">
-                      Show Consumption Graph
+                      Fuel History
                     </span>
                     <ToggleSwitch
-                      enabled={settings.config.showConsumptionGraph}
+                      enabled={settings.config.showFuelHistory}
                       onToggle={(newValue) =>
-                        handleConfigChange({ showConsumptionGraph: newValue })
+                        handleConfigChange({ showFuelHistory: newValue })
                       }
                     />
                   </div>
 
-                  {settings.config.showConsumptionGraph && (
+                  {settings.config.showFuelHistory && (
                     <div className="ml-4 pl-4 border-l border-slate-700">
                       <div className="flex items-center justify-between">
                         <span className="text-xs text-slate-300">
@@ -512,10 +638,10 @@ const SingleFuelWidgetSettings = ({ widgetId, isFuel2 }: { widgetId: string, isF
                           </span>
                         </span>
                         <select
-                          value={settings.config.consumptionGraphType}
+                          value={settings.config.fuelHistoryType}
                           onChange={(e) =>
                             handleConfigChange({
-                              consumptionGraphType: e.target.value as
+                              fuelHistoryType: e.target.value as
                                 | 'line'
                                 | 'histogram',
                             })
@@ -531,34 +657,28 @@ const SingleFuelWidgetSettings = ({ widgetId, isFuel2 }: { widgetId: string, isF
                 </>
               )}
 
-              {/* Show Consumption Graph - Fuel 2 */}
+              {/* Fuel History - Fuel 2 */}
               {isFuel2 && (
                 <>
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-slate-300">
-                      Show Consumption Graph
+                      Fuel History
                     </span>
                     <div className="flex items-center gap-4">
-                      <FontSizeInput widgetId="fuel2Graph" settings={settings} onChange={handleConfigChange} />
-                      <ToggleSwitch
-                        enabled={settings.config.showConsumptionGraph !== false}
-                        onToggle={(newValue) =>
-                          handleConfigChange({ showConsumptionGraph: newValue })
-                        }
-                      />
+                      {/* Slider removed as requested */}
                     </div>
                   </div>
 
                   {/* Allow configuring graph type for Fuel 2 as well */}
-                  {settings.config.showConsumptionGraph !== false && (
+                  {settings.config.showFuelHistory !== false && (
                     <div className="ml-4 pl-4 border-l border-slate-700 space-y-2">
                       <div className="flex items-center justify-between">
                         <span className="text-xs text-slate-300">Graph Type</span>
                         <select
-                          value={settings.config.consumptionGraphType}
+                          value={settings.config.fuelHistoryType}
                           onChange={(e) =>
                             handleConfigChange({
-                              consumptionGraphType: e.target.value as 'line' | 'histogram',
+                              fuelHistoryType: e.target.value as 'line' | 'histogram',
                             })
                           }
                           className="px-3 py-1 bg-slate-700 text-slate-200 rounded text-sm"
