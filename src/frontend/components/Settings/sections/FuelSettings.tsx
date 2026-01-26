@@ -689,25 +689,6 @@ const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => {
               </div>
             </div>
 
-            {/* IsOnTrack Section */}
-            <div className="flex items-center justify-between">
-              <div>
-                <h4 className="text-md font-medium text-slate-300">
-                  Show only when on track
-                </h4>
-                <span className="block text-xs text-slate-500">
-                  If enabled, calculator will only be shown when you are driving.
-                </span>
-              </div>
-              <ToggleSwitch
-                enabled={settings.config.showOnlyWhenOnTrack}
-                onToggle={(newValue) =>
-                  handleConfigChange({
-                    showOnlyWhenOnTrack: newValue,
-                  })
-                }
-              />
-            </div>
 
             {/* Pit Strategy Section */}
             <div className="border-t border-slate-600/50 pt-6 space-y-4">
@@ -763,6 +744,25 @@ const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => {
                   sessionVisibility={settings.config.sessionVisibility}
                   handleConfigChange={handleConfigChange}
                 />
+
+                <div className="flex items-center justify-between pt-4 border-t border-slate-700/50">
+                  <div>
+                    <h4 className="text-sm font-medium text-slate-300">
+                      Show only when on track
+                    </h4>
+                    <span className="block text-[10px] text-slate-500">
+                      If enabled, calculator will only be shown when you are driving.
+                    </span>
+                  </div>
+                  <ToggleSwitch
+                    enabled={settings.config.showOnlyWhenOnTrack}
+                    onToggle={(newValue) =>
+                      handleConfigChange({
+                        showOnlyWhenOnTrack: newValue,
+                      })
+                    }
+                  />
+                </div>
               </div>
             </div>
 
