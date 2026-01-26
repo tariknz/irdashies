@@ -254,7 +254,7 @@ const CustomShiftPointsSection = ({ config, handleConfigChange }: { config: Tach
               <div className="flex-1">
                 <p className="text-blue-200 font-medium mb-1">Demo Mode Car</p>
                 <p className="text-blue-300">
-                  Demo mode uses the <strong>Mazda MX-5 Cup</strong> (mx5 mx52016).
+                  Demo mode uses the <strong>BMW M4 GT4</strong> (bmwm4gt4).
                   Configure custom shift points for this car to test in demo mode.
                 </p>
               </div>
