@@ -460,7 +460,6 @@ export const DriverInfoRow = memo(
     }, [
       displayOrder,
       config,
-      hidden,
       position,
       lap,
       isPlayer,
