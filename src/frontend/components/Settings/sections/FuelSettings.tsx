@@ -282,22 +282,42 @@ const GridOrderSettingsList = ({ itemsOrder, onReorder, settings, handleConfigCh
 
         return (
           <div key={row.id} {...itemProps}>
-            <div className="flex items-center justify-between group bg-slate-800/50 p-1.5 rounded border border-transparent hover:border-slate-600 transition-colors">
-              <div className="flex items-center gap-2 flex-1">
-                <div
-                  {...dragHandleProps}
-                  className="cursor-grab opacity-60 hover:opacity-100 transition-opacity p-1 hover:bg-slate-600 rounded text-slate-400"
-                >
-                  <DotsSixVerticalIcon size={14} />
+            <div className="flex flex-col bg-slate-800/50 p-1.5 rounded border border-transparent hover:border-slate-600 transition-colors">
+              <div className="flex items-center justify-between group">
+                <div className="flex items-center gap-2 flex-1">
+                  <div
+                    {...dragHandleProps}
+                    className="cursor-grab opacity-60 hover:opacity-100 transition-opacity p-1 hover:bg-slate-600 rounded text-slate-400"
+                  >
+                    <DotsSixVerticalIcon size={14} />
+                  </div>
+                  <span className="text-xs text-slate-300 font-medium">{row.label}</span>
                 </div>
-                <span className="text-xs text-slate-300 font-medium">{row.label}</span>
+                <ToggleSwitch
+                  enabled={isEnabled}
+                  onToggle={(val) => {
+                    handleConfigChange({ [row.configKey]: val });
+                  }}
+                />
               </div>
-              <ToggleSwitch
-                enabled={isEnabled}
-                onToggle={(val) => {
-                  handleConfigChange({ [row.configKey]: val });
-                }}
-              />
+
+              {row.id === 'avg' && (
+                <div className="mt-2 pl-7 pr-1 flex items-center justify-between animate-in fade-in slide-in-from-top-1 duration-200">
+                  <span className="text-[10px] text-slate-400">Average Laps</span>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      min="1"
+                      max="50"
+                      step="1"
+                      value={settings.config.avgLapsCount ?? 3}
+                      onChange={(e) => handleConfigChange({ avgLapsCount: parseInt(e.target.value) || 1 })}
+                      className="w-12 px-1 py-0.5 bg-slate-700 text-slate-200 rounded text-[10px] text-center"
+                    />
+                    <span className="text-[10px] text-slate-500">Laps</span>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         );
@@ -546,31 +566,21 @@ const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => {
 
 
             {/* Show Consumption Section - Available for BOTH */}
-            <div className="flex items-center justify-between pr-20 py-4 border-b border-white/5">
-              <span className="text-sm text-slate-300">
-                Consumption Details
-                <span className="block text-xs text-slate-500">Configures rows in Consumption Grid</span>
-              </span>
-              <div className="flex flex-col gap-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-slate-400">Average Laps</span>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="range" min="1" max="50" step="1"
-                      value={settings.config.avgLapsCount ?? 3}
-                      onChange={(e) => handleConfigChange({ avgLapsCount: parseInt(e.target.value) })}
-                      className="w-32 h-1.5 bg-slate-600 rounded-lg appearance-none cursor-pointer"
-                    />
-                    <span className="text-xs text-slate-300 w-8 text-right">{settings.config.avgLapsCount ?? 3}</span>
-                  </div>
+            <div className="pr-20 py-4 border-b border-white/5">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-slate-300">
+                  Consumption Details
+                  <span className="block text-xs text-slate-500">Configures rows in Consumption Grid</span>
+                </span>
+                <div className="flex items-center gap-4">
+                  <DualFontSizeInput widgetId="fuel2Grid" settings={settings} onChange={handleConfigChange} />
                 </div>
-                <DualFontSizeInput widgetId="fuel2Grid" settings={settings} onChange={handleConfigChange} />
               </div>
 
               {/* Fuel 2 Grid Reordering */}
               <div className="pl-2 pr-1">
                 <GridOrderSettingsList
-                  itemsOrder={settings.config.consumptionGridOrder || defaultConfig.consumptionGridOrder!}
+                  itemsOrder={settings.config.consumptionGridOrder || (defaultConfig as any).consumptionGridOrder!}
                   onReorder={(newOrder) => handleConfigChange({ consumptionGridOrder: newOrder })}
                   settings={settings}
                   handleConfigChange={handleConfigChange}
