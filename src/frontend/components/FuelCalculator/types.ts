@@ -136,6 +136,8 @@ export interface FuelCalculatorSettings {
   background: { opacity: number };
   /** Display mode for fuel required column: 'toFinish' shows total fuel needed, 'toAdd' shows fuel to add at stop */
   fuelRequiredMode?: 'toFinish' | 'toAdd';
+  enableTargetPitLap?: boolean;
+  targetPitLap?: number;
 
   sessionVisibility: SessionVisibilitySettings;
   /** 

@@ -32,6 +32,8 @@ const defaultConfig: FuelWidgetSettings['config'] = {
   safetyMargin: 0.05,
   background: { opacity: 85 },
   fuelRequiredMode: 'toFinish',
+  enableTargetPitLap: false,
+  targetPitLap: 15,
   sessionVisibility: {
     race: true,
     loneQualify: true,
@@ -57,6 +59,8 @@ const migrateConfig = (savedConfig: unknown): FuelWidgetSettings['config'] => {
     layoutConfig: (config.layoutConfig as BoxConfig[]) ?? [],
     layoutTree: (config.layoutTree && (config.layoutTree as any).type ? (config.layoutTree as LayoutNode) : undefined),
     consumptionGridOrder: (config.consumptionGridOrder as string[]) ?? defaultConfig.consumptionGridOrder,
+    enableTargetPitLap: (config.enableTargetPitLap as boolean) ?? defaultConfig.enableTargetPitLap,
+    targetPitLap: (config.targetPitLap as number) ?? defaultConfig.targetPitLap,
   };
 };
 
@@ -80,6 +84,7 @@ const AVAILABLE_WIDGETS_FUEL2: { id: string; label: string }[] = [
   { id: 'fuel2Gauge', label: 'Fuel Gauge' },
   { id: 'fuel2Grid', label: 'Consumption Grid' },
   { id: 'fuel2Scenarios', label: 'Pit Scenarios' },
+  { id: 'fuel2TargetMessage', label: 'Target Pit Message' },
   { id: 'fuel2Graph', label: 'Fuel History' },
   { id: 'fuel2TimeEmpty', label: 'Time Until Empty' },
 ];
@@ -123,7 +128,7 @@ const DEFAULT_TREE_FUEL2: LayoutNode = {
       id: 'box-1',
       type: 'box',
       direction: 'col',
-      widgets: ['fuel2Header', 'fuel2Gauge', 'fuel2Grid', 'fuel2Scenarios', 'fuel2Graph', 'fuel2TimeEmpty'],
+      widgets: ['fuel2Header', 'fuel2TargetMessage', 'fuel2Gauge', 'fuel2Grid', 'fuel2Scenarios', 'fuel2Graph', 'fuel2TimeEmpty'],
     }
   ]
 };
@@ -168,7 +173,7 @@ const DualFontSizeInput = ({ widgetId, settings, onChange }: { widgetId: string,
   };
 
   return (
-    <div className="flex flex-col gap-1 w-full max-w-[160px]">
+    <div className="flex flex-col gap-1 w-full max-w-[140px] mr-20">
       <div className="flex items-center gap-2">
         <span className="text-[10px] text-slate-400 w-8">Label</span>
         <input
@@ -343,15 +348,15 @@ const SingleFuelWidgetSettings = ({ widgetId, isFuel2 }: { widgetId: string, isF
               {/* Widget Styles for Fuel 2 specific components without toggles */}
               {isFuel2 && (
                 <div className="space-y-4 pb-4 mb-4 border-b border-slate-700">
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between pr-20">
                     <span className="text-sm text-slate-300">(Stops/Window/Confidence)</span>
                     <DualFontSizeInput widgetId="fuel2Header" settings={settings} onChange={handleConfigChange} />
                   </div>
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between pr-20">
                     <span className="text-sm text-slate-300">Fuel Gauge</span>
                     <DualFontSizeInput widgetId="fuel2Gauge" settings={settings} onChange={handleConfigChange} />
                   </div>
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between pr-20">
                     <span className="text-sm text-slate-300">Time Until Empty</span>
                     <DualFontSizeInput widgetId="fuel2TimeEmpty" settings={settings} onChange={handleConfigChange} />
                   </div>
@@ -426,7 +431,7 @@ const SingleFuelWidgetSettings = ({ widgetId, isFuel2 }: { widgetId: string, isF
               )}
 
               {/* Show Consumption Section - Available for BOTH */}
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between pr-20">
                 <span className="text-sm text-slate-300">
                   Consumption Details
                   {isFuel2 && <span className="block text-xs text-slate-500">Configures rows in Consumption Grid</span>}
@@ -567,17 +572,17 @@ const SingleFuelWidgetSettings = ({ widgetId, isFuel2 }: { widgetId: string, isF
               )}
 
               {/* Show Pit Window */}
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-300">Show Pit Window</span>
-                {!isFuel2 && (
+              {!isFuel2 && (
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-300">Show Pit Window</span>
                   <ToggleSwitch
                     enabled={settings.config.showPitWindow}
                     onToggle={(newValue) =>
                       handleConfigChange({ showPitWindow: newValue })
                     }
                   />
-                )}
-              </div>
+                </div>
+              )}
 
               {/* Show Endurance Strategy */}
               {!isFuel2 && (
@@ -598,7 +603,7 @@ const SingleFuelWidgetSettings = ({ widgetId, isFuel2 }: { widgetId: string, isF
               )}
 
               {/* Fuel Scenarios */}
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between pr-20">
                 <span className="text-sm text-slate-300">Fuel Scenarios</span>
                 <div className="flex items-center gap-4">
                   {isFuel2 && <DualFontSizeInput widgetId="fuel2Scenarios" settings={settings} onChange={handleConfigChange} />}
@@ -717,7 +722,7 @@ const SingleFuelWidgetSettings = ({ widgetId, isFuel2 }: { widgetId: string, isF
               )}
 
               {/* Safety Margin */}
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between pr-20">
                 <span className="text-sm text-slate-300">
                   Safety Margin
                   <span className="block text-xs text-slate-500">
@@ -746,7 +751,7 @@ const SingleFuelWidgetSettings = ({ widgetId, isFuel2 }: { widgetId: string, isF
               </div>
 
               {/* Background Opacity */}
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between pr-20">
                 <span className="text-sm text-slate-300">Background Opacity</span>
                 <div className="flex items-center gap-2">
                   <input
@@ -787,8 +792,50 @@ const SingleFuelWidgetSettings = ({ widgetId, isFuel2 }: { widgetId: string, isF
                 />
               </div>
 
+              {/* Pit Strategy Section */}
+              <div className="border-t border-slate-600/50 pt-6 space-y-4">
+                <h3 className="text-md font-medium text-slate-200">🎯 Pit Strategy</h3>
+
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-sm text-slate-300">Fixed Target Lap</span>
+                    <span className="block text-xs text-slate-500">Enable a specific lap target for strategy</span>
+                  </div>
+                  <ToggleSwitch
+                    enabled={settings.config.enableTargetPitLap || false}
+                    onToggle={(val) => handleConfigChange({ enableTargetPitLap: val })}
+                  />
+                </div>
+
+                {(settings.config.enableTargetPitLap) && (
+                  <div className="ml-4 p-3 bg-slate-800/50 rounded border border-blue-500/30 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-slate-300">Target Pit Lap</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-slate-500">L</span>
+                        <input
+                          type="number"
+                          min="1"
+                          max="200"
+                          value={settings.config.targetPitLap ?? 15}
+                          onChange={(e) => handleConfigChange({ targetPitLap: parseInt(e.target.value) || 1 })}
+                          className="w-16 px-2 py-1 bg-slate-700 text-slate-200 rounded text-xs text-right focus:border-blue-500 focus:outline-none"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between pr-20">
+                      <span className="text-[10px] text-slate-400">Target Message Font</span>
+                      <DualFontSizeInput widgetId="fuel2TargetMessage" settings={settings} onChange={handleConfigChange} />
+                    </div>
+                    <p className="text-[10px] text-slate-500 italic">
+                      Scenarios will include this lap as a 4th row. Target message will show fuel required.
+                    </p>
+                  </div>
+                )}
+              </div>
+
               {/* Session Visibility Settings */}
-              <div className="space-y-4">
+              <div className="space-y-4 border-t border-slate-600/50 pt-6">
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-medium text-slate-200">
                     Session Visibility

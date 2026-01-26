@@ -13,6 +13,7 @@ import {
     FuelCalculator2PitScenarios,
     FuelCalculator2TimeEmpty,
     FuelCalculator2HistoryGraph,
+    FuelCalculator2TargetMessage,
 } from './widgets/FuelCalculator2Widgets';
 import { useFuelStore } from './FuelStore';
 import type { FuelCalculatorSettings } from './types';
@@ -375,6 +376,8 @@ export const FuelCalculator2 = (props: FuelCalculatorProps) => {
             case 'fuel2Graph':
             case 'historyGraph':
                 return <FuelCalculator2HistoryGraph key={widgetId} widgetId={widgetId} fuelData={fuelData} displayData={displayData} fuelUnits={fuelUnits} settings={settings} />;
+            case 'fuel2TargetMessage':
+                return <FuelCalculator2TargetMessage key={widgetId} widgetId={widgetId} fuelData={fuelData} displayData={displayData} fuelUnits={fuelUnits} settings={settings} />;
             default: return null;
         }
     };

@@ -293,6 +293,8 @@ export interface FuelWidgetSettings extends BaseWidgetSettings {
     manualTarget?: number;
     background: { opacity: number };
     fuelRequiredMode: 'toFinish' | 'toAdd';
+    enableTargetPitLap?: boolean;
+    targetPitLap?: number;
     sessionVisibility: SessionVisibilitySettings;
     /** 
     * Box Layout Configuration 

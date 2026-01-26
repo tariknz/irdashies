@@ -470,6 +470,80 @@ export const FuelCalculator2PitScenarios: React.FC<FuelCalculator2WidgetProps> =
                         </React.Fragment>
                     );
                 })}
+
+                {/* Optional 4th Row for Fixed Target */}
+                {settings?.enableTargetPitLap && settings.targetPitLap && (
+                    <TargetScenarioRow
+                        targetLap={settings.targetPitLap}
+                        fuelData={fuelData}
+                        displayData={displayData}
+                        settings={settings}
+                        valueFontSize={valueFontSize}
+                        isTesting={isTesting}
+                    />
+                )}
+            </div>
+        </div>
+    );
+};
+
+// Helper component for the Target row to avoid duplication
+const TargetScenarioRow: React.FC<{
+    targetLap: number,
+    fuelData: any,
+    displayData: any,
+    settings: any,
+    valueFontSize: string,
+    isTesting: boolean
+}> = ({ targetLap, fuelData, displayData, settings, valueFontSize, isTesting }) => {
+    const lapsLeftAfterPit = Math.max(0, fuelData.totalLaps - targetLap);
+    const safetyMargin = settings?.safetyMargin ?? 0.05;
+    const consumption = displayData.avg10Laps || 0;
+    const fuelToAddHypothetical = lapsLeftAfterPit * consumption * (1 + safetyMargin);
+    const fuelBurnedToFinish = lapsLeftAfterPit * consumption;
+    const estimatedFinishFuel = Math.max(0, fuelToAddHypothetical - fuelBurnedToFinish);
+
+    const addDisplay = (isTesting || consumption === 0) ? '--' : `+${fuelToAddHypothetical.toFixed(1)}`;
+    const finishDisplay = (isTesting || consumption === 0) ? '--' : estimatedFinishFuel.toFixed(1);
+    const rowColor = 'text-purple-400 font-bold bg-purple-500/20 rounded';
+
+    return (
+        <React.Fragment>
+            <div className={`${rowColor} py-0.5 text-center`} style={{ fontSize: valueFontSize }}>L{targetLap}</div>
+            <div className={`${rowColor} text-center py-0.5`} style={{ fontSize: valueFontSize }}>{addDisplay}</div>
+            <div className={`${rowColor} text-center py-0.5`} style={{ fontSize: valueFontSize }}>{finishDisplay}</div>
+            <div className={`${rowColor} text-center py-0.5`} style={{ fontSize: valueFontSize }}>TARGET</div>
+        </React.Fragment>
+    );
+};
+
+export const FuelCalculator2TargetMessage: React.FC<FuelCalculator2WidgetProps> = ({ fuelData, displayData, settings, widgetId }) => {
+    if (!settings?.enableTargetPitLap || !settings.targetPitLap || !fuelData) return null;
+
+    const targetLap = settings.targetPitLap;
+    const lapsLeftAfterPit = Math.max(0, fuelData.totalLaps - targetLap);
+    const safetyMargin = settings?.safetyMargin ?? 0.05;
+    const consumption = displayData.avg10Laps || 0;
+    const fuelToAddHypothetical = lapsLeftAfterPit * consumption * (1 + safetyMargin);
+
+    const widgetStyle = (widgetId && settings?.widgetStyles?.[widgetId]) || {};
+    const labelFontSize = widgetStyle.labelFontSize ? `${widgetStyle.labelFontSize}px` : (widgetStyle.fontSize ? `${widgetStyle.fontSize}px` : '10px');
+    const valueFontSize = widgetStyle.valueFontSize ? `${widgetStyle.valueFontSize}px` : (widgetStyle.fontSize ? `${widgetStyle.fontSize}px` : '16px');
+
+    const isTesting = settings?.sessionVisibility?.offlineTesting;
+    const needDisplay = (isTesting || consumption === 0) ? '--' : `+${fuelToAddHypothetical.toFixed(1)}L`;
+
+    return (
+        <div className="mb-2 py-1 px-2 bg-purple-500/20 border border-purple-500/50 rounded flex items-center justify-between">
+            <div className="flex items-center gap-2">
+                <span className="text-purple-400 font-medium" style={{ fontSize: labelFontSize }}>🎯 TARGET</span>
+                <span className="text-white font-bold" style={{ fontSize: valueFontSize }}>L{targetLap}</span>
+            </div>
+            <div className="text-xs">
+                <span className="text-slate-400" style={{ fontSize: labelFontSize }}>Need:</span>
+                <span className="text-purple-300 font-medium ml-1" style={{ fontSize: valueFontSize }}>
+                    {needDisplay}
+                </span>
             </div>
         </div>
     );
