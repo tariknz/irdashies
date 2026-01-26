@@ -9,14 +9,6 @@ describe('DriverStatusBadges', () => {
     expect(container.innerHTML).toBe('');
   });
 
-  it('renders nothing when hidden is true', () => {
-    const { container } = render(
-      <DriverStatusBadges dnf />
-    );
-
-    expect(container.innerHTML).toBe('');
-  });
-
   it('renders DNF when dnf is true', () => {
     const { container } = render(<DriverStatusBadges dnf />);
 

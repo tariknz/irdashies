@@ -22,14 +22,6 @@ describe('DriverNameCell', () => {
     expect(container.textContent).toContain('Driver A');
   });
 
-  it('hides the driver name when hidden', () => {
-    const { container } = renderInTable(
-      <DriverNameCell name="Driver A" />
-    );
-
-    expect(container.textContent).not.toContain('Driver A');
-  });
-
   it('toggles radio icon visibility based on radioActive', () => {
     const { container, rerender } = renderInTable(
       <DriverNameCell name="Driver A" radioActive />
