@@ -33,10 +33,7 @@ const RandomTraces = () => {
       );
 
       setSteer((value) =>
-        Math.max(
-          -Math.PI,
-          Math.min(Math.PI, value + Math.random() * 0.2 - 0.1),
-        )
+        Math.max(-Math.PI, Math.min(Math.PI, value + Math.random() * 0.2 - 0.1))
       );
     }, 1000 / 60);
     return () => clearInterval(interval);
@@ -54,6 +51,7 @@ const RandomTraces = () => {
           enabled: true,
           includeThrottle: true,
           includeBrake: true,
+          includeClutch: true,
           includeAbs: true,
           includeSteer: true,
           strokeWidth: 3,
@@ -86,16 +84,23 @@ const RandomTraces = () => {
         background: {
           opacity: 80,
         },
+        sessionVisibility: {
+          race: true,
+          loneQualify: true,
+          openQualify: true,
+          practice: true,
+          offlineTesting: true,
+        },
       }}
     />
   );
 };
 
 export const Primary: Story = {
-  render: () => 
-    (<div className='h-[100px] w-[500px]'>
-        <RandomTraces />
-      </div>
-    ),
+  render: () => (
+    <div className="h-[100px] w-[500px]">
+      <RandomTraces />
+    </div>
+  ),
   args: {},
 };

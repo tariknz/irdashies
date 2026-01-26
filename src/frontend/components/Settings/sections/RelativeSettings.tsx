@@ -1,13 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
-import { useDashboard, useRelativeGapStore } from '@irdashies/context';
-import { RelativeWidgetSettings } from '../types';
+import { useDashboard } from '@irdashies/context';
+import { RelativeWidgetSettings, SessionVisibilitySettings } from '../types';
 import { ToggleSwitch } from '../components/ToggleSwitch';
 import { useSortableList } from '../../SortableList';
 import { DotsSixVerticalIcon } from '@phosphor-icons/react';
 import { BadgeFormatPreview } from '../components/BadgeFormatPreview';
 import { VALID_SESSION_BAR_ITEM_KEYS, SESSION_BAR_ITEM_LABELS, DEFAULT_SESSION_BAR_DISPLAY_ORDER } from '../sessionBarConstants';
 import { mergeDisplayOrder } from '../../../utils/displayOrder';
+import { SessionVisibility } from '../components/SessionVisibility';
+import { DriverNamePreview } from '../components/DriverNamePreview';
 
 const SETTING_ID = 'relative';
 
@@ -22,9 +24,10 @@ const sortableSettings: SortableSetting[] = [
   { id: 'position', label: 'Position', configKey: 'position' },
   { id: 'carNumber', label: 'Car Number', configKey: 'carNumber' },
   { id: 'countryFlags', label: 'Country Flags', configKey: 'countryFlags' },
-  { id: 'driverName', label: 'Driver Name', configKey: 'driverName' },
+  { id: 'driverName', label: 'Driver Name', configKey: 'driverName', hasSubSetting: true },
+  { id: 'teamName', label: 'Team Name', configKey: 'teamName' },
   { id: 'pitStatus', label: 'Pit Status', configKey: 'pitStatus', hasSubSetting: true },
-  { id: 'carManufacturer', label: 'Car Manufacturer', configKey: 'carManufacturer' },
+  { id: 'carManufacturer', label: 'Car Manufacturer', configKey: 'carManufacturer', hasSubSetting: true },
   { id: 'badge', label: 'Driver Badge', configKey: 'badge' },
   { id: 'iratingChange', label: 'iRating Change', configKey: 'iratingChange' },
   { id: 'delta', label: 'Relative', configKey: 'delta' },
@@ -39,9 +42,10 @@ const defaultConfig: RelativeWidgetSettings['config'] = {
   position: { enabled: true },
   carNumber: { enabled: true },
   countryFlags: { enabled: true },
-  driverName: { enabled: true },
-  pitStatus: { enabled: true, showPitTime: false },
-  carManufacturer: { enabled: true },
+  driverName: { enabled: true, showStatusBadges: true, nameFormat: 'name-surname' },
+  teamName: { enabled: false },
+  pitStatus: { enabled: true, showPitTime: false, pitLapDisplayMode: 'lapsSinceLastPit' },
+  carManufacturer: { enabled: true, hideIfSingleMake: false },
   badge: { enabled: true, badgeFormat: 'license-color-rating-bw' },
   iratingChange: { enabled: false },
   delta: { enabled: true, precision: 2 },
@@ -49,17 +53,12 @@ const defaultConfig: RelativeWidgetSettings['config'] = {
   lastTime: { enabled: false, timeFormat: 'full' },
   compound: { enabled: false },
   displayOrder: sortableSettings.map(s => s.id),
-  enhancedGapCalculation: {
-    enabled: true,
-    interpolationMethod: 'linear',
-    sampleInterval: 0.01,
-    maxLapHistory: 5,
-  },
   titleBar: { enabled: true, progressBar: { enabled: true } },
   headerBar: {
     enabled: true,
     sessionName: { enabled: true },
     sessionTime: { enabled: true, mode: 'Remaining' },
+    sessionLaps: { enabled: true },
     incidentCount: { enabled: true },
     brakeBias: { enabled: true },
     localTime: { enabled: false },
@@ -74,6 +73,7 @@ const defaultConfig: RelativeWidgetSettings['config'] = {
     enabled: true,
     sessionName: { enabled: false },
     sessionTime: { enabled: false, mode: 'Remaining' },
+    sessionLaps: { enabled: false },
     incidentCount: { enabled: false },
     brakeBias: { enabled: false },
     localTime: { enabled: true },
@@ -86,6 +86,7 @@ const defaultConfig: RelativeWidgetSettings['config'] = {
   },
   showOnlyWhenOnTrack: false,
   useLivePosition: false,
+  sessionVisibility: { race: true, loneQualify: true, openQualify: true, practice: true, offlineTesting: true }
 };
 
 
@@ -93,19 +94,29 @@ const defaultConfig: RelativeWidgetSettings['config'] = {
 const migrateConfig = (savedConfig: unknown): RelativeWidgetSettings['config'] => {
   if (!savedConfig || typeof savedConfig !== 'object') return defaultConfig;
   const config = savedConfig as Record<string, unknown>;
-  const enhancedGap = config.enhancedGapCalculation as { enabled?: boolean; interpolationMethod?: 'linear' | 'cubic'; sampleInterval?: number; maxLapHistory?: number } | undefined;
   return {
     buffer: (config.buffer as number) ?? 3,
     background: { opacity: (config.background as { opacity?: number })?.opacity ?? 0 },
     position: { enabled: (config.position as { enabled?: boolean })?.enabled ?? true },
     carNumber: { enabled: (config.carNumber as { enabled?: boolean })?.enabled ?? true },
     countryFlags: { enabled: (config.countryFlags as { enabled?: boolean })?.enabled ?? true },
-    driverName: { enabled: (config.driverName as { enabled?: boolean })?.enabled ?? true },
+    driverName: {
+      enabled: (config.driverName as { enabled?: boolean })?.enabled ?? true,
+      showStatusBadges:
+        (config.driverName as { showStatusBadges?: boolean })?.showStatusBadges ??
+        true,
+      nameFormat: ((config.driverName as { nameFormat?: 'name-middlename-surname' | 'name-m.-surname' | 'name-surname' | 'n.-surname' | 'surname-n.' | 'surname' })?.nameFormat) ?? 'name-middlename-surname',
+    },
+    teamName: { enabled: (config.teamName as { enabled?: boolean })?.enabled ?? false },
     pitStatus: {
       enabled: (config.pitStatus as { enabled?: boolean })?.enabled ?? true,
       showPitTime: (config.pitStatus as { showPitTime?: boolean })?.showPitTime ?? false,
+      pitLapDisplayMode: (config.pitStatus as { pitLapDisplayMode?: 'lastPitLap' | 'lapsSinceLastPit' })?.pitLapDisplayMode ?? 'lapsSinceLastPit',
     },
-    carManufacturer: { enabled: (config.carManufacturer as { enabled?: boolean })?.enabled ?? true },
+    carManufacturer: {
+      enabled: (config.carManufacturer as { enabled?: boolean })?.enabled ?? true,
+      hideIfSingleMake: (config.carManufacturer as { hideIfSingleMake?: boolean })?.hideIfSingleMake ?? false,
+    },
     badge: {
       enabled: (config.badge as { enabled?: boolean })?.enabled ?? true,
       badgeFormat: ((config.badge as { badgeFormat?: string })?.badgeFormat as 'license-color-rating-bw' | 'license-color-rating-bw-no-license' | 'rating-color-no-license' | 'license-bw-rating-bw' | 'rating-only-bw-rating-bw' | 'license-bw-rating-bw-no-license' | 'rating-bw-no-license') ?? 'license-color-rating-bw'
@@ -116,12 +127,6 @@ const migrateConfig = (savedConfig: unknown): RelativeWidgetSettings['config'] =
     lastTime: { enabled: (config.lastTime as { enabled?: boolean; timeFormat?: string })?.enabled ?? false, timeFormat: ((config.lastTime as { enabled?: boolean; timeFormat?: string })?.timeFormat as 'full' | 'mixed' | 'minutes' | 'seconds-full' | 'seconds-mixed' | 'seconds') ?? 'full' },
     compound: { enabled: (config.compound as { enabled?: boolean })?.enabled ?? false },
     displayOrder: mergeDisplayOrder(sortableSettings.map(s => s.id), config.displayOrder as string[]),
-    enhancedGapCalculation: {
-      enabled: enhancedGap?.enabled ?? true,
-      interpolationMethod: enhancedGap?.interpolationMethod ?? 'linear',
-      sampleInterval: enhancedGap?.sampleInterval ?? 0.01,
-      maxLapHistory: enhancedGap?.maxLapHistory ?? 5,
-    },
     titleBar: {
       enabled: (config.titleBar as { enabled?: boolean })?.enabled ?? true,
       progressBar: {
@@ -135,6 +140,7 @@ const migrateConfig = (savedConfig: unknown): RelativeWidgetSettings['config'] =
         enabled: (config.headerBar as { sessionTime?: { enabled?: boolean } })?.sessionTime?.enabled ?? true,
         mode: ((config.headerBar as { sessionTime?: { mode?: string } })?.sessionTime?.mode as 'Remaining' | 'Elapsed') ?? 'Remaining'
       },
+      sessionLaps: { enabled: (config.headerBar as { sessionLaps?: { enabled?: boolean } })?.sessionLaps?.enabled ?? true },
       incidentCount: { enabled: (config.headerBar as { incidentCount?: { enabled?: boolean } })?.incidentCount?.enabled ?? true },
       brakeBias: { enabled: (config.headerBar as { brakeBias?: { enabled?: boolean } })?.brakeBias?.enabled ?? false },
       localTime: { enabled: (config.headerBar as { localTime?: { enabled?: boolean } })?.localTime?.enabled ?? false },
@@ -158,6 +164,7 @@ const migrateConfig = (savedConfig: unknown): RelativeWidgetSettings['config'] =
         enabled: (config.footerBar as { sessionTime?: { enabled?: boolean } })?.sessionTime?.enabled ?? false,
         mode: ((config.footerBar as { sessionTime?: { mode?: string } })?.sessionTime?.mode as 'Remaining' | 'Elapsed') ?? 'Remaining'
       },
+      sessionLaps: { enabled: (config.footerBar as { sessionLaps?: { enabled?: boolean } })?.sessionLaps?.enabled ?? true },
       incidentCount: { enabled: (config.footerBar as { incidentCount?: { enabled?: boolean } })?.incidentCount?.enabled ?? false },
       brakeBias: { enabled: (config.footerBar as { brakeBias?: { enabled?: boolean } })?.brakeBias?.enabled ?? false },
       localTime: { enabled: (config.footerBar as { localTime?: { enabled?: boolean } })?.localTime?.enabled ?? true },
@@ -176,6 +183,7 @@ const migrateConfig = (savedConfig: unknown): RelativeWidgetSettings['config'] =
     },
     showOnlyWhenOnTrack: (config.showOnlyWhenOnTrack as boolean) ?? false,
     useLivePosition: (config.useLivePosition as boolean) ?? false,
+    sessionVisibility: (config.sessionVisibility as SessionVisibilitySettings) ?? defaultConfig.sessionVisibility,
   };
 };
 
@@ -248,6 +256,25 @@ const DisplaySettingsList = ({ itemsOrder, onReorder, settings, handleConfigChan
                 </div>
               </div>
             )}
+            {setting.configKey === 'driverName' && (configValue as { enabled: boolean }).enabled && (
+              <div className="mt-3">
+                <div className="flex flex-wrap gap-3 justify-end">
+                  {(['name-middlename-surname', 'name-m.-surname', 'name-surname', 'n.-surname', 'surname-n.', 'surname'] as const).map((format) => (
+                    <DriverNamePreview
+                      key={format}
+                      format={format}
+                      selected={(configValue as { enabled: boolean; nameFormat: string }).nameFormat === format}
+                      onClick={() => {
+                        const cv = settings.config[setting.configKey] as { enabled: boolean; nameFormat: string;[key: string]: unknown };
+                        handleConfigChange({
+                          [setting.configKey]: { ...cv, nameFormat: format },
+                        });
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
             {(setting.configKey === 'fastestTime' || setting.configKey === 'lastTime') && (configValue as { enabled: boolean }).enabled && (
               <div className="flex items-center justify-between pl-8 mt-2">
                 <span className="text-sm text-slate-300"></span>
@@ -262,7 +289,7 @@ const DisplaySettingsList = ({ itemsOrder, onReorder, settings, handleConfigChan
                       },
                     });
                   }}
-                  className="w-26 bg-slate-700 text-white rounded-md px-2 py-1"
+                  className="bg-slate-700 text-white rounded-md px-2 py-1"
                 >
                   <option value="full">1:42.123</option>
                   <option value="mixed">1:42.1</option>
@@ -275,13 +302,55 @@ const DisplaySettingsList = ({ itemsOrder, onReorder, settings, handleConfigChan
             )}
             {setting.hasSubSetting && setting.configKey === 'pitStatus' && settings.config.pitStatus.enabled && (
               <div className="flex items-center justify-between pl-8 mt-2">
-                <span className="text-sm text-slate-300">Show Pit Time</span>
+                <span className="text-sm text-slate-300">Pit Time</span>
                 <ToggleSwitch
                   enabled={settings.config.pitStatus.showPitTime ?? false}
                   onToggle={(enabled) => {
-                    const cv = settings.config[setting.configKey] as { enabled: boolean; showPitTime?: boolean; [key: string]: unknown };
+                    const cv = settings.config[setting.configKey] as { enabled: boolean; showPitTime?: boolean; pitLapDisplayMode?: 'lastPitLap' | 'lapsSinceLastPit';[key: string]: unknown };
                     handleConfigChange({
                       [setting.configKey]: { ...cv, showPitTime: enabled }
+                    });
+                  }}
+                />
+                <span className="textP-sm text-slate-300">Pitlap display mode</span>
+                <select
+                  value={settings.config.pitStatus.pitLapDisplayMode}
+                  onChange={(e) => {
+                    const cv = settings.config[setting.configKey] as { enabled: boolean; showPitTime?: boolean; pitLapDisplayMode?: 'lastPitLap' | 'lapsSinceLastPit';[key: string]: unknown };
+                    handleConfigChange({
+                      [setting.configKey]: { ...cv, pitLapDisplayMode: e.target.value as 'lastPitLap' | 'lapsSinceLastPit' }
+                    })
+                  }}
+                  className="bg-slate-700 text-white rounded-md px-2 py-1"
+                >
+                  <option value="lastPitLap">Last pit lap</option>
+                  <option value="lapsSinceLastPit">Laps since last pit</option>
+                </select>
+              </div>
+            )}
+            {setting.hasSubSetting && setting.configKey === 'driverName' && settings.config.driverName.enabled && (
+              <div className="flex items-center justify-between pl-8 mt-2">
+                <span className="text-sm text-slate-300">Status Badges</span>
+                <ToggleSwitch
+                  enabled={settings.config.driverName.showStatusBadges}
+                  onToggle={(enabled) => {
+                    const cv = settings.config[setting.configKey] as { enabled: boolean; showStatusBadges: boolean;[key: string]: unknown };
+                    handleConfigChange({
+                      [setting.configKey]: { ...cv, showStatusBadges: enabled }
+                    });
+                  }}
+                />
+              </div>
+            )}
+            {setting.hasSubSetting && setting.configKey === 'carManufacturer' && settings.config.carManufacturer.enabled && (
+              <div className="flex items-center justify-between pl-8 mt-2">
+                <span className="text-sm text-slate-300">Hide If Single Make</span>
+                <ToggleSwitch
+                  enabled={settings.config.carManufacturer.hideIfSingleMake ?? false}
+                  onToggle={(enabled) => {
+                    const cv = settings.config[setting.configKey] as { enabled: boolean; hideIfSingleMake?: boolean;[key: string]: unknown };
+                    handleConfigChange({
+                      [setting.configKey]: { ...cv, hideIfSingleMake: enabled }
                     });
                   }}
                 />
@@ -365,7 +434,7 @@ const BarItemsList = ({ items, onReorder, barType, settings, handleConfigChange 
                       }
                     });
                   }}
-                  className="w-20 bg-slate-700 text-white rounded-md px-2 py-1"
+                  className="bg-slate-700 text-white rounded-md px-2 py-1"
                 >
                   <option value="Metric">°C</option>
                   <option value="Imperial">°F</option>
@@ -388,7 +457,7 @@ const BarItemsList = ({ items, onReorder, barType, settings, handleConfigChange 
                       }
                     });
                   }}
-                  className="w-26 bg-slate-700 text-white rounded-md px-2 py-1"
+                  className="bg-slate-700 text-white rounded-md px-2 py-1"
                 >
                   <option value="Remaining">Remaining</option>
                   <option value="Elapsed">Elapsed</option>
@@ -412,19 +481,6 @@ export const RelativeSettings = () => {
     config: migrateConfig(savedSettings?.config),
   });
   const [itemsOrder, setItemsOrder] = useState(settings.config.displayOrder);
-
-  const updateStoreConfig = useRelativeGapStore((state) => state.updateConfig);
-
-  useEffect(() => {
-    const config = settings.config.enhancedGapCalculation;
-    updateStoreConfig({
-      enabled: config.enabled,
-      interpolationMethod: config.interpolationMethod,
-      sampleInterval: config.sampleInterval,
-      maxLapHistory: config.maxLapHistory,
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   if (!currentDashboard) {
     return <>Loading...</>;
@@ -461,7 +517,7 @@ export const RelativeSettings = () => {
                   Reset to Default Order
                 </button>
               </div>
-              <div className="px-4">
+              <div className="pl-4">
                 <DisplaySettingsList
                   itemsOrder={itemsOrder}
                   onReorder={handleDisplayOrderChange}
@@ -476,7 +532,7 @@ export const RelativeSettings = () => {
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-medium text-slate-200">Driver Standings</h3>
               </div>
-              <div className="space-y-3 px-4">
+              <div className="space-y-3 pl-4">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-slate-300">Drivers to show around player</span>
                   <select
@@ -484,7 +540,7 @@ export const RelativeSettings = () => {
                     onChange={(e) =>
                       handleConfigChange({ buffer: parseInt(e.target.value) })
                     }
-                    className="w-20 bg-slate-700 text-white rounded-md px-2 py-1"
+                    className="bg-slate-700 text-white rounded-md px-2 py-1"
                   >
                     {Array.from({ length: 10 }, (_, i) => (
                       <option key={i} value={i + 1}>
@@ -553,7 +609,7 @@ export const RelativeSettings = () => {
                   Reset to Default Order
                 </button>
               </div>
-              <div className="space-y-3 px-4">
+              <div className="space-y-3 pl-4">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-slate-300">Show Header Bar</span>
                   <ToggleSwitch
@@ -605,7 +661,7 @@ export const RelativeSettings = () => {
                   Reset to Default Order
                 </button>
               </div>
-              <div className="space-y-3 px-4">
+              <div className="space-y-3 pl-4">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-slate-300">Show Footer Bar</span>
                   <ToggleSwitch
@@ -658,7 +714,7 @@ export const RelativeSettings = () => {
                           background: { opacity: parseInt(e.target.value) },
                         })
                       }
-                      className="w-20 h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer"
+                      className="h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer"
                     />
                     <span className="text-xs text-slate-400 w-8">
                       {settings.config.background.opacity}%
@@ -668,118 +724,36 @@ export const RelativeSettings = () => {
               </div>
             </div>
 
-            {/* Enhanced Gap Calculation Section */}
+            {/* Relative Precision Settings */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium text-slate-200">Enhanced Gap Calculation</h3>
+                <h3 className="text-lg font-medium text-slate-200">Relative Time</h3>
               </div>
-              <div className="space-y-3 px-4">
-                <div>
-                  <p className="text-xs text-slate-400 mb-3">
-                    Uses position/time records for accurate multi-class gaps instead of simple distance-based estimates
-                  </p>
-                </div>
-
+              <div className="space-y-3 pl-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <span className="text-sm text-slate-300">Enable Enhanced Calculation</span>
-                    <p className="text-xs text-slate-400">Uses lap data interpolation for accuracy</p>
+                    <span className="text-sm text-slate-300">Decimal places</span>
+                    <p className="text-xs text-slate-400">Number of decimal places to display</p>
                   </div>
-                  <ToggleSwitch
-                    enabled={settings.config.enhancedGapCalculation.enabled}
-                    onToggle={(enabled) => {
-                      const newConfig = {
-                        ...settings.config.enhancedGapCalculation,
-                        enabled,
-                      };
+                  <select
+                    value={settings.config.delta.precision}
+                    onChange={(e) => {
                       handleConfigChange({
-                        enhancedGapCalculation: newConfig,
+                        delta: {
+                          ...settings.config.delta,
+                          precision: parseInt(e.target.value),
+                        },
                       });
-                      updateStoreConfig(newConfig);
                     }}
-                  />
+                    className="bg-slate-700 text-slate-200 px-3 py-1 rounded border border-slate-600 focus:border-blue-500 focus:outline-none"
+                  >
+                    {[0, 1, 2, 3].map((num) => (
+                      <option key={num} value={num}>
+                        {num}
+                      </option>
+                    ))}
+                  </select>
                 </div>
-
-                {settings.config.enhancedGapCalculation.enabled && (
-                  <>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <span className="text-sm text-slate-300">Interpolation Method</span>
-                        <p className="text-xs text-slate-400">Linear is more stable, cubic is smoother</p>
-                      </div>
-                      <select
-                        value={settings.config.enhancedGapCalculation.interpolationMethod}
-                        onChange={(e) => {
-                          const newConfig = {
-                            ...settings.config.enhancedGapCalculation,
-                            interpolationMethod: e.target.value as 'linear' | 'cubic',
-                          };
-                          handleConfigChange({
-                            enhancedGapCalculation: newConfig,
-                          });
-                          updateStoreConfig(newConfig);
-                        }}
-                        className="bg-slate-700 text-slate-200 px-3 py-1 rounded border border-slate-600 focus:border-blue-500 focus:outline-none"
-                      >
-                        <option value="linear">Linear</option>
-                        <option value="cubic">Cubic Spline</option>
-                      </select>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <span className="text-sm text-slate-300">Max Lap History</span>
-                        <p className="text-xs text-slate-400">Number of recent laps to keep for each car</p>
-                      </div>
-                      <select
-                        value={settings.config.enhancedGapCalculation.maxLapHistory}
-                        onChange={(e) => {
-                          const newConfig = {
-                            ...settings.config.enhancedGapCalculation,
-                            maxLapHistory: parseInt(e.target.value),
-                          };
-                          handleConfigChange({
-                            enhancedGapCalculation: newConfig,
-                          });
-                          updateStoreConfig(newConfig);
-                        }}
-                        className="bg-slate-700 text-slate-200 px-3 py-1 rounded border border-slate-600 focus:border-blue-500 focus:outline-none"
-                      >
-                        {[3, 5, 7, 10].map((num) => (
-                          <option key={num} value={num}>
-                            {num} laps
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <span className="text-sm text-slate-300">Relative precision value</span>
-                        <p className="text-xs text-slate-400">Number of decimal places to display</p>
-                      </div>
-                      <select
-                        value={settings.config.delta.precision}
-                        onChange={(e) => {
-                          const newConfig = {
-                            ...settings.config.delta,
-                            precision: parseInt(e.target.value),
-                          };
-                          handleConfigChange({
-                            delta: newConfig,
-                          });
-                          updateStoreConfig(newConfig);
-                        }}
-                        className="bg-slate-700 text-slate-200 px-3 py-1 rounded border border-slate-600 focus:border-blue-500 focus:outline-none"
-                      >
-                        {[0, 1, 2, 3].map((num) => (
-                          <option key={num} value={num}>
-                            {num}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </>
-                )}
               </div>
             </div>
 
@@ -800,7 +774,7 @@ export const RelativeSettings = () => {
             </div>
 
             {/* Use Live Position Standings */}
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-4">
               <div>
                 <h4 className="text-md font-medium text-slate-300">Use Live Position Standings</h4>
                 <p className="text-sm text-slate-400">
@@ -813,6 +787,19 @@ export const RelativeSettings = () => {
                   handleConfigChange({ useLivePosition: enabled })
                 }
               />
+            </div>
+
+            {/* Session Visibility Settings */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-medium text-slate-200">Session Visibility</h3>
+              </div>
+              <div className="space-y-3 pl-4">
+                <SessionVisibility
+                  sessionVisibility={settings.config.sessionVisibility}
+                  handleConfigChange={handleConfigChange}
+                />
+              </div>
             </div>
           </div>
         );

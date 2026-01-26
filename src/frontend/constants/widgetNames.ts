@@ -1,16 +1,21 @@
+import type { WidgetId } from '../WidgetIndex';
+
 /**
  * Mapping of widget IDs to their display names
  * Used for showing friendly names in Edit Mode and other UI elements
  */
-export const WIDGET_NAMES: Record<string, string> = {
+export const WIDGET_NAMES: Record<WidgetId, string> = {
   standings: 'Standings',
   input: 'Input Traces',
   relative: 'Relative',
   map: 'Track Map',
+  flatmap: 'Flat Track Map',
   weather: 'Weather',
   fastercarsfrombehind: 'Faster Cars From Behind',
   fuel: 'Fuel Calculator',
   blindspotmonitor: 'Blind Spot Monitor',
+  garagecover: 'Garage Cover',
+  rejoin: 'Rejoin Indicator',
 };
 
 /**

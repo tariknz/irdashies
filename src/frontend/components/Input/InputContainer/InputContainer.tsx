@@ -41,7 +41,7 @@ export const InputContainer = ({
           <div className="flex flex-4">
             <InputTrace
               key="trace"
-              input={{ brake, throttle, brakeAbsActive, steer }}
+              input={{ brake, throttle, clutch, brakeAbsActive, steer }}
               settings={settings?.trace}
             />
           </div>
@@ -124,7 +124,7 @@ export const InputContainer = ({
   ]);
 
   return (
-    <div 
+    <div
       className="w-full h-full inline-flex gap-1 p-2 flex-row bg-slate-800/(--bg-opacity)"
       style={{
         ['--bg-opacity' as string]: `${settings?.background?.opacity ?? 80}%`,

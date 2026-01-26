@@ -1,40 +1,51 @@
 import { useState } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
+import { TrackMapWidgetSettings, SessionVisibilitySettings } from '../types';
 import { useDashboard } from '@irdashies/context';
 import { ToggleSwitch } from '../components/ToggleSwitch';
+import { SessionVisibility } from '../components/SessionVisibility';
 
 const SETTING_ID = 'map';
 
-interface TrackMapSettings {
-  enabled: boolean;
-  config: {
-    enableTurnNames: boolean;
-    showCarNumbers: boolean;
-    invertTrackColors: boolean;
-    driverCircleSize: number;
-    playerCircleSize: number;
-    trackLineWidth: number;
-    trackOutlineWidth: number;
-    useHighlightColor: boolean;
-  };
-}
-
-const defaultConfig: TrackMapSettings['config'] = {
+const defaultConfig: TrackMapWidgetSettings['config'] = {
   enableTurnNames: false,
   showCarNumbers: true,
+  displayMode: 'carNumber',
   invertTrackColors: false,
   driverCircleSize: 40,
   playerCircleSize: 40,
   trackLineWidth: 20,
   trackOutlineWidth: 40,
-  useHighlightColor: false
+  useHighlightColor: false,
+  showOnlyWhenOnTrack: false,
+  sessionVisibility: { race: true, loneQualify: true, openQualify: true, practice: true, offlineTesting: true }
+};
+
+const migrateConfig = (savedConfig: unknown): TrackMapWidgetSettings['config'] => {
+  if (!savedConfig || typeof savedConfig !== 'object') return defaultConfig;
+
+  const config = savedConfig as Record<string, unknown>;
+  return {
+    enableTurnNames: (config.enableTurnNames as boolean) ?? defaultConfig.enableTurnNames,
+    showCarNumbers: (config.showCarNumbers as boolean) ?? defaultConfig.showCarNumbers,
+    displayMode: (config.displayMode as 'carNumber' | 'sessionPosition') ?? defaultConfig.displayMode,
+    invertTrackColors: (config.invertTrackColors as boolean) ?? defaultConfig.invertTrackColors,
+    driverCircleSize: (config.driverCircleSize as number) ?? defaultConfig.driverCircleSize,
+    playerCircleSize: (config.playerCircleSize as number) ?? defaultConfig.playerCircleSize,
+    trackLineWidth: (config.trackLineWidth as number) ?? defaultConfig.trackLineWidth,
+    trackOutlineWidth: (config.trackOutlineWidth as number) ?? defaultConfig.trackOutlineWidth,
+    useHighlightColor: (config.useHighlightColor as boolean) ?? defaultConfig.useHighlightColor,
+    showOnlyWhenOnTrack: (config.showOnlyWhenOnTrack as boolean) ?? defaultConfig.showOnlyWhenOnTrack,
+    sessionVisibility: (config.sessionVisibility as SessionVisibilitySettings) ?? defaultConfig.sessionVisibility,
+  };
 };
 
 export const TrackMapSettings = () => {
   const { currentDashboard } = useDashboard();
-  const [settings, setSettings] = useState<TrackMapSettings>({
+  const savedSettings = currentDashboard?.widgets.find(w => w.id === SETTING_ID) as TrackMapWidgetSettings | undefined;
+  const [settings, setSettings] = useState<TrackMapWidgetSettings>({
     enabled: currentDashboard?.widgets.find(w => w.id === SETTING_ID)?.enabled ?? false,
-    config: currentDashboard?.widgets.find(w => w.id === SETTING_ID)?.config as TrackMapSettings['config'] ?? defaultConfig,
+    config: migrateConfig(savedSettings?.config)
   });
 
   if (!currentDashboard) {
@@ -79,6 +90,30 @@ export const TrackMapSettings = () => {
                 showCarNumbers: enabled
               })}
             />
+          </div>
+
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-slate-300">Display Mode</span>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => handleConfigChange({ displayMode: 'carNumber' })}
+                className={`px-3 py-1 rounded text-sm transition-colors ${settings.config.displayMode === 'carNumber'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
+                  }`}
+              >
+                Car Number
+              </button>
+              <button
+                onClick={() => handleConfigChange({ displayMode: 'sessionPosition' })}
+                className={`px-3 py-1 rounded text-sm transition-colors ${settings.config.displayMode === 'sessionPosition'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
+                  }`}
+              >
+                Session Position
+              </button>
+            </div>
           </div>
 
           <div className="space-y-2">
@@ -189,6 +224,34 @@ export const TrackMapSettings = () => {
             <p className="text-slate-400 text-sm">
               Width of the track outline
             </p>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div>
+              <span className="text-sm text-slate-300">Show Only When On Track</span>
+              <p className="text-xs text-slate-400">
+                Hide the track map when not actively driving on track
+              </p>
+            </div>
+            <ToggleSwitch
+              enabled={settings.config.showOnlyWhenOnTrack ?? false}
+              onToggle={(enabled) => handleConfigChange({
+                showOnlyWhenOnTrack: enabled
+              })}
+            />
+          </div>
+
+          {/* Session Visibility Settings */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-medium text-slate-200">Session Visibility</h3>
+            </div>
+            <div className="space-y-3 pl-4">
+              <SessionVisibility
+                sessionVisibility={settings.config.sessionVisibility}
+                handleConfigChange={handleConfigChange}
+              />
+            </div>
           </div>
         </div>
       )}

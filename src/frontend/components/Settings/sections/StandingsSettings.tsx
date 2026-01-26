@@ -1,13 +1,15 @@
 import { useState } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
-import { StandingsWidgetSettings } from '../types';
+import { SessionVisibilitySettings, StandingsWidgetSettings } from '../types';
 import { useDashboard } from '@irdashies/context';
 import { ToggleSwitch } from '../components/ToggleSwitch';
 import { useSortableList } from '../../SortableList';
 import { DotsSixVerticalIcon } from '@phosphor-icons/react';
 import { BadgeFormatPreview } from '../components/BadgeFormatPreview';
+import { DriverNamePreview } from '../components/DriverNamePreview';
 import { VALID_SESSION_BAR_ITEM_KEYS, SESSION_BAR_ITEM_LABELS, DEFAULT_SESSION_BAR_DISPLAY_ORDER } from '../sessionBarConstants';
 import { mergeDisplayOrder } from '../../../utils/displayOrder';
+import { SessionVisibility } from '../components/SessionVisibility';
 
 const SETTING_ID = 'standings';
 
@@ -22,9 +24,10 @@ const sortableSettings: SortableSetting[] = [
   { id: 'position', label: 'Position', configKey: 'position' },
   { id: 'carNumber', label: 'Car Number', configKey: 'carNumber' },
   { id: 'countryFlags', label: 'Country Flags', configKey: 'countryFlags' },
-  { id: 'driverName', label: 'Driver Name', configKey: 'driverName' },
+  { id: 'driverName', label: 'Driver Name', configKey: 'driverName', hasSubSetting: true },
+  { id: 'teamName', label: 'Team Name', configKey: 'teamName' },
   { id: 'pitStatus', label: 'Pit Status', configKey: 'pitStatus', hasSubSetting: true },
-  { id: 'carManufacturer', label: 'Car Manufacturer', configKey: 'carManufacturer' },
+  { id: 'carManufacturer', label: 'Car Manufacturer', configKey: 'carManufacturer', hasSubSetting: true },
   { id: 'badge', label: 'Driver Badge', configKey: 'badge' },
   { id: 'iratingChange', label: 'iRating Change', configKey: 'iratingChange' },
   { id: 'gap', label: 'Gap', configKey: 'gap' },
@@ -53,12 +56,13 @@ const defaultConfig: StandingsWidgetSettings['config'] = {
     numTopDrivers: 3,
   },
   compound: { enabled: true },
-  carManufacturer: { enabled: true },
+  carManufacturer: { enabled: true, hideIfSingleMake: false },
   titleBar: { enabled: true, progressBar: { enabled: true } },
   headerBar: {
     enabled: true,
     sessionName: { enabled: true },
     sessionTime: { enabled: true, mode: 'Remaining' },
+    sessionLaps: { enabled: true },
     incidentCount: { enabled: true },
     brakeBias: { enabled: false },
     localTime: { enabled: false },
@@ -73,6 +77,7 @@ const defaultConfig: StandingsWidgetSettings['config'] = {
     enabled: true,
     sessionName: { enabled: false },
     sessionTime: { enabled: false, mode: 'Remaining' },
+    sessionLaps: { enabled: false },
     incidentCount: { enabled: false },
     brakeBias: { enabled: false },
     localTime: { enabled: true },
@@ -87,12 +92,12 @@ const defaultConfig: StandingsWidgetSettings['config'] = {
   useLivePosition: false,
   lapTimeDeltas: { enabled: false, numLaps: 3 },
   position: { enabled: true },
-  driverName: { enabled: true },
-  pitStatus: { enabled: true, showPitTime: false },
-  displayOrder: sortableSettings.map(s => s.id)
+  driverName: { enabled: true, showStatusBadges: true, nameFormat: 'name-surname' },
+  teamName: { enabled: false },
+  pitStatus: { enabled: true, showPitTime: false, pitLapDisplayMode: 'lapsSinceLastPit' },
+  displayOrder: sortableSettings.map(s => s.id),
+  sessionVisibility: { race: true, loneQualify: true, openQualify: true, practice: true, offlineTesting: true }
 };
-
-
 
 const migrateConfig = (
   savedConfig: unknown
@@ -108,7 +113,7 @@ const migrateConfig = (
     },
     badge: {
       enabled: (config.badge as { enabled?: boolean })?.enabled ?? true,
-      badgeFormat: ((config.badge as { badgeFormat?: string })?.badgeFormat as 'license-color-rating-bw' | 'license-color-rating-bw-no-license' | 'rating-color-no-license' | 'license-bw-rating-bw' | 'rating-only-bw-rating-bw' | 'license-bw-rating-bw-no-license' | 'rating-bw-no-license') ?? 'license-color-rating-bw'
+      badgeFormat: ((config.badge as { badgeFormat?: string })?.badgeFormat as 'license-color-fullrating-bw' | 'license-color-rating-bw' | 'license-color-rating-bw-no-license' | 'rating-color-no-license' | 'license-bw-rating-bw' | 'rating-only-bw-rating-bw' | 'license-bw-rating-bw-no-license' | 'rating-bw-no-license') ?? 'license-color-rating-bw'
     },
     delta: { enabled: (config.delta as { enabled?: boolean })?.enabled ?? true },
     gap: { enabled: (config.gap as { enabled?: boolean })?.enabled ?? true },
@@ -151,6 +156,7 @@ const migrateConfig = (
     },
     carManufacturer: {
       enabled: (config.carManufacturer as { enabled?: boolean })?.enabled ?? true,
+      hideIfSingleMake: (config.carManufacturer as { hideIfSingleMake?: boolean })?.hideIfSingleMake ?? false,
     },
     lapTimeDeltas: {
       enabled: (config.lapTimeDeltas as { enabled?: boolean })?.enabled ?? false,
@@ -165,10 +171,11 @@ const migrateConfig = (
     headerBar: {
       enabled: (config.headerBar as { enabled?: boolean })?.enabled ?? true,
       sessionName: { enabled: (config.headerBar as { sessionName?: { enabled?: boolean } })?.sessionName?.enabled ?? true },
-      sessionTime: { 
+      sessionTime: {
         enabled: (config.headerBar as { sessionTime?: { enabled?: boolean } })?.sessionTime?.enabled ?? true,
         mode: ((config.headerBar as { sessionTime?: { mode?: string } })?.sessionTime?.mode as 'Remaining' | 'Elapsed') ?? 'Remaining'
       },
+      sessionLaps: { enabled: (config.headerBar as { sessionLaps?: { enabled?: boolean } })?.sessionLaps?.enabled ?? true },
       incidentCount: { enabled: (config.headerBar as { incidentCount?: { enabled?: boolean } })?.incidentCount?.enabled ?? true },
       brakeBias: { enabled: (config.headerBar as { brakeBias?: { enabled?: boolean } })?.brakeBias?.enabled ?? false },
       localTime: { enabled: (config.headerBar as { localTime?: { enabled?: boolean } })?.localTime?.enabled ?? false },
@@ -192,6 +199,7 @@ const migrateConfig = (
         enabled: (config.footerBar as { sessionTime?: { enabled?: boolean } })?.sessionTime?.enabled ?? false,
         mode: ((config.footerBar as { sessionTime?: { mode?: string } })?.sessionTime?.mode as 'Remaining' | 'Elapsed') ?? 'Remaining'
       },
+      sessionLaps: { enabled: (config.footerBar as { sessionLaps?: { enabled?: boolean } })?.sessionLaps?.enabled ?? true },
       incidentCount: { enabled: (config.footerBar as { incidentCount?: { enabled?: boolean } })?.incidentCount?.enabled ?? false },
       brakeBias: { enabled: (config.footerBar as { brakeBias?: { enabled?: boolean } })?.brakeBias?.enabled ?? false },
       localTime: { enabled: (config.footerBar as { localTime?: { enabled?: boolean } })?.localTime?.enabled ?? true },
@@ -210,13 +218,22 @@ const migrateConfig = (
     },
     showOnlyWhenOnTrack: (config.showOnlyWhenOnTrack as boolean) ?? false,
     useLivePosition: (config.useLivePosition as boolean) ?? false,
+    sessionVisibility: (config.sessionVisibility as SessionVisibilitySettings) ?? defaultConfig.sessionVisibility,
     position: { enabled: (config.position as { enabled?: boolean })?.enabled ?? true },
-    driverName: { enabled: (config.driverName as { enabled?: boolean })?.enabled ?? true },
+    driverName: {
+      enabled: (config.driverName as { enabled?: boolean })?.enabled ?? true,
+      showStatusBadges:
+        (config.driverName as { showStatusBadges?: boolean })?.showStatusBadges ??
+        true,
+      nameFormat: ((config.driverName as { nameFormat?: 'name-middlename-surname' | 'name-m.-surname' | 'name-surname' | 'n.-surname' | 'surname-n.' | 'surname' })?.nameFormat) ?? 'name-middlename-surname',
+    },
+    teamName: { enabled: (config.teamName as { enabled?: boolean })?.enabled ?? false },
     pitStatus: {
       enabled: (config.pitStatus as { enabled?: boolean })?.enabled ?? true,
       showPitTime: (config.pitStatus as { showPitTime?: boolean })?.showPitTime ?? false,
+      pitLapDisplayMode: (config.pitStatus as { pitLapDisplayMode?: 'lastPitLap' | 'lapsSinceLastPit' })?.pitLapDisplayMode ?? 'lapsSinceLastPit',
     },
-      displayOrder: mergeDisplayOrder(sortableSettings.map(s => s.id), config.displayOrder as string[]),
+    displayOrder: mergeDisplayOrder(sortableSettings.map(s => s.id), config.displayOrder as string[]),
   };
 };
 
@@ -263,7 +280,7 @@ const DisplaySettingsList = ({ itemsOrder, onReorder, settings, handleConfigChan
               <ToggleSwitch
                 enabled={isEnabled}
                 onToggle={(enabled) => {
-                  const cv = settings.config[setting.configKey] as { enabled: boolean; [key: string]: unknown };
+                  const cv = settings.config[setting.configKey] as { enabled: boolean;[key: string]: unknown };
                   handleConfigChange({
                     [setting.configKey]: { ...cv, enabled }
                   });
@@ -283,7 +300,7 @@ const DisplaySettingsList = ({ itemsOrder, onReorder, settings, handleConfigChan
                       },
                     })
                   }
-                  className="w-20 bg-slate-700 text-white rounded-md px-2 py-1"
+                  className="bg-slate-700 text-white rounded-md px-2 py-1"
                 >
                   <option value={1}>1</option>
                   <option value={2}>2</option>
@@ -295,13 +312,55 @@ const DisplaySettingsList = ({ itemsOrder, onReorder, settings, handleConfigChan
             )}
             {setting.hasSubSetting && setting.configKey === 'pitStatus' && settings.config.pitStatus.enabled && (
               <div className="flex items-center justify-between pl-8 mt-2">
-                <span className="text-sm text-slate-300">Show Pit Time</span>
+                <span className="text-sm text-slate-300">Pit Time</span>
                 <ToggleSwitch
                   enabled={settings.config.pitStatus.showPitTime ?? false}
                   onToggle={(enabled) => {
-                    const cv = settings.config[setting.configKey] as { enabled: boolean; showPitTime?: boolean; [key: string]: unknown };
+                    const cv = settings.config[setting.configKey] as { enabled: boolean; showPitTime?: boolean; pitLapDisplayMode?: 'lastPitLap' | 'lapsSinceLastPit';[key: string]: unknown };
                     handleConfigChange({
                       [setting.configKey]: { ...cv, showPitTime: enabled }
+                    });
+                  }}
+                />
+                <span className="textP-sm text-slate-300">Pitlap display mode</span>
+                <select
+                  value={settings.config.pitStatus.pitLapDisplayMode}
+                  onChange={(e) => {
+                    const cv = settings.config[setting.configKey] as { enabled: boolean; showPitTime?: boolean; pitLapDisplayMode?: 'lastPitLap' | 'lapsSinceLastPit';[key: string]: unknown };
+                    handleConfigChange({
+                      [setting.configKey]: { ...cv, pitLapDisplayMode: e.target.value as 'lastPitLap' | 'lapsSinceLastPit' }
+                    })
+                  }}
+                  className="bg-slate-700 text-white rounded-md px-2 py-1"
+                >
+                  <option value="lastPitLap">Last pit lap</option>
+                  <option value="lapsSinceLastPit">Laps since last pit</option>
+                </select>
+              </div>
+            )}
+            {setting.hasSubSetting && setting.configKey === 'driverName' && settings.config.driverName.enabled && (
+              <div className="flex items-center justify-between pl-8 mt-2">
+                <span className="text-sm text-slate-300">Status Badges</span>
+                <ToggleSwitch
+                  enabled={settings.config.driverName.showStatusBadges}
+                  onToggle={(enabled) => {
+                    const cv = settings.config[setting.configKey] as { enabled: boolean; showStatusBadges: boolean;[key: string]: unknown };
+                    handleConfigChange({
+                      [setting.configKey]: { ...cv, showStatusBadges: enabled }
+                    });
+                  }}
+                />
+              </div>
+            )}
+            {setting.hasSubSetting && setting.configKey === 'carManufacturer' && settings.config.carManufacturer.enabled && (
+              <div className="flex items-center justify-between pl-8 mt-2">
+                <span className="text-sm text-slate-300">Hide If Single Make</span>
+                <ToggleSwitch
+                  enabled={settings.config.carManufacturer.hideIfSingleMake ?? false}
+                  onToggle={(enabled) => {
+                    const cv = settings.config[setting.configKey] as { enabled: boolean; hideIfSingleMake?: boolean;[key: string]: unknown };
+                    handleConfigChange({
+                      [setting.configKey]: { ...cv, hideIfSingleMake: enabled }
                     });
                   }}
                 />
@@ -310,15 +369,34 @@ const DisplaySettingsList = ({ itemsOrder, onReorder, settings, handleConfigChan
             {setting.configKey === 'badge' && (configValue as { enabled: boolean }).enabled && (
               <div className="mt-3">
                 <div className="flex flex-wrap gap-3 justify-end">
-                  {(['license-color-rating-bw', 'rating-only-color-rating-bw', 'license-color-rating-bw-no-license', 'rating-color-no-license', 'license-bw-rating-bw', 'rating-only-bw-rating-bw', 'license-bw-rating-bw-no-license', 'rating-bw-no-license'] as const).map((format) => (
+                  {(['license-color-fullrating-bw', 'license-color-rating-bw', 'rating-only-color-rating-bw', 'license-color-rating-bw-no-license', 'rating-color-no-license', 'license-bw-rating-bw', 'rating-only-bw-rating-bw', 'license-bw-rating-bw-no-license', 'rating-bw-no-license'] as const).map((format) => (
                     <BadgeFormatPreview
                       key={format}
                       format={format}
                       selected={(configValue as { enabled: boolean; badgeFormat: string }).badgeFormat === format}
                       onClick={() => {
-                        const cv = settings.config[setting.configKey] as { enabled: boolean; badgeFormat: string; [key: string]: unknown };
+                        const cv = settings.config[setting.configKey] as { enabled: boolean; badgeFormat: string;[key: string]: unknown };
                         handleConfigChange({
                           [setting.configKey]: { ...cv, badgeFormat: format },
+                        });
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+            {setting.configKey === 'driverName' && (configValue as { enabled: boolean }).enabled && (
+              <div className="mt-3">
+                <div className="flex flex-wrap gap-3 justify-end">
+                  {(['name-middlename-surname', 'name-m.-surname', 'name-surname', 'n.-surname', 'surname-n.', 'surname'] as const).map((format) => (
+                    <DriverNamePreview
+                      key={format}
+                      format={format}
+                      selected={(configValue as { enabled: boolean; nameFormat: string }).nameFormat === format}
+                      onClick={() => {
+                        const cv = settings.config[setting.configKey] as { enabled: boolean; nameFormat: string;[key: string]: unknown };
+                        handleConfigChange({
+                          [setting.configKey]: { ...cv, nameFormat: format },
                         });
                       }}
                     />
@@ -332,7 +410,7 @@ const DisplaySettingsList = ({ itemsOrder, onReorder, settings, handleConfigChan
                 <select
                   value={(configValue as { enabled: boolean; timeFormat: string }).timeFormat}
                   onChange={(e) => {
-                    const cv = settings.config[setting.configKey] as { enabled: boolean; timeFormat: string; [key: string]: unknown };
+                    const cv = settings.config[setting.configKey] as { enabled: boolean; timeFormat: string;[key: string]: unknown };
                     handleConfigChange({
                       [setting.configKey]: {
                         ...cv,
@@ -340,7 +418,7 @@ const DisplaySettingsList = ({ itemsOrder, onReorder, settings, handleConfigChan
                       },
                     });
                   }}
-                  className="w-26 bg-slate-700 text-white rounded-md px-2 py-1"
+                  className="bg-slate-700 text-white rounded-md px-2 py-1"
                 >
                   <option value="full">1:42.123</option>
                   <option value="mixed">1:42.1</option>
@@ -429,7 +507,7 @@ const BarItemsList = ({ items, onReorder, barType, settings, handleConfigChange 
                       }
                     });
                   }}
-                  className="w-20 bg-slate-700 text-white rounded-md px-2 py-1"
+                  className="bg-slate-700 text-white rounded-md px-2 py-1"
                 >
                   <option value="Metric">°C</option>
                   <option value="Imperial">°F</option>
@@ -452,7 +530,7 @@ const BarItemsList = ({ items, onReorder, barType, settings, handleConfigChange 
                       }
                     });
                   }}
-                  className="w-26 bg-slate-700 text-white rounded-md px-2 py-1"
+                  className="bg-slate-700 text-white rounded-md px-2 py-1"
                 >
                   <option value="Remaining">Remaining</option>
                   <option value="Elapsed">Elapsed</option>
@@ -510,7 +588,7 @@ export const StandingsSettings = () => {
                   Reset to Default Order
                 </button>
               </div>
-              <div className="px-4">
+              <div className="pl-4">
                 <DisplaySettingsList
                   itemsOrder={itemsOrder}
                   onReorder={handleDisplayOrderChange}
@@ -525,7 +603,7 @@ export const StandingsSettings = () => {
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-medium text-slate-200">Driver Standings</h3>
               </div>
-              <div className="space-y-3 px-4">
+              <div className="space-y-3 pl-4">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-slate-300">Drivers to show around player</span>
                   <input
@@ -540,7 +618,7 @@ export const StandingsSettings = () => {
                         },
                       })
                     }
-                    className="w-20 bg-slate-700 text-white rounded-md px-2 py-1"
+                    className="bg-slate-700 text-white rounded-md px-2 py-1"
                   />
                 </div>
                 <div className="flex items-center justify-between">
@@ -557,7 +635,7 @@ export const StandingsSettings = () => {
                         },
                       })
                     }
-                    className="w-20 bg-slate-700 text-white rounded-md px-2 py-1"
+                    className="bg-slate-700 text-white rounded-md px-2 py-1"
                   />
                 </div>
                 <div className="flex items-center justify-between">
@@ -574,7 +652,7 @@ export const StandingsSettings = () => {
                         },
                       })
                     }
-                    className="w-20 bg-slate-700 text-white rounded-md px-2 py-1"
+                    className="bg-slate-700 text-white rounded-md px-2 py-1"
                   />
                 </div>
                 <div className="flex items-center justify-between">
@@ -591,7 +669,7 @@ export const StandingsSettings = () => {
                         },
                       })
                     }
-                    className="w-20 bg-slate-700 text-white rounded-md px-2 py-1"
+                    className="bg-slate-700 text-white rounded-md px-2 py-1"
                   />
                 </div>
               </div>
@@ -654,7 +732,7 @@ export const StandingsSettings = () => {
                   Reset to Default Order
                 </button>
               </div>
-              <div className="space-y-3 px-4">
+              <div className="space-y-3 pl-4">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-slate-300">Show Header Bar</span>
                   <ToggleSwitch
@@ -706,7 +784,7 @@ export const StandingsSettings = () => {
                   Reset to Default Order
                 </button>
               </div>
-              <div className="space-y-3 px-4">
+              <div className="space-y-3 pl-4">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-slate-300">Show Footer Bar</span>
                   <ToggleSwitch
@@ -759,7 +837,7 @@ export const StandingsSettings = () => {
                           background: { opacity: parseInt(e.target.value) },
                         })
                       }
-                      className="w-20 h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer"
+                      className="h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer"
                     />
                     <span className="text-xs text-slate-400 w-8">
                       {settings.config.background.opacity}%
@@ -786,7 +864,7 @@ export const StandingsSettings = () => {
             </div>
 
             {/* Use Live Position Standings */}
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-4">
               <div>
                 <h4 className="text-md font-medium text-slate-300">Use Live Position Standings</h4>
                 <p className="text-sm text-slate-400">
@@ -799,6 +877,19 @@ export const StandingsSettings = () => {
                   handleConfigChange({ useLivePosition: enabled })
                 }
               />
+            </div>
+
+            {/* Session Visibility Settings */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-medium text-slate-200">Session Visibility</h3>
+              </div>
+              <div className="space-y-3 pl-4">
+                <SessionVisibility
+                  sessionVisibility={settings.config.sessionVisibility}
+                  handleConfigChange={handleConfigChange}
+                />
+              </div>
             </div>
           </div>
         );

@@ -74,16 +74,21 @@ export interface FuelCalculation {
   lapsPerStint?: number;
   /** Target scenarios for making current fuel last different lap counts */
   targetScenarios?: {
-    laps: number;              // Target lap count (e.g., 19, 20, 21)
-    fuelPerLap: number;        // Required L/lap to achieve this (e.g., 2.63)
-    isCurrentTarget: boolean;  // True for the middle/current value
+    laps: number; // Target lap count (e.g., 19, 20, 21)
+    fuelPerLap: number; // Required L/lap to achieve this (e.g., 2.63)
+    isCurrentTarget: boolean; // True for the middle/current value
   }[];
+  /** Earliest lap to pit while still being able to finish (for safety car strategy) */
+  earliestPitLap?: number;
+  /** Fuel tank capacity in liters (respecting session limits) */
+  fuelTankCapacity?: number;
 }
 
 /**
  * Fuel calculator widget settings
  */
 export interface FuelCalculatorSettings {
+  showOnlyWhenOnTrack: boolean;
   /** Fuel units to display */
   fuelUnits: 'L' | 'gal';
   /** Layout style */
@@ -116,4 +121,6 @@ export interface FuelCalculatorSettings {
   safetyMargin: number;
   /** Background opacity (0-100) */
   background: { opacity: number };
+  /** Display mode for fuel required column: 'toFinish' shows total fuel needed, 'toAdd' shows fuel to add at stop */
+  fuelRequiredMode?: 'toFinish' | 'toAdd';
 }

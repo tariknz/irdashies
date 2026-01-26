@@ -5,6 +5,10 @@ import {
   DynamicTelemetrySelector,
   TelemetryDecoratorWithConfig,
 } from '@irdashies/storybook';
+import { DashboardProvider, SessionProvider, TelemetryProvider } from '@irdashies/context';
+import { mockDashboardBridge } from '../../../../.storybook/mockDashboardBridge';
+import { generateMockDataFromPath } from '../../../app/bridge/iracingSdk/mock-data/generateMockData';
+import type { DashboardBridge } from '@irdashies/types';
 import { useState, useMemo } from 'react';
 import { DriverInfoRow } from './components/DriverInfoRow/DriverInfoRow';
 import { SessionBar } from './components/SessionBar/SessionBar';
@@ -13,8 +17,71 @@ import { TitleBar } from './components/TitleBar/TitleBar';
 import { useDrivingState } from '@irdashies/context';
 import { useRelativeSettings, useDriverRelatives, useHighlightColor } from './hooks';
 import { usePitLapStoreUpdater } from '../../context/PitLapStore/PitLapStoreUpdater';
-import { useRelativeGapStoreUpdater } from '@irdashies/context';
 import { useWeekendInfoNumCarClasses } from '@irdashies/context';
+
+// Create a custom decorator that combines TelemetryDecoratorWithConfig with generalSettings override
+function TelemetryDecoratorWithConfigAndGeneralSettings(
+  path?: string,
+  widgetConfigOverrides?: Record<string, Record<string, unknown>>,
+  generalSettingsOverride?: Record<string, unknown>
+) {
+  const decorator = function TelemetryDecoratorWithConfigAndGeneralSettingsInner(Story: React.ComponentType) {
+    const mockBridge: DashboardBridge = {
+    ...mockDashboardBridge,
+    resetDashboard: async (resetEverything: boolean) => {
+      const baseDashboard = await mockDashboardBridge.resetDashboard(resetEverything);
+      return {
+        ...baseDashboard,
+        generalSettings: {
+          ...baseDashboard.generalSettings,
+          ...generalSettingsOverride,
+        },
+      };
+    },
+    dashboardUpdated: (callback) => {
+      mockDashboardBridge.dashboardUpdated((dashboard) => {
+        const modifiedWidgets = dashboard.widgets.map((widget) => {
+          const configOverride = widgetConfigOverrides?.[widget.id];
+          if (configOverride) {
+            return {
+              ...widget,
+              config: {
+                ...widget.config,
+                ...configOverride,
+              },
+            };
+          }
+          return widget;
+        });
+
+        callback({
+          ...dashboard,
+          widgets: modifiedWidgets,
+          generalSettings: {
+            ...dashboard.generalSettings,
+            ...generalSettingsOverride,
+          },
+        });
+      });
+      return () => {
+        // No-op cleanup function
+      };
+    },
+  };
+
+  return (
+    <>
+      <SessionProvider bridge={generateMockDataFromPath(path)} />
+      <TelemetryProvider bridge={generateMockDataFromPath(path)} />
+      <DashboardProvider bridge={mockBridge}>
+        <Story />
+      </DashboardProvider>
+    </>
+  );
+  };
+  decorator.displayName = 'TelemetryDecoratorWithConfigAndGeneralSettings';
+  return decorator;
+}
 
 // Custom component that renders relative standings without header/footer session bars
 const RelativeWithoutHeaderFooter = () => {
@@ -26,8 +93,6 @@ const RelativeWithoutHeaderFooter = () => {
   const numCarClasses = useWeekendInfoNumCarClasses();
   const isMultiClass = (numCarClasses ?? 0) > 1;
 
-  // Update relative gap store with telemetry data
-  useRelativeGapStoreUpdater();
   usePitLapStoreUpdater();
 
   // Always render 2 * buffer + 1 rows (buffer above + player + buffer below)
@@ -69,6 +134,7 @@ const RelativeWithoutHeaderFooter = () => {
           lastTime={settings?.lastTime?.enabled ? undefined : undefined}
           lastTimeState={settings?.lastTime?.enabled ? undefined : undefined}
           position={settings?.position ? undefined : undefined}
+          lap={undefined}
           onPitRoad={false}
           onTrack={true}
           radioActive={false}
@@ -116,6 +182,7 @@ const RelativeWithoutHeaderFooter = () => {
             lastTime={settings?.lastTime?.enabled ? undefined : undefined}
             lastTimeState={settings?.lastTime?.enabled ? undefined : undefined}
             position={settings?.position ? undefined : undefined}
+            lap={undefined}
             onPitRoad={false}
             onTrack={true}
             radioActive={false}
@@ -140,6 +207,7 @@ const RelativeWithoutHeaderFooter = () => {
           isPlayer={result.isPlayer}
           hasFastestTime={result.hasFastestTime}
           position={result.classPosition}
+          lap={result.lap}
           onPitRoad={result.onPitRoad}
           onTrack={result.onTrack}
           radioActive={result.radioActive}
@@ -229,6 +297,7 @@ export const Primary: Story = {
       relative: {
         headerBar: { enabled: true },
         footerBar: { enabled: true },
+        sessionVisibility: { race: true, loneQualify: true, openQualify: true, practice: true, offlineTesting: true }
       },
     }),
   ],
@@ -384,6 +453,33 @@ export const SuzukaGT3EnduranceRace: Story = {
   ],
 };
 
+export const TeamSession: Story = {
+  decorators: [
+    TelemetryDecoratorWithConfig('/test-data/1763227688917', {
+      relative: {
+        headerBar: { enabled: true },
+        footerBar: { enabled: true },
+        teamName: { enabled: true },
+        displayOrder: [
+          'position',
+          'carNumber',
+          'countryFlags',
+          'badge',
+          'teamName',
+          'driverName',
+          'pitStatus',
+          'carManufacturer',
+          'compound',
+          'iratingChange',
+          'delta',
+          'fastestTime',
+          'lastTime',
+        ],
+      },
+    }),
+  ],
+};
+
 // Component that renders relative standings without header bar but with footer
 const RelativeWithoutHeader = () => {
   const settings = useRelativeSettings();
@@ -394,8 +490,6 @@ const RelativeWithoutHeader = () => {
   const numCarClasses = useWeekendInfoNumCarClasses();
   const isMultiClass = (numCarClasses ?? 0) > 1;
 
-  // Update relative gap store with telemetry data
-  useRelativeGapStoreUpdater();
   usePitLapStoreUpdater();
 
   // Always render 2 * buffer + 1 rows (buffer above + player + buffer below)
@@ -437,6 +531,7 @@ const RelativeWithoutHeader = () => {
           lastTime={settings?.lastTime?.enabled ? undefined : undefined}
           lastTimeState={settings?.lastTime?.enabled ? undefined : undefined}
           position={settings?.position ? undefined : undefined}
+          lap={undefined}
           onPitRoad={false}
           onTrack={true}
           radioActive={false}
@@ -484,6 +579,7 @@ const RelativeWithoutHeader = () => {
             lastTime={settings?.lastTime?.enabled ? undefined : undefined}
             lastTimeState={settings?.lastTime?.enabled ? undefined : undefined}
             position={settings?.position ? undefined : undefined}
+            lap={undefined}
             onPitRoad={false}
             onTrack={true}
             radioActive={false}
@@ -508,6 +604,7 @@ const RelativeWithoutHeader = () => {
           isPlayer={result.isPlayer}
           hasFastestTime={result.hasFastestTime}
           position={result.classPosition}
+          lap={result.lap}
           onPitRoad={result.onPitRoad}
           onTrack={result.onTrack}
           radioActive={result.radioActive}
@@ -601,8 +698,6 @@ const RelativeWithoutFooter = () => {
   const numCarClasses = useWeekendInfoNumCarClasses();
   const isMultiClass = (numCarClasses ?? 0) > 1;
 
-  // Update relative gap store with telemetry data
-  useRelativeGapStoreUpdater();
   usePitLapStoreUpdater();
 
   // Always render 2 * buffer + 1 rows (buffer above + player + buffer below)
@@ -644,6 +739,7 @@ const RelativeWithoutFooter = () => {
           lastTime={settings?.lastTime?.enabled ? undefined : undefined}
           lastTimeState={settings?.lastTime?.enabled ? undefined : undefined}
           position={settings?.position ? undefined : undefined}
+          lap={undefined}
           onPitRoad={false}
           onTrack={true}
           radioActive={false}
@@ -691,6 +787,7 @@ const RelativeWithoutFooter = () => {
             lastTime={settings?.lastTime?.enabled ? undefined : undefined}
             lastTimeState={settings?.lastTime?.enabled ? undefined : undefined}
             position={settings?.position ? undefined : undefined}
+            lap={undefined}
             onPitRoad={false}
             onTrack={true}
             radioActive={false}
@@ -715,6 +812,7 @@ const RelativeWithoutFooter = () => {
           isPlayer={result.isPlayer}
           hasFastestTime={result.hasFastestTime}
           position={result.classPosition}
+          lap={result.lap}
           onPitRoad={result.onPitRoad}
           onTrack={result.onTrack}
           radioActive={result.radioActive}
@@ -791,4 +889,18 @@ const RelativeWithoutFooter = () => {
 export const NoFooter: Story = {
   render: () => <RelativeWithoutFooter />,
   decorators: [TelemetryDecorator()],
+};
+
+export const CompactMode: Story = {
+  decorators: [
+    TelemetryDecoratorWithConfigAndGeneralSettings(undefined, {
+      relative: {
+        headerBar: { enabled: true },
+        footerBar: { enabled: true },
+        sessionVisibility: { race: true, loneQualify: true, openQualify: true, practice: true, offlineTesting: true },
+      },
+    }, {
+      compactMode: true,
+    }),
+  ],
 };

@@ -1,18 +1,5 @@
 import { useDashboard } from '@irdashies/context';
-
-interface TrackMapSettings {
-  enabled: boolean;
-  config: {
-    enableTurnNames: boolean;
-    showCarNumbers: boolean;
-    invertTrackColors: boolean;
-    driverCircleSize: number;
-    playerCircleSize: number;
-    trackLineWidth: number;
-    trackOutlineWidth: number;
-    useHighlightColor: boolean;
-  };
-}
+import { TrackMapWidgetSettings } from '../../Settings/types';
 
 export const useTrackMapSettings = () => {
   const { currentDashboard } = useDashboard();
@@ -20,5 +7,5 @@ export const useTrackMapSettings = () => {
   const settings = currentDashboard?.widgets.find(
     (widget) => widget.id === 'map'
   )?.config;
-  return settings as TrackMapSettings['config'];
+  return settings as TrackMapWidgetSettings['config'];
 };

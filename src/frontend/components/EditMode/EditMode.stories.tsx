@@ -18,6 +18,8 @@ const mockDashboard: DashboardLayout = {
 };
 
 const mockBridge: (editMode: boolean) => DashboardBridge = (editMode) => ({
+  getAnalyticsOptOut: () => Promise.resolve(false),
+  setAnalyticsOptOut: () => Promise.resolve(),
   saveDashboard: () => {
     // noop
   },
@@ -48,6 +50,10 @@ const mockBridge: (editMode: boolean) => DashboardBridge = (editMode) => ({
   stop: () => {
     return;
   },
+  saveGarageCoverImage: () => Promise.resolve(''),
+  getGarageCoverImage: () => Promise.resolve(null),
+  getGarageCoverImageAsDataUrl: () => Promise.resolve(null),
+  setAutoStart: () => Promise.resolve()
 });
 
 export const Primary = {

@@ -105,9 +105,7 @@ export const useDriverStandings = (settings?: StandingsWidgetSettings['config'])
       // Apply live positions as per-class positions, then sort class arrays by class position
       initialStandings.forEach((standing) => {
         const livePosition = driverLivePositions[standing.carIdx];
-        if (livePosition !== undefined) {
-          standing.classPosition = livePosition;
-        }
+        if (livePosition !== undefined) standing.classPosition = livePosition;
       });
     }
 

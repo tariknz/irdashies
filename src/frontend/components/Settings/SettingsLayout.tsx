@@ -9,15 +9,20 @@ import { StandingsSettings } from './sections/StandingsSettings';
 import { RelativeSettings } from './sections/RelativeSettings';
 import { WeatherSettings } from './sections/WeatherSettings';
 import { TrackMapSettings } from './sections/TrackMapSettings';
+import { FlatTrackMapSettings } from './sections/FlatTrackMapSettings';
 import { AdvancedSettings } from './sections/AdvancedSettings';
 import { InputSettings } from './sections/InputSettings';
 import { AboutSettings } from './sections/AboutSettings';
 import { FasterCarsFromBehindSettings } from './sections/FasterCarsFromBehindSettings';
 import { FuelSettings } from './sections/FuelSettings';
+import { RejoinIndicatorSettings } from './sections/RejoinIndicatorSettings';
+import { PitlaneHelperSettings } from './sections/PitlaneHelperSettings';
 import { GeneralSettings } from './sections/GeneralSettings';
 import { BlindSpotMonitorSettings } from './sections/BlindSpotMonitorSettings';
+import { GarageCoverSettings } from './sections/GarageCoverSettings';
 import { useDashboard } from '@irdashies/context';
 import { useState } from 'react';
+
 
 export const SettingsLayout = () => {
   const location = useLocation();
@@ -116,13 +121,45 @@ export const SettingsLayout = () => {
               </Link>
             </li>
             <li>
+              <Link
+                to="/settings/flatmap"
+                className={menuItemClass('/flatmap')}
+              >
+                Flat Track Map
+              </Link>
+            </li>
+            <li>
               <Link to="/settings/fuel" className={menuItemClass('/fuel')}>
                 Fuel Calculator
               </Link>
             </li>
             <li>
+              <Link
+                to="/settings/garagecover"
+                className={menuItemClass('/garagecover')}
+              >
+                Garage Cover
+              </Link>
+            </li>
+            <li>
               <Link to="/settings/input" className={menuItemClass('/input')}>
                 Input Traces
+              </Link>
+            </li>
+            <li>
+              <Link
+                to="/settings/pitlanehelper"
+                className={menuItemClass('/pitlanehelper')}
+              >
+                Pitlane Helper
+              </Link>
+            </li>
+            <li>
+              <Link
+                to="/settings/rejoin"
+                className={menuItemClass('/rejoin')}
+              >
+                Rejoin Indicator
               </Link>
             </li>
             <li>
@@ -188,7 +225,10 @@ export const SettingsLayout = () => {
             <Route path="weather" element={<WeatherSettings />} />
             <Route path="fuel" element={<FuelSettings />} />
             <Route path="map" element={<TrackMapSettings />} />
+            <Route path="flatmap" element={<FlatTrackMapSettings />} />
             <Route path="input" element={<InputSettings />} />
+            <Route path="pitlanehelper" element={<PitlaneHelperSettings />} />
+            <Route path="rejoin" element={<RejoinIndicatorSettings />} />
             <Route
               path="faster-cars"
               element={<FasterCarsFromBehindSettings />}
@@ -197,6 +237,7 @@ export const SettingsLayout = () => {
               path="blindspotmonitor"
               element={<BlindSpotMonitorSettings />}
             />
+            <Route path="garagecover" element={<GarageCoverSettings />} />
             <Route path="advanced" element={<AdvancedSettings />} />
             <Route path="about" element={<AboutSettings />} />
             <Route

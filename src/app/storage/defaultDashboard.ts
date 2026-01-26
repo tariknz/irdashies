@@ -46,10 +46,15 @@ export const defaultDashboard: DashboardLayout = {
           "enabled": true
         },
         "driverName": {
-          "enabled": true
+          "enabled": true,
+          "showStatusBadges": true
+        },
+        "teamName": {
+          "enabled": false
         },
         "pitStatus": {
-          "enabled": true
+          "enabled": true,
+          "pitLapDisplayMode": "lapsSinceLastPit"
         },
         "position": {
           "enabled": true
@@ -85,6 +90,9 @@ export const defaultDashboard: DashboardLayout = {
             "enabled": true,
             "mode": "Remaining"
           },
+          "sessionLaps": {
+            "enabled": true
+          },
           "incidentCount": {
             "enabled": true
           },
@@ -108,7 +116,7 @@ export const defaultDashboard: DashboardLayout = {
             "enabled": false,
             "unit": "Metric"
           },
-          "displayOrder": ["sessionName", "sessionTime", "incidentCount", "brakeBias", "localTime", "sessionClockTime", "trackWetness", "airTemperature", "trackTemperature"]
+          "displayOrder": ["sessionName", "sessionTime", "sessionLaps", "incidentCount", "brakeBias", "localTime", "sessionClockTime", "trackWetness", "airTemperature", "trackTemperature"]
         },
         "footerBar": {
           "enabled": true,
@@ -119,6 +127,9 @@ export const defaultDashboard: DashboardLayout = {
             "enabled": false,
             "mode": "Remaining"
           },
+          "sessionLaps": {
+            "enabled": true
+          },
           "incidentCount": {
             "enabled": false
           },
@@ -142,10 +153,11 @@ export const defaultDashboard: DashboardLayout = {
             "enabled": true,
             "unit": "Metric"
           },
-          "displayOrder": ["sessionName", "sessionTime", "incidentCount", "brakeBias", "localTime", "sessionClockTime", "trackWetness", "airTemperature", "trackTemperature"]
+          "displayOrder": ["sessionName", "sessionTime", "sessionLaps", "incidentCount", "brakeBias", "localTime", "sessionClockTime", "trackWetness", "airTemperature", "trackTemperature"]
         },
         "showOnlyWhenOnTrack": false,
-        "displayOrder": ["position", "carNumber", "countryFlags", "driverName", "pitStatus", "carManufacturer", "badge", "iratingChange", "gap", "interval", "fastestTime", "lastTime", "compound", "lapTimeDeltas"]
+        "displayOrder": ["position", "carNumber", "countryFlags", "driverName", "teamName", "pitStatus", "carManufacturer", "badge", "iratingChange", "gap", "interval", "fastestTime", "lastTime", "compound", "lapTimeDeltas"],
+        "sessionVisibility": { race: true, loneQualify: true, openQualify: true, practice: true, offlineTesting: true }
       }
     },
     {
@@ -164,6 +176,7 @@ export const defaultDashboard: DashboardLayout = {
           "includeBrake": true,
           "includeAbs": true,
           "includeSteer": true,
+          "includeClutch": false,
           "strokeWidth": 3,
           "maxSamples": 400
         },
@@ -193,7 +206,8 @@ export const defaultDashboard: DashboardLayout = {
           "opacity": 80
         },
         "showOnlyWhenOnTrack": true,
-        "displayOrder": ["trace", "bar", "gear", "steer"]
+        "displayOrder": ["trace", "bar", "gear", "steer"],
+        "sessionVisibility": { race: true, loneQualify: true, openQualify: true, practice: true, offlineTesting: true }
       }
     },
     {
@@ -220,10 +234,15 @@ export const defaultDashboard: DashboardLayout = {
           "enabled": true
         },
         "driverName": {
-          "enabled": true
+          "enabled": true,
+          "showStatusBadges": true
+        },
+        "teamName": {
+          "enabled": false
         },
         "pitStatus": {
-          "enabled": true
+          "enabled": true,
+          "pitLapDisplayMode": "lapsSinceLastPit"
         },
         "carManufacturer": {
           "enabled": true
@@ -250,13 +269,7 @@ export const defaultDashboard: DashboardLayout = {
         "compound": {
           "enabled": false
         },
-        "displayOrder": ["position", "carNumber", "countryFlags", "driverName", "pitStatus", "carManufacturer", "badge", "iratingChange", "delta", "fastestTime", "lastTime", "compound"],
-        "enhancedGapCalculation": {
-          "enabled": true,
-          "interpolationMethod": "linear",
-          "sampleInterval": 0.01,
-          "maxLapHistory": 5
-        },
+        "displayOrder": ["position", "carNumber", "countryFlags", "driverName", "teamName", "pitStatus", "carManufacturer", "badge", "iratingChange", "delta", "fastestTime", "lastTime", "compound"],
         "titleBar": {
           "enabled": false,
           "progressBar": {
@@ -272,6 +285,9 @@ export const defaultDashboard: DashboardLayout = {
             "enabled": true,
             "mode": "Remaining"
           },
+          "sessionLaps": {
+            "enabled": true
+          },
           "incidentCount": {
             "enabled": true
           },
@@ -298,7 +314,7 @@ export const defaultDashboard: DashboardLayout = {
             "enabled": false,
             "unit": "Metric"
           },
-          "displayOrder": ["sessionName", "sessionTime", "incidentCount", "brakeBias", "localTime", "sessionClockTime", "trackWetness", "precipitation", "airTemperature", "trackTemperature"]
+          "displayOrder": ["sessionName", "sessionTime", "sessionLaps", "incidentCount", "brakeBias", "localTime", "sessionClockTime", "trackWetness", "precipitation", "airTemperature", "trackTemperature"]
         },
         "footerBar": {
           "enabled": true,
@@ -309,6 +325,9 @@ export const defaultDashboard: DashboardLayout = {
             "enabled": false,
             "mode": "Remaining"
           },
+          "sessionLaps": {
+            "enabled": true
+          },
           "incidentCount": {
             "enabled": false
           },
@@ -335,9 +354,10 @@ export const defaultDashboard: DashboardLayout = {
             "enabled": true,
             "unit": "Metric"
           },
-          "displayOrder": ["sessionName", "sessionTime", "incidentCount", "brakeBias", "localTime", "sessionClockTime", "trackWetness", "precipitation", "airTemperature", "trackTemperature"]
+          "displayOrder": ["sessionName", "sessionTime", "sessionLaps", "incidentCount", "brakeBias", "localTime", "sessionClockTime", "trackWetness", "precipitation", "airTemperature", "trackTemperature"]
         },
-        "showOnlyWhenOnTrack": false
+        "showOnlyWhenOnTrack": false,
+        "sessionVisibility": { race: true, loneQualify: true, openQualify: true, practice: true, offlineTesting: true }
       }
     },
     {
@@ -357,7 +377,31 @@ export const defaultDashboard: DashboardLayout = {
         "playerCircleSize": 40,
         "trackLineWidth": 20,
         "trackOutlineWidth": 40,
-        "useHighlightColor": false
+        "useHighlightColor": false,
+        "showOnlyWhenOnTrack": false,
+        "sessionVisibility": { race: true, loneQualify: true, openQualify: true, practice: true, offlineTesting: true }
+      }
+    },
+    {
+      "id": "flatmap",
+      "enabled": false,
+      "layout": {
+        "x": 622,
+        "y": 700,
+        "width": 800,
+        "height": 150
+      },
+      "config": {
+        "showCarNumbers": true,
+        "displayMode": "carNumber",
+        "driverCircleSize": 40,
+        "playerCircleSize": 40,
+        "trackLineWidth": 20,
+        "trackOutlineWidth": 40,
+        "invertTrackColors": false,
+        "useHighlightColor": false,
+        "showOnlyWhenOnTrack": false,
+        "sessionVisibility": { race: true, loneQualify: true, openQualify: true, practice: true, offlineTesting: true }
       }
     },
     {
@@ -392,7 +436,8 @@ export const defaultDashboard: DashboardLayout = {
         },
         "wind": {
           "enabled": true
-        }
+        },
+        "sessionVisibility": { race: true, loneQualify: true, openQualify: true, practice: true, offlineTesting: true }
       }
     },
     {
@@ -405,7 +450,8 @@ export const defaultDashboard: DashboardLayout = {
         "height": 43
       },
       "config": {
-        "distanceThreshold": -0.3
+        "distanceThreshold": -0.3,
+        "sessionVisibility": { race: true, loneQualify: false, openQualify: true, practice: true, offlineTesting: true }
       }
     },
     {
@@ -435,7 +481,8 @@ export const defaultDashboard: DashboardLayout = {
         "safetyMargin": 0.05,
         "background": {
           "opacity": 85
-        }
+        },
+        "sessionVisibility": { race: true, loneQualify: true, openQualify: true, practice: true, offlineTesting: true }
       }
     },
     {
@@ -453,7 +500,77 @@ export const defaultDashboard: DashboardLayout = {
         "background": {
           "opacity": 30
         },
-        "width": 20
+        "width": 20,
+        "sessionVisibility": { race: true, loneQualify: true, openQualify: true, practice: true, offlineTesting: true }
+      }
+    },
+    {
+      "id": "garagecover",
+      "enabled": false,
+      "layout": {
+        "x": 50,
+        "y": 50,
+        "width": 600,
+        "height": 540
+      },
+      "config": {
+        "imageFilename": ""
+      }
+    },
+    {
+      "id": "rejoin",
+      "enabled": false,
+      "layout": {
+        "x": 378,
+        "y": 102,
+        "width": 800,
+        "height": 500
+      },
+      "config": {
+        "showAtSpeed": 30,
+        "clearGap": 3.5,
+        "careGap": 2,
+        "stopGap": 1,
+        "width": 20,
+        "sessionVisibility": { race: true, loneQualify: false, openQualify: true, practice: true, offlineTesting: true }
+      }
+    },
+    {
+      "id": "telemetryinspector",
+      "enabled": false,
+      "layout": {
+        "x": 50,
+        "y": 50,
+        "width": 250,
+        "height": 200
+      },
+      "config": {
+        "background": {
+          "opacity": 80
+        },
+        "properties": [
+          { "source": "telemetry", "path": "Speed", "label": "Speed" },
+          { "source": "telemetry", "path": "SessionTime", "label": "Session Time" }
+        ]
+      }
+    },
+    {
+      "id": "pitlanehelper",
+      "enabled": false,
+      "layout": {
+        "x": 100,
+        "y": 100,
+        "width": 150,
+        "height": 200
+      },
+      "config": {
+        "showMode": "approaching",
+        "approachDistance": 200,
+        "enablePitLimiterWarning": true,
+        "enableEarlyPitboxWarning": true,
+        "earlyPitboxThreshold": 75,
+        "showPitlaneTraffic": true,
+        "background": { "opacity": 80 }
       }
     }
   ],
@@ -462,6 +579,7 @@ export const defaultDashboard: DashboardLayout = {
     "colorPalette": "black",
     "highlightColor": 960745,
     "skipTaskbar": true,
-    "disableHardwareAcceleration": false
+    "disableHardwareAcceleration": false,
+    "overlayAlwaysOnTop": true
   }
 };

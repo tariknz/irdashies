@@ -13,7 +13,7 @@ import { renderComponent } from './app/webserver/componentRenderer';
 const params = new URLSearchParams(window.location.search);
 const componentName = params.get('component');
 const wsUrl = params.get('wsUrl') || 'http://localhost:3000';
-const configJson = params.get('config');
+const configId = params.get('configId');
 const isDebugMode = params.get('debug') === 'true';
 
 // Make debug flag globally available
@@ -24,11 +24,24 @@ if (isDebugMode) {
   console.log('📦 Component renderer entry point loaded (NOT loading App.tsx)');
 }
 
+// Fetch config from server instead of URL to avoid 431 errors
 let config = {};
-try {
-  config = configJson ? JSON.parse(decodeURIComponent(configJson)) : {};
-} catch (e) {
-  console.error('Failed to parse config JSON:', e);
+let configPromise: Promise<void> = Promise.resolve();
+
+if (configId) {
+  configPromise = fetch(`${wsUrl}/api/config?id=${encodeURIComponent(configId)}`)
+    .then(res => {
+      if (!res.ok) {
+        throw new Error(`Failed to fetch config: ${res.status}`);
+      }
+      return res.json();
+    })
+    .then(data => {
+      config = data.config || {};
+    })
+    .catch(e => {
+      console.error('Failed to fetch config from server:', e);
+    });
 }
 
 if (isDebugMode) {
@@ -90,38 +103,37 @@ rootElement.innerHTML = `
   </style>
 `;
 
-// Render the component
+// Render the component (wait for config to be fetched first)
 if (componentName) {
-  if (isDebugMode) {
-    console.log('🎯 Starting component render...');
-  }
-  renderComponent(rootElement, componentName, config, wsUrl)
-    .then(() => {
-      if (isDebugMode) {
-        console.log('✅ Component render completed successfully');
-      }
-    })
-    .catch((err) => {
-      console.error('❌ Component render failed:', err);
-      rootElement.innerHTML = `
-        <div style="
-          padding: 40px;
-          background: transparent;
-          color: #ff6b6b;
-          font-family: monospace;
-          min-height: 100vh;
-          display: flex;
-          flex-direction: column;
-          justify-content: center;
-          align-items: center;
-        ">
-          <h1>❌ Failed to Load Component</h1>
-          <p style="margin-top: 20px;">Component: ${componentName}</p>
-          <p style="margin-top: 10px; color: #999;">${err.message}</p>
-          <pre style="margin-top: 20px; color: #666; font-size: 12px; max-width: 600px; overflow: auto;">${err.stack || ''}</pre>
-        </div>
-      `;
-    });
+  configPromise.then(() => {
+    renderComponent(rootElement, componentName, config, wsUrl)
+      .then(() => {
+        if (isDebugMode) {
+          console.log('Component rendered successfully');
+        }
+      })
+      .catch((err) => {
+        console.error('❌ Component render failed:', err);
+        rootElement.innerHTML = `
+          <div style="
+            padding: 40px;
+            background: transparent;
+            color: #ff6b6b;
+            font-family: monospace;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+          ">
+            <h1>❌ Failed to Load Component</h1>
+            <p style="margin-top: 20px;">Component: ${componentName}</p>
+            <p style="margin-top: 10px; color: #999;">${err.message}</p>
+            <pre style="margin-top: 20px; color: #666; font-size: 12px; max-width: 600px; overflow: auto;">${err.stack || ''}</pre>
+          </div>
+        `;
+      });
+  });
 } else {
   rootElement.innerHTML = `
     <div style="
