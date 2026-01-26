@@ -53,7 +53,8 @@ export const defaultDashboard: DashboardLayout = {
           "enabled": false
         },
         "pitStatus": {
-          "enabled": true
+          "enabled": true,
+          "pitLapDisplayMode": "lapsSinceLastPit"
         },
         "position": {
           "enabled": true
@@ -175,6 +176,7 @@ export const defaultDashboard: DashboardLayout = {
           "includeBrake": true,
           "includeAbs": true,
           "includeSteer": true,
+          "includeClutch": false,
           "strokeWidth": 3,
           "maxSamples": 400
         },
@@ -239,7 +241,8 @@ export const defaultDashboard: DashboardLayout = {
           "enabled": false
         },
         "pitStatus": {
-          "enabled": true
+          "enabled": true,
+          "pitLapDisplayMode": "lapsSinceLastPit"
         },
         "carManufacturer": {
           "enabled": true

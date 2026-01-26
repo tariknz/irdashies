@@ -16,7 +16,23 @@ export const usePitlaneHelperSettings = () => {
     earlyPitboxThreshold: 75,
     showPitlaneTraffic: true,
     background: { opacity: 80 },
+    progressBarOrientation: 'horizontal' as const,
+    showPitExitInputs: false,
+    pitExitInputs: {
+      throttle: true,
+      clutch: true,
+    },
+    showInputsPhase: 'afterPitbox' as const,
   };
 
-  return config;
+  // Migrate old configs to include new fields
+  const migratedConfig = {
+    ...config,
+    progressBarOrientation: config.progressBarOrientation ?? 'horizontal' as const,
+    showPitExitInputs: config.showPitExitInputs ?? false,
+    pitExitInputs: config.pitExitInputs ?? { throttle: true, clutch: true },
+    showInputsPhase: config.showInputsPhase ?? 'afterPitbox' as const,
+  };
+
+  return migratedConfig;
 };

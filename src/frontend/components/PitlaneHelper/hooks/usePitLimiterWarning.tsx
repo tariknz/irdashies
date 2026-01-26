@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useTelemetryValue, useSessionStore } from '@irdashies/context';
+import { EngineWarnings } from '@irdashies/types';
 
 export interface PitLimiterWarningResult {
   showWarning: boolean;
@@ -12,12 +13,37 @@ export const usePitLimiterWarning = (enabled: boolean): PitLimiterWarningResult 
   const onPitRoad = useTelemetryValue('OnPitRoad') ?? false;
   const limiterActive = useTelemetryValue('dcPitSpeedLimiterToggle') ?? false;
   const pitstopActive = useTelemetryValue('PitstopActive') ?? false;
+  const engineWarnings = useTelemetryValue('EngineWarnings') ?? 0;
   const isTeamRacing = (session?.WeekendInfo?.TeamRacing ?? 0) === 1;
+
+  // Check if pit speed limiter is actively engaged (manual OR auto)
+  const limiterEngaged = (engineWarnings & EngineWarnings.PitSpeedLimiter) !== 0;
+
+  // Track if we detected auto-limiter on entry to pit road
+  const [autoLimiterDetected, setAutoLimiterDetected] = useState(false);
+  const prevOnPitRoad = useRef(onPitRoad);
 
   // Track previous pitstop state for team race warning
   const prevPitstopActive = useRef(pitstopActive);
   const [teamRaceWarningActive, setTeamRaceWarningActive] = useState(false);
   const teamRaceWarningTimer = useRef<NodeJS.Timeout | null>(null);
+
+  // Detect auto-limiter when entering pit road
+  useEffect(() => {
+    // Detect transition to pit road
+    const justEnteredPitRoad = !prevOnPitRoad.current && onPitRoad;
+    prevOnPitRoad.current = onPitRoad;
+
+    if (justEnteredPitRoad) {
+      // Check if limiter engaged but player didn't toggle = auto-limiter series
+      setAutoLimiterDetected(limiterEngaged && !limiterActive);
+    }
+
+    // Reset when leaving pit road
+    if (!onPitRoad) {
+      setAutoLimiterDetected(false);
+    }
+  }, [onPitRoad, limiterEngaged, limiterActive]);
 
   // Detect pitstop completion and manage warning state
   useEffect(() => {
@@ -87,8 +113,18 @@ export const usePitLimiterWarning = (enabled: boolean): PitLimiterWarningResult 
       };
     }
 
-    // Standard warning: entering pit without limiter
-    if (onPitRoad && !limiterActive) {
+    // Auto-limiter series: warn if player manually engaged limiter
+    // (Game won't auto-disengage if player manually engaged)
+    if (onPitRoad && autoLimiterDetected && limiterActive) {
+      return {
+        showWarning: true,
+        isTeamRaceWarning: false,
+        warningText: '⚠ DISABLE LIMITER',
+      };
+    }
+
+    // Standard warning: entering pit without limiter (non-auto series)
+    if (onPitRoad && !limiterEngaged) {
       return {
         showWarning: true,
         isTeamRaceWarning: false,
@@ -101,5 +137,5 @@ export const usePitLimiterWarning = (enabled: boolean): PitLimiterWarningResult 
       isTeamRaceWarning: false,
       warningText: '',
     };
-  }, [enabled, teamRaceWarningActive, onPitRoad, limiterActive]);
+  }, [enabled, teamRaceWarningActive, onPitRoad, limiterActive, limiterEngaged, autoLimiterDetected]);
 };

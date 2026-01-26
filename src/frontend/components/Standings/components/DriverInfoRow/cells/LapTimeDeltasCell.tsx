@@ -8,42 +8,34 @@ interface LapTimeDeltasCellProps {
 }
 
 export const LapTimeDeltasCell = memo(({ hidden, lapTimeDeltas, emptyLapDeltaPlaceholders, isPlayer }: LapTimeDeltasCellProps) => {
-  if (lapTimeDeltas !== undefined) {
-    return (
-      <Fragment>
-        {lapTimeDeltas.map((deltaValue, index) => (
-          <td
-            key={`lapTimeDelta-${index}`}
-            data-column="lapTimeDelta"
-            className={`w-auto px-1 text-center whitespace-nowrap ${deltaValue > 0 ? 'text-green-400' : 'text-red-400'}`}
-          >
-            {hidden ? '' : Math.abs(deltaValue).toFixed(1)}
-          </td>
-        ))}
-      </Fragment>
-    );
+  if (!emptyLapDeltaPlaceholders) {
+    return null;
   }
-  
-  if (emptyLapDeltaPlaceholders) {
-    if (isPlayer) {
-      return (
-        <Fragment>
-          {emptyLapDeltaPlaceholders.map((index) => (
-            <td key={`empty-lapTimeDelta-${index}`} data-column="lapTimeDelta" className="w-auto px-1 text-center whitespace-nowrap">{hidden ? '' : '-'}</td>
-          ))}
-        </Fragment>
-      );
-    }
-    return (
-      <Fragment>
-        {emptyLapDeltaPlaceholders.map((index) => (
-          <td key={`placeholder-lapTimeDelta-${index}`} data-column="lapTimeDelta" className="w-auto px-1 text-center whitespace-nowrap">{hidden ? '' : ''}</td>
-        ))}
-      </Fragment>
-    );
-  }
-  
-  return null;
+
+  return (
+    <Fragment>
+      {emptyLapDeltaPlaceholders.map((_, index) => {
+        const deltaValue = lapTimeDeltas?.[index];
+        if (deltaValue !== undefined) {
+          return (
+            <td
+              key={`lapTimeDelta-${index}`}
+              data-column="lapTimeDelta"
+              className={`w-auto px-1 text-center whitespace-nowrap ${deltaValue > 0 ? 'text-green-400' : 'text-red-400'}`}
+            >
+              {hidden ? '' : Math.abs(deltaValue).toFixed(1)}
+            </td>
+          );
+        } else {
+          return (
+            <td key={`empty-lapTimeDelta-${index}`} data-column="lapTimeDelta" className="w-auto px-1 text-center whitespace-nowrap">
+              {hidden ? '' : isPlayer ? '-' : ''}
+            </td>
+          );
+        }
+      })}
+    </Fragment>
+  );
 });
 
 LapTimeDeltasCell.displayName = 'LapTimeDeltasCell';

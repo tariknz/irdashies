@@ -12,6 +12,12 @@ const FONT_SIZE_PRESETS = {
   '3xl': '3X Large',
 };
 
+const FONT_WEIGHT_PRESETS = {
+  normal: 'Normal',
+  bold: 'Bold',
+  extrabold: 'Extrabold',
+};
+
 const HIGHLIGHT_COLOR_PRESETS = new Map([
   [15680580, 'Red'],
   [16347926, 'Orange'],
@@ -44,6 +50,7 @@ export const GeneralSettings = () => {
   const { bridge, currentDashboard, onDashboardUpdated } = useDashboard();
   const [settings, setSettings] = useState<GeneralSettingsType>({
     fontSize: currentDashboard?.generalSettings?.fontSize ?? 'sm',
+    fontWeight: currentDashboard?.generalSettings?.fontWeight ?? 'normal',
     colorPalette: currentDashboard?.generalSettings?.colorPalette ?? 'default',
     highlightColor: currentDashboard?.generalSettings?.highlightColor ?? 960745,
     skipTaskbar: currentDashboard?.generalSettings?.skipTaskbar ?? true,
@@ -78,6 +85,12 @@ export const GeneralSettings = () => {
 
   const handleFontSizeChange = (newSize: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl') => {
     const newSettings = { ...settings, fontSize: newSize };
+    setSettings(newSettings);
+    updateDashboard(newSettings);
+  };
+
+  const handleFontWeightChange = (newWeight: 'normal' | 'bold' | 'extrabold') => {
+    const newSettings = { ...settings, fontWeight: newWeight };
     setSettings(newSettings);
     updateDashboard(newSettings);
   };
@@ -164,6 +177,26 @@ export const GeneralSettings = () => {
         </div>
       </div>
 
+      {/* Font Weight Settings */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-medium text-slate-200">Font Weight</h3>
+          </div>
+        {/* Font Weight Dropdown */}
+        <div className="mt-4">
+          <select
+            value={settings.fontWeight ?? 'normal'}
+            onChange={(e) => handleFontWeightChange(e.target.value as NonNullable<GeneralSettingsType['fontWeight']>)}
+            className="w-full px-3 py-2 bg-slate-700 text-slate-300 rounded border border-slate-600 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          >
+            {Object.entries(FONT_WEIGHT_PRESETS).map(([key, value]) => (
+              <option key={key} value={key}>{value}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+
       {/* Compact Mode Setting */}
       <div className="space-y-4">
         <div className="flex items-center justify-between gap-4">
@@ -182,7 +215,7 @@ export const GeneralSettings = () => {
           </label>
         </div>
       </div>
-
+      
       {/* Color Theme Settings */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
