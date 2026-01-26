@@ -1,5 +1,6 @@
 import React from 'react';
 import type { FuelCalculation, FuelCalculatorSettings } from '../types';
+import { useTelemetryValue, useSessionType } from '@irdashies/context';
 
 interface FuelCalculatorWidgetProps {
     fuelData: FuelCalculation | null;
@@ -12,6 +13,10 @@ interface FuelCalculatorWidgetProps {
 }
 
 export const FuelCalculatorTargetMessage: React.FC<FuelCalculatorWidgetProps> = ({ fuelData, displayData, settings, widgetId, customStyles, isCompact }) => {
+    const sessionNum = useTelemetryValue('SessionNum');
+    const sessionType = useSessionType(sessionNum);
+    const isTesting = sessionType === 'Offline Testing' || sessionType === 'Practice';
+
     if (!settings?.enableTargetPitLap || !settings.targetPitLap || !fuelData) return null;
 
     const targetLap = settings.targetPitLap;
@@ -24,7 +29,7 @@ export const FuelCalculatorTargetMessage: React.FC<FuelCalculatorWidgetProps> = 
     const labelFontSize = widgetStyle.labelFontSize ? `${widgetStyle.labelFontSize}px` : (widgetStyle.fontSize ? `${widgetStyle.fontSize}px` : '10px');
     const valueFontSize = widgetStyle.valueFontSize ? `${widgetStyle.valueFontSize}px` : (widgetStyle.fontSize ? `${widgetStyle.fontSize}px` : '16px');
 
-    const needDisplay = (consumption === 0) ? '--' : `+${fuelToAddHypothetical.toFixed(1)}L`;
+    const needDisplay = (isTesting || consumption === 0) ? '--' : `+${fuelToAddHypothetical.toFixed(1)}L`;
 
     return (
         <div className={`py-1 px-2 bg-purple-500/20 border border-purple-500/50 rounded flex items-center justify-between ${isCompact ? 'mb-0.5' : 'mb-2'}`}>
