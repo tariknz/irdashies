@@ -1,5 +1,5 @@
 import { memo, type ReactNode } from 'react';
-import { formatTime } from '../../../../../utils/time';
+import { formatTime } from '@irdashies/utils/time';
 
 interface StatusBadgeProps {
   textColor?: string;
