@@ -13,6 +13,7 @@ interface FuelCalculator2WidgetProps {
     fuelUnits: 'L' | 'gal';
     settings?: FuelCalculatorSettings;
     widgetId?: string;
+    predictiveUsage?: number;
 }
 
 // Map confidence to colors and text
@@ -141,7 +142,7 @@ export const FuelCalculator2Gauge: React.FC<FuelCalculator2WidgetProps> = ({ fue
     );
 };
 
-export const FuelCalculator2ConsumptionGrid: React.FC<FuelCalculator2WidgetProps> = ({ fuelData, liveFuelData, displayData, settings, widgetId }) => {
+export const FuelCalculator2ConsumptionGrid: React.FC<FuelCalculator2WidgetProps> = ({ fuelData, liveFuelData, predictiveUsage, displayData, settings, widgetId }) => {
     const styles = useWidgetStyles(settings, widgetId);
 
     if (!fuelData) return null;
@@ -163,6 +164,10 @@ export const FuelCalculator2ConsumptionGrid: React.FC<FuelCalculator2WidgetProps
     // Add min data
     const min = displayData.minLapUsage || 0;
 
+    // Predictive Data (throttled)
+    // Use prop if available, fallback to live data projected (jittery), fallback to 0
+    const currentUsage = predictiveUsage ?? liveFuelData?.projectedLapUsage ?? 0;
+
     // Check if we are in a testing/practice session
     // We need the current SessionNum to look up the SessionType in the SessionInfo array
     const sessionNum = useTelemetryValue('SessionNum');
@@ -175,18 +180,29 @@ export const FuelCalculator2ConsumptionGrid: React.FC<FuelCalculator2WidgetProps
 
     // Calculate derivates (Laps, Refuel, Finish) for each column
     // This duplicates some logic but ensures consistent display as per mockup
-    const calcCol = (usage: number) => {
+    const calcCol = (usage: number, isCurrentRow = false) => {
         if (usage <= 0) return { laps: '--', refuel: '--', finish: '--' };
 
+        // For Current Row, we should use LIVE fuel level for better prediction if possible?
+        // But to keep it comparable to other rows within the same 'snapshot' context, using frozen fuel level from displayData is safer for relative comparison.
+        // HOWEVER, "Predictive" usually means "Current State". 
+        // Let's use displayData.fuelLevel (which is frozen) to see "If I continue at this rate with the fuel I STARTED the lap with..." 
+        // OR better: "With the fuel I have RIGHT NOW".
+        // The displayData passed to this component is FROZEN.
+        // liveFuelData has 'fuelLevel' which is live.
+
+        const fuelToUse = displayData.fuelLevel;
+        const lapsRemainingToUse = fuelData.lapsRemaining;
+
         // Laps calculation
-        const laps = displayData.fuelLevel / usage;
+        const laps = fuelToUse / usage;
 
         // Finish (Fuel at finish)
-        const fuelNeeded = fuelData.lapsRemaining * usage;
-        const finish = displayData.fuelLevel - fuelNeeded;
+        const fuelNeeded = lapsRemainingToUse * usage;
+        const finish = fuelToUse - fuelNeeded;
 
         // Refuel (Fuel to add) - simplified logic for display
-        const toAdd = Math.max(0, fuelNeeded - displayData.fuelLevel);
+        const toAdd = Math.max(0, fuelNeeded - fuelToUse);
 
         // If testing, hide Refuel and Finish
         if (isTesting) {
@@ -198,7 +214,7 @@ export const FuelCalculator2ConsumptionGrid: React.FC<FuelCalculator2WidgetProps
         }
 
         return {
-            laps: laps.toFixed(2),
+            laps: isFinite(laps) ? laps.toFixed(2) : '--',
             refuel: toAdd > 0 ? toAdd.toFixed(2) : '--', // Mockup shows values, we show -- if 0? or 0. Mockup has Refuel col.
             finish: finish.toFixed(2) // Positive or negative
         };
@@ -208,6 +224,9 @@ export const FuelCalculator2ConsumptionGrid: React.FC<FuelCalculator2WidgetProps
     const maxData = calcCol(max);
     const lastData = calcCol(last);
     const minData = calcCol(min);
+
+    // Calculate Current Row Data
+    const currentData = calcCol(currentUsage, true);
 
     // Helper for color coding Finish
     const finishColor = (val: string) => {
@@ -231,10 +250,10 @@ export const FuelCalculator2ConsumptionGrid: React.FC<FuelCalculator2WidgetProps
             {showCurrent && (
                 <>
                     <div className="text-slate-400 py-0.5">CURR</div>
-                    <div className="text-white text-center py-0.5 font-bold">{(liveFuelData?.projectedLapUsage ?? fuelData.projectedLapUsage ?? 0).toFixed(2)}</div>
-                    <div className="text-slate-500 text-center py-0.5 opacity-50">--</div>
-                    <div className="text-slate-500 text-center py-0.5 opacity-50">--</div>
-                    <div className="text-slate-500 text-center py-0.5 opacity-50">--</div>
+                    <div className="text-white text-center py-0.5 font-bold">{currentUsage > 0 ? currentUsage.toFixed(2) : '--'}</div>
+                    <div className="text-white text-center py-0.5 opacity-90">{currentData.laps}</div>
+                    <div className={`${refuelColor} text-center py-0.5 opacity-90`}>{currentData.refuel}</div>
+                    <div className={`${finishColor(currentData.finish)} text-center py-0.5 opacity-90`}>{currentData.finish}</div>
                 </>
             )}
 

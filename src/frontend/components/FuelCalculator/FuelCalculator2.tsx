@@ -91,7 +91,8 @@ export const FuelCalculator2 = (props: FuelCalculatorProps) => {
             { laps: 14, fuelPerLap: 3.25, isCurrentTarget: true },
             { laps: 15, fuelPerLap: 3.03, isCurrentTarget: false },
         ],
-        lastFinishedLap: 14
+        lastFinishedLap: 14,
+        projectedLapUsage: 1.35
     };
 
     // Scenario 2: High Confidence (Good flow, clear prediction)
@@ -163,6 +164,7 @@ export const FuelCalculator2 = (props: FuelCalculatorProps) => {
         fuelTankCapacity: 60,
         targetScenarios: [] as { laps: number; fuelPerLap: number; isCurrentTarget: boolean; }[],
         lastFinishedLap: 0,
+        projectedLapUsage: 0,
     };
 
     const mocks = [mockMedium, mockHigh, mockCritical];
@@ -276,6 +278,37 @@ export const FuelCalculator2 = (props: FuelCalculatorProps) => {
         }
     }, [fuelData, frozenFuelData, storeLastLap]);
 
+    // Throttled Predictive Usage (to update Grid 'CURR' row periodically without jitter)
+    const [predictiveUsage, setPredictiveUsage] = React.useState(0);
+    const latestUsageRef = React.useRef(0);
+
+    // Keep ref updated with latest data
+    React.useEffect(() => {
+        if (fuelData) {
+            latestUsageRef.current = fuelData.projectedLapUsage ?? 0;
+        }
+    }, [fuelData?.projectedLapUsage]);
+
+    // Sample from ref on random interval (5-8 seconds)
+    React.useEffect(() => {
+        let timeoutId: NodeJS.Timeout;
+
+        const scheduleNextUpdate = () => {
+            // Random delay between 2000ms (2s) and 6000ms (6s)
+            const randomDelay = Math.floor(Math.random() * (6000 - 2000 + 1)) + 2000;
+
+            timeoutId = setTimeout(() => {
+                setPredictiveUsage(latestUsageRef.current);
+                scheduleNextUpdate();
+            }, randomDelay);
+        };
+
+        // Start the cycle
+        scheduleNextUpdate();
+
+        return () => clearTimeout(timeoutId);
+    }, []);
+
     // Frozen Display Data (for Grid)
     // Uses the frozen fuel level from the snapshot, NOT the live fuel level
     // This ensures Laps/Refuel/Finish calculations in the grid are static
@@ -287,7 +320,7 @@ export const FuelCalculator2 = (props: FuelCalculatorProps) => {
                 lapsRemaining: 0, totalLaps: 0, fuelToFinish: 0, fuelToAdd: 0,
                 canFinish: false, targetConsumption: 0, confidence: 'low' as const,
                 pitWindowOpen: 0, pitWindowClose: 0, currentLap: 0, fuelAtFinish: 0,
-                avgLapTime: 0, targetScenarios: undefined,
+                avgLapTime: 0, targetScenarios: undefined, projectedLapUsage: 0,
             };
         }
 
@@ -322,8 +355,17 @@ export const FuelCalculator2 = (props: FuelCalculatorProps) => {
                 return <FuelCalculator2Gauge key={widgetId} widgetId={widgetId} fuelData={fuelData} displayData={displayData} fuelUnits={fuelUnits} settings={settings} />;
             case 'fuel2Grid':
             case 'modernGrid':
-                // Use frozen data for grid (static rows) but pass live data for CURR row
-                return <FuelCalculator2ConsumptionGrid key={widgetId} widgetId={widgetId} fuelData={frozenFuelData} liveFuelData={fuelData} displayData={frozenDisplayData} fuelUnits={fuelUnits} settings={settings} />;
+                // Use frozen data for grid (static rows) but pass throttled predictive usage for CURR row
+                return <FuelCalculator2ConsumptionGrid
+                    key={widgetId}
+                    widgetId={widgetId}
+                    fuelData={frozenFuelData}
+                    liveFuelData={fuelData}
+                    predictiveUsage={predictiveUsage}
+                    displayData={frozenDisplayData}
+                    fuelUnits={fuelUnits}
+                    settings={settings}
+                />;
             case 'fuel2Scenarios':
             case 'modernScenarios':
                 return <FuelCalculator2PitScenarios key={widgetId} widgetId={widgetId} fuelData={fuelData} displayData={displayData} fuelUnits={fuelUnits} settings={settings} />;
