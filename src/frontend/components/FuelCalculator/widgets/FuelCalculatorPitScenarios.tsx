@@ -8,6 +8,8 @@ interface FuelCalculatorWidgetProps {
     fuelUnits?: 'L' | 'gal';
     settings?: FuelCalculatorSettings;
     widgetId?: string;
+    customStyles?: { fontSize?: number; labelFontSize?: number; valueFontSize?: number; barFontSize?: number };
+    isCompact?: boolean;
 }
 
 // Helper component for the Target row to avoid duplication
@@ -40,9 +42,9 @@ const TargetScenarioRow: React.FC<{
     );
 };
 
-export const FuelCalculatorPitScenarios: React.FC<FuelCalculatorWidgetProps> = ({ fuelData, displayData, settings, widgetId }) => {
+export const FuelCalculatorPitScenarios: React.FC<FuelCalculatorWidgetProps> = ({ fuelData, displayData, settings, widgetId, customStyles, isCompact }) => {
     // Custom style handling for separate label/value sizes
-    const widgetStyle = (widgetId && settings?.widgetStyles?.[widgetId]) || {};
+    const widgetStyle = customStyles || (widgetId && settings?.widgetStyles?.[widgetId]) || {};
     const labelFontSize = widgetStyle.labelFontSize ? `${widgetStyle.labelFontSize}px` : (widgetStyle.fontSize ? `${widgetStyle.fontSize}px` : '10px');
     const valueFontSize = widgetStyle.valueFontSize ? `${widgetStyle.valueFontSize}px` : (widgetStyle.fontSize ? `${widgetStyle.fontSize}px` : '12px');
 
@@ -67,9 +69,9 @@ export const FuelCalculatorPitScenarios: React.FC<FuelCalculatorWidgetProps> = (
 
     return (
         <div>
-            <div className="border-t border-slate-600/30 mb-2"></div>
+            <div className={`border-t border-slate-600/30 ${isCompact ? 'mb-0.5' : 'mb-2'}`}></div>
 
-            <div className="grid grid-cols-4 gap-1 mb-3">
+            <div className={`grid grid-cols-4 ${isCompact ? 'gap-0 md:gap-x-1 mb-0.5' : 'gap-1 mb-3'}`}>
                 <div className="text-slate-500 text-center" style={{ fontSize: labelFontSize }}>PIT @</div>
                 <div className="text-slate-500 text-center" style={{ fontSize: labelFontSize }}>ADD</div>
                 <div className="text-slate-500 text-center" style={{ fontSize: labelFontSize }}>FINISH</div>

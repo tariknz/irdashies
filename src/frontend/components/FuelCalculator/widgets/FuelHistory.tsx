@@ -10,22 +10,18 @@ interface FuelCalculatorWidgetProps {
     fuelUnits: 'L' | 'gal';
     settings?: FuelCalculatorSettings;
     widgetId?: string;
+    customStyles?: { fontSize?: number; labelFontSize?: number; valueFontSize?: number; barFontSize?: number };
+    isCompact?: boolean;
 }
 
-const useWidgetStyles = (settings?: FuelCalculatorSettings, widgetId?: string) => {
-    return useMemo(() => {
-        if (!settings?.widgetStyles || !widgetId) return {};
-        const styles = settings.widgetStyles[widgetId];
-        if (!styles) return {};
-
+export const FuelHistory: React.FC<FuelCalculatorWidgetProps> = ({ settings, fuelUnits, widgetId, customStyles, isCompact }) => {
+    // Custom style handling
+    const widgetStyle = customStyles || (widgetId && settings?.widgetStyles?.[widgetId]) || {};
+    const styles = useMemo(() => {
         return {
-            fontSize: styles.fontSize ? `${styles.fontSize}px` : undefined,
+            fontSize: widgetStyle.fontSize ? `${widgetStyle.fontSize}px` : undefined,
         };
-    }, [settings, widgetId]);
-};
-
-export const FuelHistory: React.FC<FuelCalculatorWidgetProps> = ({ settings, fuelUnits, widgetId }) => {
-    const styles = useWidgetStyles(settings, widgetId);
+    }, [widgetStyle]);
 
     // Access store directly to be self-contained
     const lapHistory = useFuelStore((state) => state.lapHistory);
@@ -71,7 +67,7 @@ export const FuelHistory: React.FC<FuelCalculatorWidgetProps> = ({ settings, fue
     if (settings && settings.showFuelHistory === false) return null;
 
     return (
-        <div style={styles} className="mt-2 mb-1 w-full flex-1 min-h-[60px] flex flex-col">
+        <div style={styles} className={`${isCompact ? 'mt-1 mb-0.5' : 'mt-2 mb-1'} w-full flex-1 min-h-[60px] flex flex-col`}>
             <ConsumptionGraphWidget
                 graphData={isDemoMode ? null : graphData}
                 consumptionGraphType={fuelHistoryType}
@@ -80,9 +76,9 @@ export const FuelHistory: React.FC<FuelCalculatorWidgetProps> = ({ settings, fue
                 editMode={false}
                 manualTarget={settings?.manualTarget}
                 height={settings?.widgetStyles?.[widgetId || '']?.height}
-                labelFontSize={settings?.widgetStyles?.[widgetId || '']?.labelFontSize || settings?.widgetStyles?.[widgetId || '']?.fontSize}
-                valueFontSize={settings?.widgetStyles?.[widgetId || '']?.valueFontSize || settings?.widgetStyles?.[widgetId || '']?.fontSize}
-                barFontSize={settings?.widgetStyles?.[widgetId || '']?.barFontSize}
+                labelFontSize={widgetStyle?.labelFontSize || widgetStyle?.fontSize}
+                valueFontSize={widgetStyle?.valueFontSize || widgetStyle?.fontSize}
+                barFontSize={widgetStyle?.barFontSize}
             />
         </div>
     );

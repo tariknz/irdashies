@@ -355,11 +355,12 @@ const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => {
         return (
           <div className="space-y-6">
             {/* Main Visual Layout Editor */}
-            <div className="space-y-2">
+            <div className="space-y-4">
               <div className="flex justify-between items-center">
                 <h3 className="text-md font-medium text-slate-200">Layout Editor</h3>
                 <span className="text-xs text-slate-500">Drag to Split (Right/Bottom)</span>
               </div>
+
               {currentTree && (
                 <LayoutVisualizer
                   tree={currentTree}
@@ -367,6 +368,31 @@ const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => {
                   availableWidgets={availableWidgets as any}
                 />
               )}
+
+              {/* General Control Toggles */}
+              <div className="bg-slate-800/50 p-4 rounded border border-slate-700 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-sm font-medium text-slate-300">Use General font Sizes</span>
+                    <span className="block text-[10px] text-slate-500">Syncs with Font Size slider in General tab</span>
+                  </div>
+                  <ToggleSwitch
+                    enabled={settings.config.useGeneralFontSize ?? false}
+                    onToggle={(val) => handleConfigChange({ useGeneralFontSize: val })}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-sm font-medium text-slate-300">Use General Compact Mode</span>
+                    <span className="block text-[10px] text-slate-500">Syncs with Compact Mode in General tab</span>
+                  </div>
+                  <ToggleSwitch
+                    enabled={settings.config.useGeneralCompactMode ?? false}
+                    onToggle={(val) => handleConfigChange({ useGeneralCompactMode: val })}
+                  />
+                </div>
+              </div>
             </div>
 
             <div className="space-y-4">

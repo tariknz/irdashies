@@ -7,6 +7,8 @@ interface FuelCalculatorWidgetProps {
     settings?: FuelCalculatorSettings;
     widgetId?: string;
     displayData?: any;
+    customStyles?: { fontSize?: number; labelFontSize?: number; valueFontSize?: number; barFontSize?: number };
+    isCompact?: boolean;
 }
 
 // Map confidence to colors and text
@@ -40,9 +42,9 @@ const getConfidenceConfig = (confidence: string) => {
     }
 };
 
-export const FuelCalculatorHeader: React.FC<FuelCalculatorWidgetProps> = ({ fuelData, fuelUnits, settings, widgetId }) => {
+export const FuelCalculatorHeader: React.FC<FuelCalculatorWidgetProps> = ({ fuelData, fuelUnits, settings, widgetId, customStyles, isCompact }) => {
     // Custom style handling for separate label/value sizes
-    const widgetStyle = (widgetId && settings?.widgetStyles?.[widgetId]) || {};
+    const widgetStyle = customStyles || (widgetId && settings?.widgetStyles?.[widgetId]) || {};
     const labelFontSize = widgetStyle.labelFontSize ? `${widgetStyle.labelFontSize}px` : (widgetStyle.fontSize ? `${widgetStyle.fontSize}px` : '10px');
     const valueFontSize = widgetStyle.valueFontSize ? `${widgetStyle.valueFontSize}px` : (widgetStyle.fontSize ? `${widgetStyle.fontSize}px` : '14px');
 
@@ -66,8 +68,8 @@ export const FuelCalculatorHeader: React.FC<FuelCalculatorWidgetProps> = ({ fuel
     }
 
     return (
-        <div className="flex items-center justify-between mb-1 pb-2 border-b border-slate-600/50">
-            <div className="flex items-center gap-6">
+        <div className={`flex items-center justify-between ${isCompact ? 'mb-0 pb-0.5' : 'mb-1 pb-2 border-b border-slate-600/50'}`}>
+            <div className={`flex items-center ${isCompact ? 'gap-3' : 'gap-6'}`}>
                 <div className="flex items-center gap-2">
                     <span className="text-slate-500 font-semibold tracking-wider" style={{ fontSize: labelFontSize }}>STOPS</span>
                     <span className="text-white font-bold" style={{ fontSize: valueFontSize }}>{stopsRemaining}</span>

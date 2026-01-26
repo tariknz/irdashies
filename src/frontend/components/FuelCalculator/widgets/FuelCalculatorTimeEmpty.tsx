@@ -8,11 +8,13 @@ interface FuelCalculatorWidgetProps {
     fuelUnits?: 'L' | 'gal';
     settings?: FuelCalculatorSettings;
     widgetId?: string;
+    customStyles?: { fontSize?: number; labelFontSize?: number; valueFontSize?: number; barFontSize?: number };
+    isCompact?: boolean;
 }
 
-export const FuelCalculatorTimeEmpty: React.FC<FuelCalculatorWidgetProps> = ({ fuelData, displayData, settings, widgetId }) => {
+export const FuelCalculatorTimeEmpty: React.FC<FuelCalculatorWidgetProps> = ({ fuelData, displayData, settings, widgetId, customStyles, isCompact }) => {
     // Custom style handling for separate label/value sizes
-    const widgetStyle = (widgetId && settings?.widgetStyles?.[widgetId]) || {};
+    const widgetStyle = customStyles || (widgetId && settings?.widgetStyles?.[widgetId]) || {};
     const labelFontSize = widgetStyle.labelFontSize ? `${widgetStyle.labelFontSize}px` : (widgetStyle.fontSize ? `${widgetStyle.fontSize}px` : '10px');
     const valueFontSize = widgetStyle.valueFontSize ? `${widgetStyle.valueFontSize}px` : (widgetStyle.fontSize ? `${widgetStyle.fontSize}px` : '24px');
 
@@ -37,7 +39,7 @@ export const FuelCalculatorTimeEmpty: React.FC<FuelCalculatorWidgetProps> = ({ f
     const borderColor = statusColors.border;
 
     return (
-        <div className={`bg-slate-900/80 rounded px-3 py-2 border ${borderColor}`}>
+        <div className={`bg-slate-900/80 rounded border ${borderColor} ${isCompact ? 'px-2 py-0.5' : 'px-3 py-2'}`}>
             <div className="flex items-center justify-between">
                 <span className="text-slate-400 uppercase" style={{ fontSize: labelFontSize }}>Time Empty</span>
                 <span className="font-mono font-bold text-white tracking-widest" style={{ fontSize: valueFontSize }}>

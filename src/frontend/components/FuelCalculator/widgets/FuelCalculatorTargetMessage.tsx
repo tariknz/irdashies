@@ -7,9 +7,11 @@ interface FuelCalculatorWidgetProps {
     fuelUnits?: 'L' | 'gal';
     settings?: FuelCalculatorSettings;
     widgetId?: string;
+    customStyles?: { fontSize?: number; labelFontSize?: number; valueFontSize?: number; barFontSize?: number };
+    isCompact?: boolean;
 }
 
-export const FuelCalculatorTargetMessage: React.FC<FuelCalculatorWidgetProps> = ({ fuelData, displayData, settings, widgetId }) => {
+export const FuelCalculatorTargetMessage: React.FC<FuelCalculatorWidgetProps> = ({ fuelData, displayData, settings, widgetId, customStyles, isCompact }) => {
     if (!settings?.enableTargetPitLap || !settings.targetPitLap || !fuelData) return null;
 
     const targetLap = settings.targetPitLap;
@@ -18,15 +20,15 @@ export const FuelCalculatorTargetMessage: React.FC<FuelCalculatorWidgetProps> = 
     const consumption = displayData.avg10Laps || 0;
     const fuelToAddHypothetical = lapsLeftAfterPit * consumption * (1 + safetyMargin);
 
-    const widgetStyle = (widgetId && settings?.widgetStyles?.[widgetId]) || {};
+    const widgetStyle = customStyles || (widgetId && settings?.widgetStyles?.[widgetId]) || {};
     const labelFontSize = widgetStyle.labelFontSize ? `${widgetStyle.labelFontSize}px` : (widgetStyle.fontSize ? `${widgetStyle.fontSize}px` : '10px');
     const valueFontSize = widgetStyle.valueFontSize ? `${widgetStyle.valueFontSize}px` : (widgetStyle.fontSize ? `${widgetStyle.fontSize}px` : '16px');
 
     const needDisplay = (consumption === 0) ? '--' : `+${fuelToAddHypothetical.toFixed(1)}L`;
 
     return (
-        <div className="mb-2 py-1 px-2 bg-purple-500/20 border border-purple-500/50 rounded flex items-center justify-between">
-            <div className="flex items-center gap-2">
+        <div className={`py-1 px-2 bg-purple-500/20 border border-purple-500/50 rounded flex items-center justify-between ${isCompact ? 'mb-0.5' : 'mb-2'}`}>
+            <div className={`flex items-center ${isCompact ? 'gap-1' : 'gap-2'}`}>
                 <span className="text-purple-400 font-medium" style={{ fontSize: labelFontSize }}>🎯 TARGET</span>
                 <span className="text-white font-bold" style={{ fontSize: valueFontSize }}>L{targetLap}</span>
             </div>

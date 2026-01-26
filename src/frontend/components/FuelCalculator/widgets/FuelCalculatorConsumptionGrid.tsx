@@ -11,17 +11,19 @@ interface FuelCalculatorWidgetProps {
     settings?: FuelCalculatorSettings;
     widgetId?: string;
     predictiveUsage?: number;
+    customStyles?: { fontSize?: number; labelFontSize?: number; valueFontSize?: number; barFontSize?: number };
+    isCompact?: boolean;
 }
 
-export const FuelCalculatorConsumptionGrid: React.FC<FuelCalculatorWidgetProps> = ({ fuelData, liveFuelData, predictiveUsage, displayData, settings, widgetId }) => {
+export const FuelCalculatorConsumptionGrid: React.FC<FuelCalculatorWidgetProps> = ({ fuelData, liveFuelData, predictiveUsage, displayData, settings, widgetId, customStyles, isCompact }) => {
     // Custom style handling for separate label/value sizes
-    const widgetStyle = (widgetId && settings?.widgetStyles?.[widgetId]) || {};
+    const widgetStyle = customStyles || (widgetId && settings?.widgetStyles?.[widgetId]) || {};
     const labelFontSize = widgetStyle.labelFontSize ? `${widgetStyle.labelFontSize}px` : (widgetStyle.fontSize ? `${widgetStyle.fontSize}px` : '10px');
     const valueFontSize = widgetStyle.valueFontSize ? `${widgetStyle.valueFontSize}px` : (widgetStyle.fontSize ? `${widgetStyle.fontSize}px` : '12px');
 
     // Container style for other props like padding/margins if needed, but font size is handled per element now
     const containerStyle: React.CSSProperties = {
-        ...(((widgetId && settings?.widgetStyles?.[widgetId]) as any) || {}),
+        ...((customStyles || (widgetId && settings?.widgetStyles?.[widgetId]) as any) || {}),
         fontSize: undefined // Don't set parent font size to avoid inheritance issues
     };
     if (!fuelData) return null;
@@ -118,13 +120,13 @@ export const FuelCalculatorConsumptionGrid: React.FC<FuelCalculatorWidgetProps> 
     const refuelColor = 'text-cyan-400'; // Mockup uses cyan for refuel
 
     return (
-        <div style={containerStyle} className="grid grid-cols-5 gap-0.5 select-none overflow-hidden h-full content-start">
+        <div style={containerStyle} className={`grid grid-cols-5 ${isCompact ? 'gap-0 md:gap-x-0.5' : 'gap-0.5'} select-none overflow-hidden h-full content-start`}>
             {/* Grid Header */}
-            <div className="text-center font-bold text-slate-400 border-b border-slate-600/50 pb-1 mb-1" style={{ fontSize: labelFontSize }}></div>
-            <div className="text-center font-bold text-slate-400 border-b border-slate-600/50 pb-1 mb-1" style={{ fontSize: labelFontSize }}>USE</div>
-            <div className="text-center font-bold text-slate-400 border-b border-slate-600/50 pb-1 mb-1" style={{ fontSize: labelFontSize }}>LAPS</div>
-            <div className="text-center font-bold text-slate-400 border-b border-slate-600/50 pb-1 mb-1" style={{ fontSize: labelFontSize }}>REFUEL</div>
-            <div className="text-center font-bold text-slate-400 border-b border-slate-600/50 pb-1 mb-1" style={{ fontSize: labelFontSize }}>FINISH</div>
+            <div className={`text-center font-bold text-slate-400 border-b border-slate-600/50 ${isCompact ? 'pb-0.5 mb-0.5' : 'pb-1 mb-1'}`} style={{ fontSize: labelFontSize }}></div>
+            <div className={`text-center font-bold text-slate-400 border-b border-slate-600/50 ${isCompact ? 'pb-0.5 mb-0.5' : 'pb-1 mb-1'}`} style={{ fontSize: labelFontSize }}>USE</div>
+            <div className={`text-center font-bold text-slate-400 border-b border-slate-600/50 ${isCompact ? 'pb-0.5 mb-0.5' : 'pb-1 mb-1'}`} style={{ fontSize: labelFontSize }}>LAPS</div>
+            <div className={`text-center font-bold text-slate-400 border-b border-slate-600/50 ${isCompact ? 'pb-0.5 mb-0.5' : 'pb-1 mb-1'}`} style={{ fontSize: labelFontSize }}>REFUEL</div>
+            <div className={`text-center font-bold text-slate-400 border-b border-slate-600/50 ${isCompact ? 'pb-0.5 mb-0.5' : 'pb-1 mb-1'}`} style={{ fontSize: labelFontSize }}>FINISH</div>
 
             {/* Spacer for header bottom margin if needed (or handle via border/padding in cells) */}
 
@@ -132,6 +134,7 @@ export const FuelCalculatorConsumptionGrid: React.FC<FuelCalculatorWidgetProps> 
             {(() => {
                 const defaultOrder = ['curr', 'avg', 'max', 'last', 'min'];
                 const order = settings?.consumptionGridOrder || defaultOrder;
+                const rowPadding = isCompact ? 'py-0' : 'py-0.5';
 
                 const renderRow = (type: string) => {
                     switch (type) {
@@ -139,55 +142,55 @@ export const FuelCalculatorConsumptionGrid: React.FC<FuelCalculatorWidgetProps> 
                             if (!showCurrent) return null;
                             return (
                                 <React.Fragment key="curr">
-                                    <div className="text-slate-400 py-0.5" style={{ fontSize: labelFontSize }}>CURR</div>
-                                    <div className="text-white text-center py-0.5 font-bold" style={{ fontSize: valueFontSize }}>{currentUsage > 0 ? currentUsage.toFixed(2) : '--'}</div>
-                                    <div className="text-white text-center py-0.5 opacity-90" style={{ fontSize: valueFontSize }}>{currentData.laps}</div>
-                                    <div className={`${refuelColor} text-center py-0.5 opacity-90`} style={{ fontSize: valueFontSize }}>{currentData.refuel}</div>
-                                    <div className={`${finishColor(currentData.finish)} text-center py-0.5 opacity-90`} style={{ fontSize: valueFontSize }}>{currentData.finish}</div>
+                                    <div className={`text-slate-400 ${rowPadding}`} style={{ fontSize: labelFontSize }}>CURR</div>
+                                    <div className={`text-white text-center ${rowPadding} font-bold`} style={{ fontSize: valueFontSize }}>{currentUsage > 0 ? currentUsage.toFixed(2) : '--'}</div>
+                                    <div className={`text-white text-center ${rowPadding} opacity-90`} style={{ fontSize: valueFontSize }}>{currentData.laps}</div>
+                                    <div className={`${refuelColor} text-center ${rowPadding} opacity-90`} style={{ fontSize: valueFontSize }}>{currentData.refuel}</div>
+                                    <div className={`${finishColor(currentData.finish)} text-center ${rowPadding} opacity-90`} style={{ fontSize: valueFontSize }}>{currentData.finish}</div>
                                 </React.Fragment>
                             );
                         case 'avg':
                             if (!showAvg) return null;
                             return (
                                 <React.Fragment key="avg">
-                                    <div className="text-slate-400 py-0.5" style={{ fontSize: labelFontSize }}>AVG</div>
-                                    <div className="text-white text-center py-0.5" style={{ fontSize: valueFontSize }}>{avg.toFixed(2)}</div>
-                                    <div className="text-white text-center py-0.5" style={{ fontSize: valueFontSize }}>{avgData.laps}</div>
-                                    <div className={`${refuelColor} text-center py-0.5`} style={{ fontSize: valueFontSize }}>{avgData.refuel}</div>
-                                    <div className={`${finishColor(avgData.finish)} text-center py-0.5`} style={{ fontSize: valueFontSize }}>{avgData.finish}</div>
+                                    <div className={`text-slate-400 ${rowPadding}`} style={{ fontSize: labelFontSize }}>AVG</div>
+                                    <div className={`text-white text-center ${rowPadding}`} style={{ fontSize: valueFontSize }}>{avg.toFixed(2)}</div>
+                                    <div className={`text-white text-center ${rowPadding}`} style={{ fontSize: valueFontSize }}>{avgData.laps}</div>
+                                    <div className={`${refuelColor} text-center ${rowPadding}`} style={{ fontSize: valueFontSize }}>{avgData.refuel}</div>
+                                    <div className={`${finishColor(avgData.finish)} text-center ${rowPadding}`} style={{ fontSize: valueFontSize }}>{avgData.finish}</div>
                                 </React.Fragment>
                             );
                         case 'max':
                             if (!showMax) return null;
                             return (
                                 <React.Fragment key="max">
-                                    <div className="text-slate-400 py-0.5" style={{ fontSize: labelFontSize }}>MAX</div>
-                                    <div className="text-orange-400 text-center py-0.5" style={{ fontSize: valueFontSize }}>{max.toFixed(2)}</div>
-                                    <div className="text-white text-center py-0.5" style={{ fontSize: valueFontSize }}>{maxData.laps}</div>
-                                    <div className={`${refuelColor} text-center py-0.5`} style={{ fontSize: valueFontSize }}>{maxData.refuel}</div>
-                                    <div className={`${finishColor(maxData.finish)} text-center py-0.5`} style={{ fontSize: valueFontSize }}>{maxData.finish}</div>
+                                    <div className={`text-slate-400 ${rowPadding}`} style={{ fontSize: labelFontSize }}>MAX</div>
+                                    <div className={`text-orange-400 text-center ${rowPadding}`} style={{ fontSize: valueFontSize }}>{max.toFixed(2)}</div>
+                                    <div className={`text-white text-center ${rowPadding}`} style={{ fontSize: valueFontSize }}>{maxData.laps}</div>
+                                    <div className={`${refuelColor} text-center ${rowPadding}`} style={{ fontSize: valueFontSize }}>{maxData.refuel}</div>
+                                    <div className={`${finishColor(maxData.finish)} text-center ${rowPadding}`} style={{ fontSize: valueFontSize }}>{maxData.finish}</div>
                                 </React.Fragment>
                             );
                         case 'last':
                             if (!showLast) return null;
                             return (
                                 <React.Fragment key="last">
-                                    <div className="text-slate-400 py-0.5" style={{ fontSize: labelFontSize }}>LAST</div>
-                                    <div className="text-white text-center py-0.5" style={{ fontSize: valueFontSize }}>{last.toFixed(2)}</div>
-                                    <div className="text-white text-center py-0.5" style={{ fontSize: valueFontSize }}>{lastData.laps}</div>
-                                    <div className={`${refuelColor} text-center py-0.5`} style={{ fontSize: valueFontSize }}>{lastData.refuel}</div>
-                                    <div className={`${finishColor(lastData.finish)} text-center py-0.5`} style={{ fontSize: valueFontSize }}>{lastData.finish}</div>
+                                    <div className={`text-slate-400 ${rowPadding}`} style={{ fontSize: labelFontSize }}>LAST</div>
+                                    <div className={`text-white text-center ${rowPadding}`} style={{ fontSize: valueFontSize }}>{last.toFixed(2)}</div>
+                                    <div className={`text-white text-center ${rowPadding}`} style={{ fontSize: valueFontSize }}>{lastData.laps}</div>
+                                    <div className={`${refuelColor} text-center ${rowPadding}`} style={{ fontSize: valueFontSize }}>{lastData.refuel}</div>
+                                    <div className={`${finishColor(lastData.finish)} text-center ${rowPadding}`} style={{ fontSize: valueFontSize }}>{lastData.finish}</div>
                                 </React.Fragment>
                             );
                         case 'min':
                             if (!showMin) return null;
                             return (
                                 <React.Fragment key="min">
-                                    <div className="text-slate-400 py-0.5" style={{ fontSize: labelFontSize }}>MIN</div>
-                                    <div className="text-green-400 text-center py-0.5" style={{ fontSize: valueFontSize }}>{min.toFixed(2)}</div>
-                                    <div className="text-white text-center py-0.5" style={{ fontSize: valueFontSize }}>{minData.laps}</div>
-                                    <div className={`${refuelColor} text-center py-0.5`} style={{ fontSize: valueFontSize }}>{minData.refuel}</div>
-                                    <div className={`${finishColor(minData.finish)} text-center py-0.5`} style={{ fontSize: valueFontSize }}>{minData.finish}</div>
+                                    <div className={`text-slate-400 ${rowPadding}`} style={{ fontSize: labelFontSize }}>MIN</div>
+                                    <div className={`text-green-400 text-center ${rowPadding}`} style={{ fontSize: valueFontSize }}>{min.toFixed(2)}</div>
+                                    <div className={`text-white text-center ${rowPadding}`} style={{ fontSize: valueFontSize }}>{minData.laps}</div>
+                                    <div className={`${refuelColor} text-center ${rowPadding}`} style={{ fontSize: valueFontSize }}>{minData.refuel}</div>
+                                    <div className={`${finishColor(minData.finish)} text-center ${rowPadding}`} style={{ fontSize: valueFontSize }}>{minData.finish}</div>
                                 </React.Fragment>
                             );
                         default:

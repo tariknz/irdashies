@@ -45,7 +45,42 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
     const isSessionVisible = useSessionVisibility(settings.sessionVisibility);
 
     // Visual Edit Mode & Demo Mode
-    const { editMode, isDemoMode } = useDashboard();
+    const { editMode, isDemoMode, currentDashboard } = useDashboard();
+    const generalSettings = currentDashboard?.generalSettings;
+
+    // Derived Settings based on General linkage
+    const derivedCompactMode = settings.useGeneralCompactMode
+        ? (generalSettings?.compactMode ?? false)
+        : false;
+
+    const derivedFontStyles = useMemo(() => {
+        if (!settings.useGeneralFontSize || !generalSettings?.fontSize) {
+            return settings.widgetStyles || {};
+        }
+
+        // Map general font size preset to pixel values
+        const sizeMap: Record<string, { label: number, value: number, bar: number }> = {
+            'xs': { label: 8, value: 12, bar: 6 },
+            'sm': { label: 10, value: 14, bar: 8 },
+            'md': { label: 12, value: 18, bar: 10 },
+            'lg': { label: 14, value: 22, bar: 12 },
+            'xl': { label: 16, value: 26, bar: 14 },
+            '2xl': { label: 18, value: 30, bar: 16 },
+            '3xl': { label: 20, value: 34, bar: 18 },
+        };
+
+        const preset = sizeMap[generalSettings.fontSize] || sizeMap['sm'];
+
+        // Return a virtual style object that all widgets will use
+        // We simulate that every widget requested via widgetId gets these same sizes
+        return new Proxy({}, {
+            get: () => ({
+                labelFontSize: preset.label,
+                valueFontSize: preset.value,
+                barFontSize: preset.bar
+            })
+        }) as any;
+    }, [settings.useGeneralFontSize, settings.widgetStyles, generalSettings?.fontSize]);
 
     // Real Data
     const realFuelData = useFuelCalculation(safetyMargin, settings);
@@ -360,47 +395,56 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
     if (!editMode && !isSessionVisible) return <></>;
 
     const renderWidget = (widgetId: string) => {
+        const widgetStyles = derivedFontStyles[widgetId] || derivedFontStyles; // Proxy or direct
+        const widgetProps = {
+            key: widgetId,
+            widgetId: widgetId,
+            fuelData: fuelData,
+            displayData: displayData,
+            fuelUnits: fuelUnits,
+            settings: settings,
+            customStyles: widgetStyles,
+            isCompact: derivedCompactMode
+        };
+
         switch (widgetId) {
             case 'fuelHeader':
             case 'fuel2Header':
             case 'modernHeader':
-                return <FuelCalculatorHeader key={widgetId} widgetId={widgetId} fuelData={fuelData} displayData={displayData} fuelUnits={fuelUnits} settings={settings} />;
+                return <FuelCalculatorHeader {...widgetProps} />;
             case 'fuelGauge':
             case 'fuel2Gauge':
             case 'modernGauge':
-                return <FuelCalculatorGauge key={widgetId} widgetId={widgetId} fuelData={fuelData} displayData={displayData} fuelUnits={fuelUnits} settings={settings} />;
+                return <FuelCalculatorGauge {...widgetProps} />;
             case 'fuelGrid':
             case 'fuel2Grid':
             case 'modernGrid':
                 // Use frozen data for grid (static rows) but pass throttled predictive usage for CURR row
                 return <FuelCalculatorConsumptionGrid
-                    key={widgetId}
-                    widgetId={widgetId}
+                    {...widgetProps}
                     fuelData={frozenFuelData}
                     liveFuelData={fuelData}
                     predictiveUsage={predictiveUsage}
                     displayData={frozenDisplayData}
-                    fuelUnits={fuelUnits}
-                    settings={settings}
                 />;
             case 'fuelScenarios':
             case 'fuel2Scenarios':
             case 'modernScenarios':
-                return <FuelCalculatorPitScenarios key={widgetId} widgetId={widgetId} fuelData={fuelData} displayData={displayData} fuelUnits={fuelUnits} settings={settings} />;
+                return <FuelCalculatorPitScenarios {...widgetProps} />;
             case 'fuelTimeEmpty':
             case 'fuel2TimeEmpty':
             case 'modernTimeEmpty':
-                return <FuelCalculatorTimeEmpty key={widgetId} widgetId={widgetId} fuelData={fuelData} displayData={displayData} fuelUnits={fuelUnits} settings={settings} />;
+                return <FuelCalculatorTimeEmpty {...widgetProps} />;
             case 'fuelGraph':
             case 'fuel2Graph':
             case 'historyGraph':
-                return <FuelHistory key={widgetId} widgetId={widgetId} fuelData={fuelData} displayData={displayData} fuelUnits={fuelUnits} settings={settings} />;
+                return <FuelHistory {...widgetProps} />;
             case 'fuelTargetMessage':
             case 'fuel2TargetMessage':
-                return <FuelCalculatorTargetMessage key={widgetId} widgetId={widgetId} fuelData={fuelData} displayData={displayData} fuelUnits={fuelUnits} settings={settings} />;
+                return <FuelCalculatorTargetMessage {...widgetProps} />;
             case 'fuelConfidence':
             case 'fuel2Confidence':
-                return <FuelCalculatorConfidence key={widgetId} widgetId={widgetId} fuelData={fuelData} displayData={displayData} fuelUnits={fuelUnits} settings={settings} />;
+                return <FuelCalculatorConfidence {...widgetProps} />;
             default: return null;
         }
     };

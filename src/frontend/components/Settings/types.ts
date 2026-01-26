@@ -295,6 +295,8 @@ export interface FuelWidgetSettings extends BaseWidgetSettings {
     fuelRequiredMode: 'toFinish' | 'toAdd';
     enableTargetPitLap?: boolean;
     targetPitLap?: number;
+    useGeneralFontSize?: boolean;
+    useGeneralCompactMode?: boolean;
     sessionVisibility: SessionVisibilitySettings;
     /** 
     * Box Layout Configuration 

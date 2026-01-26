@@ -8,6 +8,8 @@ interface FuelCalculatorWidgetProps {
     fuelUnits: 'L' | 'gal';
     settings?: FuelCalculatorSettings;
     widgetId?: string;
+    customStyles?: { fontSize?: number; labelFontSize?: number; valueFontSize?: number; barFontSize?: number };
+    isCompact?: boolean;
 }
 
 export const getFuelStatusColors = (status: 'safe' | 'caution' | 'danger' = 'safe') => {
@@ -47,9 +49,9 @@ export const getFuelStatusColors = (status: 'safe' | 'caution' | 'danger' = 'saf
     }
 };
 
-export const FuelCalculatorGauge: React.FC<FuelCalculatorWidgetProps> = ({ fuelData, displayData, fuelUnits, settings, widgetId }) => {
+export const FuelCalculatorGauge: React.FC<FuelCalculatorWidgetProps> = ({ fuelData, displayData, fuelUnits, settings, widgetId, customStyles, isCompact }) => {
     // Custom style handling for separate label/value sizes
-    const widgetStyle = (widgetId && settings?.widgetStyles?.[widgetId]) || {};
+    const widgetStyle = customStyles || (widgetId && settings?.widgetStyles?.[widgetId]) || {};
     const labelFontSize = widgetStyle.labelFontSize ? `${widgetStyle.labelFontSize}px` : (widgetStyle.fontSize ? `${widgetStyle.fontSize}px` : '10px');
     const valueFontSize = widgetStyle.valueFontSize ? `${widgetStyle.valueFontSize}px` : (widgetStyle.fontSize ? `${widgetStyle.fontSize}px` : '18px');
 
@@ -68,8 +70,8 @@ export const FuelCalculatorGauge: React.FC<FuelCalculatorWidgetProps> = ({ fuelD
     const tankString = formatFuel(tankCapacity, fuelUnits, 0);
 
     return (
-        <div className="mb-4">
-            <div className="flex justify-between text-[0.75em] text-slate-400 mb-2 font-medium items-end">
+        <div className={isCompact ? 'mb-1' : 'mb-4'}>
+            <div className={`flex justify-between text-[0.75em] text-slate-400 font-medium items-end ${isCompact ? 'mb-0.5' : 'mb-2'}`}>
                 <span className="mb-0.5" style={{ fontSize: labelFontSize }}>E</span>
                 <span className="text-white font-bold tracking-wide" style={{ fontSize: valueFontSize }}>
                     {fuelString} / {lapsString} laps
