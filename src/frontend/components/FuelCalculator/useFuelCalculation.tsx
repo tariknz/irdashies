@@ -170,6 +170,16 @@ export function useFuelCalculation(
     }
   }, [sessionFlags]);
 
+  const playerCarTowTime = useTelemetryValue('PlayerCarTowTime');
+  const wasTowedDuringLapRef = useRef(false);
+
+  // Monitor tow time to detect incidents
+  useEffect(() => {
+    if (playerCarTowTime !== undefined && playerCarTowTime > 0) {
+      wasTowedDuringLapRef.current = true;
+    }
+  }, [playerCarTowTime]);
+
   // Detect lap crossings and process fuel data
   useEffect(() => {
     if (
@@ -219,7 +229,10 @@ export function useFuelCalculation(
       if (completedLap >= 1 && fuelUsed > 0 && lapTime > 0) {
         // Validation logic...
         const recentLaps = state.getRecentLaps(10);
-        const isValid = validateLapData(fuelUsed, lapTime, recentLaps);
+        // A lap is invalid if a tow occurred OR if it fails statistical outlier detection
+        const isOutlier = !validateLapData(fuelUsed, lapTime, recentLaps);
+        const wasTowed = wasTowedDuringLapRef.current;
+        const isValid = !wasTowed && !isOutlier;
 
         const lapData: FuelLapData = {
           lapNumber: completedLap,
@@ -228,17 +241,21 @@ export function useFuelCalculation(
           isGreenFlag: isGreenFlag(sessionFlags),
           isValidForCalc: isValid,
           isOutLap: state.wasOnPitRoad, // Mark if lap started from pit road
+          wasTowed,
           timestamp: Date.now(),
         };
 
-        if (DEBUG_LOGGING) {
+        if (DEBUG_LOGGING || wasTowed) {
           console.log(
-            `[FuelCalculator]   -> Valid: ${lapData.isValidForCalc}, Green: ${lapData.isGreenFlag}, OutLap: ${lapData.isOutLap}`
+            `[FuelCalculator]   -> Valid: ${lapData.isValidForCalc}, Green: ${lapData.isGreenFlag}, OutLap: ${lapData.isOutLap}, Towed: ${wasTowed}, Outlier: ${isOutlier}`
           );
         }
 
         addLapData(lapData);
       }
+
+      // Reset tow flag for the new lap
+      wasTowedDuringLapRef.current = false;
 
       // Now update lap crossing state for the NEW lap
       // Ensure we increment to the next lap correctly
@@ -274,6 +291,7 @@ export function useFuelCalculation(
     lap,
     sessionFlags,
     onPitRoad,
+    playerCarTowTime,
     addLapData,
     updateLapCrossing,
     updateLapDistPct,
@@ -286,7 +304,7 @@ export function useFuelCalculation(
       fuelLevel: fuelLevel ?? 0,
       lastLapUsage: 0,
       currentLapUsage: lapStartFuel > 0 && fuelLevel ? Math.max(0, lapStartFuel - fuelLevel) : 0,
-      avg3Laps: 0,
+      avgLaps: 0,
       avg10Laps: 0,
       avgAllGreenLaps: 0,
       minLapUsage: 0,
@@ -359,23 +377,24 @@ export function useFuelCalculation(
 
     // Get different lap groupings from laps to use
     const greenLaps = getGreenFlagLaps(lapsToUse);
-    const last3 = lapsToUse.slice(0, 3);
+    const avgLapsCount = settings?.avgLapsCount || 3;
+    const lastLapsForAvg = lapsToUse.slice(0, avgLapsCount);
     const last10 = lapsToUse.slice(0, 10);
 
     // Calculate averages - Use Simple Average for display metrics (matches user expectations)
     const lastLapUsage = lapsToUse[0]?.fuelUsed || 0;
-    const avg3Laps =
-      last3.length > 0 ? calculateSimpleAverage(last3) : lastLapUsage;
+    const avgLaps =
+      lastLapsForAvg.length > 0 ? calculateSimpleAverage(lastLapsForAvg) : lastLapUsage;
     const avg10Laps =
-      last10.length > 0 ? calculateSimpleAverage(last10) : avg3Laps;
+      last10.length > 0 ? calculateSimpleAverage(last10) : avgLaps;
     const avgAllGreenLaps =
       greenLaps.length > 0 ? calculateSimpleAverage(greenLaps) : avg10Laps;
 
     // Calculate min and max fuel consumption
     const { min: minLapUsage, max: maxLapUsage } = findFuelMinMax(lapsToUse);
 
-    // Use 10-lap average as primary metric, fall back to 3-lap if needed
-    const avgFuelPerLap = last10.length >= 5 ? avg10Laps : avg3Laps;
+    // Use customizable average as primary metric for strategy and scenarios
+    const avgFuelPerLap = avgLaps;
 
     // Guard against zero or invalid avgFuelPerLap
     if (avgFuelPerLap <= 0) {
@@ -703,7 +722,7 @@ export function useFuelCalculation(
       lastLapUsage,
       currentLapUsage, // Add live usage
       projectedLapUsage, // Add projected usage
-      avg3Laps,
+      avgLaps,
       avg10Laps,
       avgAllGreenLaps,
       minLapUsage,

@@ -23,7 +23,7 @@ const TargetScenarioRow: React.FC<{
 }> = ({ targetLap, fuelData, displayData, settings, valueFontSize, isTesting }) => {
     const lapsLeftAfterPit = Math.max(0, fuelData.totalLaps - targetLap);
     const safetyMargin = settings?.safetyMargin ?? 0.05;
-    const consumption = displayData.avg10Laps || 0;
+    const consumption = displayData.avgLaps || displayData.avg10Laps || 0;
     const fuelToAddHypothetical = lapsLeftAfterPit * consumption * (1 + safetyMargin);
     const fuelBurnedToFinish = lapsLeftAfterPit * consumption;
     const estimatedFinishFuel = Math.max(0, fuelToAddHypothetical - fuelBurnedToFinish);
@@ -97,10 +97,11 @@ export const FuelCalculatorPitScenarios: React.FC<FuelCalculatorWidgetProps> = (
                     // If we drive `scenario.laps` laps, we arrive at pit.
                     const lapsLeftAfterPit = Math.max(0, fuelData.totalLaps - pitLap);
                     const safetyMargin = settings?.safetyMargin ?? 0.05;
-                    const fuelToAddHypothetical = lapsLeftAfterPit * (displayData.avg10Laps || 0) * (1 + safetyMargin);
+                    const consumption = displayData.avgLaps || displayData.avg10Laps || 0;
+                    const fuelToAddHypothetical = lapsLeftAfterPit * consumption * (1 + safetyMargin);
 
                     // Calculate estimated fuel at finish: (Added) - (Needed for remaining laps)
-                    const fuelBurnedToFinish = lapsLeftAfterPit * (displayData.avg10Laps || 0);
+                    const fuelBurnedToFinish = lapsLeftAfterPit * consumption;
                     const estimatedFinishFuel = Math.max(0, fuelToAddHypothetical - fuelBurnedToFinish);
 
                     let windowStatus = '';

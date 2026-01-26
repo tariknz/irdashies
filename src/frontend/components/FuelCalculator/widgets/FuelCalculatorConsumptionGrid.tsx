@@ -39,7 +39,7 @@ export const FuelCalculatorConsumptionGrid: React.FC<FuelCalculatorWidgetProps> 
     const showMin = settings ? settings.showMin : false; // Default off for compact modern layout unless enabled
 
     // Grid Data
-    const avg = displayData.avg10Laps || displayData.avg3Laps;
+    const avg = displayData.avgLaps || displayData.avg10Laps;
     const max = displayData.maxLapUsage;
     const last = displayData.lastLapUsage;
     // Add min data
@@ -82,8 +82,14 @@ export const FuelCalculatorConsumptionGrid: React.FC<FuelCalculatorWidgetProps> 
         const fuelNeeded = lapsRemainingToUse * usage;
         const finish = fuelToUse - fuelNeeded;
 
-        // Refuel (Fuel to add) - simplified logic for display
-        const toAdd = Math.max(0, fuelNeeded - fuelToUse);
+        // Refuel (Fuel to add)
+        // Calculate based on "how much to add at the pit stop if I pit when empty"
+        // This matches the logic in Pit Scenarios and is more consistent for strategy.
+        const safetyMargin = settings?.safetyMargin ?? 0.05;
+        const lapsPossible = usage > 0 ? fuelToUse / usage : 0;
+        const conservativePitLapOffset = Math.floor(lapsPossible);
+        const lapsAfterEmpty = Math.max(0, lapsRemainingToUse - conservativePitLapOffset);
+        const toAdd = lapsAfterEmpty * usage * (1 + safetyMargin);
 
         // If testing, hide Refuel and Finish
         if (isTesting) {
@@ -96,8 +102,12 @@ export const FuelCalculatorConsumptionGrid: React.FC<FuelCalculatorWidgetProps> 
 
         return {
             laps: isFinite(laps) ? laps.toFixed(2) : '--',
-            refuel: toAdd > 0 ? toAdd.toFixed(2) : '--', // Mockup shows values, we show -- if 0? or 0. Mockup has Refuel col.
-            finish: finish.toFixed(2) // Positive or negative
+            refuel: toAdd > 0 ? toAdd.toFixed(2) : '--',
+            // If refuelling, show the safety buffer surplus at finish to match Pit Scenarios
+            // Otherwise show pure balance
+            finish: toAdd > 0
+                ? (lapsAfterEmpty * usage * safetyMargin).toFixed(2)
+                : finish.toFixed(2)
         };
     };
 
@@ -151,9 +161,10 @@ export const FuelCalculatorConsumptionGrid: React.FC<FuelCalculatorWidgetProps> 
                             );
                         case 'avg':
                             if (!showAvg) return null;
+                            const avgLabel = `AVG ${settings?.avgLapsCount || 3}`;
                             return (
                                 <React.Fragment key="avg">
-                                    <div className={`text-slate-400 ${rowPadding}`} style={{ fontSize: labelFontSize }}>AVG</div>
+                                    <div className={`text-slate-400 ${rowPadding}`} style={{ fontSize: labelFontSize }}>{avgLabel}</div>
                                     <div className={`text-white text-center ${rowPadding}`} style={{ fontSize: valueFontSize }}>{avg.toFixed(2)}</div>
                                     <div className={`text-white text-center ${rowPadding}`} style={{ fontSize: valueFontSize }}>{avgData.laps}</div>
                                     <div className={`${refuelColor} text-center ${rowPadding}`} style={{ fontSize: valueFontSize }}>{avgData.refuel}</div>

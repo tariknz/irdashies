@@ -42,20 +42,27 @@ export function validateLapData(
   // Need at least 3 laps for statistical validation
   if (recentLaps.length < 3) return true;
 
-  // Statistical outlier detection
-  const fuelValues = recentLaps.map((l) => l.fuelUsed);
+  // Statistical outlier detection using Interquartile Range (IQR)
+  // More robust than Standard Deviation for skewed fuel data
+  const fuelValues = recentLaps.map((l) => l.fuelUsed).sort((a, b) => a - b);
+  const q1 = fuelValues[Math.floor(fuelValues.length * 0.25)];
+  const q3 = fuelValues[Math.floor(fuelValues.length * 0.75)];
+  const iqr = q3 - q1;
+
+  // Use a sensible factor (1.5 is standard, 2.0 is more lenient for racing)
+  const factor = 2.0;
+  const lowerBound = q1 - factor * iqr;
+  const upperBound = q3 + factor * iqr;
+
+  // Additional safety: ensure we don't discard laps that are within 15% of the mean
+  // to avoid over-filtering in very consistent sessions
   const mean = fuelValues.reduce((a, b) => a + b, 0) / fuelValues.length;
-  const variance =
-    fuelValues.reduce((sq, n) => sq + (n - mean) ** 2, 0) / fuelValues.length;
-  const stdDev = Math.sqrt(variance);
+  const tolerance = mean * 0.15;
 
-  // Use minimum threshold of 15% of mean to handle fuel saving scenarios
-  // This ensures laps with different driving styles (normal vs fuel saving) are accepted
-  // Example: 1.08L normal, 0.97L ultra save = ~10% difference, well within 15%
-  const minThreshold = mean * 0.15;
-  const threshold = Math.max(3 * stdDev, minThreshold);
+  const isWithinIQR = fuelUsed >= lowerBound && fuelUsed <= upperBound;
+  const isWithinTolerance = Math.abs(fuelUsed - mean) <= tolerance;
 
-  return Math.abs(fuelUsed - mean) <= threshold;
+  return isWithinIQR || isWithinTolerance;
 }
 
 // ============================================================================

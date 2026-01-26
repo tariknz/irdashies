@@ -103,7 +103,7 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
     const mockMedium: typeof realFuelData = {
         fuelLevel: 45.5,
         lastLapUsage: 3.2,
-        avg3Laps: 3.15,
+        avgLaps: 3.15,
         avg10Laps: 3.18,
         avgAllGreenLaps: 3.17,
         minLapUsage: 3.1,
@@ -142,7 +142,7 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
         lapsWithFuel: 19.2,
         currentLap: 10,
         lapsRemaining: 40,
-        avg3Laps: 3.02,
+        avgLaps: 3.02,
         avg10Laps: 3.01,
         lastLapUsage: 3.01,
         confidence: 'high',
@@ -165,7 +165,7 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
         lapsWithFuel: 1.8,
         currentLap: 30,
         lapsRemaining: 20,
-        avg3Laps: 3.3, // High consumption!
+        avgLaps: 3.3, // High consumption!
         confidence: 'low',
         stopsRemaining: 1, // Need to pit NOW
         pitWindowOpen: 31, // Pit window is open
@@ -185,7 +185,7 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
     const emptyFuelData = {
         fuelLevel: realCurrentFuelLevel || 0,
         lastLapUsage: 0,
-        avg3Laps: 0,
+        avgLaps: 0,
         avg10Laps: 0,
         avgAllGreenLaps: 0,
         minLapUsage: 0,
@@ -224,7 +224,7 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
     const displayData = useMemo(() => {
         if (!fuelData) {
             return {
-                fuelLevel: currentFuelLevel, lastLapUsage: 0, avg3Laps: 0, avg10Laps: 0,
+                fuelLevel: currentFuelLevel, lastLapUsage: 0, avgLaps: 0, avg10Laps: 0,
                 avgAllGreenLaps: 0, minLapUsage: 0, maxLapUsage: 0, lapsWithFuel: 0,
                 lapsRemaining: 0, totalLaps: 0, fuelToFinish: 0, fuelToAdd: 0,
                 canFinish: false, targetConsumption: 0, confidence: 'low' as const,
@@ -235,7 +235,7 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
         }
 
         if (Math.abs(fuelData.fuelLevel - currentFuelLevel) > 0.1) {
-            const avgFuelPerLap = fuelData.avg3Laps || fuelData.lastLapUsage;
+            const avgFuelPerLap = fuelData.avgLaps || fuelData.lastLapUsage;
             const lapsWithFuel = avgFuelPerLap > 0 ? currentFuelLevel / avgFuelPerLap : 0;
             const fuelAtFinish = currentFuelLevel - fuelData.lapsRemaining * avgFuelPerLap;
             const targetScenarios: typeof fuelData.targetScenarios = [];
@@ -364,7 +364,7 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
     const frozenDisplayData = useMemo(() => {
         if (!frozenFuelData) {
             return {
-                fuelLevel: 0, lastLapUsage: 0, avg3Laps: 0, avg10Laps: 0,
+                fuelLevel: 0, lastLapUsage: 0, avgLaps: 0, avg10Laps: 0,
                 avgAllGreenLaps: 0, minLapUsage: 0, maxLapUsage: 0, lapsWithFuel: 0,
                 lapsRemaining: 0, totalLaps: 0, fuelToFinish: 0, fuelToAdd: 0,
                 canFinish: false, targetConsumption: 0, confidence: 'low' as const,
@@ -376,7 +376,7 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
         // We use frozenFuelData.fuelLevel effectively
         // The logic below mirrors displayData but doesn't override with live currentFuelLevel
         const level = frozenFuelData.fuelLevel;
-        const avgFuelPerLap = frozenFuelData.avg3Laps || frozenFuelData.lastLapUsage;
+        const avgFuelPerLap = frozenFuelData.avgLaps || frozenFuelData.lastLapUsage;
         const lapsWithFuel = avgFuelPerLap > 0 ? level / avgFuelPerLap : 0;
         const fuelAtFinish = level - frozenFuelData.lapsRemaining * avgFuelPerLap;
 
@@ -387,7 +387,7 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
             lapsWithFuel,
             pitWindowClose: frozenFuelData.currentLap + lapsWithFuel - 1,
             fuelAtFinish,
-            targetScenarios: []
+            targetScenarios: frozenFuelData.targetScenarios
         };
     }, [frozenFuelData]);
 
@@ -430,7 +430,11 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
             case 'fuelScenarios':
             case 'fuel2Scenarios':
             case 'modernScenarios':
-                return <FuelCalculatorPitScenarios {...widgetProps} />;
+                return <FuelCalculatorPitScenarios
+                    {...widgetProps}
+                    fuelData={frozenFuelData}
+                    displayData={frozenDisplayData}
+                />;
             case 'fuelTimeEmpty':
             case 'fuel2TimeEmpty':
             case 'modernTimeEmpty':
@@ -441,7 +445,11 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
                 return <FuelHistory {...widgetProps} />;
             case 'fuelTargetMessage':
             case 'fuel2TargetMessage':
-                return <FuelCalculatorTargetMessage {...widgetProps} />;
+                return <FuelCalculatorTargetMessage
+                    {...widgetProps}
+                    fuelData={frozenFuelData}
+                    displayData={frozenDisplayData}
+                />;
             case 'fuelConfidence':
             case 'fuel2Confidence':
                 return <FuelCalculatorConfidence {...widgetProps} />;

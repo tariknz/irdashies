@@ -44,6 +44,7 @@ const defaultConfig: FuelWidgetSettings['config'] = {
   layoutConfig: [], // Default empty
   layoutTree: undefined, // Will be migrated on load
   consumptionGridOrder: ['curr', 'avg', 'max', 'last', 'min'],
+  avgLapsCount: 3,
   fuelStatusThresholds: { green: 60, amber: 30, red: 10 },
   fuelStatusBasis: 'avg',
   fuelStatusRedLaps: 3,
@@ -77,6 +78,7 @@ const migrateConfig = (savedConfig: unknown): FuelWidgetSettings['config'] => {
     fuelStatusThresholds: (config.fuelStatusThresholds as any) ?? defaultConfig.fuelStatusThresholds,
     fuelStatusBasis: (config.fuelStatusBasis as any) ?? defaultConfig.fuelStatusBasis,
     fuelStatusRedLaps: (config.fuelStatusRedLaps as any) ?? defaultConfig.fuelStatusRedLaps,
+    avgLapsCount: (config.avgLapsCount as number) ?? defaultConfig.avgLapsCount,
   };
 };
 
@@ -236,9 +238,9 @@ interface SortableRow {
   configKey: keyof FuelWidgetSettings['config'];
 }
 
-const sortableRows: SortableRow[] = [
+const getSortableRows = (avgLapsCount: number): SortableRow[] => [
   { id: 'curr', label: 'Current Lap', configKey: 'showCurrentLap' },
-  { id: 'avg', label: 'Average (3 Lap)', configKey: 'show3LapAvg' },
+  { id: 'avg', label: `Average (${avgLapsCount} Lap)`, configKey: 'show3LapAvg' },
   { id: 'max', label: 'Max Consumption', configKey: 'showMax' },
   { id: 'last', label: 'Last Lap', configKey: 'showLastLap' },
   { id: 'min', label: 'Min Consumption', configKey: 'showMin' },
@@ -250,18 +252,19 @@ const GridOrderSettingsList = ({ itemsOrder, onReorder, settings, handleConfigCh
   settings: FuelWidgetSettings;
   handleConfigChange: (changes: Partial<FuelWidgetSettings['config']>) => void;
 }) => {
+  const rows = getSortableRows(settings.config.avgLapsCount || 3);
   // Filter out any invalid IDs potentially saved in old configs
-  const validIds = sortableRows.map(r => r.id);
+  const validIds = rows.map((r: SortableRow) => r.id);
   const items = itemsOrder
     .filter(id => validIds.includes(id))
     .map((id) => {
-      const row = sortableRows.find((r) => r.id === id);
+      const row = rows.find((r: SortableRow) => r.id === id);
       return row ? { ...row } : null;
     })
     .filter((r): r is SortableRow => r !== null);
 
   // If some default rows are missing (e.g. migration), append them
-  sortableRows.forEach(def => {
+  rows.forEach((def: SortableRow) => {
     if (!items.find(i => i.id === def.id)) items.push(def);
   });
 
@@ -548,7 +551,19 @@ const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => {
                 Consumption Details
                 <span className="block text-xs text-slate-500">Configures rows in Consumption Grid</span>
               </span>
-              <div className="flex items-center gap-4">
+              <div className="flex flex-col gap-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-slate-400">Average Laps</span>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="range" min="1" max="50" step="1"
+                      value={settings.config.avgLapsCount ?? 3}
+                      onChange={(e) => handleConfigChange({ avgLapsCount: parseInt(e.target.value) })}
+                      className="w-32 h-1.5 bg-slate-600 rounded-lg appearance-none cursor-pointer"
+                    />
+                    <span className="text-xs text-slate-300 w-8 text-right">{settings.config.avgLapsCount ?? 3}</span>
+                  </div>
+                </div>
                 <DualFontSizeInput widgetId="fuel2Grid" settings={settings} onChange={handleConfigChange} />
               </div>
 

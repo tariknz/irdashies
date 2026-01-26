@@ -22,7 +22,7 @@ export const FuelCalculatorTargetMessage: React.FC<FuelCalculatorWidgetProps> = 
     const targetLap = settings.targetPitLap;
     const lapsLeftAfterPit = Math.max(0, fuelData.totalLaps - targetLap);
     const safetyMargin = settings?.safetyMargin ?? 0.05;
-    const consumption = displayData.avg10Laps || 0;
+    const consumption = displayData.avgLaps || displayData.avg10Laps || 0;
     const fuelToAddHypothetical = lapsLeftAfterPit * consumption * (1 + safetyMargin);
 
     const widgetStyle = customStyles || (widgetId && settings?.widgetStyles?.[widgetId]) || {};

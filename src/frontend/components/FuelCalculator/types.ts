@@ -19,6 +19,8 @@ export interface FuelLapData {
   isValidForCalc: boolean;
   /** Whether the car started this lap from pit road (out-lap) */
   isOutLap: boolean;
+  /** Whether the car was towed during this lap */
+  wasTowed?: boolean;
   /** Timestamp when lap was completed */
   timestamp: number;
 }
@@ -35,7 +37,8 @@ export interface FuelCalculation {
   currentLapUsage?: number;
   /** Projected fuel usage for the current lap (liters) */
   projectedLapUsage?: number;
-  /** Average fuel consumption over last 3 laps (liters) */  avg3Laps: number;
+  /** Average fuel consumption over customizable last N laps (liters) */
+  avgLaps: number;
   /** Average fuel consumption over last 10 laps (liters) */
   avg10Laps: number;
   /** Average fuel consumption for all green flag laps (liters) */
@@ -142,6 +145,8 @@ export interface FuelCalculatorSettings {
   fuelRequiredMode?: 'toFinish' | 'toAdd';
   enableTargetPitLap?: boolean;
   targetPitLap?: number;
+  /** Number of laps to use for AVG calculation (default: 3) */
+  avgLapsCount?: number;
   useGeneralFontSize?: boolean;
   useGeneralCompactMode?: boolean;
 

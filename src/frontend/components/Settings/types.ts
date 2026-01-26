@@ -319,6 +319,8 @@ export interface FuelWidgetSettings extends BaseWidgetSettings {
     fuelStatusBasis?: 'last' | 'avg' | 'min' | 'max';
     /** Number of laps remaining that triggers Red status regardless of percentage */
     fuelStatusRedLaps?: number;
+    /** Number of laps to use for AVG calculation (default: 3) */
+    avgLapsCount?: number;
   };
 }
 
