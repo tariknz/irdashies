@@ -132,11 +132,7 @@ export const SettingsLayout = () => {
                 Fuel Calculator
               </Link>
             </li>
-            <li>
-              <Link to="/settings/fuel2" className={menuItemClass('/fuel2')}>
-                Fuel Calculator 2
-              </Link>
-            </li>
+
             <li>
               <Link
                 to="/settings/garagecover"
@@ -227,8 +223,7 @@ export const SettingsLayout = () => {
             <Route path="standings" element={<StandingsSettings />} />
             <Route path="relative" element={<RelativeSettings />} />
             <Route path="weather" element={<WeatherSettings />} />
-            <Route path="fuel" element={<FuelSettings key="fuel" />} />
-            <Route path="fuel2" element={<FuelSettings key="fuel2" widgetType="fuel2" />} />
+            <Route path="fuel" element={<FuelSettings />} />
             <Route path="map" element={<TrackMapSettings />} />
             <Route path="flatmap" element={<FlatTrackMapSettings />} />
             <Route path="input" element={<InputSettings />} />

@@ -70,19 +70,7 @@ const migrateConfig = (savedConfig: unknown): FuelWidgetSettings['config'] => {
   };
 };
 
-// Available Widgets for Legacy Fuel Calculator
-const AVAILABLE_WIDGETS: { id: FuelWidgetType; label: string }[] = [
-  { id: 'fuelLevel', label: 'Fuel Level Header' },
-  { id: 'lapsRemaining', label: 'Laps Remaining Header' },
-  { id: 'fuelHeader', label: 'Combined Header (Fuel + Laps)' },
-  { id: 'consumption', label: 'Consumption Table' },
-  { id: 'keyInfo', label: 'Key Info (To Finish/Add)' },
-  { id: 'pitWindow', label: 'Pit Window' },
-  { id: 'endurance', label: 'Endurance Info' },
-  { id: 'scenarios', label: 'Target Scenarios' },
-  { id: 'graph', label: 'Consumption Graph' },
-  { id: 'confidence', label: 'Confidence Indicator' },
-];
+
 
 // Available Widgets for Fuel Calculator 2
 const AVAILABLE_WIDGETS_FUEL2: { id: string; label: string }[] = [
@@ -96,35 +84,7 @@ const AVAILABLE_WIDGETS_FUEL2: { id: string; label: string }[] = [
   { id: 'fuel2TimeEmpty', label: 'Time Until Empty' },
 ];
 
-const DEFAULT_TREE: LayoutNode = {
-  id: 'root-default',
-  type: 'split',
-  direction: 'col',
-  children: [
-    {
-      id: 'header-box',
-      type: 'box',
-      direction: 'row',
-      widgets: ['fuelHeader'],
-      weight: 1
-    },
-    {
-      id: 'main-box',
-      type: 'box',
-      direction: 'col',
-      widgets: [
-        'consumption',
-        'keyInfo',
-        'endurance',
-        'pitWindow',
-        'scenarios',
-        'graph',
-        'confidence'
-      ],
-      weight: 4
-    }
-  ]
-};
+
 
 const DEFAULT_TREE_FUEL2: LayoutNode = {
   id: 'root-fuel2-default',
@@ -280,21 +240,18 @@ const GridOrderSettingsList = ({ itemsOrder, onReorder, settings, handleConfigCh
   );
 };
 
-const SingleFuelWidgetSettings = ({ widgetId, isFuel2 }: { widgetId: string, isFuel2: boolean }) => {
+const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => {
   const { currentDashboard } = useDashboard();
   const savedSettings = currentDashboard?.widgets.find(
     (w) => w.id === widgetId
   ) as FuelWidgetSettings | undefined;
 
-  // Uses isFuel2 passed from parent to avoid race condition with savedSettings being undefined on first render
-  // const isFuel2 = savedSettings?.type === 'fuel2'; 
-
   const [settings, setSettings] = useState<FuelWidgetSettings>(() => {
     const initialConfig = migrateConfig(savedSettings?.config);
 
-    // Use DEFAULT_TREE if no layout is defined
+    // Use DEFAULT_TREE_FUEL2 if no layout is defined
     if ((!initialConfig.layoutConfig || initialConfig.layoutConfig.length === 0) && !initialConfig.layoutTree) {
-      initialConfig.layoutTree = isFuel2 ? DEFAULT_TREE_FUEL2 : DEFAULT_TREE;
+      initialConfig.layoutTree = DEFAULT_TREE_FUEL2;
     }
     return {
       enabled: savedSettings?.enabled ?? false,
@@ -302,7 +259,7 @@ const SingleFuelWidgetSettings = ({ widgetId, isFuel2 }: { widgetId: string, isF
     };
   });
 
-  const availableWidgets = isFuel2 ? AVAILABLE_WIDGETS_FUEL2 : AVAILABLE_WIDGETS;
+  const availableWidgets = AVAILABLE_WIDGETS_FUEL2;
 
 
 
@@ -312,7 +269,7 @@ const SingleFuelWidgetSettings = ({ widgetId, isFuel2 }: { widgetId: string, isF
     if (settings.config.layoutTree && settings.config.layoutTree.type) return settings.config.layoutTree;
     // Auto-migrate legacy list to tree for the visualizer
     return migrateToTree(settings.config.layoutConfig || [], availableWidgets as any);
-  }, [settings.config.layoutTree, settings.config.layoutConfig, availableWidgets, isFuel2]);
+  }, [settings.config.layoutTree, settings.config.layoutConfig, availableWidgets]);
 
   if (!currentDashboard || !savedSettings) {
     return <div className="p-4 text-slate-400">Widget not found or loading...</div>;
@@ -320,8 +277,8 @@ const SingleFuelWidgetSettings = ({ widgetId, isFuel2 }: { widgetId: string, isF
 
   return (
     <BaseSettingsSection
-      title={isFuel2 ? "Fuel Calculator 2 Settings" : "Fuel Calculator Configuration"}
-      description={isFuel2 ? "Configure the Fuel Calculator 2 layout." : "Configure fuel consumption tracking, pit stop calculations, and custom layout."}
+      title="Fuel Calculator Settings"
+      description="Configure the Fuel Calculator layout."
       settings={settings}
       onSettingsChange={setSettings}
       widgetId={widgetId}
@@ -349,624 +306,372 @@ const SingleFuelWidgetSettings = ({ widgetId, isFuel2 }: { widgetId: string, isF
               )}
             </div>
 
-            <div className={`${isFuel2 ? '' : 'border-t border-slate-600/50 pt-6'} space-y-4`}>
+            <div className="space-y-4">
               <h3 className="text-md font-medium text-slate-200">Widget Settings</h3>
 
               {/* Widget Styles for Fuel 2 specific components without toggles */}
-              {isFuel2 && (
-                <div className="space-y-4 pb-4 mb-4 border-b border-slate-700">
-                  <div className="flex items-center justify-between pr-20">
-                    <span className="text-sm text-slate-300">(Stops/Window/Confidence)</span>
-                    <DualFontSizeInput widgetId="fuel2Header" settings={settings} onChange={handleConfigChange} />
-                  </div>
-                  <div className="flex items-center justify-between pr-20">
-                    <span className="text-sm text-slate-300">Confidence Messages</span>
-                    <DualFontSizeInput widgetId="fuel2Confidence" settings={settings} onChange={handleConfigChange} />
-                  </div>
-                  <div className="flex items-center justify-between pr-20">
-                    <span className="text-sm text-slate-300">Fuel Gauge</span>
-                    <DualFontSizeInput widgetId="fuel2Gauge" settings={settings} onChange={handleConfigChange} />
-                  </div>
-                  <div className="flex items-center justify-between pr-20">
-                    <span className="text-sm text-slate-300">Time Until Empty</span>
-                    <DualFontSizeInput widgetId="fuel2TimeEmpty" settings={settings} onChange={handleConfigChange} />
+              <div className="space-y-4 pb-4 mb-4 border-b border-slate-700">
+                <div className="flex items-center justify-between pr-20">
+                  <span className="text-sm text-slate-300">(Stops/Window/Confidence)</span>
+                  <DualFontSizeInput widgetId="fuel2Header" settings={settings} onChange={handleConfigChange} />
+                </div>
+                <div className="flex items-center justify-between pr-20">
+                  <span className="text-sm text-slate-300">Confidence Messages</span>
+                  <DualFontSizeInput widgetId="fuel2Confidence" settings={settings} onChange={handleConfigChange} />
+                </div>
+                <div className="flex items-center justify-between pr-20">
+                  <span className="text-sm text-slate-300">Fuel Gauge</span>
+                  <DualFontSizeInput widgetId="fuel2Gauge" settings={settings} onChange={handleConfigChange} />
+                </div>
+                <div className="flex items-center justify-between pr-20">
+                  <span className="text-sm text-slate-300">Time Until Empty</span>
+                  <DualFontSizeInput widgetId="fuel2TimeEmpty" settings={settings} onChange={handleConfigChange} />
+                </div>
+              </div>
+            </div>
+
+            {/* Fuel Status Alerts */}
+            <div className="space-y-4 pb-4 mb-4 border-b border-slate-700">
+              <h4 className="text-sm font-medium text-slate-300">Fuel Status Alerts</h4>
+
+              <div className="space-y-3">
+                {/* Green Threshold */}
+                <div className="flex items-center justify-between pr-20">
+                  <span className="text-xs text-slate-400">Green Threshold (%)</span>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="range" min="0" max="100" step="1"
+                      value={settings.config.fuelStatusThresholds?.green ?? 60}
+                      onChange={(e) => {
+                        const val = parseInt(e.target.value);
+                        handleConfigChange({
+                          fuelStatusThresholds: {
+                            ...defaultConfig.fuelStatusThresholds,
+                            ...settings.config.fuelStatusThresholds,
+                            green: val
+                          } as any
+                        });
+                      }}
+                      className="w-32 h-1.5 bg-slate-600 rounded-lg appearance-none cursor-pointer"
+                    />
+                    <span className="text-xs text-slate-300 w-8 text-right">{settings.config.fuelStatusThresholds?.green ?? 60}%</span>
                   </div>
                 </div>
-              )}
 
-              {/* Fuel Status Alerts */}
-              {isFuel2 && (
-                <div className="space-y-4 pb-4 mb-4 border-b border-slate-700">
-                  <h4 className="text-sm font-medium text-slate-300">Fuel Status Alerts</h4>
-
-                  <div className="space-y-3">
-                    {/* Green Threshold */}
-                    <div className="flex items-center justify-between pr-20">
-                      <span className="text-xs text-slate-400">Green Threshold (%)</span>
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="range" min="0" max="100" step="1"
-                          value={settings.config.fuelStatusThresholds?.green ?? 60}
-                          onChange={(e) => {
-                            const val = parseInt(e.target.value);
-                            handleConfigChange({
-                              fuelStatusThresholds: {
-                                ...defaultConfig.fuelStatusThresholds,
-                                ...settings.config.fuelStatusThresholds,
-                                green: val
-                              } as any
-                            });
-                          }}
-                          className="w-32 h-1.5 bg-slate-600 rounded-lg appearance-none cursor-pointer"
-                        />
-                        <span className="text-xs text-slate-300 w-8 text-right">{settings.config.fuelStatusThresholds?.green ?? 60}%</span>
-                      </div>
-                    </div>
-
-                    {/* Amber Threshold */}
-                    <div className="flex items-center justify-between pr-20">
-                      <span className="text-xs text-slate-400">Amber Threshold (%)</span>
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="range" min="0" max="100" step="1"
-                          value={settings.config.fuelStatusThresholds?.amber ?? 30}
-                          onChange={(e) => {
-                            const val = parseInt(e.target.value);
-                            handleConfigChange({
-                              fuelStatusThresholds: {
-                                ...defaultConfig.fuelStatusThresholds,
-                                ...settings.config.fuelStatusThresholds,
-                                amber: val
-                              } as any
-                            });
-                          }}
-                          className="w-32 h-1.5 bg-slate-600 rounded-lg appearance-none cursor-pointer"
-                        />
-                        <span className="text-xs text-slate-300 w-8 text-right">{settings.config.fuelStatusThresholds?.amber ?? 30}%</span>
-                      </div>
-                    </div>
-
-                    {/* Red Threshold */}
-                    <div className="flex items-center justify-between pr-20">
-                      <span className="text-xs text-slate-400">Red Threshold (%)</span>
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="range" min="0" max="100" step="1"
-                          value={settings.config.fuelStatusThresholds?.red ?? 10}
-                          onChange={(e) => {
-                            const val = parseInt(e.target.value);
-                            handleConfigChange({
-                              fuelStatusThresholds: {
-                                ...defaultConfig.fuelStatusThresholds,
-                                ...settings.config.fuelStatusThresholds,
-                                red: val
-                              } as any
-                            });
-                          }}
-                          className="w-32 h-1.5 bg-slate-600 rounded-lg appearance-none cursor-pointer"
-                        />
-                        <span className="text-xs text-slate-300 w-8 text-right">{settings.config.fuelStatusThresholds?.red ?? 10}%</span>
-                      </div>
-                    </div>
-
-                    {/* Consumption Basis */}
-                    <div className="flex items-center justify-between pr-20 mt-4">
-                      <span className="text-xs text-slate-400">
-                        Alert Basis (Override)
-                        <span className="block text-[10px] text-slate-500">Triggers Red if below lap threshold</span>
-                      </span>
-                      <div className="flex items-center gap-2">
-                        <select
-                          value={settings.config.fuelStatusBasis ?? 'avg'}
-                          onChange={(e) => handleConfigChange({ fuelStatusBasis: e.target.value as any })}
-                          className="px-2 py-1 bg-slate-700 text-slate-200 rounded text-xs w-24"
-                        >
-                          <option value="last">Last Lap</option>
-                          <option value="avg">Average</option>
-                          <option value="min">Minimum</option>
-                          <option value="max">Maximum</option>
-                        </select>
-                        <input
-                          type="number" min="0" max="20" step="0.1"
-                          value={settings.config.fuelStatusRedLaps ?? 3}
-                          onChange={(e) => handleConfigChange({ fuelStatusRedLaps: parseFloat(e.target.value) })}
-                          className="w-12 px-1 py-1 bg-slate-700 text-slate-200 rounded text-xs text-center ml-2"
-                        />
-                        <span className="text-[10px] text-slate-500">Laps</span>
-                      </div>
-                    </div>
+                {/* Amber Threshold */}
+                <div className="flex items-center justify-between pr-20">
+                  <span className="text-xs text-slate-400">Amber Threshold (%)</span>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="range" min="0" max="100" step="1"
+                      value={settings.config.fuelStatusThresholds?.amber ?? 30}
+                      onChange={(e) => {
+                        const val = parseInt(e.target.value);
+                        handleConfigChange({
+                          fuelStatusThresholds: {
+                            ...defaultConfig.fuelStatusThresholds,
+                            ...settings.config.fuelStatusThresholds,
+                            amber: val
+                          } as any
+                        });
+                      }}
+                      className="w-32 h-1.5 bg-slate-600 rounded-lg appearance-none cursor-pointer"
+                    />
+                    <span className="text-xs text-slate-300 w-8 text-right">{settings.config.fuelStatusThresholds?.amber ?? 30}%</span>
                   </div>
                 </div>
-              )}
 
-              {/* Fuel Units */}
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-300">Fuel Units</span>
-                <select
-                  value={settings.config.fuelUnits}
-                  onChange={(e) =>
-                    handleConfigChange({
-                      fuelUnits: e.target.value as 'L' | 'gal',
-                    })
-                  }
-                  className="px-3 py-1 bg-slate-700 text-slate-200 rounded text-sm"
-                >
-                  <option value="L">Liters (L)</option>
-                  <option value="gal">Gallons (gal)</option>
-                </select>
+                {/* Red Threshold */}
+                <div className="flex items-center justify-between pr-20">
+                  <span className="text-xs text-slate-400">Red Threshold (%)</span>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="range" min="0" max="100" step="1"
+                      value={settings.config.fuelStatusThresholds?.red ?? 10}
+                      onChange={(e) => {
+                        const val = parseInt(e.target.value);
+                        handleConfigChange({
+                          fuelStatusThresholds: {
+                            ...defaultConfig.fuelStatusThresholds,
+                            ...settings.config.fuelStatusThresholds,
+                            red: val
+                          } as any
+                        });
+                      }}
+                      className="w-32 h-1.5 bg-slate-600 rounded-lg appearance-none cursor-pointer"
+                    />
+                    <span className="text-xs text-slate-300 w-8 text-right">{settings.config.fuelStatusThresholds?.red ?? 10}%</span>
+                  </div>
+                </div>
+
+                {/* Consumption Basis */}
+                <div className="flex items-center justify-between pr-20 mt-4">
+                  <span className="text-xs text-slate-400">
+                    Alert Basis (Override)
+                    <span className="block text-[10px] text-slate-500">Triggers Red if below lap threshold</span>
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={settings.config.fuelStatusBasis ?? 'avg'}
+                      onChange={(e) => handleConfigChange({ fuelStatusBasis: e.target.value as any })}
+                      className="px-2 py-1 bg-slate-700 text-slate-200 rounded text-xs w-24"
+                    >
+                      <option value="last">Last Lap</option>
+                      <option value="avg">Average</option>
+                      <option value="min">Minimum</option>
+                      <option value="max">Maximum</option>
+                    </select>
+                    <input
+                      type="number" min="0" max="20" step="0.1"
+                      value={settings.config.fuelStatusRedLaps ?? 3}
+                      onChange={(e) => handleConfigChange({ fuelStatusRedLaps: parseFloat(e.target.value) })}
+                      className="w-12 px-1 py-1 bg-slate-700 text-slate-200 rounded text-xs text-center ml-2"
+                    />
+                    <span className="text-[10px] text-slate-500">Laps</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-slate-300">Fuel Units</span>
+              <select
+                value={settings.config.fuelUnits}
+                onChange={(e) =>
+                  handleConfigChange({
+                    fuelUnits: e.target.value as 'L' | 'gal',
+                  })
+                }
+                className="px-3 py-1 bg-slate-700 text-slate-200 rounded text-sm"
+              >
+                <option value="L">Liters (L)</option>
+                <option value="gal">Gallons (gal)</option>
+              </select>
+            </div>
+
+
+
+
+
+            {/* Show Consumption Section - Available for BOTH */}
+            <div className="flex items-center justify-between pr-20">
+              <span className="text-sm text-slate-300">
+                Consumption Details
+                <span className="block text-xs text-slate-500">Configures rows in Consumption Grid</span>
+              </span>
+              <div className="flex items-center gap-4">
+                <DualFontSizeInput widgetId="fuel2Grid" settings={settings} onChange={handleConfigChange} />
               </div>
 
-              {/* Global Layout Style - Legacy Only */}
-              {!isFuel2 && (
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-slate-300">
-                    Global Layout Style
-                    <span className="block text-xs text-slate-500">
-                      Controls font sizes and basic widget orientation (Vertical/Horizontal)
-                    </span>
-                  </span>
-                  <select
-                    value={settings.config.layout}
-                    onChange={(e) =>
-                      handleConfigChange({
-                        layout: e.target.value as 'vertical' | 'horizontal',
-                      })
-                    }
-                    className="px-3 py-1 bg-slate-700 text-slate-200 rounded text-sm"
-                  >
-                    <option value="vertical">Vertical</option>
-                    <option value="horizontal">Horizontal</option>
-                  </select>
-                </div>
-              )}
+              {/* Fuel 2 Grid Reordering */}
+              <div className="pl-2 pr-1">
+                <GridOrderSettingsList
+                  itemsOrder={settings.config.consumptionGridOrder || defaultConfig.consumptionGridOrder!}
+                  onReorder={(newOrder) => handleConfigChange({ consumptionGridOrder: newOrder })}
+                  settings={settings}
+                  handleConfigChange={handleConfigChange}
+                />
+              </div>
+            </div>
 
-              {/* Display Options */}
-              {/* Header Visibility Toggles - Legacy Only (Modern has fixed headers in widgets) */}
-              {!isFuel2 && (
-                <>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-slate-300">Show Fuel Level Header</span>
-                    <ToggleSwitch
-                      enabled={settings.config.showFuelLevel}
-                      onToggle={(newValue) =>
-                        handleConfigChange({ showFuelLevel: newValue })
-                      }
-                    />
-                  </div>
 
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-slate-300">Show Laps Remaining Header</span>
-                    <ToggleSwitch
-                      enabled={settings.config.showLapsRemaining}
-                      onToggle={(newValue) =>
-                        handleConfigChange({ showLapsRemaining: newValue })
-                      }
-                    />
-                  </div>
-                </>
-              )}
 
-              {/* Show Consumption Section - Available for BOTH */}
-              <div className="flex items-center justify-between pr-20">
+            {/* Fuel Scenarios */}
+            <div className="flex items-center justify-between pr-20">
+              <span className="text-sm text-slate-300">Fuel Scenarios</span>
+              <div className="flex items-center gap-4">
+                <DualFontSizeInput widgetId="fuel2Scenarios" settings={settings} onChange={handleConfigChange} />
+              </div>
+            </div>
+
+
+
+            {/* Fuel History */}
+            <div>
+              <div className="flex items-center justify-between">
                 <span className="text-sm text-slate-300">
-                  Consumption Details
-                  {isFuel2 && <span className="block text-xs text-slate-500">Configures rows in Consumption Grid</span>}
+                  Fuel History
                 </span>
                 <div className="flex items-center gap-4">
-                  {isFuel2 && <DualFontSizeInput widgetId="fuel2Grid" settings={settings} onChange={handleConfigChange} />}
-                  {!isFuel2 && (
-                    <ToggleSwitch
-                      enabled={settings.config.showConsumption}
-                      onToggle={(newValue) =>
-                        handleConfigChange({ showConsumption: newValue })
-                      }
-                    />
-                  )}
+                  {/* Slider removed as requested */}
                 </div>
-
-                {/* Fuel 2 Grid Reordering */}
-                {isFuel2 && (
-                  <div className="pl-2 pr-1">
-                    <GridOrderSettingsList
-                      itemsOrder={settings.config.consumptionGridOrder || defaultConfig.consumptionGridOrder!}
-                      onReorder={(newOrder) => handleConfigChange({ consumptionGridOrder: newOrder })}
-                      settings={settings}
-                      handleConfigChange={handleConfigChange}
-                    />
-                  </div>
-                )}
               </div>
 
-              {/* Consumption Details (when enabled) */}
-              {settings.config.showConsumption && !isFuel2 && (
-                <div className="ml-4 space-y-2 pl-4 border-l border-slate-700">
+              {/* Allow configuring graph type for Fuel 2 as well */}
+              {settings.config.showFuelHistory !== false && (
+                <div className="ml-4 pl-4 border-l border-slate-700 space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-slate-300">Show Min</span>
-                    <ToggleSwitch
-                      enabled={settings.config.showMin}
-                      onToggle={(newValue) =>
-                        handleConfigChange({ showMin: newValue })
+                    <span className="text-xs text-slate-300">Graph Type</span>
+                    <select
+                      value={settings.config.fuelHistoryType}
+                      onChange={(e) =>
+                        handleConfigChange({
+                          fuelHistoryType: e.target.value as 'line' | 'histogram',
+                        })
                       }
-                    />
+                      className="px-3 py-1 bg-slate-700 text-slate-200 rounded text-sm"
+                    >
+                      <option value="line">Line Chart</option>
+                      <option value="histogram">Histogram</option>
+                    </select>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-slate-300">Show Last Lap</span>
-                    <ToggleSwitch
-                      enabled={settings.config.showLastLap}
-                      onToggle={(newValue) =>
-                        handleConfigChange({ showLastLap: newValue })
-                      }
-                    />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-slate-300">Show Current Lap</span>
-                    <ToggleSwitch
-                      enabled={settings.config.showCurrentLap}
-                      onToggle={(newValue) =>
-                        handleConfigChange({ showCurrentLap: newValue })
-                      }
-                    />
-                  </div>
+
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-slate-300">
-                      Show 3 Lap Average
-                      {isFuel2 && <span className="block text-[10px] text-slate-500">Controls AVG row</span>}
-                    </span>
-                    <ToggleSwitch
-                      enabled={settings.config.show3LapAvg}
-                      onToggle={(newValue) =>
-                        handleConfigChange({ show3LapAvg: newValue })
-                      }
-                    />
-                  </div>
-                  {!isFuel2 && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-slate-300">
-                        Show 10 Lap Average
+                      Target Line
+                      <span className="block text-[10px] text-slate-500">
+                        Optional target ref (0 to hide)
                       </span>
-                      <ToggleSwitch
-                        enabled={settings.config.show10LapAvg}
-                        onToggle={(newValue) =>
-                          handleConfigChange({ show10LapAvg: newValue })
-                        }
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.1"
+                        placeholder="None"
+                        value={settings.config.manualTarget ?? ''}
+                        onChange={(e) => {
+                          const val = e.target.value ? parseFloat(e.target.value) : undefined;
+                          handleConfigChange({ manualTarget: val });
+                        }}
+                        className="w-16 px-2 py-1 bg-slate-700 text-slate-200 rounded text-xs text-right focus:border-blue-500 focus:outline-none"
                       />
-                    </div>
-                  )}
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-slate-300">Show Max</span>
-                    <ToggleSwitch
-                      enabled={settings.config.showMax}
-                      onToggle={(newValue) =>
-                        handleConfigChange({ showMax: newValue })
-                      }
-                    />
-                  </div>
-                  {!isFuel2 && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-slate-300">
-                        Show Fuel Required
-                        <span className="block text-[10px] text-slate-500">
-                          Fuel needed for min/avg/max
-                        </span>
-                      </span>
-                      <ToggleSwitch
-                        enabled={settings.config.showFuelRequired}
-                        onToggle={(newValue) =>
-                          handleConfigChange({ showFuelRequired: newValue })
-                        }
-                      />
-                    </div>
-                  )}
-                  {settings.config.showFuelRequired && !isFuel2 && (
-                    <div className="ml-4 mt-2 pl-4">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs text-slate-300">
-                          Display Mode
-                          <span className="block text-[10px] text-slate-500">
-                            To Finish: Total fuel needed | To Add: Fuel to add at
-                            stop
-                          </span>
-                        </span>
-                        <select
-                          value={settings.config.fuelRequiredMode}
-                          onChange={(e) =>
-                            handleConfigChange({
-                              fuelRequiredMode: e.target.value as
-                                | 'toFinish'
-                                | 'toAdd',
-                            })
-                          }
-                          className="px-3 py-1 bg-slate-700 text-slate-200 rounded text-sm"
-                        >
-                          <option value="toFinish">To Finish</option>
-                          <option value="toAdd">Fuel to Add</option>
-                        </select>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Show Pit Window */}
-              {!isFuel2 && (
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-slate-300">Show Pit Window</span>
-                  <ToggleSwitch
-                    enabled={settings.config.showPitWindow}
-                    onToggle={(newValue) =>
-                      handleConfigChange({ showPitWindow: newValue })
-                    }
-                  />
-                </div>
-              )}
-
-              {/* Show Endurance Strategy */}
-              {!isFuel2 && (
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-slate-300">
-                    Show Endurance Strategy
-                    <span className="block text-xs text-slate-500">
-                      Total pit stops and stint info for long races
-                    </span>
-                  </span>
-                  <ToggleSwitch
-                    enabled={settings.config.showEnduranceStrategy}
-                    onToggle={(newValue) =>
-                      handleConfigChange({ showEnduranceStrategy: newValue })
-                    }
-                  />
-                </div>
-              )}
-
-              {/* Fuel Scenarios */}
-              <div className="flex items-center justify-between pr-20">
-                <span className="text-sm text-slate-300">Fuel Scenarios</span>
-                <div className="flex items-center gap-4">
-                  {isFuel2 && <DualFontSizeInput widgetId="fuel2Scenarios" settings={settings} onChange={handleConfigChange} />}
-                  {!isFuel2 && (
-                    <ToggleSwitch
-                      enabled={settings.config.showFuelScenarios}
-                      onToggle={(newValue) =>
-                        handleConfigChange({ showFuelScenarios: newValue })
-                      }
-                    />
-                  )}
-                </div>
-              </div>
-
-              {/* Fuel History - Legacy Only */}
-              {!isFuel2 && (
-                <>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-slate-300">
-                      Fuel History
-                    </span>
-                    <ToggleSwitch
-                      enabled={settings.config.showFuelHistory}
-                      onToggle={(newValue) =>
-                        handleConfigChange({ showFuelHistory: newValue })
-                      }
-                    />
-                  </div>
-
-                  {settings.config.showFuelHistory && (
-                    <div className="ml-4 pl-4 border-l border-slate-700">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs text-slate-300">
-                          Graph Type
-                          <span className="block text-[10px] text-slate-500">
-                            Line: 5 laps, Histogram: 30 laps
-                          </span>
-                        </span>
-                        <select
-                          value={settings.config.fuelHistoryType}
-                          onChange={(e) =>
-                            handleConfigChange({
-                              fuelHistoryType: e.target.value as
-                                | 'line'
-                                | 'histogram',
-                            })
-                          }
-                          className="px-3 py-1 bg-slate-700 text-slate-200 rounded text-sm"
-                        >
-                          <option value="line">Line Chart</option>
-                          <option value="histogram">Histogram</option>
-                        </select>
-                      </div>
-                    </div>
-                  )}
-                </>
-              )}
-
-              {/* Fuel History - Fuel 2 */}
-              {isFuel2 && (
-                <>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-slate-300">
-                      Fuel History
-                    </span>
-                    <div className="flex items-center gap-4">
-                      {/* Slider removed as requested */}
+                      <span className="text-[10px] text-slate-500">{settings.config.fuelUnits}</span>
                     </div>
                   </div>
-
-                  {/* Allow configuring graph type for Fuel 2 as well */}
-                  {settings.config.showFuelHistory !== false && (
-                    <div className="ml-4 pl-4 border-l border-slate-700 space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs text-slate-300">Graph Type</span>
-                        <select
-                          value={settings.config.fuelHistoryType}
-                          onChange={(e) =>
-                            handleConfigChange({
-                              fuelHistoryType: e.target.value as 'line' | 'histogram',
-                            })
-                          }
-                          className="px-3 py-1 bg-slate-700 text-slate-200 rounded text-sm"
-                        >
-                          <option value="line">Line Chart</option>
-                          <option value="histogram">Histogram</option>
-                        </select>
-                      </div>
-
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs text-slate-300">
-                          Target Line
-                          <span className="block text-[10px] text-slate-500">
-                            Optional target ref (0 to hide)
-                          </span>
-                        </span>
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="number"
-                            min="0"
-                            step="0.1"
-                            placeholder="None"
-                            value={settings.config.manualTarget ?? ''}
-                            onChange={(e) => {
-                              const val = e.target.value ? parseFloat(e.target.value) : undefined;
-                              handleConfigChange({ manualTarget: val });
-                            }}
-                            className="w-16 px-2 py-1 bg-slate-700 text-slate-200 rounded text-xs text-right focus:border-blue-500 focus:outline-none"
-                          />
-                          <span className="text-[10px] text-slate-500">{settings.config.fuelUnits}</span>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </>
+                </div>
               )}
+            </div>
 
-              {/* Safety Margin */}
-              <div className="flex items-center justify-between pr-20">
-                <span className="text-sm text-slate-300">
-                  Safety Margin
-                  <span className="block text-xs text-slate-500">
-                    Extra fuel buffer (affects &quot;To Finish&quot; and border
-                    colors)
-                  </span>
+            {/* Safety Margin */}
+            <div className="flex items-center justify-between pr-20">
+              <span className="text-sm text-slate-300">
+                Safety Margin
+                <span className="block text-xs text-slate-500">
+                  Extra fuel buffer (affects &quot;To Finish&quot; and border
+                  colors)
                 </span>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="range"
-                    min="0"
-                    max="20"
-                    step="1"
-                    value={settings.config.safetyMargin * 100}
-                    onChange={(e) =>
-                      handleConfigChange({
-                        safetyMargin: parseInt(e.target.value) / 100,
-                      })
-                    }
-                    className="w-20 h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer slider"
-                  />
-                  <span className="text-xs text-slate-300 w-8">
-                    {Math.round(settings.config.safetyMargin * 100)}%
-                  </span>
-                </div>
-              </div>
-
-              {/* Background Opacity */}
-              <div className="flex items-center justify-between pr-20">
-                <span className="text-sm text-slate-300">Background Opacity</span>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="range"
-                    min="0"
-                    max="100"
-                    value={settings.config.background.opacity}
-                    onChange={(e) =>
-                      handleConfigChange({
-                        background: { opacity: parseInt(e.target.value) },
-                      })
-                    }
-                    className="w-20 h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer slider"
-                  />
-                  <span className="text-xs text-slate-300 w-8">
-                    {settings.config.background.opacity}%
-                  </span>
-                </div>
-              </div>
-
-              {/* IsOnTrack Section */}
-              <div className="flex items-center justify-between">
-                <div>
-                  <h4 className="text-md font-medium text-slate-300">
-                    Show only when on track
-                  </h4>
-                  <span className="block text-xs text-slate-500">
-                    If enabled, calculator will only be shown when you are driving.
-                  </span>
-                </div>
-                <ToggleSwitch
-                  enabled={settings.config.showOnlyWhenOnTrack}
-                  onToggle={(newValue) =>
+              </span>
+              <div className="flex items-center gap-2">
+                <input
+                  type="range"
+                  min="0"
+                  max="20"
+                  step="1"
+                  value={settings.config.safetyMargin * 100}
+                  onChange={(e) =>
                     handleConfigChange({
-                      showOnlyWhenOnTrack: newValue,
+                      safetyMargin: parseInt(e.target.value) / 100,
                     })
                   }
+                  className="w-20 h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer slider"
+                />
+                <span className="text-xs text-slate-300 w-8">
+                  {Math.round(settings.config.safetyMargin * 100)}%
+                </span>
+              </div>
+            </div>
+
+            {/* Background Opacity */}
+            <div className="flex items-center justify-between pr-20">
+              <span className="text-sm text-slate-300">Background Opacity</span>
+              <div className="flex items-center gap-2">
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={settings.config.background.opacity}
+                  onChange={(e) =>
+                    handleConfigChange({
+                      background: { opacity: parseInt(e.target.value) },
+                    })
+                  }
+                  className="w-20 h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer slider"
+                />
+                <span className="text-xs text-slate-300 w-8">
+                  {settings.config.background.opacity}%
+                </span>
+              </div>
+            </div>
+
+            {/* IsOnTrack Section */}
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="text-md font-medium text-slate-300">
+                  Show only when on track
+                </h4>
+                <span className="block text-xs text-slate-500">
+                  If enabled, calculator will only be shown when you are driving.
+                </span>
+              </div>
+              <ToggleSwitch
+                enabled={settings.config.showOnlyWhenOnTrack}
+                onToggle={(newValue) =>
+                  handleConfigChange({
+                    showOnlyWhenOnTrack: newValue,
+                  })
+                }
+              />
+            </div>
+
+            {/* Pit Strategy Section */}
+            <div className="border-t border-slate-600/50 pt-6 space-y-4">
+              <h3 className="text-md font-medium text-slate-200">🎯 Pit Strategy</h3>
+
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-sm text-slate-300">Fixed Target Lap</span>
+                  <span className="block text-xs text-slate-500">Enable a specific lap target for strategy</span>
+                </div>
+                <ToggleSwitch
+                  enabled={settings.config.enableTargetPitLap || false}
+                  onToggle={(val) => handleConfigChange({ enableTargetPitLap: val })}
                 />
               </div>
 
-              {/* Pit Strategy Section */}
-              <div className="border-t border-slate-600/50 pt-6 space-y-4">
-                <h3 className="text-md font-medium text-slate-200">🎯 Pit Strategy</h3>
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <span className="text-sm text-slate-300">Fixed Target Lap</span>
-                    <span className="block text-xs text-slate-500">Enable a specific lap target for strategy</span>
-                  </div>
-                  <ToggleSwitch
-                    enabled={settings.config.enableTargetPitLap || false}
-                    onToggle={(val) => handleConfigChange({ enableTargetPitLap: val })}
-                  />
-                </div>
-
-                {(settings.config.enableTargetPitLap) && (
-                  <div className="ml-4 p-3 bg-slate-800/50 rounded border border-blue-500/30 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-slate-300">Target Pit Lap</span>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-slate-500">L</span>
-                        <input
-                          type="number"
-                          min="1"
-                          max="200"
-                          value={settings.config.targetPitLap ?? 15}
-                          onChange={(e) => handleConfigChange({ targetPitLap: parseInt(e.target.value) || 1 })}
-                          className="w-16 px-2 py-1 bg-slate-700 text-slate-200 rounded text-xs text-right focus:border-blue-500 focus:outline-none"
-                        />
-                      </div>
+              {(settings.config.enableTargetPitLap) && (
+                <div className="ml-4 p-3 bg-slate-800/50 rounded border border-blue-500/30 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-slate-300">Target Pit Lap</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-slate-500">L</span>
+                      <input
+                        type="number"
+                        min="1"
+                        max="200"
+                        value={settings.config.targetPitLap ?? 15}
+                        onChange={(e) => handleConfigChange({ targetPitLap: parseInt(e.target.value) || 1 })}
+                        className="w-16 px-2 py-1 bg-slate-700 text-slate-200 rounded text-xs text-right focus:border-blue-500 focus:outline-none"
+                      />
                     </div>
-                    <div className="flex items-center justify-between pr-20">
-                      <span className="text-[10px] text-slate-400">Target Message Font</span>
-                      <DualFontSizeInput widgetId="fuel2TargetMessage" settings={settings} onChange={handleConfigChange} />
-                    </div>
-                    <p className="text-[10px] text-slate-500 italic">
-                      Scenarios will include this lap as a 4th row. Target message will show fuel required.
-                    </p>
                   </div>
-                )}
-              </div>
-
-              {/* Session Visibility Settings */}
-              <div className="space-y-4 border-t border-slate-600/50 pt-6">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-medium text-slate-200">
-                    Session Visibility
-                  </h3>
+                  <div className="flex items-center justify-between pr-20">
+                    <span className="text-[10px] text-slate-400">Target Message Font</span>
+                    <DualFontSizeInput widgetId="fuel2TargetMessage" settings={settings} onChange={handleConfigChange} />
+                  </div>
+                  <p className="text-[10px] text-slate-500 italic">
+                    Scenarios will include this lap as a 4th row. Target message will show fuel required.
+                  </p>
                 </div>
-                <div className="space-y-3 pl-4">
-                  <SessionVisibility
-                    sessionVisibility={settings.config.sessionVisibility}
-                    handleConfigChange={handleConfigChange}
-                  />
-                </div>
-              </div>
-
-
+              )}
             </div>
+
+            {/* Session Visibility Settings */}
+            <div className="space-y-4 border-t border-slate-600/50 pt-6">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-medium text-slate-200">
+                  Session Visibility
+                </h3>
+              </div>
+              <div className="space-y-3 pl-4">
+                <SessionVisibility
+                  sessionVisibility={settings.config.sessionVisibility}
+                  handleConfigChange={handleConfigChange}
+                />
+              </div>
+            </div>
+
+
           </div>
         );
       }}
@@ -974,17 +679,18 @@ const SingleFuelWidgetSettings = ({ widgetId, isFuel2 }: { widgetId: string, isF
   );
 };
 
-export const FuelSettings = ({ widgetType = 'fuel' }: { widgetType?: 'fuel' | 'fuel2' }) => {
+export const FuelSettings = () => {
   const { currentDashboard, onDashboardUpdated } = useDashboard();
+  const widgetType = 'fuel2';
 
   // Identify widgets of the target type
   const fuelWidgets = currentDashboard?.widgets.filter(
-    (w) => w.type === widgetType || (widgetType === 'fuel' && w.id === 'fuel')
+    (w) => w.type === widgetType
   ) || [];
 
   const [selectedId, setSelectedId] = useState(() => {
     if (fuelWidgets.length > 0) return fuelWidgets[0].id;
-    return widgetType === 'fuel' ? 'fuel' : '';
+    return '';
   });
 
   const handleAddWidget = () => {
@@ -1015,7 +721,6 @@ export const FuelSettings = ({ widgetType = 'fuel' }: { widgetType?: 'fuel' | 'f
 
   const handleDeleteWidget = () => {
     if (!currentDashboard || !onDashboardUpdated) return;
-    if (selectedId === 'fuel') return; // Protect main widget
 
     const newWidgets = currentDashboard.widgets.filter((w) => w.id !== selectedId);
 
@@ -1027,17 +732,17 @@ export const FuelSettings = ({ widgetType = 'fuel' }: { widgetType?: 'fuel' | 'f
     );
 
     // Reset selection
-    const remaining = newWidgets.filter(w => w.type === widgetType || (widgetType === 'fuel' && w.id === 'fuel'));
+    const remaining = newWidgets.filter(w => w.type === widgetType);
     if (remaining.length > 0) setSelectedId(remaining[0].id);
     else setSelectedId('');
   };
 
   // If no widgets and we're in fuel2 mode, show create button prominently or handle empty state
-  if (fuelWidgets.length === 0 && widgetType === 'fuel2') {
+  if (fuelWidgets.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-full p-8 text-center space-y-4">
-        <h3 className="text-xl font-bold text-slate-200">Fuel Calculator 2</h3>
-        <p className="text-slate-400">No modern fuel calculator widgets added yet.</p>
+        <h3 className="text-xl font-bold text-slate-200">Fuel Calculator</h3>
+        <p className="text-slate-400">No fuel calculator widgets added yet.</p>
         <button
           onClick={handleAddWidget}
           className="flex items-center gap-2 px-4 py-2 bg-green-700 hover:bg-green-600 text-white rounded transition-colors"
@@ -1061,21 +766,19 @@ export const FuelSettings = ({ widgetType = 'fuel' }: { widgetType?: 'fuel' | 'f
           >
             {fuelWidgets.map(w => (
               <option key={w.id} value={w.id}>
-                {w.id === 'fuel' ? 'Main Fuel Calculator' : `${w.id}`}
+                {w.id}
               </option>
             ))}
           </select>
         </div>
 
         <div className="flex items-center gap-2">
-          {selectedId !== 'fuel' && (
-            <button
-              onClick={handleDeleteWidget}
-              className="px-3 py-1 bg-red-900/50 hover:bg-red-900 text-red-200 text-xs rounded border border-red-800 transition-colors"
-            >
-              Delete Layout
-            </button>
-          )}
+          <button
+            onClick={handleDeleteWidget}
+            className="px-3 py-1 bg-red-900/50 hover:bg-red-900 text-red-200 text-xs rounded border border-red-800 transition-colors"
+          >
+            Delete Layout
+          </button>
           <button
             onClick={handleAddWidget}
             className="flex items-center gap-1 px-3 py-1 bg-green-700 hover:bg-green-600 text-white text-xs rounded transition-colors"
@@ -1086,13 +789,7 @@ export const FuelSettings = ({ widgetType = 'fuel' }: { widgetType?: 'fuel' | 'f
       </div>
 
       {/* Render settings for selected ID */}
-      {selectedId && (() => {
-        const selectedWidget = fuelWidgets.find(w => w.id === selectedId);
-        // Infer type if widget not yet in list (race condition) or use widget property
-        const isSelectedFuel2 = selectedWidget ? selectedWidget.type === 'fuel2' : (selectedId.startsWith('fuel2') || widgetType === 'fuel2');
-
-        return <SingleFuelWidgetSettings key={selectedId} widgetId={selectedId} isFuel2={isSelectedFuel2} />;
-      })()}
+      {selectedId && <SingleFuelWidgetSettings key={selectedId} widgetId={selectedId} />}
     </div>
   );
 };

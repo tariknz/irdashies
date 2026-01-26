@@ -1,423 +1,471 @@
-/**
- * Main Fuel Calculator Component
- * Displays fuel consumption and pit stop information
- */
-
-import { useMemo } from 'react';
+import React, { useMemo } from 'react';
 import {
-  useTelemetryValues,
-  useSessionVisibility,
-  useTelemetryValue,
-  useDashboard,
+    useTelemetryValues,
+    useSessionVisibility,
+    useTelemetryValue,
+    useDashboard,
 } from '@irdashies/context';
 import { useFuelCalculation } from './useFuelCalculation';
-import { formatFuel } from './fuelCalculations';
-import type { FuelCalculatorSettings, BoxConfig } from './types';
-import type { LayoutNode } from '../Settings/types';
-import { useFuelSettings } from '../Standings/hooks';
+import {
+    FuelCalculatorHeader,
+    FuelCalculatorGauge,
+    FuelCalculatorConsumptionGrid,
+    FuelCalculatorPitScenarios,
+    FuelCalculatorTimeEmpty,
+    FuelCalculatorHistoryGraph,
+    FuelCalculatorTargetMessage,
+    FuelCalculatorConfidence,
+    getFuelStatusColors,
+} from './widgets/FuelCalculatorWidgets';
 import { useFuelStore } from './FuelStore';
-import { Box } from '../Box/Box';
-import {
-  FuelLevelWidget,
-  LapsRemainingWidget,
-  FuelHeaderCombinedWidget,
-} from './widgets/FuelHeaderWidgets';
-import { ConsumptionWidget } from './widgets/ConsumptionWidget';
-import { KeyInfoWidget } from './widgets/KeyInfoWidget';
-import {
-  EnduranceStrategyWidget,
-  PitWindowWidget,
-} from './widgets/StrategyWidgets';
-import { FuelScenariosWidget } from './widgets/FuelScenariosWidget';
-import { ConsumptionGraphWidget } from './widgets/ConsumptionGraphWidget';
-import { ConfidenceWidget } from './widgets/ConfidenceWidget';
-
+import type { FuelCalculatorSettings } from './types';
+import type { LayoutNode } from '../Settings/types';
 
 type FuelCalculatorProps = Partial<FuelCalculatorSettings>;
 
 export const FuelCalculator = (props: FuelCalculatorProps) => {
-  const globalSettings = useFuelSettings();
+    // Use specific settings from props or defaults (though this component usually receives merged settings or direct usage)
+    // For standard usage in a dashboard widget, we should grab global settings context?
+    // In `FuelCalculator.tsx` it did `useFuelSettings()` then merged.
+    // Here we are likely passed `settings` directly from `WidgetRenderer` if used there, OR we need to fetch them.
+    // The `FuelSettings.tsx` updates `currentDashboard.widgets`.
+    // The `WidgetRenderer` likely passes `settings.config` as props to the component.
+    // Let's assume `props` contains the configuration.
 
-  // Merge props with global settings, prioritizing props
-  const settings = useMemo(() => {
-    return {
-      fuelUnits: props.fuelUnits ?? globalSettings?.fuelUnits ?? 'L',
-      layout: props.layout ?? globalSettings?.layout ?? 'vertical',
-      showConsumption: props.showConsumption ?? globalSettings?.showConsumption ?? true,
-      showMin: props.showMin ?? globalSettings?.showMin ?? true,
-      showLastLap: props.showLastLap ?? globalSettings?.showLastLap ?? true,
-      show3LapAvg: props.show3LapAvg ?? globalSettings?.show3LapAvg ?? true,
-      show10LapAvg: props.show10LapAvg ?? globalSettings?.show10LapAvg ?? true,
-      showMax: props.showMax ?? globalSettings?.showMax ?? true,
-      showPitWindow: props.showPitWindow ?? globalSettings?.showPitWindow ?? true,
-      showEnduranceStrategy: props.showEnduranceStrategy ?? globalSettings?.showEnduranceStrategy ?? false,
-      showFuelScenarios: props.showFuelScenarios ?? globalSettings?.showFuelScenarios ?? true,
-      showFuelRequired: props.showFuelRequired ?? globalSettings?.showFuelRequired ?? false,
-      showConsumptionGraph: props.showConsumptionGraph ?? globalSettings?.showConsumptionGraph ?? true,
-      consumptionGraphType: props.consumptionGraphType ?? globalSettings?.consumptionGraphType ?? 'histogram',
-      safetyMargin: props.safetyMargin ?? globalSettings?.safetyMargin ?? 0.05,
-      background: {
-        opacity: props.background?.opacity ?? globalSettings?.background?.opacity ?? 85
-      },
-      fuelRequiredMode: props.fuelRequiredMode ?? globalSettings?.fuelRequiredMode ?? 'toFinish',
-      showOnlyWhenOnTrack: props.showOnlyWhenOnTrack ?? globalSettings?.showOnlyWhenOnTrack ?? true,
-      showFuelLevel: props.showFuelLevel ?? globalSettings?.showFuelLevel ?? true,
-      showLapsRemaining: props.showLapsRemaining ?? globalSettings?.showLapsRemaining ?? true,
-      layoutTree: (props as any).layoutTree ?? globalSettings?.layoutTree,
-      layoutConfig: (props as any).layoutConfig ?? globalSettings?.layoutConfig,
-      sessionVisibility: (props as any).sessionVisibility ?? globalSettings?.sessionVisibility,
+    // NOTE: In standard usage, we might be inside a provider or context.
+    // But let's follow the pattern:
+
+    const settings = props as FuelCalculatorSettings;
+
+    const {
+        fuelUnits,
+        safetyMargin,
+    } = settings;
+
+    const isSessionVisible = useSessionVisibility(settings.sessionVisibility);
+
+    // Visual Edit Mode & Demo Mode
+    const { editMode, isDemoMode } = useDashboard();
+
+    // Real Data
+    const realFuelData = useFuelCalculation(safetyMargin, settings);
+    const realCurrentFuelLevel = useTelemetryValues('FuelLevel')?.[0] || 0;
+    const realIsOnTrack = useTelemetryValue<boolean>('IsOnTrack') ?? false;
+
+    // Mock Data for Demo Mode
+    const [mockStateIndex, setMockStateIndex] = React.useState(0);
+
+    // Cycle mock states
+    React.useEffect(() => {
+        if (!isDemoMode) return;
+        const interval = setInterval(() => {
+            setMockStateIndex(prev => (prev + 1) % 3);
+        }, 5000);
+        return () => clearInterval(interval);
+    }, [isDemoMode]);
+
+    // Scenario 1: Medium Confidence (Standard Race)
+    const mockMedium: typeof realFuelData = {
+        fuelLevel: 45.5,
+        lastLapUsage: 3.2,
+        avg3Laps: 3.15,
+        avg10Laps: 3.18,
+        avgAllGreenLaps: 3.17,
+        minLapUsage: 3.1,
+        maxLapUsage: 3.4,
+        lapsWithFuel: 14.3,
+        lapsRemaining: 35,
+        totalLaps: 50,
+        currentLap: 15,
+        fuelToFinish: 111.3,
+        fuelToAdd: 65.8,
+        pitWindowOpen: 16,
+        pitWindowClose: 29,
+        canFinish: false,
+        targetConsumption: 1.3,
+        confidence: 'medium',
+        fuelAtFinish: -65.8,
+        avgLapTime: 95.5,
+        stopsRemaining: 1,
+        lapsPerStint: 18,
+        fuelTankCapacity: 60,
+        targetScenarios: [
+            { laps: 13, fuelPerLap: 3.50, isCurrentTarget: false },
+            { laps: 14, fuelPerLap: 3.25, isCurrentTarget: true },
+            { laps: 15, fuelPerLap: 3.03, isCurrentTarget: false },
+        ],
+        lastFinishedLap: 14,
+        projectedLapUsage: 1.35,
+        fuelStatus: 'danger',
+        lapsRange: [13, 15]
     };
-  }, [props, globalSettings]);
 
-  const {
-    fuelUnits,
-    layout,
-    showConsumption,
-    showMin,
-    showLastLap,
-    show3LapAvg,
-    show10LapAvg,
-    showPitWindow,
-    showEnduranceStrategy,
-    showFuelScenarios,
-    showFuelRequired,
-    showConsumptionGraph,
-    consumptionGraphType,
-    safetyMargin,
-    fuelRequiredMode,
-    showFuelLevel,
-    showLapsRemaining,
-  } = settings;
-
-  const isSessionVisible = useSessionVisibility(settings.sessionVisibility);
-  const fuelData = useFuelCalculation(safetyMargin);
-  // Subscribe to lapHistory directly to trigger re-renders when it changes
-  const lapHistory = useFuelStore((state) => state.lapHistory);
-
-  // Get current fuel level from telemetry even when no lap data
-  const currentFuelLevel = useTelemetryValues('FuelLevel')?.[0] || 0;
-  const isOnTrack = useTelemetryValue<boolean>('IsOnTrack') ?? false;
-
-  // Visual Edit Mode: Get editMode from dashboard context
-  const { editMode } = useDashboard();
-
-  // Get laps of fuel consumption for the graph
-  const graphData = useMemo(() => {
-    const lapCount = consumptionGraphType === 'histogram' ? 30 : 5;
-    // Convert Map to array and sort by lap number descending
-    const history = Array.from(lapHistory.values()).sort(
-      (a, b) => b.lapNumber - a.lapNumber
-    );
-
-    // Filter to valid laps (not out-laps) and take last N
-    const validLaps = history
-      .filter((lap) => !lap.isOutLap && lap.fuelUsed > 0)
-      .slice(0, lapCount)
-      .reverse(); // Oldest to newest for graph
-
-    if (validLaps.length < 2) return null;
-
-    const fuelValues = validLaps.map((lap) => lap.fuelUsed);
-    const avgFuel =
-      fuelValues.reduce((sum, v) => sum + v, 0) / fuelValues.length;
-    const minFuel = Math.min(...fuelValues);
-    const maxFuel = Math.max(...fuelValues);
-
-    return {
-      laps: validLaps,
-      fuelValues,
-      avgFuel,
-      minFuel,
-      maxFuel,
+    // Scenario 2: High Confidence (Good flow, clear prediction)
+    const mockHigh: typeof realFuelData = {
+        ...mockMedium,
+        fuelLevel: 58.0,
+        lapsWithFuel: 19.2,
+        currentLap: 10,
+        lapsRemaining: 40,
+        avg3Laps: 3.02,
+        avg10Laps: 3.01,
+        lastLapUsage: 3.01,
+        confidence: 'high',
+        stopsRemaining: 1,
+        pitWindowOpen: 11,
+        pitWindowClose: 29,
+        targetScenarios: [
+            { laps: 18, fuelPerLap: 3.22, isCurrentTarget: false },
+            { laps: 19, fuelPerLap: 3.05, isCurrentTarget: true },
+            { laps: 20, fuelPerLap: 2.90, isCurrentTarget: false },
+        ],
+        fuelStatus: 'safe',
+        lapsRange: [19, 19]
     };
-  }, [lapHistory, consumptionGraphType]);
 
-  // Determine status border and glow colors
-  const statusClasses = useMemo(() => {
-    if (!fuelData) return 'border-slate-600';
-
-    const lapsUntilPit = fuelData.pitWindowClose - fuelData.currentLap;
-    const isLastStint = fuelData.stopsRemaining === 0;
-    const fuelIsTight = fuelData.fuelAtFinish < fuelData.fuelToFinish * 0.1;
-
-    if (lapsUntilPit <= 1) {
-      return 'border-red-500 shadow-[0_0_15px_rgba(255,48,48,0.3)]';
-    }
-    if (lapsUntilPit <= 5 || (isLastStint && fuelIsTight)) {
-      return 'border-orange-500 shadow-[0_0_15px_rgba(255,165,0,0.2)]';
-    }
-    return 'border-green-500 shadow-[0_0_15px_rgba(0,255,0,0.2)]';
-  }, [fuelData]);
-
-  const headerTextClasses = useMemo(() => {
-    if (!fuelData)
-      return 'text-white [text-shadow:_0_0_10px_rgba(255,255,255,0.3)]';
-
-    const lapsUntilPit = fuelData.pitWindowClose - fuelData.currentLap;
-    const isLastStint = fuelData.stopsRemaining === 0;
-    const fuelIsTight = fuelData.fuelAtFinish < fuelData.fuelToFinish * 0.1;
-
-    if (lapsUntilPit <= 1) {
-      return 'text-red-400 [text-shadow:_0_0_10px_rgba(255,48,48,0.5)]';
-    }
-    if (lapsUntilPit <= 5 || (isLastStint && fuelIsTight)) {
-      return 'text-orange-400 [text-shadow:_0_0_10px_rgba(255,165,0,0.5)]';
-    }
-    return 'text-green-400 [text-shadow:_0_0_10px_rgba(0,255,0,0.5)]';
-  }, [fuelData]);
-
-  const displayData = useMemo(() => {
-    if (!fuelData) {
-      return {
-        fuelLevel: currentFuelLevel, lastLapUsage: 0, avg3Laps: 0, avg10Laps: 0,
-        avgAllGreenLaps: 0, minLapUsage: 0, maxLapUsage: 0, lapsWithFuel: 0,
-        lapsRemaining: 0, totalLaps: 0, fuelToFinish: 0, fuelToAdd: 0,
-        canFinish: false, targetConsumption: 0, confidence: 'low' as const,
-        pitWindowOpen: 0, pitWindowClose: 0, currentLap: 0, fuelAtFinish: 0,
-        avgLapTime: 0, targetScenarios: undefined,
-      };
-    }
-
-    if (Math.abs(fuelData.fuelLevel - currentFuelLevel) > 0.1) {
-      const avgFuelPerLap = fuelData.avg3Laps || fuelData.lastLapUsage;
-      const lapsWithFuel = avgFuelPerLap > 0 ? currentFuelLevel / avgFuelPerLap : 0;
-      const fuelAtFinish = currentFuelLevel - fuelData.lapsRemaining * avgFuelPerLap;
-      const targetScenarios: typeof fuelData.targetScenarios = [];
-      if (lapsWithFuel >= 0.5) {
-        const currentLapTarget = Math.round(lapsWithFuel);
-        const scenarios = [currentLapTarget - 1, currentLapTarget, currentLapTarget + 1].filter(n => n > 0);
-        for (const lapCount of scenarios) {
-          targetScenarios.push({ laps: lapCount, fuelPerLap: currentFuelLevel / lapCount, isCurrentTarget: lapCount === currentLapTarget });
-        }
-      }
-      return { ...fuelData, fuelLevel: currentFuelLevel, lapsWithFuel, pitWindowClose: fuelData.currentLap + lapsWithFuel - 1, fuelAtFinish, targetScenarios };
-    }
-    return fuelData;
-  }, [fuelData, currentFuelLevel]);
-
-  const fuelMetrics = useMemo(() => {
-    if (!fuelData || fuelData.lapsRemaining <= 0) return null;
-    const rates = { min: fuelData.minLapUsage, last: displayData.lastLapUsage, avg3: displayData.avg3Laps, avg: fuelData.avg10Laps || fuelData.avg3Laps, max: fuelData.maxLapUsage };
-    const tankCapacity = fuelData.fuelTankCapacity ?? 60;
-    const currentFuel = displayData.fuelLevel;
-    const stopsRemaining = fuelData.stopsRemaining ?? 0;
-    const metrics: Record<string, { toFinish: number; toAdd: number }> = {};
-    for (const [key, rate] of Object.entries(rates)) {
-      const toFinish = rate * fuelData.lapsRemaining * (1 + safetyMargin);
-      let toAdd = stopsRemaining > 1 ? Math.max(0, tankCapacity - currentFuel) : Math.max(0, toFinish - currentFuel);
-      metrics[key] = { toFinish, toAdd };
-    }
-    return metrics;
-  }, [fuelData, safetyMargin, displayData]);
-
-  const getToFinishColorClass = useMemo(() => {
-    if (!fuelData) return () => 'text-white/70';
-    return (fuelNeeded: number) => {
-      const currentFuel = displayData.fuelLevel;
-      const lapsUntilPit = fuelData.pitWindowClose - fuelData.currentLap;
-      const isLastStint = fuelData.stopsRemaining === 0;
-      const fuelIsTight = currentFuel < fuelNeeded * (1 + safetyMargin);
-      if (lapsUntilPit <= 1 && fuelIsTight) return 'text-red-400/70';
-      if (lapsUntilPit <= 5 || (isLastStint && fuelIsTight)) return 'text-orange-400/70';
-      return 'text-green-400/70';
+    // Scenario 3: Low Confidence / Critical (Pit window open, fuel tight)
+    const mockCritical: typeof realFuelData = {
+        ...mockMedium,
+        fuelLevel: 5.5,
+        lapsWithFuel: 1.8,
+        currentLap: 30,
+        lapsRemaining: 20,
+        avg3Laps: 3.3, // High consumption!
+        confidence: 'low',
+        stopsRemaining: 1, // Need to pit NOW
+        pitWindowOpen: 31, // Pit window is open
+        pitWindowClose: 31, // Closing soon
+        fuelToFinish: 66,
+        fuelToAdd: 60, // Full tank needed
+        targetScenarios: [
+            { laps: 1, fuelPerLap: 5.5, isCurrentTarget: true },
+            { laps: 2, fuelPerLap: 5.5, isCurrentTarget: false }, // Placeholder to keep layout stable
+            { laps: 3, fuelPerLap: 5.5, isCurrentTarget: false }, // Placeholder to keep layout stable
+        ],
+        fuelStatus: 'danger',
+        lapsRange: [0, 2]
     };
-  }, [fuelData, displayData.fuelLevel, safetyMargin]);
 
-  // Determine effective layout tree
-  const layoutTree = useMemo(() => {
-    let tree: any = settings.layoutTree;
+    // Empty/Default Data for when calculation is not yet available
+    const emptyFuelData = {
+        fuelLevel: realCurrentFuelLevel || 0,
+        lastLapUsage: 0,
+        avg3Laps: 0,
+        avg10Laps: 0,
+        avgAllGreenLaps: 0,
+        minLapUsage: 0,
+        maxLapUsage: 0,
+        lapsWithFuel: 0,
+        lapsRemaining: 0,
+        totalLaps: 0,
+        currentLap: 0,
+        fuelToFinish: 0,
+        fuelToAdd: 0,
+        pitWindowOpen: 0,
+        pitWindowClose: 0,
+        canFinish: false,
+        targetConsumption: 0,
+        confidence: 'low' as const,
+        fuelAtFinish: 0,
+        avgLapTime: 0,
+        stopsRemaining: 0,
+        lapsPerStint: 0,
+        fuelTankCapacity: 60,
+        targetScenarios: [] as { laps: number; fuelPerLap: number; isCurrentTarget: boolean; }[],
+        lastFinishedLap: 0,
+        projectedLapUsage: 0,
+        fuelStatus: 'safe' as const,
+        lapsRange: [0, 0] as [number, number],
+    };
 
-    if (!tree) {
-      const layoutConfig = settings.layoutConfig;
-      if (layoutConfig && layoutConfig.length > 0) {
-        const legacyWidgetOrder = [
-          'fuelLevel',
-          'lapsRemaining',
-          'consumption',
-          'keyInfo',
-          'endurance',
-          'pitWindow',
-          'scenarios',
-          'graph',
-          'confidence',
-        ];
-        const isLegacyDefault =
-          layoutConfig.length === 1 &&
-          layoutConfig[0].widgets.length === legacyWidgetOrder.length;
-        if (isLegacyDefault) {
-          if (layout === 'horizontal') {
-            // Horizontal Default Layout
-            const children: LayoutNode[] = [
-              { id: 'header-box', type: 'box' as const, direction: 'col' as const, widgets: ['fuelHeader'], weight: 1 },
-              { id: 'main-stats-box', type: 'box' as const, direction: 'row' as const, widgets: ['consumption', 'pitWindow', 'endurance', 'confidence'], weight: 3 },
-              { id: 'scenarios-box', type: 'box' as const, direction: 'col' as const, widgets: ['scenarios'], weight: 1.5 },
-            ];
+    const mocks = [mockMedium, mockHigh, mockCritical];
+    const mockFuelData = mocks[mockStateIndex];
 
-            if (showConsumptionGraph) {
-              children.push({ id: 'graph-box', type: 'box' as const, direction: 'col' as const, widgets: ['graph'], weight: 1.5 });
-            }
+    const fuelData = isDemoMode ? mockFuelData : (realFuelData || emptyFuelData);
+    const currentFuelLevel = isDemoMode ? mockFuelData.fuelLevel : realCurrentFuelLevel;
+    const isOnTrack = isDemoMode ? true : realIsOnTrack;
 
+    // Display Data Calculation (Same as original calculator)
+    const displayData = useMemo(() => {
+        if (!fuelData) {
             return {
-              id: 'root-horizontal-default',
-              type: 'split' as const,
-              direction: 'row' as const,
-              children,
+                fuelLevel: currentFuelLevel, lastLapUsage: 0, avg3Laps: 0, avg10Laps: 0,
+                avgAllGreenLaps: 0, minLapUsage: 0, maxLapUsage: 0, lapsWithFuel: 0,
+                lapsRemaining: 0, totalLaps: 0, fuelToFinish: 0, fuelToAdd: 0,
+                canFinish: false, targetConsumption: 0, confidence: 'low' as const,
+                pitWindowOpen: 0, pitWindowClose: 0, currentLap: 0, fuelAtFinish: 0,
+                avgLapTime: 0, targetScenarios: undefined,
+                fuelStatus: 'safe' as const, lapsRange: [0, 0] as [number, number],
             };
-          }
+        }
 
-          return {
-            id: 'root-auto-upgraded',
-            type: 'split' as const,
-            direction: 'col' as const,
-            children: [
-              {
-                id: 'header-box',
-                type: 'box' as const,
-                direction: 'row' as const,
-                widgets: ['fuelHeader'],
-                weight: 1,
-              },
-              {
-                id: 'main-box',
-                type: 'box' as const,
+        if (Math.abs(fuelData.fuelLevel - currentFuelLevel) > 0.1) {
+            const avgFuelPerLap = fuelData.avg3Laps || fuelData.lastLapUsage;
+            const lapsWithFuel = avgFuelPerLap > 0 ? currentFuelLevel / avgFuelPerLap : 0;
+            const fuelAtFinish = currentFuelLevel - fuelData.lapsRemaining * avgFuelPerLap;
+            const targetScenarios: typeof fuelData.targetScenarios = [];
+            return {
+                ...fuelData,
+                fuelLevel: currentFuelLevel,
+                lapsWithFuel,
+                pitWindowClose: fuelData.currentLap + lapsWithFuel - 1,
+                fuelAtFinish,
+                targetScenarios,
+                fuelStatus: fuelData.fuelStatus,
+                lapsRange: fuelData.lapsRange
+            };
+        }
+        return fuelData;
+    }, [fuelData, currentFuelLevel]);
+
+
+    // Determine effective layout tree
+    const layoutTree = useMemo(() => {
+        let tree: any = (settings as any).layoutTree;
+
+        if (!tree) {
+            // Default Fixed Layout if no tree in settings
+            return {
+                id: 'root-fuel-default',
+                type: 'split' as const,
                 direction: 'col' as const,
-                widgets: legacyWidgetOrder.slice(2),
-                weight: 4,
-              },
-            ],
-          };
-        }
-        const children: LayoutNode[] = layoutConfig
-          .map((box: BoxConfig) => {
-            if (!box.widgets || box.widgets.length === 0) return null;
-            return {
-              id: box.id,
-              type: 'box' as const,
-              widgets: box.widgets,
-              direction: box.flow === 'horizontal' ? 'row' : 'col',
-              weight: 1,
+                children: [
+                    {
+                        id: 'box-1',
+                        type: 'box' as const,
+                        direction: 'col' as const,
+                        widgets: ['fuelHeader', 'fuelConfidence', 'fuelGauge', 'fuelGrid', 'fuelScenarios', 'fuelGraph', 'fuelTimeEmpty'],
+                        weight: 1
+                    }
+                ]
             };
-          })
-          .filter(Boolean) as LayoutNode[];
-        if (children.length === 1) tree = children[0];
-        else
-          tree = {
-            id: 'root-migrated',
-            type: 'split' as const,
-            direction: layout === 'horizontal' ? 'row' : 'col',
-            children,
-          };
-      }
-    }
+        }
 
-    if (!tree) {
-      // Fallback default if nothing else is defined
-      if (layout === 'horizontal') {
-        return {
-          id: 'root-horizontal-fallback',
-          type: 'split' as const,
-          direction: 'row' as const,
-          children: [
-            { id: 'header-box', type: 'box' as const, direction: 'col' as const, widgets: ['fuelHeader'], weight: 1 },
-            { id: 'main-stats-box', type: 'box' as const, direction: 'row' as const, widgets: ['consumption', 'pitWindow', 'endurance'], weight: 3 },
-            { id: 'scenarios-box', type: 'box' as const, direction: 'col' as const, widgets: ['scenarios'], weight: 1.5 }
-          ]
+        // CLONE tree to avoid mutating the settings object
+        let workingTree = JSON.parse(JSON.stringify(tree));
+        // Normalize if needed (same logic as FuelCalculator)
+        const normalizeNode = (node: any): LayoutNode => {
+            if (!node) return node;
+            if (node.type === 'widget') return { id: node.id, type: 'box' as const, widgets: [node.widgetId], direction: 'col' as const, weight: node.weight };
+            if (node.type === 'split') return { ...node, children: node.children?.map(normalizeNode).filter(Boolean) || [] };
+            return node;
         };
-      }
-    }
+        return normalizeNode(workingTree);
+    }, [settings]);
 
-    if (!tree) return null;
+    // Store subscription for synchronization
+    const storeLastLap = useFuelStore((state) => state.lastLap);
 
-    // CLONE tree to avoid mutating the settings object
-    let workingTree = JSON.parse(JSON.stringify(tree));
+    // Snapshot for Consumption Grid (updates only on lap change)
+    // We restore this to keep AVG/MAX/LAST rows static during the lap, as requested.
+    const [frozenFuelData, setFrozenFuelData] = React.useState(fuelData);
 
-    const normalizeNode = (node: any): LayoutNode => {
-      if (!node) return node;
-      if (node.type === 'widget')
-        return {
-          id: node.id,
-          type: 'box' as const,
-          widgets: [node.widgetId],
-          direction: 'col' as const,
-          weight: node.weight,
+    React.useEffect(() => {
+        if (!fuelData) return;
+
+        // Initialize if empty
+        if (!frozenFuelData) {
+            setFrozenFuelData(fuelData);
+            return;
+        }
+
+        const currentTelemetryLap = fuelData.currentLap;
+        const frozenLap = frozenFuelData.currentLap;
+
+        // Check if we have moved to a new lap
+        if (currentTelemetryLap !== frozenLap || (frozenFuelData.totalLaps === 0 && fuelData.totalLaps > 0)) {
+            // Check if calculation backend has caught up
+
+            // 1. Happy path: The calculation has a lastFinishedLap that matches the previous lap
+            const isHistoryCaughtUp = fuelData.lastFinishedLap === currentTelemetryLap - 1;
+
+            // 2. Fallback path: The store explicitly says it's on the new lap (meaning processing finished),
+            // even if history didn't update (e.g. invalid lap where lastFinishedLap remains old)
+            const isStoreCaughtUp = storeLastLap === currentTelemetryLap;
+
+            // 3. Early lap edge cases (L0/L1) where history might be empty/initial
+            const isEarlyLap = currentTelemetryLap <= 1;
+
+            if (isHistoryCaughtUp || isStoreCaughtUp || isEarlyLap) {
+                setFrozenFuelData(fuelData);
+            }
+        }
+    }, [fuelData, frozenFuelData, storeLastLap]);
+
+    // Throttled Predictive Usage (to update Grid 'CURR' row periodically without jitter)
+    const [predictiveUsage, setPredictiveUsage] = React.useState(0);
+    const latestUsageRef = React.useRef(0);
+
+    // Keep ref updated with latest data
+    React.useEffect(() => {
+        if (fuelData) {
+            latestUsageRef.current = fuelData.projectedLapUsage ?? 0;
+        }
+    }, [fuelData?.projectedLapUsage]);
+
+    // Sample from ref on random interval (5-8 seconds)
+    React.useEffect(() => {
+        let timeoutId: NodeJS.Timeout;
+
+        const scheduleNextUpdate = () => {
+            // Random delay between 2000ms (2s) and 6000ms (6s)
+            const randomDelay = Math.floor(Math.random() * (6000 - 2000 + 1)) + 2000;
+
+            timeoutId = setTimeout(() => {
+                setPredictiveUsage(latestUsageRef.current);
+                scheduleNextUpdate();
+            }, randomDelay);
         };
-      if (node.type === 'split')
+
+        // Start the cycle
+        scheduleNextUpdate();
+
+        return () => clearTimeout(timeoutId);
+    }, []);
+
+    // Frozen Display Data (for Grid)
+    // Uses the frozen fuel level from the snapshot, NOT the live fuel level
+    // This ensures Laps/Refuel/Finish calculations in the grid are static
+    const frozenDisplayData = useMemo(() => {
+        if (!frozenFuelData) {
+            return {
+                fuelLevel: 0, lastLapUsage: 0, avg3Laps: 0, avg10Laps: 0,
+                avgAllGreenLaps: 0, minLapUsage: 0, maxLapUsage: 0, lapsWithFuel: 0,
+                lapsRemaining: 0, totalLaps: 0, fuelToFinish: 0, fuelToAdd: 0,
+                canFinish: false, targetConsumption: 0, confidence: 'low' as const,
+                pitWindowOpen: 0, pitWindowClose: 0, currentLap: 0, fuelAtFinish: 0,
+                avgLapTime: 0, targetScenarios: undefined, projectedLapUsage: 0,
+            };
+        }
+
+        // We use frozenFuelData.fuelLevel effectively
+        // The logic below mirrors displayData but doesn't override with live currentFuelLevel
+        const level = frozenFuelData.fuelLevel;
+        const avgFuelPerLap = frozenFuelData.avg3Laps || frozenFuelData.lastLapUsage;
+        const lapsWithFuel = avgFuelPerLap > 0 ? level / avgFuelPerLap : 0;
+        const fuelAtFinish = level - frozenFuelData.lapsRemaining * avgFuelPerLap;
+
+        // We don't really need accurate scenarios for the grid, but let's keep shape consistent
         return {
-          ...node,
-          children: node.children?.map(normalizeNode).filter(Boolean) || [],
+            ...frozenFuelData,
+            fuelLevel: level,
+            lapsWithFuel,
+            pitWindowClose: frozenFuelData.currentLap + lapsWithFuel - 1,
+            fuelAtFinish,
+            targetScenarios: []
         };
-      return node;
+    }, [frozenFuelData]);
+
+    if (!editMode && settings?.showOnlyWhenOnTrack && !isOnTrack) return null;
+    if (!editMode && !isSessionVisible) return <></>;
+
+    const renderWidget = (widgetId: string) => {
+        switch (widgetId) {
+            case 'fuelHeader':
+            case 'fuel2Header':
+            case 'modernHeader':
+                return <FuelCalculatorHeader key={widgetId} widgetId={widgetId} fuelData={fuelData} displayData={displayData} fuelUnits={fuelUnits} settings={settings} />;
+            case 'fuelGauge':
+            case 'fuel2Gauge':
+            case 'modernGauge':
+                return <FuelCalculatorGauge key={widgetId} widgetId={widgetId} fuelData={fuelData} displayData={displayData} fuelUnits={fuelUnits} settings={settings} />;
+            case 'fuelGrid':
+            case 'fuel2Grid':
+            case 'modernGrid':
+                // Use frozen data for grid (static rows) but pass throttled predictive usage for CURR row
+                return <FuelCalculatorConsumptionGrid
+                    key={widgetId}
+                    widgetId={widgetId}
+                    fuelData={frozenFuelData}
+                    liveFuelData={fuelData}
+                    predictiveUsage={predictiveUsage}
+                    displayData={frozenDisplayData}
+                    fuelUnits={fuelUnits}
+                    settings={settings}
+                />;
+            case 'fuelScenarios':
+            case 'fuel2Scenarios':
+            case 'modernScenarios':
+                return <FuelCalculatorPitScenarios key={widgetId} widgetId={widgetId} fuelData={fuelData} displayData={displayData} fuelUnits={fuelUnits} settings={settings} />;
+            case 'fuelTimeEmpty':
+            case 'fuel2TimeEmpty':
+            case 'modernTimeEmpty':
+                return <FuelCalculatorTimeEmpty key={widgetId} widgetId={widgetId} fuelData={fuelData} displayData={displayData} fuelUnits={fuelUnits} settings={settings} />;
+            case 'fuelGraph':
+            case 'fuel2Graph':
+            case 'historyGraph':
+                return <FuelCalculatorHistoryGraph key={widgetId} widgetId={widgetId} fuelData={fuelData} displayData={displayData} fuelUnits={fuelUnits} settings={settings} />;
+            case 'fuelTargetMessage':
+            case 'fuel2TargetMessage':
+                return <FuelCalculatorTargetMessage key={widgetId} widgetId={widgetId} fuelData={fuelData} displayData={displayData} fuelUnits={fuelUnits} settings={settings} />;
+            case 'fuelConfidence':
+            case 'fuel2Confidence':
+                return <FuelCalculatorConfidence key={widgetId} widgetId={widgetId} fuelData={fuelData} displayData={displayData} fuelUnits={fuelUnits} settings={settings} />;
+            default: return null;
+        }
     };
 
-    return normalizeNode(workingTree);
-  }, [settings.layoutTree, settings.layoutConfig, layout, showConsumptionGraph]);
+    const RecursiveWidgetRenderer = ({ node }: { node: LayoutNode }) => {
+        if (!node || !node.type) return null;
+        if (node.type === 'box') {
+            const isHorizontalBox = node.direction === 'row';
+            return (
+                <div
+                    className="flex-1 flex flex-col min-h-[50px] justify-center w-full"
+                    style={{ flexGrow: node.weight || 1 }}
+                >
+                    <div className={`flex flex-1 ${isHorizontalBox ? 'flex-row items-center justify-around' : 'flex-col'} w-full`}>
+                        {node.widgets?.map(widgetId => (
+                            <div key={widgetId} data-widget-id={widgetId} className="flex-1 min-w-0 flex flex-col justify-center w-full">
+                                {renderWidget(widgetId)}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        }
+        if (node.type === 'split') {
+            return (
+                <div className={`flex flex-1 gap-1 ${node.direction === 'row' ? 'flex-row items-center' : 'flex-col'} h-full`}>
+                    {node.children?.map((child: LayoutNode) => <RecursiveWidgetRenderer key={child.id} node={child} />)}
+                </div>
+            );
+        }
+        return null;
+    };
 
+    // Background opacity configuration
+    const bgAlpha = (settings?.background?.opacity ?? 95) / 100;
 
-  if (!editMode && settings?.showOnlyWhenOnTrack && !isOnTrack) return null;
-  if (!editMode && !isSessionVisible) return <></>;
+    const fuelStatusBasis = displayData.fuelStatus || 'safe';
 
-  const renderWidget = (widgetId: string) => {
-    switch (widgetId) {
-      case 'fuelLevel': return showFuelLevel ? <FuelLevelWidget key="fuelLevel" fuelLevel={displayData.fuelLevel} fuelUnits={fuelUnits} layout={layout || 'vertical'} headerFontSize={layout === 'horizontal' ? 'text-xl' : 'text-3xl'} headerTextClasses={headerTextClasses} /> : null;
-      case 'fuelHeader': return <FuelHeaderCombinedWidget key="fuelHeader" fuelLevel={displayData.fuelLevel} lapsRemaining={displayData.lapsWithFuel} fuelUnits={fuelUnits} headerFontSize={layout === 'horizontal' ? 'text-xl' : 'text-3xl'} headerTextClasses={headerTextClasses} showFuelLevel={showFuelLevel} showLapsRemaining={showLapsRemaining} />;
-      case 'lapsRemaining': return showLapsRemaining ? <LapsRemainingWidget key="lapsRemaining" lapsRemaining={displayData.lapsWithFuel} headerFontSize={layout === 'horizontal' ? 'text-xl' : 'text-3xl'} headerTextClasses={headerTextClasses} /> : null;
-      case 'consumption': return <ConsumptionWidget key="consumption" displayData={displayData} fuelMetrics={fuelMetrics} fuelUnits={fuelUnits} settings={settings} getToFinishColorClass={getToFinishColorClass} layout={layout || 'vertical'} />;
-      case 'keyInfo': return <KeyInfoWidget key="keyInfo" displayData={displayData} fuelUnits={fuelUnits} />;
-      case 'pitWindow': return <PitWindowWidget key="pitWindow" displayData={displayData} fuelData={fuelData} showPitWindow={showPitWindow} editMode={editMode} />;
-      case 'endurance': return <EnduranceStrategyWidget key="endurance" fuelData={fuelData} displayData={displayData} showEnduranceStrategy={showEnduranceStrategy} editMode={editMode} />;
-      case 'scenarios': return <FuelScenariosWidget key="scenarios" displayData={displayData} showFuelScenarios={showFuelScenarios} fuelUnits={fuelUnits} editMode={editMode} />;
-      case 'graph': return <ConsumptionGraphWidget key="graph" graphData={graphData} consumptionGraphType={consumptionGraphType || 'histogram'} fuelUnits={fuelUnits} showConsumptionGraph={showConsumptionGraph} editMode={editMode} />;
-      case 'confidence': return <ConfidenceWidget key="confidence" fuelData={fuelData} confidence={displayData.confidence} />;
-      default: return null;
-    }
-  };
+    // Extract hex codes for inline style
+    const borderColorValue = fuelStatusBasis === 'caution' ? '#f97316' :
+        fuelStatusBasis === 'danger' ? '#ef4444' : '#22c55e';
 
-  const RecursiveWidgetRenderer = ({ node }: { node: LayoutNode }) => {
-    if (!node || !node.type) return null;
-    if (node.type === 'box') {
-      const isHorizontalBox = node.direction === 'row';
-      return (
+    const shadowColorValue = fuelStatusBasis === 'caution' ? 'rgba(249, 115, 22, 0.3)' :
+        fuelStatusBasis === 'danger' ? 'rgba(239, 68, 68, 0.3)' : 'rgba(34, 197, 94, 0.3)';
+
+    return (
         <div
-          className="flex-1 flex flex-col m-0.5 min-h-[50px] justify-center"
-          style={{ flexGrow: node.weight || 1 }}
+            className="w-full h-full flex flex-col text-white"
+            style={{
+                fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+            }}
         >
-          <div className={`flex flex-1 ${isHorizontalBox ? 'flex-row items-center justify-around' : 'flex-col'} gap-1 p-1`}>
-            {node.widgets?.map(widgetId => (
-              <div key={widgetId} data-widget-id={widgetId} className="flex-1 min-w-0 flex flex-col items-center justify-center">
-                {renderWidget(widgetId)}
-              </div>
-            ))}
-          </div>
+            <div className={`border-2 w-full h-full flex flex-col box-border px-3 transition-colors duration-500`}
+                style={{
+                    backgroundColor: `rgba(30, 30, 50, ${bgAlpha})`,
+                    borderColor: borderColorValue,
+                    boxShadow: `0 0 15px ${shadowColorValue} inset`
+                }}
+            >
+                {layoutTree ? (
+                    <RecursiveWidgetRenderer node={layoutTree} />
+                ) : (
+                    <div className="text-red-500">Layout Error</div>
+                )}
+            </div>
         </div>
-      );
-    }
-    if (node.type === 'split') {
-      return (
-        <div className={`flex flex-1 gap-1 ${node.direction === 'row' ? 'flex-row items-center' : 'flex-col'} h-full`}>
-          {node.children?.map((child: LayoutNode) => <RecursiveWidgetRenderer key={child.id} node={child} />)}
-        </div>
-      );
-    }
-    return null;
-  };
-
-  return (
-    <div
-      className="w-full h-full flex flex-col bg-slate-800/(--bg-opacity) text-white"
-      style={{
-        ['--bg-opacity' as string]: `${settings.background?.opacity ?? 85}%`,
-      }}
-    >
-      <div className={`flex-1 overflow-y-auto min-h-0 ${layout === 'horizontal' ? 'flex items-center' : ''}`}>
-        {layoutTree ? (
-          <RecursiveWidgetRenderer node={layoutTree} />
-        ) : (
-          <div className="p-4 flex items-center justify-center h-full text-slate-500 italic text-xs">
-            No layout defined. Use the editor in Settings.
-          </div>
-        )}
-      </div>
-    </div>
-  );
+    );
 };
-
