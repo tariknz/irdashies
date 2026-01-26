@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { formatFuel } from '../fuelCalculations';
 import type { FuelCalculation, FuelCalculatorSettings } from '../types';
 import { useFuelStore } from '../FuelStore';
-import { useDashboard, useSessionStore, useTelemetryValue } from '@irdashies/context';
+import { useDashboard, useSessionStore, useTelemetryValue, useSessionType } from '@irdashies/context';
 import { ConsumptionGraphWidget } from './ConsumptionGraphWidget';
 import { useStore } from 'zustand';
 
@@ -343,6 +343,10 @@ export const FuelCalculator2PitScenarios: React.FC<FuelCalculator2WidgetProps> =
     const labelFontSize = widgetStyle.labelFontSize ? `${widgetStyle.labelFontSize}px` : (widgetStyle.fontSize ? `${widgetStyle.fontSize}px` : '10px');
     const valueFontSize = widgetStyle.valueFontSize ? `${widgetStyle.valueFontSize}px` : (widgetStyle.fontSize ? `${widgetStyle.fontSize}px` : '12px');
 
+    const sessionNum = useTelemetryValue('SessionNum');
+    const sessionType = useSessionType(sessionNum);
+    const isTesting = sessionType === 'Offline Testing';
+
     // Determine visibility based on settings (default true if missing)
     if (settings && settings.showFuelScenarios === false) return null;
 
@@ -421,13 +425,48 @@ export const FuelCalculator2PitScenarios: React.FC<FuelCalculator2WidgetProps> =
                     const safetyMargin = settings?.safetyMargin ?? 0.05;
                     const fuelToAddHypothetical = lapsLeftAfterPit * (displayData.avg10Laps || 0) * (1 + safetyMargin);
 
+                    // Calculate estimated fuel at finish: (Added) - (Needed for remaining laps)
+                    // Since we arrive at pit empty (scenario assumption), Added is the total available.
+                    const fuelBurnedToFinish = lapsLeftAfterPit * (displayData.avg10Laps || 0);
+                    const estimatedFinishFuel = Math.max(0, fuelToAddHypothetical - fuelBurnedToFinish);
+
+                    // Window Status Logic  
+                    // Strategic Open = Earliest lap we can pit and reach the end on one tank.
+                    // = TotalLaps - LapsPerStint (approx for 1-stop)
+                    const lapsPerStintVal = fuelData.lapsPerStint || 0;
+                    const hasValidStint = lapsPerStintVal > 0;
+
+                    const strategicWindowOpen = Math.max(1, Math.floor(fuelData.totalLaps - lapsPerStintVal));
+                    const windowClose = Math.floor(fuelData.currentLap + fuelData.lapsWithFuel);
+
+                    let windowStatus = '';
+                    if (!hasValidStint) {
+                        windowStatus = '--';
+                    } else if (pitLap >= strategicWindowOpen && pitLap <= windowClose) {
+                        windowStatus = 'OK';
+                    } else if (pitLap === strategicWindowOpen - 1) {
+                        windowStatus = '+1';
+                    } else if (pitLap < strategicWindowOpen) {
+                        windowStatus = 'Early';
+                    } else {
+                        windowStatus = 'Late';
+                    }
+
+                    const addDisplay = isTesting ? '--' : `+${fuelToAddHypothetical.toFixed(1)}`;
+                    const finishDisplay = isTesting ? '--' : estimatedFinishFuel.toFixed(1);
+                    const windowDisplay = isTesting ? '--' : windowStatus;
+
+                    // Row Color Logic determines the color for ALL text in the row
+                    let rowColor = 'text-cyan-400'; // Default
+                    if (windowStatus === 'OK') rowColor = 'text-green-400 font-bold';
+                    else if (windowStatus === 'Early' || windowStatus === '+1' || windowStatus === 'Late') rowColor = 'text-yellow-400';
+
                     return (
                         <React.Fragment key={scenario.laps}>
-                            <div className={`${colorClass} py-0.5 text-center`} style={{ fontSize: valueFontSize }}>L{pitLap}</div>
-                            <div className={`${colorClass} text-center py-0.5`} style={{ fontSize: valueFontSize }}>+{fuelToAddHypothetical.toFixed(1)}</div>
-                            <div className={`${colorClass} text-center py-0.5`} style={{ fontSize: valueFontSize }}>1.3</div>
-                            {/* Fixed 1.3 buffer for now as we don't have per-scenario buffer calc */}
-                            <div className={`${colorClass}/50 text-center py-0.5`} style={{ fontSize: valueFontSize }}>{scenario.isCurrentTarget ? 'OK' : ''}</div>
+                            <div className={`${rowColor} py-0.5 text-center`} style={{ fontSize: valueFontSize }}>L{pitLap}</div>
+                            <div className={`${rowColor} text-center py-0.5`} style={{ fontSize: valueFontSize }}>{addDisplay}</div>
+                            <div className={`${rowColor} text-center py-0.5`} style={{ fontSize: valueFontSize }}>{finishDisplay}</div>
+                            <div className={`${rowColor} text-center py-0.5`} style={{ fontSize: valueFontSize }}>{windowDisplay}</div>
                         </React.Fragment>
                     );
                 })}
