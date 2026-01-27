@@ -279,6 +279,7 @@ export interface FuelWidgetSettings extends BaseWidgetSettings {
     showLapsRemaining: boolean;
     showMin: boolean;
     showCurrentLap: boolean;
+    showQualifyConsumption?: boolean;
     showLastLap: boolean;
     show3LapAvg: boolean;
     show10LapAvg: boolean;
@@ -295,6 +296,7 @@ export interface FuelWidgetSettings extends BaseWidgetSettings {
     fuelRequiredMode: 'toFinish' | 'toAdd';
     enableTargetPitLap?: boolean;
     targetPitLap?: number;
+    targetPitLapBasis?: 'avg' | 'avg10' | 'last' | 'max' | 'min' | 'qual';
     useGeneralFontSize?: boolean;
     useGeneralCompactMode?: boolean;
     sessionVisibility: SessionVisibilitySettings;

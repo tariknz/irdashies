@@ -23,7 +23,21 @@ const TargetScenarioRow: React.FC<{
 }> = ({ targetLap, fuelData, displayData, settings, valueFontSize, isTesting }) => {
     const lapsLeftAfterPit = Math.max(0, fuelData.totalLaps - targetLap);
     const safetyMargin = settings?.safetyMargin ?? 0.05;
-    const consumption = displayData.avgLaps || displayData.avg10Laps || 0;
+    // Select consumption based on basis setting
+    const basis = settings?.targetPitLapBasis || 'avg';
+    let consumption = displayData.avgLaps;
+
+    switch (basis) {
+        case 'avg': consumption = displayData.avgLaps; break;
+        case 'avg10': consumption = displayData.avg10Laps; break;
+        case 'last': consumption = displayData.lastLapUsage; break;
+        case 'max': consumption = displayData.maxLapUsage; break;
+        case 'min': consumption = displayData.minLapUsage; break;
+        case 'qual': consumption = displayData.maxQualify; break;
+    }
+
+    // Fallback if selected is 0 or null
+    consumption = consumption || displayData.avgLaps || displayData.avg10Laps || 0;
     const fuelToAddHypothetical = lapsLeftAfterPit * consumption * (1 + safetyMargin);
     const fuelBurnedToFinish = lapsLeftAfterPit * consumption;
     const estimatedFinishFuel = Math.max(0, fuelToAddHypothetical - fuelBurnedToFinish);

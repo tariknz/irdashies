@@ -27,6 +27,7 @@ const defaultConfig: FuelWidgetSettings['config'] = {
   showEnduranceStrategy: true,
   showFuelScenarios: true,
   showFuelRequired: true,
+  showQualifyConsumption: true,
   showFuelHistory: true,
   fuelHistoryType: 'histogram',
   safetyMargin: 0.3,
@@ -34,6 +35,7 @@ const defaultConfig: FuelWidgetSettings['config'] = {
   fuelRequiredMode: 'toFinish',
   enableTargetPitLap: false,
   targetPitLap: 15,
+  targetPitLapBasis: 'avg',
   sessionVisibility: {
     race: true,
     loneQualify: true,
@@ -43,7 +45,7 @@ const defaultConfig: FuelWidgetSettings['config'] = {
   },
   layoutConfig: [], // Default empty
   layoutTree: undefined, // Will be migrated on load
-  consumptionGridOrder: ['curr', 'avg', 'max', 'last', 'min'],
+  consumptionGridOrder: ['curr', 'avg', 'max', 'last', 'min', 'qual'],
   avgLapsCount: 5,
   fuelStatusThresholds: { green: 60, amber: 30, red: 10 },
   fuelStatusBasis: 'avg',
@@ -76,6 +78,7 @@ const migrateConfig = (savedConfig: unknown): FuelWidgetSettings['config'] => {
     consumptionGridOrder: (config.consumptionGridOrder as string[]) ?? defaultConfig.consumptionGridOrder,
     enableTargetPitLap: (config.enableTargetPitLap as boolean) ?? defaultConfig.enableTargetPitLap,
     targetPitLap: (config.targetPitLap as number) ?? defaultConfig.targetPitLap,
+    targetPitLapBasis: (config.targetPitLapBasis as any) ?? defaultConfig.targetPitLapBasis,
     fuelStatusThresholds: (config.fuelStatusThresholds as any) ?? defaultConfig.fuelStatusThresholds,
     fuelStatusBasis: (config.fuelStatusBasis as any) ?? defaultConfig.fuelStatusBasis,
     fuelStatusRedLaps: (config.fuelStatusRedLaps as any) ?? defaultConfig.fuelStatusRedLaps,
@@ -246,6 +249,7 @@ const getSortableRows = (avgLapsCount: number): SortableRow[] => [
   { id: 'max', label: 'Max Consumption', configKey: 'showMax' },
   { id: 'last', label: 'Last Lap', configKey: 'showLastLap' },
   { id: 'min', label: 'Min Consumption', configKey: 'showMin' },
+  { id: 'qual', label: 'Qualify Max', configKey: 'showQualifyConsumption' },
 ];
 
 const GridOrderSettingsList = ({ itemsOrder, onReorder, settings, handleConfigChange }: {
@@ -556,17 +560,6 @@ const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => {
 
 
 
-            {/* Fuel Scenarios */}
-            <div className="flex items-center justify-between pr-20 py-4 border-b border-white/5">
-              <div>
-                <span className="text-sm text-slate-300">Fuel Scenarios</span>
-                <span className="block text-[10px] text-slate-500">Calculations for different pit stop strategies. Adjust Label/Value sizes.</span>
-              </div>
-              <div className="flex items-center gap-4">
-                <DualFontSizeInput widgetId="fuel2Scenarios" settings={settings} onChange={handleConfigChange} />
-              </div>
-            </div>
-
             {/* Fuel Economy Predict */}
             <div className="flex items-center justify-between pr-20 py-4 border-b border-white/5">
               <div>
@@ -710,8 +703,8 @@ const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => {
               </div>
 
               {(settings.config.enableTargetPitLap) && (
-                <div className="ml-4 p-3 bg-slate-800/50 rounded border border-blue-500/30 space-y-3">
-                  <div className="flex items-center justify-between">
+                <div className="ml-1 pl-3 border-l-2 border-slate-700/50 space-y-3">
+                  <div className="flex items-center justify-between pr-2">
                     <span className="text-sm text-slate-300">Target Pit Lap</span>
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-slate-500">L</span>
@@ -725,15 +718,48 @@ const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => {
                       />
                     </div>
                   </div>
-                  <div className="flex items-center justify-between pr-20">
-                    <span className="text-[10px] text-slate-400">Target Message Font</span>
+
+                  <div className="flex items-center justify-between pr-2">
+                    <div>
+                      <span className="text-xs text-slate-400">Calculated From</span>
+                    </div>
+                    <select
+                      value={settings.config.targetPitLapBasis ?? 'avg'}
+                      onChange={(e) => handleConfigChange({ targetPitLapBasis: e.target.value as any })}
+                      className="px-2 py-1 bg-slate-700 text-slate-200 rounded text-xs"
+                    >
+                      <option value="avg">Average ({settings.config.avgLapsCount})</option>
+                      <option value="avg10">Avg 10 Laps</option>
+                      <option value="last">Last Lap</option>
+                      <option value="max">Max Lap</option>
+                      <option value="min">Min Lap</option>
+                      <option value="qual">Qualify Max</option>
+                    </select>
+                  </div>
+
+                  <div className="flex items-center justify-between pr-2">
+                    <span className="text-xs text-slate-400">Target Message Font</span>
                     <DualFontSizeInput widgetId="fuel2TargetMessage" settings={settings} onChange={handleConfigChange} />
                   </div>
+
                   <p className="text-[10px] text-slate-500 italic">
                     Scenarios will include this lap as a 4th row. Target message will show fuel required.
                   </p>
                 </div>
               )}
+
+              {/* Moved Fuel Scenarios here for better organization */}
+              <div className="pt-4 mt-4 border-t border-slate-700/30">
+                <div className="flex items-center justify-between pr-20">
+                  <div>
+                    <span className="text-sm text-slate-300">Fuel Scenarios</span>
+                    <span className="block text-[10px] text-slate-500">Pit stop calculations (-1, Ideal, +1 Lap)</span>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <DualFontSizeInput widgetId="fuel2Scenarios" settings={settings} onChange={handleConfigChange} />
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* Session Visibility Settings */}

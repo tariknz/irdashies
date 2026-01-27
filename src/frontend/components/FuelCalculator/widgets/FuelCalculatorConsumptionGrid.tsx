@@ -44,6 +44,8 @@ export const FuelCalculatorConsumptionGrid: React.FC<FuelCalculatorWidgetProps> 
     const last = displayData.lastLapUsage;
     // Add min data
     const min = displayData.minLapUsage || 0;
+    // Add qualify data
+    const qual = displayData.maxQualify || 0;
 
     // Predictive Data (throttled)
     // Use prop if available, fallback to live data projected (jittery), fallback to 0
@@ -111,6 +113,7 @@ export const FuelCalculatorConsumptionGrid: React.FC<FuelCalculatorWidgetProps> 
     const maxData = calcCol(max);
     const lastData = calcCol(last);
     const minData = calcCol(min);
+    const qualData = calcCol(qual);
 
     // Calculate Current Row Data
     const currentData = calcCol(currentUsage, true);
@@ -138,8 +141,16 @@ export const FuelCalculatorConsumptionGrid: React.FC<FuelCalculatorWidgetProps> 
 
             {/* Dynamic Rows based on Order */}
             {(() => {
-                const defaultOrder = ['curr', 'avg', 'max', 'last', 'min'];
-                const order = settings?.consumptionGridOrder || defaultOrder;
+                const defaultOrder = ['curr', 'avg', 'max', 'last', 'min', 'qual'];
+                // Ensure all default keys are present in the final order, appended if missing (handles migration)
+                const savedOrder = settings?.consumptionGridOrder || defaultOrder;
+                const order = [...savedOrder];
+                defaultOrder.forEach(key => {
+                    if (!order.includes(key)) {
+                        order.push(key);
+                    }
+                });
+
                 const rowPadding = isCompact ? 'py-0' : 'py-0.5';
 
                 const renderRow = (type: string) => {
@@ -198,6 +209,19 @@ export const FuelCalculatorConsumptionGrid: React.FC<FuelCalculatorWidgetProps> 
                                     <div className={`text-white text-center ${rowPadding}`} style={{ fontSize: valueFontSize }}>{minData.laps}</div>
                                     <div className={`${refuelColor} text-center ${rowPadding}`} style={{ fontSize: valueFontSize }}>{minData.refuel}</div>
                                     <div className={`${finishColor(minData.finish)} text-center ${rowPadding}`} style={{ fontSize: valueFontSize }}>{minData.finish}</div>
+                                </React.Fragment>
+                            );
+                        case 'qual':
+                            // Only show if setting is enabled (defaulting to true if undefined for now, or false? Let's assume true for visibility unless toggled off)
+                            if (settings?.showQualifyConsumption === false) return null;
+
+                            return (
+                                <React.Fragment key="qual">
+                                    <div className={`text-slate-400 ${rowPadding}`} style={{ fontSize: labelFontSize }}>QUAL MAX</div>
+                                    <div className={`text-orange-400 text-center ${rowPadding}`} style={{ fontSize: valueFontSize }}>{qual > 0 ? qual.toFixed(2) : '--'}</div>
+                                    <div className={`text-white text-center ${rowPadding}`} style={{ fontSize: valueFontSize }}>{qualData.laps}</div>
+                                    <div className={`${refuelColor} text-center ${rowPadding}`} style={{ fontSize: valueFontSize }}>{qualData.refuel}</div>
+                                    <div className={`${finishColor(qualData.finish)} text-center ${rowPadding}`} style={{ fontSize: valueFontSize }}>{qualData.finish}</div>
                                 </React.Fragment>
                             );
                         default:

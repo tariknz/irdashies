@@ -43,6 +43,8 @@ export interface FuelCalculation {
   avg10Laps: number;
   /** Average fuel consumption for all green flag laps (liters) */
   avgAllGreenLaps: number;
+  /** Maximum fuel consumption from qualifying session (persisted) */
+  maxQualify: number | null;
   /** Minimum fuel used in a single lap (liters) */
   minLapUsage: number;
   /** Maximum fuel used in a single lap (liters) */
@@ -116,6 +118,7 @@ export interface FuelCalculatorSettings {
   showMin: boolean;
   /** Show live current lap consumption */
   showCurrentLap: boolean;
+  showQualifyConsumption?: boolean;
   /** Show consumption for last lap */
   showLastLap: boolean;
   /** Show average over last 3 laps */
@@ -145,6 +148,7 @@ export interface FuelCalculatorSettings {
   fuelRequiredMode?: 'toFinish' | 'toAdd';
   enableTargetPitLap?: boolean;
   targetPitLap?: number;
+  targetPitLapBasis?: 'avg' | 'avg10' | 'last' | 'max' | 'min' | 'qual';
   /** Number of laps to use for AVG calculation (default: 3) */
   avgLapsCount?: number;
   useGeneralFontSize?: boolean;

@@ -93,6 +93,13 @@ export function useFuelCalculation(
   const addLapData = useFuelStore((state) => state.addLapData);
   const updateLapCrossing = useFuelStore((state) => state.updateLapCrossing);
   const updateLapDistPct = useFuelStore((state) => state.updateLapDistPct);
+  const setContextInfo = useFuelStore((state) => state.setContextInfo);
+  const storedTrackId = useFuelStore((state) => state.trackId);
+  const storedCarName = useFuelStore((state) => state.carName);
+
+  // Persistent qualify store
+  const qualifyConsumption = useFuelStore((state) => state.qualifyConsumption);
+  const setQualifyConsumption = useFuelStore((state) => state.setQualifyConsumption);
 
   // Subscribe to lapStartFuel to calculate live usage
   const lapStartFuel = useFuelStore((state) => state.lapStartFuel);
@@ -142,27 +149,31 @@ export function useFuelCalculation(
   const lastTrackIdRef = useRef<number | undefined>(undefined);
 
   useEffect(() => {
-    // Clear data if session ends (SessionState.Invalid = 0)
-    if (sessionState === 0) {
-      if (DEBUG_LOGGING) console.log('[FuelCalculator] Session ended (SessionState=0), clearing all fuel data');
+    // We NO LONGER clear data on sessionState === 0.
+    // This allows data to persist across session transitions (Practice -> Qualify -> Race).
+
+    const currentCarName = useSessionStore.getState().session?.DriverInfo?.DriverCarName;
+
+    // Check for Track Change
+    const trackChanged = trackId !== undefined && storedTrackId !== undefined && trackId !== storedTrackId;
+
+    // Check for Car Change (drivers can switch cars in some sessions/replays)
+    const carChanged = currentCarName && storedCarName && currentCarName !== storedCarName;
+
+    if (trackChanged || carChanged) {
+      if (DEBUG_LOGGING) console.log(`[FuelCalculator] Context changed (Track: ${storedTrackId}->${trackId}, Car: ${storedCarName}->${currentCarName}), clearing all fuel data`);
       clearAllData();
-      lastTrackIdRef.current = undefined;
       smoothedLapsWithFuelRef.current = 0; // Reset smoothing
-      return;
     }
 
-    // Clear data if track changes (new session at different track)
-    if (trackId !== undefined && lastTrackIdRef.current !== undefined && trackId !== lastTrackIdRef.current) {
-      if (DEBUG_LOGGING) console.log(`[FuelCalculator] Track changed (${lastTrackIdRef.current} -> ${trackId}), clearing all fuel data`);
-      clearAllData();
-      smoothedLapsWithFuelRef.current = 0; // Reset smoothing
+    // Always update context info to be current
+    if (trackId !== undefined || currentCarName !== undefined) {
+      // Only update if changed to avoid loop
+      if (trackId !== storedTrackId || currentCarName !== storedCarName) {
+        setContextInfo(trackId, currentCarName);
+      }
     }
-
-    // Update the last known track ID
-    if (trackId !== undefined) {
-      lastTrackIdRef.current = trackId;
-    }
-  }, [sessionState, trackId, clearAllData]);
+  }, [sessionState, trackId, storedTrackId, storedCarName, clearAllData, setContextInfo]);
 
   // Update session flags state to avoid setState during render
   const lastSessionFlagsRef = useRef<number | undefined>(undefined);
@@ -299,6 +310,34 @@ export function useFuelCalculation(
     updateLapCrossing,
     updateLapDistPct,
   ]);
+
+  // Track Max Qualifying Consumption
+  useEffect(() => {
+    // Only process if we are in a qualifying session
+    const currentSessionType = useSessionStore.getState().session?.SessionInfo?.Sessions?.find(
+      (s) => s.SessionNum === sessionNum
+    )?.SessionType;
+
+    const isQualifying = currentSessionType === 'Lone Qualify' || currentSessionType === 'Open Qualify';
+
+    if (isQualifying) {
+      // Get all valid laps from history (since we want session max)
+      const lapHistory = useFuelStore.getState().getLapHistory();
+      const validLaps = lapHistory.filter((l) => l.isValidForCalc && !l.isOutLap);
+
+      if (validLaps.length > 0) {
+        // Find max consumption
+        const maxFuelUsed = Math.max(...validLaps.map(l => l.fuelUsed));
+
+        // Update persistent store if new max is found or not set
+        // Also update if we have a valid max and stored is null
+        if (qualifyConsumption === null || maxFuelUsed > qualifyConsumption) {
+          if (DEBUG_LOGGING) console.log(`[FuelCalculator] Updating Qualify Max: ${qualifyConsumption} -> ${maxFuelUsed}`);
+          setQualifyConsumption(maxFuelUsed);
+        }
+      }
+    }
+  }, [sessionNum, addLapData, qualifyConsumption, setQualifyConsumption]); // Trigger on lap add or session change
 
   // Calculate fuel metrics
   const calculation = useMemo((): FuelCalculation | null => {
@@ -775,6 +814,7 @@ export function useFuelCalculation(
       avgAllGreenLaps,
       minLapUsage,
       maxLapUsage,
+      maxQualify: qualifyConsumption, // Return persistent qualify max
       lapsWithFuel,
       lapsRemaining,
       totalLaps,
