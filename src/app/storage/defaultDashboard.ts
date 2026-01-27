@@ -176,6 +176,7 @@ export const defaultDashboard: DashboardLayout = {
           "includeBrake": true,
           "includeAbs": true,
           "includeSteer": true,
+          "includeClutch": false,
           "strokeWidth": 3,
           "maxSamples": 400
         },
