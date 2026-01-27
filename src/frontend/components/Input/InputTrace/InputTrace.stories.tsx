@@ -11,6 +11,7 @@ export default meta;
 const Traces = ({ brakeAbsActive }: { brakeAbsActive: boolean }) => {
   const [throttle, setThrottle] = useState(0);
   const [brake, setBrake] = useState(0);
+  const [clutch, setClutch] = useState(0);
   useEffect(() => {
     const interval = setInterval(() => {
       setThrottle((value) =>
@@ -20,14 +21,18 @@ const Traces = ({ brakeAbsActive }: { brakeAbsActive: boolean }) => {
       setBrake((value) =>
         Math.max(0, Math.min(1, value + Math.random() * 0.1 - 0.05))
       );
+
+      setClutch((value) =>
+        Math.max(0, Math.min(1, value + Math.random() * 0.1 - 0.05))
+      );
     }, 1000 / 60);
 
     return () => clearInterval(interval);
   }, []);
   return (
     <InputTrace
-      input={{ brake, throttle, brakeAbsActive: brakeAbsActive ?? false }}
-      settings={{ includeBrake: true, includeThrottle: true }}
+      input={{ brake, throttle, clutch, brakeAbsActive: brakeAbsActive ?? false }}
+      settings={{ includeBrake: true, includeThrottle: true, includeClutch: true }}
     />
   );
 };

@@ -134,6 +134,7 @@ const RelativeWithoutHeaderFooter = () => {
           lastTime={settings?.lastTime?.enabled ? undefined : undefined}
           lastTimeState={settings?.lastTime?.enabled ? undefined : undefined}
           position={settings?.position ? undefined : undefined}
+          lap={undefined}
           onPitRoad={false}
           onTrack={true}
           radioActive={false}
@@ -181,6 +182,7 @@ const RelativeWithoutHeaderFooter = () => {
             lastTime={settings?.lastTime?.enabled ? undefined : undefined}
             lastTimeState={settings?.lastTime?.enabled ? undefined : undefined}
             position={settings?.position ? undefined : undefined}
+            lap={undefined}
             onPitRoad={false}
             onTrack={true}
             radioActive={false}
@@ -205,6 +207,7 @@ const RelativeWithoutHeaderFooter = () => {
           isPlayer={result.isPlayer}
           hasFastestTime={result.hasFastestTime}
           position={result.classPosition}
+          lap={result.lap}
           onPitRoad={result.onPitRoad}
           onTrack={result.onTrack}
           radioActive={result.radioActive}
@@ -528,6 +531,7 @@ const RelativeWithoutHeader = () => {
           lastTime={settings?.lastTime?.enabled ? undefined : undefined}
           lastTimeState={settings?.lastTime?.enabled ? undefined : undefined}
           position={settings?.position ? undefined : undefined}
+          lap={undefined}
           onPitRoad={false}
           onTrack={true}
           radioActive={false}
@@ -575,6 +579,7 @@ const RelativeWithoutHeader = () => {
             lastTime={settings?.lastTime?.enabled ? undefined : undefined}
             lastTimeState={settings?.lastTime?.enabled ? undefined : undefined}
             position={settings?.position ? undefined : undefined}
+            lap={undefined}
             onPitRoad={false}
             onTrack={true}
             radioActive={false}
@@ -599,6 +604,7 @@ const RelativeWithoutHeader = () => {
           isPlayer={result.isPlayer}
           hasFastestTime={result.hasFastestTime}
           position={result.classPosition}
+          lap={result.lap}
           onPitRoad={result.onPitRoad}
           onTrack={result.onTrack}
           radioActive={result.radioActive}
@@ -733,6 +739,7 @@ const RelativeWithoutFooter = () => {
           lastTime={settings?.lastTime?.enabled ? undefined : undefined}
           lastTimeState={settings?.lastTime?.enabled ? undefined : undefined}
           position={settings?.position ? undefined : undefined}
+          lap={undefined}
           onPitRoad={false}
           onTrack={true}
           radioActive={false}
@@ -780,6 +787,7 @@ const RelativeWithoutFooter = () => {
             lastTime={settings?.lastTime?.enabled ? undefined : undefined}
             lastTimeState={settings?.lastTime?.enabled ? undefined : undefined}
             position={settings?.position ? undefined : undefined}
+            lap={undefined}
             onPitRoad={false}
             onTrack={true}
             radioActive={false}
@@ -804,6 +812,7 @@ const RelativeWithoutFooter = () => {
           isPlayer={result.isPlayer}
           hasFastestTime={result.hasFastestTime}
           position={result.classPosition}
+          lap={result.lap}
           onPitRoad={result.onPitRoad}
           onTrack={result.onTrack}
           radioActive={result.radioActive}
