@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useRef } from 'react';
 import type { FuelCalculation, FuelCalculatorSettings } from '../types';
 
 interface FuelCalculatorWidgetProps {
@@ -18,47 +18,9 @@ export const FuelCalculatorEconomyPredict: React.FC<FuelCalculatorWidgetProps> =
     const labelFontSize = widgetStyle.labelFontSize ? `${widgetStyle.labelFontSize}px` : (widgetStyle.fontSize ? `${widgetStyle.fontSize}px` : '12px');
     const valueFontSize = widgetStyle.valueFontSize ? `${widgetStyle.valueFontSize}px` : (widgetStyle.fontSize ? `${widgetStyle.fontSize * 1.2}px` : '14px');
 
-    // Buffering Logic for "End of Lap" mode
-    // We store the scenarios AND the lap number they belong to.
-    const [bufferedState, setBufferedState] = useState<{ lap: number, scenarios: any[] } | null>(null);
-
-    const currentLap = fuelData?.currentLap;
-
-    useEffect(() => {
-        // Guard against missing data
-        if (currentLap === undefined || !displayData?.targetScenarios) return;
-
-        // Update buffer ONLY if:
-        // 1. No buffer exists
-        // 2. Buffer is for an older lap (or different lap)
-        // This effectively freezes the data for the duration of 'currentLap'
-        setBufferedState(prev => {
-            // Strict check: Only update if the lap has ACTUALLY changed from what we have buffered
-            if (!prev || prev.lap !== currentLap) {
-                try {
-                    return {
-                        lap: currentLap,
-                        scenarios: JSON.parse(JSON.stringify(displayData.targetScenarios))
-                    };
-                } catch (e) {
-                    console.error("Failed to clone scenarios", e);
-                    return prev;
-                }
-            }
-            return prev;
-        });
-    }, [currentLap]); // Dependent ONLY on currentLap changing.
-
     // Determine which data to show
-    const mode = settings?.economyPredictMode ?? 'live';
-
-    let scenariosToShow: any[] = [];
-    if (mode === 'live') {
-        scenariosToShow = displayData?.targetScenarios || [];
-    } else {
-        // Use buffer, fallback to live if empty or matching current lap is not yet ready (edge case)
-        scenariosToShow = bufferedState?.scenarios || displayData?.targetScenarios || [];
-    }
+    // Reverted to always 'live' mode as per user request
+    const scenariosToShow = displayData?.targetScenarios || [];
 
     // console.log('[EconomyPredict] Render', { mode, currentLap: fuelData?.currentLap, bufferLen: bufferedScenarios.length, showLen: scenariosToShow.length });
 

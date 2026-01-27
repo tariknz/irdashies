@@ -83,6 +83,10 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
         }) as any;
     }, [settings.useGeneralFontSize, settings.widgetStyles, generalSettings?.fontSize]);
 
+    // Store subscription for synchronization
+    const storeLastLap = useFuelStore((state) => state.lastLap);
+    const qualifyConsumption = useFuelStore((state) => state.qualifyConsumption);
+
     // Real Data
     const realFuelData = useFuelCalculation(safetyMargin, settings);
     const realCurrentFuelLevel = useTelemetryValues('FuelLevel')?.[0] || 0;
@@ -133,7 +137,8 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
         lastFinishedLap: 14,
         projectedLapUsage: 1.35,
         fuelStatus: 'danger',
-        lapsRange: [13, 15]
+        lapsRange: [13, 15],
+        maxQualify: null
     };
 
     // Scenario 2: High Confidence (Good flow, clear prediction)
@@ -156,7 +161,8 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
             { laps: 20, fuelPerLap: 2.90, isCurrentTarget: false },
         ],
         fuelStatus: 'safe',
-        lapsRange: [19, 19]
+        lapsRange: [19, 19],
+        maxQualify: null
     };
 
     // Scenario 3: Low Confidence / Critical (Pit window open, fuel tight)
@@ -179,7 +185,8 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
             { laps: 3, fuelPerLap: 5.5, isCurrentTarget: false }, // Placeholder to keep layout stable
         ],
         fuelStatus: 'danger',
-        lapsRange: [0, 2]
+        lapsRange: [0, 2],
+        maxQualify: null
     };
 
     // Empty/Default Data for when calculation is not yet available
@@ -212,6 +219,7 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
         projectedLapUsage: 0,
         fuelStatus: 'safe' as const,
         lapsRange: [0, 0] as [number, number],
+        maxQualify: qualifyConsumption,
     };
 
     const mocks = [mockMedium, mockHigh, mockCritical];
@@ -232,6 +240,7 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
                 pitWindowOpen: 0, pitWindowClose: 0, currentLap: 0, fuelAtFinish: 0,
                 avgLapTime: 0, targetScenarios: undefined,
                 fuelStatus: 'safe' as const, lapsRange: [0, 0] as [number, number],
+                maxQualify: qualifyConsumption,
             };
         }
 
@@ -289,8 +298,7 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
         return normalizeNode(workingTree);
     }, [settings]);
 
-    // Store subscription for synchronization
-    const storeLastLap = useFuelStore((state) => state.lastLap);
+
 
     // Snapshot for Consumption Grid (updates only on lap change)
     // We restore this to keep AVG/MAX/LAST rows static during the lap, as requested.
@@ -375,6 +383,7 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
                 canFinish: false, targetConsumption: 0, confidence: 'low' as const,
                 pitWindowOpen: 0, pitWindowClose: 0, currentLap: 0, fuelAtFinish: 0,
                 avgLapTime: 0, targetScenarios: undefined, projectedLapUsage: 0,
+                maxQualify: null
             };
         }
 

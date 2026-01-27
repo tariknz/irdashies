@@ -152,7 +152,7 @@ export function useFuelCalculation(
     // We NO LONGER clear data on sessionState === 0.
     // This allows data to persist across session transitions (Practice -> Qualify -> Race).
 
-    const currentCarName = useSessionStore.getState().session?.DriverInfo?.DriverCarName;
+    const currentCarName = (useSessionStore.getState().session?.DriverInfo as any)?.DriverCarName;
 
     // Check for Track Change
     const trackChanged = trackId !== undefined && storedTrackId !== undefined && trackId !== storedTrackId;
@@ -319,16 +319,22 @@ export function useFuelCalculation(
       (s) => s.SessionNum === sessionNum
     )?.SessionType;
 
-    const isQualifying = currentSessionType === 'Lone Qualify' || currentSessionType === 'Open Qualify';
+    const isQualifying = currentSessionType && currentSessionType.includes('Qualify');
 
     if (isQualifying) {
-      // Get all valid laps from history (since we want session max)
       const lapHistory = useFuelStore.getState().getLapHistory();
-      const validLaps = lapHistory.filter((l) => l.isValidForCalc && !l.isOutLap);
 
-      if (validLaps.length > 0) {
+      // Relaxed validation: !wasTowed only.
+      // logic mirrors the main calculation 'lapsToUse' fallback:
+      // Prefer Non-OutLaps, but if ONLY OutLaps exist (early session), use them.
+      const allCandidates = lapHistory.filter((l) => !l.wasTowed);
+      const fullLaps = allCandidates.filter((l) => !l.isOutLap);
+
+      const lapsToUse = fullLaps.length > 0 ? fullLaps : allCandidates;
+
+      if (lapsToUse.length > 0) {
         // Find max consumption
-        const maxFuelUsed = Math.max(...validLaps.map(l => l.fuelUsed));
+        const maxFuelUsed = Math.max(...lapsToUse.map(l => l.fuelUsed));
 
         // Update persistent store if new max is found or not set
         // Logic: "overwrite what was saved before" if we have valid data in the current session
@@ -338,7 +344,7 @@ export function useFuelCalculation(
         }
       }
     }
-  }, [sessionNum, addLapData, qualifyConsumption, setQualifyConsumption]); // Trigger on lap add or session change
+  }, [sessionNum, lapHistorySize, qualifyConsumption, setQualifyConsumption]); // Trigger on lap add or session change
 
   // Calculate fuel metrics
   const calculation = useMemo((): FuelCalculation | null => {
@@ -878,6 +884,7 @@ export function useFuelCalculation(
     // Also re-calc when lapStartFuel changes (via start of new lap)
     lapStartFuel,
     settings,
+    qualifyConsumption,
   ]);
 
   return calculation;

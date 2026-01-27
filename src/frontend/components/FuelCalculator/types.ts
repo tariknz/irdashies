@@ -149,7 +149,7 @@ export interface FuelCalculatorSettings {
   enableTargetPitLap?: boolean;
   targetPitLap?: number;
   targetPitLapBasis?: 'avg' | 'avg10' | 'last' | 'max' | 'min' | 'qual';
-  economyPredictMode?: 'live' | 'endOfLap';
+
   /** Number of laps to use for AVG calculation (default: 3) */
   avgLapsCount?: number;
   useGeneralFontSize?: boolean;
