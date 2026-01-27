@@ -32,7 +32,7 @@ export const FuelCalculatorConsumptionGrid: React.FC<FuelCalculatorWidgetProps> 
     if (settings && settings.showConsumption === false) return null;
 
     // Visibility Settings (Default to true if no settings provided, except Min which is optional in modern default layout)
-    const showAvg = settings ? (settings.show3LapAvg || settings.show10LapAvg) : true;
+    const showAvg = settings ? settings.show3LapAvg : true;
     const showMax = settings ? settings.showMax : true;
     const showLast = settings ? settings.showLastLap : true;
     const showCurrent = settings ? settings.showCurrentLap : true;

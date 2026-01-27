@@ -107,6 +107,7 @@ export function useFuelCalculation(
   // Refs for smoothing projected lap usage
   const smoothedProjectedUsageRef = useRef<number>(0);
   const lastSmoothedLapRef = useRef<number>(-1);
+  const smoothedLapsWithFuelRef = useRef<number>(0);
 
   // Update leader lap only when position data changes meaningfully
   useEffect(() => {
@@ -146,6 +147,7 @@ export function useFuelCalculation(
       if (DEBUG_LOGGING) console.log('[FuelCalculator] Session ended (SessionState=0), clearing all fuel data');
       clearAllData();
       lastTrackIdRef.current = undefined;
+      smoothedLapsWithFuelRef.current = 0; // Reset smoothing
       return;
     }
 
@@ -153,6 +155,7 @@ export function useFuelCalculation(
     if (trackId !== undefined && lastTrackIdRef.current !== undefined && trackId !== lastTrackIdRef.current) {
       if (DEBUG_LOGGING) console.log(`[FuelCalculator] Track changed (${lastTrackIdRef.current} -> ${trackId}), clearing all fuel data`);
       clearAllData();
+      smoothedLapsWithFuelRef.current = 0; // Reset smoothing
     }
 
     // Update the last known track ID
@@ -405,7 +408,30 @@ export function useFuelCalculation(
     const avgLapTime = calculateAvgLapTime(lapsToUse);
 
     // Calculate laps possible with current fuel
-    const lapsWithFuel = fuelLevel / avgFuelPerLap;
+    let lapsWithFuel = fuelLevel / avgFuelPerLap;
+
+    // ========================================================================
+    // Smoothing Logic for Est. Laps
+    // ========================================================================
+    const smoothingFactor = 0.08; // Small factor = more smoothing. 0.08 is responsive but smooth
+    const snapThreshold = 1.0; // If value changes by more than this (e.g. refuel), snap instantly
+
+    // Initialize or Reset
+    if (smoothedLapsWithFuelRef.current === 0) {
+      smoothedLapsWithFuelRef.current = lapsWithFuel;
+    } else {
+      const diff = lapsWithFuel - smoothedLapsWithFuelRef.current;
+      // Check for large changes (e.g. refuel or significant usage update)
+      if (Math.abs(diff) > snapThreshold) {
+        smoothedLapsWithFuelRef.current = lapsWithFuel;
+      } else {
+        // Apply EMA smoothing
+        smoothedLapsWithFuelRef.current = smoothedLapsWithFuelRef.current + (diff * smoothingFactor);
+      }
+    }
+
+    // Use the smoothed value for UI display
+    lapsWithFuel = smoothedLapsWithFuelRef.current;
 
     // Determine laps remaining
     let lapsRemaining = sessionLapsRemain;
@@ -546,7 +572,7 @@ export function useFuelCalculation(
     const isQualifyingOrPractice = sessionType && ['Lone Qualify', 'Open Qualify', 'Practice', 'Offline Testing'].includes(sessionType);
 
     // Dynamic thresholds based on session type
-    const effectiveStatusThresholds = isQualifyingOrPractice 
+    const effectiveStatusThresholds = isQualifyingOrPractice
       ? { green: 20, amber: 10, red: 5 } // Much lower for qualifying/practice
       : statusThresholds;
 
@@ -568,7 +594,7 @@ export function useFuelCalculation(
     const lapsLeftOnBasis = basisUsageValue > 0 ? fuelLevel / basisUsageValue : 0;
 
     // Determine effective red laps threshold
-    const effectiveRedLaps = isQualifyingOrPractice 
+    const effectiveRedLaps = isQualifyingOrPractice
       ? Math.min(redLapsThreshold, 1) // Force 1 lap threshold for qualifying if not already lower
       : redLapsThreshold;
 
@@ -723,14 +749,14 @@ export function useFuelCalculation(
     // Apply smoothing (EMA)
     // Factor 0.05 = very smooth/slow. 0.1 = faster. 
     // User requested "update a little slower", so 0.05 is a good start.
-    const smoothingFactor = 0.05;
+    const projectedSmoothingFactor = 0.05;
 
     if (smoothedProjectedUsageRef.current === 0) {
       // First value or reset
       smoothedProjectedUsageRef.current = instantaneousProjection;
     } else {
       smoothedProjectedUsageRef.current =
-        smoothedProjectedUsageRef.current + (instantaneousProjection - smoothedProjectedUsageRef.current) * smoothingFactor;
+        smoothedProjectedUsageRef.current + (instantaneousProjection - smoothedProjectedUsageRef.current) * projectedSmoothingFactor;
     }
 
     projectedLapUsage = smoothedProjectedUsageRef.current;
