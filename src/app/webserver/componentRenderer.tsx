@@ -301,6 +301,11 @@ class WebSocketBridge implements IrSdkBridge {
       this.socket = null;
       this.isConnected = false;
     }
+    this.telemetryCallbacks.clear();
+    this.sessionCallbacks.clear();
+    this.runningCallbacks.clear();
+    this.dashboardUpdateCallbacks.clear();
+    this.demoModeCallbacks.clear();
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
