@@ -103,11 +103,7 @@ export const FuelCalculatorConsumptionGrid: React.FC<FuelCalculatorWidgetProps> 
         return {
             laps: isFinite(laps) ? laps.toFixed(2) : '--',
             refuel: toAdd > 0 ? toAdd.toFixed(2) : '--',
-            // If refuelling, show the safety buffer surplus at finish to match Pit Scenarios
-            // Otherwise show pure balance
-            finish: toAdd > 0
-                ? (lapsAfterEmpty * usage * safetyMargin).toFixed(2)
-                : finish.toFixed(2)
+            finish: finish.toFixed(2)
         };
     };
 
@@ -136,7 +132,7 @@ export const FuelCalculatorConsumptionGrid: React.FC<FuelCalculatorWidgetProps> 
             <div className={`text-center font-bold text-slate-400 border-b border-slate-600/50 ${isCompact ? 'pb-0.5 mb-0.5' : 'pb-1 mb-1'}`} style={{ fontSize: labelFontSize }}>USE</div>
             <div className={`text-center font-bold text-slate-400 border-b border-slate-600/50 ${isCompact ? 'pb-0.5 mb-0.5' : 'pb-1 mb-1'}`} style={{ fontSize: labelFontSize }}>LAPS</div>
             <div className={`text-center font-bold text-slate-400 border-b border-slate-600/50 ${isCompact ? 'pb-0.5 mb-0.5' : 'pb-1 mb-1'}`} style={{ fontSize: labelFontSize }}>REFUEL</div>
-            <div className={`text-center font-bold text-slate-400 border-b border-slate-600/50 ${isCompact ? 'pb-0.5 mb-0.5' : 'pb-1 mb-1'}`} style={{ fontSize: labelFontSize }}>FINISH</div>
+            <div className={`text-center font-bold text-slate-400 border-b border-slate-600/50 ${isCompact ? 'pb-0.5 mb-0.5' : 'pb-1 mb-1'}`} style={{ fontSize: labelFontSize }}>AT FINISH</div>
 
             {/* Spacer for header bottom margin if needed (or handle via border/padding in cells) */}
 
