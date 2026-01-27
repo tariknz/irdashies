@@ -100,7 +100,9 @@ export class OverlayManager {
     });
 
     if (this.overlayAlwaysOnTop) {
-      browserWindow.setAlwaysOnTop(true, 'screen-saver', 1);
+      // Use 'floating' level to stay above normal windows but below modal dialogs
+      // 'screen-saver' was too aggressive and interfered with settings window clicks
+      browserWindow.setAlwaysOnTop(true, 'floating', 1);
     }
 
     // Load the app WITHOUT a hash route - container mode
