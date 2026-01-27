@@ -15,6 +15,7 @@ import {
     FuelHistory,
     FuelCalculatorTargetMessage,
     FuelCalculatorConfidence,
+    FuelCalculatorEconomyPredict,
     getFuelStatusColors,
 } from './widgets/FuelCalculatorWidgets';
 import { useFuelStore } from './FuelStore';
@@ -269,7 +270,7 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
                         id: 'box-1',
                         type: 'box' as const,
                         direction: 'col' as const,
-                        widgets: ['fuelHeader', 'fuelConfidence', 'fuelGauge', 'fuelGrid', 'fuelScenarios', 'fuelGraph', 'fuelTimeEmpty'],
+                        widgets: ['fuelHeader', 'fuelConfidence', 'fuelGauge', 'fuelGrid', 'fuelScenarios', 'fuelEconomyPredict', 'fuelGraph', 'fuelTimeEmpty'],
                         weight: 1
                     }
                 ]
@@ -321,7 +322,11 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
             // 3. Early lap edge cases (L0/L1) where history might be empty/initial
             const isEarlyLap = currentTelemetryLap <= 1;
 
-            if (isHistoryCaughtUp || isStoreCaughtUp || isEarlyLap) {
+            // 4. Force update if we fell significantly behind (more than 1 lap)
+            // This prevents freezing if the sync checks above fail for some reason (e.g. invalid laps)
+            const isLagging = currentTelemetryLap - frozenLap > 1;
+
+            if (isHistoryCaughtUp || isStoreCaughtUp || isEarlyLap || isLagging) {
                 setFrozenFuelData(fuelData);
             }
         }
@@ -453,6 +458,17 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
             case 'fuelConfidence':
             case 'fuel2Confidence':
                 return <FuelCalculatorConfidence {...widgetProps} />;
+            case 'fuelConfidence':
+            case 'fuel2Confidence':
+                return <FuelCalculatorConfidence {...widgetProps} />;
+            case 'fuelEconomyPredict':
+            case 'fuel2EconomyPredict':
+            case 'modernEconomyPredict':
+                return <FuelCalculatorEconomyPredict
+                    {...widgetProps}
+                    fuelData={frozenFuelData}
+                    displayData={displayData}
+                />;
             default: return null;
         }
     };

@@ -193,4 +193,5 @@ export type FuelWidgetType =
   | 'endurance'
   | 'scenarios'
   | 'graph'
-  | 'confidence';
+  | 'confidence'
+  | 'economyPredict';

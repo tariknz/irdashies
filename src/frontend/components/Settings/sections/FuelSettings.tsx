@@ -44,7 +44,7 @@ const defaultConfig: FuelWidgetSettings['config'] = {
   layoutConfig: [], // Default empty
   layoutTree: undefined, // Will be migrated on load
   consumptionGridOrder: ['curr', 'avg', 'max', 'last', 'min'],
-  avgLapsCount: 3,
+  avgLapsCount: 5,
   fuelStatusThresholds: { green: 60, amber: 30, red: 10 },
   fuelStatusBasis: 'avg',
   fuelStatusRedLaps: 3,
@@ -57,6 +57,7 @@ const defaultConfig: FuelWidgetSettings['config'] = {
     'fuel2Grid': { labelFontSize: 10, valueFontSize: 12 },
     'fuel2Scenarios': { labelFontSize: 10, valueFontSize: 12 },
     'fuel2TargetMessage': { labelFontSize: 10, valueFontSize: 12 },
+    'fuel2EconomyPredict': { labelFontSize: 12, valueFontSize: 14 },
   }
 };
 
@@ -94,6 +95,7 @@ const AVAILABLE_WIDGETS_FUEL2: { id: string; label: string }[] = [
   { id: 'fuel2TargetMessage', label: 'Target Pit Message' },
   { id: 'fuel2Graph', label: 'Fuel History' },
   { id: 'fuel2TimeEmpty', label: 'Time Until Empty' },
+  { id: 'fuel2EconomyPredict', label: 'Economy Predict (Laps vs Target)' },
 ];
 
 
@@ -107,7 +109,7 @@ const DEFAULT_TREE_FUEL2: LayoutNode = {
       id: 'box-1',
       type: 'box',
       direction: 'col',
-      widgets: ['fuel2Header', 'fuel2Confidence', 'fuel2TargetMessage', 'fuel2Gauge', 'fuel2Grid', 'fuel2Scenarios', 'fuel2Graph', 'fuel2TimeEmpty'],
+      widgets: ['fuel2Header', 'fuel2Confidence', 'fuel2TargetMessage', 'fuel2Gauge', 'fuel2Grid', 'fuel2Scenarios', 'fuel2EconomyPredict', 'fuel2Graph', 'fuel2TimeEmpty'],
     }
   ]
 };
@@ -547,6 +549,14 @@ const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => {
               <span className="text-sm text-slate-300">Fuel Scenarios</span>
               <div className="flex items-center gap-4">
                 <DualFontSizeInput widgetId="fuel2Scenarios" settings={settings} onChange={handleConfigChange} />
+              </div>
+            </div>
+
+            {/* Fuel Economy Predict */}
+            <div className="flex items-center justify-between pr-20 py-4 border-b border-white/5">
+              <span className="text-sm text-slate-300">Economy Predict</span>
+              <div className="flex items-center gap-4">
+                <DualFontSizeInput widgetId="fuel2EconomyPredict" settings={settings} onChange={handleConfigChange} />
               </div>
             </div>
 
