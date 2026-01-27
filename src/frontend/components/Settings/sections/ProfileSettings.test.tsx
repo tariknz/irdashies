@@ -16,7 +16,7 @@ global.fetch = vi.fn(() =>
   Promise.resolve({
     json: () => Promise.resolve({ ip: 'localhost' }),
   })
-) as unknown as any;
+) as unknown as typeof fetch;
 
 vi.mock('@irdashies/context', () => ({
   useDashboard: () => ({
@@ -67,15 +67,15 @@ describe('ProfileSettings', () => {
   describe('Profile Creation', () => {
     it('should create a new profile with valid name', async () => {
       mockCreateProfile.mockResolvedValue(undefined);
-      
+
       render(<ProfileSettings />);
-      
+
       const input = screen.getByPlaceholderText('Enter profile name...');
       const createButton = screen.getByText('Create');
-      
+
       fireEvent.change(input, { target: { value: 'New Profile' } });
       fireEvent.click(createButton);
-      
+
       await waitFor(() => {
         expect(mockCreateProfile).toHaveBeenCalledWith('New Profile');
       });
@@ -83,7 +83,7 @@ describe('ProfileSettings', () => {
 
     it('should show error when trying to create profile with empty name', async () => {
       render(<ProfileSettings />);
-      
+
       const createButton = screen.getByText('Create');
       // Button is disabled when empty, so this test should verify the disabled state
       expect(createButton).toBeDisabled();
@@ -91,7 +91,7 @@ describe('ProfileSettings', () => {
 
     it('should disable create button when input is empty', () => {
       render(<ProfileSettings />);
-      
+
       const createButton = screen.getByText('Create');
       expect(createButton).toBeDisabled();
     });
@@ -100,12 +100,12 @@ describe('ProfileSettings', () => {
   describe('Profile Switching', () => {
     it('should switch to a different profile', async () => {
       mockSwitchProfile.mockResolvedValue(undefined);
-      
+
       render(<ProfileSettings />);
-      
+
       const switchButton = screen.getByRole('button', { name: 'Switch' });
       fireEvent.click(switchButton);
-      
+
       await waitFor(() => {
         expect(mockSwitchProfile).toHaveBeenCalledWith('default');
       });
@@ -113,15 +113,15 @@ describe('ProfileSettings', () => {
 
     it('should not show switch button for active profile', () => {
       render(<ProfileSettings />);
-      
+
       // Find the active profile row (has the blue indicator dot)
       const activeIndicator = screen.getByTitle('Active Profile');
       const activeProfileRow = activeIndicator.closest('div[class*="px-4"]');
-      
+
       // Check that there's no Switch button in this row
       const switchButtons = Array.from(activeProfileRow?.querySelectorAll('button') || [])
         .filter(btn => btn.textContent === 'Switch');
-      
+
       expect(switchButtons.length).toBe(0);
     });
   });
@@ -129,20 +129,20 @@ describe('ProfileSettings', () => {
   describe('Profile Deletion', () => {
     it('should delete a non-Default profile when confirmed', async () => {
       mockDeleteProfile.mockResolvedValue(undefined);
-      
+
       render(<ProfileSettings />);
-      
+
       const deleteButtons = screen.getAllByText('Delete');
       fireEvent.click(deleteButtons[0]);
-      
+
       // Confirmation dialog should appear
       expect(screen.getByRole('heading', { name: 'Delete Profile' })).toBeInTheDocument();
       expect(screen.getByText(/Are you sure you want to delete the profile "Test Profile"/)).toBeInTheDocument();
-      
+
       // Click the confirm button
       const confirmButton = screen.getByRole('button', { name: 'Delete Profile' });
       fireEvent.click(confirmButton);
-      
+
       await waitFor(() => {
         expect(mockDeleteProfile).toHaveBeenCalledWith('test-profile-1');
       });
@@ -150,74 +150,74 @@ describe('ProfileSettings', () => {
 
     it('should not delete when user cancels confirmation', async () => {
       render(<ProfileSettings />);
-      
+
       const deleteButtons = screen.getAllByText('Delete');
       fireEvent.click(deleteButtons[0]);
-      
+
       // Confirmation dialog should appear
       expect(screen.getByRole('heading', { name: 'Delete Profile' })).toBeInTheDocument();
-      
+
       // Click the cancel button
       const cancelButton = screen.getByRole('button', { name: 'Keep Profile' });
       fireEvent.click(cancelButton);
-      
+
       // Dialog should be gone and delete should not have been called
       await waitFor(() => {
         expect(screen.queryByRole('heading', { name: 'Delete Profile' })).not.toBeInTheDocument();
       });
-      
+
       expect(mockDeleteProfile).not.toHaveBeenCalled();
     });
 
     it('should close dialog when clicking backdrop', async () => {
       render(<ProfileSettings />);
-      
+
       const deleteButtons = screen.getAllByText('Delete');
       fireEvent.click(deleteButtons[0]);
-      
+
       // Confirmation dialog should appear
       expect(screen.getByRole('heading', { name: 'Delete Profile' })).toBeInTheDocument();
-      
+
       // Click the backdrop (the div with bg-black bg-opacity-50)
       const backdrop = document.querySelector('.bg-black.bg-opacity-50');
       fireEvent.click(backdrop as Element);
-      
+
       // Dialog should be gone and delete should not have been called
       await waitFor(() => {
         expect(screen.queryByRole('heading', { name: 'Delete Profile' })).not.toBeInTheDocument();
       });
-      
+
       expect(mockDeleteProfile).not.toHaveBeenCalled();
     });
 
     it('should close dialog when pressing Escape key', async () => {
       render(<ProfileSettings />);
-      
+
       const deleteButtons = screen.getAllByText('Delete');
       fireEvent.click(deleteButtons[0]);
-      
+
       // Confirmation dialog should appear
       expect(screen.getByRole('heading', { name: 'Delete Profile' })).toBeInTheDocument();
-      
+
       // Press Escape key
       fireEvent.keyDown(document, { key: 'Escape' });
-      
+
       // Dialog should be gone and delete should not have been called
       await waitFor(() => {
         expect(screen.queryByRole('heading', { name: 'Delete Profile' })).not.toBeInTheDocument();
       });
-      
+
       expect(mockDeleteProfile).not.toHaveBeenCalled();
     });
 
     it('should not show delete button for Default', () => {
       render(<ProfileSettings />);
-      
+
       // The Default row should not have a Delete button
       const profileRows = screen.getByText('Default').closest('div[class*="px-4"]');
       const deleteButtons = Array.from(profileRows?.querySelectorAll('button') || [])
         .filter(btn => btn.textContent === 'Delete');
-      
+
       expect(deleteButtons.length).toBe(0);
     });
   });
@@ -225,23 +225,23 @@ describe('ProfileSettings', () => {
   describe('Profile Renaming', () => {
     it('should rename a profile', async () => {
       mockRenameProfile.mockResolvedValue(undefined);
-      
+
       render(<ProfileSettings />);
-      
+
       // Click Rename button for the second profile (Test Profile)
       const renameButton = screen.getAllByText('Rename')[1];
       fireEvent.click(renameButton);
-      
+
       // Now an input field should appear for editing
       const inputs = screen.getAllByRole('textbox');
       const profileInput = inputs.find(input => (input as HTMLInputElement).value === 'Test Profile');
       expect(profileInput).toBeDefined();
-      
+
       fireEvent.change(profileInput as HTMLInputElement, { target: { value: 'Renamed Profile' } });
-      
+
       const saveButton = screen.getByText('Save');
       fireEvent.click(saveButton);
-      
+
       await waitFor(() => {
         expect(mockRenameProfile).toHaveBeenCalledWith('test-profile-1', 'Renamed Profile');
       });
@@ -249,17 +249,17 @@ describe('ProfileSettings', () => {
 
     it('should cancel rename without saving', async () => {
       render(<ProfileSettings />);
-      
+
       const renameButton = screen.getAllByText('Rename')[1];
       fireEvent.click(renameButton);
-      
+
       const inputs = screen.getAllByRole('textbox');
       const profileInput = inputs.find(input => (input as HTMLInputElement).value === 'Test Profile');
       fireEvent.change(profileInput as HTMLInputElement, { target: { value: 'New Name' } });
-      
+
       const cancelButton = screen.getByText('Cancel');
       fireEvent.click(cancelButton);
-      
+
       expect(mockRenameProfile).not.toHaveBeenCalled();
     });
   });
@@ -268,56 +268,56 @@ describe('ProfileSettings', () => {
     it.skip('should update font size override', async () => {
       mockUpdateProfileTheme.mockResolvedValue(undefined);
       mockRefreshProfiles.mockResolvedValue(undefined);
-      
+
       render(<ProfileSettings />);
-      
+
       const fontSizeSelect = screen.getAllByRole('combobox')[0];
       fireEvent.change(fontSizeSelect, { target: { value: 'lg' } });
-      
+
       await waitFor(() => {
         expect(mockUpdateProfileTheme).toHaveBeenCalledWith('test-profile-1', {
           fontSize: 'lg',
           colorPalette: 'blue',
         });
       }, { timeout: 2000 });
-      
+
       expect(mockRefreshProfiles).toHaveBeenCalled();
     });
 
     it.skip('should update color palette override', async () => {
       mockUpdateProfileTheme.mockResolvedValue(undefined);
       mockRefreshProfiles.mockResolvedValue(undefined);
-      
+
       render(<ProfileSettings />);
-      
+
       const colorPaletteSelect = screen.getAllByRole('combobox')[1];
       fireEvent.change(colorPaletteSelect, { target: { value: 'red' } });
-      
+
       // Advance timers to trigger debounce
       vi.advanceTimersByTime(500);
-      
+
       await waitFor(() => {
         expect(mockUpdateProfileTheme).toHaveBeenCalledWith('test-profile-1', {
           fontSize: 'md',
           colorPalette: 'red',
         });
       }, { timeout: 2000 });
-      
+
       expect(mockRefreshProfiles).toHaveBeenCalled();
     });
 
     it.skip('should clear font size override when set to default', async () => {
       mockUpdateProfileTheme.mockResolvedValue(undefined);
       mockRefreshProfiles.mockResolvedValue(undefined);
-      
+
       render(<ProfileSettings />);
-      
+
       const fontSizeSelect = screen.getAllByRole('combobox')[0];
       fireEvent.change(fontSizeSelect, { target: { value: '' } });
-      
+
       // Advance timers to trigger debounce
       vi.advanceTimersByTime(500);
-      
+
       await waitFor(() => {
         expect(mockUpdateProfileTheme).toHaveBeenCalledWith('test-profile-1', {
           fontSize: undefined,
@@ -329,15 +329,15 @@ describe('ProfileSettings', () => {
     it.skip('should handle theme update errors gracefully', async () => {
       mockUpdateProfileTheme.mockRejectedValue(new Error('Update failed'));
       mockRefreshProfiles.mockResolvedValue(undefined);
-      
+
       render(<ProfileSettings />);
-      
+
       const fontSizeSelect = screen.getAllByRole('combobox')[0];
       fireEvent.change(fontSizeSelect, { target: { value: 'xl' } });
-      
+
       // Advance timers to trigger debounce
       vi.advanceTimersByTime(500);
-      
+
       await waitFor(() => {
         expect(screen.getByText('Failed to update font size')).toBeInTheDocument();
       }, { timeout: 2000 });
@@ -352,12 +352,12 @@ describe('ProfileSettings', () => {
           writeText: vi.fn().mockResolvedValue(undefined),
         },
       });
-      
+
       render(<ProfileSettings />);
-      
+
       const copyButtons = screen.getAllByTitle('Copy browser URL for this profile');
       fireEvent.click(copyButtons[0]);
-      
+
       expect(navigator.clipboard.writeText).toHaveBeenCalledWith('http://localhost:3000/dashboard?profile=default');
     });
   });
@@ -365,21 +365,21 @@ describe('ProfileSettings', () => {
   describe('Profile List Display', () => {
     it('should display all profiles', () => {
       render(<ProfileSettings />);
-      
+
       expect(screen.getByText('Default')).toBeInTheDocument();
       expect(screen.getByText('Test Profile')).toBeInTheDocument();
     });
 
     it('should show active indicator for current profile', () => {
       render(<ProfileSettings />);
-      
+
       const activeIndicators = screen.getAllByTitle('Active Profile');
       expect(activeIndicators).toHaveLength(1);
     });
 
     it('should display last modified date', () => {
       render(<ProfileSettings />);
-      
+
       const modifiedText = screen.getAllByText(/Modified:/);
       expect(modifiedText.length).toBeGreaterThan(0);
     });
