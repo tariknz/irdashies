@@ -163,6 +163,7 @@ export function useFuelCalculation(
     if (trackChanged || carChanged) {
       if (DEBUG_LOGGING) console.log(`[FuelCalculator] Context changed (Track: ${storedTrackId}->${trackId}, Car: ${storedCarName}->${currentCarName}), clearing all fuel data`);
       clearAllData();
+      setQualifyConsumption(null); // Explicitly clear/reset qualify consumption on track/car change so we don't use invalid data
       smoothedLapsWithFuelRef.current = 0; // Reset smoothing
     }
 
@@ -330,8 +331,8 @@ export function useFuelCalculation(
         const maxFuelUsed = Math.max(...validLaps.map(l => l.fuelUsed));
 
         // Update persistent store if new max is found or not set
-        // Also update if we have a valid max and stored is null
-        if (qualifyConsumption === null || maxFuelUsed > qualifyConsumption) {
+        // Logic: "overwrite what was saved before" if we have valid data in the current session
+        if (qualifyConsumption === null || maxFuelUsed !== qualifyConsumption) {
           if (DEBUG_LOGGING) console.log(`[FuelCalculator] Updating Qualify Max: ${qualifyConsumption} -> ${maxFuelUsed}`);
           setQualifyConsumption(maxFuelUsed);
         }
@@ -371,6 +372,7 @@ export function useFuelCalculation(
       earliestPitLap: undefined,
       fuelTankCapacity: 60, // Default fallback
       fuelStatus: 'safe',
+      maxQualify: qualifyConsumption, // Use stored value even if calculation is empty
     };
 
     if (

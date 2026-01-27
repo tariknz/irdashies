@@ -1,4 +1,4 @@
-import React from 'react';
+import { useState, useRef, useEffect } from 'react';
 import type { FuelCalculation, FuelCalculatorSettings } from '../types';
 
 interface FuelCalculatorWidgetProps {
@@ -18,7 +18,51 @@ export const FuelCalculatorEconomyPredict: React.FC<FuelCalculatorWidgetProps> =
     const labelFontSize = widgetStyle.labelFontSize ? `${widgetStyle.labelFontSize}px` : (widgetStyle.fontSize ? `${widgetStyle.fontSize}px` : '12px');
     const valueFontSize = widgetStyle.valueFontSize ? `${widgetStyle.valueFontSize}px` : (widgetStyle.fontSize ? `${widgetStyle.fontSize * 1.2}px` : '14px');
 
-    if (!fuelData || !displayData.targetScenarios || displayData.targetScenarios.length === 0) {
+    // Buffering Logic for "End of Lap" mode
+    // We store the scenarios AND the lap number they belong to.
+    const [bufferedState, setBufferedState] = useState<{ lap: number, scenarios: any[] } | null>(null);
+
+    const currentLap = fuelData?.currentLap;
+
+    useEffect(() => {
+        // Guard against missing data
+        if (currentLap === undefined || !displayData?.targetScenarios) return;
+
+        // Update buffer ONLY if:
+        // 1. No buffer exists
+        // 2. Buffer is for an older lap (or different lap)
+        // This effectively freezes the data for the duration of 'currentLap'
+        setBufferedState(prev => {
+            // Strict check: Only update if the lap has ACTUALLY changed from what we have buffered
+            if (!prev || prev.lap !== currentLap) {
+                try {
+                    return {
+                        lap: currentLap,
+                        scenarios: JSON.parse(JSON.stringify(displayData.targetScenarios))
+                    };
+                } catch (e) {
+                    console.error("Failed to clone scenarios", e);
+                    return prev;
+                }
+            }
+            return prev;
+        });
+    }, [currentLap]); // Dependent ONLY on currentLap changing.
+
+    // Determine which data to show
+    const mode = settings?.economyPredictMode ?? 'live';
+
+    let scenariosToShow: any[] = [];
+    if (mode === 'live') {
+        scenariosToShow = displayData?.targetScenarios || [];
+    } else {
+        // Use buffer, fallback to live if empty or matching current lap is not yet ready (edge case)
+        scenariosToShow = bufferedState?.scenarios || displayData?.targetScenarios || [];
+    }
+
+    // console.log('[EconomyPredict] Render', { mode, currentLap: fuelData?.currentLap, bufferLen: bufferedScenarios.length, showLen: scenariosToShow.length });
+
+    if (!fuelData || !scenariosToShow || scenariosToShow.length === 0) {
         return (
             <div className={`flex items-center justify-center w-full rounded bg-slate-900/40 text-slate-500 italic`} style={{ fontSize: labelFontSize, minHeight: '30px' }}>
                 Needs Fuel Data
@@ -26,19 +70,13 @@ export const FuelCalculatorEconomyPredict: React.FC<FuelCalculatorWidgetProps> =
         );
     }
 
-    // Determine visibility based on settings (optional, but good practice)
-    // We can add a showPredict setting later if needed, but for now we rely on widget presence in layout.
-
     return (
         <div className={`flex flex-row items-center justify-around w-full ${isCompact ? 'gap-0.5' : 'gap-2'}`}>
-            {displayData.targetScenarios.map((scenario: any) => {
+            {scenariosToShow.map((scenario: any) => {
                 const isCurrent = scenario.isCurrentTarget;
                 const lapsRemaining = scenario.laps;
                 const absoluteTargetLap = displayData.currentLap + lapsRemaining;
                 const fuelPerLap = scenario.fuelPerLap.toFixed(2);
-
-                // Styling based on user request logic could be added here if needed
-                // Current logic: Just display the scenarios
 
                 // Highlight current target
                 const textColor = isCurrent ? 'text-green-400' : 'text-slate-300';

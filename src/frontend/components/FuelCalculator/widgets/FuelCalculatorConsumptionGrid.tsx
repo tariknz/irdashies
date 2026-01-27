@@ -220,8 +220,8 @@ export const FuelCalculatorConsumptionGrid: React.FC<FuelCalculatorWidgetProps> 
                                     <div className={`text-slate-400 ${rowPadding}`} style={{ fontSize: labelFontSize }}>QUAL MAX</div>
                                     <div className={`text-orange-400 text-center ${rowPadding}`} style={{ fontSize: valueFontSize }}>{qual > 0 ? qual.toFixed(2) : '--'}</div>
                                     <div className={`text-white text-center ${rowPadding}`} style={{ fontSize: valueFontSize }}>{qualData.laps}</div>
-                                    <div className={`${refuelColor} text-center ${rowPadding}`} style={{ fontSize: valueFontSize }}>{qualData.refuel}</div>
-                                    <div className={`${finishColor(qualData.finish)} text-center ${rowPadding}`} style={{ fontSize: valueFontSize }}>{qualData.finish}</div>
+                                    <div className={`${refuelColor} text-center ${rowPadding}`} style={{ fontSize: valueFontSize }}>--</div>
+                                    <div className={`text-slate-500 text-center ${rowPadding}`} style={{ fontSize: valueFontSize }}>--</div>
                                 </React.Fragment>
                             );
                         default:

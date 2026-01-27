@@ -78,8 +78,9 @@ interface FuelStoreActions {
 
   /**
    * Get recent N laps (most recent first)
+   */
   getRecentLaps: (count: number) => FuelLapData[];
-  
+
   /**
    * Set the qualifying consumption value
    */
@@ -237,10 +238,8 @@ export const useFuelStore = create<FuelStore>()(
     {
       name: 'fuel-calculator-storage',
       partialize: (state) => ({
-        // Only persist these fields
-        lapHistory: Array.from(state.lapHistory.entries()), // Convert Map to array for JSON
-        lastLap: state.lastLap,
-        lapStartFuel: state.lapStartFuel,
+        // Only persist these fields as requested:
+        // "save to localStorage only the max qualify consumption, I don't want the others saving"
         qualifyConsumption: state.qualifyConsumption,
         trackId: state.trackId,
         carName: state.carName,

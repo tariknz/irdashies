@@ -297,6 +297,7 @@ export interface FuelWidgetSettings extends BaseWidgetSettings {
     enableTargetPitLap?: boolean;
     targetPitLap?: number;
     targetPitLapBasis?: 'avg' | 'avg10' | 'last' | 'max' | 'min' | 'qual';
+    economyPredictMode?: 'live' | 'endOfLap';
     useGeneralFontSize?: boolean;
     useGeneralCompactMode?: boolean;
     sessionVisibility: SessionVisibilitySettings;

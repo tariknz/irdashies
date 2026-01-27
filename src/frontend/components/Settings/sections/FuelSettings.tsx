@@ -36,6 +36,7 @@ const defaultConfig: FuelWidgetSettings['config'] = {
   enableTargetPitLap: false,
   targetPitLap: 15,
   targetPitLapBasis: 'avg',
+  economyPredictMode: 'live',
   sessionVisibility: {
     race: true,
     loneQualify: true,
@@ -79,6 +80,7 @@ const migrateConfig = (savedConfig: unknown): FuelWidgetSettings['config'] => {
     enableTargetPitLap: (config.enableTargetPitLap as boolean) ?? defaultConfig.enableTargetPitLap,
     targetPitLap: (config.targetPitLap as number) ?? defaultConfig.targetPitLap,
     targetPitLapBasis: (config.targetPitLapBasis as any) ?? defaultConfig.targetPitLapBasis,
+    economyPredictMode: (config.economyPredictMode as any) ?? defaultConfig.economyPredictMode,
     fuelStatusThresholds: (config.fuelStatusThresholds as any) ?? defaultConfig.fuelStatusThresholds,
     fuelStatusBasis: (config.fuelStatusBasis as any) ?? defaultConfig.fuelStatusBasis,
     fuelStatusRedLaps: (config.fuelStatusRedLaps as any) ?? defaultConfig.fuelStatusRedLaps,
@@ -565,6 +567,17 @@ const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => {
               <div>
                 <span className="text-sm text-slate-300">Economy Predict</span>
                 <span className="block text-[10px] text-slate-500">Predicts fuel usage vs target. Adjust Label/Value sizes.</span>
+
+                <div className="mt-2 flex items-center gap-2 bg-slate-800/50 p-1 rounded">
+                  <select
+                    value={settings.config.economyPredictMode ?? 'live'}
+                    onChange={(e) => handleConfigChange({ economyPredictMode: e.target.value as any })}
+                    className="bg-slate-700 text-slate-200 text-xs rounded px-2 py-1 border-none focus:outline-none"
+                  >
+                    <option value="live">Update: Real Time</option>
+                    <option value="endOfLap">Update: End of Lap</option>
+                  </select>
+                </div>
               </div>
               <div className="flex items-center gap-4">
                 <DualFontSizeInput widgetId="fuel2EconomyPredict" settings={settings} onChange={handleConfigChange} />
