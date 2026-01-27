@@ -43,8 +43,8 @@ export const dashboardBridge: DashboardBridge = {
     console.log('[dashboardBridge.saveDashboard] Saving to profile:', targetProfileId, 'Current profile:', getCurrentProfileId(), 'Options:', options);
     saveDashboard(targetProfileId, dashboard);
 
-    // For browser views, manually trigger dashboard update callbacks
-    if (options?.profileId && dashboardUpdateCallbacks.size > 0) {
+    // Trigger dashboard update callbacks for all subscribers (browser views, component server, etc.)
+    if (dashboardUpdateCallbacks.size > 0) {
       dashboardUpdateCallbacks.forEach(callback => {
         try {
           callback(dashboard, targetProfileId);

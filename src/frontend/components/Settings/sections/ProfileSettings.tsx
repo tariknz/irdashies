@@ -65,7 +65,6 @@ export const ProfileSettings = () => {
     // Debounce state for theme settings
     const [pendingFontSize, setPendingFontSize] = useState<FontSize | '' | undefined>(currentProfile?.themeSettings?.fontSize);
     const [pendingColorPalette, setPendingColorPalette] = useState<GeneralSettingsType['colorPalette'] | ''>(currentProfile?.themeSettings?.colorPalette ?? '');
-    const [pendingOpacity, setPendingOpacity] = useState<number | undefined>(currentProfile?.themeSettings?.opacity);
 
     useEffect(() => {
         refreshProfiles();
@@ -86,7 +85,6 @@ export const ProfileSettings = () => {
         if (currentProfile) {
             setPendingFontSize(currentProfile.themeSettings?.fontSize);
             setPendingColorPalette(currentProfile.themeSettings?.colorPalette ?? '');
-            setPendingOpacity(currentProfile.themeSettings?.opacity);
         }
     }, [currentProfile]);
 
@@ -127,51 +125,6 @@ export const ProfileSettings = () => {
         }, 500);
         return () => clearTimeout(timer);
     }, [pendingColorPalette, currentProfile, bridge, refreshProfiles]);
-
-    // Debounce opacity updates (800ms delay - longer since slider produces many events)
-    useEffect(() => {
-        const timer = setTimeout(async () => {
-            if (currentProfile && bridge.saveDashboard && pendingOpacity !== currentProfile.themeSettings?.opacity) {
-                try {
-                    // Update both the theme settings and each widget's background opacity
-                    const dashboard = await bridge.getDashboardForProfile?.(currentProfile.id);
-                    if (dashboard) {
-                        const updatedWidgets = dashboard.widgets.map(widget => ({
-                            ...widget,
-                            config: {
-                                ...widget.config,
-                                background: {
-                                    ...widget.config?.background,
-                                    opacity: pendingOpacity ? Math.round(pendingOpacity * 100) : 0,
-                                },
-                            },
-                        }));
-
-                        const updatedDashboard = {
-                            ...dashboard,
-                            widgets: updatedWidgets,
-                        };
-
-                        bridge.saveDashboard(updatedDashboard, { profileId: currentProfile.id });
-
-                        // Also update the profile theme settings
-                        if (bridge.updateProfileTheme) {
-                            await bridge.updateProfileTheme(currentProfile.id, {
-                                ...currentProfile.themeSettings,
-                                opacity: pendingOpacity,
-                            });
-                        }
-
-                        await refreshProfiles();
-                    }
-                } catch (error) {
-                    console.error('Failed to update opacity:', error);
-                    setError('Failed to update opacity');
-                }
-            }
-        }, 800);
-        return () => clearTimeout(timer);
-    }, [pendingOpacity, currentProfile, bridge, refreshProfiles]);
 
     const handleCreateProfile = async () => {
         if (!newProfileName.trim()) {
@@ -465,44 +418,6 @@ export const ProfileSettings = () => {
                             </select>
                         </div>
 
-                        {/* Opacity Override */}
-                        <div className="space-y-2">
-                            <div className="flex items-center justify-between">
-                                <label className="text-sm font-medium text-slate-300">Opacity</label>
-                                <span className="text-sm text-slate-400">
-                                    {pendingOpacity !== undefined
-                                        ? `${Math.round((pendingOpacity ?? 1) * 100)}%`
-                                        : 'Use Dashboard Default'}
-                                </span>
-                            </div>
-                            <input
-                                type="range"
-                                min="0"
-                                max="100"
-                                value={pendingOpacity !== undefined
-                                    ? Math.round((pendingOpacity ?? 1) * 100)
-                                    : ''}
-                                onChange={(e) => {
-                                    const percentValue = e.target.value;
-                                    const opacityValue = percentValue ? parseInt(percentValue) / 100 : undefined;
-                                    setPendingOpacity(opacityValue);
-                                }}
-                                className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
-                            />
-                            <div className="flex justify-between text-xs text-slate-500">
-                                <span>0%</span>
-                                <span>50%</span>
-                                <span>100%</span>
-                            </div>
-                            <button
-                                onClick={() => {
-                                    setPendingOpacity(undefined);
-                                }}
-                                className="text-xs text-slate-400 hover:text-slate-200 transition-colors"
-                            >
-                                Reset to Default
-                            </button>
-                        </div>
                     </div>
                 )}
 
