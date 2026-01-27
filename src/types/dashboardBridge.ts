@@ -2,6 +2,8 @@ import type { DashboardLayout } from './dashboardLayout';
 
 export interface SaveDashboardOptions {
   forceReload?: boolean;
+  /** Skip window refresh - used for layout-only changes in container mode */
+  skipWindowRefresh?: boolean;
 }
 
 export interface DashboardBridge {

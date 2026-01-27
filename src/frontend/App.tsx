@@ -4,59 +4,58 @@ import { HashRouter, Route, Routes } from 'react-router-dom';
 import {
   TelemetryProvider,
   DashboardProvider,
-  useDashboard,
   RunningStateProvider,
-  useRunningState,
   SessionProvider,
   PitLaneProvider,
 } from '@irdashies/context';
 import { Settings } from './components/Settings/Settings';
-import { EditMode } from './components/EditMode/EditMode';
 import { ThemeManager } from './components/ThemeManager/ThemeManager';
-import { WIDGET_MAP } from './WidgetIndex';
 import { HideUIWrapper } from './components/HideUIWrapper/HideUIWrapper';
+import { OverlayContainer } from './components/OverlayContainer';
 
-const AppRoutes = () => {
-  const { currentDashboard } = useDashboard();
-  const { running } = useRunningState();
+/**
+ * Check if this window is the settings window based on URL hash
+ */
+const isSettingsWindow = () => {
+  return window.location.hash.startsWith('#/settings');
+};
 
+/**
+ * Settings window content - uses HashRouter for settings routes
+ */
+const SettingsApp = () => {
   return (
-    <Routes>
-      {currentDashboard?.widgets.map((widget) => {
-        const WidgetComponent = WIDGET_MAP[widget.id];
-        if (!WidgetComponent) {
-          return null;
-        }
+    <HashRouter>
+      <Routes>
+        <Route path="/settings/*" element={<Settings />} />
+      </Routes>
+    </HashRouter>
+  );
+};
 
-        return (
-          <Route
-            key={widget.id}
-            path={`/${widget.id}`}
-            element={running ? <WidgetComponent {...widget.config} /> : <></>}
-          />
-        );
-      })}
-      <Route path="/settings/*" element={<Settings />} />
-    </Routes>
+/**
+ * Overlay container content - renders all widgets in a single window
+ */
+const OverlayApp = () => {
+  return (
+    <HideUIWrapper>
+      <ThemeManager>
+        <OverlayContainer />
+      </ThemeManager>
+    </HideUIWrapper>
   );
 };
 
 const App = () => {
+  const isSettings = isSettingsWindow();
+
   return (
     <DashboardProvider bridge={window.dashboardBridge}>
       <RunningStateProvider bridge={window.irsdkBridge}>
         <SessionProvider bridge={window.irsdkBridge} />
         <TelemetryProvider bridge={window.irsdkBridge} />
         <PitLaneProvider bridge={window.pitLaneBridge} />
-        <HashRouter>
-          <HideUIWrapper>
-            <EditMode>
-              <ThemeManager>
-                <AppRoutes />
-              </ThemeManager>
-            </EditMode>
-          </HideUIWrapper>
-        </HashRouter>
+        {isSettings ? <SettingsApp /> : <OverlayApp />}
       </RunningStateProvider>
     </DashboardProvider>
   );
