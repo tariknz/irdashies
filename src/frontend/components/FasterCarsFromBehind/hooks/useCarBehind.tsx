@@ -27,7 +27,8 @@ export const useCarBehind = ({
 
   if (
     carBehind?.carClass?.relativeSpeed <= myCar?.carClass?.relativeSpeed ||
-    carBehind?.delta < threshold
+    carBehind?.delta < threshold ||
+    carBehind?.onPitRoad
   ) {
     return { name: undefined, distance: 0, classColor: undefined, percent: 0 };
   }
