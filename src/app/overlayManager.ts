@@ -156,6 +156,13 @@ export class OverlayManager {
   /**
    * Send a message to the container window and settings window
    */
+  // High-frequency messages that only the overlay container needs
+  private static readonly OVERLAY_ONLY_MESSAGES = new Set([
+    'telemetry',
+    'sessionData',
+    'runningState',
+  ]);
+
   public publishMessage(key: string, value: unknown): void {
     // Send to container window
     if (this.containerWindow && !this.containerWindow.isDestroyed()) {
@@ -164,6 +171,11 @@ export class OverlayManager {
       } catch (e) {
         console.error(`Failed to send message ${key} to container window`, e);
       }
+    }
+
+    // Skip high-frequency telemetry messages for the settings window
+    if (OverlayManager.OVERLAY_ONLY_MESSAGES.has(key)) {
+      return;
     }
 
     // Send to settings window

@@ -35,9 +35,9 @@ export const useCarSpeedsStore = create<CarSpeedsState>((set, get) => ({
       set({ carSpeeds: carIdxLapDistPct.map(() => 0) });
       return;
     }
+    // Reuse existing arrays; mutate in-place since the store owns them
     const newHistory: number[][] = carSpeedBuffer?.speedHistory
-      ? carSpeedBuffer.speedHistory.map(arr => [...arr])
-      : carIdxLapDistPct.map(() => []);
+      ?? carIdxLapDistPct.map(() => []);
     if (
       carSpeedBuffer &&
       carSpeedBuffer.lastLapDistPct.length === carIdxLapDistPct.length &&
@@ -59,7 +59,7 @@ export const useCarSpeedsStore = create<CarSpeedsState>((set, get) => ({
     const avgSpeeds = newHistory.map(arr => arr.length ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length) : 0);
     set({
       carSpeedBuffer: {
-        lastLapDistPct: [...carIdxLapDistPct],
+        lastLapDistPct: carIdxLapDistPct,
         lastSessionTime: sessionTime,
         speedHistory: newHistory,
       },
