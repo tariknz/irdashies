@@ -29,7 +29,7 @@ const defaultConfig: FuelWidgetSettings['config'] = {
   showFuelRequired: true,
   showFuelHistory: true,
   fuelHistoryType: 'histogram',
-  safetyMargin: 0.05,
+  safetyMargin: 0.3,
   background: { opacity: 85 },
   fuelRequiredMode: 'toFinish',
   enableTargetPitLap: false,
@@ -426,19 +426,31 @@ const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => {
               {/* Widget Styles for Fuel 2 specific components without toggles */}
               <div className="space-y-4 pb-4 mb-4 border-b border-slate-700">
                 <div className="flex items-center justify-between pr-20 pb-4 border-b border-white/5">
-                  <span className="text-sm text-slate-300">Header</span>
+                  <div>
+                    <span className="text-sm text-slate-300">Header</span>
+                    <span className="block text-[10px] text-slate-500">Stops, Lap Window, and Confidence level. Adjust Label/Value sizes.</span>
+                  </div>
                   <DualFontSizeInput widgetId="fuel2Header" settings={settings} onChange={handleConfigChange} />
                 </div>
                 <div className="flex items-center justify-between pr-20 py-4 border-b border-white/5">
-                  <span className="text-sm text-slate-300">Confidence Messages</span>
+                  <div>
+                    <span className="text-sm text-slate-300">Confidence Messages</span>
+                    <span className="block text-[10px] text-slate-500">Text warnings when data is reliable/unreliable. Adjust Label/Value sizes.</span>
+                  </div>
                   <DualFontSizeInput widgetId="fuel2Confidence" settings={settings} onChange={handleConfigChange} />
                 </div>
                 <div className="flex items-center justify-between pr-20 py-4 border-b border-white/5">
-                  <span className="text-sm text-slate-300">Fuel Gauge</span>
+                  <div>
+                    <span className="text-sm text-slate-300">Fuel Gauge</span>
+                    <span className="block text-[10px] text-slate-500">Visual circular fuel level indicator. Adjust Label/Value sizes.</span>
+                  </div>
                   <DualFontSizeInput widgetId="fuel2Gauge" settings={settings} onChange={handleConfigChange} />
                 </div>
                 <div className="flex items-center justify-between pr-20 py-4 border-b border-white/5">
-                  <span className="text-sm text-slate-300">Time Until Empty</span>
+                  <div>
+                    <span className="text-sm text-slate-300">Time Until Empty</span>
+                    <span className="block text-[10px] text-slate-500">Estimated driving time remaining. Adjust Label/Value sizes.</span>
+                  </div>
                   <DualFontSizeInput widgetId="fuel2TimeEmpty" settings={settings} onChange={handleConfigChange} />
                 </div>
               </div>
@@ -546,7 +558,10 @@ const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => {
 
             {/* Fuel Scenarios */}
             <div className="flex items-center justify-between pr-20 py-4 border-b border-white/5">
-              <span className="text-sm text-slate-300">Fuel Scenarios</span>
+              <div>
+                <span className="text-sm text-slate-300">Fuel Scenarios</span>
+                <span className="block text-[10px] text-slate-500">Calculations for different pit stop strategies. Adjust Label/Value sizes.</span>
+              </div>
               <div className="flex items-center gap-4">
                 <DualFontSizeInput widgetId="fuel2Scenarios" settings={settings} onChange={handleConfigChange} />
               </div>
@@ -554,7 +569,10 @@ const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => {
 
             {/* Fuel Economy Predict */}
             <div className="flex items-center justify-between pr-20 py-4 border-b border-white/5">
-              <span className="text-sm text-slate-300">Economy Predict</span>
+              <div>
+                <span className="text-sm text-slate-300">Economy Predict</span>
+                <span className="block text-[10px] text-slate-500">Predicts fuel usage vs target. Adjust Label/Value sizes.</span>
+              </div>
               <div className="flex items-center gap-4">
                 <DualFontSizeInput widgetId="fuel2EconomyPredict" settings={settings} onChange={handleConfigChange} />
               </div>
@@ -630,26 +648,25 @@ const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => {
               <span className="text-sm text-slate-300">
                 Safety Margin
                 <span className="block text-xs text-slate-500">
-                  Extra fuel buffer (affects &quot;To Finish&quot; and border
-                  colors)
+                  Extra fuel added to "To Finish" calculation.
                 </span>
               </span>
               <div className="flex items-center gap-2">
                 <input
-                  type="range"
+                  type="number"
                   min="0"
-                  max="20"
-                  step="1"
-                  value={settings.config.safetyMargin * 100}
+                  max="50"
+                  step="0.1"
+                  value={settings.config.safetyMargin}
                   onChange={(e) =>
                     handleConfigChange({
-                      safetyMargin: parseInt(e.target.value) / 100,
+                      safetyMargin: parseFloat(e.target.value) || 0,
                     })
                   }
-                  className="w-20 h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer slider"
+                  className="w-16 px-2 py-1 bg-slate-700 text-slate-200 rounded text-xs text-right focus:border-blue-500 focus:outline-none"
                 />
                 <span className="text-xs text-slate-300 w-8">
-                  {Math.round(settings.config.safetyMargin * 100)}%
+                  {settings.config.fuelUnits}
                 </span>
               </div>
             </div>

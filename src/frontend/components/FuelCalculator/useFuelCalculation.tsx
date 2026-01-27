@@ -42,7 +42,7 @@ const DEFAULT_TANK_CAPACITY = 60;
 const MAX_REASONABLE_LAPS = 10000;
 
 export function useFuelCalculation(
-  safetyMargin = 0.05,
+  safetyMargin = 0.3,
   settings?: FuelCalculatorSettings
 ): FuelCalculation | null {
   const fuelLevel = useTelemetryValue('FuelLevel');
@@ -513,7 +513,11 @@ export function useFuelCalculation(
     }
 
     // Calculate fuel needed with safety margin
-    const fuelNeeded = lapsRemaining * avgFuelPerLap * (1 + safetyMargin);
+    // Safety margin is now a fixed amount (L or gal)
+    // If unit is gallons, convert to liters for internal calculation (1 gal = 3.78541 L)
+    const marginAmount = settings?.fuelUnits === 'gal' ? safetyMargin * 3.78541 : safetyMargin;
+
+    const fuelNeeded = (lapsRemaining * avgFuelPerLap) + marginAmount;
     const canFinish = fuelLevel >= fuelNeeded;
 
     // Calculate pit window
