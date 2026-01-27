@@ -493,55 +493,7 @@ const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => {
                   </div>
                 </div>
 
-                {/* Red Threshold */}
-                <div className="flex items-center justify-between pr-20">
-                  <span className="text-xs text-slate-400">Red Threshold (%)</span>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="range" min="0" max="100" step="1"
-                      value={settings.config.fuelStatusThresholds?.red ?? 10}
-                      onChange={(e) => {
-                        const val = parseInt(e.target.value);
-                        handleConfigChange({
-                          fuelStatusThresholds: {
-                            ...defaultConfig.fuelStatusThresholds,
-                            ...settings.config.fuelStatusThresholds,
-                            red: val
-                          } as any
-                        });
-                      }}
-                      className="w-32 h-1.5 bg-slate-600 rounded-lg appearance-none cursor-pointer"
-                    />
-                    <span className="text-xs text-slate-300 w-8 text-right">{settings.config.fuelStatusThresholds?.red ?? 10}%</span>
-                  </div>
-                </div>
 
-                {/* Consumption Basis */}
-                <div className="flex items-center justify-between pr-20 mt-4">
-                  <span className="text-xs text-slate-400">
-                    Alert Basis (Override)
-                    <span className="block text-[10px] text-slate-500">Triggers Red if below lap threshold</span>
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <select
-                      value={settings.config.fuelStatusBasis ?? 'avg'}
-                      onChange={(e) => handleConfigChange({ fuelStatusBasis: e.target.value as any })}
-                      className="px-2 py-1 bg-slate-700 text-slate-200 rounded text-xs w-24"
-                    >
-                      <option value="last">Last Lap</option>
-                      <option value="avg">Average</option>
-                      <option value="min">Minimum</option>
-                      <option value="max">Maximum</option>
-                    </select>
-                    <input
-                      type="number" min="0" max="20" step="0.1"
-                      value={settings.config.fuelStatusRedLaps ?? 3}
-                      onChange={(e) => handleConfigChange({ fuelStatusRedLaps: parseFloat(e.target.value) })}
-                      className="w-12 px-1 py-1 bg-slate-700 text-slate-200 rounded text-xs text-center ml-2"
-                    />
-                    <span className="text-[10px] text-slate-500">Laps</span>
-                  </div>
-                </div>
               </div>
             </div>
 

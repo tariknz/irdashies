@@ -539,10 +539,20 @@ export function useFuelCalculation(
 
     // Percentage based thresholds
     const currentFuelPctValue = (fuelLevelPct ?? 0) * 100;
+    const sessionType = useSessionStore.getState().session?.SessionInfo?.Sessions?.find(
+      (s) => s.SessionNum === sessionNum
+    )?.SessionType;
 
-    if (currentFuelPctValue >= statusThresholds.green) {
+    const isQualifyingOrPractice = sessionType && ['Lone Qualify', 'Open Qualify', 'Practice', 'Offline Testing'].includes(sessionType);
+
+    // Dynamic thresholds based on session type
+    const effectiveStatusThresholds = isQualifyingOrPractice 
+      ? { green: 20, amber: 10, red: 5 } // Much lower for qualifying/practice
+      : statusThresholds;
+
+    if (currentFuelPctValue >= effectiveStatusThresholds.green) {
       fuelStatus = 'safe';
-    } else if (currentFuelPctValue >= statusThresholds.amber) {
+    } else if (currentFuelPctValue >= effectiveStatusThresholds.amber) {
       fuelStatus = 'caution';
     } else {
       fuelStatus = 'danger';
@@ -557,9 +567,17 @@ export function useFuelCalculation(
 
     const lapsLeftOnBasis = basisUsageValue > 0 ? fuelLevel / basisUsageValue : 0;
 
+    // Determine effective red laps threshold
+    const effectiveRedLaps = isQualifyingOrPractice 
+      ? Math.min(redLapsThreshold, 1) // Force 1 lap threshold for qualifying if not already lower
+      : redLapsThreshold;
+
     // If laps remaining is below threshold, force "danger" (Red)
-    if (lapsLeftOnBasis < redLapsThreshold && lapsLeftOnBasis > 0) {
+    if (lapsLeftOnBasis < effectiveRedLaps && lapsLeftOnBasis > 0) {
       fuelStatus = 'danger';
+    } else if (isQualifyingOrPractice && lapsLeftOnBasis < 2 && fuelStatus === 'safe') {
+      // For qualifying, show caution if under 2 laps remaining even if pct is okay
+      fuelStatus = 'caution';
     }
 
     // ========================================================================
