@@ -56,6 +56,7 @@ export const GeneralSettings = () => {
     skipTaskbar: currentDashboard?.generalSettings?.skipTaskbar ?? true,
     disableHardwareAcceleration: currentDashboard?.generalSettings?.disableHardwareAcceleration ?? false,
     enableAutoStart: currentDashboard?.generalSettings?.enableAutoStart ?? false,
+    startMinimized: currentDashboard?.generalSettings?.startMinimized ?? false,
     compactMode: currentDashboard?.generalSettings?.compactMode ?? false,
     overlayAlwaysOnTop: currentDashboard?.generalSettings?.overlayAlwaysOnTop ?? true
   });
@@ -130,6 +131,12 @@ export const GeneralSettings = () => {
     setSettings(newSettings);
     updateDashboard(newSettings);
     bridge.setAutoStart(enabled);
+  };
+
+  const handleStartMinimizedChange = (enabled: boolean) => {
+    const newSettings = { ...settings, startMinimized: enabled };
+    setSettings(newSettings);
+    updateDashboard(newSettings);
   };
 
   const handleCompactModeChange = (enabled: boolean) => {
@@ -341,6 +348,25 @@ export const GeneralSettings = () => {
                 type="checkbox"
                 checked={settings.enableAutoStart ?? true}
                 onChange={(e) => handleAutoStartChange(e.target.checked)}
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+            </label>
+          </div>
+        </div>
+
+        {/* Start Minimized Setting */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <h3 className="text-lg font-medium text-slate-200">Start minimized</h3>
+              <p className="text-sm text-slate-400">If enabled, the main settings window will start minimized to the system tray.</p>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={settings.startMinimized ?? false}
+                onChange={(e) => handleStartMinimizedChange(e.target.checked)}
                 className="sr-only peer"
               />
               <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
