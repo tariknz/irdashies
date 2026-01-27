@@ -3,6 +3,7 @@ import { Rnd } from 'react-rnd';
 import { useDashboard } from '@irdashies/context';
 import { WIDGET_MAP } from '../../WidgetIndex';
 import { getWidgetName } from '../../constants/widgetNames';
+import { X, ResizeIcon } from '@phosphor-icons/react';
 
 interface WidgetPosition {
   x: number;
@@ -15,9 +16,18 @@ export const DashboardView = () => {
   const { currentDashboard, bridge, currentProfile } = useDashboard();
   const [widgetPositions, setWidgetPositions] = useState<Record<string, WidgetPosition>>({});
   const [interactingWidget, setInteractingWidget] = useState<string | null>(null);
+  const [showBorderForWidget, setShowBorderForWidget] = useState<string | null>(null);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const pendingSaveRef = useRef<Record<string, WidgetPosition> | null>(null);
   const isSavingRef = useRef(false);
+
+  const handleWidgetDoubleClick = (widgetId: string) => {
+    setShowBorderForWidget(widgetId);
+  };
+
+  const handleCloseBorder = () => {
+    setShowBorderForWidget(null);
+  };
 
 
   // Filter enabled widgets and deduplicate by ID
@@ -216,12 +226,32 @@ export const DashboardView = () => {
             enableUserSelectHack={false}
           >
             <div
-              className={`w-full h-full cursor-move overflow-hidden ${isInteracting ? 'border-2 border-dashed border-blue-400' : ''}`}
+              className={`w-full h-full cursor-move overflow-hidden text-white ${isInteracting ? 'border-2 border-dashed border-blue-400' : ''} relative`}
+              onClick={() => handleWidgetDoubleClick(widget.id)}
             >
               {/* Title overlay when interacting */}
               {isInteracting && (
                 <div className="absolute top-0 left-0 right-0 bg-blue-500 text-white text-xs px-2 py-1 font-medium z-10">
                   {widgetName}
+                </div>
+              )}
+              {/* Border when double-clicked */}
+              {showBorderForWidget === widget.id && (
+                <div className="absolute inset-0 border-dashed border-2 border-sky-500 pointer-events-none z-20 flex items-start justify-end p-2">
+                  <div className="flex items-center gap-2 bg-sky-500 text-white text-sm font-semibold px-2 py-1 rounded">
+                    <ResizeIcon size={16} />
+                    <span>{widgetName}</span>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleCloseBorder();
+                      }}
+                      className="pointer-events-auto ml-2 hover:bg-sky-600 rounded p-1 transition-colors"
+                      title="Close"
+                    >
+                      <X size={16} weight="bold" />
+                    </button>
+                  </div>
                 </div>
               )}
               {/* Widget content - scrollable but no scrollbars visible */}

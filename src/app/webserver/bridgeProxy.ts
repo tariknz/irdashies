@@ -172,6 +172,16 @@ export function createBridgeProxy(
             }));
             break;
           }
+          case 'listProfiles': {
+            const { requestId } = parsed;
+            const result = await dashboardBridge?.listProfiles();
+            ws.send(JSON.stringify({
+              type: 'listProfiles',
+              requestId,
+              data: result,
+            }));
+            break;
+          }
           case 'updateProfileTheme': {
             const { requestId, data } = parsed;
             await dashboardBridge?.updateProfileTheme(data.profileId, data.themeSettings);

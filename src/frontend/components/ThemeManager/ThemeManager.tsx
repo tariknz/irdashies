@@ -10,6 +10,7 @@ export const ThemeManager = ({ children }: PropsWithChildren) => {
   // Profile theme settings override dashboard general settings
   const fontSize = currentProfile?.themeSettings?.fontSize ?? generalSettings?.fontSize ?? 'sm';
   const colorPalette = currentProfile?.themeSettings?.colorPalette ?? generalSettings?.colorPalette ?? 'default';
+  const opacity = currentProfile?.themeSettings?.opacity ?? 1;
 
   // Don't apply theme changes to the settings page since
   // they share the same theme as the rest of the overlays
@@ -24,6 +25,9 @@ export const ThemeManager = ({ children }: PropsWithChildren) => {
         overlay-theme-${fontSize} 
         overlay-theme-color-${colorPalette}
       `}
+      style={{
+        opacity: opacity,
+      }}
     >
       {children}
     </div>

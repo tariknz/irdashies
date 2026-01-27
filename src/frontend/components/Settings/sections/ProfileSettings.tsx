@@ -55,16 +55,97 @@ export const ProfileSettings = () => {
     const [editingProfileName, setEditingProfileName] = useState('');
     const [isCreating, setIsCreating] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [serverIP, setServerIP] = useState<string>('localhost');
     const [confirmDelete, setConfirmDelete] = useState<{
         isOpen: boolean;
         profileId: string;
         profileName: string;
     }>({ isOpen: false, profileId: '', profileName: '' });
 
+    // Debounce state for theme settings
+    const [pendingFontSize, setPendingFontSize] = useState<FontSize | '' | undefined>(currentProfile?.themeSettings?.fontSize);
+    const [pendingColorPalette, setPendingColorPalette] = useState<GeneralSettingsType['colorPalette'] | ''>(currentProfile?.themeSettings?.colorPalette ?? '');
+    const [pendingOpacity, setPendingOpacity] = useState<number | undefined>(currentProfile?.themeSettings?.opacity);
+
     useEffect(() => {
         refreshProfiles();
+        // Fetch server IP
+        fetch('http://localhost:3000/api/server-ip')
+            .then(res => res.json())
+            .catch(() => ({ ip: 'localhost' }))
+            .then(data => {
+                if (data.ip) {
+                    setServerIP(data.ip);
+                }
+            });
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+
+    // Sync pending values when profile changes
+    useEffect(() => {
+        if (currentProfile) {
+            setPendingFontSize(currentProfile.themeSettings?.fontSize);
+            setPendingColorPalette(currentProfile.themeSettings?.colorPalette ?? '');
+            setPendingOpacity(currentProfile.themeSettings?.opacity);
+        }
+    }, [currentProfile?.id, currentProfile?.themeSettings]);
+
+    // Debounce font size updates (500ms delay)
+    useEffect(() => {
+        const timer = setTimeout(async () => {
+            if (currentProfile && bridge.updateProfileTheme && pendingFontSize !== currentProfile.themeSettings?.fontSize) {
+                try {
+                    await bridge.updateProfileTheme(currentProfile.id, {
+                        ...currentProfile.themeSettings,
+                        fontSize: pendingFontSize || undefined,
+                    });
+                    await refreshProfiles();
+                } catch (error) {
+                    console.error('Failed to update font size:', error);
+                    setError('Failed to update font size');
+                }
+            }
+        }, 500);
+        return () => clearTimeout(timer);
+    }, [pendingFontSize, currentProfile, bridge, refreshProfiles]);
+
+    // Debounce color palette updates (500ms delay)
+    useEffect(() => {
+        const timer = setTimeout(async () => {
+            if (currentProfile && bridge.updateProfileTheme && pendingColorPalette !== (currentProfile.themeSettings?.colorPalette ?? '')) {
+                try {
+                    await bridge.updateProfileTheme(currentProfile.id, {
+                        ...currentProfile.themeSettings,
+                        colorPalette: (pendingColorPalette as GeneralSettingsType['colorPalette']) || undefined,
+                    });
+                    await refreshProfiles();
+                } catch (error) {
+                    console.error('Failed to update color palette:', error);
+                    setError('Failed to update color palette');
+                }
+            }
+        }, 500);
+        return () => clearTimeout(timer);
+    }, [pendingColorPalette, currentProfile, bridge, refreshProfiles]);
+
+    // Debounce opacity updates (800ms delay - longer since slider produces many events)
+    useEffect(() => {
+        const timer = setTimeout(async () => {
+            if (currentProfile && bridge.updateProfileTheme && pendingOpacity !== currentProfile.themeSettings?.opacity) {
+                try {
+                    await bridge.updateProfileTheme(currentProfile.id, {
+                        ...currentProfile.themeSettings,
+                        opacity: pendingOpacity,
+                    });
+                    await refreshProfiles();
+                } catch (error) {
+                    console.error('Failed to update opacity:', error);
+                    setError('Failed to update opacity');
+                }
+            }
+        }, 800);
+        return () => clearTimeout(timer);
+    }, [pendingOpacity, currentProfile, bridge, refreshProfiles]);
 
     const handleCreateProfile = async () => {
         if (!newProfileName.trim()) {
@@ -289,7 +370,7 @@ export const ProfileSettings = () => {
                                                 )}
                                                 <button
                                                     onClick={() => {
-                                                        const url = `http://localhost:3000/dashboard?profile=${profile.id}`;
+                                                        const url = `http://${serverIP}:3000/dashboard?profile=${profile.id}`;
                                                         navigator.clipboard.writeText(url);
                                                     }}
                                                     className="bg-cyan-600 hover:bg-cyan-700 text-white px-3 py-1 rounded text-sm font-medium transition-colors"
@@ -323,33 +404,10 @@ export const ProfileSettings = () => {
                     <div className="space-y-2">
                         <label className="text-sm font-medium text-slate-300">Font Size</label>
                         <select
-                            value={currentProfile.themeSettings?.fontSize ?? ''}
-                            onChange={async (e) => {
-                                console.log('[ProfileSettings] !!! onChange triggered !!!', e.target.value);
-                                try {
-                                    const value = e.target.value as FontSize | '';
-                                    console.log('[ProfileSettings] Updating font size to:', value);
-
-                                    if (!bridge.updateProfileTheme) {
-                                        console.error('bridge.updateProfileTheme is not available');
-                                        setError('Theme update not available');
-                                        return;
-                                    }
-
-                                    console.log('[ProfileSettings] About to call bridge.updateProfileTheme');
-                                    await bridge.updateProfileTheme(currentProfile.id, {
-                                        ...currentProfile.themeSettings,
-                                        fontSize: value || undefined,
-                                    });
-                                    console.log('[ProfileSettings] Font size updated, calling refreshProfiles...');
-
-                                    // Refresh profiles to update the UI
-                                    await refreshProfiles();
-                                    console.log('[ProfileSettings] refreshProfiles complete');
-                                } catch (error) {
-                                    console.error('Failed to update font size:', error);
-                                    setError('Failed to update font size');
-                                }
+                            value={pendingFontSize ?? ''}
+                            onChange={(e) => {
+                                const value = e.target.value as FontSize | '';
+                                setPendingFontSize(value || undefined);
                             }}
                             className="w-full bg-slate-900 border border-slate-600 text-white px-3 py-2 rounded focus:outline-none focus:border-blue-500"
                         >
@@ -366,28 +424,10 @@ export const ProfileSettings = () => {
                     <div className="space-y-2">
                         <label className="text-sm font-medium text-slate-300">Color Palette</label>
                         <select
-                            value={currentProfile.themeSettings?.colorPalette ?? ''}
-                            onChange={async (e) => {
-                                try {
-                                    const value = e.target.value as GeneralSettingsType['colorPalette'] | '';
-
-                                    if (!bridge.updateProfileTheme) {
-                                        console.error('bridge.updateProfileTheme is not available');
-                                        setError('Theme update not available');
-                                        return;
-                                    }
-
-                                    await bridge.updateProfileTheme(currentProfile.id, {
-                                        ...currentProfile.themeSettings,
-                                        colorPalette: value || undefined,
-                                    });
-
-                                    // Refresh profiles to update the UI
-                                    await refreshProfiles();
-                                } catch (error) {
-                                    console.error('Failed to update color palette:', error);
-                                    setError('Failed to update color palette');
-                                }
+                            value={pendingColorPalette ?? ''}
+                            onChange={(e) => {
+                                const value = e.target.value as GeneralSettingsType['colorPalette'] | '';
+                                setPendingColorPalette(value);
                             }}
                             className="w-full bg-slate-900 border border-slate-600 text-white px-3 py-2 rounded focus:outline-none focus:border-blue-500"
                         >
@@ -397,6 +437,102 @@ export const ProfileSettings = () => {
                                 </option>
                             ))}
                         </select>
+                    </div>
+
+                    {/* Opacity Override */}
+                    <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                            <label className="text-sm font-medium text-slate-300">Opacity</label>
+                            <span className="text-sm text-slate-400">
+                                {pendingOpacity !== undefined 
+                                    ? `${Math.round((pendingOpacity ?? 1) * 100)}%`
+                                    : 'Use Dashboard Default'}
+                            </span>
+                        </div>
+                        <input
+                            type="range"
+                            min="0"
+                            max="100"
+                            value={pendingOpacity !== undefined 
+                                ? Math.round((pendingOpacity ?? 1) * 100)
+                                : ''}
+                            onChange={(e) => {
+                                const percentValue = e.target.value;
+                                const opacityValue = percentValue ? parseInt(percentValue) / 100 : undefined;
+                                setPendingOpacity(opacityValue);
+                            }}
+                            className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                        />
+                        <div className="flex justify-between text-xs text-slate-500">
+                            <span>0%</span>
+                            <span>50%</span>
+                            <span>100%</span>
+                        </div>
+                        <button
+                            onClick={() => {
+                                setPendingOpacity(undefined);
+                            }}
+                            className="text-xs text-slate-400 hover:text-slate-200 transition-colors"
+                        >
+                            Reset to Default
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* OBS Browser Source URL */}
+            {currentProfile && (
+                <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4 space-y-3">
+                    <div>
+                        <h3 className="text-lg font-semibold text-white mb-2">
+                            OBS Browser Source
+                        </h3>
+                        <p className="text-sm text-gray-400 mb-3">
+                            Use the URL below for OBS browser sources. OBS requires IP addresses instead of localhost.
+                        </p>
+                    </div>
+                    
+                    <div className="space-y-2">
+                        <div className="text-xs font-medium text-slate-300 mb-2">Localhost (Development)</div>
+                        <div className="flex gap-2">
+                            <input
+                                type="text"
+                                readOnly
+                                value={`http://localhost:3000/dashboard?profile=${currentProfile.id}`}
+                                className="flex-1 bg-slate-900 border border-slate-600 text-white px-3 py-2 rounded text-sm font-mono"
+                            />
+                            <button
+                                onClick={() => {
+                                    navigator.clipboard.writeText(`http://localhost:3000/dashboard?profile=${currentProfile.id}`);
+                                }}
+                                className="bg-slate-600 hover:bg-slate-700 text-white px-3 py-2 rounded text-sm font-medium transition-colors whitespace-nowrap"
+                            >
+                                Copy
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="space-y-2">
+                        <div className="text-xs font-medium text-slate-300 mb-2">IP Address (OBS/Streaming)</div>
+                        <div className="flex gap-2">
+                            <input
+                                type="text"
+                                readOnly
+                                value={`http://${serverIP}:3000/dashboard?profile=${currentProfile.id}`}
+                                className="flex-1 bg-slate-900 border border-slate-600 text-white px-3 py-2 rounded text-sm font-mono"
+                            />
+                            <button
+                                onClick={() => {
+                                    navigator.clipboard.writeText(`http://${serverIP}:3000/dashboard?profile=${currentProfile.id}`);
+                                }}
+                                className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm font-medium transition-colors whitespace-nowrap"
+                            >
+                                Copy for OBS
+                            </button>
+                        </div>
+                        <p className="text-xs text-slate-500">
+                            Note: This URL uses your server's IP address ({serverIP}). Works in OBS browser sources and from other machines.
+                        </p>
                     </div>
                 </div>
             )}

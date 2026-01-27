@@ -53,6 +53,7 @@ export interface DashboardProfile {
   themeSettings?: {
     fontSize?: FontSize;
     colorPalette?: GeneralSettingsType['colorPalette'];
+    opacity?: number;
   };
 }
 

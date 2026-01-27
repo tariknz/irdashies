@@ -4,7 +4,6 @@ import { HashRouter, Route, Routes } from 'react-router-dom';
 import {
   TelemetryProvider,
   DashboardProvider,
-  useDashboard,
   RunningStateProvider,
   useRunningState,
   SessionProvider,
@@ -17,25 +16,17 @@ import { WIDGET_MAP } from './WidgetIndex';
 import { HideUIWrapper } from './components/HideUIWrapper/HideUIWrapper';
 
 const AppRoutes = () => {
-  const { currentDashboard } = useDashboard();
   const { running } = useRunningState();
 
   return (
     <Routes>
-      {currentDashboard?.widgets.map((widget) => {
-        const WidgetComponent = WIDGET_MAP[widget.id];
-        if (!WidgetComponent) {
-          return null;
-        }
-
-        return (
-          <Route
-            key={widget.id}
-            path={`/${widget.id}`}
-            element={running ? <WidgetComponent {...widget.config} /> : <></>}
-          />
-        );
-      })}
+      {Object.entries(WIDGET_MAP).map(([widgetId, WidgetComponent]) => (
+        <Route
+          key={widgetId}
+          path={`/${widgetId}`}
+          element={running ? <WidgetComponent /> : <></>}
+        />
+      ))}
       <Route path="/settings/*" element={<Settings />} />
     </Routes>
   );

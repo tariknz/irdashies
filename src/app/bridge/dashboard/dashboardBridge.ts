@@ -261,17 +261,18 @@ export async function publishDashboardUpdates(overlayManager: OverlayManager, an
         overlayManager.forceRefreshOverlays(dashboard);
       }
     }
-    ipcMain.handle('autostart:set', (_event, enabled: boolean) => {
-      app.setLoginItemSettings({
-        openAtLogin: enabled,
-      });
+  });
 
-      return app.getLoginItemSettings().openAtLogin;
+  ipcMain.handle('autostart:set', (_event, enabled: boolean) => {
+    app.setLoginItemSettings({
+      openAtLogin: enabled,
     });
 
-    ipcMain.handle('autostart:get', () => {
-      return app.getLoginItemSettings().openAtLogin;
-    });
+    return app.getLoginItemSettings().openAtLogin;
+  });
+
+  ipcMain.handle('autostart:get', () => {
+    return app.getLoginItemSettings().openAtLogin;
   });
 };
 

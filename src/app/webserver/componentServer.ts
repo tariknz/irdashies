@@ -131,7 +131,7 @@ export async function startComponentServer(irsdkBridge?: IrSdkBridge, dashboardB
     const pathname = url.pathname;
 
     if (!isDev && staticPath && pathname !== '/' && !pathname.startsWith('/health') && 
-        !pathname.startsWith('/debug') && !pathname.startsWith('/component') && 
+        !pathname.startsWith('/debug') && !pathname.startsWith('/api') && !pathname.startsWith('/component') && 
         !pathname.startsWith('/components') && !pathname.startsWith('/dashboard')) {
       const filePath = path.join(staticPath, pathname);
       await serveStaticFile(filePath, res);
@@ -140,6 +140,11 @@ export async function startComponentServer(irsdkBridge?: IrSdkBridge, dashboardB
 
     if (pathname === '/health' && req.method === 'GET') {
       sendJSON(res, 200, { status: 'ok', message: 'Component server is running' });
+      return;
+    }
+
+    if (pathname === '/api/server-ip' && req.method === 'GET') {
+      sendJSON(res, 200, { ip: SERVER_IP });
       return;
     }
 

@@ -476,9 +476,33 @@ export class WebSocketBridge implements IrSdkBridge {
     }
   }
 
-  // Profile management methods (stubs for component renderer)
+  // Profile management methods
   async listProfiles(): Promise<any[]> {
-    return [{ id: 'default', name: 'Default' }];
+    return new Promise((resolve) => {
+      if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+        const requestId = Math.random().toString(36).substring(7);
+        const handler = (event: MessageEvent) => {
+          try {
+            const message = JSON.parse(event.data);
+            if (message.type === 'listProfiles' && message.requestId === requestId) {
+              this.socket?.removeEventListener('message', handler);
+              clearTimeout(timeout);
+              resolve(message.data || []);
+            }
+          } catch (e) {
+            console.error('Error in listProfiles callback:', e);
+          }
+        };
+        const timeout = setTimeout(() => {
+          this.socket?.removeEventListener('message', handler);
+          resolve([{ id: 'default', name: 'Default' }]);
+        }, 5000);
+        this.socket.addEventListener('message', handler);
+        this.socket.send(JSON.stringify({ type: 'listProfiles', requestId }));
+      } else {
+        resolve([{ id: 'default', name: 'Default' }]);
+      }
+    });
   }
 
   async createProfile(): Promise<any> {
