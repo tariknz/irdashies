@@ -34,6 +34,7 @@ export interface GeneralSettingsType {
   skipTaskbar?: boolean;
   disableHardwareAcceleration?: boolean;
   enableAutoStart?: boolean;
+  startMinimized?: boolean;
   compactMode?: boolean;
   overlayAlwaysOnTop?: boolean;
 }
