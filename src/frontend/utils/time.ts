@@ -53,7 +53,11 @@ export const formatTime = (seconds?: number, format: TimeFormat = 'full'): strin
         if (formattedTime) formattedTime += ':';
         formattedTime += `${String(minutes).padStart(hours > 0 ? 2 : 0, '0')}`;
       }
-      formattedTime += `:${String(remainingSeconds).padStart(2, '0')}`;
+      if (hours > 0 || minutes > 0) {
+        formattedTime += `:${String(remainingSeconds).padStart(2, '0')}`;
+      } else {
+        formattedTime = `${remainingSeconds}`;
+      }
       break;
     case 'duration-wlabels':
       formattedTime = '';
