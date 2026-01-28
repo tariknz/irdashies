@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo } from 'react';
 import {
   useSessionStore,
   useTelemetryValues,
@@ -20,8 +20,6 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
     useSessionStore((s) => s.session?.DriverInfo?.PaceCarIdx) ?? -1;
   const { collectLapData, getReferenceLap } = useReferenceRegistry();
   const sessionTime = useTelemetryValue<number>('SessionTime') ?? 0;
-  const [timeOfSampling, setTimeOfSampling] = useState(new Map());
-  const [lastDeltas, setLastDeltas] = useState(new Map());
 
   // Driver lookup map
   const driverMap = useMemo(
@@ -76,8 +74,8 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
       const isOnPitRoadFocus = carIdxIsOnPitRoad[focusIdx];
       const isOnPitRoadOther = carIdxIsOnPitRoad[otherCarIdx];
 
-      const otherCarRefs = getReferenceLap(otherCarIdx) ?? new Map();
-      const focusCarRefs = getReferenceLap(focusIdx) ?? new Map();
+      const otherCarRefs = getReferenceLap(otherCarIdx);
+      const focusCarRefs = getReferenceLap(focusIdx);
 
       const otherCarTrckPct = carIdxLapDistPct[otherCarIdx];
       const focusCarTrckPct = carIdxLapDistPct[focusIdx];
@@ -91,8 +89,11 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
       // NOTE: focus is behind
       if (relativeDistPct > 0 && relativeDistPct <= 0.5) {
         const closestPointFocusCar = normalizeKey(focusCarTrckPct);
-        const timeAtLastPointFocus = focusCarRefs.get(closestPointFocusCar);
-        const timeAtLastPointOther = otherCarRefs.get(closestPointFocusCar);
+        const closestPointOtherCar = normalizeKey(otherCarTrckPct);
+        const timeAtLastPointFocus =
+          focusCarRefs.refPoints.get(closestPointFocusCar);
+        const timeAtLastPointOther =
+          otherCarRefs.refPoints.get(closestPointOtherCar);
 
         // TODO: check if crossing finish line while other car is in pits before finish line is a problem
         // FIX: opponent sitting in pit lane calculation
@@ -118,12 +119,17 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
             calculatedDelta = estTimeOther - estTimeFocus;
           }
         } else {
-          calculatedDelta = timeAtLastPointFocus - timeAtLastPointOther;
+          calculatedDelta =
+            timeAtLastPointFocus.timeElapsedSinceStart -
+            timeAtLastPointOther.timeElapsedSinceStart;
         }
       } else {
+        const closestPointFocusCar = normalizeKey(focusCarTrckPct);
         const closestPointOtherCar = normalizeKey(otherCarTrckPct);
-        const timeAtLastPointFocus = focusCarRefs.get(closestPointOtherCar);
-        const timeAtLastPointOther = otherCarRefs.get(closestPointOtherCar);
+        const timeAtLastPointFocus =
+          focusCarRefs.refPoints.get(closestPointFocusCar);
+        const timeAtLastPointOther =
+          otherCarRefs.refPoints.get(closestPointOtherCar);
 
         if (
           isOnPitRoadFocus ||
@@ -147,40 +153,13 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
             calculatedDelta = estTimeOther - estTimeFocus;
           }
         } else {
-          calculatedDelta = timeAtLastPointFocus - timeAtLastPointOther;
+          calculatedDelta =
+            timeAtLastPointOther.timeElapsedSinceStart -
+            timeAtLastPointFocus.timeElapsedSinceStart;
         }
       }
 
-      const timeOfSample = timeOfSampling.get(otherCarIdx) ?? 0;
-
-      if (sessionTime - timeOfSample > 0.035) {
-        setLastDeltas((d) => {
-          const newLastDelta = new Map(d);
-          let deltas = (newLastDelta.get(otherCarIdx) as number[]) ?? [];
-          if (deltas.length > 2) {
-            deltas = deltas.slice(1);
-          }
-          deltas.push(calculatedDelta);
-          newLastDelta.set(otherCarIdx, [...deltas]);
-
-          return newLastDelta;
-        });
-
-        setTimeOfSampling((t) => {
-          const newTimeOfSampling = new Map(t);
-          newTimeOfSampling.set(otherCarIdx, sessionTime);
-
-          return newTimeOfSampling;
-        });
-      }
-
-      // TODO: Fix averages when big discrepancy
-      const deltas = (lastDeltas.get(otherCarIdx) as number[]) ?? [];
-
-      return (
-        deltas.reduce((acc, value) => (acc += value), 0) /
-        (deltas.length == 0 ? 1 : deltas.length)
-      );
+      return calculatedDelta;
     },
     [
       calculateRelativeDist,
@@ -190,9 +169,6 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
       driverMap,
       focusCarIdx,
       getReferenceLap,
-      lastDeltas,
-      sessionTime,
-      timeOfSampling,
     ]
   );
 
