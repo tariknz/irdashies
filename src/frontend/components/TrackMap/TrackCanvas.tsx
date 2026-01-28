@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Driver } from '@irdashies/types';
 import tracks from './tracks/tracks.json';
-import { getColor, getTailwindStyle } from '@irdashies/utils/colors';
+import { getColor, getContrastingTextColor, getTailwindStyle } from '@irdashies/utils/colors';
 import { shouldShowTrack } from './tracks/brokenTracks';
 import { TrackDebug } from './TrackDebug';
 import { useStartFinishLine } from './hooks/useStartFinishLine';
@@ -110,14 +110,15 @@ export const TrackCanvas = ({
         if (highlightColor) {
           // Convert highlight color number to hex string for canvas
           const highlightColorHex = `#${highlightColor.toString(16).padStart(6, '0')}`;
-          colors[driver.CarIdx] = { fill: highlightColorHex, text: 'white' };
+          colors[driver.CarIdx] = { fill: highlightColorHex, text: getContrastingTextColor(highlightColorHex) };
         } else {
           // Default to amber when highlightColor is undefined
-          colors[driver.CarIdx] = { fill: getColor('amber'), text: 'white' };
+          const amberColor = getColor('amber');
+          colors[driver.CarIdx] = { fill: amberColor, text: getContrastingTextColor(amberColor) };
         }
       } else {
         const style = getTailwindStyle(driver.CarClassColor, undefined, isMultiClass);
-        colors[driver.CarIdx] = { fill: style.canvasFill, text: 'white' };
+        colors[driver.CarIdx] = { fill: style.canvasFill, text: getContrastingTextColor(style.canvasFill) };
       }
     });
 
