@@ -1,6 +1,6 @@
-import type { Session, Telemetry, IrSdkBridge } from '@irdashies/types';
-import mockTelemetry from '../../../irsdk/node/utils/mock-data/telemetry.json';
+import type { IrSdkBridge, Session, Telemetry } from '@irdashies/types';
 import mockSessionInfo from '../../../irsdk/node/utils/mock-data/session.json';
+import mockTelemetry from '../../../irsdk/node/utils/mock-data/telemetry.json';
 
 export async function generateMockDataFromPath(
   path?: string
@@ -35,7 +35,7 @@ export function generateMockData(sessionData?: {
   let sessionIdx = 0;
 
   let prevTelemetry = mockTelemetry as unknown as Telemetry;
-  
+
   // Demo mode: Simulate RPM and gear changes for Mazda MX-5
   let demoRpm = 2000;
   let demoGear = 1;
@@ -53,7 +53,7 @@ export function generateMockData(sessionData?: {
   return {
     onTelemetry: (callback: (value: Telemetry) => void) => {
       telemetryCallbacks.add(callback);
-      
+
       // Start interval only once
       if (!telemetryInterval) {
         telemetryInterval = setInterval(() => {
@@ -63,7 +63,8 @@ export function generateMockData(sessionData?: {
           if (!t) {
             const throttleValue = prevTelemetry.Throttle.value[0];
             const brakeValue = prevTelemetry.Brake.value[0];
-            
+            const jitteredBrakeValue = jitterValue(brakeValue);
+
             // Simulate RPM and gear changes for demo mode
             // Check if we're at or above shift RPM
             if (demoRpm >= shiftRpm) {
@@ -85,12 +86,17 @@ export function generateMockData(sessionData?: {
               // Normal RPM increase
               demoRpm += rpmStep;
             }
-            
+
+            // Enable ABS when brake force is above 80% in demo mode
+            const absActive = jitteredBrakeValue > 0.8;
+            const prevAbs =
+              prevTelemetry.BrakeABSactive ?? ({ value: [false] } as const);
+
             t = {
               ...prevTelemetry,
               Brake: {
                 ...prevTelemetry.Brake,
-                value: [jitterValue(brakeValue)],
+                value: [jitteredBrakeValue],
               },
               Throttle: {
                 ...prevTelemetry.Throttle,
@@ -108,18 +114,22 @@ export function generateMockData(sessionData?: {
                 ...prevTelemetry.RPM,
                 value: [demoRpm],
               },
+              BrakeABSactive: {
+                ...prevAbs,
+                value: [absActive],
+              },
             };
             prevTelemetry = t;
           }
 
           telemetryIdx = telemetryIdx + 1;
           const data = { ...t };
-          
+
           // Call all registered callbacks
           telemetryCallbacks.forEach(cb => cb(data));
         }, 1000 / 60); // Update at 60Hz for smooth telemetry simulation
       }
-      
+
       // Return unsubscribe function
       return () => {
         telemetryCallbacks.delete(callback);
@@ -132,7 +142,7 @@ export function generateMockData(sessionData?: {
     },
     onSessionData: (callback: (value: Session) => void) => {
       sessionCallbacks.add(callback);
-      
+
       const updateSessionData = () => {
         let s = Array.isArray(sessionInfo)
           ? sessionInfo[sessionIdx % sessionInfo.length]
@@ -144,15 +154,15 @@ export function generateMockData(sessionData?: {
         // Call all registered callbacks
         sessionCallbacks.forEach(cb => cb(s));
       };
-      
+
       // Send initial data immediately
       updateSessionData();
-      
+
       // Start interval only once
       if (!sessionInfoInterval) {
         sessionInfoInterval = setInterval(updateSessionData, 2000);
       }
-      
+
       // Return unsubscribe function
       return () => {
         sessionCallbacks.delete(callback);
@@ -165,17 +175,17 @@ export function generateMockData(sessionData?: {
     },
     onRunningState: (callback: (value: boolean) => void) => {
       runningStateCallbacks.add(callback);
-      
+
       // Send initial state immediately
       callback(true);
-      
+
       // Start interval only once
       if (!runningStateInterval) {
         runningStateInterval = setInterval(() => {
           runningStateCallbacks.forEach(cb => cb(true));
         }, 1000);
       }
-      
+
       // Return unsubscribe function
       return () => {
         runningStateCallbacks.delete(callback);
