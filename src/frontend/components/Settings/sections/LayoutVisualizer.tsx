@@ -1,7 +1,6 @@
-import { useState, useCallback, useRef } from 'react';
-import { LayoutNode, LayoutDirection } from '../types';
-import { useSortableList } from '../../SortableList';
-import { DotsSixVerticalIcon, TrashIcon, ArrowsOutSimple, PlusIcon } from '@phosphor-icons/react';
+import { useState } from 'react';
+import { LayoutNode, BoxConfig } from '../types';
+import { DotsSixVerticalIcon, TrashIcon } from '@phosphor-icons/react';
 
 // --- Types ---
 type DropZone = 'top' | 'bottom' | 'left' | 'right' | 'center' | null;
@@ -19,7 +18,7 @@ interface DragState {
 const generateId = () => Math.random().toString(36).substring(2, 9);
 
 // Convert flat config to Tree (Migration Helper)
-export const migrateToTree = (flatConfig: any[], availableWidgets: any[]): LayoutNode => {
+export const migrateToTree = (flatConfig: BoxConfig[]): LayoutNode => {
     if (!flatConfig || flatConfig.length === 0) {
         return {
             id: 'root-default',
@@ -32,7 +31,7 @@ export const migrateToTree = (flatConfig: any[], availableWidgets: any[]): Layou
         };
     }
 
-    const children: LayoutNode[] = flatConfig.map((box: any) => {
+    const children: LayoutNode[] = flatConfig.map((box) => {
         // Create a Box Node for each legacy box configuration
         // Legacy boxes had 'widgets' array and 'flow' (horizontal/vertical)
         return {
@@ -108,7 +107,7 @@ const RecursiveRenderer = ({
         // Only clear if we are leaving to something that isn't a child
         const rect = e.currentTarget.getBoundingClientRect();
         if (e.clientX < rect.left || e.clientX >= rect.right || e.clientY < rect.top || e.clientY >= rect.bottom) {
-            onDragOver(e, { id: null } as any); // Sentinel to clear
+            onDragOver(e, { id: '' } as LayoutNode); // Use empty string for ID as a sentinel to clear
         }
     };
 
@@ -259,7 +258,7 @@ const updateTree = (root: LayoutNode | null, draggedNode: LayoutNode, targetNode
         return node;
     };
 
-    let cleanTree = removeNodeById(root, draggedNode.id);
+    const cleanTree = removeNodeById(root, draggedNode.id);
 
     // 2. Intelligent Insert
     const insertNode = (node: LayoutNode | null): LayoutNode => {
@@ -339,7 +338,7 @@ const updateTree = (root: LayoutNode | null, draggedNode: LayoutNode, targetNode
     const flatten = (node: LayoutNode): LayoutNode => {
         if (node.type !== 'split') return node;
 
-        let children = node.children.map(flatten);
+        const children = node.children.map(flatten);
 
         // If a child is a split node with the SAME direction, merge its children into this one
         const mergedChildren: LayoutNode[] = [];
@@ -434,8 +433,8 @@ export const LayoutVisualizer = ({
         let currentTree: LayoutNode | null = tree;
 
         // Special case: Merge widget into box with specific position (either move or new)
-        if (dropZone === 'center' && targetNode.type === 'box' && (draggedNode as any).widgets?.length === 1) {
-            const sourceWidgetId = (draggedNode as any).widgets[0];
+        if (dropZone === 'center' && targetNode.type === 'box' && (draggedNode as LayoutNode & { type: 'box' }).widgets?.length === 1) {
+            const sourceWidgetId = (draggedNode as LayoutNode & { type: 'box' }).widgets[0];
             const updateTarget = (node: LayoutNode): LayoutNode => {
                 if (node.id === targetNode.id && node.type === 'box') {
                     const nextWidgets = [...node.widgets];

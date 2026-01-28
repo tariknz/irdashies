@@ -201,7 +201,9 @@ export function detectLapCrossing(
 ): boolean {
   // Use stricter threshold to avoid false positives at exact 0.0/1.0
   // Broadened to handle potential telemetry gaps or exact 1.0 values
-  return lastDistPct > 0.8 && currentDistPct < 0.2 && currentDistPct < lastDistPct;
+  return (
+    lastDistPct > 0.8 && currentDistPct < 0.2 && currentDistPct < lastDistPct
+  );
 }
 
 // ============================================================================

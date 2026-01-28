@@ -125,7 +125,10 @@ export const useFuelStore = create<FuelStore>()(
           newHistory.set(lapData.lapNumber, lapData);
 
           // Track oldest lap number for efficient pruning
-          let oldestLapNumber = Math.min(state._oldestLapNumber, lapData.lapNumber);
+          let oldestLapNumber = Math.min(
+            state._oldestLapNumber,
+            lapData.lapNumber
+          );
 
           // Prune if over limit - use tracked oldest lap number instead of searching
           if (newHistory.size > MAX_LAP_HISTORY) {
@@ -201,7 +204,9 @@ export const useFuelStore = create<FuelStore>()(
         }
 
         // Build and cache sorted array
-        const sorted = sortLapsDescending(Array.from(state.lapHistory.values()));
+        const sorted = sortLapsDescending(
+          Array.from(state.lapHistory.values())
+        );
 
         // Note: We can't set state here as it would cause infinite loop
         // The cache is primarily useful when accessed multiple times in same render
@@ -233,7 +238,7 @@ export const useFuelStore = create<FuelStore>()(
 
       setContextInfo: (trackId, carName) => {
         set({ trackId, carName });
-      }
+      },
     }),
     {
       name: 'fuel-calculator-storage',
@@ -245,11 +250,12 @@ export const useFuelStore = create<FuelStore>()(
         carName: state.carName,
       }),
       // Custom merge to rehydrate Map
-      merge: (persistedState: any, currentState) => {
+      merge: (persistedState: unknown, currentState) => {
+        const saved = persistedState as Partial<FuelStoreState>;
         return {
           ...currentState,
-          ...persistedState,
-          lapHistory: new Map(persistedState.lapHistory || []),
+          ...saved,
+          lapHistory: new Map(saved.lapHistory || []),
         };
       },
     }

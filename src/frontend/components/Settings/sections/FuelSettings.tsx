@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
-import { FuelWidgetSettings, SessionVisibilitySettings, BoxConfig, FuelWidgetType, LayoutNode } from '../types';
+import { FuelWidgetSettings, SessionVisibilitySettings, BoxConfig, LayoutNode } from '../types';
 import { useDashboard } from '@irdashies/context';
 import { SessionVisibility } from '../components/SessionVisibility';
 import { ToggleSwitch } from '../components/ToggleSwitch';
@@ -75,15 +75,15 @@ const migrateConfig = (savedConfig: unknown): FuelWidgetSettings['config'] => {
       (config.sessionVisibility as SessionVisibilitySettings) ??
       defaultConfig.sessionVisibility,
     layoutConfig: (config.layoutConfig as BoxConfig[]) ?? [],
-    layoutTree: (config.layoutTree && (config.layoutTree as any).type ? (config.layoutTree as LayoutNode) : undefined),
+    layoutTree: (config.layoutTree && (config.layoutTree as LayoutNode).type ? (config.layoutTree as LayoutNode) : undefined),
     consumptionGridOrder: (config.consumptionGridOrder as string[]) ?? defaultConfig.consumptionGridOrder,
     enableTargetPitLap: (config.enableTargetPitLap as boolean) ?? defaultConfig.enableTargetPitLap,
     targetPitLap: (config.targetPitLap as number) ?? defaultConfig.targetPitLap,
-    targetPitLapBasis: (config.targetPitLapBasis as any) ?? defaultConfig.targetPitLapBasis,
+    targetPitLapBasis: (config.targetPitLapBasis as FuelWidgetSettings['config']['targetPitLapBasis']) ?? defaultConfig.targetPitLapBasis,
 
-    fuelStatusThresholds: (config.fuelStatusThresholds as any) ?? defaultConfig.fuelStatusThresholds,
-    fuelStatusBasis: (config.fuelStatusBasis as any) ?? defaultConfig.fuelStatusBasis,
-    fuelStatusRedLaps: (config.fuelStatusRedLaps as any) ?? defaultConfig.fuelStatusRedLaps,
+    fuelStatusThresholds: (config.fuelStatusThresholds as FuelWidgetSettings['config']['fuelStatusThresholds']) ?? defaultConfig.fuelStatusThresholds,
+    fuelStatusBasis: (config.fuelStatusBasis as FuelWidgetSettings['config']['fuelStatusBasis']) ?? defaultConfig.fuelStatusBasis,
+    fuelStatusRedLaps: (config.fuelStatusRedLaps as number) ?? defaultConfig.fuelStatusRedLaps,
     avgLapsCount: (config.avgLapsCount as number) ?? defaultConfig.avgLapsCount,
   };
 };
@@ -119,33 +119,6 @@ const DEFAULT_TREE_FUEL2: LayoutNode = {
   ]
 };
 
-const FontSizeInput = ({ widgetId, settings, onChange }: { widgetId: string, settings: FuelWidgetSettings, onChange: (change: Partial<FuelWidgetSettings['config']>) => void }) => {
-  const style = settings.config.widgetStyles?.[widgetId];
-  // Default values per widget type if we wanted, but for now undefined implies CSS default
-  // Just show empty if undefined
-  const fontSize = style?.fontSize;
-
-  return (
-    <div className="flex items-center gap-2">
-      <input
-        type="range"
-        min="8"
-        max="48"
-        step="1"
-        value={fontSize ?? 16}
-        onChange={(e) => {
-          const val = parseInt(e.target.value);
-          const newStyles = { ...settings.config.widgetStyles };
-
-          newStyles[widgetId] = { ...newStyles[widgetId], fontSize: val };
-          onChange({ widgetStyles: newStyles });
-        }}
-        className="w-24 h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer slider"
-      />
-      <span className="text-xs text-slate-300 w-8 text-right">{fontSize ?? 16}px</span>
-    </div>
-  );
-};
 
 const DualFontSizeInput = ({ widgetId, settings, onChange }: { widgetId: string, settings: FuelWidgetSettings, onChange: (change: Partial<FuelWidgetSettings['config']>) => void }) => {
   const style = settings.config.widgetStyles?.[widgetId] || {};
@@ -362,7 +335,7 @@ const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => {
     // Validate that the tree has a type before using it
     if (settings.config.layoutTree && settings.config.layoutTree.type) return settings.config.layoutTree;
     // Auto-migrate legacy list to tree for the visualizer
-    return migrateToTree(settings.config.layoutConfig || [], availableWidgets as any);
+    return migrateToTree(settings.config.layoutConfig || [], availableWidgets);
   }, [settings.config.layoutTree, settings.config.layoutConfig, availableWidgets]);
 
   if (!currentDashboard || !savedSettings) {
@@ -396,7 +369,7 @@ const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => {
                 <LayoutVisualizer
                   tree={currentTree}
                   onChange={handleTreeUpdate}
-                  availableWidgets={availableWidgets as any}
+                  availableWidgets={availableWidgets}
                 />
               )}
 
@@ -481,7 +454,7 @@ const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => {
                             ...defaultConfig.fuelStatusThresholds,
                             ...settings.config.fuelStatusThresholds,
                             green: val
-                          } as any
+                          } as NonNullable<FuelWidgetSettings['config']['fuelStatusThresholds']>
                         });
                       }}
                       className="w-32 h-1.5 bg-slate-600 rounded-lg appearance-none cursor-pointer"
@@ -504,7 +477,7 @@ const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => {
                             ...defaultConfig.fuelStatusThresholds,
                             ...settings.config.fuelStatusThresholds,
                             amber: val
-                          } as any
+                          } as NonNullable<FuelWidgetSettings['config']['fuelStatusThresholds']>
                         });
                       }}
                       className="w-32 h-1.5 bg-slate-600 rounded-lg appearance-none cursor-pointer"
@@ -552,7 +525,7 @@ const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => {
               {/* Fuel 2 Grid Reordering */}
               <div className="pl-2 pr-1">
                 <GridOrderSettingsList
-                  itemsOrder={settings.config.consumptionGridOrder || (defaultConfig as any).consumptionGridOrder!}
+                  itemsOrder={settings.config.consumptionGridOrder || defaultConfig.consumptionGridOrder || []}
                   onReorder={(newOrder) => handleConfigChange({ consumptionGridOrder: newOrder })}
                   settings={settings}
                   handleConfigChange={handleConfigChange}
@@ -643,7 +616,7 @@ const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => {
               <span className="text-sm text-slate-300">
                 Safety Margin
                 <span className="block text-xs text-slate-500">
-                  Extra fuel added to "To Finish" calculation.
+                  Extra fuel added to &quot;To Finish&quot; calculation.
                 </span>
               </span>
               <div className="flex items-center gap-2">
@@ -727,7 +700,7 @@ const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => {
                     </div>
                     <select
                       value={settings.config.targetPitLapBasis ?? 'avg'}
-                      onChange={(e) => handleConfigChange({ targetPitLapBasis: e.target.value as any })}
+                      onChange={(e) => handleConfigChange({ targetPitLapBasis: e.target.value as FuelWidgetSettings['config']['targetPitLapBasis'] })}
                       className="px-2 py-1 bg-slate-700 text-slate-200 rounded text-xs"
                     >
                       <option value="avg">Average ({settings.config.avgLapsCount})</option>
