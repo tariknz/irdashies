@@ -2,18 +2,20 @@ import type { DashboardLayout } from './dashboardLayout';
 
 export interface SaveDashboardOptions {
   forceReload?: boolean;
+  /** Skip window refresh - used for layout-only changes in container mode */
+  skipWindowRefresh?: boolean;
 }
 
 export interface DashboardBridge {
-  onEditModeToggled: (callback: (value: boolean) => void) => void;
-  dashboardUpdated: (callback: (value: DashboardLayout) => void) => void;
+  onEditModeToggled: (callback: (value: boolean) => void) => void | (() => void);
+  dashboardUpdated: (callback: (value: DashboardLayout) => void) => void | (() => void);
   reloadDashboard: () => void;
   saveDashboard: (dashboard: DashboardLayout, options?: SaveDashboardOptions) => void;
   resetDashboard: (resetEverything: boolean) => Promise<DashboardLayout>;
   toggleLockOverlays: () => Promise<boolean>;
   getAppVersion: () => Promise<string>;
   toggleDemoMode: (value: boolean) => void;
-  onDemoModeChanged: (callback: (value: boolean) => void) => void;
+  onDemoModeChanged: (callback: (value: boolean) => void) => void | (() => void);
   getCurrentDashboard: () => DashboardLayout | null;
   saveGarageCoverImage: (buffer: Uint8Array) => Promise<string>;
   getGarageCoverImageAsDataUrl: (imagePath: string) => Promise<string | null>;

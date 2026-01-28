@@ -7,6 +7,9 @@ export const onDashboardUpdated = (
   listener: (dashboard: DashboardLayout) => void
 ) => {
   dashboardEvents.on('dashboardUpdated', listener);
+  return () => {
+    dashboardEvents.removeListener('dashboardUpdated', listener);
+  };
 };
 
 export const emitDashboardUpdated = (dashboard: DashboardLayout) => {

@@ -10,18 +10,27 @@ import type {
 
 export function exposeBridge() {
   contextBridge.exposeInMainWorld('irsdkBridge', {
-    onTelemetry: (callback: (value: Telemetry) => void) =>
-      ipcRenderer.on('telemetry', (_, value) => {
+    onTelemetry: (callback: (value: Telemetry) => void) => {
+      const handler = (_: Electron.IpcRendererEvent, value: Telemetry) => {
         callback(value);
-      }),
-    onSessionData: (callback: (value: Session) => void) =>
-      ipcRenderer.on('sessionData', (_, value) => {
+      };
+      ipcRenderer.on('telemetry', handler);
+      return () => ipcRenderer.removeListener('telemetry', handler);
+    },
+    onSessionData: (callback: (value: Session) => void) => {
+      const handler = (_: Electron.IpcRendererEvent, value: Session) => {
         callback(value);
-      }),
-    onRunningState: (callback: (value: boolean) => void) =>
-      ipcRenderer.on('runningState', (_, value) => {
+      };
+      ipcRenderer.on('sessionData', handler);
+      return () => ipcRenderer.removeListener('sessionData', handler);
+    },
+    onRunningState: (callback: (value: boolean) => void) => {
+      const handler = (_: Electron.IpcRendererEvent, value: boolean) => {
         callback(value);
-      }),
+      };
+      ipcRenderer.on('runningState', handler);
+      return () => ipcRenderer.removeListener('runningState', handler);
+    },
     stop: () => {
       ipcRenderer.removeAllListeners('telemetry');
       ipcRenderer.removeAllListeners('sessionData');
@@ -31,17 +40,21 @@ export function exposeBridge() {
 
   contextBridge.exposeInMainWorld('dashboardBridge', {
     onEditModeToggled: (callback: (value: boolean) => void) => {
-      ipcRenderer.on('editModeToggled', (_, value) => {
+      const handler = (_: Electron.IpcRendererEvent, value: boolean) => {
         callback(value);
-      });
+      };
+      ipcRenderer.on('editModeToggled', handler);
+      return () => ipcRenderer.removeListener('editModeToggled', handler);
     },
     reloadDashboard: () => {
       ipcRenderer.send('reloadDashboard');
     },
     dashboardUpdated: (callback: (value: DashboardLayout) => void) => {
-      ipcRenderer.on('dashboardUpdated', (_, value) => {
+      const handler = (_: Electron.IpcRendererEvent, value: DashboardLayout) => {
         callback(value);
-      });
+      };
+      ipcRenderer.on('dashboardUpdated', handler);
+      return () => ipcRenderer.removeListener('dashboardUpdated', handler);
     },
     saveDashboard: (value: DashboardLayout, options?: SaveDashboardOptions) => {
       ipcRenderer.send('saveDashboard', value, options);
@@ -59,9 +72,11 @@ export function exposeBridge() {
       ipcRenderer.send('toggleDemoMode', value);
     },
     onDemoModeChanged: (callback: (value: boolean) => void) => {
-      ipcRenderer.on('demoModeChanged', (_, value) => {
+      const handler = (_: Electron.IpcRendererEvent, value: boolean) => {
         callback(value);
-      });
+      };
+      ipcRenderer.on('demoModeChanged', handler);
+      return () => ipcRenderer.removeListener('demoModeChanged', handler);
     },
     saveGarageCoverImage: (buffer: Uint8Array) => {
       return ipcRenderer.invoke('saveGarageCoverImage', Array.from(buffer));

@@ -40,16 +40,22 @@ export const DashboardProvider: React.FC<{
   const [isDemoMode, setIsDemoMode] = useState(false);
 
   useEffect(() => {
-    console.log('📊 DashboardProvider mounted');
     bridge.reloadDashboard();
-    bridge.dashboardUpdated((dashboard) => {
+    const unsubDashboard = bridge.dashboardUpdated((dashboard) => {
       setDashboard(dashboard);
     });
-    bridge.onEditModeToggled((editMode) => setEditMode(editMode));
+    const unsubEditMode = bridge.onEditModeToggled((editMode) =>
+      setEditMode(editMode)
+    );
     bridge.getAppVersion?.().then((version) => setVersion(version));
-    bridge.onDemoModeChanged?.((demoMode) => setIsDemoMode(demoMode));
+    const unsubDemoMode = bridge.onDemoModeChanged?.((demoMode) =>
+      setIsDemoMode(demoMode)
+    );
 
     return () => {
+      if (unsubDashboard) unsubDashboard();
+      if (unsubEditMode) unsubEditMode();
+      if (unsubDemoMode) unsubDemoMode();
       bridge.stop();
     };
   }, [bridge]);
