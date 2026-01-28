@@ -25,9 +25,7 @@ describe('PitStatusCell', () => {
 
   it('renders empty cell when hidden', () => {
     const { container } = renderInTable(
-      <PitStatusCell
-        hidden={true}
-      />
+      <PitStatusCell />
     );
     
     const td = container.querySelector('td[data-column="pitStatus"]');

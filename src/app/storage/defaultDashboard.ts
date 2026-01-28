@@ -176,6 +176,7 @@ export const defaultDashboard: DashboardLayout = {
           "includeBrake": true,
           "includeAbs": true,
           "includeSteer": true,
+          "includeClutch": false,
           "strokeWidth": 3,
           "maxSamples": 400
         },
@@ -449,7 +450,7 @@ export const defaultDashboard: DashboardLayout = {
         "height": 43
       },
       "config": {
-        "distanceThreshold": -0.3,
+        "distanceThreshold": -1.5,
         "sessionVisibility": { race: true, loneQualify: false, openQualify: true, practice: true, offlineTesting: true }
       }
     },

@@ -225,6 +225,7 @@ export interface InputWidgetSettings extends BaseWidgetSettings {
       enabled: boolean;
       includeThrottle: boolean;
       includeBrake: boolean;
+      includeClutch: boolean;
       includeAbs: boolean;
       includeSteer?: boolean;
       strokeWidth?: number;
@@ -349,6 +350,13 @@ export interface FasterCarsFromBehindWidgetSettings extends BaseWidgetSettings {
   config: {
     showOnlyWhenOnTrack: boolean;
     distanceThreshold: number;
+    numberDriversBehind: number;
+    alignDriverBoxes: 'Top' | 'Bottom';
+    closestDriverBox: 'Top' | 'Reverse';
+    showName: boolean;
+    showDistance: boolean;
+    showBadge: boolean;
+    badgeFormat: string;
     sessionVisibility: SessionVisibilitySettings;
   };
 }
