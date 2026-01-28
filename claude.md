@@ -121,7 +121,7 @@ export const WIDGET_MAP = { standings: Standings, relative: Relative, mywidget: 
 ### Common Patterns
 ```tsx
 // Overlay background with variable opacity
-<div className="bg-slate-800/[var(--bg-opacity)] rounded-sm p-2 text-white">
+<div className="bg-slate-800/(--bg-opacity) rounded-sm p-2 text-white">
 
 // State-based styling
 <tr className={['odd:bg-slate-800/70 even:bg-slate-900/70',

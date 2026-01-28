@@ -156,3 +156,57 @@ export const getColor = (color?: string, value = 500) => {
   const computedColor = styles.getPropertyValue(`--color-${color}-${value}`);
   return computedColor;
 };
+
+/**
+ * Returns 'black' or 'white' depending on which contrasts better
+ * against the given background color. Parses hex (#rrggbb),
+ * rgb/rgba, and oklch color strings.
+ */
+export const getContrastingTextColor = (bgColor: string): string => {
+  const rgb = parseColorToRgb(bgColor);
+  if (!rgb) return 'white';
+
+  // Relative luminance using sRGB coefficients
+  const luminance = 0.299 * rgb.r + 0.587 * rgb.g + 0.114 * rgb.b;
+  return luminance > 150 ? 'black' : 'white';
+};
+
+const parseColorToRgb = (
+  color: string
+): { r: number; g: number; b: number } | null => {
+  // Hex format: #rrggbb or #rgb
+  const hexMatch = color.match(
+    /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i
+  );
+  if (hexMatch) {
+    return {
+      r: parseInt(hexMatch[1], 16),
+      g: parseInt(hexMatch[2], 16),
+      b: parseInt(hexMatch[3], 16),
+    };
+  }
+
+  // rgb/rgba format
+  const rgbMatch = color.match(
+    /rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/
+  );
+  if (rgbMatch) {
+    return {
+      r: parseInt(rgbMatch[1]),
+      g: parseInt(rgbMatch[2]),
+      b: parseInt(rgbMatch[3]),
+    };
+  }
+
+  // oklch or other formats: use a temporary canvas to resolve
+  try {
+    const ctx = document.createElement('canvas').getContext('2d');
+    if (!ctx) return null;
+    ctx.fillStyle = color;
+    ctx.fillRect(0, 0, 1, 1);
+    const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data;
+    return { r, g, b };
+  } catch {
+    return null;
+  }
+};

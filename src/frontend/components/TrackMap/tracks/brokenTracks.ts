@@ -6,7 +6,6 @@ export interface BrokenTrack {
 
 export const BROKEN_TRACKS: BrokenTrack[] = [
   // Suzuka variants - non-continuous
-  { id: 173, name: 'Suzuka', issue: 'non-continuous' },
   { id: 175, name: 'Suzuka', issue: 'non-continuous' },
   { id: 176, name: 'Suzuka', issue: 'non-continuous' },
   
