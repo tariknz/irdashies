@@ -8,7 +8,6 @@ import {
 } from '../../DriverName/DriverName';
 
 interface DriverNameCellProps {
-  hidden?: boolean;
   name?: string;
   fullName?: string;
   nameFormat?: DriverNameFormat;
@@ -21,7 +20,6 @@ interface DriverNameCellProps {
 
 export const DriverNameCell = memo(
   ({
-    hidden,
     name,
     fullName,
     nameFormat,
@@ -31,9 +29,7 @@ export const DriverNameCell = memo(
     slowdown,
     showStatusBadges = true,
   }: DriverNameCellProps) => {
-    const displayName = hidden
-      ? ''
-      : fullName
+    const displayName = fullName
       ? formatDriverName(
           extractDriverName(fullName),
           nameFormat ?? 'name-middlename-surname'
@@ -57,7 +53,6 @@ export const DriverNameCell = memo(
 
           {showStatusBadges && (
             <DriverStatusBadges
-              hidden={hidden}
               repair={repair}
               penalty={penalty}
               slowdown={slowdown}

@@ -7,11 +7,13 @@ import { shallow } from 'zustand/shallow';
 interface SessionState {
   session: Session | null;
   setSession: (session: Session) => void;
+  resetSession: () => void;
 }
 
 export const useSessionStore = create<SessionState>((set) => ({
   session: null as Session | null,
   setSession: (session: Session) => set({ session }),
+  resetSession: () => set({ session: null }),
 }));
 
 export const useSessionDrivers = () =>

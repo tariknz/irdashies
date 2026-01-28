@@ -180,8 +180,10 @@ Displays standings information for the current session.
 **Features:**
 - Driver information: position, car number, country flags, driver name, team name, pit status
   - Country flags: Support for 250+ countries, can be enabled/disabled, shows iRacing flag for unaffiliated drivers
+  - Driver name format: Multiple display formats (e.g., "J. Smith", "John S.", "John Smith", etc.)
   - Pit status indicators: DNF (red), TOW (orange, animated), OUT (green), PIT (yellow, animated), last pit lap number, repair/meatball flag (orange dot), penalty/black flag (orange), slowdown (orange, animated)
   - Optional pit time display
+  - Pit lap display mode: Show pit lap number or laps since last pit
   - Compact Mode: A streamlined UI option for a cleaner look
   - Incidents & Off-tracks: Driver rows highlight in yellow when they go off-track
   - Spectator Support: Automatically follows the driver you are watching in iRacing
@@ -216,8 +218,10 @@ Displays drive relative delta information for the current session.
 **Features:**
 - Driver information: position, car number, country flags, driver name, team name, pit status
   - Country flags: Support for 250+ countries, can be enabled/disabled, shows iRacing flag for unaffiliated drivers
+  - Driver name format: Multiple display formats (e.g., "J. Smith", "John S.", "John Smith", etc.)
   - Pit status indicators: DNF (red), TOW (orange, animated), OUT (green), PIT (yellow, animated), last pit lap number, repair/meatball flag (orange dot), penalty/black flag (orange), slowdown (orange, animated)
   - Optional pit time display
+  - Pit lap display mode: Show pit lap number or laps since last pit
   - Compact Mode: A streamlined UI option for a cleaner look
   - Incidents & Off-tracks: Driver rows highlight in yellow when they go off-track
   - Spectator Support: Automatically follows the driver you are watching in iRacing
@@ -390,11 +394,14 @@ Displays a safety indicator showing the gap to the car behind and whether it's s
 Helps you manage your pit stops with clear visual guidance. It assists with speed limits, finding your pit box, and monitoring pitlane traffic.
 
 **Features:**
-- Speed Limit Assistant: Color-coded warnings (Green/Amber/Red) show how close you are to the pit speed limit.
+- Speed Limit Assistant: Colour-coded warnings (Green/Amber/Red) show how close you are to the pit speed limit.
 - Pitbox Countdown: A distance tracker and progress bar show exactly how far you are from your pit stall.
+- Countdown Bars: Colour-coded progress bars for pit entry, pitbox, and pit exit distances (Green → Yellow → Blue).
+  - Configurable vertical/horizontal orientation with side-by-side layout option
+- Pit Exit Inputs: Throttle/clutch display to optimize pit exits with phase-based visibility options.
 - Traffic Monitor: See how many cars are currently ahead or behind you in the pitlane.
 - Early Warning: Alerts you if your pitbox is located near the pit entry.
-- Pit limiter alerts: Flashing warnings if you enter the pits without your limiter active.
+- Pit limiter alerts: Flashing warnings if you enter the pits without your limiter active (auto-disabled for series with automatic limiters).
 
 ![Pitlane Helper](./docs/assets/pitlanehelper.png)
 
@@ -413,6 +420,7 @@ A powerful tool for viewing live data coming from iRacing. While mostly used for
   - Color themes: Choose from built-in themes or create your own custom look.
   - Highlight color: Pick a custom color that is used across all widgets to match your branding or preference.
   - Font sizes: Multiple font size options to ensure readability on any screen.
+  - Font weight: Choose between Normal, Bold, or Extra Bold text for improved readability.
 - Ease of Use
   - Global toggle (Alt+H): Quickly hide or show all your overlays with a single keyboard shortcut.
   - Always on top: Keep your overlays visible even when clicking on other windows.

@@ -12,6 +12,7 @@ interface CarSpeedsState {
   lastSpeedUpdate: number;
   carSpeeds: number[];
   updateCarSpeeds: (telemetry: Telemetry | null, trackLength: number) => void;
+  resetCarSpeeds: () => void;
 }
 
 const SPEED_AVG_WINDOW = 5;
@@ -65,6 +66,13 @@ export const useCarSpeedsStore = create<CarSpeedsState>((set, get) => ({
       },
       lastSpeedUpdate: sessionTime,
       carSpeeds: avgSpeeds,
+    });
+  },
+  resetCarSpeeds: () => {
+    set({
+      carSpeedBuffer: null,
+      lastSpeedUpdate: 0,
+      carSpeeds: [],
     });
   },
 }));
