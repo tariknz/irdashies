@@ -30,7 +30,7 @@ const defaultConfig: FuelWidgetSettings['config'] = {
   showQualifyConsumption: true,
   showFuelHistory: true,
   fuelHistoryType: 'histogram',
-  safetyMargin: 0.3,
+  safetyMargin: 0,
   background: { opacity: 85 },
   fuelRequiredMode: 'toFinish',
   enableTargetPitLap: false,
