@@ -316,7 +316,7 @@ const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => {
   const [settings, setSettings] = useState<FuelWidgetSettings>(() => {
     const initialConfig = migrateConfig(savedSettings?.config);
 
-    // Use DEFAULT_TREE_FUEL2 if no layout is defined
+    // Use DEFAULT_TREE_FUEL if no layout is defined
     if ((!initialConfig.layoutConfig || initialConfig.layoutConfig.length === 0) && !initialConfig.layoutTree) {
       initialConfig.layoutTree = DEFAULT_TREE_FUEL;
     }

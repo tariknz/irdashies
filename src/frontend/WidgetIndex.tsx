@@ -29,7 +29,6 @@ export const WIDGET_MAP: Record<string, (config?: any) => React.JSX.Element | nu
   telemetryinspector: TelemetryInspector,
   pitlanehelper: PitlaneHelper,
   'fuel-calculator': FuelCalculator,
-  'modern-fuel-calculator': FuelCalculator, // Legacy compatibility
 };
 
 export type WidgetId = keyof typeof WIDGET_MAP;
