@@ -12,9 +12,9 @@ import {
 } from '@irdashies/context';
 import { useStore } from 'zustand';
 import { useFuelStore, selectLapHistorySize } from './FuelStore';
+import { FuelLapData } from '@irdashies/types';
 import type {
   FuelCalculation,
-  FuelLapData,
   FuelCalculatorSettings,
 } from './types';
 import {
@@ -173,7 +173,7 @@ export function useFuelCalculation(
       }
     )?.DriverCarName;
 
-    // Check for Track Change
+    // Check for Track Change (different track = different fuel characteristics)
     const trackChanged =
       trackId !== undefined &&
       storedTrackId !== undefined &&
@@ -191,6 +191,33 @@ export function useFuelCalculation(
       clearAllData();
       setQualifyConsumption(null); // Explicitly clear/reset qualify consumption on track/car change so we don't use invalid data
       smoothedLapsWithFuelRef.current = 0; // Reset smoothing
+
+      // Load historical data from JSON storage
+      if (trackId !== undefined && currentCarName !== undefined && (settings?.enableStorage ?? true)) {
+        // Load lap history
+        window.fuelCalculatorBridge
+          .getHistoricalLaps(trackId, currentCarName)
+          .then((laps) => {
+            if (laps.length > 0) {
+              if (DEBUG_LOGGING)
+                console.log(
+                  `[FuelCalculator] Loaded ${laps.length} historical laps from DB`
+                );
+              useFuelStore.getState().setLapHistory(laps);
+            }
+          });
+
+        // Load qualify max
+        window.fuelCalculatorBridge
+          .getQualifyMax(trackId, currentCarName)
+          .then((val) => {
+            if (val !== null) {
+              if (DEBUG_LOGGING)
+                console.log(`[FuelCalculator] Loaded QualifyMax (${val}) from DB`);
+              setQualifyConsumption(val);
+            }
+          });
+      }
     }
 
     // Always update context info to be current
@@ -208,6 +235,7 @@ export function useFuelCalculation(
     clearAllData,
     setContextInfo,
     setQualifyConsumption,
+    settings?.enableStorage,
   ]);
 
   // Update session flags state to avoid setState during render
@@ -305,6 +333,15 @@ export function useFuelCalculation(
         }
 
         addLapData(lapData);
+
+        // Save to JSON storage for persistence
+        if (storedTrackId !== undefined && storedCarName !== undefined && (settings?.enableStorage ?? true)) {
+          window.fuelCalculatorBridge.saveLap(
+            storedTrackId,
+            storedCarName,
+            lapData
+          );
+        }
       }
 
       // Reset tow flag for the new lap
@@ -373,9 +410,15 @@ export function useFuelCalculation(
 
       const lapsToUse = fullLaps.length > 0 ? fullLaps : allCandidates;
 
-      if (lapsToUse.length > 0) {
+      // Logic: Favor current session laps for Qualify MAX. Fallback to historical if session is empty.
+      const sessionLaps = allCandidates.filter((l) => !l.isHistorical);
+      const qualifyLapsToUse = sessionLaps.length > 0
+        ? (sessionLaps.filter(l => !l.isOutLap).length > 0 ? sessionLaps.filter(l => !l.isOutLap) : sessionLaps)
+        : lapsToUse;
+
+      if (qualifyLapsToUse.length > 0) {
         // Find max consumption
-        const maxFuelUsed = Math.max(...lapsToUse.map((l) => l.fuelUsed));
+        const maxFuelUsed = Math.max(...qualifyLapsToUse.map((l) => l.fuelUsed));
 
         // Update persistent store if new max is found or not set
         // Logic: "overwrite what was saved before" if we have valid data in the current session
@@ -385,10 +428,23 @@ export function useFuelCalculation(
               `[FuelCalculator] Updating Qualify Max: ${qualifyConsumption} -> ${maxFuelUsed}`
             );
           setQualifyConsumption(maxFuelUsed);
+
+          // Save to JSON storage
+          if (storedTrackId !== undefined && storedCarName !== undefined && (settings?.enableStorage ?? true)) {
+            window.fuelCalculatorBridge.saveQualifyMax(storedTrackId, storedCarName, maxFuelUsed);
+          }
         }
       }
     }
-  }, [sessionNum, lapHistorySize, qualifyConsumption, setQualifyConsumption]); // Trigger on lap add or session change
+  }, [
+    sessionNum,
+    lapHistorySize,
+    qualifyConsumption,
+    setQualifyConsumption,
+    storedTrackId,
+    storedCarName,
+    settings?.enableStorage,
+  ]); // Trigger on lap add or session change
 
   // Calculate fuel metrics
   const calculation = useMemo((): FuelCalculation | null => {
@@ -493,7 +549,10 @@ export function useFuelCalculation(
       greenLaps.length > 0 ? calculateSimpleAverage(greenLaps) : avg10Laps;
 
     // Calculate min and max fuel consumption
-    const { min: minLapUsage, max: maxLapUsage } = findFuelMinMax(lapsToUse);
+    // Fix: Prioritize current session laps for MAX. Fallback to historical only if session is empty.
+    const currentSessionLaps = lapsToUse.filter((l) => !l.isHistorical);
+    const maxSourceLaps = currentSessionLaps.length > 0 ? currentSessionLaps : lapsToUse;
+    const { min: minLapUsage, max: maxLapUsage } = findFuelMinMax(maxSourceLaps);
 
     // Use customizable average as primary metric for strategy and scenarios
     const avgFuelPerLap = avgLaps;

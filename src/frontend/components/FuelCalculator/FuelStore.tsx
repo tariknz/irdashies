@@ -4,7 +4,7 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { FuelLapData } from './types';
+import { FuelLapData } from '@irdashies/types';
 
 /** Maximum number of laps to retain in history */
 const MAX_LAP_HISTORY = 50;
@@ -86,6 +86,7 @@ interface FuelStoreActions {
    */
   setQualifyConsumption: (val: number | null) => void;
   setContextInfo: (trackId?: number, carName?: string) => void;
+  setLapHistory: (laps: FuelLapData[]) => void;
 }
 
 type FuelStore = FuelStoreState & FuelStoreActions;
@@ -239,13 +240,34 @@ export const useFuelStore = create<FuelStore>()(
       setContextInfo: (trackId, carName) => {
         set({ trackId, carName });
       },
+ 
+      setLapHistory: (laps) => {
+        set(() => {
+          const newHistory = new Map();
+          let oldestLapNumber = Infinity;
+ 
+          laps.forEach((lap) => {
+            newHistory.set(lap.lapNumber, { ...lap, isHistorical: true });
+            if (lap.lapNumber < oldestLapNumber) {
+              oldestLapNumber = lap.lapNumber;
+            }
+          });
+ 
+          return {
+            lapHistory: newHistory,
+            _sortedLapHistoryCache: null,
+            _oldestLapNumber: oldestLapNumber,
+            lastLap: laps.length > 0 ? Math.max(...laps.map((l) => l.lapNumber)) : 0,
+          };
+        });
+      },
     }),
     {
       name: 'fuel-calculator-storage',
       partialize: (state) => ({
         // Only persist these fields as requested:
         // "save to localStorage only the max qualify consumption, I don't want the others saving"
-        qualifyConsumption: state.qualifyConsumption,
+        // Update: User now wants EVERYTHING in SQLite, so we only keep context info for hydration
         trackId: state.trackId,
         carName: state.carName,
       }),

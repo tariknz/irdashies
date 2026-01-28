@@ -1,29 +1,7 @@
-/**
- * Type definitions for Fuel Calculator
- */
 import type { SessionVisibilitySettings, LayoutNode } from '../Settings/types';
+import type { FuelLapData } from '../../../types';
 
-/**
- * Data for a single lap's fuel consumption
- */
-export interface FuelLapData {
-  /** Lap number */
-  lapNumber: number;
-  /** Fuel consumed during this lap (liters) */
-  fuelUsed: number;
-  /** Lap time in seconds */
-  lapTime: number;
-  /** Whether this lap was under green flag conditions */
-  isGreenFlag: boolean;
-  /** Whether this lap is valid for calculations (outlier filtering) */
-  isValidForCalc: boolean;
-  /** Whether the car started this lap from pit road (out-lap) */
-  isOutLap: boolean;
-  /** Whether the car was towed during this lap */
-  wasTowed?: boolean;
-  /** Timestamp when lap was completed */
-  timestamp: number;
-}
+export type { FuelLapData };
 
 /**
  * Complete fuel calculation result
@@ -186,6 +164,8 @@ export interface FuelCalculatorSettings {
   fuelStatusBasis?: 'last' | 'avg' | 'min' | 'max';
   /** Number of laps remaining that triggers Red status regardless of percentage */
   fuelStatusRedLaps?: number;
+  /** Whether to use SQLite persistence for lap history */
+  enableStorage?: boolean;
 }
 
 export interface BoxConfig {

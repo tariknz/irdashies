@@ -7,6 +7,7 @@ import { ToggleSwitch } from '../components/ToggleSwitch';
 import { PlusIcon, DotsSixVerticalIcon } from '@phosphor-icons/react';
 import { LayoutVisualizer, migrateToTree } from './LayoutVisualizer';
 import { useSortableList } from '../../SortableList';
+import { useFuelStore } from '../../FuelCalculator/FuelStore';
 
 const generateId = () => Math.random().toString(36).substring(2, 9);
 
@@ -61,7 +62,8 @@ const defaultConfig: FuelWidgetSettings['config'] = {
     'fuelScenarios': { labelFontSize: 10, valueFontSize: 12 },
     'fuelTargetMessage': { labelFontSize: 10, valueFontSize: 12 },
     'fuelEconomyPredict': { labelFontSize: 12, valueFontSize: 14 },
-  }
+  },
+  enableStorage: true,
 };
 
 const migrateConfig = (savedConfig: unknown): FuelWidgetSettings['config'] => {
@@ -85,6 +87,7 @@ const migrateConfig = (savedConfig: unknown): FuelWidgetSettings['config'] => {
     fuelStatusBasis: (config.fuelStatusBasis as FuelWidgetSettings['config']['fuelStatusBasis']) ?? defaultConfig.fuelStatusBasis,
     fuelStatusRedLaps: (config.fuelStatusRedLaps as number) ?? defaultConfig.fuelStatusRedLaps,
     avgLapsCount: (config.avgLapsCount as number) ?? defaultConfig.avgLapsCount,
+    enableStorage: (config.enableStorage as boolean) ?? defaultConfig.enableStorage,
   };
 };
 
@@ -771,7 +774,53 @@ const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => {
               </div>
             </div>
 
+            {/* Historical Data Storage */}
+            <div className="space-y-4 border-t border-slate-600/50 pt-6">
+              <h3 className="text-md font-medium text-slate-200">📦 Historical Storage</h3>
+              <div className="bg-slate-800/50 p-4 rounded border border-slate-700 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-sm font-medium text-slate-300">Enable Historical Persistence</span>
+                    <span className="block text-[10px] text-slate-500">
+                      Saves the last 10 laps for each car/track to provide immediate estimates.
+                    </span>
+                  </div>
+                  <ToggleSwitch
+                    enabled={settings.config.enableStorage ?? true}
+                    onToggle={(val) => handleConfigChange({ enableStorage: val })}
+                  />
+                </div>
 
+                <div className="pt-4 border-t border-slate-700/50">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="text-sm font-medium text-slate-300 text-red-400">Clear Data Storage</span>
+                      <span className="block text-[10px] text-slate-500">
+                        Wipe all saved fuel consumption history from the database.
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => {
+                        if (confirm('Are you sure you want to clear ALL fuel history data? This cannot be undone.')) {
+                          window.fuelCalculatorBridge.clearAllHistory().then(() => {
+                            // Also clear the frontend store memory
+                            useFuelStore.getState().clearAllData();
+                            useFuelStore.getState().setQualifyConsumption(null);
+                            alert('Fuel history cleared successfully.');
+                          }).catch((err) => {
+                            console.error('Failed to clear fuel history:', err);
+                            alert('Failed to clear fuel history.');
+                          });
+                        }
+                      }}
+                      className="px-3 py-1 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 rounded text-xs transition-colors"
+                    >
+                      Clear All History
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         );
       }}
