@@ -625,7 +625,7 @@ const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => {
                           placeholder="None"
                           value={settings.config.manualTarget ?? ''}
                           onChange={(e) => {
-                            const val = e.target.value ? parseFloat(e.target.value) : undefined;
+                            const val = e.target.value ? parseFloat(e.target.value.replace(',', '.')) : undefined;
                             handleConfigChange({ manualTarget: val });
                           }}
                           className="w-16 px-2 py-1 bg-slate-700 text-slate-200 rounded text-xs text-right focus:border-blue-500 focus:outline-none"
@@ -655,7 +655,7 @@ const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => {
                   value={settings.config.safetyMargin}
                   onChange={(e) =>
                     handleConfigChange({
-                      safetyMargin: parseFloat(e.target.value) || 0,
+                      safetyMargin: parseFloat(e.target.value.replace(',', '.')) || 0,
                     })
                   }
                   className="w-16 px-2 py-1 bg-slate-700 text-slate-200 rounded text-xs text-right focus:border-blue-500 focus:outline-none"

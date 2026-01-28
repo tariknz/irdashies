@@ -37,7 +37,10 @@ export const FuelCalculatorTargetMessage: React.FC<FuelCalculatorWidgetProps> = 
 
     // Fallback if selected is 0 or null
     consumption = consumption || displayData.avgLaps || displayData.avg10Laps || 0;
-    const fuelToAddHypothetical = lapsLeftAfterPit * consumption * (1 + safetyMargin);
+    // Additive Safety Margin logic
+    const marginAmount = settings?.fuelUnits === 'gal' ? safetyMargin * 3.78541 : safetyMargin;
+    const fuelNeeded = (lapsLeftAfterPit * consumption) + marginAmount;
+    const fuelToAddHypothetical = Math.max(0, fuelNeeded);
 
     const widgetStyle = customStyles || (widgetId && settings?.widgetStyles?.[widgetId]) || {};
     const labelFontSize = widgetStyle.labelFontSize ? `${widgetStyle.labelFontSize}px` : (widgetStyle.fontSize ? `${widgetStyle.fontSize}px` : '10px');

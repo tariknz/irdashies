@@ -91,7 +91,9 @@ export const FuelCalculatorConsumptionGrid: React.FC<FuelCalculatorWidgetProps> 
         const lapsPossible = usage > 0 ? fuelToUse / usage : 0;
         const conservativePitLapOffset = Math.floor(lapsPossible);
         const lapsAfterEmpty = Math.max(0, lapsRemainingToUse - conservativePitLapOffset);
-        const toAdd = lapsAfterEmpty * usage * (1 + safetyMargin);
+        // Additive Safety Margin logic
+        const marginAmount = settings?.fuelUnits === 'gal' ? safetyMargin * 3.78541 : safetyMargin;
+        const toAdd = (lapsAfterEmpty * usage) + marginAmount;
 
         // If testing, hide Refuel and Finish
         if (isTesting) {

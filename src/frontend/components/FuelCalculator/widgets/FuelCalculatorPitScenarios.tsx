@@ -112,7 +112,10 @@ export const FuelCalculatorPitScenarios: React.FC<FuelCalculatorWidgetProps> = (
                     const lapsLeftAfterPit = Math.max(0, fuelData.totalLaps - pitLap);
                     const safetyMargin = settings?.safetyMargin ?? 0.05;
                     const consumption = displayData.avgLaps || displayData.avg10Laps || 0;
-                    const fuelToAddHypothetical = lapsLeftAfterPit * consumption * (1 + safetyMargin);
+                    // Additive Safety Margin logic (value is in Liters/Gallons)
+                    const marginAmount = settings?.fuelUnits === 'gal' ? safetyMargin * 3.78541 : safetyMargin;
+                    const calculationFuelNeeded = (lapsLeftAfterPit * consumption) + marginAmount;
+                    const fuelToAddHypothetical = Math.max(0, calculationFuelNeeded);
 
                     // Calculate estimated fuel at finish: (Added) - (Needed for remaining laps)
                     const fuelBurnedToFinish = lapsLeftAfterPit * consumption;

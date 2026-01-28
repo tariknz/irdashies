@@ -383,7 +383,7 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
                 canFinish: false, targetConsumption: 0, confidence: 'low' as const,
                 pitWindowOpen: 0, pitWindowClose: 0, currentLap: 0, fuelAtFinish: 0,
                 avgLapTime: 0, targetScenarios: undefined, projectedLapUsage: 0,
-                maxQualify: null
+                maxQualify: qualifyConsumption
             };
         }
 
@@ -401,9 +401,10 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
             lapsWithFuel,
             pitWindowClose: frozenFuelData.currentLap + lapsWithFuel - 1,
             fuelAtFinish,
-            targetScenarios: frozenFuelData.targetScenarios
+            targetScenarios: frozenFuelData.targetScenarios,
+            maxQualify: qualifyConsumption
         };
-    }, [frozenFuelData]);
+    }, [frozenFuelData, qualifyConsumption]);
 
     if (!editMode && settings?.showOnlyWhenOnTrack && !isOnTrack) return null;
     if (!editMode && !isSessionVisible) return <></>;
