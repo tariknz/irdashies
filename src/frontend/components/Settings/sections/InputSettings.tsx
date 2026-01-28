@@ -1,13 +1,13 @@
-import { useState, useEffect } from 'react';
-import { BaseSettingsSection } from '../components/BaseSettingsSection';
-import { InputWidgetSettings, SessionVisibilitySettings } from '../types';
 import { useDashboard } from '@irdashies/context';
-import { ToggleSwitch } from '../components/ToggleSwitch';
-import { useSortableList } from '../../SortableList';
 import { DotsSixVerticalIcon } from '@phosphor-icons/react';
-import { mergeDisplayOrder } from '../../../utils/displayOrder';
-import { SessionVisibility } from '../components/SessionVisibility';
+import { useEffect, useState } from 'react';
 import { getAvailableCars } from '../../../utils/carData';
+import { mergeDisplayOrder } from '../../../utils/displayOrder';
+import { useSortableList } from '../../SortableList';
+import { BaseSettingsSection } from '../components/BaseSettingsSection';
+import { SessionVisibility } from '../components/SessionVisibility';
+import { ToggleSwitch } from '../components/ToggleSwitch';
+import { InputWidgetSettings, SessionVisibilitySettings } from '../types';
 
 const SETTING_ID = 'input';
 
@@ -41,6 +41,7 @@ const sortableSettings: SortableSetting[] = [
   { id: 'trace', label: 'Trace', configKey: 'trace' },
   { id: 'bar', label: 'Bar', configKey: 'bar' },
   { id: 'gear', label: 'Gear', configKey: 'gear' },
+  { id: 'abs', label: 'ABS', configKey: 'abs' },
   { id: 'steer', label: 'Steer', configKey: 'steer' },
 ];
 
@@ -65,6 +66,9 @@ const defaultConfig: InputWidgetSettings['config'] = {
   gear: {
     enabled: true,
     unit: 'auto',
+  },
+  abs: {
+    enabled: true,
   },
   steer: {
     enabled: true,
@@ -151,6 +155,11 @@ const migrateConfig = (savedConfig: unknown): InputWidgetSettings['config'] => {
       unit:
         (config.gear as { unit?: 'mph' | 'km/h' | 'auto' })?.unit ??
         defaultConfig.gear.unit,
+    },
+    abs: {
+      enabled:
+        (config.abs as { enabled?: boolean })?.enabled ??
+        defaultConfig.abs.enabled,
     },
     steer: {
       enabled:
@@ -984,6 +993,24 @@ export const InputSettings = () => {
                   </div>
                 </div>
               )}
+            </div>
+
+            {/* ABS Settings */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-medium text-slate-200">ABS</h3>
+                <div className="flex items-center gap-3">
+                  <span className="text-sm text-slate-300">
+                    Enable ABS Indicator
+                  </span>
+                  <ToggleSwitch
+                    enabled={config.abs.enabled}
+                    onToggle={(enabled) =>
+                      handleConfigChange({ abs: { ...config.abs, enabled } })
+                    }
+                  />
+                </div>
+              </div>
             </div>
 
             {/* Steer Settings */}
