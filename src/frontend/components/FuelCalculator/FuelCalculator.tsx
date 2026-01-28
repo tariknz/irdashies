@@ -502,13 +502,10 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
 
     switch (widgetId) {
       case 'fuelHeader':
-      case 'fuel2Header':
         return <FuelCalculatorHeader {...widgetProps} />;
       case 'fuelGauge':
-      case 'fuel2Gauge':
         return <FuelCalculatorGauge {...widgetProps} />;
       case 'fuelGrid':
-      case 'fuel2Grid':
         // Use frozen data for grid (static rows) but pass throttled predictive usage for CURR row
         return (
           <FuelCalculatorConsumptionGrid
@@ -520,7 +517,6 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
           />
         );
       case 'fuelScenarios':
-      case 'fuel2Scenarios':
         return (
           <FuelCalculatorPitScenarios
             {...widgetProps}
@@ -529,14 +525,11 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
           />
         );
       case 'fuelTimeEmpty':
-      case 'fuel2TimeEmpty':
         return <FuelCalculatorTimeEmpty {...widgetProps} />;
       case 'fuelGraph':
-      case 'fuel2Graph':
       case 'historyGraph':
         return <FuelHistory {...widgetProps} />;
       case 'fuelTargetMessage':
-      case 'fuel2TargetMessage':
         return (
           <FuelCalculatorTargetMessage
             {...widgetProps}
@@ -545,11 +538,9 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
           />
         );
       case 'fuelConfidence':
-      case 'fuel2Confidence':
         return <FuelCalculatorConfidence {...widgetProps} />;
 
       case 'fuelEconomyPredict':
-      case 'fuel2EconomyPredict':
         return (
           <FuelCalculatorEconomyPredict
             {...widgetProps}

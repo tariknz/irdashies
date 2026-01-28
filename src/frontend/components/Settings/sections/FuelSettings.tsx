@@ -52,15 +52,15 @@ const defaultConfig: FuelWidgetSettings['config'] = {
   fuelStatusBasis: 'avg',
   fuelStatusRedLaps: 3,
   widgetStyles: {
-    'fuel2Graph': { height: 64, labelFontSize: 10, valueFontSize: 12, barFontSize: 8 },
-    'fuel2Header': { labelFontSize: 10, valueFontSize: 14 },
-    'fuel2Confidence': { labelFontSize: 10, valueFontSize: 12 },
-    'fuel2Gauge': { labelFontSize: 10, valueFontSize: 12 },
-    'fuel2TimeEmpty': { labelFontSize: 10, valueFontSize: 14 },
-    'fuel2Grid': { labelFontSize: 10, valueFontSize: 12 },
-    'fuel2Scenarios': { labelFontSize: 10, valueFontSize: 12 },
-    'fuel2TargetMessage': { labelFontSize: 10, valueFontSize: 12 },
-    'fuel2EconomyPredict': { labelFontSize: 12, valueFontSize: 14 },
+    'fuelGraph': { height: 64, labelFontSize: 10, valueFontSize: 12, barFontSize: 8 },
+    'fuelHeader': { labelFontSize: 10, valueFontSize: 14 },
+    'fuelConfidence': { labelFontSize: 10, valueFontSize: 12 },
+    'fuelGauge': { labelFontSize: 10, valueFontSize: 12 },
+    'fuelTimeEmpty': { labelFontSize: 10, valueFontSize: 14 },
+    'fuelGrid': { labelFontSize: 10, valueFontSize: 12 },
+    'fuelScenarios': { labelFontSize: 10, valueFontSize: 12 },
+    'fuelTargetMessage': { labelFontSize: 10, valueFontSize: 12 },
+    'fuelEconomyPredict': { labelFontSize: 12, valueFontSize: 14 },
   }
 };
 
@@ -90,23 +90,23 @@ const migrateConfig = (savedConfig: unknown): FuelWidgetSettings['config'] => {
 
 
 
-// Available Widgets for Fuel Calculator 2
-const AVAILABLE_WIDGETS_FUEL2: { id: string; label: string }[] = [
-  { id: 'fuel2Header', label: 'Header (Stops/Window/Confidence)' },
-  { id: 'fuel2Confidence', label: 'Confidence Messages' },
-  { id: 'fuel2Gauge', label: 'Fuel Gauge' },
-  { id: 'fuel2Grid', label: 'Consumption Grid' },
-  { id: 'fuel2Scenarios', label: 'Pit Scenarios' },
-  { id: 'fuel2TargetMessage', label: 'Target Pit Message' },
-  { id: 'fuel2Graph', label: 'Fuel History' },
-  { id: 'fuel2TimeEmpty', label: 'Time Until Empty' },
-  { id: 'fuel2EconomyPredict', label: 'Economy Predict (Laps vs Target)' },
+// Available Widgets for Fuel Calculator
+const AVAILABLE_WIDGETS_FUEL: { id: string; label: string }[] = [
+  { id: 'fuelHeader', label: 'Header (Stops/Window/Confidence)' },
+  { id: 'fuelConfidence', label: 'Confidence Messages' },
+  { id: 'fuelGauge', label: 'Fuel Gauge' },
+  { id: 'fuelGrid', label: 'Consumption Grid' },
+  { id: 'fuelScenarios', label: 'Pit Scenarios' },
+  { id: 'fuelTargetMessage', label: 'Target Pit Message' },
+  { id: 'fuelGraph', label: 'Fuel History' },
+  { id: 'fuelTimeEmpty', label: 'Time Until Empty' },
+  { id: 'fuelEconomyPredict', label: 'Economy Predict (Laps vs Target)' },
 ];
 
 
 
-const DEFAULT_TREE_FUEL2: LayoutNode = {
-  id: 'root-fuel2-default',
+const DEFAULT_TREE_FUEL: LayoutNode = {
+  id: 'root-fuel-default',
   type: 'split',
   direction: 'col',
   children: [
@@ -114,7 +114,7 @@ const DEFAULT_TREE_FUEL2: LayoutNode = {
       id: 'box-1',
       type: 'box',
       direction: 'col',
-      widgets: ['fuel2Header', 'fuel2Confidence', 'fuel2TargetMessage', 'fuel2Gauge', 'fuel2Grid', 'fuel2Scenarios', 'fuel2EconomyPredict', 'fuel2Graph', 'fuel2TimeEmpty'],
+      widgets: ['fuelHeader', 'fuelConfidence', 'fuelTargetMessage', 'fuelGauge', 'fuelGrid', 'fuelScenarios', 'fuelEconomyPredict', 'fuelGraph', 'fuelTimeEmpty'],
     }
   ]
 };
@@ -318,7 +318,7 @@ const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => {
 
     // Use DEFAULT_TREE_FUEL2 if no layout is defined
     if ((!initialConfig.layoutConfig || initialConfig.layoutConfig.length === 0) && !initialConfig.layoutTree) {
-      initialConfig.layoutTree = DEFAULT_TREE_FUEL2;
+      initialConfig.layoutTree = DEFAULT_TREE_FUEL;
     }
     return {
       enabled: savedSettings?.enabled ?? false,
@@ -326,7 +326,7 @@ const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => {
     };
   });
 
-  const availableWidgets = AVAILABLE_WIDGETS_FUEL2;
+  const availableWidgets = AVAILABLE_WIDGETS_FUEL;
 
 
 
@@ -335,8 +335,8 @@ const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => {
     // Validate that the tree has a type before using it
     if (settings.config.layoutTree && settings.config.layoutTree.type) return settings.config.layoutTree;
     // Auto-migrate legacy list to tree for the visualizer
-    return migrateToTree(settings.config.layoutConfig || [], availableWidgets);
-  }, [settings.config.layoutTree, settings.config.layoutConfig, availableWidgets]);
+    return migrateToTree(settings.config.layoutConfig || []);
+  }, [settings.config.layoutTree, settings.config.layoutConfig]);
 
   if (!currentDashboard || !savedSettings) {
     return <div className="p-4 text-slate-400">Widget not found or loading...</div>;
@@ -409,28 +409,28 @@ const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => {
                     <span className="text-sm text-slate-300">Header</span>
                     <span className="block text-[10px] text-slate-500">Stops, Lap Window, and Confidence level. Adjust Label/Value sizes.</span>
                   </div>
-                  <DualFontSizeInput widgetId="fuel2Header" settings={settings} onChange={handleConfigChange} />
+                  <DualFontSizeInput widgetId="fuelHeader" settings={settings} onChange={handleConfigChange} />
                 </div>
                 <div className="flex items-center justify-between pr-20 py-4 border-b border-white/5">
                   <div>
                     <span className="text-sm text-slate-300">Confidence Messages</span>
                     <span className="block text-[10px] text-slate-500">Text warnings when data is reliable/unreliable. Adjust Label/Value sizes.</span>
                   </div>
-                  <DualFontSizeInput widgetId="fuel2Confidence" settings={settings} onChange={handleConfigChange} />
+                  <DualFontSizeInput widgetId="fuelConfidence" settings={settings} onChange={handleConfigChange} />
                 </div>
                 <div className="flex items-center justify-between pr-20 py-4 border-b border-white/5">
                   <div>
                     <span className="text-sm text-slate-300">Fuel Gauge</span>
                     <span className="block text-[10px] text-slate-500">Visual circular fuel level indicator. Adjust Label/Value sizes.</span>
                   </div>
-                  <DualFontSizeInput widgetId="fuel2Gauge" settings={settings} onChange={handleConfigChange} />
+                  <DualFontSizeInput widgetId="fuelGauge" settings={settings} onChange={handleConfigChange} />
                 </div>
                 <div className="flex items-center justify-between pr-20 py-4 border-b border-white/5">
                   <div>
                     <span className="text-sm text-slate-300">Time Until Empty</span>
                     <span className="block text-[10px] text-slate-500">Estimated driving time remaining. Adjust Label/Value sizes.</span>
                   </div>
-                  <DualFontSizeInput widgetId="fuel2TimeEmpty" settings={settings} onChange={handleConfigChange} />
+                  <DualFontSizeInput widgetId="fuelTimeEmpty" settings={settings} onChange={handleConfigChange} />
                 </div>
               </div>
             </div>
@@ -518,7 +518,7 @@ const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => {
                   <span className="block text-xs text-slate-500">Configures rows in Consumption Grid</span>
                 </span>
                 <div className="flex items-center gap-4">
-                  <DualFontSizeInput widgetId="fuel2Grid" settings={settings} onChange={handleConfigChange} />
+                  <DualFontSizeInput widgetId="fuelGrid" settings={settings} onChange={handleConfigChange} />
                 </div>
               </div>
 
@@ -542,7 +542,7 @@ const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => {
                 <span className="block text-[10px] text-slate-500">Predicts fuel usage vs target. Adjust Label/Value sizes.</span>
               </div>
               <div className="flex items-center gap-4">
-                <DualFontSizeInput widgetId="fuel2EconomyPredict" settings={settings} onChange={handleConfigChange} />
+                <DualFontSizeInput widgetId="fuelEconomyPredict" settings={settings} onChange={handleConfigChange} />
               </div>
             </div>
 
@@ -552,7 +552,7 @@ const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => {
             <div className="py-4 border-b border-white/5">
               <div className="flex items-center justify-between pr-20 mb-2">
                 <span className="text-sm text-slate-300">Fuel History</span>
-                <DualFontSizeInput widgetId="fuel2Graph" settings={settings} onChange={handleConfigChange} />
+                <DualFontSizeInput widgetId="fuelGraph" settings={settings} onChange={handleConfigChange} />
               </div>
 
               {/* Sub-settings container */}
@@ -560,8 +560,8 @@ const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => {
                 <div className="flex items-center justify-between pr-20">
                   <span className="text-xs text-slate-400">Graph Properties</span>
                   <div className="flex items-center gap-4">
-                    <BarFontSizeInput widgetId="fuel2Graph" settings={settings} onChange={handleConfigChange} />
-                    <HeightInput widgetId="fuel2Graph" settings={settings} onChange={handleConfigChange} />
+                    <BarFontSizeInput widgetId="fuelGraph" settings={settings} onChange={handleConfigChange} />
+                    <HeightInput widgetId="fuelGraph" settings={settings} onChange={handleConfigChange} />
                   </div>
                 </div>
 
@@ -714,7 +714,7 @@ const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => {
 
                   <div className="flex items-center justify-between pr-2">
                     <span className="text-xs text-slate-400">Target Message Font</span>
-                    <DualFontSizeInput widgetId="fuel2TargetMessage" settings={settings} onChange={handleConfigChange} />
+                    <DualFontSizeInput widgetId="fuelTargetMessage" settings={settings} onChange={handleConfigChange} />
                   </div>
 
                   <p className="text-[10px] text-slate-500 italic">
@@ -731,7 +731,7 @@ const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => {
                     <span className="block text-[10px] text-slate-500">Pit stop calculations (-1, Ideal, +1 Lap)</span>
                   </div>
                   <div className="flex items-center gap-4">
-                    <DualFontSizeInput widgetId="fuel2Scenarios" settings={settings} onChange={handleConfigChange} />
+                    <DualFontSizeInput widgetId="fuelScenarios" settings={settings} onChange={handleConfigChange} />
                   </div>
                 </div>
               </div>
@@ -781,7 +781,7 @@ const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => {
 
 export const FuelSettings = () => {
   const { currentDashboard, onDashboardUpdated } = useDashboard();
-  const widgetType = 'fuel2';
+  const widgetType = 'fuel';
 
   // Identify widgets of the target type
   const fuelWidgets = currentDashboard?.widgets.filter(
@@ -837,7 +837,7 @@ export const FuelSettings = () => {
     else setSelectedId('');
   };
 
-  // If no widgets and we're in fuel2 mode, show create button prominently or handle empty state
+  // If no widgets and we're in fuel mode, show create button prominently or handle empty state
   if (fuelWidgets.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-full p-8 text-center space-y-4">

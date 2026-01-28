@@ -30,8 +30,6 @@ export const WIDGET_MAP: Record<string, (config?: any) => React.JSX.Element | nu
   pitlanehelper: PitlaneHelper,
   'fuel-calculator': FuelCalculator,
   'modern-fuel-calculator': FuelCalculator, // Legacy compatibility
-  'fuel-calculator-2': FuelCalculator,
-  'fuel2': FuelCalculator, // Alias used by settings generator
 };
 
 export type WidgetId = keyof typeof WIDGET_MAP;
