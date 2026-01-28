@@ -62,6 +62,7 @@ export function useFuelCalculation(
   // Get race leader's lap for multi-class racing
   const carIdxLap = useTelemetry('CarIdxLap');
   const carIdxPosition = useTelemetry('CarIdxPosition');
+  const carIdxLastLapTime = useTelemetry('CarIdxLastLapTime'); // Subscribe to lap times
 
   // Get fuel tank capacity from DriverInfo
   const driverCarFuelMaxLtr = useStore(
@@ -110,32 +111,41 @@ export function useFuelCalculation(
 
   // Cache leader position lookup to avoid recalculating on every telemetry tick
   const leaderLapRef = useRef<number | undefined>(undefined);
+  const leaderLastLapTimeRef = useRef<number | undefined>(undefined);
 
   // Refs for smoothing projected lap usage
   const smoothedProjectedUsageRef = useRef<number>(0);
   const lastSmoothedLapRef = useRef<number>(-1);
   const smoothedLapsWithFuelRef = useRef<number>(0);
 
-  // Update leader lap only when position data changes meaningfully
+  // Update leader lap and lap time only when position data changes meaningfully
   useEffect(() => {
-    if (!carIdxPosition?.value || !carIdxLap?.value) {
+    if (!carIdxPosition?.value || !carIdxLap?.value || !carIdxLastLapTime?.value) {
       leaderLapRef.current = undefined;
       return;
     }
 
     const positions = carIdxPosition.value;
     const laps = carIdxLap.value;
+    const lapTimes = carIdxLastLapTime.value;
 
     // Find leader (position 1)
     for (let i = 0; i < positions.length; i++) {
       if (positions[i] === 1) {
         leaderLapRef.current = laps[i];
+
+        // Update leader's last lap time if valid (> 0)
+        // If leader just pitted or had an invalid lap, we might want to keep the old valid one?
+        // For now, take the latest valid one.
+        if (lapTimes[i] > 0) {
+          leaderLastLapTimeRef.current = lapTimes[i];
+        }
         return;
       }
     }
 
     leaderLapRef.current = undefined;
-  }, [carIdxPosition?.value, carIdxLap?.value]);
+  }, [carIdxPosition?.value, carIdxLap?.value, carIdxLastLapTime?.value]);
 
   // Track current session number (preserves data across session changes)
   useEffect(() => {
@@ -502,11 +512,28 @@ export function useFuelCalculation(
         }
       }
 
-      lapsRemaining = 1;
+      // Precise final lap calculation: use remaining distance pct if available
+      // If we are 60% through the lap, we need fuel for 0.4 laps
+      // Ensure we don't go below 0
+      const remainingDistance = Math.max(0, 1 - (lapDistPct || 0));
+      lapsRemaining = remainingDistance;
+
       totalLaps = lap + 1;
     } else if (sessionLapsRemain === TIMED_RACE_LAPS_REMAINING) {
       // Timed race without white flag - estimate from time
-      if (sessionTimeRemain !== undefined && sessionTimeRemain > 0) {
+
+      const leaderLap = leaderLapRef.current || 0; // Current lap for the leader
+      const leaderLastLap = leaderLastLapTimeRef.current || avgLapTime; // Leader's pace or fallback to user avg
+
+      // Use Leader Pace for Projection if available and valid
+      if (sessionTimeRemain !== undefined && sessionTimeRemain > 0 && leaderLastLap > 0) {
+        const leaderProjectedLaps = leaderLap + (sessionTimeRemain / leaderLastLap);
+        const projectedTotalLaps = Math.ceil(leaderProjectedLaps);
+
+        totalLaps = projectedTotalLaps;
+        lapsRemaining = Math.max(0, totalLaps - lap); // User's laps remaining to target
+      } else if (sessionTimeRemain !== undefined && sessionTimeRemain > 0) {
+        // Fallback to user pace if leader data invalid
         const estLapTime =
           validLaps.reduce((sum, l) => sum + l.lapTime, 0) / validLaps.length;
         lapsRemaining = Math.ceil(sessionTimeRemain / estLapTime) + 1;
