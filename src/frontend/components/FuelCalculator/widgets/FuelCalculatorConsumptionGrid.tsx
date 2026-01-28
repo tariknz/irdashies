@@ -60,6 +60,7 @@ export const FuelCalculatorConsumptionGrid: React.FC<FuelCalculatorWidgetProps> 
 
     // Check for "Offline Testing" or "Practice"
     const isTesting = sessionType === 'Offline Testing' || sessionType === 'Practice';
+    const isRace = sessionType === 'Race';
 
     // Calculate derivates (Laps, Refuel, Finish) for each column
     // This duplicates some logic but ensures consistent display as per mockup
@@ -222,8 +223,12 @@ export const FuelCalculatorConsumptionGrid: React.FC<FuelCalculatorWidgetProps> 
                                     <div className={`text-slate-400 ${rowPadding}`} style={{ fontSize: labelFontSize }}>QUAL MAX</div>
                                     <div className={`text-orange-400 text-center ${rowPadding}`} style={{ fontSize: valueFontSize }}>{qual > 0 ? qual.toFixed(2) : '--'}</div>
                                     <div className={`text-white text-center ${rowPadding}`} style={{ fontSize: valueFontSize }}>{qualData.laps}</div>
-                                    <div className={`${refuelColor} text-center ${rowPadding}`} style={{ fontSize: valueFontSize }}>--</div>
-                                    <div className={`text-slate-500 text-center ${rowPadding}`} style={{ fontSize: valueFontSize }}>--</div>
+                                    <div className={`${refuelColor} text-center ${rowPadding}`} style={{ fontSize: valueFontSize }}>
+                                        {isRace && qual > 0 ? qualData.refuel : '--'}
+                                    </div>
+                                    <div className={`${isRace && qual > 0 ? finishColor(qualData.finish) : 'text-slate-500'} text-center ${rowPadding}`} style={{ fontSize: valueFontSize }}>
+                                        {isRace && qual > 0 ? qualData.finish : '--'}
+                                    </div>
                                 </React.Fragment>
                             );
                         default:
