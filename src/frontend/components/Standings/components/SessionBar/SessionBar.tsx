@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useSessionName, useSessionLaps, useTelemetryValue, useTelemetryValues, useSessionQualifyingResults, useSessionPositions, useGeneralSettings } from '@irdashies/context';
 import { formatTime } from '@irdashies/utils/time';
 import { useDriverIncidents, useSessionLapCount, useBrakeBias } from '../../hooks';
@@ -50,6 +50,93 @@ export const SessionBar = ({ position = 'header', variant = 'standings' }: Sessi
 
   // Cache for estimated total time to prevent continuous updates
   const [cachedTotalTime, setCachedTotalTime] = useState<{totalTime: number, leaderCarIdx: number, leaderLaps: number} | null>(null);
+  
+  // Track the last calculated times for real-time counting
+  const [lastCalculatedTimes, setLastCalculatedTimes] = useState<{
+    timeElapsed: number;
+    timeRemaining: number;
+    totalTime: number;
+    timestamp: number;
+  } | null>(null);
+
+  // Real-time tracking state that gets updated by setInterval
+  const [realTimeElapsed, setRealTimeElapsed] = useState<number>(0);
+  const [realTimeRemaining, setRealTimeRemaining] = useState<number>(0);
+  const [realTimeTotal, setRealTimeTotal] = useState<number>(0);
+
+  // Callback to get current timestamp
+  const getCurrentTimestamp = useCallback(() => Date.now(), []);
+
+
+  // Calculate real-time elapsed/remaining times for lap-based races
+  const realTimeValues = useMemo(() => {
+    if (state !== 4) {
+      return null;
+    }
+
+    // For active race sessions, always provide real-time values
+    if (sessionName?.toLowerCase() === "race" && totalLaps) {
+      if (lastCalculatedTimes) {
+        // Use the real-time state values that are being updated by setInterval
+        return {
+          timeElapsed: realTimeElapsed,
+          timeRemaining: realTimeRemaining,
+          totalTime: realTimeTotal
+        };
+      } else {
+        // If no calculated times yet, use basic session time values
+        const timeElapsed = timeTotal - timeRemaining;
+        const totalTime = timeTotal;
+        
+        return {
+          timeElapsed: timeElapsed,
+          timeRemaining: timeRemaining,
+          totalTime: totalTime
+        };
+      }
+    }
+
+    return null;
+  }, [lastCalculatedTimes, state, sessionName, totalLaps, timeTotal, timeRemaining, realTimeElapsed, realTimeRemaining, realTimeTotal]);
+
+
+  // Ref to track previous state to avoid cascading renders
+  const prevSessionState = useRef<{state: number, sessionName: string | undefined, totalLaps: number | undefined, lastCalculatedTimes: {
+    timeElapsed: number;
+    timeRemaining: number;
+    totalTime: number;
+    timestamp: number;
+  } | null} | null>(null);
+
+  // Ensure continuous real-time updates for race sessions
+  useEffect(() => {
+    const currentSessionState = { state, sessionName, totalLaps, lastCalculatedTimes };
+    const prev = prevSessionState.current;
+    
+    // Only update if we're transitioning to/from active race session
+    const isPrevActiveRace = prev && prev.state === 4 && prev.sessionName?.toLowerCase() === "race" && prev.totalLaps && prev.lastCalculatedTimes;
+    const isCurrentActiveRace = state === 4 && sessionName?.toLowerCase() === "race" && totalLaps && lastCalculatedTimes;
+    
+    if (isCurrentActiveRace && !isPrevActiveRace) {
+      // Starting active race session - start interval
+      const interval = setInterval(() => {
+        setRealTimeElapsed(prev => prev + 1);
+        setRealTimeRemaining(prev => Math.max(0, prev - 1));
+      }, 1000); // Update every second
+
+      return () => clearInterval(interval);
+    } else if (!isCurrentActiveRace && isPrevActiveRace) {
+      // Ending active race session - clear values using setTimeout to avoid cascading renders
+      setTimeout(() => {
+        setRealTimeElapsed(0);
+        setRealTimeRemaining(0);
+        setRealTimeTotal(0);
+      }, 0);
+    }
+    
+    // Update ref for next render
+    prevSessionState.current = currentSessionState;
+  }, [state, sessionName, totalLaps, lastCalculatedTimes]);
 
   // Define all possible items with their render functions
   const itemDefinitions = {
@@ -94,17 +181,29 @@ export const SessionBar = ({ position = 'header', variant = 'standings' }: Sessi
           return timeStr ? <div className="flex justify-center">{timeStr}</div> : null;
         }
 
-        // For lap-based races
-        if (sessionName?.toLowerCase() === "race" && totalLaps) {
-          // Calculate time elapsed
+        if(sessionName?.toLowerCase() === "qualify" && totalLaps) {
           const timeElapsed = state === 4 ? (timeTotal - timeRemaining) : (state === 1 ? time : 0);
 
+          const elapsedStr = formatTime(timeElapsed, 'duration');
+          const totalStr = formatTime(timeTotal, 'duration');
+          const remainingStr = formatTime(timeRemaining, 'duration');
+
+          if (mode === 'Elapsed' && elapsedStr && totalStr) {
+            return <div className="flex justify-center">{`${elapsedStr} / ≈ ${totalStr}`}</div>;
+          } else if (mode === 'Remaining' && remainingStr && totalStr) {
+            return <div className="flex justify-center">{`${remainingStr} / ≈ ${totalStr}`}</div>;
+          }
+        }
+
+        // For lap-based races
+        if (sessionName?.toLowerCase() === "race" && totalLaps) {
           // Get overall fastest qualifying time
           const validQualifyingTimes = qualifyingResults?.map(r => r.FastestTime).filter(t => t > 0) || [];
           const fastestQualifyingTime = validQualifyingTimes.length > 0 ? Math.min(...validQualifyingTimes) : 0;
 
           // Find race leader (position 1 with most laps, tie-break by lap percent)
           const positionOneDrivers = racePositions?.filter(driver => driver.Position === 1) || [];
+          
           const raceLeader = positionOneDrivers.length > 0 ? positionOneDrivers.reduce((best, current) => {
             if (!best || current.LapsComplete > best.LapsComplete) return current;
             if (current.LapsComplete === best.LapsComplete) {
@@ -128,6 +227,7 @@ export const SessionBar = ({ position = 'header', variant = 'standings' }: Sessi
 
             // Simple average of all valid lap times
             const validTimes = lapTimes.filter(t => t > 0);
+            
             if (validTimes.length > 0) {
               avgLapTime = validTimes.reduce((sum, t) => sum + t, 0) / validTimes.length;
             }
@@ -138,33 +238,95 @@ export const SessionBar = ({ position = 'header', variant = 'standings' }: Sessi
             avgLapTime = fastestQualifyingTime;
           }
 
-          // Calculate and cache estimates
+  // Calculate and cache estimates using average lap time and lap counts
           if (avgLapTime > 0) {
             const lapsRemaining = Math.max(0, totalLaps - (raceLeader?.LapsComplete ?? 0));
-            const estimatedTotalTime = timeElapsed + (lapsRemaining * avgLapTime);
-
-            // Only update cached total time when leader changes or completes more laps
+            
+            // Calculate time based on lap counts and average lap time
+            const calculatedTimeElapsed = avgLapTime * (raceLeader?.LapsComplete ?? 0);
+            const calculatedTimeRemaining = avgLapTime * lapsRemaining;
+            const calculatedTotalTime = calculatedTimeElapsed + calculatedTimeRemaining;
+            
+            // Update cached total time more frequently to ensure smooth real-time updates
             const shouldUpdateCache = !cachedTotalTime ||
               cachedTotalTime.leaderCarIdx !== (raceLeader?.CarIdx ?? -1) ||
-              cachedTotalTime.leaderLaps !== (raceLeader?.LapsComplete ?? 0);
+              cachedTotalTime.leaderLaps !== (raceLeader?.LapsComplete ?? 0) ||
+              !cachedTotalTime.totalTime || 
+              Math.abs((cachedTotalTime.totalTime - calculatedTotalTime) / cachedTotalTime.totalTime) > 0.01; // Update if difference > 1%
 
             if (shouldUpdateCache) {
               setCachedTotalTime({
-                totalTime: estimatedTotalTime,
+                totalTime: calculatedTotalTime,
                 leaderCarIdx: raceLeader?.CarIdx ?? -1,
                 leaderLaps: raceLeader?.LapsComplete ?? 0
               });
             }
 
             // Use cached total time for display (stable between calculations)
-            const displayTotalTime = cachedTotalTime?.totalTime ?? estimatedTotalTime;
-            const displayRemaining = Math.max(0, displayTotalTime - timeElapsed);
+            const displayTotalTime = cachedTotalTime?.totalTime ?? calculatedTotalTime;
+            
+            // For real-time counting, track when calculations were last updated
+            // and count up/down from those values until new calculations come in
+            if (shouldUpdateCache) {
+              // New calculations available, update the last calculated times
+              const currentTime = getCurrentTimestamp();
+              setLastCalculatedTimes({
+                timeElapsed: calculatedTimeElapsed,
+                timeRemaining: calculatedTimeRemaining,
+                totalTime: calculatedTotalTime,
+                timestamp: currentTime
+              });
+              // Also update the real-time state variables immediately
+              setRealTimeElapsed(calculatedTimeElapsed);
+              setRealTimeRemaining(calculatedTimeRemaining);
+              setRealTimeTotal(calculatedTotalTime);
+            } else if (!lastCalculatedTimes && state === 4) {
+              // Initialize real-time tracking if session is active but no calculations yet
+              const currentTime = getCurrentTimestamp();
+              setLastCalculatedTimes({
+                timeElapsed: calculatedTimeElapsed,
+                timeRemaining: calculatedTimeRemaining,
+                totalTime: calculatedTotalTime,
+                timestamp: currentTime
+              });
+              // Also update the real-time state variables immediately
+              setRealTimeElapsed(calculatedTimeElapsed);
+              setRealTimeRemaining(calculatedTimeRemaining);
+              setRealTimeTotal(calculatedTotalTime);
+            }
+            
+            let displayTimeElapsed;
+            let displayTimeRemaining;
+            
+            if (state === 4) {
+              // Always use real-time values for active race sessions
+              if (realTimeValues) {
+                // Use real-time values calculated in useMemo
+                if (mode === 'Elapsed') {
+                  // Count up from last calculated elapsed time
+                  displayTimeElapsed = realTimeValues.timeElapsed;
+                  displayTimeRemaining = Math.max(0, displayTotalTime - displayTimeElapsed);
+                } else {
+                  // Count down from last calculated remaining time
+                  displayTimeRemaining = realTimeValues.timeRemaining;
+                  displayTimeElapsed = displayTotalTime - displayTimeRemaining;
+                }
+              } else {
+                // Fallback to calculated values if no real-time tracking yet
+                displayTimeElapsed = calculatedTimeElapsed;
+                displayTimeRemaining = calculatedTimeRemaining;
+              }
+            } else {
+              // Pre-race or other states - use calculated values
+              displayTimeElapsed = calculatedTimeElapsed;
+              displayTimeRemaining = calculatedTimeRemaining;
+            }
 
             // Display logic
             if (state === 4) {
-              const elapsedStr = formatTime(timeElapsed, 'duration');
+              const elapsedStr = formatTime(displayTimeElapsed, 'duration');
               const totalStr = formatTime(displayTotalTime, 'duration');
-              const remainingStr = formatTime(displayRemaining, 'duration');
+              const remainingStr = formatTime(displayTimeRemaining, 'duration');
 
               if (mode === 'Elapsed' && elapsedStr && totalStr) {
                 return <div className="flex justify-center">{`${elapsedStr} / ≈ ${totalStr}`}</div>;
