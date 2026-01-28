@@ -1,4 +1,5 @@
 import { memo, type ReactNode } from 'react';
+import { formatTime } from '@irdashies/utils/time';
 
 interface StatusBadgeProps {
   textColor?: string;
@@ -72,7 +73,7 @@ export const DriverStatusBadges = memo(
       return null;
     }
 
-    const pitDuration = <>{showPitTime && lastPitLap && lastPitLap > 1 && pitStopDuration && <span className="text-yellow-500">{pitStopDuration} s</span>}</>;
+    const pitDuration = <>{showPitTime && lastPitLap && lastPitLap > 1 && pitStopDuration && <span className="text-yellow-500">{formatTime(pitStopDuration, 'duration')}</span>}</>;
     let pitLap = lastPitLap;
 
     if (pitLapDisplayMode == 'lapsSinceLastPit')
