@@ -15,13 +15,21 @@ export const OverlaySizeWrapper = ({ layout, children }: OverlaySizeWrapperProps
     return <>{children}</>;
   }
 
+  const width = Number(layout.width);
+  const height = Number(layout.height);
+
+  const style: { width?: string; height?: string } = {};
+  if (Number.isFinite(width) && width > 0) {
+    style.width = `${width}px`;
+  }
+  if (Number.isFinite(height) && height > 0) {
+    style.height = `${height}px`;
+  }
+
   return (
     <div
       className="flex flex-col overflow-hidden bg-transparent"
-      style={{
-        width: `${layout.width}px`,
-        height: `${layout.height}px`,
-      }}
+      style={style}
     >
       {children}
     </div>
