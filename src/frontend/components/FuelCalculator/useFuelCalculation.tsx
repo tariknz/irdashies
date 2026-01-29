@@ -213,11 +213,20 @@ export function useFuelCalculation(
   const wasTowedDuringLapRef = useRef(false);
 
   // Monitor tow time to detect incidents
+  const wasOnPitRoadDuringLapRef = useRef(false);
+
   useEffect(() => {
     if (playerCarTowTime !== undefined && playerCarTowTime > 0) {
       wasTowedDuringLapRef.current = true;
     }
   }, [playerCarTowTime]);
+
+  // Monitor Pit Road status usage to detect In-Laps
+  useEffect(() => {
+     if (onPitRoad) {
+         wasOnPitRoadDuringLapRef.current = true;
+     }
+  }, [onPitRoad]);
 
   // Detect lap crossings and process fuel data
   useEffect(() => {
@@ -280,14 +289,15 @@ export function useFuelCalculation(
           lapTime,
           isGreenFlag: isGreenFlag(sessionFlags),
           isValidForCalc: isValid,
-          isOutLap: state.wasOnPitRoad, // Mark if lap started from pit road
+          isOutLap: state.wasOnPitRoad, // Mark if lap started from pit road (Out Lap)
+          isInLap: wasOnPitRoadDuringLapRef.current, // Mark if lap involved pit road (In Lap)
           wasTowed,
           timestamp: Date.now(),
         };
 
         if (DEBUG_LOGGING || wasTowed) {
           console.log(
-            `[FuelCalculator]   -> Valid: ${lapData.isValidForCalc}, Green: ${lapData.isGreenFlag}, OutLap: ${lapData.isOutLap}, Towed: ${wasTowed}, Outlier: ${isOutlier}`
+            `[FuelCalculator]   -> Valid: ${lapData.isValidForCalc}, Green: ${lapData.isGreenFlag}, OutLap: ${lapData.isOutLap}, InLap: ${lapData.isInLap}, Towed: ${wasTowed}, Outlier: ${isOutlier}`
           );
         }
 
@@ -303,8 +313,15 @@ export function useFuelCalculation(
         }
       }
 
-      // Reset tow flag for the new lap
+      // Reset flags for the new lap
       wasTowedDuringLapRef.current = false;
+      // If we are currently on pit road (pit stop), the NEXT lap will start on pit road.
+      // But the 'wasOnPitRoadDuringLapRef' tracks if we touched it DURING the completed lap.
+      // We reset it to false, but if we are *currently* on pit road, it will be set to true immediately by the effect?
+      // Actually, if we are stationary in pits, onPitRoad is high.
+      // The effect `useEffect(() => { if (onPitRoad) ... })` will trigger on next render.
+      // So resetting to false is correct for the start of the NEW lap.
+      wasOnPitRoadDuringLapRef.current = false;
 
       // Now update lap crossing state for the NEW lap
       // Ensure we increment to the next lap correctly
@@ -483,12 +500,14 @@ export function useFuelCalculation(
       fuelTankCapacityFromSession ??
       (fuelLevelPct > 0 ? fuelLevel / fuelLevelPct : DEFAULT_TANK_CAPACITY);
 
-    // Exclude out-laps. We no longer blindly exclude firstLapNumber as it might be a valid mid-session lap.
-    // getFullRacingLaps was too aggressive.
-    const fullLaps = validLaps.filter((l) => !l.isOutLap);
+    // Exclude out-laps AND in-laps (pit stop laps).
+    // We filter out any lap where the car was on pit road (in or out) to ensure clean racing laps for average.
+    const fullLaps = validLaps.filter((l) => !l.isOutLap && !l.isInLap);
 
     // If no full racing laps yet (early in session), use all valid laps as fallback
-    const lapsToUse = fullLaps.length > 0 ? fullLaps : validLaps;
+    // User requested strict exclusion of Out Laps.
+    // const lapsToUse = fullLaps.length > 0 ? fullLaps : validLaps;
+    const lapsToUse = fullLaps;
 
     // Get different lap groupings from laps to use
     const greenLaps = getGreenFlagLaps(lapsToUse);
@@ -513,21 +532,8 @@ export function useFuelCalculation(
     const maxSourceLaps = currentSessionLaps.length > 0 ? currentSessionLaps : lapsToUse;
     const { min: minLapUsage, max: maxLapUsage } = findFuelMinMax(maxSourceLaps);
 
-    // Calculate projected lap usage for current lap (calculated later, but we need it here)
-    // We'll calculate it inline for now
-    let projectedCurrentLap = 0;
-    if (
-      typeof lapDistPct === 'number' &&
-      lapDistPct > 0.05 &&
-      currentLapUsage > 0
-    ) {
-      projectedCurrentLap = currentLapUsage / lapDistPct;
-    } else if (lastLapUsage > 0) {
-      projectedCurrentLap = lastLapUsage;
-    } else {
-      projectedCurrentLap = avg10Laps || 0;
-    }
-
+    // Calculate projected lap usage (Removed per user request to disable live projection)
+    
     // Use customizable average as primary metric, but include projected current lap
     // This allows refuel to update LIVE during the lap (like Kapps)
     let avgFuelPerLapBase = avgLaps; // Base average without current lap projection
@@ -551,6 +557,9 @@ export function useFuelCalculation(
     }
     
     // If we're mid-lap and have a valid projection, blend it into consumption average
+    // DISABLED: User requested to strictly NOT use live 'accelerator based' projection.
+    // Calculations will rely solely on completed laps (avgLaps / avgFuelPerLapBase).
+    /*
     if (lapDistPct && lapDistPct > 0.05 && lapDistPct < 0.95 && projectedCurrentLap > 0) {
       // Include projected current lap in the average for consumption calculations
       // Weight: treat it as the most recent lap
@@ -558,6 +567,7 @@ export function useFuelCalculation(
       const limitedLaps = lapsForAvgWithCurrent.slice(0, avgLapsCount);
       avgFuelPerLapForConsumption = limitedLaps.reduce((sum, val) => sum + val, 0) / limitedLaps.length;
     }
+    */
 
     // Guard against zero or invalid avgFuelPerLap - only return null if we truly have no data
     if (avgFuelPerLapBase <= 0) {

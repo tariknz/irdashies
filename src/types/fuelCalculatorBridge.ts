@@ -14,6 +14,8 @@ export interface FuelLapData {
   isValidForCalc: boolean;
   /** Whether the car started this lap from pit road (out-lap) */
   isOutLap: boolean;
+  /** Whether the car entered pit road during this lap (in-lap) */
+  isInLap?: boolean;
   /** Whether the car was towed during this lap */
   wasTowed?: boolean;
   /** Whether this lap is from a previous session (historical) */

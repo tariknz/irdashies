@@ -490,7 +490,6 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
   const renderWidget = (widgetId: string) => {
     const widgetStyles = derivedFontStyles[widgetId] || derivedFontStyles; // Proxy or direct
     const widgetProps = {
-      key: widgetId,
       widgetId: widgetId,
       fuelData: fuelData,
       displayData: displayData,
@@ -506,12 +505,12 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
       case 'fuelGauge':
         return <FuelCalculatorGauge {...widgetProps} />;
       case 'fuelGrid':
-        // Use frozen data for grid (static rows) but pass throttled predictive usage for CURR row
         return (
           <FuelCalculatorConsumptionGrid
             {...widgetProps}
             fuelData={frozenFuelData}
             liveFuelData={fuelData}
+            liveFuelLevel={currentFuelLevel}
             predictiveUsage={predictiveUsage}
             displayData={frozenDisplayData}
           />
