@@ -181,6 +181,7 @@ describe('useDriverRelatives', () => {
           CarSetup: {} as any,
         },
         setSession: vi.fn(),
+        resetSession: vi.fn(),
       })
     );
   });

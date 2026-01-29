@@ -5,16 +5,19 @@ import { getColor } from '@irdashies/utils/colors';
 const BRAKE_COLOR = getColor('red');
 const BRAKE_ABS_COLOR = getColor('yellow', 500);
 const THROTTLE_COLOR = getColor('green');
+const CLUTCH_COLOR = getColor('blue');
 const STEER_COLOR = getColor('slate', 300);
 
 export interface InputTraceProps {
   input: {
+    clutch?: number;
     brake?: number;
     brakeAbsActive?: boolean;
     throttle?: number;
     steer?: number;
   };
   settings?: {
+    includeClutch?: boolean;
     includeThrottle?: boolean;
     includeBrake?: boolean;
     includeAbs?: boolean;
@@ -24,11 +27,16 @@ export interface InputTraceProps {
   };
 }
 
-export const InputTrace = ({
-  input,
-  settings,
-}: InputTraceProps) => {
-  const { includeThrottle = true, includeBrake = true, includeAbs = true, includeSteer = true, strokeWidth = 3, maxSamples = 400 } = settings ?? {};
+export const InputTrace = ({ input, settings }: InputTraceProps) => {
+  const {
+    includeClutch = true,
+    includeThrottle = true,
+    includeBrake = true,
+    includeAbs = true,
+    includeSteer = true,
+    strokeWidth = 3,
+    maxSamples = 400,
+  } = settings ?? {};
   const svgRef = useRef<SVGSVGElement>(null);
   const rafRef = useRef<number | null>(null);
   const { width, height } = { width: 400, height: 100 };
@@ -36,10 +44,21 @@ export const InputTrace = ({
   const bufferSize = maxSamples;
 
   // Circular buffers - pre-allocated arrays that are reused
-  const brakeArray = useRef<number[]>(Array.from({ length: bufferSize }, () => 0));
-  const brakeABSArray = useRef<boolean[]>(Array.from({ length: bufferSize }, () => false));
-  const throttleArray = useRef<number[]>(Array.from({ length: bufferSize }, () => 0));
-  const steerArray = useRef<number[]>(Array.from({ length: bufferSize }, () => 0.5));
+  const brakeArray = useRef<number[]>(
+    Array.from({ length: bufferSize }, () => 0)
+  );
+  const brakeABSArray = useRef<boolean[]>(
+    Array.from({ length: bufferSize }, () => false)
+  );
+  const throttleArray = useRef<number[]>(
+    Array.from({ length: bufferSize }, () => 0)
+  );
+  const steerArray = useRef<number[]>(
+    Array.from({ length: bufferSize }, () => 0.5)
+  );
+  const clutchArray = useRef<number[]>(
+    Array.from({ length: bufferSize }, () => 0)
+  );
 
   // Write index for circular buffer (oldest data point position)
   const writeIndex = useRef<number>(0);
@@ -62,9 +81,15 @@ export const InputTrace = ({
           brakeABSArray.current[idx] = input.brakeAbsActive ?? false;
         }
       }
+      if (includeClutch) {
+        clutchArray.current[idx] = input.clutch ?? 0;
+      }
       if (includeSteer) {
         const angleRad = input.steer ?? 0;
-        const normalizedValue = Math.max(0, Math.min(1, (angleRad / (2 * Math.PI)) + 0.5));
+        const normalizedValue = Math.max(
+          0,
+          Math.min(1, angleRad / (2 * Math.PI) + 0.5)
+        );
         steerArray.current[idx] = normalizedValue;
       }
 
@@ -77,19 +102,36 @@ export const InputTrace = ({
         valueArrayWithColors.push({
           values: steerArray.current,
           color: STEER_COLOR,
-          isCentered: true
+          isCentered: true,
         });
       }
-      if (includeThrottle) valueArrayWithColors.push({ values: throttleArray.current, color: THROTTLE_COLOR });
+      if (includeClutch)
+        valueArrayWithColors.push({
+          values: clutchArray.current,
+          color: CLUTCH_COLOR,
+        });
+      if (includeThrottle)
+        valueArrayWithColors.push({
+          values: throttleArray.current,
+          color: THROTTLE_COLOR,
+        });
       if (includeBrake) {
         valueArrayWithColors.push({
           values: brakeArray.current,
           color: BRAKE_COLOR,
           absStates: includeAbs ? brakeABSArray.current : undefined,
-          absColor: includeAbs ? BRAKE_ABS_COLOR : undefined
+          absColor: includeAbs ? BRAKE_ABS_COLOR : undefined,
         });
       }
-      drawGraph(svgRef.current, valueArrayWithColors, width, height, strokeWidth, bufferSize, writeIndex.current);
+      drawGraph(
+        svgRef.current,
+        valueArrayWithColors,
+        width,
+        height,
+        strokeWidth,
+        bufferSize,
+        writeIndex.current
+      );
     });
 
     return () => {
@@ -97,7 +139,18 @@ export const InputTrace = ({
         cancelAnimationFrame(rafRef.current);
       }
     };
-  }, [input, includeThrottle, includeBrake, includeAbs, includeSteer, bufferSize, width, height, strokeWidth]);
+  }, [
+    input,
+    includeThrottle,
+    includeBrake,
+    includeAbs,
+    includeSteer,
+    includeClutch,
+    bufferSize,
+    width,
+    height,
+    strokeWidth,
+  ]);
 
   return (
     <svg
@@ -110,7 +163,12 @@ export const InputTrace = ({
 };
 
 // Helper to read from circular buffer at logical index
-function getCircularValue<T>(array: T[], logicalIndex: number, writeIndex: number, bufferSize: number): T {
+function getCircularValue<T>(
+  array: T[],
+  logicalIndex: number,
+  writeIndex: number,
+  bufferSize: number
+): T {
   const physicalIndex = (writeIndex + logicalIndex) % bufferSize;
   return array[physicalIndex];
 }
@@ -146,7 +204,10 @@ function drawGraph(
   svg.selectAll('*').remove();
 
   const scaleMargin = 0.05;
-  const xScale = d3.scaleLinear().domain([0, bufferSize - 1]).range([0, width]);
+  const xScale = d3
+    .scaleLinear()
+    .domain([0, bufferSize - 1])
+    .range([0, width]);
   const yScale = d3
     .scaleLinear()
     .domain([0 - scaleMargin, 1 + scaleMargin])
@@ -155,15 +216,46 @@ function drawGraph(
   drawYAxis(svg, yScale, width);
 
   // Draw directly from circular buffers using index mapper
-  valueArrayWithColors.forEach(({ values, color, absStates, absColor, isCentered }) => {
-    if (absStates && absColor) {
-      drawABSAwareLine(svg, values as number[], absStates, xScale, yScale, color, absColor, strokeWidth, writeIndex, bufferSize);
-    } else if (isCentered) {
-      drawCenteredLine(svg, values as number[], xScale, yScale, color, height, writeIndex, bufferSize);
-    } else {
-      drawLine(svg, values as number[], xScale, yScale, color, strokeWidth, writeIndex, bufferSize);
+  valueArrayWithColors.forEach(
+    ({ values, color, absStates, absColor, isCentered }) => {
+      if (absStates && absColor) {
+        drawABSAwareLine(
+          svg,
+          values as number[],
+          absStates,
+          xScale,
+          yScale,
+          color,
+          absColor,
+          strokeWidth,
+          writeIndex,
+          bufferSize
+        );
+      } else if (isCentered) {
+        drawCenteredLine(
+          svg,
+          values as number[],
+          xScale,
+          yScale,
+          color,
+          height,
+          writeIndex,
+          bufferSize
+        );
+      } else {
+        drawLine(
+          svg,
+          values as number[],
+          xScale,
+          yScale,
+          color,
+          strokeWidth,
+          writeIndex,
+          bufferSize
+        );
+      }
     }
-  });
+  );
 }
 
 function drawYAxis(
@@ -266,7 +358,10 @@ function drawABSAwareLine(
   bufferSize: number
 ) {
   // Group consecutive points by ABS state, reading from circular buffer
-  const segments: { values: { value: number; index: number }[]; isABS: boolean }[] = [];
+  const segments: {
+    values: { value: number; index: number }[];
+    isABS: boolean;
+  }[] = [];
   let currentSegment: { value: number; index: number }[] = [];
   let currentIsABS = getCircularValue(absStates, 0, writeIndex, bufferSize);
 
@@ -283,7 +378,10 @@ function drawABSAwareLine(
       }
 
       // Start new segment with overlap point for continuity
-      currentSegment = [currentSegment[currentSegment.length - 1], { value, index: i }];
+      currentSegment = [
+        currentSegment[currentSegment.length - 1],
+        { value, index: i },
+      ];
       currentIsABS = isABS;
     }
   }
@@ -294,7 +392,7 @@ function drawABSAwareLine(
   }
 
   // Draw each segment with appropriate color
-  segments.forEach(segment => {
+  segments.forEach((segment) => {
     if (segment.values.length > 1) {
       const line = d3
         .line<{ value: number; index: number }>()
@@ -302,7 +400,9 @@ function drawABSAwareLine(
         .y((d) => yScale(Math.max(0, Math.min(1, d.value))))
         .curve(d3.curveBasis);
 
-      const segmentStrokeWidth = segment.isABS ? Math.round(strokeWidth * 1.67) : strokeWidth;
+      const segmentStrokeWidth = segment.isABS
+        ? Math.round(strokeWidth * 1.67)
+        : strokeWidth;
       svg
         .append('g')
         .append('path')

@@ -8,6 +8,7 @@ import {
   useRunningState,
   SessionProvider,
   PitLaneProvider,
+  useResetOnDisconnect,
 } from '@irdashies/context';
 import { Settings } from './components/Settings/Settings';
 import { EditMode } from './components/EditMode/EditMode';
@@ -17,6 +18,7 @@ import { HideUIWrapper } from './components/HideUIWrapper/HideUIWrapper';
 
 const AppRoutes = () => {
   const { running } = useRunningState();
+  useResetOnDisconnect(running);
 
   return (
     <Routes>
