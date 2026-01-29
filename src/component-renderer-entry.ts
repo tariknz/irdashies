@@ -19,10 +19,16 @@ const isDebugMode = params.get('debug') === 'true';
 // Extract layout dimensions if provided
 const layoutWidth = params.get('layoutWidth');
 const layoutHeight = params.get('layoutHeight');
-const layoutDimensions = (layoutWidth && layoutHeight) 
-  ? { width: parseInt(layoutWidth, 10), height: parseInt(layoutHeight, 10) }
-  : null;
+let layoutDimensions: { width: number; height: number } | null = null;
 
+if (layoutWidth && layoutHeight) {
+  const parsedWidth = parseInt(layoutWidth, 10);
+  const parsedHeight = parseInt(layoutHeight, 10);
+
+  if (!Number.isNaN(parsedWidth) && !Number.isNaN(parsedHeight)) {
+    layoutDimensions = { width: parsedWidth, height: parsedHeight };
+  }
+}
 // Make debug flag globally available
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 (window as any).__DEBUG_MODE__ = isDebugMode;
