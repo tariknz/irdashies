@@ -350,6 +350,13 @@ export interface FasterCarsFromBehindWidgetSettings extends BaseWidgetSettings {
   config: {
     showOnlyWhenOnTrack: boolean;
     distanceThreshold: number;
+    numberDriversBehind: number;
+    alignDriverBoxes: 'Top' | 'Bottom';
+    closestDriverBox: 'Top' | 'Reverse';
+    showName: boolean;
+    showDistance: boolean;
+    showBadge: boolean;
+    badgeFormat: string;
     sessionVisibility: SessionVisibilitySettings;
   };
 }

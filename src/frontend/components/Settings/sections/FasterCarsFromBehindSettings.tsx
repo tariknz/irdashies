@@ -5,6 +5,7 @@ import {
   SessionVisibilitySettings,
 } from '../types';
 import { SessionVisibility } from '../components/SessionVisibility';
+import { BadgeFormatPreview } from '../components/BadgeFormatPreview';
 import { useDashboard } from '@irdashies/context';
 import { useFasterCarsSettings } from '../../FasterCarsFromBehind/hooks/useFasterCarsSettings';
 import { ToggleSwitch } from '../components/ToggleSwitch';
@@ -14,6 +15,13 @@ const SETTING_ID = 'fastercarsfrombehind';
 const defaultConfig: FasterCarsFromBehindWidgetSettings['config'] = {
   showOnlyWhenOnTrack: true,
   distanceThreshold: -0.3,
+  numberDriversBehind: 1,
+  alignDriverBoxes: 'Top',
+  closestDriverBox: 'Top',
+  showName: true,
+  showDistance: true,
+  showBadge: true,
+  badgeFormat: 'license-color-rating-bw',
   sessionVisibility: {
     race: true,
     loneQualify: false,
@@ -34,6 +42,20 @@ const migrateConfig = (
         defaultConfig.showOnlyWhenOnTrack,
       distanceThreshold:
         (config.distanceThreshold as number) ?? defaultConfig.distanceThreshold,
+      numberDriversBehind:
+        (config.numberDriversBehind as number) ?? defaultConfig.numberDriversBehind,
+      alignDriverBoxes:
+        (config.alignDriverBoxes as 'Top' | 'Bottom') ?? defaultConfig.alignDriverBoxes,
+      closestDriverBox:
+        (config.closestDriverBox as 'Top' | 'Reverse') ?? defaultConfig.closestDriverBox,
+      showName:
+        (config.showName as boolean) ?? defaultConfig.showName,
+      showDistance:
+        (config.showDistance as boolean) ?? defaultConfig.showDistance,
+      showBadge:
+        (config.showBadge as boolean) ?? defaultConfig.showBadge,
+      badgeFormat:
+        (config.badgeFormat as string) ?? defaultConfig.badgeFormat,
       sessionVisibility:
         (config.sessionVisibility as SessionVisibilitySettings) ??
         defaultConfig.sessionVisibility,
@@ -65,23 +87,88 @@ export const FasterCarsFromBehindSettings = () => {
     >
       {(handleConfigChange) => (
         <div className="space-y-4">
-          <div className="space-y-2">
-            <label className="text-slate-300">Distance Threshold</label>
+          {/* Distance Threshold */}
+          <div className="space-y-2 px-4">
+            <label className="text-slate-300">
+              Distance Threshold: {Math.abs(settings.config.distanceThreshold).toFixed(1)} seconds
+            </label>
             <input
-              type="number"
-              value={settings.config.distanceThreshold}
+              type="range"
+              min="0.3"
+              max="20"
+              step="0.1"
+              value={Math.abs(settings.config.distanceThreshold)}
               onChange={(e) =>
                 handleConfigChange({
-                  distanceThreshold: parseFloat(e.target.value),
+                  distanceThreshold: -parseFloat(e.target.value),
                 })
               }
-              className="w-full rounded border-gray-600 bg-gray-700 p-2 text-slate-300"
-              step="0.1"
+              className="w-full"
             />
+            <p className="text-slate-400 text-sm">
+              Minimum gap to a faster car before it is displayed. Smaller values show cars that are closer behind you.
+            </p>
+          </div>
+
+          <div className="space-y-3 px-4">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-slate-300">Drivers Behind</span>
+              <select
+                value={settings.config.numberDriversBehind}
+                onChange={(e) =>
+                  handleConfigChange({
+                    numberDriversBehind: parseInt(e.target.value),
+                  })
+                }
+                className="bg-slate-700 text-white rounded-md px-2 py-1"
+              >
+                {Array.from({ length: 10 }, (_, i) => i + 1).map((num) => (
+                  <option key={num} value={num}>
+                    {num}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="space-y-3 px-4">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-slate-300">Align Driver Boxes</span>
+              <select
+                value={settings.config.alignDriverBoxes}
+                onChange={(e) =>
+                  handleConfigChange({
+                    alignDriverBoxes: e.target.value as 'Top' | 'Bottom',
+                  })
+                }
+                className="bg-slate-700 text-white rounded-md px-2 py-1"
+              >
+                <option value="Top">Align to Top of Widget</option>
+                <option value="Bottom">Align to Bottom of Widget</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="space-y-3 px-4">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-slate-300">Closest Driver</span>
+              <select
+                value={settings.config.closestDriverBox}
+                onChange={(e) =>
+                  handleConfigChange({
+                    closestDriverBox: e.target.value as 'Top' | 'Reverse',
+                  })
+                }
+                className="bg-slate-700 text-white rounded-md px-2 py-1"
+              >
+                <option value="Top">Closest Driver at Top</option>
+                <option value="Reverse">Closest Driver at Bottom</option>
+              </select>
+            </div>
           </div>
 
           {/* IsOnTrack Section */}
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between pr-4">
             <div>
               <h4 className="text-md font-medium text-slate-300">
                 Show only when on track
@@ -100,6 +187,86 @@ export const FasterCarsFromBehindSettings = () => {
             />
           </div>
 
+          {/* Show Name Section */}
+          <div className="flex items-center justify-between pr-4">
+            <div>
+              <h4 className="text-md font-medium text-slate-300">
+                Show Name
+              </h4>
+              <span className="block text-xs text-slate-500">
+                Display the driver name in the faster cars widget.
+              </span>
+            </div>
+            <ToggleSwitch
+              enabled={settings.config.showName}
+              onToggle={(newValue) =>
+                handleConfigChange({
+                  showName: newValue,
+                })
+              }
+            />
+          </div>
+
+          {/* Show Badge Section */}
+          <div className="flex items-center justify-between pr-4">
+            <div>
+              <h4 className="text-md font-medium text-slate-300">
+                Show Driver Badge
+              </h4>
+              <span className="block text-xs text-slate-500">
+                Display the driver license and iRating badge.
+              </span>
+            </div>
+            <ToggleSwitch
+              enabled={settings.config.showBadge}
+              onToggle={(newValue) =>
+                handleConfigChange({
+                  showBadge: newValue,
+                })
+              }
+            />
+          </div>
+
+          {/* Badge Format Selector */}
+          {settings.config.showBadge && (
+            <div className="mt-3">
+              <div className="flex flex-wrap gap-3 justify-end">
+                {(['license-color-fullrating-bw', 'license-color-rating-bw', 'rating-only-color-rating-bw', 'license-color-rating-bw-no-license', 'rating-color-no-license', 'license-bw-rating-bw', 'rating-only-bw-rating-bw', 'license-bw-rating-bw-no-license', 'rating-bw-no-license'] as const).map((format) => (
+                  <BadgeFormatPreview
+                    key={format}
+                    format={format}
+                    selected={settings.config.badgeFormat === format}
+                    onClick={() => {
+                      handleConfigChange({
+                        badgeFormat: format,
+                      });
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Show Distance Section */}
+          <div className="flex items-center justify-between pr-4">
+            <div>
+              <h4 className="text-md font-medium text-slate-300">
+                Show Distance
+              </h4>
+              <span className="block text-xs text-slate-500">
+                Display the distance to the faster car.
+              </span>
+            </div>
+            <ToggleSwitch
+              enabled={settings.config.showDistance}
+              onToggle={(newValue) =>
+                handleConfigChange({
+                  showDistance: newValue,
+                })
+              }
+            />
+          </div>
+
           {/* Session Visibility Settings */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
@@ -107,7 +274,7 @@ export const FasterCarsFromBehindSettings = () => {
                 Session Visibility
               </h3>
             </div>
-            <div className="space-y-3 pl-4">
+            <div className="space-y-3 px-4">
               <SessionVisibility
                 sessionVisibility={settings.config.sessionVisibility}
                 handleConfigChange={handleConfigChange}

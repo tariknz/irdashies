@@ -4,14 +4,6 @@ export interface DriverNameParts {
   surname: string;
 };
 
-// Utility: capitalize the first letter of each word (some people use lower case for the fist letter of their name for strange reasons)
-const capitalizeWords = (str: string) =>
-  str
-    .split(' ')
-    .filter(Boolean)
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-    .join(' ');
-
 export const extractDriverName = (
   fullName = ''
 ): DriverNameParts => {
@@ -23,19 +15,19 @@ export const extractDriverName = (
 
   if (parts.length === 1) {
     return {
-      firstName: capitalizeWords(parts[0]),
+      firstName: parts[0],
       middleName: null,
       surname: '',
     };
   }
 
   return {
-    firstName: capitalizeWords(parts[0]),
+    firstName: parts[0],
     middleName:
       parts.length > 2
-        ? capitalizeWords(parts.slice(1, -1).join(' '))
+        ? parts.slice(1, -1).join(' ')
         : null,
-    surname: capitalizeWords(parts[parts.length - 1]),
+    surname: parts[parts.length - 1],
   };
 };
 
