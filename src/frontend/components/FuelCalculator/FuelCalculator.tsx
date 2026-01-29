@@ -107,6 +107,9 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
   const realFuelData = useFuelCalculation(safetyMargin, settings);
   const realCurrentFuelLevel = useTelemetryValues('FuelLevel')?.[0] || 0;
   const realIsOnTrack = useTelemetryValue<boolean>('IsOnTrack') ?? false;
+  const onPitRoad = useTelemetryValue<boolean>('OnPitRoad') ?? false;
+  const sessionState = useTelemetryValue('SessionState');
+  const sessionFlags = useTelemetryValue('SessionFlags');
 
   // Mock Data for Demo Mode
   const [mockStateIndex, setMockStateIndex] = React.useState(0);
@@ -358,18 +361,27 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
     return normalizeNode(workingTree);
   }, [settings]);
 
-  // Snapshot for Consumption Grid (updates only on lap change)
-  // We restore this to keep AVG/MAX/LAST rows static during the lap, as requested.
   const [frozenFuelData, setFrozenFuelData] = React.useState(fuelData);
+  const prevOnPitRoadRef = React.useRef(onPitRoad);
+  const fuelDataRef = React.useRef(fuelData);
+
+  // Keep ref updated
+  React.useEffect(() => {
+    fuelDataRef.current = fuelData;
+  }, [fuelData]);
 
   React.useEffect(() => {
     if (!fuelData) return;
 
-    // Initialize if empty
     if (!frozenFuelData) {
       setFrozenFuelData(fuelData);
       return;
     }
+
+    // Stop updates if race is over (State >= 6 is CoolDown/Results)
+    // 0x0004 is Checkered Flag
+    const isRaceOver = (sessionState && sessionState >= 6) || (sessionFlags && (sessionFlags & 0x0004));
+    if (isRaceOver) return;
 
     const currentTelemetryLap = fuelData.currentLap;
     const frozenLap = frozenFuelData.currentLap;
@@ -400,7 +412,18 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
         setFrozenFuelData(fuelData);
       }
     }
-  }, [fuelData, frozenFuelData, storeLastLap]);
+
+    // Check for Pit Exit (update after 2 seconds to allow data to stabilize)
+    const isPitExit = prevOnPitRoadRef.current && !onPitRoad;
+    if (isPitExit) {
+      setTimeout(() => {
+        if (fuelDataRef.current) {
+          setFrozenFuelData(fuelDataRef.current);
+        }
+      }, 3000);
+    }
+    prevOnPitRoadRef.current = onPitRoad;
+  }, [fuelData, frozenFuelData, storeLastLap, onPitRoad]);
 
   // Throttled Predictive Usage (to update Grid 'CURR' row periodically without jitter)
   const [predictiveUsage, setPredictiveUsage] = React.useState(0);
@@ -422,8 +445,12 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
       const randomDelay = Math.floor(Math.random() * (6000 - 2000 + 1)) + 2000;
 
       timeoutId = setTimeout(() => {
-        setPredictiveUsage(latestUsageRef.current);
-        scheduleNextUpdate();
+        // Stop if race is over
+        const isRaceOver = (sessionState && sessionState >= 6) || (sessionFlags && (sessionFlags & 0x0004));
+        if (!isRaceOver) {
+             setPredictiveUsage(latestUsageRef.current);
+             scheduleNextUpdate();
+        }
       }, randomDelay);
     };
 
@@ -431,7 +458,7 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
     scheduleNextUpdate();
 
     return () => clearTimeout(timeoutId);
-  }, []);
+  }, [sessionState, sessionFlags]);
 
   // Frozen Display Data (for Grid)
   // Uses the frozen fuel level from the snapshot, NOT the live fuel level

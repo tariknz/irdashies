@@ -37,6 +37,7 @@ export const FuelCalculatorConsumptionGrid: React.FC<
   // Check if we are in a testing/practice session
   // We need the current SessionNum to look up the SessionType in the SessionInfo array
   const sessionNum = useTelemetryValue('SessionNum');
+  const sessionFlags = useTelemetryValue('SessionFlags');
 
   const sessionType = useStore(
     useSessionStore,
@@ -84,7 +85,14 @@ export const FuelCalculatorConsumptionGrid: React.FC<
   const lapsRemainingToUse = displayData?.lapsRemaining || 0;
   const currentLap = displayData?.currentLap || 0;
   const fuelLevelToUse = displayData?.fuelLevel ?? 0;
-  const effectiveTotalLaps = Math.max(totalRaceLaps, currentLap);
+  // Check for White (0x0002) or Checkered (0x0004) flag
+  const isFinalLapOrFinished = sessionFlags && ((sessionFlags & 0x0002) || (sessionFlags & 0x0004));
+
+  // If final lap/finished, we clamp the total race laps to the current lap (so it shows X / X)
+  let effectiveTotalLaps = Math.max(totalRaceLaps, currentLap);
+  if (isFinalLapOrFinished) {
+      effectiveTotalLaps = currentLap;
+  }
   
   // Grid Data (Frozen Values from Parent)
   const avg = displayData?.avgLaps || displayData?.avg10Laps || 0;

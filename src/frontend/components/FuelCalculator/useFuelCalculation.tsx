@@ -133,22 +133,24 @@ export function useFuelCalculation(
       }
     )?.DriverCarName;
 
-    // Check for Track Change (different track = different fuel characteristics)
+    // Check for Track Change (or initial load)
     const trackChanged =
       trackId !== undefined &&
-      storedTrackId !== undefined &&
-      trackId !== storedTrackId;
+      (storedTrackId === undefined || trackId !== storedTrackId);
 
     // Check for Car Change (drivers can switch cars in some sessions/replays)
     const carChanged =
-      currentCarName && storedCarName && currentCarName !== storedCarName;
+      currentCarName !== undefined &&
+      (storedCarName === undefined || currentCarName !== storedCarName);
 
     if (trackChanged || carChanged) {
       if (DEBUG_LOGGING)
         console.log(
-          `[FuelCalculator] Context changed (Track: ${storedTrackId}->${trackId}, Car: ${storedCarName}->${currentCarName}), clearing all fuel data`
+          `[FuelCalculator] Context changed (Track: ${storedTrackId}->${trackId}, Car: ${storedCarName}->${currentCarName}), loading fuel data`
         );
-      clearAllData();
+      if (storedTrackId !== undefined && storedCarName !== undefined) {
+          clearAllData();
+      }
       setQualifyConsumption(null); // Explicitly clear/reset qualify consumption on track/car change so we don't use invalid data
 
       // Load historical data from JSON storage
