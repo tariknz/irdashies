@@ -2,7 +2,7 @@ import { useRef, useCallback } from 'react';
 
 /** The interval step used for normalizing track percentage keys. */
 export const REFERENCE_INTERVAL = 0.0025;
-const DECIMAL_PLACES = 4;
+const DECIMAL_PLACES = REFERENCE_INTERVAL.toString().split('.')[1]?.length || 0;
 
 /** Represents a single telemetry sample recorded at a specific distance around the track.
  * Used for interpolating time gaps between cars at different positions. */
@@ -143,7 +143,7 @@ export const useReferenceRegistry = () => {
 
       // 3. Data Collection
       // Always update lastTrackPct so we detect the wrap accurately next frame
-      refLap.lastTrackedPct = trackPct;
+      // refLap.lastTrackedPct = trackPct;
 
       // Only add point if this specific 0.25% bucket is empty
       const lastRefPoint = refLap.refPoints.get(key);

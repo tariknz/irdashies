@@ -12,6 +12,66 @@ import {
   ReferenceLap,
   useReferenceRegistry,
 } from './useReferenceRegistry';
+import { Standings } from '../createStandings';
+
+const FALLBACK_LAPTIME = 90;
+// Helper to grab clean numbers (prevents null/undefined mess)
+function getStats(estTime: number, driver: Standings | undefined) {
+  const stats = {
+    estTime,
+    classEstTime: driver?.carClass.estLapTime ?? FALLBACK_LAPTIME,
+  };
+
+  return stats;
+}
+
+/**
+ * Calculates the time gap between two cars using class-normalized estimated times.
+ *
+ * logic:
+ * The Reference Ruler is ALWAYS the car physically BEHIND.
+ * We scale the car AHEAD to match the class performance of the car BEHIND.
+ *
+ * @param carAhead - Stats for the car physically further along the track (0.9 vs 0.1).
+ * @param carBehind - Stats for the car physically earlier on the track.
+ * @param isTargetAhead - TRUE if we want the gap TO the car ahead (Positive), FALSE if TO the car behind (Negative).
+ */
+const calculateClassEstimatedGap = (
+  carAhead: { estTime: number; classEstTime: number },
+  carBehind: { estTime: number; classEstTime: number },
+  isTargetAhead: boolean
+): number => {
+  // 1. Normalize: Scale the 'Ahead' car's time into 'Behind' car's units
+  // Ratio > 1.0 means Behind is Slower (GT3 chasing GTP) -> Gap gets larger
+  // Ratio < 1.0 means Behind is Faster (GTP chasing GT3) -> Gap gets smaller
+  const scalingRatio = carBehind.classEstTime / carAhead.classEstTime;
+  const aheadTimeScaled = carAhead.estTime * scalingRatio;
+
+  const referenceLapTime = carBehind.classEstTime;
+  let delta = 0;
+
+  if (isTargetAhead) {
+    // Scenario: We want the gap TO the car Ahead (Expected: Positive)
+    // Formula: (Ahead) - (Behind)
+    delta = aheadTimeScaled - carBehind.estTime;
+
+    // Wrap Check: If delta is huge negative (e.g. -100s), Ahead actually lapped Behind
+    if (delta < -referenceLapTime / 2) {
+      delta += referenceLapTime;
+    }
+  } else {
+    // Scenario: We want the gap TO the car Behind (Expected: Negative)
+    // Formula: (Behind) - (Ahead)
+    delta = carBehind.estTime - aheadTimeScaled;
+
+    // Wrap Check: If delta is huge positive (e.g. +100s), Behind actually lapped Ahead
+    if (delta > referenceLapTime / 2) {
+      delta -= referenceLapTime;
+    }
+  }
+
+  return delta;
+};
 
 function getTimeAtPosition(refLap: ReferenceLap, trackPct: number) {
   const prevPosKey = normalizeKey(trackPct);
@@ -38,6 +98,41 @@ function getTimeAtPosition(refLap: ReferenceLap, trackPct: number) {
   return prevPosRef.timeElapsedSinceStart + fraction * timeDiff;
 }
 
+function calculateReferenceDelta(
+  referenceLap: ReferenceLap,
+  opponentTrackPct: number,
+  playerTrackPct: number
+): number {
+  const timeFocus = getTimeAtPosition(referenceLap, playerTrackPct);
+  const timeOther = getTimeAtPosition(referenceLap, opponentTrackPct);
+
+  let calculatedDelta = timeOther - timeFocus;
+  const lapTime = referenceLap.finishTime - referenceLap.startTime;
+
+  if (calculatedDelta <= -lapTime / 2) {
+    calculatedDelta += lapTime;
+  } else if (calculatedDelta >= lapTime / 2) {
+    calculatedDelta -= lapTime;
+  }
+
+  return calculatedDelta;
+}
+
+const calculateRelativeDist = (focusDistPct: number, otherDistPct: number) => {
+  if (focusDistPct === undefined || otherDistPct === undefined) {
+    return NaN;
+  }
+
+  const relativePct = otherDistPct - focusDistPct;
+
+  if (relativePct > 0.5) {
+    return relativePct - 1.0;
+  } else if (relativePct < -0.5) {
+    return relativePct + 1.0;
+  }
+
+  return relativePct;
+};
 export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
   const drivers = useDriverStandings();
   const carIdxLapDistPct = useTelemetryValues('CarIdxLapDistPct');
@@ -57,25 +152,6 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
     [drivers]
   );
 
-  const calculateRelativeDist = useCallback(
-    (focusDistPct: number, otherDistPct: number) => {
-      if (focusDistPct === undefined || otherDistPct === undefined) {
-        return NaN;
-      }
-
-      const relativePct = otherDistPct - focusDistPct;
-
-      if (relativePct > 0.5) {
-        return relativePct - 1.0;
-      } else if (relativePct < -0.5) {
-        return relativePct + 1.0;
-      }
-
-      return relativePct;
-    },
-    []
-  );
-
   const calculateRelativePct = useCallback(
     (carIdx: number) => {
       if (focusCarIdx === undefined) {
@@ -87,7 +163,7 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
 
       return calculateRelativeDist(playerDistPct, otherDistPct);
     },
-    [focusCarIdx, carIdxLapDistPct, calculateRelativeDist]
+    [focusCarIdx, carIdxLapDistPct]
   );
 
   const calculateDelta = useCallback(
@@ -104,92 +180,62 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
       const isOnPitRoadFocus = carIdxIsOnPitRoad[focusIdx];
       const isOnPitRoadOther = carIdxIsOnPitRoad[otherCarIdx];
 
-      const focusCarTrckPct = carIdxLapDistPct[focusIdx];
-      const otherCarTrckPct = carIdxLapDistPct[otherCarIdx];
+      const focusTrckPct = carIdxLapDistPct[focusIdx];
+      const otherTrckPct = carIdxLapDistPct[otherCarIdx];
 
       let calculatedDelta = 0;
-      const relativeDistPct = calculateRelativeDist(
-        focusCarTrckPct,
-        otherCarTrckPct
-      );
+      const relativeDistPct = calculateRelativeDist(focusTrckPct, otherTrckPct);
+      const isTargetAhead = relativeDistPct > 0 && relativeDistPct <= 0.5;
 
-      // NOTE: focus is behind
-      if (relativeDistPct > 0 && relativeDistPct <= 0.5) {
-        const focusCarLap = getReferenceLap(focusIdx);
+      if (isTargetAhead) {
+        const focusLap = getReferenceLap(focusIdx);
 
-        // TODO: check if crossing finish line while other car is in pits before finish line is a problem
-        // FIX: opponent sitting in pit lane calculation
-        if (
-          isOnPitRoadFocus ||
-          isOnPitRoadOther ||
-          focusCarLap.finishTime <= 0
-        ) {
-          const estTimeFocus = carIdxEstTime[focusIdx];
-          const estTimeOther = carIdxEstTime[otherCarIdx];
-          if (focusDriver?.carClass.id !== otherDriver?.carClass.id) {
-            const focusClassEstTime = focusDriver?.carClass.estLapTime ?? 1;
-            const otherClassEstTime = otherDriver?.carClass.estLapTime ?? 1;
+        const hasNoDataOrIsPit =
+          isOnPitRoadFocus || isOnPitRoadOther || focusLap.finishTime <= 0;
 
-            const estTimeScaled = Math.max(
-              estTimeOther * (focusClassEstTime / otherClassEstTime),
-              estTimeOther
-            );
+        if (hasNoDataOrIsPit) {
+          const focusEstTime = carIdxEstTime[focusIdx];
+          const otherEstTime = carIdxEstTime[otherCarIdx];
 
-            calculatedDelta = estTimeScaled - estTimeFocus;
-          } else {
-            calculatedDelta = estTimeOther - estTimeFocus;
-          }
+          calculatedDelta = calculateClassEstimatedGap(
+            getStats(otherEstTime, otherDriver), // Ahead
+            getStats(focusEstTime, focusDriver), // Behind
+            isTargetAhead
+          );
         } else {
-          const timeFocus = getTimeAtPosition(focusCarLap, focusCarTrckPct);
-          const timeOther = getTimeAtPosition(focusCarLap, otherCarTrckPct);
-
-          calculatedDelta = timeOther - timeFocus;
-          const lapTime = focusCarLap.finishTime - focusCarLap.startTime;
-
-          if (calculatedDelta < -lapTime / 2) {
-            calculatedDelta += lapTime;
-          }
+          calculatedDelta = calculateReferenceDelta(
+            focusLap,
+            otherTrckPct,
+            focusTrckPct
+          );
         }
       } else {
-        const otherCarLap = getReferenceLap(otherCarIdx);
+        const otherLap = getReferenceLap(otherCarIdx);
 
-        if (
-          isOnPitRoadFocus ||
-          isOnPitRoadOther ||
-          otherCarLap.finishTime <= 0
-        ) {
-          const estTimeFocus = carIdxEstTime[focusIdx];
-          const estTimeOther = carIdxEstTime[otherCarIdx];
-          if (focusDriver?.carClass.id !== otherDriver?.carClass.id) {
-            const focusClassEstTime = focusDriver?.carClass.estLapTime ?? 1;
-            const otherClassEstTime = otherDriver?.carClass.estLapTime ?? 1;
+        const hasNoDataOrIsPit =
+          isOnPitRoadFocus || isOnPitRoadOther || otherLap.finishTime <= 0;
 
-            const estTimeScaled = Math.min(
-              estTimeFocus * (otherClassEstTime / focusClassEstTime),
-              estTimeFocus
-            );
+        if (hasNoDataOrIsPit) {
+          const focusEstTime = carIdxEstTime[focusIdx];
+          const otherEstTime = carIdxEstTime[otherCarIdx];
 
-            calculatedDelta = estTimeFocus - estTimeScaled;
-          } else {
-            calculatedDelta = estTimeOther - estTimeFocus;
-          }
+          calculatedDelta = calculateClassEstimatedGap(
+            getStats(focusEstTime, focusDriver), // Ahead
+            getStats(otherEstTime, otherDriver), // Behind
+            isTargetAhead
+          );
         } else {
-          const timeFocus = getTimeAtPosition(otherCarLap, focusCarTrckPct);
-          const timeOther = getTimeAtPosition(otherCarLap, otherCarTrckPct);
-          calculatedDelta = timeOther - timeFocus;
-
-          const lapTime = otherCarLap.finishTime - otherCarLap.startTime;
-
-          if (calculatedDelta > lapTime / 2) {
-            calculatedDelta -= lapTime;
-          }
+          calculatedDelta = calculateReferenceDelta(
+            otherLap,
+            otherTrckPct,
+            focusTrckPct
+          );
         }
       }
 
       return calculatedDelta;
     },
     [
-      calculateRelativeDist,
       carIdxEstTime,
       carIdxIsOnPitRoad,
       carIdxLapDistPct,
