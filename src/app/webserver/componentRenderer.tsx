@@ -513,10 +513,11 @@ export async function renderComponent(
   containerElement: HTMLElement,
   componentName: string,
   config: Record<string, any>,
-  wsUrl: string
+  wsUrl: string,
+  layoutDimensions?: { width: number; height: number } | null
 ): Promise<void> {
   try {
-    debugLog('renderComponent called with:', { componentName, wsUrl });
+    debugLog('renderComponent called with:', { componentName, wsUrl, layoutDimensions });
 
     await initializeMockStores();
 
@@ -536,6 +537,9 @@ export async function renderComponent(
         `Component not found: ${componentName}. Available: ${Object.keys(WIDGET_MAP).join(', ')}`
       );
     }
+
+    // Import OverlaySizeWrapper to apply size constraints
+    const { OverlaySizeWrapper } = await import('../../frontend/components/OverlaySizeWrapper/OverlaySizeWrapper');
 
     const ThemeWrapper = () => {
       const { currentDashboard } = useDashboard();
@@ -570,12 +574,21 @@ export async function renderComponent(
       return <ComponentFn {...config} />;
     };
 
+    // Wrap component with OverlaySizeWrapper if layout dimensions are provided
+    const ComponentWithLayout = layoutDimensions ? (
+      <OverlaySizeWrapper layout={layoutDimensions}>
+        <ThemeWrapper />
+      </OverlaySizeWrapper>
+    ) : (
+      <ThemeWrapper />
+    );
+
     const WrappedComponent = (
       <DashboardProvider bridge={bridge as any}>
         <RunningStateProvider bridge={bridge as any}>
           <SessionProvider bridge={bridge as any} />
           <TelemetryProvider bridge={bridge as any} />
-          <ThemeWrapper />
+          {ComponentWithLayout}
         </RunningStateProvider>
       </DashboardProvider>
     );

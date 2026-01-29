@@ -176,11 +176,15 @@ export async function startComponentServer(irsdkBridge?: IrSdkBridge, dashboardB
       const wsUrl = 'http://localhost:3000';
       const normalizedName = componentName.toLowerCase();
       let finalConfig = {};
+      let layout = null;
       
       if (currentDashboard) {
         const widget = currentDashboard.widgets?.find((w) => w.id.toLowerCase() === normalizedName);
         if (widget?.config) {
           finalConfig = widget.config;
+        }
+        if (widget?.layout) {
+          layout = widget.layout;
         }
       }
       
@@ -196,13 +200,23 @@ export async function startComponentServer(irsdkBridge?: IrSdkBridge, dashboardB
         }
       }
 
+      // Build URL params including layout dimensions
+      const urlParams = new URLSearchParams();
+      urlParams.append('component', componentName);
+      urlParams.append('wsUrl', wsUrl);
+      urlParams.append('configId', configId);
+      if (layout) {
+        urlParams.append('layoutWidth', layout.width.toString());
+        urlParams.append('layoutHeight', layout.height.toString());
+      }
+
       let componentRendererUrl: string;
       
       if (isDev) {
         const vitePort = process.env.VITE_PORT || '5173';
-        componentRendererUrl = `http://localhost:${vitePort}/index-component-renderer.html?component=${encodeURIComponent(componentName)}&wsUrl=${encodeURIComponent(wsUrl)}&configId=${configId}`;
+        componentRendererUrl = `http://localhost:${vitePort}/index-component-renderer.html?${urlParams.toString()}`;
       } else {
-        componentRendererUrl = `http://localhost:${COMPONENT_PORT}/index-component-renderer.html?component=${encodeURIComponent(componentName)}&wsUrl=${encodeURIComponent(wsUrl)}&configId=${configId}`;
+        componentRendererUrl = `http://localhost:${COMPONENT_PORT}/index-component-renderer.html?${urlParams.toString()}`;
       }
 
       const escapedName = componentName.replace(/[<>&"']/g, '');

@@ -16,6 +16,13 @@ const wsUrl = params.get('wsUrl') || 'http://localhost:3000';
 const configId = params.get('configId');
 const isDebugMode = params.get('debug') === 'true';
 
+// Extract layout dimensions if provided
+const layoutWidth = params.get('layoutWidth');
+const layoutHeight = params.get('layoutHeight');
+const layoutDimensions = (layoutWidth && layoutHeight) 
+  ? { width: parseInt(layoutWidth, 10), height: parseInt(layoutHeight, 10) }
+  : null;
+
 // Make debug flag globally available
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 (window as any).__DEBUG_MODE__ = isDebugMode;
@@ -49,6 +56,9 @@ if (isDebugMode) {
   console.log(`  Component: ${componentName}`);
   console.log(`  WebSocket URL: ${wsUrl}`);
   console.log(`  Config:`, config);
+  if (layoutDimensions) {
+    console.log(`  Layout: ${layoutDimensions.width}x${layoutDimensions.height}px`);
+  }
 }
 
 // Check if WebSocket is available
@@ -106,7 +116,7 @@ rootElement.innerHTML = `
 // Render the component (wait for config to be fetched first)
 if (componentName) {
   configPromise.then(() => {
-    renderComponent(rootElement, componentName, config, wsUrl)
+    renderComponent(rootElement, componentName, config, wsUrl, layoutDimensions)
       .then(() => {
         if (isDebugMode) {
           console.log('Component rendered successfully');

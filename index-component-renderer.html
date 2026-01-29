@@ -42,6 +42,11 @@
       left: 0;
     }
 
+    /* 
+     * Root container will be constrained by OverlaySizeWrapper component.
+     * This ensures it respects the size set in "Edit Layout (F6)" mode.
+     * Without this, the overlay would expand to fill available space.
+     */
     #root {
       width: 100%;
       height: 100%;
@@ -64,3 +69,4 @@
   <script type="module" src="./src/component-renderer-entry.ts"></script>
 </body>
 </html>
+
