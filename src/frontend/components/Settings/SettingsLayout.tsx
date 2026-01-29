@@ -35,8 +35,7 @@ export const SettingsLayout = () => {
   };
 
   const menuItemClass = (path: string) =>
-    `block w-full p-2 rounded cursor-pointer ${
-      isActive(path) ? 'bg-slate-700' : 'hover:bg-slate-700'
+    `block w-full p-2 rounded cursor-pointer ${isActive(path) ? 'bg-slate-700' : 'hover:bg-slate-700'
     }`;
 
   const handleToggleLock = async () => {
@@ -133,6 +132,7 @@ export const SettingsLayout = () => {
                 Fuel Calculator
               </Link>
             </li>
+
             <li>
               <Link
                 to="/settings/garagecover"

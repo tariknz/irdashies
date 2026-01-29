@@ -7,25 +7,25 @@ import { useEffect, useMemo, useRef } from 'react';
 import {
   useSessionLaps,
   useSessionStore,
-  useTelemetry,
   useTelemetryValue,
 } from '@irdashies/context';
 import { useStore } from 'zustand';
 import { useFuelStore, selectLapHistorySize } from './FuelStore';
-import type { FuelCalculation, FuelLapData } from './types';
+import { FuelLapData } from '@irdashies/types';
+import type {
+  FuelCalculation,
+  FuelCalculatorSettings,
+} from './types';
 import {
   validateLapData,
-  calculateWeightedAverage,
+  calculateSimpleAverage,
   calculateAvgLapTime,
   findFuelMinMax,
-  findFirstLapNumber,
-  getFullRacingLaps,
   getGreenFlagLaps,
   detectLapCrossing,
   isGreenFlag,
   isFinalLap,
   isCheckeredFlag,
-  calculateConfidence,
 } from './fuelCalculations';
 
 /** Enable debug logging (set to true for testing/troubleshooting) */
@@ -41,7 +41,8 @@ const DEFAULT_TANK_CAPACITY = 60;
 const MAX_REASONABLE_LAPS = 10000;
 
 export function useFuelCalculation(
-  safetyMargin = 0.05
+  safetyMargin = 0.3,
+  settings?: FuelCalculatorSettings
 ): FuelCalculation | null {
   const fuelLevel = useTelemetryValue('FuelLevel');
   const fuelLevelPct = useTelemetryValue('FuelLevelPct');
@@ -57,9 +58,7 @@ export function useFuelCalculation(
   const sessionLaps = useSessionLaps(sessionNum);
   const onPitRoad = useTelemetryValue('OnPitRoad');
 
-  // Get race leader's lap for multi-class racing
-  const carIdxLap = useTelemetry('CarIdxLap');
-  const carIdxPosition = useTelemetry('CarIdxPosition');
+
 
   // Get fuel tank capacity from DriverInfo
   const driverCarFuelMaxLtr = useStore(
@@ -91,34 +90,28 @@ export function useFuelCalculation(
   const addLapData = useFuelStore((state) => state.addLapData);
   const updateLapCrossing = useFuelStore((state) => state.updateLapCrossing);
   const updateLapDistPct = useFuelStore((state) => state.updateLapDistPct);
+  const setContextInfo = useFuelStore((state) => state.setContextInfo);
+  const storedTrackId = useFuelStore((state) => state.trackId);
+  const storedCarName = useFuelStore((state) => state.carName);
+
+  // Persistent qualify store
+  const qualifyConsumption = useFuelStore((state) => state.qualifyConsumption);
+  const setQualifyConsumption = useFuelStore(
+    (state) => state.setQualifyConsumption
+  );
+
+  // Subscribe to lapStartFuel to calculate live usage
+  const lapStartFuel = useFuelStore((state) => state.lapStartFuel);
 
   // Subscribe to lap history size to trigger recalculation when laps are added
   // More efficient than subscribing to entire Map
   const lapHistorySize = useFuelStore(selectLapHistorySize);
 
-  // Cache leader position lookup to avoid recalculating on every telemetry tick
-  const leaderLapRef = useRef<number | undefined>(undefined);
+  // Refs for smoothing projected lap usage
+  const smoothedProjectedUsageRef = useRef<number>(0);
+  const lastSmoothedLapRef = useRef<number>(-1);
 
-  // Update leader lap only when position data changes meaningfully
-  useEffect(() => {
-    if (!carIdxPosition?.value || !carIdxLap?.value) {
-      leaderLapRef.current = undefined;
-      return;
-    }
 
-    const positions = carIdxPosition.value;
-    const laps = carIdxLap.value;
-
-    // Find leader (position 1)
-    for (let i = 0; i < positions.length; i++) {
-      if (positions[i] === 1) {
-        leaderLapRef.current = laps[i];
-        return;
-      }
-    }
-
-    leaderLapRef.current = undefined;
-  }, [carIdxPosition?.value, carIdxLap?.value]);
 
   // Track current session number (preserves data across session changes)
   useEffect(() => {
@@ -129,28 +122,102 @@ export function useFuelCalculation(
 
   // Clear fuel data when session ends or track changes
   // Track the last known track ID to detect changes
-  const lastTrackIdRef = useRef<number | undefined>(undefined);
 
   useEffect(() => {
-    // Clear data if session ends (SessionState.Invalid = 0)
-    if (sessionState === 0) {
-      if (DEBUG_LOGGING) console.log('[FuelCalculator] Session ended (SessionState=0), clearing all fuel data');
+    // We NO LONGER clear data on sessionState === 0.
+    // This allows data to persist across session transitions (Practice -> Qualify -> Race).
+
+    const currentCarName = (
+      useSessionStore.getState().session?.DriverInfo as {
+        DriverCarName?: string;
+      }
+    )?.DriverCarName;
+
+    // Check for Track Change (different track = different fuel characteristics)
+    const trackChanged =
+      trackId !== undefined &&
+      storedTrackId !== undefined &&
+      trackId !== storedTrackId;
+
+    // Check for Car Change (drivers can switch cars in some sessions/replays)
+    const carChanged =
+      currentCarName && storedCarName && currentCarName !== storedCarName;
+
+    if (trackChanged || carChanged) {
+      if (DEBUG_LOGGING)
+        console.log(
+          `[FuelCalculator] Context changed (Track: ${storedTrackId}->${trackId}, Car: ${storedCarName}->${currentCarName}), clearing all fuel data`
+        );
       clearAllData();
-      lastTrackIdRef.current = undefined;
-      return;
+      setQualifyConsumption(null); // Explicitly clear/reset qualify consumption on track/car change so we don't use invalid data
+
+      // Load historical data from JSON storage
+      if (trackId !== undefined && currentCarName !== undefined && (settings?.enableStorage ?? true)) {
+        // Load lap history
+        window.fuelCalculatorBridge
+          .getHistoricalLaps(trackId, currentCarName)
+          .then((laps) => {
+            if (laps.length > 0) {
+              if (DEBUG_LOGGING)
+                console.log(
+                  `[FuelCalculator] Loaded ${laps.length} historical laps from DB`
+                );
+              useFuelStore.getState().setLapHistory(laps);
+            }
+          });
+
+        // Load qualify max
+        window.fuelCalculatorBridge
+          .getQualifyMax(trackId, currentCarName)
+          .then((val) => {
+            if (val !== null) {
+              if (DEBUG_LOGGING)
+                console.log(`[FuelCalculator] Loaded QualifyMax (${val}) from DB`);
+              setQualifyConsumption(val);
+            }
+          });
+      }
     }
 
-    // Clear data if track changes (new session at different track)
-    if (trackId !== undefined && lastTrackIdRef.current !== undefined && trackId !== lastTrackIdRef.current) {
-      if (DEBUG_LOGGING) console.log(`[FuelCalculator] Track changed (${lastTrackIdRef.current} -> ${trackId}), clearing all fuel data`);
-      clearAllData();
+    // Always update context info to be current
+    if (trackId !== undefined || currentCarName !== undefined) {
+      // Only update if changed to avoid loop
+      if (trackId !== storedTrackId || currentCarName !== storedCarName) {
+        setContextInfo(trackId, currentCarName);
+      }
     }
+  }, [
+    sessionState,
+    trackId,
+    storedTrackId,
+    storedCarName,
+    clearAllData,
+    setContextInfo,
+    setQualifyConsumption,
+    settings?.enableStorage,
+  ]);
 
-    // Update the last known track ID
-    if (trackId !== undefined) {
-      lastTrackIdRef.current = trackId;
+  // Update session flags state to avoid setState during render
+  const lastSessionFlagsRef = useRef<number | undefined>(undefined);
+  useEffect(() => {
+    if (
+      sessionFlags !== undefined &&
+      lastSessionFlagsRef.current !== sessionFlags
+    ) {
+      useFuelStore.setState({ lastSessionFlags: sessionFlags });
+      lastSessionFlagsRef.current = sessionFlags;
     }
-  }, [sessionState, trackId, clearAllData]);
+  }, [sessionFlags]);
+
+  const playerCarTowTime = useTelemetryValue('PlayerCarTowTime');
+  const wasTowedDuringLapRef = useRef(false);
+
+  // Monitor tow time to detect incidents
+  useEffect(() => {
+    if (playerCarTowTime !== undefined && playerCarTowTime > 0) {
+      wasTowedDuringLapRef.current = true;
+    }
+  }, [playerCarTowTime]);
 
   // Detect lap crossings and process fuel data
   useEffect(() => {
@@ -167,8 +234,27 @@ export function useFuelCalculation(
     const state = useFuelStore.getState();
 
     // Detect lap crossing - when lap distance goes from >0.9 to <0.1
-    if (detectLapCrossing(lapDistPct, state.lastLapDistPct)) {
-      const completedLap = lap - 1;
+    // OR when the lap counter increments (to handle telemetry lag where distance might jump)
+    // Use state.lastLapDistPct which tracks the distance from the previous update
+    const distCrossing = detectLapCrossing(lapDistPct, state.lastLapDistPct);
+    const lapIncremented = lap > state.lastLap;
+
+    // Only treat lap increment as crossing if it's a 1-lap increment (avoid resets/towing jumps for now, or handle separately)
+    // Actually, if we tow, we usually want to reset or invalidate.
+    // For now, robustly accept 1-lap forward.
+    const isCrossing =
+      distCrossing || (lapIncremented && lap - state.lastLap === 1);
+
+    if (isCrossing) {
+      // Robustly determine completed lap number
+      // If we detected via integer increment, then 'lap' is the NEW lap.
+      // If via distance, 'lap' might still be OLD lap or NEW lap depending on telemetry phase.
+      // But usually 'lap' updates at crossing.
+
+      // If lapIncremented is true, we definitely finished 'state.lastLap'.
+      // If distCrossing is true, we finished 'state.lastLap'.
+      const completedLap = state.lastLap;
+
       const fuelUsed = state.lapStartFuel - fuelLevel;
       const lapTime = sessionTime - state.lapCrossingTime;
 
@@ -178,11 +264,15 @@ export function useFuelCalculation(
         );
       }
 
-      // Skip lap 0 and lap 1 (standing/rolling start laps are too short and unreliable)
-      // Validate and store lap data only from lap 2 onwards
-      if (completedLap >= 2 && fuelUsed > 0 && lapTime > 0) {
+      // Record lap data
+      // Only record Lap 1 onwards (exclude Lap 0/Start laps)
+      if (completedLap >= 1 && fuelUsed > 0 && lapTime > 0) {
+        // Validation logic...
         const recentLaps = state.getRecentLaps(10);
-        const isValid = validateLapData(fuelUsed, lapTime, recentLaps);
+        // A lap is invalid if a tow occurred OR if it fails statistical outlier detection
+        const isOutlier = !validateLapData(fuelUsed, lapTime, recentLaps);
+        const wasTowed = wasTowedDuringLapRef.current;
+        const isValid = !wasTowed && !isOutlier;
 
         const lapData: FuelLapData = {
           lapNumber: completedLap,
@@ -191,24 +281,41 @@ export function useFuelCalculation(
           isGreenFlag: isGreenFlag(sessionFlags),
           isValidForCalc: isValid,
           isOutLap: state.wasOnPitRoad, // Mark if lap started from pit road
+          wasTowed,
           timestamp: Date.now(),
         };
 
-        if (DEBUG_LOGGING) {
+        if (DEBUG_LOGGING || wasTowed) {
           console.log(
-            `[FuelCalculator]   -> Valid: ${lapData.isValidForCalc}, Green: ${lapData.isGreenFlag}, OutLap: ${lapData.isOutLap}`
+            `[FuelCalculator]   -> Valid: ${lapData.isValidForCalc}, Green: ${lapData.isGreenFlag}, OutLap: ${lapData.isOutLap}, Towed: ${wasTowed}, Outlier: ${isOutlier}`
           );
         }
 
         addLapData(lapData);
+
+        // Save to JSON storage for persistence
+        if (storedTrackId !== undefined && storedCarName !== undefined && (settings?.enableStorage ?? true)) {
+          window.fuelCalculatorBridge.saveLap(
+            storedTrackId,
+            storedCarName,
+            lapData
+          );
+        }
       }
 
+      // Reset tow flag for the new lap
+      wasTowedDuringLapRef.current = false;
+
       // Now update lap crossing state for the NEW lap
+      // Ensure we increment to the next lap correctly
+      // taking the max of 'lap' (telemetry) and 'completedLap + 1' ensures we sync
+      const nextLap = Math.max(lap, completedLap + 1);
+
       updateLapCrossing(
         lapDistPct,
         fuelLevel,
         sessionTime,
-        lap,
+        nextLap,
         onPitRoad === 1
       );
     } else if (state.lastLapDistPct === 0) {
@@ -233,13 +340,112 @@ export function useFuelCalculation(
     lap,
     sessionFlags,
     onPitRoad,
+    playerCarTowTime,
     addLapData,
     updateLapCrossing,
     updateLapDistPct,
   ]);
 
+  // Track Max Qualifying Consumption
+  useEffect(() => {
+    // Only process if we are in a qualifying session
+    const currentSessionType = useSessionStore
+      .getState()
+      .session?.SessionInfo?.Sessions?.find(
+        (s) => s.SessionNum === sessionNum
+      )?.SessionType;
+
+    const isQualifying =
+      currentSessionType && currentSessionType.includes('Qualify');
+
+    if (isQualifying) {
+      const lapHistory = useFuelStore.getState().getLapHistory();
+
+      // Relaxed validation: !wasTowed only.
+      // logic mirrors the main calculation 'lapsToUse' fallback:
+      // Prefer Non-OutLaps, but if ONLY OutLaps exist (early session), use them.
+      const allCandidates = lapHistory.filter((l) => !l.wasTowed);
+      const fullLaps = allCandidates.filter((l) => !l.isOutLap);
+
+      const lapsToUse = fullLaps.length > 0 ? fullLaps : allCandidates;
+
+      // Logic: Favor current session laps for Qualify MAX. Fallback to historical if session is empty.
+      const sessionLaps = allCandidates.filter((l) => !l.isHistorical);
+      const qualifyLapsToUse = sessionLaps.length > 0
+        ? (sessionLaps.filter(l => !l.isOutLap).length > 0 ? sessionLaps.filter(l => !l.isOutLap) : sessionLaps)
+        : lapsToUse;
+
+      if (qualifyLapsToUse.length > 0) {
+        // Find max consumption
+        const maxFuelUsed = Math.max(...qualifyLapsToUse.map((l) => l.fuelUsed));
+
+        // Update persistent store if new max is found or not set
+        // Logic: "overwrite what was saved before" if we have valid data in the current session
+        if (qualifyConsumption === null || maxFuelUsed !== qualifyConsumption) {
+          if (DEBUG_LOGGING)
+            console.log(
+              `[FuelCalculator] Updating Qualify Max: ${qualifyConsumption} -> ${maxFuelUsed}`
+            );
+          setQualifyConsumption(maxFuelUsed);
+
+          // Save to JSON storage
+          if (storedTrackId !== undefined && storedCarName !== undefined && (settings?.enableStorage ?? true)) {
+            window.fuelCalculatorBridge.saveQualifyMax(storedTrackId, storedCarName, maxFuelUsed);
+          }
+        }
+      }
+    }
+  }, [
+    sessionNum,
+    lapHistorySize,
+    qualifyConsumption,
+    setQualifyConsumption,
+    storedTrackId,
+    storedCarName,
+    settings?.enableStorage,
+  ]); // Trigger on lap add or session change
+
   // Calculate fuel metrics
   const calculation = useMemo((): FuelCalculation | null => {
+    // Default fallback object to prevent UI flickering/unmounting
+    const emptyCalculation: FuelCalculation = {
+      fuelLevel: fuelLevel ?? 0,
+      lastLapUsage: 0,
+      currentLapUsage:
+        lapStartFuel > 0 && fuelLevel
+          ? Math.max(0, lapStartFuel - fuelLevel)
+          : 0,
+      avgLaps: 0,
+      avg10Laps: 0,
+      avgAllGreenLaps: 0,
+      minLapUsage: 0,
+      maxLapUsage: 0,
+      lapsWithFuel: 0,
+      lapsRemaining: sessionLapsRemain ?? 0,
+      totalLaps:
+        typeof sessionLaps === 'string'
+          ? parseInt(sessionLaps, 10)
+          : sessionLaps || 0,
+      currentLap: lap ?? 0,
+      fuelToFinish: 0,
+      fuelToAdd: 0,
+      pitWindowOpen: 0,
+      pitWindowClose: 0,
+      canFinish: false,
+      targetConsumption: 0,
+      confidence: 'low',
+      fuelAtFinish: 0,
+      avgLapTime: 0,
+      sessionTimeTotal: sessionTimeTotal ?? 0,
+      stopsRemaining: 0,
+      lapsPerStint: 0,
+      targetScenarios: [],
+      earliestPitLap: undefined,
+      fuelTankCapacity: 60, // Default fallback
+      fuelStatus: 'safe',
+      maxQualify: qualifyConsumption, // Use stored value even if calculation is empty
+    };
+
     if (
       fuelLevel === undefined ||
       fuelLevelPct === undefined ||
@@ -247,7 +453,7 @@ export function useFuelCalculation(
       sessionLapsRemain === undefined ||
       sessionLaps === undefined
     ) {
-      return null;
+      return emptyCalculation;
     }
 
     // Get lap history from store
@@ -255,12 +461,21 @@ export function useFuelCalculation(
 
     // Need at least 1 lap for calculations
     if (lapHistory.length < 1) {
-      return null;
+      // Even if no history, we might want to return current usage if valid
+      // Return the fallback with live usage populated
+      return emptyCalculation;
     }
+
+    // Use lapStartFuel for current lap usage
+    // Default to 0 if negative (refuel) or unset
+    const currentLapUsage =
+      lapStartFuel > 0 ? Math.max(0, lapStartFuel - fuelLevel) : 0;
 
     // Filter valid laps
     const validLaps = lapHistory.filter((l) => l.isValidForCalc);
-    if (validLaps.length === 0) return null;
+    if (validLaps.length === 0) return { ...emptyCalculation, currentLapUsage };
+
+    // ... rest of calculation logic ...
 
     // Get tank capacity - prioritize session data as it now includes tank limit multiplier
     // Falls back to calculation from fuel level if session data unavailable
@@ -268,108 +483,129 @@ export function useFuelCalculation(
       fuelTankCapacityFromSession ??
       (fuelLevelPct > 0 ? fuelLevel / fuelLevelPct : DEFAULT_TANK_CAPACITY);
 
-    // Find first lap number once and reuse
-    const firstLapNumber = findFirstLapNumber(validLaps);
-
-    // Exclude out-laps and first lap (from grid or after reset) for calculations
-    // as they're typically not full racing laps with representative fuel consumption
-    const fullLaps = getFullRacingLaps(validLaps, firstLapNumber);
+    // Exclude out-laps. We no longer blindly exclude firstLapNumber as it might be a valid mid-session lap.
+    // getFullRacingLaps was too aggressive.
+    const fullLaps = validLaps.filter((l) => !l.isOutLap);
 
     // If no full racing laps yet (early in session), use all valid laps as fallback
     const lapsToUse = fullLaps.length > 0 ? fullLaps : validLaps;
 
     // Get different lap groupings from laps to use
     const greenLaps = getGreenFlagLaps(lapsToUse);
-    const last3 = lapsToUse.slice(0, 3);
+    const avgLapsCount = settings?.avgLapsCount || 3;
+    const lastLapsForAvg = lapsToUse.slice(0, avgLapsCount);
     const last10 = lapsToUse.slice(0, 10);
 
-    // Calculate averages
+    // Calculate averages - Use Simple Average for display metrics (matches user expectations)
     const lastLapUsage = lapsToUse[0]?.fuelUsed || 0;
-    const avg3Laps =
-      last3.length > 0 ? calculateWeightedAverage(last3) : lastLapUsage;
+    const avgLaps =
+      lastLapsForAvg.length > 0
+        ? calculateSimpleAverage(lastLapsForAvg)
+        : lastLapUsage;
     const avg10Laps =
-      last10.length > 0 ? calculateWeightedAverage(last10) : avg3Laps;
+      last10.length > 0 ? calculateSimpleAverage(last10) : avgLaps;
     const avgAllGreenLaps =
-      greenLaps.length > 0 ? calculateWeightedAverage(greenLaps) : avg10Laps;
+      greenLaps.length > 0 ? calculateSimpleAverage(greenLaps) : avg10Laps;
 
     // Calculate min and max fuel consumption
-    const { min: minLapUsage, max: maxLapUsage } = findFuelMinMax(lapsToUse);
+    // Fix: Prioritize current session laps for MAX. Fallback to historical only if session is empty.
+    const currentSessionLaps = lapsToUse.filter((l) => !l.isHistorical);
+    const maxSourceLaps = currentSessionLaps.length > 0 ? currentSessionLaps : lapsToUse;
+    const { min: minLapUsage, max: maxLapUsage } = findFuelMinMax(maxSourceLaps);
 
-    // Use 10-lap average as primary metric, fall back to 3-lap if needed
-    const avgFuelPerLap = last10.length >= 5 ? avg10Laps : avg3Laps;
+    // Calculate projected lap usage for current lap (calculated later, but we need it here)
+    // We'll calculate it inline for now
+    let projectedCurrentLap = 0;
+    if (
+      typeof lapDistPct === 'number' &&
+      lapDistPct > 0.05 &&
+      currentLapUsage > 0
+    ) {
+      projectedCurrentLap = currentLapUsage / lapDistPct;
+    } else if (lastLapUsage > 0) {
+      projectedCurrentLap = lastLapUsage;
+    } else {
+      projectedCurrentLap = avg10Laps || 0;
+    }
 
-    // Guard against zero or invalid avgFuelPerLap
-    if (avgFuelPerLap <= 0) {
+    // Use customizable average as primary metric, but include projected current lap
+    // This allows refuel to update LIVE during the lap (like Kapps)
+    let avgFuelPerLapBase = avgLaps; // Base average without current lap projection
+    let avgFuelPerLapForConsumption = avgLaps; // For consumption display (refuel, at finish, laps)
+    
+    // FALLBACK: If no valid laps yet (race start), use qualify or historical data
+    if (avgFuelPerLapBase <= 0) {
+      // Try qualify consumption first
+      if (qualifyConsumption && qualifyConsumption > 0) {
+        avgFuelPerLapBase = qualifyConsumption;
+        avgFuelPerLapForConsumption = qualifyConsumption;
+      }
+      // Then try historical average
+      else if (lapsToUse.length > 0 && lapsToUse[0].isHistorical) {
+        const historicalAvg = calculateSimpleAverage(lapsToUse.slice(0, 5));
+        if (historicalAvg > 0) {
+          avgFuelPerLapBase = historicalAvg;
+          avgFuelPerLapForConsumption = historicalAvg;
+        }
+      }
+    }
+    
+    // If we're mid-lap and have a valid projection, blend it into consumption average
+    if (lapDistPct && lapDistPct > 0.05 && lapDistPct < 0.95 && projectedCurrentLap > 0) {
+      // Include projected current lap in the average for consumption calculations
+      // Weight: treat it as the most recent lap
+      const lapsForAvgWithCurrent = [projectedCurrentLap, ...lastLapsForAvg.map(l => l.fuelUsed)];
+      const limitedLaps = lapsForAvgWithCurrent.slice(0, avgLapsCount);
+      avgFuelPerLapForConsumption = limitedLaps.reduce((sum, val) => sum + val, 0) / limitedLaps.length;
+    }
+
+    // Guard against zero or invalid avgFuelPerLap - only return null if we truly have no data
+    if (avgFuelPerLapBase <= 0) {
       return null;
     }
 
     // Calculate average lap time
     const avgLapTime = calculateAvgLapTime(lapsToUse);
 
-    // Calculate laps possible with current fuel
-    const lapsWithFuel = fuelLevel / avgFuelPerLap;
+    // Calculate laps possible with current fuel - uses CONSUMPTION average (with projection)
+    const lapsWithFuel = avgFuelPerLapForConsumption > 0 ? fuelLevel / avgFuelPerLapForConsumption : 0;
 
-    // Determine laps remaining
-    let lapsRemaining = sessionLapsRemain;
+    // Determine laps remaining - SIMPLIFIED
+    let lapsRemaining = sessionLapsRemain || 0;
     let totalLaps =
       typeof sessionLaps === 'string'
         ? parseInt(sessionLaps, 10)
         : sessionLaps || 0;
 
     // Check for white/checkered flag first - overrides all other calculations
-    // This handles final lap in both timed and lap-based races
     if (sessionFlags !== undefined && isFinalLap(sessionFlags)) {
-      // White/checkered flag = final lap or race complete
-      // Set to 1 lap remaining to show fuel to finish line, ignore any time extensions
+      // Final lap: use remaining distance for precision
+      const remainingDistance = Math.max(0, 1 - (lapDistPct || 0));
+      lapsRemaining = remainingDistance;
+      totalLaps = lap + 1;
 
-      // Only log when flag state changes to avoid spam
-      const state = useFuelStore.getState();
-      const flagChanged = state.lastSessionFlags !== sessionFlags;
-      if (flagChanged) {
+      if (DEBUG_LOGGING) {
+        console.log(
+          `[FuelCalculator] ${isCheckeredFlag(sessionFlags) ? 'Checkered' : 'White'} flag - final lap, remaining: ${lapsRemaining.toFixed(2)}`
+        );
+      }
+    } 
+    // Timed race: estimate from YOUR pace (simple and reliable)
+    else if (sessionLapsRemain === TIMED_RACE_LAPS_REMAINING) {
+      if (sessionTimeRemain !== undefined && sessionTimeRemain > 0 && avgLapTime > 0) {
+        lapsRemaining = Math.ceil(sessionTimeRemain / avgLapTime);
+        totalLaps = lap + lapsRemaining;
+
         if (DEBUG_LOGGING) {
           console.log(
-            `[FuelCalculator] ${isCheckeredFlag(sessionFlags) ? 'Checkered' : 'White'} flag detected - final lap (ignoring sessionTimeRemain: ${sessionTimeRemain}, sessionLapsRemain: ${sessionLapsRemain})`
+            `[FuelCalculator] Timed race: ${sessionTimeRemain.toFixed(0)}s remaining, ` +
+            `avg lap: ${avgLapTime.toFixed(1)}s, estimated laps: ${lapsRemaining}`
           );
         }
-        // Update stored flag state
-        useFuelStore.setState({ lastSessionFlags: sessionFlags });
-      }
-
-      lapsRemaining = 1;
-      totalLaps = lap + 1;
-    } else if (sessionLapsRemain === TIMED_RACE_LAPS_REMAINING) {
-      // Timed race without white flag - estimate from time
-      if (sessionTimeRemain !== undefined && sessionTimeRemain > 0) {
-        const estLapTime =
-          validLaps.reduce((sum, l) => sum + l.lapTime, 0) / validLaps.length;
-        lapsRemaining = Math.ceil(sessionTimeRemain / estLapTime) + 1;
-        totalLaps = lap + lapsRemaining;
       } else {
-        // Can't determine laps remaining for timed race - use best estimate
-        // Assume 1 lap remaining to keep calculator visible
+        // Fallback: assume 1 lap remaining
         lapsRemaining = 1;
         totalLaps = lap + 1;
-      }
-    }
-
-    // For lap-based races, account for race leader in multi-class racing
-    // Use cached leader lap from ref to avoid expensive array search
-    const leaderLap = leaderLapRef.current;
-    if (
-      leaderLap !== undefined &&
-      sessionLapsRemain !== TIMED_RACE_LAPS_REMAINING &&
-      Number.isFinite(totalLaps) &&
-      totalLaps > 0 &&
-      leaderLap > 0
-    ) {
-      // Leader's laps remaining
-      const leaderLapsRemaining = totalLaps - leaderLap;
-      // Guard against negative or unreasonably large values
-      // This can happen with data glitches or when leader position changes
-      if (leaderLapsRemaining > 0 && leaderLapsRemaining < MAX_REASONABLE_LAPS) {
-        // Use the minimum of your laps remaining or leader's laps remaining
-        // This accounts for being lapped - race ends when leader finishes
-        lapsRemaining = Math.min(lapsRemaining, leaderLapsRemaining);
       }
     }
 
@@ -390,7 +626,12 @@ export function useFuelCalculation(
     }
 
     // Calculate fuel needed with safety margin
-    const fuelNeeded = lapsRemaining * avgFuelPerLap * (1 + safetyMargin);
+    // Safety margin is now a fixed amount (L or gal)
+    // If unit is gallons, convert to liters for internal calculation (1 gal = 3.78541 L)
+    const marginAmount =
+      settings?.fuelUnits === 'gal' ? safetyMargin * 3.78541 : safetyMargin;
+
+    const fuelNeeded = lapsRemaining * avgFuelPerLapForConsumption + marginAmount;
     const canFinish = fuelLevel >= fuelNeeded;
 
     // Calculate pit window
@@ -401,10 +642,101 @@ export function useFuelCalculation(
     const targetConsumption = lapsRemaining > 0 ? fuelLevel / lapsRemaining : 0;
 
     // Calculate fuel at finish (current fuel - fuel needed for remaining laps)
-    const fuelAtFinish = fuelLevel - lapsRemaining * avgFuelPerLap;
+    const fuelAtFinish = fuelLevel - lapsRemaining * avgFuelPerLapForConsumption;
 
-    // Calculate confidence
-    const confidence = calculateConfidence(validLaps.length);
+    // ========================================================================
+    // Calculate Confidence and Lap Range (Simplified)
+    // ========================================================================
+    let confidence: 'low' | 'medium' | 'high' = 'low';
+    let lapsRange: [number, number] = [0, 0];
+
+    // Simple confidence based on lap count
+    if (validLaps.length >= 5) {
+      confidence = 'high';
+    } else if (validLaps.length >= 3) {
+      confidence = 'medium';
+    } else {
+      confidence = 'low';
+    }
+
+    // Simple ±1 lap range
+    lapsRange = [
+      Math.max(0, Math.floor(lapsRemaining)),
+      Math.ceil(lapsRemaining) + 1
+    ];
+
+    // Always fuel for the worst case (top of the range)
+
+    // ========================================================================
+    // Calculate Fuel Status (Custom logic for Gauge/Borders)
+    // ========================================================================
+    const statusThresholds = settings?.fuelStatusThresholds || {
+      green: 60,
+      amber: 30,
+      red: 10,
+    };
+    const statusBasis = settings?.fuelStatusBasis || 'avg';
+    const redLapsThreshold = settings?.fuelStatusRedLaps ?? 3;
+
+    let fuelStatus: 'safe' | 'caution' | 'danger' = 'safe';
+
+    // Percentage based thresholds
+    const currentFuelPctValue = (fuelLevelPct ?? 0) * 100;
+    const sessionType = useSessionStore
+      .getState()
+      .session?.SessionInfo?.Sessions?.find(
+        (s) => s.SessionNum === sessionNum
+      )?.SessionType;
+
+    const isQualifyingOrPractice =
+      sessionType &&
+      ['Lone Qualify', 'Open Qualify', 'Practice', 'Offline Testing'].includes(
+        sessionType
+      );
+
+    // Dynamic thresholds based on session type
+    const effectiveStatusThresholds = isQualifyingOrPractice
+      ? { green: 20, amber: 10, red: 5 } // Much lower for qualifying/practice
+      : statusThresholds;
+
+    if (currentFuelPctValue >= effectiveStatusThresholds.green) {
+      fuelStatus = 'safe';
+    } else if (currentFuelPctValue >= effectiveStatusThresholds.amber) {
+      fuelStatus = 'caution';
+    } else {
+      fuelStatus = 'danger';
+    }
+
+    // Laps remaining override logic (quantity remaining check)
+    // Select consumption based on user setting
+    const basisUsageValue =
+      statusBasis === 'max'
+        ? maxLapUsage
+        : statusBasis === 'min'
+          ? minLapUsage
+          : statusBasis === 'last'
+            ? lastLapUsage
+            : avgFuelPerLapBase;
+
+    const lapsLeftOnBasis =
+      basisUsageValue > 0 ? fuelLevel / basisUsageValue : 0;
+
+    // Determine effective red laps threshold
+    const effectiveRedLaps = isQualifyingOrPractice
+      ? Math.min(redLapsThreshold, 1) // Force 1 lap threshold for qualifying if not already lower
+      : redLapsThreshold;
+
+    // If laps remaining is below threshold, force "danger" (Red)
+    if (lapsLeftOnBasis < effectiveRedLaps && lapsLeftOnBasis > 0) {
+      fuelStatus = 'danger';
+    } else if (
+      isQualifyingOrPractice &&
+      lapsLeftOnBasis < 2 &&
+      fuelStatus === 'safe'
+    ) {
+      // For qualifying, show caution if under 2 laps remaining even if pct is okay
+      fuelStatus = 'caution';
+    }
 
     // ========================================================================
     // Calculate Stops Remaining (pit stops needed from current position)
@@ -413,8 +745,8 @@ export function useFuelCalculation(
     let lapsPerStint: number | undefined;
 
     // Calculate laps per stint based on FULL TANK (how many laps on a full tank)
-    if (fuelTankCapacity > 0 && avgFuelPerLap > 0) {
-      lapsPerStint = fuelTankCapacity / avgFuelPerLap;
+    if (fuelTankCapacity > 0 && avgFuelPerLapBase > 0) {
+      lapsPerStint = fuelTankCapacity / avgFuelPerLapBase;
     }
 
     // Calculate stops remaining to finish the race
@@ -422,7 +754,7 @@ export function useFuelCalculation(
     if (
       lapsRemaining > 0 &&
       fuelTankCapacity > 0 &&
-      avgFuelPerLap > 0 &&
+      avgFuelPerLapBase > 0 &&
       fuelLevel >= 0
     ) {
       // Fuel needed to finish with safety margin (same as fuelNeeded calculated above)
@@ -477,7 +809,7 @@ export function useFuelCalculation(
 
     // Only show scenarios if we have meaningful fuel data
     if (lapsWithFuel >= 0.5) {
-      const currentLapTarget = Math.round(lapsWithFuel);
+      const currentLapTarget = Math.floor(lapsWithFuel);
 
       // Determine which scenarios to show based on lapsWithFuel
       const scenarios: number[] = [];
@@ -485,8 +817,8 @@ export function useFuelCalculation(
       if (currentLapTarget > 1) {
         scenarios.push(currentLapTarget - 1); // -1 lap
       }
-      scenarios.push(currentLapTarget);        // current
-      scenarios.push(currentLapTarget + 1);    // +1 lap
+      scenarios.push(currentLapTarget); // current
+      scenarios.push(currentLapTarget + 1); // +1 lap
 
       // Calculate fuel per lap for each scenario
       for (const lapCount of scenarios) {
@@ -505,7 +837,12 @@ export function useFuelCalculation(
     // ========================================================================
     let earliestPitLap: number | undefined;
 
-    if (stopsRemaining !== undefined && stopsRemaining > 0 && lapsPerStint !== undefined && lapsPerStint > 0) {
+    if (
+      stopsRemaining !== undefined &&
+      stopsRemaining > 0 &&
+      lapsPerStint !== undefined &&
+      lapsPerStint > 0
+    ) {
       // Maximum laps coverable with all remaining stops (each fills full tank)
       const maxLapsWithAllStops = lapsPerStint * stopsRemaining;
 
@@ -528,14 +865,56 @@ export function useFuelCalculation(
       }
     }
 
+    // Calculate Projected Lap Usage with Smoothing
+
+    // Reset smoothing on new lap
+    if (lastSmoothedLapRef.current !== lap) {
+      smoothedProjectedUsageRef.current = 0;
+      lastSmoothedLapRef.current = lap || 0;
+    }
+
+    let projectedLapUsage = 0;
+
+    // Calculate instantaneous projection
+    let instantaneousProjection = 0;
+    if (
+      typeof lapDistPct === 'number' &&
+      lapDistPct > 0.05 &&
+      currentLapUsage > 0
+    ) {
+      instantaneousProjection = currentLapUsage / lapDistPct;
+    } else {
+      instantaneousProjection = lastLapUsage || avg10Laps || 0;
+    }
+
+    // Apply smoothing (EMA)
+    // Factor 0.05 = very smooth/slow. 0.1 = faster.
+    // User requested "update a little slower", so 0.05 is a good start.
+    const projectedSmoothingFactor = 0.05;
+
+    if (smoothedProjectedUsageRef.current === 0) {
+      // First value or reset
+      smoothedProjectedUsageRef.current = instantaneousProjection;
+    } else {
+      smoothedProjectedUsageRef.current =
+        smoothedProjectedUsageRef.current +
+        (instantaneousProjection - smoothedProjectedUsageRef.current) *
+          projectedSmoothingFactor;
+    }
+
+    projectedLapUsage = smoothedProjectedUsageRef.current;
+
     const result: FuelCalculation = {
       fuelLevel,
       lastLapUsage,
-      avg3Laps,
+      currentLapUsage, // Add live usage
+      projectedLapUsage, // Add projected usage
+      avgLaps,
       avg10Laps,
       avgAllGreenLaps,
       minLapUsage,
       maxLapUsage,
+      maxQualify: qualifyConsumption, // Return persistent qualify max
       lapsWithFuel,
       lapsRemaining,
       totalLaps,
@@ -555,6 +934,10 @@ export function useFuelCalculation(
       targetScenarios,
       earliestPitLap,
       fuelTankCapacity,
+      lastFinishedLap:
+        lapsToUse.length > 0 ? lapsToUse[0].lapNumber : undefined,
+      fuelStatus,
+      lapsRange,
     };
 
     // Only log when lap changes to avoid spam
@@ -562,13 +945,13 @@ export function useFuelCalculation(
     if (result.currentLap !== state.lastLap) {
       if (DEBUG_LOGGING) {
         console.log(
-          `[FuelCalculator] Lap ${result.currentLap} - Fuel: ${result.fuelLevel.toFixed(2)}L, LapsRemaining: ${result.lapsRemaining}, AvgPerLap: ${avgFuelPerLap.toFixed(3)}L, ToFinish: ${result.fuelToFinish.toFixed(2)}L, CanFinish: ${result.canFinish}, ValidLaps: ${validLaps.length}, TotalLaps: ${totalLaps}, LeaderLap: ${leaderLapRef.current ?? 'N/A'}`
+          `[FuelCalculator] Lap ${result.currentLap} - Fuel: ${result.fuelLevel.toFixed(2)}L, LapsRemaining: ${result.lapsRemaining}, AvgPerLap: ${avgFuelPerLapForConsumption.toFixed(3)}L, ToFinish: ${result.fuelToFinish.toFixed(2)}L, CanFinish: ${result.canFinish}, ValidLaps: ${validLaps.length}, TotalLaps: ${totalLaps}`
         );
 
         // Log endurance strategy details
         if (result.stopsRemaining !== undefined) {
           console.log(
-            `[Endurance] LapsRemaining: ${result.lapsRemaining}, Fuel/lap: ${avgFuelPerLap.toFixed(2)}L, ` +
+            `[Endurance] LapsRemaining: ${result.lapsRemaining}, Fuel/lap: ${avgFuelPerLapForConsumption.toFixed(2)}L, ` +
               `Needed: ${result.fuelToFinish.toFixed(1)}L (inc ${(safetyMargin * 100).toFixed(0)}% margin), ` +
               `Current: ${result.fuelLevel.toFixed(1)}L, Tank: ${fuelTankCapacity.toFixed(1)}L, ` +
               `Stops: ${result.stopsRemaining}, Laps/stint: ${result.lapsPerStint?.toFixed(1) ?? 'N/A'}`
@@ -591,6 +974,10 @@ export function useFuelCalculation(
     safetyMargin,
     // Use lapHistorySize instead of the full Map for efficient change detection
     lapHistorySize,
+    // Also re-calc when lapStartFuel changes (via start of new lap)
+    lapStartFuel,
+    settings,
+    qualifyConsumption,
   ]);
 
   return calculation;
