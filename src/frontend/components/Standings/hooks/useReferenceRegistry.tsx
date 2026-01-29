@@ -101,7 +101,9 @@ export const useReferenceRegistry = () => {
           startTime: sessionTime,
           finishTime: -1,
           // TODO: Maybe only do a new map and let end of function handle?
-          refPoints: new Map([[key, { trackPct, timeElapsedSinceStart: 0 }]]),
+          refPoints: new Map<number, ReferencePoint>([
+            [key, { trackPct, timeElapsedSinceStart: 0 } as ReferencePoint],
+          ]),
           lastTrackedPct: trackPct,
         };
 
@@ -135,7 +137,9 @@ export const useReferenceRegistry = () => {
         refLap = {
           startTime: sessionTime,
           finishTime: -1,
-          refPoints: new Map([[key, { trackPct, timeElapsedSinceStart: 0 }]]),
+          refPoints: new Map<number, ReferencePoint>([
+            [key, { trackPct, timeElapsedSinceStart: 0 }],
+          ]),
           lastTrackedPct: trackPct,
         };
         laps.current.set(carIdx, refLap);
@@ -151,7 +155,7 @@ export const useReferenceRegistry = () => {
         refLap.refPoints.set(key, {
           timeElapsedSinceStart: sessionTime - refLap.startTime,
           trackPct,
-        });
+        } as ReferencePoint);
 
         refLap.lastTrackedPct = trackPct;
       }

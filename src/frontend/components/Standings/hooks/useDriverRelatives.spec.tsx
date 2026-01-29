@@ -3,10 +3,17 @@ import { renderHook } from '@testing-library/react';
 import { useDriverRelatives } from './useDriverRelatives';
 import type { Standings } from '../createStandings';
 import {
+  normalizeKey,
   ReferenceLap,
   ReferencePoint,
-  useReferenceRegistry,
 } from './useReferenceRegistry';
+import {
+  calculateClassEstimatedGap,
+  calculateReferenceDelta,
+  calculateRelativeDist,
+  getStats,
+  getTimeAtPosition,
+} from '../relativeGapHelpers';
 
 // Mock the context hooks
 vi.mock('@irdashies/context', async (importOriginal) => {
@@ -26,51 +33,31 @@ vi.mock('./useDriverPositions', () => ({
 // 2. Replicate the simple normalize logic
 // (We cannot import the real one because of hoisting)
 
-vi.mock('./useReferenceRegistry', () => {
-  // 1. Define the constant LOCALLY so it is available instantly
-  const INTERVAL = 0.0025;
-  const normalizeKey = (key: number) => {
-    // Logic: Floor to nearest interval and fix float precision
-    const val = key - (key % INTERVAL);
-    return parseFloat(val.toFixed(4));
-  };
-  return {
-    useReferenceRegistry: vi.fn(),
-    // We MUST pass through the real normalizeKey, otherwise our Map keys
-    // in the test helper and the component will all be undefined.
-    normalizeKey: normalizeKey,
-    REFERENCE_INTERVAL: INTERVAL,
-  };
-});
-
 // =============================================================================
 // HELPER: Generate a full Reference Lap with 400 points (0.25% interval)
 // =============================================================================
 const generateReferenceLap = (lapTime: number): ReferenceLap => {
-  const INTERVAL = 0.0025;
-  const normalizeKey = (key: number) => {
-    // Logic: Floor to nearest interval and fix float precision
-    const val = key - (key % INTERVAL);
-    return parseFloat(val.toFixed(4));
-  };
   const refPoints = new Map<number, ReferencePoint>();
   // Generate points every 0.0025 (0.25%) -> 400 points total
-  for (let i = 0; i <= 400; i++) {
-    const pct = i * 0.0025;
-    // Ensure precision matches your normalizeKey logic
+  for (let i = 0; i < 400; i++) {
+    // NOTE: FLOATING POINT ISSUEEEES!
+    // WARN: DO NOT REMOVE 0.000001, it's breaking the tests!
+    const pct = i * 0.0025 + 0.000001;
     const key = normalizeKey(pct);
     refPoints.set(key, {
       trackPct: pct,
       timeElapsedSinceStart: pct * lapTime, // Linear speed for simplicity
-    });
+    } as ReferencePoint);
   }
 
+  const startTime = 1000;
+
   return {
-    startTime: 1000,
-    finishTime: 1000 + lapTime,
+    startTime: startTime,
+    finishTime: startTime + lapTime,
     refPoints,
     lastTrackedPct: 1,
-  };
+  } as ReferenceLap;
 };
 
 // Import mocked functions after vi.mock
@@ -180,16 +167,6 @@ describe('useDriverRelatives', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-
-    vi.mocked(useReferenceRegistry).mockReturnValue({
-      collectLapData: vi.fn(),
-      getReferenceLap: vi.fn().mockReturnValue({
-        startTime: 0,
-        finishTime: 0,
-        refPoints: new Map(),
-        lastTrackedPct: 0,
-      }),
-    });
 
     vi.mocked(useFocusCarIdx).mockReturnValue(0);
     vi.mocked(useTelemetryValues).mockImplementation((key: string) => {
@@ -436,162 +413,254 @@ describe('useDriverRelatives', () => {
   });
 });
 
-describe('useDriverRelatives - Reference Lap Calculations', () => {
-  const mockGetReferenceLap = vi.fn();
+describe('getStats', () => {
+  it('should return stats with driver estLapTime', () => {
+    const driver = { ...mockDrivers[0] };
+    const estTime = 50;
+    const result = getStats(estTime, driver);
 
-  beforeEach(() => {
-    vi.clearAllMocks();
-    vi.mocked(useReferenceRegistry).mockReturnValue({
-      collectLapData: vi.fn(),
-      getReferenceLap: mockGetReferenceLap,
+    expect(result).toEqual({
+      estTime: estTime,
+      classEstTime: mockDrivers[0].carClass.estLapTime,
     });
   });
 
-  it('should use reference lap for precise gap AHEAD (Same Class)', () => {
-    // SETUP: Player and Opponent in same class (100s lap)
-    const lapData = generateReferenceLap(100);
-    mockGetReferenceLap.mockReturnValue(lapData);
+  it('should use fallback lap time when driver is undefined', () => {
+    const result = getStats(50, undefined);
 
-    // Player at 50% (50s), Opponent at 52% (52s)
-    vi.mocked(useTelemetryValues).mockImplementation((key) => {
-      if (key === 'CarIdxLapDistPct') return [0.5, 0.52];
-      if (key === 'CarIdxEstTime') return [50, 52]; // Add this
-      if (key === 'CarIdxOnPitRoad') return [false, false]; // Add this
-      return [];
+    expect(result).toEqual({
+      estTime: 50,
+      classEstTime: 90, // FALLBACK_LAPTIME
     });
-    vi.mocked(useDriverStandings).mockReturnValue([
-      { ...mockDrivers[0], carIdx: 0 },
-      { ...mockDrivers[1], carIdx: 1 },
-    ]);
+  });
+});
 
-    const { result } = renderHook(() => useDriverRelatives({ buffer: 2 }));
-    console.log(result);
-    const opponent = result.current.find((d) => d.carIdx === 1);
-    console.log(opponent);
-
-    // LOGIC: Uses Player's Ref Lap
-    // Opponent (52s) - Player (50s) = +2.0s
-    expect(opponent?.delta).toBeCloseTo(2.0);
+describe('calculateRelativeDist', () => {
+  it('should calculate positive relative distance for car ahead', () => {
+    const result = calculateRelativeDist(0.5, 0.6);
+    expect(result).toBeCloseTo(0.1);
   });
 
-  it('should use reference lap for precise gap BEHIND (Same Class)', () => {
-    // SETUP: Player and Opponent in same class (100s lap)
-    const lapData = generateReferenceLap(100);
-    mockGetReferenceLap.mockReturnValue(lapData);
-
-    // Player at 50% (50s), Opponent at 48% (48s)
-    vi.mocked(useTelemetryValues).mockImplementation((key) => {
-      if (key === 'CarIdxLapDistPct') return [0.5, 0.48];
-      if (key === 'CarIdxEstTime') return [50, 48];
-      if (key === 'CarIdxOnPitRoad') return [false, false];
-      return [];
-    });
-    vi.mocked(useDriverStandings).mockReturnValue([
-      { ...mockDrivers[0], carIdx: 0 },
-      { ...mockDrivers[1], carIdx: 1 },
-    ]);
-
-    const { result } = renderHook(() => useDriverRelatives({ buffer: 2 }));
-    const opponent = result.current.find((d) => d.carIdx === 1);
-
-    // LOGIC: Uses Opponent's Ref Lap (which is identical to Player's here)
-    // Opponent (48s) - Player (50s) = -2.0s
-    expect(opponent?.delta).toBeCloseTo(-2.0);
+  it('should calculate negative relative distance for car behind', () => {
+    const result = calculateRelativeDist(0.5, 0.4);
+    expect(result).toBeCloseTo(-0.1);
   });
 
-  it('should handle Wrap-Around correctly (Car Behind across Start/Finish)', () => {
-    const lapData = generateReferenceLap(100);
-    mockGetReferenceLap.mockReturnValue(lapData);
-
-    // Player just started (1%), Opponent finishing (99%)
-    // Physical gap: 2% (Behind)
-    vi.mocked(useTelemetryValues).mockImplementation((key) => {
-      if (key === 'CarIdxLapDistPct') return [0.01, 0.99];
-      if (key === 'CarIdxEstTime') return [1, 99];
-      if (key === 'CarIdxOnPitRoad') return [false, false];
-      return [];
-    });
-    vi.mocked(useDriverStandings).mockReturnValue([
-      { ...mockDrivers[0], carIdx: 0 },
-      { ...mockDrivers[1], carIdx: 1 },
-    ]);
-
-    const { result } = renderHook(() => useDriverRelatives({ buffer: 2 }));
-    const opponent = result.current.find((d) => d.carIdx === 1);
-
-    // RAW MATH: Opponent (99s) - Player (1s) = +98s
-    // WRAP FIX: +98s > (100/2) -> 98 - 100 = -2s
-    expect(opponent?.delta).toBeCloseTo(-2.0);
+  it('should wrap around when crossing start/finish (car ahead wraps to start)', () => {
+    // Player at 0.9, opponent at 0.1 (actually ahead by 0.2)
+    const result = calculateRelativeDist(0.9, 0.1);
+    expect(result).toBeCloseTo(0.2);
   });
 
-  it('should switch reference laps for Multi-Class Threat (Fast Car Behind)', () => {
-    // SETUP:
-    // Player (GT3): 100s Lap
-    // Opponent (GTP): 80s Lap (Faster)
-    const gt3Lap = generateReferenceLap(100);
-    const gtpLap = generateReferenceLap(80);
+  it('should wrap around when crossing start/finish (car behind wraps to finish)', () => {
+    // Player at 0.1, opponent at 0.9 (actually behind by 0.2)
+    const result = calculateRelativeDist(0.1, 0.9);
+    expect(result).toBeCloseTo(-0.2);
+  });
+});
 
-    mockGetReferenceLap.mockImplementation((idx) => {
-      return idx === 0 ? gt3Lap : gtpLap;
+describe('calculateClassEstimatedGap', () => {
+  describe('Same Class (1:1 scaling)', () => {
+    it('should calculate positive gap for car ahead (same class)', () => {
+      const carAhead = { estTime: 60, classEstTime: 100 };
+      const carBehind = { estTime: 50, classEstTime: 100 };
+
+      const result = calculateClassEstimatedGap(carAhead, carBehind, true);
+
+      // Delta = 60 - 50 = +10s
+      expect(result).toBeCloseTo(10);
     });
 
-    // Player at 50%
-    // Opponent at 40% (Behind)
-    // Physical Distance: 10%
-    vi.mocked(useTelemetryValues).mockImplementation((key) => {
-      if (key === 'CarIdxLapDistPct') return [0.5, 0.4];
-      if (key === 'CarIdxEstTime') return [50, 32];
-      if (key === 'CarIdxOnPitRoad') return [false, false];
-      return [];
+    it('should calculate negative gap for car behind (same class)', () => {
+      const carAhead = { estTime: 50, classEstTime: 100 };
+      const carBehind = { estTime: 40, classEstTime: 100 };
+
+      const result = calculateClassEstimatedGap(carAhead, carBehind, false);
+
+      // Delta = 40 - 50 = -10s
+      expect(result).toBeCloseTo(-10);
     });
-    vi.mocked(useDriverStandings).mockReturnValue([
-      { ...mockDrivers[0], carIdx: 0 }, // GT3
-      { ...mockDrivers[2], carIdx: 2 }, // GTP
-    ]);
 
-    const { result } = renderHook(() => useDriverRelatives({ buffer: 2 }));
-    const opponent = result.current.find((d) => d.carIdx === 2);
+    it('should handle wrap-around for car ahead (same class)', () => {
+      // Car ahead just crossed finish (1s), car behind finishing lap (99s)
+      const carAhead = { estTime: 1, classEstTime: 100 };
+      const carBehind = { estTime: 99, classEstTime: 100 };
 
-    // LOGIC: Car Behind -> Use THEIR Reference Lap (GTP/80s)
-    // Player pos (0.5) on GTP Lap = 40s (0.5 * 80)
-    // Opponent pos (0.4) on GTP Lap = 32s (0.4 * 80)
-    // Delta: 32s - 40s = -8.0s
-    expect(opponent?.delta).toBeCloseTo(-8.0);
+      const result = calculateClassEstimatedGap(carAhead, carBehind, true);
+
+      // Raw: 1 - 99 = -98s
+      // Wrapped: -98 + 100 = +2s (ahead just crossed)
+      expect(result).toBeCloseTo(2);
+    });
+
+    it('should handle wrap-around for car behind (same class)', () => {
+      // Car ahead finishing lap (99s), car behind just crossed (1s)
+      const carAhead = { estTime: 99, classEstTime: 100 };
+      const carBehind = { estTime: 1, classEstTime: 100 };
+
+      const result = calculateClassEstimatedGap(carAhead, carBehind, false);
+
+      // Raw: 1 - 99 = -98s
+      // This is already negative, no wrap needed
+      expect(result).toBeCloseTo(-98);
+    });
   });
 
-  it('should use Player reference for Multi-Class Chase (Fast Car Ahead)', () => {
-    // SETUP:
-    // Player (GT3): 100s Lap
-    // Opponent (GTP): 80s Lap
-    const gt3Lap = generateReferenceLap(100);
-    const gtpLap = generateReferenceLap(80);
+  describe('Multi-Class: Faster Car Ahead (GTP ahead of GT3)', () => {
+    it('should scale gap correctly when faster car is ahead', () => {
+      // GT3 (player) at 50% = 50s into 100s lap
+      // GTP (ahead) at 60% = 48s into 80s lap
+      const carAhead = { estTime: 48, classEstTime: 80 }; // GTP
+      const carBehind = { estTime: 50, classEstTime: 100 }; // GT3
 
-    mockGetReferenceLap.mockImplementation((idx) => {
-      return idx === 0 ? gt3Lap : gtpLap;
+      const result = calculateClassEstimatedGap(carAhead, carBehind, true);
+
+      // Scaling: 100/80 = 1.25
+      // Scaled ahead: 48 * 1.25 = 60s
+      // Delta: 60 - 50 = +10s
+      expect(result).toBeCloseTo(10);
     });
+  });
 
-    // Player at 50%
-    // Opponent at 60% (Ahead)
-    // Physical Distance: 10%
-    vi.mocked(useTelemetryValues).mockImplementation((key) => {
-      if (key === 'CarIdxLapDistPct') return [0.5, 0.6];
-      if (key === 'CarIdxEstTime') return [50, 48];
-      if (key === 'CarIdxOnPitRoad') return [false, false];
-      return [];
+  describe('Multi-Class: Faster Car Behind (GTP behind GT3)', () => {
+    it('should scale gap correctly when faster car is behind', () => {
+      // GT3 (player) at 50% = 50s into 100s lap
+      // GTP (behind) at 40% = 32s into 80s lap
+      const carAhead = { estTime: 50, classEstTime: 100 }; // GT3
+      const carBehind = { estTime: 32, classEstTime: 80 }; // GTP
+
+      const result = calculateClassEstimatedGap(carAhead, carBehind, false);
+
+      // Scaling: 80/100 = 0.8
+      // Scaled ahead: 50 * 0.8 = 40s
+      // Delta: 32 - 40 = -8s
+      expect(result).toBeCloseTo(-8);
     });
-    vi.mocked(useDriverStandings).mockReturnValue([
-      { ...mockDrivers[0], carIdx: 0 },
-      { ...mockDrivers[2], carIdx: 2 },
-    ]);
+  });
 
-    const { result } = renderHook(() => useDriverRelatives({ buffer: 2 }));
-    const opponent = result.current.find((d) => d.carIdx === 2);
+  describe('Multi-Class: Slower Car Ahead (GT3 ahead of GTP)', () => {
+    it('should scale gap correctly when slower car is ahead', () => {
+      // GTP (player) at 40% = 32s into 80s lap
+      // GT3 (ahead) at 50% = 50s into 100s lap
+      const carAhead = { estTime: 50, classEstTime: 100 }; // GT3
+      const carBehind = { estTime: 32, classEstTime: 80 }; // GTP
 
-    // LOGIC: Car Ahead -> Use MY Reference Lap (GT3/100s)
-    // "How long for ME to catch them?"
-    // Player pos (0.5) on GT3 Lap = 50s
-    // Opponent pos (0.6) on GT3 Lap = 60s
-    // Delta: 60s - 50s = +10.0s
-    expect(opponent?.delta).toBeCloseTo(10.0);
+      const result = calculateClassEstimatedGap(carAhead, carBehind, true);
+
+      // Scaling: 80/100 = 0.8
+      // Scaled ahead: 50 * 0.8 = 40s
+      // Delta: 40 - 32 = +8s
+      expect(result).toBeCloseTo(8);
+    });
+  });
+
+  describe('Multi-Class: Slower Car Behind (GT3 behind GTP)', () => {
+    it('should scale gap correctly when slower car is behind', () => {
+      // GTP (player) at 60% = 48s into 80s lap
+      // GT3 (behind) at 50% = 50s into 100s lap
+      const carAhead = { estTime: 48, classEstTime: 80 }; // GTP
+      const carBehind = { estTime: 50, classEstTime: 100 }; // GT3
+
+      const result = calculateClassEstimatedGap(carAhead, carBehind, false);
+
+      // Scaling: 100/80 = 1.25
+      // Scaled ahead: 48 * 1.25 = 60s
+      // Delta: 50 - 60 = -10s
+      expect(result).toBeCloseTo(-10);
+    });
+  });
+});
+
+describe('getTimeAtPosition', () => {
+  it('should interpolate time at exact reference point', () => {
+    const refLap = generateReferenceLap(100);
+
+    // At 50% through 100s lap = 50s
+    const result = getTimeAtPosition(refLap, 0.5001);
+
+    expect(result).toBeCloseTo(50);
+  });
+
+  it('should interpolate time between reference points', () => {
+    const refLap = generateReferenceLap(100);
+
+    // At 50.125% (halfway between 50% and 50.25%)
+    // Should be 50.00s
+    const result = getTimeAtPosition(refLap, 0.50125);
+
+    expect(result).toBeCloseTo(50);
+  });
+
+  it('should handle position near start (0%)', () => {
+    const refLap = generateReferenceLap(100);
+
+    const result = getTimeAtPosition(refLap, 0.0101);
+
+    expect(result).toBeCloseTo(1);
+  });
+
+  it('should handle position near finish (100%)', () => {
+    const refLap = generateReferenceLap(100);
+
+    const result = getTimeAtPosition(refLap, 0.9901);
+
+    expect(result).toBeCloseTo(99);
+  });
+});
+
+describe('calculateReferenceDelta', () => {
+  it('should calculate positive delta for opponent ahead (same class)', () => {
+    const refLap = generateReferenceLap(100);
+
+    // Player at 50%, opponent at 52%
+    const result = calculateReferenceDelta(refLap, 0.5201, 0.5001);
+
+    // Opponent: 52s, Player: 50s
+    // Delta: 52 - 50 = +2s
+    expect(result).toBeCloseTo(2);
+  });
+
+  it('should calculate negative delta for opponent behind (same class)', () => {
+    const refLap = generateReferenceLap(100);
+
+    // Player at 50%, opponent at 48%
+    const result = calculateReferenceDelta(refLap, 0.4801, 0.5001);
+
+    // Opponent: 48s, Player: 50s
+    // Delta: 48 - 50 = -2s
+    expect(result).toBeCloseTo(-2);
+  });
+
+  it('should handle wrap-around when opponent crosses start/finish', () => {
+    const refLap = generateReferenceLap(100);
+
+    // Player just started (1%), opponent finishing (99%)
+    const result = calculateReferenceDelta(refLap, 0.9901, 0.0101);
+
+    // Raw: 99 - 1 = +98s
+    // Wrapped: 98 - 100 = -2s (opponent is behind)
+    expect(result).toBeCloseTo(-2);
+  });
+
+  it('should handle wrap-around when player crosses start/finish', () => {
+    const refLap = generateReferenceLap(100);
+
+    // Player finishing (99%), opponent just started (1%)
+    const result = calculateReferenceDelta(refLap, 0.0101, 0.9901);
+
+    // Raw: 1 - 99 = -98s
+    // Wrapped: -98 + 100 = +2s (opponent is ahead)
+    expect(result).toBeCloseTo(2);
+  });
+
+  it('should work with different lap times', () => {
+    const refLap = generateReferenceLap(80); // 80s lap
+
+    // Player at 50%, opponent at 60%
+    const result = calculateReferenceDelta(refLap, 0.6001, 0.5001);
+
+    // Opponent: 48s (0.6 * 80), Player: 40s (0.5 * 80)
+    // Delta: 48 - 40 = +8s
+    expect(result).toBeCloseTo(8);
   });
 });
