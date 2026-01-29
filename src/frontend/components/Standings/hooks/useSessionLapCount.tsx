@@ -1,4 +1,4 @@
-import { useSessionLaps, useTelemetryValue, useTelemetryValues, useFocusCarIdx } from '@irdashies/context';
+import { useSessionLaps, useTelemetryValue, useTelemetryValues, useFocusCarIdx, useGreenFlagTimestamp, useSetGreenFlagTimestamp, useCurrentSessionType } from '@irdashies/context';
 import { useMemo } from 'react';
 
 export const useSessionLapCount = () => {
@@ -11,6 +11,15 @@ export const useSessionLapCount = () => {
   const time = useTelemetryValue('SessionTime');
   const timeTotal = useTelemetryValue('SessionTimeTotal');
   const timeRemaining = useTelemetryValue('SessionTimeRemain');
+  const sessionType = useCurrentSessionType();
+  
+  // Get store hooks for tracking green flag time
+  const greenFlagTimestamp = useGreenFlagTimestamp();
+  const setGreenFlagTimestamp = useSetGreenFlagTimestamp();
+  // Detect state transition from 3 to 4 (green flag) and store the time
+  if (sessionType === 'Race' && greenFlagTimestamp == null && sessionState === 4 && time !== undefined) {
+    setGreenFlagTimestamp(time);
+  }
 
   const result = useMemo(() => {
     const result = {
@@ -20,6 +29,7 @@ export const useSessionLapCount = () => {
       time: 0,
       timeTotal: 0,
       timeRemaining: 0,
+      greenFlagTimestamp: 0,
     };
 
     if (!sessionLaps) {
@@ -35,9 +45,10 @@ export const useSessionLapCount = () => {
     result.timeTotal = timeTotal ?? 0;
     result.currentLap = currentLap ?? 0;
     result.timeRemaining = timeRemaining ?? 0;
+    result.greenFlagTimestamp = greenFlagTimestamp ?? 0;
 
     return result;
-  }, [sessionLaps, currentLap, sessionState, time, timeTotal, timeRemaining]);
+  }, [sessionLaps, currentLap, sessionState, time, timeTotal, timeRemaining, greenFlagTimestamp]);
 
   return result;
 };
