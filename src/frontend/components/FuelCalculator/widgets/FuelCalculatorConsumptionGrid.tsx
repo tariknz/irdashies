@@ -82,7 +82,7 @@ export const FuelCalculatorConsumptionGrid: React.FC<
   // Use frozen displayData directly - it is already snapshotted by the parent
   // We do NOT want live updates here.
   const lapsRemainingToUse = displayData?.lapsRemaining || 0;
-  const currentLap = displayData?.currentLap || 1;
+  const currentLap = displayData?.currentLap || 0;
   const fuelLevelToUse = displayData?.fuelLevel ?? 0;
   const effectiveTotalLaps = Math.max(totalRaceLaps, currentLap);
   
@@ -115,7 +115,7 @@ export const FuelCalculatorConsumptionGrid: React.FC<
   // Calculate derivates (Laps, Refuel, Finish) for each column
   // This duplicates some logic but ensures consistent display as per mockup
   const calcCol = (usage: number) => {
-    if (usage <= 0) return { laps: NaN, refuel: 0, finish: 0, isValid: false, hideRefuel: true };
+    if (usage <= 0) return { laps: NaN, refuel: 0, totalReq: 0, isDeficit: false, isValid: false, hideRefuel: true };
     
     // Use FROZEN values for calculation to prevent jitter
     const fuelToUse = fuelLevelToUse;
@@ -123,33 +123,28 @@ export const FuelCalculatorConsumptionGrid: React.FC<
     // Laps calculation
     const laps = fuelToUse / usage;
 
-    // Finish (Fuel at finish)
+    // Total Required for Race (Distance * Usage)
+    const totalReq = effectiveTotalLaps * usage;
+
+    // Finish (Fuel at finish) -> This is effectively our BALANCE for coloring
     // Formula: CurrentFuel - FuelNeeded
     // FuelNeeded = LapsRemaining * Usage
-    // If Result < 0, it means we don't have enough fuel to finish (deficit)
-    // If Result > 0, it means we have extra fuel (surplus)
     const fuelNeeded = lapsRemainingToUse * usage;
-    const finish = fuelToUse - fuelNeeded;
-
-    // Refuel (Fuel to add)
-    // Removed safety margin per user request
+    const balance = fuelToUse - fuelNeeded;
     
-    // Calculate deficit based on smooth laps remaining
-    const lapsPossible = usage > 0 ? fuelToUse / usage : 0;
-    
-    const lapsAfterEmpty = Math.max(
-      0,
-      lapsRemainingToUse - lapsPossible
-    );
-
-    const toAdd = lapsAfterEmpty * usage;
+    // Logic for Refuel Column:
+    // If Balance < 0 (Deficit): Show POSITIVE amount to ADD.
+    // If Balance >= 0 (Surplus): Show POSITIVE amount EXTRA.
+    const refuelValue = balance < 0 ? Math.abs(balance) : balance;
+    const isDeficit = balance < 0;
 
     // If testing, hide Refuel and Finish (return 0/invalid)
     if (isTesting) {
       return {
         laps: laps,
         refuel: 0,
-        finish: 0,
+        totalReq: 0,
+        isDeficit: false,
         isValid: true,
         hideRefuel: true
       };
@@ -157,8 +152,9 @@ export const FuelCalculatorConsumptionGrid: React.FC<
 
     return {
       laps: laps, // number
-      refuel: toAdd, // number
-      finish: finish, // number
+      refuel: refuelValue, // number (absolute value to show)
+      totalReq: totalReq, // number
+      isDeficit: isDeficit, // boolean
       isValid: true,
       hideRefuel: false
     };
@@ -187,15 +183,13 @@ export const FuelCalculatorConsumptionGrid: React.FC<
 
 
   // Helper for color coding Finish
-  const finishColor = (val: number) => {
-    return val >= 0 ? 'text-green-400' : 'text-orange-400';
-  };
+
 
   // Helper for formatting
   const fmt = (num: number, isValid: boolean) => isValid ? num.toFixed(2) : '--';
 
   // Helper for Refuel color
-  const refuelColor = 'text-cyan-400'; // Mockup uses cyan for refuel
+
 
   return (
     <div
@@ -207,9 +201,9 @@ export const FuelCalculatorConsumptionGrid: React.FC<
         className={`text-center font-bold text-slate-400 border-b border-slate-600/50 ${isCompact ? 'pb-0.5 mb-0.5' : 'pb-1 mb-1'} flex flex-col justify-end leading-none`}
         style={{ fontSize: labelFontSize }}
       >
-        <div style={{ fontSize: '0.8em', opacity: 0.7 }}>REM</div>
+        <div style={{ fontSize: '0.8em', opacity: 0.7 }}>IN RACE</div>
         <div style={{ color: '#fff' }}>
-          {lapsRemainingToUse.toFixed(2)}
+          {currentLap}
           {isRace && effectiveTotalLaps > 0 ? ` / ${effectiveTotalLaps.toFixed(2)}` : ''}
         </div>
       </div>
@@ -235,7 +229,7 @@ export const FuelCalculatorConsumptionGrid: React.FC<
         className={`text-center font-bold text-slate-400 border-b border-slate-600/50 ${isCompact ? 'pb-0.5 mb-0.5' : 'pb-1 mb-1'}`}
         style={{ fontSize: labelFontSize }}
       >
-        AT FINISH
+        TOTAL
       </div>
 
       {/* Spacer for header bottom margin if needed (or handle via border/padding in cells) */}
@@ -278,17 +272,18 @@ export const FuelCalculatorConsumptionGrid: React.FC<
                   >
                      {fmt(currentData.laps, isFinite(currentData.laps))}
                   </div>
+
                   <div
-                    className={`${refuelColor} text-center ${rowPadding} opacity-90`}
+                    className={`${currentData.isDeficit ? 'text-red-500 bg-red-500/10' : 'text-green-400 bg-green-500/10'} text-center ${rowPadding} font-bold rounded mx-0.5`}
                     style={{ fontSize: valueFontSize }}
                   >
-                    {currentData.refuel > 0 ? fmt(currentData.refuel, true) : '--'}
+                    {!currentData.isDeficit ? '+' : ''}{fmt(currentData.refuel, true)}
                   </div>
                   <div
-                    className={`${finishColor(currentData.finish)} text-center ${rowPadding} opacity-90`}
+                    className={`text-white text-center ${rowPadding} opacity-90`}
                     style={{ fontSize: valueFontSize }}
                   >
-                    {fmt(currentData.finish, true)}
+                    {fmt(currentData.totalReq, true)}
                   </div>
                 </React.Fragment>
               );
@@ -315,17 +310,18 @@ export const FuelCalculatorConsumptionGrid: React.FC<
                   >
                     {fmt(avgData.laps, isFinite(avgData.laps))}
                   </div>
+
                   <div
-                    className={`${refuelColor} text-center ${rowPadding}`}
+                    className={`${avgData.isDeficit ? 'text-red-500 bg-red-500/10' : 'text-green-400 bg-green-500/10'} text-center ${rowPadding} font-bold rounded mx-0.5`}
                     style={{ fontSize: valueFontSize }}
                   >
-                    {avgData.refuel > 0 ? fmt(avgData.refuel, true) : '--'}
+                    {!avgData.isDeficit ? '+' : ''}{fmt(avgData.refuel, true)}
                   </div>
                   <div
-                    className={`${finishColor(avgData.finish)} text-center ${rowPadding}`}
+                    className={`text-white text-center ${rowPadding}`}
                     style={{ fontSize: valueFontSize }}
                   >
-                     {fmt(avgData.finish, true)}
+                     {fmt(avgData.totalReq, true)}
                   </div>
                 </React.Fragment>
               );
@@ -352,17 +348,18 @@ export const FuelCalculatorConsumptionGrid: React.FC<
                   >
                     {fmt(maxData.laps, isFinite(maxData.laps))}
                   </div>
+
                   <div
-                    className={`${refuelColor} text-center ${rowPadding}`}
+                    className={`${maxData.isDeficit ? 'text-red-500 bg-red-500/10' : 'text-green-400 bg-green-500/10'} text-center ${rowPadding} font-bold rounded mx-0.5`}
                     style={{ fontSize: valueFontSize }}
                   >
-                    {maxData.refuel > 0 ? fmt(maxData.refuel, true) : '--'}
+                    {!maxData.isDeficit ? '+' : ''}{fmt(maxData.refuel, true)}
                   </div>
                   <div
-                    className={`${finishColor(maxData.finish)} text-center ${rowPadding}`}
+                    className={`text-white text-center ${rowPadding}`}
                     style={{ fontSize: valueFontSize }}
                   >
-                    {fmt(maxData.finish, true)}
+                    {fmt(maxData.totalReq, true)}
                   </div>
                 </React.Fragment>
               );
@@ -388,17 +385,18 @@ export const FuelCalculatorConsumptionGrid: React.FC<
                   >
                     {fmt(lastData.laps, isFinite(lastData.laps))}
                   </div>
+
                   <div
-                    className={`${refuelColor} text-center ${rowPadding}`}
+                    className={`${lastData.isDeficit ? 'text-red-500 bg-red-500/10' : 'text-green-400 bg-green-500/10'} text-center ${rowPadding} font-bold rounded mx-0.5`}
                     style={{ fontSize: valueFontSize }}
                   >
-                    {lastData.refuel > 0 ? fmt(lastData.refuel, true) : '--'}
+                    {!lastData.isDeficit ? '+' : ''}{fmt(lastData.refuel, true)}
                   </div>
                   <div
-                    className={`${finishColor(lastData.finish)} text-center ${rowPadding}`}
+                    className={`text-white text-center ${rowPadding}`}
                     style={{ fontSize: valueFontSize }}
                   >
-                    {fmt(lastData.finish, true)}
+                    {fmt(lastData.totalReq, true)}
                   </div>
                 </React.Fragment>
               );
@@ -424,17 +422,18 @@ export const FuelCalculatorConsumptionGrid: React.FC<
                   >
                    {fmt(minData.laps, isFinite(minData.laps))}
                   </div>
+
                   <div
-                    className={`${refuelColor} text-center ${rowPadding}`}
+                    className={`${minData.isDeficit ? 'text-red-500 bg-red-500/10' : 'text-green-400 bg-green-500/10'} text-center ${rowPadding} font-bold rounded mx-0.5`}
                     style={{ fontSize: valueFontSize }}
                   >
-                    {minData.refuel > 0 ? fmt(minData.refuel, true) : '--'}
+                    {!minData.isDeficit ? '+' : ''}{fmt(minData.refuel, true)}
                   </div>
                   <div
-                    className={`${finishColor(minData.finish)} text-center ${rowPadding}`}
+                    className={`text-white text-center ${rowPadding}`}
                     style={{ fontSize: valueFontSize }}
                   >
-                     {fmt(minData.finish, true)}
+                     {fmt(minData.totalReq, true)}
                   </div>
                 </React.Fragment>
               );
@@ -462,17 +461,22 @@ export const FuelCalculatorConsumptionGrid: React.FC<
                   >
                     {fmt(qualData.laps, isFinite(qualData.laps))}
                   </div>
+
                   <div
-                    className={`${refuelColor} text-center ${rowPadding}`}
+                    className={`${qualData.isDeficit ? 'text-red-500 bg-red-500/10' : 'text-green-400 bg-green-500/10'} text-center ${rowPadding} font-bold rounded mx-0.5`}
                     style={{ fontSize: valueFontSize }}
                   >
-                    {isRace && qual > 0 && qualData.refuel > 0 ? fmt(qualData.refuel, true) : '--'}
+                    {isRace && qual > 0 ? (
+                        <>
+                        {!qualData.isDeficit ? '+' : ''}{fmt(qualData.refuel, true)}
+                        </>
+                    ) : '--'}
                   </div>
                   <div
-                    className={`${isRace && qual > 0 ? finishColor(qualData.finish) : 'text-slate-500'} text-center ${rowPadding}`}
+                    className={`text-white text-center ${rowPadding}`}
                     style={{ fontSize: valueFontSize }}
                   >
-                    {isRace && qual > 0 ? fmt(qualData.finish, true) : '--'}
+                    {isRace && qual > 0 ? fmt(qualData.totalReq, true) : '--'}
                   </div>
                 </React.Fragment>
               );
