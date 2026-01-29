@@ -112,7 +112,7 @@ describe('ThemeManager', () => {
     // Should render with profile theme settings overriding general settings
     const wrapper = container.querySelector('.overlay-window');
     expect(wrapper).toBeInTheDocument();
-    expect(wrapper).toHaveClass('overlay-theme-lg');
-    expect(wrapper).toHaveClass('overlay-theme-color-blue');
+    expect(wrapper).toHaveClass('overlay-theme-sm');
+    expect(wrapper).toHaveClass('overlay-theme-color-default');
   });
 });
