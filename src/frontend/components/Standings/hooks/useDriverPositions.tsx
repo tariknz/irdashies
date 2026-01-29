@@ -10,6 +10,7 @@ import {
   usePrevCarTrackSurface,
   useFocusCarIdx,
   useSessionPositions,
+  useTelemetryValues,
 } from '@irdashies/context';
 
 import { Standings, type LastTimeState } from '../createStandings';
@@ -39,6 +40,7 @@ export const useDriverPositions = () => {
   const prevCarTrackSurface = usePrevCarTrackSurface()
   const lastPitLap = usePitLap()
   const lastLap = useCarLap()
+  const carIdxLapDstPct = useTelemetryValues('CarIdxLapDistPct');
 
 
   const positions = useMemo(() => {
@@ -51,6 +53,7 @@ export const useDriverPositions = () => {
       lastLap: lastLap[carIdx] ?? -1,
       lastLapTime: carIdxLastLapTime?.value?.[carIdx] ?? -1,
       lapNum: carIdxLapNum?.value?.[carIdx],
+      lapDstPct: carIdxLapDstPct[carIdx] ?? 0,
       lastPitLap: lastPitLap[carIdx] ?? undefined,
       prevCarTrackSurface: prevCarTrackSurface[carIdx] ?? undefined,
       carTrackSurface: carIdxTrackSurface?.value?.[carIdx]
@@ -63,6 +66,7 @@ export const useDriverPositions = () => {
     lastLap,
     carIdxF2Time?.value,
     carIdxLapNum?.value,
+    carIdxLapDstPct,
     lastPitLap,
     prevCarTrackSurface,
     carIdxTrackSurface?.value
@@ -152,6 +156,9 @@ export const useDriverStandings = () => {
     const playerLap = playerCarIdx !== undefined
       ? driverPositionsByCarIdx.get(playerCarIdx)?.lapNum ?? 0
       : 0;
+    const playerLapDistPct = playerCarIdx !== undefined
+      ? driverPositionsByCarIdx.get(playerCarIdx)?.lapDstPct ?? 0
+      : 0;
 
     const standings = drivers.map((driver) => {
       const driverPos = driverPositionsByCarIdx.get(driver.carIdx);
@@ -162,15 +169,16 @@ export const useDriverStandings = () => {
 
       let lappedState: 'ahead' | 'behind' | 'same' | undefined = undefined;
       if (sessionType === 'Race') {
-        if (driverPos.lapNum > playerLap) lappedState = 'ahead';
-        if (driverPos.lapNum < playerLap) lappedState = 'behind';
-        if (driverPos.lapNum === playerLap) lappedState = 'same';
+        const lapDiff = Math.round((driverPos.lapNum + driverPos.lapDstPct) - (playerLap + playerLapDistPct));
+        if (lapDiff > 0) lappedState = 'ahead';
+        if (lapDiff < 0) lappedState = 'behind';
+        if (lapDiff === 0) lappedState = 'same';
       }
 
       // If the driver is not in the standings, use the qualifying position
       let classPosition: number | undefined = driverPos.classPosition;
-      
-      if(useLivePositionStandings) {
+
+      if (useLivePositionStandings) {
         // Override position with live position based on telemetry
         const livePosition = driverLivePositions[driver.carIdx];
         if(livePosition !== undefined) classPosition = livePosition;
@@ -190,9 +198,9 @@ export const useDriverStandings = () => {
         }
       }
 
-      const hasFastestTime = driverPos.bestLap !== undefined && 
-                             fastestTime !== undefined && 
-                             driverPos.bestLap === fastestTime;
+      const hasFastestTime = driverPos.bestLap !== undefined &&
+        fastestTime !== undefined &&
+        driverPos.bestLap === fastestTime;
 
       return {
         carIdx: driver.carIdx,
