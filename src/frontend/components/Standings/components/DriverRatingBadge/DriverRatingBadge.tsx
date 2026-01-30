@@ -23,9 +23,9 @@ export const DriverRatingBadge = ({
   };
   const color = colorMap[licenseLevel] ?? '';
 
-  let fixed = 1;
-  if (rating >= 10000) fixed = 0;
-  const simplifiedRating = (rating / 1000).toFixed(fixed);
+  const decimal = String(rating / 1000);
+  const dotIndex = decimal.indexOf('.');
+  const simplifiedRating = decimal.substring(0, dotIndex + 2);
 
   // Extract safety rating number from license string
   const safetyRatingMatch = license?.match(/([A-Z])\s*(\d+\.\d+)/);
