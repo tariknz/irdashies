@@ -28,7 +28,7 @@ export const WIDGET_MAP: Record<string, (config?: any) => React.JSX.Element | nu
   rejoin: RejoinIndicator,
   telemetryinspector: TelemetryInspector,
   pitlanehelper: PitlaneHelper,
-  'fuel-calculator': FuelCalculator,
+
 };
 
 export type WidgetId = keyof typeof WIDGET_MAP;

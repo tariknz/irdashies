@@ -4,7 +4,8 @@ import {
   LockOpenIcon,
   PresentationChartIcon,
 } from '@phosphor-icons/react';
-import { Link, Route, Routes, useLocation, Navigate } from 'react-router-dom';
+import { Link, Route, Routes, useLocation, Navigate, useParams } from 'react-router-dom';
+import { Fragment } from 'react';
 import { StandingsSettings } from './sections/StandingsSettings';
 import { RelativeSettings } from './sections/RelativeSettings';
 import { WeatherSettings } from './sections/WeatherSettings';
@@ -103,96 +104,74 @@ export const SettingsLayout = () => {
             </li>
           </ul>
           <ul className="flex flex-col gap-2 flex-1 mb-2">
-            <li>
-              <Link
-                to="/settings/blindspotmonitor"
-                className={menuItemClass('/blindspotmonitor')}
-              >
-                Blind Spot Monitor
-              </Link>
-            </li>
-            <li>
-              <Link
-                to="/settings/faster-cars"
-                className={menuItemClass('/faster-cars')}
-              >
-                Faster Cars
-              </Link>
-            </li>
-            <li>
-              <Link
-                to="/settings/flatmap"
-                className={menuItemClass('/flatmap')}
-              >
-                Flat Track Map
-              </Link>
-            </li>
-            <li>
-              <Link to="/settings/fuel" className={menuItemClass('/fuel')}>
-                Fuel Calculator
-              </Link>
-            </li>
+            {(() => {
+              const standingsIndex = currentDashboard.widgets.findIndex(w => (w.type || w.id) === 'standings');
+              const fuelLink = (
+                 <li key="fuel-main-link">
+                   <Link 
+                      to="/settings/fuel" 
+                      className={`block w-full p-2 rounded cursor-pointer ${location.pathname.includes('/settings/fuel') ? 'bg-slate-700' : 'hover:bg-slate-700'}`}
+                   >
+                      Fuel Calculator
+                   </Link>
+                 </li>
+              );
 
-            <li>
-              <Link
-                to="/settings/garagecover"
-                className={menuItemClass('/garagecover')}
-              >
-                Garage Cover
-              </Link>
-            </li>
-            <li>
-              <Link to="/settings/input" className={menuItemClass('/input')}>
-                Input Traces
-              </Link>
-            </li>
-            <li>
-              <Link
-                to="/settings/pitlanehelper"
-                className={menuItemClass('/pitlanehelper')}
-              >
-                Pitlane Helper
-              </Link>
-            </li>
-            <li>
-              <Link
-                to="/settings/rejoin"
-                className={menuItemClass('/rejoin')}
-              >
-                Rejoin Indicator
-              </Link>
-            </li>
-            <li>
-              <Link
-                to="/settings/relative"
-                className={menuItemClass('/relative')}
-              >
-                Relative
-              </Link>
-            </li>
-            <li>
-              <Link
-                to="/settings/standings"
-                className={menuItemClass('/standings')}
-              >
-                Standings
-              </Link>
-            </li>
-            <li>
-              <Link to="/settings/map" className={menuItemClass('/map')}>
-                <div className="flex flex-row gap-2 items-center">
-                  Track Map
-                </div>
-              </Link>
-            </li>
-            <li>
-              <Link
-                to="/settings/weather"
-                className={menuItemClass('/weather')}
-              >
-                Weather
-              </Link>
-            </li>
+              const items = currentDashboard.widgets.map((widget, index) => {
+                const type = widget.type || widget.id;
+                let label = widget.id; // Default fallback
+
+                // Friendly Labels Map
+                const labels: Record<string, string> = {
+                   'blindspotmonitor': 'Blind Spot Monitor',
+                   'faster-cars': 'Faster Cars',
+                   'fastercarsfrombehind': 'Faster Cars',
+                   'flatmap': 'Flat Track Map',
+                   'fuel': 'Fuel Calculator',
+                   'garagecover': 'Garage Cover',
+                   'input': 'Input Traces',
+                   'pitlanehelper': 'Pitlane Helper',
+                   'rejoin': 'Rejoin Indicator',
+                   'relative': 'Relative',
+                   'standings': 'Standings',
+                   'map': 'Track Map',
+                   'weather': 'Weather'
+                };
+
+
+                // Filter out Fuel widgets from distinct items - they are handled by the single 'Fuel Calculator' entry
+                if (type === 'fuel' || widget.id === 'fuel' || widget.id.startsWith('fuel')) {
+                    return null;
+                }
+
+                if (labels[type]) {
+                    label = labels[type];
+                    if (widget.id !== type) {
+                        label += ` (${widget.id})`;
+                    }
+                }
+                
+                const item = (
+                    <li key={widget.id}>
+                       <Link to={`/settings/${widget.id}`} className={menuItemClass(`/${widget.id}`)}>
+                          {label}
+                       </Link>
+                    </li>
+                );
+
+                if (index === standingsIndex) {
+                    return <Fragment key={`group-${widget.id}`}>{item}{fuelLink}</Fragment>;
+                }
+                return item;
+              });
+
+              return (
+                 <>
+                    {items}
+                    {standingsIndex === -1 && fuelLink}
+                 </>
+              );
+            })()}
           </ul>
           {/* Advanced settings pushed to bottom */}
           <ul className="mt-auto pt-2 border-t border-slate-700 flex flex-col gap-2">
@@ -215,42 +194,58 @@ export const SettingsLayout = () => {
         {/* Right Column - Widget Settings */}
         <div className="w-3/4 bg-slate-800 p-4 rounded-md flex flex-col overflow-hidden">
           <Routes>
-            <Route
-              path="/"
-              element={<Navigate to="/settings/general" replace />}
-            />
-            <Route path="general" element={<GeneralSettings />} />
-            <Route path="standings" element={<StandingsSettings />} />
-            <Route path="relative" element={<RelativeSettings />} />
-            <Route path="weather" element={<WeatherSettings />} />
-            <Route path="fuel" element={<FuelSettings />} />
-            <Route path="map" element={<TrackMapSettings />} />
-            <Route path="flatmap" element={<FlatTrackMapSettings />} />
-            <Route path="input" element={<InputSettings />} />
-            <Route path="pitlanehelper" element={<PitlaneHelperSettings />} />
-            <Route path="rejoin" element={<RejoinIndicatorSettings />} />
-            <Route
-              path="faster-cars"
-              element={<FasterCarsFromBehindSettings />}
-            />
-            <Route
-              path="blindspotmonitor"
-              element={<BlindSpotMonitorSettings />}
-            />
-            <Route path="garagecover" element={<GarageCoverSettings />} />
-            <Route path="advanced" element={<AdvancedSettings />} />
-            <Route path="about" element={<AboutSettings />} />
-            <Route
-              path="*"
-              element={
-                <div className="text-slate-400">
-                  Select a widget from the left to customize its settings
-                </div>
-              }
-            />
+             <Route path="/" element={<Navigate to="/settings/general" replace />} />
+             <Route path="/:widgetId" element={<SettingsLoader />} />
           </Routes>
         </div>
       </div>
     </div>
   );
+};
+
+const SettingsLoader = () => {
+    const { widgetId } = useParams<{ widgetId: string }>();
+    const { currentDashboard } = useDashboard();
+    
+    // 1. Handle non-widget pages
+    if (widgetId === 'general') return <GeneralSettings />;
+    if (widgetId === 'advanced') return <AdvancedSettings />;
+    if (widgetId === 'about') return <AboutSettings />;
+    
+    // 2. Special Manager Pages
+    // FuelSettings handles its own creation/selection logic, so we always render it 
+    // if the route is /settings/fuel, even if no widget with id='fuel' exists.
+    if (widgetId === 'fuel') {
+         // If a widget explicitly named 'fuel' exists, we could pass it,
+         // but FuelSettings defaults to selecting the first fuel widget anyway.
+         // Passing widgetId="fuel" specifically might be safer if it exists.
+         const hasFuelWidget = currentDashboard?.widgets.some(w => w.id === 'fuel');
+         return <FuelSettings widgetId={hasFuelWidget ? 'fuel' : undefined} />;
+    }
+    
+    // 3. Find specific widget instance
+    const widget = currentDashboard?.widgets.find(w => w.id === widgetId);
+    
+    if (!widget) {
+        return <div className="text-slate-400">Select a widget to edit</div>;
+    }
+    
+    const type = widget.type || widget.id;
+    
+    switch (type) {
+        case 'standings': return <StandingsSettings />;
+        case 'relative': return <RelativeSettings />;
+        case 'weather': return <WeatherSettings />;
+        case 'fuel': return <FuelSettings widgetId={widget.id} />;
+        case 'map': return <TrackMapSettings />;
+        case 'flatmap': return <FlatTrackMapSettings />;
+        case 'input': return <InputSettings />;
+        case 'pitlanehelper': return <PitlaneHelperSettings />;
+        case 'rejoin': return <RejoinIndicatorSettings />;
+        case 'faster-cars': 
+        case 'fastercarsfrombehind': return <FasterCarsFromBehindSettings />;
+        case 'blindspotmonitor': return <BlindSpotMonitorSettings />;
+        case 'garagecover': return <GarageCoverSettings />;
+        default: return <div className="text-red-400">No settings available for {type}</div>;
+    }
 };

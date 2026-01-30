@@ -591,7 +591,7 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
           <div
             className={`flex flex-1 ${isHorizontalBox ? 'flex-row items-center justify-around' : 'flex-col'} w-full`}
           >
-            {node.widgets?.map((widgetId) => (
+            {Array.from(new Set(node.widgets || [])).map((widgetId) => (
               <div
                 key={widgetId}
                 data-widget-id={widgetId}

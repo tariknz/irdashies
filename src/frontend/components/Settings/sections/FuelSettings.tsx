@@ -347,7 +347,7 @@ const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => {
 
   return (
     <BaseSettingsSection
-      title="Fuel Calculator Settings"
+      title={`Fuel Calculator Settings - ${widgetId}`}
       description="Configure the Fuel Calculator layout."
       settings={settings}
       onSettingsChange={setSettings}
@@ -828,19 +828,45 @@ const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => {
   );
 };
 
-export const FuelSettings = () => {
-  const { currentDashboard, onDashboardUpdated } = useDashboard();
-  const widgetType = 'fuel';
+import { useNavigate } from 'react-router-dom';
 
-  // Identify widgets of the target type
+interface FuelSettingsProps {
+    widgetId?: string;
+}
+
+export const FuelSettings = ({ widgetId }: FuelSettingsProps) => {
+  const { currentDashboard, onDashboardUpdated } = useDashboard();
+  const navigate = useNavigate();
+  const widgetType = 'fuel';
+  const legacyTypes = ['fuel2', 'fuel-calculator'];
+
+  // Identify widgets of the target type (including legacy)
   const fuelWidgets = currentDashboard?.widgets.filter(
-    (w) => w.type === widgetType
+    (w) => w.id === 'fuel' || w.type === widgetType || (w.type && legacyTypes.includes(w.type))
   ) || [];
 
   const [selectedId, setSelectedId] = useState(() => {
+    if (widgetId) return widgetId;
     if (fuelWidgets.length > 0) return fuelWidgets[0].id;
     return '';
   });
+
+  // Track previous widgetId to detect external prop changes
+  const [prevWidgetId, setPrevWidgetId] = useState(widgetId);
+
+  // Sync state when prop changes (crucial for URL navigation updates)
+  if (widgetId !== prevWidgetId) {
+    setPrevWidgetId(widgetId);
+    if (widgetId) {
+      setSelectedId(widgetId);
+    }
+  }
+
+
+  const handleWidgetChange = (newId: string) => {
+      setSelectedId(newId);
+      navigate(`/settings/${newId}`);
+  };
 
   const handleAddWidget = () => {
     if (!currentDashboard || !onDashboardUpdated) return;
@@ -865,7 +891,7 @@ export const FuelSettings = () => {
     );
 
     // Select the new widget
-    setSelectedId(newId);
+    handleWidgetChange(newId);
   };
 
   const handleDeleteWidget = () => {
@@ -882,8 +908,8 @@ export const FuelSettings = () => {
 
     // Reset selection
     const remaining = newWidgets.filter(w => w.type === widgetType);
-    if (remaining.length > 0) setSelectedId(remaining[0].id);
-    else setSelectedId('');
+    if (remaining.length > 0) handleWidgetChange(remaining[0].id);
+    else navigate('/settings/fuel'); // Stay on fuel page but empty state
   };
 
   // If no widgets and we're in fuel mode, show create button prominently or handle empty state
@@ -910,7 +936,7 @@ export const FuelSettings = () => {
           <span className="text-sm font-bold text-slate-200">Editing Widget:</span>
           <select
             value={selectedId}
-            onChange={(e) => setSelectedId(e.target.value)}
+            onChange={(e) => handleWidgetChange(e.target.value)}
             className="bg-slate-900 border border-slate-600 text-white text-sm rounded px-2 py-1"
           >
             {fuelWidgets.map(w => (
@@ -924,9 +950,13 @@ export const FuelSettings = () => {
         <div className="flex items-center gap-2">
           <button
             onClick={handleDeleteWidget}
-            className="px-3 py-1 bg-red-900/50 hover:bg-red-900 text-red-200 text-xs rounded border border-red-800 transition-colors"
+            disabled={selectedId === 'fuel'}
+            title={selectedId === 'fuel' ? "Default widget cannot be deleted. Disable it instead." : "Delete this layout configuration"}
+            className={`px-3 py-1 text-xs rounded border transition-colors ${selectedId === 'fuel' 
+              ? 'bg-slate-800 text-slate-500 border-slate-700 cursor-not-allowed opacity-50' 
+              : 'bg-red-900/50 hover:bg-red-900 text-red-200 border-red-800'}`}
           >
-            Delete Layout
+            {selectedId === 'fuel' ? 'Default (Locked)' : 'Delete Layout'}
           </button>
           <button
             onClick={handleAddWidget}
