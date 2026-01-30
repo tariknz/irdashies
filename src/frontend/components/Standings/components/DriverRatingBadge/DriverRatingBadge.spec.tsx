@@ -19,14 +19,14 @@ describe('DriverRatingBadge', () => {
     const { container } = render(
       <DriverRatingBadge license="B" rating={10000} />
     );
-    expect(container.textContent).toBe('B 10k');
+    expect(container.textContent).toBe('B 10.0k');
   });
 
   it('renders with license C and rating 15000', () => {
     const { container } = render(
       <DriverRatingBadge license="C" rating={15000} />
     );
-    expect(container.textContent).toBe('C 15k');
+    expect(container.textContent).toBe('C 15.0k');
   });
 
   it('renders with license D and rating 2000', () => {
