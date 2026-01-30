@@ -33,6 +33,7 @@ export const FuelCalculatorConsumptionGrid: React.FC<
   widgetId,
   customStyles,
   isCompact,
+  predictiveUsage,
 }) => {
   // Check if we are in a testing/practice session
   // We need the current SessionNum to look up the SessionType in the SessionInfo array
@@ -118,7 +119,9 @@ export const FuelCalculatorConsumptionGrid: React.FC<
   // The "CURR" *value* (the usage itself) might still want to be live?
   // Let's stick to using the `displayData` fully, which is frozen in parent 'frozenDisplayData'.
   // If parent logic freezes it, then `displayData.projectedLapUsage` will be frozen too.
-  const currentUsage = displayData?.projectedLapUsage || 0;
+  // Use frozen displayData for stable columns
+  // BUT use predictiveUsage (passed from parent's throttled trigger) for the CURR column
+  const currentUsage = predictiveUsage ?? displayData?.projectedLapUsage ?? 0;
 
   // Calculate derivates (Laps, Refuel, Finish) for each column
   // This duplicates some logic but ensures consistent display as per mockup

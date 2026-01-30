@@ -61,7 +61,7 @@ export const FuelCalculatorTimeEmpty: React.FC<FuelCalculatorWidgetProps> = ({
 
   return (
     <div
-      className={`bg-slate-900/80 rounded border ${borderColor} ${isCompact ? 'px-2 py-0.5' : 'px-3 py-2'}`}
+      className={`rounded border ${borderColor} ${isCompact ? 'px-2 py-0.5' : 'px-3 py-2'}`}
     >
       <div className="flex items-center justify-between">
         <span

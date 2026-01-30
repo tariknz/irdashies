@@ -295,6 +295,7 @@ export function useFuelCalculation(
           isInLap: wasOnPitRoadDuringLapRef.current, // Mark if lap involved pit road (In Lap)
           wasTowed,
           timestamp: Date.now(),
+          sessionNum,
         };
 
         if (DEBUG_LOGGING || wasTowed) {
@@ -389,7 +390,8 @@ export function useFuelCalculation(
       const lapsToUse = fullLaps.length > 0 ? fullLaps : allCandidates;
 
       // Logic: Favor current session laps for Qualify MAX. Fallback to historical if session is empty.
-      const sessionLaps = allCandidates.filter((l) => !l.isHistorical);
+      // Filter by sessionNum to ensure we only use laps from THIS specific qualifying session
+      const sessionLaps = allCandidates.filter((l) => !l.isHistorical && l.sessionNum === sessionNum);
       const qualifyLapsToUse = sessionLaps.length > 0
         ? (sessionLaps.filter(l => !l.isOutLap).length > 0 ? sessionLaps.filter(l => !l.isOutLap) : sessionLaps)
         : lapsToUse;
@@ -534,13 +536,13 @@ export function useFuelCalculation(
     const maxSourceLaps = currentSessionLaps.length > 0 ? currentSessionLaps : lapsToUse;
     const { min: minLapUsage, max: maxLapUsage } = findFuelMinMax(maxSourceLaps);
 
-    // Calculate projected lap usage (Removed per user request to disable live projection)
-    
+
+
     // Use customizable average as primary metric, but include projected current lap
     // This allows refuel to update LIVE during the lap (like Kapps)
     let avgFuelPerLapBase = avgLaps; // Base average without current lap projection
     let avgFuelPerLapForConsumption = avgLaps; // For consumption display (refuel, at finish, laps)
-    
+
     // FALLBACK: If no valid laps yet (race start), use qualify or historical data
     if (avgFuelPerLapBase <= 0) {
       // Try qualify consumption first
@@ -557,19 +559,6 @@ export function useFuelCalculation(
         }
       }
     }
-    
-    // If we're mid-lap and have a valid projection, blend it into consumption average
-    // DISABLED: User requested to strictly NOT use live 'accelerator based' projection.
-    // Calculations will rely solely on completed laps (avgLaps / avgFuelPerLapBase).
-    /*
-    if (lapDistPct && lapDistPct > 0.05 && lapDistPct < 0.95 && projectedCurrentLap > 0) {
-      // Include projected current lap in the average for consumption calculations
-      // Weight: treat it as the most recent lap
-      const lapsForAvgWithCurrent = [projectedCurrentLap, ...lastLapsForAvg.map(l => l.fuelUsed)];
-      const limitedLaps = lapsForAvgWithCurrent.slice(0, avgLapsCount);
-      avgFuelPerLapForConsumption = limitedLaps.reduce((sum, val) => sum + val, 0) / limitedLaps.length;
-    }
-    */
 
     // Guard against zero or invalid avgFuelPerLap - only return null if we truly have no data
     if (avgFuelPerLapBase <= 0) {

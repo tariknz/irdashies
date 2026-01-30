@@ -22,6 +22,8 @@ export interface FuelLapData {
   isHistorical?: boolean;
   /** Timestamp when lap was completed */
   timestamp: number;
+  /** Session number the lap was completed in */
+  sessionNum?: number;
 }
 
 export interface FuelCalculatorBridge {
