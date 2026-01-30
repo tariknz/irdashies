@@ -15,24 +15,25 @@ export const useCarBehind = ({
   const allDrivers = useDriverRelatives({ buffer: driversStandings.length });
 
   // Filter out drivers who are in the pits
-  const drivers = allDrivers.filter(driver => !driver.onPitRoad);
+  const drivers = allDrivers.filter((driver) => !driver.onPitRoad);
   const myCar = drivers[1];
   const threshold = distanceThreshold ?? -3;
 
   const fasterCarsFromBehind = useMemo(() => {
     // Get all cars behind the player (negative delta)
-    const carsBehind = drivers.filter(driver => driver.delta < 0);
+    const carsBehind = drivers.filter((driver) => driver.delta ?? 0 < 0);
 
     return carsBehind
-      .filter(car =>
-        car.carClass?.relativeSpeed > myCar?.carClass?.relativeSpeed &&
-        car.delta >= threshold // delta is negative, so >= threshold means within threshold distance
+      .filter(
+        (car) =>
+          car.carClass?.relativeSpeed > myCar?.carClass?.relativeSpeed &&
+          (car.delta ?? 0) >= threshold // delta is negative, so >= threshold means within threshold distance
       )
-      .sort((a, b) => a.delta - b.delta) // Sort by closest first (most negative delta)
+      .sort((a, b) => (a.delta ?? 0) - (b.delta ?? 0)) // Sort by closest first (most negative delta)
       .slice(0, settings.numberDriversBehind) // Take only the configured number
-      .map(car => {
+      .map((car) => {
         const percent = parseInt(
-          (100 - (Math.abs(car.delta) / 3) * 100).toFixed(0)
+          (100 - (Math.abs(car.delta ?? 0) / 3) * 100).toFixed(0)
         );
 
         return {
