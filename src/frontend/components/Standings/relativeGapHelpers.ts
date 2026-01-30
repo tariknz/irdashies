@@ -81,11 +81,10 @@ export function getTimeAtPosition(refLap: ReferenceLap, trackPct: number) {
   };
 
   const sectorDistance = nextPosRef.trackPct - prevPosRef.trackPct;
+  const distanceCovered = trackPct - prevPosRef.trackPct;
 
   const fraction =
-    (trackPct - prevPosRef.trackPct) / sectorDistance === 0
-      ? 1
-      : sectorDistance;
+    sectorDistance === 0 ? distanceCovered : distanceCovered / sectorDistance;
 
   const timeDiff =
     nextPosRef.timeElapsedSinceStart - prevPosRef.timeElapsedSinceStart;

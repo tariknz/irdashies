@@ -577,7 +577,7 @@ describe('getTimeAtPosition', () => {
     const refLap = generateReferenceLap(100);
 
     // At 50% through 100s lap = 50s
-    const result = getTimeAtPosition(refLap, 0.5001);
+    const result = getTimeAtPosition(refLap, 0.5);
 
     expect(result).toBeCloseTo(50);
   });
@@ -586,16 +586,16 @@ describe('getTimeAtPosition', () => {
     const refLap = generateReferenceLap(100);
 
     // At 50.125% (halfway between 50% and 50.25%)
-    // Should be 50.00s
+    // Should be 50.125s
     const result = getTimeAtPosition(refLap, 0.50125);
 
-    expect(result).toBeCloseTo(50);
+    expect(result).toBeCloseTo(50.125);
   });
 
   it('should handle position near start (0%)', () => {
     const refLap = generateReferenceLap(100);
 
-    const result = getTimeAtPosition(refLap, 0.0101);
+    const result = getTimeAtPosition(refLap, 0.01);
 
     expect(result).toBeCloseTo(1);
   });
@@ -603,7 +603,7 @@ describe('getTimeAtPosition', () => {
   it('should handle position near finish (100%)', () => {
     const refLap = generateReferenceLap(100);
 
-    const result = getTimeAtPosition(refLap, 0.9901);
+    const result = getTimeAtPosition(refLap, 0.99);
 
     expect(result).toBeCloseTo(99);
   });
@@ -614,7 +614,7 @@ describe('calculateReferenceDelta', () => {
     const refLap = generateReferenceLap(100);
 
     // Player at 50%, opponent at 52%
-    const result = calculateReferenceDelta(refLap, 0.5201, 0.5001);
+    const result = calculateReferenceDelta(refLap, 0.52, 0.5);
 
     // Opponent: 52s, Player: 50s
     // Delta: 52 - 50 = +2s
@@ -625,7 +625,7 @@ describe('calculateReferenceDelta', () => {
     const refLap = generateReferenceLap(100);
 
     // Player at 50%, opponent at 48%
-    const result = calculateReferenceDelta(refLap, 0.4801, 0.5001);
+    const result = calculateReferenceDelta(refLap, 0.48, 0.5);
 
     // Opponent: 48s, Player: 50s
     // Delta: 48 - 50 = -2s
@@ -636,7 +636,7 @@ describe('calculateReferenceDelta', () => {
     const refLap = generateReferenceLap(100);
 
     // Player just started (1%), opponent finishing (99%)
-    const result = calculateReferenceDelta(refLap, 0.9901, 0.0101);
+    const result = calculateReferenceDelta(refLap, 0.99, 0.01);
 
     // Raw: 99 - 1 = +98s
     // Wrapped: 98 - 100 = -2s (opponent is behind)
@@ -647,7 +647,7 @@ describe('calculateReferenceDelta', () => {
     const refLap = generateReferenceLap(100);
 
     // Player finishing (99%), opponent just started (1%)
-    const result = calculateReferenceDelta(refLap, 0.0101, 0.9901);
+    const result = calculateReferenceDelta(refLap, 0.01, 0.99);
 
     // Raw: 1 - 99 = -98s
     // Wrapped: -98 + 100 = +2s (opponent is ahead)
@@ -658,7 +658,7 @@ describe('calculateReferenceDelta', () => {
     const refLap = generateReferenceLap(80); // 80s lap
 
     // Player at 50%, opponent at 60%
-    const result = calculateReferenceDelta(refLap, 0.6001, 0.5001);
+    const result = calculateReferenceDelta(refLap, 0.6, 0.5);
 
     // Opponent: 48s (0.6 * 80), Player: 40s (0.5 * 80)
     // Delta: 48 - 40 = +8s
