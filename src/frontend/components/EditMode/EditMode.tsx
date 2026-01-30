@@ -36,7 +36,10 @@ export const EditMode = ({ children }: PropsWithChildren) => {
           <div className="flex items-center gap-2 absolute top-0 right-0 py-1 px-2 bg-sky-500 text-white cursor-move">
             <ResizeIcon />
             <span>
-              {widgetName ??  'Edit Mode'}
+              {widgetName ?? 'Edit Mode'}
+              {widgetId && componentType === 'fuel' && widgetId !== 'fuel' && (
+                <span className="ml-1 text-[10px] opacity-80 font-mono">({widgetId})</span>
+              )}
             </span>
           </div>
         </div>
