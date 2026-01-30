@@ -5,7 +5,9 @@
       "Bash(npm run test:*)",
       "Bash(git checkout:*)",
       "Bash(npx tsc:*)",
-      "Bash(npm test:*)"
+      "Bash(npm test:*)",
+      "Bash(gh pr view:*)",
+      "Bash(git pull:*)"
     ],
     "deny": [],
     "ask": []

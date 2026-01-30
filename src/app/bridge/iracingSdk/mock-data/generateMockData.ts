@@ -35,6 +35,15 @@ export function generateMockData(sessionData?: {
   let sessionIdx = 0;
 
   let prevTelemetry = mockTelemetry as unknown as Telemetry;
+  
+  // Demo mode: Simulate RPM and gear changes for Mazda MX-5
+  let demoRpm = 2000;
+  let demoGear = 1;
+  let holdAtRedlineCounter = 0; // Counter to hold at redline
+  const shiftRpm = 7400; // MX-5 shift point
+  const minRpm = 2000;
+  const rpmStep = 15; // RPM change per update
+  const holdAtRedlineTicks = 15; // Hold for 1.5 seconds (15 ticks * 100ms)
 
   // Use Sets to support multiple subscribers
   const telemetryCallbacks = new Set<(value: Telemetry) => void>();
@@ -54,6 +63,29 @@ export function generateMockData(sessionData?: {
           if (!t) {
             const throttleValue = prevTelemetry.Throttle.value[0];
             const brakeValue = prevTelemetry.Brake.value[0];
+            
+            // Simulate RPM and gear changes for demo mode
+            // Check if we're at or above shift RPM
+            if (demoRpm >= shiftRpm) {
+              // Hold at redline for a moment
+              if (holdAtRedlineCounter < holdAtRedlineTicks) {
+                holdAtRedlineCounter++;
+                demoRpm = shiftRpm; // Keep at exactly shift RPM
+              } else {
+                // Shift up after holding
+                demoGear = Math.min(6, demoGear + 1);
+                demoRpm = minRpm + 1000; // Drop RPM after shift
+                holdAtRedlineCounter = 0; // Reset counter
+                // After reaching 6th gear, loop back to 1st
+                if (demoGear > 6) {
+                  demoGear = 1;
+                }
+              }
+            } else {
+              // Normal RPM increase
+              demoRpm += rpmStep;
+            }
+            
             t = {
               ...prevTelemetry,
               Brake: {
@@ -66,11 +98,15 @@ export function generateMockData(sessionData?: {
               },
               Gear: {
                 ...prevTelemetry.Gear,
-                value: [3],
+                value: [demoGear],
               },
               Speed: {
                 ...prevTelemetry.Speed,
-                value: [44],
+                value: [44 + demoGear * 10],
+              },
+              RPM: {
+                ...prevTelemetry.RPM,
+                value: [demoRpm],
               },
             };
             prevTelemetry = t;
@@ -81,7 +117,7 @@ export function generateMockData(sessionData?: {
           
           // Call all registered callbacks
           telemetryCallbacks.forEach(cb => cb(data));
-        }, 1000 / 60);
+        }, 1000 / 60); // Update at 60Hz for smooth telemetry simulation
       }
       
       // Return unsubscribe function

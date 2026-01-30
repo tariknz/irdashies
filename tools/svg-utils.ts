@@ -100,9 +100,9 @@ export const findDirection = (trackId: number) => {
     332, 333, 336, 337, 338, 343, 350, 351, 357, 364, 365, 366, 371, 381, 386,
     397, 398, 404, 405, 407, 413, 414, 418, 424, 426, 427, 429, 431, 436, 438,
     443, 444, 445, 448, 449, 451, 453, 454, 455, 456, 463, 469, 473, 474, 481,
-    483, 498, 511, 512, 514, 518, 519, 520, 522, 526, 527, 528, 529, 530, 532, 
-    540, 541, 542, 543, 544, 545, 546, 551, 559, 561, 562, 563, 564, 565, 567, 
-    568, 569, 570, 571, 572, 573, 574, 575, 576, 577, 580
+    483, 498, 509, 510, 511, 512, 514, 518, 519, 520, 522, 526, 527, 528, 529,
+    530, 532, 540, 541, 542, 543, 544, 545, 546, 551, 559, 561, 562, 563, 564,
+    565, 567, 568, 569, 570, 571, 572, 573, 574, 575, 576, 577, 580
   ];
 
   return anticlockwiseTracks.includes(trackId) ? 'anticlockwise' : 'clockwise';
@@ -113,12 +113,12 @@ export const findDirection = (trackId: number) => {
 export const preCalculatePoints = (pathData: string): { x: number; y: number }[] => {
   const path = new svgPathProperties(pathData);
   const totalLength = path.getTotalLength();
-  
+
   // Calculate number of points based on path length
   // Aim for roughly 1 point per 2-3 pixels of path length for good resolution
   const pointsPerPixel = 0.4; // Adjust this value to control density
   const calculatedPoints = Math.max(500, Math.min(2000, Math.round(totalLength * pointsPerPixel)));
-  
+
   const points: { x: number; y: number }[] = [];
 
   for (let i = 0; i <= calculatedPoints; i++) {
@@ -145,7 +145,7 @@ export const rectToPath = (rect: SVGRectElement): string => {
   const y = parseFloat(rect.getAttribute('y') || '0');
   const width = parseFloat(rect.getAttribute('width') || '0');
   const height = parseFloat(rect.getAttribute('height') || '0');
-  
+
   // Handle transform if present
   const transform = rect.getAttribute('transform');
   if (transform) {
@@ -153,7 +153,7 @@ export const rectToPath = (rect: SVGRectElement): string => {
     // This should work for most start-finish lines
     const centerX = x + width / 2;
     const centerY = y + height / 2;
-    
+
     // Create a simple line through the center of the rect
     // For rotated rects, we'll use the longer dimension
     const isRotated = transform.includes('rotate');
@@ -166,7 +166,7 @@ export const rectToPath = (rect: SVGRectElement): string => {
       return `M${centerX},${y}L${centerX},${y + height}`;
     }
   }
-  
+
   // For non-rotated rects, use the center line
   const centerX = x + width / 2;
   return `M${centerX},${y}L${centerX},${y + height}`;
@@ -180,39 +180,39 @@ export const extractStartFinishData = (svg: SVGSVGElement): { line: string; arro
     // Look for start-finish line and arrow symbols
     let linePath = '';
     let arrowPath = '';
-    
+
     for (const useEl of useElements) {
       const href = useEl.getAttribute('href') || useEl.getAttribute('xlink:href');
       const transform = useEl.getAttribute('transform') || '';
-      
+
       if (href) {
         const symbolId = href.replace('#', '');
         const symbol = svg.querySelector(`symbol[id="${symbolId}"]`);
-        
+
         if (symbol) {
           // Extract transform values
           const translateMatch = transform.match(/translate\(([^,\s]+)\s+([^)]+)\)/);
           const translateX = translateMatch ? parseFloat(translateMatch[1]) : 0;
           const translateY = translateMatch ? parseFloat(translateMatch[2]) : 0;
-          
+
           // Check if this is a line (rect) or arrow (polygon)
           const rect = symbol.querySelector('rect');
           const polygon = symbol.querySelector('polygon');
-          
+
           if (rect) {
             // Convert rect to path and apply transform
             const x = parseFloat(rect.getAttribute('x') || '0');
             const y = parseFloat(rect.getAttribute('y') || '0');
             const width = parseFloat(rect.getAttribute('width') || '0');
             const height = parseFloat(rect.getAttribute('height') || '0');
-            
+
             // Create line through center of rect
             const centerX = x + width / 2;
             const lineX1 = translateX + centerX;
             const lineY1 = translateY + y;
             const lineX2 = translateX + centerX;
             const lineY2 = translateY + y + height;
-            
+
             linePath = `M${lineX1},${lineY1}L${lineX2},${lineY2}`;
           } else if (polygon) {
             // Convert polygon to path and apply transform
@@ -233,7 +233,7 @@ export const extractStartFinishData = (svg: SVGSVGElement): { line: string; arro
         }
       }
     }
-    
+
     if (linePath && arrowPath) {
       return { line: linePath, arrow: arrowPath };
     }
@@ -286,7 +286,7 @@ export const extractStartFinishData = (svg: SVGSVGElement): { line: string; arro
           points.push([coords[i], coords[i + 1]]);
         }
       }
-      
+
       if (points.length >= 3) {
         const polygonPathData = `M${points[0][0]},${points[0][1]}L${points.slice(1).map(p => `${p[0]},${p[1]}`).join('L')}Z`;
         return { line: rectPath, arrow: polygonPathData };

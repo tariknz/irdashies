@@ -6,6 +6,7 @@ import { ToggleSwitch } from '../components/ToggleSwitch';
 import { useSortableList } from '../../SortableList';
 import { DotsSixVerticalIcon } from '@phosphor-icons/react';
 import { BadgeFormatPreview } from '../components/BadgeFormatPreview';
+import { DriverNamePreview } from '../components/DriverNamePreview';
 import { VALID_SESSION_BAR_ITEM_KEYS, SESSION_BAR_ITEM_LABELS, DEFAULT_SESSION_BAR_DISPLAY_ORDER } from '../sessionBarConstants';
 import { mergeDisplayOrder } from '../../../utils/displayOrder';
 import { SessionVisibility } from '../components/SessionVisibility';
@@ -91,9 +92,9 @@ const defaultConfig: StandingsWidgetSettings['config'] = {
   useLivePosition: false,
   lapTimeDeltas: { enabled: false, numLaps: 3 },
   position: { enabled: true },
-  driverName: { enabled: true, showStatusBadges: true },
+  driverName: { enabled: true, showStatusBadges: true, nameFormat: 'name-surname' },
   teamName: { enabled: false },
-  pitStatus: { enabled: true, showPitTime: false },
+  pitStatus: { enabled: true, showPitTime: false, pitLapDisplayMode: 'lapsSinceLastPit' },
   displayOrder: sortableSettings.map(s => s.id),
   sessionVisibility: { race: true, loneQualify: true, openQualify: true, practice: true, offlineTesting: true }
 };
@@ -224,13 +225,15 @@ const migrateConfig = (
       showStatusBadges:
         (config.driverName as { showStatusBadges?: boolean })?.showStatusBadges ??
         true,
+      nameFormat: ((config.driverName as { nameFormat?: 'name-middlename-surname' | 'name-m.-surname' | 'name-surname' | 'n.-surname' | 'surname-n.' | 'surname' })?.nameFormat) ?? 'name-middlename-surname',
     },
     teamName: { enabled: (config.teamName as { enabled?: boolean })?.enabled ?? false },
     pitStatus: {
       enabled: (config.pitStatus as { enabled?: boolean })?.enabled ?? true,
       showPitTime: (config.pitStatus as { showPitTime?: boolean })?.showPitTime ?? false,
+      pitLapDisplayMode: (config.pitStatus as { pitLapDisplayMode?: 'lastPitLap' | 'lapsSinceLastPit' })?.pitLapDisplayMode ?? 'lapsSinceLastPit',
     },
-      displayOrder: mergeDisplayOrder(sortableSettings.map(s => s.id), config.displayOrder as string[]),
+    displayOrder: mergeDisplayOrder(sortableSettings.map(s => s.id), config.displayOrder as string[]),
   };
 };
 
@@ -277,7 +280,7 @@ const DisplaySettingsList = ({ itemsOrder, onReorder, settings, handleConfigChan
               <ToggleSwitch
                 enabled={isEnabled}
                 onToggle={(enabled) => {
-                  const cv = settings.config[setting.configKey] as { enabled: boolean; [key: string]: unknown };
+                  const cv = settings.config[setting.configKey] as { enabled: boolean;[key: string]: unknown };
                   handleConfigChange({
                     [setting.configKey]: { ...cv, enabled }
                   });
@@ -309,25 +312,39 @@ const DisplaySettingsList = ({ itemsOrder, onReorder, settings, handleConfigChan
             )}
             {setting.hasSubSetting && setting.configKey === 'pitStatus' && settings.config.pitStatus.enabled && (
               <div className="flex items-center justify-between pl-8 mt-2">
-                <span className="text-sm text-slate-300">Show Pit Time</span>
+                <span className="text-sm text-slate-300">Pit Time</span>
                 <ToggleSwitch
                   enabled={settings.config.pitStatus.showPitTime ?? false}
                   onToggle={(enabled) => {
-                    const cv = settings.config[setting.configKey] as { enabled: boolean; showPitTime?: boolean; [key: string]: unknown };
+                    const cv = settings.config[setting.configKey] as { enabled: boolean; showPitTime?: boolean; pitLapDisplayMode?: 'lastPitLap' | 'lapsSinceLastPit';[key: string]: unknown };
                     handleConfigChange({
                       [setting.configKey]: { ...cv, showPitTime: enabled }
                     });
                   }}
                 />
+                <span className="textP-sm text-slate-300">Pitlap display mode</span>
+                <select
+                  value={settings.config.pitStatus.pitLapDisplayMode}
+                  onChange={(e) => {
+                    const cv = settings.config[setting.configKey] as { enabled: boolean; showPitTime?: boolean; pitLapDisplayMode?: 'lastPitLap' | 'lapsSinceLastPit';[key: string]: unknown };
+                    handleConfigChange({
+                      [setting.configKey]: { ...cv, pitLapDisplayMode: e.target.value as 'lastPitLap' | 'lapsSinceLastPit' }
+                    })
+                  }}
+                  className="bg-slate-700 text-white rounded-md px-2 py-1"
+                >
+                  <option value="lastPitLap">Last pit lap</option>
+                  <option value="lapsSinceLastPit">Laps since last pit</option>
+                </select>
               </div>
             )}
             {setting.hasSubSetting && setting.configKey === 'driverName' && settings.config.driverName.enabled && (
               <div className="flex items-center justify-between pl-8 mt-2">
-                <span className="text-sm text-slate-300">Show Status Badges</span>
+                <span className="text-sm text-slate-300">Status Badges</span>
                 <ToggleSwitch
                   enabled={settings.config.driverName.showStatusBadges}
                   onToggle={(enabled) => {
-                    const cv = settings.config[setting.configKey] as { enabled: boolean; showStatusBadges: boolean; [key: string]: unknown };
+                    const cv = settings.config[setting.configKey] as { enabled: boolean; showStatusBadges: boolean;[key: string]: unknown };
                     handleConfigChange({
                       [setting.configKey]: { ...cv, showStatusBadges: enabled }
                     });
@@ -341,7 +358,7 @@ const DisplaySettingsList = ({ itemsOrder, onReorder, settings, handleConfigChan
                 <ToggleSwitch
                   enabled={settings.config.carManufacturer.hideIfSingleMake ?? false}
                   onToggle={(enabled) => {
-                    const cv = settings.config[setting.configKey] as { enabled: boolean; hideIfSingleMake?: boolean; [key: string]: unknown };
+                    const cv = settings.config[setting.configKey] as { enabled: boolean; hideIfSingleMake?: boolean;[key: string]: unknown };
                     handleConfigChange({
                       [setting.configKey]: { ...cv, hideIfSingleMake: enabled }
                     });
@@ -358,9 +375,28 @@ const DisplaySettingsList = ({ itemsOrder, onReorder, settings, handleConfigChan
                       format={format}
                       selected={(configValue as { enabled: boolean; badgeFormat: string }).badgeFormat === format}
                       onClick={() => {
-                        const cv = settings.config[setting.configKey] as { enabled: boolean; badgeFormat: string; [key: string]: unknown };
+                        const cv = settings.config[setting.configKey] as { enabled: boolean; badgeFormat: string;[key: string]: unknown };
                         handleConfigChange({
                           [setting.configKey]: { ...cv, badgeFormat: format },
+                        });
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+            {setting.configKey === 'driverName' && (configValue as { enabled: boolean }).enabled && (
+              <div className="mt-3">
+                <div className="flex flex-wrap gap-3 justify-end">
+                  {(['name-middlename-surname', 'name-m.-surname', 'name-surname', 'n.-surname', 'surname-n.', 'surname'] as const).map((format) => (
+                    <DriverNamePreview
+                      key={format}
+                      format={format}
+                      selected={(configValue as { enabled: boolean; nameFormat: string }).nameFormat === format}
+                      onClick={() => {
+                        const cv = settings.config[setting.configKey] as { enabled: boolean; nameFormat: string;[key: string]: unknown };
+                        handleConfigChange({
+                          [setting.configKey]: { ...cv, nameFormat: format },
                         });
                       }}
                     />
@@ -374,7 +410,7 @@ const DisplaySettingsList = ({ itemsOrder, onReorder, settings, handleConfigChan
                 <select
                   value={(configValue as { enabled: boolean; timeFormat: string }).timeFormat}
                   onChange={(e) => {
-                    const cv = settings.config[setting.configKey] as { enabled: boolean; timeFormat: string; [key: string]: unknown };
+                    const cv = settings.config[setting.configKey] as { enabled: boolean; timeFormat: string;[key: string]: unknown };
                     handleConfigChange({
                       [setting.configKey]: {
                         ...cv,
@@ -552,7 +588,7 @@ export const StandingsSettings = () => {
                   Reset to Default Order
                 </button>
               </div>
-              <div className="px-4">
+              <div className="pl-4">
                 <DisplaySettingsList
                   itemsOrder={itemsOrder}
                   onReorder={handleDisplayOrderChange}
@@ -567,7 +603,7 @@ export const StandingsSettings = () => {
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-medium text-slate-200">Driver Standings</h3>
               </div>
-              <div className="space-y-3 px-4">
+              <div className="space-y-3 pl-4">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-slate-300">Drivers to show around player</span>
                   <input
@@ -696,7 +732,7 @@ export const StandingsSettings = () => {
                   Reset to Default Order
                 </button>
               </div>
-              <div className="space-y-3 px-4">
+              <div className="space-y-3 pl-4">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-slate-300">Show Header Bar</span>
                   <ToggleSwitch
@@ -748,7 +784,7 @@ export const StandingsSettings = () => {
                   Reset to Default Order
                 </button>
               </div>
-              <div className="space-y-3 px-4">
+              <div className="space-y-3 pl-4">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-slate-300">Show Footer Bar</span>
                   <ToggleSwitch
@@ -828,7 +864,7 @@ export const StandingsSettings = () => {
             </div>
 
             {/* Use Live Position Standings */}
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-4">
               <div>
                 <h4 className="text-md font-medium text-slate-300">Use Live Position Standings</h4>
                 <p className="text-sm text-slate-400">

@@ -63,7 +63,7 @@ export const BaseSettingsSection = <T,>({
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex-none space-y-6">
+      <div className="flex-none space-y-6 p-4 bg-slate-700 rounded">
         <div>
           <div className="flex justify-between items-center mb-1">
             <h2 className="text-xl">{title}</h2>
@@ -73,13 +73,13 @@ export const BaseSettingsSection = <T,>({
               label="Enable Widget"
             />
           </div>
-          <p className="text-slate-400 text-sm mb-4">{description}</p>
+          <p className="text-slate-400 text-sm">{description}</p>
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto min-h-0">
+      <div className="flex-1 overflow-y-auto min-h-0 mt-4">
         {children && (
-          <div className="space-y-4">
+          <div className="space-y-4 p-4">
             {typeof children === 'function' ? children(handleConfigChange) : children}
           </div>
         )}

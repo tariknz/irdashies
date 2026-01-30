@@ -23,6 +23,7 @@ interface PitLapState {
     carIdxTrackSurface: number[],
     sessionState: number
   ) => void;
+  reset: () => void;
 }
 
 export const usePitLapStore = create<PitLapState>((set, get) => ({
@@ -119,6 +120,21 @@ export const usePitLapStore = create<PitLapState>((set, get) => ({
       sessionTime: currentSessionTime,
       sessionState: sessionState,
       sessionUniqId: currentSessionUniqId
+    });
+  },
+  reset: () => {
+    set({
+      sessionUniqId: 0,
+      sessionTime: 0,
+      sessionState: 0,
+      pitLaps: [],
+      carLaps: [],
+      prevCarTrackSurface: [],
+      actualCarTrackSurface: [],
+      pitEntryTime: [],
+      pitExitTime: [],
+      prevOnPitRoad: [],
+      entryLap: [],
     });
   },
 }));

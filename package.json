@@ -1,7 +1,7 @@
 {
   "name": "irdashies",
   "productName": "irdashies",
-  "version": "0.0.36",
+  "version": "0.0.38",
   "description": "iRacing Dashboards & Overlays",
   "repository": {
     "type": "git",
@@ -11,6 +11,7 @@
   "scripts": {
     "start": "electron-forge start --enable-logging",
     "generate-assets": "npx tsx ./tools/index.ts",
+    "generate-track-json": "npx tsx ./tools/generate-track-json.ts",
     "package": "electron-forge package",
     "make": "electron-forge make",
     "publish:ci": "electron-forge publish",
@@ -22,7 +23,8 @@
     "ensure-tracks": "npx tsx ./tools/ensure-tracks.ts",
     "analyze-memory": "npx tsx ./tools/analyze-memory.ts",
     "analyze-profile": "npx tsx ./tools/analyze-profile.ts",
-    "chromatic": "npm run ensure-tracks && npx chromatic"
+    "chromatic": "npm run ensure-tracks && npx chromatic",
+    "fetch-lovely-data": "npx tsx ./tools/fetch-lovely-data.ts"
   },
   "devDependencies": {
     "@chromatic-com/storybook": "^4.1.3",

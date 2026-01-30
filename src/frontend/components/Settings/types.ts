@@ -84,9 +84,9 @@ export interface StandingsWidgetSettings extends BaseWidgetSettings {
     showOnlyWhenOnTrack: boolean;
     useLivePosition: boolean;
     position: { enabled: boolean };
-    driverName: { enabled: boolean; showStatusBadges: boolean };
+    driverName: { enabled: boolean; showStatusBadges: boolean; nameFormat: 'name-middlename-surname' | 'name-m.-surname' | 'name-surname' | 'n.-surname' | 'surname-n.' | 'surname' };
     teamName: { enabled: boolean };
-    pitStatus: { enabled: boolean; showPitTime?: boolean };
+    pitStatus: { enabled: boolean; showPitTime?: boolean; pitLapDisplayMode: 'lastPitLap' | 'lapsSinceLastPit' };
     displayOrder: string[];
     sessionVisibility: SessionVisibilitySettings;
   };
@@ -159,9 +159,9 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
       precision: number;
     };
     position: { enabled: boolean };
-    driverName: { enabled: boolean; showStatusBadges: boolean };
+    driverName: { enabled: boolean; showStatusBadges: boolean; nameFormat: 'name-middlename-surname' | 'name-m.-surname' | 'name-surname' | 'n.-surname' | 'surname-n.' | 'surname' };
     teamName: { enabled: boolean };
-    pitStatus: { enabled: boolean; showPitTime?: boolean };
+    pitStatus: { enabled: boolean; showPitTime?: boolean; pitLapDisplayMode: 'lastPitLap' | 'lapsSinceLastPit' };
     displayOrder: string[];
     useLivePosition: boolean;
     sessionVisibility: SessionVisibilitySettings;
@@ -225,6 +225,7 @@ export interface InputWidgetSettings extends BaseWidgetSettings {
       enabled: boolean;
       includeThrottle: boolean;
       includeBrake: boolean;
+      includeClutch: boolean;
       includeAbs: boolean;
       includeSteer?: boolean;
       strokeWidth?: number;
@@ -245,6 +246,20 @@ export interface InputWidgetSettings extends BaseWidgetSettings {
     tachometer: {
       enabled: boolean;
       showRpmText: boolean;
+      shiftPointStyle?: 'glow' | 'pulse' | 'border';
+      customShiftPoints?: {
+        enabled: boolean;
+        indicatorType: 'glow' | 'pulse' | 'border';
+        indicatorColor: string;
+        carConfigs: Record<string, {
+          enabled: boolean;
+          carId: string;
+          carName: string;
+          gearCount: number;
+          redlineRpm: number;
+          gearShiftPoints: Record<string, { shiftRpm: number }>;
+        }>;
+      };
     };
     background: { opacity: number };
     displayOrder: string[];
@@ -335,6 +350,13 @@ export interface FasterCarsFromBehindWidgetSettings extends BaseWidgetSettings {
   config: {
     showOnlyWhenOnTrack: boolean;
     distanceThreshold: number;
+    numberDriversBehind: number;
+    alignDriverBoxes: 'Top' | 'Bottom';
+    closestDriverBox: 'Top' | 'Reverse';
+    showName: boolean;
+    showDistance: boolean;
+    showBadge: boolean;
+    badgeFormat: string;
     sessionVisibility: SessionVisibilitySettings;
   };
 }
@@ -348,5 +370,29 @@ export interface PitlaneHelperWidgetSettings extends BaseWidgetSettings {
     earlyPitboxThreshold: number;
     showPitlaneTraffic: boolean;
     background: { opacity: number };
+    progressBarOrientation: 'horizontal' | 'vertical';
+    showPitExitInputs: boolean;
+    pitExitInputs: {
+      throttle: boolean;
+      clutch: boolean;
+    };
+    showInputsPhase: 'atPitbox' | 'afterPitbox' | 'always';
   };
+}
+
+// Type for custom shift points - used in InputWidgetSettings tachometer config
+export interface ShiftPointSettings {
+  /** Whether custom shift points are enabled */
+  enabled: boolean;
+  /** Visual indicator type */
+  indicatorType: 'glow' | 'pulse' | 'border';
+  /** Indicator color */
+  indicatorColor: string;
+  /** Per-car shift configurations */
+  carConfigs: Record<string, {
+    carId: string;
+    carName: string;
+    gearCount: number;
+    gearShiftPoints: Record<string, { shiftRpm: number }>;
+  }>;
 }
