@@ -9,9 +9,9 @@ const SETTING_ID = 'flag';
 
 const defaultConfig: FlagWidgetSettings['config'] = {
   enabled: true,
-  showOnlyWhenOnTrack: false,
+  showOnlyWhenOnTrack: true,
   showLabel: true,
-  animate: false,
+  animate: true,
   blinkPeriod: 0.5,
   matrixMode: '16x16',
   showNoFlagState: true,
