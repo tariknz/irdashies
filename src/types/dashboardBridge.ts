@@ -7,15 +7,15 @@ export interface SaveDashboardOptions {
 }
 
 export interface DashboardBridge {
-  onEditModeToggled: (callback: (value: boolean) => void) => void | (() => void);
-  dashboardUpdated: (callback: (value: DashboardLayout) => void) => void | (() => void);
+  onEditModeToggled: (callback: (value: boolean) => void) => (() => void) | undefined;
+  dashboardUpdated: (callback: (value: DashboardLayout) => void) => (() => void) | undefined;
   reloadDashboard: () => void;
   saveDashboard: (dashboard: DashboardLayout, options?: SaveDashboardOptions) => void;
   resetDashboard: (resetEverything: boolean) => Promise<DashboardLayout>;
   toggleLockOverlays: () => Promise<boolean>;
   getAppVersion: () => Promise<string>;
   toggleDemoMode: (value: boolean) => void;
-  onDemoModeChanged: (callback: (value: boolean) => void) => void | (() => void);
+  onDemoModeChanged: (callback: (value: boolean) => void) => (() => void) | undefined;
   getCurrentDashboard: () => DashboardLayout | null;
   saveGarageCoverImage: (buffer: Uint8Array) => Promise<string>;
   getGarageCoverImageAsDataUrl: (imagePath: string) => Promise<string | null>;

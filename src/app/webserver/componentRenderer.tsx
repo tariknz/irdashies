@@ -276,19 +276,22 @@ class WebSocketBridge implements IrSdkBridge {
     return this.connectionPromise;
   }
 
-  onTelemetry(callback: (data: any) => void): void {
-    if (!callback) return;
+  onTelemetry(callback: (data: any) => void): (() => void) | undefined {
+    if (!callback) return undefined;
     this.telemetryCallbacks.add(callback);
+    return () => this.telemetryCallbacks.delete(callback);
   }
 
-  onSessionData(callback: (data: any) => void): void {
-    if (!callback) return;
+  onSessionData(callback: (data: any) => void): (() => void) | undefined {
+    if (!callback) return undefined;
     this.sessionCallbacks.add(callback);
+    return () => this.sessionCallbacks.delete(callback);
   }
 
-  onRunningState(callback: (running: boolean) => void): void {
-    if (!callback) return;
+  onRunningState(callback: (running: boolean) => void): (() => void) | undefined {
+    if (!callback) return undefined;
     this.runningCallbacks.add(callback);
+    return () => this.runningCallbacks.delete(callback);
   }
 
   stop(): void {
@@ -309,11 +312,12 @@ class WebSocketBridge implements IrSdkBridge {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  onEditModeToggled(_: (value: boolean) => void): void {
+  onEditModeToggled(_: (value: boolean) => void): (() => void) | undefined {
     // Edit mode is not supported in browser clients
+    return undefined;
   }
 
-  dashboardUpdated(callback: (value: any) => void): void {
+  dashboardUpdated(callback: (value: any) => void): (() => void) | undefined {
     this.dashboardUpdateCallbacks.add(callback);
     if (this.lastDashboard) {
       try {
@@ -324,6 +328,7 @@ class WebSocketBridge implements IrSdkBridge {
     } else if (this.socket && this.socket.readyState === WebSocket.OPEN) {
       this.socket.send(JSON.stringify({ type: 'getDashboard' }));
     }
+    return () => this.dashboardUpdateCallbacks.delete(callback);
   }
 
   reloadDashboard(): void {
@@ -456,7 +461,7 @@ class WebSocketBridge implements IrSdkBridge {
     }
   }
 
-  onDemoModeChanged(callback: (value: boolean) => void): void {
+  onDemoModeChanged(callback: (value: boolean) => void): (() => void) | undefined {
     this.demoModeCallbacks.add(callback);
     if (this.currentIsDemoMode !== undefined) {
       try {
@@ -465,6 +470,7 @@ class WebSocketBridge implements IrSdkBridge {
         console.error('Error in demo mode callback:', e);
       }
     }
+    return () => this.demoModeCallbacks.delete(callback);
   }
 }
 

@@ -11,7 +11,7 @@ export const TelemetryProvider = ({ bridge }: TelemetryProviderProps) => {
 
   useEffect(() => {
     let cancelled = false;
-    let unsub: (() => void) | void;
+    let unsub: (() => void) | undefined;
 
     if (bridge instanceof Promise) {
       bridge.then((resolved) => {

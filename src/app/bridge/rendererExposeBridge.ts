@@ -95,10 +95,13 @@ export function exposeBridge() {
       ipcRenderer.removeAllListeners('dashboardUpdated');
       ipcRenderer.removeAllListeners('demoModeChanged');
     },
-
     setAutoStart: (enabled: boolean) => {
-      ipcRenderer.invoke('autostart:set', enabled);
+      return ipcRenderer.invoke('autostart:set', enabled);
     },
-
+    getCurrentDashboard: () => {
+      // This is a synchronous getter used in overlay container mode
+      // The actual dashboard state is managed by the OverlayContainer component
+      return null;
+    },
   } as DashboardBridge);
 }

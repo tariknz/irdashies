@@ -17,9 +17,11 @@ const demoModeCallbacks: Set<(isDemoMode: boolean) => void> = new Set<(isDemoMod
 export const dashboardBridge: DashboardBridge = {
   onEditModeToggled: () => {
     // Not used by component server, but required by interface
+    return undefined;
   },
   dashboardUpdated: (callback: (value: DashboardLayout) => void) => {
     dashboardUpdateCallbacks.add(callback);
+    return () => dashboardUpdateCallbacks.delete(callback);
   },
   reloadDashboard: () => {
     // Not used by component server
@@ -38,6 +40,7 @@ export const dashboardBridge: DashboardBridge = {
   },
   onDemoModeChanged: (callback: (isDemoMode: boolean) => void) => {
     demoModeCallbacks.add(callback);
+    return () => demoModeCallbacks.delete(callback);
   },
   getCurrentDashboard: () => {
     const dashboard = getDashboard('default');
