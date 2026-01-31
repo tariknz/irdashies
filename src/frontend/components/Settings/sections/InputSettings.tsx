@@ -68,7 +68,7 @@ const defaultConfig: InputWidgetSettings['config'] = {
     unit: 'auto',
   },
   abs: {
-    enabled: true,
+    enabled: false,
   },
   steer: {
     enabled: true,
