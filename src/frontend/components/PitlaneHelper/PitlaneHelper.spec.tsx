@@ -105,6 +105,7 @@ describe('PitlaneHelper', () => {
       bridge: {} as never,
       version: '0.0.0',
       toggleDemoMode: vi.fn(),
+      containerBoundsInfo: null,
     });
 
     vi.mocked(usePitlaneHelperSettings).mockReturnValue(defaultConfig);

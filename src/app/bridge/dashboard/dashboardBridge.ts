@@ -1,7 +1,8 @@
 import { app, ipcMain } from 'electron';
 import type { DashboardBridge, DashboardLayout } from '@irdashies/types';
 import { onDashboardUpdated } from '../../storage/dashboardEvents';
-import { getDashboard, saveDashboard, resetDashboard, saveGarageCoverImage, getGarageCoverImageAsDataUrl } from '../../storage/dashboards';
+import { getDashboard, saveDashboard, resetDashboard, saveGarageCoverImage, getGarageCoverImageAsDataUrl, listDashboards } from '../../storage/dashboards';
+import { writeData } from '../../storage/storage';
 import { OverlayManager } from '../../overlayManager';
 import { getAnalyticsOptOut as getAnalyticsOptOutStorage, setAnalyticsOptOut as setAnalyticsOptOutStorage } from '../../storage/analytics';
 import { Analytics } from '../../analytics';
@@ -16,9 +17,11 @@ const demoModeCallbacks: Set<(isDemoMode: boolean) => void> = new Set<(isDemoMod
 export const dashboardBridge: DashboardBridge = {
   onEditModeToggled: () => {
     // Not used by component server, but required by interface
+    return undefined;
   },
   dashboardUpdated: (callback: (value: DashboardLayout) => void) => {
     dashboardUpdateCallbacks.add(callback);
+    return () => dashboardUpdateCallbacks.delete(callback);
   },
   reloadDashboard: () => {
     // Not used by component server
@@ -37,6 +40,7 @@ export const dashboardBridge: DashboardBridge = {
   },
   onDemoModeChanged: (callback: (isDemoMode: boolean) => void) => {
     demoModeCallbacks.add(callback);
+    return () => demoModeCallbacks.delete(callback);
   },
   getCurrentDashboard: () => {
     const dashboard = getDashboard('default');
@@ -81,6 +85,17 @@ export async function publishDashboardUpdates(overlayManager: OverlayManager, an
     });
   });
   ipcMain.on('saveDashboard', (_, dashboard, options) => {
+    // For layout-only changes (drag/resize), skip the window refresh
+    if (options?.skipWindowRefresh) {
+      // Save without emitting event to avoid window recreation
+      const existingDashboards = listDashboards();
+      existingDashboards['default'] = dashboard;
+      writeData('dashboards', existingDashboards);
+      // Still notify renderer of the update
+      overlayManager.publishMessage('dashboardUpdated', dashboard);
+      return;
+    }
+
     saveDashboard('default', dashboard);
     if (options?.forceReload) {
       overlayManager.forceRefreshOverlays(dashboard);

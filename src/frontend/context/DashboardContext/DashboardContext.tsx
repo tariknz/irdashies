@@ -10,6 +10,7 @@ import type {
   DashboardLayout,
   GeneralSettingsType,
   SaveDashboardOptions,
+  ContainerBoundsInfo,
 } from '@irdashies/types';
 
 interface DashboardContextProps {
@@ -24,6 +25,7 @@ interface DashboardContextProps {
   version: string;
   isDemoMode: boolean;
   toggleDemoMode: () => void;
+  containerBoundsInfo: ContainerBoundsInfo | null;
 }
 
 const DashboardContext = createContext<DashboardContextProps | undefined>(
@@ -38,18 +40,31 @@ export const DashboardProvider: React.FC<{
   const [editMode, setEditMode] = useState(false);
   const [version, setVersion] = useState('');
   const [isDemoMode, setIsDemoMode] = useState(false);
+  const [containerBoundsInfo, setContainerBoundsInfo] =
+    useState<ContainerBoundsInfo | null>(null);
 
   useEffect(() => {
-    console.log('📊 DashboardProvider mounted');
     bridge.reloadDashboard();
-    bridge.dashboardUpdated((dashboard) => {
+    const unsubDashboard = bridge.dashboardUpdated((dashboard) => {
       setDashboard(dashboard);
     });
-    bridge.onEditModeToggled((editMode) => setEditMode(editMode));
+    const unsubEditMode = bridge.onEditModeToggled((editMode) =>
+      setEditMode(editMode)
+    );
     bridge.getAppVersion?.().then((version) => setVersion(version));
-    bridge.onDemoModeChanged?.((demoMode) => setIsDemoMode(demoMode));
+    const unsubDemoMode = bridge.onDemoModeChanged?.((demoMode) =>
+      setIsDemoMode(demoMode)
+    );
+    const unsubContainerBounds = bridge.onContainerBoundsInfo?.((info) => {
+      console.log('[DashboardContext] Container bounds info received:', info);
+      setContainerBoundsInfo(info);
+    });
 
     return () => {
+      if (unsubDashboard) unsubDashboard();
+      if (unsubEditMode) unsubEditMode();
+      if (unsubDemoMode) unsubDemoMode();
+      if (unsubContainerBounds) unsubContainerBounds();
       bridge.stop();
     };
   }, [bridge]);
@@ -85,6 +100,7 @@ export const DashboardProvider: React.FC<{
         version,
         isDemoMode,
         toggleDemoMode,
+        containerBoundsInfo,
       }}
     >
       {children}

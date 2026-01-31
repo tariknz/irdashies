@@ -24,7 +24,7 @@ const mockBridge: (editMode: boolean) => DashboardBridge = (editMode) => ({
     // noop
   },
   dashboardUpdated: () => {
-    // noop
+    return undefined;
   },
   reloadDashboard: () => {
     // noop
@@ -32,6 +32,7 @@ const mockBridge: (editMode: boolean) => DashboardBridge = (editMode) => ({
   resetDashboard: () => Promise.resolve(mockDashboard),
   onEditModeToggled: (callback) => {
     callback(editMode);
+    return undefined;
   },
   toggleLockOverlays: () => Promise.resolve(true),
   getAppVersion: () => Promise.resolve('1.0.0'),

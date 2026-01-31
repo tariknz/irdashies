@@ -36,6 +36,7 @@ describe('RunningStateContext', () => {
     vi.spyOn(mockBridge, 'onRunningState').mockImplementation(
       (callback: (isRunning: boolean) => void) => {
         runningStateCallback = callback;
+        return undefined;
       }
     );
 

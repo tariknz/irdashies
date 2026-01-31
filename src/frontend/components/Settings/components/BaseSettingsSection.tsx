@@ -1,7 +1,8 @@
-import { ReactNode } from 'react';
+import { ReactNode, useState } from 'react';
 import { ToggleSwitch } from './ToggleSwitch';
 import { BaseWidgetSettings } from '../types';
 import { useDashboard } from '@irdashies/context';
+import { Copy, Check } from '@phosphor-icons/react';
 
 interface BaseSettingsSectionProps<T> {
   title: string;
@@ -23,6 +24,19 @@ export const BaseSettingsSection = <T,>({
   onConfigChange,
 }: BaseSettingsSectionProps<T>) => {
   const { currentDashboard, onDashboardUpdated } = useDashboard();
+  const [copied, setCopied] = useState(false);
+
+  const browserSourceUrl = `http://localhost:3000/component/${widgetId}`;
+
+  const handleCopyUrl = async () => {
+    try {
+      await navigator.clipboard.writeText(browserSourceUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy URL:', err);
+    }
+  };
 
   const handleSettingsChange = (newSettings: BaseWidgetSettings<T>) => {
     onSettingsChange(newSettings);
@@ -47,15 +61,35 @@ export const BaseSettingsSection = <T,>({
     if (currentDashboard && onDashboardUpdated) {
       const updatedDashboard = {
         ...currentDashboard,
-        widgets: currentDashboard.widgets.map(widget =>
-          widget.id === widgetId
-            ? {
-                ...widget,
-                enabled: newSettings.enabled,
-                config: newSettings.config as unknown as Record<string, unknown>
-              }
-            : widget
-        )
+        widgets: currentDashboard.widgets.map((widget) => {
+          if (widget.id !== widgetId) return widget;
+
+          // Check if widget is being newly enabled
+          const isBeingEnabled = !widget.enabled && newSettings.enabled;
+
+          // If being enabled, center it in the viewport
+          let layout = widget.layout;
+          if (isBeingEnabled) {
+            const centerX = Math.round(
+              (window.innerWidth - widget.layout.width) / 2
+            );
+            const centerY = Math.round(
+              (window.innerHeight - widget.layout.height) / 2
+            );
+            layout = {
+              ...widget.layout,
+              x: Math.max(0, centerX),
+              y: Math.max(0, centerY),
+            };
+          }
+
+          return {
+            ...widget,
+            enabled: newSettings.enabled,
+            config: newSettings.config as unknown as Record<string, unknown>,
+            layout,
+          };
+        }),
       };
       onDashboardUpdated(updatedDashboard);
     }
@@ -74,6 +108,23 @@ export const BaseSettingsSection = <T,>({
             />
           </div>
           <p className="text-slate-400 text-sm">{description}</p>
+          <div className="mt-3 flex items-center gap-2">
+            <span className="text-slate-400 text-xs">Browser Source:</span>
+            <code className="text-xs bg-slate-800 px-2 py-1 rounded font-mono text-slate-300">
+              {browserSourceUrl}
+            </code>
+            <button
+              onClick={handleCopyUrl}
+              className="p-1 rounded hover:bg-slate-600 transition-colors"
+              title="Copy URL"
+            >
+              {copied ? (
+                <Check size={14} className="text-green-400" />
+              ) : (
+                <Copy size={14} className="text-slate-400" />
+              )}
+            </button>
+          </div>
         </div>
       </div>
 
