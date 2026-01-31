@@ -9,38 +9,55 @@ import { useEffect, useState } from 'react';
 import { useFlagSettings } from './hooks/useFlagSettings';
 import { getDemoFlagData } from './demoData';
 
-const getFlagInfo = (sessionFlags: number) => {
-  // 1. CRITICAL SESSION STATUS
+export const getFlagInfo = (sessionFlags: number) => {
+/**
+Flag Priority Hierarchy:
+BLACK FLAG / FURLED (Absolute King – overrides even the finish line)
+CHECKERED (The race is over)
+RED (Session stopped)
+DISQUALIFIED (You are removed from the session)
+MEATBALL (Only if both Servicible and Repair bits are set)
+YELLOW (Includes Waving, Caution, and CautionWaving)
+GREEN (Includes StartGo and GreenHeld)
+BLUE FLAG (Lapped traffic info)
+DEBRIS (Track surface hazard)
+WHITE (Final lap)
+NO FLAG (Default state / Pits / Inactive) 
+*/
+
+  // 1. ABSOLUTE PRIORITY Too important in iracing to put any other flag above it
+  if (sessionFlags & (GlobalFlags.Black | GlobalFlags.Furled)) {
+    return { label: 'BLACK FLAG', color: 'bg-black text-white' };
+  }
+
+  // 2. CRITICAL SESSION STATUS
   if (sessionFlags & GlobalFlags.Checkered) return { label: 'CHECKERED', color: 'bg-white text-black' };
   if (sessionFlags & GlobalFlags.Red) return { label: 'RED', color: 'bg-red-600' };
   if (sessionFlags & GlobalFlags.Disqualify) return { label: 'DISQUALIFIED', color: 'bg-black text-red-600' };
 
-  // 2. PERSONAL PENALTIES (Highest Priority for the driver)
-  if (sessionFlags & (GlobalFlags.Black | GlobalFlags.Furled | GlobalFlags.Disqualify)) return { label: 'BLACK FLAG', color: 'bg-black text-white' };
-  if (sessionFlags & (GlobalFlags.Servicible && GlobalFlags.Repair)) return { label: 'MEATBALL', color: 'bg-orange-600' };
+  // 3. MECHANICAL / MEATBALL 
+  const meatballMask = GlobalFlags.Servicible | GlobalFlags.Repair;
+  if ((sessionFlags & meatballMask) === meatballMask) {
+    return { label: 'MEATBALL', color: 'bg-orange-600' };
+  }
 
-  // 3. TRACK CAUTIONS
+  // 4. TRACK CAUTIONS
   if (sessionFlags & (GlobalFlags.Yellow | GlobalFlags.YellowWaving | GlobalFlags.Caution | GlobalFlags.CautionWaving)) {
     return { label: 'YELLOW', color: 'bg-yellow-400 text-black' };
   }
 
-  // 4. RACING STATE
-  // Now we check the actual Green bit instead of sessionState === 0
-  if (sessionFlags & (GlobalFlags.Green | GlobalFlags.StartGo)) return { label: 'GREEN', color: 'bg-green-600' };
+  // 5. RACING STATE
+  if (sessionFlags & (GlobalFlags.Green | GlobalFlags.StartGo | GlobalFlags.GreenHeld)) {
+    return { label: 'GREEN', color: 'bg-green-600' };
+  }
 
-  // 5. INFO FLAGS (Only shown if nothing above is active)
+  // 6. INFO FLAGS
   if (sessionFlags & GlobalFlags.Blue) return { label: 'BLUE FLAG', color: 'bg-blue-600' };
   if (sessionFlags & GlobalFlags.Debris) return { label: 'DEBRIS', color: 'bg-yellow-400' };
   if (sessionFlags & GlobalFlags.White) return { label: 'WHITE', color: 'bg-white text-black' };
   
-  // 6. STARTING LIGHTS / PRE-RACE
-  //if (sessionFlags & GlobalFlags.StartSet) return { label: 'SET', color: 'bg-red-600' };
-  //if (sessionFlags & GlobalFlags.StartReady) return { label: 'READY', color: 'bg-orange-500' };
-
   return { label: 'NO FLAG', color: 'bg-slate-500' };
 };
-
-
 
 
 export const Flag = () => {
