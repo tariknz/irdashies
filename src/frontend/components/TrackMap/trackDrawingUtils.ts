@@ -10,12 +10,12 @@ export const setupCanvasContext = (
   ctx.save();
   ctx.translate(offsetX, offsetY);
   ctx.scale(scale, scale);
-  
+
   // Apply shadow
   ctx.shadowColor = 'black';
-  ctx.shadowBlur = 2;
-  ctx.shadowOffsetX = 1;
-  ctx.shadowOffsetY = 1;
+  ctx.shadowBlur = 4;
+  ctx.shadowOffsetX = 0;
+  ctx.shadowOffsetY = 0;
 };
 
 export const drawTrack = (
@@ -43,7 +43,10 @@ export const drawTrack = (
 
 export const drawStartFinishLine = (
   ctx: CanvasRenderingContext2D,
-  startFinishLine: { point: { x: number; y: number }; perpendicular: { x: number; y: number } } | null
+  startFinishLine: {
+    point: { x: number; y: number };
+    perpendicular: { x: number; y: number };
+  } | null
 ) => {
   if (!startFinishLine) return;
 
@@ -86,7 +89,13 @@ export const drawTurnNames = (
 
 export const drawDrivers = (
   ctx: CanvasRenderingContext2D,
-  calculatePositions: Record<number, TrackDriver & { position: { x: number; y: number }; sessionPosition?: number }>,
+  calculatePositions: Record<
+    number,
+    TrackDriver & {
+      position: { x: number; y: number };
+      sessionPosition?: number;
+    }
+  >,
   driverColors: Record<number, { fill: string; text: string }>,
   driversOffTrack: boolean[],
   driverCircleSize: number,
@@ -119,15 +128,26 @@ export const drawDrivers = (
         ctx.textBaseline = 'middle';
         ctx.fillStyle = color.text;
         ctx.font = `${fontSize}px sans-serif`;
+
+        // White shadow for black text, black shadow for white text
+        const originalShadowColor = ctx.shadowColor;
+        ctx.shadowColor = color.text === 'black' ? 'white' : 'black';
+
         let displayText = '';
         if (displayMode === 'sessionPosition') {
-          displayText = sessionPosition !== undefined && sessionPosition > 0 ? sessionPosition.toString() : '';
+          displayText =
+            sessionPosition !== undefined && sessionPosition > 0
+              ? sessionPosition.toString()
+              : '';
         } else {
           displayText = driver.CarNumber;
         }
         if (displayText) {
           ctx.fillText(displayText, position.x, position.y);
         }
+
+        // Restore original shadow color
+        ctx.shadowColor = originalShadowColor;
       }
     });
-}; 
+};
