@@ -242,6 +242,9 @@ export interface InputWidgetSettings extends BaseWidgetSettings {
       enabled: boolean;
       unit: 'mph' | 'km/h' | 'auto';
     };
+    abs: {
+      enabled: boolean;
+    };
     steer: SteerWidgetSettings;
     tachometer: {
       enabled: boolean;
