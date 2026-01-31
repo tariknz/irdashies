@@ -23,7 +23,11 @@ const getLastTimeState = (
   fastestTime: number | undefined,
   hasFastestTime: boolean
 ): LastTimeState => {
-  if (lastTime !== undefined && fastestTime !== undefined && lastTime === fastestTime) {
+  if (
+    lastTime !== undefined &&
+    fastestTime !== undefined &&
+    lastTime === fastestTime
+  ) {
     return hasFastestTime ? 'session-fastest' : 'personal-best';
   }
   return undefined;
@@ -69,7 +73,7 @@ export const useDriverPositions = () => {
     carIdxLapDstPct,
     lastPitLap,
     prevCarTrackSurface,
-    carIdxTrackSurface?.value
+    carIdxTrackSurface?.value,
   ]);
 
   return positions;
@@ -94,7 +98,7 @@ export const useDrivers = () => {
         relativeSpeed: driver.CarClassRelSpeed,
         estLapTime: driver.CarClassEstLapTime,
       },
-      carId: driver.CarID
+      carId: driver.CarID,
     })) ?? [];
   return drivers;
 };
@@ -106,17 +110,32 @@ export const useCarState = () => {
   const carIdxSessionFlags = useTelemetry<number[]>('CarIdxSessionFlags');
 
   return useMemo(() => {
-    return carIdxTrackSurface?.value?.map((onTrack, index) => ({
-      carIdx: index,
-      onTrack: onTrack > -1,
-      onPitRoad: carIdxOnPitRoad?.value?.[index],
-      tireCompound: carIdxTireCompound?.value?.[index],
-      dnf: !!((carIdxSessionFlags?.value?.[index] ?? 0) & GlobalFlags.Disqualify),
-      repair: !!((carIdxSessionFlags?.value?.[index] ?? 0) & GlobalFlags.Repair),
-      penalty: !!((carIdxSessionFlags?.value?.[index] ?? 0) & GlobalFlags.Black),
-      slowdown: !!((carIdxSessionFlags?.value?.[index] ?? 0) & GlobalFlags.Furled)
-    })) ?? [];
-  }, [carIdxTrackSurface?.value, carIdxOnPitRoad?.value, carIdxTireCompound?.value, carIdxSessionFlags?.value]);
+    return (
+      carIdxTrackSurface?.value?.map((onTrack, index) => ({
+        carIdx: index,
+        onTrack: onTrack > -1,
+        onPitRoad: carIdxOnPitRoad?.value?.[index],
+        tireCompound: carIdxTireCompound?.value?.[index],
+        dnf: !!(
+          (carIdxSessionFlags?.value?.[index] ?? 0) & GlobalFlags.Disqualify
+        ),
+        repair: !!(
+          (carIdxSessionFlags?.value?.[index] ?? 0) & GlobalFlags.Repair
+        ),
+        penalty: !!(
+          (carIdxSessionFlags?.value?.[index] ?? 0) & GlobalFlags.Black
+        ),
+        slowdown: !!(
+          (carIdxSessionFlags?.value?.[index] ?? 0) & GlobalFlags.Furled
+        ),
+      })) ?? []
+    );
+  }, [
+    carIdxTrackSurface?.value,
+    carIdxOnPitRoad?.value,
+    carIdxTireCompound?.value,
+    carIdxSessionFlags?.value,
+  ]);
 };
 
 // TODO: this should eventually replace the useDriverStandings hook
@@ -138,12 +157,17 @@ export const useDriverStandings = () => {
   const sessionPositions = useSessionPositions(sessionNum);
 
   const driverStandings: Standings[] = useMemo(() => {
-    const fastestTime = driverPositions.reduce((fastest, pos) => {
-      if (pos.bestLap !== undefined && pos.bestLap > 0) {
-        return fastest === undefined || pos.bestLap < fastest ? pos.bestLap : fastest;
-      }
-      return fastest;
-    }, undefined as number | undefined);
+    const fastestTime = driverPositions.reduce(
+      (fastest, pos) => {
+        if (pos.bestLap !== undefined && pos.bestLap > 0) {
+          return fastest === undefined || pos.bestLap < fastest
+            ? pos.bestLap
+            : fastest;
+        }
+        return fastest;
+      },
+      undefined as number | undefined
+    );
 
     // Create Map lookups for O(1) access instead of O(n) find() calls
     const driverPositionsByCarIdx = new Map(driverPositions.map(pos => [pos.carIdx, pos]));
@@ -240,7 +264,8 @@ export const useDriverStandings = () => {
         dnf: carState?.dnf ?? false,
         repair: carState?.repair ?? false,
         penalty: carState?.penalty ?? false,
-        slowdown: carState?.slowdown ?? false
+        slowdown: carState?.slowdown ?? false,
+        relativePct: 0,
       };
     });
 

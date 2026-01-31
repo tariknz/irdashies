@@ -101,6 +101,6 @@ export async function publishIRacingSDKEvents(
     stop: () => {
       shouldStop = true;
       clearInterval(runningStateInterval);
-    }
+    },
   };
 }

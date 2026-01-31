@@ -58,6 +58,7 @@ export interface Standings {
   repair: boolean;
   penalty: boolean;
   slowdown: boolean;
+  relativePct: number;
 }
 
 const calculateDelta = (
@@ -196,8 +197,8 @@ export const createDriverStandings = (
           result.CarIdx === session.playerIdx
             ? undefined // Don't show deltas for player (comparing to themselves)
             : lapDeltasVsPlayer &&
-              lapDeltasVsPlayer[result.CarIdx] &&
-              lapDeltasVsPlayer[result.CarIdx].length > 0
+                lapDeltasVsPlayer[result.CarIdx] &&
+                lapDeltasVsPlayer[result.CarIdx].length > 0
               ? lapDeltasVsPlayer[result.CarIdx].slice(0, numLapsToShow) // Use pre-calculated deltas
               : undefined,
         lastPitLap: lastPitLap[result.CarIdx] ?? undefined,
@@ -222,6 +223,7 @@ export const createDriverStandings = (
           (telemetry?.carIdxSessionFlags?.[result.CarIdx] ?? 0) &
           GlobalFlags.Furled
         ),
+        relativePct: 0,
       };
     })
     .filter((s) => !!s);
