@@ -4,12 +4,12 @@ import {
   useSessionVisibility, // Use this for the logic
   useRunningState,
 } from '@irdashies/context';
-import { GlobalFlags, SessionState } from '@irdashies/types';
+import { GlobalFlags } from '@irdashies/types';
 import { useEffect, useState } from 'react';
 import { useFlagSettings } from './hooks/useFlagSettings';
 import { getDemoFlagData } from './demoData';
 
-const getFlagInfo = (sessionFlags: number, sessionState?: number) => {
+const getFlagInfo = (sessionFlags: number) => {
   // 1. CRITICAL SESSION STATUS
   if (sessionFlags & GlobalFlags.Checkered) return { label: 'CHECKERED', color: 'bg-white text-black' };
   if (sessionFlags & GlobalFlags.Red) return { label: 'RED', color: 'bg-red-600' };
@@ -51,7 +51,6 @@ export const Flag = () => {
   
   // High-speed telemetry
  const sessionFlags = useTelemetryValue<number>('SessionFlags') ?? 0;
- const sessionState = useTelemetryValue<number>('SessionState');
  const isPlayerOnTrack = useTelemetryValue<boolean>('IsOnTrack') ?? false;
   // Force it to show even if the sim isn't running
   //const isPlayerOnTrack = useTelemetryValue<boolean>('IsOnTrack') ?? true; // Default to true for testing
@@ -93,7 +92,7 @@ export const Flag = () => {
   if (settings.showOnlyWhenOnTrack && !isPlayerOnTrack) return null;
 
   // --- RENDER ---
-  const flagInfo = getFlagInfo(sessionFlags, sessionState);
+  const flagInfo = getFlagInfo(sessionFlags);
 
   const visibleLabel = settings.animate && !blinkOn ? 'NO FLAG' : flagInfo.label;
 
