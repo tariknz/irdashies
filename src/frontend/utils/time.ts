@@ -1,7 +1,7 @@
-export type TimeFormat = 'full' | 'mixed' | 'minutes' | 'seconds-full' | 'seconds-mixed' | 'seconds' | 'duration' | 'duration-wlabels';
+export type TimeFormat = 'full' | 'mixed' | 'minutes' | 'seconds-full' | 'seconds-mixed' | 'seconds' | 'duration' | 'duration-wlabels' | 'duration-(hh:)mm:ss';
 
 export const formatTime = (seconds?: number, format: TimeFormat = 'full'): string => {
-  if (!seconds) return '';
+  if (seconds === undefined) return '';
   if (seconds < 0) return '';
 
   const ms = Math.round((seconds % 1) * 1000); // Get milliseconds
@@ -58,6 +58,13 @@ export const formatTime = (seconds?: number, format: TimeFormat = 'full'): strin
       } else {
         formattedTime = `${remainingSeconds}`;
       }
+      break;
+    case 'duration-(hh:)mm:ss':
+      formattedTime = '';
+      if (hours > 0) {
+        formattedTime = `${String(hours).padStart(2, '0')}:`;
+      }
+      formattedTime += `${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`;
       break;
     case 'duration-wlabels':
       formattedTime = '';
