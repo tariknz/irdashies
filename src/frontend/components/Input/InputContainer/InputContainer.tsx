@@ -81,7 +81,7 @@ export const InputContainer = ({
       },
       {
         id: 'abs' as const,
-        shouldRender: settings?.abs?.enabled ?? true,
+        shouldRender: settings?.abs?.enabled ?? false,
         component: (
           <div className="flex flex-1 min-w-0 items-center justify-center p-2">
             <InputAbsIndicator
