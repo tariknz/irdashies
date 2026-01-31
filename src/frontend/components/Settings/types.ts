@@ -314,6 +314,18 @@ export interface RejoinIndicatorWidgetSettings extends BaseWidgetSettings {
   };
 }
 
+// FIX: Move the properties INSIDE the config object
+export interface FlagWidgetSettings extends BaseWidgetSettings {
+  id: 'flag';
+  config: {
+    enabled: boolean;
+    showOnlyWhenOnTrack: boolean;
+    showLabel: boolean;
+    showNoFlagState: boolean;
+    sessionVisibility: SessionVisibilitySettings;
+  };
+}
+
 export interface FlatTrackMapWidgetSettings extends BaseWidgetSettings {
   config: {
     showCarNumbers: boolean;
