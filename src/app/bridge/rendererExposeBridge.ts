@@ -107,5 +107,10 @@ export function exposeBridge() {
     saveQualifyMax: (trackId: number, carName: string, val: number | null) => {
       return ipcRenderer.invoke('fuel:saveQualifyMax', trackId, carName, val);
     },
+    startNewLog: () => ipcRenderer.invoke('fuel:startNewLog'),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    logData: (data: any) => {
+      return ipcRenderer.invoke('fuel:logData', data);
+    },
   } as FuelCalculatorBridge);
 }

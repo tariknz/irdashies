@@ -105,6 +105,8 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
 
   // Real Data
   const realFuelData = useFuelCalculation(safetyMargin, settings);
+  // (Logging is now handled inside useFuelCalculation)
+
   const realCurrentFuelLevel = useTelemetryValues('FuelLevel')?.[0] || 0;
   const realIsOnTrack = useTelemetryValue<boolean>('IsOnTrack') ?? false;
   const onPitRoad = useTelemetryValue<boolean>('OnPitRoad') ?? false;
@@ -423,7 +425,17 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
       }, 3000);
     }
     prevOnPitRoadRef.current = onPitRoad;
-  }, [fuelData, frozenFuelData, storeLastLap, onPitRoad]);
+  }, [fuelData, frozenFuelData, storeLastLap, onPitRoad, sessionFlags, sessionState]);
+
+  // Specific trigger for Total Laps change (e.g. timed race adjustment or race control change)
+  // This ensures the grid updates immediately if race duration changes
+  React.useEffect(() => {
+    if (!fuelData || !frozenFuelData) return;
+
+    if (fuelData.totalLaps !== frozenFuelData.totalLaps) {
+      setFrozenFuelData(fuelData);
+    }
+  }, [fuelData, frozenFuelData]);
 
   // Throttled Predictive Usage (to update Grid 'CURR' row periodically without jitter)
   const [predictiveUsage, setPredictiveUsage] = React.useState(0);

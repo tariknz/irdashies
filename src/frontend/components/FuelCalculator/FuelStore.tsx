@@ -33,9 +33,11 @@ interface FuelStoreState {
   /** Persistent maximum fuel consumption from qualifying session */
   qualifyConsumption: number | null;
   /** Current track ID for invalidation */
-  trackId?: number;
+  trackId?: string | number;
   /** Current car identifier for invalidation */
   carName?: string;
+  /** Accumulated fuel added during the current lap (from pit stops) */
+  accumulatedRefuel: number;
 }
 
 interface FuelStoreActions {
@@ -43,6 +45,11 @@ interface FuelStoreActions {
    * Add a completed lap's fuel data
    */
   addLapData: (lapData: FuelLapData) => void;
+
+  /**
+   * Add detected refuel amount to the current lap
+   */
+  addRefuel: (amount: number) => void;
 
   /**
    * Update lap crossing state
@@ -54,6 +61,7 @@ interface FuelStoreActions {
     currentLap: number,
     isOnPitRoad: boolean
   ) => void;
+
 
   /**
    * Update just the lap distance percentage (for tracking lap crossing)
@@ -85,7 +93,7 @@ interface FuelStoreActions {
    * Set the qualifying consumption value
    */
   setQualifyConsumption: (val: number | null) => void;
-  setContextInfo: (trackId?: number, carName?: string) => void;
+  setContextInfo: (trackId?: string | number, carName?: string) => void;
   setLapHistory: (laps: FuelLapData[]) => void;
 }
 
@@ -94,8 +102,19 @@ type FuelStore = FuelStoreState & FuelStoreActions;
 /**
  * Sort laps by lap number descending (most recent first)
  */
+/**
+ * Sort laps by timestamp descending (most recent first)
+ * Fallback to lap number if timestamp is missing
+ */
 function sortLapsDescending(laps: FuelLapData[]): FuelLapData[] {
-  return laps.sort((a, b) => b.lapNumber - a.lapNumber);
+  return laps.sort((a, b) => {
+    const timeA = a.timestamp || 0;
+    const timeB = b.timestamp || 0;
+    if (timeA !== timeB) {
+      return timeB - timeA;
+    }
+    return b.lapNumber - a.lapNumber;
+  });
 }
 
 /**
@@ -116,6 +135,7 @@ export const useFuelStore = create<FuelStore>()(
       wasOnPitRoad: false,
       lastSessionFlags: 0,
       qualifyConsumption: null,
+      accumulatedRefuel: 0,
       trackId: undefined,
       carName: undefined,
 
@@ -152,6 +172,10 @@ export const useFuelStore = create<FuelStore>()(
         });
       },
 
+      addRefuel: (amount: number) => {
+        set((state) => ({ accumulatedRefuel: state.accumulatedRefuel + amount }));
+      },
+
       updateLapCrossing: (
         lapDistPct: number,
         fuelLevel: number,
@@ -165,6 +189,7 @@ export const useFuelStore = create<FuelStore>()(
           lapCrossingTime: sessionTime,
           lastLap: currentLap,
           wasOnPitRoad: isOnPitRoad,
+          accumulatedRefuel: 0, // Reset accumulated refuel for the new lap
         });
       },
 
@@ -183,6 +208,7 @@ export const useFuelStore = create<FuelStore>()(
           lastLapDistPct: 0,
           wasOnPitRoad: false,
           lastSessionFlags: 0,
+          accumulatedRefuel: 0,
           // qualifyConsumption is INTENTIONALLY preservation across session changes
           // It should only be cleared if we detect a track change (handled in useFuelCalculation)
           // or if we decide to add a hard reset button later.

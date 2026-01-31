@@ -64,6 +64,7 @@ const defaultConfig: FuelWidgetSettings['config'] = {
     'fuelEconomyPredict': { labelFontSize: 12, valueFontSize: 14 },
   },
   enableStorage: true,
+  enableLogging: false,
 };
 
 const migrateConfig = (savedConfig: unknown): FuelWidgetSettings['config'] => {
@@ -88,6 +89,7 @@ const migrateConfig = (savedConfig: unknown): FuelWidgetSettings['config'] => {
     fuelStatusRedLaps: (config.fuelStatusRedLaps as number) ?? defaultConfig.fuelStatusRedLaps,
     avgLapsCount: (config.avgLapsCount as number) ?? defaultConfig.avgLapsCount,
     enableStorage: (config.enableStorage as boolean) ?? defaultConfig.enableStorage,
+    enableLogging: (config.enableLogging as boolean) ?? defaultConfig.enableLogging,
   };
 };
 
@@ -788,6 +790,19 @@ const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => {
                   <ToggleSwitch
                     enabled={settings.config.enableStorage ?? true}
                     onToggle={(val) => handleConfigChange({ enableStorage: val })}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between pt-4 border-t border-slate-700/50">
+                  <div>
+                    <span className="text-sm font-medium text-slate-300">Enable Debug Logging</span>
+                    <span className="block text-[10px] text-slate-500">
+                      Log comprehensive data to file for troubleshooting.
+                    </span>
+                  </div>
+                  <ToggleSwitch
+                    enabled={settings.config.enableLogging ?? false}
+                    onToggle={(val) => handleConfigChange({ enableLogging: val })}
                   />
                 </div>
 

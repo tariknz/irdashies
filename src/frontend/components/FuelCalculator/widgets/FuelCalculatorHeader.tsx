@@ -35,6 +35,7 @@ const getConfidenceConfig = (confidence: string) => {
         shadow: 'shadow-[0_0_15px_rgba(249,115,22,0.3)]',
         pulse: 'animate-pulse',
       };
+    case 'very-low':
     case 'low':
     default:
       return {
@@ -81,7 +82,7 @@ export const FuelCalculatorHeader: React.FC<FuelCalculatorWidgetProps> = ({
   let lapsText = `${Math.ceil(fuelData.lapsRemaining)} LAPS`;
   if (confidence === 'medium')
     lapsText = `~${Math.ceil(fuelData.lapsRemaining)} LAPS`;
-  if (confidence === 'low')
+  if (confidence === 'low' || confidence === 'very-low')
     lapsText = `${Math.floor(fuelData.lapsRemaining)}-${Math.ceil(fuelData.lapsRemaining + 2)} LAPS`;
 
   // If no data (avgLaps is 0), show --

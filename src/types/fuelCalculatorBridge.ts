@@ -30,17 +30,17 @@ export interface FuelCalculatorBridge {
   /**
    * Get the last 10 laps for a specific track and car
    */
-  getHistoricalLaps: (trackId: number, carName: string) => Promise<FuelLapData[]>;
+  getHistoricalLaps: (trackId: string | number, carName: string) => Promise<FuelLapData[]>;
 
   /**
    * Save a completed lap for a specific track and car
    */
-  saveLap: (trackId: number, carName: string, lap: FuelLapData) => Promise<void>;
+  saveLap: (trackId: string | number, carName: string, lap: FuelLapData) => Promise<void>;
 
   /**
    * Clear history for a specific track and car
    */
-  clearHistory: (trackId: number, carName: string) => Promise<void>;
+  clearHistory: (trackId: string | number, carName: string) => Promise<void>;
 
   /**
    * Clear all fuel history from the database
@@ -50,10 +50,17 @@ export interface FuelCalculatorBridge {
   /**
    * Get qualifying max consumption for a specific track and car
    */
-  getQualifyMax: (trackId: number, carName: string) => Promise<number | null>;
+  getQualifyMax: (trackId: string | number, carName: string) => Promise<number | null>;
 
   /**
    * Save qualifying max consumption for a specific track and car
    */
-  saveQualifyMax: (trackId: number, carName: string, val: number | null) => Promise<void>;
+  saveQualifyMax: (trackId: string | number, carName: string, val: number | null) => Promise<void>;
+  startNewLog(): Promise<void>;
+  
+  /**
+   * Log data to file
+   */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  logData: (data: any) => Promise<void>;
 }

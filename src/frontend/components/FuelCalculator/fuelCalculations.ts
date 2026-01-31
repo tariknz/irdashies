@@ -39,12 +39,16 @@ export function validateLapData(
   // Basic validation
   if (fuelUsed <= 0 || lapTime <= 0) return false;
 
-  // Need at least 3 laps for statistical validation
-  if (recentLaps.length < 3) return true;
+  // Filter to use only VALID laps for statistical baseline
+  // This prevents invalid laps (tows, out-laps, etc.) from polluting the baseline
+  // and causing a "death spiral" where valid recovery laps are rejected against a bad baseline.
+  const validHistory = recentLaps.filter((l) => l.isValidForCalc);
 
-  // Statistical outlier detection using Interquartile Range (IQR)
-  // More robust than Standard Deviation for skewed fuel data
-  const fuelValues = recentLaps.map((l) => l.fuelUsed).sort((a, b) => a - b);
+  // Need at least 3 valid laps for statistical validation
+  if (validHistory.length < 3) return true;
+
+  // Statistical outlier detection using Interquartile Range (IQR) on VALID history
+  const fuelValues = validHistory.map((l) => l.fuelUsed).sort((a, b) => a - b);
   const q1 = fuelValues[Math.floor(fuelValues.length * 0.25)];
   const q3 = fuelValues[Math.floor(fuelValues.length * 0.75)];
   const iqr = q3 - q1;

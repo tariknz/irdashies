@@ -326,6 +326,8 @@ export interface FuelWidgetSettings extends BaseWidgetSettings {
     avgLapsCount?: number;
     /** Whether to use SQLite persistence for lap history */
     enableStorage?: boolean;
+    /** Whether to enable debug logging to file */
+    enableLogging?: boolean;
   };
 }
 

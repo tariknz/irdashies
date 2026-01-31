@@ -38,11 +38,11 @@ export class FuelDatabase {
     }
   }
 
-  private getContextKey(trackId: number, carName: string): string {
+  private getContextKey(trackId: string | number, carName: string): string {
     return `${trackId}:${carName}`;
   }
 
-  public saveLap(trackId: number, carName: string, lap: FuelLapData) {
+  public saveLap(trackId: string | number, carName: string, lap: FuelLapData) {
     const key = this.getContextKey(trackId, carName);
     if (!this.data.laps[key]) {
       this.data.laps[key] = [];
@@ -59,23 +59,23 @@ export class FuelDatabase {
     this.save();
   }
 
-  public getLaps(trackId: number, carName: string): FuelLapData[] {
+  public getLaps(trackId: string | number, carName: string): FuelLapData[] {
     const key = this.getContextKey(trackId, carName);
     return this.data.laps[key] || [];
   }
 
-  public saveQualifyMax(trackId: number, carName: string, val: number | null) {
+  public saveQualifyMax(trackId: string | number, carName: string, val: number | null) {
     const key = this.getContextKey(trackId, carName);
     this.data.settings[key] = { qualifyMax: val };
     this.save();
   }
 
-  public getQualifyMax(trackId: number, carName: string): number | null {
+  public getQualifyMax(trackId: string | number, carName: string): number | null {
     const key = this.getContextKey(trackId, carName);
     return this.data.settings[key]?.qualifyMax ?? null;
   }
 
-  public clearLaps(trackId: number, carName: string) {
+  public clearLaps(trackId: string | number, carName: string) {
     const key = this.getContextKey(trackId, carName);
     this.data.laps[key] = [];
     this.save();

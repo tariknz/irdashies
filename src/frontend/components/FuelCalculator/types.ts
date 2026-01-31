@@ -48,7 +48,7 @@ export interface FuelCalculation {
   /** Target fuel consumption per lap to finish with current fuel (liters) */
   targetConsumption: number;
   /** Confidence level in the calculations */
-  confidence: 'high' | 'medium' | 'low';
+  confidence: 'high' | 'medium' | 'low' | 'very-low';
   /** Estimated fuel remaining at race finish (can be negative if insufficient fuel) */
   fuelAtFinish: number;
   /** Average lap time in seconds (for time until empty calculation) */
@@ -166,6 +166,8 @@ export interface FuelCalculatorSettings {
   fuelStatusRedLaps?: number;
   /** Whether to use SQLite persistence for lap history */
   enableStorage?: boolean;
+  /** Whether to enable debug logging to file */
+  enableLogging?: boolean;
 }
 
 export interface BoxConfig {

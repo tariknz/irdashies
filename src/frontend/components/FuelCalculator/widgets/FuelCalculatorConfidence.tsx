@@ -1,7 +1,9 @@
 import React from 'react';
 import type { FuelCalculation, FuelCalculatorSettings } from '../types';
 
-interface FuelCalculatorWidgetProps {
+export type ConfidenceLevel = 'high' | 'medium' | 'low' | 'very-low';
+
+export interface FuelCalculatorWidgetProps {
   fuelData: FuelCalculation | null;
   displayData?: FuelCalculation | null;
   fuelUnits?: 'L' | 'gal';
@@ -47,14 +49,14 @@ export const FuelCalculatorConfidence: React.FC<FuelCalculatorWidgetProps> = ({
     ? 'py-0.5 px-2 mb-0.5'
     : 'py-1.5 px-2 mb-2';
 
-  if (confidence === 'low') {
+  if (confidence === 'low' || confidence === 'very-low') {
     return (
       <div
         className={`${containerPadding} bg-red-500/10 border border-red-500/30 rounded`}
       >
         <div className="text-center" style={{ fontSize: labelFontSize }}>
           <span className="text-red-400">
-            ⚠ Low confidence - need more lap data
+            {confidence === 'very-low' ? '⚠ Not enough data' : '⚠ Low confidence'}
           </span>
         </div>
         <div className="text-center mt-0.5" style={{ fontSize: valueFontSize }}>
