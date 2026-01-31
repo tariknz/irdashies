@@ -61,15 +61,35 @@ export const BaseSettingsSection = <T,>({
     if (currentDashboard && onDashboardUpdated) {
       const updatedDashboard = {
         ...currentDashboard,
-        widgets: currentDashboard.widgets.map(widget =>
-          widget.id === widgetId
-            ? {
-                ...widget,
-                enabled: newSettings.enabled,
-                config: newSettings.config as unknown as Record<string, unknown>
-              }
-            : widget
-        )
+        widgets: currentDashboard.widgets.map((widget) => {
+          if (widget.id !== widgetId) return widget;
+
+          // Check if widget is being newly enabled
+          const isBeingEnabled = !widget.enabled && newSettings.enabled;
+
+          // If being enabled, center it in the viewport
+          let layout = widget.layout;
+          if (isBeingEnabled) {
+            const centerX = Math.round(
+              (window.innerWidth - widget.layout.width) / 2
+            );
+            const centerY = Math.round(
+              (window.innerHeight - widget.layout.height) / 2
+            );
+            layout = {
+              ...widget.layout,
+              x: Math.max(0, centerX),
+              y: Math.max(0, centerY),
+            };
+          }
+
+          return {
+            ...widget,
+            enabled: newSettings.enabled,
+            config: newSettings.config as unknown as Record<string, unknown>,
+            layout,
+          };
+        }),
       };
       onDashboardUpdated(updatedDashboard);
     }
