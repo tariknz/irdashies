@@ -6,6 +6,19 @@ export interface SaveDashboardOptions {
   skipWindowRefresh?: boolean;
 }
 
+/**
+ * Information about the container window bounds
+ * Used to compensate for OS constraints on window positioning
+ */
+export interface ContainerBoundsInfo {
+  /** The bounds we requested */
+  expected: { x: number; y: number; width: number; height: number };
+  /** The bounds the OS actually gave us (may differ due to constraints) */
+  actual: { x: number; y: number; width: number; height: number };
+  /** Offset to compensate for OS constraints (actual - expected) */
+  offset: { x: number; y: number };
+}
+
 export interface DashboardBridge {
   onEditModeToggled: (callback: (value: boolean) => void) => (() => void) | undefined;
   dashboardUpdated: (callback: (value: DashboardLayout) => void) => (() => void) | undefined;
@@ -23,4 +36,7 @@ export interface DashboardBridge {
   setAnalyticsOptOut: (optOut: boolean) => Promise<void>;
   stop: () => void;
   setAutoStart: (autoStart: boolean) => Promise<void>;
+  onContainerBoundsInfo?: (
+    callback: (value: ContainerBoundsInfo) => void
+  ) => (() => void) | undefined;
 }

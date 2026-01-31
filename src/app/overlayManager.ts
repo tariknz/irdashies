@@ -1,5 +1,5 @@
 import { app, BrowserWindow, screen } from 'electron';
-import type { DashboardLayout } from '@irdashies/types';
+import type { DashboardLayout, ContainerBoundsInfo } from '@irdashies/types';
 import path from 'node:path';
 import { Notification } from 'electron';
 import { readData, writeData } from './storage/storage';
@@ -28,6 +28,8 @@ export class OverlayManager {
   private overlayAlwaysOnTop = true;
   private hasSingleInstanceLock = false;
   private onWindowReadyCallbacks = new Set<(windowId: string) => void>();
+  // Track container bounds for coordinate compensation
+  private containerBoundsInfo: ContainerBoundsInfo | null = null;
 
   public getVersion(): string {
     const version = app.getVersion();
@@ -68,8 +70,23 @@ export class OverlayManager {
 
     // Calculate combined bounds of all displays to span all monitors
     const allDisplays = screen.getAllDisplays();
+    const primaryDisplay = screen.getPrimaryDisplay();
+
+    // Log display info for debugging
+    console.log(`[OverlayManager] Found ${allDisplays.length} display(s):`);
+    for (const display of allDisplays) {
+      const isPrimary = display.id === primaryDisplay.id;
+      console.log(
+        `  Display ${display.id}${isPrimary ? ' (PRIMARY)' : ''}: bounds=${JSON.stringify(display.bounds)}`
+      );
+    }
+
     const bounds = this.calculateCombinedDisplayBounds(allDisplays);
     const { x, y, width, height } = bounds;
+
+    console.log(
+      `[OverlayManager] Creating container window at: x=${x}, y=${y}, ${width}x${height}`
+    );
 
     const browserWindow = new BrowserWindow({
       x,
@@ -118,19 +135,55 @@ export class OverlayManager {
 
     this.containerWindow = browserWindow;
 
+    // Check actual bounds vs expected - OS may constrain window position
+    const actualBounds = browserWindow.getBounds();
+    const offset = {
+      x: actualBounds.x - x,
+      y: actualBounds.y - y,
+    };
+
+    this.containerBoundsInfo = {
+      expected: { x, y, width, height },
+      actual: actualBounds,
+      offset,
+    };
+
+    console.log(
+      `[OverlayManager] Actual window bounds: x=${actualBounds.x}, y=${actualBounds.y}, ${actualBounds.width}x${actualBounds.height}`
+    );
+
+    if (offset.x !== 0 || offset.y !== 0) {
+      console.warn(
+        `[OverlayManager] OS constrained window position! Offset: (${offset.x}, ${offset.y})`
+      );
+    }
+
     browserWindow.on('closed', () => {
       console.log('Container window closed');
       this.containerWindow = undefined;
+      this.containerBoundsInfo = null;
     });
 
     browserWindow.webContents.once('did-finish-load', () => {
       if (!browserWindow.isDestroyed()) {
+        // Send container bounds info to the frontend
+        browserWindow.webContents.send(
+          'containerBoundsInfo',
+          this.containerBoundsInfo
+        );
         // Notify that the container is ready
         this.onWindowReadyCallbacks.forEach((cb) => cb('container'));
       }
     });
 
     return browserWindow;
+  }
+
+  /**
+   * Get the container bounds info (expected vs actual position)
+   */
+  public getContainerBoundsInfo(): ContainerBoundsInfo | null {
+    return this.containerBoundsInfo;
   }
 
   /**

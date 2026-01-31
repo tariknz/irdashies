@@ -6,6 +6,7 @@ import type {
   DashboardBridge,
   DashboardLayout,
   SaveDashboardOptions,
+  ContainerBoundsInfo,
 } from '@irdashies/types';
 
 export function exposeBridge() {
@@ -94,6 +95,7 @@ export function exposeBridge() {
       ipcRenderer.removeAllListeners('editModeToggled');
       ipcRenderer.removeAllListeners('dashboardUpdated');
       ipcRenderer.removeAllListeners('demoModeChanged');
+      ipcRenderer.removeAllListeners('containerBoundsInfo');
     },
     setAutoStart: (enabled: boolean) => {
       return ipcRenderer.invoke('autostart:set', enabled);
@@ -102,6 +104,16 @@ export function exposeBridge() {
       // This is a synchronous getter used in overlay container mode
       // The actual dashboard state is managed by the OverlayContainer component
       return null;
+    },
+    onContainerBoundsInfo: (callback: (value: ContainerBoundsInfo) => void) => {
+      const handler = (
+        _: Electron.IpcRendererEvent,
+        value: ContainerBoundsInfo
+      ) => {
+        callback(value);
+      };
+      ipcRenderer.on('containerBoundsInfo', handler);
+      return () => ipcRenderer.removeListener('containerBoundsInfo', handler);
     },
   } as DashboardBridge);
 }
