@@ -68,6 +68,9 @@ const RandomTraces = () => {
           enabled: true,
           unit: 'auto',
         },
+        abs: {
+          enabled: true,
+        },
         steer: {
           enabled: true,
           config: {
