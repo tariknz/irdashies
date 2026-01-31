@@ -39,7 +39,12 @@ export const OverlayContainer = memo(() => {
   );
 
   return (
-    <div className="fixed inset-0 overflow-hidden">
+    <div
+      className={[
+        'fixed inset-0 overflow-hidden',
+        editMode ? 'bg-blue-900/20' : '',
+      ].join(' ')}
+    >
       {enabledWidgets.map((widget, index) => {
         const WidgetComponent = WIDGET_MAP[widget.id];
         if (!WidgetComponent) {
@@ -59,11 +64,11 @@ export const OverlayContainer = memo(() => {
         );
       })}
 
-      {/* Exit edit mode button */}
+      {/* Exit edit mode button - centered, 50px from top */}
       {editMode && (
         <button
           onClick={handleExitEditMode}
-          className="fixed top-4 right-4 z-[9999] flex items-center gap-2 px-3 py-2 bg-sky-500 hover:bg-sky-600 text-white rounded shadow-lg transition-colors"
+          className="fixed top-[50px] left-1/2 -translate-x-1/2 z-[9999] flex items-center gap-2 px-3 py-2 bg-sky-500 hover:bg-sky-600 text-white rounded shadow-lg transition-colors"
         >
           <X size={18} weight="bold" />
           <span className="text-sm font-medium">Exit Edit Mode</span>

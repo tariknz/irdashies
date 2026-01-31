@@ -59,15 +59,17 @@ export class OverlayManager {
 
   /**
    * Create a single fullscreen transparent window that contains all overlays
+   * Spans across all connected monitors
    */
   private createContainerWindow(): BrowserWindow {
     if (this.containerWindow && !this.containerWindow.isDestroyed()) {
       return this.containerWindow;
     }
 
-    // Get display bounds - use primary display for now
-    const primaryDisplay = screen.getPrimaryDisplay();
-    const { x, y, width, height } = primaryDisplay.bounds;
+    // Calculate combined bounds of all displays to span all monitors
+    const allDisplays = screen.getAllDisplays();
+    const bounds = this.calculateCombinedDisplayBounds(allDisplays);
+    const { x, y, width, height } = bounds;
 
     const browserWindow = new BrowserWindow({
       x,
@@ -100,9 +102,9 @@ export class OverlayManager {
     });
 
     if (this.overlayAlwaysOnTop) {
-      // Use 'floating' level to stay above normal windows but below modal dialogs
-      // 'screen-saver' was too aggressive and interfered with settings window clicks
-      browserWindow.setAlwaysOnTop(true, 'floating', 1);
+      // Use 'screen-saver' level to stay above fullscreen games
+      // This is the highest z-order level available in Electron
+      browserWindow.setAlwaysOnTop(true, 'screen-saver', 1);
     }
 
     // Load the app WITHOUT a hash route - container mode
@@ -129,6 +131,44 @@ export class OverlayManager {
     });
 
     return browserWindow;
+  }
+
+  /**
+   * Calculate the bounding rectangle that encompasses all displays
+   * This creates one large virtual screen spanning all monitors
+   */
+  private calculateCombinedDisplayBounds(
+    displays: Electron.Display[]
+  ): Electron.Rectangle {
+    if (displays.length === 0) {
+      // Fallback to a default if no displays (shouldn't happen)
+      return { x: 0, y: 0, width: 1920, height: 1080 };
+    }
+
+    if (displays.length === 1) {
+      return displays[0].bounds;
+    }
+
+    // Find the bounding box that contains all displays
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+
+    for (const display of displays) {
+      const { x, y, width, height } = display.bounds;
+      minX = Math.min(minX, x);
+      minY = Math.min(minY, y);
+      maxX = Math.max(maxX, x + width);
+      maxY = Math.max(maxY, y + height);
+    }
+
+    return {
+      x: minX,
+      y: minY,
+      width: maxX - minX,
+      height: maxY - minY,
+    };
   }
 
   /**
@@ -329,6 +369,12 @@ export class OverlayManager {
 
     // Track window movement and resizing to save bounds
     trackSettingsWindowMovement(browserWindow);
+
+    // Set settings window to screen-saver level so it appears above the overlay
+    // Use relative level 2 (higher than overlay's 1) so it's always clickable
+    if (this.overlayAlwaysOnTop) {
+      browserWindow.setAlwaysOnTop(true, 'screen-saver', 2);
+    }
 
     // and load the index.html of the app.
     if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
