@@ -998,7 +998,7 @@ export const InputSettings = () => {
             {/* ABS Settings */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium text-slate-200">ABS</h3>
+                <h3 className="text-lg font-medium text-slate-200">ABS Indicator</h3>
                 <div className="flex items-center gap-3">
                   <span className="text-sm text-slate-300">
                     Enable ABS Indicator
