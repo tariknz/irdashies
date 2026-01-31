@@ -11,6 +11,9 @@ const defaultConfig: FlagWidgetSettings['config'] = {
   enabled: true,
   showOnlyWhenOnTrack: false,
   showLabel: true,
+  animate: false,
+  blinkPeriod: 0.5,
+  matrixMode: '16x16',
   showNoFlagState: true,
   sessionVisibility: { 
     race: true, 
@@ -29,7 +32,10 @@ const migrateConfig = (savedConfig: unknown): FlagWidgetSettings['config'] => {
     enabled: (config.enabled as boolean) ?? defaultConfig.enabled,
     showOnlyWhenOnTrack: (config.showOnlyWhenOnTrack as boolean) ?? defaultConfig.showOnlyWhenOnTrack,
     showLabel: (config.showLabel as boolean) ?? defaultConfig.showLabel,
+    animate: (config.animate as boolean) ?? defaultConfig.animate,
+    blinkPeriod: (config.blinkPeriod as number) ?? defaultConfig.blinkPeriod,
     showNoFlagState: (config.showNoFlagState as boolean) ?? defaultConfig.showNoFlagState,
+    matrixMode: (config.matrixMode as '8x8' | '16x16' | 'uniform') ?? defaultConfig.matrixMode,
     sessionVisibility: (config.sessionVisibility as SessionVisibilitySettings) ?? defaultConfig.sessionVisibility,
   };
 };
@@ -61,12 +67,49 @@ export const FlagSettings = () => {
         <div className="space-y-6">
           <div className="flex items-center justify-between">
             <div>
-              <h4 className="text-md font-medium text-slate-300">Show Only When On Track</h4>
-              <p className="text-sm text-slate-400">Hide widget while in the garage.</p>
+              <h4 className="text-md font-medium text-slate-300">Matrix Mode</h4>
+              <p className="text-sm text-slate-400">Choose between 8x8, 16x16, or uniform color rendering.</p>
+            </div>
+            <div>
+              <select
+                className="rounded-md bg-slate-800 text-slate-200 px-3 py-1 text-center"
+                value={settings.config.matrixMode ?? '16x16'}
+                onChange={(e) => handleConfigChange({ matrixMode: e.target.value as '8x8' | '16x16' | 'uniform' })}
+              >
+                <option value="8x8">8x8</option>
+                <option value="16x16">16x16</option>
+                <option value="uniform">Uniform (1x1)</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className="text-md font-medium text-slate-300">Animate Flag</h4>
+              <p className="text-sm text-slate-400">When enabled the flag will blink on/off every 0.5s.</p>
             </div>
             <ToggleSwitch
-              enabled={settings.config.showOnlyWhenOnTrack}
-              onToggle={(enabled) => handleConfigChange({ showOnlyWhenOnTrack: enabled })}
+              enabled={settings.config.animate ?? false}
+              onToggle={(enabled) => handleConfigChange({ animate: enabled })}
+            />
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className="text-md font-medium text-slate-300">Blink Period (s)</h4>
+              <p className="text-sm text-slate-400">Set how many seconds between on/off when animation is enabled.</p>
+            </div>
+            <input
+              type="number"
+              step="0.1"
+              min="0.1"
+              className="w-24 rounded-md bg-slate-800 text-slate-200 px-2 py-1 text-right"
+              value={settings.config.blinkPeriod ?? 0.5}
+              disabled={!settings.config.animate}
+              onChange={(e) => {
+                const v = parseFloat(e.target.value);
+                if (!Number.isNaN(v)) handleConfigChange({ blinkPeriod: v });
+              }}
             />
           </div>
 
@@ -84,11 +127,22 @@ export const FlagSettings = () => {
           <div className="flex items-center justify-between">
             <div>
               <h4 className="text-md font-medium text-slate-300">Show No Flag State</h4>
-              <p className="text-sm text-slate-400">Display grey indicator when no flags are waved.</p>
+              <p className="text-sm text-slate-400">Display 'no flag' (grey leds) when no flags are waved.</p>
             </div>
             <ToggleSwitch
               enabled={settings.config.showNoFlagState ?? true}
               onToggle={(enabled) => handleConfigChange({ showNoFlagState: enabled })}
+            />
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className="text-md font-medium text-slate-300">Show Only When On Track</h4>
+              <p className="text-sm text-slate-400">Hide widget while in the garage.</p>
+            </div>
+            <ToggleSwitch
+              enabled={settings.config.showOnlyWhenOnTrack}
+              onToggle={(enabled) => handleConfigChange({ showOnlyWhenOnTrack: enabled })}
             />
           </div>
 

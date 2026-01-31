@@ -4,6 +4,7 @@ import {
   useSessionVisibility, // Use this for the logic
   useRunningState,
 } from '@irdashies/context';
+import { useEffect, useState } from 'react';
 import { useFlagSettings } from './hooks/useFlagSettings';
 import { getDemoFlagData } from './demoData';
 
@@ -16,7 +17,7 @@ const FLAG_STATES = {
   BLUE: 0x00000020,
   DEBRIS: 0x00000040,
   BLACK: 0x010000,
-  SERVICIBLE: 0x040000,
+  SERVICIBLE: 0x040000, // this is the meatball flag
 };
 
 const getFlagInfo = (sessionFlags: number) => {
@@ -25,6 +26,7 @@ const getFlagInfo = (sessionFlags: number) => {
   if (sessionFlags & FLAG_STATES.BLACK) return { label: 'BLACK FLAG', color: 'bg-black' };
   if (sessionFlags & FLAG_STATES.SERVICIBLE) return { label: 'MEATBALL', color: 'bg-orange-600' };
   if (sessionFlags & FLAG_STATES.BLUE) return { label: 'BLUE FLAG', color: 'bg-blue-600' };
+  if (sessionFlags & FLAG_STATES.DEBRIS) return { label: 'DEBRIS', color: 'bg-yellow-400' };
   if (sessionFlags & FLAG_STATES.YELLOW) return { label: 'YELLOW', color: 'bg-yellow-400' };
   return { label: 'NO FLAG', color: 'bg-slate-500' };
 };
@@ -49,8 +51,8 @@ const isPlayerOnTrack = useTelemetryValue<boolean>('IsOnTrack') ?? true; // Defa
   if (isDemoMode) {
     const demo = getDemoFlagData();
     return (
-      <div style={{ position: 'fixed', top: '100px', left: '100px', zIndex: 99999 }}>
-        <FlagDisplay label={demo.label} showLabel={settings.showLabel ?? true} />
+      <div style={{ position: 'fixed', top: 0, left: 0, zIndex: 99999, width: '100vw', height: '100vh' }}>
+        <FlagDisplay label={demo.label} showLabel={settings.showLabel ?? true} matrixSize={settings.matrixMode === '8x8' ? 8 : settings.matrixMode === '16x16' ? 16 : 1} fullBleed />
       </div>
     );
   }
@@ -69,17 +71,34 @@ const isPlayerOnTrack = useTelemetryValue<boolean>('IsOnTrack') ?? true; // Defa
   // --- RENDER ---
   const flagInfo = getFlagInfo(sessionFlags);
   
-  // 4. Hide widget if NO FLAG state is disabled and no flags are waved
-  if (flagInfo.label === 'NO FLAG' && !settings.showNoFlagState) return null;
-  
-  return <FlagDisplay label={flagInfo.label} showLabel={settings.showLabel ?? true} />;
-};
+  // Animation (blink) support: when animate is enabled, toggle between NO FLAG and the real flag every 500ms
+  const [blinkOn, setBlinkOn] = useState(true);
+  useEffect(() => {
+    if (!settings.animate) {
+      setBlinkOn(true);
+      return;
+    }
+    setBlinkOn(true);
+    const periodMs = (settings.blinkPeriod && settings.blinkPeriod > 0) ? Math.max(100, Math.floor(settings.blinkPeriod * 1000)) : 500;
+    const id = setInterval(() => setBlinkOn((v) => !v), periodMs);
+    return () => clearInterval(id);
+  }, [settings.animate, settings.blinkPeriod]);
 
-export const FlagDisplay = ({ label, showLabel = true, textColor }: { label: string; showLabel?: boolean; textColor?: string }) => {
+  const visibleLabel = settings.animate && !blinkOn ? 'NO FLAG' : flagInfo.label;
+
+  // 4. Hide widget if NO FLAG state is disabled and no flags are waved (apply to visible label)
+  if (visibleLabel === 'NO FLAG' && !settings.showNoFlagState) return null;
+
+  return <FlagDisplay label={visibleLabel} showLabel={settings.showLabel ?? true} matrixSize={settings.matrixMode === '8x8' ? 8 : settings.matrixMode === '16x16' ? 16 : 1} />;
+};
+export const FlagDisplay = ({ label, showLabel = true, textColor, matrixSize = 16, fullBleed = false }: { label: string; showLabel?: boolean; textColor?: string; matrixSize?: number; fullBleed?: boolean }) => {
+  const isUniform = matrixSize === 1;
+  const cols = isUniform ? 1 : matrixSize;
+  const rows = isUniform ? 1 : matrixSize;
   const getLedColorHex = (flagType: string, row: number, col: number) => {
     // Colors (hex) chosen to match Tailwind-ish palette
     const GREEN = '#10B981'; // green-500
-    const YELLOW = '#F59E0B'; // yellow-400-ish
+    const YELLOW = '#f5de0b'; // yellow-400-ish
     const BLUE = '#3B82F6'; // blue-500
     const RED = '#EF4444'; // red-500
     const WHITE = '#FFFFFF';
@@ -88,7 +107,23 @@ export const FlagDisplay = ({ label, showLabel = true, textColor }: { label: str
     const GREY = '#9CA3AF'; // slate-400
     const DARK = '#1f2937'; // slate-800
 
-    if (flagType === 'NO') return GREY;  // NO FLAG = all grey
+    // If the visible flag is NO, always render grey
+    if (flagType === 'NO') return GREY;
+
+    // If matrixSize is 1 we render a uniform colour across the full visual grid
+    if (matrixSize === 1) {
+      if (flagType === 'NO') return GREY; // NO FLAG = all grey
+      if (flagType === 'CHECKERED') return WHITE;
+      if (flagType === 'WHITE') return WHITE;
+      if (flagType === 'BLACK') return BLACK;
+      if (flagType === 'MEATBALL') return ORANGE; // full orange for 1x1 meatball
+      if (flagType === 'GREEN') return GREEN;
+      if (flagType === 'YELLOW') return YELLOW;
+      if (flagType === 'BLUE') return BLUE;
+      if (flagType === 'RED') return RED;
+      if (flagType === 'DEBRIS') return YELLOW;
+      return WHITE;
+    }
 
     if (flagType === 'CHECKERED') {
       return ((row + col) % 2 === 0) ? WHITE : DARK;
@@ -98,21 +133,36 @@ export const FlagDisplay = ({ label, showLabel = true, textColor }: { label: str
     if (flagType === 'BLACK') return BLACK;
 
     if (flagType === 'MEATBALL') {
-      // 4x4 center 'ball' for visibility: center rows/cols for 16x16 grid are 7 and 8
-      if ((row === 7 || row === 8) && (col === 7 || col === 8)) return ORANGE;
+      // Draw a circular meatball centered in the matrix. Radius scales with matrix size.
+      const cx = (cols - 1) / 2;
+      const cy = (rows - 1) / 2;
+      // Radius scales with matrix width so 8x8 also shows a visible orange circle
+      const radius = Math.max(1, Math.floor(cols * 0.3));
+      const dx = col - cx;
+      const dy = row - cy;
+      if (Math.sqrt(dx * dx + dy * dy) <= radius) return ORANGE;
       return BLACK;
     }
 
     // Default colored flags
     if (flagType === 'GREEN') return GREEN;
     if (flagType === 'YELLOW') return YELLOW;
-    if (flagType === 'BLUE') return BLUE;
+    if (flagType === 'BLUE') {
+      // Blue flag with yellow diagonal stripe from top-right to bottom-left
+      const diagonalThreshold = cols - 1;
+      const diagonalPos = col + row;
+      // Create a stripe of about 2-3 cells thick
+      if (Math.abs(diagonalPos - diagonalThreshold) <= 1) return YELLOW;
+      return BLUE;
+    }
+    if (flagType === 'DEBRIS') {
+      // DEBRIS flag: red and yellow horizontal stripes
+      return (row % 2 === 0) ? RED : YELLOW;
+    }
     if (flagType === 'RED') return RED;
 
     return WHITE;
   };
-  const cols = 16;
-  const rows = 16;
   const shortLabel = label.split(' ')[0];
 
   const getTextColorClass = () => {
@@ -123,6 +173,7 @@ export const FlagDisplay = ({ label, showLabel = true, textColor }: { label: str
     if (shortLabel === 'RED') return 'text-red-500';
     if (shortLabel === 'WHITE') return 'text-white';
     if (shortLabel === 'MEATBALL') return 'text-orange-500';
+    if (shortLabel === 'DEBRIS') return 'text-yellow-400';
     if (shortLabel === 'CHECKERED') return 'text-white';
     if (shortLabel === 'BLACK') return 'text-white';
     return 'text-white';
@@ -132,32 +183,61 @@ export const FlagDisplay = ({ label, showLabel = true, textColor }: { label: str
 
   const flagType = shortLabel; // e.g., 'YELLOW', 'CHECKERED', 'MEATBALL', etc.
 
+  const innerPadding = 6; // keep inner padding to show the border area
+  const gap = isUniform ? 0 : 6;
+  const cellRadius = isUniform ? 16 : 4;
+
+  const outerClass = fullBleed
+    ? 'flex flex-col items-stretch gap-0 bg-slate-900 border-4 border-slate-800 shadow-2xl'
+    : 'flex flex-col items-center gap-2 p-4 bg-slate-900 rounded-2xl border-4 border-slate-800 shadow-2xl';
+
+  const outerStyle: React.CSSProperties = fullBleed
+    ? { width: '100%', height: '100%', boxSizing: 'border-box', margin: 0, padding: 0 }
+    : { width: '100%' };
+
   return (
-    <div className="flex flex-col items-center gap-2 p-4 bg-slate-900 rounded-xl border-4 border-slate-800 shadow-2xl h-full w-full">
+    <div className={outerClass} style={outerStyle}>
       <div
         style={{
           display: 'grid',
           gridTemplateColumns: `repeat(${cols}, 1fr)`,
-          gap: 6,
+          gap,
           width: '100%',
           aspectRatio: `${cols} / ${rows}`,
           background: '#000000',
-          padding: 6,
-          borderRadius: 6,
+          padding: innerPadding,
+          borderRadius: isUniform ? 20 : 12,
           boxSizing: 'border-box',
+          height: fullBleed ? '100%' : undefined,
         }}
       >
         {Array.from({ length: cols * rows }).map((_, i) => {
           const row = Math.floor(i / cols);
           const col = i % cols;
           const bg = getLedColorHex(flagType, row, col);
+          // For uniform mode render a single cell that fills the area
+          if (isUniform) {
+            return (
+              <div
+                key="uniform"
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  borderRadius: cellRadius,
+                  boxSizing: 'border-box',
+                  background: bg,
+                }}
+              />
+            );
+          }
+
           return (
             <div
               key={i}
               style={{
                 width: '100%',
                 height: '100%',
-                borderRadius: 4,
+                borderRadius: cellRadius,
                 boxSizing: 'border-box',
                 background: bg,
               }}
@@ -167,7 +247,7 @@ export const FlagDisplay = ({ label, showLabel = true, textColor }: { label: str
       </div>
       <div className="flex gap-2">
         {showLabel && shortLabel !== 'NO' && (
-          <span className={`text-[10px] font-black px-2 uppercase rounded bg-black ${textColorClass}`}>
+          <span className={`text-[14px] font-black px-3 py-1 uppercase rounded-md bg-black ${textColorClass}`}>
             {shortLabel}
           </span>
         )}
