@@ -82,17 +82,22 @@ export class OverlayManager {
     }
 
     const bounds = this.calculateCombinedDisplayBounds(allDisplays);
-    const { x, y, width, height } = bounds;
+    const expectedBounds = {
+      x: bounds.x,
+      y: bounds.y,
+      width: bounds.width,
+      height: bounds.height,
+    };
 
     console.log(
-      `[OverlayManager] Creating container window at: x=${x}, y=${y}, ${width}x${height}`
+      `[OverlayManager] Creating container window at: x=${expectedBounds.x}, y=${expectedBounds.y}, ${expectedBounds.width}x${expectedBounds.height}`
     );
 
     const browserWindow = new BrowserWindow({
-      x,
-      y,
-      width,
-      height,
+      x: expectedBounds.x,
+      y: expectedBounds.y,
+      width: expectedBounds.width,
+      height: expectedBounds.height,
       title: 'iRacing Dashies - Overlay Container',
       transparent: true,
       frame: false,
@@ -102,11 +107,18 @@ export class OverlayManager {
       movable: false,
       roundedCorners: false,
       hasShadow: false,
+      show: false, // Don't show until ready
+      alwaysOnTop: true, // Set in constructor for better Windows compatibility
+      backgroundColor: '#00000000', // Explicit transparent background
+      enableLargerThanScreen: true, // Allow window to span multiple monitors
       icon: getIconPath(),
       webPreferences: {
         preload: path.join(__dirname, 'preload.js'),
       },
     });
+
+    // Force set bounds after creation - more reliable on Windows
+    browserWindow.setBounds(expectedBounds);
 
     browserWindow.on('page-title-updated', (evt) => {
       evt.preventDefault();
@@ -124,6 +136,12 @@ export class OverlayManager {
       browserWindow.setAlwaysOnTop(true, 'screen-saver', 1);
     }
 
+    // Check actual bounds vs expected after initial setup
+    const initialBounds = browserWindow.getBounds();
+    console.log(
+      `[OverlayManager] Initial bounds after setBounds: x=${initialBounds.x}, y=${initialBounds.y}, ${initialBounds.width}x${initialBounds.height}`
+    );
+
     // Load the app WITHOUT a hash route - container mode
     if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
       browserWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
@@ -135,33 +153,52 @@ export class OverlayManager {
 
     this.containerWindow = browserWindow;
 
-    // Check actual bounds vs expected - OS may constrain window position
-    const actualBounds = browserWindow.getBounds();
-    const offset = {
-      x: actualBounds.x - x,
-      y: actualBounds.y - y,
-    };
-
-    this.containerBoundsInfo = {
-      expected: { x, y, width, height },
-      actual: actualBounds,
-      offset,
-    };
-
-    console.log(
-      `[OverlayManager] Actual window bounds: x=${actualBounds.x}, y=${actualBounds.y}, ${actualBounds.width}x${actualBounds.height}`
-    );
-
-    if (offset.x !== 0 || offset.y !== 0) {
-      console.warn(
-        `[OverlayManager] OS constrained window position! Offset: (${offset.x}, ${offset.y})`
-      );
-    }
-
     browserWindow.on('closed', () => {
       console.log('Container window closed');
       this.containerWindow = undefined;
       this.containerBoundsInfo = null;
+    });
+
+    // Show window and retry positioning when ready
+    browserWindow.once('ready-to-show', () => {
+      if (browserWindow.isDestroyed()) return;
+
+      // Retry setting bounds - Windows sometimes allows it after window is visible
+      browserWindow.setPosition(expectedBounds.x, expectedBounds.y);
+      browserWindow.setSize(expectedBounds.width, expectedBounds.height);
+      browserWindow.show();
+
+      // Check final bounds
+      const actualBounds = browserWindow.getBounds();
+      const offset = {
+        x: actualBounds.x - expectedBounds.x,
+        y: actualBounds.y - expectedBounds.y,
+      };
+
+      this.containerBoundsInfo = {
+        expected: expectedBounds,
+        actual: actualBounds,
+        offset,
+      };
+
+      console.log(
+        `[OverlayManager] Final window bounds: x=${actualBounds.x}, y=${actualBounds.y}, ${actualBounds.width}x${actualBounds.height}`
+      );
+
+      if (offset.x !== 0 || offset.y !== 0) {
+        console.warn(
+          `[OverlayManager] OS constrained window position! Offset: (${offset.x}, ${offset.y})`
+        );
+      }
+
+      if (
+        actualBounds.width !== expectedBounds.width ||
+        actualBounds.height !== expectedBounds.height
+      ) {
+        console.warn(
+          `[OverlayManager] Window size mismatch! Expected ${expectedBounds.width}x${expectedBounds.height}, got ${actualBounds.width}x${actualBounds.height}`
+        );
+      }
     });
 
     browserWindow.webContents.once('did-finish-load', () => {

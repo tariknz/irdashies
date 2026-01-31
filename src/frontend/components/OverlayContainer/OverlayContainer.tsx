@@ -1,4 +1,4 @@
-import { memo, useCallback, CSSProperties } from 'react';
+import { memo, useCallback } from 'react';
 import { useDashboard, useRunningState } from '@irdashies/context';
 import type { WidgetLayout } from '@irdashies/types';
 import { WidgetContainer } from '../WidgetContainer';
@@ -6,13 +6,8 @@ import { WIDGET_MAP } from '../../WidgetIndex';
 import { X } from '@phosphor-icons/react';
 
 export const OverlayContainer = memo(() => {
-  const {
-    currentDashboard,
-    editMode,
-    onDashboardUpdated,
-    bridge,
-    containerBoundsInfo,
-  } = useDashboard();
+  const { currentDashboard, editMode, onDashboardUpdated, bridge } =
+    useDashboard();
   const { running } = useRunningState();
 
   const handleExitEditMode = useCallback(() => {
@@ -43,25 +38,12 @@ export const OverlayContainer = memo(() => {
     (widget) => widget.enabled
   );
 
-  // Calculate offset compensation style
-  // If the OS constrained the window position, we need to shift content to compensate
-  const offsetCompensationStyle: CSSProperties = containerBoundsInfo?.offset
-    ? {
-        // Shift content by the negative of the offset to maintain correct screen positions
-        transform: `translate(${-containerBoundsInfo.offset.x}px, ${-containerBoundsInfo.offset.y}px)`,
-        // Expand the container to cover the full expected area
-        width: containerBoundsInfo.expected.width,
-        height: containerBoundsInfo.expected.height,
-      }
-    : {};
-
   return (
     <div
       className={[
-        'fixed inset-0 overflow-visible',
+        'fixed inset-0 overflow-hidden',
         editMode ? 'bg-blue-900/20' : '',
       ].join(' ')}
-      style={offsetCompensationStyle}
     >
       {enabledWidgets.map((widget, index) => {
         const WidgetComponent = WIDGET_MAP[widget.id];
