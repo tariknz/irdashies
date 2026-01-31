@@ -1,7 +1,7 @@
 import {
   useTelemetryValue,
   useDashboard,
-  useSessionVisibility, // Use this for the logic
+  useSessionVisibility,
   useRunningState,
 } from '@irdashies/context';
 import { GlobalFlags } from '@irdashies/types';
@@ -16,7 +16,6 @@ const getFlagInfo = (sessionFlags: number) => {
   if (sessionFlags & GlobalFlags.Disqualify) return { label: 'DISQUALIFIED', color: 'bg-black text-red-600' };
 
   // 2. PERSONAL PENALTIES (Highest Priority for the driver)
-  // We check these BEFORE Green/Yellow so you never miss a penalty.
   if (sessionFlags & (GlobalFlags.Black | GlobalFlags.Furled | GlobalFlags.Disqualify)) return { label: 'BLACK FLAG', color: 'bg-black text-white' };
   if (sessionFlags & (GlobalFlags.Servicible && GlobalFlags.Repair)) return { label: 'MEATBALL', color: 'bg-orange-600' };
 
@@ -49,11 +48,8 @@ export const Flag = () => {
   const { running } = useRunningState();
   const settings = useFlagSettings();
   
-  // High-speed telemetry
  const sessionFlags = useTelemetryValue<number>('SessionFlags') ?? 0;
  const isPlayerOnTrack = useTelemetryValue<boolean>('IsOnTrack') ?? false;
-  // Force it to show even if the sim isn't running
-  //const isPlayerOnTrack = useTelemetryValue<boolean>('IsOnTrack') ?? true; // Default to true for testing
   
   // FIX: This hook calculates visibility based on the settings we pass in
   const isVisibleInSession = useSessionVisibility(settings.sessionVisibility);
@@ -122,12 +118,12 @@ export const FlagDisplay = ({ label, showLabel = true, textColor, matrixSize = 1
 
     // If matrixSize is 1 we render a uniform colour across the full visual grid
     if (matrixSize === 1) {
-      if (flagType === 'NO') return GREY; // NO FLAG = all grey
+      if (flagType === 'NO') return GREY; 
       if (flagType === 'CHECKERED') return WHITE;
       if (flagType === 'WHITE') return WHITE;
       if (flagType === 'BLACK') return BLACK;
       if (flagType === 'DISQUALIFIED') return BLACK;
-      if (flagType === 'MEATBALL') return ORANGE; // full orange for 1x1 meatball
+      if (flagType === 'MEATBALL') return ORANGE; 
       if (flagType === 'GREEN') return GREEN;
       if (flagType === 'YELLOW') return YELLOW;
       if (flagType === 'BLUE') return BLUE;
@@ -159,7 +155,6 @@ export const FlagDisplay = ({ label, showLabel = true, textColor, matrixSize = 1
     if (flagType === 'GREEN') return GREEN;
     if (flagType === 'YELLOW') return YELLOW;
     if (flagType === 'BLUE') {
-      // Blue flag with yellow diagonal stripe from top-right to bottom-left
       const diagonalThreshold = cols - 1;
       const diagonalPos = col + row;
       // Create a stripe of about 2-3 cells thick
@@ -167,14 +162,10 @@ export const FlagDisplay = ({ label, showLabel = true, textColor, matrixSize = 1
       return BLUE;
     }
     if (flagType === 'DEBRIS') {
-      // DEBRIS flag: red and yellow horizontal stripes
       return (row % 2 === 0) ? RED : YELLOW;
     }
     if (flagType === 'DISQUALIFIED') {
-      // DISQUALIFIED flag: all black with two white diagonals
-      // Diagonal 1: top-left to bottom-right
       const diag1 = row - col;
-      // Diagonal 2: top-right to bottom-left
       const diag2 = row + col - (cols - 1);
       if (Math.abs(diag1) <= 1 || Math.abs(diag2) <= 1) return WHITE;
       return BLACK;
