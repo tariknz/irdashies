@@ -4,32 +4,45 @@ import {
   useSessionVisibility, // Use this for the logic
   useRunningState,
 } from '@irdashies/context';
+import { GlobalFlags, SessionState } from '@irdashies/types';
 import { useEffect, useState } from 'react';
 import { useFlagSettings } from './hooks/useFlagSettings';
 import { getDemoFlagData } from './demoData';
 
-const FLAG_STATES = {
-  CHECKERED: 0x00000001,
-  WHITE: 0x00000002,
-  GREEN: 0x00000004,
-  YELLOW: 0x00000008,
-  RED: 0x00000010,
-  BLUE: 0x00000020,
-  DEBRIS: 0x00000040,
-  BLACK: 0x010000,
-  SERVICIBLE: 0x040000, // this is the meatball flag
-};
+const getFlagInfo = (sessionFlags: number, sessionState?: number) => {
+  // 1. CRITICAL SESSION STATUS
+  if (sessionFlags & GlobalFlags.Checkered) return { label: 'CHECKERED', color: 'bg-white text-black' };
+  if (sessionFlags & GlobalFlags.Red) return { label: 'RED', color: 'bg-red-600' };
+  if (sessionFlags & GlobalFlags.Disqualify) return { label: 'DISQUALIFIED', color: 'bg-black text-red-600' };
 
-const getFlagInfo = (sessionFlags: number) => {
-  if (sessionFlags & FLAG_STATES.RED) return { label: 'RED FLAG', color: 'bg-red-600' };
-  if (sessionFlags & FLAG_STATES.CHECKERED) return { label: 'CHECKERED', color: 'bg-white' };
-  if (sessionFlags & FLAG_STATES.BLACK) return { label: 'BLACK FLAG', color: 'bg-black' };
-  if (sessionFlags & FLAG_STATES.SERVICIBLE) return { label: 'MEATBALL', color: 'bg-orange-600' };
-  if (sessionFlags & FLAG_STATES.BLUE) return { label: 'BLUE FLAG', color: 'bg-blue-600' };
-  if (sessionFlags & FLAG_STATES.DEBRIS) return { label: 'DEBRIS', color: 'bg-yellow-400' };
-  if (sessionFlags & FLAG_STATES.YELLOW) return { label: 'YELLOW', color: 'bg-yellow-400' };
+  // 2. PERSONAL PENALTIES (Highest Priority for the driver)
+  // We check these BEFORE Green/Yellow so you never miss a penalty.
+  if (sessionFlags & (GlobalFlags.Black | GlobalFlags.Furled | GlobalFlags.Disqualify)) return { label: 'BLACK FLAG', color: 'bg-black text-white' };
+  if (sessionFlags & (GlobalFlags.Servicible && GlobalFlags.Repair)) return { label: 'MEATBALL', color: 'bg-orange-600' };
+
+  // 3. TRACK CAUTIONS
+  if (sessionFlags & (GlobalFlags.Yellow | GlobalFlags.YellowWaving | GlobalFlags.Caution | GlobalFlags.CautionWaving)) {
+    return { label: 'YELLOW', color: 'bg-yellow-400 text-black' };
+  }
+
+  // 4. RACING STATE
+  // Now we check the actual Green bit instead of sessionState === 0
+  if (sessionFlags & (GlobalFlags.Green | GlobalFlags.StartGo)) return { label: 'GREEN', color: 'bg-green-600' };
+
+  // 5. INFO FLAGS (Only shown if nothing above is active)
+  if (sessionFlags & GlobalFlags.Blue) return { label: 'BLUE FLAG', color: 'bg-blue-600' };
+  if (sessionFlags & GlobalFlags.Debris) return { label: 'DEBRIS', color: 'bg-yellow-400' };
+  if (sessionFlags & GlobalFlags.White) return { label: 'WHITE', color: 'bg-white text-black' };
+  
+  // 6. STARTING LIGHTS / PRE-RACE
+  //if (sessionFlags & GlobalFlags.StartSet) return { label: 'SET', color: 'bg-red-600' };
+  //if (sessionFlags & GlobalFlags.StartReady) return { label: 'READY', color: 'bg-orange-500' };
+
   return { label: 'NO FLAG', color: 'bg-slate-500' };
 };
+
+
+
 
 export const Flag = () => {
   const { isDemoMode } = useDashboard();
@@ -37,9 +50,11 @@ export const Flag = () => {
   const settings = useFlagSettings();
   
   // High-speed telemetry
-  const sessionFlags = useTelemetryValue<number>('SessionFlags') ?? 0;
+ const sessionFlags = useTelemetryValue<number>('SessionFlags') ?? 0;
+ const sessionState = useTelemetryValue<number>('SessionState');
+ const isPlayerOnTrack = useTelemetryValue<boolean>('IsOnTrack') ?? false;
   // Force it to show even if the sim isn't running
-const isPlayerOnTrack = useTelemetryValue<boolean>('IsOnTrack') ?? true; // Default to true for testing
+  //const isPlayerOnTrack = useTelemetryValue<boolean>('IsOnTrack') ?? true; // Default to true for testing
   
   // FIX: This hook calculates visibility based on the settings we pass in
   const isVisibleInSession = useSessionVisibility(settings.sessionVisibility);
@@ -78,7 +93,7 @@ const isPlayerOnTrack = useTelemetryValue<boolean>('IsOnTrack') ?? true; // Defa
   if (settings.showOnlyWhenOnTrack && !isPlayerOnTrack) return null;
 
   // --- RENDER ---
-  const flagInfo = getFlagInfo(sessionFlags);
+  const flagInfo = getFlagInfo(sessionFlags, sessionState);
 
   const visibleLabel = settings.animate && !blinkOn ? 'NO FLAG' : flagInfo.label;
 
@@ -112,6 +127,7 @@ export const FlagDisplay = ({ label, showLabel = true, textColor, matrixSize = 1
       if (flagType === 'CHECKERED') return WHITE;
       if (flagType === 'WHITE') return WHITE;
       if (flagType === 'BLACK') return BLACK;
+      if (flagType === 'DISQUALIFIED') return BLACK;
       if (flagType === 'MEATBALL') return ORANGE; // full orange for 1x1 meatball
       if (flagType === 'GREEN') return GREEN;
       if (flagType === 'YELLOW') return YELLOW;
@@ -155,6 +171,15 @@ export const FlagDisplay = ({ label, showLabel = true, textColor, matrixSize = 1
       // DEBRIS flag: red and yellow horizontal stripes
       return (row % 2 === 0) ? RED : YELLOW;
     }
+    if (flagType === 'DISQUALIFIED') {
+      // DISQUALIFIED flag: all black with two white diagonals
+      // Diagonal 1: top-left to bottom-right
+      const diag1 = row - col;
+      // Diagonal 2: top-right to bottom-left
+      const diag2 = row + col - (cols - 1);
+      if (Math.abs(diag1) <= 1 || Math.abs(diag2) <= 1) return WHITE;
+      return BLACK;
+    }
     if (flagType === 'RED') return RED;
 
     return WHITE;
@@ -172,6 +197,7 @@ export const FlagDisplay = ({ label, showLabel = true, textColor, matrixSize = 1
     if (shortLabel === 'DEBRIS') return 'text-yellow-400';
     if (shortLabel === 'CHECKERED') return 'text-white';
     if (shortLabel === 'BLACK') return 'text-white';
+    if (shortLabel === 'DISQUALIFIED') return 'text-red-500';
     return 'text-white';
   };
 
@@ -241,10 +267,15 @@ export const FlagDisplay = ({ label, showLabel = true, textColor, matrixSize = 1
           );
         })}
       </div>
-      <div className="flex gap-2">
-        {showLabel && shortLabel !== 'NO' && (
-          <span className={`text-[14px] font-black px-3 py-1 uppercase rounded-md bg-black ${textColorClass}`}>
-            {shortLabel}
+      <div
+        className="flex gap-2 items-center"
+        style={{ minHeight: showLabel ? 24 : 0 }}
+      >
+        {showLabel && (
+          <span
+            className={`text-[14px] font-black px-3 py-1 uppercase rounded-md bg-black ${textColorClass} ${shortLabel === 'NO' ? 'opacity-0' : ''}`}
+          >
+            {shortLabel === 'NO' ? 'NO' : shortLabel}
           </span>
         )}
       </div>

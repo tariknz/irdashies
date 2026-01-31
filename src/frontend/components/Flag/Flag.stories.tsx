@@ -22,6 +22,7 @@ const FLAG_COLORS: Record<string, string> = {
   MEATBALL: 'text-orange-500',
   CHECKERED: 'text-white',
   DEBRIS: 'text-yellow-400',
+  DISQUALIFIED: 'text-red-500',
 };
 
 export const AllStates: Story = {
