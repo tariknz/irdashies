@@ -128,7 +128,7 @@ export const FlagSettings = () => {
           <div className="flex items-center justify-between">
             <div>
               <h4 className="text-md font-medium text-slate-300">Show No Flag State</h4>
-              <p className="text-sm text-slate-400">Display 'no flag' (grey leds) when no flags are waved.</p>
+              <p className="text-sm text-slate-400">Display &apos;no flag&apos; (grey leds) when no flags are waved.</p>
             </div>
             <ToggleSwitch
               enabled={settings.config.showNoFlagState ?? true}

@@ -44,13 +44,6 @@ export const AllStates: Story = {
   ),
 };
 
-interface InteractiveArgs {
-  flagLabel: string;
-  matrixMode: '8x8' | '16x16' | 'uniform';
-  animate: boolean;
-  blinkPeriod: number;
-  showLabel: boolean;
-}
 
 // -------- Interactive Story with animation options --------
 interface InteractiveFlagArgs {
@@ -68,13 +61,13 @@ const FlagWrapper: React.FC<InteractiveFlagArgs> = ({
   animate,
   blinkPeriod,
 }) => {
+  // Always call useState first — initial state true
   const [on, setOn] = useState(true);
 
+  // useEffect is always called
   useEffect(() => {
-    if (!animate) {
-      setOn(true);
-      return;
-    }
+    if (!animate) return; // exit early, but hook is still called
+
     const periodMs = Math.max(100, Math.floor(blinkPeriod * 1000));
     const id = setInterval(() => setOn((v) => !v), periodMs);
     return () => clearInterval(id);
@@ -95,6 +88,7 @@ const FlagWrapper: React.FC<InteractiveFlagArgs> = ({
     </div>
   );
 };
+
 
 export const Interactive: StoryObj<typeof FlagWrapper> = {
   argTypes: {

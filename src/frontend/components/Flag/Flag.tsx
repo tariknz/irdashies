@@ -44,6 +44,15 @@ const isPlayerOnTrack = useTelemetryValue<boolean>('IsOnTrack') ?? true; // Defa
   // FIX: This hook calculates visibility based on the settings we pass in
   const isVisibleInSession = useSessionVisibility(settings.sessionVisibility);
 
+  // Animation (blink) support: when animate is enabled, toggle between NO FLAG and the real flag every 500ms
+  const [blinkOn, setBlinkOn] = useState(true);
+  useEffect(() => {
+    if (!settings.animate) return;
+    const periodMs = (settings.blinkPeriod && settings.blinkPeriod > 0) ? Math.max(100, Math.floor(settings.blinkPeriod * 1000)) : 500;
+    const id = setInterval(() => setBlinkOn((v) => !v), periodMs);
+    return () => clearInterval(id);
+  }, [settings.animate, settings.blinkPeriod]);
+
   // 1. Sidebar Master Switch
   if (!settings?.enabled) return null;
 
@@ -70,19 +79,6 @@ const isPlayerOnTrack = useTelemetryValue<boolean>('IsOnTrack') ?? true; // Defa
 
   // --- RENDER ---
   const flagInfo = getFlagInfo(sessionFlags);
-  
-  // Animation (blink) support: when animate is enabled, toggle between NO FLAG and the real flag every 500ms
-  const [blinkOn, setBlinkOn] = useState(true);
-  useEffect(() => {
-    if (!settings.animate) {
-      setBlinkOn(true);
-      return;
-    }
-    setBlinkOn(true);
-    const periodMs = (settings.blinkPeriod && settings.blinkPeriod > 0) ? Math.max(100, Math.floor(settings.blinkPeriod * 1000)) : 500;
-    const id = setInterval(() => setBlinkOn((v) => !v), periodMs);
-    return () => clearInterval(id);
-  }, [settings.animate, settings.blinkPeriod]);
 
   const visibleLabel = settings.animate && !blinkOn ? 'NO FLAG' : flagInfo.label;
 
