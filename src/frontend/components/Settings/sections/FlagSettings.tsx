@@ -58,7 +58,7 @@ export const FlagSettings = () => {
   return (
     <BaseSettingsSection
       title="Flag"
-      description="Display track flags (Yellow, Blue, Green, etc.)"
+      description="Display track flags"
       settings={settings as FlagWidgetSettings}
       onSettingsChange={(s) => setSettings(s as FlagWidgetSettings)}
       widgetId={SETTING_ID}
@@ -86,7 +86,7 @@ export const FlagSettings = () => {
           <div className="flex items-center justify-between">
             <div>
               <h4 className="text-md font-medium text-slate-300">Animate Flag</h4>
-              <p className="text-sm text-slate-400">When enabled the flag will blink on/off every 0.5s.</p>
+              <p className="text-sm text-slate-400">When enabled the flag will blink on/off.</p>
             </div>
             <ToggleSwitch
               enabled={settings.config.animate ?? false}
@@ -97,12 +97,13 @@ export const FlagSettings = () => {
           <div className="flex items-center justify-between">
             <div>
               <h4 className="text-md font-medium text-slate-300">Blink Period (s)</h4>
-              <p className="text-sm text-slate-400">Set how many seconds between on/off when animation is enabled.</p>
+              <p className="text-sm text-slate-400">Set how many seconds between on/off when animation is enabled. Min 0.1s, Max 3s.</p>
             </div>
             <input
               type="number"
               step="0.1"
               min="0.1"
+              max="3"
               className="w-24 rounded-md bg-slate-800 text-slate-200 px-2 py-1 text-right"
               value={settings.config.blinkPeriod ?? 0.5}
               disabled={!settings.config.animate}

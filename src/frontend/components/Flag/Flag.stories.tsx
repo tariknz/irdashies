@@ -52,48 +52,64 @@ interface InteractiveArgs {
   showLabel: boolean;
 }
 
-export const Interactive: Story<InteractiveArgs> = {
+// -------- Interactive Story with animation options --------
+interface InteractiveFlagArgs {
+  label: string;
+  matrixMode: '8x8' | '16x16' | 'uniform';
+  showLabel: boolean;
+  animate: boolean;
+  blinkPeriod: number;
+}
+
+const FlagWrapper: React.FC<InteractiveFlagArgs> = ({
+  label,
+  matrixMode,
+  showLabel,
+  animate,
+  blinkPeriod,
+}) => {
+  const [on, setOn] = useState(true);
+
+  useEffect(() => {
+    if (!animate) {
+      setOn(true);
+      return;
+    }
+    const periodMs = Math.max(100, Math.floor(blinkPeriod * 1000));
+    const id = setInterval(() => setOn((v) => !v), periodMs);
+    return () => clearInterval(id);
+  }, [animate, blinkPeriod]);
+
+  const displayLabel = animate && !on ? 'NO FLAG' : label;
+  const textColor = FLAG_COLORS[displayLabel] || 'text-slate-500';
+  const matrixSize = matrixMode === '8x8' ? 8 : matrixMode === '16x16' ? 16 : 1;
+
+  return (
+    <div style={{ width: 420 }}>
+      <FlagDisplay
+        label={displayLabel}
+        textColor={textColor}
+        showLabel={showLabel}
+        matrixSize={matrixSize}
+      />
+    </div>
+  );
+};
+
+export const Interactive: StoryObj<typeof FlagWrapper> = {
   argTypes: {
-    flagLabel: {
-      control: { type: 'select' },
-      options: Object.keys(FLAG_COLORS),
-    },
-    matrixMode: {
-      control: { type: 'select' },
-      options: ['8x8', '16x16', 'uniform'],
-    },
+    label: { control: 'select', options: Object.keys(FLAG_COLORS) },
+    matrixMode: { control: 'select', options: ['8x8', '16x16', 'uniform'] },
+    showLabel: { control: 'boolean' },
     animate: { control: 'boolean' },
     blinkPeriod: { control: { type: 'number', min: 0.1, step: 0.1 } },
-    showLabel: { control: 'boolean' },
   },
   args: {
-    flagLabel: 'YELLOW',
+    label: 'YELLOW',
     matrixMode: '16x16',
+    showLabel: true,
     animate: false,
     blinkPeriod: 0.5,
-    showLabel: true,
   },
-  render: (args) => {
-    const [on, setOn] = useState(true);
-
-    useEffect(() => {
-      if (!args.animate) {
-        setOn(true);
-        return;
-      }
-      setOn(true);
-      const periodMs = Math.max(100, Math.floor(args.blinkPeriod * 1000));
-      const id = setInterval(() => setOn((v) => !v), periodMs);
-      return () => clearInterval(id);
-    }, [args.animate, args.blinkPeriod]);
-
-    const matrixSize = args.matrixMode === '8x8' ? 8 : args.matrixMode === '16x16' ? 16 : 1;
-    const displayLabel = args.animate && !on ? 'NO FLAG' : args.flagLabel;
-
-    return (
-      <div style={{ width: 420 }}>
-        <FlagDisplay label={displayLabel} showLabel={args.showLabel} matrixSize={matrixSize} />
-      </div>
-    );
-  },
+  render: (args) => <FlagWrapper {...args} />,
 };
