@@ -1,6 +1,7 @@
 import http from 'http';
 import fs from 'fs';
 import path from 'path';
+import os from 'os';
 import type { IrSdkBridge, DashboardBridge } from '@irdashies/types';
 import { currentDashboard } from './bridgeProxy';
 import { getGarageCoverImageAsDataUrl } from '../storage/dashboards';
@@ -16,6 +17,36 @@ const configCache = new Map<string, unknown>();
 const isDev = process.env.NODE_ENV === 'development' || process.env.VITE_DEV_SERVER_URL;
 
 declare const MAIN_WINDOW_VITE_NAME: string;
+
+// Get the local IP address dynamically
+function getLocalIPAddress(): string {
+  const interfaces = os.networkInterfaces();
+  const candidates: string[] = [];
+  
+  for (const name of Object.keys(interfaces)) {
+    const nets = interfaces[name];
+    if (!nets) continue;
+    
+    for (const net of nets) {
+      if (net.family === 'IPv4' && !net.internal) {
+        candidates.push(net.address);
+      }
+    }
+  }
+  
+  if (candidates.length > 0) {
+    // Prefer 192.168.x.x or 10.x.x.x addresses (common home/office networks)
+    const preferred = candidates.find(ip => 
+      ip.startsWith('192.168.') || ip.startsWith('10.') || ip.startsWith('172.')
+    );
+    return preferred || candidates[0];
+  }
+  
+  return 'localhost';
+}
+
+const SERVER_IP = getLocalIPAddress();
+
 
 function setCORSHeaders(res: http.ServerResponse) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -79,7 +110,7 @@ async function serveStaticFile(filePath: string, res: http.ServerResponse) {
  * Creates an HTTP server that serves components to external browsers
  * Bridge data is exposed via WebSocket so browsers can access real-time telemetry
  * 
- * Access components via: http://localhost:3000/component/<componentName>
+ * Access components via: http://[dynamic-ip]:3000/component/<componentName>
  */
 export async function startComponentServer(irsdkBridge?: IrSdkBridge, dashboardBridge?: DashboardBridge) {
   let staticPath: string | null = null;
@@ -100,8 +131,8 @@ export async function startComponentServer(irsdkBridge?: IrSdkBridge, dashboardB
     const pathname = url.pathname;
 
     if (!isDev && staticPath && pathname !== '/' && !pathname.startsWith('/health') && 
-        !pathname.startsWith('/debug') && !pathname.startsWith('/component') && 
-        !pathname.startsWith('/components')) {
+        !pathname.startsWith('/debug') && !pathname.startsWith('/api') && !pathname.startsWith('/component') && 
+        !pathname.startsWith('/components') && !pathname.startsWith('/dashboard')) {
       const filePath = path.join(staticPath, pathname);
       await serveStaticFile(filePath, res);
       return;
@@ -109,6 +140,11 @@ export async function startComponentServer(irsdkBridge?: IrSdkBridge, dashboardB
 
     if (pathname === '/health' && req.method === 'GET') {
       sendJSON(res, 200, { status: 'ok', message: 'Component server is running' });
+      return;
+    }
+
+    if (pathname === '/api/server-ip' && req.method === 'GET') {
+      sendJSON(res, 200, { ip: SERVER_IP });
       return;
     }
 
@@ -173,7 +209,6 @@ export async function startComponentServer(irsdkBridge?: IrSdkBridge, dashboardB
         return;
       }
 
-      const wsUrl = 'http://localhost:3000';
       const normalizedName = componentName.toLowerCase();
       let finalConfig = {};
       
@@ -196,23 +231,70 @@ export async function startComponentServer(irsdkBridge?: IrSdkBridge, dashboardB
         }
       }
 
-      let componentRendererUrl: string;
-      
-      if (isDev) {
-        const vitePort = process.env.VITE_PORT || '5173';
-        componentRendererUrl = `http://localhost:${vitePort}/index-component-renderer.html?component=${encodeURIComponent(componentName)}&wsUrl=${encodeURIComponent(wsUrl)}&configId=${configId}`;
-      } else {
-        componentRendererUrl = `http://localhost:${COMPONENT_PORT}/index-component-renderer.html?component=${encodeURIComponent(componentName)}&wsUrl=${encodeURIComponent(wsUrl)}&configId=${configId}`;
-      }
-
-      const escapedName = componentName.replace(/[<>&"']/g, '');
+      // Individual component rendering is no longer supported
+      // Use /dashboard route to view the full dashboard instead
       const html = `
       <!DOCTYPE html>
       <html>
       <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>${escapedName} Component</title>
+        <title>Component Rendering Deprecated</title>
+        <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          html, body { width: 100%; height: 100%; overflow: hidden; }
+          body { background: #1e293b; color: #e2e8f0; font-family: system-ui, -apple-system, sans-serif; display: flex; align-items: center; justify-content: center; }
+          .message { text-align: center; padding: 2rem; }
+          h1 { font-size: 1.5rem; margin-bottom: 1rem; }
+          p { margin-bottom: 0.5rem; }
+          code { background: #0f172a; padding: 0.25rem 0.5rem; border-radius: 0.25rem; }
+        </style>
+      </head>
+      <body>
+        <div class="message">
+          <h1>Individual Component Rendering Deprecated</h1>
+          <p>Please use the full dashboard view instead:</p>
+          <p><code>http://${SERVER_IP}:3000/dashboard</code></p>
+        </div>
+      </body>
+      </html>
+    `;
+
+      sendHTML(res, html);
+      return;
+    }
+
+    // Dashboard view - shows all overlays in one page
+    if (pathname === '/dashboard' && req.method === 'GET') {
+      const wsUrl = `http://${SERVER_IP}:${COMPONENT_PORT}`;
+      const debug = url.searchParams.get('debug') || 'false';
+      
+      // Get profile ID from URL param (check both 'profile' and 'profileId')
+      const profileIdParam = url.searchParams.get('profile') || url.searchParams.get('profileId');
+      let profileId = profileIdParam;
+      
+      if (!profileId) {
+        const { getCurrentProfileId } = await import('../storage/dashboards');
+        profileId = getCurrentProfileId();
+      }
+      
+      let dashboardViewUrl: string;
+      
+      if (isDev) {
+        const vitePort = process.env.VITE_PORT || '5173';
+        dashboardViewUrl = `http://${SERVER_IP}:${vitePort}/index-dashboard-view.html?wsUrl=${encodeURIComponent(wsUrl)}&profile=${encodeURIComponent(profileId)}&debug=${debug}`;
+      } else {
+        dashboardViewUrl = `http://${SERVER_IP}:${COMPONENT_PORT}/index-dashboard-view.html?wsUrl=${encodeURIComponent(wsUrl)}&profile=${encodeURIComponent(profileId)}&debug=${debug}`;
+      }
+
+      // Serve HTML with iframe to dashboard view
+      const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Dashboard</title>
         <style>
           * { margin: 0; padding: 0; box-sizing: border-box; }
           html, body, #root { width: 100%; height: 100%; overflow: hidden; }
@@ -221,7 +303,7 @@ export async function startComponentServer(irsdkBridge?: IrSdkBridge, dashboardB
         </style>
       </head>
       <body>
-        <iframe src="${componentRendererUrl}" scrolling="no"></iframe>
+        <iframe src="${dashboardViewUrl}" scrolling="no"></iframe>
       </body>
       </html>
     `;
@@ -246,10 +328,10 @@ export async function startComponentServer(irsdkBridge?: IrSdkBridge, dashboardB
 
       sendJSON(res, 200, {
         components: componentNames,
-        baseUrl: `http://localhost:${COMPONENT_PORT}`,
-        websocketUrl: `ws://localhost:${COMPONENT_PORT}`,
+        baseUrl: `http://${SERVER_IP}:${COMPONENT_PORT}`,
+        websocketUrl: `ws://${SERVER_IP}:${COMPONENT_PORT}`,
         examples: componentNames.map(
-          (name) => `http://localhost:${COMPONENT_PORT}/component/${name}`
+          (name) => `http://${SERVER_IP}:${COMPONENT_PORT}/component/${name}`
         ),
       });
       return;
@@ -272,9 +354,19 @@ export async function startComponentServer(irsdkBridge?: IrSdkBridge, dashboardB
       console.warn('Failed to initialize WebSocket bridge:', err);
     }
   }
+  httpServer.on('error', (error: NodeJS.ErrnoException) => {
+    console.error('❌ Server error:', error);
+    if (error.code === 'EADDRINUSE') {
+      console.error(`   Port ${COMPONENT_PORT} is already in use by another application`);
+      console.error(`   Try changing COMPONENT_PORT environment variable or close other apps using this port`);
+    } else if (error.code === 'EACCES') {
+      console.error(`   Permission denied to bind to port ${COMPONENT_PORT}`);
+      console.error(`   Try running as administrator or use a port number above 1024`);
+    }
+  });
 
-  httpServer.listen(Number(COMPONENT_PORT), 'localhost', () => {
-    console.log(`Component server running on http://localhost:${COMPONENT_PORT}`);
+  httpServer.listen(Number(COMPONENT_PORT), '0.0.0.0', () => {
+    console.log(`Component server running on http://${SERVER_IP}:${COMPONENT_PORT}`);
   });
 }
 

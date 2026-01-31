@@ -20,13 +20,14 @@ import { PitlaneHelperSettings } from './sections/PitlaneHelperSettings';
 import { GeneralSettings } from './sections/GeneralSettings';
 import { BlindSpotMonitorSettings } from './sections/BlindSpotMonitorSettings';
 import { GarageCoverSettings } from './sections/GarageCoverSettings';
+import { ProfileSettings } from './sections/ProfileSettings';
 import { useDashboard } from '@irdashies/context';
 import { useState } from 'react';
 
 
 export const SettingsLayout = () => {
   const location = useLocation();
-  const { bridge, editMode, isDemoMode, toggleDemoMode, currentDashboard } =
+  const { bridge, editMode, isDemoMode, toggleDemoMode, currentDashboard, currentProfile } =
     useDashboard();
   const [isLocked, setIsLocked] = useState(!editMode);
 
@@ -53,7 +54,14 @@ export const SettingsLayout = () => {
       <div className="flex flex-row gap-4 items-center justify-between">
         <div className="flex flex-row gap-4 items-center">
           <GearIcon size={32} weight="bold" />
-          <h1 className="text-2xl font-bold">Overlay Settings</h1>
+          <div>
+            <h1 className="text-2xl font-bold">Overlay Settings</h1>
+            {currentProfile && (
+              <p className="text-sm text-gray-400">
+                {currentProfile.name} Active
+              </p>
+            )}
+          </div>
         </div>
         <div className="flex flex-row gap-2">
           <button
@@ -100,6 +108,14 @@ export const SettingsLayout = () => {
                 className={menuItemClass('/general')}
               >
                 General
+              </Link>
+            </li>
+            <li>
+              <Link
+                to="/settings/profiles"
+                className={menuItemClass('/profiles')}
+              >
+                Profiles
               </Link>
             </li>
           </ul>
@@ -220,6 +236,7 @@ export const SettingsLayout = () => {
               element={<Navigate to="/settings/general" replace />}
             />
             <Route path="general" element={<GeneralSettings />} />
+            <Route path="profiles" element={<ProfileSettings />} />
             <Route path="standings" element={<StandingsSettings />} />
             <Route path="relative" element={<RelativeSettings />} />
             <Route path="weather" element={<WeatherSettings />} />

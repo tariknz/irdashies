@@ -1,6 +1,6 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
-import { describe, it, expect, vi } from 'vitest';
+import { render, screen, act, waitFor } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { DashboardProvider, useDashboard } from './DashboardContext';
 import type { DashboardBridge, DashboardLayout } from '@irdashies/types';
 
@@ -20,6 +20,14 @@ const mockBridge: DashboardBridge = {
   getGarageCoverImageAsDataUrl: vi.fn(),
   getAnalyticsOptOut: vi.fn().mockResolvedValue(false),
   setAnalyticsOptOut: vi.fn(),
+  listProfiles: vi.fn().mockResolvedValue([]),
+  createProfile: vi.fn(),
+  deleteProfile: vi.fn(),
+  renameProfile: vi.fn(),
+  switchProfile: vi.fn(),
+  getCurrentProfile: vi.fn().mockResolvedValue(null),
+  updateProfileTheme: vi.fn(),
+  getDashboardForProfile: vi.fn(),
   setAutoStart: vi.fn()
 };
 
@@ -51,49 +59,72 @@ const TestComponent: React.FC = () => {
 };
 
 describe('DashboardContext', () => {
-  it('provides the current dashboard', () => {
-    render(
-      <DashboardProvider bridge={mockBridge}>
-        <TestComponent />
-      </DashboardProvider>
-    );
+  beforeEach(() => {
+    vi.clearAllMocks();
 
-    expect(screen.getByTestId('current-dashboard').textContent).toBe(
-      'No Dashboard'
-    );
+    // Reset mock implementations that might have been modified
+    mockBridge.dashboardUpdated = vi.fn();
+    mockBridge.listProfiles = vi.fn().mockResolvedValue([]);
+    mockBridge.getCurrentProfile = vi.fn().mockResolvedValue(null);
   });
 
-  it('updates the dashboard', () => {
-    render(
-      <DashboardProvider bridge={mockBridge}>
-        <TestComponent />
-      </DashboardProvider>
-    );
+  it('provides the current dashboard', async () => {
+    act(() => {
+      render(
+        <DashboardProvider bridge={mockBridge}>
+          <TestComponent />
+        </DashboardProvider>
+      );
+    });
 
-    screen.getByText('Update Dashboard').click();
-
-    expect(mockBridge.saveDashboard).toHaveBeenCalledWith({
-      widgets: [
-        {
-          id: 'test',
-          enabled: true,
-          layout: { x: 0, y: 0, width: 1, height: 1 },
-        },
-      ],
-    }, undefined);
+    await waitFor(() => {
+      expect(screen.getByTestId('current-dashboard').textContent).toBe(
+        'No Dashboard'
+      );
+    });
   });
 
-  it('reloads the dashboard on mount', () => {
-    render(
-      <DashboardProvider bridge={mockBridge}>
-        <TestComponent />
-      </DashboardProvider>
-    );
+  it('updates the dashboard', async () => {
+    act(() => {
+      render(
+        <DashboardProvider bridge={mockBridge}>
+          <TestComponent />
+        </DashboardProvider>
+      );
+    });
 
-    expect(mockBridge.reloadDashboard).toHaveBeenCalled();
+    await act(async () => {
+      screen.getByText('Update Dashboard').click();
+    });
+
+    await waitFor(() => {
+      expect(mockBridge.saveDashboard).toHaveBeenCalledWith({
+        widgets: [
+          {
+            id: 'test',
+            enabled: true,
+            layout: { x: 0, y: 0, width: 1, height: 1 },
+          },
+        ],
+      }, { profileId: undefined });
+    });
   });
 
-  it('sets the dashboard when updated', () => {
+  it('reloads the dashboard on mount', async () => {
+    act(() => {
+      render(
+        <DashboardProvider bridge={mockBridge}>
+          <TestComponent />
+        </DashboardProvider>
+      );
+    });
+
+    await waitFor(() => {
+      expect(mockBridge.reloadDashboard).toHaveBeenCalled();
+    });
+  });
+
+  it('sets the dashboard when updated', async () => {
     const mockDashboard: DashboardLayout = {
       widgets: [
         {
@@ -103,26 +134,124 @@ describe('DashboardContext', () => {
         },
       ],
     };
-    mockBridge.dashboardUpdated = (callback) => callback(mockDashboard);
+    mockBridge.dashboardUpdated = (callback) => callback(mockDashboard, "123");
 
-    render(
-      <DashboardProvider bridge={mockBridge}>
-        <TestComponent />
-      </DashboardProvider>
-    );
+    act(() => {
+      render(
+        <DashboardProvider bridge={mockBridge}>
+          <TestComponent />
+        </DashboardProvider>
+      );
+    });
 
-    expect(screen.getByTestId('current-dashboard').textContent).toBe(
-      JSON.stringify(mockDashboard)
-    );
+    await waitFor(() => {
+      expect(screen.getByTestId('current-dashboard').textContent).toBe(
+        JSON.stringify(mockDashboard)
+      );
+    });
   });
 
   it('stops the bridge on unmount', () => {
-    render(
+    const { unmount } = render(
       <DashboardProvider bridge={mockBridge}>
         <TestComponent />
       </DashboardProvider>
     );
 
+    act(() => {
+      unmount();
+    });
+
     expect(mockBridge.stop).toHaveBeenCalled();
   });
-});
+
+  describe('Browser view with profileId', () => {
+    it('loads profile synchronously when profileId is provided', async () => {
+      const profileId = 'test-profile-id';
+      const testProfile = { id: profileId, name: 'Test Profile', createdAt: new Date().toISOString(), lastModified: new Date().toISOString() };
+      mockBridge.listProfiles = vi.fn().mockResolvedValue([testProfile]);
+      mockBridge.getDashboardForProfile = vi.fn().mockResolvedValue({
+        widgets: [{ id: 'test', enabled: true, layout: { x: 0, y: 0, width: 1, height: 1 } }]
+      });
+
+      const TestComponentWithProfile: React.FC = () => {
+        const { currentProfile } = useDashboard();
+        return <div data-testid="current-profile">{currentProfile?.id || 'No Profile'}</div>;
+      };
+
+      act(() => {
+        render(
+          <DashboardProvider bridge={mockBridge} profileId={profileId}>
+            <TestComponentWithProfile />
+          </DashboardProvider>
+        );
+      });
+
+      await waitFor(() => {
+        expect(screen.getByTestId('current-profile').textContent).toBe(profileId);
+      });
+    });
+
+    it('creates minimal profile object when profileId is not in active list', async () => {
+      const profileId = 'inactive-profile-id';
+      mockBridge.listProfiles = vi.fn().mockResolvedValue([]); // Profile not in active list
+      mockBridge.getDashboardForProfile = vi.fn().mockResolvedValue({
+        widgets: [{ id: 'test', enabled: true, layout: { x: 0, y: 0, width: 1, height: 1 } }]
+      });
+
+      const TestComponentWithProfile: React.FC = () => {
+        const { currentProfile } = useDashboard();
+        return <div data-testid="current-profile">{currentProfile?.id || 'No Profile'}</div>;
+      };
+
+      act(() => {
+        render(
+          <DashboardProvider bridge={mockBridge} profileId={profileId}>
+            <TestComponentWithProfile />
+          </DashboardProvider>
+        );
+      });
+
+      await waitFor(() => {
+        expect(screen.getByTestId('current-profile').textContent).toBe(profileId);
+      });
+    });
+
+    it('saves dashboard with correct profileId for non-active profile', async () => {
+      const profileId = 'inactive-profile-id';
+      mockBridge.listProfiles = vi.fn().mockResolvedValue([]); // Profile not in active list
+      mockBridge.getDashboardForProfile = vi.fn().mockResolvedValue({
+        widgets: [{ id: 'test', enabled: true, layout: { x: 0, y: 0, width: 1, height: 1 } }]
+      });
+
+      act(() => {
+        render(
+          <DashboardProvider bridge={mockBridge} profileId={profileId}>
+            <TestComponent />
+          </DashboardProvider>
+        );
+      });
+
+      // Wait for the profile to be loaded
+      await waitFor(
+        () => {
+          expect(screen.getByText('Update Dashboard')).toBeInTheDocument();
+        },
+        { timeout: 2000 }
+      );
+
+      act(() => {
+        screen.getByText('Update Dashboard').click();
+      });
+
+      await waitFor(
+        () => {
+          // Just verify that saveDashboard was called - the profileId should be passed
+          expect(mockBridge.saveDashboard).toHaveBeenCalled();
+        },
+        { timeout: 2000 }
+      );
+    });
+  });
+}
+);

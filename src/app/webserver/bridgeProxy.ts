@@ -79,9 +79,9 @@ export function createBridgeProxy(
   };
 
   if (dashboardBridge) {
-    dashboardBridge.dashboardUpdated((dashboard: DashboardLayout) => {
+    dashboardBridge.dashboardUpdated((dashboard: DashboardLayout, profileId?: string) => {
       currentDashboard = dashboard;
-      broadcast('dashboardUpdated', dashboard);
+      broadcast('dashboardUpdated', { dashboard, profileId });
     });
 
     if (dashboardBridge.onDemoModeChanged) {
@@ -122,9 +122,26 @@ export function createBridgeProxy(
               data: currentDashboard,
             }));
             break;
+          case 'getDashboardForProfile': {
+            const { requestId, data } = parsed;
+            const result = await dashboardBridge?.getDashboardForProfile?.(data.profileId) || currentDashboard;
+            ws.send(JSON.stringify({
+              type: 'getDashboardForProfile',
+              requestId,
+              data: result,
+            }));
+            break;
+          }
           case 'reloadDashboard':
             dashboardBridge?.reloadDashboard();
             break;
+          case 'saveDashboard': {
+            const { dashboard, options } = parsed.data || {};
+            if (dashboard && dashboardBridge) {
+              dashboardBridge.saveDashboard(dashboard, options);
+            }
+            break;
+          }
           case 'getAppVersion': {
             const { requestId } = parsed;
             const result = await dashboardBridge?.getAppVersion();
@@ -142,6 +159,36 @@ export function createBridgeProxy(
               type: 'getGarageCoverImageAsDataUrl',
               requestId,
               data: result,
+            }));
+            break;
+          }
+          case 'getCurrentProfile': {
+            const { requestId } = parsed;
+            const result = await dashboardBridge?.getCurrentProfile();
+            ws.send(JSON.stringify({
+              type: 'getCurrentProfile',
+              requestId,
+              data: result,
+            }));
+            break;
+          }
+          case 'listProfiles': {
+            const { requestId } = parsed;
+            const result = await dashboardBridge?.listProfiles();
+            ws.send(JSON.stringify({
+              type: 'listProfiles',
+              requestId,
+              data: result,
+            }));
+            break;
+          }
+          case 'updateProfileTheme': {
+            const { requestId, data } = parsed;
+            await dashboardBridge?.updateProfileTheme(data.profileId, data.themeSettings);
+            ws.send(JSON.stringify({
+              type: 'updateProfileTheme',
+              requestId,
+              data: null,
             }));
             break;
           }
