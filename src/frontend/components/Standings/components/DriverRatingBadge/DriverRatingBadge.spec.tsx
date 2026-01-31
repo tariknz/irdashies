@@ -91,4 +91,46 @@ describe('DriverRatingBadge', () => {
     );
     expect(container.textContent).toBe('Oh no 5.0k');
   });
+
+  it('should floor rating to 1 decimal place (1999 -> 1.9k)', () => {
+    const { container } = render(
+      <DriverRatingBadge license="A" rating={1999} />
+    );
+    expect(container.textContent).toBe('A 1.9k');
+  });
+
+  it('should floor rating to 1 decimal place (1950 -> 1.9k)', () => {
+    const { container } = render(
+      <DriverRatingBadge license="B" rating={1950} />
+    );
+    expect(container.textContent).toBe('B 1.9k');
+  });
+
+  it('should floor rating to 1 decimal place (2999 -> 2.9k)', () => {
+    const { container } = render(
+      <DriverRatingBadge license="C" rating={2999} />
+    );
+    expect(container.textContent).toBe('C 2.9k');
+  });
+
+  it('should floor rating with no decimals for >= 10000 (10500 -> 10k)', () => {
+    const { container } = render(
+      <DriverRatingBadge license="A" rating={10500} />
+    );
+    expect(container.textContent).toBe('A 10.5k');
+  });
+
+  it('should floor rating with no decimals for >= 10000 (10999 -> 10k)', () => {
+    const { container } = render(
+      <DriverRatingBadge license="B" rating={10999} />
+    );
+    expect(container.textContent).toBe('B 10.9k');
+  });
+
+  it('should floor rating with no decimals for >= 10000 (15999 -> 15k)', () => {
+    const { container } = render(
+      <DriverRatingBadge license="C" rating={15999} />
+    );
+    expect(container.textContent).toBe('C 15.9k');
+  });
 });
