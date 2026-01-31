@@ -100,17 +100,5 @@
     "use-sync-external-store": "^1.6.0",
     "ws": "^8.19.0",
     "zustand": "^5.0.9"
-  },
-  "lint-staged": {
-    "*.{js,jsx,ts,tsx}": [
-      "prettier --write",
-      "eslint --fix --max-warnings 0"
-    ],
-    "*.{ts,tsx}": [
-      "tsc --project ./tsconfig.json --noEmit"
-    ],
-    "*.{json,css,md}": [
-      "prettier --write"
-    ]
   }
 }
