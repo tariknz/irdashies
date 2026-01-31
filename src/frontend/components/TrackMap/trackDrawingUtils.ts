@@ -13,9 +13,9 @@ export const setupCanvasContext = (
 
   // Apply shadow
   ctx.shadowColor = 'black';
-  ctx.shadowBlur = 2;
-  ctx.shadowOffsetX = 1;
-  ctx.shadowOffsetY = 1;
+  ctx.shadowBlur = 4;
+  ctx.shadowOffsetX = 0;
+  ctx.shadowOffsetY = 0;
 };
 
 export const drawTrack = (
@@ -129,7 +129,7 @@ export const drawDrivers = (
         ctx.fillStyle = color.text;
         ctx.font = `${fontSize}px sans-serif`;
 
-        // Use contrasting shadow color: white shadow for black text, black for white text
+        // White shadow for black text, black shadow for white text
         const originalShadowColor = ctx.shadowColor;
         ctx.shadowColor = color.text === 'black' ? 'white' : 'black';
 
