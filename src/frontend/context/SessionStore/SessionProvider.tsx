@@ -6,7 +6,7 @@ export interface SessionProviderProps {
   bridge: IrSdkBridge | Promise<IrSdkBridge>;
 }
 
-export const SessionProvider = ({ bridge, children }: SessionProviderProps & { children?: React.ReactNode }) => {
+export const SessionProvider = ({ bridge }: SessionProviderProps) => {
   const setSession = useSessionStore((state) => state.setSession);
 
   useEffect(() => {
@@ -26,5 +26,5 @@ export const SessionProvider = ({ bridge, children }: SessionProviderProps & { c
     return () => bridge.stop();
   }, [bridge, setSession]);
 
-  return <>{children}</>;
+  return <></>;
 };

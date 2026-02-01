@@ -281,7 +281,6 @@ export const DashboardView = () => {
       {enabledWidgets.length === 0 && (
         <div className="flex items-center justify-center h-full">
           <div className="text-center text-gray-400">
-            <div className="text-6xl mb-4">📊</div>
             <div className="text-xl mb-2">No overlays enabled</div>
             <div className="text-sm">Enable overlays in Settings to see them here</div>
           </div>
