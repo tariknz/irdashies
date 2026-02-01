@@ -11,6 +11,7 @@ import { useDragWidget } from './useDragWidget';
 import { useResizeWidget, ResizeDirection } from './useResizeWidget';
 import { getWidgetName } from '../../constants/widgetNames';
 import { ResizeIcon } from '@phosphor-icons/react';
+import { useContainerOffset } from '@irdashies/context';
 
 export interface WidgetContainerProps {
   widget: DashboardWidget;
@@ -36,6 +37,7 @@ export const WidgetContainer = memo(
       undefined
     );
     const pendingLayoutRef = useRef<WidgetLayout | null>(null);
+    const containerOffset = useContainerOffset();
 
     const handleLayoutChange = useCallback(
       (newLayout: WidgetLayout) => {
@@ -123,10 +125,17 @@ export const WidgetContainer = memo(
     // Always use localLayout for display
     const displayedLayout = localLayout;
 
+    // Transform widget coordinates from screen space to container space
+    // Widget coords assume primary display at (0,0), but container may span multiple displays
+    // with negative origins (e.g., secondary monitor to the left at x=-1920).
+    //
+    // Note: Drag/resize hooks don't need offset adjustments because they work with deltas
+    // (movement amounts), which are the same in both coordinate spaces. The saved widget
+    // positions remain in screen space for logical consistency.
     const containerStyle: CSSProperties = {
       position: 'absolute',
-      left: displayedLayout.x,
-      top: displayedLayout.y,
+      left: displayedLayout.x + containerOffset.x,
+      top: displayedLayout.y + containerOffset.y,
       width: displayedLayout.width,
       height: displayedLayout.height,
       zIndex,

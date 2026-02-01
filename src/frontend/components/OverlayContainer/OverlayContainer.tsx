@@ -3,7 +3,7 @@ import { useDashboard, useRunningState } from '@irdashies/context';
 import type { WidgetLayout } from '@irdashies/types';
 import { WidgetContainer } from '../WidgetContainer';
 import { WIDGET_MAP } from '../../WidgetIndex';
-import { X } from '@phosphor-icons/react';
+import { XIcon } from '@phosphor-icons/react';
 
 export const OverlayContainer = memo(() => {
   const { currentDashboard, editMode, onDashboardUpdated, bridge } =
@@ -68,9 +68,9 @@ export const OverlayContainer = memo(() => {
       {editMode && (
         <button
           onClick={handleExitEditMode}
-          className="fixed top-[50px] left-1/2 -translate-x-1/2 z-[9999] flex items-center gap-2 px-3 py-2 bg-sky-500 hover:bg-sky-600 text-white rounded shadow-lg transition-colors"
+          className="fixed top-[50px] left-1/2 -translate-x-1/2 z-9999 flex items-center gap-2 px-3 py-2 bg-sky-500 hover:bg-sky-600 text-white rounded shadow-lg transition-colors"
         >
-          <X size={18} weight="bold" />
+          <XIcon size={18} weight="bold" />
           <span className="text-sm font-medium">Exit Edit Mode</span>
         </button>
       )}
