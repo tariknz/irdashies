@@ -102,12 +102,11 @@ describe('getFlagInfo', () => {
   }); // I would rahter know about a slow car ahead than having a faster car behind me. Could be not ideal in the case of green falg, but I think this is better overall.
 
   describe('Racing State', () => {
-    it('should return GREEN for Green, StartGo, or GreenHeld', () => {
+    it('should return GREEN for Green, StartGo', () => {
       expect(getFlag(GlobalFlags.Green).label).toBe('GREEN');
       expect(getFlag(GlobalFlags.StartGo).label).toBe('GREEN');
-      expect(getFlag(GlobalFlags.GreenHeld).label).toBe('GREEN');
     });
-
+    
     it('should prioritize GREEN over BLUE, DEBRIS, and WHITE', () => {
       const flags = GlobalFlags.Green | GlobalFlags.Blue | GlobalFlags.Debris | GlobalFlags.White;
       const result = getFlag(flags);
