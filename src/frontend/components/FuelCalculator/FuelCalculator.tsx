@@ -388,9 +388,13 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
     const currentTelemetryLap = fuelData.currentLap;
     const frozenLap = frozenFuelData.currentLap;
 
-    // Check if we have moved to a new lap
+    // Check if we have moved to a new lap OR if our frozen data is stale (history hasn't caught up yet)
+    // This prevents locking in stale data if 'isStoreCaughtUp' triggers before 'fuelData' refreshes
+    const isFrozenStale = frozenFuelData.lastFinishedLap !== undefined && frozenFuelData.lastFinishedLap < currentTelemetryLap - 1;
+
     if (
       currentTelemetryLap !== frozenLap ||
+      isFrozenStale ||
       (frozenFuelData.totalLaps === 0 && fuelData.totalLaps > 0)
     ) {
       // Check if calculation backend has caught up
@@ -410,8 +414,22 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
       // This prevents freezing if the sync checks above fail for some reason (e.g. invalid laps)
       const isLagging = currentTelemetryLap - frozenLap > 1;
 
-      if (isHistoryCaughtUp || isStoreCaughtUp || isEarlyLap || isLagging) {
-        setFrozenFuelData(fuelData);
+      // Only update if we have a "better" or "caught up" state
+      // If we are just stale, wait for history to catch up or store to confirm
+      if (isHistoryCaughtUp || (isStoreCaughtUp && !isFrozenStale) || isEarlyLap || isLagging) {
+         // Note: We avoid updating on JUST isStoreCaughtUp if we are fixing staleness, 
+         // because we want to wait for the actual Data (history) to catch up if possible.
+         // However, if history never updates (invalid lap), we might be stuck?
+         // Solution: If store is caught up, we update. 
+         // But if we updated and it was still stale (race condition), the 'isFrozenStale' check 
+         // in the NEXT render will keep trying until 'isHistoryCaughtUp' becomes true.
+         setFrozenFuelData(fuelData);
+      } else if (isStoreCaughtUp) {
+         // If store is caught up but history isn't (and we know we are stale), we should probably update 
+         // to show *at least* the correct currentLap count, even if usage stats are old?
+         // YES, update. The 'isFrozenStale' check next frame will trigger again if usage is still old,
+         // allowing us to overwrite with new usage when it arrives.
+         setFrozenFuelData(fuelData);
       }
     }
 

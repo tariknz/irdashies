@@ -13,7 +13,7 @@
  * 7. FIXED: lapDistPct reset detection and handling
  */
 
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   useSessionLaps,
   useSessionStore,
@@ -51,8 +51,8 @@ const DEFAULT_TANK_CAPACITY = 60;
 /** Maximum reasonable laps remaining (sanity check) */
 const MAX_REASONABLE_LAPS = 5000;
 
-/** Intrinsic safety margin value (0.2 units) */
-const INTRINSIC_MARGIN_VALUE = 0.2;
+/** Intrinsic safety margin value (0.25 units) */
+const INTRINSIC_MARGIN_VALUE = 0.25;
 
 /** Minimum valid lap time to record (seconds) */
 const MIN_LAP_TIME = 10;
@@ -163,6 +163,10 @@ export function useFuelCalculation(
   const lapDistPctHistoryRef = useRef<number[]>([]);
   const lapDistPctResetDetectedRef = useRef(false);
   const lastValidLapDistPctRef = useRef<number | undefined>(undefined);
+
+  // FIX: Race Finish Detection
+  const [isRaceFinished, setIsRaceFinished] = useState(false);
+  const checkFlagLapRef = useRef<number | null>(null);
   
   // --------------------------------------------------------------------------
   // FIXED: Detect lapDistPct resets (crítico para o problema identificado)
@@ -661,8 +665,47 @@ export function useFuelCalculation(
     settings?.enableStorage,
   ]);
 
+  // FIX: Monitor for Race Finish
+  useEffect(() => {
+    if (sessionFlags === undefined || lap === undefined || lapDistPct === undefined) return;
+
+    // Determine if we are in a "Post-Race" context
+    const isCheckered = isCheckeredFlag(sessionFlags);
+    // Also consider State 5 (Checkered) or 6 (Cooldown) as definitive finish states
+    const isPostRaceState = sessionState !== undefined && sessionState >= 5;
+
+    if (isCheckered || isPostRaceState) {
+      if (checkFlagLapRef.current === null) {
+        // First time seeing Checkered Flag/State
+        checkFlagLapRef.current = lap;
+        
+        // If we see the flag at the very start of a lap (< 5%), it implies we 
+        // just crossed the line to trigger it (or crossed while it was waving).
+        const isLongCooldown = sessionTimeRemain !== undefined && sessionTimeRemain > 300 && isPostRaceState;
+        
+        if (lapDistPct < 0.05 || isLongCooldown) {
+          setIsRaceFinished(true);
+          if (DEBUG_LOGGING) console.log('[FuelCalculator] Race Finished detected (Immediate)');
+        }
+      } else {
+        // Already tracking checkered state
+        // If we incremented lap since first seeing checkered flag, we are definitely done
+        if (lap > checkFlagLapRef.current) {
+            setIsRaceFinished(true);
+            if (DEBUG_LOGGING) console.log('[FuelCalculator] Race Finished detected (Lap Crossed)');
+        }
+      }
+    } else {
+      // Reset if flags clear (new session, restart)
+      if (checkFlagLapRef.current !== null) {
+        setIsRaceFinished(false);
+        checkFlagLapRef.current = null;
+      }
+    }
+  }, [sessionFlags, sessionState, lap, lapDistPct, sessionTimeRemain]);
+
   // Calculate fuel metrics - VERSÃO DEFINITIVA
-  const calculation = useMemo((): FuelCalculation | null => {
+  const baseCalculation = useMemo((): FuelCalculation | null => {
     const emptyCalculation: FuelCalculation = {
       fuelLevel: fuelLevel ?? 0,
       lastLapUsage: 0,
@@ -857,9 +900,33 @@ export function useFuelCalculation(
       // SOLUTION 2: Timed Race Laps Remaining
       if (sessionTimeRemain !== undefined && sessionTimeRemain > 0) {
         if (avgLapTime > 0) {
-          const TIME_PADDING_SECONDS = 30;
-          const paddedTimeRemain = sessionTimeRemain + TIME_PADDING_SECONDS;
-          lapsRemaining = Math.ceil(paddedTimeRemain / avgLapTime);
+          // Calculate time remaining when we cross the start/finish line
+          // This accounts for the fact that we are partway through the current lap
+          const pctRemainingInLap = Math.max(0, 1 - (lapDistPct || 0));
+          const timeToFinishLap = avgLapTime * pctRemainingInLap;
+          
+          // Time left after finishing this lap
+          const timeAtLine = sessionTimeRemain - timeToFinishLap;
+          
+          // Small padding to account for crossing the line just milliseconds before zero
+          const TIME_PADDING_SECONDS = 0.5;
+
+          if (timeAtLine < -TIME_PADDING_SECONDS) {
+             // We won't finish this lap before time runs out broadly?
+             // Actually in iRacing, if time runs out, we finish the lap.
+             // But if we are SO far behind that time ran out long ago?
+             // Usually, we always finish the current lap. 
+             // Logic: 1 lap remaining (the current one) + 0 future laps.
+             lapsRemaining = 1; 
+          } else {
+             // We will finish this lap.
+             // How many future laps can we start?
+             // If timeAtLine > 0 (even 0.001s), we start a new lap (White flag).
+             // Math.ceil effectively does this: ceil(0.1) = 1. ceil(0) = 0.
+             // So futureLaps = Ceil(timeAtLine / avgLapTime).
+             const futureLaps = Math.ceil((timeAtLine + TIME_PADDING_SECONDS) / avgLapTime);
+             lapsRemaining = 1 + Math.max(0, futureLaps);
+          }
         } else {
           // Fallback seguro: usar consumo médio e combustível atual
           const estimatedLapsFromFuel = trendAdjustedConsumption > 0 
@@ -875,9 +942,28 @@ export function useFuelCalculation(
           );
         }
       } else {
-        // Se sessionTimeRemain é 0 ou indefinido
-        lapsRemaining = Math.max(1, Math.floor(fuelLevel / (trendAdjustedConsumption || 3.2)));
-        totalLaps = lap + lapsRemaining;
+        // Se sessionTimeRemain é -1, é inválido/não iniciado -> Fallback seguro
+        if (sessionTimeRemain === -1) {
+           const estimatedLapsFromFuel = trendAdjustedConsumption > 0 
+             ? Math.floor(fuelLevel / trendAdjustedConsumption)
+             : 10;
+           lapsRemaining = Math.max(1, Math.min(estimatedLapsFromFuel, 50));
+           totalLaps = lap + lapsRemaining;
+           
+           if (DEBUG_LOGGING) {
+              console.log(`[FuelCalculator] Timed race (Time=-1), fallback to fuel est: ${lapsRemaining}`);
+           }
+        } else {
+           // Se sessionTimeRemain é 0 ou negativo (e não -1), o tempo acabou.
+           // A distância restante é apenas completar a volta atual.
+           const remainingDistance = Math.max(0, 1 - (lapDistPct || 0));
+           lapsRemaining = remainingDistance;
+           totalLaps = lap + 1;
+           
+           if (DEBUG_LOGGING) {
+              console.log(`[FuelCalculator] Timed race ended (Time<=0), completing current lap. Rem: ${lapsRemaining.toFixed(2)}`);
+           }
+        }
       }
     }
 
@@ -964,16 +1050,31 @@ export function useFuelCalculation(
       isLapDistPctReset
     );
 
-    // Apply smoothing com fator adaptativo
+    // Apply smoothing with adaptive factor
     const baseSmoothingFactor = 0.1;
-    const progressBasedFactor = Math.min(0.3, baseSmoothingFactor * (1 + (lapDistPct || 0) * 2));
-    
+    let progressBasedFactor = Math.min(0.3, baseSmoothingFactor * (1 + (lapDistPct || 0) * 2));
+
+    // DAMPENING AT END OF LAP: Reduce sensitivity near finish line to prevent spikes
+    // driven by final corner acceleration or lap distance anomalies.
+    if ((lapDistPct || 0) > 0.9) {
+       progressBasedFactor = 0.05; // Very slow updates at end of lap to lock in value
+    }
+
     if (smoothedProjectedUsageRef.current === 0) {
       smoothedProjectedUsageRef.current = definitiveProjection;
     } else {
+      // Clamp the change to prevent massive spikes in a single frame
+      const maxChange = 0.2; // Max 0.2L change per update
+      let targetValue = definitiveProjection;
+      
+      const potentialChange = targetValue - smoothedProjectedUsageRef.current;
+      if (Math.abs(potentialChange) > maxChange) {
+         targetValue = smoothedProjectedUsageRef.current + (Math.sign(potentialChange) * maxChange);
+      }
+
       smoothedProjectedUsageRef.current =
         smoothedProjectedUsageRef.current +
-        (definitiveProjection - smoothedProjectedUsageRef.current) *
+        (targetValue - smoothedProjectedUsageRef.current) *
           progressBasedFactor;
     }
 
@@ -1218,6 +1319,26 @@ export function useFuelCalculation(
     calculateDefinitiveProjectedUsage,
     lapDistPct,
   ]);
+
+  // Wrap calculation to apply overrides (Race Finish)
+  const calculation = useMemo(() => {
+    if (!baseCalculation) return null;
+    
+    if (isRaceFinished) {
+      return {
+        ...baseCalculation,
+        lapsRemaining: 0,
+        fuelToFinish: 0,
+        fuelToAdd: 0,
+        canFinish: true,
+        fuelStatus: 'safe' as const,
+        stopsRemaining: 0,
+        confidence: 'high' as const // Force type compatibility
+      };
+    }
+    
+    return baseCalculation;
+  }, [baseCalculation, isRaceFinished]);
 
   // LOGGING
   const debugData = useMemo(() => ({
