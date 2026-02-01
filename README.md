@@ -183,6 +183,10 @@ Displays standings information for the current session.
   - Driver name format: Multiple display formats (e.g., "J. Smith", "John S.", "John Smith", etc.)
   - Pit status indicators: DNF (red), TOW (orange, animated), OUT (green), PIT (yellow, animated), last pit lap number, repair/meatball flag (orange dot), penalty/black flag (orange), slowdown (orange, animated)
   - Optional pit time display
+  - Pit lap display mode: Show pit lap number or laps since last pit
+  - Compact Mode: A streamlined UI option for a cleaner look
+  - Incidents & Off-tracks: Driver rows highlight in yellow when they go off-track
+  - Spectator Support: Automatically follows the driver you are watching in iRacing
 - Car details: manufacturer (with option to hide if single-make series), tire compound
 - Driver badges with multiple format options (license/rating combinations)
   - Full iRating: Option to display the full iRating value instead of just the badge
