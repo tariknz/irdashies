@@ -7,22 +7,24 @@ import {
 import { GlobalFlags } from '@irdashies/types';
 import { useEffect, useState } from 'react';
 import { useFlagSettings } from './hooks/useFlagSettings';
+import { getLedColorHex } from './hooks/getLedColorHex';
+import { getTextColorClass } from './hooks/getTextColorClass';
 import { getDemoFlagData } from './demoData';
 
 export const getFlagInfo = (sessionFlags: number) => {
 /**
 Flag Priority Hierarchy:
-BLACK FLAG / FURLED (Absolute King – overrides even the finish line)
-CHECKERED (The race is over)
-RED (Session stopped)
-DISQUALIFIED (You are removed from the session)
+BLACK FLAG / FURLED 
+CHECKERED 
+RED 
+DISQUALIFIED 
 MEATBALL (Only if both Servicible and Repair bits are set)
 YELLOW (Includes Waving, Caution, and CautionWaving)
-GREEN (Includes StartGo and GreenHeld)
-BLUE FLAG (Lapped traffic info)
+GREEN 
+BLUE FLAG 
 DEBRIS (Track surface hazard)
 WHITE (Final lap)
-NO FLAG (Default state / Pits / Inactive) 
+NO FLAG
 */
 
   // 1. ABSOLUTE PRIORITY Too important in iracing to put any other flag above it
@@ -118,97 +120,9 @@ export const FlagDisplay = ({ label, showLabel = true, textColor, matrixSize = 1
   const isUniform = matrixSize === 1;
   const cols = isUniform ? 1 : matrixSize;
   const rows = isUniform ? 1 : matrixSize;
-  const getLedColorHex = (flagType: string, row: number, col: number) => {
-    // Colors (hex) chosen to match Tailwind-ish palette
-    const GREEN = '#10B981'; // green-500
-    const YELLOW = '#f5de0b'; // yellow-400-ish
-    const BLUE = '#3B82F6'; // blue-500
-    const RED = '#EF4444'; // red-500
-    const WHITE = '#FFFFFF';
-    const BLACK = '#000000';
-    const ORANGE = '#F97316'; // orange-500
-    const GREY = '#9CA3AF'; // slate-400
-    const DARK = '#1f2937'; // slate-800
-
-    // If the visible flag is NO, always render grey
-    if (flagType === 'NO') return GREY;
-
-    // If matrixSize is 1 we render a uniform colour across the full visual grid
-    if (matrixSize === 1) {
-      if (flagType === 'NO') return GREY; 
-      if (flagType === 'CHECKERED') return WHITE;
-      if (flagType === 'WHITE') return WHITE;
-      if (flagType === 'BLACK') return BLACK;
-      if (flagType === 'DISQUALIFIED') return BLACK;
-      if (flagType === 'MEATBALL') return ORANGE; 
-      if (flagType === 'GREEN') return GREEN;
-      if (flagType === 'YELLOW') return YELLOW;
-      if (flagType === 'BLUE') return BLUE;
-      if (flagType === 'RED') return RED;
-      if (flagType === 'DEBRIS') return YELLOW;
-      return WHITE;
-    }
-
-    if (flagType === 'CHECKERED') {
-      return ((row + col) % 2 === 0) ? WHITE : DARK;
-    }
-
-    if (flagType === 'WHITE') return WHITE;
-    if (flagType === 'BLACK') return BLACK;
-
-    if (flagType === 'MEATBALL') {
-      // Draw a circular meatball centered in the matrix. Radius scales with matrix size.
-      const cx = (cols - 1) / 2;
-      const cy = (rows - 1) / 2;
-      // Radius scales with matrix width so 8x8 also shows a visible orange circle
-      const radius = Math.max(1, Math.floor(cols * 0.3));
-      const dx = col - cx;
-      const dy = row - cy;
-      if (Math.sqrt(dx * dx + dy * dy) <= radius) return ORANGE;
-      return BLACK;
-    }
-
-    // Default colored flags
-    if (flagType === 'GREEN') return GREEN;
-    if (flagType === 'YELLOW') return YELLOW;
-    if (flagType === 'BLUE') {
-      const diagonalThreshold = cols - 1;
-      const diagonalPos = col + row;
-      // Create a stripe of about 2-3 cells thick
-      if (Math.abs(diagonalPos - diagonalThreshold) <= 1) return YELLOW;
-      return BLUE;
-    }
-    if (flagType === 'DEBRIS') {
-      return (row % 2 === 0) ? RED : YELLOW;
-    }
-    if (flagType === 'DISQUALIFIED') {
-      const diag1 = row - col;
-      const diag2 = row + col - (cols - 1);
-      if (Math.abs(diag1) <= 1 || Math.abs(diag2) <= 1) return WHITE;
-      return BLACK;
-    }
-    if (flagType === 'RED') return RED;
-
-    return WHITE;
-  };
   const shortLabel = label.split(' ')[0];
 
-  const getTextColorClass = () => {
-    if (shortLabel === 'NO') return 'text-slate-500';
-    if (shortLabel === 'GREEN') return 'text-green-500';
-    if (shortLabel === 'YELLOW') return 'text-yellow-400';
-    if (shortLabel === 'BLUE') return 'text-blue-500';
-    if (shortLabel === 'RED') return 'text-red-500';
-    if (shortLabel === 'WHITE') return 'text-white';
-    if (shortLabel === 'MEATBALL') return 'text-orange-500';
-    if (shortLabel === 'DEBRIS') return 'text-yellow-400';
-    if (shortLabel === 'CHECKERED') return 'text-white';
-    if (shortLabel === 'BLACK') return 'text-white';
-    if (shortLabel === 'DISQUALIFIED') return 'text-red-500';
-    return 'text-white';
-  };
-
-  const textColorClass = textColor ?? getTextColorClass();
+  const textColorClass = textColor ?? getTextColorClass(shortLabel);
 
   const flagType = shortLabel; // e.g., 'YELLOW', 'CHECKERED', 'MEATBALL', etc.
 
@@ -243,7 +157,7 @@ export const FlagDisplay = ({ label, showLabel = true, textColor, matrixSize = 1
         {Array.from({ length: cols * rows }).map((_, i) => {
           const row = Math.floor(i / cols);
           const col = i % cols;
-          const bg = getLedColorHex(flagType, row, col);
+          const bg = getLedColorHex(flagType, row, col, matrixSize, cols, rows);
           // For uniform mode render a single cell that fills the area
           if (isUniform) {
             return (
