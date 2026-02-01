@@ -1,4 +1,5 @@
 import { useRef, useCallback } from 'react';
+import { TRACK_SURFACES } from './useDriverRelatives';
 
 /** The interval step used for normalizing track percentage keys. */
 export const REFERENCE_INTERVAL = 0.0025;
@@ -50,6 +51,7 @@ export interface ReferenceLap {
    * by comparing `lastTrackedPct` (>0.9) vs `currentPct` (<0.1).
    */
   lastTrackedPct: number;
+  isCleanLap: boolean;
 }
 
 /**
@@ -92,7 +94,13 @@ export const useReferenceRegistry = () => {
    * @param sessionTime - The current session time in seconds.
    */
   const collectLapData = useCallback(
-    (carIdx: number, trackPct: number, sessionTime: number) => {
+    (
+      carIdx: number,
+      trackPct: number,
+      sessionTime: number,
+      trackSurface: number,
+      isOnPitRoad: boolean
+    ) => {
       let refLap = laps.current.get(carIdx);
       const key = normalizeKey(trackPct);
       // 1. Initialization
@@ -105,6 +113,7 @@ export const useReferenceRegistry = () => {
             [key, { trackPct, timeElapsedSinceStart: 0 } as ReferencePoint],
           ]),
           lastTrackedPct: trackPct,
+          isCleanLap: trackSurface === TRACK_SURFACES.OnTrack && !isOnPitRoad,
         };
 
         laps.current.set(carIdx, refLap);
@@ -118,13 +127,13 @@ export const useReferenceRegistry = () => {
         refLap.finishTime = sessionTime;
         const bestLap = bestLaps.current.get(carIdx);
 
-        const MIN_POINTS_FOR_VALID_LAP = 350;
+        const MIN_POINTS_FOR_VALID_LAP = 400;
 
         if (refLap.refPoints.size >= MIN_POINTS_FOR_VALID_LAP) {
           // If no best lap exists OR this one is faster, save it
           if (!bestLap) {
             bestLaps.current.set(carIdx, refLap);
-          } else {
+          } else if (refLap.isCleanLap) {
             const currentLapTime = refLap.finishTime - refLap.startTime;
             const bestLapTime = bestLap.finishTime - bestLap.startTime;
             if (currentLapTime > 0 && currentLapTime < bestLapTime) {
@@ -141,8 +150,17 @@ export const useReferenceRegistry = () => {
             [key, { trackPct, timeElapsedSinceStart: 0 }],
           ]),
           lastTrackedPct: trackPct,
+          isCleanLap: trackSurface === TRACK_SURFACES.OnTrack && !isOnPitRoad,
         };
         laps.current.set(carIdx, refLap);
+      }
+
+      if (
+        refLap.isCleanLap &&
+        trackSurface !== TRACK_SURFACES.OnTrack &&
+        isOnPitRoad
+      ) {
+        refLap.isCleanLap = false;
       }
 
       // 3. Data Collection
@@ -151,7 +169,7 @@ export const useReferenceRegistry = () => {
 
       // Only add point if this specific 0.25% bucket is empty
       const lastRefPoint = refLap.refPoints.get(key);
-      if (!lastRefPoint) {
+      if (!lastRefPoint && refLap.isCleanLap) {
         refLap.refPoints.set(key, {
           timeElapsedSinceStart: sessionTime - refLap.startTime,
           trackPct,
@@ -176,6 +194,7 @@ export const useReferenceRegistry = () => {
         finishTime: -1,
         refPoints: new Map(),
         lastTrackedPct: -1,
+        isCleanLap: false,
       }
     );
   }, []);

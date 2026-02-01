@@ -97,10 +97,10 @@ export function calculateReferenceDelta(
   opponentTrackPct: number,
   playerTrackPct: number
 ): number {
-  const timeFocus = getTimeAtPosition(referenceLap, playerTrackPct);
-  const timeOther = getTimeAtPosition(referenceLap, opponentTrackPct);
+  const timePlayer = getTimeAtPosition(referenceLap, playerTrackPct);
+  const timeOpponent = getTimeAtPosition(referenceLap, opponentTrackPct);
 
-  let calculatedDelta = timeOther - timeFocus;
+  let calculatedDelta = timeOpponent - timePlayer;
   const lapTime = referenceLap.finishTime - referenceLap.startTime;
 
   if (calculatedDelta <= -lapTime / 2) {
