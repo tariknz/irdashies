@@ -1,6 +1,6 @@
 import { getColor } from '@irdashies/utils/colors';
 
-export const getLedColorHex = (
+export const getLedColor = (
   flagType: string,
   row: number,
   col: number,
