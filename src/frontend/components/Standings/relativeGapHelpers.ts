@@ -5,6 +5,14 @@ import {
   ReferenceLap,
 } from './hooks/useReferenceRegistry';
 
+export const TRACK_SURFACES = {
+  NotInWorld: -1,
+  OffTrack: 0,
+  InPitStall: 1,
+  ApproachingPits: 2,
+  OnTrack: 3,
+};
+
 const FALLBACK_LAPTIME = 90;
 // Helper to grab clean numbers (prevents null/undefined mess)
 export function getStats(estTime: number, driver: Standings | undefined) {
@@ -110,23 +118,4 @@ export function calculateReferenceDelta(
   }
 
   return calculatedDelta;
-}
-
-export function calculateRelativeDist(
-  focusDistPct: number,
-  otherDistPct: number
-) {
-  if (focusDistPct === undefined || otherDistPct === undefined) {
-    return NaN;
-  }
-
-  const relativePct = otherDistPct - focusDistPct;
-
-  if (relativePct > 0.5) {
-    return relativePct - 1.0;
-  } else if (relativePct < -0.5) {
-    return relativePct + 1.0;
-  }
-
-  return relativePct;
 }

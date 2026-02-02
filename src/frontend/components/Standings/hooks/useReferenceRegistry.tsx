@@ -1,5 +1,5 @@
 import { useRef, useCallback } from 'react';
-import { TRACK_SURFACES } from './useDriverRelatives';
+import { TRACK_SURFACES } from '../relativeGapHelpers';
 
 /** The interval step used for normalizing track percentage keys. */
 export const REFERENCE_INTERVAL = 0.0025;
@@ -121,7 +121,7 @@ export const useReferenceRegistry = () => {
       }
 
       // 2. Lap Completion Logic
-      const isLapComplete = refLap.lastTrackedPct > 0.95 && trackPct < 0.1;
+      const isLapComplete = refLap.lastTrackedPct > 0.95 && trackPct < 0.05;
 
       if (isLapComplete) {
         refLap.finishTime = sessionTime;

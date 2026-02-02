@@ -10,7 +10,6 @@ import {
 import {
   calculateClassEstimatedGap,
   calculateReferenceDelta,
-  calculateRelativeDist,
   getStats,
   getTimeAtPosition,
 } from '../relativeGapHelpers';
@@ -433,30 +432,6 @@ describe('getStats', () => {
       estTime: 50,
       classEstTime: 90, // FALLBACK_LAPTIME
     });
-  });
-});
-
-describe('calculateRelativeDist', () => {
-  it('should calculate positive relative distance for car ahead', () => {
-    const result = calculateRelativeDist(0.5, 0.6);
-    expect(result).toBeCloseTo(0.1);
-  });
-
-  it('should calculate negative relative distance for car behind', () => {
-    const result = calculateRelativeDist(0.5, 0.4);
-    expect(result).toBeCloseTo(-0.1);
-  });
-
-  it('should wrap around when crossing start/finish (car ahead wraps to start)', () => {
-    // Player at 0.9, opponent at 0.1 (actually ahead by 0.2)
-    const result = calculateRelativeDist(0.9, 0.1);
-    expect(result).toBeCloseTo(0.2);
-  });
-
-  it('should wrap around when crossing start/finish (car behind wraps to finish)', () => {
-    // Player at 0.1, opponent at 0.9 (actually behind by 0.2)
-    const result = calculateRelativeDist(0.1, 0.9);
-    expect(result).toBeCloseTo(-0.2);
   });
 });
 

@@ -10,17 +10,8 @@ import { useReferenceRegistry } from './useReferenceRegistry';
 import {
   calculateClassEstimatedGap,
   calculateReferenceDelta,
-  calculateRelativeDist,
   getStats,
 } from '../relativeGapHelpers';
-
-export const TRACK_SURFACES = {
-  NotInWorld: -1,
-  OffTrack: 0,
-  InPitStall: 1,
-  ApproachingPits: 2,
-  OnTrack: 3,
-};
 
 export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
   const drivers = useDriverStandings();
@@ -43,56 +34,56 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
   );
 
   const calculateRelativePct = useCallback(
-    (carIdx: number) => {
+    (opponentIdx: number) => {
       if (focusCarIdx === undefined) {
         return NaN;
       }
 
       const playerDistPct = carIdxLapDistPct[focusCarIdx];
-      const otherDistPct = carIdxLapDistPct[carIdx];
+      const opponentDistPct = carIdxLapDistPct[opponentIdx];
 
-      return calculateRelativeDist(playerDistPct, otherDistPct);
+      const relativePct = opponentDistPct - playerDistPct;
+
+      if (relativePct > 0.5) {
+        return relativePct - 1.0;
+      } else if (relativePct < -0.5) {
+        return relativePct + 1.0;
+      }
+
+      return relativePct;
     },
     [focusCarIdx, carIdxLapDistPct]
   );
 
   const calculateDelta = useCallback(
-    (opponentCarIdx: number) => {
+    (opponentCarIdx: number, relativeDistPct: number) => {
       const focusIdx = focusCarIdx ?? 0;
 
       if (focusIdx === opponentCarIdx) {
         return 0;
       }
 
-      const focusTrckPct = carIdxLapDistPct[focusIdx];
-      const opponentTrckPct = carIdxLapDistPct[opponentCarIdx];
-
-      const relativeDistPct = calculateRelativeDist(
-        focusTrckPct,
-        opponentTrckPct
-      );
-
       const isTargetAhead = relativeDistPct > 0 && relativeDistPct <= 0.5;
 
       const aheadIdx = isTargetAhead ? opponentCarIdx : focusIdx;
       const behindIdx = !isTargetAhead ? opponentCarIdx : focusIdx;
 
-      const aheadDriver = driverMap.get(aheadIdx);
-      const behindDriver = driverMap.get(behindIdx);
-
       const isOnPitRoadAhead = carIdxIsOnPitRoad[aheadIdx] === 1;
       const isOnPitRoadBehind = carIdxIsOnPitRoad[behindIdx] === 1;
+      const isAnyoneOnPitRoad = isOnPitRoadAhead || isOnPitRoadBehind;
 
       const refLap = getReferenceLap(behindIdx);
 
-      const hasNoDataOrIsInPit =
-        isOnPitRoadAhead || isOnPitRoadBehind || refLap.finishTime <= 0;
+      const isInPitOrHasNoData = isAnyoneOnPitRoad || refLap.finishTime <= 0;
 
       let calculatedDelta = 0;
 
-      if (hasNoDataOrIsInPit) {
+      if (isInPitOrHasNoData) {
         const aheadEstTime = carIdxEstTime[aheadIdx];
+        const aheadDriver = driverMap.get(aheadIdx);
+
         const behindEstTime = carIdxEstTime[behindIdx];
+        const behindDriver = driverMap.get(behindIdx);
 
         calculatedDelta = calculateClassEstimatedGap(
           getStats(aheadEstTime, aheadDriver),
@@ -100,6 +91,9 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
           isTargetAhead
         );
       } else {
+        const focusTrckPct = carIdxLapDistPct[focusIdx];
+        const opponentTrckPct = carIdxLapDistPct[opponentCarIdx];
+
         calculatedDelta = calculateReferenceDelta(
           refLap,
           opponentTrckPct,
@@ -120,68 +114,64 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
   );
 
   const standings = useMemo(() => {
-    let sortedDrivers = drivers.filter(
-      (driver) =>
+    // 1. FILTER: Isolate valid drivers first
+    // This ensures collectLapData only runs on relevant cars.
+    const activeDrivers = drivers.filter((driver) => {
+      return (
         (driver.onTrack || driver.carIdx === focusCarIdx) &&
         driver.carIdx > -1 &&
         driver.carIdx !== paceCarIdx
-    );
+      );
+    });
 
-    sortedDrivers.forEach((d) =>
-      collectLapData(
-        d.carIdx,
-        carIdxLapDistPct[d.carIdx],
-        sessionTime,
-        carIdxTrackSurface[d.carIdx],
-        carIdxIsOnPitRoad[d.carIdx] === 1
-      )
-    );
+    // 2. COLLECT: Batch update side effects
+    // We run this separately to ensure ALL lap data is fresh before any calculations begin.
+    activeDrivers.forEach((d) => {
+      const idx = d.carIdx;
+      const lapPct = carIdxLapDistPct[idx];
+      const trackSurface = carIdxTrackSurface[idx];
+      const isOnPitRoad = carIdxIsOnPitRoad[idx] === 1;
+      collectLapData(idx, lapPct, sessionTime, trackSurface, isOnPitRoad);
+    });
 
-    sortedDrivers = sortedDrivers
-      .map((result) => {
-        const relativePct = calculateRelativePct(result.carIdx);
-        const delta = calculateDelta(result.carIdx);
+    // 3. CALCULATE: Compute metrics sequentially
+    const processed = activeDrivers
+      .map((d) => {
+        const relativePct = calculateRelativePct(d.carIdx);
+
+        const delta = calculateDelta(d.carIdx, relativePct);
+
         return {
-          ...result,
+          ...d,
           relativePct,
           delta,
         };
       })
-      .filter((result) => !isNaN(result.relativePct) && !isNaN(result.delta));
+      .filter((d) => !isNaN(d.relativePct) && !isNaN(d.delta));
 
-    const playerArrIndex = sortedDrivers.findIndex(
-      (result) => result.carIdx === focusCarIdx
-    );
+    // 4. SORT: Single descending sort
+    // Alignment: [Furthest Ahead (+1.0) ... Player (0.0) ... Furthest Behind (-1.0)]
+    processed.sort((a, b) => b.relativePct - a.relativePct);
 
-    // if the player is not in the list, return an empty array
-    if (playerArrIndex === -1) {
-      return [];
-    }
+    // 5. SLICE: Extract window
+    const playerIdx = processed.findIndex((d) => d.carIdx === focusCarIdx);
 
-    const player = sortedDrivers[playerArrIndex];
+    if (playerIdx === -1) return [];
 
-    const driversAhead = sortedDrivers
-      .filter((d) => d.relativePct > 0)
-      .sort((a, b) => a.relativePct - b.relativePct) // sort ascending (closest to player first)
-      .slice(0, buffer)
-      .reverse(); // reverse to get furthest to closest for display
+    const start = Math.max(0, playerIdx - buffer);
+    const end = Math.min(processed.length, playerIdx + 1 + buffer);
 
-    const driversBehind = sortedDrivers
-      .filter((d) => d.relativePct < 0)
-      .sort((a, b) => b.relativePct - a.relativePct) // sort descending (closest to player first)
-      .slice(0, buffer);
-
-    return [...driversAhead, player, ...driversBehind];
+    return processed.slice(start, end);
   }, [
     drivers,
     buffer,
     focusCarIdx,
     paceCarIdx,
-    collectLapData,
     carIdxLapDistPct,
-    sessionTime,
     carIdxTrackSurface,
     carIdxIsOnPitRoad,
+    collectLapData,
+    sessionTime,
     calculateRelativePct,
     calculateDelta,
   ]);
