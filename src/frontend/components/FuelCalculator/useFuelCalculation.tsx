@@ -2,15 +2,6 @@
 /**
  * Hook for calculating fuel metrics from telemetry data
  * Follows irdashies pattern using useTelemetryValues and Zustand store
- * 
- * MAJOR FIXES APPLIED:
- * 1. Fixed lapDistPct tracking and lap numbering
- * 2. Improved projectedLapUsage calculation
- * 3. Added consumption trend detection
- * 4. Enhanced pit stop timing
- * 5. Added safety margins and confidence-based adjustments
- * 6. FIXED: Consistent projected lap usage throughout lap
- * 7. FIXED: lapDistPct reset detection and handling
  */
 
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -879,6 +870,9 @@ export function useFuelCalculation(
 
     // Determine laps remaining
     let lapsRemaining = sessionLapsRemain || 0;
+    // Separate variable for Refuel calculations (Optimistic)
+    let lapsRemainingRefuel = sessionLapsRemain || 0;
+
     let totalLaps =
       typeof sessionLaps === 'string'
         ? parseInt(sessionLaps, 10)
@@ -888,6 +882,7 @@ export function useFuelCalculation(
     if (sessionFlags !== undefined && isFinalLap(sessionFlags)) {
       const remainingDistance = Math.max(0, 1 - (lapDistPct || 0));
       lapsRemaining = remainingDistance;
+      lapsRemainingRefuel = remainingDistance;
       totalLaps = lap + 1;
 
       if (DEBUG_LOGGING) {
@@ -908,37 +903,57 @@ export function useFuelCalculation(
           // Time left after finishing this lap
           const timeAtLine = sessionTimeRemain - timeToFinishLap;
           
-          // Small padding to account for crossing the line just milliseconds before zero
+          // Standard padding for accurate display (Consumption Grid)
           const TIME_PADDING_SECONDS = 0.5;
+          // Optimistic padding for Fuel Calculation (Benevolent Lie) to cover pit stops
+          const TIME_PADDING_REFUEL = 45.0;
 
+          let futureLaps = 0;
+          let futureLapsRefuel = 0;
+
+          // Process Standard (Realistic) Laps
           if (timeAtLine < -TIME_PADDING_SECONDS) {
-             // We won't finish this lap before time runs out broadly?
-             // Actually in iRacing, if time runs out, we finish the lap.
-             // But if we are SO far behind that time ran out long ago?
-             // Usually, we always finish the current lap. 
-             // Logic: 1 lap remaining (the current one) + 0 future laps.
              lapsRemaining = 1; 
+             futureLaps = 0;
           } else {
-             // We will finish this lap.
-             // How many future laps can we start?
-             // If timeAtLine > 0 (even 0.001s), we start a new lap (White flag).
-             // Math.ceil effectively does this: ceil(0.1) = 1. ceil(0) = 0.
-             // So futureLaps = Ceil(timeAtLine / avgLapTime).
-             const futureLaps = Math.ceil((timeAtLine + TIME_PADDING_SECONDS) / avgLapTime);
-             lapsRemaining = 1 + Math.max(0, futureLaps);
+             futureLaps = Math.ceil((timeAtLine + TIME_PADDING_SECONDS) / avgLapTime);
+             futureLaps = Math.max(0, futureLaps);
+             lapsRemaining = 1 + futureLaps;
           }
+          totalLaps = lap + futureLaps;
+
+          // Process Optmistic (Refuel) Laps - specifically for Fuel Needed calculation
+          if (timeAtLine < -TIME_PADDING_REFUEL) {
+             lapsRemainingRefuel = 1;
+             futureLapsRefuel = 0;
+          } else {
+             futureLapsRefuel = Math.ceil((timeAtLine + TIME_PADDING_REFUEL) / avgLapTime);
+             futureLapsRefuel = Math.max(0, futureLapsRefuel);
+             lapsRemainingRefuel = 1 + futureLapsRefuel;
+          }
+
         } else {
           // Fallback seguro: usar consumo médio e combustível atual
           const estimatedLapsFromFuel = trendAdjustedConsumption > 0 
             ? Math.floor(fuelLevel / trendAdjustedConsumption)
             : 10; // Fallback conservador
           lapsRemaining = Math.max(1, Math.min(estimatedLapsFromFuel, 50));
+          lapsRemainingRefuel = lapsRemaining;
         }
-        totalLaps = lap + lapsRemaining;
-
+        totalLaps = lap + (lapsRemaining - 1); // Correct total laps logic for fallback? 
+        // Wait, line 938: totalLaps = lap + lapsRemaining. 
+        // If lapsRemaining is count including current, then totalLaps = lap + lapsRemaining is likely Double Counting if lap is 'current completed' vs 'current index'.
+        // Original code (938) was: totalLaps = lap + lapsRemaining;
+        // My fix in 930 was: totalLaps = lap + futureLaps.
+        // Let's stick to the 930 logic for the timed branch.
+        // For fallback, lapsRemaining is absolute remaining.
+        if (avgLapTime <= 0) {
+           totalLaps = lap + lapsRemaining;
+        }
+        
         if (DEBUG_LOGGING) {
           console.log(
-            `[FuelCalculator] Timed race: estimated laps: ${lapsRemaining}`
+            `[FuelCalculator] Timed race: estimated laps: ${lapsRemaining}, refuel laps: ${lapsRemainingRefuel}`
           );
         }
       } else {
@@ -948,6 +963,7 @@ export function useFuelCalculation(
              ? Math.floor(fuelLevel / trendAdjustedConsumption)
              : 10;
            lapsRemaining = Math.max(1, Math.min(estimatedLapsFromFuel, 50));
+           lapsRemainingRefuel = lapsRemaining;
            totalLaps = lap + lapsRemaining;
            
            if (DEBUG_LOGGING) {
@@ -958,6 +974,7 @@ export function useFuelCalculation(
            // A distância restante é apenas completar a volta atual.
            const remainingDistance = Math.max(0, 1 - (lapDistPct || 0));
            lapsRemaining = remainingDistance;
+           lapsRemainingRefuel = lapsRemaining;
            totalLaps = lap + 1;
            
            if (DEBUG_LOGGING) {
@@ -965,6 +982,9 @@ export function useFuelCalculation(
            }
         }
       }
+    } else {
+       // Not a timed race, sync refuel count
+       lapsRemainingRefuel = lapsRemaining;
     }
 
     // Guard against invalid lapsRemaining - SOLUTION 5
@@ -972,6 +992,7 @@ export function useFuelCalculation(
     if (lapsRemaining > 1000) {
       console.warn(`[FuelCalculator] Unrealistic lapsRemaining (${lapsRemaining}) capped at 1000`);
       lapsRemaining = 1000;
+      lapsRemainingRefuel = 1000;
     }
 
     if (
@@ -981,6 +1002,7 @@ export function useFuelCalculation(
     ) {
       if (sessionLapsRemain !== TIMED_RACE_LAPS_REMAINING) {
         lapsRemaining = sessionLapsRemain;
+        lapsRemainingRefuel = sessionLapsRemain;
       } else {
         return null;
       }
@@ -1012,14 +1034,16 @@ export function useFuelCalculation(
       INTRINSIC_MARGIN_VALUE * 3.78541 : INTRINSIC_MARGIN_VALUE;
     
     const adjustedMargin = (marginAmount + intrinsicMargin) * confidenceMultiplier;
-    const fuelNeeded = lapsRemaining * trendAdjustedConsumption + adjustedMargin;
+    
+    // CRITICAL FIX: Use lapsRemainingRefuel (Optimistic) for fuel calculation
+    const fuelNeeded = lapsRemainingRefuel * trendAdjustedConsumption + adjustedMargin;
     const canFinish = fuelLevel >= fuelNeeded;
 
     // Calculate pit window with trend adjustment
     const pitWindowOpen = lap + 1;
     const pitWindowClose = Math.max(pitWindowOpen, lap + Math.floor(lapsWithFuel * 0.8)); // 80% of estimated laps
 
-    // Target consumption for fuel saving
+    // Target consumption for fuel saving (Use realistic lapsRemaining)
     const targetConsumption = lapsRemaining > 0 ? fuelLevel / lapsRemaining : 0;
 
     // Calculate fuel at finish
@@ -1199,17 +1223,15 @@ export function useFuelCalculation(
     // Calculate fuel to add
     let fuelToAdd = 0;
     if (stopsRemaining !== undefined && stopsRemaining > 1) {
+      // More than 1 stop: Fill to capacity
       fuelToAdd = Math.max(0, fuelTankCapacity - fuelLevel);
-    } else if (stopsRemaining === 1 || stopsRemaining === 0) {
-      fuelToAdd = Math.max(
-        0,
-        Math.min(fuelTankCapacity, fuelNeeded) - fuelLevel
-      );
     } else {
-      fuelToAdd = Math.max(
-        0,
-        Math.min(fuelTankCapacity, fuelNeeded) - fuelLevel
-      );
+      // 0 or 1 stop: Add exactly what is needed to finish
+      // We calculate the total deficit.
+      // We do NOT clamp to tank capacity here immediately, because this value
+      // typically represents "amount to add at the next stop".
+      // If the deficit > capacity, stopsRemaining should have been > 1.
+      fuelToAdd = Math.max(0, fuelNeeded - fuelLevel);
     }
 
     // Calculate target scenarios
