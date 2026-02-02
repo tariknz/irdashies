@@ -20,6 +20,7 @@ import {
 import { useFuelStore } from './FuelStore';
 import type { FuelCalculatorSettings } from './types';
 import type { LayoutNode } from '../Settings/types';
+import { DEFAULT_FUEL_LAYOUT_TREE } from './defaults';
 
 type FuelCalculatorProps = Partial<FuelCalculatorSettings>;
 
@@ -313,29 +314,7 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
 
     if (!tree) {
       // Default Fixed Layout if no tree in settings
-      return {
-        id: 'root-fuel-default',
-        type: 'split' as const,
-        direction: 'col' as const,
-        children: [
-          {
-            id: 'box-1',
-            type: 'box' as const,
-            direction: 'col' as const,
-            widgets: [
-              'fuelHeader',
-              'fuelConfidence',
-              'fuelGauge',
-              'fuelGrid',
-              'fuelScenarios',
-              'fuelEconomyPredict',
-              'fuelGraph',
-              'fuelTimeEmpty',
-            ],
-            weight: 1,
-          },
-        ],
-      };
+      return DEFAULT_FUEL_LAYOUT_TREE;
     }
 
     // CLONE tree to avoid mutating the settings object

@@ -85,7 +85,7 @@ export interface FuelCalculatorSettings {
   /** Fuel units to display */
   fuelUnits: 'L' | 'gal';
   /** Layout style */
-  layout?: 'vertical' | 'horizontal';
+  layout: 'vertical' | 'horizontal';
   /** Show detailed consumption breakdown */
   showConsumption: boolean;
   /** Show fuel level */
@@ -108,22 +108,22 @@ export interface FuelCalculatorSettings {
   /** Show pit window information */
   showPitWindow: boolean;
   /** Show endurance strategy (total pit stops for entire session) */
-  showEnduranceStrategy?: boolean;
+  showEnduranceStrategy: boolean;
   /** Show fuel scenarios (target consumption for different lap counts) */
   showFuelScenarios: boolean;
   /** Show fuel required for min/avg/max consumption */
-  showFuelRequired?: boolean;
+  showFuelRequired: boolean;
   /** Show fuel history graph */
-  showFuelHistory?: boolean;
+  showFuelHistory: boolean;
   /** Fuel history graph type */
-  fuelHistoryType?: 'line' | 'histogram';
+  fuelHistoryType: 'line' | 'histogram';
   /** Safety margin percentage (0-1) */
   safetyMargin: number;
   manualTarget?: number;
   /** Background opacity (0-100) */
   background: { opacity: number };
   /** Display mode for fuel required column: 'toFinish' shows total fuel needed, 'toAdd' shows fuel to add at stop */
-  fuelRequiredMode?: 'toFinish' | 'toAdd';
+  fuelRequiredMode: 'toFinish' | 'toAdd';
   enableTargetPitLap?: boolean;
   targetPitLap?: number;
   targetPitLapBasis?: 'avg' | 'avg10' | 'last' | 'max' | 'min' | 'qual';

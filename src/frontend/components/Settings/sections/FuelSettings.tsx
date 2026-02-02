@@ -9,63 +9,11 @@ import { LayoutVisualizer, migrateToTree } from './LayoutVisualizer';
 import { useSortableList } from '../../SortableList';
 import { useFuelStore } from '../../FuelCalculator/FuelStore';
 
+import { defaultFuelCalculatorSettings, DEFAULT_FUEL_LAYOUT_TREE } from '../../FuelCalculator/defaults';
+
 const generateId = () => Math.random().toString(36).substring(2, 9);
 
-const defaultConfig: FuelWidgetSettings['config'] = {
-  showOnlyWhenOnTrack: true,
-  fuelUnits: 'L',
-  layout: 'vertical',
-  showConsumption: true,
-  showFuelLevel: true,
-  showLapsRemaining: true,
-  showMin: true,
-  showCurrentLap: true,
-  showLastLap: true,
-  show3LapAvg: true,
-  show10LapAvg: true,
-  showMax: true,
-  showPitWindow: true,
-  showEnduranceStrategy: true,
-  showFuelScenarios: true,
-  showFuelRequired: true,
-  showQualifyConsumption: true,
-  showFuelHistory: true,
-  fuelHistoryType: 'histogram',
-  safetyMargin: 0,
-  background: { opacity: 85 },
-  fuelRequiredMode: 'toFinish',
-  enableTargetPitLap: false,
-  targetPitLap: 15,
-  targetPitLapBasis: 'avg',
-
-  sessionVisibility: {
-    race: true,
-    loneQualify: true,
-    openQualify: true,
-    practice: true,
-    offlineTesting: true,
-  },
-  layoutConfig: [], // Default empty
-  layoutTree: undefined, // Will be migrated on load
-  consumptionGridOrder: ['curr', 'avg', 'max', 'last', 'min', 'qual'],
-  avgLapsCount: 5,
-  fuelStatusThresholds: { green: 60, amber: 30, red: 10 },
-  fuelStatusBasis: 'avg',
-  fuelStatusRedLaps: 3,
-  widgetStyles: {
-    'fuelGraph': { height: 64, labelFontSize: 10, valueFontSize: 12, barFontSize: 8 },
-    'fuelHeader': { labelFontSize: 10, valueFontSize: 14 },
-    'fuelConfidence': { labelFontSize: 10, valueFontSize: 12 },
-    'fuelGauge': { labelFontSize: 10, valueFontSize: 12 },
-    'fuelTimeEmpty': { labelFontSize: 10, valueFontSize: 14 },
-    'fuelGrid': { labelFontSize: 10, valueFontSize: 12 },
-    'fuelScenarios': { labelFontSize: 10, valueFontSize: 12 },
-    'fuelTargetMessage': { labelFontSize: 10, valueFontSize: 12 },
-    'fuelEconomyPredict': { labelFontSize: 12, valueFontSize: 14 },
-  },
-  enableStorage: true,
-  enableLogging: false,
-};
+const defaultConfig = defaultFuelCalculatorSettings;
 
 const migrateConfig = (savedConfig: unknown): FuelWidgetSettings['config'] => {
   if (!savedConfig || typeof savedConfig !== 'object') return defaultConfig;
@@ -110,19 +58,7 @@ const AVAILABLE_WIDGETS_FUEL: { id: string; label: string }[] = [
 
 
 
-const DEFAULT_TREE_FUEL: LayoutNode = {
-  id: 'root-fuel-default',
-  type: 'split',
-  direction: 'col',
-  children: [
-    {
-      id: 'box-1',
-      type: 'box',
-      direction: 'col',
-      widgets: ['fuelHeader', 'fuelConfidence', 'fuelTargetMessage', 'fuelGauge', 'fuelGrid', 'fuelScenarios', 'fuelEconomyPredict', 'fuelGraph', 'fuelTimeEmpty'],
-    }
-  ]
-};
+const DEFAULT_TREE_FUEL = DEFAULT_FUEL_LAYOUT_TREE;
 
 
 const DualFontSizeInput = ({ widgetId, settings, onChange }: { widgetId: string, settings: FuelWidgetSettings, onChange: (change: Partial<FuelWidgetSettings['config']>) => void }) => {
@@ -893,8 +829,8 @@ export const FuelSettings = ({ widgetId }: FuelSettingsProps) => {
       id: newId,
       type: widgetType,
       enabled: true,
-      layout: { x: 50, y: 50, width: 300, height: 400 }, // Default window size
-      config: defaultConfig, // Start with default config
+      layout: { x: 50, y: 50, width: 300, height: 220 }, // Default window size
+      config: defaultConfig as unknown as Record<string, unknown>, // Start with default config
     };
 
     // Update Dashboard
