@@ -34,6 +34,8 @@ export const FuelCalculatorConsumptionGrid: React.FC<
   customStyles,
   isCompact,
   predictiveUsage,
+  liveFuelData,
+  liveFuelLevel,
 }) => {
   // Check if we are in a testing/practice session
   // We need the current SessionNum to look up the SessionType in the SessionInfo array
@@ -123,25 +125,22 @@ export const FuelCalculatorConsumptionGrid: React.FC<
   // BUT use predictiveUsage (passed from parent's throttled trigger) for the CURR column
   const currentUsage = predictiveUsage ?? displayData?.projectedLapUsage ?? 0;
 
-  // Calculate derivates (Laps, Refuel, Finish) for each column
-  // This duplicates some logic but ensures consistent display as per mockup
-  const calcCol = (usage: number) => {
+  // Calculate derivates (Laps, Refuel, Finish)
+  const calcCol = (usage: number, contextTotalLaps: number, contextLapsRemaining: number, contextFuelLevel: number) => {
     if (usage <= 0) return { laps: NaN, refuel: 0, totalReq: 0, isDeficit: false, isValid: false, hideRefuel: true };
     
-    // Use FROZEN values for calculation to prevent jitter
-    const fuelToUse = fuelLevelToUse;
-
     // Laps calculation
-    const laps = fuelToUse / usage;
+    const laps = contextFuelLevel / usage;
 
     // Total Required for Race (Distance * Usage)
-    const totalReq = effectiveTotalLaps * usage;
+    // We use contextTotalLaps which might be live or frozen depending on the row
+    const totalReq = contextTotalLaps * usage;
 
     // Finish (Fuel at finish) -> This is effectively our BALANCE for coloring
     // Formula: CurrentFuel - FuelNeeded
     // FuelNeeded = LapsRemaining * Usage
-    const fuelNeeded = lapsRemainingToUse * usage;
-    const balance = fuelToUse - fuelNeeded;
+    const fuelNeeded = contextLapsRemaining * usage;
+    const balance = contextFuelLevel - fuelNeeded;
     
     // Logic for Refuel Column:
     // If Balance < 0 (Deficit): Show POSITIVE amount to ADD.
@@ -171,12 +170,34 @@ export const FuelCalculatorConsumptionGrid: React.FC<
     };
   };
 
-  const avgData = calcCol(avg);
-  const maxData = calcCol(max);
-  const lastData = calcCol(last);
-  const minData = calcCol(min);
-  const qualData = calcCol(qual);
-  const currentData = calcCol(currentUsage);
+  // Frozen Context Data (for static rows)
+  const frozenFuelLevel = fuelLevelToUse;
+  const frozenLapsRemaining = lapsRemainingToUse;
+  const frozenTotalLaps = effectiveTotalLaps; // Already based on displayData (frozen)
+
+  // Live Context Data (for CURR row)
+  // We prefer liveFuelData if available to get the most up-to-date 'lapsRemaining' and 'totalLaps'
+  const liveTotalLaps = liveFuelData?.totalLaps ?? frozenTotalLaps;
+  // If we are finished, clamp live remaining to 0 or appropriate
+  const liveLapsRemaining = liveFuelData?.lapsRemaining ?? frozenLapsRemaining;
+  const dataLiveFuelLevel = liveFuelLevel || frozenFuelLevel;
+
+  // Header Logic: Usually headers should be stable too if the grid is stable, 
+  // but "Total Laps" changing is a major event.
+  // The user requested removing update in middle of lap. 
+  // Let's keep the Header reflecting the FROZEN state effectively to match the grid rows?
+  // Or should it be live? If I change race length, I likely want to see it up top.
+  // But if the rows below (AVG/MAX) are calculating based on OLD length, then header showing NEW length is confusing.
+  // Verdict: Header should match the rows context. Since most rows are frozen, Header uses frozenTotalLaps.
+
+  const avgData = calcCol(avg, frozenTotalLaps, frozenLapsRemaining, frozenFuelLevel);
+  const maxData = calcCol(max, frozenTotalLaps, frozenLapsRemaining, frozenFuelLevel);
+  const lastData = calcCol(last, frozenTotalLaps, frozenLapsRemaining, frozenFuelLevel);
+  const minData = calcCol(min, frozenTotalLaps, frozenLapsRemaining, frozenFuelLevel);
+  const qualData = calcCol(qual, frozenTotalLaps, frozenLapsRemaining, frozenFuelLevel);
+  
+  // CURR uses LIVE context
+  const currentData = calcCol(currentUsage, liveTotalLaps, liveLapsRemaining, dataLiveFuelLevel);
   if (!fuelData) return null;
 
   // Master visibility toggle

@@ -16,7 +16,6 @@ import {
   FuelCalculatorTargetMessage,
   FuelCalculatorConfidence,
   FuelCalculatorEconomyPredict,
-
 } from './widgets/FuelCalculatorWidgets';
 import { useFuelStore } from './FuelStore';
 import type { FuelCalculatorSettings } from './types';
@@ -343,7 +342,11 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
     const workingTree = JSON.parse(JSON.stringify(tree));
     // Normalize if needed (same logic as FuelCalculator)
 
-    const normalizeNode = (node: LayoutNode | { type: 'widget', id: string, widgetId: string, weight?: number }): LayoutNode => {
+    const normalizeNode = (
+      node:
+        | LayoutNode
+        | { type: 'widget'; id: string; widgetId: string; weight?: number }
+    ): LayoutNode => {
       if (!node) return node;
       if (node.type === 'widget')
         return {
@@ -382,7 +385,9 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
 
     // Stop updates if race is over (State >= 6 is CoolDown/Results)
     // 0x0004 is Checkered Flag
-    const isRaceOver = (sessionState && sessionState >= 6) || (sessionFlags && (sessionFlags & 0x0004));
+    const isRaceOver =
+      (sessionState && sessionState >= 6) ||
+      (sessionFlags && sessionFlags & 0x0004);
     if (isRaceOver) return;
 
     const currentTelemetryLap = fuelData.currentLap;
@@ -390,7 +395,9 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
 
     // Check if we have moved to a new lap OR if our frozen data is stale (history hasn't caught up yet)
     // This prevents locking in stale data if 'isStoreCaughtUp' triggers before 'fuelData' refreshes
-    const isFrozenStale = frozenFuelData.lastFinishedLap !== undefined && frozenFuelData.lastFinishedLap < currentTelemetryLap - 1;
+    const isFrozenStale =
+      frozenFuelData.lastFinishedLap !== undefined &&
+      frozenFuelData.lastFinishedLap < currentTelemetryLap - 1;
 
     if (
       currentTelemetryLap !== frozenLap ||
@@ -416,20 +423,25 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
 
       // Only update if we have a "better" or "caught up" state
       // If we are just stale, wait for history to catch up or store to confirm
-      if (isHistoryCaughtUp || (isStoreCaughtUp && !isFrozenStale) || isEarlyLap || isLagging) {
-         // Note: We avoid updating on JUST isStoreCaughtUp if we are fixing staleness, 
-         // because we want to wait for the actual Data (history) to catch up if possible.
-         // However, if history never updates (invalid lap), we might be stuck?
-         // Solution: If store is caught up, we update. 
-         // But if we updated and it was still stale (race condition), the 'isFrozenStale' check 
-         // in the NEXT render will keep trying until 'isHistoryCaughtUp' becomes true.
-         setFrozenFuelData(fuelData);
+      if (
+        isHistoryCaughtUp ||
+        (isStoreCaughtUp && !isFrozenStale) ||
+        isEarlyLap ||
+        isLagging
+      ) {
+        // Note: We avoid updating on JUST isStoreCaughtUp if we are fixing staleness,
+        // because we want to wait for the actual Data (history) to catch up if possible.
+        // However, if history never updates (invalid lap), we might be stuck?
+        // Solution: If store is caught up, we update.
+        // But if we updated and it was still stale (race condition), the 'isFrozenStale' check
+        // in the NEXT render will keep trying until 'isHistoryCaughtUp' becomes true.
+        setFrozenFuelData(fuelData);
       } else if (isStoreCaughtUp) {
-         // If store is caught up but history isn't (and we know we are stale), we should probably update 
-         // to show *at least* the correct currentLap count, even if usage stats are old?
-         // YES, update. The 'isFrozenStale' check next frame will trigger again if usage is still old,
-         // allowing us to overwrite with new usage when it arrives.
-         setFrozenFuelData(fuelData);
+        // If store is caught up but history isn't (and we know we are stale), we should probably update
+        // to show *at least* the correct currentLap count, even if usage stats are old?
+        // YES, update. The 'isFrozenStale' check next frame will trigger again if usage is still old,
+        // allowing us to overwrite with new usage when it arrives.
+        setFrozenFuelData(fuelData);
       }
     }
 
@@ -443,17 +455,14 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
       }, 3000);
     }
     prevOnPitRoadRef.current = onPitRoad;
-  }, [fuelData, frozenFuelData, storeLastLap, onPitRoad, sessionFlags, sessionState]);
-
-  // Specific trigger for Total Laps change (e.g. timed race adjustment or race control change)
-  // This ensures the grid updates immediately if race duration changes
-  React.useEffect(() => {
-    if (!fuelData || !frozenFuelData) return;
-
-    if (fuelData.totalLaps !== frozenFuelData.totalLaps) {
-      setFrozenFuelData(fuelData);
-    }
-  }, [fuelData, frozenFuelData]);
+  }, [
+    fuelData,
+    frozenFuelData,
+    storeLastLap,
+    onPitRoad,
+    sessionFlags,
+    sessionState,
+  ]);
 
   // Throttled Predictive Usage (to update Grid 'CURR' row periodically without jitter)
   const [predictiveUsage, setPredictiveUsage] = React.useState(0);
@@ -476,10 +485,12 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
 
       timeoutId = setTimeout(() => {
         // Stop if race is over
-        const isRaceOver = (sessionState && sessionState >= 6) || (sessionFlags && (sessionFlags & 0x0004));
+        const isRaceOver =
+          (sessionState && sessionState >= 6) ||
+          (sessionFlags && sessionFlags & 0x0004);
         if (!isRaceOver) {
-             setPredictiveUsage(latestUsageRef.current);
-             scheduleNextUpdate();
+          setPredictiveUsage(latestUsageRef.current);
+          scheduleNextUpdate();
         }
       }, randomDelay);
     };
