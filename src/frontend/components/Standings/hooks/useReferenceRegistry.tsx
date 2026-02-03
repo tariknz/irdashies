@@ -39,7 +39,11 @@ export function normalizeKey(key: number): number {
     (key - (key % REFERENCE_INTERVAL)).toFixed(DECIMAL_PLACES)
   );
 
-  return normalizedKey < 0 ? 0 : normalizedKey >= 1 ? 0 : normalizedKey;
+  return normalizedKey < 0 || normalizedKey >= 1 ? 0 : normalizedKey;
+}
+
+function isLapClean(trackSurface: number, isOnPitRoad: boolean): boolean {
+  return trackSurface === TRACK_SURFACES.OnTrack && !isOnPitRoad;
 }
 
 /**
@@ -84,7 +88,7 @@ export const useReferenceRegistry = () => {
             [key, { trackPct, timeElapsedSinceStart: 0 } as ReferencePoint],
           ]),
           lastTrackedPct: trackPct,
-          isCleanLap: trackSurface === TRACK_SURFACES.OnTrack && !isOnPitRoad,
+          isCleanLap: isLapClean(trackSurface, isOnPitRoad),
         };
 
         laps.current.set(carIdx, refLap);
@@ -142,7 +146,7 @@ export const useReferenceRegistry = () => {
             ],
           ]),
           lastTrackedPct: trackPct,
-          isCleanLap: trackSurface === TRACK_SURFACES.OnTrack && !isOnPitRoad,
+          isCleanLap: isLapClean(trackSurface, isOnPitRoad),
         };
         laps.current.set(carIdx, refLap);
       }
@@ -184,7 +188,7 @@ export const useReferenceRegistry = () => {
       bestLaps.current.get(carIdx) ?? {
         startTime: -1,
         finishTime: -1,
-        refPoints: new Map(),
+        refPoints: new Map<number, ReferencePoint>(),
         lastTrackedPct: -1,
         isCleanLap: false,
       }
