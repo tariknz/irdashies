@@ -161,6 +161,20 @@ export const defaultDashboard: DashboardLayout = {
       }
     },
     {
+      "id": "flag",
+      "enabled": true,
+      "layout": {
+        "x": 1100,
+        "y": 300,
+        "width": 220,
+        "height": 180
+      },
+      "config": {
+        "showOnlyWhenOnTrack": false,
+        "sessionVisibility": { "race": true, "loneQualify": true, "openQualify": true, "practice": true, "offlineTesting": true }
+      }
+    },
+    {
       "id": "input",
       "enabled": true,
       "layout": {

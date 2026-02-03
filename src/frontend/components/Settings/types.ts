@@ -317,6 +317,20 @@ export interface RejoinIndicatorWidgetSettings extends BaseWidgetSettings {
   };
 }
 
+export interface FlagWidgetSettings extends BaseWidgetSettings {
+  id: 'flag';
+  config: {
+    enabled: boolean;
+    showOnlyWhenOnTrack: boolean;
+    showLabel: boolean;
+    matrixMode: '8x8' | '16x16' | 'uniform';
+    animate: boolean;
+    blinkPeriod: number;
+    showNoFlagState: boolean;
+    sessionVisibility: SessionVisibilitySettings;
+  };
+}
+
 export interface FlatTrackMapWidgetSettings extends BaseWidgetSettings {
   config: {
     showCarNumbers: boolean;
