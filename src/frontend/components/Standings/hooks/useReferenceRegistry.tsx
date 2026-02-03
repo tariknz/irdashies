@@ -1,5 +1,6 @@
 import { useRef, useCallback } from 'react';
 import { TRACK_SURFACES } from '../relativeGapHelpers';
+import { precomputePCHIPTangents } from '../splineInterpolation';
 
 /** The interval step used for normalizing track percentage keys. */
 export const REFERENCE_INTERVAL = 0.0025;
@@ -8,48 +9,18 @@ const DECIMAL_PLACES = REFERENCE_INTERVAL.toString().split('.')[1]?.length || 0;
 /** Represents a single telemetry sample recorded at a specific distance around the track.
  * Used for interpolating time gaps between cars at different positions. */
 export interface ReferencePoint {
-  /** The specific position on the track where this point was recorded.
-   * Represented as a normalized percentage from 0.0 (Start/Finish) to 1.0. */
   trackPct: number;
-
-  /**
-   * The elapsed time in seconds from the start of the lap to this point.
-   * Calculated as: (Current Session Time - ReferenceLap.startTime). */
   timeElapsedSinceStart: number;
+  tangent: number | undefined;
 }
 
 /**
  * A container for all timing data associated with a specific lap.
  * This can represent an active lap currently being recorded or a finalized "Best Lap". */
 export interface ReferenceLap {
-  /**
-   * A lookup map of track positions to timing data.
-   * Key: A quantized/normalized track percentage (e.g., 0.1025).
-   * Value: The specific ReferencePoint data.
-   *
-   * This Map allows O(1) access to find the time split at any point on the track. */
   refPoints: Map<number, ReferencePoint>;
-
-  /**
-   * The session timestamp (in seconds) when this lap began.
-   * Used as the anchor point for calculating `timeElapsedSinceStart`.
-   */
   startTime: number;
-
-  /**
-   * The session timestamp (in seconds) when this lap was completed.
-   * If the lap is currently in progress, this is set to -1.
-   */
   finishTime: number;
-
-  /**
-   * The most recent raw track percentage received from telemetry.
-   *
-   * CRITICAL FOR LOGIC:
-   * 1. Used to detect if the car is moving forward or backward (spins).
-   * 2. Used to detect the "wrap-around" event (crossing Start/Finish)
-   * by comparing `lastTrackedPct` (>0.9) vs `currentPct` (<0.1).
-   */
   lastTrackedPct: number;
   isCleanLap: boolean;
 }
@@ -68,7 +39,7 @@ export function normalizeKey(key: number): number {
     (key - (key % REFERENCE_INTERVAL)).toFixed(DECIMAL_PLACES)
   );
 
-  return normalizedKey < 0 ? 0 : normalizedKey;
+  return normalizedKey < 0 ? 0 : normalizedKey >= 1 ? 0 : normalizedKey;
 }
 
 /**
@@ -125,19 +96,33 @@ export const useReferenceRegistry = () => {
 
       if (isLapComplete) {
         refLap.finishTime = sessionTime;
-        const bestLap = bestLaps.current.get(carIdx);
-
         const MIN_POINTS_FOR_VALID_LAP = 400;
 
         if (refLap.refPoints.size >= MIN_POINTS_FOR_VALID_LAP) {
+          const bestLap = bestLaps.current.get(carIdx);
+
           // If no best lap exists OR this one is faster, save it
           if (!bestLap) {
-            bestLaps.current.set(carIdx, refLap);
+            precomputePCHIPTangents(refLap);
+            bestLaps.current.set(carIdx, refLap); // ✓ Now interpolated!
+            // let log = '';
+            // for (const [key, value] of refLap.refPoints.entries()) {
+            //   log += `KEY: ${key} VALUE: ${JSON.stringify(value)}`;
+            // }
+            //
+            // console.log(log);
           } else if (refLap.isCleanLap) {
             const currentLapTime = refLap.finishTime - refLap.startTime;
             const bestLapTime = bestLap.finishTime - bestLap.startTime;
             if (currentLapTime > 0 && currentLapTime < bestLapTime) {
+              precomputePCHIPTangents(refLap);
               bestLaps.current.set(carIdx, refLap);
+              // let log = '';
+              // for (const [key, value] of refLap.refPoints.entries()) {
+              //   log += `KEY: ${key} VALUE: ${JSON.stringify(value)}`;
+              // }
+              //
+              // console.log(log);
             }
           }
         }
@@ -147,7 +132,14 @@ export const useReferenceRegistry = () => {
           startTime: sessionTime,
           finishTime: -1,
           refPoints: new Map<number, ReferencePoint>([
-            [key, { trackPct, timeElapsedSinceStart: 0 }],
+            [
+              key,
+              {
+                trackPct,
+                timeElapsedSinceStart: 0,
+                tangent: undefined,
+              } as ReferencePoint,
+            ],
           ]),
           lastTrackedPct: trackPct,
           isCleanLap: trackSurface === TRACK_SURFACES.OnTrack && !isOnPitRoad,

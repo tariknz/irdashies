@@ -1,9 +1,10 @@
 import { Standings } from './createStandings';
 import {
   normalizeKey,
-  REFERENCE_INTERVAL,
   ReferenceLap,
+  REFERENCE_INTERVAL,
 } from './hooks/useReferenceRegistry';
+import { interpolateAtPoint } from './splineInterpolation';
 
 export const TRACK_SURFACES = {
   NotInWorld: -1,
@@ -105,8 +106,8 @@ export function calculateReferenceDelta(
   opponentTrackPct: number,
   playerTrackPct: number
 ): number {
-  const timePlayer = getTimeAtPosition(referenceLap, playerTrackPct);
-  const timeOpponent = getTimeAtPosition(referenceLap, opponentTrackPct);
+  const timePlayer = interpolateAtPoint(referenceLap, playerTrackPct) ?? 0;
+  const timeOpponent = interpolateAtPoint(referenceLap, opponentTrackPct) ?? 0;
 
   let calculatedDelta = timeOpponent - timePlayer;
   const lapTime = referenceLap.finishTime - referenceLap.startTime;

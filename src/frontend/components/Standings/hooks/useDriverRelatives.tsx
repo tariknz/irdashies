@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import {
   useSessionStore,
   useTelemetryValues,
@@ -12,6 +12,7 @@ import {
   calculateReferenceDelta,
   getStats,
 } from '../relativeGapHelpers';
+import { Standings } from '../createStandings';
 
 export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
   const drivers = useDriverStandings();
@@ -113,66 +114,85 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
     ]
   );
 
-  const standings = useMemo(() => {
-    // 1. FILTER: Isolate valid drivers first
-    // This ensures collectLapData only runs on relevant cars.
-    const activeDrivers = drivers.filter((driver) => {
-      return (
-        (driver.onTrack || driver.carIdx === focusCarIdx) &&
-        driver.carIdx > -1 &&
-        driver.carIdx !== paceCarIdx
-      );
+  const isValidDriver = useCallback(
+    (driver: Standings) => {
+      // Must be a real car (idx > -1)
+      if (driver.carIdx <= -1) return false;
+
+      // Must not be the pace car
+      if (driver.carIdx === paceCarIdx) return false;
+
+      // Must be on track OR be the player (we always track the player)
+      return driver.onTrack || driver.carIdx === focusCarIdx;
+    },
+    [focusCarIdx, paceCarIdx]
+  );
+
+  // ===========================================================================
+  // 1. DATA COLLECTION PHASE (Side Effect)
+  // Run this in an Effect so it happens reliably after every frame update.
+  // ===========================================================================
+  useEffect(() => {
+    drivers.forEach((d) => {
+      if (isValidDriver(d)) {
+        const idx = d.carIdx;
+        collectLapData(
+          idx,
+          carIdxLapDistPct[idx],
+          sessionTime,
+          carIdxTrackSurface[idx],
+          carIdxIsOnPitRoad[idx] === 1
+        );
+      }
     });
-
-    // 2. COLLECT: Batch update side effects
-    // We run this separately to ensure ALL lap data is fresh before any calculations begin.
-    activeDrivers.forEach((d) => {
-      const idx = d.carIdx;
-      const lapPct = carIdxLapDistPct[idx];
-      const trackSurface = carIdxTrackSurface[idx];
-      const isOnPitRoad = carIdxIsOnPitRoad[idx] === 1;
-      collectLapData(idx, lapPct, sessionTime, trackSurface, isOnPitRoad);
-    });
-
-    // 3. CALCULATE: Compute metrics sequentially
-    const processed = activeDrivers
-      .map((d) => {
-        const relativePct = calculateRelativePct(d.carIdx);
-
-        const delta = calculateDelta(d.carIdx, relativePct);
-
-        return {
-          ...d,
-          relativePct,
-          delta,
-        };
-      })
-      .filter((d) => !isNaN(d.relativePct) && !isNaN(d.delta));
-
-    // 4. SORT: Single descending sort
-    // Alignment: [Furthest Ahead (+1.0) ... Player (0.0) ... Furthest Behind (-1.0)]
-    processed.sort((a, b) => b.relativePct - a.relativePct);
-
-    // 5. SLICE: Extract window
-    const playerIdx = processed.findIndex((d) => d.carIdx === focusCarIdx);
-
-    if (playerIdx === -1) return [];
-
-    const start = Math.max(0, playerIdx - buffer);
-    const end = Math.min(processed.length, playerIdx + 1 + buffer);
-
-    return processed.slice(start, end);
   }, [
+    sessionTime,
     drivers,
-    buffer,
     focusCarIdx,
     paceCarIdx,
     carIdxLapDistPct,
     carIdxTrackSurface,
     carIdxIsOnPitRoad,
     collectLapData,
-    sessionTime,
+    isValidDriver,
+  ]);
+
+  // ===========================================================================
+  // 2. VIEW PROJECTION PHASE (Pure Calculation)
+  // ===========================================================================
+  const standings = useMemo(() => {
+    // A. Filter & Map (Calculate Relative Pct immutably)
+    const processed = drivers
+      .filter(isValidDriver)
+      .map((d) => ({
+        ...d,
+        relativePct: calculateRelativePct(d.carIdx),
+      }))
+      .filter((d) => !isNaN(d.relativePct));
+
+    // B. Sort (Descending)
+    processed.sort((a, b) => b.relativePct - a.relativePct);
+
+    // C. Slice Window
+    const playerIdx = processed.findIndex((d) => d.carIdx === focusCarIdx);
+    if (playerIdx === -1) return [];
+
+    const start = Math.max(0, playerIdx - buffer);
+    const end = Math.min(processed.length, playerIdx + 1 + buffer);
+
+    const visibleDrivers = processed.slice(start, end);
+
+    // D. Final Map (Attach Delta)
+    return visibleDrivers.map((d) => ({
+      ...d,
+      delta: calculateDelta(d.carIdx, d.relativePct),
+    }));
+  }, [
+    drivers,
+    isValidDriver,
+    buffer,
     calculateRelativePct,
+    focusCarIdx,
     calculateDelta,
   ]);
 
