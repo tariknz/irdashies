@@ -11,6 +11,7 @@ import {
   calculateClassEstimatedGap,
   calculateReferenceDelta,
   getStats,
+  TRACK_SURFACES,
 } from '../relativeGapHelpers';
 import { Standings } from '../createStandings';
 
@@ -18,7 +19,7 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
   const drivers = useDriverStandings();
   const carIdxLapDistPct = useTelemetryValues('CarIdxLapDistPct');
   const carIdxIsOnPitRoad = useTelemetryValues('CarIdxOnPitRoad');
-  const carIdxTrackSurface = useTelemetryValues('CarIdxTrackSurface');
+  // const carIdxTrackSurface = useTelemetryValues('CarIdxTrackSurface');
   // CarIdxEstTime - iRacing's native estimated time gap calculation
   const carIdxEstTime = useTelemetryValues('CarIdxEstTime');
   // Use focus car index which handles spectator mode (uses CamCarIdx when spectating)
@@ -140,7 +141,8 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
           idx,
           carIdxLapDistPct[idx],
           sessionTime,
-          carIdxTrackSurface[idx],
+          TRACK_SURFACES.OnTrack,
+          // carIdxTrackSurface[idx],
           carIdxIsOnPitRoad[idx] === 1
         );
       }
@@ -151,7 +153,7 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
     focusCarIdx,
     paceCarIdx,
     carIdxLapDistPct,
-    carIdxTrackSurface,
+    // carIdxTrackSurface,
     carIdxIsOnPitRoad,
     collectLapData,
     isValidDriver,

@@ -4,6 +4,7 @@ import { useDriverRelatives } from './useDriverRelatives';
 import type { Standings } from '../createStandings';
 import {
   normalizeKey,
+  REFERENCE_INTERVAL,
   ReferenceLap,
   ReferencePoint,
 } from './useReferenceRegistry';
@@ -29,23 +30,28 @@ vi.mock('./useDriverPositions', () => ({
   useDriverStandings: vi.fn(),
 }));
 
-// 2. Replicate the simple normalize logic
-// (We cannot import the real one because of hoisting)
-
 // =============================================================================
-// HELPER: Generate a full Reference Lap with 400 points (0.25% interval)
+// HELPER: Generate a full Reference Lap with Tangents
 // =============================================================================
 const generateReferenceLap = (lapTime: number): ReferenceLap => {
   const refPoints = new Map<number, ReferencePoint>();
-  // Generate points every 0.0025 (0.25%) -> 400 points total
-  for (let i = 0; i < 400; i++) {
-    // NOTE: FLOATING POINT ISSUEEEES!
-    // WARN: DO NOT REMOVE 0.000001, it's breaking the tests!
-    const pct = i * 0.0025 + 0.000001;
+
+  // 400 points = 100% / 0.25%
+  const totalPoints = Math.round(1 / REFERENCE_INTERVAL);
+
+  for (let i = 0; i <= totalPoints; i++) {
+    // Clean float generation: 0, 0.0025, 0.0050 ... 1.0
+    const pct = i * REFERENCE_INTERVAL + 0.00001;
+
     const key = normalizeKey(pct);
+
     refPoints.set(key, {
       trackPct: pct,
-      timeElapsedSinceStart: pct * lapTime, // Linear speed for simplicity
+      timeElapsedSinceStart: pct * lapTime, // Linear speed
+      // CRITICAL FOR FRITSCH-CARLSON:
+      // For a perfectly linear lap (y = mx), the tangent (slope) is constant.
+      // Slope = Rise / Run = LapTime / 1.0 = LapTime.
+      tangent: lapTime,
     } as ReferencePoint);
   }
 
@@ -160,8 +166,6 @@ const mockDrivers: Standings[] = [
 describe('useDriverRelatives', () => {
   const mockCarIdxLapDistPct = [0.5, 0.6, 0.4]; // Player, Ahead, Behind
   // CarIdxEstTime: same class cars, delta = otherEstTime - playerEstTime
-  // For car 1 (ahead): 109 - 99 = +10 seconds ahead
-  // For car 2 (behind): 89 - 99 = -10 seconds behind
   const mockCarIdxEstTime = [99, 109, 89]; // Player, Ahead (+10), Behind (-10)
 
   beforeEach(() => {

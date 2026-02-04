@@ -108,25 +108,13 @@ export const useReferenceRegistry = () => {
           // If no best lap exists OR this one is faster, save it
           if (!bestLap) {
             precomputePCHIPTangents(refLap);
-            bestLaps.current.set(carIdx, refLap); // ✓ Now interpolated!
-            // let log = '';
-            // for (const [key, value] of refLap.refPoints.entries()) {
-            //   log += `KEY: ${key} VALUE: ${JSON.stringify(value)}`;
-            // }
-            //
-            // console.log(log);
+            bestLaps.current.set(carIdx, refLap);
           } else if (refLap.isCleanLap) {
             const currentLapTime = refLap.finishTime - refLap.startTime;
             const bestLapTime = bestLap.finishTime - bestLap.startTime;
             if (currentLapTime > 0 && currentLapTime < bestLapTime) {
               precomputePCHIPTangents(refLap);
               bestLaps.current.set(carIdx, refLap);
-              // let log = '';
-              // for (const [key, value] of refLap.refPoints.entries()) {
-              //   log += `KEY: ${key} VALUE: ${JSON.stringify(value)}`;
-              // }
-              //
-              // console.log(log);
             }
           }
         }
