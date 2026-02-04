@@ -85,6 +85,40 @@ export const findIntersectionPoint = (
   return null;
 };
 
+export const getLengthAtPoint = (
+  path: string,
+  point: { x: number; y: number }
+): number => {
+  if (!path) return 0;
+  const p = new svgPathProperties(path);
+  const totalLength = p.getTotalLength();
+  const step = totalLength / 500;
+  let bestLength = 0;
+  let bestDistSq = Infinity;
+  for (let length = 0; length <= totalLength; length += step) {
+    const pt = p.getPointAtLength(Math.min(length, totalLength));
+    const distSq = Math.pow(pt.x - point.x, 2) + Math.pow(pt.y - point.y, 2);
+    if (distSq < bestDistSq) {
+      bestDistSq = distSq;
+      bestLength = length;
+    }
+  }
+  const lo = Math.max(0, bestLength - step);
+  const hi = Math.min(totalLength, bestLength + step);
+  const fineStep = (hi - lo) / 100;
+  let best = bestLength;
+  let bestD = bestDistSq;
+  for (let length = lo; length <= hi; length += fineStep) {
+    const pt = p.getPointAtLength(length);
+    const d = Math.pow(pt.x - point.x, 2) + Math.pow(pt.y - point.y, 2);
+    if (d < bestD) {
+      bestD = d;
+      best = length;
+    }
+  }
+  return best;
+};
+
 // Function to find the direction of the track based on the order of turns
 // looks at the position of the first two turns to determine the direction
 export const findDirection = (trackId: number) => {
@@ -102,7 +136,7 @@ export const findDirection = (trackId: number) => {
     443, 444, 445, 448, 449, 451, 453, 454, 455, 456, 463, 469, 473, 474, 481,
     483, 498, 509, 510, 511, 512, 514, 518, 519, 520, 522, 526, 527, 528, 529,
     530, 532, 540, 541, 542, 543, 544, 545, 546, 551, 559, 561, 562, 563, 564,
-    565, 567, 568, 569, 570, 571, 572, 573, 574, 575, 576, 577, 580
+    565, 567, 568, 569, 570, 571, 572, 573, 574, 575, 576, 577, 580,
   ];
 
   return anticlockwiseTracks.includes(trackId) ? 'anticlockwise' : 'clockwise';
@@ -110,14 +144,19 @@ export const findDirection = (trackId: number) => {
 
 // Pre calculate pointAtLength values for a given SVG path
 // this is used to find the position of the car based on the percentage of the track completed
-export const preCalculatePoints = (pathData: string): { x: number; y: number }[] => {
+export const preCalculatePoints = (
+  pathData: string
+): { x: number; y: number }[] => {
   const path = new svgPathProperties(pathData);
   const totalLength = path.getTotalLength();
 
   // Calculate number of points based on path length
   // Aim for roughly 1 point per 2-3 pixels of path length for good resolution
   const pointsPerPixel = 0.4; // Adjust this value to control density
-  const calculatedPoints = Math.max(500, Math.min(2000, Math.round(totalLength * pointsPerPixel)));
+  const calculatedPoints = Math.max(
+    500,
+    Math.min(2000, Math.round(totalLength * pointsPerPixel))
+  );
 
   const points: { x: number; y: number }[] = [];
 
@@ -128,7 +167,7 @@ export const preCalculatePoints = (pathData: string): { x: number; y: number }[]
   }
 
   return points;
-}
+};
 
 // Convert line element to path data
 export const lineToPath = (line: SVGLineElement): string => {
@@ -137,7 +176,7 @@ export const lineToPath = (line: SVGLineElement): string => {
   const x2 = parseFloat(line.getAttribute('x2') || '0');
   const y2 = parseFloat(line.getAttribute('y2') || '0');
   return `M${x1},${y1}L${x2},${y2}`;
-}
+};
 
 // Convert rect element to path data
 export const rectToPath = (rect: SVGRectElement): string => {
@@ -170,10 +209,12 @@ export const rectToPath = (rect: SVGRectElement): string => {
   // For non-rotated rects, use the center line
   const centerX = x + width / 2;
   return `M${centerX},${y}L${centerX},${y + height}`;
-}
+};
 
 // Extract start-finish line data from various SVG element types
-export const extractStartFinishData = (svg: SVGSVGElement): { line: string; arrow: string } | null => {
+export const extractStartFinishData = (
+  svg: SVGSVGElement
+): { line: string; arrow: string } | null => {
   // Try to find use elements with symbol references first (for complex SVGs)
   const useElements = svg.querySelectorAll('use');
   if (useElements.length >= 2) {
@@ -182,7 +223,8 @@ export const extractStartFinishData = (svg: SVGSVGElement): { line: string; arro
     let arrowPath = '';
 
     for (const useEl of useElements) {
-      const href = useEl.getAttribute('href') || useEl.getAttribute('xlink:href');
+      const href =
+        useEl.getAttribute('href') || useEl.getAttribute('xlink:href');
       const transform = useEl.getAttribute('transform') || '';
 
       if (href) {
@@ -191,7 +233,9 @@ export const extractStartFinishData = (svg: SVGSVGElement): { line: string; arro
 
         if (symbol) {
           // Extract transform values
-          const translateMatch = transform.match(/translate\(([^,\s]+)\s+([^)]+)\)/);
+          const translateMatch = transform.match(
+            /translate\(([^,\s]+)\s+([^)]+)\)/
+          );
           const translateX = translateMatch ? parseFloat(translateMatch[1]) : 0;
           const translateY = translateMatch ? parseFloat(translateMatch[2]) : 0;
 
@@ -218,11 +262,17 @@ export const extractStartFinishData = (svg: SVGSVGElement): { line: string; arro
             // Convert polygon to path and apply transform
             const points = polygon.getAttribute('points');
             if (points) {
-              const coords = points.trim().split(/\s+/).map(parseFloat).filter(n => !isNaN(n));
+              const coords = points
+                .trim()
+                .split(/\s+/)
+                .map(parseFloat)
+                .filter((n) => !isNaN(n));
               const transformedPoints = [];
               for (let i = 0; i < coords.length; i += 2) {
                 if (i + 1 < coords.length) {
-                  transformedPoints.push(`${coords[i] + translateX},${coords[i + 1] + translateY}`);
+                  transformedPoints.push(
+                    `${coords[i] + translateX},${coords[i + 1] + translateY}`
+                  );
                 }
               }
               if (transformedPoints.length >= 3) {
@@ -279,7 +329,11 @@ export const extractStartFinishData = (svg: SVGSVGElement): { line: string; arro
     if (rectPath && polygonPath) {
       // Convert polygon points to path
       // Points are space-separated pairs like "x1 y1 x2 y2 x3 y3"
-      const coords = polygonPath.trim().split(/\s+/).map(parseFloat).filter(n => !isNaN(n));
+      const coords = polygonPath
+        .trim()
+        .split(/\s+/)
+        .map(parseFloat)
+        .filter((n) => !isNaN(n));
       const points = [];
       for (let i = 0; i < coords.length; i += 2) {
         if (i + 1 < coords.length) {
@@ -288,7 +342,10 @@ export const extractStartFinishData = (svg: SVGSVGElement): { line: string; arro
       }
 
       if (points.length >= 3) {
-        const polygonPathData = `M${points[0][0]},${points[0][1]}L${points.slice(1).map(p => `${p[0]},${p[1]}`).join('L')}Z`;
+        const polygonPathData = `M${points[0][0]},${points[0][1]}L${points
+          .slice(1)
+          .map((p) => `${p[0]},${p[1]}`)
+          .join('L')}Z`;
         return { line: rectPath, arrow: polygonPathData };
       }
     }
@@ -304,4 +361,4 @@ export const extractStartFinishData = (svg: SVGSVGElement): { line: string; arro
   }
 
   return null;
-}
+};

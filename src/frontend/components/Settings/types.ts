@@ -242,6 +242,9 @@ export interface InputWidgetSettings extends BaseWidgetSettings {
       enabled: boolean;
       unit: 'mph' | 'km/h' | 'auto';
     };
+    abs: {
+      enabled: boolean;
+    };
     steer: SteerWidgetSettings;
     tachometer: {
       enabled: boolean;
@@ -310,6 +313,20 @@ export interface RejoinIndicatorWidgetSettings extends BaseWidgetSettings {
     showAtSpeed: number;
     careGap: number;
     stopGap: number;
+    sessionVisibility: SessionVisibilitySettings;
+  };
+}
+
+export interface FlagWidgetSettings extends BaseWidgetSettings {
+  id: 'flag';
+  config: {
+    enabled: boolean;
+    showOnlyWhenOnTrack: boolean;
+    showLabel: boolean;
+    matrixMode: '8x8' | '16x16' | 'uniform';
+    animate: boolean;
+    blinkPeriod: number;
+    showNoFlagState: boolean;
     sessionVisibility: SessionVisibilitySettings;
   };
 }
