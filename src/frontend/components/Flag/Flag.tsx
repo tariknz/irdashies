@@ -1,6 +1,6 @@
 import { useTelemetryValue, useSessionVisibility } from '@irdashies/context';
-import { useEffect, useState } from 'react';
 import { useFlagSettings } from './hooks/useFlagSettings';
+import { useBlinkState } from './hooks/useBlinkState';
 import { getLedColor } from './hooks/getLedColor';
 import { getTextColorClass } from './hooks/getTextColorClass';
 import { getFlag } from '@irdashies/utils/getFlag';
@@ -12,18 +12,7 @@ export const Flag = () => {
   const isPlayerOnTrack = useTelemetryValue<boolean>('IsOnTrack') ?? false;
   const isVisibleInSession = useSessionVisibility(settings.sessionVisibility);
 
-  // Animation (blink) support: when animate is enabled, toggle between NO FLAG and the real flag every 500ms
-  const [blinkOn, setBlinkOn] = useState(true);
-
-  useEffect(() => {
-    if (!settings.animate) return;
-    const periodMs =
-      settings.blinkPeriod && settings.blinkPeriod > 0
-        ? Math.max(100, Math.floor(settings.blinkPeriod * 1000))
-        : 500;
-    const id = setInterval(() => setBlinkOn((v) => !v), periodMs);
-    return () => clearInterval(id);
-  }, [settings.animate, settings.blinkPeriod]);
+  const blinkOn = useBlinkState(settings.animate, settings.blinkPeriod);
 
   if (!isVisibleInSession) return null;
   if (settings.showOnlyWhenOnTrack && !isPlayerOnTrack) return null;
@@ -33,8 +22,8 @@ export const Flag = () => {
   const visibleLabel =
     settings.animate && !blinkOn ? 'NO FLAG' : flagInfo.label;
 
-  // 4. Hide widget if NO FLAG state is disabled and no flags are waved (apply to visible label)
-  if (visibleLabel === 'NO FLAG' && !settings.showNoFlagState) return null;
+  // 4. Hide widget if NO FLAG state is disabled and no flags are waved (check actual flag, not visible label)
+  if (flagInfo.label === 'NO FLAG' && !settings.showNoFlagState) return null;
 
   return (
     <FlagDisplay
