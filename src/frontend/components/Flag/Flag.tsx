@@ -11,16 +11,14 @@ import { getTextColorClass } from './hooks/getTextColorClass';
 import { getDemoFlagData } from './demoData';
 import { getFlag } from '@irdashies/utils/getFlag';
 
-
-
 export const Flag = () => {
   const { isDemoMode } = useDashboard();
   const { running } = useRunningState();
   const settings = useFlagSettings();
-  
- const sessionFlags = useTelemetryValue<number>('SessionFlags') ?? 0;
- const isPlayerOnTrack = useTelemetryValue<boolean>('IsOnTrack') ?? false;
-  
+
+  const sessionFlags = useTelemetryValue<number>('SessionFlags') ?? 0;
+  const isPlayerOnTrack = useTelemetryValue<boolean>('IsOnTrack') ?? false;
+
   // FIX: This hook calculates visibility based on the settings we pass in
   const isVisibleInSession = useSessionVisibility(settings.sessionVisibility);
 
@@ -28,7 +26,10 @@ export const Flag = () => {
   const [blinkOn, setBlinkOn] = useState(true);
   useEffect(() => {
     if (!settings.animate) return;
-    const periodMs = (settings.blinkPeriod && settings.blinkPeriod > 0) ? Math.max(100, Math.floor(settings.blinkPeriod * 1000)) : 500;
+    const periodMs =
+      settings.blinkPeriod && settings.blinkPeriod > 0
+        ? Math.max(100, Math.floor(settings.blinkPeriod * 1000))
+        : 500;
     const id = setInterval(() => setBlinkOn((v) => !v), periodMs);
     return () => clearInterval(id);
   }, [settings.animate, settings.blinkPeriod]);
@@ -40,8 +41,20 @@ export const Flag = () => {
   if (isDemoMode) {
     const demo = getDemoFlagData();
     return (
-      <div style={{ position: 'fixed', top: 0, left: 0, zIndex: 99999, width: '100vw', height: '100vh' }}>
-        <FlagDisplay label={demo.label} showLabel={settings.showLabel ?? true} matrixSize={settings.matrixMode === '8x8' ? 8 : settings.matrixMode === '16x16' ? 16 : 1} fullBleed />
+      <div className="fixed top-0 left-0 w-screen h-screen z-99999">
+        <FlagDisplay
+          label={demo.label}
+          showLabel={settings.showLabel ?? true}
+          matrixSize={
+            settings.matrixMode === '8x8'
+              ? 8
+              : settings.matrixMode === '16x16'
+                ? 16
+                : 1
+          }
+          fullBleed
+          enableGlow={settings.enableGlow ?? true}
+        />
       </div>
     );
   }
@@ -60,14 +73,42 @@ export const Flag = () => {
   // --- RENDER ---
   const flagInfo = getFlag(sessionFlags);
 
-  const visibleLabel = settings.animate && !blinkOn ? 'NO FLAG' : flagInfo.label;
+  const visibleLabel =
+    settings.animate && !blinkOn ? 'NO FLAG' : flagInfo.label;
 
   // 4. Hide widget if NO FLAG state is disabled and no flags are waved (apply to visible label)
   if (visibleLabel === 'NO FLAG' && !settings.showNoFlagState) return null;
 
-  return <FlagDisplay label={visibleLabel} showLabel={settings.showLabel ?? true} matrixSize={settings.matrixMode === '8x8' ? 8 : settings.matrixMode === '16x16' ? 16 : 1} />;
+  return (
+    <FlagDisplay
+      label={visibleLabel}
+      showLabel={settings.showLabel ?? true}
+      matrixSize={
+        settings.matrixMode === '8x8'
+          ? 8
+          : settings.matrixMode === '16x16'
+            ? 16
+            : 1
+      }
+      enableGlow={settings.enableGlow ?? true}
+    />
+  );
 };
-export const FlagDisplay = ({ label, showLabel = true, textColor, matrixSize = 16, fullBleed = false }: { label: string; showLabel?: boolean; textColor?: string; matrixSize?: number; fullBleed?: boolean }) => {
+export const FlagDisplay = ({
+  label,
+  showLabel = true,
+  textColor,
+  matrixSize = 16,
+  fullBleed = false,
+  enableGlow = true,
+}: {
+  label: string;
+  showLabel?: boolean;
+  textColor?: string;
+  matrixSize?: number;
+  fullBleed?: boolean;
+  enableGlow?: boolean;
+}) => {
   const isUniform = matrixSize === 1;
   const cols = isUniform ? 1 : matrixSize;
   const rows = isUniform ? 1 : matrixSize;
@@ -77,31 +118,24 @@ export const FlagDisplay = ({ label, showLabel = true, textColor, matrixSize = 1
 
   const flagType = shortLabel; // e.g., 'YELLOW', 'CHECKERED', 'MEATBALL', etc.
 
-  const innerPadding = 6; // keep inner padding to show the border area
-  const gap = isUniform ? 0 : 6;
+  const innerPadding = isUniform ? '1.5%' : '1%'; // scale padding with display size
+  const gap = isUniform ? 0 : '1.2%';
   const cellRadius = isUniform ? 16 : 4;
 
   const outerClass = fullBleed
-    ? 'flex flex-col items-stretch gap-0 bg-slate-900 border-4 border-slate-800 shadow-2xl'
-    : 'flex flex-col items-center gap-2 p-4 bg-slate-900 rounded-2xl border-4 border-slate-800 shadow-2xl';
-
-  const outerStyle: React.CSSProperties = fullBleed
-    ? { width: '100%', height: '100%', boxSizing: 'border-box', margin: 0, padding: 0 }
-    : { width: '100%' };
+    ? 'flex flex-col items-stretch gap-0 bg-slate-900 border-4 border-slate-800 shadow-2xl w-full h-full box-border m-0 p-0'
+    : 'flex flex-col items-center gap-2 p-4 bg-slate-900 rounded-2xl border-4 border-slate-800 shadow-2xl w-full';
 
   return (
-    <div className={outerClass} style={outerStyle}>
+    <div className={outerClass}>
       <div
+        className="grid w-full bg-black box-border"
         style={{
-          display: 'grid',
           gridTemplateColumns: `repeat(${cols}, 1fr)`,
           gap,
-          width: '100%',
           aspectRatio: `${cols} / ${rows}`,
-          background: '#000000',
           padding: innerPadding,
           borderRadius: isUniform ? 20 : 12,
-          boxSizing: 'border-box',
           height: fullBleed ? '100%' : undefined,
         }}
       >
@@ -109,17 +143,20 @@ export const FlagDisplay = ({ label, showLabel = true, textColor, matrixSize = 1
           const row = Math.floor(i / cols);
           const col = i % cols;
           const bg = getLedColor(flagType, row, col, matrixSize, cols, rows);
+          const glowIntensity = 8;
+          const hasGlow = enableGlow && glowIntensity > 0;
+          const boxShadow = hasGlow ? `0 0 ${glowIntensity}px ${bg}` : 'none';
+
           // For uniform mode render a single cell that fills the area
           if (isUniform) {
             return (
               <div
                 key="uniform"
+                className="w-full h-full box-border"
                 style={{
-                  width: '100%',
-                  height: '100%',
                   borderRadius: cellRadius,
-                  boxSizing: 'border-box',
                   background: bg,
+                  boxShadow,
                 }}
               />
             );
@@ -128,20 +165,18 @@ export const FlagDisplay = ({ label, showLabel = true, textColor, matrixSize = 1
           return (
             <div
               key={i}
+              className="w-full h-full box-border"
               style={{
-                width: '100%',
-                height: '100%',
                 borderRadius: cellRadius,
-                boxSizing: 'border-box',
                 background: bg,
+                boxShadow,
               }}
             />
           );
         })}
       </div>
       <div
-        className="flex gap-2 items-center"
-        style={{ minHeight: showLabel ? 24 : 0 }}
+        className={`flex gap-2 items-center ${showLabel ? 'min-h-6' : 'min-h-0'}`}
       >
         {showLabel && (
           <span

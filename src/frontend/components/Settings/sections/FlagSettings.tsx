@@ -15,13 +15,14 @@ const defaultConfig: FlagWidgetSettings['config'] = {
   blinkPeriod: 0.5,
   matrixMode: '16x16',
   showNoFlagState: true,
-  sessionVisibility: { 
-    race: true, 
-    loneQualify: true, 
-    openQualify: true, 
-    practice: true, 
-    offlineTesting: true 
-  }
+  enableGlow: true,
+  sessionVisibility: {
+    race: true,
+    loneQualify: true,
+    openQualify: true,
+    practice: true,
+    offlineTesting: true,
+  },
 };
 
 const migrateConfig = (savedConfig: unknown): FlagWidgetSettings['config'] => {
@@ -30,19 +31,27 @@ const migrateConfig = (savedConfig: unknown): FlagWidgetSettings['config'] => {
 
   return {
     enabled: (config.enabled as boolean) ?? defaultConfig.enabled,
-    showOnlyWhenOnTrack: (config.showOnlyWhenOnTrack as boolean) ?? defaultConfig.showOnlyWhenOnTrack,
+    showOnlyWhenOnTrack:
+      (config.showOnlyWhenOnTrack as boolean) ??
+      defaultConfig.showOnlyWhenOnTrack,
     showLabel: (config.showLabel as boolean) ?? defaultConfig.showLabel,
     animate: (config.animate as boolean) ?? defaultConfig.animate,
     blinkPeriod: (config.blinkPeriod as number) ?? defaultConfig.blinkPeriod,
-    showNoFlagState: (config.showNoFlagState as boolean) ?? defaultConfig.showNoFlagState,
-    matrixMode: (config.matrixMode as '8x8' | '16x16' | 'uniform') ?? defaultConfig.matrixMode,
-    sessionVisibility: (config.sessionVisibility as SessionVisibilitySettings) ?? defaultConfig.sessionVisibility,
+    showNoFlagState:
+      (config.showNoFlagState as boolean) ?? defaultConfig.showNoFlagState,
+    matrixMode:
+      (config.matrixMode as '8x8' | '16x16' | 'uniform') ??
+      defaultConfig.matrixMode,
+    enableGlow: (config.enableGlow as boolean) ?? defaultConfig.enableGlow,
+    sessionVisibility:
+      (config.sessionVisibility as SessionVisibilitySettings) ??
+      defaultConfig.sessionVisibility,
   };
 };
 
 export const FlagSettings = () => {
   const { currentDashboard } = useDashboard();
-  
+
   const savedSettings = currentDashboard?.widgets.find(
     (w) => w.id === SETTING_ID
   ) as FlagWidgetSettings | undefined;
@@ -67,14 +76,22 @@ export const FlagSettings = () => {
         <div className="space-y-6">
           <div className="flex items-center justify-between">
             <div>
-              <h4 className="text-md font-medium text-slate-300">Matrix Mode</h4>
-              <p className="text-sm text-slate-400">Choose between 8x8, 16x16, or uniform color rendering.</p>
+              <h4 className="text-md font-medium text-slate-300">
+                Matrix Mode
+              </h4>
+              <p className="text-sm text-slate-400">
+                Choose between 8x8, 16x16, or uniform color rendering.
+              </p>
             </div>
             <div>
               <select
                 className="rounded-md bg-slate-800 text-slate-200 px-3 py-1 text-center"
                 value={settings.config.matrixMode ?? '16x16'}
-                onChange={(e) => handleConfigChange({ matrixMode: e.target.value as '8x8' | '16x16' | 'uniform' })}
+                onChange={(e) =>
+                  handleConfigChange({
+                    matrixMode: e.target.value as '8x8' | '16x16' | 'uniform',
+                  })
+                }
               >
                 <option value="8x8">8x8</option>
                 <option value="16x16">16x16</option>
@@ -85,8 +102,12 @@ export const FlagSettings = () => {
 
           <div className="flex items-center justify-between">
             <div>
-              <h4 className="text-md font-medium text-slate-300">Animate Flag</h4>
-              <p className="text-sm text-slate-400">When enabled the flag will blink on/off.</p>
+              <h4 className="text-md font-medium text-slate-300">
+                Animate Flag
+              </h4>
+              <p className="text-sm text-slate-400">
+                When enabled the flag will blink on/off.
+              </p>
             </div>
             <ToggleSwitch
               enabled={settings.config.animate ?? false}
@@ -96,8 +117,13 @@ export const FlagSettings = () => {
 
           <div className="flex items-center justify-between">
             <div>
-              <h4 className="text-md font-medium text-slate-300">Blink Period (s)</h4>
-              <p className="text-sm text-slate-400">Set how many seconds between on/off when animation is enabled. Min 0.1s, Max 3s.</p>
+              <h4 className="text-md font-medium text-slate-300">
+                Blink Period (s)
+              </h4>
+              <p className="text-sm text-slate-400">
+                Set how many seconds between on/off when animation is enabled.
+                Min 0.1s, Max 3s.
+              </p>
             </div>
             <input
               type="number"
@@ -116,8 +142,12 @@ export const FlagSettings = () => {
 
           <div className="flex items-center justify-between">
             <div>
-              <h4 className="text-md font-medium text-slate-300">Show Flag Label</h4>
-              <p className="text-sm text-slate-400">Toggle display of the flag name text.</p>
+              <h4 className="text-md font-medium text-slate-300">
+                Show Flag Label
+              </h4>
+              <p className="text-sm text-slate-400">
+                Toggle display of the flag name text.
+              </p>
             </div>
             <ToggleSwitch
               enabled={settings.config.showLabel ?? true}
@@ -127,28 +157,59 @@ export const FlagSettings = () => {
 
           <div className="flex items-center justify-between">
             <div>
-              <h4 className="text-md font-medium text-slate-300">Show No Flag State</h4>
-              <p className="text-sm text-slate-400">Display &apos;no flag&apos; (grey leds) when no flags are waved.</p>
+              <h4 className="text-md font-medium text-slate-300">
+                Show No Flag State
+              </h4>
+              <p className="text-sm text-slate-400">
+                Display &apos;no flag&apos; (grey leds) when no flags are waved.
+              </p>
             </div>
             <ToggleSwitch
               enabled={settings.config.showNoFlagState ?? true}
-              onToggle={(enabled) => handleConfigChange({ showNoFlagState: enabled })}
+              onToggle={(enabled) =>
+                handleConfigChange({ showNoFlagState: enabled })
+              }
             />
           </div>
 
           <div className="flex items-center justify-between">
             <div>
-              <h4 className="text-md font-medium text-slate-300">Show Only When On Track</h4>
-              <p className="text-sm text-slate-400">Hide widget while in the garage.</p>
+              <h4 className="text-md font-medium text-slate-300">
+                Enable Glow Effect
+              </h4>
+              <p className="text-sm text-slate-400">
+                Add a glow effect around the matrix lights.
+              </p>
+            </div>
+            <ToggleSwitch
+              enabled={settings.config.enableGlow ?? true}
+              onToggle={(enabled) =>
+                handleConfigChange({ enableGlow: enabled })
+              }
+            />
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className="text-md font-medium text-slate-300">
+                Show Only When On Track
+              </h4>
+              <p className="text-sm text-slate-400">
+                Hide widget while in the garage.
+              </p>
             </div>
             <ToggleSwitch
               enabled={settings.config.showOnlyWhenOnTrack}
-              onToggle={(enabled) => handleConfigChange({ showOnlyWhenOnTrack: enabled })}
+              onToggle={(enabled) =>
+                handleConfigChange({ showOnlyWhenOnTrack: enabled })
+              }
             />
           </div>
 
           <div className="space-y-4">
-            <h3 className="text-lg font-medium text-slate-200">Session Visibility</h3>
+            <h3 className="text-lg font-medium text-slate-200">
+              Session Visibility
+            </h3>
             <SessionVisibility
               sessionVisibility={settings.config.sessionVisibility}
               handleConfigChange={handleConfigChange}

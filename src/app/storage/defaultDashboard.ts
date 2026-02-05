@@ -215,6 +215,12 @@ export const defaultDashboard: DashboardLayout = {
       },
       config: {
         showOnlyWhenOnTrack: false,
+        showLabel: true,
+        animate: true,
+        blinkPeriod: 0.5,
+        matrixMode: '16x16',
+        showNoFlagState: true,
+        enableGlow: true,
         sessionVisibility: {
           race: true,
           loneQualify: true,
