@@ -100,9 +100,13 @@ export const useReferenceRegistry = () => {
 
       if (isLapComplete) {
         refLap.finishTime = sessionTime;
+        const currentLapTime = refLap.finishTime - refLap.startTime;
         const MIN_POINTS_FOR_VALID_LAP = 400;
 
-        if (refLap.refPoints.size >= MIN_POINTS_FOR_VALID_LAP) {
+        if (
+          refLap.refPoints.size >= MIN_POINTS_FOR_VALID_LAP &&
+          currentLapTime > 0
+        ) {
           const bestLap = bestLaps.current.get(carIdx);
 
           // If no best lap exists OR this one is faster, save it
@@ -110,9 +114,8 @@ export const useReferenceRegistry = () => {
             precomputePCHIPTangents(refLap);
             bestLaps.current.set(carIdx, refLap);
           } else if (refLap.isCleanLap) {
-            const currentLapTime = refLap.finishTime - refLap.startTime;
             const bestLapTime = bestLap.finishTime - bestLap.startTime;
-            if (currentLapTime > 0 && currentLapTime < bestLapTime) {
+            if (currentLapTime < bestLapTime) {
               precomputePCHIPTangents(refLap);
               bestLaps.current.set(carIdx, refLap);
             }
@@ -129,7 +132,6 @@ export const useReferenceRegistry = () => {
               {
                 trackPct,
                 timeElapsedSinceStart: 0,
-                tangent: undefined,
               } as ReferencePoint,
             ],
           ]),
@@ -183,5 +185,10 @@ export const useReferenceRegistry = () => {
     );
   }, []);
 
-  return { collectLapData, getReferenceLap };
+  const resetLaps = useCallback(() => {
+    bestLaps.current.clear();
+    laps.current.clear();
+  }, []);
+
+  return { collectLapData, getReferenceLap, resetLaps };
 };

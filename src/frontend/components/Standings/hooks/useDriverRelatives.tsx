@@ -26,8 +26,9 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
   const focusCarIdx = useFocusCarIdx();
   const paceCarIdx =
     useSessionStore((s) => s.session?.DriverInfo?.PaceCarIdx) ?? -1;
-  const { collectLapData, getReferenceLap } = useReferenceRegistry();
+  const { collectLapData, getReferenceLap, resetLaps } = useReferenceRegistry();
   const sessionTime = useTelemetryValue<number>('SessionTime') ?? 0;
+  const sessionNum = useTelemetryValue('SessionNum') ?? -1;
 
   // Driver lookup map
   const driverMap = useMemo(
@@ -76,7 +77,7 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
 
       const refLap = getReferenceLap(behindIdx);
 
-      const isInPitOrHasNoData = isAnyoneOnPitRoad || refLap.finishTime <= 0;
+      const isInPitOrHasNoData = isAnyoneOnPitRoad || refLap.finishTime < 0;
 
       let calculatedDelta = 0;
 
@@ -128,6 +129,10 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
     },
     [focusCarIdx, paceCarIdx]
   );
+
+  useEffect(() => {
+    resetLaps();
+  }, [resetLaps, sessionNum]);
 
   // ===========================================================================
   // 1. DATA COLLECTION PHASE (Side Effect)
