@@ -1,29 +1,20 @@
-import {
-  useTelemetryValue,
-  useDashboard,
-  useSessionVisibility,
-  useRunningState,
-} from '@irdashies/context';
+import { useTelemetryValue, useSessionVisibility } from '@irdashies/context';
 import { useEffect, useState } from 'react';
 import { useFlagSettings } from './hooks/useFlagSettings';
 import { getLedColor } from './hooks/getLedColor';
 import { getTextColorClass } from './hooks/getTextColorClass';
-import { getDemoFlagData } from './demoData';
 import { getFlag } from '@irdashies/utils/getFlag';
 
 export const Flag = () => {
-  const { isDemoMode } = useDashboard();
-  const { running } = useRunningState();
   const settings = useFlagSettings();
 
   const sessionFlags = useTelemetryValue<number>('SessionFlags') ?? 0;
   const isPlayerOnTrack = useTelemetryValue<boolean>('IsOnTrack') ?? false;
-
-  // FIX: This hook calculates visibility based on the settings we pass in
   const isVisibleInSession = useSessionVisibility(settings.sessionVisibility);
 
   // Animation (blink) support: when animate is enabled, toggle between NO FLAG and the real flag every 500ms
   const [blinkOn, setBlinkOn] = useState(true);
+
   useEffect(() => {
     if (!settings.animate) return;
     const periodMs =
@@ -34,43 +25,9 @@ export const Flag = () => {
     return () => clearInterval(id);
   }, [settings.animate, settings.blinkPeriod]);
 
-  // 1. Sidebar Master Switch
-  if (!settings?.enabled) return null;
-
-  // --- DEMO MODE ---
-  if (isDemoMode) {
-    const demo = getDemoFlagData();
-    return (
-      <div className="fixed top-0 left-0 w-screen h-screen z-99999">
-        <FlagDisplay
-          label={demo.label}
-          showLabel={settings.showLabel ?? true}
-          matrixSize={
-            settings.matrixMode === '8x8'
-              ? 8
-              : settings.matrixMode === '16x16'
-                ? 16
-                : 1
-          }
-          fullBleed
-          enableGlow={settings.enableGlow ?? true}
-        />
-      </div>
-    );
-  }
-
-  // If the sim isn't running and demo mode is off, don't render the widget
-  if (!running && !isDemoMode) return null;
-
-  // --- VISIBILITY CHECKS ---
-
-  // 2. Check if the current session allows this widget (calculated by the hook)
   if (!isVisibleInSession) return null;
-
-  // 3. Check "On Track" setting
   if (settings.showOnlyWhenOnTrack && !isPlayerOnTrack) return null;
 
-  // --- RENDER ---
   const flagInfo = getFlag(sessionFlags);
 
   const visibleLabel =
@@ -180,7 +137,7 @@ export const FlagDisplay = ({
       >
         {showLabel && (
           <span
-            className={`text-[14px] font-black px-3 py-1 uppercase rounded-md bg-black ${textColorClass} ${shortLabel === 'NO' ? 'opacity-0' : ''}`}
+            className={`text-sm font-black px-3 py-1 uppercase rounded-md bg-black ${textColorClass} ${shortLabel === 'NO' ? 'opacity-0' : ''}`}
           >
             {shortLabel === 'NO' ? 'NO' : shortLabel}
           </span>
