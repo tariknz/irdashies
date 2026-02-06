@@ -428,6 +428,7 @@ export interface FasterCarsFromBehindWidgetSettings extends BaseWidgetSettings {
     showDistance: boolean;
     showBadge: boolean;
     badgeFormat: string;
+    onlyShowFasterClasses: boolean;
     sessionVisibility: SessionVisibilitySettings;
   };
 }

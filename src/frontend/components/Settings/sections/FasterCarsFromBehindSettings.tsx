@@ -22,6 +22,7 @@ const defaultConfig: FasterCarsFromBehindWidgetSettings['config'] = {
   showDistance: true,
   showBadge: true,
   badgeFormat: 'license-color-rating-bw',
+  onlyShowFasterClasses: true,
   sessionVisibility: {
     race: true,
     loneQualify: false,
@@ -43,19 +44,22 @@ const migrateConfig = (
       distanceThreshold:
         (config.distanceThreshold as number) ?? defaultConfig.distanceThreshold,
       numberDriversBehind:
-        (config.numberDriversBehind as number) ?? defaultConfig.numberDriversBehind,
+        (config.numberDriversBehind as number) ??
+        defaultConfig.numberDriversBehind,
       alignDriverBoxes:
-        (config.alignDriverBoxes as 'Top' | 'Bottom') ?? defaultConfig.alignDriverBoxes,
+        (config.alignDriverBoxes as 'Top' | 'Bottom') ??
+        defaultConfig.alignDriverBoxes,
       closestDriverBox:
-        (config.closestDriverBox as 'Top' | 'Reverse') ?? defaultConfig.closestDriverBox,
-      showName:
-        (config.showName as boolean) ?? defaultConfig.showName,
+        (config.closestDriverBox as 'Top' | 'Reverse') ??
+        defaultConfig.closestDriverBox,
+      showName: (config.showName as boolean) ?? defaultConfig.showName,
       showDistance:
         (config.showDistance as boolean) ?? defaultConfig.showDistance,
-      showBadge:
-        (config.showBadge as boolean) ?? defaultConfig.showBadge,
-      badgeFormat:
-        (config.badgeFormat as string) ?? defaultConfig.badgeFormat,
+      showBadge: (config.showBadge as boolean) ?? defaultConfig.showBadge,
+      badgeFormat: (config.badgeFormat as string) ?? defaultConfig.badgeFormat,
+      onlyShowFasterClasses:
+        (config.onlyShowFasterClasses as boolean) ??
+        defaultConfig.onlyShowFasterClasses,
       sessionVisibility:
         (config.sessionVisibility as SessionVisibilitySettings) ??
         defaultConfig.sessionVisibility,
@@ -90,7 +94,8 @@ export const FasterCarsFromBehindSettings = () => {
           {/* Distance Threshold */}
           <div className="space-y-2 px-4">
             <label className="text-slate-300">
-              Distance Threshold: {Math.abs(settings.config.distanceThreshold).toFixed(1)} seconds
+              Distance Threshold:{' '}
+              {Math.abs(settings.config.distanceThreshold).toFixed(1)} seconds
             </label>
             <input
               type="range"
@@ -106,7 +111,8 @@ export const FasterCarsFromBehindSettings = () => {
               className="w-full"
             />
             <p className="text-slate-400 text-sm">
-              Minimum gap to a faster car before it is displayed. Smaller values show cars that are closer behind you.
+              Minimum gap to a faster car before it is displayed. Smaller values
+              show cars that are closer behind you.
             </p>
           </div>
 
@@ -187,12 +193,31 @@ export const FasterCarsFromBehindSettings = () => {
             />
           </div>
 
-          {/* Show Name Section */}
+          {/* Only Show Faster Classes Section */}
           <div className="flex items-center justify-between pr-4">
             <div>
               <h4 className="text-md font-medium text-slate-300">
-                Show Name
+                Only show faster classes
               </h4>
+              <span className="block text-xs text-slate-500">
+                If enabled, only cars from faster classes will be shown.
+                Same-class competitors will be hidden.
+              </span>
+            </div>
+            <ToggleSwitch
+              enabled={settings.config.onlyShowFasterClasses}
+              onToggle={(newValue) =>
+                handleConfigChange({
+                  onlyShowFasterClasses: newValue,
+                })
+              }
+            />
+          </div>
+
+          {/* Show Name Section */}
+          <div className="flex items-center justify-between pr-4">
+            <div>
+              <h4 className="text-md font-medium text-slate-300">Show Name</h4>
               <span className="block text-xs text-slate-500">
                 Display the driver name in the faster cars widget.
               </span>
@@ -231,7 +256,19 @@ export const FasterCarsFromBehindSettings = () => {
           {settings.config.showBadge && (
             <div className="mt-3">
               <div className="flex flex-wrap gap-3 justify-end">
-                {(['license-color-fullrating-bw', 'license-color-rating-bw', 'rating-only-color-rating-bw', 'license-color-rating-bw-no-license', 'rating-color-no-license', 'license-bw-rating-bw', 'rating-only-bw-rating-bw', 'license-bw-rating-bw-no-license', 'rating-bw-no-license'] as const).map((format) => (
+                {(
+                  [
+                    'license-color-fullrating-bw',
+                    'license-color-rating-bw',
+                    'rating-only-color-rating-bw',
+                    'license-color-rating-bw-no-license',
+                    'rating-color-no-license',
+                    'license-bw-rating-bw',
+                    'rating-only-bw-rating-bw',
+                    'license-bw-rating-bw-no-license',
+                    'rating-bw-no-license',
+                  ] as const
+                ).map((format) => (
                   <BadgeFormatPreview
                     key={format}
                     format={format}

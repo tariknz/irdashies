@@ -15,22 +15,35 @@ export const useCarBehind = ({
   const allDrivers = useDriverRelatives({ buffer: driversStandings.length });
 
   // Filter out drivers who are in the pits
-  const drivers = allDrivers.filter(driver => !driver.onPitRoad);
-  const myCar = drivers[1];
+  const drivers = allDrivers.filter((driver) => !driver.onPitRoad);
+  // Find the player car (delta should be 0 for player)
+  const myCar = drivers.find((driver) => driver.delta === 0);
   const threshold = distanceThreshold ?? -3;
 
   const fasterCarsFromBehind = useMemo(() => {
-    // Get all cars behind the player (negative delta)
-    const carsBehind = drivers.filter(driver => driver.delta < 0);
+    // Get all cars behind the player (negative delta means behind: other - player < 0)
+    const carsBehind = drivers.filter((driver) => driver.delta < 0);
 
-    return carsBehind
-      .filter(car =>
-        car.carClass?.relativeSpeed > myCar?.carClass?.relativeSpeed &&
-        car.delta >= threshold // delta is negative, so >= threshold means within threshold distance
-      )
-      .sort((a, b) => a.delta - b.delta) // Sort by closest first (most negative delta)
+    const filtered = carsBehind.filter((car) => {
+      // Check distance threshold
+      if (car.delta < threshold) return false;
+
+      // If onlyShowFasterClasses is enabled, only show cars from faster classes
+      if (settings.onlyShowFasterClasses) {
+        return (
+          (car.carClass?.relativeSpeed ?? 0) >
+          (myCar?.carClass?.relativeSpeed ?? 0)
+        );
+      }
+
+      // Otherwise show all cars (including same class)
+      return true;
+    });
+
+    return filtered
+      .sort((a, b) => b.delta - a.delta) // Sort by closest first (least negative delta)
       .slice(0, settings.numberDriversBehind) // Take only the configured number
-      .map(car => {
+      .map((car) => {
         const percent = parseInt(
           (100 - (Math.abs(car.delta) / 3) * 100).toFixed(0)
         );
@@ -45,7 +58,13 @@ export const useCarBehind = ({
           percent: percent,
         };
       });
-  }, [drivers, myCar, threshold, settings.numberDriversBehind]);
+  }, [
+    drivers,
+    myCar,
+    threshold,
+    settings.numberDriversBehind,
+    settings.onlyShowFasterClasses,
+  ]);
 
   return fasterCarsFromBehind;
 };
