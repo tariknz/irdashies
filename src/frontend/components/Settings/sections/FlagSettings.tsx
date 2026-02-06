@@ -16,6 +16,7 @@ const defaultConfig: FlagWidgetSettings['config'] = {
   matrixMode: '16x16',
   showNoFlagState: true,
   enableGlow: true,
+  doubleflag: false,
   sessionVisibility: {
     race: true,
     loneQualify: true,
@@ -46,6 +47,7 @@ const migrateConfig = (savedConfig: unknown): FlagWidgetSettings['config'] => {
     sessionVisibility:
       (config.sessionVisibility as SessionVisibilitySettings) ??
       defaultConfig.sessionVisibility,
+      doubleflag: (config.doubleflag as boolean) ?? defaultConfig.doubleflag,
   };
 };
 
@@ -74,6 +76,21 @@ export const FlagSettings = () => {
     >
       {(handleConfigChange) => (
         <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className="text-md font-medium text-slate-300">
+                Double flag
+              </h4>
+              <p className="text-sm text-slate-400">
+                When enabled two flags will be displayed
+              </p>
+            </div>
+            <ToggleSwitch
+              enabled={settings.config.doubleflag ?? false}
+              onToggle={(enabled) => handleConfigChange({ doubleflag: enabled })}
+            />
+          </div>
+
           <div className="flex items-center justify-between">
             <div>
               <h4 className="text-md font-medium text-slate-300">

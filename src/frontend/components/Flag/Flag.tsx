@@ -11,35 +11,57 @@ export const Flag = () => {
   const sessionFlags = useTelemetryValue<number>('SessionFlags') ?? 0;
   const isPlayerOnTrack = useTelemetryValue<boolean>('IsOnTrack') ?? false;
   const isVisibleInSession = useSessionVisibility(settings.sessionVisibility);
-
   const blinkOn = useBlinkState(settings.animate, settings.blinkPeriod);
 
   if (!isVisibleInSession) return null;
   if (settings.showOnlyWhenOnTrack && !isPlayerOnTrack) return null;
 
   const flagInfo = getFlag(sessionFlags);
+  if (flagInfo.label === 'NO FLAG' && !settings.showNoFlagState) return null;
 
   const visibleLabel =
     settings.animate && !blinkOn ? 'NO FLAG' : flagInfo.label;
 
-  // 4. Hide widget if NO FLAG state is disabled and no flags are waved (check actual flag, not visible label)
-  if (flagInfo.label === 'NO FLAG' && !settings.showNoFlagState) return null;
+  const matrixSize =
+    settings.matrixMode === '8x8'
+      ? 8
+      : settings.matrixMode === '16x16'
+        ? 16
+        : 1;
 
+  const flagProps = {
+    label: visibleLabel,
+    showLabel: settings.showLabel ?? true,
+    matrixSize,
+    enableGlow: settings.enableGlow ?? true,
+    fullBleed: true,
+  };
+
+  // 🔹 SINGLE FLAG
+  if (!settings.doubleflag) {
+    return (
+      <div className="h-full">
+        <FlagDisplay {...flagProps} />
+      </div>
+    );
+  }
+
+  // 🔹 DOUBLE FLAG — height-driven, edge-pinned
   return (
-    <FlagDisplay
-      label={visibleLabel}
-      showLabel={settings.showLabel ?? true}
-      matrixSize={
-        settings.matrixMode === '8x8'
-          ? 8
-          : settings.matrixMode === '16x16'
-            ? 16
-            : 1
-      }
-      enableGlow={settings.enableGlow ?? true}
-    />
+    <div className="flex h-full w-full justify-between items-stretch">
+      <div className="h-full">
+        <FlagDisplay {...flagProps} />
+      </div>
+
+      <div className="h-full">
+        <FlagDisplay {...flagProps} />
+      </div>
+    </div>
   );
 };
+
+
+
 export const FlagDisplay = ({
   label,
   showLabel = true,
@@ -122,7 +144,9 @@ export const FlagDisplay = ({
         })}
       </div>
       <div
-        className={`flex gap-2 items-center ${showLabel ? 'min-h-6' : 'min-h-0'}`}
+        className={`flex w-full justify-center ${
+          showLabel ? 'min-h-6' : 'min-h-0'
+        }`}
       >
         {showLabel && (
           <span
