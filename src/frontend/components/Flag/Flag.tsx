@@ -91,11 +91,13 @@ export const FlagDisplay = ({
   const cellRadius = isUniform ? 16 : 4;
 
   const outerClass = fullBleed
-    ? 'flex flex-col items-stretch gap-0 bg-slate-900 border-4 border-slate-800 shadow-2xl w-full h-full box-border m-0 p-0'
+    ? 'flex flex-col items-stretch gap-0 bg-slate-900 border-4 border-slate-800 shadow-2xl w-full h-full box-border m-0'
     : 'flex flex-col items-center gap-2 p-4 bg-slate-900 rounded-2xl border-4 border-slate-800 shadow-2xl w-full';
 
+  const outerStyle = fullBleed && showLabel ? { paddingBottom: '20px' } : {};
+
   return (
-    <div className={outerClass}>
+    <div className={outerClass} style={outerStyle}>
       <div
         className="grid w-full bg-black box-border"
         style={{
