@@ -596,6 +596,7 @@ export const defaultDashboard: DashboardLayout = {
       },
       config: {
         distanceThreshold: -1.5,
+        onlyShowFasterClasses: true,
         sessionVisibility: {
           race: true,
           loneQualify: false,
