@@ -17,6 +17,8 @@ export const WIDGET_NAMES: Record<WidgetId, string> = {
   garagecover: 'Garage Cover',
   rejoin: 'Rejoin Indicator',
   flag: 'Flag',
+  pitlanehelper: 'Pitlane Helper',
+  telemetryinspector: 'Telemetry Inspector',
 };
 
 /**
