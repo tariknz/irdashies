@@ -9,6 +9,7 @@ import {
   useSessionLaps,
   useSessionStore,
   useTelemetryValue,
+  useTotalRaceLaps,
 } from '@irdashies/context';
 import { useStore } from 'zustand';
 import { useFuelStore, selectLapHistorySize, selectLastLapUsage } from './FuelStore';
@@ -72,6 +73,9 @@ export function useFuelCalculation(
   const sessionLaps = useSessionLaps(sessionNum);
   const onPitRoad = useTelemetryValue('OnPitRoad');
   const isOnTrack = useTelemetryValue('IsOnTrack');
+
+  // Use centralized total race laps calculation
+  const { isFixedLapRace, totalRaceLaps: calculatedTotalRaceLaps } = useTotalRaceLaps();
 
   // Check if current session is a Race
   const sessions = useStore(
@@ -1037,50 +1041,49 @@ export function useFuelCalculation(
         );
       }
     } else if (sessionLapsRemain === TIMED_RACE_LAPS_REMAINING) {
-      // SOLUTION 2: Timed Race Laps Remaining
-      if (sessionTimeRemain !== undefined && sessionTimeRemain > 0) {
-        // Calculate safe projection time: Use the TIGHTER (lower) of session avg or recent avg
-        // This fails SAFE: if you are speeding up, we assume you keep that speed.
+      // Use centralized useTotalRaceLaps hook for timed race calculations
+      if (calculatedTotalRaceLaps > 0) {
+        // Use the hook's result directly
+        totalLaps = Math.ceil(calculatedTotalRaceLaps);
+        lapsRemaining = Math.max(0, totalLaps - (lap - 1) - (lapDistPct || 0));
+        
+        // Add safety buffer for refuel calculations
+        const TIME_PADDING_REFUEL = 45.0;
+        const avgLapTimeForBuffer = avgLapTime > 0 ? avgLapTime : 90; // Default 90s if unknown
+        const bufferLaps = TIME_PADDING_REFUEL / avgLapTimeForBuffer;
+        lapsRemainingRefuel = lapsRemaining + bufferLaps;
+
+        if (DEBUG_LOGGING) {
+          console.log(
+            `[FuelCalculator] Timed race (via useTotalRaceLaps): totalLaps=${totalLaps}, lapsRemaining=${lapsRemaining.toFixed(2)}, refuel=${lapsRemainingRefuel.toFixed(2)}`
+          );
+        }
+      } else if (sessionTimeRemain !== undefined && sessionTimeRemain > 0) {
+        // Fallback to local calculation if hook didn't return a valid value
         let projectionLapTime = avgLapTime;
 
-        // Calculate recent average for projection (last 3 laps)
         if (lapsToUse.length >= 3) {
           const recentLapsForProj = lapsToUse.slice(0, 3);
           const recentAvg = calculateAvgLapTime(recentLapsForProj);
           if (recentAvg > 0 && recentAvg < projectionLapTime) {
             projectionLapTime = recentAvg;
-            if (DEBUG_LOGGING) {
-              console.log(
-                `[FuelCalculator] Using faster recent pace for projection: ${recentAvg.toFixed(3)}s vs ${avgLapTime.toFixed(3)}s`
-              );
-            }
           }
         }
 
         if (projectionLapTime > 0) {
-          // Calculate time remaining when we cross the start/finish line
-          // This accounts for the fact that we are partway through the current lap
           const pctRemainingInLap = Math.max(0, 1 - (lapDistPct || 0));
           const timeToFinishLap = projectionLapTime * pctRemainingInLap;
-
-          // Time left after finishing this lap
           const timeAtLine = sessionTimeRemain - timeToFinishLap;
-
-          // Standard padding for accurate display (Consumption Grid)
           const TIME_PADDING_SECONDS = 0.5;
-          // Optimistic padding for Fuel Calculation (Benevolent Lie) to cover pit stops
           const TIME_PADDING_REFUEL = 45.0;
 
           let futureLaps = 0;
           let futureLapsRefuel = 0;
 
-          // Process Standard (Realistic) Laps - use mixed average for display
           if (timeAtLine < -TIME_PADDING_SECONDS) {
             lapsRemaining = 1;
             futureLaps = 0;
           } else {
-            // For display, we might want to be slightly less aggressive, but consistency is key.
-            // Let's use the safe projection here too so numbers align.
             futureLaps = Math.ceil(
               (timeAtLine + TIME_PADDING_SECONDS) / projectionLapTime
             );
@@ -1089,10 +1092,8 @@ export function useFuelCalculation(
           }
           totalLaps = lap + futureLaps;
 
-          // Process Optmistic (Refuel) Laps - specifically for Fuel Needed calculation
           if (timeAtLine < -TIME_PADDING_REFUEL) {
             lapsRemainingRefuel = 1;
-            futureLapsRefuel = 0;
           } else {
             futureLapsRefuel = Math.ceil(
               (timeAtLine + TIME_PADDING_REFUEL) / projectionLapTime
@@ -1101,11 +1102,10 @@ export function useFuelCalculation(
             lapsRemainingRefuel = 1 + futureLapsRefuel;
           }
         } else {
-          // Fallback seguro: usar consumo médio e combustível atual
           const estimatedLapsFromFuel =
             trendAdjustedConsumption > 0
               ? Math.floor(fuelLevel / trendAdjustedConsumption)
-              : 10; // Fallback conservador
+              : 0;
           lapsRemaining = Math.max(1, Math.min(estimatedLapsFromFuel, 50));
           lapsRemainingRefuel = lapsRemaining;
         }
@@ -1116,16 +1116,15 @@ export function useFuelCalculation(
 
         if (DEBUG_LOGGING) {
           console.log(
-            `[FuelCalculator] Timed race: estimated laps: ${lapsRemaining}, refuel laps: ${lapsRemainingRefuel}`
+            `[FuelCalculator] Timed race (fallback): estimated laps: ${lapsRemaining}, refuel laps: ${lapsRemainingRefuel}`
           );
         }
       } else {
-        // If sessionTimeRemain is -1, it's invalid/not started -> Safe fallback
         if (sessionTimeRemain === -1) {
           const estimatedLapsFromFuel =
             trendAdjustedConsumption > 0
               ? Math.floor(fuelLevel / trendAdjustedConsumption)
-              : 10;
+              : 0;
           lapsRemaining = Math.max(1, Math.min(estimatedLapsFromFuel, 50));
           lapsRemainingRefuel = lapsRemaining;
           totalLaps = lap + lapsRemaining;
@@ -1136,8 +1135,6 @@ export function useFuelCalculation(
             );
           }
         } else {
-          // If sessionTimeRemain is 0 or negative (and not -1), the time is over.
-          // The remaining distance is simply to complete the current lap.
           const remainingDistance = Math.max(0, 1 - (lapDistPct || 0));
           lapsRemaining = remainingDistance;
           lapsRemainingRefuel = lapsRemaining;
@@ -1502,7 +1499,7 @@ export function useFuelCalculation(
     };
 
     return result;
-  }, [sessionNum, fuelLevel, fuelLevelPct, lap, sessionLapsRemain, sessionLaps, sessionTimeRemain, sessionTimeTotal, sessionFlags, driverCarFuelMaxLtr, driverCarMaxFuelPct, safetyMargin, lapStartFuel, settings, qualifyConsumption, fuelTankCapacityFromSession, calculateDefinitiveProjectedUsage, lapDistPct, storeLastLapUsage]);
+  }, [sessionNum, fuelLevel, fuelLevelPct, lap, sessionLapsRemain, sessionLaps, sessionTimeRemain, sessionTimeTotal, sessionFlags, driverCarFuelMaxLtr, driverCarMaxFuelPct, safetyMargin, lapStartFuel, settings, qualifyConsumption, fuelTankCapacityFromSession, calculateDefinitiveProjectedUsage, lapDistPct, storeLastLapUsage, calculatedTotalRaceLaps]);
 
   // Wrap calculation to apply overrides (Race Finish)
   const calculation = useMemo(() => {
