@@ -479,21 +479,24 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
   const bgAlpha = (settings?.background?.opacity ?? 95) / 100;
 
   const fuelStatusBasis = displayData.fuelStatus || 'safe';
+  const showFuelStatusBorder = settings.showFuelStatusBorder ?? true;
 
   // Extract hex codes for inline style
-  const borderColorValue =
-    fuelStatusBasis === 'caution'
+  const borderColorValue = showFuelStatusBorder
+    ? fuelStatusBasis === 'caution'
       ? '#f97316'
       : fuelStatusBasis === 'danger'
         ? '#ef4444'
-        : '#22c55e';
+        : '#22c55e'
+    : 'transparent';
 
-  const shadowColorValue =
-    fuelStatusBasis === 'caution'
+  const shadowColorValue = showFuelStatusBorder
+    ? fuelStatusBasis === 'caution'
       ? 'rgba(249, 115, 22, 0.3)'
       : fuelStatusBasis === 'danger'
         ? 'rgba(239, 68, 68, 0.3)'
-        : 'rgba(34, 197, 94, 0.3)';
+        : 'rgba(34, 197, 94, 0.3)'
+    : 'none';
 
   // Static styling since we removed blinkState
   const backgroundStyle: React.CSSProperties = {

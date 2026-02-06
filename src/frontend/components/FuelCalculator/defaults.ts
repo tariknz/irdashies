@@ -75,4 +75,5 @@ export const defaultFuelCalculatorSettings: FuelCalculatorSettings = {
   },
   enableStorage: true,
   enableLogging: false,
+  showFuelStatusBorder: true,
 };

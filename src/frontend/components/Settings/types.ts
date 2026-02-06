@@ -385,6 +385,8 @@ export interface FuelWidgetSettings extends BaseWidgetSettings {
     enableStorage?: boolean;
     /** Whether to enable debug logging to file */
     enableLogging?: boolean;
+    /** Whether to show the fuel status border color (green/orange/red) */
+    showFuelStatusBorder?: boolean;
   };
 }
 

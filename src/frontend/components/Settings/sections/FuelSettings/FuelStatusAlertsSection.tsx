@@ -1,5 +1,6 @@
 import { FuelWidgetSettings } from '../../types';
 import { defaultFuelCalculatorSettings } from '../../../FuelCalculator/defaults';
+import { ToggleSwitch } from '../../components/ToggleSwitch';
 
 const defaultConfig = defaultFuelCalculatorSettings;
 
@@ -12,6 +13,18 @@ export const FuelStatusAlertsSection = ({ settings, onChange }: FuelStatusAlerts
   return (
     <div className="space-y-4 pb-4 mb-4 border-b border-slate-700">
       <h4 className="text-sm font-medium text-slate-300">Fuel Status Alerts</h4>
+
+      {/* Border Color Toggle */}
+      <div className="flex items-center justify-between pr-20">
+        <div>
+          <span className="text-xs text-slate-400">Show Border Color</span>
+          <span className="block text-[10px] text-slate-500">Green (safe), Orange (caution), Red (danger)</span>
+        </div>
+        <ToggleSwitch
+          enabled={settings.config.showFuelStatusBorder ?? true}
+          onToggle={(val) => onChange({ showFuelStatusBorder: val })}
+        />
+      </div>
 
       <div className="space-y-3">
         {/* Green Threshold */}
