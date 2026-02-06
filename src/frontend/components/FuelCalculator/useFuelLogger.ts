@@ -9,8 +9,7 @@ import type { FuelCalculatorSettings } from './types';
  * @param settings The fuel calculator settings containing the toggle
  */
 export function useFuelLogger(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  data: any,
+  data: unknown,
   settings?: FuelCalculatorSettings
 ) {
   const lastLogTimeRef = useRef<number>(0);
