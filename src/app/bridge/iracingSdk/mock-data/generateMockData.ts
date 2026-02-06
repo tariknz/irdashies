@@ -194,7 +194,7 @@ export function generateMockData(sessionData?: {
               OnPitRoad: {
                  ...prevTelemetry.OnPitRoad,
                  value: [false]
-              }
+              },
               BrakeABSactive: {
                 ...prevAbs,
                 value: [absActive],
