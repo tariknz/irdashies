@@ -164,7 +164,7 @@ export interface FuelCalculatorSettings {
   fuelStatusBasis?: 'last' | 'avg' | 'min' | 'max';
   /** Number of laps remaining that triggers Red status regardless of percentage */
   fuelStatusRedLaps?: number;
-  /** Whether to use SQLite persistence for lap history */
+  /** Whether to use persistence for lap history */
   enableStorage?: boolean;
   /** Whether to enable debug logging to file */
   enableLogging?: boolean;

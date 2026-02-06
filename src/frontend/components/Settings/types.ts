@@ -381,7 +381,7 @@ export interface FuelWidgetSettings extends BaseWidgetSettings {
     fuelStatusRedLaps?: number;
     /** Number of laps to use for AVG calculation (default: 3) */
     avgLapsCount?: number;
-    /** Whether to use SQLite persistence for lap history */
+    /** Whether to use persistence for lap history */
     enableStorage?: boolean;
     /** Whether to enable debug logging to file */
     enableLogging?: boolean;

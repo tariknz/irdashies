@@ -85,8 +85,4 @@ export class FuelDatabase {
     this.data = { laps: {}, settings: {} };
     this.save();
   }
-
-  public close() {
-    // No-op for JSON storage
-  }
 }

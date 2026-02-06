@@ -138,6 +138,7 @@ export function useFuelCalculation(
   const storeLastLapUsage = useFuelStore(selectLastLapUsage);
 
   // Ref to track the currently loaded context (Track + Car) to avoid redundant clears/loads
+
   const loadedContextRef = useRef<string | null>(null);
 
   // Refs for smoothing projected lap usage
@@ -159,29 +160,31 @@ export function useFuelCalculation(
   );
   const lastProjectedUsageRef = useRef<number | null>(null);
 
-  // NEW: Rastrear histórico de lapDistPct para detectar resets
+  // Track lapDistPct history to detect resets
+
   const lapDistPctHistoryRef = useRef<number[]>([]);
   const lapDistPctResetDetectedRef = useRef(false);
   const lastValidLapDistPctRef = useRef<number | undefined>(undefined);
 
-  // FIX: Race Finish Detection
+  // Race Finish Detection
+
   const [isRaceFinished, setIsRaceFinished] = useState(false);
   const checkFlagLapRef = useRef<number | null>(null);
 
   // --------------------------------------------------------------------------
-  // FIXED: Detect lapDistPct resets (crítico para o problema identificado)
+  // Detect lapDistPct resets
   // --------------------------------------------------------------------------
 
   useEffect(() => {
     if (lapDistPct === undefined) return;
 
-    // Manter histórico dos últimos 10 valores
+    // Maintain history of last 10 values
     lapDistPctHistoryRef.current.push(lapDistPct);
     if (lapDistPctHistoryRef.current.length > 10) {
       lapDistPctHistoryRef.current.shift();
     }
 
-    // Detectar reset: se lapDistPct diminuiu drasticamente
+    // Detect reset: if lapDistPct dropped drastically
     if (
       lastValidLapDistPctRef.current !== undefined &&
       lapDistPct < lastValidLapDistPctRef.current - LAP_DIST_RESET_THRESHOLD
@@ -193,12 +196,12 @@ export function useFuelCalculation(
         );
       }
 
-      // Limpar dados de projeção quando detecta reset
+      // Clear projection data when reset detected
       consumptionSegmentsRef.current = [];
       lastProjectedUsageRef.current = null;
       smoothedProjectedUsageRef.current = 0;
     }
-    // Se está aumentando normalmente após um reset, marcar como não-reset
+    // If it is increasing normally after a reset, mark as non-reset
     else if (
       lapDistPctResetDetectedRef.current &&
       lastValidLapDistPctRef.current !== undefined &&
@@ -207,12 +210,12 @@ export function useFuelCalculation(
       lapDistPctResetDetectedRef.current = false;
     }
 
-    // Atualizar último valor válido
+    // Update last valid value
     lastValidLapDistPctRef.current = lapDistPct;
   }, [lapDistPct]);
 
   // --------------------------------------------------------------------------
-  // FIXED: Cálculo definitivo de projeção com tratamento de resets
+  // Definitive projection calculation with reset handling
   // --------------------------------------------------------------------------
 
   const calculateDefinitiveProjectedUsage = useMemo(() => {
@@ -226,9 +229,8 @@ export function useFuelCalculation(
       _currentFuel: number,
       isLapDistPctReset: boolean
     ): number => {
-      // SOLUTION 3: Calculate Safe Projection with bounds checking
+      // Use appropriate historical reference
 
-      // Usar referência histórica apropriada
       let historicalReference = avgConsumption;
       // Prefer last lap if valid and similar to average
       if (
@@ -243,9 +245,10 @@ export function useFuelCalculation(
 
       if (historicalReference <= 0) historicalReference = 3.2; // Fallback default
 
-      // CRITICAL FIX: Detect Refuel on Out Lap
-      // Se tiver mais combustível agora do que no início da volta, é impossível calcular consumo
-      // da volta atual. Usar Média Histórica para evitar queda para 0.1
+      // Detect Refuel on Out Lap
+
+      // If we have more fuel now than at the start of the lap, it is impossible to calculate consumption
+      // for the current lap. Use Historical Average to avoid drop to 0.1
       if (_currentFuel > _lapStartFuel) {
         if (DEBUG_LOGGING) {
           // console.log('[FuelCalculator] Refuel detected during lap - enforcing historical avg');
@@ -261,38 +264,38 @@ export function useFuelCalculation(
 
       const rawProjection = currentLapUsage / lapDistPct;
 
-      // Limitar valores extremos (Solução 3/5)
-      const minReasonable = 0.1; // Mínimo 0.1L por volta
-      const maxReasonable = 20.0; // Máximo 20L por volta
+      // Limit extreme values
+
+      const minReasonable = 0.1; // Minimum 0.1L per lap
+      const maxReasonable = 20.0; // Maximum 20L per lap
 
       const safeProjection = Math.max(
         minReasonable,
         Math.min(maxReasonable, rawProjection)
       );
 
-      // Determinar confiança baseada no progresso
-      // REFINAMENTO: O usuário confia mais no historico/após linha de chegada.
-      // Aumentar peso do histórico durante toda a volta.
+      // Determine confidence based on progress
+      // Increase historical weight throughout the lap.
       let confidence = 0;
 
-      // De 0% a 50% da volta: Confiança sobe de 0.0 para 0.5 (Mais conservador no início)
+      // From 0% to 50% of the lap: Confidence rises from 0.0 to 0.5 (More conservative at start)
       if (lapDistPct < 0.5) {
         confidence = (lapDistPct / 0.5) * 0.5;
       }
-      // De 50% a 100% da volta: Confiança sobe de 0.5 para 0.8 (Maximo 80% Live)
+      // From 50% to 100% of the lap: Confidence rises from 0.5 to 0.8 (Max 80% Live)
       else {
         confidence = 0.5 + ((lapDistPct - 0.5) / 0.5) * 0.3;
       }
 
-      // Misturar projeção com histórico
+      // Mix projection with history
       let projected =
         safeProjection * confidence + historicalReference * (1 - confidence);
 
-      // Aplicar margem de segurança baseada na confiança
+      // Apply safety margin based on confidence
       const safetyMultiplier = 1.02 + 0.05 * (1 - confidence); // Reduced margin
       projected = projected * safetyMultiplier;
 
-      // Limitar variação drástica se já temos uma projeção anterior estável na mesma volta
+      // Limit drastic variation if we already have a stable previous projection in the same lap
       if (
         lastProjectedUsageRef.current !== null &&
         lastProjectedUsageRef.current > 0
@@ -456,7 +459,8 @@ export function useFuelCalculation(
     }
   }, [onPitRoad]);
 
-  // NEW: Track if the ENTIRE lap was under Green Flag conditions
+  // Track if the ENTIRE lap was under Green Flag conditions
+
   // This ensures rolling start formation laps (Yellow) or caution laps are not counted
   const isLapFullyGreenRef = useRef(true);
   
@@ -468,7 +472,8 @@ export function useFuelCalculation(
     }
   }, [sessionFlags]);
 
-  // Detect lap crossings and process fuel data - VERSÃO OTIMIZADA
+  // Detect lap crossings and process fuel data - OPTIMIZED VERSION
+
   useEffect(() => {
     if (
       lapDistPct === undefined ||
@@ -482,12 +487,13 @@ export function useFuelCalculation(
 
     const state = useFuelStore.getState();
 
-    // Detect Refueling - SOLUTION 4
+    // Detect Refueling
+
     if (prevFuelLevelRef.current !== undefined) {
       const fuelDelta = fuelLevel - prevFuelLevelRef.current;
       const timeDelta = sessionTime - (lastRefuelTimeRef.current || 0);
 
-      // Detectar se: aumento significativo E não foi há pouco tempo
+      // Detect if: significant increase AND not recently
       if (fuelDelta > 0.05 && timeDelta > 5) {
         if (DEBUG_LOGGING)
           console.log(
@@ -501,7 +507,7 @@ export function useFuelCalculation(
 
     // Track segment usage for projection
     if (state.lastLapDistPct !== undefined && lapDistPct !== undefined) {
-      // Apenas rastrear se não estamos em estado de reset
+      // Only track if not in reset state
       if (
         !lapDistPctResetDetectedRef.current &&
         lapDistPct > state.lastLapDistPct
@@ -512,7 +518,7 @@ export function useFuelCalculation(
           usage: segmentUsage,
         });
 
-        // Manter apenas segmentos recentes
+        // Keep only recent segments
         if (consumptionSegmentsRef.current.length > 10) {
           consumptionSegmentsRef.current.shift();
         }
@@ -686,6 +692,10 @@ export function useFuelCalculation(
     addLapData,
     updateLapCrossing,
     updateLapDistPct,
+    sessionNum,
+    storedTrackId,
+    storedCarName,
+    settings?.enableStorage
   ]);
 
   // Track Max Qualifying Consumption
@@ -753,7 +763,7 @@ export function useFuelCalculation(
     settings?.enableStorage,
   ]);
 
-  // FIX: Monitor for Race Finish
+  // Monitor for Race Finish
   useEffect(() => {
     if (
       sessionFlags === undefined ||
@@ -804,7 +814,7 @@ export function useFuelCalculation(
     }
   }, [sessionFlags, sessionState, lap, lapDistPct, sessionTimeRemain]);
 
-  // Calculate fuel metrics - VERSÃO DEFINITIVA
+  // Calculate fuel metrics
   const baseCalculation = useMemo((): FuelCalculation | null => {
     const emptyCalculation: FuelCalculation = {
       fuelLevel: fuelLevel ?? 0,
@@ -871,19 +881,19 @@ export function useFuelCalculation(
 
     // Get tank capacity - SOLUTION 1 + 5
     const calculateRealTankCapacity = () => {
-      // Prioridade 1: Dados da sessão
+      // Priority 1: Session data
       if (fuelTankCapacityFromSession && fuelTankCapacityFromSession > 0) {
         return fuelTankCapacityFromSession;
       }
 
-      // Prioridade 2: Estimar do histórico máximo observado
+      // Priority 2: Estimate from maximum observed
       const maxObservedFuel = Math.max(
-        ...validLaps.map((l) => l.fuelUsed * 2), // Assumir que usa no máximo 50% por volta
-        fuelLevel * 3, // Assumir que tem pelo menos 1/3 do tanque
+        ...validLaps.map((l) => l.fuelUsed * 2), // Assume maximum usage of 50% per lap
+        fuelLevel * 3, // Assume at least 1/3 of the tank
         DEFAULT_TANK_CAPACITY
       );
 
-      // Prioridade 3: Usar fuelLevelPct com verificação
+      // Priority 3: Use fuelLevelPct with verification
       if (fuelLevelPct && fuelLevelPct > 0.01 && fuelLevelPct < 0.99) {
         const calculated = fuelLevel / fuelLevelPct;
         if (calculated > fuelLevel * 1.1 && calculated < fuelLevel * 50) {
@@ -999,10 +1009,15 @@ export function useFuelCalculation(
     const lapsWithFuel =
       trendAdjustedConsumption > 0 ? fuelLevel / trendAdjustedConsumption : 0;
 
+    // Calculate remaining distance in current lap
+    const currentLapRemainingPct = Math.max(0, 1 - (lapDistPct || 0));
+
     // Determine laps remaining
-    let lapsRemaining = sessionLapsRemain || 0;
-    // Separate variable for Refuel calculations (Optimistic)
-    let lapsRemainingRefuel = sessionLapsRemain || 0;
+    // sessionLapsRemain counts COMPLETE laps remaining after finishing current
+    // For fuel calculation, we need to add the remaining portion of THIS lap
+    let lapsRemaining = (sessionLapsRemain || 0) + currentLapRemainingPct;
+    // Separate variable for Refuel calculations (adds safety buffer)
+    let lapsRemainingRefuel = (sessionLapsRemain || 0) + currentLapRemainingPct;
 
     let totalLaps =
       typeof sessionLaps === 'string'
@@ -1105,7 +1120,7 @@ export function useFuelCalculation(
           );
         }
       } else {
-        // Se sessionTimeRemain é -1, é inválido/não iniciado -> Fallback seguro
+        // If sessionTimeRemain is -1, it's invalid/not started -> Safe fallback
         if (sessionTimeRemain === -1) {
           const estimatedLapsFromFuel =
             trendAdjustedConsumption > 0
@@ -1121,8 +1136,8 @@ export function useFuelCalculation(
             );
           }
         } else {
-          // Se sessionTimeRemain é 0 ou negativo (e não -1), o tempo acabou.
-          // A distância restante é apenas completar a volta atual.
+          // If sessionTimeRemain is 0 or negative (and not -1), the time is over.
+          // The remaining distance is simply to complete the current lap.
           const remainingDistance = Math.max(0, 1 - (lapDistPct || 0));
           lapsRemaining = remainingDistance;
           lapsRemainingRefuel = lapsRemaining;
@@ -1214,7 +1229,7 @@ export function useFuelCalculation(
     // Calculate fuel at finish
     const fuelAtFinish = fuelLevel - lapsRemaining * trendAdjustedConsumption;
 
-    // DEFINITIVE: Consistent projected lap usage with reset detection
+    // Consistent projected lap usage with reset detection
     let projectedLapUsage = 0;
 
     // Reset smoothing when lap changes
@@ -1273,7 +1288,7 @@ export function useFuelCalculation(
 
     projectedLapUsage = smoothedProjectedUsageRef.current;
 
-    // Log detalhado para debug - SOLUTION 6
+    // Detailed log for debug
     if (DEBUG_LOGGING) {
       if (isLapDistPctReset) {
         console.log(

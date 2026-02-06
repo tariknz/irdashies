@@ -3,7 +3,6 @@
  */
 
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 import { FuelLapData } from '@irdashies/types';
 
 /** Maximum number of laps to retain in history */
@@ -121,7 +120,6 @@ function sortLapsDescending(laps: FuelLapData[]): FuelLapData[] {
  * Main Zustand store for fuel calculations
  */
 export const useFuelStore = create<FuelStore>()(
-  persist(
     (set, get) => ({
       // Initial state
       lapHistory: new Map(),
@@ -287,27 +285,7 @@ export const useFuelStore = create<FuelStore>()(
           };
         });
       },
-    }),
-    {
-      name: 'fuel-calculator-storage',
-      partialize: (state) => ({
-        // Only persist these fields as requested:
-        // "save to localStorage only the max qualify consumption, I don't want the others saving"
-        // Update: User now wants EVERYTHING in SQLite, so we only keep context info for hydration
-        trackId: state.trackId,
-        carName: state.carName,
-      }),
-      // Custom merge to rehydrate Map
-      merge: (persistedState: unknown, currentState) => {
-        const saved = persistedState as Partial<FuelStoreState>;
-        return {
-          ...currentState,
-          ...saved,
-          lapHistory: new Map(saved.lapHistory || []),
-        };
-      },
-    }
-  )
+    })
 );
 
 // ============================================================================
