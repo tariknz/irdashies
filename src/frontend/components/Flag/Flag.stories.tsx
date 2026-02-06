@@ -31,20 +31,34 @@ export const AllStates: Story = {
       {Object.entries(FLAG_COLORS).map(([label, textColor]) => (
         <div key={label} className="flex items-start gap-4">
           <div style={{ width: 360 }}>
-            <FlagDisplay label={label} textColor={textColor} showLabel={true} matrixSize={8} />
+            <FlagDisplay
+              label={label}
+              textColor={textColor}
+              showLabel={true}
+              matrixSize={8}
+            />
           </div>
           <div style={{ width: 360 }}>
-            <FlagDisplay label={label} textColor={textColor} showLabel={true} matrixSize={16} />
+            <FlagDisplay
+              label={label}
+              textColor={textColor}
+              showLabel={true}
+              matrixSize={16}
+            />
           </div>
           <div style={{ width: 360 }}>
-            <FlagDisplay label={label} textColor={textColor} showLabel={true} matrixSize={1} />
+            <FlagDisplay
+              label={label}
+              textColor={textColor}
+              showLabel={true}
+              matrixSize={1}
+            />
           </div>
         </div>
       ))}
     </div>
   ),
 };
-
 
 // -------- Interactive Story with animation options --------
 interface InteractiveFlagArgs {
@@ -53,6 +67,7 @@ interface InteractiveFlagArgs {
   showLabel: boolean;
   animate: boolean;
   blinkPeriod: number;
+  enableGlow: boolean;
 }
 
 const FlagWrapper: React.FC<InteractiveFlagArgs> = ({
@@ -61,6 +76,7 @@ const FlagWrapper: React.FC<InteractiveFlagArgs> = ({
   showLabel,
   animate,
   blinkPeriod,
+  enableGlow,
 }) => {
   // Always call useState first — initial state true
   const [on, setOn] = useState(true);
@@ -85,11 +101,11 @@ const FlagWrapper: React.FC<InteractiveFlagArgs> = ({
         textColor={textColor}
         showLabel={showLabel}
         matrixSize={matrixSize}
+        enableGlow={enableGlow}
       />
     </div>
   );
 };
-
 
 export const Interactive: StoryObj<typeof FlagWrapper> = {
   argTypes: {
@@ -98,6 +114,7 @@ export const Interactive: StoryObj<typeof FlagWrapper> = {
     showLabel: { control: 'boolean' },
     animate: { control: 'boolean' },
     blinkPeriod: { control: { type: 'number', min: 0.1, step: 0.1 } },
+    enableGlow: { control: 'boolean' },
   },
   args: {
     label: 'YELLOW',
@@ -105,6 +122,7 @@ export const Interactive: StoryObj<typeof FlagWrapper> = {
     showLabel: true,
     animate: false,
     blinkPeriod: 0.5,
+    enableGlow: true,
   },
   render: (args) => <FlagWrapper {...args} />,
 };
