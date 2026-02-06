@@ -11,7 +11,7 @@ import {
   useTelemetryValue,
 } from '@irdashies/context';
 import { useStore } from 'zustand';
-import { useFuelStore, selectLapHistorySize } from './FuelStore';
+import { useFuelStore, selectLapHistorySize, selectLastLapUsage } from './FuelStore';
 import { FuelLapData } from '@irdashies/types';
 import type { FuelCalculation, FuelCalculatorSettings } from './types';
 import { useFuelLogger } from './useFuelLogger';
@@ -133,6 +133,12 @@ export function useFuelCalculation(
 
   // Subscribe to lap history size to trigger recalculation when laps are added
   const lapHistorySize = useFuelStore(selectLapHistorySize);
+
+  // Subscribe to last lap data directly to ensure immediate reactivity
+  const storeLastLapUsage = useFuelStore(selectLastLapUsage);
+
+  // Ref to track the currently loaded context (Track + Car) to avoid redundant clears/loads
+  const loadedContextRef = useRef<string | null>(null);
 
   // Refs for smoothing projected lap usage
   const smoothedProjectedUsageRef = useRef<number>(0);
@@ -353,51 +359,50 @@ export function useFuelCalculation(
       }
     )?.DriverCarName;
 
-    // Check for Track Change (or initial load)
-    const trackChanged =
-      trackId !== undefined &&
-      (storedTrackId === undefined || trackId !== storedTrackId);
+    const currentContext =
+      trackId !== undefined && currentCarName !== undefined
+        ? `${trackId}:${currentCarName}`
+        : null;
 
-    // Check for Car Change
-    const carChanged =
-      currentCarName !== undefined &&
-      (storedCarName === undefined || currentCarName !== storedCarName);
+    const contextChanged = currentContext !== null && currentContext !== loadedContextRef.current;
 
-    if (trackChanged || carChanged) {
-      if (DEBUG_LOGGING)
+    if (contextChanged) {
+      if (DEBUG_LOGGING) {
         console.log(
-          `[FuelCalculator] Context changed (Track: ${storedTrackId}->${trackId}, Car: ${storedCarName}->${currentCarName}), loading fuel data`
+          `[FuelCalculator] Context changed to ${currentContext}. Purging current session volatile data and loading history from DB.`
         );
-      if (storedTrackId !== undefined && storedCarName !== undefined) {
-        clearAllData();
       }
+      
+      // Update ref immediately to prevent race conditions from additional renders
+      loadedContextRef.current = currentContext;
+
+      // ALWAYS clear current volatile data ONLY when context really changes to prevent leakage
+      // This ONLY clears browser memory for the current session, NOT the database historical array.
+      clearAllData();
       setQualifyConsumption(null);
 
-      if (
-        trackId !== undefined &&
-        currentCarName !== undefined &&
-        (settings?.enableStorage ?? true)
-      ) {
+      if (settings?.enableStorage ?? true) {
+        const [tId, cName] = currentContext.split(':');
+        console.log(`[FuelCalculator] Loading historical data for: Track=${tId}, Car=${cName}`);
+        
         window.fuelCalculatorBridge
-          .getHistoricalLaps(trackId, currentCarName)
+          .getHistoricalLaps(tId, cName)
           .then((laps) => {
+            console.log(`[FuelCalculator] Historical laps received: ${laps.length} laps for ${currentContext}`);
+            // Set history (even if empty) to ensure memory is updated to the new context
             if (laps.length > 0) {
-              if (DEBUG_LOGGING)
-                console.log(
-                  `[FuelCalculator] Loaded ${laps.length} historical laps from DB`
-                );
-              useFuelStore.getState().setLapHistory(laps);
+              console.log(`[FuelCalculator] First historical lap: fuelUsed=${laps[0].fuelUsed.toFixed(3)}L`);
+            } else {
+              console.log(`[FuelCalculator] No historical data found for this combination in DB. Starting fresh.`);
             }
+            useFuelStore.getState().setLapHistory(laps);
           });
 
         window.fuelCalculatorBridge
-          .getQualifyMax(trackId, currentCarName)
+          .getQualifyMax(tId, cName)
           .then((val) => {
             if (val !== null) {
-              if (DEBUG_LOGGING)
-                console.log(
-                  `[FuelCalculator] Loaded QualifyMax (${val}) from DB`
-                );
+              console.log(`[FuelCalculator] Loaded QualifyMax (${val}) from DB`);
               setQualifyConsumption(val);
             }
           });
@@ -574,7 +579,7 @@ export function useFuelCalculation(
         return;
       }
 
-      const completedLap = state.lastLap;
+      const completedLap = lap - 1;
       const fuelUsed = state.lapStartFuel + state.accumulatedRefuel - fuelLevel;
       const lapTime = timeSinceLastCrossing;
 
@@ -902,8 +907,11 @@ export function useFuelCalculation(
     const lastLapsForAvg = lapsToUse.slice(0, avgLapsCount);
     const last10 = lapsToUse.slice(0, 10);
 
-    // Calculate averages
-    const lastLapUsage = lapHistory.length > 0 ? lapHistory[0].fuelUsed : 0;
+    // Calculate averages - use reactive store value for immediate update
+    // storeLastLapUsage is subscribed directly and updates immediately when addLapData is called
+    const lastLapUsage = storeLastLapUsage > 0 
+      ? storeLastLapUsage 
+      : (lapHistory.length > 0 ? lapHistory[0].fuelUsed : 0);
 
     const avgLaps =
       lastLapsForAvg.length > 0
@@ -1479,28 +1487,7 @@ export function useFuelCalculation(
     };
 
     return result;
-  }, [
-    sessionState,
-    sessionNum,
-    fuelLevel,
-    fuelLevelPct,
-    lap,
-    sessionLapsRemain,
-    sessionLaps,
-    sessionTimeRemain,
-    sessionTimeTotal,
-    sessionFlags,
-    driverCarFuelMaxLtr,
-    driverCarMaxFuelPct,
-    safetyMargin,
-    lapHistorySize,
-    lapStartFuel,
-    settings,
-    qualifyConsumption,
-    fuelTankCapacityFromSession,
-    calculateDefinitiveProjectedUsage,
-    lapDistPct,
-  ]);
+  }, [sessionNum, fuelLevel, fuelLevelPct, lap, sessionLapsRemain, sessionLaps, sessionTimeRemain, sessionTimeTotal, sessionFlags, driverCarFuelMaxLtr, driverCarMaxFuelPct, safetyMargin, lapStartFuel, settings, qualifyConsumption, fuelTankCapacityFromSession, calculateDefinitiveProjectedUsage, lapDistPct, storeLastLapUsage]);
 
   // Wrap calculation to apply overrides (Race Finish)
   const calculation = useMemo(() => {

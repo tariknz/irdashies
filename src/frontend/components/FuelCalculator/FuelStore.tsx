@@ -322,6 +322,32 @@ export const selectLapHistorySize = (state: FuelStore): number =>
   state.lapHistory.size;
 
 /**
+ * Selector to get the most recent lap data (reactive to lastLap changes)
+ */
+export const selectLastLapData = (state: FuelStore): FuelLapData | null => {
+  if (state.lapHistory.size === 0) return null;
+  
+  // Use lastLap as the primary key, but if it doesn't exist in history (e.g. we just moved to next lap),
+  // find the highest lap number actually present in the history.
+  if (state.lastLap > 0 && state.lapHistory.has(state.lastLap)) {
+    return state.lapHistory.get(state.lastLap) ?? null;
+  }
+
+  // Fallback: find the highest lap number in the map
+  const lapNumbers = Array.from(state.lapHistory.keys());
+  const maxLap = Math.max(...lapNumbers);
+  return state.lapHistory.get(maxLap) ?? null;
+};
+
+/**
+ * Selector to get the most recent lap fuel usage (reactive)
+ */
+export const selectLastLapUsage = (state: FuelStore): number => {
+  const lastLapData = selectLastLapData(state);
+  return lastLapData?.fuelUsed ?? 0;
+};
+
+/**
  * Selector to get the last lap number
  */
 export const selectLastLap = (state: FuelStore): number => state.lastLap;

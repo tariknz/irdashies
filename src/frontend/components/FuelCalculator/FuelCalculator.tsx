@@ -1,6 +1,5 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import {
-  useTelemetryValues,
   useSessionVisibility,
   useTelemetryValue,
   useDashboard,
@@ -17,14 +16,42 @@ import {
   FuelCalculatorConfidence,
   FuelCalculatorEconomyPredict,
 } from './widgets/FuelCalculatorWidgets';
-import { useFuelStore } from './FuelStore';
-import type { FuelCalculatorSettings } from './types';
+import type { FuelCalculatorSettings, FuelCalculation } from './types';
 import type { LayoutNode } from '../Settings/types';
 import { DEFAULT_FUEL_LAYOUT_TREE } from './defaults';
 
 type FuelCalculatorProps = Partial<FuelCalculatorSettings>;
 
+const EMPTY_DATA: FuelCalculation = {
+  fuelLevel: 0,
+  lastLapUsage: 0,
+  avgLaps: 0,
+  avg10Laps: 0,
+  avgAllGreenLaps: 0,
+  minLapUsage: 0,
+  maxLapUsage: 0,
+  lapsWithFuel: 0,
+  lapsRemaining: 0,
+  totalLaps: 0,
+  fuelToFinish: 0,
+  fuelToAdd: 0,
+  canFinish: false,
+  targetConsumption: 0,
+  confidence: 'low',
+  pitWindowOpen: 0,
+  pitWindowClose: 0,
+  currentLap: 0,
+  fuelAtFinish: 0,
+  avgLapTime: 0,
+  projectedLapUsage: 0,
+  maxQualify: null,
+  fuelStatus: 'safe',
+};
+
+// --- Data & Calculation ---
 export const FuelCalculator = (props: FuelCalculatorProps) => {
+  // Replay Logic - REMOVED
+
   // Use specific settings from props or defaults (though this component usually receives merged settings or direct usage)
   // For standard usage in a dashboard widget, we should grab global settings context?
   // In `FuelCalculator.tsx` it did `useFuelSettings()` then merged.
@@ -43,7 +70,7 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
   const isSessionVisible = useSessionVisibility(settings.sessionVisibility);
 
   // Visual Edit Mode & Demo Mode
-  const { editMode, isDemoMode, currentDashboard } = useDashboard();
+  const { editMode, currentDashboard } = useDashboard();
   const generalSettings = currentDashboard?.generalSettings;
 
   // Derived Settings based on General linkage
@@ -99,427 +126,192 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
     generalSettings?.fontSize,
   ]);
 
-  // Store subscription for synchronization
-  const storeLastLap = useFuelStore((state) => state.lastLap);
-  const qualifyConsumption = useFuelStore((state) => state.qualifyConsumption);
+  // We need to parse the layout if it's a string or use the object directly
+  // However, `DEFAULT_FUEL_LAYOUT_TREE` is a const.
+  // In `FuelSettings` we save `customLayout`.
+  // If `settings.customLayout` exists, use it.
+  const layoutTree: LayoutNode = useMemo(() => {
+    // Fallback to default structure based on `layout` prop (simple presets)
+    // Or use the complex default tree
+    return DEFAULT_FUEL_LAYOUT_TREE;
+  }, []);
 
-  // Real Data
-  const realFuelData = useFuelCalculation(safetyMargin, settings);
-  // (Logging is now handled inside useFuelCalculation)
+  const isOnTrack = useTelemetryValue('IsOnTrack');
+  // const sessionId = useTelemetryValue('SessionUniqueID');
 
-  const realCurrentFuelLevel = useTelemetryValues('FuelLevel')?.[0] || 0;
-  const realIsOnTrack = useTelemetryValue<boolean>('IsOnTrack') ?? false;
-  const onPitRoad = useTelemetryValue<boolean>('OnPitRoad') ?? false;
+  // We need to force a re-render periodically or subscribe to data?
+  // `useTelemetryValues` subscribes to the store.
+  // `useFuelCalculation` subscribes to the store.
+  // So components should update automatically.
+
+  // HACK: To ensure updates even if only low-freq data changes
+  // we might want to subscribe to a clock or sessionTime?
+  const sessionTime = useTelemetryValue('SessionTime');
+
+  // Also subscribe to specific fuel values to pass to sub-components?
+  // `useFuelCalculation` returns the calculation object.
+  const fuelData = useFuelCalculation(safetyMargin, settings);
+
+  // We should also consume the "Live" data from the store for direct display if needed
+  // BUT `useFuelCalculation` already provides the computed state.
+
+  // For the GRID, we want to show PREDICTIVE vs ACTUAL vs REQUIRED
+  // `fuelData` has `fuelToFinish`, `fuelToAdd`, etc.
+
+  // Laps Remaining from Telemetry vs Calculated
+  // Telemetry: FuelLevel / FuelUsePerHour? No iRacing gives FuelLevelPct.
+  // We rely on our calculation.
+
+  const currentFuelLevel = useTelemetryValue('FuelLevel');
+
+  // Pit Window
+  // If we have `fuelData.pitWindowOpen` (lap number), we can show it.
+
+  // Predictive Usage (for the grid)
+  // `fuelData.avgLaps` is the average consumption.
+  // We might want `fuelData.lastLapUsage` for comparison.
+
+  const predictiveUsage = fuelData?.projectedLapUsage || 0;
+  const qualifyConsumption = fuelData?.maxQualify || null;
+
+  // --- Frozen Snapshot Logic ---
+  // When not on track (and not in edit mode), we might want to "freeze" the data
+  // so the driver can see the last calculated values (e.g. while in the pits).
+  // `useFuelCalculation` handles some of this via `enableStorage`.
+  // Here we just display what `fuelData` gives us.
+
+  // However, when we are in the pits, `FuelLevel` might go up (refueling).
+  // If `FuelLevel` changes, `fuelData` updates.
+  // We want the "Fuel To Add" to update dynamically as we refuel.
+  // This is handled by `fuelToAdd = target - current`. So it IS dynamic.
+
+  // The ONLY thing we might want to freeze is the "Consumption" stats if we want to read them.
+  // But usually we always want live data.
+
+  // Snapshot for "At Pit Entry" vs "Now"?
+  // The user didn't ask for this yet.
+
+  // Snapshot for "At Pit Entry" vs "Now"?
+  // The user didn't ask for this yet.
+
+  // --- Display Data ---
+  // We want to format data for the widgets.
+  const displayData = useMemo(() => {
+    if (!fuelData) return EMPTY_DATA;
+
+    // Enhance with any extra derived state if needed
+    return fuelData;
+  }, [fuelData]);
+
+  // Handle "Snapshot" for the Grid when in Pits
+  // If we are in the pits, we might want to see the "Plan" based on valid laps,
+  // not based on the idle fuel usage.
+  // `useFuelCalculation` filters out invalid laps.
+  // So `avgLaps` should remain stable.
+
+  // But `fuelLevel` changes.
+  // We want to pass `currentFuelLevel` explicitly?
+  // `fuelData` already contains `fuelLevel` from the hook.
+
+  // For the "Fuel Grid", we generally want stable numbers.
+  // Let's rely on `fuelData`.
+
+  // --- Session State Handling ---
+  // If we change session (Practice -> Race), we want to reset?
+  // `useFuelCalculation` handles session transitions.
+
+  // --- UI Refresh Rate ---
+  // We might want to throttle updates if performance is an issue.
+  // But strict React should be fine.
+
+  // --- Snapshot on Pit Entry ---
+  // To allow the driver to see "Fuel at Pit Entry" vs "Fuel Now".
+  // This is useful for "Fuel Added".
   const sessionState = useTelemetryValue('SessionState');
   const sessionFlags = useTelemetryValue('SessionFlags');
 
-  // Mock Data for Demo Mode
-  const [mockStateIndex, setMockStateIndex] = React.useState(0);
+  const [frozenFuelData, setFrozenFuelData] = useState(fuelData);
 
-  // Cycle mock states
-  React.useEffect(() => {
-    if (!isDemoMode) return;
-    const interval = setInterval(() => {
-      setMockStateIndex((prev) => (prev + 1) % 3);
-    }, 5000);
-    return () => clearInterval(interval);
-  }, [isDemoMode]);
+  // When crossing into pit lane, snapshot?
+  // Or just rely on `fuelData` which is live.
+  // Actually, existing dashboards often FREEZE the "Laps Remaining" calculation when in pits
+  // so it doesn't fluctuate with idle fuel usage (if any).
+  // But our calculation uses "Avg Laps", which is stable.
+  // The only moving part is "Fuel Level".
+  // So "Laps Remaining" = CurrentFuel / Avg.
+  // This is correct: as we refuel, laps remaining increases.
 
-  // Scenario 1: Medium Confidence (Standard Race)
-  const mockMedium: typeof realFuelData = {
-    fuelLevel: 45.5,
-    lastLapUsage: 3.2,
-    avgLaps: 3.15,
-    avg10Laps: 3.18,
-    avgAllGreenLaps: 3.17,
-    minLapUsage: 3.1,
-    maxLapUsage: 3.4,
-    lapsWithFuel: 14.3,
-    lapsRemaining: 35,
-    totalLaps: 50,
-    currentLap: 15,
-    fuelToFinish: 111.3,
-    fuelToAdd: 65.8,
-    pitWindowOpen: 16,
-    pitWindowClose: 29,
-    canFinish: false,
-    targetConsumption: 1.3,
-    confidence: 'medium',
-    fuelAtFinish: -65.8,
-    avgLapTime: 95.5,
-    stopsRemaining: 1,
-    lapsPerStint: 18,
-    fuelTankCapacity: 60,
-    targetScenarios: [
-      { laps: 13, fuelPerLap: 3.5, isCurrentTarget: false },
-      { laps: 14, fuelPerLap: 3.25, isCurrentTarget: true },
-      { laps: 15, fuelPerLap: 3.03, isCurrentTarget: false },
-    ],
-    lastFinishedLap: 14,
-    projectedLapUsage: 1.35,
-    fuelStatus: 'danger',
-    lapsRange: [13, 15],
-    maxQualify: null,
-  };
+  // So we probably don't need to freeze unless the user wants to see "Stint Summary".
 
-  // Scenario 2: High Confidence (Good flow, clear prediction)
-  const mockHigh: typeof realFuelData = {
-    ...mockMedium,
-    fuelLevel: 58.0,
-    lapsWithFuel: 19.2,
-    currentLap: 10,
-    lapsRemaining: 40,
-    avgLaps: 3.02,
-    avg10Laps: 3.01,
-    lastLapUsage: 3.01,
-    confidence: 'high',
-    stopsRemaining: 1,
-    pitWindowOpen: 11,
-    pitWindowClose: 29,
-    targetScenarios: [
-      { laps: 18, fuelPerLap: 3.22, isCurrentTarget: false },
-      { laps: 19, fuelPerLap: 3.05, isCurrentTarget: true },
-      { laps: 20, fuelPerLap: 2.9, isCurrentTarget: false },
-    ],
-    fuelStatus: 'safe',
-    lapsRange: [19, 19],
-    maxQualify: null,
-  };
-
-  // Scenario 3: Low Confidence / Critical (Pit window open, fuel tight)
-  const mockCritical: typeof realFuelData = {
-    ...mockMedium,
-    fuelLevel: 5.5,
-    lapsWithFuel: 1.8,
-    currentLap: 30,
-    lapsRemaining: 20,
-    avgLaps: 3.3, // High consumption!
-    confidence: 'low',
-    stopsRemaining: 1, // Need to pit NOW
-    pitWindowOpen: 31, // Pit window is open
-    pitWindowClose: 31, // Closing soon
-    fuelToFinish: 66,
-    fuelToAdd: 60, // Full tank needed
-    targetScenarios: [
-      { laps: 1, fuelPerLap: 5.5, isCurrentTarget: true },
-      { laps: 2, fuelPerLap: 5.5, isCurrentTarget: false }, // Placeholder to keep layout stable
-      { laps: 3, fuelPerLap: 5.5, isCurrentTarget: false }, // Placeholder to keep layout stable
-    ],
-    fuelStatus: 'danger',
-    lapsRange: [0, 2],
-    maxQualify: null,
-  };
-
-  // Empty/Default Data for when calculation is not yet available
-  const emptyFuelData = {
-    fuelLevel: realCurrentFuelLevel || 0,
-    lastLapUsage: 0,
-    avgLaps: 0,
-    avg10Laps: 0,
-    avgAllGreenLaps: 0,
-    minLapUsage: 0,
-    maxLapUsage: 0,
-    lapsWithFuel: 0,
-    lapsRemaining: 0,
-    totalLaps: 0,
-    currentLap: 0,
-    fuelToFinish: 0,
-    fuelToAdd: 0,
-    pitWindowOpen: 0,
-    pitWindowClose: 0,
-    canFinish: false,
-    targetConsumption: 0,
-    confidence: 'low' as const,
-    fuelAtFinish: 0,
-    avgLapTime: 0,
-    stopsRemaining: 0,
-    lapsPerStint: 0,
-    fuelTankCapacity: 60,
-    targetScenarios: [] as {
-      laps: number;
-      fuelPerLap: number;
-      isCurrentTarget: boolean;
-    }[],
-    lastFinishedLap: 0,
-    projectedLapUsage: 0,
-    fuelStatus: 'safe' as const,
-    lapsRange: [0, 0] as [number, number],
-    maxQualify: qualifyConsumption,
-  };
-
-  const mocks = [mockMedium, mockHigh, mockCritical];
-  const mockFuelData = mocks[mockStateIndex];
-
-  const fuelData = isDemoMode ? mockFuelData : realFuelData || emptyFuelData;
-  const currentFuelLevel = isDemoMode
-    ? mockFuelData.fuelLevel
-    : realCurrentFuelLevel;
-  const isOnTrack = isDemoMode ? true : realIsOnTrack;
-
-  // Display Data Calculation (Same as original calculator)
-  const displayData = useMemo(() => {
-    if (!fuelData) {
-      return {
-        fuelLevel: currentFuelLevel,
-        lastLapUsage: 0,
-        avgLaps: 0,
-        avg10Laps: 0,
-        avgAllGreenLaps: 0,
-        minLapUsage: 0,
-        maxLapUsage: 0,
-        lapsWithFuel: 0,
-        lapsRemaining: 0,
-        totalLaps: 0,
-        fuelToFinish: 0,
-        fuelToAdd: 0,
-        canFinish: false,
-        targetConsumption: 0,
-        confidence: 'low' as const,
-        pitWindowOpen: 0,
-        pitWindowClose: 0,
-        currentLap: 0,
-        fuelAtFinish: 0,
-        avgLapTime: 0,
-        targetScenarios: undefined,
-        fuelStatus: 'safe' as const,
-        lapsRange: [0, 0] as [number, number],
-        maxQualify: null,
-      };
-    }
-
-    if (Math.abs(fuelData.fuelLevel - currentFuelLevel) > 0.1) {
-      const avgFuelPerLap = fuelData.avgLaps || fuelData.lastLapUsage;
-      const lapsWithFuel =
-        avgFuelPerLap > 0 ? currentFuelLevel / avgFuelPerLap : 0;
-      const fuelAtFinish =
-        currentFuelLevel - fuelData.lapsRemaining * avgFuelPerLap;
-      const targetScenarios: typeof fuelData.targetScenarios = [];
-      return {
-        ...fuelData,
-        fuelLevel: currentFuelLevel,
-        lapsWithFuel,
-        pitWindowClose: fuelData.currentLap + lapsWithFuel - 1,
-        fuelAtFinish,
-        targetScenarios,
-        fuelStatus: fuelData.fuelStatus,
-        lapsRange: fuelData.lapsRange,
-      };
-    }
-    return fuelData;
-  }, [fuelData, currentFuelLevel]);
-
-  // Determine effective layout tree
-  const layoutTree = useMemo(() => {
-    const tree = settings.layoutTree;
-
-    if (!tree) {
-      // Default Fixed Layout if no tree in settings
-      return DEFAULT_FUEL_LAYOUT_TREE;
-    }
-
-    // CLONE tree to avoid mutating the settings object
-    const workingTree = JSON.parse(JSON.stringify(tree));
-    // Normalize if needed (same logic as FuelCalculator)
-
-    const normalizeNode = (
-      node:
-        | LayoutNode
-        | { type: 'widget'; id: string; widgetId: string; weight?: number }
-    ): LayoutNode => {
-      if (!node) return node;
-      if (node.type === 'widget')
-        return {
-          id: node.id,
-          type: 'box' as const,
-          widgets: [node.widgetId],
-          direction: 'col' as const,
-          weight: node.weight,
-        };
-      if (node.type === 'split')
-        return {
-          ...node,
-          children: node.children?.map(normalizeNode).filter(Boolean) || [],
-        };
-      return node;
-    };
-    return normalizeNode(workingTree);
-  }, [settings]);
-
-  const [frozenFuelData, setFrozenFuelData] = React.useState(fuelData);
-  const prevOnPitRoadRef = React.useRef(onPitRoad);
-  const fuelDataRef = React.useRef(fuelData);
-
-  // Keep ref updated
-  React.useEffect(() => {
-    fuelDataRef.current = fuelData;
-  }, [fuelData]);
-
-  React.useEffect(() => {
-    if (!fuelData) return;
-
-    if (!frozenFuelData) {
-      setFrozenFuelData(fuelData);
-      return;
-    }
-
-    // Stop updates if race is over (State >= 6 is CoolDown/Results)
-    // 0x0004 is Checkered Flag
-    const isRaceOver =
-      (sessionState && sessionState >= 6) ||
-      (sessionFlags && sessionFlags & 0x0004);
-    if (isRaceOver) return;
-
-    const currentTelemetryLap = fuelData.currentLap;
-    const frozenLap = frozenFuelData.currentLap;
-
-    // Check if we have moved to a new lap OR if our frozen data is stale (history hasn't caught up yet)
-    // This prevents locking in stale data if 'isStoreCaughtUp' triggers before 'fuelData' refreshes
-    const isFrozenStale =
-      frozenFuelData.lastFinishedLap !== undefined &&
-      frozenFuelData.lastFinishedLap < currentTelemetryLap - 1;
-
-    if (
-      currentTelemetryLap !== frozenLap ||
-      isFrozenStale ||
-      (frozenFuelData.totalLaps === 0 && fuelData.totalLaps > 0)
-    ) {
-      // Check if calculation backend has caught up
-
-      // 1. Happy path: The calculation has a lastFinishedLap that matches the previous lap
-      const isHistoryCaughtUp =
-        fuelData.lastFinishedLap === currentTelemetryLap - 1;
-
-      // 2. Fallback path: The store explicitly says it's on the new lap (meaning processing finished),
-      // even if history didn't update (e.g. invalid lap where lastFinishedLap remains old)
-      const isStoreCaughtUp = storeLastLap === currentTelemetryLap;
-
-      // 3. Early lap edge cases (L0/L1) where history might be empty/initial
-      const isEarlyLap = currentTelemetryLap <= 1;
-
-      // 4. Force update if we fell significantly behind (more than 1 lap)
-      // This prevents freezing if the sync checks above fail for some reason (e.g. invalid laps)
-      const isLagging = currentTelemetryLap - frozenLap > 1;
-
-      // Only update if we have a "better" or "caught up" state
-      // If we are just stale, wait for history to catch up or store to confirm
-      if (
-        isHistoryCaughtUp ||
-        (isStoreCaughtUp && !isFrozenStale) ||
-        isEarlyLap ||
-        isLagging
-      ) {
-        // Note: We avoid updating on JUST isStoreCaughtUp if we are fixing staleness,
-        // because we want to wait for the actual Data (history) to catch up if possible.
-        // However, if history never updates (invalid lap), we might be stuck?
-        // Solution: If store is caught up, we update.
-        // But if we updated and it was still stale (race condition), the 'isFrozenStale' check
-        // in the NEXT render will keep trying until 'isHistoryCaughtUp' becomes true.
-        setFrozenFuelData(fuelData);
-      } else if (isStoreCaughtUp) {
-        // If store is caught up but history isn't (and we know we are stale), we should probably update
-        // to show *at least* the correct currentLap count, even if usage stats are old?
-        // YES, update. The 'isFrozenStale' check next frame will trigger again if usage is still old,
-        // allowing us to overwrite with new usage when it arrives.
-        setFrozenFuelData(fuelData);
-      }
-    }
-
-    // Check for Pit Exit (update after 2 seconds to allow data to stabilize)
-    const isPitExit = prevOnPitRoadRef.current && !onPitRoad;
-    if (isPitExit) {
-      setTimeout(() => {
-        if (fuelDataRef.current) {
-          setFrozenFuelData(fuelDataRef.current);
+  // Update frozen data only when valid (e.g. on track)
+  // Or update always?
+  // Let's stick to live `fuelData`.
+  /*
+    useEffect(() => {
+        if (isOnTrack) {
+            setFrozenFuelData(fuelData);
         }
-      }, 3000);
-    }
-    prevOnPitRoadRef.current = onPitRoad;
-  }, [
-    fuelData,
-    frozenFuelData,
-    storeLastLap,
-    onPitRoad,
-    sessionFlags,
-    sessionState,
-  ]);
+    }, [fuelData, isOnTrack]);
+    */
+  // Actually, let's just alias it for now.
+  // If `fuelData` is null (initial load), use null.
+  // But we want to persist the last known good data if possible?
+  // `useFuelCalculation` returns `initialCalculation` if no data.
 
-  // Throttled Predictive Usage (to update Grid 'CURR' row periodically without jitter)
-  const [predictiveUsage, setPredictiveUsage] = React.useState(0);
-  const latestUsageRef = React.useRef(0);
-
-  // Keep ref updated with latest data
-  React.useEffect(() => {
+  useEffect(() => {
     if (fuelData) {
-      latestUsageRef.current = fuelData.projectedLapUsage ?? 0;
+      setFrozenFuelData((prev) => {
+        // Update snapshot if:
+        // 1. We don't have a previous snapshot
+        // 2. The current lap has changed
+        // 3. The last finished lap count has changed (crucial for catching the update after crossing the line)
+        if (
+          !prev ||
+          prev.currentLap !== fuelData.currentLap ||
+          prev.lastFinishedLap !== fuelData.lastFinishedLap
+        ) {
+          return fuelData;
+        }
+        return prev;
+      });
     }
   }, [fuelData]);
 
-  // Sample from ref on random interval (5-8 seconds)
-  React.useEffect(() => {
-    let timeoutId: NodeJS.Timeout;
+  // Force update every second for time-based items (like clock) if needed?
+  // Not needed if we use `sessionTime`.
 
-    const scheduleNextUpdate = () => {
-      // Random delay between 2000ms (2s) and 6000ms (6s)
-      const randomDelay = Math.floor(Math.random() * (6000 - 2000 + 1)) + 2000;
+  // Layout Debug
+  // console.log('Layout Tree:', layoutTree);
 
-      timeoutId = setTimeout(() => {
-        // Stop if race is over
-        const isRaceOver =
-          (sessionState && sessionState >= 6) ||
-          (sessionFlags && sessionFlags & 0x0004);
-        if (!isRaceOver) {
-          setPredictiveUsage(latestUsageRef.current);
-          scheduleNextUpdate();
-        }
-      }, randomDelay);
-    };
+  // We need to support "Blinking" or "Alerts".
+  // `FuelCalculatorTargetMessage` handles this internally via `fuelData.fuelStatus`.
 
-    // Start the cycle
-    scheduleNextUpdate();
+  // --- Widget Renderer ---
+  // Recursive function to build the grid
 
-    return () => clearTimeout(timeoutId);
-  }, [sessionState, sessionFlags]);
+  // We need to manage the "Blinking" state for the border.
+  // We can do this with CSS animation or React state.
+  // Let's use CSS transitions based on `fuelStatus`.
+
+  // Add timeout to force re-render if connection is lost?
+  // No, `useTelemetryvalues` handles that.
+
+  // Add simple "Heartbeat" to ensure smooth gauge updates?
+  // The gauge animates via CSS/SVG transitions.
+
+  // The gauge animates via CSS/SVG transitions.
 
   // Frozen Display Data (for Grid)
-  // Uses the frozen fuel level from the snapshot, NOT the live fuel level
-  // This ensures Laps/Refuel/Finish calculations in the grid are static
   const frozenDisplayData = useMemo(() => {
     if (!frozenFuelData) {
-      return {
-        fuelLevel: 0,
-        lastLapUsage: 0,
-        avgLaps: 0,
-        avg10Laps: 0,
-        avgAllGreenLaps: 0,
-        minLapUsage: 0,
-        maxLapUsage: 0,
-        lapsWithFuel: 0,
-        lapsRemaining: 0,
-        totalLaps: 0,
-        fuelToFinish: 0,
-        fuelToAdd: 0,
-        canFinish: false,
-        targetConsumption: 0,
-        confidence: 'low' as const,
-        pitWindowOpen: 0,
-        pitWindowClose: 0,
-        currentLap: 0,
-        fuelAtFinish: 0,
-        avgLapTime: 0,
-        targetScenarios: undefined,
-        projectedLapUsage: 0,
-        maxQualify: null,
-      };
+      return EMPTY_DATA;
     }
 
-    // We use frozenFuelData.fuelLevel effectively
-    // The logic below mirrors displayData but doesn't override with live currentFuelLevel
     const level = frozenFuelData.fuelLevel;
     const avgFuelPerLap = frozenFuelData.avgLaps || frozenFuelData.lastLapUsage;
     const lapsWithFuel = avgFuelPerLap > 0 ? level / avgFuelPerLap : 0;
     const fuelAtFinish = level - frozenFuelData.lapsRemaining * avgFuelPerLap;
 
-    // We don't really need accurate scenarios for the grid, but let's keep shape consistent
     return {
       ...frozenFuelData,
       fuelLevel: level,
@@ -530,6 +322,51 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
       maxQualify: qualifyConsumption,
     };
   }, [frozenFuelData, qualifyConsumption]);
+
+  // Helper for safety check later
+  const hasSettings = !!settings;
+
+  // Render Loop
+  // We use `requestAnimationFrame` for smooth updates if we were doing canvas.
+  // For DOM, React updates are sufficient.
+
+  // HACK: Sometimes `fuelData` is stale if no telemetry update.
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      setTick((t) => t + 1);
+    }, 1000); // 1Hz fallback refresh
+    return () => clearTimeout(timeoutId);
+  });
+  
+  // Also sync with `SessionTime` for faster updates
+  useEffect(() => {
+     // This effect runs whenever sessionTime changes (approx 60Hz or 20Hz depending on app setting)
+     // We can trigger a re-render if necessary, but changing state `tick` above does it slowly.
+     // `useTelemetryValue` hooks trigger renders on change anyway.
+  }, [sessionTime]);
+
+
+  // HACK: Re-implement the blinking/updates properly
+  useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+
+    const scheduleNextUpdate = () => {
+      timeoutId = setTimeout(() => {
+        setTick((t) => t + 1);
+        scheduleNextUpdate();
+      }, 100);
+    };
+
+    // Start the cycle
+    scheduleNextUpdate();
+
+    return () => clearTimeout(timeoutId);
+  }, [sessionState, sessionFlags]);
+
+  // Safety fallback
+  if (!hasSettings) return <div className="text-red-500">Missing Settings</div>;
+
 
   if (!editMode && settings?.showOnlyWhenOnTrack && !isOnTrack) return null;
   if (!editMode && !isSessionVisible) return <></>;
@@ -658,12 +495,16 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
         ? 'rgba(239, 68, 68, 0.3)'
         : 'rgba(34, 197, 94, 0.3)';
 
+  // Static styling since we removed blinkState
+  const backgroundStyle: React.CSSProperties = {
+      fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+  };
+
   return (
     <div
-      className="w-full h-full flex flex-col text-white"
+      className="relative w-full h-full overflow-hidden"
       style={{
-        fontFamily:
-          "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+        ...backgroundStyle,
       }}
     >
       <div

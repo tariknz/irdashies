@@ -17,6 +17,7 @@ import { ThemeManager } from './components/ThemeManager/ThemeManager';
 import { WIDGET_MAP } from './WidgetIndex';
 import { HideUIWrapper } from './components/HideUIWrapper/HideUIWrapper';
 
+
 const WidgetLoader = () => {
   const { widgetId } = useParams<{ widgetId: string }>();
   const { currentDashboard } = useDashboard();
@@ -71,6 +72,7 @@ const AppRoutes = () => {
   return (
     <Routes>
       <Route path="/settings/*" element={<Settings />} />
+      <Route path="/edit" element={<EditMode />} />
       <Route path="/:widgetId" element={<WidgetLoader />} />
       <Route path="/" element={<div className="text-white">Dashboard Root</div>} />
     </Routes>

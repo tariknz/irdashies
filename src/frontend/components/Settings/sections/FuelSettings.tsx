@@ -9,6 +9,7 @@ import { LayoutVisualizer, migrateToTree } from './LayoutVisualizer';
 import { useSortableList } from '../../SortableList';
 import { useFuelStore } from '../../FuelCalculator/FuelStore';
 
+
 import { defaultFuelCalculatorSettings, DEFAULT_FUEL_LAYOUT_TREE } from '../../FuelCalculator/defaults';
 
 const generateId = () => Math.random().toString(36).substring(2, 9);
@@ -711,6 +712,8 @@ const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => {
                 </div>
               </div>
             </div>
+
+
 
             {/* Historical Data Storage */}
             <div className="space-y-4 border-t border-slate-600/50 pt-6">
