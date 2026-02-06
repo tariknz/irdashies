@@ -85,7 +85,7 @@ export const FasterCarsFromBehindDisplay = ({
           )}
         </div>
         {settings?.showDistance && (
-          <div className="rounded-sm bg-gray-700 p-1">{distance}</div>
+          <div className="rounded-sm bg-gray-700 p-1">{distance?.toFixed(1)}</div>
         )}
       </div>
 

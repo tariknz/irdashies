@@ -7,11 +7,11 @@
  * This project provides comprehensive car telemetry data for various racing games,
  * including RPM thresholds, LED configurations, and shift point information.
  * 
- * Car data sourced from lovely-car-data repository and bundled in src/data/cars-bundle.json
+ * Car data sourced from lovely-car-data repository and bundled in src/frontend/assets/data/cars-bundle.json
  * Update with: npm run fetch-lovely-data
  */
 
-import carDataBundle from '../../data/cars-bundle.json';
+import carDataBundle from '../assets/data/cars-bundle.json';
 
 export interface CarData {
   carName: string;

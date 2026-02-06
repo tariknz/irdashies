@@ -21,10 +21,20 @@ export async function publishIRacingSDKEvents(
   const runningStateCallbacks = new Set<(value: boolean) => void>();
 
   overlayManager.onOverlayReady((id) => {
-    console.log('[iracingSdkBridge] New window ready, sending initial data: ', id);
-    if (lastRunningState !== undefined) overlayManager.publishMessageToOverlay(id, 'runningState', lastRunningState);
-    if (latestTelemetry) overlayManager.publishMessageToOverlay(id, 'telemetry', latestTelemetry);
-    if (latestSession) overlayManager.publishMessageToOverlay(id, 'sessionData', latestSession);
+    console.log(
+      '[iracingSdkBridge] New window ready, sending initial data: ',
+      id
+    );
+    if (lastRunningState !== undefined)
+      overlayManager.publishMessageToOverlay(
+        id,
+        'runningState',
+        lastRunningState
+      );
+    if (latestTelemetry)
+      overlayManager.publishMessageToOverlay(id, 'telemetry', latestTelemetry);
+    if (latestSession)
+      overlayManager.publishMessageToOverlay(id, 'sessionData', latestSession);
   });
 
   const runningStateInterval = setInterval(async () => {
@@ -33,7 +43,10 @@ export async function publishIRacingSDKEvents(
       return;
     }
     lastRunningState = isSimRunning;
-    console.log('[iracingSdkBridge] Sending running state to window', isSimRunning);
+    console.log(
+      '[iracingSdkBridge] Sending running state to window',
+      isSimRunning
+    );
     overlayManager.publishMessage('runningState', isSimRunning);
     runningStateCallbacks.forEach((callback) => callback(isSimRunning));
   }, 5000);
@@ -45,6 +58,7 @@ export async function publishIRacingSDKEvents(
         console.log('[iracingSdkBridge] iRacing is running');
         const sdk = new IRacingSDK();
         let lastSessionVersion = -1;
+        let lastSessionPublishTime = 0;
         sdk.autoEnableTelemetry = true;
 
         await sdk.ready();
@@ -61,16 +75,27 @@ export async function publishIRacingSDKEvents(
             telemetryCallbacks.forEach((callback) => callback(telemetry));
           }
 
-          if (session && sdk.currDataVersion !== lastSessionVersion) {
-            lastSessionVersion = sdk.currDataVersion;
-            latestSession = session;
-            overlayManager.publishMessage('sessionData', session);
-            telemetrySink.addSession(session);
-            sessionCallbacks.forEach((callback) => callback(session));
+          if (session) {
+            // Only publish the session data if it has changed or if 1 second has passed since the last publish
+            const now = Date.now();
+            const timeSinceLastPublish = now - lastSessionPublishTime;
+            if (
+              sdk.currDataVersion !== lastSessionVersion ||
+              timeSinceLastPublish >= 1000
+            ) {
+              lastSessionVersion = sdk.currDataVersion;
+              lastSessionPublishTime = now;
+              latestSession = session;
+              overlayManager.publishMessage('sessionData', session);
+              telemetrySink.addSession(session);
+              sessionCallbacks.forEach((callback) => callback(session));
+            }
           }
         }
 
-        console.log('[iracingSdkBridge] iRacing is no longer publishing telemetry');
+        console.log(
+          '[iracingSdkBridge] iRacing is no longer publishing telemetry'
+        );
       } else {
         console.log('[iracingSdkBridge] iRacing is not running');
       }
@@ -101,6 +126,6 @@ export async function publishIRacingSDKEvents(
     stop: () => {
       shouldStop = true;
       clearInterval(runningStateInterval);
-    }
+    },
   };
 }
