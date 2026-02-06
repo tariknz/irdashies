@@ -37,7 +37,7 @@ export const Flag = () => {
     fullBleed: true,
   };
 
-  // 🔹 SINGLE FLAG
+  // Single flag
   if (!settings.doubleflag) {
     return (
       <div className="h-full">
@@ -46,7 +46,7 @@ export const Flag = () => {
     );
   }
 
-  // 🔹 DOUBLE FLAG — height-driven, edge-pinned
+  // Double flag
   return (
     <div className="flex h-full w-full justify-between items-stretch">
       <div className="h-full">
@@ -59,8 +59,6 @@ export const Flag = () => {
     </div>
   );
 };
-
-
 
 export const FlagDisplay = ({
   label,
