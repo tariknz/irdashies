@@ -307,7 +307,7 @@ const RelativeWithReorderableConfig = () => {
       countryFlags: { enabled: true },
       driverName: { enabled: true, showStatusBadges: true, nameFormat: 'name-surname'},
       teamName: { enabled: true },
-      pitStatus: { enabled: true },
+      pitStatus: { enabled: true, pitLapDisplayMode: 'lapsSinceLastPit' },
       carManufacturer: { enabled: true },
       badge: { enabled: true, badgeFormat: 'license-color-rating-bw' },
       iratingChange: { enabled: true },

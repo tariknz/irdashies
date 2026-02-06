@@ -2,7 +2,6 @@ import { memo } from 'react';
 import { Gap } from '../../../createStandings';
 
 interface DeltaCellProps {
-  hidden?: boolean;
   delta?: number | Gap;
   showForUndefined?: string;
   decimalPlaces?: number;
@@ -10,7 +9,6 @@ interface DeltaCellProps {
 
 export const DeltaCell = memo(
   ({
-    hidden,
     delta,
     showForUndefined = '-',
     decimalPlaces = 2,
@@ -44,7 +42,7 @@ export const DeltaCell = memo(
         data-column="delta"
         className="w-auto px-2 whitespace-nowrap text-center"
       >
-        {hidden ? '' : displayValue}
+        {displayValue}
       </td>
     );
   }

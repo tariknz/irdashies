@@ -2,30 +2,32 @@ import { memo } from 'react';
 import { DriverStatusBadges } from './DriverStatusBadges';
 
 interface PitStatusCellProps {
-  hidden?: boolean;
   onPitRoad?: boolean;
   carTrackSurface?: number;
   prevCarTrackSurface?: number;
+  lap?: number;
   lastPitLap?: number;
   lastLap?: number;
   currentSessionType?: string;
   dnf?: boolean;
   pitStopDuration?: number | null;
   showPitTime?: boolean;
+  pitLapDisplayMode?: string;
 }
 
 export const PitStatusCell = memo(
   ({
-    hidden,
     onPitRoad,
     carTrackSurface,
     prevCarTrackSurface,
+    lap,
     lastPitLap,
     lastLap,
     currentSessionType,
     dnf,
     pitStopDuration,
-    showPitTime = false
+    showPitTime = false,
+    pitLapDisplayMode
   }: PitStatusCellProps) => {
     const widthClass = showPitTime ? 'w-[7rem]' : 'w-[4.5rem]';
     const tow =
@@ -56,21 +58,18 @@ export const PitStatusCell = memo(
         data-column="pitStatus"
         className={`${widthClass} px-1 text-center align-middle whitespace-nowrap`}
       >
-        {hidden ? (
-          ''
-        ) : (
-          <DriverStatusBadges
-            hidden={hidden}
-            dnf={dnf}
-            tow={tow}
-            pit={pit}
-            out={out}
-            lastPit={lastPit}
-            lastPitLap={lastPitLap}
-            pitStopDuration={pitStopDuration}
-            showPitTime={showPitTime}
-          />
-        )}
+        <DriverStatusBadges
+          dnf={dnf}
+          tow={tow}
+          pit={pit}
+          out={out}
+          lap={lap}
+          lastPit={lastPit}
+          lastPitLap={lastPitLap}
+          pitStopDuration={pitStopDuration}
+          showPitTime={showPitTime}
+          pitLapDisplayMode={pitLapDisplayMode}
+        />
       </td>
     );
   }

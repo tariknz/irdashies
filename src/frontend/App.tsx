@@ -9,6 +9,7 @@ import {
   useRunningState,
   SessionProvider,
   PitLaneProvider,
+  useResetOnDisconnect,
 } from '@irdashies/context';
 import type { DashboardWidget } from '@irdashies/types';
 import { Settings } from './components/Settings/Settings';
@@ -22,6 +23,7 @@ const WidgetLoader = () => {
   const { widgetId } = useParams<{ widgetId: string }>();
   const { currentDashboard } = useDashboard();
   const { running } = useRunningState();
+  useResetOnDisconnect(running);
 
   if (!currentDashboard || !widgetId) {
     return <div className="flex h-screen w-screen items-center justify-center text-slate-500 text-sm">Loading config...</div>;

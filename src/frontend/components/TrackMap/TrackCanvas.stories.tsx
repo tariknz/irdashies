@@ -45,7 +45,8 @@ export default {
     },
     highlightColor: {
       control: { type: 'number' },
-      description: 'Highlight color for player circle (RGB number). Leave undefined to use amber (16096779).',
+      description:
+        'Highlight color for player circle (RGB number). Leave undefined to use amber (16096779).',
     },
     debug: {
       control: { type: 'boolean' },
@@ -409,22 +410,24 @@ export const SingleDriver: Story = {
   },
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   render: (args: any) => {
-    const drivers = [{
-      driver: {
-        CarIdx: 39,
-        CarNumber: args.carNumber || '29',
-        CarClassID: 3,
-        CarClassColor: args.carClassColor || 11430911,
-        CarClassEstLapTime: 126.2284,
+    const drivers = [
+      {
+        driver: {
+          CarIdx: 39,
+          CarNumber: args.carNumber || '29',
+          CarClassID: 3,
+          CarClassColor: args.carClassColor || 11430911,
+          CarClassEstLapTime: 126.2284,
+        },
+        progress: args.progress || 0,
+        isPlayer: args.isPlayer || false,
       },
-      progress: args.progress || 0,
-      isPlayer: args.isPlayer || false,
-    }] as TrackDriver[];
+    ] as TrackDriver[];
 
     return (
-      <TrackCanvas 
-        trackId={args.trackId} 
-        drivers={drivers} 
+      <TrackCanvas
+        trackId={args.trackId}
+        drivers={drivers}
         enableTurnNames={args.enableTurnNames}
         showCarNumbers={args.showCarNumbers ?? true}
         invertTrackColors={args.invertTrackColors ?? false}
@@ -462,9 +465,9 @@ export const CirclingAround: Story = {
     });
 
     return (
-      <TrackCanvas 
-        trackId={args.trackId} 
-        drivers={drivers} 
+      <TrackCanvas
+        trackId={args.trackId}
+        drivers={drivers}
         enableTurnNames={args.enableTurnNames}
         showCarNumbers={args.showCarNumbers ?? true}
         invertTrackColors={args.invertTrackColors ?? false}
@@ -482,10 +485,63 @@ export const CirclingAround: Story = {
   },
 };
 
+const singleDriverData = [
+  {
+    driver: {
+      CarIdx: 24,
+      CarNumber: '24',
+      CarClassID: 2,
+      CarClassColor: 16734344,
+      CarClassEstLapTime: 126.9374,
+    },
+    progress: 0,
+    isPlayer: true,
+  },
+] as TrackDriver[];
+
+export const CirclingAroundSingleDriver: Story = {
+  render: (args) => {
+    const [drivers, setDrivers] = useState(singleDriverData);
+    useEffect(() => {
+      const interval = setInterval(() => {
+        setDrivers((prev) =>
+          prev.map((d) => ({
+            ...d,
+            progress: (d.progress + 0.003) % 1,
+          }))
+        );
+      }, 50);
+
+      return () => clearInterval(interval);
+    });
+
+    return (
+      <TrackCanvas
+        trackId={args.trackId}
+        drivers={drivers}
+        enableTurnNames={args.enableTurnNames}
+        showCarNumbers={args.showCarNumbers ?? true}
+        invertTrackColors={args.invertTrackColors ?? false}
+        driverCircleSize={args.driverCircleSize ?? 40}
+        playerCircleSize={args.playerCircleSize ?? 40}
+        trackLineWidth={args.trackLineWidth ?? 20}
+        trackOutlineWidth={args.trackOutlineWidth ?? 40}
+        highlightColor={args.highlightColor}
+      />
+    );
+  },
+  args: {
+    trackId: 1,
+  },
+};
+
 // All available track IDs from tracks.json
 const allTrackIds = Object.keys(tracks)
   .map(Number)
-  .filter(trackId => !isNaN(trackId) && tracks[trackId.toString() as keyof typeof tracks])
+  .filter(
+    (trackId) =>
+      !isNaN(trackId) && tracks[trackId.toString() as keyof typeof tracks]
+  )
   .sort((a, b) => a - b);
 
 export const AllTracksGrid: Story = {
@@ -497,17 +553,17 @@ export const AllTracksGrid: Story = {
         <h1 className="text-white text-center mb-6 text-2xl">
           All Available Tracks ({allTrackIds.length} total)
         </h1>
-        <div 
+        <div
           className="grid gap-4 justify-center mx-auto"
           style={{
             gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
             maxWidth: '100%',
-            width: '100%'
+            width: '100%',
           }}
         >
           {allTrackIds.map((trackId) => (
-            <div 
-              key={trackId} 
+            <div
+              key={trackId}
               className="border border-gray-600 rounded-lg overflow-hidden bg-gray-800 relative aspect-square"
               style={{ maxWidth: trackSize, maxHeight: trackSize }}
             >
@@ -515,9 +571,9 @@ export const AllTracksGrid: Story = {
                 Track {trackId}
               </div>
               <div className="w-full h-full">
-                <TrackCanvas 
-                  trackId={trackId} 
-                  drivers={sampleData} 
+                <TrackCanvas
+                  trackId={trackId}
+                  drivers={sampleData}
                   enableTurnNames={args.enableTurnNames}
                   showCarNumbers={args.showCarNumbers ?? true}
                   invertTrackColors={args.invertTrackColors ?? false}
@@ -547,26 +603,27 @@ export const BrokenTracksGrid: Story = {
           Broken Tracks ({BROKEN_TRACKS.length} total)
         </h1>
         <p className="text-gray-400 text-center mb-6">
-          These tracks are broken and will be hidden in production but available for debugging in development/storybook.
+          These tracks are broken and will be hidden in production but available
+          for debugging in development/storybook.
         </p>
-        <div 
+        <div
           className="grid gap-4 justify-center mx-auto"
           style={{
             gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
             maxWidth: '100%',
-            width: '100%'
+            width: '100%',
           }}
         >
           {BROKEN_TRACKS.map((brokenTrack) => (
-            <div 
-              key={brokenTrack.id} 
+            <div
+              key={brokenTrack.id}
               className="border border-red-600 rounded-lg overflow-hidden bg-gray-800 relative aspect-square"
               style={{ maxWidth: trackSize, maxHeight: trackSize }}
             >
               <div className="w-full h-full">
-                <TrackCanvas 
-                  trackId={brokenTrack.id} 
-                  drivers={sampleData} 
+                <TrackCanvas
+                  trackId={brokenTrack.id}
+                  drivers={sampleData}
                   enableTurnNames={args.enableTurnNames}
                   showCarNumbers={args.showCarNumbers ?? true}
                   invertTrackColors={args.invertTrackColors ?? false}

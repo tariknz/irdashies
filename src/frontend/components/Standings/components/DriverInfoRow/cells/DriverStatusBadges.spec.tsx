@@ -9,14 +9,6 @@ describe('DriverStatusBadges', () => {
     expect(container.innerHTML).toBe('');
   });
 
-  it('renders nothing when hidden is true', () => {
-    const { container } = render(
-      <DriverStatusBadges hidden dnf />
-    );
-
-    expect(container.innerHTML).toBe('');
-  });
-
   it('renders DNF when dnf is true', () => {
     const { container } = render(<DriverStatusBadges dnf />);
 
@@ -57,7 +49,20 @@ describe('DriverStatusBadges', () => {
       />
     );
 
-    expect(container.textContent).toContain('L 4 12 s');
+    expect(container.textContent).toContain('L 4 12');
+  });
+
+  it('renders pit time when showPitTime is enabled, pit longer than a minute', () => {
+    const { container } = render(
+      <DriverStatusBadges
+        lastPit
+        lastPitLap={4}
+        pitStopDuration={75}
+        showPitTime
+      />
+    );
+
+    expect(container.textContent).toContain('L 4 1:15');
   });
 
   it('renders repair, penalty, and slowdown badges', () => {
