@@ -41,8 +41,11 @@ export async function publishIRacingSDKEvents(
       overlayManager.publishMessageToOverlay(id, 'sessionData', latestSession);
   });
 
-  const runningStateInterval = setInterval(async () => {
-    const isSimRunning = await IRacingSDK.IsSimRunning();
+  const runningStateSdk = new IRacingSDK();
+  await runningStateSdk.ready();
+
+  const runningStateInterval = setInterval(() => {
+    const isSimRunning = runningStateSdk.sessionStatusOK;
     if (isSimRunning === lastRunningState) {
       return;
     }
@@ -57,15 +60,15 @@ export async function publishIRacingSDKEvents(
 
   // Start the telemetry loop in the background
   (async () => {
+    const sdk = new IRacingSDK();
+    sdk.autoEnableTelemetry = true;
+    await sdk.ready();
+
     while (!shouldStop) {
-      if (await IRacingSDK.IsSimRunning()) {
+      if (sdk.sessionStatusOK) {
         console.log('[iracingSdkBridge] iRacing is running');
-        const sdk = new IRacingSDK();
         let lastSessionVersion = -1;
         let lastSessionPublishTime = 0;
-        sdk.autoEnableTelemetry = true;
-
-        await sdk.ready();
 
         while (!shouldStop && sdk.waitForData(TIMEOUT)) {
           perfMetrics.markStart('processTelemetry');
