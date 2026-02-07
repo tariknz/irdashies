@@ -11,37 +11,36 @@ export const Flag = () => {
   const sessionFlags = useTelemetryValue<number>('SessionFlags') ?? 0;
   const isPlayerOnTrack = useTelemetryValue<boolean>('IsOnTrack') ?? false;
   const isVisibleInSession = useSessionVisibility(settings.sessionVisibility);
+
   const blinkOn = useBlinkState(settings.animate, settings.blinkPeriod);
 
   if (!isVisibleInSession) return null;
   if (settings.showOnlyWhenOnTrack && !isPlayerOnTrack) return null;
 
   const flagInfo = getFlag(sessionFlags);
-  if (flagInfo.label === 'NO FLAG' && !settings.showNoFlagState) return null;
 
   const visibleLabel =
     settings.animate && !blinkOn ? 'NO FLAG' : flagInfo.label;
 
-  const matrixSize =
-    settings.matrixMode === '8x8'
-      ? 8
-      : settings.matrixMode === '16x16'
-        ? 16
-        : 1;
-
-  const flagProps = {
-    label: visibleLabel,
-    showLabel: settings.showLabel ?? true,
-    matrixSize,
-    enableGlow: settings.enableGlow ?? true,
-    fullBleed: true,
-  };
+  // 4. Hide widget if NO FLAG state is disabled and no flags are waved (check actual flag, not visible label)
+  if (flagInfo.label === 'NO FLAG' && !settings.showNoFlagState) return null;
 
   // Single flag
   if (!settings.doubleflag) {
     return (
       <div className="h-full">
-        <FlagDisplay {...flagProps} />
+        <FlagDisplay
+      label={visibleLabel}
+      showLabel={settings.showLabel ?? true}
+      matrixSize={
+        settings.matrixMode === '8x8'
+          ? 8
+          : settings.matrixMode === '16x16'
+            ? 16
+            : 1
+      }
+      enableGlow={settings.enableGlow ?? true}
+    />
       </div>
     );
   }
@@ -50,15 +49,40 @@ export const Flag = () => {
   return (
     <div className="flex h-full w-full justify-between items-stretch">
       <div className="h-full">
-        <FlagDisplay {...flagProps} />
+        <FlagDisplay
+      label={visibleLabel}
+      showLabel={settings.showLabel ?? true}
+      matrixSize={
+        settings.matrixMode === '8x8'
+          ? 8
+          : settings.matrixMode === '16x16'
+            ? 16
+            : 1
+      }
+      enableGlow={settings.enableGlow ?? true}
+    />
       </div>
 
       <div className="h-full">
-        <FlagDisplay {...flagProps} />
+        <FlagDisplay
+      label={visibleLabel}
+      showLabel={settings.showLabel ?? true}
+      matrixSize={
+        settings.matrixMode === '8x8'
+          ? 8
+          : settings.matrixMode === '16x16'
+            ? 16
+            : 1
+      }
+      enableGlow={settings.enableGlow ?? true}
+    />
       </div>
     </div>
   );
 };
+
+
+
 
 export const FlagDisplay = ({
   label,
@@ -89,13 +113,11 @@ export const FlagDisplay = ({
   const cellRadius = isUniform ? 16 : 4;
 
   const outerClass = fullBleed
-    ? 'flex flex-col items-stretch gap-0 bg-slate-900 border-4 border-slate-800 shadow-2xl w-full h-full box-border m-0'
+    ? 'flex flex-col items-stretch gap-0 bg-slate-900 border-4 border-slate-800 shadow-2xl w-full h-full box-border m-0 p-0'
     : 'flex flex-col items-center gap-2 p-4 bg-slate-900 rounded-2xl border-4 border-slate-800 shadow-2xl w-full';
 
-  const outerStyle = fullBleed && showLabel ? { paddingBottom: '20px' } : {};
-
   return (
-    <div className={outerClass} style={outerStyle}>
+    <div className={outerClass}>
       <div
         className="grid w-full bg-black box-border"
         style={{
@@ -144,9 +166,7 @@ export const FlagDisplay = ({
         })}
       </div>
       <div
-        className={`flex w-full justify-center ${
-          showLabel ? 'min-h-6' : 'min-h-0'
-        }`}
+        className={`flex gap-2 items-center ${showLabel ? 'min-h-6' : 'min-h-0'}`}
       >
         {showLabel && (
           <span
