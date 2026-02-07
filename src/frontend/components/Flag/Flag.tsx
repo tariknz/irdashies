@@ -27,7 +27,7 @@ export const Flag = () => {
   if (flagInfo.label === 'NO FLAG' && !settings.showNoFlagState) return null;
 
   // Single flag
-  if (!settings.doubleflag) {
+  if (!settings.doubleFlag) {
     return (
       <div className="h-full">
         <FlagDisplay
