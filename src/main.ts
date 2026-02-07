@@ -1,8 +1,14 @@
 import { app } from 'electron';
-import { iRacingSDKSetup, getCurrentBridge } from './app/bridge/iracingSdk/setup';
+import {
+  iRacingSDKSetup,
+  getCurrentBridge,
+} from './app/bridge/iracingSdk/setup';
 import { getOrCreateDefaultDashboard } from './app/storage/dashboards';
 import { setupTaskbar } from './app';
-import { publishDashboardUpdates, dashboardBridge } from './app/bridge/dashboard/dashboardBridge';
+import {
+  publishDashboardUpdates,
+  dashboardBridge,
+} from './app/bridge/dashboard/dashboardBridge';
 import { setupPitLaneBridge } from './app/bridge/pitLaneBridge';
 import { setupFuelCalculatorBridge } from './app/bridge/fuelCalculatorBridge';
 import { TelemetrySink } from './app/bridge/iracingSdk/telemetrySink';
@@ -12,7 +18,7 @@ import { updateElectronApp } from 'update-electron-app';
 // @ts-expect-error no types for squirrel
 import started from 'electron-squirrel-startup';
 import { Analytics } from './app/analytics';
-import { registerHideUiShortcut } from './frontend/utils/globalShortcuts';
+import { registerHideUiShortcut } from './app/globalShortcuts';
 
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
@@ -57,7 +63,8 @@ app.on('ready', async () => {
   registerHideUiShortcut(overlayManager);
 
   // Check if settings window should start minimized
-  const shouldStartMinimized = dashboard?.generalSettings?.startMinimized ?? false;
+  const shouldStartMinimized =
+    dashboard?.generalSettings?.startMinimized ?? false;
   if (shouldStartMinimized) {
     // Create the settings window but don't show it immediately
     const settingsWindow = overlayManager.createSettingsWindow();
