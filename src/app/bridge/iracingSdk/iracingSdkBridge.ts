@@ -1,6 +1,7 @@
 import { IRacingSDK } from '../../irsdk';
 import { TelemetrySink } from './telemetrySink';
 import { OverlayManager } from '../../overlayManager';
+import { TelemetryPerfMetrics } from '../../perfMetrics';
 import type { IrSdkBridge, Session, Telemetry } from '@irdashies/types';
 
 const TIMEOUT = 1000;
@@ -10,6 +11,9 @@ export async function publishIRacingSDKEvents(
   overlayManager: OverlayManager
 ): Promise<IrSdkBridge> {
   console.log('[iracingSdkBridge] Loading iRacing SDK bridge...');
+
+  const perfMetrics = new TelemetryPerfMetrics();
+  perfMetrics.startReporting();
 
   let shouldStop = false;
   let lastRunningState: boolean | undefined = undefined;
@@ -64,13 +68,16 @@ export async function publishIRacingSDKEvents(
         await sdk.ready();
 
         while (!shouldStop && sdk.waitForData(TIMEOUT)) {
+          perfMetrics.markStart('processTelemetry');
           const telemetry = sdk.getTelemetry();
           const session = sdk.getSessionData();
           await new Promise((resolve) => setTimeout(resolve, 1000 / 25)); // 25Hz update rate
 
           if (telemetry) {
             latestTelemetry = telemetry;
+            perfMetrics.markStart('broadcast');
             overlayManager.publishMessage('telemetry', telemetry);
+            perfMetrics.markEnd('broadcast');
             telemetrySink.addTelemetry(telemetry);
             telemetryCallbacks.forEach((callback) => callback(telemetry));
           }
@@ -91,6 +98,8 @@ export async function publishIRacingSDKEvents(
               sessionCallbacks.forEach((callback) => callback(session));
             }
           }
+          perfMetrics.markEnd('processTelemetry');
+          perfMetrics.tick();
         }
 
         console.log(
@@ -126,6 +135,7 @@ export async function publishIRacingSDKEvents(
     stop: () => {
       shouldStop = true;
       clearInterval(runningStateInterval);
+      perfMetrics.stopReporting();
     },
   };
 }
