@@ -1,26 +1,7 @@
-/**
- * Type definitions for Fuel Calculator
- */
+import type { SessionVisibilitySettings, LayoutNode } from '../Settings/types';
+import type { FuelLapData } from '../../../types';
 
-/**
- * Data for a single lap's fuel consumption
- */
-export interface FuelLapData {
-  /** Lap number */
-  lapNumber: number;
-  /** Fuel consumed during this lap (liters) */
-  fuelUsed: number;
-  /** Lap time in seconds */
-  lapTime: number;
-  /** Whether this lap was under green flag conditions */
-  isGreenFlag: boolean;
-  /** Whether this lap is valid for calculations (outlier filtering) */
-  isValidForCalc: boolean;
-  /** Whether the car started this lap from pit road (out-lap) */
-  isOutLap: boolean;
-  /** Timestamp when lap was completed */
-  timestamp: number;
-}
+export type { FuelLapData };
 
 /**
  * Complete fuel calculation result
@@ -30,12 +11,18 @@ export interface FuelCalculation {
   fuelLevel: number;
   /** Fuel used on the most recent completed lap (liters) */
   lastLapUsage: number;
-  /** Average fuel consumption over last 3 laps (liters) */
-  avg3Laps: number;
+  /** Fuel used so far in the current lap (liters) */
+  currentLapUsage?: number;
+  /** Projected fuel usage for the current lap (liters) */
+  projectedLapUsage?: number;
+  /** Average fuel consumption over customizable last N laps (liters) */
+  avgLaps: number;
   /** Average fuel consumption over last 10 laps (liters) */
   avg10Laps: number;
   /** Average fuel consumption for all green flag laps (liters) */
   avgAllGreenLaps: number;
+  /** Maximum fuel consumption from qualifying session (persisted) */
+  maxQualify: number | null;
   /** Minimum fuel used in a single lap (liters) */
   minLapUsage: number;
   /** Maximum fuel used in a single lap (liters) */
@@ -61,7 +48,7 @@ export interface FuelCalculation {
   /** Target fuel consumption per lap to finish with current fuel (liters) */
   targetConsumption: number;
   /** Confidence level in the calculations */
-  confidence: 'high' | 'medium' | 'low';
+  confidence: 'high' | 'medium' | 'low' | 'very-low';
   /** Estimated fuel remaining at race finish (can be negative if insufficient fuel) */
   fuelAtFinish: number;
   /** Average lap time in seconds (for time until empty calculation) */
@@ -82,6 +69,12 @@ export interface FuelCalculation {
   earliestPitLap?: number;
   /** Fuel tank capacity in liters (respecting session limits) */
   fuelTankCapacity?: number;
+  /** The lap number of the last finished lap included in the calculation */
+  lastFinishedLap?: number;
+  /** Fuel safety status based on current level vs required */
+  fuelStatus?: 'safe' | 'caution' | 'danger';
+  /** Minimum and maximum number of laps estimated in the session at the current pace */
+  lapsRange?: [number, number];
 }
 
 /**
@@ -92,11 +85,18 @@ export interface FuelCalculatorSettings {
   /** Fuel units to display */
   fuelUnits: 'L' | 'gal';
   /** Layout style */
-  layout?: 'vertical' | 'horizontal';
+  layout: 'vertical' | 'horizontal';
   /** Show detailed consumption breakdown */
   showConsumption: boolean;
+  /** Show fuel level */
+  showFuelLevel: boolean;
+  /** Show laps remaining */
+  showLapsRemaining: boolean;
   /** Show minimum fuel consumption */
   showMin: boolean;
+  /** Show live current lap consumption */
+  showCurrentLap: boolean;
+  showQualifyConsumption?: boolean;
   /** Show consumption for last lap */
   showLastLap: boolean;
   /** Show average over last 3 laps */
@@ -108,19 +108,88 @@ export interface FuelCalculatorSettings {
   /** Show pit window information */
   showPitWindow: boolean;
   /** Show endurance strategy (total pit stops for entire session) */
-  showEnduranceStrategy?: boolean;
+  showEnduranceStrategy: boolean;
   /** Show fuel scenarios (target consumption for different lap counts) */
   showFuelScenarios: boolean;
   /** Show fuel required for min/avg/max consumption */
-  showFuelRequired?: boolean;
-  /** Show consumption history graph */
-  showConsumptionGraph?: boolean;
-  /** Consumption graph type */
-  consumptionGraphType?: 'line' | 'histogram';
+  showFuelRequired: boolean;
+  /** Show fuel history graph */
+  showFuelHistory: boolean;
+  /** Fuel history graph type */
+  fuelHistoryType: 'line' | 'histogram';
   /** Safety margin percentage (0-1) */
   safetyMargin: number;
+  manualTarget?: number;
   /** Background opacity (0-100) */
   background: { opacity: number };
   /** Display mode for fuel required column: 'toFinish' shows total fuel needed, 'toAdd' shows fuel to add at stop */
-  fuelRequiredMode?: 'toFinish' | 'toAdd';
+  fuelRequiredMode: 'toFinish' | 'toAdd';
+  enableTargetPitLap?: boolean;
+  targetPitLap?: number;
+  targetPitLapBasis?: 'avg' | 'avg10' | 'last' | 'max' | 'min' | 'qual';
+
+  /** Number of laps to use for AVG calculation (default: 3) */
+  avgLapsCount?: number;
+  useGeneralFontSize?: boolean;
+  useGeneralCompactMode?: boolean;
+
+  sessionVisibility: SessionVisibilitySettings;
+  /**
+   * Box Layout Configuration
+   * Defines the structure of boxes and which widgets they contain
+   */
+  layoutConfig?: BoxConfig[];
+  /** Recursive Layout Tree (Supersedes layoutConfig) */
+  layoutTree?: LayoutNode;
+  /** Per-widget styling overrides (e.g. fontSize) */
+  widgetStyles?: Record<
+    string,
+    {
+      fontSize?: number;
+      labelFontSize?: number;
+      valueFontSize?: number;
+      barFontSize?: number;
+      height?: number;
+    }
+  >;
+  /** Order of rows in the consumption grid (curr, avg, max, last, min) */
+  consumptionGridOrder?: string[];
+  /** Percentage thresholds for fuel status colors (0-100) */
+  fuelStatusThresholds?: {
+    green: number;
+    amber: number;
+    red: number;
+  };
+  /** Basis for fuel status coloring consumption calculation */
+  fuelStatusBasis?: 'last' | 'avg' | 'min' | 'max';
+  /** Number of laps remaining that triggers Red status regardless of percentage */
+  fuelStatusRedLaps?: number;
+  /** Whether to use persistence for lap history */
+  enableStorage?: boolean;
+  /** Whether to enable debug logging to file */
+  enableLogging?: boolean;
+  /** Whether to show the fuel status border color (green/orange/red) */
+  showFuelStatusBorder?: boolean;
 }
+
+export interface BoxConfig {
+  id: string;
+  /** Layout flow for widgets in this box */
+  flow?: 'vertical' | 'horizontal';
+  /** Width of the box relative to container */
+  width?: '1/1' | '1/2' | '1/3' | '1/4';
+  /** Widgets contained in this box, in order */
+  widgets: string[];
+}
+
+/** Available widgets for the Fuel Calculator */
+export type FuelWidgetType =
+  | 'fuelLevel'
+  | 'lapsRemaining'
+  | 'consumption'
+  | 'pitWindow'
+  | 'endurance'
+  | 'scenarios'
+  | 'graph'
+  | 'confidence'
+  | 'economyPredict';

@@ -1,14 +1,30 @@
 import { app, ipcMain } from 'electron';
-import type { DashboardBridge, DashboardLayout } from '@irdashies/types';
+import type {
+  DashboardBridge,
+  DashboardLayout,
+  SaveDashboardOptions,
+} from '@irdashies/types';
 import { onDashboardUpdated } from '../../storage/dashboardEvents';
-import { getDashboard, saveDashboard, resetDashboard, saveGarageCoverImage, getGarageCoverImageAsDataUrl } from '../../storage/dashboards';
+import {
+  getDashboard,
+  saveDashboard,
+  resetDashboard,
+  saveGarageCoverImage,
+  getGarageCoverImageAsDataUrl,
+} from '../../storage/dashboards';
 import { OverlayManager } from '../../overlayManager';
-import { getAnalyticsOptOut as getAnalyticsOptOutStorage, setAnalyticsOptOut as setAnalyticsOptOutStorage } from '../../storage/analytics';
+import {
+  getAnalyticsOptOut as getAnalyticsOptOutStorage,
+  setAnalyticsOptOut as setAnalyticsOptOutStorage,
+} from '../../storage/analytics';
 import { Analytics } from '../../analytics';
 
 // Store callbacks for dashboard updates
-const dashboardUpdateCallbacks: Set<(dashboard: DashboardLayout) => void> = new Set<(dashboard: DashboardLayout) => void>();
-const demoModeCallbacks: Set<(isDemoMode: boolean) => void> = new Set<(isDemoMode: boolean) => void>();
+const dashboardUpdateCallbacks: Set<(dashboard: DashboardLayout) => void> =
+  new Set<(dashboard: DashboardLayout) => void>();
+const demoModeCallbacks: Set<(isDemoMode: boolean) => void> = new Set<
+  (isDemoMode: boolean) => void
+>();
 
 /**
  * Main dashboard bridge instance exposed to component server
@@ -23,8 +39,17 @@ export const dashboardBridge: DashboardBridge = {
   reloadDashboard: () => {
     // Not used by component server
   },
-  saveDashboard: (dashboard: DashboardLayout) => {
+  saveDashboard: (
+    dashboard: DashboardLayout,
+    options?: SaveDashboardOptions
+  ) => {
     saveDashboard('default', dashboard);
+    if (options?.forceReload) {
+      // We don't have direct access to overlayManager here,
+      // but ipcMain handles it in publishDashboardUpdates.
+      // However, for the component server bridge, we might need a way to trigger it.
+      // The current implementation of publishDashboardUpdates already listens for 'saveDashboard' IPC.
+    }
   },
   resetDashboard: async (resetEverything: boolean) => {
     return resetDashboard(resetEverything, 'default');
@@ -64,10 +89,13 @@ export const dashboardBridge: DashboardBridge = {
     app.setLoginItemSettings({
       openAtLogin: enabled,
     });
-  }
+  },
 };
 
-export async function publishDashboardUpdates(overlayManager: OverlayManager, analytics: Analytics) {
+export async function publishDashboardUpdates(
+  overlayManager: OverlayManager,
+  analytics: Analytics
+) {
   onDashboardUpdated((dashboard) => {
     overlayManager.closeOrCreateWindows(dashboard);
     overlayManager.publishMessage('dashboardUpdated', dashboard);
@@ -118,15 +146,18 @@ export async function publishDashboardUpdates(overlayManager: OverlayManager, an
     }
   });
 
-  ipcMain.handle('getGarageCoverImageAsDataUrl', async (_, imagePath: string) => {
-    try {
-      const dataUrl = await getGarageCoverImageAsDataUrl(imagePath);
-      return dataUrl;
-    } catch (err) {
-      console.error('Error loading garage cover image as data URL:', err);
-      throw err;
+  ipcMain.handle(
+    'getGarageCoverImageAsDataUrl',
+    async (_, imagePath: string) => {
+      try {
+        const dataUrl = await getGarageCoverImageAsDataUrl(imagePath);
+        return dataUrl;
+      } catch (err) {
+        console.error('Error loading garage cover image as data URL:', err);
+        throw err;
+      }
     }
-  });
+  );
   ipcMain.handle('getAnalyticsOptOut', () => {
     return getAnalyticsOptOutStorage();
   });
@@ -159,7 +190,10 @@ export async function publishDashboardUpdates(overlayManager: OverlayManager, an
  * Called from iracingSdk setup when demo mode is toggled
  */
 export function notifyDemoModeChanged(isDemoMode: boolean) {
-  console.log('🎭 Notifying dashboard bridge callbacks of demo mode change:', isDemoMode);
+  console.log(
+    '🎭 Notifying dashboard bridge callbacks of demo mode change:',
+    isDemoMode
+  );
   demoModeCallbacks.forEach((callback) => {
     try {
       callback(isDemoMode);

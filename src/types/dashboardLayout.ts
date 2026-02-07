@@ -13,8 +13,10 @@ export interface WidgetLayout {
 }
 
 export interface DashboardWidget {
-  /** id of the widget type, used to route to the widget (see App.tsx). */
+  /** Unique instance ID of the widget. */
   id: string;
+  /** Component type ID (e.g. 'fuel', 'standings'). If undefined, 'id' is used as type. */
+  type?: string;
   /** Show/hide widget */
   enabled: boolean;
   /** The layout of the window for the widget on the dashboard. */
