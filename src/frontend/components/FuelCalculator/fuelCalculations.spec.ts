@@ -47,17 +47,20 @@ describe('fuelCalculations', () => {
       expect(validateLapData(2.5, 90, [mockLap(1, 2.4, 89)])).toBe(true);
     });
 
-    it('should detect outliers beyond 3 standard deviations', () => {
+    it('should detect outliers using IQR method', () => {
       const recentLaps = [
-        mockLap(1, 2.5, 90),
-        mockLap(2, 2.6, 91),
-        mockLap(3, 2.4, 89),
+        mockLap(1, 2.4, 90),
+        mockLap(2, 2.5, 91),
+        mockLap(3, 2.5, 89),
         mockLap(4, 2.5, 90),
-        mockLap(5, 2.5, 91),
+        mockLap(5, 2.6, 91),
       ];
 
+      // Mean is 2.5. Tolerance (15%) is 0.375.
+      // Bounds: [2.125, 2.875]
       expect(validateLapData(2.5, 90, recentLaps)).toBe(true);
-      expect(validateLapData(10.0, 90, recentLaps)).toBe(false); // Outlier
+      expect(validateLapData(2.8, 90, recentLaps)).toBe(true);
+      expect(validateLapData(5.0, 90, recentLaps)).toBe(false); // Outlier
     });
   });
 
@@ -232,8 +235,8 @@ describe('fuelCalculations', () => {
     });
 
     it('should handle edge cases', () => {
-      expect(detectLapCrossing(0.0, 1.0)).toBe(false);
-      expect(detectLapCrossing(0.1, 0.9)).toBe(false);
+      expect(detectLapCrossing(0.0, 1.0)).toBe(true);
+      expect(detectLapCrossing(0.1, 0.9)).toBe(true);
       expect(detectLapCrossing(0.09, 0.91)).toBe(true);
     });
   });

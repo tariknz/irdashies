@@ -1,4 +1,6 @@
 export interface BaseWidgetSettings<T = Record<string, unknown>> {
+  id?: string;
+  type?: string;
   enabled: boolean;
   config: T;
 }
@@ -330,7 +332,11 @@ export interface FuelWidgetSettings extends BaseWidgetSettings {
     fuelUnits: 'L' | 'gal';
     layout: 'vertical' | 'horizontal';
     showConsumption: boolean;
+    showFuelLevel: boolean;
+    showLapsRemaining: boolean;
     showMin: boolean;
+    showCurrentLap: boolean;
+    showQualifyConsumption?: boolean;
     showLastLap: boolean;
     show3LapAvg: boolean;
     show10LapAvg: boolean;
@@ -339,14 +345,79 @@ export interface FuelWidgetSettings extends BaseWidgetSettings {
     showEnduranceStrategy: boolean;
     showFuelScenarios: boolean;
     showFuelRequired: boolean;
-    showConsumptionGraph: boolean;
-    consumptionGraphType: 'line' | 'histogram';
+    showFuelHistory: boolean;
+    fuelHistoryType: 'line' | 'histogram';
     safetyMargin: number;
+    manualTarget?: number;
     background: { opacity: number };
     fuelRequiredMode: 'toFinish' | 'toAdd';
+    enableTargetPitLap?: boolean;
+    targetPitLap?: number;
+    targetPitLapBasis?: 'avg' | 'avg10' | 'last' | 'max' | 'min' | 'qual';
+    economyPredictMode?: 'live' | 'endOfLap';
+    useGeneralFontSize?: boolean;
+    useGeneralCompactMode?: boolean;
     sessionVisibility: SessionVisibilitySettings;
+    /** 
+    * Box Layout Configuration 
+    * Defines the structure of boxes and which widgets they contain
+    */
+    layoutConfig?: BoxConfig[];
+    /** Recursive Layout Tree (Supersedes layoutConfig) */
+    layoutTree?: LayoutNode;
+    /** Per-widget styling overrides (e.g. fontSize) */
+    widgetStyles?: Record<string, { fontSize?: number; labelFontSize?: number; valueFontSize?: number; barFontSize?: number; height?: number }>;
+    /** Order of rows in the consumption grid (curr, avg, max, last, min) */
+    consumptionGridOrder?: string[];
+    /** Percentage thresholds for fuel status colors (0-100) */
+    fuelStatusThresholds?: {
+      green: number;
+      amber: number;
+      red: number;
+    };
+    /** Basis for fuel status coloring consumption calculation */
+    fuelStatusBasis?: 'last' | 'avg' | 'min' | 'max';
+    /** Number of laps remaining that triggers Red status regardless of percentage */
+    fuelStatusRedLaps?: number;
+    /** Number of laps to use for AVG calculation (default: 3) */
+    avgLapsCount?: number;
+    /** Whether to use persistence for lap history */
+    enableStorage?: boolean;
+    /** Whether to enable debug logging to file */
+    enableLogging?: boolean;
+    /** Whether to show the fuel status border color (green/orange/red) */
+    showFuelStatusBorder?: boolean;
   };
 }
+
+export interface BoxConfig {
+  id: string;
+  /** Layout flow for widgets in this box */
+  flow?: 'vertical' | 'horizontal';
+  /** Width of the box relative to container */
+  width?: '1/1' | '1/2' | '1/3' | '1/4';
+  /** Widgets contained in this box, in order */
+  widgets: string[];
+}
+
+export type LayoutDirection = 'row' | 'col';
+
+export type LayoutNode =
+  | { id: string; type: 'box'; widgets: string[]; direction: LayoutDirection; weight?: number }
+  | { id: string; type: 'split'; direction: LayoutDirection; children: LayoutNode[]; weight?: number };
+
+/** Available widgets for the Fuel Calculator */
+export type FuelWidgetType =
+  | 'fuelLevel'
+  | 'lapsRemaining'
+  | 'fuelHeader'
+  | 'consumption'
+  | 'pitWindow'
+  | 'endurance'
+  | 'scenarios'
+  | 'graph'
+  | 'confidence'
+  | 'keyInfo';
 
 export interface BlindSpotMonitorWidgetSettings extends BaseWidgetSettings {
   config: {
@@ -429,6 +500,7 @@ export interface FasterCarsFromBehindWidgetSettings extends BaseWidgetSettings {
     showDistance: boolean;
     showBadge: boolean;
     badgeFormat: string;
+    onlyShowFasterClasses: boolean;
     sessionVisibility: SessionVisibilitySettings;
   };
 }

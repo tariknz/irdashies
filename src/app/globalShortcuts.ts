@@ -1,6 +1,5 @@
 import { app, globalShortcut } from 'electron';
-import { OverlayManager } from 'src/app/overlayManager';
-
+import { OverlayManager } from './overlayManager';
 
 export function registerHideUiShortcut(overlayManager: OverlayManager) {
   let hideState = false;
