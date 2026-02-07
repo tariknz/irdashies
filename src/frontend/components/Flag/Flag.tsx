@@ -82,9 +82,6 @@ export const Flag = () => {
   );
 };
 
-
-
-
 export const FlagDisplay = ({
   label,
   showLabel = true,
