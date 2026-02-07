@@ -128,13 +128,19 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
 
   // We need to parse the layout if it's a string or use the object directly
   // However, `DEFAULT_FUEL_LAYOUT_TREE` is a const.
-  // In `FuelSettings` we save `customLayout`.
-  // If `settings.customLayout` exists, use it.
+  // In `FuelSettings` we save `layoutTree`.
   const layoutTree: LayoutNode = useMemo(() => {
-    // Fallback to default structure based on `layout` prop (simple presets)
-    // Or use the complex default tree
+    // If we have a custom layout tree in settings, use it
+    if (
+      settings.layoutTree &&
+      (settings.layoutTree as Record<string, unknown>).type
+    ) {
+      return settings.layoutTree as LayoutNode;
+    }
+
+    // Fallback to default structure
     return DEFAULT_FUEL_LAYOUT_TREE;
-  }, []);
+  }, [settings.layoutTree]);
 
   const isOnTrack = useTelemetryValue('IsOnTrack');
   // const sessionId = useTelemetryValue('SessionUniqueID');
@@ -338,14 +344,13 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
     }, 1000); // 1Hz fallback refresh
     return () => clearTimeout(timeoutId);
   });
-  
+
   // Also sync with `SessionTime` for faster updates
   useEffect(() => {
-     // This effect runs whenever sessionTime changes (approx 60Hz or 20Hz depending on app setting)
-     // We can trigger a re-render if necessary, but changing state `tick` above does it slowly.
-     // `useTelemetryValue` hooks trigger renders on change anyway.
+    // This effect runs whenever sessionTime changes (approx 60Hz or 20Hz depending on app setting)
+    // We can trigger a re-render if necessary, but changing state `tick` above does it slowly.
+    // `useTelemetryValue` hooks trigger renders on change anyway.
   }, [sessionTime]);
-
 
   // HACK: Re-implement the blinking/updates properly
   useEffect(() => {
@@ -366,7 +371,6 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
 
   // Safety fallback
   if (!hasSettings) return <div className="text-red-500">Missing Settings</div>;
-
 
   if (!editMode && settings?.showOnlyWhenOnTrack && !isOnTrack) return null;
   if (!editMode && !isSessionVisible) return <></>;
@@ -500,7 +504,8 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
 
   // Static styling since we removed blinkState
   const backgroundStyle: React.CSSProperties = {
-      fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+    fontFamily:
+      "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
   };
 
   return (
