@@ -109,7 +109,6 @@ export class IRacingSDK {
 
   constructor() {
     this._sdkReq = this._loadSDK();
-    void IRacingSDK.IsSimRunning();
   }
 
   private async _loadSDK(): Promise<void> {
