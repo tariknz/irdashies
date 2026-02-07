@@ -37,7 +37,7 @@ const formatValue = (value: unknown): string => {
     if (value.length === 0) return '[]';
     if (value.length === 1) return formatValue(value[0]);
     if (value.length <= 5) return `[${value.map(formatValue).join(', ')}]`;
-    return `[${value.slice(0, 3).map(formatValue).join(', ')}... (${value.length} items)]`;
+    return `[${value.map(formatValue).join(', ')}... (${value.length} items)]`;
   }
   if (typeof value === 'object') return JSON.stringify(value);
   return String(value);
@@ -58,7 +58,12 @@ const PropertyRow = ({ label, path, source }: PropertyRowProps) => {
     const rawValue = getNestedValue(data, path);
 
     // For telemetry, extract the value array from the TelemetryVariable
-    if (source === 'telemetry' && rawValue && typeof rawValue === 'object' && 'value' in rawValue) {
+    if (
+      source === 'telemetry' &&
+      rawValue &&
+      typeof rawValue === 'object' &&
+      'value' in rawValue
+    ) {
       return (rawValue as { value: unknown }).value;
     }
 
@@ -70,7 +75,10 @@ const PropertyRow = ({ label, path, source }: PropertyRowProps) => {
       <span className="text-slate-400 text-xs truncate mr-2" title={path}>
         {label}
       </span>
-      <span className="text-white text-xs font-mono text-right" title={String(value)}>
+      <span
+        className="text-white text-xs font-mono text-right"
+        title={String(value)}
+      >
         {formatValue(value)}
       </span>
     </div>
@@ -79,7 +87,9 @@ const PropertyRow = ({ label, path, source }: PropertyRowProps) => {
 
 export const TelemetryInspector = (config?: TelemetryInspectorConfig) => {
   const { currentDashboard } = useDashboard();
-  const widgetConfig = currentDashboard?.widgets?.find((w: DashboardWidget) => w.id === 'telemetryinspector')?.config as TelemetryInspectorConfig | undefined;
+  const widgetConfig = currentDashboard?.widgets?.find(
+    (w: DashboardWidget) => w.id === 'telemetryinspector'
+  )?.config as TelemetryInspectorConfig | undefined;
   const settings = config ?? widgetConfig;
 
   const properties = settings?.properties ?? [];

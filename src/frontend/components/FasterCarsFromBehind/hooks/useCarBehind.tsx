@@ -45,7 +45,7 @@ export const useCarBehind = ({
       .slice(0, settings.numberDriversBehind) // Take only the configured number
       .map((car) => {
         const percent = parseInt(
-          (100 - (Math.abs(car.delta) / 3) * 100).toFixed(0)
+          (100 - (Math.abs(car.delta ?? 0) / 3) * 100).toFixed(0)
         );
 
         return {
