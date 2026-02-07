@@ -14,29 +14,40 @@ export interface SessionVisibilitySettings {
 export interface StandingsWidgetSettings extends BaseWidgetSettings {
   config: {
     iratingChange: { enabled: boolean };
-    badge: { enabled: boolean; badgeFormat: 'license-color-fullrating-bw' | 'license-color-rating-bw' | 'license-color-rating-bw-no-license' | 'rating-color-no-license' | 'license-bw-rating-bw' | 'rating-only-bw-rating-bw' | 'license-bw-rating-bw-no-license' | 'rating-bw-no-license' };
+    badge: {
+      enabled: boolean;
+      badgeFormat:
+        | 'license-color-fullrating-bw'
+        | 'license-color-rating-bw'
+        | 'license-color-rating-bw-no-license'
+        | 'rating-color-no-license'
+        | 'license-bw-rating-bw'
+        | 'rating-only-bw-rating-bw'
+        | 'license-bw-rating-bw-no-license'
+        | 'rating-bw-no-license';
+    };
     delta: { enabled: boolean };
     gap: { enabled: boolean };
     interval: { enabled: boolean };
     lastTime: {
       enabled: boolean;
       timeFormat:
-      | 'full'
-      | 'mixed'
-      | 'minutes'
-      | 'seconds-full'
-      | 'seconds-mixed'
-      | 'seconds';
+        | 'full'
+        | 'mixed'
+        | 'minutes'
+        | 'seconds-full'
+        | 'seconds-mixed'
+        | 'seconds';
     };
     fastestTime: {
       enabled: boolean;
       timeFormat:
-      | 'full'
-      | 'mixed'
-      | 'minutes'
-      | 'seconds-full'
-      | 'seconds-mixed'
-      | 'seconds';
+        | 'full'
+        | 'mixed'
+        | 'minutes'
+        | 'seconds-full'
+        | 'seconds-mixed'
+        | 'seconds';
     };
     background: { opacity: number };
     countryFlags: { enabled: boolean };
@@ -84,9 +95,23 @@ export interface StandingsWidgetSettings extends BaseWidgetSettings {
     showOnlyWhenOnTrack: boolean;
     useLivePosition: boolean;
     position: { enabled: boolean };
-    driverName: { enabled: boolean; showStatusBadges: boolean; nameFormat: 'name-middlename-surname' | 'name-m.-surname' | 'name-surname' | 'n.-surname' | 'surname-n.' | 'surname' };
+    driverName: {
+      enabled: boolean;
+      showStatusBadges: boolean;
+      nameFormat:
+        | 'name-middlename-surname'
+        | 'name-m.-surname'
+        | 'name-surname'
+        | 'n.-surname'
+        | 'surname-n.'
+        | 'surname';
+    };
     teamName: { enabled: boolean };
-    pitStatus: { enabled: boolean; showPitTime?: boolean; pitLapDisplayMode: 'lastPitLap' | 'lapsSinceLastPit' };
+    pitStatus: {
+      enabled: boolean;
+      showPitTime?: boolean;
+      pitLapDisplayMode: 'lastPitLap' | 'lapsSinceLastPit';
+    };
     displayOrder: string[];
     sessionVisibility: SessionVisibilitySettings;
   };
@@ -101,22 +126,22 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
     lastTime: {
       enabled: boolean;
       timeFormat:
-      | 'full'
-      | 'mixed'
-      | 'minutes'
-      | 'seconds-full'
-      | 'seconds-mixed'
-      | 'seconds';
+        | 'full'
+        | 'mixed'
+        | 'minutes'
+        | 'seconds-full'
+        | 'seconds-mixed'
+        | 'seconds';
     };
     fastestTime: {
       enabled: boolean;
       timeFormat:
-      | 'full'
-      | 'mixed'
-      | 'minutes'
-      | 'seconds-full'
-      | 'seconds-mixed'
-      | 'seconds';
+        | 'full'
+        | 'mixed'
+        | 'minutes'
+        | 'seconds-full'
+        | 'seconds-mixed'
+        | 'seconds';
     };
     compound: { enabled: boolean };
     carManufacturer: { enabled: boolean; hideIfSingleMake?: boolean };
@@ -152,16 +177,41 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
       displayOrder: string[];
     };
     showOnlyWhenOnTrack: boolean;
-    badge: { enabled: boolean; badgeFormat: 'license-color-fullrating-bw' | 'license-color-rating-bw' | 'license-color-rating-bw-no-license' | 'rating-color-no-license' | 'license-bw-rating-bw' | 'rating-only-bw-rating-bw' | 'license-bw-rating-bw-no-license' | 'rating-bw-no-license' };
+    badge: {
+      enabled: boolean;
+      badgeFormat:
+        | 'license-color-fullrating-bw'
+        | 'license-color-rating-bw'
+        | 'license-color-rating-bw-no-license'
+        | 'rating-color-no-license'
+        | 'license-bw-rating-bw'
+        | 'rating-only-bw-rating-bw'
+        | 'license-bw-rating-bw-no-license'
+        | 'rating-bw-no-license';
+    };
     iratingChange: { enabled: boolean };
     delta: {
       enabled: boolean;
       precision: number;
     };
     position: { enabled: boolean };
-    driverName: { enabled: boolean; showStatusBadges: boolean; nameFormat: 'name-middlename-surname' | 'name-m.-surname' | 'name-surname' | 'n.-surname' | 'surname-n.' | 'surname' };
+    driverName: {
+      enabled: boolean;
+      showStatusBadges: boolean;
+      nameFormat:
+        | 'name-middlename-surname'
+        | 'name-m.-surname'
+        | 'name-surname'
+        | 'n.-surname'
+        | 'surname-n.'
+        | 'surname';
+    };
     teamName: { enabled: boolean };
-    pitStatus: { enabled: boolean; showPitTime?: boolean; pitLapDisplayMode: 'lastPitLap' | 'lapsSinceLastPit' };
+    pitStatus: {
+      enabled: boolean;
+      showPitTime?: boolean;
+      pitLapDisplayMode: 'lastPitLap' | 'lapsSinceLastPit';
+    };
     displayOrder: string[];
     useLivePosition: boolean;
     sessionVisibility: SessionVisibilitySettings;
@@ -242,6 +292,9 @@ export interface InputWidgetSettings extends BaseWidgetSettings {
       enabled: boolean;
       unit: 'mph' | 'km/h' | 'auto';
     };
+    abs: {
+      enabled: boolean;
+    };
     steer: SteerWidgetSettings;
     tachometer: {
       enabled: boolean;
@@ -251,14 +304,17 @@ export interface InputWidgetSettings extends BaseWidgetSettings {
         enabled: boolean;
         indicatorType: 'glow' | 'pulse' | 'border';
         indicatorColor: string;
-        carConfigs: Record<string, {
-          enabled: boolean;
-          carId: string;
-          carName: string;
-          gearCount: number;
-          redlineRpm: number;
-          gearShiftPoints: Record<string, { shiftRpm: number }>;
-        }>;
+        carConfigs: Record<
+          string,
+          {
+            enabled: boolean;
+            carId: string;
+            carName: string;
+            gearCount: number;
+            redlineRpm: number;
+            gearShiftPoints: Record<string, { shiftRpm: number }>;
+          }
+        >;
       };
     };
     background: { opacity: number };
@@ -314,6 +370,21 @@ export interface RejoinIndicatorWidgetSettings extends BaseWidgetSettings {
   };
 }
 
+export interface FlagWidgetSettings extends BaseWidgetSettings {
+  id: 'flag';
+  config: {
+    enabled: boolean;
+    showOnlyWhenOnTrack: boolean;
+    showLabel: boolean;
+    matrixMode: '8x8' | '16x16' | 'uniform';
+    animate: boolean;
+    blinkPeriod: number;
+    showNoFlagState: boolean;
+    enableGlow: boolean;
+    sessionVisibility: SessionVisibilitySettings;
+  };
+}
+
 export interface FlatTrackMapWidgetSettings extends BaseWidgetSettings {
   config: {
     showCarNumbers: boolean;
@@ -357,6 +428,7 @@ export interface FasterCarsFromBehindWidgetSettings extends BaseWidgetSettings {
     showDistance: boolean;
     showBadge: boolean;
     badgeFormat: string;
+    onlyShowFasterClasses: boolean;
     sessionVisibility: SessionVisibilitySettings;
   };
 }
@@ -389,10 +461,13 @@ export interface ShiftPointSettings {
   /** Indicator color */
   indicatorColor: string;
   /** Per-car shift configurations */
-  carConfigs: Record<string, {
-    carId: string;
-    carName: string;
-    gearCount: number;
-    gearShiftPoints: Record<string, { shiftRpm: number }>;
-  }>;
+  carConfigs: Record<
+    string,
+    {
+      carId: string;
+      carName: string;
+      gearCount: number;
+      gearShiftPoints: Record<string, { shiftRpm: number }>;
+    }
+  >;
 }

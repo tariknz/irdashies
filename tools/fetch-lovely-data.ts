@@ -37,8 +37,8 @@ interface CarDataBundle {
 }
 
 const GITHUB_RAW_BASE = 'https://raw.githubusercontent.com/Lovely-Sim-Racing/lovely-car-data/main/data';
-const TARGET_GAME = 'IRacing';
-const DATA_DIR = path.join(process.cwd(), 'src', 'data');
+const TARGET_GAME = 'iracing';
+const DATA_DIR = path.join(process.cwd(), 'src', 'frontend', 'assets', 'data');
 const OUTPUT_FILE = path.join(DATA_DIR, 'cars-bundle.json');
 
 // Check if force flag is passed

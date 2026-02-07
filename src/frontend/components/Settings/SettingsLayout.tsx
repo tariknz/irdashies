@@ -16,6 +16,7 @@ import { AboutSettings } from './sections/AboutSettings';
 import { FasterCarsFromBehindSettings } from './sections/FasterCarsFromBehindSettings';
 import { FuelSettings } from './sections/FuelSettings';
 import { RejoinIndicatorSettings } from './sections/RejoinIndicatorSettings';
+import { FlagSettings } from './sections/FlagSettings';
 import { PitlaneHelperSettings } from './sections/PitlaneHelperSettings';
 import { GeneralSettings } from './sections/GeneralSettings';
 import { BlindSpotMonitorSettings } from './sections/BlindSpotMonitorSettings';
@@ -118,6 +119,14 @@ export const SettingsLayout = () => {
                 className={menuItemClass('/faster-cars')}
               >
                 Faster Cars
+              </Link>
+            </li>
+            <li>
+              <Link
+                to="/settings/flag"
+                className={menuItemClass('/flag')}
+              >
+                Flag
               </Link>
             </li>
             <li>
@@ -229,6 +238,7 @@ export const SettingsLayout = () => {
             <Route path="input" element={<InputSettings />} />
             <Route path="pitlanehelper" element={<PitlaneHelperSettings />} />
             <Route path="rejoin" element={<RejoinIndicatorSettings />} />
+            <Route path="flag" element={<FlagSettings />} />
             <Route
               path="faster-cars"
               element={<FasterCarsFromBehindSettings />}

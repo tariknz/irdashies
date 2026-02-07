@@ -1,7 +1,13 @@
 import fs from 'fs';
 import { JSDOM } from 'jsdom';
 import { svgPathProperties } from 'svg-path-properties';
-import { findDirection, findIntersectionPoint, preCalculatePoints, extractStartFinishData } from './svg-utils';
+import {
+  findDirection,
+  findIntersectionPoint,
+  getLengthAtPoint,
+  preCalculatePoints,
+  extractStartFinishData,
+} from './svg-utils';
 import { TrackDrawing } from '../src/frontend/components/TrackMap/TrackCanvas';
 
 interface TrackInfo {
@@ -10,7 +16,9 @@ interface TrackInfo {
   config_name: string;
 }
 
-export const generateTrackJsonForTrack = (trackId: number | string): TrackDrawing | undefined => {
+export const generateTrackJsonForTrack = (
+  trackId: number | string
+): TrackDrawing | undefined => {
   const order = [
     'background',
     'inactive',
@@ -19,10 +27,10 @@ export const generateTrackJsonForTrack = (trackId: number | string): TrackDrawin
     'turns',
     'start-finish',
   ];
-  
+
   const trackIdStr = String(trackId);
   const trackPath = `./asset-data/${trackIdStr}`;
-  
+
   if (!fs.existsSync(trackPath) || !fs.lstatSync(trackPath).isDirectory()) {
     console.error(`Track directory not found for trackId: ${trackId}`);
     return undefined;
@@ -33,7 +41,7 @@ export const generateTrackJsonForTrack = (trackId: number | string): TrackDrawin
     'utf8'
   );
   const trackInfo: TrackInfo[] = JSON.parse(trackInfoString);
-  
+
   const track = trackInfo.find((t) => t.track_id === +trackIdStr);
   if (!track) {
     console.error(`No track info found for ${trackId}`);
@@ -84,12 +92,11 @@ export const generateTrackJsonForTrack = (trackId: number | string): TrackDrawin
         const firstZ = firstZIndex === -1 ? pathData.length : firstZIndex + 1;
         const inside = pathData.slice(0, firstZ);
         const outside = pathData.slice(firstZ);
-        
+
         const trackPathPoints = preCalculatePoints(inside);
         const pathProps = new svgPathProperties(inside);
         const totalLength = pathProps.getTotalLength();
 
-        
         acc[prop] = {
           inside,
           outside,
@@ -105,25 +112,35 @@ export const generateTrackJsonForTrack = (trackId: number | string): TrackDrawin
         }
 
         const { line, arrow } = startFinishData;
-        let flipLineArrow = false;
-        let intersection = findIntersectionPoint(
-          acc['active'].inside,
-          line
-        );
+        const startPointOverridePath = `./tools/tracks/overrides/${trackIdStr}/start-point.json`;
+        let point: { x: number; y: number; length?: number } | null;
 
-        if (!intersection) {
-          flipLineArrow = true;
-          intersection = findIntersectionPoint(
-            acc['active'].inside,
-            arrow
-          );
+        if (fs.existsSync(startPointOverridePath)) {
+          const override = JSON.parse(
+            fs.readFileSync(startPointOverridePath, 'utf8')
+          ) as { x: number; y: number };
+          const length = getLengthAtPoint(acc['active'].inside, override);
+          point = { x: override.x, y: override.y, length };
+          acc[prop] = {
+            line,
+            arrow,
+            point,
+            direction: findDirection(parseInt(trackIdStr)),
+          };
+        } else {
+          let flipLineArrow = false;
+          point = findIntersectionPoint(acc['active'].inside, line);
+          if (!point) {
+            flipLineArrow = true;
+            point = findIntersectionPoint(acc['active'].inside, arrow);
+          }
+          acc[prop] = {
+            line: flipLineArrow ? arrow : line,
+            arrow: flipLineArrow ? line : arrow,
+            point,
+            direction: findDirection(parseInt(trackIdStr)),
+          };
         }
-        acc[prop] = {
-          line: flipLineArrow ? arrow : line,
-          arrow: flipLineArrow ? line : arrow,
-          point: intersection,
-          direction: findDirection(parseInt(trackIdStr)),
-        };
       }
 
       if (prop === 'turns') {
