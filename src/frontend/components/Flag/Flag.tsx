@@ -1,3 +1,4 @@
+import { useLayoutEffect, useRef, useState } from 'react';
 import { useTelemetryValue, useSessionVisibility } from '@irdashies/context';
 import { useFlagSettings } from './hooks/useFlagSettings';
 import { useBlinkState } from './hooks/useBlinkState';
@@ -111,24 +112,57 @@ export const FlagDisplay = ({
   const innerPadding = isUniform ? '1.5%' : '1%'; // scale padding with display size
   const gap = isUniform ? 0 : '1.2%';
   const cellRadius = isUniform ? 16 : 4;
+  const aspect = cols / rows;
+
+  const gridWrapRef = useRef<HTMLDivElement | null>(null);
+  const [gridSize, setGridSize] = useState<{ width: number; height: number } | null>(null);
+
+  useLayoutEffect(() => {
+    const node = gridWrapRef.current;
+    if (!node) return;
+
+    const updateSize = () => {
+      const { clientWidth, clientHeight } = node;
+      if (!clientWidth || !clientHeight) return;
+
+      const height = clientHeight;
+      const width = height * aspect;
+
+      setGridSize({
+        width: Math.round(width),
+        height: Math.round(height),
+      });
+    };
+
+    updateSize();
+    const observer = new ResizeObserver(updateSize);
+    observer.observe(node);
+
+    return () => observer.disconnect();
+  }, [aspect]);
 
   const outerClass = fullBleed
     ? 'flex flex-col items-stretch gap-0 bg-slate-900 border-4 border-slate-800 shadow-2xl w-full h-full box-border m-0 p-0'
-    : 'flex flex-col items-center gap-2 p-4 bg-slate-900 rounded-2xl border-4 border-slate-800 shadow-2xl w-full';
+    : 'flex flex-col items-center gap-2 p-4 bg-slate-900 rounded-2xl border-4 border-slate-800 shadow-2xl w-full h-full';
 
   return (
     <div className={outerClass}>
       <div
-        className="grid w-full bg-black box-border"
-        style={{
-          gridTemplateColumns: `repeat(${cols}, 1fr)`,
-          gap,
-          aspectRatio: `${cols} / ${rows}`,
-          padding: innerPadding,
-          borderRadius: isUniform ? 20 : 12,
-          height: fullBleed ? '100%' : undefined,
-        }}
+        ref={gridWrapRef}
+        className="flex-1 w-full flex items-center justify-center min-h-0"
       >
+        <div
+          className="grid bg-black box-border"
+          style={{
+            gridTemplateColumns: `repeat(${cols}, 1fr)`,
+            gap,
+            aspectRatio: `${cols} / ${rows}`,
+            padding: innerPadding,
+            borderRadius: isUniform ? 20 : 12,
+            width: gridSize ? `${gridSize.width}px` : '100%',
+            height: gridSize ? `${gridSize.height}px` : '100%',
+          }}
+        >
         {Array.from({ length: cols * rows }).map((_, i) => {
           const row = Math.floor(i / cols);
           const col = i % cols;
@@ -164,10 +198,9 @@ export const FlagDisplay = ({
             />
           );
         })}
+        </div>
       </div>
-      <div
-        className={`flex gap-2 items-center ${showLabel ? 'min-h-6' : 'min-h-0'}`}
-      >
+      <div className="w-full h-6 flex items-center justify-center shrink-0">
         {showLabel && (
           <span
             className={`text-sm font-black px-3 py-1 uppercase rounded-md bg-black ${textColorClass} ${shortLabel === 'NO' ? 'opacity-0' : ''}`}
