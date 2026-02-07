@@ -478,22 +478,22 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
   // Background opacity configuration
   const bgAlpha = (settings?.background?.opacity ?? 95) / 100;
 
-  const fuelStatusBasis = displayData.fuelStatus || 'safe';
+  const currentFuelStatus = displayData.fuelStatus || 'safe';
   const showFuelStatusBorder = settings.showFuelStatusBorder ?? true;
 
   // Extract hex codes for inline style
   const borderColorValue = showFuelStatusBorder
-    ? fuelStatusBasis === 'caution'
+    ? currentFuelStatus === 'caution'
       ? '#f97316'
-      : fuelStatusBasis === 'danger'
+      : currentFuelStatus === 'danger'
         ? '#ef4444'
         : '#22c55e'
-    : 'transparent';
+    : 'rgba(71, 85, 105, 0.4)'; // Neutral inactive border
 
   const shadowColorValue = showFuelStatusBorder
-    ? fuelStatusBasis === 'caution'
+    ? currentFuelStatus === 'caution'
       ? 'rgba(249, 115, 22, 0.3)'
-      : fuelStatusBasis === 'danger'
+      : currentFuelStatus === 'danger'
         ? 'rgba(239, 68, 68, 0.3)'
         : 'rgba(34, 197, 94, 0.3)'
     : 'none';
