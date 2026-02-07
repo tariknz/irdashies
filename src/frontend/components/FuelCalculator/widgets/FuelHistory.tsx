@@ -2,7 +2,10 @@ import React, { useMemo } from 'react';
 import type { FuelCalculatorSettings, FuelCalculation } from '../types';
 import { useFuelStore } from '../FuelStore';
 import { useDashboard } from '@irdashies/context';
-import { ConsumptionGraphWidget, ConsumptionGraphData } from './ConsumptionGraphWidget';
+import {
+  ConsumptionGraphWidget,
+  ConsumptionGraphData,
+} from './ConsumptionGraphWidget';
 
 interface FuelCalculatorWidgetProps {
   fuelData?: FuelCalculation | null;
@@ -27,17 +30,20 @@ export const FuelHistory: React.FC<FuelCalculatorWidgetProps> = ({
   isCompact,
 }) => {
   // Custom style handling
-  const widgetStyle =
-    customStyles || (widgetId && settings?.widgetStyles?.[widgetId]) || {};
+  const widgetStyle = useMemo(
+    () =>
+      customStyles || (widgetId && settings?.widgetStyles?.[widgetId]) || {},
+    [customStyles, widgetId, settings?.widgetStyles]
+  );
+
   const styles = useMemo(() => {
     return {
       fontSize: widgetStyle.fontSize ? `${widgetStyle.fontSize}px` : undefined,
     };
-  }, [widgetStyle]);
+  }, [widgetStyle.fontSize]);
 
   // Access store directly to be self-contained
   const lapHistory = useFuelStore((state) => state.lapHistory);
-  const lastLap = useFuelStore((state) => state.lastLap);
   const { isDemoMode } = useDashboard();
 
   // Default to histogram if not specified in settings
@@ -74,7 +80,7 @@ export const FuelHistory: React.FC<FuelCalculatorWidgetProps> = ({
       minFuel,
       maxFuel,
     } as ConsumptionGraphData;
-  }, [lapHistory, lapHistory.size, lastLap, fuelHistoryType]);
+  }, [lapHistory, fuelHistoryType]);
 
   // Reuse the existing widget!
   if (settings && settings.showFuelHistory === false) return null;

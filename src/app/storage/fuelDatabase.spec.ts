@@ -1,7 +1,6 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { FuelDatabase } from './fuelDatabase';
 import fs from 'node:fs';
-import path from 'node:path';
 import { FuelLapData } from '../../types';
 
 // Mock electron
@@ -21,15 +20,6 @@ describe('FuelDatabase', () => {
       fs.mkdirSync(testDir);
     }
     db = new FuelDatabase();
-  });
-
-  afterEach(() => {
-    db.close();
-    // Clean up test database
-    const dbPath = path.join(testDir, 'fuel_data.db');
-    if (fs.existsSync(dbPath)) {
-      fs.unlinkSync(dbPath);
-    }
   });
 
   it('should save and retrieve laps for a specific context', () => {

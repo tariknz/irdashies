@@ -36,6 +36,15 @@ export function generateMockData(sessionData?: {
 
   let prevTelemetry = mockTelemetry as unknown as Telemetry;
 
+  const mockState = {
+    fuelLevel: 45.0, // FUEL_START
+    lapDistPct: 0.1, // Start a bit into the lap
+    currentLap: 3,
+    sessionTime: 600.0, // Start 10 mins in
+    sessionLaps: 15,
+    sessionLapsRemain: 12,
+  };
+
   // Demo mode: Simulate RPM and gear changes for Mazda MX-5
   let demoRpm = 2000;
   let demoGear = 1;
@@ -90,47 +99,39 @@ export function generateMockData(sessionData?: {
             // --- Fuel Calculator Mock Logic Start ---
             // Constants for simulation
             const FUEL_TANK_MAX = 60.0;
-            const FUEL_START = 45.0;
             const FUEL_PER_LAP = 2.2;
             const LAP_DISTANCE_INC = 0.0007; // Increment per tick for ~24s lap at 60Hz (fast mock lap)
-            const SESSION_TIME_INC = 1/60; // Seconds per tick
-
-            // Initialize state if not present on prevTelemetry (using existing fields as state holders if needed, or just vars)
-            // leveraging global vars defined outside this scope would be cleaner but for now extending the closure vars
-            if (typeof (prevTelemetry as any)._mockState === 'undefined') {
-               (prevTelemetry as any)._mockState = {
-                 fuelLevel: FUEL_START,
-                 lapDistPct: 0.1, // Start a bit into the lap
-                 currentLap: 3,
-                 sessionTime: 600.0, // Start 10 mins in
-                 sessionLaps: 15,
-                 sessionLapsRemain: 12
-               };
-            }
-            
-            const state = (prevTelemetry as any)._mockState;
+            const SESSION_TIME_INC = 1 / 60; // Seconds per tick
 
             // Update Lap Distance
-            state.lapDistPct += LAP_DISTANCE_INC;
+            mockState.lapDistPct += LAP_DISTANCE_INC;
 
             // Handle Lap Completion
-            if (state.lapDistPct >= 1.0) {
-              state.lapDistPct = 0.0;
-              state.currentLap += 1;
-              state.sessionLapsRemain = Math.max(0, state.sessionLapsRemain - 1);
+            if (mockState.lapDistPct >= 1.0) {
+              mockState.lapDistPct = 0.0;
+              mockState.currentLap += 1;
+              mockState.sessionLapsRemain = Math.max(
+                0,
+                mockState.sessionLapsRemain - 1
+              );
             }
 
             // Update Fuel (consume based on distance)
             // Fuel consumed = (Fuel Per Lap) * (Distance Fraction traveled this tick)
             // Since we increment dist by LAP_DISTANCE_INC, we consume that fraction of a lap's fuel
             const fuelConsumedThisTick = FUEL_PER_LAP * LAP_DISTANCE_INC;
-            state.fuelLevel = Math.max(0, state.fuelLevel - fuelConsumedThisTick);
+            mockState.fuelLevel = Math.max(
+              0,
+              mockState.fuelLevel - fuelConsumedThisTick
+            );
 
             // Update Session Time
-            state.sessionTime += SESSION_TIME_INC;
+            mockState.sessionTime += SESSION_TIME_INC;
 
             // --- Fuel Calculator Mock Logic End ---
-            
+
+            const state = mockState;
+
             // Enable ABS when brake force is above 80% in demo mode
             const absActive = jitteredBrakeValue > 0.8;
             const prevAbs =
@@ -161,53 +162,53 @@ export function generateMockData(sessionData?: {
               // Inject Fuel Calculator Mock Values
               FuelLevel: {
                 ...prevTelemetry.FuelLevel,
-                value: [state.fuelLevel]
+                value: [state.fuelLevel],
               },
               FuelLevelPct: {
                 ...prevTelemetry.FuelLevelPct,
-                value: [state.fuelLevel / FUEL_TANK_MAX]
+                value: [state.fuelLevel / FUEL_TANK_MAX],
               },
               Lap: {
                 ...prevTelemetry.Lap,
-                value: [state.currentLap]
+                value: [state.currentLap],
               },
               LapDistPct: {
                 ...prevTelemetry.LapDistPct,
-                value: [state.lapDistPct]
+                value: [state.lapDistPct],
               },
               SessionTime: {
                 ...prevTelemetry.SessionTime,
-                value: [state.sessionTime]
+                value: [state.sessionTime],
               },
               SessionLapsRemain: {
                 ...prevTelemetry.SessionLapsRemain,
-                value: [state.sessionLapsRemain]
+                value: [state.sessionLapsRemain],
               },
               SessionTimeRemain: {
-                 ...prevTelemetry.SessionTimeRemain,
-                 value: [state.sessionLapsRemain * 90] // Roughly 1.5 min laps
+                ...prevTelemetry.SessionTimeRemain,
+                value: [state.sessionLapsRemain * 90], // Roughly 1.5 min laps
               },
-               IsOnTrack: {
-                ...prevTelemetry.IsOnTrack, // Ensure this field exists or mock it if missing types might be tricky but assuming existing
-                value: [true]
+              IsOnTrack: {
+                ...prevTelemetry.IsOnTrack,
+                value: [true],
               },
               OnPitRoad: {
-                 ...prevTelemetry.OnPitRoad,
-                 value: [false]
+                ...prevTelemetry.OnPitRoad,
+                value: [false],
               },
               BrakeABSactive: {
                 ...prevAbs,
                 value: [absActive],
               },
-            };
+            } as unknown as Telemetry;
             prevTelemetry = t;
           }
 
           telemetryIdx = telemetryIdx + 1;
-          const data = { ...t };
+          const data = t;
 
           // Call all registered callbacks
-          telemetryCallbacks.forEach(cb => cb(data));
+          telemetryCallbacks.forEach((cb) => cb(data));
         }, 1000 / 60); // Update at 60Hz for smooth telemetry simulation
       }
 
@@ -233,7 +234,7 @@ export function generateMockData(sessionData?: {
         sessionIdx = sessionIdx + 1;
 
         // Call all registered callbacks
-        sessionCallbacks.forEach(cb => cb(s));
+        sessionCallbacks.forEach((cb) => cb(s));
       };
 
       // Send initial data immediately
@@ -263,7 +264,7 @@ export function generateMockData(sessionData?: {
       // Start interval only once
       if (!runningStateInterval) {
         runningStateInterval = setInterval(() => {
-          runningStateCallbacks.forEach(cb => cb(true));
+          runningStateCallbacks.forEach((cb) => cb(true));
         }, 1000);
       }
 
