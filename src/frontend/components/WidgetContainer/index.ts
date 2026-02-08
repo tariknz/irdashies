@@ -3,3 +3,4 @@ export type { WidgetContainerProps } from './WidgetContainer';
 export { useDragWidget } from './useDragWidget';
 export { useResizeWidget } from './useResizeWidget';
 export type { ResizeDirection } from './useResizeWidget';
+export { ResizeHandle, ResizeHandles } from './ResizeHandle';
