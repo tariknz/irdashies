@@ -532,9 +532,7 @@ export const ProfileSettings = () => {
 
         {/* Info Box */}
         <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
-          <h4 className="text-blue-300 font-semibold mb-2">
-            💡 About Profiles
-          </h4>
+          <h4 className="text-blue-300 font-semibold mb-2">About Profiles</h4>
           <ul className="text-sm text-blue-200 space-y-1 list-disc list-inside">
             <li>Each profile has its own widget configurations and layouts</li>
             <li>Switch between profiles to use different dashboard setups</li>

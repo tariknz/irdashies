@@ -57,15 +57,15 @@ export const ConfirmDialog = ({
   const variantStyles = {
     danger: {
       confirmButton: 'bg-red-600 hover:bg-red-700 focus:ring-red-500',
-      icon: '⚠️',
+      icon: '',
     },
     warning: {
       confirmButton: 'bg-yellow-600 hover:bg-yellow-700 focus:ring-yellow-500',
-      icon: '⚠️',
+      icon: '',
     },
     info: {
       confirmButton: 'bg-blue-600 hover:bg-blue-700 focus:ring-blue-500',
-      icon: 'ℹ️',
+      icon: '',
     },
   };
 
@@ -93,7 +93,9 @@ export const ConfirmDialog = ({
         <div className="p-6">
           {/* Header */}
           <div className="flex items-center mb-4">
-            <span className="text-2xl mr-3">{styles.icon}</span>
+            {styles.icon && (
+              <span className="text-2xl mr-3">{styles.icon}</span>
+            )}
             <h3 className="text-lg font-semibold text-white">{title}</h3>
           </div>
 
