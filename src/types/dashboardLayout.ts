@@ -29,8 +29,29 @@ export type FontSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl';
 
 export interface GeneralSettingsType {
   fontSize?: FontSize;
-  fontWeight?:  'normal' | 'bold' | 'extrabold';
-  colorPalette?: 'default' | 'black' | 'red' | 'orange' | 'amber' | 'yellow' | 'lime' | 'green' | 'emerald' | 'teal' | 'cyan' | 'sky' | 'blue' | 'indigo' | 'violet' | 'purple' | 'fuchsia' | 'pink' | 'rose' | 'zinc' | 'stone';
+  fontWeight?: 'normal' | 'bold' | 'extrabold';
+  colorPalette?:
+    | 'default'
+    | 'black'
+    | 'red'
+    | 'orange'
+    | 'amber'
+    | 'yellow'
+    | 'lime'
+    | 'green'
+    | 'emerald'
+    | 'teal'
+    | 'cyan'
+    | 'sky'
+    | 'blue'
+    | 'indigo'
+    | 'violet'
+    | 'purple'
+    | 'fuchsia'
+    | 'pink'
+    | 'rose'
+    | 'zinc'
+    | 'stone';
   showOnlyWhenOnTrack?: boolean;
   highlightColor?: number;
   skipTaskbar?: boolean;
@@ -39,6 +60,26 @@ export interface GeneralSettingsType {
   startMinimized?: boolean;
   compactMode?: boolean;
   overlayAlwaysOnTop?: boolean;
+  enableNetworkAccess?: boolean;
+}
+
+/**
+ * Represents a configuration profile with a unique identifier and name.
+ */
+export interface DashboardProfile {
+  /** Unique identifier for the profile */
+  id: string;
+  /** User-friendly name for the profile */
+  name: string;
+  /** ISO timestamp of when the profile was created */
+  createdAt?: string;
+  /** ISO timestamp of when the profile was last modified */
+  lastModified?: string;
+  /** Optional theme settings that override dashboard general settings */
+  themeSettings?: {
+    fontSize?: FontSize;
+    colorPalette?: GeneralSettingsType['colorPalette'];
+  };
 }
 
 export interface DashboardLayout {

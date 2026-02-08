@@ -10,6 +10,7 @@ export const SessionProvider = ({ bridge }: SessionProviderProps) => {
   const setSession = useSessionStore((state) => state.setSession);
 
   useEffect(() => {
+    console.log('📦 SessionProvider mounted');
     if (bridge instanceof Promise) {
       bridge.then((bridge) => {
         bridge.onSessionData((telemetry) => {

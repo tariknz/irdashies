@@ -99,7 +99,7 @@ export const FuelCalculatorTargetMessage: React.FC<
           className="text-purple-400 font-medium"
           style={{ fontSize: labelFontSize }}
         >
-          🎯 TARGET
+          TARGET
         </span>
         <span
           className="text-white font-bold"

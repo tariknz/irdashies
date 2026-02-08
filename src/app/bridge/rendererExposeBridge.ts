@@ -5,6 +5,7 @@ import type {
   IrSdkBridge,
   DashboardBridge,
   DashboardLayout,
+  DashboardProfile,
   SaveDashboardOptions,
   FuelCalculatorBridge,
   FuelLapData,
@@ -76,6 +77,31 @@ export function exposeBridge() {
     },
     setAnalyticsOptOut: (optOut: boolean) => {
       return ipcRenderer.invoke('setAnalyticsOptOut', optOut);
+    },
+    // Profile management
+    listProfiles: () => {
+      return ipcRenderer.invoke('listProfiles');
+    },
+    createProfile: (name: string) => {
+      return ipcRenderer.invoke('createProfile', name);
+    },
+    deleteProfile: (profileId: string) => {
+      return ipcRenderer.invoke('deleteProfile', profileId);
+    },
+    renameProfile: (profileId: string, newName: string) => {
+      return ipcRenderer.invoke('renameProfile', profileId, newName);
+    },
+    switchProfile: (profileId: string) => {
+      return ipcRenderer.invoke('switchProfile', profileId);
+    },
+    getCurrentProfile: () => {
+      return ipcRenderer.invoke('getCurrentProfile');
+    },
+    getDashboardForProfile: (profileId: string) => {
+      return ipcRenderer.invoke('getDashboardForProfile', profileId);
+    },
+    updateProfileTheme: (profileId: string, themeSettings: DashboardProfile['themeSettings']) => {
+      return ipcRenderer.invoke('updateProfileTheme', profileId, themeSettings);
     },
     stop: () => {
       ipcRenderer.removeAllListeners('editModeToggled');

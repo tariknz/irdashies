@@ -31,17 +31,17 @@ export const Flag = () => {
     return (
       <div className="h-full">
         <FlagDisplay
-      label={visibleLabel}
-      showLabel={settings.showLabel ?? true}
-      matrixSize={
-        settings.matrixMode === '8x8'
-          ? 8
-          : settings.matrixMode === '16x16'
-            ? 16
-            : 1
-      }
-      enableGlow={settings.enableGlow ?? true}
-    />
+          label={visibleLabel}
+          showLabel={settings.showLabel ?? true}
+          matrixSize={
+            settings.matrixMode === '8x8'
+              ? 8
+              : settings.matrixMode === '16x16'
+                ? 16
+                : 1
+          }
+          enableGlow={settings.enableGlow ?? true}
+        />
       </div>
     );
   }
@@ -51,32 +51,32 @@ export const Flag = () => {
     <div className="flex h-full w-full justify-between items-stretch">
       <div className="h-full">
         <FlagDisplay
-      label={visibleLabel}
-      showLabel={settings.showLabel ?? true}
-      matrixSize={
-        settings.matrixMode === '8x8'
-          ? 8
-          : settings.matrixMode === '16x16'
-            ? 16
-            : 1
-      }
-      enableGlow={settings.enableGlow ?? true}
-    />
+          label={visibleLabel}
+          showLabel={settings.showLabel ?? true}
+          matrixSize={
+            settings.matrixMode === '8x8'
+              ? 8
+              : settings.matrixMode === '16x16'
+                ? 16
+                : 1
+          }
+          enableGlow={settings.enableGlow ?? true}
+        />
       </div>
 
       <div className="h-full">
         <FlagDisplay
-      label={visibleLabel}
-      showLabel={settings.showLabel ?? true}
-      matrixSize={
-        settings.matrixMode === '8x8'
-          ? 8
-          : settings.matrixMode === '16x16'
-            ? 16
-            : 1
-      }
-      enableGlow={settings.enableGlow ?? true}
-    />
+          label={visibleLabel}
+          showLabel={settings.showLabel ?? true}
+          matrixSize={
+            settings.matrixMode === '8x8'
+              ? 8
+              : settings.matrixMode === '16x16'
+                ? 16
+                : 1
+          }
+          enableGlow={settings.enableGlow ?? true}
+        />
       </div>
     </div>
   );
@@ -112,7 +112,10 @@ export const FlagDisplay = ({
   const aspect = cols / rows;
 
   const gridWrapRef = useRef<HTMLDivElement | null>(null);
-  const [gridSize, setGridSize] = useState<{ width: number; height: number } | null>(null);
+  const [gridSize, setGridSize] = useState<{
+    width: number;
+    height: number;
+  } | null>(null);
 
   useLayoutEffect(() => {
     const node = gridWrapRef.current;
@@ -160,19 +163,32 @@ export const FlagDisplay = ({
             height: gridSize ? `${gridSize.height}px` : '100%',
           }}
         >
-        {Array.from({ length: cols * rows }).map((_, i) => {
-          const row = Math.floor(i / cols);
-          const col = i % cols;
-          const bg = getLedColor(flagType, row, col, matrixSize, cols, rows);
-          const glowIntensity = 8;
-          const hasGlow = enableGlow && glowIntensity > 0;
-          const boxShadow = hasGlow ? `0 0 ${glowIntensity}px ${bg}` : 'none';
+          {Array.from({ length: cols * rows }).map((_, i) => {
+            const row = Math.floor(i / cols);
+            const col = i % cols;
+            const bg = getLedColor(flagType, row, col, matrixSize, cols, rows);
+            const glowIntensity = 8;
+            const hasGlow = enableGlow && glowIntensity > 0;
+            const boxShadow = hasGlow ? `0 0 ${glowIntensity}px ${bg}` : 'none';
 
-          // For uniform mode render a single cell that fills the area
-          if (isUniform) {
+            // For uniform mode render a single cell that fills the area
+            if (isUniform) {
+              return (
+                <div
+                  key="uniform"
+                  className="w-full h-full box-border"
+                  style={{
+                    borderRadius: cellRadius,
+                    background: bg,
+                    boxShadow,
+                  }}
+                />
+              );
+            }
+
             return (
               <div
-                key="uniform"
+                key={i}
                 className="w-full h-full box-border"
                 style={{
                   borderRadius: cellRadius,
@@ -181,20 +197,7 @@ export const FlagDisplay = ({
                 }}
               />
             );
-          }
-
-          return (
-            <div
-              key={i}
-              className="w-full h-full box-border"
-              style={{
-                borderRadius: cellRadius,
-                background: bg,
-                boxShadow,
-              }}
-            />
-          );
-        })}
+          })}
         </div>
       </div>
       <div className="w-full h-6 flex items-center justify-center shrink-0">

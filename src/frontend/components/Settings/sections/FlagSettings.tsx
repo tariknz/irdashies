@@ -87,7 +87,9 @@ export const FlagSettings = () => {
             </div>
             <ToggleSwitch
               enabled={settings.config.doubleFlag ?? false}
-              onToggle={(enabled) => handleConfigChange({ doubleFlag: enabled })}
+              onToggle={(enabled) =>
+                handleConfigChange({ doubleFlag: enabled })
+              }
             />
           </div>
 

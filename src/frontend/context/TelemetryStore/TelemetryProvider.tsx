@@ -11,7 +11,7 @@ export const TelemetryProvider = ({ bridge }: TelemetryProviderProps) => {
 
   useEffect(() => {
     console.log('📡 TelemetryProvider mounted, bridge:', bridge);
-    
+
     if (bridge instanceof Promise) {
       console.log('📡 Bridge is Promise, waiting...');
       bridge.then((bridge) => {

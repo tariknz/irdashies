@@ -358,15 +358,24 @@ export interface FuelWidgetSettings extends BaseWidgetSettings {
     useGeneralFontSize?: boolean;
     useGeneralCompactMode?: boolean;
     sessionVisibility: SessionVisibilitySettings;
-    /** 
-    * Box Layout Configuration 
-    * Defines the structure of boxes and which widgets they contain
-    */
+    /**
+     * Box Layout Configuration
+     * Defines the structure of boxes and which widgets they contain
+     */
     layoutConfig?: BoxConfig[];
     /** Recursive Layout Tree (Supersedes layoutConfig) */
     layoutTree?: LayoutNode;
     /** Per-widget styling overrides (e.g. fontSize) */
-    widgetStyles?: Record<string, { fontSize?: number; labelFontSize?: number; valueFontSize?: number; barFontSize?: number; height?: number }>;
+    widgetStyles?: Record<
+      string,
+      {
+        fontSize?: number;
+        labelFontSize?: number;
+        valueFontSize?: number;
+        barFontSize?: number;
+        height?: number;
+      }
+    >;
     /** Order of rows in the consumption grid (curr, avg, max, last, min) */
     consumptionGridOrder?: string[];
     /** Percentage thresholds for fuel status colors (0-100) */
@@ -403,8 +412,20 @@ export interface BoxConfig {
 export type LayoutDirection = 'row' | 'col';
 
 export type LayoutNode =
-  | { id: string; type: 'box'; widgets: string[]; direction: LayoutDirection; weight?: number }
-  | { id: string; type: 'split'; direction: LayoutDirection; children: LayoutNode[]; weight?: number };
+  | {
+      id: string;
+      type: 'box';
+      widgets: string[];
+      direction: LayoutDirection;
+      weight?: number;
+    }
+  | {
+      id: string;
+      type: 'split';
+      direction: LayoutDirection;
+      children: LayoutNode[];
+      weight?: number;
+    };
 
 /** Available widgets for the Fuel Calculator */
 export type FuelWidgetType =
