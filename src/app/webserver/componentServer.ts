@@ -5,14 +5,10 @@ import os from 'os';
 import type { IrSdkBridge, DashboardBridge } from '@irdashies/types';
 import { currentDashboard } from './bridgeProxy';
 import { getGarageCoverImageAsDataUrl } from '../storage/dashboards';
-import crypto from 'crypto';
 import type { WidgetId } from '../../frontend/WidgetIndex';
 
 const PORT = 3000;
 const COMPONENT_PORT = process.env.COMPONENT_PORT || PORT;
-
-// Cache for widget configs to avoid passing large data in URL
-const configCache = new Map<string, unknown>();
 
 const isDev =
   process.env.NODE_ENV === 'development' || process.env.VITE_DEV_SERVER_URL;
@@ -199,23 +195,6 @@ export async function startComponentServer(
       return;
     }
 
-    if (pathname === '/api/config' && req.method === 'GET') {
-      const configId = url.searchParams.get('id');
-      if (!configId) {
-        sendJSON(res, 400, { error: 'Missing config ID' });
-        return;
-      }
-
-      const config = configCache.get(configId);
-      if (!config) {
-        sendJSON(res, 404, { error: 'Config not found' });
-        return;
-      }
-
-      sendJSON(res, 200, { config });
-      return;
-    }
-
     if (pathname === '/api/garage-cover-image' && req.method === 'GET') {
       const filename = url.searchParams.get('filename');
       if (!filename) {
@@ -247,30 +226,6 @@ export async function startComponentServer(
       if (!/^[a-zA-Z0-9_-]+$/.test(componentName)) {
         sendJSON(res, 400, { error: 'Invalid component name' });
         return;
-      }
-
-      const normalizedName = componentName.toLowerCase();
-      let finalConfig = {};
-
-      if (currentDashboard) {
-        const widget = currentDashboard.widgets?.find(
-          (w) => w.id.toLowerCase() === normalizedName
-        );
-        if (widget?.config) {
-          finalConfig = widget.config;
-        }
-      }
-
-      // Store config in cache and pass only the ID in URL to avoid 431 errors
-      const configId = crypto.randomBytes(16).toString('hex');
-      configCache.set(configId, finalConfig);
-
-      // Clean up old cache entries (keep last 50)
-      if (configCache.size > 50) {
-        const keys = Array.from(configCache.keys());
-        for (let i = 0; i < keys.length - 50; i++) {
-          configCache.delete(keys[i]);
-        }
       }
 
       // Individual component rendering is no longer supported
