@@ -3,7 +3,7 @@ import { Rnd } from 'react-rnd';
 import { useDashboard } from '@irdashies/context';
 import { WIDGET_MAP } from '../../WidgetIndex';
 import { getWidgetName } from '../../constants/widgetNames';
-import { X, ResizeIcon } from '@phosphor-icons/react';
+import { ResizeIcon, XIcon } from '@phosphor-icons/react';
 
 interface WidgetPosition {
   x: number;
@@ -14,9 +14,12 @@ interface WidgetPosition {
 
 export const DashboardView = () => {
   const { currentDashboard, bridge, currentProfile } = useDashboard();
-  const [widgetPositions, setWidgetPositions] = useState<Record<string, WidgetPosition>>({});
-  const [interactingWidget, setInteractingWidget] = useState<string | null>(null);
-  const [showBorderForWidget, setShowBorderForWidget] = useState<string | null>(null);
+  const [widgetPositions, setWidgetPositions] = useState<
+    Record<string, WidgetPosition>
+  >({});
+  const [showBorderForWidget, setShowBorderForWidget] = useState<string | null>(
+    null
+  );
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const pendingSaveRef = useRef<Record<string, WidgetPosition> | null>(null);
   const isSavingRef = useRef(false);
@@ -29,14 +32,13 @@ export const DashboardView = () => {
     setShowBorderForWidget(null);
   };
 
-
   // Filter enabled widgets and deduplicate by ID
   const enabledWidgets = useMemo(() => {
     if (!currentDashboard?.widgets) {
       return [];
     }
     const seen = new Set<string>();
-    const filtered = currentDashboard.widgets.filter(w => {
+    const filtered = currentDashboard.widgets.filter((w) => {
       if (!w.enabled || seen.has(w.id)) return false;
       seen.add(w.id);
       return true;
@@ -54,7 +56,9 @@ export const DashboardView = () => {
 
     enabledWidgets.forEach((widget) => {
       const widgetConfig = widget.config as Record<string, unknown>;
-      const browserPos = widgetConfig?.browserPosition as WidgetPosition | undefined;
+      const browserPos = widgetConfig?.browserPosition as
+        | WidgetPosition
+        | undefined;
 
       // Use saved browserPosition if available, otherwise use layout dimensions from Electron config
       if (browserPos && typeof browserPos.x === 'number') {
@@ -86,7 +90,7 @@ export const DashboardView = () => {
     if (!currentDashboard?.widgets || !currentProfile) return;
 
     try {
-      const updatedWidgets = currentDashboard.widgets.map(widget => {
+      const updatedWidgets = currentDashboard.widgets.map((widget) => {
         const widgetPosition = positions[widget.id];
         if (!widgetPosition) return widget;
 
@@ -104,7 +108,12 @@ export const DashboardView = () => {
         widgets: updatedWidgets,
       };
 
-      console.log('💾 Saving widget positions for profile:', currentProfile.id, 'with positions:', positions);
+      console.log(
+        '💾 Saving widget positions for profile:',
+        currentProfile.id,
+        'with positions:',
+        positions
+      );
       bridge.saveDashboard(updatedDashboard, { profileId: currentProfile.id });
       console.log('💾 Saved widget positions:', positions);
     } catch (error) {
@@ -131,7 +140,7 @@ export const DashboardView = () => {
   };
 
   const handlePositionChange = (widgetId: string, position: WidgetPosition) => {
-    setWidgetPositions(prev => {
+    setWidgetPositions((prev) => {
       // Initialize from initial positions if empty
       const base = Object.keys(prev).length === 0 ? initialPositions : prev;
       const newPositions = {
@@ -168,7 +177,6 @@ export const DashboardView = () => {
     return (
       <div className="flex items-center justify-center h-screen bg-slate-900 text-white">
         <div className="text-center">
-          <div className="text-6xl mb-4">⏳</div>
           <div className="text-xl">Loading dashboard...</div>
         </div>
       </div>
@@ -176,7 +184,10 @@ export const DashboardView = () => {
   }
 
   return (
-    <div className="w-full h-screen overflow-hidden relative" style={{ background: 'transparent' }}>
+    <div
+      className="w-full h-screen overflow-hidden relative"
+      style={{ background: 'transparent' }}
+    >
       {enabledWidgets.map((widget) => {
         const WidgetComponent = WIDGET_MAP[widget.id];
         if (!WidgetComponent) {
@@ -184,24 +195,20 @@ export const DashboardView = () => {
           return null;
         }
 
-        const position = Object.keys(widgetPositions).length > 0
-          ? widgetPositions[widget.id]
-          : initialPositions[widget.id];
+        const position =
+          Object.keys(widgetPositions).length > 0
+            ? widgetPositions[widget.id]
+            : initialPositions[widget.id];
         if (!position) return null;
 
         const widgetName = getWidgetName(widget.id);
-        const isInteracting = interactingWidget === widget.id;
 
         return (
           <Rnd
             key={widget.id}
             position={{ x: position.x, y: position.y }}
             size={{ width: position.width, height: position.height }}
-            onDragStart={() => {
-              setInteractingWidget(widget.id);
-            }}
             onDragStop={(e, d) => {
-              setInteractingWidget(null);
               const newPosition = {
                 ...position,
                 x: d.x,
@@ -209,11 +216,7 @@ export const DashboardView = () => {
               };
               handlePositionChange(widget.id, newPosition);
             }}
-            onResizeStart={() => {
-              setInteractingWidget(widget.id);
-            }}
             onResizeStop={(e, direction, ref, delta, position) => {
-              setInteractingWidget(null);
               const newPosition = {
                 x: position.x,
                 y: position.y,
@@ -226,15 +229,9 @@ export const DashboardView = () => {
             enableUserSelectHack={false}
           >
             <div
-              className={`w-full h-full cursor-move overflow-hidden text-white ${isInteracting ? 'border-2 border-dashed border-blue-400' : ''} relative`}
+              className="w-full h-full cursor-move overflow-hidden text-white relative"
               onClick={() => handleWidgetDoubleClick(widget.id)}
             >
-              {/* Title overlay when interacting */}
-              {isInteracting && (
-                <div className="absolute top-0 left-0 right-0 bg-blue-500 text-white text-xs px-2 py-1 font-medium z-10">
-                  {widgetName}
-                </div>
-              )}
               {/* Border when double-clicked */}
               {showBorderForWidget === widget.id && (
                 <div className="absolute inset-0 border-dashed border-2 border-sky-500 pointer-events-none z-20 flex items-start justify-end p-2">
@@ -249,7 +246,7 @@ export const DashboardView = () => {
                       className="pointer-events-auto ml-2 hover:bg-sky-600 rounded p-1 transition-colors"
                       title="Close"
                     >
-                      <X size={16} weight="bold" />
+                      <XIcon size={16} />
                     </button>
                   </div>
                 </div>
@@ -261,7 +258,7 @@ export const DashboardView = () => {
                   overflow: 'auto',
                   scrollbarWidth: 'none',
                   msOverflowStyle: 'none',
-                  paddingTop: isInteracting ? '24px' : '8px', // Add space for title when interacting
+                  paddingTop: '8px',
                 }}
               >
                 <style>{`
@@ -282,7 +279,9 @@ export const DashboardView = () => {
         <div className="flex items-center justify-center h-full">
           <div className="text-center text-gray-400">
             <div className="text-xl mb-2">No overlays enabled</div>
-            <div className="text-sm">Enable overlays in Settings to see them here</div>
+            <div className="text-sm">
+              Enable overlays in Settings to see them here
+            </div>
           </div>
         </div>
       )}
