@@ -67,7 +67,7 @@ export const getLedColor = (
       return BLUE;
     }
     if (flagType === 'DEBRIS') {
-      return (row % 2 === 0) ? RED : YELLOW;
+      return (col % 2 === 0) ? RED : YELLOW;
     }
     if (flagType === 'DISQUALIFIED') {
       const diag1 = row - col;

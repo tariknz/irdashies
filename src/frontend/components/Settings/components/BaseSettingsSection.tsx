@@ -1,7 +1,8 @@
-import { ReactNode } from 'react';
+import { ReactNode, useState } from 'react';
 import { ToggleSwitch } from './ToggleSwitch';
 import { BaseWidgetSettings } from '../types';
 import { useDashboard } from '@irdashies/context';
+import { Copy, Check } from '@phosphor-icons/react';
 
 interface BaseSettingsSectionProps<T> {
   title: string;
@@ -9,8 +10,11 @@ interface BaseSettingsSectionProps<T> {
   settings: BaseWidgetSettings<T>;
   onSettingsChange: (settings: BaseWidgetSettings<T>) => void;
   widgetId: string;
-  children?: ((handleConfigChange: (config: Partial<T>) => void) => ReactNode) | ReactNode;
+  children?:
+    | ((handleConfigChange: (config: Partial<T>) => void) => ReactNode)
+    | ReactNode;
   onConfigChange?: (config: Partial<T>) => void;
+  disableInternalScroll?: boolean;
 }
 
 export const BaseSettingsSection = <T,>({
@@ -21,23 +25,59 @@ export const BaseSettingsSection = <T,>({
   widgetId,
   children,
   onConfigChange,
+  disableInternalScroll = false,
 }: BaseSettingsSectionProps<T>) => {
   const { currentDashboard, onDashboardUpdated } = useDashboard();
+  const [localSettings, setLocalSettings] =
+    useState<BaseWidgetSettings<T>>(settings);
+  const [copied, setCopied] = useState(false);
+
+  const browserSourceUrl = `http://localhost:3000/component/${widgetId}`;
+
+  const handleCopyUrl = async () => {
+    try {
+      await navigator.clipboard.writeText(browserSourceUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy URL:', err);
+    }
+  };
+
+  // Clean synchronization pattern: track what we last synced to detect external changes
+  const updatedWidget = currentDashboard?.widgets.find(
+    (w) => w.id === widgetId
+  );
+  const [prevWidgetData, setPrevWidgetData] = useState(updatedWidget);
+
+  if (JSON.stringify(updatedWidget) !== JSON.stringify(prevWidgetData)) {
+    setPrevWidgetData(updatedWidget);
+    if (updatedWidget) {
+      // This setState during render is safe and efficient in React when guarded by a condition
+      // like this. It avoids the extra render pass that an effect would cause.
+      setLocalSettings({
+        enabled: updatedWidget.enabled,
+        config: updatedWidget.config as unknown as T,
+      });
+    }
+  }
 
   const handleSettingsChange = (newSettings: BaseWidgetSettings<T>) => {
+    setLocalSettings(newSettings);
     onSettingsChange(newSettings);
     updateDashboard(newSettings);
   };
 
   const handleConfigChange = (newConfig: Partial<T>) => {
     const updatedSettings: BaseWidgetSettings<T> = {
-      ...settings,
+      ...localSettings,
       config: {
-        ...settings.config,
+        ...localSettings.config,
         ...newConfig,
       } as T,
     };
 
+    setLocalSettings(updatedSettings);
     onSettingsChange(updatedSettings);
     updateDashboard(updatedSettings);
     onConfigChange?.(newConfig);
@@ -45,45 +85,105 @@ export const BaseSettingsSection = <T,>({
 
   const updateDashboard = (newSettings: BaseWidgetSettings<T>) => {
     if (currentDashboard && onDashboardUpdated) {
+      const widgetExists = currentDashboard.widgets.some(
+        (w) => w.id === widgetId
+      );
+
+      const updatedWidgets = widgetExists
+        ? currentDashboard.widgets.map((widget) => {
+            if (widget.id !== widgetId) return widget;
+
+            // Check if widget is being newly enabled
+            const isBeingEnabled = !widget.enabled && newSettings.enabled;
+
+            // If being enabled, center it in the viewport
+            let layout = widget.layout;
+            if (isBeingEnabled) {
+              const centerX = Math.round(
+                (window.innerWidth - widget.layout.width) / 2
+              );
+              const centerY = Math.round(
+                (window.innerHeight - widget.layout.height) / 2
+              );
+              layout = {
+                ...widget.layout,
+                x: Math.max(0, centerX),
+                y: Math.max(0, centerY),
+              };
+            }
+
+            return {
+              ...widget,
+              enabled: newSettings.enabled,
+              config: newSettings.config as unknown as Record<string, unknown>,
+              layout,
+            };
+          })
+        : [
+            ...currentDashboard.widgets,
+            {
+              id: widgetId,
+              enabled: newSettings.enabled,
+              config: newSettings.config as unknown as Record<string, unknown>,
+              // Default layout for new widgets if they don't exist
+              layout: { x: 50, y: 50, width: 400, height: 300 },
+            },
+          ];
+
       const updatedDashboard = {
         ...currentDashboard,
-        widgets: currentDashboard.widgets.map(widget =>
-          widget.id === widgetId
-            ? {
-                ...widget,
-                enabled: newSettings.enabled,
-                config: newSettings.config as unknown as Record<string, unknown>
-              }
-            : widget
-        )
+        widgets: updatedWidgets,
       };
       onDashboardUpdated(updatedDashboard);
     }
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <div className={`flex flex-col ${disableInternalScroll ? '' : 'h-full'}`}>
       <div className="flex-none space-y-6 p-4 bg-slate-700 rounded">
         <div>
           <div className="flex justify-between items-center mb-1">
             <h2 className="text-xl">{title}</h2>
             <ToggleSwitch
               enabled={settings.enabled}
-              onToggle={(enabled) => handleSettingsChange({ ...settings, enabled })}
+              onToggle={(enabled) =>
+                handleSettingsChange({ ...settings, enabled })
+              }
               label="Enable Widget"
             />
           </div>
           <p className="text-slate-400 text-sm">{description}</p>
+          <div className="mt-3 flex items-center gap-2">
+            <span className="text-slate-400 text-xs">Browser Source:</span>
+            <code className="text-xs bg-slate-800 px-2 py-1 rounded font-mono text-slate-300">
+              {browserSourceUrl}
+            </code>
+            <button
+              onClick={handleCopyUrl}
+              className="p-1 rounded hover:bg-slate-600 transition-colors"
+              title="Copy URL"
+            >
+              {copied ? (
+                <Check size={14} className="text-green-400" />
+              ) : (
+                <Copy size={14} className="text-slate-400" />
+              )}
+            </button>
+          </div>
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto min-h-0 mt-4">
+      <div
+        className={`${disableInternalScroll ? '' : 'flex-1 overflow-y-auto min-h-0'} mt-4`}
+      >
         {children && (
           <div className="space-y-4 p-4">
-            {typeof children === 'function' ? children(handleConfigChange) : children}
+            {typeof children === 'function'
+              ? children(handleConfigChange)
+              : children}
           </div>
         )}
       </div>
     </div>
   );
-}; 
+};

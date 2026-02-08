@@ -1,20 +1,15 @@
-import { app, BrowserWindow } from 'electron';
-import type { DashboardLayout, DashboardWidget } from '@irdashies/types';
+import { app, BrowserWindow, screen } from 'electron';
+import type { DashboardLayout, ContainerBoundsInfo } from '@irdashies/types';
 import path from 'node:path';
-import { trackWindowMovement } from './trackWindowMovement';
 import { Notification } from 'electron';
 import { readData, writeData } from './storage/storage';
 import { getDashboard } from './storage/dashboards';
+import { trackSettingsWindowMovement } from './trackWindowMovement';
 
 // used for Hot Module Replacement
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string;
 declare const MAIN_WINDOW_VITE_NAME: string;
 declare const APP_GIT_HASH: string;
-
-interface DashboardWidgetWithWindow {
-  widget: DashboardWidget;
-  window: BrowserWindow;
-}
 
 function getIconPath(): string {
   const isDev = !!MAIN_WINDOW_VITE_DEV_SERVER_URL;
@@ -26,13 +21,15 @@ function getIconPath(): string {
 }
 
 export class OverlayManager {
-  private overlayWindows = new Map<string, DashboardWidgetWithWindow>();
+  private containerWindow: BrowserWindow | undefined;
   private currentSettingsWindow: BrowserWindow | undefined;
   private isLocked = true;
   private skipTaskbar = true;
   private overlayAlwaysOnTop = true;
   private hasSingleInstanceLock = false;
   private onWindowReadyCallbacks = new Set<(windowId: string) => void>();
+  // Track container bounds for coordinate compensation
+  private containerBoundsInfo: ContainerBoundsInfo | null = null;
 
   public getVersion(): string {
     const version = app.getVersion();
@@ -40,110 +37,281 @@ export class OverlayManager {
     return `${version}+${gitHash}`;
   }
 
-  public getOverlays(): { widget: DashboardWidget; window: BrowserWindow }[] {
-    return Array.from(this.overlayWindows.values());
+  /**
+   * Get the container window (for backwards compatibility with IPC)
+   */
+  public getOverlays(): { window: BrowserWindow }[] {
+    if (this.containerWindow && !this.containerWindow.isDestroyed()) {
+      return [{ window: this.containerWindow }];
+    }
+    return [];
   }
 
+  /**
+   * Create the single overlay container window that holds all widgets
+   */
   public createOverlays(dashboardLayout: DashboardLayout): void {
-    const { widgets, generalSettings } = dashboardLayout;
+    const { generalSettings } = dashboardLayout;
     this.skipTaskbar = generalSettings?.skipTaskbar ?? true;
     this.overlayAlwaysOnTop = generalSettings?.overlayAlwaysOnTop ?? true;
-    widgets.forEach((widget) => {
-      if (!widget.enabled) return; // skip disabled widgets
-      const window = this.createOverlayWindow(widget);
-      trackWindowMovement(widget, window);
-    });
+
+    this.createContainerWindow();
     this.createSettingsWindow();
   }
 
-  public createOverlayWindow(widget: DashboardWidget): BrowserWindow {
-    const { id, layout } = widget;
-    const { x, y, width, height } = layout;
-    const title = id.charAt(0).toUpperCase() + id.slice(1);
+  /**
+   * Create a single fullscreen transparent window that contains all overlays
+   * Spans across all connected monitors
+   */
+  private createContainerWindow(): BrowserWindow {
+    if (this.containerWindow && !this.containerWindow.isDestroyed()) {
+      return this.containerWindow;
+    }
 
-    // Create the browser window.
+    // Calculate combined bounds of all displays to span all monitors
+    const allDisplays = screen.getAllDisplays();
+    const primaryDisplay = screen.getPrimaryDisplay();
+
+    // Log display info for debugging
+    console.log(`[OverlayManager] Found ${allDisplays.length} display(s):`);
+    for (const display of allDisplays) {
+      const isPrimary = display.id === primaryDisplay.id;
+      console.log(
+        `  Display ${display.id}${isPrimary ? ' (PRIMARY)' : ''}: bounds=${JSON.stringify(display.bounds)}`
+      );
+    }
+
+    const bounds = this.calculateCombinedDisplayBounds(allDisplays);
+    const expectedBounds = {
+      x: bounds.x,
+      y: bounds.y,
+      width: bounds.width,
+      height: bounds.height,
+    };
+
+    console.log(
+      `[OverlayManager] Creating container window at: x=${expectedBounds.x}, y=${expectedBounds.y}, ${expectedBounds.width}x${expectedBounds.height}`
+    );
+
     const browserWindow = new BrowserWindow({
-      x,
-      y,
-      width,
-      height,
-      title: `iRacing Dashies - ${title}`,
+      x: expectedBounds.x,
+      y: expectedBounds.y,
+      width: expectedBounds.width,
+      height: expectedBounds.height,
+      title: 'iRacing Dashies - Overlay Container',
       transparent: true,
       frame: false,
       skipTaskbar: this.skipTaskbar,
-      focusable: true, //for OpenKneeeboard/VR
+      focusable: true, // for OpenKneeboard/VR
       resizable: false,
       movable: false,
       roundedCorners: false,
+      hasShadow: false,
+      show: false, // Don't show until ready
+      alwaysOnTop: true, // Set in constructor for better Windows compatibility
+      backgroundColor: '#00000000', // Explicit transparent background
+      enableLargerThanScreen: true, // Allow window to span multiple monitors
       icon: getIconPath(),
       webPreferences: {
         preload: path.join(__dirname, 'preload.js'),
       },
     });
 
+    // Force set bounds after creation - more reliable on Windows
+    browserWindow.setBounds(expectedBounds);
+
     browserWindow.on('page-title-updated', (evt) => {
       evt.preventDefault();
     });
-    browserWindow.setIgnoreMouseEvents(true);
+
+    // Enable click-through when locked (no forwarding to avoid per-mousemove IPC overhead)
+    browserWindow.setIgnoreMouseEvents(this.isLocked);
     browserWindow.setVisibleOnAllWorkspaces(true, {
       visibleOnFullScreen: true,
     });
+
     if (this.overlayAlwaysOnTop) {
+      // Use 'screen-saver' level to stay above fullscreen games
+      // This is the highest z-order level available in Electron
       browserWindow.setAlwaysOnTop(true, 'screen-saver', 1);
     }
-    // and load the index.html of the app.
+
+    // Check actual bounds vs expected after initial setup
+    const initialBounds = browserWindow.getBounds();
+    console.log(
+      `[OverlayManager] Initial bounds after setBounds: x=${initialBounds.x}, y=${initialBounds.y}, ${initialBounds.width}x${initialBounds.height}`
+    );
+
+    // Load the app WITHOUT a hash route - container mode
     if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
-      browserWindow.loadURL(`${MAIN_WINDOW_VITE_DEV_SERVER_URL}#/${id}`);
+      browserWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
     } else {
       browserWindow.loadFile(
-        path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`),
-        { hash: `/${id}` }
+        path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`)
       );
     }
 
-    this.overlayWindows.set(id, { widget, window: browserWindow });
+    this.containerWindow = browserWindow;
 
     browserWindow.on('closed', () => {
-      const closedWindow = this.overlayWindows.get(id);
-      if (closedWindow) {
-        console.log('Closing window', closedWindow.widget.id);
+      console.log('Container window closed');
+      this.containerWindow = undefined;
+      this.containerBoundsInfo = null;
+    });
+
+    // Show window and retry positioning when ready
+    browserWindow.once('ready-to-show', () => {
+      if (browserWindow.isDestroyed()) return;
+
+      // Retry setting bounds - Windows sometimes allows it after window is visible
+      browserWindow.setPosition(expectedBounds.x, expectedBounds.y);
+      browserWindow.setSize(expectedBounds.width, expectedBounds.height);
+      browserWindow.show();
+
+      // Check final bounds
+      const actualBounds = browserWindow.getBounds();
+      const offset = {
+        x: actualBounds.x - expectedBounds.x,
+        y: actualBounds.y - expectedBounds.y,
+      };
+
+      this.containerBoundsInfo = {
+        expected: expectedBounds,
+        actual: actualBounds,
+        offset,
+      };
+
+      console.log(
+        `[OverlayManager] Final window bounds: x=${actualBounds.x}, y=${actualBounds.y}, ${actualBounds.width}x${actualBounds.height}`
+      );
+
+      if (offset.x !== 0 || offset.y !== 0) {
+        console.warn(
+          `[OverlayManager] OS constrained window position! Offset: (${offset.x}, ${offset.y})`
+        );
       }
-      this.overlayWindows.delete(id);
+
+      if (
+        actualBounds.width !== expectedBounds.width ||
+        actualBounds.height !== expectedBounds.height
+      ) {
+        console.warn(
+          `[OverlayManager] Window size mismatch! Expected ${expectedBounds.width}x${expectedBounds.height}, got ${actualBounds.width}x${actualBounds.height}`
+        );
+      }
     });
 
     browserWindow.webContents.once('did-finish-load', () => {
       if (!browserWindow.isDestroyed()) {
-        this.onWindowReadyCallbacks.forEach((cb) => cb(id));
+        // Send container bounds info to the frontend
+        browserWindow.webContents.send(
+          'containerBoundsInfo',
+          this.containerBoundsInfo
+        );
+        // Notify that the container is ready
+        this.onWindowReadyCallbacks.forEach((cb) => cb('container'));
       }
     });
 
     return browserWindow;
   }
 
+  /**
+   * Get the container bounds info (expected vs actual position)
+   */
+  public getContainerBoundsInfo(): ContainerBoundsInfo | null {
+    return this.containerBoundsInfo;
+  }
+
+  /**
+   * Calculate the bounding rectangle that encompasses all displays
+   * This creates one large virtual screen spanning all monitors
+   */
+  private calculateCombinedDisplayBounds(
+    displays: Electron.Display[]
+  ): Electron.Rectangle {
+    if (displays.length === 0) {
+      // Fallback to a default if no displays (shouldn't happen)
+      return { x: 0, y: 0, width: 1920, height: 1080 };
+    }
+
+    if (displays.length === 1) {
+      return displays[0].bounds;
+    }
+
+    // Find the bounding box that contains all displays
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+
+    for (const display of displays) {
+      const { x, y, width, height } = display.bounds;
+      minX = Math.min(minX, x);
+      minY = Math.min(minY, y);
+      maxX = Math.max(maxX, x + width);
+      maxY = Math.max(maxY, y + height);
+    }
+
+    return {
+      x: minX,
+      y: minY,
+      width: maxX - minX,
+      height: maxY - minY,
+    };
+  }
+
+  /**
+   * Toggle edit mode - enables/disables mouse interaction with overlays
+   */
   public toggleLockOverlays(): boolean {
     this.isLocked = !this.isLocked;
-    this.getOverlays().forEach(({ window }) => {
-      window.setResizable(!this.isLocked);
-      window.setMovable(!this.isLocked);
-      window.setIgnoreMouseEvents(this.isLocked);
-      window.blur();
-      window.webContents.send('editModeToggled', !this.isLocked);
-    });
+
+    if (this.containerWindow && !this.containerWindow.isDestroyed()) {
+      // In edit mode, allow mouse events; in locked mode, pass through
+      // Don't use forward:true when locked - it causes per-mousemove IPC overhead
+      this.containerWindow.setIgnoreMouseEvents(this.isLocked);
+      this.containerWindow.webContents.send('editModeToggled', !this.isLocked);
+
+      if (!this.isLocked) {
+        // In edit mode, bring to focus for interaction
+        this.containerWindow.focus();
+      }
+    }
 
     return this.isLocked;
   }
 
+  /**
+   * Send a message to the container window and settings window
+   */
+  // High-frequency messages that only the overlay container needs
+  private static readonly OVERLAY_ONLY_MESSAGES = new Set([
+    'telemetry',
+    'sessionData',
+    'runningState',
+  ]);
+
   public publishMessage(key: string, value: unknown): void {
-    this.getOverlays().forEach(({ window }) => {
-      if (window.isDestroyed()) return;
-      // notifies the overlay windows that there's a dashboard settings/layout update
+    // Send to container window
+    if (this.containerWindow && !this.containerWindow.isDestroyed()) {
       try {
-        window.webContents.send(key, value);
+        this.containerWindow.webContents.send(key, value);
       } catch (e) {
-        console.error(`Failed to send message ${key} to window`, e);
+        console.error(`Failed to send message ${key} to container window`, e);
       }
-    });
-    if (this.currentSettingsWindow && !this.currentSettingsWindow.isDestroyed()) {
+    }
+
+    // Skip high-frequency telemetry messages for the settings window
+    if (OverlayManager.OVERLAY_ONLY_MESSAGES.has(key)) {
+      return;
+    }
+
+    // Send to settings window
+    if (
+      this.currentSettingsWindow &&
+      !this.currentSettingsWindow.isDestroyed()
+    ) {
       try {
         this.currentSettingsWindow.webContents.send(key, value);
       } catch (e) {
@@ -152,14 +320,16 @@ export class OverlayManager {
     }
   }
 
-  public publishMessageToOverlay(id: string, key: string, value: unknown): void {
-    const overlay = this.overlayWindows.get(id);
-    if (!overlay || overlay.window.isDestroyed()) return;
-    try {
-      overlay.window.webContents.send(key, value);
-    } catch (e) {
-      console.error(`Failed to send message ${key} to overlay ${id}`, e);
-    }
+  /**
+   * Send a message to a specific overlay (for backwards compatibility)
+   * In container mode, this just sends to the container
+   */
+  public publishMessageToOverlay(
+    _id: string,
+    key: string,
+    value: unknown
+  ): void {
+    this.publishMessage(key, value);
   }
 
   public onOverlayReady(callback: (id: string) => void) {
@@ -167,59 +337,44 @@ export class OverlayManager {
     return () => this.onWindowReadyCallbacks.delete(callback);
   }
 
+  /**
+   * Close the container window
+   */
   public closeAllOverlays(): void {
-    this.getOverlays().forEach(({ window }) => {
-      if (!window.isDestroyed()) {
-        window.close();
-      }
-    });
-    this.overlayWindows.clear();
+    if (this.containerWindow && !this.containerWindow.isDestroyed()) {
+      this.containerWindow.close();
+    }
+    this.containerWindow = undefined;
   }
 
-  public closeOrCreateWindows(dashboardLayout: DashboardLayout): void {
-    const { widgets } = dashboardLayout;
-    const widgetsById = widgets.reduce(
-      (acc, widget) => {
-        acc[widget.id] = widget;
-        return acc;
-      },
-      {} as Record<string, DashboardWidget>
-    );
-
-    const openWidgets = this.getOverlays();
-    openWidgets.forEach(({ widget, window }) => {
-      // const dashboardWidget = widgetsById[widget.id];
-      if (!widgetsById[widget.id]?.enabled) {
-        window.close();
-        this.overlayWindows.delete(widget.id);
-      }
-    });
-
-    widgets.forEach((widget) => {
-      if (!widget.enabled) {
-        return;
-      }
-      if (!this.overlayWindows.has(widget.id)) {
-        const window = this.createOverlayWindow(widget);
-        trackWindowMovement(widget, window);
-      } else {
-        // Window already exists
-      }
-    });
+  /**
+   * In container mode, we don't need to close/create windows for widget changes
+   * The container handles widget visibility internally via React state
+   */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  public closeOrCreateWindows(_dashboardLayout?: DashboardLayout): void {
+    // In container mode, widget visibility is handled by the React OverlayContainer
+    // We only need to ensure the container window exists
+    if (!this.containerWindow || this.containerWindow.isDestroyed()) {
+      this.createContainerWindow();
+    }
+    // The dashboard update is already published via IPC, so React will handle the rest
   }
 
-  public forceRefreshOverlays(dashboardLayout: DashboardLayout): void {
+  /**
+   * Force refresh by recreating the container window
+   */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  public forceRefreshOverlays(_dashboardLayout?: DashboardLayout): void {
     this.closeAllOverlays();
-    const { widgets } = dashboardLayout;
-    widgets.forEach((widget) => {
-      if (!widget.enabled) return;
-      const window = this.createOverlayWindow(widget);
-      trackWindowMovement(widget, window);
-    });
+    this.createContainerWindow();
   }
 
   public focusSettingsWindow(): void {
-    if (this.currentSettingsWindow && !this.currentSettingsWindow.isDestroyed()) {
+    if (
+      this.currentSettingsWindow &&
+      !this.currentSettingsWindow.isDestroyed()
+    ) {
       if (this.currentSettingsWindow.isMinimized()) {
         this.currentSettingsWindow.restore();
       }
@@ -304,6 +459,12 @@ export class OverlayManager {
     // Track window movement and resizing to save bounds
     trackSettingsWindowMovement(browserWindow);
 
+    // Set settings window to screen-saver level so it appears above the overlay
+    // Use relative level 2 (higher than overlay's 1) so it's always clickable
+    if (this.overlayAlwaysOnTop) {
+      browserWindow.setAlwaysOnTop(true, 'screen-saver', 2);
+    }
+
     // and load the index.html of the app.
     if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
       browserWindow.loadURL(`${MAIN_WINDOW_VITE_DEV_SERVER_URL}#/settings`);
@@ -320,7 +481,7 @@ export class OverlayManager {
       if (!trayNotificationShown) {
         new Notification({
           title: 'iRacing Dashies',
-          body: 'Settings window is still accessible via the system tray icon'
+          body: 'Settings window is still accessible via the system tray icon',
         }).show();
         writeData('trayNotificationShown', true);
       }
@@ -331,19 +492,6 @@ export class OverlayManager {
   }
 }
 
-function saveWindowBounds(browserWindow: BrowserWindow): void {
-  const bounds = browserWindow.getBounds();
-  writeData('settingsWindowBounds', bounds);
-}
-
 function loadWindowBounds(): Electron.Rectangle | undefined {
   return readData<Electron.Rectangle>('settingsWindowBounds');
 }
-
-export const trackSettingsWindowMovement = (
-  browserWindow: BrowserWindow
-) => {
-  // Tracks moved and resized events on settings window and saves bounds to storage
-  browserWindow.on('moved', () => saveWindowBounds(browserWindow));
-  browserWindow.on('resized', () => saveWindowBounds(browserWindow));
-};
