@@ -41,12 +41,12 @@ export const OverlayContainer = memo(() => {
   return (
     <div
       className={[
-        'fixed inset-0 overflow-hidden',
+        'fixed inset-0 overflow-hidden pointer-events-none',
         editMode ? 'bg-blue-900/20' : '',
       ].join(' ')}
     >
       {enabledWidgets.map((widget, index) => {
-        const WidgetComponent = WIDGET_MAP[widget.id];
+        const WidgetComponent = WIDGET_MAP[widget.type || widget.id];
         if (!WidgetComponent) {
           return null;
         }

@@ -138,7 +138,7 @@ export const WidgetContainer = memo(
       width: displayedLayout.width,
       height: displayedLayout.height,
       zIndex,
-      pointerEvents: editMode ? 'auto' : 'none',
+      pointerEvents: 'auto',
     };
 
     const widgetName = getWidgetName(id);
@@ -146,10 +146,7 @@ export const WidgetContainer = memo(
     return (
       <div style={containerStyle} data-widget-id={id}>
         {/* Widget content */}
-        <div
-          className="w-full h-full"
-          style={{ pointerEvents: editMode ? 'none' : 'auto' }}
-        >
+        <div className="w-full h-full" style={{ pointerEvents: 'auto' }}>
           {children}
         </div>
 

@@ -105,7 +105,7 @@ const DashboardWidgetItem = memo(
       };
     }, []);
 
-    const WidgetComponent = WIDGET_MAP[widget.id];
+    const WidgetComponent = WIDGET_MAP[widget.type || widget.id];
     if (!WidgetComponent) {
       return null;
     }

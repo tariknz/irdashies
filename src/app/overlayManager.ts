@@ -124,8 +124,8 @@ export class OverlayManager {
       evt.preventDefault();
     });
 
-    // Enable click-through with event forwarding for edit mode
-    browserWindow.setIgnoreMouseEvents(this.isLocked, { forward: true });
+    // Enable click-through when locked (no forwarding to avoid per-mousemove IPC overhead)
+    browserWindow.setIgnoreMouseEvents(this.isLocked);
     browserWindow.setVisibleOnAllWorkspaces(true, {
       visibleOnFullScreen: true,
     });
@@ -269,9 +269,8 @@ export class OverlayManager {
 
     if (this.containerWindow && !this.containerWindow.isDestroyed()) {
       // In edit mode, allow mouse events; in locked mode, pass through
-      this.containerWindow.setIgnoreMouseEvents(this.isLocked, {
-        forward: true,
-      });
+      // Don't use forward:true when locked - it causes per-mousemove IPC overhead
+      this.containerWindow.setIgnoreMouseEvents(this.isLocked);
       this.containerWindow.webContents.send('editModeToggled', !this.isLocked);
 
       if (!this.isLocked) {
