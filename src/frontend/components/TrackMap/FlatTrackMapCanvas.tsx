@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { TrackDriver, TrackDrawing } from './TrackCanvas';
-import { getColor, getContrastingTextColor, getTailwindStyle } from '@irdashies/utils/colors';
+import { getColor, getTailwindStyle } from '@irdashies/utils/colors';
 import { useDriverOffTrack } from './hooks/useDriverOffTrack';
 
 export interface FlatTrackMapCanvasProps {
@@ -45,14 +45,13 @@ export const FlatTrackMapCanvas = ({
       if (isPlayer) {
         if (highlightColor) {
           const highlightColorHex = `#${highlightColor.toString(16).padStart(6, '0')}`;
-          colors[driver.CarIdx] = { fill: highlightColorHex, text: getContrastingTextColor(highlightColorHex) };
+          colors[driver.CarIdx] = { fill: highlightColorHex, text: 'white' };
         } else {
-          const amberColor = getColor('amber');
-          colors[driver.CarIdx] = { fill: amberColor, text: getContrastingTextColor(amberColor) };
+          colors[driver.CarIdx] = { fill: getColor('amber'), text: 'white' };
         }
       } else {
         const style = getTailwindStyle(driver.CarClassColor, undefined, isMultiClass);
-        colors[driver.CarIdx] = { fill: style.canvasFill, text: getContrastingTextColor(style.canvasFill) };
+        colors[driver.CarIdx] = { fill: style.canvasFill, text: 'white' };
       }
     });
     return colors;

@@ -1,5 +1,6 @@
 import { Fragment, useMemo } from 'react';
 import { InputWidgetSettings } from '../../Settings/types';
+import { InputAbsIndicator } from '../InputAbsIndicator/InputAbsIndicator';
 import { InputBar } from '../InputBar/InputBar';
 import { InputGear } from '../InputGear/InputGear';
 import { InputSteer } from '../InputSteer/InputSteer';
@@ -17,7 +18,7 @@ export interface InputProps {
   settings?: InputWidgetSettings['config'];
 }
 
-type InputSection = 'trace' | 'bar' | 'gear' | 'steer';
+type InputSection = 'trace' | 'bar' | 'gear' | 'abs' | 'steer';
 
 export const InputContainer = ({
   brake,
@@ -74,6 +75,19 @@ export const InputContainer = ({
               speedMs={speed}
               unit={unit}
               settings={settings?.gear}
+            />
+          </div>
+        ),
+      },
+      {
+        id: 'abs' as const,
+        shouldRender: settings?.abs?.enabled ?? false,
+        component: (
+          <div className="flex flex-1 min-w-0 items-center justify-center p-2">
+            <InputAbsIndicator
+              key="abs"
+              absActive={brakeAbsActive ?? false}
+              className="w-full h-full aspect-[512/357.25]"
             />
           </div>
         ),

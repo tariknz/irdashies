@@ -5,3 +5,5 @@ export * from './dashboardLayout';
 export * from './session';
 export * from './telemetry';
 export * from './pitLane';
+export * from './fuelCalculatorBridge';
+export * from './widgetId';

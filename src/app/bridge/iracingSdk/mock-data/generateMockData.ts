@@ -1,6 +1,6 @@
-import type { Session, Telemetry, IrSdkBridge } from '@irdashies/types';
-import mockTelemetry from '../../../irsdk/node/utils/mock-data/telemetry.json';
+import type { IrSdkBridge, Session, Telemetry } from '@irdashies/types';
 import mockSessionInfo from '../../../irsdk/node/utils/mock-data/session.json';
+import mockTelemetry from '../../../irsdk/node/utils/mock-data/telemetry.json';
 
 export async function generateMockDataFromPath(
   path?: string
@@ -35,7 +35,16 @@ export function generateMockData(sessionData?: {
   let sessionIdx = 0;
 
   let prevTelemetry = mockTelemetry as unknown as Telemetry;
-  
+
+  const mockState = {
+    fuelLevel: 45.0, // FUEL_START
+    lapDistPct: 0.1, // Start a bit into the lap
+    currentLap: 3,
+    sessionTime: 600.0, // Start 10 mins in
+    sessionLaps: 15,
+    sessionLapsRemain: 12,
+  };
+
   // Demo mode: Simulate RPM and gear changes for Mazda MX-5
   let demoRpm = 2000;
   let demoGear = 1;
@@ -53,7 +62,7 @@ export function generateMockData(sessionData?: {
   return {
     onTelemetry: (callback: (value: Telemetry) => void) => {
       telemetryCallbacks.add(callback);
-      
+
       // Start interval only once
       if (!telemetryInterval) {
         telemetryInterval = setInterval(() => {
@@ -63,7 +72,8 @@ export function generateMockData(sessionData?: {
           if (!t) {
             const throttleValue = prevTelemetry.Throttle.value[0];
             const brakeValue = prevTelemetry.Brake.value[0];
-            
+            const jitteredBrakeValue = jitterValue(brakeValue);
+
             // Simulate RPM and gear changes for demo mode
             // Check if we're at or above shift RPM
             if (demoRpm >= shiftRpm) {
@@ -85,12 +95,53 @@ export function generateMockData(sessionData?: {
               // Normal RPM increase
               demoRpm += rpmStep;
             }
-            
+
+            // --- Fuel Calculator Mock Logic Start ---
+            // Constants for simulation
+            const FUEL_TANK_MAX = 60.0;
+            const FUEL_PER_LAP = 2.2;
+            const LAP_DISTANCE_INC = 0.0007; // Increment per tick for ~24s lap at 60Hz (fast mock lap)
+            const SESSION_TIME_INC = 1 / 60; // Seconds per tick
+
+            // Update Lap Distance
+            mockState.lapDistPct += LAP_DISTANCE_INC;
+
+            // Handle Lap Completion
+            if (mockState.lapDistPct >= 1.0) {
+              mockState.lapDistPct = 0.0;
+              mockState.currentLap += 1;
+              mockState.sessionLapsRemain = Math.max(
+                0,
+                mockState.sessionLapsRemain - 1
+              );
+            }
+
+            // Update Fuel (consume based on distance)
+            // Fuel consumed = (Fuel Per Lap) * (Distance Fraction traveled this tick)
+            // Since we increment dist by LAP_DISTANCE_INC, we consume that fraction of a lap's fuel
+            const fuelConsumedThisTick = FUEL_PER_LAP * LAP_DISTANCE_INC;
+            mockState.fuelLevel = Math.max(
+              0,
+              mockState.fuelLevel - fuelConsumedThisTick
+            );
+
+            // Update Session Time
+            mockState.sessionTime += SESSION_TIME_INC;
+
+            // --- Fuel Calculator Mock Logic End ---
+
+            const state = mockState;
+
+            // Enable ABS when brake force is above 80% in demo mode
+            const absActive = jitteredBrakeValue > 0.8;
+            const prevAbs =
+              prevTelemetry.BrakeABSactive ?? ({ value: [false] } as const);
+
             t = {
               ...prevTelemetry,
               Brake: {
                 ...prevTelemetry.Brake,
-                value: [jitterValue(brakeValue)],
+                value: [jitteredBrakeValue],
               },
               Throttle: {
                 ...prevTelemetry.Throttle,
@@ -108,18 +159,59 @@ export function generateMockData(sessionData?: {
                 ...prevTelemetry.RPM,
                 value: [demoRpm],
               },
-            };
+              // Inject Fuel Calculator Mock Values
+              FuelLevel: {
+                ...prevTelemetry.FuelLevel,
+                value: [state.fuelLevel],
+              },
+              FuelLevelPct: {
+                ...prevTelemetry.FuelLevelPct,
+                value: [state.fuelLevel / FUEL_TANK_MAX],
+              },
+              Lap: {
+                ...prevTelemetry.Lap,
+                value: [state.currentLap],
+              },
+              LapDistPct: {
+                ...prevTelemetry.LapDistPct,
+                value: [state.lapDistPct],
+              },
+              SessionTime: {
+                ...prevTelemetry.SessionTime,
+                value: [state.sessionTime],
+              },
+              SessionLapsRemain: {
+                ...prevTelemetry.SessionLapsRemain,
+                value: [state.sessionLapsRemain],
+              },
+              SessionTimeRemain: {
+                ...prevTelemetry.SessionTimeRemain,
+                value: [state.sessionLapsRemain * 90], // Roughly 1.5 min laps
+              },
+              IsOnTrack: {
+                ...prevTelemetry.IsOnTrack,
+                value: [true],
+              },
+              OnPitRoad: {
+                ...prevTelemetry.OnPitRoad,
+                value: [false],
+              },
+              BrakeABSactive: {
+                ...prevAbs,
+                value: [absActive],
+              },
+            } as unknown as Telemetry;
             prevTelemetry = t;
           }
 
           telemetryIdx = telemetryIdx + 1;
-          const data = { ...t };
-          
+          const data = t;
+
           // Call all registered callbacks
-          telemetryCallbacks.forEach(cb => cb(data));
+          telemetryCallbacks.forEach((cb) => cb(data));
         }, 1000 / 60); // Update at 60Hz for smooth telemetry simulation
       }
-      
+
       // Return unsubscribe function
       return () => {
         telemetryCallbacks.delete(callback);
@@ -132,7 +224,7 @@ export function generateMockData(sessionData?: {
     },
     onSessionData: (callback: (value: Session) => void) => {
       sessionCallbacks.add(callback);
-      
+
       const updateSessionData = () => {
         let s = Array.isArray(sessionInfo)
           ? sessionInfo[sessionIdx % sessionInfo.length]
@@ -142,17 +234,17 @@ export function generateMockData(sessionData?: {
         sessionIdx = sessionIdx + 1;
 
         // Call all registered callbacks
-        sessionCallbacks.forEach(cb => cb(s));
+        sessionCallbacks.forEach((cb) => cb(s));
       };
-      
+
       // Send initial data immediately
       updateSessionData();
-      
+
       // Start interval only once
       if (!sessionInfoInterval) {
         sessionInfoInterval = setInterval(updateSessionData, 2000);
       }
-      
+
       // Return unsubscribe function
       return () => {
         sessionCallbacks.delete(callback);
@@ -165,17 +257,17 @@ export function generateMockData(sessionData?: {
     },
     onRunningState: (callback: (value: boolean) => void) => {
       runningStateCallbacks.add(callback);
-      
+
       // Send initial state immediately
       callback(true);
-      
+
       // Start interval only once
       if (!runningStateInterval) {
         runningStateInterval = setInterval(() => {
-          runningStateCallbacks.forEach(cb => cb(true));
+          runningStateCallbacks.forEach((cb) => cb(true));
         }, 1000);
       }
-      
+
       // Return unsubscribe function
       return () => {
         runningStateCallbacks.delete(callback);

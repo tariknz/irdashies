@@ -21,10 +21,14 @@ function getWidgetIdFromUrl(): string | null {
 }
 
 export const EditMode = ({ children }: PropsWithChildren) => {
-  const { editMode } = useDashboard();
+  const { editMode, currentDashboard } = useDashboard();
   if (editMode) {
     const widgetId = getWidgetIdFromUrl();
-    const widgetName = widgetId ? getWidgetName(widgetId) : null;
+    // Find widget definition to get true type
+    const widgetDef = currentDashboard?.widgets.find(w => w.id === widgetId);
+    const componentType = widgetDef?.type || widgetId;
+    
+    const widgetName = componentType ? getWidgetName(componentType) : null;
 
     return (
       <div className="relative w-full h-full">
@@ -33,6 +37,9 @@ export const EditMode = ({ children }: PropsWithChildren) => {
             <ResizeIcon />
             <span>
               {widgetName ?? 'Edit Mode'}
+               {widgetId && componentType === 'fuel' && widgetId !== 'fuel' && (
+                <span className="ml-1 text-xs opacity-80 font-mono">({widgetId})</span>
+              )}
             </span>
           </div>
         </div>

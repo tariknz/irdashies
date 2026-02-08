@@ -72,8 +72,8 @@ export class OverlayManager {
       frame: false,
       skipTaskbar: this.skipTaskbar,
       focusable: true, //for OpenKneeeboard/VR
-      resizable: false,
-      movable: false,
+      resizable: !this.isLocked,
+      movable: !this.isLocked,
       roundedCorners: false,
       icon: getIconPath(),
       webPreferences: {
@@ -84,7 +84,7 @@ export class OverlayManager {
     browserWindow.on('page-title-updated', (evt) => {
       evt.preventDefault();
     });
-    browserWindow.setIgnoreMouseEvents(true);
+    browserWindow.setIgnoreMouseEvents(this.isLocked);
     browserWindow.setVisibleOnAllWorkspaces(true, {
       visibleOnFullScreen: true,
     });
@@ -143,7 +143,10 @@ export class OverlayManager {
         console.error(`Failed to send message ${key} to window`, e);
       }
     });
-    if (this.currentSettingsWindow && !this.currentSettingsWindow.isDestroyed()) {
+    if (
+      this.currentSettingsWindow &&
+      !this.currentSettingsWindow.isDestroyed()
+    ) {
       try {
         this.currentSettingsWindow.webContents.send(key, value);
       } catch (e) {
@@ -152,7 +155,11 @@ export class OverlayManager {
     }
   }
 
-  public publishMessageToOverlay(id: string, key: string, value: unknown): void {
+  public publishMessageToOverlay(
+    id: string,
+    key: string,
+    value: unknown
+  ): void {
     const overlay = this.overlayWindows.get(id);
     if (!overlay || overlay.window.isDestroyed()) return;
     try {
@@ -219,7 +226,10 @@ export class OverlayManager {
   }
 
   public focusSettingsWindow(): void {
-    if (this.currentSettingsWindow && !this.currentSettingsWindow.isDestroyed()) {
+    if (
+      this.currentSettingsWindow &&
+      !this.currentSettingsWindow.isDestroyed()
+    ) {
       if (this.currentSettingsWindow.isMinimized()) {
         this.currentSettingsWindow.restore();
       }
@@ -320,7 +330,7 @@ export class OverlayManager {
       if (!trayNotificationShown) {
         new Notification({
           title: 'iRacing Dashies',
-          body: 'Settings window is still accessible via the system tray icon'
+          body: 'Settings window is still accessible via the system tray icon',
         }).show();
         writeData('trayNotificationShown', true);
       }
@@ -340,9 +350,7 @@ function loadWindowBounds(): Electron.Rectangle | undefined {
   return readData<Electron.Rectangle>('settingsWindowBounds');
 }
 
-export const trackSettingsWindowMovement = (
-  browserWindow: BrowserWindow
-) => {
+export const trackSettingsWindowMovement = (browserWindow: BrowserWindow) => {
   // Tracks moved and resized events on settings window and saves bounds to storage
   browserWindow.on('moved', () => saveWindowBounds(browserWindow));
   browserWindow.on('resized', () => saveWindowBounds(browserWindow));

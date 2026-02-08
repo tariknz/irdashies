@@ -1,4 +1,9 @@
-import type { DashboardBridge, DashboardLayout, DashboardProfile, SaveDashboardOptions } from '@irdashies/types';
+import type {
+  DashboardBridge,
+  DashboardLayout,
+  DashboardProfile,
+  SaveDashboardOptions,
+} from '@irdashies/types';
 import { app, ipcMain } from 'electron';
 import { onDashboardUpdated } from '../../storage/dashboardEvents';
 import {
@@ -15,15 +20,20 @@ import {
   setCurrentProfile,
   getProfile,
   updateProfileTheme,
-  getOrCreateDefaultDashboardForProfile
+  getOrCreateDefaultDashboardForProfile,
 } from '../../storage/dashboards';
 import { OverlayManager } from '../../overlayManager';
-import { getAnalyticsOptOut as getAnalyticsOptOutStorage, setAnalyticsOptOut as setAnalyticsOptOutStorage } from '../../storage/analytics';
+import {
+  getAnalyticsOptOut as getAnalyticsOptOutStorage,
+  setAnalyticsOptOut as setAnalyticsOptOutStorage,
+} from '../../storage/analytics';
 import { Analytics } from '../../analytics';
 
 // Store callbacks for dashboard updates
-const dashboardUpdateCallbacks: Set<(dashboard: DashboardLayout, profileId?: string) => void> = new Set<(dashboard: DashboardLayout, profileId?: string) => void>();
-const demoModeCallbacks: Set<(isDemoMode: boolean) => void> = new Set<(isDemoMode: boolean) => void>();
+const dashboardUpdateCallbacks = new Set<
+  (dashboard: DashboardLayout, profileId?: string) => void
+>();
+const demoModeCallbacks = new Set<(isDemoMode: boolean) => void>();
 
 /**
  * Main dashboard bridge instance exposed to component server
@@ -38,14 +48,14 @@ export const dashboardBridge: DashboardBridge = {
   reloadDashboard: () => {
     // Not used by component server
   },
-  saveDashboard: (dashboard: DashboardLayout, options?: SaveDashboardOptions) => {
+  saveDashboard: (
+    dashboard: DashboardLayout,
+    options?: SaveDashboardOptions
+  ) => {
     const targetProfileId = options?.profileId || getCurrentProfileId();
-    console.log('[dashboardBridge.saveDashboard] Saving to profile:', targetProfileId, 'Current profile:', getCurrentProfileId(), 'Options:', options);
     saveDashboard(targetProfileId, dashboard);
-
-    // Trigger dashboard update callbacks for all subscribers (browser views, component server, etc.)
     if (dashboardUpdateCallbacks.size > 0) {
-      dashboardUpdateCallbacks.forEach(callback => {
+      dashboardUpdateCallbacks.forEach((callback) => {
         try {
           callback(dashboard, targetProfileId);
         } catch (err) {
@@ -134,10 +144,13 @@ export const dashboardBridge: DashboardBridge = {
     app.setLoginItemSettings({
       openAtLogin: enabled,
     });
-  }
+  },
 };
 
-export async function publishDashboardUpdates(overlayManager: OverlayManager, analytics: Analytics) {
+export async function publishDashboardUpdates(
+  overlayManager: OverlayManager,
+  analytics: Analytics
+) {
   onDashboardUpdated((dashboard) => {
     overlayManager.closeOrCreateWindows(dashboard);
     overlayManager.publishMessage('dashboardUpdated', dashboard);
@@ -192,15 +205,18 @@ export async function publishDashboardUpdates(overlayManager: OverlayManager, an
     }
   });
 
-  ipcMain.handle('getGarageCoverImageAsDataUrl', async (_, imagePath: string) => {
-    try {
-      const dataUrl = await getGarageCoverImageAsDataUrl(imagePath);
-      return dataUrl;
-    } catch (err) {
-      console.error('Error loading garage cover image as data URL:', err);
-      throw err;
+  ipcMain.handle(
+    'getGarageCoverImageAsDataUrl',
+    async (_, imagePath: string) => {
+      try {
+        const dataUrl = await getGarageCoverImageAsDataUrl(imagePath);
+        return dataUrl;
+      } catch (err) {
+        console.error('Error loading garage cover image as data URL:', err);
+        throw err;
+      }
     }
-  });
+  );
   ipcMain.handle('getAnalyticsOptOut', () => {
     return getAnalyticsOptOutStorage();
   });
@@ -281,7 +297,10 @@ export async function publishDashboardUpdates(overlayManager: OverlayManager, an
  * Called from iracingSdk setup when demo mode is toggled
  */
 export function notifyDemoModeChanged(isDemoMode: boolean) {
-  console.log('🎭 Notifying dashboard bridge callbacks of demo mode change:', isDemoMode);
+  console.log(
+    '🎭 Notifying dashboard bridge callbacks of demo mode change:',
+    isDemoMode
+  );
   demoModeCallbacks.forEach((callback) => {
     try {
       callback(isDemoMode);

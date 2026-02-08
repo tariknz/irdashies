@@ -1,4 +1,6 @@
 export interface BaseWidgetSettings<T = Record<string, unknown>> {
+  id?: string;
+  type?: string;
   enabled: boolean;
   config: T;
 }
@@ -14,29 +16,40 @@ export interface SessionVisibilitySettings {
 export interface StandingsWidgetSettings extends BaseWidgetSettings {
   config: {
     iratingChange: { enabled: boolean };
-    badge: { enabled: boolean; badgeFormat: 'license-color-fullrating-bw' | 'license-color-rating-bw' | 'license-color-rating-bw-no-license' | 'rating-color-no-license' | 'license-bw-rating-bw' | 'rating-only-bw-rating-bw' | 'license-bw-rating-bw-no-license' | 'rating-bw-no-license' };
+    badge: {
+      enabled: boolean;
+      badgeFormat:
+        | 'license-color-fullrating-bw'
+        | 'license-color-rating-bw'
+        | 'license-color-rating-bw-no-license'
+        | 'rating-color-no-license'
+        | 'license-bw-rating-bw'
+        | 'rating-only-bw-rating-bw'
+        | 'license-bw-rating-bw-no-license'
+        | 'rating-bw-no-license';
+    };
     delta: { enabled: boolean };
     gap: { enabled: boolean };
     interval: { enabled: boolean };
     lastTime: {
       enabled: boolean;
       timeFormat:
-      | 'full'
-      | 'mixed'
-      | 'minutes'
-      | 'seconds-full'
-      | 'seconds-mixed'
-      | 'seconds';
+        | 'full'
+        | 'mixed'
+        | 'minutes'
+        | 'seconds-full'
+        | 'seconds-mixed'
+        | 'seconds';
     };
     fastestTime: {
       enabled: boolean;
       timeFormat:
-      | 'full'
-      | 'mixed'
-      | 'minutes'
-      | 'seconds-full'
-      | 'seconds-mixed'
-      | 'seconds';
+        | 'full'
+        | 'mixed'
+        | 'minutes'
+        | 'seconds-full'
+        | 'seconds-mixed'
+        | 'seconds';
     };
     background: { opacity: number };
     countryFlags: { enabled: boolean };
@@ -84,9 +97,23 @@ export interface StandingsWidgetSettings extends BaseWidgetSettings {
     showOnlyWhenOnTrack: boolean;
     useLivePosition: boolean;
     position: { enabled: boolean };
-    driverName: { enabled: boolean; showStatusBadges: boolean; nameFormat: 'name-middlename-surname' | 'name-m.-surname' | 'name-surname' | 'n.-surname' | 'surname-n.' | 'surname' };
+    driverName: {
+      enabled: boolean;
+      showStatusBadges: boolean;
+      nameFormat:
+        | 'name-middlename-surname'
+        | 'name-m.-surname'
+        | 'name-surname'
+        | 'n.-surname'
+        | 'surname-n.'
+        | 'surname';
+    };
     teamName: { enabled: boolean };
-    pitStatus: { enabled: boolean; showPitTime?: boolean; pitLapDisplayMode: 'lastPitLap' | 'lapsSinceLastPit' };
+    pitStatus: {
+      enabled: boolean;
+      showPitTime?: boolean;
+      pitLapDisplayMode: 'lastPitLap' | 'lapsSinceLastPit';
+    };
     displayOrder: string[];
     sessionVisibility: SessionVisibilitySettings;
   };
@@ -101,22 +128,22 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
     lastTime: {
       enabled: boolean;
       timeFormat:
-      | 'full'
-      | 'mixed'
-      | 'minutes'
-      | 'seconds-full'
-      | 'seconds-mixed'
-      | 'seconds';
+        | 'full'
+        | 'mixed'
+        | 'minutes'
+        | 'seconds-full'
+        | 'seconds-mixed'
+        | 'seconds';
     };
     fastestTime: {
       enabled: boolean;
       timeFormat:
-      | 'full'
-      | 'mixed'
-      | 'minutes'
-      | 'seconds-full'
-      | 'seconds-mixed'
-      | 'seconds';
+        | 'full'
+        | 'mixed'
+        | 'minutes'
+        | 'seconds-full'
+        | 'seconds-mixed'
+        | 'seconds';
     };
     compound: { enabled: boolean };
     carManufacturer: { enabled: boolean; hideIfSingleMake?: boolean };
@@ -152,16 +179,41 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
       displayOrder: string[];
     };
     showOnlyWhenOnTrack: boolean;
-    badge: { enabled: boolean; badgeFormat: 'license-color-fullrating-bw' | 'license-color-rating-bw' | 'license-color-rating-bw-no-license' | 'rating-color-no-license' | 'license-bw-rating-bw' | 'rating-only-bw-rating-bw' | 'license-bw-rating-bw-no-license' | 'rating-bw-no-license' };
+    badge: {
+      enabled: boolean;
+      badgeFormat:
+        | 'license-color-fullrating-bw'
+        | 'license-color-rating-bw'
+        | 'license-color-rating-bw-no-license'
+        | 'rating-color-no-license'
+        | 'license-bw-rating-bw'
+        | 'rating-only-bw-rating-bw'
+        | 'license-bw-rating-bw-no-license'
+        | 'rating-bw-no-license';
+    };
     iratingChange: { enabled: boolean };
     delta: {
       enabled: boolean;
       precision: number;
     };
     position: { enabled: boolean };
-    driverName: { enabled: boolean; showStatusBadges: boolean; nameFormat: 'name-middlename-surname' | 'name-m.-surname' | 'name-surname' | 'n.-surname' | 'surname-n.' | 'surname' };
+    driverName: {
+      enabled: boolean;
+      showStatusBadges: boolean;
+      nameFormat:
+        | 'name-middlename-surname'
+        | 'name-m.-surname'
+        | 'name-surname'
+        | 'n.-surname'
+        | 'surname-n.'
+        | 'surname';
+    };
     teamName: { enabled: boolean };
-    pitStatus: { enabled: boolean; showPitTime?: boolean; pitLapDisplayMode: 'lastPitLap' | 'lapsSinceLastPit' };
+    pitStatus: {
+      enabled: boolean;
+      showPitTime?: boolean;
+      pitLapDisplayMode: 'lastPitLap' | 'lapsSinceLastPit';
+    };
     displayOrder: string[];
     useLivePosition: boolean;
     sessionVisibility: SessionVisibilitySettings;
@@ -242,6 +294,9 @@ export interface InputWidgetSettings extends BaseWidgetSettings {
       enabled: boolean;
       unit: 'mph' | 'km/h' | 'auto';
     };
+    abs: {
+      enabled: boolean;
+    };
     steer: SteerWidgetSettings;
     tachometer: {
       enabled: boolean;
@@ -251,14 +306,17 @@ export interface InputWidgetSettings extends BaseWidgetSettings {
         enabled: boolean;
         indicatorType: 'glow' | 'pulse' | 'border';
         indicatorColor: string;
-        carConfigs: Record<string, {
-          enabled: boolean;
-          carId: string;
-          carName: string;
-          gearCount: number;
-          redlineRpm: number;
-          gearShiftPoints: Record<string, { shiftRpm: number }>;
-        }>;
+        carConfigs: Record<
+          string,
+          {
+            enabled: boolean;
+            carId: string;
+            carName: string;
+            gearCount: number;
+            redlineRpm: number;
+            gearShiftPoints: Record<string, { shiftRpm: number }>;
+          }
+        >;
       };
     };
     background: { opacity: number };
@@ -274,7 +332,11 @@ export interface FuelWidgetSettings extends BaseWidgetSettings {
     fuelUnits: 'L' | 'gal';
     layout: 'vertical' | 'horizontal';
     showConsumption: boolean;
+    showFuelLevel: boolean;
+    showLapsRemaining: boolean;
     showMin: boolean;
+    showCurrentLap: boolean;
+    showQualifyConsumption?: boolean;
     showLastLap: boolean;
     show3LapAvg: boolean;
     show10LapAvg: boolean;
@@ -283,14 +345,79 @@ export interface FuelWidgetSettings extends BaseWidgetSettings {
     showEnduranceStrategy: boolean;
     showFuelScenarios: boolean;
     showFuelRequired: boolean;
-    showConsumptionGraph: boolean;
-    consumptionGraphType: 'line' | 'histogram';
+    showFuelHistory: boolean;
+    fuelHistoryType: 'line' | 'histogram';
     safetyMargin: number;
+    manualTarget?: number;
     background: { opacity: number };
     fuelRequiredMode: 'toFinish' | 'toAdd';
+    enableTargetPitLap?: boolean;
+    targetPitLap?: number;
+    targetPitLapBasis?: 'avg' | 'avg10' | 'last' | 'max' | 'min' | 'qual';
+    economyPredictMode?: 'live' | 'endOfLap';
+    useGeneralFontSize?: boolean;
+    useGeneralCompactMode?: boolean;
     sessionVisibility: SessionVisibilitySettings;
+    /** 
+    * Box Layout Configuration 
+    * Defines the structure of boxes and which widgets they contain
+    */
+    layoutConfig?: BoxConfig[];
+    /** Recursive Layout Tree (Supersedes layoutConfig) */
+    layoutTree?: LayoutNode;
+    /** Per-widget styling overrides (e.g. fontSize) */
+    widgetStyles?: Record<string, { fontSize?: number; labelFontSize?: number; valueFontSize?: number; barFontSize?: number; height?: number }>;
+    /** Order of rows in the consumption grid (curr, avg, max, last, min) */
+    consumptionGridOrder?: string[];
+    /** Percentage thresholds for fuel status colors (0-100) */
+    fuelStatusThresholds?: {
+      green: number;
+      amber: number;
+      red: number;
+    };
+    /** Basis for fuel status coloring consumption calculation */
+    fuelStatusBasis?: 'last' | 'avg' | 'min' | 'max';
+    /** Number of laps remaining that triggers Red status regardless of percentage */
+    fuelStatusRedLaps?: number;
+    /** Number of laps to use for AVG calculation (default: 3) */
+    avgLapsCount?: number;
+    /** Whether to use persistence for lap history */
+    enableStorage?: boolean;
+    /** Whether to enable debug logging to file */
+    enableLogging?: boolean;
+    /** Whether to show the fuel status border color (green/orange/red) */
+    showFuelStatusBorder?: boolean;
   };
 }
+
+export interface BoxConfig {
+  id: string;
+  /** Layout flow for widgets in this box */
+  flow?: 'vertical' | 'horizontal';
+  /** Width of the box relative to container */
+  width?: '1/1' | '1/2' | '1/3' | '1/4';
+  /** Widgets contained in this box, in order */
+  widgets: string[];
+}
+
+export type LayoutDirection = 'row' | 'col';
+
+export type LayoutNode =
+  | { id: string; type: 'box'; widgets: string[]; direction: LayoutDirection; weight?: number }
+  | { id: string; type: 'split'; direction: LayoutDirection; children: LayoutNode[]; weight?: number };
+
+/** Available widgets for the Fuel Calculator */
+export type FuelWidgetType =
+  | 'fuelLevel'
+  | 'lapsRemaining'
+  | 'fuelHeader'
+  | 'consumption'
+  | 'pitWindow'
+  | 'endurance'
+  | 'scenarios'
+  | 'graph'
+  | 'confidence'
+  | 'keyInfo';
 
 export interface BlindSpotMonitorWidgetSettings extends BaseWidgetSettings {
   config: {
@@ -310,6 +437,21 @@ export interface RejoinIndicatorWidgetSettings extends BaseWidgetSettings {
     showAtSpeed: number;
     careGap: number;
     stopGap: number;
+    sessionVisibility: SessionVisibilitySettings;
+  };
+}
+
+export interface FlagWidgetSettings extends BaseWidgetSettings {
+  id: 'flag';
+  config: {
+    enabled: boolean;
+    showOnlyWhenOnTrack: boolean;
+    showLabel: boolean;
+    matrixMode: '8x8' | '16x16' | 'uniform';
+    animate: boolean;
+    blinkPeriod: number;
+    showNoFlagState: boolean;
+    enableGlow: boolean;
     sessionVisibility: SessionVisibilitySettings;
   };
 }
@@ -357,6 +499,7 @@ export interface FasterCarsFromBehindWidgetSettings extends BaseWidgetSettings {
     showDistance: boolean;
     showBadge: boolean;
     badgeFormat: string;
+    onlyShowFasterClasses: boolean;
     sessionVisibility: SessionVisibilitySettings;
   };
 }
@@ -389,10 +532,13 @@ export interface ShiftPointSettings {
   /** Indicator color */
   indicatorColor: string;
   /** Per-car shift configurations */
-  carConfigs: Record<string, {
-    carId: string;
-    carName: string;
-    gearCount: number;
-    gearShiftPoints: Record<string, { shiftRpm: number }>;
-  }>;
+  carConfigs: Record<
+    string,
+    {
+      carId: string;
+      carName: string;
+      gearCount: number;
+      gearShiftPoints: Record<string, { shiftRpm: number }>;
+    }
+  >;
 }
