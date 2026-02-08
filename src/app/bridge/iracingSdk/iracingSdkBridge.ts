@@ -137,6 +137,9 @@ export async function publishIRacingSDKEvents(
     stop: () => {
       shouldStop = true;
       clearInterval(runningStateInterval);
+      telemetryCallbacks.clear();
+      sessionCallbacks.clear();
+      runningStateCallbacks.clear();
       perfMetrics.stopReporting();
     },
   };

@@ -833,5 +833,6 @@ export const defaultDashboard: DashboardLayout = {
     skipTaskbar: true,
     disableHardwareAcceleration: false,
     overlayAlwaysOnTop: true,
+    enableNetworkAccess: false,
   },
 };

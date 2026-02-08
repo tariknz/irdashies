@@ -28,13 +28,21 @@ import { PitlaneHelperSettings } from './sections/PitlaneHelperSettings';
 import { GeneralSettings } from './sections/GeneralSettings';
 import { BlindSpotMonitorSettings } from './sections/BlindSpotMonitorSettings';
 import { GarageCoverSettings } from './sections/GarageCoverSettings';
+import { ProfileSettings } from './sections/ProfileSettings';
+import { FlagSettings } from './sections/FlagSettings';
 import { useDashboard } from '@irdashies/context';
 import { useState } from 'react';
 
 export const SettingsLayout = () => {
   const location = useLocation();
-  const { bridge, editMode, isDemoMode, toggleDemoMode, currentDashboard } =
-    useDashboard();
+  const {
+    bridge,
+    editMode,
+    isDemoMode,
+    toggleDemoMode,
+    currentDashboard,
+    currentProfile,
+  } = useDashboard();
   const [isLocked, setIsLocked] = useState(!editMode);
 
   const isActive = (path: string) => {
@@ -60,7 +68,14 @@ export const SettingsLayout = () => {
       <div className="flex flex-row gap-4 items-center justify-between">
         <div className="flex flex-row gap-4 items-center">
           <GearIcon size={32} weight="bold" />
-          <h1 className="text-2xl font-bold">Overlay Settings</h1>
+          <div>
+            <h1 className="text-2xl font-bold">Overlay Settings</h1>
+            {currentProfile && (
+              <p className="text-sm text-gray-400">
+                {currentProfile.name} Active
+              </p>
+            )}
+          </div>
         </div>
         <div className="flex flex-row gap-2">
           <button
@@ -109,23 +124,33 @@ export const SettingsLayout = () => {
                 General
               </Link>
             </li>
+            <li>
+              <Link
+                to="/settings/profiles"
+                className={menuItemClass('/profiles')}
+              >
+                Profiles
+              </Link>
+            </li>
           </ul>
           <ul className="flex flex-col gap-2 flex-1 mb-2">
             {(() => {
               // Define widget order priority (lower = higher priority)
               const widgetOrder: Record<string, number> = {
-                'standings': 1,
-                'fuel': 2,
+                standings: 1,
+                fuel: 2,
               };
 
               // Sort widgets: prioritized ones first, then by original order
-              const sortedWidgets = [...currentDashboard.widgets].sort((a, b) => {
-                const typeA = a.type || a.id;
-                const typeB = b.type || b.id;
-                const orderA = widgetOrder[typeA] ?? 100;
-                const orderB = widgetOrder[typeB] ?? 100;
-                return orderA - orderB;
-              });
+              const sortedWidgets = [...currentDashboard.widgets].sort(
+                (a, b) => {
+                  const typeA = a.type || a.id;
+                  const typeB = b.type || b.id;
+                  const orderA = widgetOrder[typeA] ?? 100;
+                  const orderB = widgetOrder[typeB] ?? 100;
+                  return orderA - orderB;
+                }
+              );
 
               // Deduplicate fuel widgets - only keep the first one in sidebar
               // Others are managed via internal dropdown in FuelSettings
@@ -154,13 +179,13 @@ export const SettingsLayout = () => {
                 }
 
                 // Fuel Calculator gets special path handling
-                const linkPath = type === 'fuel' 
-                  ? '/settings/fuel'
-                  : `/settings/${widget.id}`;
+                const linkPath =
+                  type === 'fuel' ? '/settings/fuel' : `/settings/${widget.id}`;
 
-                const isActive = type === 'fuel'
-                  ? location.pathname.includes('/settings/fuel')
-                  : location.pathname === `/settings/${widget.id}`;
+                const isActive =
+                  type === 'fuel'
+                    ? location.pathname.includes('/settings/fuel')
+                    : location.pathname === `/settings/${widget.id}`;
 
                 return (
                   <li key={widget.id}>
@@ -214,6 +239,7 @@ const SettingsLoader = () => {
 
   // 1. Handle non-widget pages
   if (widgetId === 'general') return <GeneralSettings />;
+  if (widgetId === 'profiles') return <ProfileSettings />;
   if (widgetId === 'advanced') return <AdvancedSettings />;
   if (widgetId === 'about') return <AboutSettings />;
 
@@ -265,6 +291,8 @@ const SettingsLoader = () => {
       return <BlindSpotMonitorSettings />;
     case 'garagecover':
       return <GarageCoverSettings />;
+    case 'flag':
+      return <FlagSettings />;
     default:
       return (
         <div className="text-red-400">No settings available for {type}</div>
