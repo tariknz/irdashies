@@ -92,7 +92,6 @@
     "flag-icons": "^7.5.0",
     "js-yaml": "^4.1.1",
     "posthog-node": "^5.20.0",
-    "react-rnd": "^10.5.2",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
     "react-router-dom": "^7.12.0",

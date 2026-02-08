@@ -134,7 +134,10 @@ describe('DashboardContext', () => {
         },
       ],
     };
-    mockBridge.dashboardUpdated = (callback) => callback(mockDashboard, "123");
+    mockBridge.dashboardUpdated = (callback) => {
+      callback(mockDashboard, '123');
+      return undefined;
+    };
 
     act(() => {
       render(

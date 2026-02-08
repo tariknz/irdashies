@@ -1,6 +1,11 @@
 import type { DashboardWidget } from '@irdashies/types';
 import { BrowserWindow } from 'electron';
-import { updateDashboardWidget, getDashboard, getCurrentProfileId } from './storage/dashboards';
+import {
+  updateDashboardWidget,
+  getDashboard,
+  getCurrentProfileId,
+} from './storage/dashboards';
+import { writeData } from './storage/storage';
 
 export const trackWindowMovement = (
   widget: DashboardWidget,
@@ -40,4 +45,17 @@ function updateWidgetLayout(
   };
 
   updateDashboardWidget(updatedWidget, currentProfileId);
+}
+
+/**
+ * Track settings window position and size changes
+ */
+export const trackSettingsWindowMovement = (browserWindow: BrowserWindow) => {
+  browserWindow.on('moved', () => saveSettingsWindowBounds(browserWindow));
+  browserWindow.on('resized', () => saveSettingsWindowBounds(browserWindow));
+};
+
+function saveSettingsWindowBounds(browserWindow: BrowserWindow): void {
+  const bounds = browserWindow.getBounds();
+  writeData('settingsWindowBounds', bounds);
 }

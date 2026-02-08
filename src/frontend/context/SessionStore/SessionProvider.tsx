@@ -10,20 +10,34 @@ export const SessionProvider = ({ bridge }: SessionProviderProps) => {
   const setSession = useSessionStore((state) => state.setSession);
 
   useEffect(() => {
-    console.log('📦 SessionProvider mounted');
+    let cancelled = false;
+    let unsub: (() => void) | undefined;
     if (bridge instanceof Promise) {
-      bridge.then((bridge) => {
-        bridge.onSessionData((telemetry) => {
-          setSession(telemetry);
+      bridge.then((resolved) => {
+        if (cancelled) {
+          resolved.stop();
+          return;
+        }
+        unsub = resolved.onSessionData((session) => {
+          setSession(session);
         });
       });
-      return () => bridge.then((bridge) => bridge.stop());
+      return () => {
+        cancelled = true;
+        if (unsub) unsub();
+        bridge.then((resolved) => resolved.stop());
+      };
     }
 
-    bridge.onSessionData((telemetry) => {
-      setSession(telemetry);
+    unsub = bridge.onSessionData((session) => {
+      setSession(session);
     });
-    return () => bridge.stop();
+
+    return () => {
+      cancelled = true;
+      if (unsub) unsub();
+      bridge.stop();
+    };
   }, [bridge, setSession]);
 
   return <></>;
