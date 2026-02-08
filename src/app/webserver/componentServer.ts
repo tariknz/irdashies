@@ -65,6 +65,14 @@ function sendJSON(res: http.ServerResponse, statusCode: number, data: unknown) {
   res.end(JSON.stringify(data));
 }
 
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
 function sendHTML(res: http.ServerResponse, html: string) {
   res.setHeader('Content-Type', 'text/html');
   res.statusCode = 200;
@@ -347,6 +355,13 @@ export async function startComponentServer(
       return;
     }
 
+    if (pathname === '/api/profiles' && req.method === 'GET') {
+      const { listProfiles } = await import('../storage/dashboards');
+      const profiles = listProfiles();
+      sendJSON(res, 200, { profiles });
+      return;
+    }
+
     if (pathname === '/components' && req.method === 'GET') {
       const componentNames: WidgetId[] = [
         'standings',
@@ -369,6 +384,47 @@ export async function startComponentServer(
           (name) => `http://${SERVER_IP}:${COMPONENT_PORT}/component/${name}`
         ),
       });
+      return;
+    }
+
+    if (pathname === '/' && req.method === 'GET') {
+      const { listProfiles } = await import('../storage/dashboards');
+      const profiles = listProfiles();
+
+      const profileLinks = profiles
+        .map(
+          (p) =>
+            `<a href="/dashboard?profile=${encodeURIComponent(p.id)}">${escapeHtml(p.name || p.id)}</a>`
+        )
+        .join('');
+
+      const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>irDashies</title>
+        <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { background: #0f172a; color: #e2e8f0; font-family: system-ui, -apple-system, sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+          .container { text-align: center; padding: 2rem; }
+          h1 { font-size: 1.5rem; margin-bottom: 1.5rem; color: #f8fafc; }
+          .profiles { display: flex; flex-direction: column; gap: 0.75rem; }
+          a { display: block; padding: 0.75rem 1.5rem; background: #1e293b; color: #38bdf8; text-decoration: none; border-radius: 0.5rem; border: 1px solid #334155; transition: background 0.15s, border-color 0.15s; }
+          a:hover { background: #334155; border-color: #38bdf8; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <h1>irDashies - Profiles</h1>
+          <div class="profiles">${profileLinks}</div>
+        </div>
+      </body>
+      </html>
+      `;
+
+      sendHTML(res, html);
       return;
     }
 
