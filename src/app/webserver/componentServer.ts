@@ -20,7 +20,6 @@ const isDev =
 declare const MAIN_WINDOW_VITE_NAME: string;
 
 // Get the local IP address dynamically
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function getLocalIPAddress(): string {
   const interfaces = os.networkInterfaces();
   const candidates: string[] = [];
@@ -50,7 +49,7 @@ function getLocalIPAddress(): string {
   return 'localhost';
 }
 
-const SERVER_IP = 'localhost'; // getLocalIPAddress();
+let SERVER_IP = 'localhost';
 
 function setCORSHeaders(res: http.ServerResponse) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -123,6 +122,15 @@ export async function startComponentServer(
   irsdkBridge?: IrSdkBridge,
   dashboardBridge?: DashboardBridge
 ) {
+  const { getDashboard, getCurrentProfileId } =
+    await import('../storage/dashboards');
+  const profileId = getCurrentProfileId();
+  const dashboard = getDashboard(profileId);
+  const networkAccess =
+    dashboard?.generalSettings?.enableNetworkAccess ?? false;
+  const bindHost = networkAccess ? '0.0.0.0' : 'localhost';
+  SERVER_IP = networkAccess ? getLocalIPAddress() : 'localhost';
+
   let staticPath: string | null = null;
   if (!isDev) {
     staticPath = path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}`);
@@ -402,7 +410,7 @@ export async function startComponentServer(
     }
   });
 
-  httpServer.listen(Number(COMPONENT_PORT), 'localhost', () => {
+  httpServer.listen(Number(COMPONENT_PORT), bindHost, () => {
     console.log(
       `Component server running on http://${SERVER_IP}:${COMPONENT_PORT}`
     );
