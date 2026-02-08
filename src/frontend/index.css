@@ -1,10 +1,5 @@
 @import url(./theme.css);
 
-body {
-  -webkit-app-region: drag;
-  background-color: transparent !important;
-}
-
 html,body,#app {
   width: 100%;
   height: 100%;

@@ -45,12 +45,16 @@ export function createBridgeProxy(
 
     const unsubTelemetry = bridge.onTelemetry((telemetry: Telemetry) => {
       currentTelemetry = telemetry;
-      broadcast('telemetry', telemetry);
+      if (clients.size > 0) {
+        broadcast('telemetry', telemetry);
+      }
     });
 
     const unsubSession = bridge.onSessionData((session: Session) => {
       currentSession = session;
-      broadcast('sessionData', session);
+      if (clients.size > 0) {
+        broadcast('sessionData', session);
+      }
     });
 
     const unsubRunning = bridge.onRunningState((running: boolean) => {

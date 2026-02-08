@@ -10,25 +10,35 @@ export const TelemetryProvider = ({ bridge }: TelemetryProviderProps) => {
   const setTelemetry = useTelemetryStore((state) => state.setTelemetry);
 
   useEffect(() => {
-    console.log('📡 TelemetryProvider mounted, bridge:', bridge);
+    let cancelled = false;
+    let unsub: (() => void) | undefined;
 
     if (bridge instanceof Promise) {
-      console.log('📡 Bridge is Promise, waiting...');
-      bridge.then((bridge) => {
-        console.log('📡 Bridge resolved, setting up callback');
-        bridge.onTelemetry((telemetry) => {
+      bridge.then((resolved) => {
+        if (cancelled) {
+          resolved.stop();
+          return;
+        }
+        unsub = resolved.onTelemetry((telemetry) => {
           setTelemetry(telemetry);
         });
       });
-      return () => bridge.then((bridge) => bridge.stop());
+      return () => {
+        cancelled = true;
+        if (unsub) unsub();
+        bridge.then((resolved) => resolved.stop());
+      };
     }
 
-    console.log('📡 Bridge is ready, setting up callback');
-    bridge.onTelemetry((telemetry) => {
+    unsub = bridge.onTelemetry((telemetry) => {
       setTelemetry(telemetry);
     });
 
-    return () => bridge.stop();
+    return () => {
+      cancelled = true;
+      if (unsub) unsub();
+      bridge.stop();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bridge]);
 

@@ -89,13 +89,12 @@ export const useLapTimesStore = create<LapTimesState>((set, get) => ({
       return;
     }
 
+    // Reuse existing arrays; only clone the specific sub-array that changes
     const newHistory: number[][] = lapTimeBuffer?.lapTimeHistory
-      ? lapTimeBuffer.lapTimeHistory.map(arr => [...arr])
-      : carIdxLastLapTime.map(() => []);
+      ?? carIdxLastLapTime.map(() => []);
 
     const newDeltas: number[][] = lapTimeBuffer?.lapDeltasVsPlayer
-      ? lapTimeBuffer.lapDeltasVsPlayer.map(arr => [...arr])
-      : carIdxLastLapTime.map(() => []);
+      ?? carIdxLastLapTime.map(() => []);
 
     let historyChanged = false;
 
@@ -104,23 +103,21 @@ export const useLapTimesStore = create<LapTimesState>((set, get) => ({
         const prevLapTime = lapTimeBuffer.lastLapTimes[idx];
         // Only add to history if it's a new valid lap time
         if (lapTime > 0 && lapTime !== prevLapTime) {
-          if (!newHistory[idx]) newHistory[idx] = [];
-          newHistory[idx].push(lapTime);
-          if (newHistory[idx].length > LAP_TIME_AVG_WINDOW) newHistory[idx].shift();
+          // Clone only the changed sub-array
+          newHistory[idx] = [...(newHistory[idx] ?? []), lapTime];
+          if (newHistory[idx].length > LAP_TIME_AVG_WINDOW) newHistory[idx] = newHistory[idx].slice(-LAP_TIME_AVG_WINDOW);
 
           // Calculate delta vs player's corresponding lap (if available and not the player themselves)
           if (playerCarIdx !== null && idx !== playerCarIdx) {
             const playerHistory = newHistory[playerCarIdx];
             if (playerHistory && playerHistory.length > 0) {
-              // Get the corresponding player lap time (align by index in history)
-              const playerLapIndex = playerHistory.length - 1; // Most recent player lap
+              const playerLapIndex = playerHistory.length - 1;
               const playerLapTime = playerHistory[playerLapIndex];
 
               if (playerLapTime > 0) {
-                if (!newDeltas[idx]) newDeltas[idx] = [];
                 const delta = lapTime - playerLapTime;
-                newDeltas[idx].push(delta);
-                if (newDeltas[idx].length > LAP_TIME_AVG_WINDOW) newDeltas[idx].shift();
+                newDeltas[idx] = [...(newDeltas[idx] ?? []), delta];
+                if (newDeltas[idx].length > LAP_TIME_AVG_WINDOW) newDeltas[idx] = newDeltas[idx].slice(-LAP_TIME_AVG_WINDOW);
               }
             }
           }
@@ -134,27 +131,23 @@ export const useLapTimesStore = create<LapTimesState>((set, get) => ({
         if (lapTime > 0) {
           newHistory[idx] = [lapTime];
           historyChanged = true;
-          // No deltas on first run (need at least player's first lap)
         }
       });
     }
 
-    // Calculate pace for each car by filtering outliers and using median
-    const avgLapTimes = newHistory.map(arr => {
-      if (arr.length === 0) return 0;
-      if (arr.length === 1) return arr[0];
-      
-      // Filter out outliers
-      const filteredTimes = filterOutliers(arr);
-      // Use median of filtered times for more stable pace
-      const medianValue = median(filteredTimes);
-
-      return medianValue;
-    });
+    // Only recalculate averages when history actually changed
+    const avgLapTimes = historyChanged
+      ? newHistory.map(arr => {
+          if (arr.length === 0) return 0;
+          if (arr.length === 1) return arr[0];
+          const filteredTimes = filterOutliers(arr);
+          return median(filteredTimes);
+        })
+      : get().lapTimes;
 
     set({
       lapTimeBuffer: {
-        lastLapTimes: [...carIdxLastLapTime],
+        lastLapTimes: carIdxLastLapTime,
         lapTimeHistory: newHistory,
         lapDeltasVsPlayer: newDeltas,
         version: historyChanged ? (lapTimeBuffer?.version ?? 0) + 1 : (lapTimeBuffer?.version ?? 0),

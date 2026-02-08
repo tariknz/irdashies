@@ -1,5 +1,6 @@
 export * from './useCarIdxSpeed';
 export * from './useCarIdxAverageLapTime';
+export * from './useContainerOffset';
 export * from './useCurrentSessionType';
 export * from './useDrivingState';
 export * from './useFocusCarIdx';

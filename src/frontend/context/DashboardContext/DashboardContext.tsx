@@ -11,6 +11,7 @@ import type {
   DashboardProfile,
   GeneralSettingsType,
   SaveDashboardOptions,
+  ContainerBoundsInfo,
 } from '@irdashies/types';
 
 interface DashboardContextProps {
@@ -32,6 +33,7 @@ interface DashboardContextProps {
   version: string;
   isDemoMode: boolean;
   toggleDemoMode: () => void;
+  containerBoundsInfo: ContainerBoundsInfo | null;
 }
 
 const DashboardContext = createContext<DashboardContextProps | undefined>(
@@ -47,90 +49,119 @@ export const DashboardProvider: React.FC<{
   const [editMode, setEditMode] = useState(false);
   const [version, setVersion] = useState('');
   const [isDemoMode, setIsDemoMode] = useState(false);
-  const [currentProfile, setCurrentProfile] = useState<DashboardProfile | null>(null);
+  const [containerBoundsInfo, setContainerBoundsInfo] =
+    useState<ContainerBoundsInfo | null>(null);
+  const [currentProfile, setCurrentProfile] = useState<DashboardProfile | null>(
+    null
+  );
   const [profiles, setProfiles] = useState<DashboardProfile[]>([]);
 
   // Store the initial profileId from URL to always use it
   const initialProfileIdRef = React.useRef(profileId);
 
-  const loadProfiles = React.useCallback(async (specificProfileId?: string) => {
-    const allProfiles = await bridge.listProfiles();
-    setProfiles(allProfiles);
+  const loadProfiles = React.useCallback(
+    async (specificProfileId?: string) => {
+      const allProfiles = await bridge.listProfiles();
+      setProfiles(allProfiles);
 
-    // Always use the initial profileId from URL if it was provided
-    const profileIdToUse = specificProfileId || initialProfileIdRef.current;
+      // Always use the initial profileId from URL if it was provided
+      const profileIdToUse = specificProfileId || initialProfileIdRef.current;
 
-    // If a specific profile ID is provided, use that; otherwise get current profile
-    let profileToLoad: DashboardProfile | null;
-    if (profileIdToUse) {
-      profileToLoad = allProfiles.find(p => p.id === profileIdToUse) || null;
-      if (!profileToLoad) {
-        // For browser views with a specific profileId, create a minimal profile object
-        // The profile exists, but might not be in the active list
-        if (initialProfileIdRef.current === profileIdToUse) {
-          profileToLoad = {
-            id: profileIdToUse,
-            name: profileIdToUse, // Use ID as name until we can fetch the real name
-            createdAt: new Date().toISOString(),
-            lastModified: new Date().toISOString(),
-          };
-        } else {
-          // This is a different profile, fall back to current
-          profileToLoad = await bridge.getCurrentProfile();
-        }
-      }
-    } else {
-      profileToLoad = await bridge.getCurrentProfile();
-    }
-
-    // Deep clone to ensure React detects nested changes
-    setCurrentProfile(profileToLoad ? JSON.parse(JSON.stringify(profileToLoad)) : null);
-  }, [bridge]);
-
-  useEffect(() => {
-    bridge.dashboardUpdated((dashboard, updatedProfileId) => {
-      const contextProfileId = initialProfileIdRef.current;
-
-      // If this context is for a specific profile (i.e., a browser view)
-      if (contextProfileId) {
-        // Only accept updates that are specifically for our profile
-        if (updatedProfileId === contextProfileId) {
-          setDashboard(dashboard);
+      // If a specific profile ID is provided, use that; otherwise get current profile
+      let profileToLoad: DashboardProfile | null;
+      if (profileIdToUse) {
+        profileToLoad = allProfiles.find((p) => p.id === profileIdToUse) || null;
+        if (!profileToLoad) {
+          // For browser views with a specific profileId, create a minimal profile object
+          // The profile exists, but might not be in the active list
+          if (initialProfileIdRef.current === profileIdToUse) {
+            profileToLoad = {
+              id: profileIdToUse,
+              name: profileIdToUse, // Use ID as name until we can fetch the real name
+              createdAt: new Date().toISOString(),
+              lastModified: new Date().toISOString(),
+            };
+          } else {
+            // This is a different profile, fall back to current
+            profileToLoad = await bridge.getCurrentProfile();
+          }
         }
       } else {
-        // Otherwise, this is the main Electron app context, so we should accept any update
-        setDashboard(dashboard);
+        profileToLoad = await bridge.getCurrentProfile();
       }
-      
-      // Refresh profiles to pick up on theme changes etc.
-      loadProfiles().catch((err) => console.error('Failed to refresh profiles on dashboard update:', err));
-    });
+
+      // Deep clone to ensure React detects nested changes
+      setCurrentProfile(
+        profileToLoad ? JSON.parse(JSON.stringify(profileToLoad)) : null
+      );
+    },
+    [bridge]
+  );
+
+  useEffect(() => {
+    const unsubDashboard = bridge.dashboardUpdated(
+      (updatedDashboard, updatedProfileId) => {
+        const contextProfileId = initialProfileIdRef.current;
+
+        // If this context is for a specific profile (i.e., a browser view)
+        if (contextProfileId) {
+          // Only accept updates that are specifically for our profile
+          if (updatedProfileId === contextProfileId) {
+            setDashboard(updatedDashboard);
+          }
+        } else {
+          // Otherwise, this is the main Electron app context, so we should accept any update
+          setDashboard(updatedDashboard);
+        }
+
+        // Refresh profiles to pick up on theme changes etc.
+        loadProfiles().catch((err) =>
+          console.error(
+            'Failed to refresh profiles on dashboard update:',
+            err
+          )
+        );
+      }
+    );
 
     // Initial load logic
     if (profileId && bridge.getDashboardForProfile) {
-      bridge.getDashboardForProfile(profileId).then((dashboard) => {
-        if (dashboard) {
-          setDashboard(dashboard);
-        } else {
-          // Fallback for safety, should not be hit in normal operation
+      bridge
+        .getDashboardForProfile(profileId)
+        .then((dashboard) => {
+          if (dashboard) {
+            setDashboard(dashboard);
+          } else {
+            // Fallback for safety, should not be hit in normal operation
+            bridge.reloadDashboard();
+          }
+        })
+        .catch((error) => {
+          console.error('Error loading dashboard for profile:', profileId, error);
           bridge.reloadDashboard();
-        }
-      }).catch((error) => {
-        console.error('Error loading dashboard for profile:', profileId, error);
-        bridge.reloadDashboard();
-      });
+        });
     } else {
       // This is the path for the main Electron app, which doesn't have a profileId prop
       bridge.reloadDashboard();
     }
 
-    // Set up other listeners
-    bridge.onEditModeToggled((editMode) => setEditMode(editMode));
+    const unsubEditMode = bridge.onEditModeToggled((editMode) =>
+      setEditMode(editMode)
+    );
     bridge.getAppVersion?.().then((version) => setVersion(version));
-    bridge.onDemoModeChanged?.((demoMode) => setIsDemoMode(demoMode));
+    const unsubDemoMode = bridge.onDemoModeChanged?.((demoMode) =>
+      setIsDemoMode(demoMode)
+    );
+    const unsubContainerBounds = bridge.onContainerBoundsInfo?.((info) => {
+      setContainerBoundsInfo(info);
+    });
 
     // Cleanup
     return () => {
+      if (unsubDashboard) unsubDashboard();
+      if (unsubEditMode) unsubEditMode();
+      if (unsubDemoMode) unsubDemoMode();
+      if (unsubContainerBounds) unsubContainerBounds();
       bridge.stop();
     };
   }, [bridge, profileId, loadProfiles]);
@@ -233,6 +264,7 @@ export const DashboardProvider: React.FC<{
         version,
         isDemoMode,
         toggleDemoMode,
+        containerBoundsInfo,
       }}
     >
       {children}

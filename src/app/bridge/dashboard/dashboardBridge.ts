@@ -12,6 +12,7 @@ import {
   resetDashboard,
   saveGarageCoverImage,
   getGarageCoverImageAsDataUrl,
+  listDashboards,
   listProfiles,
   createProfile,
   deleteProfile,
@@ -22,6 +23,7 @@ import {
   updateProfileTheme,
   getOrCreateDefaultDashboardForProfile,
 } from '../../storage/dashboards';
+import { writeData } from '../../storage/storage';
 import { OverlayManager } from '../../overlayManager';
 import {
   getAnalyticsOptOut as getAnalyticsOptOutStorage,
@@ -41,9 +43,11 @@ const demoModeCallbacks = new Set<(isDemoMode: boolean) => void>();
 export const dashboardBridge: DashboardBridge = {
   onEditModeToggled: () => {
     // Not used by component server, but required by interface
+    return undefined;
   },
   dashboardUpdated: (callback: (dashboard: DashboardLayout, profileId?: string) => void) => {
     dashboardUpdateCallbacks.add(callback);
+    return () => dashboardUpdateCallbacks.delete(callback);
   },
   reloadDashboard: () => {
     // Not used by component server
@@ -76,6 +80,7 @@ export const dashboardBridge: DashboardBridge = {
   },
   onDemoModeChanged: (callback: (isDemoMode: boolean) => void) => {
     demoModeCallbacks.add(callback);
+    return () => demoModeCallbacks.delete(callback);
   },
   getCurrentDashboard: () => {
     const currentProfileId = getCurrentProfileId();
@@ -165,6 +170,18 @@ export async function publishDashboardUpdates(
     });
   });
   ipcMain.on('saveDashboard', (_, dashboard, options) => {
+    // For layout-only changes (drag/resize), skip the window refresh
+    if (options?.skipWindowRefresh) {
+      // Save without emitting event to avoid window recreation
+      const currentProfileId = getCurrentProfileId();
+      const existingDashboards = listDashboards();
+      existingDashboards[currentProfileId] = dashboard;
+      writeData('dashboards', existingDashboards);
+      // Still notify renderer of the update
+      overlayManager.publishMessage('dashboardUpdated', dashboard);
+      return;
+    }
+
     const currentProfileId = getCurrentProfileId();
     saveDashboard(currentProfileId, dashboard);
     if (options?.forceReload) {
