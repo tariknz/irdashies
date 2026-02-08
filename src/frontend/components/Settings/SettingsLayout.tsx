@@ -28,6 +28,7 @@ import { PitlaneHelperSettings } from './sections/PitlaneHelperSettings';
 import { GeneralSettings } from './sections/GeneralSettings';
 import { BlindSpotMonitorSettings } from './sections/BlindSpotMonitorSettings';
 import { GarageCoverSettings } from './sections/GarageCoverSettings';
+import { FlagSettings } from './sections/FlagSettings';
 import { useDashboard } from '@irdashies/context';
 import { useState } from 'react';
 
@@ -265,6 +266,8 @@ const SettingsLoader = () => {
       return <BlindSpotMonitorSettings />;
     case 'garagecover':
       return <GarageCoverSettings />;
+    case 'flag':
+      return <FlagSettings />;
     default:
       return (
         <div className="text-red-400">No settings available for {type}</div>

@@ -453,6 +453,7 @@ export interface FlagWidgetSettings extends BaseWidgetSettings {
     showNoFlagState: boolean;
     enableGlow: boolean;
     sessionVisibility: SessionVisibilitySettings;
+    doubleFlag: boolean;
   };
 }
 
