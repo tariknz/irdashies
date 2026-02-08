@@ -14,43 +14,50 @@ const COMPONENT_PORT = process.env.COMPONENT_PORT || PORT;
 // Cache for widget configs to avoid passing large data in URL
 const configCache = new Map<string, unknown>();
 
-const isDev = process.env.NODE_ENV === 'development' || process.env.VITE_DEV_SERVER_URL;
+const isDev =
+  process.env.NODE_ENV === 'development' || process.env.VITE_DEV_SERVER_URL;
 
 declare const MAIN_WINDOW_VITE_NAME: string;
 
 // Get the local IP address dynamically
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function getLocalIPAddress(): string {
   const interfaces = os.networkInterfaces();
   const candidates: string[] = [];
-  
+
   for (const name of Object.keys(interfaces)) {
     const nets = interfaces[name];
     if (!nets) continue;
-    
+
     for (const net of nets) {
       if (net.family === 'IPv4' && !net.internal) {
         candidates.push(net.address);
       }
     }
   }
-  
+
   if (candidates.length > 0) {
     // Prefer 192.168.x.x or 10.x.x.x addresses (common home/office networks)
-    const preferred = candidates.find(ip => 
-      ip.startsWith('192.168.') || ip.startsWith('10.') || ip.startsWith('172.')
+    const preferred = candidates.find(
+      (ip) =>
+        ip.startsWith('192.168.') ||
+        ip.startsWith('10.') ||
+        ip.startsWith('172.')
     );
     return preferred || candidates[0];
   }
-  
+
   return 'localhost';
 }
 
-const SERVER_IP = getLocalIPAddress();
-
+const SERVER_IP = 'localhost'; // getLocalIPAddress();
 
 function setCORSHeaders(res: http.ServerResponse) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+  res.setHeader(
+    'Access-Control-Allow-Headers',
+    'Origin, X-Requested-With, Content-Type, Accept'
+  );
 }
 
 function sendJSON(res: http.ServerResponse, statusCode: number, data: unknown) {
@@ -109,10 +116,13 @@ async function serveStaticFile(filePath: string, res: http.ServerResponse) {
 /**
  * Creates an HTTP server that serves components to external browsers
  * Bridge data is exposed via WebSocket so browsers can access real-time telemetry
- * 
+ *
  * Access components via: http://[dynamic-ip]:3000/component/<componentName>
  */
-export async function startComponentServer(irsdkBridge?: IrSdkBridge, dashboardBridge?: DashboardBridge) {
+export async function startComponentServer(
+  irsdkBridge?: IrSdkBridge,
+  dashboardBridge?: DashboardBridge
+) {
   let staticPath: string | null = null;
   if (!isDev) {
     staticPath = path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}`);
@@ -130,16 +140,27 @@ export async function startComponentServer(irsdkBridge?: IrSdkBridge, dashboardB
     const url = new URL(req.url, `http://${req.headers.host}`);
     const pathname = url.pathname;
 
-    if (!isDev && staticPath && pathname !== '/' && !pathname.startsWith('/health') && 
-        !pathname.startsWith('/debug') && !pathname.startsWith('/api') && !pathname.startsWith('/component') && 
-        !pathname.startsWith('/components') && !pathname.startsWith('/dashboard')) {
+    if (
+      !isDev &&
+      staticPath &&
+      pathname !== '/' &&
+      !pathname.startsWith('/health') &&
+      !pathname.startsWith('/debug') &&
+      !pathname.startsWith('/api') &&
+      !pathname.startsWith('/component') &&
+      !pathname.startsWith('/components') &&
+      !pathname.startsWith('/dashboard')
+    ) {
       const filePath = path.join(staticPath, pathname);
       await serveStaticFile(filePath, res);
       return;
     }
 
     if (pathname === '/health' && req.method === 'GET') {
-      sendJSON(res, 200, { status: 'ok', message: 'Component server is running' });
+      sendJSON(res, 200, {
+        status: 'ok',
+        message: 'Component server is running',
+      });
       return;
     }
 
@@ -153,11 +174,11 @@ export async function startComponentServer(irsdkBridge?: IrSdkBridge, dashboardB
         hasDashboard: !!currentDashboard,
         dashboard: currentDashboard,
         widgetCount: currentDashboard?.widgets?.length || 0,
-        widgets: currentDashboard?.widgets?.map(w => ({
+        widgets: currentDashboard?.widgets?.map((w) => ({
           id: w.id,
           hasConfig: !!w.config,
-          configKeys: w.config ? Object.keys(w.config) : []
-        }))
+          configKeys: w.config ? Object.keys(w.config) : [],
+        })),
       });
       return;
     }
@@ -168,13 +189,13 @@ export async function startComponentServer(irsdkBridge?: IrSdkBridge, dashboardB
         sendJSON(res, 400, { error: 'Missing config ID' });
         return;
       }
-      
+
       const config = configCache.get(configId);
       if (!config) {
         sendJSON(res, 404, { error: 'Config not found' });
         return;
       }
-      
+
       sendJSON(res, 200, { config });
       return;
     }
@@ -185,7 +206,7 @@ export async function startComponentServer(irsdkBridge?: IrSdkBridge, dashboardB
         sendJSON(res, 400, { error: 'Missing filename' });
         return;
       }
-      
+
       try {
         const dataUrl = await getGarageCoverImageAsDataUrl(filename);
         if (!dataUrl) {
@@ -194,7 +215,10 @@ export async function startComponentServer(irsdkBridge?: IrSdkBridge, dashboardB
         }
         sendJSON(res, 200, { dataUrl });
       } catch (err) {
-        console.error('[ComponentServer] Error loading garage cover image:', err);
+        console.error(
+          '[ComponentServer] Error loading garage cover image:',
+          err
+        );
         sendJSON(res, 500, { error: 'Failed to load image' });
       }
       return;
@@ -211,18 +235,20 @@ export async function startComponentServer(irsdkBridge?: IrSdkBridge, dashboardB
 
       const normalizedName = componentName.toLowerCase();
       let finalConfig = {};
-      
+
       if (currentDashboard) {
-        const widget = currentDashboard.widgets?.find((w) => w.id.toLowerCase() === normalizedName);
+        const widget = currentDashboard.widgets?.find(
+          (w) => w.id.toLowerCase() === normalizedName
+        );
         if (widget?.config) {
           finalConfig = widget.config;
         }
       }
-      
+
       // Store config in cache and pass only the ID in URL to avoid 431 errors
       const configId = crypto.randomBytes(16).toString('hex');
       configCache.set(configId, finalConfig);
-      
+
       // Clean up old cache entries (keep last 50)
       if (configCache.size > 50) {
         const keys = Array.from(configCache.keys());
@@ -268,18 +294,19 @@ export async function startComponentServer(irsdkBridge?: IrSdkBridge, dashboardB
     if (pathname === '/dashboard' && req.method === 'GET') {
       const wsUrl = `http://${SERVER_IP}:${COMPONENT_PORT}`;
       const debug = url.searchParams.get('debug') || 'false';
-      
+
       // Get profile ID from URL param (check both 'profile' and 'profileId')
-      const profileIdParam = url.searchParams.get('profile') || url.searchParams.get('profileId');
+      const profileIdParam =
+        url.searchParams.get('profile') || url.searchParams.get('profileId');
       let profileId = profileIdParam;
-      
+
       if (!profileId) {
         const { getCurrentProfileId } = await import('../storage/dashboards');
         profileId = getCurrentProfileId();
       }
-      
+
       let dashboardViewUrl: string;
-      
+
       if (isDev) {
         const vitePort = process.env.VITE_PORT || '5173';
         dashboardViewUrl = `http://${SERVER_IP}:${vitePort}/index-dashboard-view.html?wsUrl=${encodeURIComponent(wsUrl)}&profile=${encodeURIComponent(profileId)}&debug=${debug}`;
@@ -344,8 +371,12 @@ export async function startComponentServer(irsdkBridge?: IrSdkBridge, dashboardB
   if (irsdkBridge) {
     try {
       const { createBridgeProxy } = await import('./bridgeProxy');
-      const { resubscribeToBridge } = createBridgeProxy(httpServer, irsdkBridge, dashboardBridge);
-      
+      const { resubscribeToBridge } = createBridgeProxy(
+        httpServer,
+        irsdkBridge,
+        dashboardBridge
+      );
+
       const { onBridgeChanged } = await import('../bridge/iracingSdk/setup');
       onBridgeChanged((newBridge) => {
         resubscribeToBridge(newBridge);
@@ -357,16 +388,23 @@ export async function startComponentServer(irsdkBridge?: IrSdkBridge, dashboardB
   httpServer.on('error', (error: NodeJS.ErrnoException) => {
     console.error('❌ Server error:', error);
     if (error.code === 'EADDRINUSE') {
-      console.error(`   Port ${COMPONENT_PORT} is already in use by another application`);
-      console.error(`   Try changing COMPONENT_PORT environment variable or close other apps using this port`);
+      console.error(
+        `   Port ${COMPONENT_PORT} is already in use by another application`
+      );
+      console.error(
+        `   Try changing COMPONENT_PORT environment variable or close other apps using this port`
+      );
     } else if (error.code === 'EACCES') {
       console.error(`   Permission denied to bind to port ${COMPONENT_PORT}`);
-      console.error(`   Try running as administrator or use a port number above 1024`);
+      console.error(
+        `   Try running as administrator or use a port number above 1024`
+      );
     }
   });
 
-  httpServer.listen(Number(COMPONENT_PORT), '0.0.0.0', () => {
-    console.log(`Component server running on http://${SERVER_IP}:${COMPONENT_PORT}`);
+  httpServer.listen(Number(COMPONENT_PORT), 'localhost', () => {
+    console.log(
+      `Component server running on http://${SERVER_IP}:${COMPONENT_PORT}`
+    );
   });
 }
-
