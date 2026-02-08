@@ -125,7 +125,7 @@ export class OverlayManager {
     });
 
     // Enable click-through with event forwarding for edit mode
-    browserWindow.setIgnoreMouseEvents(true, { forward: true });
+    browserWindow.setIgnoreMouseEvents(this.isLocked, { forward: true });
     browserWindow.setVisibleOnAllWorkspaces(true, {
       visibleOnFullScreen: true,
     });

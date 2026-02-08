@@ -74,4 +74,5 @@ describe('ThemeManager', () => {
     expect(wrapper).toBeInTheDocument();
     expect(wrapper).toHaveClass('overlay-theme-sm');
   });
+
 });

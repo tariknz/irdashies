@@ -5,8 +5,11 @@ import type {
   IrSdkBridge,
   DashboardBridge,
   DashboardLayout,
+  DashboardProfile,
   SaveDashboardOptions,
   ContainerBoundsInfo,
+  FuelCalculatorBridge,
+  FuelLapData,
 } from '@irdashies/types';
 
 export function exposeBridge() {
@@ -50,9 +53,15 @@ export function exposeBridge() {
     reloadDashboard: () => {
       ipcRenderer.send('reloadDashboard');
     },
-    dashboardUpdated: (callback: (value: DashboardLayout) => void) => {
-      const handler = (_: Electron.IpcRendererEvent, value: DashboardLayout) => {
-        callback(value);
+    dashboardUpdated: (
+      callback: (dashboard: DashboardLayout, profileId?: string) => void
+    ) => {
+      const handler = (
+        _: Electron.IpcRendererEvent,
+        dashboard: DashboardLayout,
+        profileId?: string
+      ) => {
+        callback(dashboard, profileId);
       };
       ipcRenderer.on('dashboardUpdated', handler);
       return () => ipcRenderer.removeListener('dashboardUpdated', handler);
@@ -91,6 +100,31 @@ export function exposeBridge() {
     setAnalyticsOptOut: (optOut: boolean) => {
       return ipcRenderer.invoke('setAnalyticsOptOut', optOut);
     },
+    // Profile management
+    listProfiles: () => {
+      return ipcRenderer.invoke('listProfiles');
+    },
+    createProfile: (name: string) => {
+      return ipcRenderer.invoke('createProfile', name);
+    },
+    deleteProfile: (profileId: string) => {
+      return ipcRenderer.invoke('deleteProfile', profileId);
+    },
+    renameProfile: (profileId: string, newName: string) => {
+      return ipcRenderer.invoke('renameProfile', profileId, newName);
+    },
+    switchProfile: (profileId: string) => {
+      return ipcRenderer.invoke('switchProfile', profileId);
+    },
+    getCurrentProfile: () => {
+      return ipcRenderer.invoke('getCurrentProfile');
+    },
+    getDashboardForProfile: (profileId: string) => {
+      return ipcRenderer.invoke('getDashboardForProfile', profileId);
+    },
+    updateProfileTheme: (profileId: string, themeSettings: DashboardProfile['themeSettings']) => {
+      return ipcRenderer.invoke('updateProfileTheme', profileId, themeSettings);
+    },
     stop: () => {
       ipcRenderer.removeAllListeners('editModeToggled');
       ipcRenderer.removeAllListeners('dashboardUpdated');
@@ -116,4 +150,30 @@ export function exposeBridge() {
       return () => ipcRenderer.removeListener('containerBoundsInfo', handler);
     },
   } as DashboardBridge);
+
+  contextBridge.exposeInMainWorld('fuelCalculatorBridge', {
+    getHistoricalLaps: (trackId: number, carName: string) => {
+      return ipcRenderer.invoke('fuel:getHistoricalLaps', trackId, carName);
+    },
+    saveLap: (trackId: number, carName: string, lap: FuelLapData) => {
+      return ipcRenderer.invoke('fuel:saveLap', trackId, carName, lap);
+    },
+    clearHistory: (trackId: number, carName: string) => {
+      return ipcRenderer.invoke('fuel:clearHistory', trackId, carName);
+    },
+    clearAllHistory: () => {
+      return ipcRenderer.invoke('fuel:clearAllHistory');
+    },
+    getQualifyMax: (trackId: number, carName: string) => {
+      return ipcRenderer.invoke('fuel:getQualifyMax', trackId, carName);
+    },
+    saveQualifyMax: (trackId: number, carName: string, val: number | null) => {
+      return ipcRenderer.invoke('fuel:saveQualifyMax', trackId, carName, val);
+    },
+    startNewLog: () => ipcRenderer.invoke('fuel:startNewLog'),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    logData: (data: any) => {
+      return ipcRenderer.invoke('fuel:logData', data);
+    },
+  } as FuelCalculatorBridge);
 }

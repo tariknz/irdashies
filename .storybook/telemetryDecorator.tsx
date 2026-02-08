@@ -41,7 +41,7 @@ export const createMockBridgeWithConfig = (
     ...mockDashboardBridge,
     resetDashboard: async () => modifiedDashboard,
     dashboardUpdated: (callback) => {
-      callback(modifiedDashboard);
+      callback(modifiedDashboard, undefined);
       return () => {
         // No-op cleanup function
       };

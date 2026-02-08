@@ -7,8 +7,6 @@ import {
   RunningStateProvider,
   SessionProvider,
   PitLaneProvider,
-  useResetOnDisconnect,
-  useRunningState,
 } from '@irdashies/context';
 import { Settings } from './components/Settings/Settings';
 import { ThemeManager } from './components/ThemeManager/ThemeManager';
@@ -39,9 +37,6 @@ const SettingsApp = () => {
  * Overlay container content - renders all widgets in a single window
  */
 const OverlayApp = () => {
-  const { running } = useRunningState();
-  useResetOnDisconnect(running);
-
   return (
     <HideUIWrapper>
       <ThemeManager>

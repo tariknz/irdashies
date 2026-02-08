@@ -106,6 +106,13 @@ describe('PitlaneHelper', () => {
       version: '0.0.0',
       toggleDemoMode: vi.fn(),
       containerBoundsInfo: null,
+      currentProfile: null,
+      profiles: [],
+      createProfile: vi.fn(),
+      deleteProfile: vi.fn(),
+      renameProfile: vi.fn(),
+      switchProfile: vi.fn(),
+      refreshProfiles: vi.fn(),
     });
 
     vi.mocked(usePitlaneHelperSettings).mockReturnValue(defaultConfig);

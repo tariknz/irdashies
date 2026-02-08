@@ -11,6 +11,7 @@ const DEFAULT_CONFIG: FasterCarsFromBehindWidgetSettings['config'] = {
   showDistance: true,
   showBadge: true,
   badgeFormat: 'license-color-rating-bw',
+  onlyShowFasterClasses: true,
   sessionVisibility: {
     race: true,
     loneQualify: false,
@@ -39,14 +40,12 @@ export const useFasterCarsSettings = () => {
       settings?.alignDriverBoxes ?? DEFAULT_CONFIG.alignDriverBoxes,
     closestDriverBox:
       settings?.closestDriverBox ?? DEFAULT_CONFIG.closestDriverBox,
-    showName:
-      settings?.showName ?? DEFAULT_CONFIG.showName,
-    showDistance:
-      settings?.showDistance ?? DEFAULT_CONFIG.showDistance,
-    showBadge:
-      settings?.showBadge ?? DEFAULT_CONFIG.showBadge,
-    badgeFormat:
-      settings?.badgeFormat ?? DEFAULT_CONFIG.badgeFormat,
+    showName: settings?.showName ?? DEFAULT_CONFIG.showName,
+    showDistance: settings?.showDistance ?? DEFAULT_CONFIG.showDistance,
+    showBadge: settings?.showBadge ?? DEFAULT_CONFIG.showBadge,
+    badgeFormat: settings?.badgeFormat ?? DEFAULT_CONFIG.badgeFormat,
+    onlyShowFasterClasses:
+      settings?.onlyShowFasterClasses ?? DEFAULT_CONFIG.onlyShowFasterClasses,
     sessionVisibility:
       settings?.sessionVisibility ?? DEFAULT_CONFIG.sessionVisibility,
   } as FasterCarsFromBehindWidgetSettings['config'];

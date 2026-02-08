@@ -1,17 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { createRoot } from 'react-dom/client';
-import React from 'react';
-import { WIDGET_MAP } from '../../frontend/WidgetIndex';
 import type { IrSdkBridge } from '../../types';
-import {
-  DashboardProvider,
-  useDashboard,
-  RunningStateProvider,
-  SessionProvider,
-  TelemetryProvider,
-} from '@irdashies/context';
 
-const isDebugMode = () => typeof window !== 'undefined' && (window as any).__DEBUG_MODE__ === true;
+const isDebugMode = () =>
+  typeof window !== 'undefined' && (window as any).__DEBUG_MODE__ === true;
 
 const debugLog = (...args: any[]) => {
   if (isDebugMode()) {
@@ -22,7 +13,7 @@ const debugLog = (...args: any[]) => {
 /**
  * Web-based bridge that connects to the WebSocket server
  */
-class WebSocketBridge implements IrSdkBridge {
+export class WebSocketBridge implements IrSdkBridge {
   private socket: WebSocket | null;
   private telemetryCallbacks: Set<(data: any) => void>;
   private sessionCallbacks: Set<(data: any) => void>;
@@ -37,7 +28,9 @@ class WebSocketBridge implements IrSdkBridge {
   private reconnectDelay: number;
   private reconnectDelayMax: number;
 
-  private dashboardUpdateCallbacks: Set<(value: any) => void>;
+  private dashboardUpdateCallbacks: Set<
+    (value: any, profileId?: string) => void
+  >;
   private demoModeCallbacks: Set<(value: boolean) => void>;
   private lastDashboard: any = null;
   private currentIsDemoMode = false;
@@ -146,16 +139,21 @@ class WebSocketBridge implements IrSdkBridge {
             }
           });
           break;
-        case 'dashboardUpdated':
-          this.lastDashboard = data;
-          this.dashboardUpdateCallbacks.forEach((cb) => {
-            try {
-              cb(data);
-            } catch (e) {
-              console.error('Error in dashboard update callback:', e);
-            }
-          });
+        case 'dashboardUpdated': {
+          const { dashboard: updatedDashboard, profileId: updatedProfileId } =
+            data || {};
+          if (updatedDashboard) {
+            this.lastDashboard = updatedDashboard;
+            this.dashboardUpdateCallbacks.forEach((cb) => {
+              try {
+                cb(updatedDashboard, updatedProfileId);
+              } catch (e) {
+                console.error('Error in dashboard update callback:', e);
+              }
+            });
+          }
           break;
+        }
         case 'demoModeChanged':
           this.currentIsDemoMode = data;
           this.demoModeCallbacks.forEach((cb) => {
@@ -192,10 +190,15 @@ class WebSocketBridge implements IrSdkBridge {
       clearTimeout(this.reconnectTimer);
     }
 
-    const delay = Math.min(this.reconnectDelay * Math.pow(2, this.reconnectAttempts), this.reconnectDelayMax);
+    const delay = Math.min(
+      this.reconnectDelay * Math.pow(2, this.reconnectAttempts),
+      this.reconnectDelayMax
+    );
     this.reconnectAttempts++;
 
-    debugLog(`Attempting to reconnect in ${delay}ms (attempt ${this.reconnectAttempts})`);
+    debugLog(
+      `Attempting to reconnect in ${delay}ms (attempt ${this.reconnectAttempts})`
+    );
 
     this.reconnectTimer = setTimeout(() => {
       this.connect(this.wsUrl).catch((err) => {
@@ -254,7 +257,7 @@ class WebSocketBridge implements IrSdkBridge {
           this.isConnected = false;
           this.socket = null;
           this.connectionPromise = null;
-          
+
           if (!this.isConnecting) {
             this.attemptReconnect();
           }
@@ -317,11 +320,22 @@ class WebSocketBridge implements IrSdkBridge {
     return undefined;
   }
 
-  dashboardUpdated(callback: (value: any) => void): (() => void) | undefined {
+  dashboardUpdated(
+    callback: (value: any, profileId?: string) => void
+  ): (() => void) | undefined {
     this.dashboardUpdateCallbacks.add(callback);
     if (this.lastDashboard) {
       try {
-        callback(this.lastDashboard);
+        // Handle both old and new formats for backward compatibility
+        if (
+          typeof this.lastDashboard === 'object' &&
+          'dashboard' in this.lastDashboard &&
+          'profileId' in this.lastDashboard
+        ) {
+          callback(this.lastDashboard.dashboard, this.lastDashboard.profileId);
+        } else {
+          callback(this.lastDashboard);
+        }
       } catch (e) {
         console.error('Error in dashboard callback:', e);
       }
@@ -339,8 +353,15 @@ class WebSocketBridge implements IrSdkBridge {
 
   saveDashboard(dashboard: any, options?: any): void {
     if (this.socket && this.socket.readyState === WebSocket.OPEN) {
-      this.socket.send(JSON.stringify({ type: 'saveDashboard', data: { dashboard, options } }));
+      this.socket.send(
+        JSON.stringify({ type: 'saveDashboard', data: { dashboard, options } })
+      );
     }
+  }
+
+  setAutoStart(): Promise<void> {
+    // Not supported by component browser
+    return new Promise<void>((resolve) => resolve());
   }
 
   async resetDashboard(resetEverything: boolean): Promise<any> {
@@ -350,7 +371,10 @@ class WebSocketBridge implements IrSdkBridge {
         const handler = (event: MessageEvent) => {
           try {
             const message = JSON.parse(event.data);
-            if (message.type === 'resetDashboard' && message.requestId === requestId) {
+            if (
+              message.type === 'resetDashboard' &&
+              message.requestId === requestId
+            ) {
               this.socket?.removeEventListener('message', handler);
               clearTimeout(timeout);
               resolve(message.data);
@@ -364,7 +388,13 @@ class WebSocketBridge implements IrSdkBridge {
           resolve(null);
         }, 5000);
         this.socket.addEventListener('message', handler);
-        this.socket.send(JSON.stringify({ type: 'resetDashboard', requestId, data: { resetEverything } }));
+        this.socket.send(
+          JSON.stringify({
+            type: 'resetDashboard',
+            requestId,
+            data: { resetEverything },
+          })
+        );
       } else {
         resolve(null);
       }
@@ -378,7 +408,10 @@ class WebSocketBridge implements IrSdkBridge {
         const handler = (event: MessageEvent) => {
           try {
             const message = JSON.parse(event.data);
-            if (message.type === 'toggleLockOverlays' && message.requestId === requestId) {
+            if (
+              message.type === 'toggleLockOverlays' &&
+              message.requestId === requestId
+            ) {
               this.socket?.removeEventListener('message', handler);
               clearTimeout(timeout);
               resolve(message.data);
@@ -392,7 +425,9 @@ class WebSocketBridge implements IrSdkBridge {
           resolve(false);
         }, 5000);
         this.socket.addEventListener('message', handler);
-        this.socket.send(JSON.stringify({ type: 'toggleLockOverlays', requestId }));
+        this.socket.send(
+          JSON.stringify({ type: 'toggleLockOverlays', requestId })
+        );
       } else {
         resolve(false);
       }
@@ -406,7 +441,10 @@ class WebSocketBridge implements IrSdkBridge {
         const handler = (event: MessageEvent) => {
           try {
             const message = JSON.parse(event.data);
-            if (message.type === 'getAppVersion' && message.requestId === requestId) {
+            if (
+              message.type === 'getAppVersion' &&
+              message.requestId === requestId
+            ) {
               this.socket?.removeEventListener('message', handler);
               clearTimeout(timeout);
               resolve(message.data);
@@ -427,14 +465,19 @@ class WebSocketBridge implements IrSdkBridge {
     });
   }
 
-  async getGarageCoverImageAsDataUrl(imagePath: string): Promise<string | null> {
+  async getGarageCoverImageAsDataUrl(
+    imagePath: string
+  ): Promise<string | null> {
     return new Promise((resolve) => {
       if (this.socket && this.socket.readyState === WebSocket.OPEN) {
         const requestId = Math.random().toString(36).substring(7);
         const handler = (event: MessageEvent) => {
           try {
             const message = JSON.parse(event.data);
-            if (message.type === 'getGarageCoverImageAsDataUrl' && message.requestId === requestId) {
+            if (
+              message.type === 'getGarageCoverImageAsDataUrl' &&
+              message.requestId === requestId
+            ) {
               this.socket?.removeEventListener('message', handler);
               clearTimeout(timeout);
               resolve(message.data);
@@ -448,7 +491,13 @@ class WebSocketBridge implements IrSdkBridge {
           resolve(null);
         }, 5000);
         this.socket.addEventListener('message', handler);
-        this.socket.send(JSON.stringify({ type: 'getGarageCoverImageAsDataUrl', requestId, data: { imagePath } }));
+        this.socket.send(
+          JSON.stringify({
+            type: 'getGarageCoverImageAsDataUrl',
+            requestId,
+            data: { imagePath },
+          })
+        );
       } else {
         resolve(null);
       }
@@ -472,168 +521,274 @@ class WebSocketBridge implements IrSdkBridge {
     }
     return () => this.demoModeCallbacks.delete(callback);
   }
-}
 
-async function initializeMockStores(): Promise<void> {
-  try {
-    const { useTelemetryStore } = await import('../../frontend/context/TelemetryStore/TelemetryStore');
-    const { useSessionStore } = await import('../../frontend/context/SessionStore/SessionStore');
-
-    const mockTelemetry = {
-      SessionTick: { value: [0] },
-      DisplayUnits: { value: [0] },
-      TrackName: { value: ['Mock Track'] },
-      TrackID: { value: ['0'] },
-      TrackLength: { value: [0] },
-      TrackDisplayName: { value: ['Mock Track'] },
-      YawNorth: { value: [0] },
-      SteeringWheelAngle: { value: [0] },
-      Throttle: { value: [0] },
-      Brake: { value: [0] },
-      RPM: { value: [0] },
-      RpmRedLine: { value: [6500] },
-      SessionState: { value: [0] },
-      SessionNum: { value: [0] },
-      RaceLaps: { value: [0] },
-      LapCompleted: { value: [0] },
-      LapDist: { value: [0] },
-      LapDistPct: { value: [0] },
-      TrackTemp: { value: [0] },
-      TrackWetness: { value: [0] },
-      Precipitation: { value: [0] },
-      WindDir: { value: [0] },
-      WindVel: { value: [0] },
-      AirTemp: { value: [0] },
-      AirDensity: { value: [0] },
-      Skies: { value: [0] },
-      WeatherType: { value: [0] },
-      OnPitRoad: { value: [false] },
-    } as any;
-
-    useTelemetryStore.setState({ telemetry: mockTelemetry });
-    useSessionStore.setState({ session: null });
-  } catch (error) {
-    console.error('Error initializing mock stores:', error);
-  }
-}
-
-/**
- * Main export: Render a component to a container element
- */
-export async function renderComponent(
-  containerElement: HTMLElement,
-  componentName: string,
-  config: Record<string, any>,
-  wsUrl: string
-): Promise<void> {
-  try {
-    debugLog('renderComponent called with:', { componentName, wsUrl });
-
-    await initializeMockStores();
-
-    const bridge = new WebSocketBridge();
-
-    await bridge.connect(wsUrl);
-
-    await new Promise((resolve) => setTimeout(resolve, 100));
-
-    const root = createRoot(containerElement);
-
-    const normalizedName = componentName.toLowerCase();
-    const ComponentFn = WIDGET_MAP[normalizedName];
-
-    if (!ComponentFn) {
-      throw new Error(
-        `Component not found: ${componentName}. Available: ${Object.keys(WIDGET_MAP).join(', ')}`
-      );
-    }
-
-    const ThemeWrapper = () => {
-      const { currentDashboard } = useDashboard();
-      const settings = currentDashboard?.generalSettings;
-
-      React.useEffect(() => {
-        if (!settings) return;
-
-        const targetElement = containerElement;
-
-        if (!targetElement.classList.contains('overlay-window')) {
-          targetElement.classList.add('overlay-window');
-        }
-
-        targetElement.style.background = 'transparent';
-
-        targetElement.classList.forEach(className => {
-          if (className.startsWith('overlay-theme-')) {
-            targetElement.classList.remove(className);
+  // Profile management methods
+  async listProfiles(): Promise<any[]> {
+    return new Promise((resolve) => {
+      if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+        const requestId = Math.random().toString(36).substring(7);
+        const handler = (event: MessageEvent) => {
+          try {
+            const message = JSON.parse(event.data);
+            if (
+              message.type === 'listProfiles' &&
+              message.requestId === requestId
+            ) {
+              this.socket?.removeEventListener('message', handler);
+              clearTimeout(timeout);
+              resolve(message.data || []);
+            }
+          } catch (e) {
+            console.error('Error in listProfiles callback:', e);
           }
-        });
+        };
+        const timeout = setTimeout(() => {
+          this.socket?.removeEventListener('message', handler);
+          resolve([{ id: 'default', name: 'Default' }]);
+        }, 5000);
+        this.socket.addEventListener('message', handler);
+        this.socket.send(JSON.stringify({ type: 'listProfiles', requestId }));
+      } else {
+        resolve([{ id: 'default', name: 'Default' }]);
+      }
+    });
+  }
 
-        if (settings.fontSize) {
-          targetElement.classList.add(`overlay-theme-${settings.fontSize}`);
-        }
+  async createProfile(): Promise<any> {
+    return { id: 'new', name: 'New Profile' };
+  }
 
-        if (settings.colorPalette) {
-          targetElement.classList.add(`overlay-theme-color-${settings.colorPalette}`);
-        }
-      }, [settings]);
+  async deleteProfile(): Promise<void> {
+    return;
+  }
 
-      return <ComponentFn {...config} />;
-    };
+  async renameProfile(): Promise<void> {
+    return;
+  }
 
-    const WrappedComponent = (
-      <DashboardProvider bridge={bridge as any}>
-        <RunningStateProvider bridge={bridge as any}>
-          <SessionProvider bridge={bridge as any} />
-          <TelemetryProvider bridge={bridge as any} />
-          <ThemeWrapper />
-        </RunningStateProvider>
-      </DashboardProvider>
-    );
+  async switchProfile(): Promise<void> {
+    return;
+  }
 
-    root.render(WrappedComponent);
+  async getCurrentProfile(): Promise<any> {
+    return new Promise((resolve) => {
+      if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+        const requestId = Math.random().toString(36).substring(7);
+        const handler = (event: MessageEvent) => {
+          try {
+            const message = JSON.parse(event.data);
+            if (
+              message.type === 'getCurrentProfile' &&
+              message.requestId === requestId
+            ) {
+              this.socket?.removeEventListener('message', handler);
+              clearTimeout(timeout);
+              resolve(message.data);
+            }
+          } catch (e) {
+            console.error('Error in getCurrentProfile callback:', e);
+          }
+        };
+        const timeout = setTimeout(() => {
+          this.socket?.removeEventListener('message', handler);
+          resolve({ id: 'default', name: 'Default' });
+        }, 5000);
+        this.socket.addEventListener('message', handler);
+        this.socket.send(
+          JSON.stringify({ type: 'getCurrentProfile', requestId })
+        );
+      } else {
+        resolve({ id: 'default', name: 'Default' });
+      }
+    });
+  }
 
-    debugLog(`Successfully rendered component: ${componentName}`);
-  } catch (error) {
-    console.error(`Failed to render component: ${componentName}`, error);
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    const errorStack = (error instanceof Error ? error.stack : '') || '';
-    containerElement.innerHTML = `
-      <div style="
-        padding: 40px;
-        background: #1a1a1a;
-        color: #ff6b6b;
-        font-family: monospace;
-        min-height: 100vh;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        white-space: pre-wrap;
-        overflow: auto;
-      ">
-        <h1>Error Rendering Component</h1>
-        <p style="max-width: 600px; margin: 20px 0;">
-          <strong>Component:</strong> ${componentName}
-        </p>
-        <p style="max-width: 600px; margin: 20px 0;">
-          <strong>Message:</strong> ${errorMessage}
-        </p>
-        <p style="max-width: 600px; margin: 20px 0; font-size: 12px; color: #999;">
-          <strong>Stack:</strong> ${errorStack.replace(/</g, '&lt;').replace(/>/g, '&gt;')}
-        </p>
-      </div>
-    `;
+  async updateProfileTheme(
+    profileId: string,
+    themeSettings: any
+  ): Promise<void> {
+    return new Promise((resolve) => {
+      if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+        const requestId = Math.random().toString(36).substring(7);
+        const handler = (event: MessageEvent) => {
+          try {
+            const message = JSON.parse(event.data);
+            if (
+              message.type === 'updateProfileTheme' &&
+              message.requestId === requestId
+            ) {
+              this.socket?.removeEventListener('message', handler);
+              clearTimeout(timeout);
+              resolve();
+            }
+          } catch (e) {
+            console.error('Error in updateProfileTheme callback:', e);
+          }
+        };
+        const timeout = setTimeout(() => {
+          this.socket?.removeEventListener('message', handler);
+          resolve();
+        }, 5000);
+        this.socket.addEventListener('message', handler);
+        this.socket.send(
+          JSON.stringify({
+            type: 'updateProfileTheme',
+            requestId,
+            data: { profileId, themeSettings },
+          })
+        );
+      } else {
+        resolve();
+      }
+    });
+  }
+
+  async getDashboardForProfile(profileId: string): Promise<any> {
+    return new Promise((resolve) => {
+      if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+        const requestId = Math.random().toString(36).substring(7);
+        const handler = (event: MessageEvent) => {
+          try {
+            const message = JSON.parse(event.data);
+            if (
+              message.type === 'getDashboardForProfile' &&
+              message.requestId === requestId
+            ) {
+              this.socket?.removeEventListener('message', handler);
+              clearTimeout(timeout);
+              resolve(message.data);
+            }
+          } catch (e) {
+            console.error('Error in getDashboardForProfile callback:', e);
+          }
+        };
+        const timeout = setTimeout(() => {
+          this.socket?.removeEventListener('message', handler);
+          resolve(null);
+        }, 5000);
+        this.socket.addEventListener('message', handler);
+        this.socket.send(
+          JSON.stringify({
+            type: 'getDashboardForProfile',
+            requestId,
+            data: { profileId },
+          })
+        );
+      } else {
+        resolve(null);
+      }
+    });
+  }
+
+  // Additional DashboardBridge methods
+  getCurrentDashboard(): any | null {
+    return this.lastDashboard;
+  }
+
+  async saveGarageCoverImage(buffer: Uint8Array): Promise<string> {
+    return new Promise((resolve) => {
+      if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+        const requestId = Math.random().toString(36).substring(7);
+        const handler = (event: MessageEvent) => {
+          try {
+            const message = JSON.parse(event.data);
+            if (
+              message.type === 'saveGarageCoverImage' &&
+              message.requestId === requestId
+            ) {
+              this.socket?.removeEventListener('message', handler);
+              clearTimeout(timeout);
+              resolve(message.data);
+            }
+          } catch (e) {
+            console.error('Error in saveGarageCoverImage callback:', e);
+          }
+        };
+        const timeout = setTimeout(() => {
+          this.socket?.removeEventListener('message', handler);
+          resolve('');
+        }, 5000);
+        this.socket.addEventListener('message', handler);
+        this.socket.send(
+          JSON.stringify({
+            type: 'saveGarageCoverImage',
+            requestId,
+            data: { buffer: Array.from(buffer) },
+          })
+        );
+      } else {
+        resolve('');
+      }
+    });
+  }
+
+  async getAnalyticsOptOut(): Promise<boolean> {
+    return new Promise((resolve) => {
+      if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+        const requestId = Math.random().toString(36).substring(7);
+        const handler = (event: MessageEvent) => {
+          try {
+            const message = JSON.parse(event.data);
+            if (
+              message.type === 'getAnalyticsOptOut' &&
+              message.requestId === requestId
+            ) {
+              this.socket?.removeEventListener('message', handler);
+              clearTimeout(timeout);
+              resolve(message.data);
+            }
+          } catch (e) {
+            console.error('Error in getAnalyticsOptOut callback:', e);
+          }
+        };
+        const timeout = setTimeout(() => {
+          this.socket?.removeEventListener('message', handler);
+          resolve(false);
+        }, 5000);
+        this.socket.addEventListener('message', handler);
+        this.socket.send(
+          JSON.stringify({ type: 'getAnalyticsOptOut', requestId })
+        );
+      } else {
+        resolve(false);
+      }
+    });
+  }
+
+  async setAnalyticsOptOut(optOut: boolean): Promise<void> {
+    return new Promise((resolve) => {
+      if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+        const requestId = Math.random().toString(36).substring(7);
+        const handler = (event: MessageEvent) => {
+          try {
+            const message = JSON.parse(event.data);
+            if (
+              message.type === 'setAnalyticsOptOut' &&
+              message.requestId === requestId
+            ) {
+              this.socket?.removeEventListener('message', handler);
+              clearTimeout(timeout);
+              resolve();
+            }
+          } catch (e) {
+            console.error('Error in setAnalyticsOptOut callback:', e);
+          }
+        };
+        const timeout = setTimeout(() => {
+          this.socket?.removeEventListener('message', handler);
+          resolve();
+        }, 5000);
+        this.socket.addEventListener('message', handler);
+        this.socket.send(
+          JSON.stringify({
+            type: 'setAnalyticsOptOut',
+            requestId,
+            data: { optOut },
+          })
+        );
+      } else {
+        resolve();
+      }
+    });
   }
 }
-
-declare global {
-  interface Window {
-    renderComponent: typeof renderComponent;
-  }
-}
-
-if (typeof window !== 'undefined') {
-  (window as any).renderComponent = renderComponent;
-}
-

@@ -12,7 +12,6 @@ export const SessionProvider = ({ bridge }: SessionProviderProps) => {
   useEffect(() => {
     let cancelled = false;
     let unsub: (() => void) | undefined;
-
     if (bridge instanceof Promise) {
       bridge.then((resolved) => {
         if (cancelled) {
