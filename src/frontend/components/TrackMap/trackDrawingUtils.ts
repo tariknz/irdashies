@@ -10,6 +10,12 @@ export const setupCanvasContext = (
   ctx.save();
   ctx.translate(offsetX, offsetY);
   ctx.scale(scale, scale);
+
+  // Apply shadow (now efficient thanks to canvas caching)
+  ctx.shadowColor = 'black';
+  ctx.shadowBlur = 2;
+  ctx.shadowOffsetX = 1;
+  ctx.shadowOffsetY = 1;
 };
 
 export const drawTrack = (
