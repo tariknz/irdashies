@@ -148,23 +148,8 @@ const DashboardWidgetItem = memo(
             </div>
           )}
           {/* Widget content */}
-          <div
-            className="w-full h-full p-2"
-            style={{
-              overflow: 'auto',
-              scrollbarWidth: 'none',
-              msOverflowStyle: 'none',
-              paddingTop: '8px',
-            }}
-          >
-            <style>{`
-              .widget-content::-webkit-scrollbar {
-                display: none;
-              }
-            `}</style>
-            <div className="widget-content w-full h-full">
-              <WidgetComponent />
-            </div>
+          <div className="w-full h-full">
+            <WidgetComponent {...(widget.config ?? {})} />
           </div>
         </div>
 
