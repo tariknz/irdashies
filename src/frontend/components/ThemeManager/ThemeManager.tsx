@@ -1,22 +1,28 @@
 import { PropsWithChildren } from 'react';
 import { useGeneralSettings } from '@irdashies/context';
-import { useLocation } from 'react-router-dom';
+
+/**
+ * Check if we're on the settings page by looking at the URL hash.
+ * This works both with and without react-router context.
+ */
+const isSettingsPage = () => {
+  return window.location.hash.startsWith('#/settings');
+};
 
 export const ThemeManager = ({ children }: PropsWithChildren) => {
-  const { fontSize, colorPalette,fontWeight } = useGeneralSettings() || {};
-  const location = useLocation();
+  const { fontSize, colorPalette, fontWeight } = useGeneralSettings() || {};
 
   // Don't apply theme changes to the settings page since
   // they share the same theme as the rest of the overlays
-  if (location.pathname.startsWith('/settings')) {
+  if (isSettingsPage()) {
     return <>{children}</>;
   }
 
   return (
     <div
       className={`
-        relative w-full h-full overflow-hidden overlay-window 
-        overlay-theme-${fontSize ?? 'sm'} 
+        relative w-full h-full overflow-hidden overlay-window
+        overlay-theme-${fontSize ?? 'sm'}
         overlay-theme-color-${colorPalette ?? 'default'}
         overlay-theme-font-weight-${fontWeight ?? 'normal'}
       `}

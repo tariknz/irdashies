@@ -24,7 +24,7 @@ const mockBridge: (editMode: boolean) => DashboardBridge = (editMode) => ({
     // noop
   },
   dashboardUpdated: () => {
-    // noop
+    return undefined;
   },
   reloadDashboard: () => {
     // noop
@@ -32,6 +32,7 @@ const mockBridge: (editMode: boolean) => DashboardBridge = (editMode) => ({
   resetDashboard: () => Promise.resolve(mockDashboard),
   onEditModeToggled: (callback) => {
     callback(editMode);
+    return undefined;
   },
   toggleLockOverlays: () => Promise.resolve(true),
   getAppVersion: () => Promise.resolve('1.0.0'),
@@ -53,6 +54,27 @@ const mockBridge: (editMode: boolean) => DashboardBridge = (editMode) => ({
   saveGarageCoverImage: () => Promise.resolve(''),
   getGarageCoverImage: () => Promise.resolve(null),
   getGarageCoverImageAsDataUrl: () => Promise.resolve(null),
+  // Profile management methods
+  listProfiles: () => Promise.resolve([
+    { id: 'default', name: 'Default', createdAt: new Date().toISOString(), lastModified: new Date().toISOString() }
+  ]),
+  createProfile: (name: string) => Promise.resolve({
+    id: 'mock-id',
+    name,
+    createdAt: new Date().toISOString(),
+    lastModified: new Date().toISOString()
+  }),
+  deleteProfile: () => Promise.resolve(),
+  renameProfile: () => Promise.resolve(),
+  switchProfile: () => Promise.resolve(),
+  getCurrentProfile: () => Promise.resolve({
+    id: 'default',
+    name: 'Default',
+    createdAt: new Date().toISOString(),
+    lastModified: new Date().toISOString()
+  }),
+  updateProfileTheme: async () => undefined,
+  getDashboardForProfile: async () => null,
   setAutoStart: () => Promise.resolve()
 });
 
