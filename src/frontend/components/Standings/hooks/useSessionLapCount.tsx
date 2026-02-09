@@ -1,11 +1,13 @@
-import { useSessionLaps, useTelemetryValue } from '@irdashies/context';
+import { useSessionLaps, useTelemetryValue, useTelemetryValues, useFocusCarIdx } from '@irdashies/context';
 import { useMemo } from 'react';
 
 export const useSessionLapCount = () => {
   const sessionNum = useTelemetryValue('SessionNum');
   const sessionLaps = useSessionLaps(sessionNum);
   const sessionState = useTelemetryValue('SessionState');
-  const currentLap = useTelemetryValue('Lap');
+  const carIdxLap = useTelemetryValues('CarIdxLap');
+  const focusCarIdx = useFocusCarIdx();
+  const currentLap = focusCarIdx !== undefined ? carIdxLap?.[focusCarIdx] : 0;
   const time = useTelemetryValue('SessionTime');
   const timeTotal = useTelemetryValue('SessionTimeTotal');
   const timeRemaining = useTelemetryValue('SessionTimeRemain');

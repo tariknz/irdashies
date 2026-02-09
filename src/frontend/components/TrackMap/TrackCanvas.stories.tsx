@@ -6,8 +6,16 @@ import { BROKEN_TRACKS } from './tracks/brokenTracks';
 
 export default {
   component: TrackCanvas,
+  title: 'widgets/TrackMap/components/TrackCanvas',
   args: {
     enableTurnNames: false,
+    showCarNumbers: true,
+    invertTrackColors: false,
+    driverCircleSize: 40,
+    playerCircleSize: 40,
+    trackLineWidth: 20,
+    trackOutlineWidth: 40,
+    highlightColor: undefined,
     debug: true,
   },
   argTypes: {
@@ -16,6 +24,29 @@ export default {
     },
     enableTurnNames: {
       control: { type: 'boolean' },
+    },
+    showCarNumbers: {
+      control: { type: 'boolean' },
+    },
+    invertTrackColors: {
+      control: { type: 'boolean' },
+    },
+    driverCircleSize: {
+      control: { type: 'range', min: 10, max: 100, step: 1 },
+    },
+    playerCircleSize: {
+      control: { type: 'range', min: 10, max: 100, step: 1 },
+    },
+    trackLineWidth: {
+      control: { type: 'range', min: 5, max: 100, step: 1 },
+    },
+    trackOutlineWidth: {
+      control: { type: 'range', min: 5, max: 150, step: 1 },
+    },
+    highlightColor: {
+      control: { type: 'number' },
+      description:
+        'Highlight color for player circle (RGB number). Leave undefined to use amber (16096779).',
     },
     debug: {
       control: { type: 'boolean' },
@@ -30,6 +61,7 @@ const sampleData = [
     driver: {
       CarIdx: 2,
       CarNumber: '20',
+      CarClassID: 1,
       CarClassColor: 16767577,
       CarClassEstLapTime: 113.6302,
     },
@@ -40,6 +72,7 @@ const sampleData = [
     driver: {
       CarIdx: 9,
       CarNumber: '38',
+      CarClassID: 1,
       CarClassColor: 16767577,
       CarClassEstLapTime: 113.6302,
     },
@@ -50,6 +83,7 @@ const sampleData = [
     driver: {
       CarIdx: 10,
       CarNumber: '39',
+      CarClassID: 1,
       CarClassColor: 16767577,
       CarClassEstLapTime: 113.6302,
     },
@@ -60,6 +94,7 @@ const sampleData = [
     driver: {
       CarIdx: 13,
       CarNumber: '5',
+      CarClassID: 2,
       CarClassColor: 16734344,
       CarClassEstLapTime: 126.9374,
     },
@@ -70,6 +105,7 @@ const sampleData = [
     driver: {
       CarIdx: 15,
       CarNumber: '10',
+      CarClassID: 2,
       CarClassColor: 16734344,
       CarClassEstLapTime: 126.9374,
     },
@@ -80,6 +116,7 @@ const sampleData = [
     driver: {
       CarIdx: 16,
       CarNumber: '13',
+      CarClassID: 2,
       CarClassColor: 16734344,
       CarClassEstLapTime: 126.9374,
     },
@@ -90,6 +127,7 @@ const sampleData = [
     driver: {
       CarIdx: 18,
       CarNumber: '17',
+      CarClassID: 2,
       CarClassColor: 16734344,
       CarClassEstLapTime: 126.9374,
     },
@@ -100,6 +138,7 @@ const sampleData = [
     driver: {
       CarIdx: 19,
       CarNumber: '18',
+      CarClassID: 2,
       CarClassColor: 16734344,
       CarClassEstLapTime: 126.9374,
     },
@@ -110,6 +149,7 @@ const sampleData = [
     driver: {
       CarIdx: 20,
       CarNumber: '19',
+      CarClassID: 2,
       CarClassColor: 16734344,
       CarClassEstLapTime: 126.9374,
     },
@@ -120,6 +160,7 @@ const sampleData = [
     driver: {
       CarIdx: 22,
       CarNumber: '22',
+      CarClassID: 2,
       CarClassColor: 16734344,
       CarClassEstLapTime: 126.9374,
     },
@@ -130,6 +171,7 @@ const sampleData = [
     driver: {
       CarIdx: 23,
       CarNumber: '23',
+      CarClassID: 2,
       CarClassColor: 16734344,
       CarClassEstLapTime: 126.9374,
     },
@@ -140,6 +182,7 @@ const sampleData = [
     driver: {
       CarIdx: 24,
       CarNumber: '24',
+      CarClassID: 2,
       CarClassColor: 16734344,
       CarClassEstLapTime: 126.9374,
     },
@@ -150,6 +193,7 @@ const sampleData = [
     driver: {
       CarIdx: 25,
       CarNumber: '25',
+      CarClassID: 2,
       CarClassColor: 16734344,
       CarClassEstLapTime: 126.9374,
     },
@@ -160,6 +204,7 @@ const sampleData = [
     driver: {
       CarIdx: 26,
       CarNumber: '31',
+      CarClassID: 2,
       CarClassColor: 16734344,
       CarClassEstLapTime: 126.9374,
     },
@@ -170,6 +215,7 @@ const sampleData = [
     driver: {
       CarIdx: 27,
       CarNumber: '32',
+      CarClassID: 2,
       CarClassColor: 16734344,
       CarClassEstLapTime: 126.9374,
     },
@@ -180,6 +226,7 @@ const sampleData = [
     driver: {
       CarIdx: 28,
       CarNumber: '1',
+      CarClassID: 3,
       CarClassColor: 11430911,
       CarClassEstLapTime: 126.2284,
     },
@@ -190,6 +237,7 @@ const sampleData = [
     driver: {
       CarIdx: 29,
       CarNumber: '2',
+      CarClassID: 3,
       CarClassColor: 11430911,
       CarClassEstLapTime: 126.2284,
     },
@@ -200,6 +248,7 @@ const sampleData = [
     driver: {
       CarIdx: 30,
       CarNumber: '3',
+      CarClassID: 3,
       CarClassColor: 11430911,
       CarClassEstLapTime: 126.2284,
     },
@@ -210,6 +259,7 @@ const sampleData = [
     driver: {
       CarIdx: 31,
       CarNumber: '6',
+      CarClassID: 3,
       CarClassColor: 11430911,
       CarClassEstLapTime: 126.2284,
     },
@@ -220,6 +270,7 @@ const sampleData = [
     driver: {
       CarIdx: 32,
       CarNumber: '7',
+      CarClassID: 3,
       CarClassColor: 11430911,
       CarClassEstLapTime: 126.2284,
     },
@@ -230,6 +281,7 @@ const sampleData = [
     driver: {
       CarIdx: 33,
       CarNumber: '9',
+      CarClassID: 3,
       CarClassColor: 11430911,
       CarClassEstLapTime: 126.2284,
     },
@@ -240,6 +292,7 @@ const sampleData = [
     driver: {
       CarIdx: 35,
       CarNumber: '12',
+      CarClassID: 3,
       CarClassColor: 11430911,
       CarClassEstLapTime: 126.2284,
     },
@@ -250,6 +303,7 @@ const sampleData = [
     driver: {
       CarIdx: 36,
       CarNumber: '16',
+      CarClassID: 3,
       CarClassColor: 11430911,
       CarClassEstLapTime: 126.2284,
     },
@@ -260,6 +314,7 @@ const sampleData = [
     driver: {
       CarIdx: 37,
       CarNumber: '27',
+      CarClassID: 3,
       CarClassColor: 11430911,
       CarClassEstLapTime: 126.2284,
     },
@@ -270,6 +325,7 @@ const sampleData = [
     driver: {
       CarIdx: 39,
       CarNumber: '29',
+      CarClassID: 3,
       CarClassColor: 11430911,
       CarClassEstLapTime: 126.2284,
     },
@@ -280,6 +336,7 @@ const sampleData = [
     driver: {
       CarIdx: 40,
       CarNumber: '30',
+      CarClassID: 3,
       CarClassColor: 11430911,
       CarClassEstLapTime: 126.2284,
     },
@@ -293,6 +350,43 @@ export const Primary: Story = {
     trackId: 1,
     drivers: sampleData,
     enableTurnNames: true,
+    showCarNumbers: true,
+    invertTrackColors: false,
+    driverCircleSize: 40,
+    playerCircleSize: 40,
+    trackLineWidth: 20,
+    trackOutlineWidth: 40,
+    highlightColor: undefined,
+  },
+};
+
+export const InvertedTrackColors: Story = {
+  args: {
+    trackId: 1,
+    drivers: sampleData,
+    enableTurnNames: true,
+    showCarNumbers: true,
+    invertTrackColors: true,
+    driverCircleSize: 40,
+    playerCircleSize: 40,
+    trackLineWidth: 20,
+    trackOutlineWidth: 40,
+    highlightColor: undefined,
+  },
+};
+
+export const SingleClass: Story = {
+  args: {
+    trackId: 1,
+    drivers: sampleData.filter(({ driver }) => driver.CarClassID === 2),
+    enableTurnNames: true,
+    showCarNumbers: true,
+    invertTrackColors: false,
+    driverCircleSize: 40,
+    playerCircleSize: 40,
+    trackLineWidth: 20,
+    trackOutlineWidth: 40,
+    highlightColor: undefined,
   },
 };
 
@@ -316,18 +410,34 @@ export const SingleDriver: Story = {
   },
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   render: (args: any) => {
-    const drivers = [{
-      driver: {
-        CarIdx: 39,
-        CarNumber: args.carNumber || '29',
-        CarClassColor: args.carClassColor || 11430911,
-        CarClassEstLapTime: 126.2284,
+    const drivers = [
+      {
+        driver: {
+          CarIdx: 39,
+          CarNumber: args.carNumber || '29',
+          CarClassID: 3,
+          CarClassColor: args.carClassColor || 11430911,
+          CarClassEstLapTime: 126.2284,
+        },
+        progress: args.progress || 0,
+        isPlayer: args.isPlayer || false,
       },
-      progress: args.progress || 0,
-      isPlayer: args.isPlayer || false,
-    }] as TrackDriver[];
+    ] as TrackDriver[];
 
-    return <TrackCanvas trackId={args.trackId} drivers={drivers} enableTurnNames={args.enableTurnNames} />;
+    return (
+      <TrackCanvas
+        trackId={args.trackId}
+        drivers={drivers}
+        enableTurnNames={args.enableTurnNames}
+        showCarNumbers={args.showCarNumbers ?? true}
+        invertTrackColors={args.invertTrackColors ?? false}
+        driverCircleSize={args.driverCircleSize ?? 40}
+        playerCircleSize={args.playerCircleSize ?? 40}
+        trackLineWidth={args.trackLineWidth ?? 20}
+        trackOutlineWidth={args.trackOutlineWidth ?? 40}
+        highlightColor={args.highlightColor}
+      />
+    );
   },
   args: {
     trackId: 1,
@@ -354,7 +464,20 @@ export const CirclingAround: Story = {
       return () => clearInterval(interval);
     });
 
-    return <TrackCanvas trackId={args.trackId} drivers={drivers} enableTurnNames={args.enableTurnNames} />;
+    return (
+      <TrackCanvas
+        trackId={args.trackId}
+        drivers={drivers}
+        enableTurnNames={args.enableTurnNames}
+        showCarNumbers={args.showCarNumbers ?? true}
+        invertTrackColors={args.invertTrackColors ?? false}
+        driverCircleSize={args.driverCircleSize ?? 40}
+        playerCircleSize={args.playerCircleSize ?? 40}
+        trackLineWidth={args.trackLineWidth ?? 20}
+        trackOutlineWidth={args.trackOutlineWidth ?? 40}
+        highlightColor={args.highlightColor}
+      />
+    );
   },
   args: {
     trackId: 1,
@@ -362,10 +485,63 @@ export const CirclingAround: Story = {
   },
 };
 
+const singleDriverData = [
+  {
+    driver: {
+      CarIdx: 24,
+      CarNumber: '24',
+      CarClassID: 2,
+      CarClassColor: 16734344,
+      CarClassEstLapTime: 126.9374,
+    },
+    progress: 0,
+    isPlayer: true,
+  },
+] as TrackDriver[];
+
+export const CirclingAroundSingleDriver: Story = {
+  render: (args) => {
+    const [drivers, setDrivers] = useState(singleDriverData);
+    useEffect(() => {
+      const interval = setInterval(() => {
+        setDrivers((prev) =>
+          prev.map((d) => ({
+            ...d,
+            progress: (d.progress + 0.003) % 1,
+          }))
+        );
+      }, 50);
+
+      return () => clearInterval(interval);
+    });
+
+    return (
+      <TrackCanvas
+        trackId={args.trackId}
+        drivers={drivers}
+        enableTurnNames={args.enableTurnNames}
+        showCarNumbers={args.showCarNumbers ?? true}
+        invertTrackColors={args.invertTrackColors ?? false}
+        driverCircleSize={args.driverCircleSize ?? 40}
+        playerCircleSize={args.playerCircleSize ?? 40}
+        trackLineWidth={args.trackLineWidth ?? 20}
+        trackOutlineWidth={args.trackOutlineWidth ?? 40}
+        highlightColor={args.highlightColor}
+      />
+    );
+  },
+  args: {
+    trackId: 1,
+  },
+};
+
 // All available track IDs from tracks.json
 const allTrackIds = Object.keys(tracks)
   .map(Number)
-  .filter(trackId => !isNaN(trackId) && tracks[trackId.toString() as keyof typeof tracks])
+  .filter(
+    (trackId) =>
+      !isNaN(trackId) && tracks[trackId.toString() as keyof typeof tracks]
+  )
   .sort((a, b) => a - b);
 
 export const AllTracksGrid: Story = {
@@ -377,17 +553,17 @@ export const AllTracksGrid: Story = {
         <h1 className="text-white text-center mb-6 text-2xl">
           All Available Tracks ({allTrackIds.length} total)
         </h1>
-        <div 
+        <div
           className="grid gap-4 justify-center mx-auto"
           style={{
             gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
             maxWidth: '100%',
-            width: '100%'
+            width: '100%',
           }}
         >
           {allTrackIds.map((trackId) => (
-            <div 
-              key={trackId} 
+            <div
+              key={trackId}
               className="border border-gray-600 rounded-lg overflow-hidden bg-gray-800 relative aspect-square"
               style={{ maxWidth: trackSize, maxHeight: trackSize }}
             >
@@ -395,10 +571,17 @@ export const AllTracksGrid: Story = {
                 Track {trackId}
               </div>
               <div className="w-full h-full">
-                <TrackCanvas 
-                  trackId={trackId} 
-                  drivers={sampleData} 
+                <TrackCanvas
+                  trackId={trackId}
+                  drivers={sampleData}
                   enableTurnNames={args.enableTurnNames}
+                  showCarNumbers={args.showCarNumbers ?? true}
+                  invertTrackColors={args.invertTrackColors ?? false}
+                  driverCircleSize={args.driverCircleSize ?? 40}
+                  playerCircleSize={args.playerCircleSize ?? 40}
+                  trackLineWidth={args.trackLineWidth ?? 20}
+                  trackOutlineWidth={args.trackOutlineWidth ?? 40}
+                  highlightColor={args.highlightColor}
                   debug={args.debug}
                 />
               </div>
@@ -420,27 +603,35 @@ export const BrokenTracksGrid: Story = {
           Broken Tracks ({BROKEN_TRACKS.length} total)
         </h1>
         <p className="text-gray-400 text-center mb-6">
-          These tracks are broken and will be hidden in production but available for debugging in development/storybook.
+          These tracks are broken and will be hidden in production but available
+          for debugging in development/storybook.
         </p>
-        <div 
+        <div
           className="grid gap-4 justify-center mx-auto"
           style={{
             gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
             maxWidth: '100%',
-            width: '100%'
+            width: '100%',
           }}
         >
           {BROKEN_TRACKS.map((brokenTrack) => (
-            <div 
-              key={brokenTrack.id} 
+            <div
+              key={brokenTrack.id}
               className="border border-red-600 rounded-lg overflow-hidden bg-gray-800 relative aspect-square"
               style={{ maxWidth: trackSize, maxHeight: trackSize }}
             >
               <div className="w-full h-full">
-                <TrackCanvas 
-                  trackId={brokenTrack.id} 
-                  drivers={sampleData} 
+                <TrackCanvas
+                  trackId={brokenTrack.id}
+                  drivers={sampleData}
                   enableTurnNames={args.enableTurnNames}
+                  showCarNumbers={args.showCarNumbers ?? true}
+                  invertTrackColors={args.invertTrackColors ?? false}
+                  driverCircleSize={args.driverCircleSize ?? 40}
+                  playerCircleSize={args.playerCircleSize ?? 40}
+                  trackLineWidth={args.trackLineWidth ?? 20}
+                  trackOutlineWidth={args.trackOutlineWidth ?? 40}
+                  highlightColor={args.highlightColor}
                   debug={args.debug}
                 />
               </div>

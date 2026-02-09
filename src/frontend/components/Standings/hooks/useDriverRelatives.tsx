@@ -1,50 +1,51 @@
-import { useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import {
   useSessionStore,
   useTelemetryValues,
-  useRelativeGapStore,
-  detectEdgeCases,
-  calculateRelativeGap,
   useFocusCarIdx,
+  useTelemetryValue,
 } from '@irdashies/context';
 import { useDriverStandings } from './useDriverPositions';
-import type { Standings } from '../createStandings';
-
-
+import { useReferenceRegistry } from './useReferenceRegistry';
+import {
+  calculateClassEstimatedGap,
+  calculateReferenceDelta,
+  getStats,
+  TRACK_SURFACES,
+} from '../relativeGapHelpers';
+import { Standings } from '../createStandings';
 
 export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
-  const driversGrouped = useDriverStandings();
-  const drivers = driversGrouped as Standings[];
+  const drivers = useDriverStandings();
   const carIdxLapDistPct = useTelemetryValues('CarIdxLapDistPct');
-  const carIdxLap = useTelemetryValues('CarIdxLap');
-  const carIdxTrackSurface = useTelemetryValues('CarIdxTrackSurface');
-  const sessionTime = useTelemetryValues('SessionTime')?.[0] ?? 0;
+  const carIdxIsOnPitRoad = useTelemetryValues('CarIdxOnPitRoad');
+  // const carIdxTrackSurface = useTelemetryValues('CarIdxTrackSurface');
+  // CarIdxEstTime - iRacing's native estimated time gap calculation
+  const carIdxEstTime = useTelemetryValues('CarIdxEstTime');
   // Use focus car index which handles spectator mode (uses CamCarIdx when spectating)
-  const playerIndex = useFocusCarIdx();
+  const focusCarIdx = useFocusCarIdx();
   const paceCarIdx =
     useSessionStore((s) => s.session?.DriverInfo?.PaceCarIdx) ?? -1;
+  const { collectLapData, getReferenceLap, resetLaps } = useReferenceRegistry();
+  const sessionTime = useTelemetryValue<number>('SessionTime') ?? 0;
+  const sessionNum = useTelemetryValue('SessionNum') ?? -1;
 
-  // Access RelativeGapStore config values individually to prevent infinite loops
-  const isEnhancedEnabled = useRelativeGapStore((state) => state.config.enabled);
-  const interpolationMethod = useRelativeGapStore((state) => state.config.interpolationMethod);
+  // Driver lookup map
+  const driverMap = useMemo(
+    () => new Map(drivers.map((d) => [d.carIdx, d])),
+    [drivers]
+  );
 
-  const standings = useMemo(() => {
-    // Get store reference inside useMemo to access getCarHistory
-    const store = useRelativeGapStore.getState();
-    const driversByCarIdx = new Map(drivers.map(driver => [driver.carIdx, driver]));
-    const calculateRelativePct = (carIdx: number) => {
-      if (playerIndex === undefined) {
+  const calculateRelativePct = useCallback(
+    (opponentIdx: number) => {
+      if (focusCarIdx === undefined) {
         return NaN;
       }
 
-      const playerDistPct = carIdxLapDistPct?.[playerIndex];
-      const otherDistPct = carIdxLapDistPct?.[carIdx];
+      const playerDistPct = carIdxLapDistPct[focusCarIdx];
+      const opponentDistPct = carIdxLapDistPct[opponentIdx];
 
-      if (playerDistPct === undefined || otherDistPct === undefined) {
-        return NaN;
-      }
-
-      const relativePct = otherDistPct - playerDistPct;
+      const relativePct = opponentDistPct - playerDistPct;
 
       if (relativePct > 0.5) {
         return relativePct - 1.0;
@@ -53,121 +54,154 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
       }
 
       return relativePct;
-    };
+    },
+    [focusCarIdx, carIdxLapDistPct]
+  );
 
-    const calculateDelta = (otherCarIdx: number) => {
-      const playerCarIdx = playerIndex ?? 0;
+  const calculateDelta = useCallback(
+    (opponentCarIdx: number, relativeDistPct: number) => {
+      const focusIdx = focusCarIdx ?? 0;
 
-      const playerDistPct = carIdxLapDistPct?.[playerCarIdx];
-      const otherDistPct = carIdxLapDistPct?.[otherCarIdx];
-      const playerLap = carIdxLap?.[playerCarIdx] ?? 0;
-      const otherLap = carIdxLap?.[otherCarIdx] ?? 0;
-
-      const player = playerIndex !== undefined ? driversByCarIdx.get(playerIndex) : undefined;
-      const other = driversByCarIdx.get(otherCarIdx);
-
-      // Get class estimated lap times (fallback for Tier 3)
-      const playerEstLapTime = player?.carClass?.estLapTime ?? 0;
-      const otherEstLapTime = other?.carClass?.estLapTime ?? 0;
-
-      // Check if enhanced gap calculation is enabled
-      if (isEnhancedEnabled) {
-        // Get position history for both cars
-        const playerHistory = store.getCarHistory(playerCarIdx);
-        const otherHistory = store.getCarHistory(otherCarIdx);
-
-        // Detect edge cases
-        const otherTrackSurface = carIdxTrackSurface?.[otherCarIdx] ?? 0;
-        const isOffTrack = otherTrackSurface === -1 || otherTrackSurface === 0;
-        const isInPits = other?.onPitRoad ?? false;
-        const hasLapHistory = (otherHistory?.lapRecords?.length ?? 0) > 0;
-
-        const edgeCase = detectEdgeCases(
-          otherCarIdx,
-          isOffTrack,
-          isInPits,
-          otherLap,
-          hasLapHistory,
-        );
-
-        // Calculate relative gap using three-tier system
-        const gapResult = calculateRelativeGap(
-          playerHistory,
-          otherHistory,
-          {
-            playerCarIdx,
-            otherCarIdx,
-            playerPosition: playerDistPct ?? 0,
-            otherPosition: otherDistPct ?? 0,
-            playerLap,
-            otherLap,
-            sessionTime,
-          },
-          playerEstLapTime,
-          otherEstLapTime,
-          edgeCase,
-          interpolationMethod,
-        );
-
-        return gapResult.timeGap;
+      if (focusIdx === opponentCarIdx) {
+        return 0;
       }
 
-      // Fallback to old simple distance-based calculation
-      const baseLapTime = Math.max(playerEstLapTime, otherEstLapTime);
+      const isTargetAhead = relativeDistPct > 0 && relativeDistPct <= 0.5;
 
-      let distPctDifference = otherDistPct - playerDistPct;
+      const aheadIdx = isTargetAhead ? opponentCarIdx : focusIdx;
+      const behindIdx = !isTargetAhead ? opponentCarIdx : focusIdx;
 
-      if (distPctDifference > 0.5) {
-        distPctDifference -= 1.0;
-      } else if (distPctDifference < -0.5) {
-        distPctDifference += 1.0;
+      const isOnPitRoadAhead = carIdxIsOnPitRoad[aheadIdx] === 1;
+      const isOnPitRoadBehind = carIdxIsOnPitRoad[behindIdx] === 1;
+      const isAnyoneOnPitRoad = isOnPitRoadAhead || isOnPitRoadBehind;
+
+      const refLap = getReferenceLap(behindIdx);
+
+      const isInPitOrHasNoData = isAnyoneOnPitRoad || refLap.finishTime < 0;
+
+      let calculatedDelta = 0;
+
+      if (isInPitOrHasNoData) {
+        const aheadEstTime = carIdxEstTime[aheadIdx];
+        const aheadDriver = driverMap.get(aheadIdx);
+
+        const behindEstTime = carIdxEstTime[behindIdx];
+        const behindDriver = driverMap.get(behindIdx);
+
+        calculatedDelta = calculateClassEstimatedGap(
+          getStats(aheadEstTime, aheadDriver),
+          getStats(behindEstTime, behindDriver),
+          isTargetAhead
+        );
+      } else {
+        const focusTrckPct = carIdxLapDistPct[focusIdx];
+        const opponentTrckPct = carIdxLapDistPct[opponentCarIdx];
+
+        calculatedDelta = calculateReferenceDelta(
+          refLap,
+          opponentTrckPct,
+          focusTrckPct
+        );
       }
 
-      const timeDelta = distPctDifference * baseLapTime;
+      return calculatedDelta;
+    },
+    [
+      carIdxEstTime,
+      carIdxIsOnPitRoad,
+      carIdxLapDistPct,
+      driverMap,
+      focusCarIdx,
+      getReferenceLap,
+    ]
+  );
 
-      return timeDelta;
-    };
+  const isValidDriver = useCallback(
+    (driver: Standings) => {
+      // Must be a real car (idx > -1)
+      if (driver.carIdx <= -1) return false;
 
-    const sortedDrivers = drivers
-      .filter((driver) => 
-        (driver.onTrack || driver.carIdx === playerIndex) && 
-        driver.carIdx > -1 && 
-        driver.carIdx !== paceCarIdx
-      )
-      .map((result) => {
-        const relativePct = calculateRelativePct(result.carIdx);
-        return {
-          ...result,
-          relativePct,
-          delta: calculateDelta(result.carIdx),
-        };
-      })
-      .filter((result) => !isNaN(result.relativePct) && !isNaN(result.delta));
+      // Must not be the pace car
+      if (driver.carIdx === paceCarIdx) return false;
 
-    const playerArrIndex = sortedDrivers.findIndex(
-      (result) => result.carIdx === playerIndex,
-    );
+      // Must be on track OR be the player (we always track the player)
+      return driver.onTrack || driver.carIdx === focusCarIdx;
+    },
+    [focusCarIdx, paceCarIdx]
+  );
 
-    // if the player is not in the list, return an empty array
-    if (playerArrIndex === -1) {
-      return [];
-    }
+  useEffect(() => {
+    resetLaps();
+  }, [resetLaps, sessionNum]);
 
-    const player = sortedDrivers[playerArrIndex];
+  // ===========================================================================
+  // 1. DATA COLLECTION PHASE (Side Effect)
+  // Run this in an Effect so it happens reliably after every frame update.
+  // ===========================================================================
+  useEffect(() => {
+    drivers.forEach((d) => {
+      if (isValidDriver(d)) {
+        const idx = d.carIdx;
+        collectLapData(
+          idx,
+          carIdxLapDistPct[idx],
+          sessionTime,
+          TRACK_SURFACES.OnTrack,
+          // carIdxTrackSurface[idx],
+          carIdxIsOnPitRoad[idx] === 1
+        );
+      }
+    });
+  }, [
+    sessionTime,
+    drivers,
+    focusCarIdx,
+    paceCarIdx,
+    carIdxLapDistPct,
+    // carIdxTrackSurface,
+    carIdxIsOnPitRoad,
+    collectLapData,
+    isValidDriver,
+  ]);
 
-    const driversAhead = sortedDrivers
-      .filter((d) => d.relativePct > 0)
-      .sort((a, b) => a.relativePct - b.relativePct) // sort ascending (closest to player first)
-      .slice(0, buffer)
-      .reverse(); // reverse to get furthest to closest for display
+  // ===========================================================================
+  // 2. VIEW PROJECTION PHASE (Pure Calculation)
+  // ===========================================================================
+  const standings = useMemo(() => {
+    // A. Filter & Map (Calculate Relative Pct immutably)
+    const processed = drivers
+      .filter(isValidDriver)
+      .map((d) => ({
+        ...d,
+        relativePct: calculateRelativePct(d.carIdx),
+      }))
+      .filter((d) => !isNaN(d.relativePct));
 
-    const driversBehind = sortedDrivers
-      .filter((d) => d.relativePct < 0)
-      .sort((a, b) => b.relativePct - a.relativePct) // sort descending (closest to player first)
-      .slice(0, buffer);
+    // B. Sort (Descending)
+    processed.sort((a, b) => b.relativePct - a.relativePct);
 
-    return [...driversAhead, player, ...driversBehind];
-  }, [buffer, playerIndex, carIdxLapDistPct, carIdxLap, carIdxTrackSurface, sessionTime, drivers, paceCarIdx, isEnhancedEnabled, interpolationMethod]);
+    // C. Slice Window
+    const playerIdx = processed.findIndex((d) => d.carIdx === focusCarIdx);
+    if (playerIdx === -1) return [];
+
+    const start = Math.max(0, playerIdx - buffer);
+    const end = Math.min(processed.length, playerIdx + 1 + buffer);
+
+    const visibleDrivers = processed.slice(start, end);
+
+    // D. Final Map (Attach Delta)
+    return visibleDrivers.map((d) => ({
+      ...d,
+      delta: calculateDelta(d.carIdx, d.relativePct),
+    }));
+  }, [
+    drivers,
+    isValidDriver,
+    buffer,
+    calculateRelativePct,
+    focusCarIdx,
+    calculateDelta,
+  ]);
 
   return standings;
 };

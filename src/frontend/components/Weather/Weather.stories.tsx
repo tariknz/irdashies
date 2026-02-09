@@ -4,6 +4,7 @@ import { TelemetryDecorator } from '@irdashies/storybook';
 
 export default {
   component: Weather,
+  title: 'widgets/Weather',
   decorators: [(Story) => (
     <div style={{ width: '150px' }}>
       <Story />

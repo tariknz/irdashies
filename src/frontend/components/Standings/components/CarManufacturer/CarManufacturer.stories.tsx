@@ -4,6 +4,7 @@ import { CAR_ID_TO_CAR_MANUFACTURER } from './carManufacturerMapping';
 
 const meta: Meta<typeof CarManufacturer> = {
   component: CarManufacturer,
+  title: 'widgets/Standings/components/CarManufacturer',
   parameters: {
     layout: 'centered',
   },

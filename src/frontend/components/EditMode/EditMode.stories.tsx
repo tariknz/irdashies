@@ -8,6 +8,7 @@ import { Standings } from '../Standings/Standings';
 
 const meta: Meta<typeof EditMode> = {
   component: EditMode,
+  title: 'components/EditMode',
   decorators: [TelemetryDecorator()],
 };
 export default meta;
@@ -17,11 +18,13 @@ const mockDashboard: DashboardLayout = {
 };
 
 const mockBridge: (editMode: boolean) => DashboardBridge = (editMode) => ({
+  getAnalyticsOptOut: () => Promise.resolve(false),
+  setAnalyticsOptOut: () => Promise.resolve(),
   saveDashboard: () => {
     // noop
   },
   dashboardUpdated: () => {
-    // noop
+    return undefined;
   },
   reloadDashboard: () => {
     // noop
@@ -29,6 +32,7 @@ const mockBridge: (editMode: boolean) => DashboardBridge = (editMode) => ({
   resetDashboard: () => Promise.resolve(mockDashboard),
   onEditModeToggled: (callback) => {
     callback(editMode);
+    return undefined;
   },
   toggleLockOverlays: () => Promise.resolve(true),
   getAppVersion: () => Promise.resolve('1.0.0'),
@@ -47,6 +51,31 @@ const mockBridge: (editMode: boolean) => DashboardBridge = (editMode) => ({
   stop: () => {
     return;
   },
+  saveGarageCoverImage: () => Promise.resolve(''),
+  getGarageCoverImage: () => Promise.resolve(null),
+  getGarageCoverImageAsDataUrl: () => Promise.resolve(null),
+  // Profile management methods
+  listProfiles: () => Promise.resolve([
+    { id: 'default', name: 'Default', createdAt: new Date().toISOString(), lastModified: new Date().toISOString() }
+  ]),
+  createProfile: (name: string) => Promise.resolve({
+    id: 'mock-id',
+    name,
+    createdAt: new Date().toISOString(),
+    lastModified: new Date().toISOString()
+  }),
+  deleteProfile: () => Promise.resolve(),
+  renameProfile: () => Promise.resolve(),
+  switchProfile: () => Promise.resolve(),
+  getCurrentProfile: () => Promise.resolve({
+    id: 'default',
+    name: 'Default',
+    createdAt: new Date().toISOString(),
+    lastModified: new Date().toISOString()
+  }),
+  updateProfileTheme: async () => undefined,
+  getDashboardForProfile: async () => null,
+  setAutoStart: () => Promise.resolve()
 });
 
 export const Primary = {

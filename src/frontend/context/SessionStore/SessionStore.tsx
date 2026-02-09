@@ -7,11 +7,13 @@ import { shallow } from 'zustand/shallow';
 interface SessionState {
   session: Session | null;
   setSession: (session: Session) => void;
+  resetSession: () => void;
 }
 
 export const useSessionStore = create<SessionState>((set) => ({
   session: null as Session | null,
   setSession: (session: Session) => set({ session }),
+  resetSession: () => set({ session: null }),
 }));
 
 export const useSessionDrivers = () =>
@@ -73,6 +75,9 @@ export const useWeekendInfoNumCarClasses = () =>
     (state) => state.session?.WeekendInfo?.NumCarClasses
   );
 
+export const useWeekendInfoTeamRacing = () =>
+  useStore(useSessionStore, (state) => state.session?.WeekendInfo?.TeamRacing);
+
 export const useDriverCarIdx = () =>
   useStore(useSessionStore, (state) => state.session?.DriverInfo?.DriverCarIdx);
 
@@ -119,17 +124,23 @@ export const useTrackLength = () =>
 /**
  * @returns The car index and car class estimated lap time for each driver
  */
+let cachedEstLapTime: Record<number, number> | undefined;
+let cachedEstLapTimeDrivers: unknown;
 export const useCarIdxClassEstLapTime = () =>
   useStoreWithEqualityFn(
     useSessionStore,
     (state) => {
-      return state.session?.DriverInfo?.Drivers?.reduce(
+      const drivers = state.session?.DriverInfo?.Drivers;
+      if (drivers === cachedEstLapTimeDrivers) return cachedEstLapTime;
+      cachedEstLapTimeDrivers = drivers;
+      cachedEstLapTime = drivers?.reduce(
         (acc, driver) => {
           acc[driver.CarIdx] = driver.CarClassEstLapTime;
           return acc;
         },
         {} as Record<number, number>
       );
+      return cachedEstLapTime;
     },
     shallow
   );

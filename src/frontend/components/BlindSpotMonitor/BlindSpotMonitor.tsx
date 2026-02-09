@@ -1,6 +1,10 @@
-import { useBlindSpotMonitor, BlindSpotState } from './hooks/useBlindSpotMonitor';
+import {
+  useBlindSpotMonitor,
+  BlindSpotState,
+} from './hooks/useBlindSpotMonitor';
 import { useBlindSpotMonitorSettings } from './hooks/useBlindSpotMonitorSettings';
 import { BlindSpotMonitorIndicator } from './components/BlindSpotMonitorIndicator';
+import { useSessionVisibility, useTelemetryValue } from '@irdashies/context';
 
 export interface BlindSpotMonitorDisplayProps {
   show: boolean;
@@ -23,8 +27,10 @@ export const BlindSpotMonitorDisplay = ({
   bgOpacity,
   width,
 }: BlindSpotMonitorDisplayProps) => {
-  const showLeft = show && (leftState === 'CarLeft' || leftState === 'Cars2Left');
-  const showRight = show && (rightState === 'CarRight' || rightState === 'Cars2Right');
+  const showLeft =
+    show && (leftState === 'CarLeft' || leftState === 'Cars2Left');
+  const showRight =
+    show && (rightState === 'CarRight' || rightState === 'Cars2Right');
 
   return (
     <div className="w-full h-full relative">
@@ -53,6 +59,10 @@ export const BlindSpotMonitorDisplay = ({
 export const BlindSpotMonitor = () => {
   const state = useBlindSpotMonitor();
   const settings = useBlindSpotMonitorSettings();
+  const isOnTrack = useTelemetryValue<boolean>('IsOnTrack') ?? false;
+
+  if (!useSessionVisibility(settings?.sessionVisibility)) return <></>;
+  if (settings?.showOnlyWhenOnTrack && !isOnTrack) return <></>;
 
   return (
     <BlindSpotMonitorDisplay
@@ -67,4 +77,3 @@ export const BlindSpotMonitor = () => {
     />
   );
 };
-

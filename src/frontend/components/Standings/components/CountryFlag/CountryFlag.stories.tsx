@@ -4,6 +4,7 @@ import { IRacingFlag } from './IRacingFlag';
 
 const meta: Meta<typeof CountryFlag> = {
   component: CountryFlag,
+  title: 'widgets/Standings/components/CountryFlag',
   parameters: {
     layout: 'centered',
   },

@@ -1,5 +1,6 @@
-import { useMemo } from 'react';
+import { Fragment, useMemo } from 'react';
 import { InputWidgetSettings } from '../../Settings/types';
+import { InputAbsIndicator } from '../InputAbsIndicator/InputAbsIndicator';
 import { InputBar } from '../InputBar/InputBar';
 import { InputGear } from '../InputGear/InputGear';
 import { InputSteer } from '../InputSteer/InputSteer';
@@ -17,7 +18,7 @@ export interface InputProps {
   settings?: InputWidgetSettings['config'];
 }
 
-type InputSection = 'trace' | 'bar' | 'gear' | 'steer';
+type InputSection = 'trace' | 'bar' | 'gear' | 'abs' | 'steer';
 
 export const InputContainer = ({
   brake,
@@ -38,10 +39,10 @@ export const InputContainer = ({
         id: 'trace' as const,
         shouldRender: settings?.trace?.enabled ?? true,
         component: (
-          <div className="flex flex-3">
+          <div className="flex flex-4">
             <InputTrace
               key="trace"
-              input={{ brake, throttle, brakeAbsActive, steer }}
+              input={{ brake, throttle, clutch, brakeAbsActive, steer }}
               settings={settings?.trace}
             />
           </div>
@@ -51,7 +52,7 @@ export const InputContainer = ({
         id: 'bar' as const,
         shouldRender: settings?.bar?.enabled ?? true,
         component: (
-          <div className="flex flex-1">
+          <div className="flex flex-1 min-w-0">
             <InputBar
               key="bar"
               brake={brake}
@@ -67,7 +68,7 @@ export const InputContainer = ({
         id: 'gear' as const,
         shouldRender: settings?.gear?.enabled ?? true,
         component: (
-          <div className="flex flex-1">
+          <div className="flex flex-1 min-w-0">
             <InputGear
               key="gear"
               gear={gear}
@@ -79,10 +80,23 @@ export const InputContainer = ({
         ),
       },
       {
+        id: 'abs' as const,
+        shouldRender: settings?.abs?.enabled ?? false,
+        component: (
+          <div className="flex flex-1 min-w-0 items-center justify-center p-2">
+            <InputAbsIndicator
+              key="abs"
+              absActive={brakeAbsActive ?? false}
+              className="w-full h-full aspect-[512/357.25]"
+            />
+          </div>
+        ),
+      },
+      {
         id: 'steer' as const,
         shouldRender: settings?.steer?.enabled ?? true,
         component: (
-          <div className="flex flex-1">
+          <div className="flex flex-1 min-w-0">
             <InputSteer
               key="steer"
               angleRad={steer}
@@ -124,13 +138,15 @@ export const InputContainer = ({
   ]);
 
   return (
-    <div 
+    <div
       className="w-full h-full inline-flex gap-1 p-2 flex-row bg-slate-800/(--bg-opacity)"
       style={{
         ['--bg-opacity' as string]: `${settings?.background?.opacity ?? 80}%`,
       }}
     >
-      {columnDefinitions.map((column) => column.component)}
+      {columnDefinitions.map((column) => (
+        <Fragment key={column.id}>{column.component}</Fragment>
+      ))}
     </div>
   );
 };

@@ -4,6 +4,7 @@ import { TelemetryDecorator } from '../../../../../../.storybook/telemetryDecora
 
 export default {
   component: SessionBar,
+  title: 'widgets/Standings/components/SessionBar',
   decorators: [TelemetryDecorator()],
 } as Meta;
 

@@ -3,6 +3,7 @@ import { InputBar } from './InputBar';
 
 const meta: Meta<typeof InputBar> = {
   component: InputBar,
+  title: 'widgets/Input/components/InputBar',
   decorators: [
     (Story) => (
       <div className="w-[100px] m-5 h-[120px]">

@@ -3,6 +3,7 @@ import { InputGear } from './InputGear';
 
 export default {
   component: InputGear,
+  title: 'widgets/Input/components/InputGear',
   argTypes: {
     gear: {
       control: {

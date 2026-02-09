@@ -6,6 +6,7 @@ import { DotsSixVerticalIcon } from '@phosphor-icons/react';
 
 const meta = {
   component: SortableList,
+  title: 'components/SortableList',
 } satisfies Meta<typeof SortableList>;
 
 export default meta;
@@ -118,6 +119,7 @@ const StringArrayDemo = () => {
   const [items, setItems] = useState([
     'sessionName',
     'sessionTime',
+    'sessionLaps',
     'incidentCount',
     'brakeBias',
   ]);

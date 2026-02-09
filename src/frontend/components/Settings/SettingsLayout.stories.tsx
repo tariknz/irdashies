@@ -10,6 +10,7 @@ interface StoryProps {
 
 const meta: Meta<typeof SettingsLayout> = {
   component: SettingsLayout,
+  title: 'components/SettingsLayout',
   decorators: [
     (Story, context) => {
       const { initialPath = 'standings' } =
@@ -54,5 +55,11 @@ export const RelativeRoute: Story = {
 export const WeatherRoute: Story = {
   args: {
     initialPath: '/settings/weather',
+  },
+};
+
+export const FlatTrackMapRoute: Story = {
+  args: {
+    initialPath: '/settings/flatmap',
   },
 };

@@ -1,0 +1,185 @@
+import {
+  memo,
+  useCallback,
+  useRef,
+  useState,
+  useEffect,
+  CSSProperties,
+} from 'react';
+import type { DashboardWidget, WidgetLayout } from '@irdashies/types';
+import { useDragWidget } from './useDragWidget';
+import { useResizeWidget } from './useResizeWidget';
+import { ResizeHandles } from './ResizeHandle';
+import { getWidgetName } from '../../constants/widgetNames';
+import { ResizeIcon } from '@phosphor-icons/react';
+import { useContainerOffset } from '@irdashies/context';
+
+export interface WidgetContainerProps {
+  widget: DashboardWidget;
+  editMode: boolean;
+  zIndex: number;
+  onLayoutChange: (widgetId: string, layout: WidgetLayout) => void;
+  children: React.ReactNode;
+}
+
+export const WidgetContainer = memo(
+  ({
+    widget,
+    editMode,
+    zIndex,
+    onLayoutChange,
+    children,
+  }: WidgetContainerProps) => {
+    const { id, layout } = widget;
+    const [localLayout, setLocalLayout] = useState(layout);
+    const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(
+      undefined
+    );
+    const pendingLayoutRef = useRef<WidgetLayout | null>(null);
+    const containerOffset = useContainerOffset();
+
+    const handleLayoutChange = useCallback(
+      (newLayout: WidgetLayout) => {
+        setLocalLayout(newLayout);
+        pendingLayoutRef.current = newLayout;
+
+        // Debounce the save to avoid excessive IPC calls during drag/resize
+        if (debounceRef.current) {
+          clearTimeout(debounceRef.current);
+        }
+        debounceRef.current = setTimeout(() => {
+          onLayoutChange(id, newLayout);
+          pendingLayoutRef.current = null;
+        }, 100);
+      },
+      [id, onLayoutChange]
+    );
+
+    // Flush pending save immediately when interaction ends
+    const flushPendingSave = useCallback(() => {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+        debounceRef.current = undefined;
+      }
+      if (pendingLayoutRef.current) {
+        onLayoutChange(id, pendingLayoutRef.current);
+        pendingLayoutRef.current = null;
+      }
+    }, [id, onLayoutChange]);
+
+    const { isDragging, dragHandleProps } = useDragWidget({
+      layout: localLayout,
+      onLayoutChange: handleLayoutChange,
+      enabled: editMode,
+    });
+
+    const { isResizing, getResizeHandleProps } = useResizeWidget({
+      layout: localLayout,
+      onLayoutChange: handleLayoutChange,
+      enabled: editMode,
+    });
+
+    // Use local state during interaction, otherwise use prop
+    const isInteracting = isDragging || isResizing;
+    const prevInteractingRef = useRef(isInteracting);
+    const justFlushedRef = useRef(false);
+
+    // Flush save and sync state when interaction ends
+    useEffect(() => {
+      const wasInteracting = prevInteractingRef.current;
+      prevInteractingRef.current = isInteracting;
+
+      if (wasInteracting && !isInteracting) {
+        // Interaction just ended - flush the pending save immediately
+        // Mark that we just flushed so sync effect doesn't reset to old prop
+        justFlushedRef.current = true;
+        flushPendingSave();
+      }
+    }, [isInteracting, flushPendingSave]);
+
+    // Sync local state when prop changes externally (e.g., from settings)
+    // Skip if we just flushed (prop hasn't caught up yet) or if interacting
+    useEffect(() => {
+      if (isInteracting) return;
+
+      if (justFlushedRef.current) {
+        // Check if prop now matches our local state (save completed)
+        if (
+          layout.x === localLayout.x &&
+          layout.y === localLayout.y &&
+          layout.width === localLayout.width &&
+          layout.height === localLayout.height
+        ) {
+          justFlushedRef.current = false;
+        }
+        // Don't sync yet - wait for prop to catch up
+        return;
+      }
+
+      // Prop changed externally - sync to it
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setLocalLayout(layout);
+    }, [layout, localLayout, isInteracting]);
+
+    // Always use localLayout for display
+    const displayedLayout = localLayout;
+
+    // Transform widget coordinates from screen space to container space
+    // Widget coords assume primary display at (0,0), but container may span multiple displays
+    // with negative origins (e.g., secondary monitor to the left at x=-1920).
+    //
+    // Note: Drag/resize hooks don't need offset adjustments because they work with deltas
+    // (movement amounts), which are the same in both coordinate spaces. The saved widget
+    // positions remain in screen space for logical consistency.
+    const containerStyle: CSSProperties = {
+      position: 'absolute',
+      left: displayedLayout.x + containerOffset.x,
+      top: displayedLayout.y + containerOffset.y,
+      width: displayedLayout.width,
+      height: displayedLayout.height,
+      zIndex,
+      pointerEvents: 'auto',
+    };
+
+    const widgetName = getWidgetName(id);
+
+    return (
+      <div style={containerStyle} data-widget-id={id}>
+        {/* Widget content */}
+        <div className="w-full h-full" style={{ pointerEvents: 'auto' }}>
+          {children}
+        </div>
+
+        {/* Edit mode overlay */}
+        {editMode && (
+          <>
+            {/* Drag handle (entire top area) */}
+            <div
+              {...dragHandleProps}
+              className={[
+                'absolute inset-0 border-2 border-sky-500',
+                isDragging || isResizing
+                  ? 'border-sky-400'
+                  : 'animate-pulse-border',
+              ].join(' ')}
+            >
+              {/* Label */}
+              <div
+                className="absolute top-0 right-0 py-1 px-2 bg-sky-500 text-white text-sm flex items-center gap-1"
+                style={{ cursor: 'move' }}
+              >
+                <ResizeIcon size={14} />
+                <span>{widgetName}</span>
+              </div>
+            </div>
+
+            {/* Resize handles */}
+            <ResizeHandles getResizeHandleProps={getResizeHandleProps} />
+          </>
+        )}
+      </div>
+    );
+  }
+);
+
+WidgetContainer.displayName = 'WidgetContainer';

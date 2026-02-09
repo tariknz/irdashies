@@ -9,11 +9,11 @@ import { useStore } from 'zustand';
  *
  * Use this hook in components that need pit lap tracking (e.g., Standings overlay).
  */
-export const usePitLabStoreUpdater = () => {
-  const carIdxOnPitRoad = useTelemetryValues('CarIdxOnPitRoad');
-  const carIdxLap = useTelemetryValues('CarIdxLap');
+export const usePitLapStoreUpdater = () => {
+  const carIdxOnPitRoad = useTelemetryValues<boolean[]>('CarIdxOnPitRoad');
+  const carIdxLap = useTelemetryValues<number[]>('CarIdxLap');
   const sessionUniqueID = useTelemetryValue('SessionUniqueID');
-  const carIdxTrackSurface = useTelemetryValues('CarIdxTrackSurface');
+  const carIdxTrackSurface = useTelemetryValues<number[]>('CarIdxTrackSurface');
   const sessionState = useTelemetryValue('SessionState');
   const updatePitLapTimes = usePitLapStore(state => state.updatePitLaps);
 

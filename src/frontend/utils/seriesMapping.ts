@@ -38,6 +38,7 @@ export const seriesMapping: Record<string, string> = {
   "285": "IMSA Vintage Series",
   "291": "DIRTcar Limited Late Model Series",
   "292": "DIRTcar 305 Sprint Car Series by Fanatec",
+  "298": "Daytona 24",
   "299": "iRacing Porsche Cup by CONSPIT",
   "305": "DIRTcar 360 Sprint Car Series",
   "306": "DIRTcar Pro Late Model Series",
@@ -58,7 +59,6 @@ export const seriesMapping: Record<string, string> = {
   "416": "Super Late Model Series - Fixed",
   "417": "NASCAR Tour Modified Series - Fixed",
   "419": "IMSA Endurance Series",
-  "426": "iRacing Chili Bowl Nationals",
   "428": "SUPER DIRTcar Big Block Modified Series",
   "429": "Dallara Formula iR",
   "430": "TCR Virtual Challenge - Fixed",
@@ -92,6 +92,8 @@ export const seriesMapping: Record<string, string> = {
   "492": "IMSA Michelin Pilot Challenge Series",
   "493": "Stock Car Brasil Series",
   "498": "FIA Formula 4 Challenge - Fixed",
+  "500": "Dirt Super Late Model Tour",
+  "501": "Dirt 410 Sprint Car Tour",
   "502": "Sports Car Challenge by Falken Tyre",
   "503": "TCR Virtual Challenge",
   "505": "Porsche Mission R Challenge",
@@ -130,7 +132,6 @@ export const seriesMapping: Record<string, string> = {
   "570": "World of Outlaws Pro Qualifying Series",
   "571": "BMW M2 Cup by Nitro Concepts",
   "572": "IMSA Sportscar Endurance Challenge",
-  "573": "THE Production Car Challenge",
   "576": "DIRTcar UMP Modified Series",
   "584": "Production Endurance Challenge",
   "588": "Advanced Pro2 Lite Off Road Series by Trak Racer",
@@ -140,5 +141,6 @@ export const seriesMapping: Record<string, string> = {
   "594": "iRacing GT3 Regional Tour - Asia Pacific",
   "595": "iRacing GT3 Regional Tour - Americas",
   "596": "iRacing GT3 Regional Tour - Europe",
-  "599": "FIA Cross Car Championship"
+  "599": "FIA Cross Car Championship",
+  "601": "eNASCAR Coca Cola iRacing Qualifying Series"
 }

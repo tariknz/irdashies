@@ -1,7 +1,9 @@
 import { Meta } from '@storybook/react-vite';
 import { useTelemetry } from '@irdashies/context';
 
-export default {} as Meta;
+export default {
+  title: 'components/RerenderTester',
+} as Meta;
 
 const RerenderTester = () => {
   const throttle = useTelemetry('AirTemp');

@@ -6,17 +6,16 @@ interface TailwindStyles {
 }
 
 interface CarNumberCellProps {
-  hidden?: boolean;
   carNumber?: string;
   tailwindStyles: TailwindStyles;
 }
 
-export const CarNumberCell = memo(({ hidden, carNumber, tailwindStyles }: CarNumberCellProps) => (
+export const CarNumberCell = memo(({ carNumber, tailwindStyles }: CarNumberCellProps) => (
   <td
     data-column="carNumber"
     className={`w-auto ${tailwindStyles.driverIcon} border-l-4 text-white text-right px-1 whitespace-nowrap`}
   >
-    {hidden ? '' : `#${carNumber}`}
+    {`#${carNumber}`}
   </td>
 ));
 

@@ -3,6 +3,7 @@ import { WindDirection } from './WindDirection';
 
 export default {
   component: WindDirection,
+  title: 'widgets/Weather/components/WindDirection',
   argTypes: {
     direction: {
       control: {

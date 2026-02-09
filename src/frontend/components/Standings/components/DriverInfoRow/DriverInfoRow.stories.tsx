@@ -6,6 +6,7 @@ import { CAR_ID_TO_CAR_MANUFACTURER } from '../CarManufacturer/carManufacturerMa
 
 export default {
   component: DriverInfoRow,
+  title: 'widgets/Standings/components/DriverInfoRow',
   decorators: [
     (Story) => (
       <table className="w-full">
@@ -28,6 +29,7 @@ export const Primary: Story = {
     hasFastestTime: false,
     delta: 0.1,
     position: 1,
+    lap: 2,
     classColor: 16777215,
     fastestTime: 111.111,
     lastTime: 112.225,
@@ -47,6 +49,7 @@ export const Primary: Story = {
       lastTime: { enabled: true },
       iratingChange: { enabled: true },
       badge: { enabled: true, badgeFormat: 'license-color-rating-bw' },
+      pitStatus: { enabled: true, showPitTime: true },
     } as StandingsWidgetSettings['config'],
     dnf: false,
     repair: false,
@@ -98,6 +101,14 @@ export const RadioActive: Story = {
   args: {
     ...Primary.args,
     radioActive: true,
+  },
+};
+
+export const RadioActiveWithStatus: Story = {
+  args: {
+    ...Primary.args,
+    radioActive: true,
+    penalty: true,
   },
 };
 
@@ -213,6 +224,7 @@ const Relative = () => {
       isPlayer: false,
       delta: 12,
       classPosition: 1,
+      lap: 2,
       hasFastestTime: false,
       lastTime: 112.225,
       fastestTime: 111.111,
@@ -404,6 +416,7 @@ const Relative = () => {
               hasFastestTime={result.hasFastestTime}
               delta={result.delta}
               position={result.classPosition}
+              lap={result.lap}
               onPitRoad={result.onPitRoad}
               onTrack={result.onTrack}
               radioActive={result.radioActive}
@@ -460,6 +473,7 @@ const AllBadgeFormats = () => {
               hasFastestTime={false}
               delta={0.1}
               position={index + 1}
+              lap={2}
               classColor={16777215}
               fastestTime={111.111}
               lastTime={112.225}
@@ -523,6 +537,9 @@ const AllFlagCombinations = () => {
     { name: 'PIT + Penalty', dnf: false, repair: false, penalty: true, slowdown: false, onPitRoad: true, lastPitLap: undefined, lastLap: undefined, carTrackSurface: 2, prevCarTrackSurface: undefined },
     { name: 'PIT + Slowdown', dnf: false, repair: false, penalty: false, slowdown: true, onPitRoad: true, lastPitLap: undefined, lastLap: undefined, carTrackSurface: 2, prevCarTrackSurface: undefined },
     { name: 'Pit Lap (L 5)', dnf: false, repair: false, penalty: false, slowdown: false, onPitRoad: false, lastPitLap: 5, lastLap: 10, carTrackSurface: 1, prevCarTrackSurface: undefined },
+    { name: 'Pit Lap with Time (L 5 1:24)', dnf: false, repair: false, penalty: false, slowdown: false, onPitRoad: false, lastPitLap: 5, lastLap: 10, carTrackSurface: 1, prevCarTrackSurface: undefined, pitStopDuration: 84 },
+    { name: 'Pit Lap with Time (L 5 0:34)', dnf: false, repair: false, penalty: false, slowdown: false, onPitRoad: false, lastPitLap: 5, lastLap: 10, carTrackSurface: 1, prevCarTrackSurface: undefined, pitStopDuration: 34 },
+    { name: 'Pit Lap with Time (L 5 0:34)', dnf: false, repair: false, penalty: false, slowdown: false, onPitRoad: false, lastPitLap: 5, lastLap: 5, carTrackSurface: 1, prevCarTrackSurface: undefined, pitStopDuration: 34 },
     { name: 'Pit Lap + DNF', dnf: true, repair: false, penalty: false, slowdown: false, onPitRoad: false, lastPitLap: 5, lastLap: 10, carTrackSurface: 1, prevCarTrackSurface: undefined },
     { name: 'Pit Lap + Repair', dnf: false, repair: true, penalty: false, slowdown: false, onPitRoad: false, lastPitLap: 5, lastLap: 10, carTrackSurface: 1, prevCarTrackSurface: undefined },
     { name: 'Pit Lap + Penalty', dnf: false, repair: false, penalty: true, slowdown: false, onPitRoad: false, lastPitLap: 5, lastLap: 10, carTrackSurface: 1, prevCarTrackSurface: undefined },
@@ -576,6 +593,7 @@ const AllFlagCombinations = () => {
               hasFastestTime={false}
               delta={0.1}
               position={index + 1}
+              lap={2}
               classColor={16777215}
               fastestTime={111.111}
               lastTime={112.225}
@@ -598,11 +616,13 @@ const AllFlagCombinations = () => {
               lastLap={combo.lastLap}
               carTrackSurface={combo.carTrackSurface}
               prevCarTrackSurface={combo.prevCarTrackSurface}
+              pitStopDuration={combo.pitStopDuration}
               config={{
                 fastestTime: { enabled: true, timeFormat: 'full' },
                 lastTime: { enabled: true, timeFormat: 'full' },
                 iratingChange: { enabled: true },
                 badge: { enabled: true, badgeFormat: 'license-color-rating-bw' },
+                pitStatus: { enabled: true, showPitTime: true },
               } as StandingsWidgetSettings['config']}
             />
           ))}
@@ -634,6 +654,7 @@ const AllCarsComponent = () => {
               isPlayer={false}
               hasFastestTime={false}
               position={index + 1}
+              lap={2}
               classColor={16777215}
               isMultiClass={false}
               flairId={2}
@@ -657,6 +678,68 @@ const AllCarsComponent = () => {
 
 export const AllCars: Story = {
   render: () => <AllCarsComponent />,
+  parameters: {
+    layout: 'padded',
+  },
+};
+
+const IMSACarsComponent = () => {
+  const imsaCars = [
+    { id: 128, name: 'Dallara P217', class: 'LMP2' },
+    { id: 132, name: 'BMW M4 GT3 EVO', class: 'IMSA23' },
+    { id: 133, name: 'Lamborghini Huracán GT3 EVO', class: 'IMSA23' },
+    { id: 156, name: 'Mercedes-AMG GT3 2020', class: 'IMSA23' },
+    { id: 169, name: 'Porsche 911 GT3 R (992)', class: 'IMSA23' },
+    { id: 173, name: 'Ferrari 296 GT3', class: 'IMSA23' },
+    { id: 184, name: 'Chevrolet Corvette Z06 GT3.R', class: 'IMSA23' },
+    { id: 185, name: 'Ford Mustang GT3', class: 'IMSA23' },
+    { id: 188, name: 'McLaren 720S GT3 EVO', class: 'IMSA23' },
+    { id: 194, name: 'Acura NSX GT3 EVO 22', class: 'IMSA23' },
+    { id: 206, name: 'Aston Martin Vantage GT3 EVO', class: 'IMSA23' },
+    { id: 159, name: 'BMW M Hybrid V8', class: 'GTP' },
+    { id: 168, name: 'Cadillac V-Series.R GTP', class: 'GTP' },
+    { id: 170, name: 'Acura ARX-06 GTP', class: 'GTP' },
+    { id: 174, name: 'Porsche 963 GTP', class: 'GTP' },
+    { id: 196, name: 'Ferrari 499P', class: 'GTP' },
+  ];
+
+  return (
+    <div className="w-full h-full max-h-[90vh] overflow-y-auto">
+      <table className="w-full table-auto text-sm border-separate border-spacing-y-0.5 mb-3 mt-3">
+        <tbody>
+          {imsaCars.map((car, index) => (
+            <DriverInfoRow
+              key={car.id}
+              carIdx={index + 1}
+              carNumber={`${car.id}`}
+              name={car.name}
+              isPlayer={false}
+              hasFastestTime={false}
+              position={index + 1}
+              lap={2}
+              classColor={16777215}
+              isMultiClass={false}
+              flairId={2}
+              carId={car.id}
+              dnf={false}
+              repair={false}
+              penalty={false}
+              slowdown={false}
+              config={{
+                countryFlags: { enabled: false },
+                gap: { enabled: false },
+                badge: { enabled: false },
+              } as StandingsWidgetSettings['config']}
+            />
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+};
+
+export const IMSACars: Story = {
+  render: () => <IMSACarsComponent />,
   parameters: {
     layout: 'padded',
   },

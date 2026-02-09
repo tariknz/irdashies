@@ -1,27 +1,52 @@
 import { useDashboard } from '@irdashies/context';
+import { FasterCarsFromBehindWidgetSettings } from '../../Settings/types';
 
-interface FasterCarsFromBehindSettings {
-  enabled: boolean;
-  config: {
-    distanceThreshold: number;
-  };
-}
+const DEFAULT_CONFIG: FasterCarsFromBehindWidgetSettings['config'] = {
+  showOnlyWhenOnTrack: true,
+  distanceThreshold: -1.5,
+  numberDriversBehind: 1,
+  alignDriverBoxes: 'Top',
+  closestDriverBox: 'Top',
+  showName: true,
+  showDistance: true,
+  showBadge: true,
+  badgeFormat: 'license-color-rating-bw',
+  onlyShowFasterClasses: true,
+  sessionVisibility: {
+    race: true,
+    loneQualify: false,
+    openQualify: true,
+    practice: true,
+    offlineTesting: true,
+  },
+};
 
 export const useFasterCarsSettings = () => {
   const { currentDashboard } = useDashboard();
 
   const settings = currentDashboard?.widgets.find(
-    (widget) => widget.id === 'fastercarsfrombehind',
+    (widget) => widget.id === 'fastercarsfrombehind'
   )?.config;
 
-  // Add type guard to ensure settings matches expected shape
-  if (settings && 
-    typeof settings === 'object' &&
-    'distanceThreshold' in settings &&
-    typeof settings.distanceThreshold === 'number'
-  ) {
-    return settings as FasterCarsFromBehindSettings['config'];
-  }
-
-  return undefined;
-}; 
+  return {
+    showOnlyWhenOnTrack:
+      (settings?.showOnlyWhenOnTrack as boolean) ??
+      DEFAULT_CONFIG.showOnlyWhenOnTrack,
+    distanceThreshold:
+      settings?.distanceThreshold ?? DEFAULT_CONFIG.distanceThreshold,
+    numberDriversBehind:
+      settings?.numberDriversBehind ?? DEFAULT_CONFIG.numberDriversBehind,
+    alignDriverBoxes:
+      settings?.alignDriverBoxes ?? DEFAULT_CONFIG.alignDriverBoxes,
+    closestDriverBox:
+      settings?.closestDriverBox ?? DEFAULT_CONFIG.closestDriverBox,
+    showName: settings?.showName ?? DEFAULT_CONFIG.showName,
+    showDistance: settings?.showDistance ?? DEFAULT_CONFIG.showDistance,
+    showBadge: settings?.showBadge ?? DEFAULT_CONFIG.showBadge,
+    badgeFormat: settings?.badgeFormat ?? DEFAULT_CONFIG.badgeFormat,
+    onlyShowFasterClasses:
+      settings?.onlyShowFasterClasses ?? DEFAULT_CONFIG.onlyShowFasterClasses,
+    sessionVisibility:
+      settings?.sessionVisibility ?? DEFAULT_CONFIG.sessionVisibility,
+  } as FasterCarsFromBehindWidgetSettings['config'];
+};

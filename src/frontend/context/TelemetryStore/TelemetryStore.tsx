@@ -7,11 +7,13 @@ import { arrayCompare, telemetryCompare } from './telemetryCompare';
 interface TelemetryState {
   telemetry: Telemetry | null;
   setTelemetry: (telemetry: Telemetry | null) => void;
+  resetTelemetry: () => void;
 }
 
 export const useTelemetryStore = create<TelemetryState>((set) => ({
   telemetry: null,
   setTelemetry: (telemetry: Telemetry | null) => set({ telemetry }),
+  resetTelemetry: () => set({ telemetry: null }),
 }));
 
 export const useTelemetry = <T extends number[] | boolean[] = number[]>(

@@ -31,6 +31,9 @@ export const tsconfigPathAliases = Object.fromEntries(
 
 // https://vitejs.dev/config
 export default defineConfig({
+  server: {
+    host: '0.0.0.0',
+  },
   resolve: {
     alias: tsconfigPathAliases,
   },
@@ -43,7 +46,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: path.resolve(__dirname, 'index.html'),
-        'component-renderer': path.resolve(__dirname, 'index-component-renderer.html'),
+        'dashboard-view': path.resolve(__dirname, 'index-dashboard-view.html'),
       },
       output: {
         manualChunks: {

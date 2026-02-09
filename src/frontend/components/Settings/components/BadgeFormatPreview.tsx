@@ -10,6 +10,17 @@ export const BadgeFormatPreview = ({
 }) => {
   const renderPreview = () => {
     switch (format) {
+      case 'license-color-fullrating-bw':
+        return (
+          <div className="flex gap-1 items-center">
+            <div className="text-white text-nowrap border-2 px-1 rounded-md text-xs leading-tight border-green-500 bg-green-800">
+              B 3.8
+            </div>
+            <div className="bg-white/10 text-white border-2 border-transparent px-1 rounded-md text-xs leading-tight">
+              1412
+            </div>
+          </div>
+        );
       case 'license-color-rating-bw':
         return (
           <div className="flex gap-1 items-center">

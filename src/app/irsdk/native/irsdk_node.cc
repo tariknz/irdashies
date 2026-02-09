@@ -117,49 +117,61 @@ Napi::Value iRacingSdkNode::WaitForData(const Napi::CallbackInfo &info)
     return Napi::Boolean::New(info.Env(), false);
   }
 
-  // @todo: try to do this async instead
   const irsdk_header* header = irsdk_getHeader();
 
-  // @todo: This isn't the best way of doing this. Need to improve, but this works for now
-  if (!this->_data) {
+  // Allocate buffer before waiting (so waitForDataReady can populate it)
+  if (header && !this->_data) {
+    if (this->_loggingEnabled) printf("Initial buffer allocation\n");
     this->_data = new char[header->bufLen];
+    this->_bufLineLen = header->bufLen;
   }
 
-  // wait for start of sesh or new data
+  // Wait for start of session or new data (buffer will be populated here)
   bool dataReady = irsdk_waitForDataReady(timeout, this->_data);
   if (dataReady && header)
   {
-    if (this->_loggingEnabled) ("Session started or we have new data.\n");
+    if (this->_loggingEnabled) printf("Got data from iRacing SDK\n");
 
-    // New connection or data changed length
-    if (this->_bufLineLen != header->bufLen) {
-      if (this->_loggingEnabled) printf("Connection started / data changed length.\n");
+    // Check if data changed length (need to reallocate)
+    if (this->_bufLineLen != header->bufLen)
+    {
+      if (this->_loggingEnabled) printf("Data changed length, reallocating\n");
 
+      // Reallocate buffer for new size
+      if (this->_data) delete[] this->_data;
       this->_bufLineLen = header->bufLen;
+      this->_data = new char[this->_bufLineLen];
 
-      // Increment connection
+      // Increment connection counter
       this->_sessionStatusID++;
-
-      // Reset info str status
       this->_lastSessionCt = -1;
-      return Napi::Boolean::New(info.Env(), true);
-    } else if (this->_data) {
-      if (this->_loggingEnabled) printf("Data initialized and ready to process.\n");
-      // already initialized and ready to process
+
+      // Fetch data into the newly allocated buffer
+      if (irsdk_getNewData(this->_data))
+      {
+        if (this->_loggingEnabled) printf("New data retrieved after reallocation\n");
+        return Napi::Boolean::New(info.Env(), true);
+      }
+    }
+    else if (this->_data)
+    {
+      if (this->_loggingEnabled) printf("Data ready for processing\n");
       return Napi::Boolean::New(info.Env(), true);
     }
   }
-  else if (!(this->_data != NULL && irsdk_isConnected()))
+  else if (!irsdk_isConnected())
   {
-    printf("Session ended. Cleaning up.\n");
+    if (this->_loggingEnabled) printf("Session ended. Cleaning up.\n");
+
     // Session ended
     if (this->_data) delete[] this->_data;
     this->_data = NULL;
 
-    // Reset Info str
+    // Reset session info string status
     this->_lastSessionCt = -1;
   }
-  printf("Session ended or something went wrong. Not successful.\n");
+
+  if (this->_loggingEnabled) printf("No data available.\n");
   return Napi::Boolean::New(info.Env(), false);
 }
 

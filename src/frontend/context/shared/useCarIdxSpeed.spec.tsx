@@ -31,6 +31,7 @@ const mockCarSpeedsState = {
   lastSpeedUpdate: 0,
   carSpeeds: [],
   updateCarSpeeds: vi.fn(),
+  resetCarSpeeds: vi.fn(),
 };
 
 describe('useCarIdxSpeed', () => {

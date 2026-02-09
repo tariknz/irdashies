@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite';
-import fs from 'fs';
-import path from 'path';
 import { execSync } from 'child_process';
+import path from 'path';
+import fs from 'fs';
 
 // Get git hash
 const getGitHash = () => {
@@ -32,6 +32,7 @@ export default defineConfig({
   },
   define: {
     APP_GIT_HASH: JSON.stringify(getGitHash()),
+    POSTHOG_KEY: JSON.stringify(process.env.POSTHOG_KEY || ''),
   },
 });
 
@@ -72,6 +73,10 @@ function irsdkNativeModule(nodeFiles: string[], outDir: string) {
       }
       nodeFileMap.forEach((fileAbs, file) => {
         const out = `${outDir}/${file}`;
+        if (!fs.existsSync(fileAbs)) {
+          console.warn(`[irsdkNativeModule] Native module not found at: ${fileAbs}`);
+          return;
+        }
         const nodeFile = fs.readFileSync(fileAbs);
         fs.mkdirSync(path.dirname(out), { recursive: true });
         fs.writeFileSync(out, nodeFile);

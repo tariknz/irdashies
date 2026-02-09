@@ -49,7 +49,7 @@ describe('useCarClassStats', () => {
         total: 4,
         color: 123456,
         shortName: 'GT3',
-        sof: 1800,
+        sof: 1748,
       },
       '2': {
         total: 1,

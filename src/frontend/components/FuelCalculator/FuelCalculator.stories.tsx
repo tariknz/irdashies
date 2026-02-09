@@ -10,7 +10,7 @@ import type { FuelLapData } from './types';
 
 export default {
   component: FuelCalculator,
-  title: 'FRONTEND/components/FuelCalculator',
+  title: 'widgets/FuelCalculator',
 } as Meta;
 
 type Story = StoryObj<typeof FuelCalculator>;
@@ -87,10 +87,10 @@ export const WithoutPitWindow: Story = {
   },
 };
 
-export const WithoutFuelSave: Story = {
+export const WithoutFuelScenarios: Story = {
   decorators: [TelemetryDecorator()],
   args: {
-    showFuelSave: false,
+    showFuelScenarios: false,
   },
 };
 
@@ -106,7 +106,7 @@ export const MinimalView: Story = {
   args: {
     showConsumption: true,
     showPitWindow: true,
-    showFuelSave: true,
+    showFuelScenarios: true,
     show10LapAvg: true,
   },
 };
@@ -123,8 +123,12 @@ export const NormalRaceSimulation: Story = {
     show10LapAvg: true,
     showMax: true,
     showPitWindow: true,
-    showFuelSave: true,
+    showEnduranceStrategy: true,
+    showFuelScenarios: true,
     showFuelRequired: true,
+    fuelRequiredMode: 'toAdd',
+    showFuelHistory: true,
+    fuelHistoryType: 'histogram',
     safetyMargin: 0.05,
     background: { opacity: 85 },
   },
@@ -150,9 +154,11 @@ export const HorizontalLayout: Story = {
     showMax: true,
     showPitWindow: true,
     showEnduranceStrategy: true,
+    showFuelScenarios: true,
     showFuelRequired: true,
-    showConsumptionGraph: true,
-    consumptionGraphType: 'histogram',
+    fuelRequiredMode: 'toAdd',
+    showFuelHistory: true,
+    fuelHistoryType: 'histogram',
     safetyMargin: 0.05,
     background: { opacity: 85 },
   },
@@ -173,9 +179,9 @@ const MockFuelDataProvider = ({ children }: { children: React.ReactNode }) => {
       // Create varied fuel usage with some above and below average (avg ~2.1)
       const baseUsage = 2.1;
       const variation = [
-        -0.3, 0, 0.05, -0.02, 0.02, -0.05, 0.08, 0, 0.01, -0.06,
-        0.15, -0.1, 0.03, -0.02, 0.05, -0.08, 0.1, -0.03, 0.02, -0.05,
-        0.12, -0.07, 0.04, -0.01, 0.06, -0.04, 0.09, -0.02, 0.03, -0.06
+        -0.3, 0, 0.05, -0.02, 0.02, -0.05, 0.08, 0, 0.01, -0.06, 0.15, -0.1,
+        0.03, -0.02, 0.05, -0.08, 0.1, -0.03, 0.02, -0.05, 0.12, -0.07, 0.04,
+        -0.01, 0.06, -0.04, 0.09, -0.02, 0.03, -0.06,
       ][i];
       return {
         lapNumber: i + 1,
@@ -188,7 +194,7 @@ const MockFuelDataProvider = ({ children }: { children: React.ReactNode }) => {
       };
     });
 
-    mockLaps.forEach(lap => addLapData(lap));
+    mockLaps.forEach((lap) => addLapData(lap));
 
     // Set current lap crossing state
     updateLapCrossing(0.1, 35.5, 2700, 31, false);
@@ -216,9 +222,11 @@ export const WithMockLapData: Story = {
     show10LapAvg: true,
     showMax: true,
     showPitWindow: true,
+    showEnduranceStrategy: true,
     showFuelRequired: true,
-    showConsumptionGraph: true,
-    consumptionGraphType: 'histogram',
+    fuelRequiredMode: 'toAdd',
+    showFuelHistory: true,
+    fuelHistoryType: 'histogram',
     safetyMargin: 0.05,
     background: { opacity: 85 },
   },
@@ -238,8 +246,8 @@ export const WithHistogram: Story = {
     layout: 'vertical',
     showConsumption: true,
     showPitWindow: true,
-    showConsumptionGraph: true,
-    consumptionGraphType: 'histogram',
+    showFuelHistory: true,
+    fuelHistoryType: 'histogram',
     safetyMargin: 0.05,
     background: { opacity: 85 },
   },
@@ -259,8 +267,8 @@ export const WithLineChart: Story = {
     layout: 'vertical',
     showConsumption: true,
     showPitWindow: true,
-    showConsumptionGraph: true,
-    consumptionGraphType: 'line',
+    showFuelHistory: true,
+    fuelHistoryType: 'line',
     safetyMargin: 0.05,
     background: { opacity: 85 },
   },
@@ -276,6 +284,52 @@ export const WithoutConsumptionGraph: Story = {
     TelemetryDecorator(),
   ],
   args: {
-    showConsumptionGraph: false,
+    showFuelHistory: false,
+  },
+};
+
+export const FuelScenariosShowcase: Story = {
+  decorators: [TelemetryDecorator('/test-data/mock-fuel/normal')],
+  args: {
+    fuelUnits: 'L',
+    layout: 'vertical',
+    showConsumption: true,
+    showMin: true,
+    showLastLap: true,
+    show3LapAvg: true,
+    show10LapAvg: true,
+    showMax: true,
+    showPitWindow: true,
+    showEnduranceStrategy: true,
+    showFuelScenarios: true,
+    showFuelRequired: true,
+    fuelRequiredMode: 'toFinish',
+    showFuelHistory: true,
+    fuelHistoryType: 'histogram',
+    safetyMargin: 0.05,
+    background: { opacity: 85 },
+  },
+};
+
+export const FuelScenariosHorizontal: Story = {
+  decorators: [TelemetryDecorator('/test-data/mock-fuel/normal')],
+  args: {
+    fuelUnits: 'L',
+    layout: 'horizontal',
+    showConsumption: true,
+    showMin: true,
+    showLastLap: true,
+    show3LapAvg: true,
+    show10LapAvg: true,
+    showMax: true,
+    showPitWindow: true,
+    showEnduranceStrategy: true,
+    showFuelScenarios: true,
+    showFuelRequired: true,
+    fuelRequiredMode: 'toFinish',
+    showFuelHistory: true,
+    fuelHistoryType: 'histogram',
+    safetyMargin: 0.05,
+    background: { opacity: 85 },
   },
 };
