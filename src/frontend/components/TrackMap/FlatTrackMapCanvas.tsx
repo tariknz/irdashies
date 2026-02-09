@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { TrackDriver, TrackDrawing } from './TrackCanvas';
 import { getColor, getTailwindStyle } from '@irdashies/utils/colors';
 import { useDriverOffTrack } from './hooks/useDriverOffTrack';
@@ -35,7 +35,9 @@ export const FlatTrackMapCanvas = ({
 
   const isMultiClass = useMemo(() => {
     if (!drivers || drivers.length === 0) return false;
-    const uniqueClassIds = new Set(drivers.map(({ driver }) => driver.CarClassID));
+    const uniqueClassIds = new Set(
+      drivers.map(({ driver }) => driver.CarClassID)
+    );
     return uniqueClassIds.size > 1;
   }, [drivers]);
 
@@ -50,7 +52,11 @@ export const FlatTrackMapCanvas = ({
           colors[driver.CarIdx] = { fill: getColor('amber'), text: 'white' };
         }
       } else {
-        const style = getTailwindStyle(driver.CarClassColor, undefined, isMultiClass);
+        const style = getTailwindStyle(
+          driver.CarClassColor,
+          undefined,
+          isMultiClass
+        );
         colors[driver.CarIdx] = { fill: style.canvasFill, text: 'white' };
       }
     });
@@ -91,7 +97,7 @@ export const FlatTrackMapCanvas = ({
     };
   }, []);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext('2d');
     if (!canvas || !ctx || canvasSize.width === 0) return;
@@ -110,7 +116,7 @@ export const FlatTrackMapCanvas = ({
     const circleScale = 0.25; // Scale factor to match curved map coordinate space
     const scaledTrackLineWidth = trackLineWidth * circleScale;
     const scaledOutlineWidth = trackOutlineWidth * circleScale;
-    
+
     // First draw outline
     ctx.strokeStyle = outlineColor;
     ctx.lineWidth = scaledOutlineWidth;
@@ -119,7 +125,7 @@ export const FlatTrackMapCanvas = ({
     ctx.moveTo(trackStartX, centerY);
     ctx.lineTo(trackEndX, centerY);
     ctx.stroke();
-    
+
     // Then draw track on top
     ctx.strokeStyle = trackColor;
     ctx.lineWidth = scaledTrackLineWidth;
@@ -141,16 +147,21 @@ export const FlatTrackMapCanvas = ({
     const flagSize = 8;
     const flagY = centerY - 25;
     const flagX = HORIZONTAL_PADDING - flagSize;
-    
+
     // Draw 2x2 checkered pattern
     for (let row = 0; row < 2; row++) {
       for (let col = 0; col < 2; col++) {
         const isBlack = (row + col) % 2 === 0;
         ctx.fillStyle = isBlack ? 'black' : 'white';
-        ctx.fillRect(flagX + col * flagSize, flagY + row * flagSize, flagSize, flagSize);
+        ctx.fillRect(
+          flagX + col * flagSize,
+          flagY + row * flagSize,
+          flagSize,
+          flagSize
+        );
       }
     }
-    
+
     // Add border around flag
     ctx.strokeStyle = 'black';
     ctx.lineWidth = 1;
@@ -158,41 +169,63 @@ export const FlatTrackMapCanvas = ({
 
     // Draw drivers
     // Apply scale factor to match curved track map proportions
-    [...drivers].sort((a, b) => Number(a.isPlayer) - Number(b.isPlayer)).forEach(({ driver, progress, isPlayer, classPosition }) => {
-      const color = driverColors[driver.CarIdx];
-      if (!color) return;
+    [...drivers]
+      .sort((a, b) => Number(a.isPlayer) - Number(b.isPlayer))
+      .forEach(({ driver, progress, isPlayer, classPosition }) => {
+        const color = driverColors[driver.CarIdx];
+        if (!color) return;
 
-      const x = HORIZONTAL_PADDING + progress * usableWidth;
-      const radius = (isPlayer ? playerCircleSize : driverCircleSize) * circleScale;
+        const x = HORIZONTAL_PADDING + progress * usableWidth;
+        const radius =
+          (isPlayer ? playerCircleSize : driverCircleSize) * circleScale;
 
-      ctx.fillStyle = color.fill;
-      ctx.beginPath();
-      ctx.arc(x, centerY, radius, 0, 2 * Math.PI);
-      ctx.fill();
+        ctx.fillStyle = color.fill;
+        ctx.beginPath();
+        ctx.arc(x, centerY, radius, 0, 2 * Math.PI);
+        ctx.fill();
 
-      if (driversOffTrack[driver.CarIdx]) {
-        ctx.strokeStyle = getColor('yellow', 400);
-        ctx.lineWidth = 3;
-        ctx.stroke();
-      }
-
-      if (showCarNumbers) {
-        ctx.fillStyle = color.text;
-        ctx.font = `${radius * 0.7}px sans-serif`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        let displayText = '';
-        if (displayMode === 'sessionPosition') {
-          displayText = classPosition !== undefined && classPosition > 0 ? classPosition.toString() : '';
-        } else {
-          displayText = driver.CarNumber;
+        if (driversOffTrack[driver.CarIdx]) {
+          ctx.strokeStyle = getColor('yellow', 400);
+          ctx.lineWidth = 3;
+          ctx.stroke();
         }
-        if (displayText) {
-          ctx.fillText(displayText, x, centerY);
-        }
-      }
-    });
-  }, [canvasSize, drivers, driverColors, driversOffTrack, showCarNumbers, displayMode, driverCircleSize, playerCircleSize, trackLineWidth, trackOutlineWidth, invertTrackColors]);
 
-  return <div className="w-full h-full"><canvas ref={canvasRef} className="w-full h-full" /></div>;
+        if (showCarNumbers) {
+          ctx.fillStyle = color.text;
+          ctx.font = `${radius * 0.7}px sans-serif`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          let displayText = '';
+          if (displayMode === 'sessionPosition') {
+            displayText =
+              classPosition !== undefined && classPosition > 0
+                ? classPosition.toString()
+                : '';
+          } else {
+            displayText = driver.CarNumber;
+          }
+          if (displayText) {
+            ctx.fillText(displayText, x, centerY);
+          }
+        }
+      });
+  }, [
+    canvasSize,
+    drivers,
+    driverColors,
+    driversOffTrack,
+    showCarNumbers,
+    displayMode,
+    driverCircleSize,
+    playerCircleSize,
+    trackLineWidth,
+    trackOutlineWidth,
+    invertTrackColors,
+  ]);
+
+  return (
+    <div className="w-full h-full">
+      <canvas ref={canvasRef} className="w-full h-full" />
+    </div>
+  );
 };
