@@ -1,7 +1,6 @@
 import { useMemo, useRef, useEffect } from 'react';
-import { useCurrentSessionType, useSessionPositions, useSessionStore, useTelemetryValue, useTelemetryValues } from '@irdashies/context';
+import { useCurrentSessionType, useSessionPositions, useSessionStore, useTelemetryValue, useTelemetryValues, useThrottledValue } from '@irdashies/context';
 import { SessionState } from '@irdashies/types';
-import { useThrottledValue } from '../../../hooks/useThrottledValue';
 
 interface DriverData {
   driverIdx: number;

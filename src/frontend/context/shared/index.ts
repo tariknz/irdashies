@@ -7,3 +7,4 @@ export * from './useFocusCarIdx';
 export * from './useResetOnDisconnect';
 export * from './useSessionVisibility';
 export * from './useTotalRaceLaps';
+export * from './useThrottledValue';
