@@ -1,11 +1,12 @@
 import { ThermometerIcon } from '@phosphor-icons/react';
+import { memo } from 'react';
 
 export interface WeatherTempProps {
   title: string;
   value: string;
 }
 
-export const WeatherTemp = ({ title, value }: WeatherTempProps) => {
+export const WeatherTemp = memo(({ title, value }: WeatherTempProps) => {
   return (
     <div className="bg-slate-800/70 p-2 rounded-sm w-full">
       <div className="flex flex-row gap-x-2 items-center text-sm">
@@ -15,4 +16,5 @@ export const WeatherTemp = ({ title, value }: WeatherTempProps) => {
       </div>
     </div>
   );
-};
+});
+WeatherTemp.displayName = 'WeatherTemp';

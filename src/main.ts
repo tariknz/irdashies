@@ -10,6 +10,7 @@ import {
   dashboardBridge,
 } from './app/bridge/dashboard/dashboardBridge';
 import { setupPitLaneBridge } from './app/bridge/pitLaneBridge';
+import { setupFuelCalculatorBridge } from './app/bridge/fuelCalculatorBridge';
 import { TelemetrySink } from './app/bridge/iracingSdk/telemetrySink';
 import { OverlayManager } from './app/overlayManager';
 import { startComponentServer } from './app/webserver/componentServer';
@@ -18,6 +19,7 @@ import { updateElectronApp } from 'update-electron-app';
 import started from 'electron-squirrel-startup';
 import { Analytics } from './app/analytics';
 import { registerHideUiShortcut } from './app/globalShortcuts';
+
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) app.quit();
@@ -45,6 +47,7 @@ app.on('ready', async () => {
   const bridge = getCurrentBridge();
 
   // Setup IPC bridges
+  setupFuelCalculatorBridge();
   setupPitLaneBridge();
 
   // Start component server for browser components

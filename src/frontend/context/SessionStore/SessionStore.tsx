@@ -124,17 +124,23 @@ export const useTrackLength = () =>
 /**
  * @returns The car index and car class estimated lap time for each driver
  */
+let cachedEstLapTime: Record<number, number> | undefined;
+let cachedEstLapTimeDrivers: unknown;
 export const useCarIdxClassEstLapTime = () =>
   useStoreWithEqualityFn(
     useSessionStore,
     (state) => {
-      return state.session?.DriverInfo?.Drivers?.reduce(
+      const drivers = state.session?.DriverInfo?.Drivers;
+      if (drivers === cachedEstLapTimeDrivers) return cachedEstLapTime;
+      cachedEstLapTimeDrivers = drivers;
+      cachedEstLapTime = drivers?.reduce(
         (acc, driver) => {
           acc[driver.CarIdx] = driver.CarClassEstLapTime;
           return acc;
         },
         {} as Record<number, number>
       );
+      return cachedEstLapTime;
     },
     shallow
   );

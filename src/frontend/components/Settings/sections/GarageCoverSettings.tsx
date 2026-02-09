@@ -162,7 +162,7 @@ export const GarageCoverSettings = () => {
                                 It only appears when you have the garage window open in iRacing.
                             </p>
                             <p className="text-sm text-slate-300">
-                                <strong>Browser Source URL:</strong> <code className="bg-slate-800 px-2 py-1 rounded">http://localhost:3000/component/garagecover</code>
+                                <strong>Browser Source URL:</strong> <code className="bg-slate-800 px-2 py-1 rounded">http://localhost:3000/dashboard</code>
                             </p>
                         </div>
 

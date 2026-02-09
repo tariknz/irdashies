@@ -1,24 +1,34 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { ThemeManager } from './ThemeManager';
 import { useGeneralSettings } from '@irdashies/context';
-import { useLocation } from 'react-router-dom';
 
 // Mock the hooks
 vi.mock('@irdashies/context', () => ({
   useGeneralSettings: vi.fn(),
 }));
 
-vi.mock('react-router-dom', () => ({
-  useLocation: vi.fn(),
-}));
-
 describe('ThemeManager', () => {
   const mockChildren = <div>Test Content</div>;
+  const originalLocation = window.location;
 
-  it('renders children without theme wrapper when pathname starts with /settings', () => {
-    // Mock the hooks
-    vi.mocked(useLocation).mockReturnValue({ pathname: '/settings/general', search: '', hash: '', state: null, key: '' });
+  beforeEach(() => {
+    // Mock window.location.hash
+    Object.defineProperty(window, 'location', {
+      value: { ...originalLocation, hash: '' },
+      writable: true,
+    });
+  });
+
+  afterEach(() => {
+    Object.defineProperty(window, 'location', {
+      value: originalLocation,
+      writable: true,
+    });
+  });
+
+  it('renders children without theme wrapper when hash starts with #/settings', () => {
+    window.location.hash = '#/settings/general';
     vi.mocked(useGeneralSettings).mockReturnValue({ fontSize: 'sm' });
 
     const { container } = render(<ThemeManager>{mockChildren}</ThemeManager>);
@@ -29,8 +39,7 @@ describe('ThemeManager', () => {
   });
 
   it('renders children with theme wrapper for non-settings paths', () => {
-    // Mock the hooks
-    vi.mocked(useLocation).mockReturnValue({ pathname: '/dashboard', search: '', hash: '', state: null, key: '' });
+    window.location.hash = '';
     vi.mocked(useGeneralSettings).mockReturnValue({ fontSize: 'lg' });
 
     const { container } = render(<ThemeManager>{mockChildren}</ThemeManager>);
@@ -43,8 +52,7 @@ describe('ThemeManager', () => {
   });
 
   it('handles undefined fontSize gracefully', () => {
-    // Mock the hooks
-    vi.mocked(useLocation).mockReturnValue({ pathname: '/dashboard', search: '', hash: '', state: null, key: '' });
+    window.location.hash = '';
     vi.mocked(useGeneralSettings).mockReturnValue({});
 
     const { container } = render(<ThemeManager>{mockChildren}</ThemeManager>);
@@ -56,8 +64,7 @@ describe('ThemeManager', () => {
   });
 
   it('handles undefined useGeneralSettings return value', () => {
-    // Mock the hooks
-    vi.mocked(useLocation).mockReturnValue({ pathname: '/dashboard', search: '', hash: '', state: null, key: '' });
+    window.location.hash = '';
     vi.mocked(useGeneralSettings).mockReturnValue(undefined);
 
     const { container } = render(<ThemeManager>{mockChildren}</ThemeManager>);
@@ -67,4 +74,5 @@ describe('ThemeManager', () => {
     expect(wrapper).toBeInTheDocument();
     expect(wrapper).toHaveClass('overlay-theme-sm');
   });
+
 });
