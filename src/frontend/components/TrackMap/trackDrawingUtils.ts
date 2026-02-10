@@ -129,7 +129,7 @@ export const drawDrivers = (
           displayText = driver.CarNumber;
         }
         if (displayText) {
-          ctx.fillText(displayText, position.x, position.y + circleRadius * 0.1);
+          ctx.fillText(displayText, position.x, position.y);
         }
       }
     });
