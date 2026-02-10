@@ -156,7 +156,7 @@ export const FlatTrackMapSettings = () => {
             <input
               type="range"
               min="50"
-              max="200"
+              max="150"
               step="1"
               value={settings.config.trackmapFontSize ?? 100}
               onChange={(e) =>

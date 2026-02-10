@@ -28,7 +28,7 @@ export default {
       control: { type: 'range', min: 10, max: 100, step: 1 },
     },
     trackmapFontSize: {
-      control: { type: 'range', min: 50, max: 200, step: 1 },
+      control: { type: 'range', min: 50, max: 150, step: 1 },
     },
     trackLineWidth: {
       control: { type: 'range', min: 5, max: 40, step: 1 },
