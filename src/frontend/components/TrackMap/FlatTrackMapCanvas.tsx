@@ -11,6 +11,7 @@ export interface FlatTrackMapCanvasProps {
   displayMode?: 'carNumber' | 'sessionPosition';
   driverCircleSize?: number;
   playerCircleSize?: number;
+  trackmapFontSize?: number;
   trackLineWidth?: number;
   trackOutlineWidth?: number;
   invertTrackColors?: boolean;
@@ -25,6 +26,7 @@ export const FlatTrackMapCanvas = ({
   displayMode = 'carNumber',
   driverCircleSize = 40,
   playerCircleSize = 40,
+  trackmapFontSize = 100,
   trackLineWidth = 20,
   trackOutlineWidth = 40,
   invertTrackColors = false,
@@ -164,6 +166,7 @@ export const FlatTrackMapCanvas = ({
 
       const x = HORIZONTAL_PADDING + progress * usableWidth;
       const radius = (isPlayer ? playerCircleSize : driverCircleSize) * circleScale;
+      const fontSize = radius * (trackmapFontSize / 100);
 
       ctx.fillStyle = color.fill;
       ctx.beginPath();
@@ -178,7 +181,7 @@ export const FlatTrackMapCanvas = ({
 
       if (showCarNumbers) {
         ctx.fillStyle = color.text;
-        ctx.font = `${radius * 0.7}px sans-serif`;
+        ctx.font = `${fontSize}px sans-serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         let displayText = '';
@@ -192,7 +195,7 @@ export const FlatTrackMapCanvas = ({
         }
       }
     });
-  }, [canvasSize, drivers, driverColors, driversOffTrack, showCarNumbers, displayMode, driverCircleSize, playerCircleSize, trackLineWidth, trackOutlineWidth, invertTrackColors]);
+  }, [canvasSize, drivers, driverColors, driversOffTrack, showCarNumbers, displayMode, driverCircleSize, playerCircleSize, trackmapFontSize, trackLineWidth, trackOutlineWidth, invertTrackColors]);
 
   return <div className="w-full h-full"><canvas ref={canvasRef} className="w-full h-full" /></div>;
 };

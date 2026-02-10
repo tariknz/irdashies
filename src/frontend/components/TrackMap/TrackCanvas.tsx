@@ -23,6 +23,7 @@ export interface TrackProps {
   invertTrackColors?: boolean;
   driverCircleSize?: number;
   playerCircleSize?: number;
+  trackmapFontSize?: number;
   trackLineWidth?: number;
   trackOutlineWidth?: number;
   highlightColor?: number;
@@ -68,6 +69,7 @@ export const TrackCanvas = ({
   invertTrackColors = false,
   driverCircleSize = 40,
   playerCircleSize = 40,
+  trackmapFontSize = 100,
   trackLineWidth = 20,
   trackOutlineWidth = 40,
   highlightColor,
@@ -257,8 +259,8 @@ export const TrackCanvas = ({
     // Draw all elements
     drawTrack(ctx, path2DObjects, invertTrackColors, trackLineWidth, trackOutlineWidth);
     drawStartFinishLine(ctx, startFinishLine);
-    drawTurnNames(ctx, trackDrawing.turns, enableTurnNames);
-    drawDrivers(ctx, calculatePositions, driverColors, driversOffTrack, driverCircleSize, playerCircleSize, showCarNumbers, displayMode);
+    drawTurnNames(ctx, trackDrawing.turns, enableTurnNames, trackmapFontSize);
+    drawDrivers(ctx, calculatePositions, driverColors, driversOffTrack, driverCircleSize, playerCircleSize, trackmapFontSize, showCarNumbers, displayMode);
 
     // Restore context state
     ctx.restore();
@@ -280,6 +282,7 @@ export const TrackCanvas = ({
     driversOffTrack,
     driverCircleSize,
     playerCircleSize,
+    trackmapFontSize,
   ]);
 
   // Development/Storybook mode - show debug info and canvas

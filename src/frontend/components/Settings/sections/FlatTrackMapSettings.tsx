@@ -12,6 +12,7 @@ const defaultConfig: FlatTrackMapWidgetSettings['config'] = {
   displayMode: 'carNumber',
   driverCircleSize: 40,
   playerCircleSize: 40,
+  trackmapFontSize: 100,
   trackLineWidth: 20,
   trackOutlineWidth: 40,
   invertTrackColors: false,
@@ -29,6 +30,7 @@ const migrateConfig = (savedConfig: unknown): FlatTrackMapWidgetSettings['config
     displayMode: (config.displayMode as 'carNumber' | 'sessionPosition') ?? defaultConfig.displayMode,
     driverCircleSize: (config.driverCircleSize as number) ?? defaultConfig.driverCircleSize,
     playerCircleSize: (config.playerCircleSize as number) ?? defaultConfig.playerCircleSize,
+    trackmapFontSize: (config.trackmapFontSize as number) ?? defaultConfig.trackmapFontSize,
     trackLineWidth: (config.trackLineWidth as number) ?? defaultConfig.trackLineWidth,
     trackOutlineWidth: (config.trackOutlineWidth as number) ?? defaultConfig.trackOutlineWidth,
     invertTrackColors: (config.invertTrackColors as boolean) ?? defaultConfig.invertTrackColors,
@@ -144,6 +146,28 @@ export const FlatTrackMapSettings = () => {
             />
             <p className="text-slate-400 text-sm">
               Size of the circle for your car (matches curved track map scale)
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-slate-300">
+              Relative Font Size: {settings.config.trackmapFontSize ?? 100}%
+            </label>
+            <input
+              type="range"
+              min="50"
+              max="200"
+              step="1"
+              value={settings.config.trackmapFontSize ?? 100}
+              onChange={(e) =>
+                handleConfigChange({
+                  trackmapFontSize: parseInt(e.target.value) || 100,
+                })
+              }
+              className="w-full"
+            />
+            <p className="text-slate-400 text-sm">
+              Relative size of the font within the trackmap
             </p>
           </div>
 

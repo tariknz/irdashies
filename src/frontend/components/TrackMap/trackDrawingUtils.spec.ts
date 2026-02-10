@@ -68,6 +68,7 @@ describe('trackDrawingUtils', () => {
         driversOffTrack,
         40,
         40,
+        100,
         true,
         'carNumber'
       );
@@ -85,6 +86,7 @@ describe('trackDrawingUtils', () => {
         driversOffTrack,
         40,
         40,
+        100,
         true,
         'carNumber'
       );
@@ -102,6 +104,7 @@ describe('trackDrawingUtils', () => {
         driversOffTrack,
         40,
         40,
+        100,
         true,
         'sessionPosition'
       );
@@ -126,6 +129,7 @@ describe('trackDrawingUtils', () => {
         driversOffTrack,
         40,
         40,
+        100,
         true,
         'sessionPosition'
       );
@@ -143,6 +147,7 @@ describe('trackDrawingUtils', () => {
         driversOffTrack,
         40,
         40,
+        100,
         false,
         'carNumber'
       );
@@ -160,6 +165,7 @@ describe('trackDrawingUtils', () => {
         driversOffTrackArray,
         40,
         40,
+        100,
         true,
         'carNumber'
       );
@@ -175,6 +181,7 @@ describe('trackDrawingUtils', () => {
         driversOffTrack,
         30,
         50,
+        100,
         true,
         'carNumber'
       );
@@ -193,6 +200,7 @@ describe('trackDrawingUtils', () => {
         driversOffTrack,
         40,
         40,
+        100,
         true,
         'carNumber'
       );
@@ -234,6 +242,7 @@ describe('trackDrawingUtils', () => {
         driversOffTrack,
         40,
         40,
+        100,
         true,
         'sessionPosition'
       );
@@ -277,6 +286,7 @@ describe('trackDrawingUtils', () => {
         driversOffTrack,
         40,
         40,
+        100,
         true,
         'carNumber'
       );
@@ -313,6 +323,7 @@ describe('trackDrawingUtils', () => {
         driversOffTrack,
         40,
         40,
+        100,
         true,
         'sessionPosition'
       );

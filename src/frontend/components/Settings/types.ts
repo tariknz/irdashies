@@ -256,6 +256,7 @@ export interface TrackMapWidgetSettings extends BaseWidgetSettings {
     invertTrackColors: boolean;
     driverCircleSize: number;
     playerCircleSize: number;
+    trackmapFontSize: number;
     trackLineWidth: number;
     trackOutlineWidth: number;
     useHighlightColor: boolean;
@@ -484,6 +485,7 @@ export interface FlatTrackMapWidgetSettings extends BaseWidgetSettings {
     displayMode: 'carNumber' | 'sessionPosition';
     driverCircleSize: number;
     playerCircleSize: number;
+    trackmapFontSize: number;
     trackLineWidth: number;
     trackOutlineWidth: number;
     invertTrackColors: boolean;
