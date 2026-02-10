@@ -98,17 +98,23 @@ const createMockBridge = (
   setAutoStart: () => Promise.resolve()
 });
 
-const FONT_SIZES: FontSize[] = ['xs', 'sm', 'md', 'lg', 'xl', '2xl', '3xl'];
+const FONT_SIZES: FontSize[] = ['xs', 'sm', 'md', 'lg', 'xl', '2xl', '3xl', '4xl', '5xl', '6xl', '7xl', '8xl', '9xl'];
 const FONT_SIZE_LABELS: Record<FontSize, string> = {
-  xs: 'Extra Small',
-  sm: 'Small',
-  md: 'Medium',
-  lg: 'Large',
-  xl: 'Extra Large',
-  '2xl': '2X Large',
-  '3xl': '3X Large',
+  xs: 'Minimum',
+  sm: 'Tiny',
+  md: 'Smaller',
+  lg: 'Small',
+  xl: 'Medium',
+  '2xl': 'Medium-large',
+  '3xl': 'Large',
+  '4xl': 'Extra large',
+  '5xl': 'Huge',
+  '6xl': 'Massive',
+  '7xl': 'Enormous',
+  '8xl': 'Gigantic',
+  '9xl': 'Maximum'
 };
-const FONT_WEIGHTS: NonNullable<GeneralSettingsType['fontWeight']>[] = ['normal', 'bold', 'extrabold'];
+const FONT_WEIGHTS: NonNullable<GeneralSettingsType['fontWeight']>[] = ['normal', 'medium', 'semibold', 'bold', 'extrabold'];
 
 const COLOR_PALETTES: NonNullable<GeneralSettingsType['colorPalette']>[] = [
   'default',
@@ -239,6 +245,24 @@ export const Primary = {
                   <div className="text-base">text-base</div>
                   <div className="text-lg">text-lg</div>
                   <div className="text-xl">text-xl</div>
+                </div>
+
+                {/* Medium text */}
+                <div className="space-y-2">
+                  <div className="text-xs font-medium">text-xs medium</div>
+                  <div className="text-sm font-medium">text-sm medium</div>
+                  <div className="text-base font-medium">text-base medium</div>
+                  <div className="text-lg font-medium">text-lg medium</div>
+                  <div className="text-xl font-medium">text-xl medium</div>
+                </div>
+
+                {/* Semi-Bold text */}
+                <div className="space-y-2">
+                  <div className="text-xs font-semibold">text-xs semibold</div>
+                  <div className="text-sm font-semibold">text-sm semibold</div>
+                  <div className="text-base font-semibold">text-base semibold</div>
+                  <div className="text-lg font-semibold">text-lg semibold</div>
+                  <div className="text-xl font-semibold">text-xl semibold</div>
                 </div>
 
                 {/* Bold text */}

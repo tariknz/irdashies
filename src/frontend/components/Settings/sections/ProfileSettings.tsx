@@ -15,6 +15,12 @@ const FONT_SIZE_OPTIONS: { value: FontSize; label: string }[] = [
   { value: 'xl', label: 'Extra Large' },
   { value: '2xl', label: '2X Large' },
   { value: '3xl', label: '3X Large' },
+  { value: '4xl', label: '4X Large' },
+  { value: '5xl', label: '5X Large' },
+  { value: '6xl', label: '6X Large' },
+  { value: '7xl', label: '7X Large' },
+  { value: '8xl', label: '8X Large' },
+  { value: '9xl', label: '9X Large' },
 ];
 
 const COLOR_PALETTES: {

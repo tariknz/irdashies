@@ -3,17 +3,25 @@ import { useDashboard } from '@irdashies/context';
 import { GeneralSettingsType } from '@irdashies/types';
 
 const FONT_SIZE_PRESETS = {
-  xs: 'Extra Small',
-  sm: 'Small',
-  md: 'Medium',
-  lg: 'Large',
-  xl: 'Extra Large',
-  '2xl': '2X Large',
-  '3xl': '3X Large',
+  xs: 'Minimum',
+  sm: 'Tiny',
+  md: 'Smaller',
+  lg: 'Small',
+  xl: 'Medium',
+  '2xl': 'Medium-large',
+  '3xl': 'Large',
+  '4xl': 'Extra large',
+  '5xl': 'Huge',
+  '6xl': 'Massive',
+  '7xl': 'Enormous',
+  '8xl': 'Gigantic',
+  '9xl': 'Maximum'
 };
 
 const FONT_WEIGHT_PRESETS = {
   normal: 'Normal',
+  medium: 'Medium',
+  semibold: 'Semibold',
   bold: 'Bold',
   extrabold: 'Extrabold',
 };
@@ -91,6 +99,12 @@ export const GeneralSettings = () => {
     'xl',
     '2xl',
     '3xl',
+    '4xl',
+    '5xl',
+    '6xl',
+    '7xl',
+    '8xl',
+    '9xl'
   ];
 
   const getSliderValue = (size: string | undefined): number => {
@@ -107,7 +121,7 @@ export const GeneralSettings = () => {
   };
 
   const handleFontSizeChange = (
-    newSize: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl'
+    newSize: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | '5xl' | '6xl' | '7xl' | '8xl' | '9xl'
   ) => {
     const newSettings = { ...settings, fontSize: newSize };
     setSettings(newSettings);
@@ -115,7 +129,7 @@ export const GeneralSettings = () => {
   };
 
   const handleFontWeightChange = (
-    newWeight: 'normal' | 'bold' | 'extrabold'
+    newWeight: 'normal' | 'medium' | 'semibold' | 'bold' | 'extrabold'
   ) => {
     const newSettings = { ...settings, fontWeight: newWeight };
     setSettings(newSettings);
@@ -211,7 +225,7 @@ export const GeneralSettings = () => {
             <input
               type="range"
               min="0"
-              max="6"
+              max="12"
               step="1"
               value={getSliderValue(settings.fontSize)}
               onChange={handleSliderChange}
