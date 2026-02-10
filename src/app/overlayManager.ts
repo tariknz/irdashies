@@ -459,12 +459,6 @@ export class OverlayManager {
     // Track window movement and resizing to save bounds
     trackSettingsWindowMovement(browserWindow);
 
-    // Set settings window to screen-saver level so it appears above the overlay
-    // Use relative level 2 (higher than overlay's 1) so it's always clickable
-    if (this.overlayAlwaysOnTop) {
-      browserWindow.setAlwaysOnTop(true, 'screen-saver', 2);
-    }
-
     // and load the index.html of the app.
     if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
       browserWindow.loadURL(`${MAIN_WINDOW_VITE_DEV_SERVER_URL}#/settings`);

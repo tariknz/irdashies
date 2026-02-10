@@ -135,36 +135,50 @@ export const SettingsLayout = () => {
           </ul>
           <ul className="flex flex-col gap-2 flex-1 mb-2">
             {(() => {
-              // Define widget order priority (lower = higher priority)
-              const widgetOrder: Record<string, number> = {
-                standings: 1,
-                fuel: 2,
-              };
+              // Widgets handled elsewhere (e.g. in Advanced settings)
+              const hiddenWidgets = new Set(['telemetryinspector']);
 
-              // Sort widgets: prioritized ones first, then by original order
-              const sortedWidgets = [...currentDashboard.widgets].sort(
-                (a, b) => {
-                  const typeA = a.type || a.id;
-                  const typeB = b.type || b.id;
-                  const orderA = widgetOrder[typeA] ?? 100;
-                  const orderB = widgetOrder[typeB] ?? 100;
-                  return orderA - orderB;
+              // Deduplicate fuel widgets and filter hidden widgets
+              const seenTypes = new Set<string>();
+              const filteredWidgets = currentDashboard.widgets.filter(
+                (widget) => {
+                  const type = widget.type || widget.id;
+                  if (hiddenWidgets.has(type)) return false;
+                  if (type === 'fuel') {
+                    if (seenTypes.has('fuel')) return false;
+                    seenTypes.add('fuel');
+                  }
+                  return true;
                 }
               );
 
-              // Deduplicate fuel widgets - only keep the first one in sidebar
-              // Others are managed via internal dropdown in FuelSettings
-              const seenTypes = new Set<string>();
-              const deduplicatedWidgets = sortedWidgets.filter((widget) => {
-                const type = widget.type || widget.id;
-                if (type === 'fuel') {
-                  if (seenTypes.has('fuel')) return false;
-                  seenTypes.add('fuel');
-                }
-                return true;
+              // Pin certain widgets at the top in a specific order
+              const pinnedOrder: Record<string, number> = {
+                standings: 0,
+                relative: 1,
+                fuel: 2,
+                input: 3,
+              };
+
+              const sortedWidgets = [...filteredWidgets].sort((a, b) => {
+                const typeA = a.type || a.id;
+                const typeB = b.type || b.id;
+                const pinA = pinnedOrder[typeA];
+                const pinB = pinnedOrder[typeB];
+
+                // Both pinned: sort by pin order
+                if (pinA !== undefined && pinB !== undefined)
+                  return pinA - pinB;
+                // Only one pinned: pinned comes first
+                if (pinA !== undefined) return -1;
+                if (pinB !== undefined) return 1;
+                // Neither pinned: alphabetical by display name
+                const nameA = getWidgetName(typeA);
+                const nameB = getWidgetName(typeB);
+                return nameA.localeCompare(nameB);
               });
 
-              return deduplicatedWidgets.map((widget) => {
+              return sortedWidgets.map((widget) => {
                 const type = widget.type || widget.id;
                 let label = widget.id; // Default fallback
 
