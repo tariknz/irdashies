@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,300..900;1,300..900&display=swap')
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans:ital,wght@0,100..900;1,100..900&display=swap')
 layer(base);
 @import 'tailwindcss';
 
@@ -23,7 +23,7 @@ layer(base);
 }
 
 @theme {
-  --font-sans: 'Figtree', sans-serif;
+  --font-sans: 'Noto Sans', sans-serif;
   --animate-pulse-border: pulse-border 1s infinite;
   --animate-blink: blink 1s infinite;
   --text-xs: 12px;
