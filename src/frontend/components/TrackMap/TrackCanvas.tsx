@@ -75,6 +75,9 @@ export const TrackCanvas = ({
 }: TrackProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
+  const debounceResizeRef = useRef<ReturnType<typeof setTimeout> | undefined>(
+    undefined
+  );
 
   const trackDrawing = (tracks as unknown as TrackDrawing[])[trackId];
   const shouldShow = shouldShowTrack(trackId, trackDrawing);
@@ -236,8 +239,6 @@ export const TrackCanvas = ({
       canvas.height = rect.height * dpr;
 
       // Set the CSS size to maintain the same visual size
-      canvas.style.width = rect.width + 'px';
-      canvas.style.height = rect.height + 'px';
 
       // Apply device pixel ratio scaling to the context
       const ctx = canvas.getContext('2d');
@@ -254,18 +255,38 @@ export const TrackCanvas = ({
 
     // Use ResizeObserver to watch the canvas container
     const resizeObserver = new ResizeObserver(() => {
-      resize();
+      // Clear existing timeout
+      if (debounceResizeRef.current) {
+        clearTimeout(debounceResizeRef.current);
+      }
+
+      // Set new timeout
+      debounceResizeRef.current = setTimeout(() => {
+        resize();
+      }, 50);
     });
 
     // Observe the canvas element itself
     resizeObserver.observe(canvas);
 
     // Add window resize listener as fallback
-    window.addEventListener('resize', resize);
+    const handleWindowResize = () => {
+      if (debounceResizeRef.current) {
+        clearTimeout(debounceResizeRef.current);
+      }
+      debounceResizeRef.current = setTimeout(() => {
+        resize();
+      }, 50);
+    };
+
+    window.addEventListener('resize', handleWindowResize);
 
     return () => {
       resizeObserver.disconnect();
-      window.removeEventListener('resize', resize);
+      window.removeEventListener('resize', handleWindowResize);
+      if (debounceResizeRef.current) {
+        clearTimeout(debounceResizeRef.current);
+      }
     };
   }, [trackId]);
 

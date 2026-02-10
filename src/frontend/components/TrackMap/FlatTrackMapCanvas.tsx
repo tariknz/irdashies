@@ -32,6 +32,9 @@ export const FlatTrackMapCanvas = ({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
   const driversOffTrack = useDriverOffTrack();
+  const debounceResizeRef = useRef<ReturnType<typeof setTimeout> | undefined>(
+    undefined
+  );
 
   const isMultiClass = useMemo(() => {
     if (!drivers || drivers.length === 0) return false;
@@ -72,8 +75,7 @@ export const FlatTrackMapCanvas = ({
       const rect = canvas.getBoundingClientRect();
       canvas.width = rect.width * dpr;
       canvas.height = rect.height * dpr;
-      canvas.style.width = rect.width + 'px';
-      canvas.style.height = rect.height + 'px';
+
       const ctx = canvas.getContext('2d');
       if (ctx) {
         ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -82,18 +84,32 @@ export const FlatTrackMapCanvas = ({
       setCanvasSize({ width: rect.width, height: rect.height });
     };
 
+    // Initial resize
     resize();
-    const resizeObserver = new ResizeObserver(resize);
+
+    const handleResize = () => {
+      if (debounceResizeRef.current) {
+        clearTimeout(debounceResizeRef.current);
+      }
+      debounceResizeRef.current = setTimeout(() => {
+        resize();
+      }, 50);
+    };
+
+    const resizeObserver = new ResizeObserver(handleResize);
     resizeObserver.observe(canvas);
     // Also observe the parent container
     if (canvas.parentElement) {
       resizeObserver.observe(canvas.parentElement);
     }
-    window.addEventListener('resize', resize);
+    window.addEventListener('resize', handleResize);
 
     return () => {
       resizeObserver.disconnect();
-      window.removeEventListener('resize', resize);
+      window.removeEventListener('resize', handleResize);
+      if (debounceResizeRef.current) {
+        clearTimeout(debounceResizeRef.current);
+      }
     };
   }, []);
 
