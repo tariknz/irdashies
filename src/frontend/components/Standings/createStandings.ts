@@ -142,6 +142,57 @@ export const createDriverStandings = (
     : [];
   const results =
     resultsPositions.length > 0 ? resultsPositions : qualifyingResults;
+
+  // When no results exist yet (e.g. race warmup before any laps), build
+  // standings from the full driver list so all drivers are visible immediately.
+  if (results.length === 0 && session.drivers) {
+    return session.drivers
+      .filter((driver) => !driver.CarIsPaceCar && !driver.IsSpectator)
+      .map((driver, index) => ({
+        carIdx: driver.CarIdx,
+        position: index + 1,
+        classPosition: index + 1, // temporary until real positions are available
+        isPlayer: driver.CarIdx === session.playerIdx,
+        driver: {
+          name: driver.UserName,
+          carNum: driver.CarNumber,
+          license: driver.LicString,
+          rating: driver.IRating,
+          flairId: driver.FlairID,
+          teamName: driver.TeamName,
+        },
+        fastestTime: -1,
+        hasFastestTime: false,
+        lastTime: -1,
+        lastTimeState: undefined as LastTimeState,
+        onPitRoad: telemetry?.carIdxOnPitRoadValue?.[driver.CarIdx] ?? false,
+        onTrack:
+          (telemetry?.carIdxTrackSurfaceValue?.[driver.CarIdx] ?? -1) > -1,
+        tireCompound: telemetry?.carIdxTireCompoundValue?.[driver.CarIdx] ?? 0,
+        carClass: {
+          id: driver.CarClassID,
+          color: driver.CarClassColor,
+          name: driver.CarClassShortName,
+          relativeSpeed: driver.CarClassRelSpeed,
+          estLapTime: driver.CarClassEstLapTime,
+        },
+        radioActive: telemetry.radioTransmitCarIdx?.includes(driver.CarIdx),
+        carId: driver.CarID,
+        lapTimeDeltas: undefined,
+        lastPitLap: lastPitLap[driver.CarIdx] ?? undefined,
+        lastLap: lastLap[driver.CarIdx] ?? undefined,
+        prevCarTrackSurface: prevCarTrackSurface[driver.CarIdx] ?? undefined,
+        carTrackSurface:
+          telemetry?.carIdxTrackSurfaceValue?.[driver.CarIdx] ?? undefined,
+        currentSessionType: currentSession.sessionType,
+        dnf: false,
+        repair: false,
+        penalty: false,
+        slowdown: false,
+        relativePct: 0,
+      }));
+  }
+
   const fastestDriverIdx = currentSession.resultsFastestLap?.[0]?.CarIdx;
   const fastestDriver = results?.find((r) => r.CarIdx === fastestDriverIdx);
 
