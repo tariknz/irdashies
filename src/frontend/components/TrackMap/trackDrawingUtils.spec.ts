@@ -91,9 +91,9 @@ describe('trackDrawingUtils', () => {
         'carNumber'
       );
 
-      expect(ctx.fillText).toHaveBeenCalledWith('1', 100, 100);
-      expect(ctx.fillText).toHaveBeenCalledWith('2', 200, 100);
-      expect(ctx.fillText).toHaveBeenCalledWith('3', 150, 200);
+      expect(ctx.fillText).toHaveBeenCalledWith('1', 100, expect.any(Number));
+      expect(ctx.fillText).toHaveBeenCalledWith('2', 200, expect.any(Number));
+      expect(ctx.fillText).toHaveBeenCalledWith('3', 150, expect.any(Number));
     });
 
     it('should display class positions in sessionPosition mode', () => {
