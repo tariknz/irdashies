@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useDashboard } from '@irdashies/context';
 import type {
   DashboardProfile
@@ -12,7 +12,8 @@ export const ProfileSettings = () => {
     createProfile,
     deleteProfile,
     renameProfile,
-    switchProfile
+    switchProfile,
+    refreshProfiles
   } = useDashboard();
 
   const [newProfileName, setNewProfileName] = useState('');
@@ -27,6 +28,19 @@ export const ProfileSettings = () => {
     profileName: string;
   }>({ isOpen: false, profileId: '', profileName: '' });
 
+  useEffect(() => {
+    refreshProfiles();
+    // Fetch server IP
+    fetch('http://localhost:3000/api/server-ip')
+      .then((res) => res.json())
+      .catch(() => ({ ip: 'localhost' }))
+      .then((data) => {
+        if (data.ip) {
+          setServerIP(data.ip);
+        }
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleCreateProfile = async () => {
     if (!newProfileName.trim()) {
