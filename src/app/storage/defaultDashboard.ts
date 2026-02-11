@@ -825,6 +825,23 @@ export const defaultDashboard: DashboardLayout = {
         background: { opacity: 80 },
       },
     },
+    {
+      id: 'twitchchat',
+      enabled: false,
+      layout: {
+        x: 378,
+        y: 102,
+        width: 400,
+        height: 500,
+      },
+      config: {
+        fontSize: 16,
+        channel: '',
+        background: {
+          opacity: 30,
+        },
+      },
+    },
   ],
   generalSettings: {
     fontSize: 'sm',

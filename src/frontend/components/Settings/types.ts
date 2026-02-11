@@ -545,6 +545,14 @@ export interface PitlaneHelperWidgetSettings extends BaseWidgetSettings {
   };
 }
 
+export interface TwitchChatWidgetSettings extends BaseWidgetSettings {
+  config: {
+    fontSize: number;
+    channel: string;
+    background: { opacity: number };
+  };
+}
+
 // Type for custom shift points - used in InputWidgetSettings tachometer config
 export interface ShiftPointSettings {
   /** Whether custom shift points are enabled */

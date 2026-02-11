@@ -30,6 +30,7 @@ import { BlindSpotMonitorSettings } from './sections/BlindSpotMonitorSettings';
 import { GarageCoverSettings } from './sections/GarageCoverSettings';
 import { ProfileSettings } from './sections/ProfileSettings';
 import { FlagSettings } from './sections/FlagSettings';
+import { TwitchChatSettings } from './sections/TwitchChatSettings';
 import { useDashboard } from '@irdashies/context';
 import { useState } from 'react';
 
@@ -307,6 +308,8 @@ const SettingsLoader = () => {
       return <GarageCoverSettings />;
     case 'flag':
       return <FlagSettings />;
+    case 'twitchchat':
+      return <TwitchChatSettings />;
     default:
       return (
         <div className="text-red-400">No settings available for {type}</div>
