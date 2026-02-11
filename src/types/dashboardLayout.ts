@@ -28,6 +28,7 @@ export interface DashboardWidget {
 export type FontSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | '5xl' | '6xl' | '7xl' | '8xl' | '9xl';
 
 export interface GeneralSettingsType {
+  fontFace?: 'lato' | 'notosans' | 'roboto'
   fontSize?: FontSize;
   fontWeight?: 'normal' | 'medium' | 'semibold' | 'bold' | 'extrabold';
   colorPalette?:

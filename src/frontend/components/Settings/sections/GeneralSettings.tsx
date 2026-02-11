@@ -2,6 +2,12 @@ import { useState } from 'react';
 import { useDashboard } from '@irdashies/context';
 import { GeneralSettingsType } from '@irdashies/types';
 
+const FONT_PRESETS = {
+  lato: 'Lato',
+  notosans: 'Noto Sans',
+  roboto: 'Roboto'
+};
+
 const FONT_SIZE_PRESETS = {
   xs: 'Minimum',
   sm: 'Tiny',
@@ -120,6 +126,14 @@ export const GeneralSettings = () => {
     return FONT_SIZE_VALUES[value] || 'sm';
   };
 
+  const handleFontChange = (
+    newFont: 'lato' | 'notosans' | 'roboto'
+  ) => {
+    const newSettings = { ...settings, fontFace: newFont };
+    setSettings(newSettings);
+    updateDashboard(newSettings);
+  };
+
   const handleFontSizeChange = (
     newSize: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | '5xl' | '6xl' | '7xl' | '8xl' | '9xl'
   ) => {
@@ -208,7 +222,37 @@ export const GeneralSettings = () => {
         </p>
       </div>
 
+      
+
       <div className="flex-1 overflow-y-auto min-h-0 space-y-6 p-4 mt-4">
+
+        {/* Font Settings */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-medium text-slate-200">Font</h3>
+          </div>
+          {/* Font Weight Dropdown */}
+          <div className="mt-4">
+            <select
+              value={settings.fontFace ?? 'lato'}
+              onChange={(e) =>
+                handleFontChange(
+                  e.target.value as NonNullable<
+                    GeneralSettingsType['fontFace']
+                  >
+                )
+              }
+              className="w-full px-3 py-2 bg-slate-700 text-slate-300 rounded border border-slate-600 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            >
+              {Object.entries(FONT_PRESETS).map(([key, value]) => (
+                <option key={key} value={key}>
+                  {value}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
         {/* Font Size Settings */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
