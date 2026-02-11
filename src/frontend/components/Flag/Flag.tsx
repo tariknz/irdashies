@@ -49,7 +49,7 @@ export const Flag = () => {
   // Double flag
   return (
     <div className="flex h-full w-full justify-between items-stretch">
-      <div className="h-full">
+      <div className="h-full aspect-square flex-none">
         <FlagDisplay
           label={visibleLabel}
           showLabel={settings.showLabel ?? true}
@@ -64,7 +64,7 @@ export const Flag = () => {
         />
       </div>
 
-      <div className="h-full">
+      <div className="h-full aspect-square flex-none">
         <FlagDisplay
           label={visibleLabel}
           showLabel={settings.showLabel ?? true}
