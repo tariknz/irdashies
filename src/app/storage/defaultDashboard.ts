@@ -827,6 +827,7 @@ export const defaultDashboard: DashboardLayout = {
     },
     {
       id: 'twitchchat',
+      alwaysEnabled: true,
       enabled: false,
       layout: {
         x: 378,
