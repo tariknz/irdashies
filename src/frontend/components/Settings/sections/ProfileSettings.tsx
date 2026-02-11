@@ -2,54 +2,9 @@ import { useState, useEffect } from 'react';
 import { useDashboard } from '@irdashies/context';
 import type {
   DashboardProfile,
-  GeneralSettingsType,
-  FontSize,
+  GeneralSettingsType
 } from '@irdashies/types';
 import { ConfirmDialog } from '../components/ConfirmDialog';
-
-const FONT_SIZE_OPTIONS: { value: FontSize; label: string }[] = [
-  { value: 'xs', label: 'Extra Small' },
-  { value: 'sm', label: 'Small' },
-  { value: 'md', label: 'Medium' },
-  { value: 'lg', label: 'Large' },
-  { value: 'xl', label: 'Extra Large' },
-  { value: '2xl', label: '2X Large' },
-  { value: '3xl', label: '3X Large' },
-  { value: '4xl', label: '4X Large' },
-  { value: '5xl', label: '5X Large' },
-  { value: '6xl', label: '6X Large' },
-  { value: '7xl', label: '7X Large' },
-  { value: '8xl', label: '8X Large' },
-  { value: '9xl', label: '9X Large' },
-];
-
-const COLOR_PALETTES: {
-  value: GeneralSettingsType['colorPalette'];
-  label: string;
-}[] = [
-  { value: undefined, label: 'Use Dashboard Default' },
-  { value: 'default', label: 'Slate (default)' },
-  { value: 'black', label: 'Black' },
-  { value: 'red', label: 'Red' },
-  { value: 'orange', label: 'Orange' },
-  { value: 'amber', label: 'Amber' },
-  { value: 'yellow', label: 'Yellow' },
-  { value: 'lime', label: 'Lime' },
-  { value: 'green', label: 'Green' },
-  { value: 'emerald', label: 'Emerald' },
-  { value: 'teal', label: 'Teal' },
-  { value: 'cyan', label: 'Cyan' },
-  { value: 'sky', label: 'Sky' },
-  { value: 'blue', label: 'Blue' },
-  { value: 'indigo', label: 'Indigo' },
-  { value: 'violet', label: 'Violet' },
-  { value: 'purple', label: 'Purple' },
-  { value: 'fuchsia', label: 'Fuchsia' },
-  { value: 'pink', label: 'Pink' },
-  { value: 'rose', label: 'Rose' },
-  { value: 'zinc', label: 'Zinc' },
-  { value: 'stone', label: 'Stone' },
-];
 
 export const ProfileSettings = () => {
   const {
@@ -75,84 +30,6 @@ export const ProfileSettings = () => {
     profileName: string;
   }>({ isOpen: false, profileId: '', profileName: '' });
 
-  // Debounce state for theme settings
-  const [pendingFontSize, setPendingFontSize] = useState<
-    FontSize | '' | undefined
-  >(currentProfile?.themeSettings?.fontSize);
-  const [pendingColorPalette, setPendingColorPalette] = useState<
-    GeneralSettingsType['colorPalette'] | ''
-  >(currentProfile?.themeSettings?.colorPalette ?? '');
-
-  useEffect(() => {
-    refreshProfiles();
-    // Fetch server IP
-    fetch('http://localhost:3000/api/server-ip')
-      .then((res) => res.json())
-      .catch(() => ({ ip: 'localhost' }))
-      .then((data) => {
-        if (data.ip) {
-          setServerIP(data.ip);
-        }
-      });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Sync pending values when profile changes
-  useEffect(() => {
-    if (currentProfile) {
-      setPendingFontSize(currentProfile.themeSettings?.fontSize);
-      setPendingColorPalette(currentProfile.themeSettings?.colorPalette ?? '');
-    }
-  }, [currentProfile]);
-
-  // Debounce font size updates (500ms delay)
-  useEffect(() => {
-    const timer = setTimeout(async () => {
-      if (
-        currentProfile &&
-        bridge.updateProfileTheme &&
-        pendingFontSize !== currentProfile.themeSettings?.fontSize
-      ) {
-        try {
-          await bridge.updateProfileTheme(currentProfile.id, {
-            ...currentProfile.themeSettings,
-            fontSize: pendingFontSize || undefined,
-          });
-          await refreshProfiles();
-        } catch (error) {
-          console.error('Failed to update font size:', error);
-          setError('Failed to update font size');
-        }
-      }
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [pendingFontSize, currentProfile, bridge, refreshProfiles]);
-
-  // Debounce color palette updates (500ms delay)
-  useEffect(() => {
-    const timer = setTimeout(async () => {
-      if (
-        currentProfile &&
-        bridge.updateProfileTheme &&
-        pendingColorPalette !==
-          (currentProfile.themeSettings?.colorPalette ?? '')
-      ) {
-        try {
-          await bridge.updateProfileTheme(currentProfile.id, {
-            ...currentProfile.themeSettings,
-            colorPalette:
-              (pendingColorPalette as GeneralSettingsType['colorPalette']) ||
-              undefined,
-          });
-          await refreshProfiles();
-        } catch (error) {
-          console.error('Failed to update color palette:', error);
-          setError('Failed to update color palette');
-        }
-      }
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [pendingColorPalette, currentProfile, bridge, refreshProfiles]);
 
   const handleCreateProfile = async () => {
     if (!newProfileName.trim()) {
@@ -405,69 +282,6 @@ export const ProfileSettings = () => {
             )}
           </div>
         </div>
-
-        {/* Theme Override Settings for Current Profile */}
-        {currentProfile && (
-          <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4 space-y-4">
-            <div>
-              <h3 className="text-lg font-semibold text-white mb-2">
-                Theme Overrides for &quot;{currentProfile.name}&quot;
-              </h3>
-              <p className="text-sm text-gray-400">
-                Customize theme settings for this profile. Leave unset to use
-                dashboard defaults.
-              </p>
-            </div>
-
-            {/* Font Size Override */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-300">
-                Font Size
-              </label>
-              <select
-                value={pendingFontSize ?? ''}
-                onChange={(e) => {
-                  const value = e.target.value as FontSize | '';
-                  setPendingFontSize(value || undefined);
-                }}
-                className="w-full bg-slate-900 border border-slate-600 text-white px-3 py-2 rounded focus:outline-none focus:border-blue-500"
-              >
-                <option value="">Use Dashboard Default</option>
-                {FONT_SIZE_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Color Palette Override */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-300">
-                Color Palette
-              </label>
-              <select
-                value={pendingColorPalette ?? ''}
-                onChange={(e) => {
-                  const value = e.target.value as
-                    | GeneralSettingsType['colorPalette']
-                    | '';
-                  setPendingColorPalette(value);
-                }}
-                className="w-full bg-slate-900 border border-slate-600 text-white px-3 py-2 rounded focus:outline-none focus:border-blue-500"
-              >
-                {COLOR_PALETTES.map((opt, idx) => (
-                  <option
-                    key={opt.value ?? `unset-${idx}`}
-                    value={opt.value ?? ''}
-                  >
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-        )}
 
         {/* OBS Browser Source URL */}
         {currentProfile && (

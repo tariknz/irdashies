@@ -9,19 +9,19 @@ const FONT_PRESETS = {
 };
 
 const FONT_SIZE_PRESETS = {
-  xs: 'Minimum',
-  sm: 'Tiny',
-  md: 'Smaller',
-  lg: 'Small',
-  xl: 'Medium',
-  '2xl': 'Large',
-  '3xl': 'Larger',
-  '4xl': 'Big',
-  '5xl': 'Huge',
-  '6xl': 'Massive',
-  '7xl': 'Enormous',
-  '8xl': 'Gigantic',
-  '9xl': 'Maximum'
+  'xs': 'Extra Small',
+  'sm': 'Small',
+  'md': 'Medium',
+  'lg': 'Large',
+  'xl': 'Extra Large',
+  '2xl': '2X Large',
+  '3xl': '3X Large',
+  '4xl': '4X Large',
+  '5xl': '5X Large',
+  '6xl': '6X Large',
+  '7xl': '7X Large',
+  '8xl': '8X Large',
+  '9xl': '9X Large',
 };
 
 const FONT_WEIGHT_PRESETS = {
@@ -68,6 +68,7 @@ const COLOR_THEME_PRESETS: Record<string, string> = {
 export const GeneralSettings = () => {
   const { bridge, currentDashboard, onDashboardUpdated } = useDashboard();
   const [settings, setSettings] = useState<GeneralSettingsType>({
+    fontFace: currentDashboard?.generalSettings?.fontFace ?? 'lato',
     fontSize: currentDashboard?.generalSettings?.fontSize ?? 'sm',
     fontWeight: currentDashboard?.generalSettings?.fontWeight ?? 'normal',
     colorPalette: currentDashboard?.generalSettings?.colorPalette ?? 'default',

@@ -100,19 +100,19 @@ const createMockBridge = (
 
 const FONT_SIZES: FontSize[] = ['xs', 'sm', 'md', 'lg', 'xl', '2xl', '3xl', '4xl', '5xl', '6xl', '7xl', '8xl', '9xl'];
 const FONT_SIZE_LABELS: Record<FontSize, string> = {
-  xs: 'Minimum',
-  sm: 'Tiny',
-  md: 'Smaller',
-  lg: 'Small',
-  xl: 'Medium',
-  '2xl': 'Large',
-  '3xl': 'Larger',
-  '4xl': 'Big',
-  '5xl': 'Huge',
-  '6xl': 'Massive',
-  '7xl': 'Enormous',
-  '8xl': 'Gigantic',
-  '9xl': 'Maximum'
+  'xs': 'Extra Small',
+  'sm': 'Small',
+  'md': 'Medium',
+  'lg': 'Large',
+  'xl': 'Extra Large',
+  '2xl': '2X Large',
+  '3xl': '3X Large',
+  '4xl': '4X Large',
+  '5xl': '5X Large',
+  '6xl': '6X Large',
+  '7xl': '7X Large',
+  '8xl': '8X Large',
+  '9xl': '9X Large',
 };
 const FONT_WEIGHTS: NonNullable<GeneralSettingsType['fontWeight']>[] = ['normal', 'medium', 'semibold', 'bold', 'extrabold'];
 
