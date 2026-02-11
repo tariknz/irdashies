@@ -129,8 +129,7 @@ export const drawDrivers = (
           displayText = driver.CarNumber;
         }
         if (displayText) {
-          const opticalOffsetY = (circleRadius / 14) * (trackmapFontSize / 100); // tweak value
-          ctx.fillText(displayText, position.x, position.y + opticalOffsetY);
+          ctx.fillText(displayText, position.x, position.y);
         }
       }
     });
