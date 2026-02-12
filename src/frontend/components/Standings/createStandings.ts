@@ -148,6 +148,15 @@ export const createDriverStandings = (
   if (results.length === 0 && session.drivers) {
     return session.drivers
       .filter((driver) => !driver.CarIsPaceCar && !driver.IsSpectator)
+      .sort((a, b) => {
+        const numA = parseInt(a.CarNumber, 10);
+        const numB = parseInt(b.CarNumber, 10);
+        if (isNaN(numA) && isNaN(numB))
+          return a.CarNumber.localeCompare(b.CarNumber);
+        if (isNaN(numA)) return 1;
+        if (isNaN(numB)) return -1;
+        return numA - numB;
+      })
       .map((driver, index) => ({
         carIdx: driver.CarIdx,
         position: index + 1,

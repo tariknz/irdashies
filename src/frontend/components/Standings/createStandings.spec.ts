@@ -152,15 +152,27 @@ describe('createStandings', () => {
     expect(standings[0][1][0].onTrack).toBe(true);
   });
 
-  it('should show all drivers from session when no results positions exist yet', () => {
+  it('should show all drivers from session when no results positions exist yet, sorted by car number', () => {
     const sessionWithNoResults: Session = {
       DriverInfo: {
-        DriverCarIdx: 1,
+        DriverCarIdx: 2,
         Drivers: [
           {
+            CarIdx: 2,
+            UserName: 'Driver B',
+            CarNumber: '42',
+            CarClassID: 1,
+            CarClassShortName: 'Class 1',
+            CarClassRelSpeed: 1.0,
+            IRating: 1800,
+            LicString: 'B 3.50',
+            CarIsPaceCar: 0,
+            IsSpectator: 0,
+          },
+          {
             CarIdx: 0,
-            UserName: 'Driver 1',
-            CarNumber: '1',
+            UserName: 'Driver A',
+            CarNumber: '3',
             CarClassID: 1,
             CarClassShortName: 'Class 1',
             CarClassRelSpeed: 1.0,
@@ -171,13 +183,13 @@ describe('createStandings', () => {
           },
           {
             CarIdx: 1,
-            UserName: 'Driver 2',
-            CarNumber: '2',
+            UserName: 'Driver C',
+            CarNumber: '7',
             CarClassID: 1,
             CarClassShortName: 'Class 1',
             CarClassRelSpeed: 1.0,
-            IRating: 1800,
-            LicString: 'B 3.50',
+            IRating: 1500,
+            LicString: 'B 2.00',
             CarIsPaceCar: 0,
             IsSpectator: 0,
           },
@@ -196,7 +208,7 @@ describe('createStandings', () => {
 
     const standings = createDriverStandings(
       {
-        playerIdx: 1,
+        playerIdx: 2,
         drivers: sessionWithNoResults.DriverInfo.Drivers,
       },
       {},
@@ -210,12 +222,18 @@ describe('createStandings', () => {
       []
     );
 
-    expect(standings).toHaveLength(2);
-    expect(standings[0].driver.name).toBe('Driver 1');
-    expect(standings[0].carIdx).toBe(0);
-    expect(standings[1].driver.name).toBe('Driver 2');
-    expect(standings[1].carIdx).toBe(1);
-    expect(standings[1].isPlayer).toBe(true);
+    expect(standings).toHaveLength(3);
+    // Sorted by car number: 3, 7, 42
+    expect(standings[0].driver.carNum).toBe('3');
+    expect(standings[0].driver.name).toBe('Driver A');
+    expect(standings[0].position).toBe(1);
+    expect(standings[1].driver.carNum).toBe('7');
+    expect(standings[1].driver.name).toBe('Driver C');
+    expect(standings[1].position).toBe(2);
+    expect(standings[2].driver.carNum).toBe('42');
+    expect(standings[2].driver.name).toBe('Driver B');
+    expect(standings[2].position).toBe(3);
+    expect(standings[2].isPlayer).toBe(true);
   });
 
   it('should exclude pace car and spectators from fallback standings', () => {
