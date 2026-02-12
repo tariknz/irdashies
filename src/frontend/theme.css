@@ -25,12 +25,12 @@
 }
 
 @theme {
-  --font-sans: sans-serif;
+  --font-sans: 'Lato', sans-serif;
   --animate-pulse-border: pulse-border 1s infinite;
   --animate-blink: blink 1s infinite;
-  --text-xs: 12px;
-  --text-sm: 14px;
-  --text-base: 16px;
+  --text-xs: 10px;
+  --text-sm: 12px;
+  --text-base: 14px;
 
   @keyframes pulse-border {
     0% {
