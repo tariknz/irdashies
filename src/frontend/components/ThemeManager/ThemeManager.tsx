@@ -10,7 +10,7 @@ const isSettingsPage = () => {
 };
 
 export const ThemeManager = ({ children }: PropsWithChildren) => {
-  const { fontSize, colorPalette, fontFace, fontWeight } = useGeneralSettings() || {};
+  const { fontSize, colorPalette, fontType, fontWeight } = useGeneralSettings() || {};
 
   // Don't apply theme changes to the settings page since
   // they share the same theme as the rest of the overlays
@@ -24,7 +24,7 @@ export const ThemeManager = ({ children }: PropsWithChildren) => {
         relative w-full h-full overflow-hidden overlay-window
         overlay-theme-${fontSize ?? 'sm'}
         overlay-theme-color-${colorPalette ?? 'default'}
-        overlay-theme-font-face-${fontFace ?? 'lato'}
+        overlay-theme-font-face-${fontType ?? 'lato'}
         overlay-theme-font-weight-${fontWeight ?? 'normal'}
       `}
     >

@@ -68,7 +68,7 @@ const COLOR_THEME_PRESETS: Record<string, string> = {
 export const GeneralSettings = () => {
   const { bridge, currentDashboard, onDashboardUpdated } = useDashboard();
   const [settings, setSettings] = useState<GeneralSettingsType>({
-    fontFace: currentDashboard?.generalSettings?.fontFace ?? 'lato',
+    fontType: currentDashboard?.generalSettings?.fontType ?? 'lato',
     fontSize: currentDashboard?.generalSettings?.fontSize ?? 'sm',
     fontWeight: currentDashboard?.generalSettings?.fontWeight ?? 'normal',
     colorPalette: currentDashboard?.generalSettings?.colorPalette ?? 'default',
@@ -130,7 +130,7 @@ export const GeneralSettings = () => {
   const handleFontChange = (
     newFont: 'lato' | 'notosans' | 'roboto'
   ) => {
-    const newSettings = { ...settings, fontFace: newFont };
+    const newSettings = { ...settings, fontType: newFont };
     setSettings(newSettings);
     updateDashboard(newSettings);
   };
@@ -235,11 +235,11 @@ export const GeneralSettings = () => {
           {/* Font Weight Dropdown */}
           <div className="mt-4">
             <select
-              value={settings.fontFace ?? 'lato'}
+              value={settings.fontType ?? 'lato'}
               onChange={(e) =>
                 handleFontChange(
                   e.target.value as NonNullable<
-                    GeneralSettingsType['fontFace']
+                    GeneralSettingsType['fontType']
                   >
                 )
               }
