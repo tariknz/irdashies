@@ -59,7 +59,9 @@ export const OverlayContainer = memo(() => {
             zIndex={index + 1}
             onLayoutChange={handleLayoutChange}
           >
-            {running ? <WidgetComponent {...widget.config} /> : null}
+            {running || widget.alwaysEnabled ? (
+              <WidgetComponent {...widget.config} />
+            ) : null}
           </WidgetContainer>
         );
       })}
