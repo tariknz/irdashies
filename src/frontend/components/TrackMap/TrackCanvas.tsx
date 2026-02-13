@@ -353,11 +353,12 @@ export const TrackCanvas = ({
       }
     }
 
-    // 2. Clear main canvas and draw cache
+    // 2. Clear main canvas and draw cache (pixel-for-pixel, bypass DPR transform)
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    if (cacheCanvas) {
-      ctx.drawImage(cacheCanvas, 0, 0);
-    }
+    ctx.drawImage(cacheCanvas, 0, 0);
+    ctx.restore();
 
     // 3. Draw dynamic elements (drivers)
     // We need the scale and offset for drivers too
