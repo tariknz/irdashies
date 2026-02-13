@@ -26,9 +26,32 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
   const focusCarIdx = useFocusCarIdx();
   const paceCarIdx =
     useSessionStore((s) => s.session?.DriverInfo?.PaceCarIdx) ?? -1;
-  const { collectLapData, getReferenceLap, resetLaps } = useReferenceRegistry();
+  const seriesId =
+    useSessionStore((s) => s.session?.WeekendInfo.SeriesID) ?? -1;
+  const trackId = useSessionStore((s) => s.session?.WeekendInfo.TrackID) ?? -1;
+  const classIdsString = drivers.map((d) => d.carClass.id).join(',');
+
+  const classList = useMemo(() => {
+    const ids = drivers.map((d) => d.carClass.id);
+    const uniqueIds = Array.from(new Set(ids));
+
+    const paceCarClassId = 11;
+    // Optional: Filter out Pace Car (usually class 11) and sort
+    return uniqueIds
+      .filter((classId) => classId !== paceCarClassId)
+      .sort((a, b) => a - b);
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [classIdsString]);
+
+  const { collectLapData, getReferenceLap, completeSession } =
+    useReferenceRegistry(seriesId, trackId, classList);
   const sessionTime = useTelemetryValue<number>('SessionTime') ?? 0;
   const sessionNum = useTelemetryValue('SessionNum') ?? -1;
+
+  useEffect(() => {
+    completeSession();
+  }, [seriesId, sessionNum, completeSession]);
 
   // Driver lookup map
   const driverMap = useMemo(
@@ -75,7 +98,10 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
       const isOnPitRoadBehind = carIdxIsOnPitRoad[behindIdx] === 1;
       const isAnyoneOnPitRoad = isOnPitRoadAhead || isOnPitRoadBehind;
 
-      const refLap = getReferenceLap(behindIdx);
+      const behindDriver = driverMap.get(behindIdx);
+      const classId = behindDriver?.carClass.id ?? -1;
+      const isStartingLap = (behindDriver?.lap ?? -1) <= 1;
+      const refLap = getReferenceLap(behindIdx, classId, isStartingLap);
 
       const isInPitOrHasNoData = isAnyoneOnPitRoad || refLap.finishTime < 0;
 
@@ -86,7 +112,6 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
         const aheadDriver = driverMap.get(aheadIdx);
 
         const behindEstTime = carIdxEstTime[behindIdx];
-        const behindDriver = driverMap.get(behindIdx);
 
         calculatedDelta = calculateClassEstimatedGap(
           getStats(aheadEstTime, aheadDriver),
@@ -130,10 +155,6 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
     [focusCarIdx, paceCarIdx]
   );
 
-  useEffect(() => {
-    resetLaps();
-  }, [resetLaps, sessionNum]);
-
   // ===========================================================================
   // 1. DATA COLLECTION PHASE (Side Effect)
   // Run this in an Effect so it happens reliably after every frame update.
@@ -142,8 +163,10 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
     drivers.forEach((d) => {
       if (isValidDriver(d)) {
         const idx = d.carIdx;
+        const classId = d.carClass.id;
         collectLapData(
           idx,
+          classId,
           carIdxLapDistPct[idx],
           sessionTime,
           TRACK_SURFACES.OnTrack,

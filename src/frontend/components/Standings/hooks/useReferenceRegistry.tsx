@@ -18,6 +18,7 @@ export interface ReferencePoint {
  * A container for all timing data associated with a specific lap.
  * This can represent an active lap currently being recorded or a finalized "Best Lap". */
 export interface ReferenceLap {
+  classId: number;
   refPoints: Map<number, ReferencePoint>;
   startTime: number;
   finishTime: number;
@@ -54,8 +55,56 @@ function isLapClean(trackSurface: number, isOnPitRoad: boolean): boolean {
  *
  * @returns An object containing functions to process driver updates and retrieve lap data.
  */
-export const useReferenceRegistry = () => {
+export const useReferenceRegistry = (
+  seriesId: number,
+  trackId: number,
+  classList: number[]
+) => {
   // Persistence for 63 drivers
+  const persistedLaps = useRef<Map<number, ReferenceLap>>(
+    new Map<number, ReferenceLap>()
+  );
+
+  const initialize = useCallback(() => {
+    const loadReferenceLaps = async () => {
+      const results = await Promise.all(
+        classList.map(async (classId) => {
+          try {
+            const lap = (await window.referenceLapsBridge.getReferenceLap(
+              seriesId,
+              trackId,
+              classId
+            )) as ReferenceLap;
+            console.log(
+              `Class ${classId} Lap Time: ${lap.finishTime - lap.startTime}`
+            );
+            return { classId, lap };
+          } catch (error) {
+            console.error(
+              `Failed to load reference lap for class ${classId}:`,
+              error
+            );
+            return { classId, lap: null };
+          }
+        })
+      );
+
+      // Update the ref synchronously once data arrives
+      results.forEach(({ classId, lap }) => {
+        if (lap) {
+          persistedLaps.current.set(classId, lap);
+        }
+      });
+    };
+
+    console.log('Initilized storage!');
+
+    if (classList.length > 0 && persistedLaps.current.size === 0) {
+      loadReferenceLaps();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const laps = useRef<Map<number, ReferenceLap>>(new Map());
   const bestLaps = useRef<Map<number, ReferenceLap>>(new Map());
 
@@ -71,6 +120,7 @@ export const useReferenceRegistry = () => {
   const collectLapData = useCallback(
     (
       carIdx: number,
+      classId: number,
       trackPct: number,
       sessionTime: number,
       trackSurface: number,
@@ -81,6 +131,7 @@ export const useReferenceRegistry = () => {
       // 1. Initialization
       if (!refLap) {
         refLap = {
+          classId,
           startTime: sessionTime,
           finishTime: -1,
           // TODO: Maybe only do a new map and let end of function handle?
@@ -110,20 +161,34 @@ export const useReferenceRegistry = () => {
           const bestLap = bestLaps.current.get(carIdx);
 
           // If no best lap exists OR this one is faster, save it
-          if (!bestLap) {
-            precomputePCHIPTangents(refLap);
-            bestLaps.current.set(carIdx, refLap);
-          } else if (refLap.isCleanLap) {
+          if (bestLap && refLap.isCleanLap) {
             const bestLapTime = bestLap.finishTime - bestLap.startTime;
             if (currentLapTime < bestLapTime) {
               precomputePCHIPTangents(refLap);
               bestLaps.current.set(carIdx, refLap);
+
+              const savedLap = persistedLaps.current.get(refLap.classId);
+
+              if (savedLap) {
+                const savedLapTime = savedLap?.finishTime - savedLap?.startTime;
+                if (savedLapTime > bestLapTime) {
+                  persistedLaps.current.set(refLap.classId, refLap);
+                  saveLapData(refLap);
+                }
+              } else {
+                persistedLaps.current.set(refLap.classId, refLap);
+                saveLapData(refLap);
+              }
             }
+          } else {
+            precomputePCHIPTangents(refLap);
+            bestLaps.current.set(carIdx, refLap);
           }
         }
 
         // Reset for new lap
         refLap = {
+          classId,
           startTime: sessionTime,
           finishTime: -1,
           refPoints: new Map<number, ReferencePoint>([
@@ -150,9 +215,6 @@ export const useReferenceRegistry = () => {
       }
 
       // 3. Data Collection
-      // Always update lastTrackPct so we detect the wrap accurately next frame
-      // refLap.lastTrackedPct = trackPct;
-
       // Only add point if this specific 0.25% bucket is empty
       const lastRefPoint = refLap.refPoints.get(key);
       if (!lastRefPoint && refLap.isCleanLap) {
@@ -164,6 +226,7 @@ export const useReferenceRegistry = () => {
         refLap.lastTrackedPct = trackPct;
       }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     []
   );
 
@@ -173,22 +236,61 @@ export const useReferenceRegistry = () => {
    * @param carIdx - The unique identifier for the driver.
    * @returns A Map of normalized track percentages to session times, or undefined if no data exists.
    */
-  const getReferenceLap = useCallback((carIdx: number): ReferenceLap => {
-    return (
-      bestLaps.current.get(carIdx) ?? {
-        startTime: -1,
-        finishTime: -1,
-        refPoints: new Map<number, ReferencePoint>(),
-        lastTrackedPct: -1,
-        isCleanLap: false,
-      }
-    );
-  }, []);
+  const getReferenceLap = useCallback(
+    (
+      carIdx: number,
+      classId: number,
+      usePersistence: boolean
+    ): ReferenceLap => {
+      const bestLap = bestLaps.current.get(carIdx);
+      if (usePersistence || !bestLap) {
+        const persistedLap = persistedLaps.current.get(classId) ?? {
+          classId,
+          startTime: -1,
+          finishTime: -1,
+          refPoints: new Map<number, ReferencePoint>(),
+          lastTrackedPct: -1,
+          isCleanLap: false,
+        };
 
-  const resetLaps = useCallback(() => {
+        return persistedLap;
+      }
+      return bestLap;
+    },
+    []
+  );
+
+  const clearAllTrackedData = useCallback(() => {
     bestLaps.current.clear();
     laps.current.clear();
+    persistedLaps.current.clear();
   }, []);
 
-  return { collectLapData, getReferenceLap, resetLaps };
+  const saveLapData = useCallback(async (newLap: ReferenceLap) => {
+    const classId = newLap.classId;
+    // Create the promise but don't await it yet (batch them below)
+    const savePromise = window.referenceLapsBridge
+      .saveReferenceLap(seriesId, trackId, classId, newLap)
+      .then(() => {
+        console.log(
+          `[Session] Saved new best for class ${classId}: ${newLap.finishTime - newLap.startTime} s`
+        );
+      })
+      .catch((err: Error) => {
+        console.error(`[Session] Failed to save class ${classId}`, err);
+      });
+
+    // Wait for all necessary disk writes to finish in parallel
+    if (savePromise) {
+      await savePromise;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const completeSession = useCallback(() => {
+    clearAllTrackedData();
+    initialize();
+  }, [clearAllTrackedData, initialize]);
+
+  return { collectLapData, getReferenceLap, completeSession, initialize };
 };

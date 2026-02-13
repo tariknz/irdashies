@@ -1,7 +1,7 @@
 import { app } from 'electron';
 import fs from 'node:fs';
 import path from 'node:path';
-import { ReferenceLap, ReferencePoint } from 'src/types/referenceLaps';
+import type { ReferenceLap, ReferencePoint } from 'src/types/referenceLaps';
 
 const dataPath = app.getPath('userData');
 const filePath = path.join(dataPath, 'referenceLaps.json');
