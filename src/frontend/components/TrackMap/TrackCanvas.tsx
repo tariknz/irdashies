@@ -74,10 +74,12 @@ export const TrackCanvas = ({
   debug,
 }: TrackProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
+  const cacheCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const cacheParamsRef = useRef<string>('');
   const debounceResizeRef = useRef<ReturnType<typeof setTimeout> | undefined>(
     undefined
   );
+  const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
 
   const trackDrawing = (tracks as unknown as TrackDrawing[])[trackId];
   const shouldShow = shouldShowTrack(trackId, trackDrawing);
@@ -220,9 +222,7 @@ export const TrackCanvas = ({
     trackDrawing?.active?.totalLength,
   ]);
 
-  // Canvas setup effect
-  // this is used to set the canvas size to the correct size
-  // and handles resizing the canvas when the container is resized
+  // Canvas setup and resize handling
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -237,8 +237,6 @@ export const TrackCanvas = ({
       // Set the actual canvas size in memory (scaled up for high-DPI)
       canvas.width = rect.width * dpr;
       canvas.height = rect.height * dpr;
-
-      // Set the CSS size to maintain the same visual size
 
       // Apply device pixel ratio scaling to the context
       const ctx = canvas.getContext('2d');
@@ -287,12 +285,10 @@ export const TrackCanvas = ({
       if (debounceResizeRef.current) {
         clearTimeout(debounceResizeRef.current);
       }
+      cacheCanvasRef.current = null;
+      cacheParamsRef.current = '';
     };
   }, [trackId]);
-
-  // Caching for static elements (track, lines, turns)
-  const cacheCanvasRef = useRef<HTMLCanvasElement | null>(null);
-  const cacheParamsRef = useRef<string>('');
 
   // Main render loop
   useLayoutEffect(() => {
@@ -353,7 +349,7 @@ export const TrackCanvas = ({
       }
     }
 
-    // 2. Clear main canvas and draw cache (pixel-for-pixel, bypass DPR transform)
+    // 2. Blit cache to main canvas (identity transform to avoid double DPR scaling)
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -361,7 +357,6 @@ export const TrackCanvas = ({
     ctx.restore();
 
     // 3. Draw dynamic elements (drivers)
-    // We need the scale and offset for drivers too
     const scaleX = canvasSize.width / TRACK_DRAWING_WIDTH;
     const scaleY = canvasSize.height / TRACK_DRAWING_HEIGHT;
     const scale = Math.min(scaleX, scaleY);
