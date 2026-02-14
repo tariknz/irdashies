@@ -59,6 +59,7 @@ export interface Standings {
   penalty: boolean;
   slowdown: boolean;
   relativePct: number;
+  carIdxLapDistPct?: number;
 }
 
 const calculateDelta = (
@@ -118,6 +119,7 @@ export const createDriverStandings = (
     carIdxTireCompoundValue?: number[];
     isOnTrack?: boolean;
     carIdxSessionFlags?: number[];
+    carIdxLapDistPctValue?: number[];
   },
   currentSession: {
     resultsPositions?: SessionResults[];
@@ -224,6 +226,8 @@ export const createDriverStandings = (
           GlobalFlags.Furled
         ),
         relativePct: 0,
+        carIdxLapDistPct:
+          telemetry?.carIdxLapDistPctValue?.[result.CarIdx] ?? undefined,
       };
     })
     .filter((s) => !!s);

@@ -68,6 +68,7 @@ interface DriverRowInfoProps {
   slowdown: boolean;
   deltaDecimalPlaces?: number;
   hideCarManufacturer?: boolean;
+  carIdxLapDistPct?: number;
 }
 
 // Helper function to provide dummy data for hidden rows
@@ -78,7 +79,7 @@ const getDummyData = () => ({
   teamName: 'Team Name',
   delta: 0,
   fastestTime: 60000, // 1:00.000
-  lastTime: 60000,    // 1:00.000
+  lastTime: 60000, // 1:00.000
   tireCompound: 0,
   license: 'A 4.99',
   rating: 4999,
@@ -98,9 +99,9 @@ const getDummyData = () => ({
 // Helper function to transform props for hidden rows
 const getDisplayProps = (props: DriverRowInfoProps) => {
   if (!props.hidden) return props;
-  
+
   const dummyData = getDummyData();
-  
+
   return {
     ...props,
     // Override with dummy data for hidden rows
@@ -128,395 +129,380 @@ const getDisplayProps = (props: DriverRowInfoProps) => {
   };
 };
 
-export const DriverInfoRow = memo(
-  (props: DriverRowInfoProps) => {
-    // Transform props for hidden rows
-    const displayProps = getDisplayProps(props);
-    
-    const {
-      carIdx,
-      carNumber,
-      classColor,
-      name,
-      teamName,
-      isPlayer,
-      hasFastestTime,
-      delta,
-      gap,
-      interval,
-      position,
-      lap,
-      license,
-      rating,
-      iratingChangeValue,
-      lastTime,
-      fastestTime,
-      lastTimeState,
-      onPitRoad,
-      onTrack,
-      radioActive,
-      isLapped,
-      isLappingAhead,
-      hidden,
-      flairId,
-      tireCompound,
-      carId,
-      lapTimeDeltas,
-      numLapDeltasToShow,
-      isMultiClass,
-      displayOrder,
-      config,
-      lastPitLap,
-      lastLap,
-      prevCarTrackSurface,
-      carTrackSurface,
-      currentSessionType,
-      highlightColor = 960745,
-      dnf,
-      repair,
-      penalty,
-      slowdown,
-      deltaDecimalPlaces,
-      pitStopDuration: pitStopDurationProp,
-      hideCarManufacturer,
-    } = displayProps;
-    const pitStopDurations = usePitStopDuration();
-    const pitStopDuration =
-      pitStopDurationProp ?? pitStopDurations[carIdx] ?? null;
+export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
+  // Transform props for hidden rows
+  const displayProps = getDisplayProps(props);
 
-    const lastTimeString = useMemo(() => {
-      const format = config?.lastTime?.timeFormat ?? 'full';
-      return formatTime(lastTime, format as TimeFormat);
-    }, [lastTime, config?.lastTime?.timeFormat]);
+  const {
+    carIdx,
+    carNumber,
+    classColor,
+    name,
+    teamName,
+    isPlayer,
+    hasFastestTime,
+    delta,
+    gap,
+    interval,
+    position,
+    lap,
+    license,
+    rating,
+    iratingChangeValue,
+    lastTime,
+    fastestTime,
+    lastTimeState,
+    onPitRoad,
+    onTrack,
+    radioActive,
+    isLapped,
+    isLappingAhead,
+    hidden,
+    flairId,
+    tireCompound,
+    carId,
+    lapTimeDeltas,
+    numLapDeltasToShow,
+    isMultiClass,
+    displayOrder,
+    config,
+    lastPitLap,
+    lastLap,
+    prevCarTrackSurface,
+    carTrackSurface,
+    currentSessionType,
+    highlightColor = 960745,
+    dnf,
+    repair,
+    penalty,
+    slowdown,
+    deltaDecimalPlaces,
+    pitStopDuration: pitStopDurationProp,
+    hideCarManufacturer,
+    carIdxLapDistPct,
+  } = displayProps;
+  const pitStopDurations = usePitStopDuration();
+  const pitStopDuration =
+    pitStopDurationProp ?? pitStopDurations[carIdx] ?? null;
 
-    const fastestTimeString = useMemo(() => {
-      const format = config?.fastestTime?.timeFormat ?? 'full';
-      return formatTime(fastestTime, format as TimeFormat);
-    }, [fastestTime, config?.fastestTime?.timeFormat]);
+  const lastTimeString = useMemo(() => {
+    const format = config?.lastTime?.timeFormat ?? 'full';
+    return formatTime(lastTime, format as TimeFormat);
+  }, [lastTime, config?.lastTime?.timeFormat]);
 
-    const offTrack = carTrackSurface === 0 ? true : false;
+  const fastestTimeString = useMemo(() => {
+    const format = config?.fastestTime?.timeFormat ?? 'full';
+    return formatTime(fastestTime, format as TimeFormat);
+  }, [fastestTime, config?.fastestTime?.timeFormat]);
 
-    const tailwindStyles = useMemo(() => {
-      return getTailwindStyle(classColor, highlightColor, isMultiClass);
-    }, [classColor, highlightColor, isMultiClass]);
+  const offTrack = carTrackSurface === 0 ? true : false;
 
-    const emptyLapDeltaPlaceholders = useMemo(() => {
-      if (!numLapDeltasToShow) return null;
-      return Array.from({ length: numLapDeltasToShow }, (_, index) => index);
-    }, [numLapDeltasToShow]);
-    
-    const columnDefinitions = useMemo(() => {
-      const columns = [
-        {
-          id: 'position',
-          shouldRender:
-            (displayOrder ? displayOrder.includes('position') : true) &&
-            (config?.position?.enabled ?? true),
-          component: (
-            <PositionCell
-              key="position"
-              position={position}
-              isPlayer={isPlayer}
-              offTrack={offTrack}
-              tailwindStyles={tailwindStyles}
-            />
-          ),
-        },
-        {
-          id: 'carNumber',
-          shouldRender:
-            (displayOrder ? displayOrder.includes('carNumber') : true) &&
-            (config?.carNumber?.enabled ?? true),
-          component: (
-            <CarNumberCell
-              key="carNumber"
-              carNumber={carNumber}
-              tailwindStyles={tailwindStyles}
-            />
-          ),
-        },
-        {
-          id: 'countryFlags',
-          shouldRender:
-            (displayOrder ? displayOrder.includes('countryFlags') : true) &&
-            (config?.countryFlags?.enabled ?? true),
-          component: (
-            <CountryFlagsCell
-              key="countryFlags"
-              flairId={flairId}
-            />
-          ),
-        },
-        {
-          id: 'driverName',
-          shouldRender:
-            (displayOrder ? displayOrder.includes('driverName') : true) &&
-            (config?.driverName?.enabled ?? true),
-          component: (
-            <DriverNameCell
-              key="driverName"
-              radioActive={radioActive}
-              repair={repair}
-              penalty={penalty}
-              slowdown={slowdown}
-              showStatusBadges={config?.driverName?.showStatusBadges ?? true}
-              fullName={name}
-              nameFormat={config?.driverName?.nameFormat}
-            />
-          ),
-        },
-        {
-          id: 'teamName',
-          shouldRender:
-            teamName !== undefined &&
-            (displayOrder ? displayOrder.includes('teamName') : false) &&
-            (config?.teamName?.enabled ?? false),
-          component: (
-            <TeamNameCell 
-              key="teamName" 
-              teamName={teamName} />
-          ),
-        },
-        {
-          id: 'pitStatus',
-          shouldRender:
-            (displayOrder ? displayOrder.includes('pitStatus') : true) &&
-            (config?.pitStatus?.enabled ?? true),
-          component: (
-            <PitStatusCell
-              key="pitStatus"
-              onPitRoad={onPitRoad}
-              carTrackSurface={carTrackSurface}
-              prevCarTrackSurface={prevCarTrackSurface}
-              lap={lap}
-              lastPitLap={lastPitLap}
-              lastLap={lastLap}
-              currentSessionType={currentSessionType}
-              dnf={dnf}
-              pitStopDuration={pitStopDuration}
-              showPitTime={config?.pitStatus?.showPitTime ?? false}
-              pitLapDisplayMode={config?.pitStatus?.pitLapDisplayMode}
-            />
-          ),
-        },
-        {
-          id: 'carManufacturer',
-          shouldRender:
-            (displayOrder ? displayOrder.includes('carManufacturer') : true) &&
-            (config?.carManufacturer?.enabled ?? true) &&
-            !hideCarManufacturer,
-          component: (
-            <CarManufacturerCell
-              key="carManufacturer"
-              carId={carId}
-            />
-          ),
-        },
-        {
-          id: 'badge',
-          shouldRender:
-            (displayOrder ? displayOrder.includes('badge') : true) &&
-            (config?.badge?.enabled ?? true),
-          component: (
-            <BadgeCell
-              key="badge"
-              license={license}
-              rating={rating}
-              badgeFormat={config?.badge?.badgeFormat}
-            />
-          ),
-        },
-        {
-          id: 'iratingChange',
-          shouldRender:
-            (displayOrder ? displayOrder.includes('iratingChange') : true) &&
-            (config?.iratingChange?.enabled ?? false),
-          component: (
-            <IratingChangeCell
-              key="iratingChange"
-              iratingChangeValue={iratingChangeValue}
-            />
-          ),
-        },
-        {
-          id: 'delta',
-          shouldRender:
-            (displayOrder ? displayOrder.includes('delta') : true) &&
-            (config?.delta?.enabled ?? true) &&
-            !(config && 'gap' in config),
-          component: (
-            <DeltaCell
-              key="delta"
-              delta={delta}
-              decimalPlaces={deltaDecimalPlaces}
-            />
-          ),
-        },
-        {
-          id: 'gap',
-          shouldRender:
-            (displayOrder ? displayOrder.includes('gap') : true) &&
-            (config && 'gap' in config ? config.gap.enabled : false) &&
-            currentSessionType?.toLowerCase() === 'race',
-          component: (
-            <DeltaCell
-              key="gap"
-              delta={gap}
-              showForUndefined={position === 1 ? 'gap' : undefined}
-              decimalPlaces={deltaDecimalPlaces}
-            />
-          ),
-        },
-        {
-          id: 'interval',
-          shouldRender:
-            (displayOrder ? displayOrder.includes('interval') : true) &&
-            (config && 'interval' in config
-              ? config.interval.enabled
-              : false) &&
-            currentSessionType?.toLowerCase() === 'race',
-          component: (
-            <DeltaCell
-              key="interval"
-              delta={interval}
-              showForUndefined={position === 1 ? 'int' : undefined}
-              decimalPlaces={deltaDecimalPlaces}
-            />
-          ),
-        },
-        {
-          id: 'fastestTime',
-          shouldRender:
-            (displayOrder ? displayOrder.includes('fastestTime') : true) &&
-            (config?.fastestTime?.enabled ?? false),
-          component: (
-            <FastestTimeCell
-              key="fastestTime"
-              fastestTimeString={fastestTimeString}
-              hasFastestTime={hasFastestTime}
-            />
-          ),
-        },
-        {
-          id: 'lastTime',
-          shouldRender:
-            (displayOrder ? displayOrder.includes('lastTime') : true) &&
-            (config?.lastTime?.enabled ?? false),
-          component: (
-            <LastTimeCell
-              key="lastTime"
-              lastTimeString={lastTimeString}
-              lastTimeState={lastTimeState}
-            />
-          ),
-        },
-        {
-          id: 'compound',
-          shouldRender:
-            (displayOrder ? displayOrder.includes('compound') : true) &&
-            (config?.compound?.enabled ?? false),
-          component: (
-            <CompoundCell
-              key="compound"
-              tireCompound={tireCompound}
-              carId={carId}
-            />
-          ),
-        },
-        {
-          id: 'lapTimeDeltas',
-          shouldRender:
-            (displayOrder ? displayOrder.includes('lapTimeDeltas') : false) &&
-            (config && 'lapTimeDeltas' in config
-              ? config.lapTimeDeltas.enabled
-              : false),
-          component: (
-            <LapTimeDeltasCell
-              key="lapTimeDeltas"
-              lapTimeDeltas={lapTimeDeltas}
-              emptyLapDeltaPlaceholders={emptyLapDeltaPlaceholders}
-              isPlayer={isPlayer}
-            />
-          ),
-        },
-      ];
+  const tailwindStyles = useMemo(() => {
+    return getTailwindStyle(classColor, highlightColor, isMultiClass);
+  }, [classColor, highlightColor, isMultiClass]);
 
-      if (displayOrder) {
-        const orderedColumns = displayOrder
-          .map((orderId) => columns.find((col) => col.id === orderId))
-          .filter(
-            (col): col is NonNullable<typeof col> =>
-              col !== undefined && col.shouldRender
-          );
+  const emptyLapDeltaPlaceholders = useMemo(() => {
+    if (!numLapDeltasToShow) return null;
+    return Array.from({ length: numLapDeltasToShow }, (_, index) => index);
+  }, [numLapDeltasToShow]);
 
-        const remainingColumns = columns.filter(
-          (col) => col.shouldRender && !displayOrder.includes(col.id)
+  const columnDefinitions = useMemo(() => {
+    const columns = [
+      {
+        id: 'position',
+        shouldRender:
+          (displayOrder ? displayOrder.includes('position') : true) &&
+          (config?.position?.enabled ?? true),
+        component: (
+          <PositionCell
+            key="position"
+            position={position}
+            isPlayer={isPlayer}
+            offTrack={offTrack}
+            tailwindStyles={tailwindStyles}
+          />
+        ),
+      },
+      {
+        id: 'carNumber',
+        shouldRender:
+          (displayOrder ? displayOrder.includes('carNumber') : true) &&
+          (config?.carNumber?.enabled ?? true),
+        component: (
+          <CarNumberCell
+            key="carNumber"
+            carNumber={carNumber}
+            tailwindStyles={tailwindStyles}
+          />
+        ),
+      },
+      {
+        id: 'countryFlags',
+        shouldRender:
+          (displayOrder ? displayOrder.includes('countryFlags') : true) &&
+          (config?.countryFlags?.enabled ?? true),
+        component: <CountryFlagsCell key="countryFlags" flairId={flairId} />,
+      },
+      {
+        id: 'driverName',
+        shouldRender:
+          (displayOrder ? displayOrder.includes('driverName') : true) &&
+          (config?.driverName?.enabled ?? true),
+        component: (
+          <DriverNameCell
+            key="driverName"
+            radioActive={radioActive}
+            repair={repair}
+            penalty={penalty}
+            slowdown={slowdown}
+            showStatusBadges={config?.driverName?.showStatusBadges ?? true}
+            fullName={name}
+            nameFormat={config?.driverName?.nameFormat}
+          />
+        ),
+      },
+      {
+        id: 'teamName',
+        shouldRender:
+          teamName !== undefined &&
+          (displayOrder ? displayOrder.includes('teamName') : false) &&
+          (config?.teamName?.enabled ?? false),
+        component: <TeamNameCell key="teamName" teamName={teamName} />,
+      },
+      {
+        id: 'pitStatus',
+        shouldRender:
+          (displayOrder ? displayOrder.includes('pitStatus') : true) &&
+          (config?.pitStatus?.enabled ?? true),
+        component: (
+          <PitStatusCell
+            key="pitStatus"
+            onPitRoad={onPitRoad}
+            carTrackSurface={carTrackSurface}
+            prevCarTrackSurface={prevCarTrackSurface}
+            lap={lap}
+            lastPitLap={lastPitLap}
+            lastLap={lastLap}
+            currentSessionType={currentSessionType}
+            dnf={dnf}
+            pitStopDuration={pitStopDuration}
+            showPitTime={config?.pitStatus?.showPitTime ?? false}
+            pitLapDisplayMode={config?.pitStatus?.pitLapDisplayMode}
+            carIdxLapDistPct={carIdxLapDistPct}
+          />
+        ),
+      },
+      {
+        id: 'carManufacturer',
+        shouldRender:
+          (displayOrder ? displayOrder.includes('carManufacturer') : true) &&
+          (config?.carManufacturer?.enabled ?? true) &&
+          !hideCarManufacturer,
+        component: <CarManufacturerCell key="carManufacturer" carId={carId} />,
+      },
+      {
+        id: 'badge',
+        shouldRender:
+          (displayOrder ? displayOrder.includes('badge') : true) &&
+          (config?.badge?.enabled ?? true),
+        component: (
+          <BadgeCell
+            key="badge"
+            license={license}
+            rating={rating}
+            badgeFormat={config?.badge?.badgeFormat}
+          />
+        ),
+      },
+      {
+        id: 'iratingChange',
+        shouldRender:
+          (displayOrder ? displayOrder.includes('iratingChange') : true) &&
+          (config?.iratingChange?.enabled ?? false),
+        component: (
+          <IratingChangeCell
+            key="iratingChange"
+            iratingChangeValue={iratingChangeValue}
+          />
+        ),
+      },
+      {
+        id: 'delta',
+        shouldRender:
+          (displayOrder ? displayOrder.includes('delta') : true) &&
+          (config?.delta?.enabled ?? true) &&
+          !(config && 'gap' in config),
+        component: (
+          <DeltaCell
+            key="delta"
+            delta={delta}
+            decimalPlaces={deltaDecimalPlaces}
+          />
+        ),
+      },
+      {
+        id: 'gap',
+        shouldRender:
+          (displayOrder ? displayOrder.includes('gap') : true) &&
+          (config && 'gap' in config ? config.gap.enabled : false) &&
+          currentSessionType?.toLowerCase() === 'race',
+        component: (
+          <DeltaCell
+            key="gap"
+            delta={gap}
+            showForUndefined={position === 1 ? 'gap' : undefined}
+            decimalPlaces={deltaDecimalPlaces}
+          />
+        ),
+      },
+      {
+        id: 'interval',
+        shouldRender:
+          (displayOrder ? displayOrder.includes('interval') : true) &&
+          (config && 'interval' in config ? config.interval.enabled : false) &&
+          currentSessionType?.toLowerCase() === 'race',
+        component: (
+          <DeltaCell
+            key="interval"
+            delta={interval}
+            showForUndefined={position === 1 ? 'int' : undefined}
+            decimalPlaces={deltaDecimalPlaces}
+          />
+        ),
+      },
+      {
+        id: 'fastestTime',
+        shouldRender:
+          (displayOrder ? displayOrder.includes('fastestTime') : true) &&
+          (config?.fastestTime?.enabled ?? false),
+        component: (
+          <FastestTimeCell
+            key="fastestTime"
+            fastestTimeString={fastestTimeString}
+            hasFastestTime={hasFastestTime}
+          />
+        ),
+      },
+      {
+        id: 'lastTime',
+        shouldRender:
+          (displayOrder ? displayOrder.includes('lastTime') : true) &&
+          (config?.lastTime?.enabled ?? false),
+        component: (
+          <LastTimeCell
+            key="lastTime"
+            lastTimeString={lastTimeString}
+            lastTimeState={lastTimeState}
+          />
+        ),
+      },
+      {
+        id: 'compound',
+        shouldRender:
+          (displayOrder ? displayOrder.includes('compound') : true) &&
+          (config?.compound?.enabled ?? false),
+        component: (
+          <CompoundCell
+            key="compound"
+            tireCompound={tireCompound}
+            carId={carId}
+          />
+        ),
+      },
+      {
+        id: 'lapTimeDeltas',
+        shouldRender:
+          (displayOrder ? displayOrder.includes('lapTimeDeltas') : false) &&
+          (config && 'lapTimeDeltas' in config
+            ? config.lapTimeDeltas.enabled
+            : false),
+        component: (
+          <LapTimeDeltasCell
+            key="lapTimeDeltas"
+            lapTimeDeltas={lapTimeDeltas}
+            emptyLapDeltaPlaceholders={emptyLapDeltaPlaceholders}
+            isPlayer={isPlayer}
+          />
+        ),
+      },
+    ];
+
+    if (displayOrder) {
+      const orderedColumns = displayOrder
+        .map((orderId) => columns.find((col) => col.id === orderId))
+        .filter(
+          (col): col is NonNullable<typeof col> =>
+            col !== undefined && col.shouldRender
         );
 
-        return [...orderedColumns, ...remainingColumns];
-      }
+      const remainingColumns = columns.filter(
+        (col) => col.shouldRender && !displayOrder.includes(col.id)
+      );
 
-      return columns.filter((col) => col.shouldRender);
-    }, [
-      displayOrder,
-      config,
-      position,
-      lap,
-      isPlayer,
-      offTrack,
-      tailwindStyles,
-      carNumber,
-      flairId,
-      name,
-      teamName,
-      radioActive,
-      onPitRoad,
-      carTrackSurface,
-      prevCarTrackSurface,
-      lastPitLap,
-      lastLap,
-      currentSessionType,
-      dnf,
-      repair,
-      penalty,
-      slowdown,
-      pitStopDuration,
-      carId,
-      license,
-      rating,
-      iratingChangeValue,
-      delta,
-      deltaDecimalPlaces,
-      gap,
-      interval,
-      fastestTimeString,
-      hasFastestTime,
-      lastTimeString,
-      lastTimeState,
-      tireCompound,
-      lapTimeDeltas,
-      emptyLapDeltaPlaceholders,
-      hideCarManufacturer,
-    ]);
+      return [...orderedColumns, ...remainingColumns];
+    }
 
-    return (
-      <tr
-        key={carIdx}
-        className={[
-          !onTrack || onPitRoad ? 'text-white/60' : '',
-          isPlayer ? 'text-amber-300' : '',
-          isPlayer
-            ? 'bg-yellow-500/20'
-            : 'odd:bg-slate-800/70 even:bg-slate-900/70 text-sm',
-          !isPlayer && isLapped ? 'text-blue-400' : '',
-          !isPlayer && isLappingAhead ? 'text-red-400' : '',
-          hidden ? 'invisible' : '',
-        ].join(' ')}
-      >
-        {columnDefinitions.map((column) => column.component)}
-      </tr>
-    );
-  }
-);
+    return columns.filter((col) => col.shouldRender);
+  }, [
+    displayOrder,
+    config,
+    position,
+    lap,
+    isPlayer,
+    offTrack,
+    tailwindStyles,
+    carNumber,
+    flairId,
+    name,
+    teamName,
+    radioActive,
+    onPitRoad,
+    carTrackSurface,
+    prevCarTrackSurface,
+    lastPitLap,
+    lastLap,
+    currentSessionType,
+    dnf,
+    repair,
+    penalty,
+    slowdown,
+    pitStopDuration,
+    carId,
+    license,
+    rating,
+    iratingChangeValue,
+    delta,
+    deltaDecimalPlaces,
+    gap,
+    interval,
+    fastestTimeString,
+    hasFastestTime,
+    lastTimeString,
+    lastTimeState,
+    tireCompound,
+    lapTimeDeltas,
+    emptyLapDeltaPlaceholders,
+    hideCarManufacturer,
+    carIdxLapDistPct,
+  ]);
+
+  return (
+    <tr
+      key={carIdx}
+      className={[
+        !onTrack || onPitRoad ? 'text-white/60' : '',
+        isPlayer ? 'text-amber-300' : '',
+        isPlayer
+          ? 'bg-yellow-500/20'
+          : 'odd:bg-slate-800/70 even:bg-slate-900/70 text-sm',
+        !isPlayer && isLapped ? 'text-blue-400' : '',
+        !isPlayer && isLappingAhead ? 'text-red-400' : '',
+        hidden ? 'invisible' : '',
+      ].join(' ')}
+    >
+      {columnDefinitions.map((column) => column.component)}
+    </tr>
+  );
+});
 
 DriverInfoRow.displayName = 'DriverInfoRow';

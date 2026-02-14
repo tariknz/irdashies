@@ -8,6 +8,7 @@ import {
   useSessionType,
   useTelemetry,
   useTelemetryValue,
+  useTelemetryValues,
   useFocusCarIdx,
 } from '@irdashies/context';
 import { useLapDeltasVsPlayer } from '../../../context/LapTimesStore/LapTimesStore';
@@ -28,7 +29,9 @@ import type { StandingsWidgetSettings } from '../../Settings/types';
 import { useDriverLivePositions } from './useDriverLivePositions';
 import { useStandingsSettings } from './useStandingsSettings';
 
-export const useDriverStandings = (settings?: StandingsWidgetSettings['config']) => {
+export const useDriverStandings = (
+  settings?: StandingsWidgetSettings['config']
+) => {
   const {
     driverStandings: {
       buffer,
@@ -38,7 +41,10 @@ export const useDriverStandings = (settings?: StandingsWidgetSettings['config'])
     } = {},
     gap: { enabled: gapEnabled } = { enabled: false },
     interval: { enabled: intervalEnabled } = { enabled: false },
-    lapTimeDeltas: { enabled: lapTimeDeltasEnabled, numLaps: numLapDeltas } = { enabled: false, numLaps: 3 },
+    lapTimeDeltas: { enabled: lapTimeDeltasEnabled, numLaps: numLapDeltas } = {
+      enabled: false,
+      numLaps: 3,
+    },
   } = settings ?? {};
 
   const sessionDrivers = useSessionDrivers();
@@ -58,14 +64,15 @@ export const useDriverStandings = (settings?: StandingsWidgetSettings['config'])
   const radioTransmitCarIdx = useTelemetry('RadioTransmitCarIdx');
   const carIdxTireCompound = useTelemetry<number[]>('CarIdxTireCompound');
   const carIdxSessionFlags = useTelemetry<number[]>('CarIdxSessionFlags');
+  const carIdxLapDistPcts = useTelemetryValues<number[]>('CarIdxLapDistPct');
+
   const isOfficial = useSessionIsOfficial();
   const lastPitLap = usePitLap();
   const lastLap = useCarLap();
   const prevCarTrackSurface = usePrevCarTrackSurface();
   const driverClass = useMemo(() => {
-    return sessionDrivers?.find(
-      (driver) => driver.CarIdx === driverCarIdx
-    )?.CarClassID;
+    return sessionDrivers?.find((driver) => driver.CarIdx === driverCarIdx)
+      ?.CarClassID;
   }, [sessionDrivers, driverCarIdx]);
   const lapDeltasVsPlayer = useLapDeltasVsPlayer();
 
@@ -87,7 +94,8 @@ export const useDriverStandings = (settings?: StandingsWidgetSettings['config'])
         carIdxTrackSurfaceValue: carIdxTrackSurface?.value,
         radioTransmitCarIdx: radioTransmitCarIdx?.value,
         carIdxTireCompoundValue: carIdxTireCompound?.value,
-        carIdxSessionFlags: carIdxSessionFlags?.value
+        carIdxSessionFlags: carIdxSessionFlags?.value,
+        carIdxLapDistPctValue: carIdxLapDistPcts,
       },
       {
         resultsPositions: positions,
@@ -98,7 +106,7 @@ export const useDriverStandings = (settings?: StandingsWidgetSettings['config'])
       lastLap,
       prevCarTrackSurface,
       lapTimeDeltasEnabled ? numLapDeltas : undefined,
-      lapDeltasForCalc,
+      lapDeltasForCalc
     );
 
     if (useLivePositionStandings) {
@@ -114,7 +122,9 @@ export const useDriverStandings = (settings?: StandingsWidgetSettings['config'])
     if (useLivePositionStandings) {
       groupedByClass = groupedByClass.map(([classId, classStandings]) => [
         classId,
-        classStandings.slice().sort((a, b) => (a.classPosition ?? 999) - (b.classPosition ?? 999)),
+        classStandings
+          .slice()
+          .sort((a, b) => (a.classPosition ?? 999) - (b.classPosition ?? 999)),
       ]) as [string, typeof initialStandings][];
     }
 
@@ -125,9 +135,10 @@ export const useDriverStandings = (settings?: StandingsWidgetSettings['config'])
         : groupedByClass;
 
     // Calculate gap to class leader when enabled OR when interval is enabled (interval needs gap data)
-    const gapAugmentedGroupedByClass = gapEnabled || intervalEnabled
-      ? augmentStandingsWithGap(iratingAugmentedGroupedByClass)
-      : iratingAugmentedGroupedByClass;
+    const gapAugmentedGroupedByClass =
+      gapEnabled || intervalEnabled
+        ? augmentStandingsWithGap(iratingAugmentedGroupedByClass)
+        : iratingAugmentedGroupedByClass;
 
     // Calculate interval to player when enabled
     const intervalAugmentedGroupedByClass = intervalEnabled
@@ -167,6 +178,7 @@ export const useDriverStandings = (settings?: StandingsWidgetSettings['config'])
     gapEnabled,
     intervalEnabled,
     carIdxSessionFlags?.value,
+    carIdxLapDistPcts,
     useLivePositionStandings,
     driverLivePositions,
   ]);

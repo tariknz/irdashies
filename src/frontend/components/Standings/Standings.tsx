@@ -49,7 +49,9 @@ export const Standings = () => {
   const isTeamRacing = useWeekendInfoTeamRacing();
 
   // Determine table border spacing based on compact mode
-  const tableBorderSpacing = generalSettings?.compactMode ? 'border-spacing-y-0' : 'border-spacing-y-0.5';
+  const tableBorderSpacing = generalSettings?.compactMode
+    ? 'border-spacing-y-0'
+    : 'border-spacing-y-0.5';
 
   if (!isSessionVisible) return <></>;
 
@@ -69,7 +71,9 @@ export const Standings = () => {
       {(settings?.headerBar?.enabled ?? true) && (
         <SessionBar position="header" variant="standings" />
       )}
-      <table className={`w-full table-auto text-sm border-separate ${tableBorderSpacing}`}>
+      <table
+        className={`w-full table-auto text-sm border-separate ${tableBorderSpacing}`}
+      >
         <tbody>
           {standings.map(([classId, classStandings], index) =>
             classStandings.length > 0 ? (
@@ -165,13 +169,15 @@ export const Standings = () => {
                     penalty={result.penalty}
                     slowdown={result.slowdown}
                     hideCarManufacturer={hideCarManufacturer}
+                    carIdxLapDistPct={result.carIdxLapDistPct}
                   />
                 ))}
-                {index < standings.length - 1 && !generalSettings?.compactMode && (
-                  <tr>
-                    <td colSpan={12} className="h-2"></td>
-                  </tr>
-                )}
+                {index < standings.length - 1 &&
+                  !generalSettings?.compactMode && (
+                    <tr>
+                      <td colSpan={12} className="h-2"></td>
+                    </tr>
+                  )}
               </Fragment>
             ) : null
           )}

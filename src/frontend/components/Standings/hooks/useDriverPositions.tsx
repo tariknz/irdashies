@@ -287,6 +287,7 @@ export const useDriverStandings = () => {
         penalty: carState?.penalty ?? false,
         slowdown: carState?.slowdown ?? false,
         relativePct: 0,
+        carIdxLapDistPct: driverPos.lapDstPct,
       };
     });
 
