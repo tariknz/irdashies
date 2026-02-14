@@ -252,9 +252,9 @@ export const Relative = () => {
   if (playerIndex === -1) {
     return (
       <div
-        className="w-full h-full rounded-sm"
+        className={`w-full h-full rounded-sm ${settings?.showFlag ? 'border-10 border-solid' : ''}`}
         style={{
-          ...(settings?.showFlag && { border: `10px solid ${flagColor}` }),
+          ...(settings?.showFlag && { borderColor: flagColor }),
         }}
       >
         <TitleBar titleBarSettings={settings?.titleBar} />
@@ -275,10 +275,10 @@ export const Relative = () => {
 
   return (
     <div
-      className={`w-full bg-slate-800/(--bg-opacity) rounded-sm ${!generalSettings?.compactMode ? 'p-2' : ''} overflow-hidden`}
+      className={`w-full bg-slate-800/(--bg-opacity) rounded-sm ${!generalSettings?.compactMode ? 'p-2' : ''} overflow-hidden ${settings?.showFlag ? 'border-10 border-solid' : ''}`}
       style={{
         ['--bg-opacity' as string]: `${settings?.background?.opacity ?? 0}%`,
-        ...(settings?.showFlag && { border: `10px solid ${flagColor}` }),
+        ...(settings?.showFlag && { borderColor: flagColor }),
       }}
     >
       <TitleBar titleBarSettings={settings?.titleBar} />
