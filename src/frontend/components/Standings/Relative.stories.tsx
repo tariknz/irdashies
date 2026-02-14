@@ -1006,7 +1006,7 @@ export const ShowFlagON: Story = {
     TelemetryDecoratorWithConfig('/test-data/1747384033336', {
       relative: {
         headerBar: { enabled: true },
-        footerBar: { enabled: false },
+        footerBar: { enabled: true },
         showFlag: true,
       },
     }),
