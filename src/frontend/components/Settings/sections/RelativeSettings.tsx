@@ -610,7 +610,7 @@ const DisplaySettingsList = ({
                       });
                     }}
                   />
-                  <span className="textP-sm text-slate-300">
+                  <span className="text-sm text-slate-300">
                     Pitlap display mode
                   </span>
                   <select
