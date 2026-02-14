@@ -12,7 +12,10 @@ describe('trackDrawingUtils', () => {
       fill: vi.fn(),
       stroke: vi.fn(),
       fillText: vi.fn(),
-      measureText: vi.fn(),
+      measureText: vi.fn(() => ({
+        actualBoundingBoxAscent: 10,
+        actualBoundingBoxDescent: 4
+      })),
       save: vi.fn(),
       restore: vi.fn(),
       textAlign: 'center',
