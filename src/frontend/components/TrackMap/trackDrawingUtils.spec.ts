@@ -12,6 +12,7 @@ describe('trackDrawingUtils', () => {
       fill: vi.fn(),
       stroke: vi.fn(),
       fillText: vi.fn(),
+      measureText: vi.fn(),
       save: vi.fn(),
       restore: vi.fn(),
       textAlign: 'center',
