@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Driver } from '@irdashies/types';
 import tracks from './tracks/tracks.json';
 import { getColor, getTailwindStyle } from '@irdashies/utils/colors';
@@ -74,6 +74,11 @@ export const TrackCanvas = ({
   debug,
 }: TrackProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const cacheCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const cacheParamsRef = useRef<string>('');
+  const debounceResizeRef = useRef<ReturnType<typeof setTimeout> | undefined>(
+    undefined
+  );
   const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
 
   const trackDrawing = (tracks as unknown as TrackDrawing[])[trackId];
@@ -97,7 +102,9 @@ export const TrackCanvas = ({
   // Calculate if this is a multi-class race by counting unique CarClassID values
   const isMultiClass = useMemo(() => {
     if (!drivers || drivers.length === 0) return false;
-    const uniqueClassIds = new Set(drivers.map(({ driver }) => driver.CarClassID));
+    const uniqueClassIds = new Set(
+      drivers.map(({ driver }) => driver.CarClassID)
+    );
     return uniqueClassIds.size > 1;
   }, [drivers]);
 
@@ -116,7 +123,11 @@ export const TrackCanvas = ({
           colors[driver.CarIdx] = { fill: getColor('amber'), text: 'white' };
         }
       } else {
-        const style = getTailwindStyle(driver.CarClassColor, undefined, isMultiClass);
+        const style = getTailwindStyle(
+          driver.CarClassColor,
+          undefined,
+          isMultiClass
+        );
         colors[driver.CarIdx] = { fill: style.canvasFill, text: 'white' };
       }
     });
@@ -131,6 +142,7 @@ export const TrackCanvas = ({
   });
 
   // Position calculation based on the percentage of the track completed
+  // with linear interpolation between track points for sub-pixel smoothness
   const calculatePositions = useMemo(() => {
     if (
       !trackDrawing?.active?.trackPathPoints ||
@@ -145,7 +157,15 @@ export const TrackCanvas = ({
     const intersectionLength = trackDrawing.startFinish.point.length;
     const totalLength = trackDrawing.active.totalLength;
 
-    return drivers.reduce<Record<number, TrackDriver & { position: { x: number; y: number }; sessionPosition?: number }>>(
+    return drivers.reduce<
+      Record<
+        number,
+        TrackDriver & {
+          position: { x: number; y: number };
+          sessionPosition?: number;
+        }
+      >
+    >(
       (acc, { driver, progress, isPlayer, classPosition: sessionPosition }) => {
         // Calculate position based on progress
         const adjustedLength = (totalLength * progress) % totalLength;
@@ -154,22 +174,45 @@ export const TrackCanvas = ({
             ? (intersectionLength + adjustedLength) % totalLength
             : (intersectionLength - adjustedLength + totalLength) % totalLength;
 
-        // Find the closest trackPath point
-        const pointIndex = Math.round(
-          (length / totalLength) * (trackPathPoints.length - 1)
-        );
-        const clampedIndex = Math.max(
-          0,
-          Math.min(pointIndex, trackPathPoints.length - 1)
-        );
-        const canvasPosition = trackPathPoints[clampedIndex];
+        // --- Linear Interpolation between points ---
+        const floatIndex =
+          (length / totalLength) * (trackPathPoints.length - 1);
+        const index1 = Math.floor(floatIndex);
+        const index2 = Math.min(index1 + 1, trackPathPoints.length - 1);
+        const t = floatIndex - index1;
+
+        const p1 = trackPathPoints[index1];
+        const p2 = trackPathPoints[index2];
+
+        const canvasPosition = {
+          x: p1.x + (p2.x - p1.x) * t,
+          y: p1.y + (p2.y - p1.y) * t,
+        };
 
         return {
           ...acc,
-          [driver.CarIdx]: { position: canvasPosition, driver, isPlayer, progress, sessionPosition },
-        } as Record<number, TrackDriver & { position: { x: number; y: number }; sessionPosition?: number }>;
+          [driver.CarIdx]: {
+            position: canvasPosition,
+            driver,
+            isPlayer,
+            progress,
+            sessionPosition,
+          },
+        } as Record<
+          number,
+          TrackDriver & {
+            position: { x: number; y: number };
+            sessionPosition?: number;
+          }
+        >;
       },
-      {} as Record<number, TrackDriver & { position: { x: number; y: number }; sessionPosition?: number }>
+      {} as Record<
+        number,
+        TrackDriver & {
+          position: { x: number; y: number };
+          sessionPosition?: number;
+        }
+      >
     );
   }, [
     drivers,
@@ -179,9 +222,7 @@ export const TrackCanvas = ({
     trackDrawing?.active?.totalLength,
   ]);
 
-  // Canvas setup effect
-  // this is used to set the canvas size to the correct size
-  // and handles resizing the canvas when the container is resized
+  // Canvas setup and resize handling
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -196,10 +237,6 @@ export const TrackCanvas = ({
       // Set the actual canvas size in memory (scaled up for high-DPI)
       canvas.width = rect.width * dpr;
       canvas.height = rect.height * dpr;
-
-      // Set the CSS size to maintain the same visual size
-      canvas.style.width = rect.width + 'px';
-      canvas.style.height = rect.height + 'px';
 
       // Apply device pixel ratio scaling to the context
       const ctx = canvas.getContext('2d');
@@ -216,51 +253,127 @@ export const TrackCanvas = ({
 
     // Use ResizeObserver to watch the canvas container
     const resizeObserver = new ResizeObserver(() => {
-      resize();
+      // Clear existing timeout
+      if (debounceResizeRef.current) {
+        clearTimeout(debounceResizeRef.current);
+      }
+
+      // Set new timeout
+      debounceResizeRef.current = setTimeout(() => {
+        resize();
+      }, 50);
     });
 
     // Observe the canvas element itself
     resizeObserver.observe(canvas);
 
     // Add window resize listener as fallback
-    window.addEventListener('resize', resize);
+    const handleWindowResize = () => {
+      if (debounceResizeRef.current) {
+        clearTimeout(debounceResizeRef.current);
+      }
+      debounceResizeRef.current = setTimeout(() => {
+        resize();
+      }, 50);
+    };
+
+    window.addEventListener('resize', handleWindowResize);
 
     return () => {
       resizeObserver.disconnect();
-      window.removeEventListener('resize', resize);
+      window.removeEventListener('resize', handleWindowResize);
+      if (debounceResizeRef.current) {
+        clearTimeout(debounceResizeRef.current);
+      }
+      cacheCanvasRef.current = null;
+      cacheParamsRef.current = '';
     };
   }, [trackId]);
 
-  // Render track and drivers (main render loop)
-  useEffect(() => {
+  // Main render loop
+  useLayoutEffect(() => {
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext('2d');
     if (!canvas || !ctx || !path2DObjects) return;
 
     if (canvasSize.width === 0 || canvasSize.height === 0) return;
 
-    // Clear the entire canvas
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    // 1. Prepare/Update Static Cache
+    if (!cacheCanvasRef.current) {
+      cacheCanvasRef.current = document.createElement('canvas');
+    }
+    const cacheCanvas = cacheCanvasRef.current;
 
-    // Calculate scale to fit the 1920x1080 track into the current canvas size
+    // Create a unique key for current static settings to identify when cache is invalid
+    const currentParams = JSON.stringify({
+      trackId,
+      width: canvasSize.width,
+      height: canvasSize.height,
+      enableTurnNames,
+      invertTrackColors,
+      trackLineWidth,
+      trackOutlineWidth,
+      sfPointX: startFinishLine?.point?.x,
+      sfPointY: startFinishLine?.point?.y,
+    });
+
+    if (cacheParamsRef.current !== currentParams) {
+      const cacheCtx = cacheCanvas.getContext('2d');
+      if (cacheCtx) {
+        cacheCanvas.width = canvas.width;
+        cacheCanvas.height = canvas.height;
+
+        const scaleX = canvasSize.width / TRACK_DRAWING_WIDTH;
+        const scaleY = canvasSize.height / TRACK_DRAWING_HEIGHT;
+        const scale = Math.min(scaleX, scaleY);
+        const offsetX = (canvasSize.width - TRACK_DRAWING_WIDTH * scale) / 2;
+        const offsetY = (canvasSize.height - TRACK_DRAWING_HEIGHT * scale) / 2;
+
+        const dpr = window.devicePixelRatio || 1;
+        cacheCtx.setTransform(1, 0, 0, 1, 0, 0);
+        cacheCtx.scale(dpr, dpr);
+
+        setupCanvasContext(cacheCtx, scale, offsetX, offsetY);
+        drawTrack(
+          cacheCtx,
+          path2DObjects,
+          invertTrackColors,
+          trackLineWidth,
+          trackOutlineWidth
+        );
+        drawStartFinishLine(cacheCtx, startFinishLine);
+        drawTurnNames(cacheCtx, trackDrawing.turns, enableTurnNames);
+        cacheCtx.restore();
+
+        cacheParamsRef.current = currentParams;
+      }
+    }
+
+    // 2. Blit cache to main canvas (identity transform to avoid double DPR scaling)
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(cacheCanvas, 0, 0);
+    ctx.restore();
+
+    // 3. Draw dynamic elements (drivers)
     const scaleX = canvasSize.width / TRACK_DRAWING_WIDTH;
     const scaleY = canvasSize.height / TRACK_DRAWING_HEIGHT;
-    const scale = Math.min(scaleX, scaleY); // Maintain aspect ratio
-
-    // Calculate centering offset
+    const scale = Math.min(scaleX, scaleY);
     const offsetX = (canvasSize.width - TRACK_DRAWING_WIDTH * scale) / 2;
     const offsetY = (canvasSize.height - TRACK_DRAWING_HEIGHT * scale) / 2;
 
-    // Setup canvas context with scaling and shadow
     setupCanvasContext(ctx, scale, offsetX, offsetY);
-
-    // Draw all elements
-    drawTrack(ctx, path2DObjects, invertTrackColors, trackLineWidth, trackOutlineWidth);
-    drawStartFinishLine(ctx, startFinishLine);
-    drawTurnNames(ctx, trackDrawing.turns, enableTurnNames);
-    drawDrivers(ctx, calculatePositions, driverColors, driversOffTrack, driverCircleSize, playerCircleSize, showCarNumbers, displayMode);
-
-    // Restore context state
+    drawDrivers(
+      ctx,
+      calculatePositions,
+      driverColors,
+      driversOffTrack,
+      driverCircleSize,
+      playerCircleSize,
+      showCarNumbers,
+      displayMode
+    );
     ctx.restore();
   }, [
     calculatePositions,
@@ -274,12 +387,11 @@ export const TrackCanvas = ({
     invertTrackColors,
     trackLineWidth,
     trackOutlineWidth,
-    trackDrawing?.startFinish?.point,
-    trackDrawing?.active?.trackPathPoints,
     startFinishLine,
     driversOffTrack,
     driverCircleSize,
     playerCircleSize,
+    trackId,
   ]);
 
   // Development/Storybook mode - show debug info and canvas
