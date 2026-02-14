@@ -11,6 +11,7 @@ export interface FlatTrackMapCanvasProps {
   displayMode?: 'carNumber' | 'sessionPosition';
   driverCircleSize?: number;
   playerCircleSize?: number;
+  trackmapFontSize?: number;
   trackLineWidth?: number;
   trackOutlineWidth?: number;
   invertTrackColors?: boolean;
@@ -25,6 +26,7 @@ export const FlatTrackMapCanvas = ({
   displayMode = 'carNumber',
   driverCircleSize = 40,
   playerCircleSize = 40,
+  trackmapFontSize = 100,
   trackLineWidth = 20,
   trackOutlineWidth = 40,
   invertTrackColors = false,
@@ -191,9 +193,9 @@ export const FlatTrackMapCanvas = ({
         const color = driverColors[driver.CarIdx];
         if (!color) return;
 
-        const x = HORIZONTAL_PADDING + progress * usableWidth;
-        const radius =
-          (isPlayer ? playerCircleSize : driverCircleSize) * circleScale;
+      const x = HORIZONTAL_PADDING + progress * usableWidth;
+      const radius = (isPlayer ? playerCircleSize : driverCircleSize) * circleScale;
+      const fontSize = radius * (trackmapFontSize / 100);
 
         ctx.fillStyle = color.fill;
         ctx.beginPath();
@@ -208,7 +210,7 @@ export const FlatTrackMapCanvas = ({
 
         if (showCarNumbers) {
           ctx.fillStyle = color.text;
-          ctx.font = `${radius * 0.7}px sans-serif`;
+          ctx.font = `${fontSize}px sans-serif`;
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
           let displayText = '';
@@ -221,7 +223,9 @@ export const FlatTrackMapCanvas = ({
             displayText = driver.CarNumber;
           }
           if (displayText) {
-            ctx.fillText(displayText, x, centerY);
+            const m = ctx.measureText(displayText);
+            const visualOffset = (m.actualBoundingBoxAscent - m.actualBoundingBoxDescent) / 2;
+            ctx.fillText(displayText, x, centerY + visualOffset);
           }
         }
       });
@@ -234,6 +238,7 @@ export const FlatTrackMapCanvas = ({
     displayMode,
     driverCircleSize,
     playerCircleSize,
+    trackmapFontSize,
     trackLineWidth,
     trackOutlineWidth,
     invertTrackColors,

@@ -43,6 +43,7 @@ export const FlatTrackMap = () => {
         displayMode={settings?.displayMode ?? 'carNumber'}
         driverCircleSize={settings?.driverCircleSize ?? 40}
         playerCircleSize={settings?.playerCircleSize ?? 40}
+        trackmapFontSize={settings?.trackmapFontSize ?? 100}
         trackLineWidth={settings?.trackLineWidth ?? 20}
         trackOutlineWidth={settings?.trackOutlineWidth ?? 40}
         invertTrackColors={settings?.invertTrackColors ?? false}
