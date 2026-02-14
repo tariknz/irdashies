@@ -44,12 +44,18 @@ export const Relative = () => {
 
   // Get flag color for border
   const sessionFlags = useTelemetryValue<number>('SessionFlags') ?? 0;
-  const flagInfo = getFlag(sessionFlags);
-  // Normalize flag label for getFlagColor (remove " FLAG" suffix, handle "NO FLAG")
-  const normalizedFlagLabel =
-    flagInfo.label === 'NO FLAG' ? 'NO' : flagInfo.label.replace(' FLAG', '');
-  const flagColor = getFlagColor(normalizedFlagLabel);
+  const flagColor = useMemo(() => {
+    if (!settings?.showFlag) {
+      return undefined;
+    }
 
+    const flagInfo = getFlag(sessionFlags);
+    // Normalize flag label for getFlagColor (remove " FLAG" suffix, handle "NO FLAG")
+    const normalizedFlagLabel =
+      flagInfo.label === 'NO FLAG' ? 'NO' : flagInfo.label.replace(' FLAG', '');
+
+    return getFlagColor(normalizedFlagLabel);
+  }, [settings?.showFlag, sessionFlags]);
   // Determine table border spacing based on compact mode
   const tableBorderSpacing = generalSettings?.compactMode
     ? 'border-spacing-y-0'
