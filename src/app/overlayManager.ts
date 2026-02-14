@@ -114,6 +114,7 @@ export class OverlayManager {
       icon: getIconPath(),
       webPreferences: {
         preload: path.join(__dirname, 'preload.js'),
+        backgroundThrottling: false,
       },
     });
 
