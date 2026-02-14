@@ -51,8 +51,7 @@ export const Relative = () => {
 
     const flagInfo = getFlag(sessionFlags);
     // Normalize flag label for getFlagColor (remove " FLAG" suffix, handle "NO FLAG")
-    const normalizedFlagLabel =
-      flagInfo.label === 'NO FLAG' ? 'NO' : flagInfo.label.replace(' FLAG', '');
+    const normalizedFlagLabel = flagInfo.label.split(' ')[0];
 
     return getFlagColor(normalizedFlagLabel);
   }, [settings?.showFlag, sessionFlags]);
