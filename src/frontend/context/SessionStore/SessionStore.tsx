@@ -8,12 +8,16 @@ interface SessionState {
   session: Session | null;
   setSession: (session: Session) => void;
   resetSession: () => void;
+  greenFlagTimestamp: number | null;
+  setGreenFlagTimestamp: (time: number | null) => void;
 }
 
 export const useSessionStore = create<SessionState>((set) => ({
   session: null as Session | null,
   setSession: (session: Session) => set({ session }),
   resetSession: () => set({ session: null }),
+  greenFlagTimestamp: null as number | null,
+  setGreenFlagTimestamp: (time: number | null) => set({ greenFlagTimestamp: time }),
 }));
 
 export const useSessionDrivers = () =>
@@ -144,3 +148,9 @@ export const useCarIdxClassEstLapTime = () =>
     },
     shallow
   );
+
+export const useGreenFlagTimestamp = () =>
+  useStore(useSessionStore, (state) => state.greenFlagTimestamp);
+
+export const useSetGreenFlagTimestamp = () =>
+  useStore(useSessionStore, (state) => state.setGreenFlagTimestamp);
