@@ -2,18 +2,32 @@ import { useState } from 'react';
 import { useDashboard } from '@irdashies/context';
 import { GeneralSettingsType } from '@irdashies/types';
 
+const FONT_PRESETS = {
+  lato: 'Lato',
+  notosans: 'Noto Sans',
+  roboto: 'Roboto'
+};
+
 const FONT_SIZE_PRESETS = {
-  xs: 'Extra Small',
-  sm: 'Small',
-  md: 'Medium',
-  lg: 'Large',
-  xl: 'Extra Large',
+  'xs': 'Extra Small',
+  'sm': 'Small',
+  'md': 'Medium',
+  'lg': 'Large',
+  'xl': 'Extra Large',
   '2xl': '2X Large',
   '3xl': '3X Large',
+  '4xl': '4X Large',
+  '5xl': '5X Large',
+  '6xl': '6X Large',
+  '7xl': '7X Large',
+  '8xl': '8X Large',
+  '9xl': '9X Large',
 };
 
 const FONT_WEIGHT_PRESETS = {
   normal: 'Normal',
+  medium: 'Medium',
+  semibold: 'Semibold',
   bold: 'Bold',
   extrabold: 'Extrabold',
 };
@@ -54,6 +68,7 @@ const COLOR_THEME_PRESETS: Record<string, string> = {
 export const GeneralSettings = () => {
   const { bridge, currentDashboard, onDashboardUpdated } = useDashboard();
   const [settings, setSettings] = useState<GeneralSettingsType>({
+    fontType: currentDashboard?.generalSettings?.fontType ?? 'lato',
     fontSize: currentDashboard?.generalSettings?.fontSize ?? 'sm',
     fontWeight: currentDashboard?.generalSettings?.fontWeight ?? 'normal',
     colorPalette: currentDashboard?.generalSettings?.colorPalette ?? 'default',
@@ -91,6 +106,12 @@ export const GeneralSettings = () => {
     'xl',
     '2xl',
     '3xl',
+    '4xl',
+    '5xl',
+    '6xl',
+    '7xl',
+    '8xl',
+    '9xl'
   ];
 
   const getSliderValue = (size: string | undefined): number => {
@@ -106,8 +127,16 @@ export const GeneralSettings = () => {
     return FONT_SIZE_VALUES[value] || 'sm';
   };
 
+  const handleFontChange = (
+    newFont: 'lato' | 'notosans' | 'roboto'
+  ) => {
+    const newSettings = { ...settings, fontType: newFont };
+    setSettings(newSettings);
+    updateDashboard(newSettings);
+  };
+
   const handleFontSizeChange = (
-    newSize: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl'
+    newSize: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | '5xl' | '6xl' | '7xl' | '8xl' | '9xl'
   ) => {
     const newSettings = { ...settings, fontSize: newSize };
     setSettings(newSettings);
@@ -115,7 +144,7 @@ export const GeneralSettings = () => {
   };
 
   const handleFontWeightChange = (
-    newWeight: 'normal' | 'bold' | 'extrabold'
+    newWeight: 'normal' | 'medium' | 'semibold' | 'bold' | 'extrabold'
   ) => {
     const newSettings = { ...settings, fontWeight: newWeight };
     setSettings(newSettings);
@@ -194,7 +223,37 @@ export const GeneralSettings = () => {
         </p>
       </div>
 
+      
+
       <div className="flex-1 overflow-y-auto min-h-0 space-y-6 p-4 mt-4">
+
+        {/* Font Settings */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-medium text-slate-200">Font</h3>
+          </div>
+          {/* Font Weight Dropdown */}
+          <div className="mt-4">
+            <select
+              value={settings.fontType ?? 'lato'}
+              onChange={(e) =>
+                handleFontChange(
+                  e.target.value as NonNullable<
+                    GeneralSettingsType['fontType']
+                  >
+                )
+              }
+              className="w-full px-3 py-2 bg-slate-700 text-slate-300 rounded border border-slate-600 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            >
+              {Object.entries(FONT_PRESETS).map(([key, value]) => (
+                <option key={key} value={key}>
+                  {value}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
         {/* Font Size Settings */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
@@ -211,7 +270,7 @@ export const GeneralSettings = () => {
             <input
               type="range"
               min="0"
-              max="6"
+              max="12"
               step="1"
               value={getSliderValue(settings.fontSize)}
               onChange={handleSliderChange}
