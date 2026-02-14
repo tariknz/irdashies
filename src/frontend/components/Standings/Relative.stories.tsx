@@ -1000,3 +1000,27 @@ export const CompactMode: Story = {
     ),
   ],
 };
+
+export const ShowFlagON: Story = {
+  decorators: [
+    TelemetryDecoratorWithConfig('/test-data/1747384033336', {
+      relative: {
+        headerBar: { enabled: true },
+        footerBar: { enabled: false },
+        showFlag: true,
+      },
+    }),
+  ],
+};
+
+export const ShowFlagOFF: Story = {
+  decorators: [
+    TelemetryDecoratorWithConfig('/test-data/1747384033336', {
+      relative: {
+        headerBar: { enabled: true },
+        footerBar: { enabled: true },
+        showFlag: false,
+      },
+    }),
+  ],
+};

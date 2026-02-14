@@ -1,12 +1,25 @@
 import { useMemo } from 'react';
 import { DriverInfoRow } from './components/DriverInfoRow/DriverInfoRow';
-import { useDrivingState, useWeekendInfoNumCarClasses, useWeekendInfoTeamRacing, useSessionVisibility, useGeneralSettings } from '@irdashies/context';
-import { useRelativeSettings, useDriverRelatives, useHighlightColor } from './hooks';
+import {
+  useDrivingState,
+  useWeekendInfoNumCarClasses,
+  useWeekendInfoTeamRacing,
+  useSessionVisibility,
+  useGeneralSettings,
+  useTelemetryValue,
+} from '@irdashies/context';
+import {
+  useRelativeSettings,
+  useDriverRelatives,
+  useHighlightColor,
+} from './hooks';
 import { SessionBar } from './components/SessionBar/SessionBar';
 
 import { TitleBar } from './components/TitleBar/TitleBar';
 import { usePitLapStoreUpdater } from '../../context/PitLapStore/PitLapStoreUpdater';
 import { useIsSingleMake } from './hooks/useIsSingleMake';
+import { getFlagColor } from './hooks/getFlagColor';
+import { getFlag } from '@irdashies/utils/getFlag';
 
 export const Relative = () => {
   const settings = useRelativeSettings();
@@ -22,13 +35,25 @@ export const Relative = () => {
   usePitLapStoreUpdater();
 
   const isSingleMake = useIsSingleMake();
-  const hideCarManufacturer = !!(settings?.carManufacturer?.hideIfSingleMake && isSingleMake);
+  const hideCarManufacturer = !!(
+    settings?.carManufacturer?.hideIfSingleMake && isSingleMake
+  );
 
   // Check if this is a team racing session
   const isTeamRacing = useWeekendInfoTeamRacing();
 
+  // Get flag color for border
+  const sessionFlags = useTelemetryValue<number>('SessionFlags') ?? 0;
+  const flagInfo = getFlag(sessionFlags);
+  // Normalize flag label for getFlagColor (remove " FLAG" suffix, handle "NO FLAG")
+  const normalizedFlagLabel =
+    flagInfo.label === 'NO FLAG' ? 'NO' : flagInfo.label.replace(' FLAG', '');
+  const flagColor = getFlagColor(normalizedFlagLabel);
+
   // Determine table border spacing based on compact mode
-  const tableBorderSpacing = generalSettings?.compactMode ? 'border-spacing-y-0' : 'border-spacing-y-0.5';
+  const tableBorderSpacing = generalSettings?.compactMode
+    ? 'border-spacing-y-0'
+    : 'border-spacing-y-0.5';
 
   // Always render 2 * buffer + 1 rows (buffer above + player + buffer below)
   const totalRows = 2 * buffer + 1;
@@ -49,21 +74,23 @@ export const Relative = () => {
           carIdx={0}
           classColor={0}
           name="Franz Hermann"
-          teamName={settings?.teamName?.enabled && isTeamRacing ? '' : undefined}
+          teamName={
+            settings?.teamName?.enabled && isTeamRacing ? '' : undefined
+          }
           isPlayer={false}
           hasFastestTime={false}
           hidden={true}
           isMultiClass={false}
           displayOrder={settings?.displayOrder}
           config={settings}
-          carNumber={settings?.carNumber?.enabled ?? true ? '' : undefined}
-          flairId={settings?.countryFlags?.enabled ?? true ? 0 : undefined}
-          carId={settings?.carManufacturer?.enabled ?? true ? 0 : undefined}
+          carNumber={(settings?.carNumber?.enabled ?? true) ? '' : undefined}
+          flairId={(settings?.countryFlags?.enabled ?? true) ? 0 : undefined}
+          carId={(settings?.carManufacturer?.enabled ?? true) ? 0 : undefined}
           license={undefined}
           rating={undefined}
           currentSessionType=""
           iratingChangeValue={undefined}
-          delta={settings?.delta?.enabled ?? true ? 0 : undefined}
+          delta={(settings?.delta?.enabled ?? true) ? 0 : undefined}
           fastestTime={settings?.fastestTime?.enabled ? undefined : undefined}
           lastTime={settings?.lastTime?.enabled ? undefined : undefined}
           lastTimeState={settings?.lastTime?.enabled ? undefined : undefined}
@@ -98,21 +125,23 @@ export const Relative = () => {
             carIdx={0}
             classColor={0}
             name="Franz Hermann"
-            teamName={settings?.teamName?.enabled && isTeamRacing ? '' : undefined}
+            teamName={
+              settings?.teamName?.enabled && isTeamRacing ? '' : undefined
+            }
             isPlayer={false}
             hasFastestTime={false}
             hidden={true}
             isMultiClass={false}
             displayOrder={settings?.displayOrder}
             config={settings}
-            carNumber={settings?.carNumber?.enabled ?? true ? '' : undefined}
-            flairId={settings?.countryFlags?.enabled ?? true ? 0 : undefined}
-            carId={settings?.carManufacturer?.enabled ?? true ? 0 : undefined}
+            carNumber={(settings?.carNumber?.enabled ?? true) ? '' : undefined}
+            flairId={(settings?.countryFlags?.enabled ?? true) ? 0 : undefined}
+            carId={(settings?.carManufacturer?.enabled ?? true) ? 0 : undefined}
             license={undefined}
             rating={undefined}
             currentSessionType=""
             iratingChangeValue={undefined}
-            delta={settings?.delta?.enabled ?? true ? 0 : undefined}
+            delta={(settings?.delta?.enabled ?? true) ? 0 : undefined}
             fastestTime={settings?.fastestTime?.enabled ? undefined : undefined}
             lastTime={settings?.lastTime?.enabled ? undefined : undefined}
             lastTimeState={settings?.lastTime?.enabled ? undefined : undefined}
@@ -138,9 +167,17 @@ export const Relative = () => {
           key={result.carIdx}
           carIdx={result.carIdx}
           classColor={result.carClass.color}
-          carNumber={settings?.carNumber?.enabled ?? true ? result.driver?.carNum || '' : undefined}
+          carNumber={
+            (settings?.carNumber?.enabled ?? true)
+              ? result.driver?.carNum || ''
+              : undefined
+          }
           name={result.driver?.name || ''}
-          teamName={settings?.teamName?.enabled && isTeamRacing ? result.driver?.teamName || '' : undefined}
+          teamName={
+            settings?.teamName?.enabled && isTeamRacing
+              ? result.driver?.teamName || ''
+              : undefined
+          }
           isPlayer={result.isPlayer}
           hasFastestTime={result.hasFastestTime}
           position={result.classPosition}
@@ -150,11 +187,21 @@ export const Relative = () => {
           radioActive={result.radioActive}
           isLapped={result.lappedState === 'behind'}
           isLappingAhead={result.lappedState === 'ahead'}
-          flairId={settings?.countryFlags?.enabled ?? true ? result.driver?.flairId : undefined}
+          flairId={
+            (settings?.countryFlags?.enabled ?? true)
+              ? result.driver?.flairId
+              : undefined
+          }
           lastTime={settings?.lastTime?.enabled ? result.lastTime : undefined}
-          fastestTime={settings?.fastestTime?.enabled ? result.fastestTime : undefined}
-          lastTimeState={settings?.lastTime?.enabled ? result.lastTimeState : undefined}
-          tireCompound={settings?.compound?.enabled ? result.tireCompound : undefined}
+          fastestTime={
+            settings?.fastestTime?.enabled ? result.fastestTime : undefined
+          }
+          lastTimeState={
+            settings?.lastTime?.enabled ? result.lastTimeState : undefined
+          }
+          tireCompound={
+            settings?.compound?.enabled ? result.tireCompound : undefined
+          }
           carId={result.carId}
           lastPitLap={result.lastPitLap}
           lastLap={result.lastLap}
@@ -165,7 +212,7 @@ export const Relative = () => {
           license={result.driver?.license}
           rating={result.driver?.rating}
           iratingChangeValue={result.iratingChange}
-          delta={settings?.delta?.enabled ?? true ? result.delta : undefined}
+          delta={(settings?.delta?.enabled ?? true) ? result.delta : undefined}
           displayOrder={settings?.displayOrder}
           config={settings}
           highlightColor={highlightColor}
@@ -178,10 +225,19 @@ export const Relative = () => {
         />
       );
     });
-  }, [standings, playerIndex, totalRows, settings, isMultiClass, highlightColor, hideCarManufacturer, isTeamRacing]);
+  }, [
+    standings,
+    playerIndex,
+    totalRows,
+    settings,
+    isMultiClass,
+    highlightColor,
+    hideCarManufacturer,
+    isTeamRacing,
+  ]);
 
   if (!isSessionVisible) return <></>;
-  
+
   // Show only when on track setting
   if (settings?.showOnlyWhenOnTrack && !isDriving) {
     return <></>;
@@ -190,13 +246,24 @@ export const Relative = () => {
   // If no player found, render empty table with consistent height
   if (playerIndex === -1) {
     return (
-      <div className="w-full h-full">
+      <div
+        className="w-full h-full rounded-sm"
+        style={{
+          ...(settings?.showFlag && { border: `10px solid ${flagColor}` }),
+        }}
+      >
         <TitleBar titleBarSettings={settings?.titleBar} />
-        {(settings?.headerBar?.enabled ?? false) && <SessionBar position="header" variant="relative" />}
-        <table className={`w-full table-auto text-sm border-separate ${tableBorderSpacing}`}>
+        {(settings?.headerBar?.enabled ?? false) && (
+          <SessionBar position="header" variant="relative" />
+        )}
+        <table
+          className={`w-full table-auto text-sm border-separate ${tableBorderSpacing}`}
+        >
           <tbody>{rows}</tbody>
         </table>
-        {(settings?.footerBar?.enabled ?? true) && <SessionBar position="footer" variant="relative" />}
+        {(settings?.footerBar?.enabled ?? true) && (
+          <SessionBar position="footer" variant="relative" />
+        )}
       </div>
     );
   }
@@ -206,14 +273,21 @@ export const Relative = () => {
       className={`w-full bg-slate-800/(--bg-opacity) rounded-sm ${!generalSettings?.compactMode ? 'p-2' : ''} overflow-hidden`}
       style={{
         ['--bg-opacity' as string]: `${settings?.background?.opacity ?? 0}%`,
+        ...(settings?.showFlag && { border: `10px solid ${flagColor}` }),
       }}
     >
       <TitleBar titleBarSettings={settings?.titleBar} />
-      {(settings?.headerBar?.enabled ?? false) && <SessionBar position="header" variant="relative" />}
-      <table className={`w-full table-auto text-sm border-separate ${tableBorderSpacing}`}>
+      {(settings?.headerBar?.enabled ?? false) && (
+        <SessionBar position="header" variant="relative" />
+      )}
+      <table
+        className={`w-full table-auto text-sm border-separate ${tableBorderSpacing}`}
+      >
         <tbody>{rows}</tbody>
       </table>
-      {(settings?.footerBar?.enabled ?? true) && <SessionBar position="footer" variant="relative" />}
+      {(settings?.footerBar?.enabled ?? true) && (
+        <SessionBar position="footer" variant="relative" />
+      )}
     </div>
   );
 };
