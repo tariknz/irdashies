@@ -159,6 +159,23 @@ export class OverlayManager {
       this.containerBoundsInfo = null;
     });
 
+    // Track readiness of both events to avoid race condition:
+    // In packaged mode, did-finish-load can fire before ready-to-show,
+    // which would send null containerBoundsInfo to the frontend.
+    let boundsReady = false;
+    let pageLoaded = false;
+
+    const sendBoundsIfReady = () => {
+      if (!boundsReady || !pageLoaded) return;
+      if (browserWindow.isDestroyed()) return;
+
+      browserWindow.webContents.send(
+        'containerBoundsInfo',
+        this.containerBoundsInfo
+      );
+      this.onWindowReadyCallbacks.forEach((cb) => cb('container'));
+    };
+
     // Show window and retry positioning when ready
     browserWindow.once('ready-to-show', () => {
       if (browserWindow.isDestroyed()) return;
@@ -199,18 +216,16 @@ export class OverlayManager {
           `[OverlayManager] Window size mismatch! Expected ${expectedBounds.width}x${expectedBounds.height}, got ${actualBounds.width}x${actualBounds.height}`
         );
       }
+
+      boundsReady = true;
+      sendBoundsIfReady();
     });
 
     browserWindow.webContents.once('did-finish-load', () => {
-      if (!browserWindow.isDestroyed()) {
-        // Send container bounds info to the frontend
-        browserWindow.webContents.send(
-          'containerBoundsInfo',
-          this.containerBoundsInfo
-        );
-        // Notify that the container is ready
-        this.onWindowReadyCallbacks.forEach((cb) => cb('container'));
-      }
+      if (browserWindow.isDestroyed()) return;
+
+      pageLoaded = true;
+      sendBoundsIfReady();
     });
 
     return browserWindow;
