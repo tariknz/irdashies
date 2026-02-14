@@ -18,7 +18,7 @@ import { SessionBar } from './components/SessionBar/SessionBar';
 import { TitleBar } from './components/TitleBar/TitleBar';
 import { usePitLapStoreUpdater } from '../../context/PitLapStore/PitLapStoreUpdater';
 import { useIsSingleMake } from './hooks/useIsSingleMake';
-import { getFlagColor } from './hooks/getFlagColor';
+import { getFlagColor } from '@irdashies/utils/getFlagColor';
 import { getFlag } from '@irdashies/utils/getFlag';
 
 export const Relative = () => {
