@@ -315,6 +315,7 @@ export const TrackCanvas = ({
       invertTrackColors,
       trackLineWidth,
       trackOutlineWidth,
+      trackmapFontSize,
       sfPointX: startFinishLine?.point?.x,
       sfPointY: startFinishLine?.point?.y,
     });
