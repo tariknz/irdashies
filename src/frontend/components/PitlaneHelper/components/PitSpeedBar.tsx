@@ -32,31 +32,28 @@ export const PitSpeedBar = memo(({ speedKph, limitKph }: PitSpeedBarProps) => {
   }
 
   return (
-    <div className="flex flex-col items-center gap-1">
-      <div className="text-xs text-slate-400">Speed</div>
+    <div className="flex flex-col items-center gap-0.5">
+      <span className="text-[10px] text-slate-300 tabular-nums leading-none">
+        {Math.round(speedKph)}
+      </span>
 
-      {/* Bar container */}
+      {/* Bar */}
       <div
-        className="relative w-5 bg-slate-700/50 rounded overflow-hidden"
-        style={{ height: '100px' }}
+        className="relative w-4 bg-slate-700/50 rounded overflow-hidden"
+        style={{ height: '64px' }}
       >
-        {/* Speed fill — grows from bottom */}
         <div
-          className="absolute bottom-0 w-full transition-all duration-150 ease-out rounded"
-          style={{
-            height: `${fillPercent}%`,
-            backgroundColor: fillColor,
-          }}
+          className="absolute bottom-0 w-full transition-all duration-150 ease-out"
+          style={{ height: `${fillPercent}%`, backgroundColor: fillColor }}
         />
-
-        {/* Limit marker at 50% */}
+        {/* Limit marker at midpoint */}
         <div
-          className="absolute w-full border-t-2 border-white/80"
+          className="absolute w-full border-t border-white/60"
           style={{ bottom: '50%' }}
         />
       </div>
 
-      <div className="text-xs text-slate-400">0</div>
+      <span className="text-[10px] text-slate-400 leading-none">spd</span>
     </div>
   );
 });
