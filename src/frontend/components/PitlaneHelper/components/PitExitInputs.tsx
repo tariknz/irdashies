@@ -13,13 +13,13 @@ interface InputBarColumnProps {
 }
 
 const InputBarColumn = ({ value, color, label }: InputBarColumnProps) => (
-  <div className="flex flex-col items-center gap-0.5">
-    <span className="text-[10px] text-slate-300 tabular-nums leading-none">
+  <div className="flex flex-col items-center gap-1">
+    <span className="text-xs text-white font-medium tabular-nums leading-none">
       {Math.round(value * 100)}
     </span>
     <div
-      className="relative w-4 bg-slate-700/50 rounded overflow-hidden"
-      style={{ height: '64px' }}
+      className="relative w-8 bg-slate-700/50 rounded overflow-hidden"
+      style={{ height: '80px' }}
     >
       <div
         className="absolute bottom-0 w-full transition-[height] duration-50 ease-out"

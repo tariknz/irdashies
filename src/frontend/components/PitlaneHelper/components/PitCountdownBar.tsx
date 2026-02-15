@@ -26,13 +26,13 @@ export const PitCountdownBar = memo(
 
     if (orientation === 'vertical') {
       return (
-        <div className="flex flex-col items-center gap-0.5">
-          <span className="text-[10px] text-slate-300 tabular-nums leading-none">
+        <div className="flex flex-col items-center gap-1">
+          <span className="text-xs text-white font-medium tabular-nums leading-none">
             {valueLabel}
           </span>
           <div
-            className="relative w-4 bg-slate-700/50 rounded overflow-hidden"
-            style={{ height: '64px' }}
+            className="relative w-8 bg-slate-700/50 rounded overflow-hidden"
+            style={{ height: '80px' }}
           >
             <div
               className="absolute bottom-0 w-full transition-all duration-200 ease-out"
@@ -48,14 +48,14 @@ export const PitCountdownBar = memo(
 
     // Horizontal orientation
     return (
-      <div className="flex flex-col gap-0.5">
-        <div className="flex justify-between items-center">
-          <span className="text-[10px] text-slate-400">{targetName}</span>
-          <span className="text-[10px] text-slate-300 tabular-nums">
+      <div className="flex flex-col gap-1">
+        <div className="flex justify-between items-center text-xs">
+          <span className="text-slate-400">{targetName}</span>
+          <span className="text-white font-medium tabular-nums">
             {valueLabel}
           </span>
         </div>
-        <div className="relative h-3 w-full bg-slate-700/50 rounded overflow-hidden">
+        <div className="relative h-4 w-full bg-slate-700/50 rounded overflow-hidden">
           <div
             className="absolute left-0 top-0 h-full transition-all duration-200 ease-out"
             style={{ width: `${progressPercent}%`, backgroundColor: color }}
