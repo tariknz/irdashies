@@ -93,20 +93,6 @@ export const GeneralSettings = () => {
       currentDashboard?.generalSettings?.enableNetworkAccess ?? false,
   });
 
-  const restrictedWeights =
-    FONT_WEIGHT_RESTRICTIONS[settings.fontType ?? ''] ?? [];
-
-  const filteredWeights = Object.fromEntries(
-    Object.entries(FONT_WEIGHT_PRESETS).filter(
-      ([key]) => !restrictedWeights.includes(key)
-    )
-  );
-
-  const resolvedFontWeight =
-  settings.fontWeight && filteredWeights[settings.fontWeight]
-    ? settings.fontWeight
-    : 'normal';
-
   if (!currentDashboard || !onDashboardUpdated) {
     return <>Loading...</>;
   }
@@ -171,6 +157,24 @@ export const GeneralSettings = () => {
     setSettings(newSettings);
     updateDashboard(newSettings);
   };
+
+  const restrictedWeights =
+    FONT_WEIGHT_RESTRICTIONS[settings.fontType ?? ''] ?? [];
+
+  const filteredWeights = Object.fromEntries(
+    Object.entries(FONT_WEIGHT_PRESETS).filter(
+      ([key]) => !restrictedWeights.includes(key)
+    )
+  );
+
+  const resolvedFontWeight =
+  settings.fontWeight && filteredWeights[settings.fontWeight]
+    ? settings.fontWeight
+    : 'normal';
+
+  if (settings.fontWeight != resolvedFontWeight) {
+    handleFontWeightChange(resolvedFontWeight);
+  }
 
   const handleSliderChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const sliderValue = parseInt(event.target.value);
@@ -275,31 +279,6 @@ export const GeneralSettings = () => {
           </div>
         </div>
 
-        {/* Font Size Settings */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-medium text-slate-200">Font Size</h3>
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-slate-300">
-                {FONT_SIZE_PRESETS[settings.fontSize ?? 'sm']}
-              </span>
-            </div>
-          </div>
-
-          {/* Font Size Slider */}
-          <div className="mt-4">
-            <input
-              type="range"
-              min="0"
-              max="12"
-              step="1"
-              value={getSliderValue(settings.fontSize)}
-              onChange={handleSliderChange}
-              className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer slider accent-blue-500"
-            />
-          </div>
-        </div>
-
         {/* Font Weight Settings */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
@@ -324,6 +303,31 @@ export const GeneralSettings = () => {
                 </option>
               ))}
             </select>
+          </div>
+        </div>
+
+        {/* Font Size Settings */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-medium text-slate-200">Font Size</h3>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-slate-300">
+                {FONT_SIZE_PRESETS[settings.fontSize ?? 'sm']}
+              </span>
+            </div>
+          </div>
+
+          {/* Font Size Slider */}
+          <div className="mt-4">
+            <input
+              type="range"
+              min="0"
+              max="12"
+              step="1"
+              value={getSliderValue(settings.fontSize)}
+              onChange={handleSliderChange}
+              className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer slider accent-blue-500"
+            />
           </div>
         </div>
 
