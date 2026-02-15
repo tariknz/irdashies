@@ -1,10 +1,13 @@
 import { useState } from 'react';
+import { useEffect } from 'react';
 import { useDashboard } from '@irdashies/context';
 import { GeneralSettingsType } from '@irdashies/types';
 
 const FONT_PRESETS = {
   lato: 'Lato',
   notosans: 'Noto Sans',
+  figtree: 'Figtree',
+  inter: 'Inter',
   roboto: 'Roboto'
 };
 
@@ -25,11 +28,16 @@ const FONT_SIZE_PRESETS = {
 };
 
 const FONT_WEIGHT_PRESETS = {
+  light: 'Light',
   normal: 'Normal',
   medium: 'Medium',
   semibold: 'Semibold',
   bold: 'Bold',
-  extrabold: 'Extrabold',
+  extrabold: 'Extrabold'
+};
+
+const FONT_WEIGHT_RESTRICTIONS: Record<string, string[]> = {
+  lato: ['medium','semibold']
 };
 
 const HIGHLIGHT_COLOR_PRESETS = new Map([
@@ -128,7 +136,7 @@ export const GeneralSettings = () => {
   };
 
   const handleFontChange = (
-    newFont: 'lato' | 'notosans' | 'roboto'
+    newFont: 'lato' | 'notosans' | 'figtree' | 'inter' | 'roboto'
   ) => {
     const newSettings = { ...settings, fontType: newFont };
     setSettings(newSettings);
@@ -144,7 +152,7 @@ export const GeneralSettings = () => {
   };
 
   const handleFontWeightChange = (
-    newWeight: 'normal' | 'medium' | 'semibold' | 'bold' | 'extrabold'
+    newWeight: 'light' | 'normal' | 'medium' | 'semibold' | 'bold' | 'extrabold'
   ) => {
     const newSettings = { ...settings, fontWeight: newWeight };
     setSettings(newSettings);
@@ -213,6 +221,26 @@ export const GeneralSettings = () => {
     setSettings(newSettings);
     updateDashboard(newSettings);
   };
+
+  const restrictedWeights =
+    FONT_WEIGHT_RESTRICTIONS[settings.fontType ?? ''] ?? [];
+
+  const filteredWeights = Object.fromEntries(
+    Object.entries(FONT_WEIGHT_PRESETS).filter(
+      ([key]) => !restrictedWeights.includes(key)
+    )
+  );
+
+  const resolvedFontWeight =
+  settings.fontWeight && filteredWeights[settings.fontWeight]
+    ? settings.fontWeight
+    : 'normal';
+
+  useEffect(() => {
+  if ((settings.fontWeight ?? 'normal') !== resolvedFontWeight) {
+    handleFontWeightChange(resolvedFontWeight);
+  }
+  }, [resolvedFontWeight, handleFontWeightChange]);
 
   return (
     <div className="flex flex-col h-full">
@@ -287,7 +315,7 @@ export const GeneralSettings = () => {
           {/* Font Weight Dropdown */}
           <div className="mt-4">
             <select
-              value={settings.fontWeight ?? 'normal'}
+              value={resolvedFontWeight}
               onChange={(e) =>
                 handleFontWeightChange(
                   e.target.value as NonNullable<
@@ -297,7 +325,7 @@ export const GeneralSettings = () => {
               }
               className="w-full px-3 py-2 bg-slate-700 text-slate-300 rounded border border-slate-600 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
             >
-              {Object.entries(FONT_WEIGHT_PRESETS).map(([key, value]) => (
+              {Object.entries(filteredWeights).map(([key, value]) => (
                 <option key={key} value={key}>
                   {value}
                 </option>

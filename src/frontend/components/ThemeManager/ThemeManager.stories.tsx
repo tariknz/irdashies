@@ -101,7 +101,7 @@ const createMockBridge = (
   setAutoStart: () => Promise.resolve()
 });
 
-const FONT_TYPES: FontType[] = ['lato', 'notosans', 'roboto'];
+const FONT_TYPES: FontType[] = ['lato', 'notosans', 'figtree', 'inter', 'roboto'];
 const FONT_SIZES: FontSize[] = ['xs', 'sm', 'md', 'lg', 'xl', '2xl', '3xl', '4xl', '5xl', '6xl', '7xl', '8xl', '9xl'];
 const FONT_SIZE_LABELS: Record<FontSize, string> = {
   'xs': 'Extra Small',
@@ -118,7 +118,7 @@ const FONT_SIZE_LABELS: Record<FontSize, string> = {
   '8xl': '8X Large',
   '9xl': '9X Large',
 };
-const FONT_WEIGHTS: NonNullable<GeneralSettingsType['fontWeight']>[] = ['normal', 'medium', 'semibold', 'bold', 'extrabold'];
+const FONT_WEIGHTS: NonNullable<GeneralSettingsType['fontWeight']>[] = ['light', 'normal', 'medium' , 'semibold' , 'bold', 'extrabold'];
 
 const COLOR_PALETTES: NonNullable<GeneralSettingsType['colorPalette']>[] = [
   'default',
@@ -274,6 +274,15 @@ export const Primary = {
                   <div className="text-xl">text-xl</div>
                 </div>
 
+                {/* Light text */}
+                <div className="space-y-2">
+                  <div className="text-xs font-light">text-xs light</div>
+                  <div className="text-sm font-light">text-sm light</div>
+                  <div className="text-base font-light">text-base light</div>
+                  <div className="text-lg font-light">text-lg light</div>
+                  <div className="text-xl font-light">text-xl light</div>
+                </div>
+
                 {/* Medium text */}
                 <div className="space-y-2">
                   <div className="text-xs font-medium">text-xs medium</div>
@@ -283,7 +292,7 @@ export const Primary = {
                   <div className="text-xl font-medium">text-xl medium</div>
                 </div>
 
-                {/* Semi-Bold text */}
+                {/* Semibold text */}
                 <div className="space-y-2">
                   <div className="text-xs font-semibold">text-xs semibold</div>
                   <div className="text-sm font-semibold">text-sm semibold</div>

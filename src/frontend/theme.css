@@ -1,9 +1,15 @@
 @import url('https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&display=swap')
 layer(base);
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans:ital,wght@0,100..900;1,100..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,100..900;1,100..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,100..900;1,100..900&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100..900;1,100..900&display=swap');
 
 @import 'tailwindcss';
+
+.overlay-window.overlay-theme-font-weight-light {
+  font-weight: var(--font-weight-light);
+}
 
 .overlay-window.overlay-theme-font-weight-normal {
   font-weight: var(--font-weight-normal);
@@ -79,6 +85,14 @@ html {
   font-family: 'Noto Sans', sans-serif;
 }
 
+.overlay-window.overlay-theme-font-face-figtree {
+  font-family: 'Figtree', sans-serif;
+}
+
+.overlay-window.overlay-theme-font-face-inter {
+  font-family: 'Inter', sans-serif;
+}
+
 .overlay-window.overlay-theme-font-face-roboto {
   font-family: 'Roboto', sans-serif;
 }
@@ -90,6 +104,8 @@ html {
   --text-base: 12px;
   --text-lg: 13px;
   --text-xl: 14px;
+  --text-2xl: 15px;
+  --text-3xl: 16px;
 }
 
 .overlay-window.overlay-theme-sm {
@@ -98,6 +114,8 @@ html {
   --text-base: 13px;
   --text-lg: 14px;
   --text-xl: 15px;
+  --text-2xl: 16px;
+  --text-3xl: 17px;
 }
 
 .overlay-window.overlay-theme-md {
@@ -106,6 +124,8 @@ html {
   --text-base: 14px;
   --text-lg: 15px;
   --text-xl: 16px;
+  --text-2xl: 17px;
+  --text-3xl: 18px;
 }
 
 .overlay-window.overlay-theme-lg {
@@ -114,6 +134,8 @@ html {
   --text-base: 15px;
   --text-lg: 16px;
   --text-xl: 17px;
+  --text-2xl: 18px;
+  --text-3xl: 19px;
 }
 
 .overlay-window.overlay-theme-xl {
