@@ -24,7 +24,7 @@ describe('PitExitInputs', () => {
       expect(container.firstChild).toBeNull();
     });
 
-    it('renders with throttle enabled', () => {
+    it('renders throttle bar when throttle is enabled', () => {
       vi.spyOn(context, 'useTelemetryValue').mockImplementation((key) => {
         if (key === 'Throttle') return 0.5;
         if (key === 'Clutch') return 0.2;
@@ -35,10 +35,10 @@ describe('PitExitInputs', () => {
         <PitExitInputs showThrottle={true} showClutch={false} />
       );
 
-      expect(getByText('Pit Exit Inputs')).toBeInTheDocument();
+      expect(getByText('thr')).toBeInTheDocument();
     });
 
-    it('renders with clutch enabled', () => {
+    it('renders clutch bar when clutch is enabled', () => {
       vi.spyOn(context, 'useTelemetryValue').mockImplementation((key) => {
         if (key === 'Throttle') return 0.5;
         if (key === 'Clutch') return 0.2;
@@ -49,10 +49,10 @@ describe('PitExitInputs', () => {
         <PitExitInputs showThrottle={false} showClutch={true} />
       );
 
-      expect(getByText('Pit Exit Inputs')).toBeInTheDocument();
+      expect(getByText('clt')).toBeInTheDocument();
     });
 
-    it('renders with both throttle and clutch enabled', () => {
+    it('renders both throttle and clutch bars when both enabled', () => {
       vi.spyOn(context, 'useTelemetryValue').mockImplementation((key) => {
         if (key === 'Throttle') return 0.65;
         if (key === 'Clutch') return 0.8;
@@ -63,7 +63,8 @@ describe('PitExitInputs', () => {
         <PitExitInputs showThrottle={true} showClutch={true} />
       );
 
-      expect(getByText('Pit Exit Inputs')).toBeInTheDocument();
+      expect(getByText('thr')).toBeInTheDocument();
+      expect(getByText('clt')).toBeInTheDocument();
     });
   });
 
@@ -109,8 +110,7 @@ describe('PitExitInputs', () => {
         <PitExitInputs showThrottle={false} showClutch={true} />
       );
 
-      // The inverted value (0.2) should be passed to InputBar
-      // We can't directly test the prop, but we can verify the component renders
+      // The inverted value (0.2 = 20%) should be shown in the label
       expect(container.firstChild).toBeInTheDocument();
     });
 
@@ -143,37 +143,38 @@ describe('PitExitInputs', () => {
     });
   });
 
-  describe('InputBar Integration', () => {
-    it('passes correct settings when only throttle is shown', () => {
+  describe('Bar Display', () => {
+    it('shows only throttle bar when only throttle is enabled', () => {
       vi.spyOn(context, 'useTelemetryValue').mockImplementation((key) => {
         if (key === 'Throttle') return 0.65;
         if (key === 'Clutch') return 0.8;
         return undefined;
       });
 
-      const { container } = render(
+      const { getByText, queryByText } = render(
         <PitExitInputs showThrottle={true} showClutch={false} />
       );
 
-      // InputBar should be rendered with includeBrake=false, includeAbs=false
-      expect(container.querySelector('.h-16')).toBeInTheDocument();
+      expect(getByText('thr')).toBeInTheDocument();
+      expect(queryByText('clt')).not.toBeInTheDocument();
     });
 
-    it('passes correct settings when only clutch is shown', () => {
+    it('shows only clutch bar when only clutch is enabled', () => {
       vi.spyOn(context, 'useTelemetryValue').mockImplementation((key) => {
         if (key === 'Throttle') return 0.5;
         if (key === 'Clutch') return 0.2;
         return undefined;
       });
 
-      const { container } = render(
+      const { getByText, queryByText } = render(
         <PitExitInputs showThrottle={false} showClutch={true} />
       );
 
-      expect(container.querySelector('.h-16')).toBeInTheDocument();
+      expect(getByText('clt')).toBeInTheDocument();
+      expect(queryByText('thr')).not.toBeInTheDocument();
     });
 
-    it('passes correct settings when both are shown', () => {
+    it('shows vertical bars with correct width class', () => {
       vi.spyOn(context, 'useTelemetryValue').mockImplementation((key) => {
         if (key === 'Throttle') return 0.65;
         if (key === 'Clutch') return 0.8;
@@ -184,64 +185,29 @@ describe('PitExitInputs', () => {
         <PitExitInputs showThrottle={true} showClutch={true} />
       );
 
-      expect(container.querySelector('.h-16')).toBeInTheDocument();
-    });
-
-    it('never includes brake in settings', () => {
-      vi.spyOn(context, 'useTelemetryValue').mockImplementation((key) => {
-        if (key === 'Throttle') return 0.5;
-        if (key === 'Clutch') return 0.5;
-        return undefined;
-      });
-
-      const { container } = render(
-        <PitExitInputs showThrottle={true} showClutch={true} />
-      );
-
-      // Verify brake is never shown (InputBar settings.includeBrake should be false)
-      expect(container.querySelector('.h-16')).toBeInTheDocument();
-    });
-
-    it('never includes ABS in settings', () => {
-      vi.spyOn(context, 'useTelemetryValue').mockImplementation((key) => {
-        if (key === 'Throttle') return 0.5;
-        if (key === 'Clutch') return 0.5;
-        return undefined;
-      });
-
-      const { container } = render(
-        <PitExitInputs showThrottle={true} showClutch={true} />
-      );
-
-      // Verify ABS is never shown (InputBar settings.includeAbs should be false)
-      expect(container.querySelector('.h-16')).toBeInTheDocument();
+      const bars = container.querySelectorAll('.w-8');
+      expect(bars.length).toBeGreaterThan(0);
     });
   });
 
   describe('Component Structure', () => {
-    it('renders header label', () => {
-      vi.spyOn(context, 'useTelemetryValue').mockReturnValue(0.5);
+    it('has correct displayName for debugging', () => {
+      expect(PitExitInputs.displayName).toBe('PitExitInputs');
+    });
+
+    it('shows percentage value label above the bar', () => {
+      vi.spyOn(context, 'useTelemetryValue').mockImplementation((key) => {
+        if (key === 'Throttle') return 0.5;
+        if (key === 'Clutch') return 1.0;
+        return undefined;
+      });
 
       const { getByText } = render(
         <PitExitInputs showThrottle={true} showClutch={false} />
       );
 
-      expect(getByText('Pit Exit Inputs')).toBeInTheDocument();
-    });
-
-    it('renders container with correct height', () => {
-      vi.spyOn(context, 'useTelemetryValue').mockReturnValue(0.5);
-
-      const { container } = render(
-        <PitExitInputs showThrottle={true} showClutch={false} />
-      );
-
-      const inputBarContainer = container.querySelector('.h-16');
-      expect(inputBarContainer).toBeInTheDocument();
-    });
-
-    it('has correct displayName for debugging', () => {
-      expect(PitExitInputs.displayName).toBe('PitExitInputs');
+      // 0.5 throttle = 50%
+      expect(getByText('50')).toBeInTheDocument();
     });
   });
 

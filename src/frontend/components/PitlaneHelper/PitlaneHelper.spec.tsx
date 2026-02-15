@@ -281,7 +281,7 @@ describe('PitlaneHelper', () => {
 
       const { getByText } = render(<PitlaneHelper />);
 
-      expect(getByText('Past Pitbox')).toBeInTheDocument();
+      expect(getByText('Past Box')).toBeInTheDocument();
     });
 
     it('shows both pitbox and pit exit countdown side-by-side when past pitbox', () => {
@@ -299,7 +299,7 @@ describe('PitlaneHelper', () => {
       const { getByText } = render(<PitlaneHelper />);
 
       // Both should be visible
-      expect(getByText('Past Pitbox')).toBeInTheDocument();
+      expect(getByText('Past Box')).toBeInTheDocument();
       expect(getByText('Pit Exit')).toBeInTheDocument();
     });
 
@@ -354,8 +354,10 @@ describe('PitlaneHelper', () => {
 
       const { getByText } = render(<PitlaneHelper />);
 
-      expect(getByText(/-5\.0 km\/h/)).toBeInTheDocument();
-      expect(getByText(/Limit: 72 km\/h/)).toBeInTheDocument();
+      // Delta and unit are in separate elements
+      expect(getByText('-5.0')).toBeInTheDocument();
+      expect(getByText('km/h')).toBeInTheDocument();
+      expect(getByText('lim 72')).toBeInTheDocument();
     });
 
     it('displays speed delta in mph when limitMph > limitKph', () => {
@@ -374,8 +376,10 @@ describe('PitlaneHelper', () => {
 
       const { getByText } = render(<PitlaneHelper />);
 
-      expect(getByText(/-5\.0 mph/)).toBeInTheDocument();
-      expect(getByText(/Limit: 72 mph/)).toBeInTheDocument();
+      // Delta and unit are in separate elements
+      expect(getByText('-5.0')).toBeInTheDocument();
+      expect(getByText('mph')).toBeInTheDocument();
+      expect(getByText('lim 72')).toBeInTheDocument();
     });
 
     it('shows green color when under speed limit', () => {
@@ -478,7 +482,7 @@ describe('PitlaneHelper', () => {
 
       const { getByText } = render(<PitlaneHelper />);
 
-      expect(getByText('⚠ EARLY PITBOX')).toBeInTheDocument();
+      expect(getByText('EARLY PITBOX')).toBeInTheDocument();
     });
 
     it('hides early pitbox warning when not on pit road', () => {
@@ -494,7 +498,7 @@ describe('PitlaneHelper', () => {
 
       const { queryByText } = render(<PitlaneHelper />);
 
-      expect(queryByText('⚠ EARLY PITBOX')).not.toBeInTheDocument();
+      expect(queryByText('EARLY PITBOX')).not.toBeInTheDocument();
     });
 
     it('hides early pitbox warning when disabled in config', () => {
@@ -515,7 +519,7 @@ describe('PitlaneHelper', () => {
 
       const { queryByText } = render(<PitlaneHelper />);
 
-      expect(queryByText('⚠ EARLY PITBOX')).not.toBeInTheDocument();
+      expect(queryByText('EARLY PITBOX')).not.toBeInTheDocument();
     });
   });
 
@@ -525,6 +529,7 @@ describe('PitlaneHelper', () => {
         ...defaultConfig,
         showPitExitInputs: true,
         showInputsPhase: 'always',
+        pitExitInputs: { throttle: true, clutch: true },
       });
 
       vi.mocked(context.useTelemetryValue).mockImplementation((key) => {
@@ -534,13 +539,15 @@ describe('PitlaneHelper', () => {
 
       const { getByText } = render(<PitlaneHelper />);
 
-      expect(getByText('Pit Exit Inputs')).toBeInTheDocument();
+      // PitExitInputs renders 'thr' and 'clt' labels
+      expect(getByText('thr')).toBeInTheDocument();
     });
 
     it('hides pit exit inputs when not on pit road', () => {
       vi.mocked(usePitlaneHelperSettings).mockReturnValue({
         ...defaultConfig,
         showPitExitInputs: true,
+        pitExitInputs: { throttle: true, clutch: true },
       });
 
       vi.mocked(context.useTelemetryValue).mockImplementation((key) => {
@@ -550,7 +557,7 @@ describe('PitlaneHelper', () => {
 
       const { queryByText } = render(<PitlaneHelper />);
 
-      expect(queryByText('Pit Exit Inputs')).not.toBeInTheDocument();
+      expect(queryByText('thr')).not.toBeInTheDocument();
     });
 
     it('shows inputs only at pitbox when phase is "atPitbox"', () => {
@@ -558,6 +565,7 @@ describe('PitlaneHelper', () => {
         ...defaultConfig,
         showPitExitInputs: true,
         showInputsPhase: 'atPitbox',
+        pitExitInputs: { throttle: true, clutch: true },
       });
 
       vi.mocked(context.useTelemetryValue).mockImplementation((key) => {
@@ -573,7 +581,7 @@ describe('PitlaneHelper', () => {
 
       const { getByText } = render(<PitlaneHelper />);
 
-      expect(getByText('Pit Exit Inputs')).toBeInTheDocument();
+      expect(getByText('thr')).toBeInTheDocument();
     });
 
     it('hides inputs before pitbox when phase is "atPitbox"', () => {
@@ -581,6 +589,7 @@ describe('PitlaneHelper', () => {
         ...defaultConfig,
         showPitExitInputs: true,
         showInputsPhase: 'atPitbox',
+        pitExitInputs: { throttle: true, clutch: true },
       });
 
       vi.mocked(context.useTelemetryValue).mockImplementation((key) => {
@@ -596,7 +605,7 @@ describe('PitlaneHelper', () => {
 
       const { queryByText } = render(<PitlaneHelper />);
 
-      expect(queryByText('Pit Exit Inputs')).not.toBeInTheDocument();
+      expect(queryByText('thr')).not.toBeInTheDocument();
     });
 
     it('shows inputs only after pitbox when phase is "afterPitbox"', () => {
@@ -604,6 +613,7 @@ describe('PitlaneHelper', () => {
         ...defaultConfig,
         showPitExitInputs: true,
         showInputsPhase: 'afterPitbox',
+        pitExitInputs: { throttle: true, clutch: true },
       });
 
       vi.mocked(context.useTelemetryValue).mockImplementation((key) => {
@@ -619,7 +629,7 @@ describe('PitlaneHelper', () => {
 
       const { getByText } = render(<PitlaneHelper />);
 
-      expect(getByText('Pit Exit Inputs')).toBeInTheDocument();
+      expect(getByText('thr')).toBeInTheDocument();
     });
   });
 
@@ -633,7 +643,7 @@ describe('PitlaneHelper', () => {
 
       const { getByText } = render(<PitlaneHelper />);
 
-      expect(getByText('2 ahead • 1 behind')).toBeInTheDocument();
+      expect(getByText('2 ahead · 1 behind')).toBeInTheDocument();
     });
 
     it('hides traffic when no cars in pitlane', () => {
@@ -645,7 +655,7 @@ describe('PitlaneHelper', () => {
 
       const { queryByText } = render(<PitlaneHelper />);
 
-      expect(queryByText(/ahead • behind/)).not.toBeInTheDocument();
+      expect(queryByText(/ahead · behind/)).not.toBeInTheDocument();
     });
 
     it('hides traffic when disabled in config', () => {
@@ -662,7 +672,7 @@ describe('PitlaneHelper', () => {
 
       const { queryByText } = render(<PitlaneHelper />);
 
-      expect(queryByText(/ahead • behind/)).not.toBeInTheDocument();
+      expect(queryByText(/ahead · behind/)).not.toBeInTheDocument();
     });
   });
 });
