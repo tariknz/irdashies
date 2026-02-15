@@ -47,6 +47,7 @@ describe('PitlaneHelper', () => {
     approachDistance: 200,
     earlyPitboxThreshold: 75,
     progressBarOrientation: 'vertical' as const,
+    showSpeedBar: true,
     background: { opacity: 80 },
     showPitExitInputs: false,
     showInputsPhase: 'always' as const,
@@ -415,7 +416,9 @@ describe('PitlaneHelper', () => {
 
       const { container } = render(<PitlaneHelper />);
 
-      const speedContainer = container.querySelector('.bg-red-600.animate-pulse');
+      const speedContainer = container.querySelector(
+        '.bg-red-600.animate-pulse'
+      );
       expect(speedContainer).toBeInTheDocument();
     });
   });
@@ -455,7 +458,9 @@ describe('PitlaneHelper', () => {
       const { container, getByText } = render(<PitlaneHelper />);
 
       expect(getByText('⚠ LIMITER! (TEAM RACE)')).toBeInTheDocument();
-      const warningElement = container.querySelector('.bg-red-700.animate-pulse');
+      const warningElement = container.querySelector(
+        '.bg-red-700.animate-pulse'
+      );
       expect(warningElement).toBeInTheDocument();
     });
 

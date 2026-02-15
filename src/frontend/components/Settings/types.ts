@@ -536,6 +536,7 @@ export interface PitlaneHelperWidgetSettings extends BaseWidgetSettings {
     showPitlaneTraffic: boolean;
     background: { opacity: number };
     progressBarOrientation: 'horizontal' | 'vertical';
+    showSpeedBar: boolean;
     showPitExitInputs: boolean;
     pitExitInputs: {
       throttle: boolean;
