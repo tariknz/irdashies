@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useEffect } from 'react';
 import { useDashboard } from '@irdashies/context';
 import { GeneralSettingsType } from '@irdashies/types';
 
@@ -93,6 +92,20 @@ export const GeneralSettings = () => {
     enableNetworkAccess:
       currentDashboard?.generalSettings?.enableNetworkAccess ?? false,
   });
+
+  const restrictedWeights =
+    FONT_WEIGHT_RESTRICTIONS[settings.fontType ?? ''] ?? [];
+
+  const filteredWeights = Object.fromEntries(
+    Object.entries(FONT_WEIGHT_PRESETS).filter(
+      ([key]) => !restrictedWeights.includes(key)
+    )
+  );
+
+  const resolvedFontWeight =
+  settings.fontWeight && filteredWeights[settings.fontWeight]
+    ? settings.fontWeight
+    : 'normal';
 
   if (!currentDashboard || !onDashboardUpdated) {
     return <>Loading...</>;
@@ -221,26 +234,6 @@ export const GeneralSettings = () => {
     setSettings(newSettings);
     updateDashboard(newSettings);
   };
-
-  const restrictedWeights =
-    FONT_WEIGHT_RESTRICTIONS[settings.fontType ?? ''] ?? [];
-
-  const filteredWeights = Object.fromEntries(
-    Object.entries(FONT_WEIGHT_PRESETS).filter(
-      ([key]) => !restrictedWeights.includes(key)
-    )
-  );
-
-  const resolvedFontWeight =
-  settings.fontWeight && filteredWeights[settings.fontWeight]
-    ? settings.fontWeight
-    : 'normal';
-
-  useEffect(() => {
-  if ((settings.fontWeight ?? 'normal') !== resolvedFontWeight) {
-    handleFontWeightChange(resolvedFontWeight);
-  }
-  }, [resolvedFontWeight, handleFontWeightChange]);
 
   return (
     <div className="flex flex-col h-full">
