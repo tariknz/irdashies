@@ -3,7 +3,7 @@ import { ThemeManager } from './ThemeManager';
 import { TelemetryDecorator } from '@irdashies/storybook';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { DashboardProvider } from '@irdashies/context';
-import type { DashboardBridge, DashboardLayout, FontSize, GeneralSettingsType } from '@irdashies/types';
+import type { DashboardBridge, DashboardLayout, FontType, FontSize, GeneralSettingsType } from '@irdashies/types';
 import { useState } from 'react';
 import { WIDGET_MAP } from '../../WidgetIndex';
 import { defaultDashboard } from '../../../app/storage/defaultDashboard';
@@ -17,6 +17,8 @@ const meta: Meta<typeof ThemeManager> = {
 export default meta;
 
 const createMockBridge = (
+  fontType: FontType | undefined,
+  setFontType: (size: FontType | undefined) => void,
   fontSize: FontSize | undefined,
   setFontSize: (size: FontSize | undefined) => void,
   fontWeight: GeneralSettingsType['fontWeight'],
@@ -29,14 +31,15 @@ const createMockBridge = (
     return;
   },
   saveDashboard: (dashboard: DashboardLayout) => {
-    setFontSize(dashboard.generalSettings?.fontSize);
+    setFontType(dashboard.generalSettings?.fontType || 'lato');
+    setFontSize(dashboard.generalSettings?.fontSize || 'sm');
     setColorPalette(dashboard.generalSettings?.colorPalette || 'default');
     setFontWeight(dashboard.generalSettings?.fontWeight || 'normal');
   },
   dashboardUpdated: (callback) => {
     callback({
       widgets,
-      generalSettings: { fontSize, colorPalette },
+      generalSettings: { fontType, fontSize, colorPalette, fontWeight },
     }, undefined);
     return () => {
       return;
@@ -53,7 +56,7 @@ const createMockBridge = (
   resetDashboard: () =>
     Promise.resolve({
       widgets: [],
-      generalSettings: { fontSize, colorPalette },
+      generalSettings: { fontType, fontSize, colorPalette, fontWeight },
     }),
   toggleDemoMode: () => {
     return;
@@ -98,17 +101,24 @@ const createMockBridge = (
   setAutoStart: () => Promise.resolve()
 });
 
-const FONT_SIZES: FontSize[] = ['xs', 'sm', 'md', 'lg', 'xl', '2xl', '3xl'];
+const FONT_TYPES: FontType[] = ['lato', 'notosans', 'figtree', 'inter', 'roboto'];
+const FONT_SIZES: FontSize[] = ['xs', 'sm', 'md', 'lg', 'xl', '2xl', '3xl', '4xl', '5xl', '6xl', '7xl', '8xl', '9xl'];
 const FONT_SIZE_LABELS: Record<FontSize, string> = {
-  xs: 'Extra Small',
-  sm: 'Small',
-  md: 'Medium',
-  lg: 'Large',
-  xl: 'Extra Large',
+  'xs': 'Extra Small',
+  'sm': 'Small',
+  'md': 'Medium',
+  'lg': 'Large',
+  'xl': 'Extra Large',
   '2xl': '2X Large',
   '3xl': '3X Large',
+  '4xl': '4X Large',
+  '5xl': '5X Large',
+  '6xl': '6X Large',
+  '7xl': '7X Large',
+  '8xl': '8X Large',
+  '9xl': '9X Large',
 };
-const FONT_WEIGHTS: NonNullable<GeneralSettingsType['fontWeight']>[] = ['normal', 'bold', 'extrabold'];
+const FONT_WEIGHTS: NonNullable<GeneralSettingsType['fontWeight']>[] = ['light', 'normal', 'medium' , 'semibold' , 'bold', 'extrabold'];
 
 const COLOR_PALETTES: NonNullable<GeneralSettingsType['colorPalette']>[] = [
   'default',
@@ -135,6 +145,7 @@ const COLOR_PALETTES: NonNullable<GeneralSettingsType['colorPalette']>[] = [
 ];
 
 const createThemeControls = (
+  fontType: FontType | undefined,
   fontSize: FontSize | undefined,
   colorPalette: GeneralSettingsType['colorPalette'],
   fontWeight: GeneralSettingsType['fontWeight'],
@@ -147,7 +158,7 @@ const createThemeControls = (
     const newSize = FONT_SIZES[value];
     mockBridge.saveDashboard({
       widgets: [],
-      generalSettings: { fontSize: newSize, colorPalette, fontWeight },
+      generalSettings: { fontType, fontSize: newSize, colorPalette, fontWeight },
     });
   };
 
@@ -182,7 +193,7 @@ const createThemeControls = (
           onChange={(e) =>
             mockBridge.saveDashboard({
               widgets: [],
-              generalSettings: { fontSize, colorPalette: e.target.value as GeneralSettingsType['colorPalette'], fontWeight },
+              generalSettings: { fontType, fontSize, colorPalette: e.target.value as GeneralSettingsType['colorPalette'], fontWeight },
             })
           }
           className="px-2 py-1 rounded border text-[12px]"
@@ -190,6 +201,28 @@ const createThemeControls = (
           {COLOR_PALETTES.map((palette) => (
             <option key={palette} value={palette}>
               {palette.charAt(0).toUpperCase() + palette.slice(1)}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* Font */}
+      <div className="flex items-center gap-2">
+        <label htmlFor="fontType" className="text-[12px]">Font:</label>
+        <select
+          id="fontType"
+          value={fontType}
+          onChange={(e) =>
+            mockBridge.saveDashboard({
+              widgets: [],
+              generalSettings: { fontType: e.target.value as GeneralSettingsType['fontType'], fontSize, colorPalette, fontWeight },
+            })
+          }
+          className="px-2 py-1 rounded border text-[12px]"
+        >
+          {FONT_TYPES.map((face) => (
+            <option key={face} value={face}>
+              {face.charAt(0).toUpperCase() + face.slice(1)}
             </option>
           ))}
         </select>
@@ -206,7 +239,7 @@ const createThemeControls = (
             setFontWeight(newWeight);
             mockBridge.saveDashboard({
               widgets: [],
-              generalSettings: { fontSize, colorPalette, fontWeight: newWeight },
+              generalSettings: { fontType, fontSize, colorPalette, fontWeight: newWeight },
             });
           }}
           className="px-2 py-1 rounded border text-[12px]"
@@ -241,6 +274,33 @@ export const Primary = {
                   <div className="text-xl">text-xl</div>
                 </div>
 
+                {/* Light text */}
+                <div className="space-y-2">
+                  <div className="text-xs font-light">text-xs light</div>
+                  <div className="text-sm font-light">text-sm light</div>
+                  <div className="text-base font-light">text-base light</div>
+                  <div className="text-lg font-light">text-lg light</div>
+                  <div className="text-xl font-light">text-xl light</div>
+                </div>
+
+                {/* Medium text */}
+                <div className="space-y-2">
+                  <div className="text-xs font-medium">text-xs medium</div>
+                  <div className="text-sm font-medium">text-sm medium</div>
+                  <div className="text-base font-medium">text-base medium</div>
+                  <div className="text-lg font-medium">text-lg medium</div>
+                  <div className="text-xl font-medium">text-xl medium</div>
+                </div>
+
+                {/* Semibold text */}
+                <div className="space-y-2">
+                  <div className="text-xs font-semibold">text-xs semibold</div>
+                  <div className="text-sm font-semibold">text-sm semibold</div>
+                  <div className="text-base font-semibold">text-base semibold</div>
+                  <div className="text-lg font-semibold">text-lg semibold</div>
+                  <div className="text-xl font-semibold">text-xl semibold</div>
+                </div>
+
                 {/* Bold text */}
                 <div className="space-y-2">
                   <div className="text-xs font-bold">text-xs bold</div>
@@ -269,17 +329,18 @@ export const Primary = {
 
 export const WithFontSizeControls = {
   render: () => {
+    const [fontType, setFontType] = useState<FontType | undefined>('lato');
     const [fontSize, setFontSize] = useState<FontSize | undefined>('sm');
     const [colorPalette, setColorPalette] = useState<GeneralSettingsType['colorPalette']>('default');
     const [fontWeight, setFontWeight] = useState<GeneralSettingsType['fontWeight']>('normal');
-    const mockBridge = createMockBridge(fontSize, setFontSize, fontWeight, setFontWeight, colorPalette, setColorPalette);
+    const mockBridge = createMockBridge(fontType, setFontType, fontSize, setFontSize, fontWeight, setFontWeight, colorPalette, setColorPalette);
 
     return (
       <DashboardProvider bridge={mockBridge}>
         <MemoryRouter initialEntries={['/']}>
           <ThemeManager>
             <div className="p-4 space-y-4">
-              {createThemeControls(fontSize, colorPalette, fontWeight, setFontWeight, mockBridge)}
+              {createThemeControls(fontType, fontSize, colorPalette, fontWeight, setFontWeight, mockBridge)}
               <div className="space-y-2 bg-slate-800/25 rounded-sm p-2">
                 <div className={`text-xs ${fontWeight}`}>This is extra small text</div>
                 <div className={`text-sm ${fontWeight}`}>This is small text</div>
@@ -297,17 +358,18 @@ export const WithFontSizeControls = {
 
 export const WithAllAvailableWidgets = {
   render: () => {
+    const [fontType, setFontType] = useState<FontType | undefined>('lato');
     const [fontSize, setFontSize] = useState<FontSize | undefined>('sm');
     const [colorPalette, setColorPalette] = useState<GeneralSettingsType['colorPalette']>('default');
     const [fontWeight, setFontWeight] = useState<GeneralSettingsType['fontWeight']>('normal');
-    const mockBridge = createMockBridge(fontSize, setFontSize, fontWeight, setFontWeight, colorPalette, setColorPalette, defaultDashboard.widgets);
+    const mockBridge = createMockBridge(fontType, setFontType, fontSize, setFontSize, fontWeight, setFontWeight, colorPalette, setColorPalette, defaultDashboard.widgets);
 
     return (
       <DashboardProvider bridge={mockBridge}>
         <MemoryRouter initialEntries={['/']}>
           <ThemeManager>
             <div className="p-4 space-y-4">
-              {createThemeControls(fontSize, colorPalette, fontWeight, setFontWeight, mockBridge)}
+              {createThemeControls(fontType, fontSize, colorPalette, fontWeight, setFontWeight, mockBridge)}
             </div>
             <hr className="my-4" />
             <Routes>
