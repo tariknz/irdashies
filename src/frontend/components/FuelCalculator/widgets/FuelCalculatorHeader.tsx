@@ -90,6 +90,49 @@ export const FuelCalculatorHeader: React.FC<FuelCalculatorWidgetProps> = ({
     lapsText = '--';
   }
 
+  // Grid Warning Logic
+  if (fuelData.gridWarning) {
+    let warningMsg = '';
+    let warningColor = 'text-red-400';
+    let warningBg = 'bg-red-500/20';
+    let warningBorder = 'border-red-500';
+
+    switch (fuelData.gridWarning) {
+      case 'fill_tank':
+        warningMsg = 'INSUFFICIENT FUEL';
+        break;
+      case 'low_fuel':
+        warningMsg = 'LOW FUEL (< 5 LAPS)';
+        warningColor = 'text-amber-400';
+        warningBg = 'bg-amber-500/20';
+        warningBorder = 'border-amber-500';
+        break;
+      case 'can_finish_fill':
+        warningMsg = 'FILL TANK RECOMMENDED';
+        warningColor = 'text-blue-300';
+        warningBg = 'bg-blue-500/20';
+        warningBorder = 'border-blue-500';
+        break;
+    }
+
+    return (
+      <div
+        className={`flex items-center justify-center ${isCompact ? 'mb-0 pb-0.5' : 'mb-1 pb-2 border-b border-slate-600/50'}`}
+      >
+        <div
+          className={`flex items-center gap-2 px-3 py-1 rounded w-full justify-center border ${warningBg} ${warningBorder}`}
+        >
+          <span
+            className={`${warningColor} font-bold animate-pulse`}
+            style={{ fontSize: valueFontSize }}
+          >
+            {warningMsg}
+          </span>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       className={`flex items-center justify-between ${isCompact ? 'mb-0 pb-0.5' : 'mb-1 pb-2 border-b border-slate-600/50'}`}

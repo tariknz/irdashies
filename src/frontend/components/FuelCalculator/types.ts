@@ -4,6 +4,15 @@ import type { FuelLapData } from '../../../types';
 export type { FuelLapData };
 
 /**
+ * Grid warning types
+ */
+export type GridWarningType =
+  | 'fill_tank'
+  | 'low_fuel'
+  | 'can_finish_fill'
+  | null;
+
+/**
  * Complete fuel calculation result
  */
 export interface FuelCalculation {
@@ -75,6 +84,10 @@ export interface FuelCalculation {
   fuelStatus?: 'safe' | 'caution' | 'danger';
   /** Minimum and maximum number of laps estimated in the session at the current pace */
   lapsRange?: [number, number];
+  /** Active grid/pre-race fuel warning */
+  gridWarning?: GridWarningType;
+  /** Amount of fuel queued for next pit stop (from PitSvFuel) */
+  queuedFuel?: number;
 }
 
 /**

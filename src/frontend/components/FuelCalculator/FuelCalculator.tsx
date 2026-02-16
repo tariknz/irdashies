@@ -287,7 +287,6 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
   // Not needed if we use `sessionTime`.
 
   // Layout Debug
-  // console.log('Layout Tree:', layoutTree);
 
   // We need to support "Blinking" or "Alerts".
   // `FuelCalculatorTargetMessage` handles this internally via `fuelData.fuelStatus`.
@@ -479,9 +478,6 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
     return null;
   };
 
-  // Background opacity configuration
-  const bgAlpha = (settings?.background?.opacity ?? 95) / 100;
-
   const currentFuelStatus = displayData.fuelStatus || 'safe';
   const showFuelStatusBorder = settings.showFuelStatusBorder ?? true;
 
@@ -516,9 +512,9 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
       }}
     >
       <div
-        className={`border-2 w-full h-full flex flex-col box-border px-3 transition-colors duration-500`}
+        className={`border-2 w-full h-full flex flex-col box-border px-3 transition-colors duration-500 bg-slate-900/(--bg-opacity)`}
         style={{
-          backgroundColor: `rgba(30, 30, 50, ${bgAlpha})`,
+          ['--bg-opacity' as string]: `${settings?.background?.opacity ?? 95}%`,
           borderColor: borderColorValue,
           boxShadow: `0 0 15px ${shadowColorValue} inset`,
         }}
