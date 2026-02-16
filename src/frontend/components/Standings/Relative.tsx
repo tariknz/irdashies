@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { DriverInfoRow } from './components/DriverInfoRow/DriverInfoRow';
+import { FlagContour } from '../../utils/FlagContour';
 import {
   useDrivingState,
   useWeekendInfoNumCarClasses,
@@ -251,11 +252,11 @@ export const Relative = () => {
   // If no player found, render empty table with consistent height
   if (playerIndex === -1) {
     return (
-      <div
-        className={`w-full h-full rounded-sm ${settings?.showFlag ? 'border-10 border-solid' : ''}`}
-        style={{
-          ...(settings?.showFlag && { borderColor: flagColor }),
-        }}
+      <FlagContour
+        compactMode={generalSettings?.compactMode}
+        showFlag={settings?.showFlag}
+        flagColor={flagColor}
+        backgroundOpacity={0}
       >
         <TitleBar titleBarSettings={settings?.titleBar} />
         {(settings?.headerBar?.enabled ?? false) && (
@@ -269,17 +270,16 @@ export const Relative = () => {
         {(settings?.footerBar?.enabled ?? true) && (
           <SessionBar position="footer" variant="relative" />
         )}
-      </div>
+      </FlagContour>
     );
   }
 
   return (
-    <div
-      className={`w-full bg-slate-800/(--bg-opacity) rounded-sm ${!generalSettings?.compactMode ? 'p-2' : ''} overflow-hidden ${settings?.showFlag ? 'border-10 border-solid' : ''}`}
-      style={{
-        ['--bg-opacity' as string]: `${settings?.background?.opacity ?? 0}%`,
-        ...(settings?.showFlag && { borderColor: flagColor }),
-      }}
+    <FlagContour
+      compactMode={generalSettings?.compactMode}
+      showFlag={settings?.showFlag}
+      flagColor={flagColor}
+      backgroundOpacity={settings?.background?.opacity ?? 0}
     >
       <TitleBar titleBarSettings={settings?.titleBar} />
       {(settings?.headerBar?.enabled ?? false) && (
@@ -293,6 +293,6 @@ export const Relative = () => {
       {(settings?.footerBar?.enabled ?? true) && (
         <SessionBar position="footer" variant="relative" />
       )}
-    </div>
+    </FlagContour>
   );
 };
