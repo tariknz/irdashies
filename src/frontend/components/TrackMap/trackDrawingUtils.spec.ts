@@ -81,7 +81,6 @@ describe('trackDrawingUtils', () => {
         100,
         true,
         'carNumber',
-        false,
         driverLivePositions
       );
 
@@ -101,7 +100,6 @@ describe('trackDrawingUtils', () => {
         100,
         true,
         'carNumber',
-        false,
         driverLivePositions
       );
 
@@ -121,8 +119,7 @@ describe('trackDrawingUtils', () => {
         100,
         true,
         'sessionPosition',
-        false,
-        driverLivePositions
+         driverLivePositions
       );
 
       // Should render at least some positions
@@ -148,7 +145,6 @@ describe('trackDrawingUtils', () => {
         100,
         true,
         'sessionPosition',
-        false,
         driverLivePositions
       );
 
@@ -168,7 +164,6 @@ describe('trackDrawingUtils', () => {
         100,
         false,
         'carNumber',
-        false,
         driverLivePositions
       );
 
@@ -188,7 +183,6 @@ describe('trackDrawingUtils', () => {
         100,
         true,
         'carNumber',
-        false,
         driverLivePositions
       );
 
@@ -206,7 +200,6 @@ describe('trackDrawingUtils', () => {
         100,
         true,
         'carNumber',
-        false,
         driverLivePositions
       );
 
@@ -227,7 +220,6 @@ describe('trackDrawingUtils', () => {
         100,
         true,
         'carNumber',
-        false,
         driverLivePositions
       );
 
@@ -271,7 +263,6 @@ describe('trackDrawingUtils', () => {
         100,
         true,
         'sessionPosition',
-        false,
         driverLivePositions
       );
 
@@ -317,7 +308,6 @@ describe('trackDrawingUtils', () => {
         100,
         true,
         'carNumber',
-        false,
         driverLivePositions
       );
 
@@ -361,7 +351,6 @@ describe('trackDrawingUtils', () => {
         100,
         true,
         'sessionPosition',
-        false,
         multiClassDriverLivePositions
       );
 

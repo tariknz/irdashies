@@ -104,8 +104,7 @@ export const drawDrivers = (
   playerCircleSize: number,
   trackmapFontSize: number,
   showCarNumbers: boolean,
-  displayMode: 'carNumber' | 'sessionPosition' = 'carNumber',
-  useLivePositionStandings: boolean,
+  displayMode: 'carNumber' | 'sessionPosition' | 'livePosition' = 'carNumber',
   driverLivePositions: Record<number, number>
 ) => {
 
@@ -135,14 +134,16 @@ export const drawDrivers = (
         ctx.fillStyle = color.text;
         ctx.font = `${fontSize}px sans-serif`;
         let displayText = '';       
-        if (displayMode === 'sessionPosition') {
-          const resolvedPosition = useLivePositionStandings
-            ? driverLivePositions[driver.CarIdx]
-            : sessionPosition;
-
+        if (displayMode === 'livePosition') {
+          const livePosition = driverLivePositions[driver.CarIdx];
           displayText =
-            resolvedPosition && resolvedPosition > 0
-              ? resolvedPosition.toString()
+            livePosition && livePosition > 0
+              ? livePosition.toString()
+              : '';
+        } else if (displayMode === 'sessionPosition') {
+           displayText =
+            sessionPosition && sessionPosition > 0
+              ? sessionPosition.toString()
               : '';
         } else {
           displayText = driver.CarNumber;
