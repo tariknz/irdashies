@@ -9,7 +9,8 @@
       "Bash(gh pr view:*)",
       "Bash(git pull:*)",
       "mcp__ide__getDiagnostics",
-      "Bash(npx eslint:*)"
+      "Bash(npx eslint:*)",
+      "WebFetch(domain:github.com)"
     ],
     "deny": [],
     "ask": []
