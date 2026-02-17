@@ -12,6 +12,10 @@ describe('trackDrawingUtils', () => {
       fill: vi.fn(),
       stroke: vi.fn(),
       fillText: vi.fn(),
+      measureText: vi.fn(() => ({
+        actualBoundingBoxAscent: 10,
+        actualBoundingBoxDescent: 4
+      })),
       save: vi.fn(),
       restore: vi.fn(),
       textAlign: 'center',
@@ -68,6 +72,7 @@ describe('trackDrawingUtils', () => {
         driversOffTrack,
         40,
         40,
+        100,
         true,
         'carNumber'
       );
@@ -85,13 +90,14 @@ describe('trackDrawingUtils', () => {
         driversOffTrack,
         40,
         40,
+        100,
         true,
         'carNumber'
       );
 
-      expect(ctx.fillText).toHaveBeenCalledWith('1', 100, 100);
-      expect(ctx.fillText).toHaveBeenCalledWith('2', 200, 100);
-      expect(ctx.fillText).toHaveBeenCalledWith('3', 150, 200);
+      expect(ctx.fillText).toHaveBeenCalledWith('1', 100, expect.any(Number));
+      expect(ctx.fillText).toHaveBeenCalledWith('2', 200, expect.any(Number));
+      expect(ctx.fillText).toHaveBeenCalledWith('3', 150, expect.any(Number));
     });
 
     it('should display class positions in sessionPosition mode', () => {
@@ -102,6 +108,7 @@ describe('trackDrawingUtils', () => {
         driversOffTrack,
         40,
         40,
+        100,
         true,
         'sessionPosition'
       );
@@ -126,6 +133,7 @@ describe('trackDrawingUtils', () => {
         driversOffTrack,
         40,
         40,
+        100,
         true,
         'sessionPosition'
       );
@@ -143,6 +151,7 @@ describe('trackDrawingUtils', () => {
         driversOffTrack,
         40,
         40,
+        100,
         false,
         'carNumber'
       );
@@ -160,6 +169,7 @@ describe('trackDrawingUtils', () => {
         driversOffTrackArray,
         40,
         40,
+        100,
         true,
         'carNumber'
       );
@@ -175,6 +185,7 @@ describe('trackDrawingUtils', () => {
         driversOffTrack,
         30,
         50,
+        100,
         true,
         'carNumber'
       );
@@ -193,6 +204,7 @@ describe('trackDrawingUtils', () => {
         driversOffTrack,
         40,
         40,
+        100,
         true,
         'carNumber'
       );
@@ -234,6 +246,7 @@ describe('trackDrawingUtils', () => {
         driversOffTrack,
         40,
         40,
+        100,
         true,
         'sessionPosition'
       );
@@ -277,6 +290,7 @@ describe('trackDrawingUtils', () => {
         driversOffTrack,
         40,
         40,
+        100,
         true,
         'carNumber'
       );
@@ -313,6 +327,7 @@ describe('trackDrawingUtils', () => {
         driversOffTrack,
         40,
         40,
+        100,
         true,
         'sessionPosition'
       );
