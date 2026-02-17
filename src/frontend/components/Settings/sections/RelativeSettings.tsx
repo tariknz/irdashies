@@ -120,7 +120,7 @@ const defaultConfig: RelativeWidgetSettings['config'] = {
     practice: true,
     offlineTesting: true,
   },
-  showFlag: false,
+  flags: { enabled: false },
 };
 
 const migrateConfig = (
@@ -404,7 +404,7 @@ const migrateConfig = (
     sessionVisibility:
       (config.sessionVisibility as SessionVisibilitySettings) ??
       defaultConfig.sessionVisibility,
-    showFlag: (config.showFlag as boolean) ?? false,
+    flags: (config.flags as { enabled: boolean }) ?? { enabled: false },
   };
 };
 
@@ -1208,9 +1208,9 @@ export const RelativeSettings = () => {
                 </p>
               </div>
               <ToggleSwitch
-                enabled={settings.config.showFlag ?? false}
+                enabled={settings.config.flags?.enabled ?? false}
                 onToggle={(enabled) =>
-                  handleConfigChange({ showFlag: enabled })
+                  handleConfigChange({ flags: { enabled } })
                 }
               />
             </div>

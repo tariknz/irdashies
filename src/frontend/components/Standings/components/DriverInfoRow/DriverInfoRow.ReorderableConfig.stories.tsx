@@ -415,7 +415,7 @@ const RelativeWithReorderableConfig = () => {
         practice: true,
         offlineTesting: true,
       },
-      showFlag: false,
+      flags: { enabled: false },
     }),
     [displayOrder]
   );

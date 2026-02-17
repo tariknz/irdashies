@@ -217,7 +217,7 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
     displayOrder: string[];
     useLivePosition: boolean;
     sessionVisibility: SessionVisibilitySettings;
-    showFlag: boolean;
+    flags: { enabled: boolean };
   };
 }
 

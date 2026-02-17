@@ -1007,7 +1007,7 @@ export const ShowFlagON: Story = {
       relative: {
         headerBar: { enabled: true },
         footerBar: { enabled: true },
-        showFlag: true,
+        flags: { enabled: true },
       },
     }),
   ],
@@ -1019,7 +1019,7 @@ export const ShowFlagOFF: Story = {
       relative: {
         headerBar: { enabled: true },
         footerBar: { enabled: true },
-        showFlag: false,
+        flags: { enabled: false },
       },
     }),
   ],

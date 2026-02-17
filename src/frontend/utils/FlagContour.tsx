@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 export interface FlagContourProps {
   children: ReactNode;
   compactMode?: boolean;
-  showFlag?: boolean;
+  flags?: { enabled: boolean };
   flagColor?: string;
   backgroundOpacity?: number;
 }
@@ -11,17 +11,17 @@ export interface FlagContourProps {
 export const FlagContour = ({
   children,
   compactMode = false,
-  showFlag = false,
+  flags = { enabled: false },
   flagColor,
   backgroundOpacity = 0,
 }: FlagContourProps) => {
   const containerClassName = `w-full bg-slate-800/(--bg-opacity) rounded-sm ${
     !compactMode ? 'p-2' : ''
-  } overflow-hidden ${showFlag ? 'border-10 border-solid' : ''}`;
+  } overflow-hidden ${flags.enabled ? 'border-10 border-solid' : ''}`;
 
   const containerStyle = {
     ['--bg-opacity' as string]: `${backgroundOpacity}%`,
-    ...(showFlag && flagColor && { borderColor: flagColor }),
+    ...(flags.enabled && flagColor && { borderColor: flagColor }),
   };
 
   return (

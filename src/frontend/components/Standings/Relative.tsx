@@ -46,7 +46,7 @@ export const Relative = () => {
   // Get flag color for border
   const sessionFlags = useTelemetryValue<number>('SessionFlags') ?? 0;
   const flagColor = useMemo(() => {
-    if (!settings?.showFlag) {
+    if (!settings?.flags?.enabled) {
       return undefined;
     }
 
@@ -55,7 +55,7 @@ export const Relative = () => {
     const normalizedFlagLabel = flagInfo.label.split(' ')[0];
 
     return getFlagColor(normalizedFlagLabel);
-  }, [settings?.showFlag, sessionFlags]);
+  }, [settings?.flags?.enabled, sessionFlags]);
   // Determine table border spacing based on compact mode
   const tableBorderSpacing = generalSettings?.compactMode
     ? 'border-spacing-y-0'
@@ -254,7 +254,7 @@ export const Relative = () => {
     return (
       <FlagContour
         compactMode={generalSettings?.compactMode}
-        showFlag={settings?.showFlag}
+        flags={settings?.flags}
         flagColor={flagColor}
         backgroundOpacity={0}
       >
@@ -277,7 +277,7 @@ export const Relative = () => {
   return (
     <FlagContour
       compactMode={generalSettings?.compactMode}
-      showFlag={settings?.showFlag}
+      flags={settings?.flags}
       flagColor={flagColor}
       backgroundOpacity={settings?.background?.opacity ?? 0}
     >
