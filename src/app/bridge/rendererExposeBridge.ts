@@ -10,6 +10,7 @@ import type {
   ContainerBoundsInfo,
   FuelCalculatorBridge,
   FuelLapData,
+  WindowControlsBridge,
 } from '@irdashies/types';
 
 export function exposeBridge() {
@@ -122,7 +123,10 @@ export function exposeBridge() {
     getDashboardForProfile: (profileId: string) => {
       return ipcRenderer.invoke('getDashboardForProfile', profileId);
     },
-    updateProfileTheme: (profileId: string, themeSettings: DashboardProfile['themeSettings']) => {
+    updateProfileTheme: (
+      profileId: string,
+      themeSettings: DashboardProfile['themeSettings']
+    ) => {
       return ipcRenderer.invoke('updateProfileTheme', profileId, themeSettings);
     },
     stop: () => {
@@ -176,4 +180,18 @@ export function exposeBridge() {
       return ipcRenderer.invoke('fuel:logData', data);
     },
   } as FuelCalculatorBridge);
+
+  contextBridge.exposeInMainWorld('windowControlsBridge', {
+    minimize: () => ipcRenderer.invoke('window:minimize'),
+    maximize: () => ipcRenderer.invoke('window:maximize'),
+    close: () => ipcRenderer.invoke('window:close'),
+    isMaximized: () => ipcRenderer.invoke('window:isMaximized'),
+    onMaximizeChange: (callback: (isMaximized: boolean) => void) => {
+      const handler = (_: Electron.IpcRendererEvent, value: boolean) =>
+        callback(value);
+      ipcRenderer.on('window:maximizeChanged', handler);
+      return () =>
+        ipcRenderer.removeListener('window:maximizeChanged', handler);
+    },
+  } as WindowControlsBridge);
 }

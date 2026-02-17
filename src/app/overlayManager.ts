@@ -455,7 +455,7 @@ export class OverlayManager {
     const savedBounds = loadWindowBounds();
     const defaultOptions = {
       title: `iRacing Dashies - Settings`,
-      frame: true,
+      frame: false,
       width: 800,
       height: 700,
       autoHideMenuBar: true,
@@ -471,6 +471,13 @@ export class OverlayManager {
     );
 
     this.currentSettingsWindow = browserWindow;
+
+    browserWindow.on('maximize', () => {
+      browserWindow.webContents.send('window:maximizeChanged', true);
+    });
+    browserWindow.on('unmaximize', () => {
+      browserWindow.webContents.send('window:maximizeChanged', false);
+    });
 
     // Track window movement and resizing to save bounds
     trackSettingsWindowMovement(browserWindow);
