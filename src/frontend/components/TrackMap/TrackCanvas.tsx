@@ -20,7 +20,7 @@ export interface TrackProps {
   drivers: TrackDriver[];
   enableTurnNames?: boolean;
   showCarNumbers?: boolean;
-  displayMode?: 'carNumber' | 'sessionPosition';
+  displayMode?: 'carNumber' | 'sessionPosition' | 'livePosition';
   invertTrackColors?: boolean;
   driverCircleSize?: number;
   playerCircleSize?: number;
