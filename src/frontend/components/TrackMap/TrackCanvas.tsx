@@ -13,6 +13,9 @@ import {
   drawDrivers,
 } from './trackDrawingUtils';
 import { useDriverOffTrack } from './hooks/useDriverOffTrack';
+import { useDriverLivePositions } from '../Standings/hooks/useDriverLivePositions';
+import { useStandingsSettings } from '../Standings/hooks/useStandingsSettings';
+import { useRelativeSettings } from '../Standings/hooks/useRelativeSettings';
 
 export interface TrackProps {
   trackId: number;
@@ -87,6 +90,9 @@ export const TrackCanvas = ({
   const shouldShow = shouldShowTrack(trackId, trackDrawing);
 
   const driversOffTrack = useDriverOffTrack();
+  const driverLivePositions = useDriverLivePositions();
+  const relativeSettings = useRelativeSettings();
+  const standingsSettings = useStandingsSettings();
 
   // Memoize Path2D objects to avoid re-creating them on every render
   // this is used to draw the track and start/finish line
@@ -365,6 +371,7 @@ export const TrackCanvas = ({
     const scale = Math.min(scaleX, scaleY);
     const offsetX = (canvasSize.width - TRACK_DRAWING_WIDTH * scale) / 2;
     const offsetY = (canvasSize.height - TRACK_DRAWING_HEIGHT * scale) / 2;
+    const useLivePositionStandings = !!standingsSettings?.useLivePosition || !!relativeSettings?.useLivePosition;
 
     setupCanvasContext(ctx, scale, offsetX, offsetY);
     drawDrivers(
@@ -376,7 +383,9 @@ export const TrackCanvas = ({
       playerCircleSize,
       trackmapFontSize,
       showCarNumbers,
-      displayMode
+      displayMode,
+      useLivePositionStandings,
+      driverLivePositions
     );
     ctx.restore();
   }, [
@@ -393,10 +402,13 @@ export const TrackCanvas = ({
     trackOutlineWidth,
     startFinishLine,
     driversOffTrack,
+    driverLivePositions,
     driverCircleSize,
     playerCircleSize,
     trackmapFontSize,
     trackId,
+    standingsSettings,
+    relativeSettings,
   ]);
 
   // Development/Storybook mode - show debug info and canvas
