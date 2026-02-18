@@ -12,13 +12,16 @@ interface WeatherData {
   humidity: number | undefined;
 }
 
-const selectWeatherData = (telemetry: Telemetry | null): WeatherData => ({
-  trackMoisture: telemetry?.TrackWetness?.value?.[0],
-  windYaw: telemetry?.YawNorth?.value?.[0],
-  windDirection: telemetry?.WindDir?.value?.[0],
-  windVelocity: telemetry?.WindVel?.value?.[0],
-  humidity: telemetry?.RelativeHumidity?.value?.[0],
-});
+const selectWeatherData = (telemetry: Telemetry | null): WeatherData => {
+  const camCarIdx = telemetry?.CamCarIdx?.value?.[0] ?? 0;
+  return {
+    trackMoisture: telemetry?.TrackWetness?.value?.[0],
+    windYaw: telemetry?.YawNorth?.value?.[camCarIdx],
+    windDirection: telemetry?.WindDir?.value?.[0],
+    windVelocity: telemetry?.WindVel?.value?.[0],
+    humidity: telemetry?.RelativeHumidity?.value?.[0],
+  };
+};
 
 /**
  * Subscribes to weather telemetry data but only updates React state
