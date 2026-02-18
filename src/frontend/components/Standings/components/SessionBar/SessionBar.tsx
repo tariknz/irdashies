@@ -2,7 +2,6 @@ import {
   useGeneralSettings,
   useTelemetryValue,
 } from '@irdashies/context';
-import { formatTime } from '@irdashies/utils/time';
 import {
   useDriverIncidents,
   useSessionLapCount,
@@ -32,6 +31,48 @@ import {
 import { SessionState } from '@irdashies/types';
 import { WindArrow } from '../../../shared/WindArrow';
 
+// compact=true (total time): trims trailing zero components, never shows seconds
+// compact=false (elapsed/remaining): always shows full HH:MM:SS
+const formatTotalTime = (
+  seconds: number,
+  totalFormat: 'hh:mm' | 'minimal',
+  compact: boolean,
+  labelStyle: 'none' | 'short' | 'minimal'
+): string => {
+  if (seconds < 0) return '-';
+  const totalSecs = Math.floor(seconds);
+  const hours = Math.floor(totalSecs / 3600);
+  const minutes = Math.floor((totalSecs % 3600) / 60);
+  const secs = totalSecs % 60;
+
+  let result: string;
+  if (totalFormat === 'hh:mm') {
+    if (compact && minutes === 0 && hours > 0) {
+      result = String(hours).padStart(2, '0');
+    } else {
+      result = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+      if (!compact) result += `:${String(secs).padStart(2, '0')}`;
+    }
+  } else {
+    // minimal
+    if (hours > 0) {
+      result =
+        compact && minutes === 0
+          ? `${hours}`
+          : `${hours}:${String(minutes).padStart(2, '0')}`;
+    } else {
+      result = `${minutes}`;
+    }
+    if (!compact) result += `:${String(secs).padStart(2, '0')}`;
+  }
+
+  if (labelStyle === 'short')
+    result += hours > 0 ? ' hrs' : minutes > 0 ? ' mins' : ' secs';
+  else if (labelStyle === 'minimal')
+    result += hours > 0 ? ' h' : minutes > 0 ? ' m' : ' s';
+  return result;
+};
+
 interface SessionBarProps {
   position?: 'header' | 'footer';
   variant?: 'standings' | 'relative';
@@ -45,12 +86,22 @@ export const SessionBar = ({
   const standingsSettings = useStandingsSettings();
   const relativeSettings = useRelativeSettings();
   const generalSettings = useGeneralSettings();
-  const settings = variant === 'relative' ? relativeSettings : standingsSettings;
-  const effectiveBarSettings = position === 'footer' ? settings?.footerBar : settings?.headerBar;
+  const settings =
+    variant === 'relative' ? relativeSettings : standingsSettings;
+  const effectiveBarSettings =
+    position === 'footer' ? settings?.footerBar : settings?.headerBar;
   const session = useCurrentSessionType();
   const displayUnits = useTelemetryValue('DisplayUnits'); // 0 = imperial, 1 = metric
   const { incidentLimit, incidents } = useDriverIncidents();
-  const { currentLap, time, timeRemaining, timeTotal, totalLaps, state, greenFlagTimestamp } = useSessionLapCount();
+  const {
+    currentLap,
+    time,
+    timeRemaining,
+    timeTotal,
+    totalLaps,
+    state,
+    greenFlagTimestamp,
+  } = useSessionLapCount();
   const brakeBias = useBrakeBias();
   const { trackWetness } = useTrackWetness();
   const { precipitation } = usePrecipitation();
@@ -63,12 +114,14 @@ export const SessionBar = ({
   const localTime = useCurrentTime();
   const sessionClockTime = useSessionCurrentTime();
   const { totalRaceLaps, isFixedLapRace } = useTotalRaceLaps();
-  const { totalRaceTime } = useTotalRaceTime();
+  const { totalRaceTime, adjustedRaceTime } = useTotalRaceTime();
 
   // Define all possible items with their render functions
   const itemDefinitions = {
     sessionName: {
-      enabled: effectiveBarSettings?.sessionName?.enabled ?? (position === 'header' ? true : false),
+      enabled:
+        effectiveBarSettings?.sessionName?.enabled ??
+        (position === 'header' ? true : false),
       render: () => <div className="flex">{session}</div>,
     },
     sessionTime: {
@@ -79,7 +132,7 @@ export const SessionBar = ({
         let elapsedTime = -1;
         let remainingTime = -1;
         let totalTime = -1;
-        if (session === "Race") {
+        if (session === 'Race') {
           switch (state) {
             case SessionState.GetInCar:
               // Before grid, there is a ~2min countdown
@@ -92,9 +145,9 @@ export const SessionBar = ({
               // Freeze the race timers until green
               elapsedTime = 0;
               if (isFixedLapRace) {
+                remainingTime = totalRaceTime;
                 totalTime = totalRaceTime;
-              }
-              else {
+              } else {
                 remainingTime = timeRemaining;
                 totalTime = timeTotal;
               }
@@ -104,10 +157,9 @@ export const SessionBar = ({
               // Session timer does not restart at green
               elapsedTime = time - greenFlagTimestamp;
               if (isFixedLapRace) {
-                remainingTime = totalRaceTime - elapsedTime;
+                remainingTime = adjustedRaceTime - elapsedTime;
                 totalTime = totalRaceTime;
-              }
-              else {
+              } else {
                 remainingTime = timeRemaining;
                 totalTime = timeTotal;
               }
@@ -119,27 +171,47 @@ export const SessionBar = ({
               totalTime = 0;
               break;
           }
-        }
-        else {
+        } else {
           elapsedTime = time;
           remainingTime = timeRemaining;
           totalTime = timeTotal;
         }
 
-        const elapsedStr = (elapsedTime >= 0) ? formatTime(elapsedTime, 'duration-hh:mm:ss') : '-';
-        const remainingStr = (remainingTime >= 0) ? formatTime(remainingTime, 'duration-hh:mm:ss') : '-';
-        let totalStr = (totalTime >= 0) ? formatTime(totalTime, 'duration-hh:mm-wlabel') : "-";
+        const sessionTimeSettings = effectiveBarSettings?.sessionTime;
+        const totalFormat = sessionTimeSettings?.totalFormat ?? 'minimal';
+        const labelStyle = sessionTimeSettings?.labelStyle ?? 'minimal';
 
-        if ((session === "Race") && (state >= 2) && isFixedLapRace) {
-          totalStr = "~" + totalStr;
+        const elapsedStr =
+          elapsedTime >= 0
+            ? formatTotalTime(elapsedTime, totalFormat, false, labelStyle)
+            : '-';
+        const remainingStr =
+          remainingTime >= 0
+            ? formatTotalTime(remainingTime, totalFormat, false, labelStyle)
+            : '-';
+        let totalStr =
+          totalTime >= 0
+            ? formatTotalTime(totalTime, totalFormat, true, labelStyle)
+            : '-';
+
+        if (session === 'Race' && state >= 2 && isFixedLapRace) {
+          totalStr = '~' + totalStr;
         }
 
-        const mode = effectiveBarSettings?.sessionTime?.mode ?? 'Remaining';
+        const mode = sessionTimeSettings?.mode ?? 'Remaining';
         if (mode === 'Remaining') {
-          return <div className="flex justify-center">{remainingStr}/{totalStr}</div>;
-        }
-        else { // mode === Elapsed
-          return <div className="flex justify-center">{elapsedStr}/{totalStr}</div>;
+          return (
+            <div className="flex justify-center tabular-nums">
+              {remainingStr} / {totalStr}
+            </div>
+          );
+        } else {
+          // mode === Elapsed
+          return (
+            <div className="flex justify-center tabular-nums">
+              {elapsedStr} / {totalStr}
+            </div>
+          );
         }
       },
     },
@@ -147,14 +219,21 @@ export const SessionBar = ({
       enabled: effectiveBarSettings?.sessionLaps?.enabled ?? true,
       render: () => {
         const lapDisplay = Math.max(currentLap, 0);
-        const lapsTotal = session === "Race" ? totalRaceLaps : totalLaps;
+        const lapsTotal = session === 'Race' ? totalRaceLaps : totalLaps;
         if (lapsTotal > 0)
           if (isFixedLapRace)
-            return <div className="flex justify-center">L{lapDisplay}/{lapsTotal.toFixed(0)}</div>;
+            return (
+              <div className="flex justify-center">
+                L{lapDisplay}/{lapsTotal.toFixed(0)}
+              </div>
+            );
           else
-            return <div className="flex justify-center">L{lapDisplay}/{lapsTotal.toFixed(1)}</div>;
-        else
-          return <div className="flex justify-center">L{lapDisplay}</div>;
+            return (
+              <div className="flex justify-center">
+                L{lapDisplay}/{lapsTotal.toFixed(1)}
+              </div>
+            );
+        else return <div className="flex justify-center">L{lapDisplay}</div>;
       },
     },
     incidentCount: {
