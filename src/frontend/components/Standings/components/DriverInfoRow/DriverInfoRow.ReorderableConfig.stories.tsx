@@ -53,14 +53,56 @@ const mockReorderableConfigData = (() => {
   let seed = 123;
   const random = () => seededRandom(seed++);
 
-  const names = ['Alice', 'Bob', 'Charlie', 'David', 'Eve', 'Frank', 'Grace', 'Hank', 'Ivy', 'Jack'];
-  const surnames = ['Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis', 'Rodriguez', 'Martinez'];
-  const middleNames = ['James', 'Marie', 'Lee', 'Ann', 'Grace', 'John', 'Michael', 'Elizabeth', 'David', 'Rose'];
+  const names = [
+    'Alice',
+    'Bob',
+    'Charlie',
+    'David',
+    'Eve',
+    'Frank',
+    'Grace',
+    'Hank',
+    'Ivy',
+    'Jack',
+  ];
+  const surnames = [
+    'Smith',
+    'Johnson',
+    'Williams',
+    'Brown',
+    'Jones',
+    'Garcia',
+    'Miller',
+    'Davis',
+    'Rodriguez',
+    'Martinez',
+  ];
+  const middleNames = [
+    'James',
+    'Marie',
+    'Lee',
+    'Ann',
+    'Grace',
+    'John',
+    'Michael',
+    'Elizabeth',
+    'David',
+    'Rose',
+  ];
   const licenses = ['C', 'B', 'A'];
-  const teamNames = ['Radical Racing', 'Lumen Motorsport', 'DFL Motorsport', 'RCKLSS ABNDN Racing', 'SRN Esports Red', 'Purple Reign Motorsports', 'Siroco Virtual Racing'];
+  const teamNames = [
+    'Radical Racing',
+    'Lumen Motorsport',
+    'DFL Motorsport',
+    'RCKLSS ABNDN Racing',
+    'SRN Esports Red',
+    'Purple Reign Motorsports',
+    'Siroco Virtual Racing',
+  ];
 
   const getLicense = () => licenses[Math.floor(random() * licenses.length)];
-  const getSafetyRating = () => parseFloat((random() * (4.5 - 1.5) + 1.5).toFixed(2));
+  const getSafetyRating = () =>
+    parseFloat((random() * (4.5 - 1.5) + 1.5).toFixed(2));
   const getFullName = () => {
     const hasMiddleName = random() > 0.5;
     const firstName = names[Math.floor(random() * names.length)];
@@ -144,7 +186,7 @@ const RelativeWithReorderableConfig = () => {
       dnf: false,
       repair: false,
       penalty: false,
-      slowdown: false
+      slowdown: false,
     },
     {
       carIdx: 3,
@@ -175,7 +217,7 @@ const RelativeWithReorderableConfig = () => {
       dnf: false,
       repair: false,
       penalty: false,
-      slowdown: false
+      slowdown: false,
     },
     {
       carIdx: 4,
@@ -204,7 +246,7 @@ const RelativeWithReorderableConfig = () => {
       dnf: false,
       repair: false,
       penalty: false,
-      slowdown: false
+      slowdown: false,
     },
     {
       carIdx: 5,
@@ -233,7 +275,7 @@ const RelativeWithReorderableConfig = () => {
       dnf: false,
       repair: false,
       penalty: false,
-      slowdown: false
+      slowdown: false,
     },
     {
       carIdx: 6,
@@ -262,7 +304,7 @@ const RelativeWithReorderableConfig = () => {
       dnf: false,
       repair: false,
       penalty: false,
-      slowdown: false
+      slowdown: false,
     },
     {
       carIdx: 7,
@@ -290,7 +332,7 @@ const RelativeWithReorderableConfig = () => {
       dnf: false,
       repair: false,
       penalty: false,
-      slowdown: false
+      slowdown: false,
     },
   ];
 
@@ -305,7 +347,11 @@ const RelativeWithReorderableConfig = () => {
       position: { enabled: true },
       carNumber: { enabled: true },
       countryFlags: { enabled: true },
-      driverName: { enabled: true, showStatusBadges: true, nameFormat: 'name-surname'},
+      driverName: {
+        enabled: true,
+        showStatusBadges: true,
+        nameFormat: 'name-surname',
+      },
       teamName: { enabled: true },
       pitStatus: { enabled: true, pitLapDisplayMode: 'lapsSinceLastPit' },
       carManufacturer: { enabled: true },
@@ -321,7 +367,12 @@ const RelativeWithReorderableConfig = () => {
       headerBar: {
         enabled: true,
         sessionName: { enabled: true },
-        sessionTime: { enabled: true, mode: 'Remaining' },
+        sessionTime: {
+          enabled: true,
+          mode: 'Remaining',
+          totalFormat: 'minimal',
+          labelStyle: 'minimal',
+        },
         sessionLaps: { enabled: true },
         incidentCount: { enabled: true },
         brakeBias: { enabled: false },
@@ -331,12 +382,23 @@ const RelativeWithReorderableConfig = () => {
         precipitation: { enabled: false },
         airTemperature: { enabled: false, unit: 'Metric' },
         trackTemperature: { enabled: false, unit: 'Metric' },
-        displayOrder: ['sessionName', 'sessionTime', 'sessionLaps', 'brakeBias', 'incidentCount']
+        displayOrder: [
+          'sessionName',
+          'sessionTime',
+          'sessionLaps',
+          'brakeBias',
+          'incidentCount',
+        ],
       },
       footerBar: {
         enabled: true,
         sessionName: { enabled: false },
-        sessionTime: { enabled: false, mode: 'Remaining' },
+        sessionTime: {
+          enabled: false,
+          mode: 'Remaining',
+          totalFormat: 'minimal',
+          labelStyle: 'minimal',
+        },
         sessionLaps: { enabled: true },
         incidentCount: { enabled: false },
         brakeBias: { enabled: true },
@@ -346,23 +408,37 @@ const RelativeWithReorderableConfig = () => {
         precipitation: { enabled: false },
         airTemperature: { enabled: true, unit: 'Metric' },
         trackTemperature: { enabled: true, unit: 'Metric' },
-        displayOrder: ['localTime', 'trackWetness', 'sessionLaps','airTemperature', 'trackTemperature']
+        displayOrder: [
+          'localTime',
+          'trackWetness',
+          'sessionLaps',
+          'airTemperature',
+          'trackTemperature',
+        ],
       },
       showOnlyWhenOnTrack: false,
       useLivePosition: false,
-      sessionVisibility: { race: true, loneQualify: false, openQualify: true, practice: true, offlineTesting: true }
+      sessionVisibility: {
+        race: true,
+        loneQualify: false,
+        openQualify: true,
+        practice: true,
+        offlineTesting: true,
+      },
     }),
     [displayOrder]
   );
 
-  const items = displayOrder.map(id => {
-    const setting = sortableSettings.find(s => s.id === id);
-    return setting ? { ...setting } : null;
-  }).filter((s): s is { id: string; label: string } => s !== null);
+  const items = displayOrder
+    .map((id) => {
+      const setting = sortableSettings.find((s) => s.id === id);
+      return setting ? { ...setting } : null;
+    })
+    .filter((s): s is { id: string; label: string } => s !== null);
 
   const { getItemProps, displayItems } = useSortableList({
     items,
-    onReorder: (newItems) => setDisplayOrder(newItems.map(i => i.id)),
+    onReorder: (newItems) => setDisplayOrder(newItems.map((i) => i.id)),
     getItemId: (item) => item.id,
   });
 

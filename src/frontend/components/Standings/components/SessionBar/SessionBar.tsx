@@ -1,14 +1,71 @@
 import { useGeneralSettings } from '@irdashies/context';
-import { formatTime } from '@irdashies/utils/time';
-import { useDriverIncidents, useSessionLapCount, useBrakeBias } from '../../hooks';
+
+// compact=true (total time): trims trailing zero components, never shows seconds
+// compact=false (elapsed/remaining): always shows full HH:MM:SS
+const formatTotalTime = (
+  seconds: number,
+  totalFormat: 'hh:mm' | 'minimal',
+  compact: boolean,
+  labelStyle: 'none' | 'short' | 'minimal'
+): string => {
+  if (seconds < 0) return '-';
+  const totalSecs = Math.floor(seconds);
+  const hours = Math.floor(totalSecs / 3600);
+  const minutes = Math.floor((totalSecs % 3600) / 60);
+  const secs = totalSecs % 60;
+
+  let result: string;
+  if (totalFormat === 'hh:mm') {
+    if (compact && minutes === 0 && hours > 0) {
+      result = String(hours).padStart(2, '0');
+    } else {
+      result = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+      if (!compact) result += `:${String(secs).padStart(2, '0')}`;
+    }
+  } else {
+    // minimal
+    if (hours > 0) {
+      result =
+        compact && minutes === 0
+          ? `${hours}`
+          : `${hours}:${String(minutes).padStart(2, '0')}`;
+    } else {
+      result = `${minutes}`;
+    }
+    if (!compact) result += `:${String(secs).padStart(2, '0')}`;
+  }
+
+  if (labelStyle === 'short')
+    result += hours > 0 ? ' hrs' : minutes > 0 ? ' mins' : ' secs';
+  else if (labelStyle === 'minimal')
+    result += hours > 0 ? ' h' : minutes > 0 ? ' m' : ' s';
+  return result;
+};
+import {
+  useDriverIncidents,
+  useSessionLapCount,
+  useBrakeBias,
+} from '../../hooks';
 import { useTrackWetness } from '../../hooks/useTrackWetness';
 import { useTrackTemperature } from '../../hooks/useTrackTemperature';
 import { useCurrentTime } from '../../hooks/useCurrentTime';
 import { useStandingsSettings, useRelativeSettings } from '../../hooks';
-import { ClockIcon, ClockUserIcon, CloudRainIcon, DropIcon, RoadHorizonIcon, ThermometerIcon, TireIcon } from '@phosphor-icons/react';
+import {
+  ClockIcon,
+  ClockUserIcon,
+  CloudRainIcon,
+  DropIcon,
+  RoadHorizonIcon,
+  ThermometerIcon,
+  TireIcon,
+} from '@phosphor-icons/react';
 import { useSessionCurrentTime } from '../../hooks/useSessionCurrentTime';
 import { usePrecipitation } from '../../hooks/usePrecipitation';
-import { useCurrentSessionType, useTotalRaceLaps, useTotalRaceTime } from '../../../../context/shared';
+import {
+  useCurrentSessionType,
+  useTotalRaceLaps,
+  useTotalRaceTime,
+} from '../../../../context/shared';
 import { SessionState } from '@irdashies/types';
 
 interface SessionBarProps {
@@ -16,16 +73,29 @@ interface SessionBarProps {
   variant?: 'standings' | 'relative';
 }
 
-export const SessionBar = ({ position = 'header', variant = 'standings' }: SessionBarProps) => {
+export const SessionBar = ({
+  position = 'header',
+  variant = 'standings',
+}: SessionBarProps) => {
   // Use settings hook directly for reactivity
   const standingsSettings = useStandingsSettings();
   const relativeSettings = useRelativeSettings();
   const generalSettings = useGeneralSettings();
-  const settings = variant === 'relative' ? relativeSettings : standingsSettings;
-  const effectiveBarSettings = position === 'footer' ? settings?.footerBar : settings?.headerBar;
+  const settings =
+    variant === 'relative' ? relativeSettings : standingsSettings;
+  const effectiveBarSettings =
+    position === 'footer' ? settings?.footerBar : settings?.headerBar;
   const session = useCurrentSessionType();
   const { incidentLimit, incidents } = useDriverIncidents();
-  const { currentLap, time, timeRemaining, timeTotal, totalLaps, state, greenFlagTimestamp } = useSessionLapCount();
+  const {
+    currentLap,
+    time,
+    timeRemaining,
+    timeTotal,
+    totalLaps,
+    state,
+    greenFlagTimestamp,
+  } = useSessionLapCount();
   const brakeBias = useBrakeBias();
   const { trackWetness } = useTrackWetness();
   const { precipitation } = usePrecipitation();
@@ -36,22 +106,26 @@ export const SessionBar = ({ position = 'header', variant = 'standings' }: Sessi
   const localTime = useCurrentTime();
   const sessionClockTime = useSessionCurrentTime();
   const { totalRaceLaps, isFixedLapRace } = useTotalRaceLaps();
-  const { totalRaceTime } = useTotalRaceTime();
+  const { totalRaceTime, adjustedRaceTime } = useTotalRaceTime();
   // Define all possible items with their render functions
   const itemDefinitions = {
     sessionName: {
-      enabled: effectiveBarSettings?.sessionName?.enabled ?? (position === 'header' ? true : false),
+      enabled:
+        effectiveBarSettings?.sessionName?.enabled ??
+        (position === 'header' ? true : false),
       render: () => <div className="flex">{session}</div>,
     },
     sessionTime: {
-      enabled: effectiveBarSettings?.sessionTime?.enabled ?? (position === 'header' ? true : false),
+      enabled:
+        effectiveBarSettings?.sessionTime?.enabled ??
+        (position === 'header' ? true : false),
       render: () => {
         let elapsedTime = -1;
         let remainingTime = -1;
         let totalTime = -1;
-        if (session === "Race") {
+        if (session === 'Race') {
           switch (state) {
-            case SessionState.GetInCar: 
+            case SessionState.GetInCar:
               // Before grid, there is a ~2min countdown
               elapsedTime = time;
               remainingTime = timeRemaining;
@@ -62,9 +136,9 @@ export const SessionBar = ({ position = 'header', variant = 'standings' }: Sessi
               // Freeze the race timers until green
               elapsedTime = 0;
               if (isFixedLapRace) {
+                remainingTime = totalRaceTime;
                 totalTime = totalRaceTime;
-              }
-              else {
+              } else {
                 remainingTime = timeRemaining;
                 totalTime = timeTotal;
               }
@@ -74,42 +148,61 @@ export const SessionBar = ({ position = 'header', variant = 'standings' }: Sessi
               // Session timer does not restart at green
               elapsedTime = time - greenFlagTimestamp;
               if (isFixedLapRace) {
-                remainingTime = totalRaceTime - elapsedTime;
+                remainingTime = adjustedRaceTime - elapsedTime;
                 totalTime = totalRaceTime;
-              }
-              else {
+              } else {
                 remainingTime = timeRemaining;
                 totalTime = timeTotal;
               }
               break;
             case SessionState.CoolDown:
             default:
-              elapsedTime = 0
-              remainingTime = 0
-              totalTime = 0
+              elapsedTime = 0;
+              remainingTime = 0;
+              totalTime = 0;
               break;
           }
-        }
-        else {
+        } else {
           elapsedTime = time;
           remainingTime = timeRemaining;
           totalTime = timeTotal;
         }
 
-        const elapsedStr = (elapsedTime >= 0) ? formatTime(elapsedTime, 'duration-hh:mm:ss') : '-';
-        const remainingStr = (remainingTime >= 0) ? formatTime(remainingTime, 'duration-hh:mm:ss') : '-';
-        let totalStr = (totalTime >= 0) ? formatTime(totalTime, 'duration-hh:mm-wlabel') : "-";
+        const sessionTimeSettings = effectiveBarSettings?.sessionTime;
+        const totalFormat = sessionTimeSettings?.totalFormat ?? 'minimal';
+        const labelStyle = sessionTimeSettings?.labelStyle ?? 'minimal';
 
-        if ((session === "Race") && (state >= 2) && isFixedLapRace) {
-          totalStr = "~" + totalStr;
+        const elapsedStr =
+          elapsedTime >= 0
+            ? formatTotalTime(elapsedTime, totalFormat, false, labelStyle)
+            : '-';
+        const remainingStr =
+          remainingTime >= 0
+            ? formatTotalTime(remainingTime, totalFormat, false, labelStyle)
+            : '-';
+        let totalStr =
+          totalTime >= 0
+            ? formatTotalTime(totalTime, totalFormat, true, labelStyle)
+            : '-';
+
+        if (session === 'Race' && state >= 2 && isFixedLapRace) {
+          totalStr = '~' + totalStr;
         }
 
-        const mode = effectiveBarSettings?.sessionTime?.mode ?? 'Remaining';
+        const mode = sessionTimeSettings?.mode ?? 'Remaining';
         if (mode === 'Remaining') {
-          return <div className="flex justify-center">{remainingStr}/{totalStr}</div>;
-        }
-        else { // mode === Elapsed
-          return <div className="flex justify-center">{elapsedStr}/{totalStr}</div>;
+          return (
+            <div className="flex justify-center tabular-nums">
+              {remainingStr} / {totalStr}
+            </div>
+          );
+        } else {
+          // mode === Elapsed
+          return (
+            <div className="flex justify-center tabular-nums">
+              {elapsedStr} / {totalStr}
+            </div>
+          );
         }
       },
     },
@@ -117,18 +210,27 @@ export const SessionBar = ({ position = 'header', variant = 'standings' }: Sessi
       enabled: effectiveBarSettings?.sessionLaps?.enabled ?? true,
       render: () => {
         const lapDisplay = Math.max(currentLap, 0);
-        const lapsTotal = session === "Race" ? totalRaceLaps : totalLaps;
+        const lapsTotal = session === 'Race' ? totalRaceLaps : totalLaps;
         if (lapsTotal > 0)
           if (isFixedLapRace)
-            return <div className="flex justify-center">L{lapDisplay}/{lapsTotal.toFixed(0)}</div>;
+            return (
+              <div className="flex justify-center">
+                L{lapDisplay}/{lapsTotal.toFixed(0)}
+              </div>
+            );
           else
-            return <div className="flex justify-center">L{lapDisplay}/{lapsTotal.toFixed(1)}</div>;
-        else
-          return <div className="flex justify-center">L{lapDisplay}</div>;
+            return (
+              <div className="flex justify-center">
+                L{lapDisplay}/{lapsTotal.toFixed(1)}
+              </div>
+            );
+        else return <div className="flex justify-center">L{lapDisplay}</div>;
       },
     },
     incidentCount: {
-      enabled: effectiveBarSettings?.incidentCount?.enabled ?? (position === 'header' ? true : false),
+      enabled:
+        effectiveBarSettings?.incidentCount?.enabled ??
+        (position === 'header' ? true : false),
       render: () => (
         <div className="flex justify-end">
           {incidents}
@@ -137,19 +239,30 @@ export const SessionBar = ({ position = 'header', variant = 'standings' }: Sessi
       ),
     },
     brakeBias: {
-      enabled: effectiveBarSettings?.brakeBias?.enabled ?? (position === 'header' ? true : true),
+      enabled:
+        effectiveBarSettings?.brakeBias?.enabled ??
+        (position === 'header' ? true : true),
       render: () => {
-        if (!brakeBias || typeof brakeBias.value !== 'number' || isNaN(brakeBias.value)) return null;
+        if (
+          !brakeBias ||
+          typeof brakeBias.value !== 'number' ||
+          isNaN(brakeBias.value)
+        )
+          return null;
         return (
           <div className="flex justify-center gap-1 items-center">
             <TireIcon />
-            {brakeBias.isClio ? `${brakeBias.value.toFixed(0)}` : `${brakeBias.value.toFixed(1)}%`}
+            {brakeBias.isClio
+              ? `${brakeBias.value.toFixed(0)}`
+              : `${brakeBias.value.toFixed(1)}%`}
           </div>
         );
       },
     },
     localTime: {
-      enabled: effectiveBarSettings?.localTime?.enabled ?? (position === 'header' ? true : true),
+      enabled:
+        effectiveBarSettings?.localTime?.enabled ??
+        (position === 'header' ? true : true),
       render: () => (
         <div className="flex justify-center gap-1 items-center">
           <ClockUserIcon />
@@ -167,7 +280,9 @@ export const SessionBar = ({ position = 'header', variant = 'standings' }: Sessi
       ),
     },
     trackWetness: {
-      enabled: effectiveBarSettings?.trackWetness?.enabled ?? (position === 'header' ? false : true),
+      enabled:
+        effectiveBarSettings?.trackWetness?.enabled ??
+        (position === 'header' ? false : true),
       render: () => (
         <div className="flex justify-center gap-1 items-center text-nowrap">
           <DropIcon />
@@ -176,7 +291,9 @@ export const SessionBar = ({ position = 'header', variant = 'standings' }: Sessi
       ),
     },
     precipitation: {
-      enabled: effectiveBarSettings?.precipitation?.enabled ?? (position === 'header' ? false : false),
+      enabled:
+        effectiveBarSettings?.precipitation?.enabled ??
+        (position === 'header' ? false : false),
       render: () => (
         <div className="flex justify-center gap-1 items-center text-nowrap">
           <CloudRainIcon />
@@ -185,7 +302,9 @@ export const SessionBar = ({ position = 'header', variant = 'standings' }: Sessi
       ),
     },
     airTemperature: {
-      enabled: effectiveBarSettings?.airTemperature?.enabled ?? (position === 'header' ? false : true),
+      enabled:
+        effectiveBarSettings?.airTemperature?.enabled ??
+        (position === 'header' ? false : true),
       render: () => (
         <div className="flex justify-center gap-1 items-center">
           <ThermometerIcon />
@@ -194,7 +313,9 @@ export const SessionBar = ({ position = 'header', variant = 'standings' }: Sessi
       ),
     },
     trackTemperature: {
-      enabled: effectiveBarSettings?.trackTemperature?.enabled ?? (position === 'header' ? false : true),
+      enabled:
+        effectiveBarSettings?.trackTemperature?.enabled ??
+        (position === 'header' ? false : true),
       render: () => (
         <div className="flex justify-center gap-1 items-center">
           <RoadHorizonIcon />
@@ -205,14 +326,28 @@ export const SessionBar = ({ position = 'header', variant = 'standings' }: Sessi
   };
 
   // Get display order, fallback to default order
-  const displayOrder = effectiveBarSettings?.displayOrder || (position === 'header'
-    ? ['sessionName', 'sessionTime', 'sessionLaps', 'localTime', 'brakeBias', 'incidentCount']
-    : ['localTime', 'trackWetness', 'sessionLaps', 'airTemperature', 'trackTemperature']
-  );
+  const displayOrder =
+    effectiveBarSettings?.displayOrder ||
+    (position === 'header'
+      ? [
+          'sessionName',
+          'sessionTime',
+          'sessionLaps',
+          'localTime',
+          'brakeBias',
+          'incidentCount',
+        ]
+      : [
+          'localTime',
+          'trackWetness',
+          'sessionLaps',
+          'airTemperature',
+          'trackTemperature',
+        ]);
 
   // Filter and order items based on settings
   const itemsToRender = displayOrder
-    .map(key => ({
+    .map((key) => ({
       key,
       definition: itemDefinitions[key as keyof typeof itemDefinitions],
     }))
@@ -225,7 +360,9 @@ export const SessionBar = ({ position = 'header', variant = 'standings' }: Sessi
     .filter(Boolean);
 
   return (
-    <div className={`bg-slate-900/70 text-sm px-3 py-1 flex justify-between ${!generalSettings?.compactMode ? (position === 'header' ? 'mb-3' : 'mt-3') : ''}`}>
+    <div
+      className={`bg-slate-900/70 text-sm px-3 py-1 flex justify-between ${!generalSettings?.compactMode ? (position === 'header' ? 'mb-3' : 'mt-3') : ''}`}
+    >
       {itemsToRender}
     </div>
   );
