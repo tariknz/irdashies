@@ -21,6 +21,7 @@ export interface TrackProps {
   showCarNumbers?: boolean;
   displayMode?: 'carNumber' | 'sessionPosition';
   invertTrackColors?: boolean;
+  highContrastTurns?: boolean;
   driverCircleSize?: number;
   playerCircleSize?: number;
   trackmapFontSize?: number;
@@ -67,6 +68,7 @@ export const TrackCanvas = ({
   showCarNumbers = true,
   displayMode = 'carNumber',
   invertTrackColors = false,
+  highContrastTurns = false,
   driverCircleSize = 40,
   playerCircleSize = 40,
   trackmapFontSize = 100,
@@ -313,6 +315,7 @@ export const TrackCanvas = ({
       height: canvasSize.height,
       enableTurnNames,
       invertTrackColors,
+      highContrastTurns,
       trackLineWidth,
       trackOutlineWidth,
       trackmapFontSize,
@@ -345,7 +348,7 @@ export const TrackCanvas = ({
           trackOutlineWidth
         );
         drawStartFinishLine(cacheCtx, startFinishLine);
-        drawTurnNames(cacheCtx, trackDrawing.turns, enableTurnNames, trackmapFontSize);
+        drawTurnNames(cacheCtx, trackDrawing.turns, enableTurnNames, highContrastTurns, trackmapFontSize);
         cacheCtx.restore();
 
         cacheParamsRef.current = currentParams;
@@ -389,6 +392,7 @@ export const TrackCanvas = ({
     showCarNumbers,
     displayMode,
     invertTrackColors,
+    highContrastTurns,
     trackLineWidth,
     trackOutlineWidth,
     startFinishLine,
