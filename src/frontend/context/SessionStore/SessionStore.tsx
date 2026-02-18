@@ -144,3 +144,6 @@ export const useCarIdxClassEstLapTime = () =>
     },
     shallow
   );
+
+export const useCarSetup = () =>
+  useStore(useSessionStore, (state) => state.session?.CarSetup);

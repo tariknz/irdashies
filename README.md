@@ -325,17 +325,22 @@ Displays information about faster cars approaching from behind, including driver
 - Visual pulsing indicator when cars are close
 - Configurable distance threshold for alerts
 - Real-time detection of faster approaching cars
+- Pit status filtering: Option to exclude cars in the pits
+- Multiple driver display settings for more control over what's shown
 
 ![Faster Cars From Behind](./docs/assets/fastercarsfrombehind.png)
 
 ### Fuel Calculator
 
-Displays comprehensive fuel management information including current fuel level, fuel consumption per lap (min, max, averages), pit window timing, fuel required to finish, and consumption history graphs. Supports both vertical and horizontal layouts.
+Displays comprehensive fuel management information including current fuel level, fuel consumption per lap (min, max, averages), pit window timing, fuel required to finish, and consumption history graphs. Features a complete redesign with visual layout editing and real-time consumption calculations.
 
 **Features:**
 
 - Fuel units: Liters (L) or Gallons (gal)
+- Visual layout editing: Drag and drop widgets to customize your fuel display
 - Layout options: Vertical or horizontal
+- Real-time consumption calculations with pit strategy recommendations
+- Multiple display widgets for flexible information presentation
 - Consumption statistics:
   - Minimum consumption
   - Last lap consumption
@@ -354,7 +359,7 @@ Displays comprehensive fuel management information including current fuel level,
 - Fuel-to-add mode: Toggle between showing total fuel needed or just what's needed at the next stop
 - Target consumption: Shows what fuel saving is required to reach specific lap targets (±1 from current estimate)
 
-<img src="./docs/assets/fuelcalculator.png" alt="Fuel Calculator" width="250px">
+<img src="./docs/assets/fuel2.png" alt="Fuel Calculator" width="250px">
 
 ### Blind Spot Monitor
 
@@ -384,7 +389,7 @@ Displays a custom image overlay when you are in the garage. Perfect for streamin
 - Custom image upload (drag and drop or file selection)
 - Only displays when in garage
 - Browser source compatible for OBS and other streaming software
-- Accessible via browser at `http://localhost:3000/component/garagecover`
+- Accessible via browser at `http://localhost:3000/dashboard` (displays as part of your dashboard)
 - Image preview in settings
 
 ### Rejoin Indicator
@@ -427,6 +432,21 @@ Helps you manage your pit stops with clear visual guidance. It assists with spee
 
 ![Pitlane Helper](./docs/assets/pitlanehelper.png)
 
+### Flag Widget
+
+Displays racing flags in an LED-matrix style, automatically showing the most relevant flag when multiple are active. Perfect for keeping track of track conditions and race control messages.
+
+**Features:**
+
+- LED-matrix style flag display
+- Automatic flag priority: Shows the most important flag when multiple are active
+- Support for all iRacing racing flags (green, yellow, white, checkered, blue, black, etc.)
+- Option to display two identical flags within a single widget
+- Customizable size and positioning
+- Session visibility settings (Race, Lone Qualify, Open Qualify, Practice, Offline Testing)
+
+![Flag Widget](./docs/assets/flags.png)
+
 ### Telemetry Inspector
 
 A powerful tool for viewing live data coming from iRacing. While mostly used for debugging, it's great for seeing exactly what data the app is receiving in real-time.
@@ -435,8 +455,13 @@ A powerful tool for viewing live data coming from iRacing. While mostly used for
 
 **Features:**
 
+- Profile Management
+  - Save and switch between different dashboard configurations
+  - Multiple profiles for different racing scenarios or streaming setups
+  - Each profile can be accessed as a browser source for OBS streaming
 - Streamer & OBS Ready
-  - Built-in Web Server: Every overlay can be used as a browser source in OBS. Just use `http://localhost:3000/component/<name>`.
+  - Built-in Web Server: All overlays can be used as a browser source in OBS. Use `http://localhost:3000/dashboard` for the default profile, or `http://localhost:3000/dashboard?profile=<profileId>` for specific profiles.
+  - Network Access: Enable network access in settings to allow other devices on your local network to access the dashboard (useful for dual-PC streaming setups).
   - Garage Cover: Automatically hide your screen with a custom image when you enter the garage to keep your car setup private.
   - Transparent backgrounds: All overlays are designed to look great on top of your game or stream.
 - Customization & Themes
@@ -448,6 +473,7 @@ A powerful tool for viewing live data coming from iRacing. While mostly used for
   - Global toggle (Alt+H): Quickly hide or show all your overlays with a single keyboard shortcut.
   - Always on top: Keep your overlays visible even when clicking on other windows.
   - System autostart: Optionally have the app start automatically when your computer boots up.
+  - Start minimized: Launch the settings window in minimized state for a cleaner desktop
   - Automatic updates: The app keeps itself up to date with the latest features and bug fixes.
 
 ## Acknowledgments

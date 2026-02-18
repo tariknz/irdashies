@@ -5,9 +5,17 @@ import { usePitlaneVisibility } from './hooks/usePitlaneVisibility';
 import { usePitLimiterWarning } from './hooks/usePitLimiterWarning';
 import { usePitlaneTraffic } from './hooks/usePitlaneTraffic';
 import { useTelemetryValue, useDashboard } from '@irdashies/context';
-import { getDemoPitlaneData, PitlaneHelperSettings, PitSpeedResult, PitboxPositionResult, PitLimiterWarningResult, PitlaneTrafficResult } from './demoData';
+import {
+  getDemoPitlaneData,
+  PitlaneHelperSettings,
+  PitSpeedResult,
+  PitboxPositionResult,
+  PitLimiterWarningResult,
+  PitlaneTrafficResult,
+} from './demoData';
 import { PitCountdownBar } from './components/PitCountdownBar';
 import { PitExitInputs } from './components/PitExitInputs';
+import { PitSpeedBar } from './components/PitSpeedBar';
 
 // Calculate color for countdown bars based on distance
 const getCountdownColor = (distance: number, maxDistance: number): string => {
@@ -25,7 +33,10 @@ export const PitlaneHelper = () => {
 
   // Core data hooks - must be called in same order every render
   const speed = usePitSpeed();
-  const position = usePitboxPosition(config.approachDistance, config.earlyPitboxThreshold);
+  const position = usePitboxPosition(
+    config.approachDistance,
+    config.earlyPitboxThreshold
+  );
   const isVisible = usePitlaneVisibility();
   const limiterWarning = usePitLimiterWarning(config.enablePitLimiterWarning);
   const traffic = usePitlaneTraffic(config.showPitlaneTraffic);
@@ -55,158 +66,171 @@ export const PitlaneHelper = () => {
   // Examples: Daytona where first pitbox is ~30m past pit entry
   // The warning appears when surface=2 (OnPitRoad) and pitbox is within the configured threshold
   const showEarlyPitboxWarning =
-    config.enableEarlyPitboxWarning &&
-    onPitRoad &&
-    position.isEarlyPitbox;
+    config.enableEarlyPitboxWarning && onPitRoad && position.isEarlyPitbox;
 
   // Determine if we should show the pit exit inputs based on distance
   const atPitbox = Math.abs(position.distanceToPit) < 10;
   const afterPitbox = position.distanceToPit < -10;
-  const shouldShowInputs = config.showPitExitInputs && onPitRoad && (
-    config.showInputsPhase === 'always' ||
-    (config.showInputsPhase === 'atPitbox' && atPitbox) ||
-    (config.showInputsPhase === 'afterPitbox' && afterPitbox)
-  );
+  const shouldShowInputs =
+    config.showPitExitInputs &&
+    onPitRoad &&
+    (config.showInputsPhase === 'always' ||
+      (config.showInputsPhase === 'atPitbox' && atPitbox) ||
+      (config.showInputsPhase === 'afterPitbox' && afterPitbox));
 
   return (
     <div
-      className="flex flex-col gap-2 p-3 rounded text-white font-medium"
+      className="flex flex-col gap-2 p-2 rounded text-white font-medium"
       style={{
         backgroundColor: `rgb(30 41 59 / ${config.background.opacity}%)`,
-        minWidth: '150px',
       }}
     >
-      {/* Speed Delta */}
-      <div
-        className={[
-          'flex flex-col items-center p-2 rounded transition-all',
-          speed.isSeverelyOver
-            ? 'bg-red-600 animate-pulse'
-            : speed.isSpeeding
-              ? 'bg-red-600/50'
-              : '',
-        ].join(' ')}
-      >
+      {/* Row 1: Speed delta + speed bar */}
+      <div className="flex items-end gap-2">
         <div
           className={[
-            'text-2xl font-bold transition-colors',
-            speed.isSeverelyOver || speed.isSpeeding ? 'text-white' : speed.colorClass,
+            'flex flex-col justify-center px-2 py-1 rounded transition-all',
+            speed.isSeverelyOver
+              ? 'bg-red-600 animate-pulse'
+              : speed.isSpeeding
+                ? 'bg-red-600/50'
+                : '',
           ].join(' ')}
         >
-          {speed.deltaKph > 0 ? '+' : ''}
-          {displayKph ? speed.deltaKph.toFixed(1) : speed.deltaMph.toFixed(1)}{' '}
-          {displayKph ? 'km/h' : 'mph'}
-        </div>
-        <div className={speed.isSpeeding ? 'text-xs text-white/80' : 'text-xs text-slate-400'}>
-          Limit: {displayKph ? speed.limitKph.toFixed(0) : speed.limitMph.toFixed(0)}{' '}
-          {displayKph ? 'km/h' : 'mph'}
-        </div>
-      </div>
-
-      {/* Countdown Bars Container - displays bars side by side */}
-      <div className="flex gap-2">
-        {/* Pit Entry Countdown (when approaching or in blend zone) */}
-        {!onPitRoad && position.distanceToPitEntry > 0 && position.distanceToPitEntry <= config.approachDistance && (
-          <div className="flex-1">
-            <PitCountdownBar
-              distance={position.distanceToPitEntry}
-              maxDistance={config.approachDistance}
-              orientation={config.progressBarOrientation}
-              color={getCountdownColor(position.distanceToPitEntry, config.approachDistance)}
-              targetName="Pit Entry"
-            />
-          </div>
-        )}
-
-        {/* Blend Zone Message (Surface=2 but OnPitRoad still false, no pit entry detection available) */}
-        {inBlendZone && position.distanceToPitEntry === 0 && (
-          <div className="flex-1 text-center text-sm font-bold py-2 px-3 bg-amber-600 rounded">
-            Entering Pit Lane
-          </div>
-        )}
-
-        {/* Pitbox Distance Display (when on pit road) */}
-        {onPitRoad && (
-          <div className="flex-1">
-            {Math.abs(position.distanceToPit) < 5 ? (
-              /* At Pitbox - Static Display */
-              <div className="text-center text-sm font-bold py-2 px-3 bg-green-600 rounded">
-                At Pitbox
-              </div>
-            ) : (
-              /* Countdown to or past pitbox */
-              <PitCountdownBar
-                distance={Math.abs(position.distanceToPit)}
-                maxDistance={100}
-                orientation={config.progressBarOrientation}
-                color={
-                  position.distanceToPit > 0
-                    ? getCountdownColor(position.distanceToPit, 100)  // Approaching pitbox
-                    : 'rgb(34, 197, 94)'  // Past pitbox (green)
-                }
-                targetName={position.distanceToPit > 0 ? 'Pitbox' : 'Past Pitbox'}
-              />
-            )}
-          </div>
-        )}
-
-        {/* Pit Exit Countdown (when on pit road and past pitbox) */}
-        {onPitRoad && position.distanceToPit < -5 && position.distanceToPitExit > 0 && position.distanceToPitExit <= 150 && (
-          <div className="flex-1">
-            <PitCountdownBar
-              distance={position.distanceToPitExit}
-              maxDistance={150}
-              orientation={config.progressBarOrientation}
-              color={getCountdownColor(position.distanceToPitExit, 150)}
-              targetName="Pit Exit"
-            />
-          </div>
-        )}
-      </div>
-
-      {/* Pit Exit Inputs (throttle/clutch assistance) */}
-      {shouldShowInputs && (
-        <PitExitInputs
-          showThrottle={config.pitExitInputs.throttle}
-          showClutch={config.pitExitInputs.clutch}
-        />
-      )}
-
-      {/* Warnings */}
-      <div className="flex flex-col gap-1">
-        {/* Pit Limiter Warning (CRITICAL - team race takes priority) */}
-        {limiterWarning.showWarning && (
           <div
             className={[
-              'text-center text-sm font-bold py-1 px-2 rounded',
-              limiterWarning.isTeamRaceWarning
-                ? 'bg-red-700 animate-pulse'
-                : 'bg-red-600',
+              'text-2xl font-bold leading-none transition-colors tabular-nums',
+              speed.isSeverelyOver || speed.isSpeeding
+                ? 'text-white'
+                : speed.colorClass,
             ].join(' ')}
           >
-            {limiterWarning.warningText}
+            {speed.deltaKph > 0 ? '+' : ''}
+            {displayKph ? speed.deltaKph.toFixed(1) : speed.deltaMph.toFixed(1)}
           </div>
-        )}
+          <div className="text-xs text-slate-400 leading-tight">
+            {displayKph ? 'km/h' : 'mph'}
+          </div>
+          <div
+            className={[
+              'text-xs leading-tight',
+              speed.isSpeeding ? 'text-white/70' : 'text-slate-500',
+            ].join(' ')}
+          >
+            lim{' '}
+            {displayKph ? speed.limitKph.toFixed(0) : speed.limitMph.toFixed(0)}
+          </div>
+        </div>
 
-        {/* Early Pitbox Warning */}
-        {showEarlyPitboxWarning && (
-          <div className="bg-amber-600 text-center text-sm font-bold py-1 px-2 rounded">
-            ⚠ EARLY PITBOX
-          </div>
-        )}
-
-        {/* Traffic Display */}
-        {config.showPitlaneTraffic && traffic.totalCars > 0 && (
-          <div className="bg-blue-700 text-center text-xs py-1 px-2 rounded">
-            {traffic.carsAhead} ahead • {traffic.carsBehind} behind
-          </div>
+        {config.showSpeedBar && (
+          <PitSpeedBar speedKph={speed.speedKph} limitKph={speed.limitKph} />
         )}
       </div>
+
+      {/* Row 2: Countdown bars (entry/box/exit) */}
+      {((!onPitRoad &&
+        position.distanceToPitEntry > 0 &&
+        position.distanceToPitEntry <= config.approachDistance) ||
+        (onPitRoad && Math.abs(position.distanceToPit) >= 5) ||
+        (onPitRoad &&
+          position.distanceToPit < -5 &&
+          position.distanceToPitExit > 0 &&
+          position.distanceToPitExit <= 150)) && (
+        <div className="flex gap-3">
+          {!onPitRoad &&
+            position.distanceToPitEntry > 0 &&
+            position.distanceToPitEntry <= config.approachDistance && (
+              <PitCountdownBar
+                distance={position.distanceToPitEntry}
+                maxDistance={config.approachDistance}
+                orientation={config.progressBarOrientation}
+                color={getCountdownColor(
+                  position.distanceToPitEntry,
+                  config.approachDistance
+                )}
+                targetName="Pit Entry"
+              />
+            )}
+
+          {onPitRoad && Math.abs(position.distanceToPit) >= 5 && (
+            <PitCountdownBar
+              distance={Math.abs(position.distanceToPit)}
+              maxDistance={100}
+              orientation={config.progressBarOrientation}
+              color={
+                position.distanceToPit > 0
+                  ? getCountdownColor(position.distanceToPit, 100)
+                  : 'rgb(34, 197, 94)'
+              }
+              targetName={position.distanceToPit > 0 ? 'Pitbox' : 'Past Box'}
+            />
+          )}
+
+          {onPitRoad &&
+            position.distanceToPit < -5 &&
+            position.distanceToPitExit > 0 &&
+            position.distanceToPitExit <= 150 && (
+              <PitCountdownBar
+                distance={position.distanceToPitExit}
+                maxDistance={150}
+                orientation={config.progressBarOrientation}
+                color={getCountdownColor(position.distanceToPitExit, 150)}
+                targetName="Pit Exit"
+              />
+            )}
+        </div>
+      )}
+
+      {/* Row 3: Input bars (clutch/throttle) */}
+      {shouldShowInputs && (
+        <div className="flex gap-3">
+          <PitExitInputs
+            showThrottle={config.pitExitInputs.throttle}
+            showClutch={config.pitExitInputs.clutch}
+          />
+        </div>
+      )}
+
+      {/* Status & warning badges */}
+      {onPitRoad && Math.abs(position.distanceToPit) < 5 && (
+        <div className="text-center text-xs font-bold py-1 px-2 bg-green-600 rounded">
+          At Pitbox
+        </div>
+      )}
+
+      {inBlendZone && position.distanceToPitEntry === 0 && (
+        <div className="text-center text-xs font-bold py-1 px-2 bg-amber-600 rounded">
+          Entering Pit Lane
+        </div>
+      )}
+
+      {limiterWarning.showWarning && (
+        <div
+          className={[
+            'text-center text-xs font-bold py-1 px-2 rounded',
+            limiterWarning.isTeamRaceWarning
+              ? 'bg-red-700 animate-pulse'
+              : 'bg-red-600',
+          ].join(' ')}
+        >
+          {limiterWarning.warningText}
+        </div>
+      )}
+
+      {showEarlyPitboxWarning && (
+        <div className="bg-amber-600 text-center text-xs font-bold py-1 px-2 rounded">
+          EARLY PITBOX
+        </div>
+      )}
+
+      {config.showPitlaneTraffic && traffic.totalCars > 0 && (
+        <div className="bg-blue-700 text-center text-xs py-1 px-2 rounded">
+          {traffic.carsAhead} ahead · {traffic.carsBehind} behind
+        </div>
+      )}
     </div>
   );
 };
-
-
 
 // Display component for demo data
 interface PitlaneHelperDisplayProps {
@@ -239,139 +263,162 @@ const PitlaneHelperDisplay = ({
   // Early pitbox warning: show when on pit road AND pitbox is within threshold of pit entry
   const onPitRoad = surface === 2;
   const showEarlyPitboxWarning =
-    config.enableEarlyPitboxWarning &&
-    onPitRoad &&
-    position.isEarlyPitbox;
+    config.enableEarlyPitboxWarning && onPitRoad && position.isEarlyPitbox;
 
   // Determine if we should show the pit exit inputs based on distance
   const atPitbox = Math.abs(position.distanceToPit) < 10;
   const afterPitbox = position.distanceToPit < -10;
-  const shouldShowInputs = config.showPitExitInputs && onPitRoad && (
-    config.showInputsPhase === 'always' ||
-    (config.showInputsPhase === 'atPitbox' && atPitbox) ||
-    (config.showInputsPhase === 'afterPitbox' && afterPitbox)
-  );
+  const shouldShowInputs =
+    config.showPitExitInputs &&
+    onPitRoad &&
+    (config.showInputsPhase === 'always' ||
+      (config.showInputsPhase === 'atPitbox' && atPitbox) ||
+      (config.showInputsPhase === 'afterPitbox' && afterPitbox));
 
   return (
     <div
-      className="flex flex-col gap-2 p-3 rounded text-white font-medium"
+      className="flex flex-col gap-2 p-2 rounded text-white font-medium"
       style={{
         backgroundColor: `rgb(30 41 59 / ${config.background.opacity}%)`,
-        minWidth: '150px',
       }}
     >
-      {/* Speed Delta */}
-      <div
-        className={[
-          'flex flex-col items-center p-2 rounded transition-all',
-          speed.isSeverelyOver
-            ? 'bg-red-600 animate-pulse'
-            : speed.isSpeeding
-              ? 'bg-red-600/50'
-              : '',
-        ].join(' ')}
-      >
+      {/* Row 1: Speed delta + speed bar */}
+      <div className="flex items-end gap-2">
         <div
           className={[
-            'text-2xl font-bold transition-colors',
-            speed.isSeverelyOver || speed.isSpeeding ? 'text-white' : speed.colorClass,
+            'flex flex-col justify-center px-2 py-1 rounded transition-all',
+            speed.isSeverelyOver
+              ? 'bg-red-600 animate-pulse'
+              : speed.isSpeeding
+                ? 'bg-red-600/50'
+                : '',
           ].join(' ')}
         >
-          {speed.deltaKph > 0 ? '+' : ''}
-          {displayKph ? speed.deltaKph.toFixed(1) : speed.deltaMph.toFixed(1)}{' '}
-          {displayKph ? 'km/h' : 'mph'}
+          <div
+            className={[
+              'text-2xl font-bold leading-none transition-colors tabular-nums',
+              speed.isSeverelyOver || speed.isSpeeding
+                ? 'text-white'
+                : speed.colorClass,
+            ].join(' ')}
+          >
+            {speed.deltaKph > 0 ? '+' : ''}
+            {displayKph ? speed.deltaKph.toFixed(1) : speed.deltaMph.toFixed(1)}
+          </div>
+          <div className="text-xs text-slate-400 leading-tight">
+            {displayKph ? 'km/h' : 'mph'}
+          </div>
+          <div
+            className={[
+              'text-xs leading-tight',
+              speed.isSpeeding ? 'text-white/70' : 'text-slate-500',
+            ].join(' ')}
+          >
+            lim{' '}
+            {displayKph ? speed.limitKph.toFixed(0) : speed.limitMph.toFixed(0)}
+          </div>
         </div>
-        <div className={speed.isSpeeding ? 'text-xs text-white/80' : 'text-xs text-slate-400'}>
-          Limit: {displayKph ? speed.limitKph.toFixed(0) : speed.limitMph.toFixed(0)}{' '}
-          {displayKph ? 'km/h' : 'mph'}
-        </div>
+
+        {config.showSpeedBar && (
+          <PitSpeedBar speedKph={speed.speedKph} limitKph={speed.limitKph} />
+        )}
       </div>
 
-      {/* Pit Entry Countdown (when approaching but not yet on pit road) */}
-      {!onPitRoad && position.distanceToPitEntry > 0 && position.distanceToPitEntry <= config.approachDistance && (
-        <PitCountdownBar
-          distance={position.distanceToPitEntry}
-          maxDistance={config.approachDistance}
-          orientation={config.progressBarOrientation}
-          color={getCountdownColor(position.distanceToPitEntry, config.approachDistance)}
-          targetName="Pit Entry"
-        />
-      )}
+      {/* Row 2: Countdown bars (entry/box/exit) */}
+      {((!onPitRoad &&
+        position.distanceToPitEntry > 0 &&
+        position.distanceToPitEntry <= config.approachDistance) ||
+        (onPitRoad && Math.abs(position.distanceToPit) >= 5) ||
+        (onPitRoad &&
+          position.distanceToPit < -5 &&
+          position.distanceToPitExit > 0 &&
+          position.distanceToPitExit <= 150)) && (
+        <div className="flex gap-3">
+          {!onPitRoad &&
+            position.distanceToPitEntry > 0 &&
+            position.distanceToPitEntry <= config.approachDistance && (
+              <PitCountdownBar
+                distance={position.distanceToPitEntry}
+                maxDistance={config.approachDistance}
+                orientation={config.progressBarOrientation}
+                color={getCountdownColor(
+                  position.distanceToPitEntry,
+                  config.approachDistance
+                )}
+                targetName="Pit Entry"
+              />
+            )}
 
-      {/* Pitbox Distance Display (when on pit road) */}
-      {onPitRoad && (
-        <>
-          {Math.abs(position.distanceToPit) < 5 ? (
-            /* At Pitbox - Static Display */
-            <div className="text-center text-sm font-bold py-2 px-3 bg-green-600 rounded">
-              At Pitbox
-            </div>
-          ) : (
-            /* Countdown to or past pitbox */
+          {onPitRoad && Math.abs(position.distanceToPit) >= 5 && (
             <PitCountdownBar
               distance={Math.abs(position.distanceToPit)}
               maxDistance={100}
               orientation={config.progressBarOrientation}
               color={
                 position.distanceToPit > 0
-                  ? getCountdownColor(position.distanceToPit, 100)  // Approaching pitbox
-                  : 'rgb(34, 197, 94)'  // Past pitbox (green)
+                  ? getCountdownColor(position.distanceToPit, 100)
+                  : 'rgb(34, 197, 94)'
               }
-              targetName={position.distanceToPit > 0 ? 'Pitbox' : 'Past Pitbox'}
+              targetName={position.distanceToPit > 0 ? 'Pitbox' : 'Past Box'}
             />
           )}
-        </>
+
+          {onPitRoad &&
+            position.distanceToPit < -5 &&
+            position.distanceToPitExit > 0 &&
+            position.distanceToPitExit <= 150 && (
+              <PitCountdownBar
+                distance={position.distanceToPitExit}
+                maxDistance={150}
+                orientation={config.progressBarOrientation}
+                color={getCountdownColor(position.distanceToPitExit, 150)}
+                targetName="Pit Exit"
+              />
+            )}
+        </div>
       )}
 
-      {/* Pit Exit Countdown (when on pit road and past pitbox) */}
-      {onPitRoad && position.distanceToPit < -5 && position.distanceToPitExit > 0 && position.distanceToPitExit <= 150 && (
-        <PitCountdownBar
-          distance={position.distanceToPitExit}
-          maxDistance={150}
-          orientation={config.progressBarOrientation}
-          color={getCountdownColor(position.distanceToPitExit, 150)}
-          targetName="Pit Exit"
-        />
-      )}
-
-      {/* Pit Exit Inputs (throttle/clutch assistance) */}
+      {/* Row 3: Input bars (clutch/throttle) */}
       {shouldShowInputs && (
-        <PitExitInputs
-          showThrottle={config.pitExitInputs.throttle}
-          showClutch={config.pitExitInputs.clutch}
-        />
+        <div className="flex gap-3">
+          <PitExitInputs
+            showThrottle={config.pitExitInputs.throttle}
+            showClutch={config.pitExitInputs.clutch}
+          />
+        </div>
       )}
 
-      {/* Warnings */}
-      <div className="flex flex-col gap-1">
-        {/* Pit Limiter Warning (CRITICAL - team race takes priority) */}
-        {limiterWarning.showWarning && (
-          <div
-            className={[
-              'text-center text-sm font-bold py-1 px-2 rounded',
-              limiterWarning.isTeamRaceWarning
-                ? 'bg-red-700 animate-pulse'
-                : 'bg-red-600',
-            ].join(' ')}
-          >
-            {limiterWarning.warningText}
-          </div>
-        )}
+      {/* Status & warning badges */}
+      {onPitRoad && Math.abs(position.distanceToPit) < 5 && (
+        <div className="text-center text-xs font-bold py-1 px-2 bg-green-600 rounded">
+          At Pitbox
+        </div>
+      )}
 
-        {/* Early Pitbox Warning */}
-        {showEarlyPitboxWarning && (
-          <div className="bg-amber-600 text-center text-sm font-bold py-1 px-2 rounded">
-            ⚠ EARLY PITBOX
-          </div>
-        )}
+      {limiterWarning.showWarning && (
+        <div
+          className={[
+            'text-center text-xs font-bold py-1 px-2 rounded',
+            limiterWarning.isTeamRaceWarning
+              ? 'bg-red-700 animate-pulse'
+              : 'bg-red-600',
+          ].join(' ')}
+        >
+          {limiterWarning.warningText}
+        </div>
+      )}
 
-        {/* Traffic Display */}
-        {config.showPitlaneTraffic && traffic.totalCars > 0 && (
-          <div className="bg-blue-700 text-center text-xs py-1 px-2 rounded">
-            {traffic.carsAhead} ahead • {traffic.carsBehind} behind
-          </div>
-        )}
-      </div>
+      {showEarlyPitboxWarning && (
+        <div className="bg-amber-600 text-center text-xs font-bold py-1 px-2 rounded">
+          EARLY PITBOX
+        </div>
+      )}
+
+      {config.showPitlaneTraffic && traffic.totalCars > 0 && (
+        <div className="bg-blue-700 text-center text-xs py-1 px-2 rounded">
+          {traffic.carsAhead} ahead · {traffic.carsBehind} behind
+        </div>
+      )}
     </div>
   );
 };
