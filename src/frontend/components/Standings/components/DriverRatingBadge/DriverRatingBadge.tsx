@@ -52,8 +52,8 @@ export const DriverRatingBadge = ({
     case 'fullrating-white-no-license':
       // Full rating only in white
       return (
-        <div className="flex gap-1 items-center mx-2">
-          <div className="bg-white/90 text-gray-700 text-nowrap border-2 px-1 rounded-md text-xs leading-tight bg-white/10 border-transparent min-w-[3.4em]">
+        <div className="flex gap-1 items-center justify-center mx-2">
+          <div className="bg-white/90 text-gray-700 text-nowrap border-2 px-1 rounded-md text-xs leading-tight bg-white/10 border-transparent">
             {rating}
           </div>
         </div>
@@ -118,8 +118,8 @@ export const DriverRatingBadge = ({
     case 'rating-color-no-license':
       // Rating only in colored badge, no license
       return (
-        <div className="flex gap-1 items-center mx-2">
-          <div className={`text-white text-nowrap border-2 px-1 rounded-md text-xs leading-tight min-w-[3em] ${color}`}>
+        <div className="flex gap-1 items-center justify-center mx-2">
+          <div className={`text-white text-nowrap border-2 px-1 rounded-md text-xs leading-tight ${color}`}>
             {simplifiedRating}k
           </div>
         </div>
@@ -169,8 +169,8 @@ export const DriverRatingBadge = ({
     case 'rating-bw-no-license':
       // Rating only in B&W
       return (
-        <div className="flex gap-1 items-center mx-2">
-          <div className="text-white text-nowrap border-2 px-1 rounded-md text-xs leading-tight bg-white/10 border-transparent min-w-[3em]">
+        <div className="flex gap-1 items-center justify-center mx-2">
+          <div className="text-white text-nowrap border-2 px-1 rounded-md text-xs leading-tight bg-white/10 border-transparent">
             {simplifiedRating}k
           </div>
         </div>
@@ -179,8 +179,8 @@ export const DriverRatingBadge = ({
     case 'fullrating-bw-no-license':
       // Full rating only in B&W
       return (
-        <div className="flex gap-1 items-center mx-2">
-          <div className="text-white text-nowrap border-2 px-1 rounded-md text-xs leading-tight bg-white/10 border-transparent min-w-[3.4em]">
+        <div className="flex gap-1 items-center justify-center mx-2">
+          <div className="text-white text-nowrap border-2 px-1 rounded-md text-xs leading-tight bg-white/10 border-transparent">
             {rating}
           </div>
         </div>
