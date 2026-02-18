@@ -32,7 +32,7 @@ import { usePrecipitation } from '../../hooks/usePrecipitation';
 import { useTotalRaceLaps } from '../../../../context/shared/useTotalRaceLaps';
 import { useLapTimeHistory } from '../../../../context/LapTimesStore/LapTimesStore';
 import { useThrottledWeather } from '../../../Weather/hooks/useThrottledWeather';
-import { WindArrow } from './WindArrow';
+import { WindArrow } from '../../../Weather/WindDirection/WindArrow';
 
 interface SessionBarProps {
   position?: 'header' | 'footer';
@@ -52,6 +52,7 @@ export const SessionBar = ({
   const effectiveBarSettings =
     position === 'footer' ? settings?.footerBar : settings?.headerBar;
   const sessionNum = useTelemetryValue('SessionNum');
+  const displayUnits = useTelemetryValue('DisplayUnits'); // 0 = imperial, 1 = metric
   const sessionName = useSessionName(sessionNum);
   const sessionLaps = useSessionLaps(sessionNum);
   const { incidentLimit, incidents } = useDriverIncidents();
@@ -378,20 +379,17 @@ export const SessionBar = ({
     wind: {
       enabled: effectiveBarSettings?.wind?.enabled ?? false,
       render: () => {
-        const unit = effectiveBarSettings?.wind?.unit ?? 'Metric';
+        const isMetric = displayUnits === 1;
         const speedPosition =
           effectiveBarSettings?.wind?.speedPosition ?? 'right';
         const speed =
           windVelocity !== undefined
-            ? Math.round(windVelocity * (unit === 'Metric' ? 3.6 : 2.23694))
+            ? Math.round(windVelocity * (isMetric ? 3.6 : 2.23694))
             : '-';
-        const unitLabel = unit === 'Metric' ? 'km/h' : 'mph';
-        const speedEl = (
-          <span className="text-nowrap">
-            {speed} {unitLabel}
-          </span>
+        const speedEl = <span>{speed}</span>;
+        const arrowEl = (
+          <WindArrow direction={windDirection} className="mx-1 w-3.5 h-4" />
         );
-        const arrowEl = <WindArrow direction={windDirection} />;
         return (
           <div className="flex justify-center gap-1 items-center">
             {speedPosition === 'left' && speedEl}

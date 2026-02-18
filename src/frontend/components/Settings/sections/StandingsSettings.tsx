@@ -95,7 +95,7 @@ const defaultConfig: StandingsWidgetSettings['config'] = {
     precipitation: { enabled: false },
     airTemperature: { enabled: false, unit: 'Metric' },
     trackTemperature: { enabled: false, unit: 'Metric' },
-    wind: { enabled: false, unit: 'Metric', speedPosition: 'right' },
+    wind: { enabled: false, speedPosition: 'right' },
     displayOrder: DEFAULT_SESSION_BAR_DISPLAY_ORDER,
   },
   footerBar: {
@@ -111,7 +111,7 @@ const defaultConfig: StandingsWidgetSettings['config'] = {
     precipitation: { enabled: false },
     airTemperature: { enabled: true, unit: 'Metric' },
     trackTemperature: { enabled: true, unit: 'Metric' },
-    wind: { enabled: false, unit: 'Metric', speedPosition: 'right' },
+    wind: { enabled: false, speedPosition: 'right' },
     displayOrder: DEFAULT_SESSION_BAR_DISPLAY_ORDER,
   },
   showOnlyWhenOnTrack: false,
@@ -322,10 +322,6 @@ const migrateConfig = (
         enabled:
           (config.headerBar as { wind?: { enabled?: boolean } })?.wind
             ?.enabled ?? false,
-        unit:
-          ((config.headerBar as { wind?: { unit?: string } })?.wind?.unit as
-            | 'Metric'
-            | 'Imperial') ?? 'Metric',
         speedPosition:
           ((config.headerBar as { wind?: { speedPosition?: string } })?.wind
             ?.speedPosition as 'left' | 'right') ?? 'right',
@@ -411,10 +407,6 @@ const migrateConfig = (
         enabled:
           (config.footerBar as { wind?: { enabled?: boolean } })?.wind
             ?.enabled ?? false,
-        unit:
-          ((config.footerBar as { wind?: { unit?: string } })?.wind?.unit as
-            | 'Metric'
-            | 'Imperial') ?? 'Metric',
         speedPosition:
           ((config.footerBar as { wind?: { speedPosition?: string } })?.wind
             ?.speedPosition as 'left' | 'right') ?? 'right',
@@ -864,7 +856,6 @@ const BarItemsList = ({
                           : item.id === 'wind'
                             ? {
                                 enabled,
-                                unit: currentUnit,
                                 speedPosition: currentSpeedPosition,
                               }
                             : { enabled },
@@ -911,57 +902,53 @@ const BarItemsList = ({
               'enabled' in itemConfig &&
               itemConfig.enabled && (
                 <div className="flex items-center justify-end gap-2 pl-8 mt-2">
-                  <select
-                    value={
-                      (itemConfig as { unit?: 'Metric' | 'Imperial' }).unit ??
-                      'Metric'
-                    }
-                    onChange={(e) => {
-                      handleConfigChange({
-                        [barType]: {
-                          ...settings.config[barType],
-                          wind: {
-                            enabled: itemConfig.enabled,
-                            speedPosition:
-                              (
-                                itemConfig as {
-                                  speedPosition?: 'left' | 'right';
-                                }
-                              ).speedPosition ?? 'right',
-                            unit: e.target.value as 'Metric' | 'Imperial',
-                          },
-                        },
-                      });
-                    }}
-                    className="bg-slate-700 text-white rounded-md px-2 py-1"
-                  >
-                    <option value="Metric">km/h</option>
-                    <option value="Imperial">mph</option>
-                  </select>
-                  <select
-                    value={
+                  {(['left', 'right'] as const).map((pos) => {
+                    const currentPos =
                       (itemConfig as { speedPosition?: 'left' | 'right' })
-                        .speedPosition ?? 'right'
-                    }
-                    onChange={(e) => {
-                      handleConfigChange({
-                        [barType]: {
-                          ...settings.config[barType],
-                          wind: {
-                            enabled: itemConfig.enabled,
-                            unit:
-                              (itemConfig as { unit?: 'Metric' | 'Imperial' })
-                                .unit ?? 'Metric',
-                            speedPosition: e.target.value as 'left' | 'right',
-                          },
-                        },
-                      });
-                    }}
-                    className="bg-slate-700 text-white rounded-md px-2 py-1"
-                  >
-                    <option value="left">Speed / Arrow</option>
-                    <option value="right">Arrow / Speed</option>
-                  </select>
+                        .speedPosition ?? 'right';
+                    const arrow = (
+                      <svg
+                        viewBox="50 80 650 720"
+                        className="w-3 h-3.5 fill-current shrink-0"
+                        style={{ rotate: '-14deg' }}
+                      >
+                        <path
+                          fillRule="nonzero"
+                          d="m373.75 91.496c-0.95-1.132-74.87 153.23-164.19 343.02-160.8 341.68-162.27 345.16-156.49 350.27 3.203 2.83 6.954 4.79 8.319 4.34 1.365-0.46 71.171-73.88 155.14-163.1 83.97-89.22 153.66-162.83 154.87-163.56 1.2-0.72 71.42 72.34 156.04 162.29s155.21 163.82 156.95 164.19 5.57-1.19 8.5-3.44c5.04-3.86-3.75-23.46-156.04-348-88.77-189.18-162.15-344.88-163.1-346.01z"
+                        />
+                      </svg>
+                    );
+                    return (
+                      <button
+                        key={pos}
+                        type="button"
+                        onClick={() =>
+                          handleConfigChange({
+                            [barType]: {
+                              ...settings.config[barType],
+                              wind: {
+                                enabled: itemConfig.enabled,
+                                speedPosition: pos,
+                              },
+                            },
+                          })
+                        }
+                        className={`flex items-center gap-1 px-2 py-1 rounded-md text-white ${currentPos === pos ? 'bg-blue-500' : 'bg-slate-700 hover:bg-slate-600'}`}
+                      >
+                        {pos === 'left' ? (
+                          <>
+                            <span>7</span>
+                            {arrow}
+                          </>
+                        ) : (
+                          <>
+                            {arrow}
+                            <span>7</span>
+                          </>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             {item.id === 'sessionTime' &&

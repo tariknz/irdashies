@@ -79,7 +79,6 @@ export interface StandingsWidgetSettings extends BaseWidgetSettings {
       trackTemperature: { enabled: boolean; unit: 'Metric' | 'Imperial' };
       wind: {
         enabled: boolean;
-        unit: 'Metric' | 'Imperial';
         speedPosition: 'left' | 'right';
       };
       displayOrder: string[];
@@ -99,7 +98,6 @@ export interface StandingsWidgetSettings extends BaseWidgetSettings {
       trackTemperature: { enabled: boolean; unit: 'Metric' | 'Imperial' };
       wind: {
         enabled: boolean;
-        unit: 'Metric' | 'Imperial';
         speedPosition: 'left' | 'right';
       };
       displayOrder: string[];
@@ -173,7 +171,6 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
       trackTemperature: { enabled: boolean; unit: 'Metric' | 'Imperial' };
       wind: {
         enabled: boolean;
-        unit: 'Metric' | 'Imperial';
         speedPosition: 'left' | 'right';
       };
       displayOrder: string[];
@@ -193,7 +190,6 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
       trackTemperature: { enabled: boolean; unit: 'Metric' | 'Imperial' };
       wind: {
         enabled: boolean;
-        unit: 'Metric' | 'Imperial';
         speedPosition: 'left' | 'right';
       };
       displayOrder: string[];
