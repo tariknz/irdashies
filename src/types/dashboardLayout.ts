@@ -26,12 +26,31 @@ export interface DashboardWidget {
 }
 
 export type FontType = 'lato' | 'notosans' | 'figtree' | 'inter' | 'roboto';
-export type FontSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | '5xl' | '6xl' | '7xl' | '8xl' | '9xl';
+export type FontSize =
+  | 'xs'
+  | 'sm'
+  | 'md'
+  | 'lg'
+  | 'xl'
+  | '2xl'
+  | '3xl'
+  | '4xl'
+  | '5xl'
+  | '6xl'
+  | '7xl'
+  | '8xl'
+  | '9xl';
 
 export interface GeneralSettingsType {
   fontType?: FontType;
   fontSize?: FontSize;
-  fontWeight?: 'light' | 'normal' | 'medium' | 'semibold' | 'bold' | 'extrabold';
+  fontWeight?:
+    | 'light'
+    | 'normal'
+    | 'medium'
+    | 'semibold'
+    | 'bold'
+    | 'extrabold';
   colorPalette?:
     | 'default'
     | 'black'
@@ -103,10 +122,21 @@ export interface TagGroup {
   icon?: string;
 }
 
+export interface DriverTagEntry {
+  /** iRacing customer ID (numeric string) — primary lookup key */
+  id?: string;
+  /** iRacing display name — fallback lookup key */
+  name?: string;
+  /** The tag group id this driver belongs to */
+  groupId: string;
+}
+
 export interface DriverTagSettings {
   /** Array of user-created tag groups */
   groups: TagGroup[];
-  /** Mapping from iRacing driver name (string) to group id */
+  /** Driver tag entries (preferred over legacy mapping) */
+  entries?: DriverTagEntry[];
+  /** @deprecated Use entries instead. Mapping from iRacing driver name or ID to group id */
   mapping: Record<string, string>;
   /** Display config for the tag strip */
   display: {
@@ -115,6 +145,8 @@ export interface DriverTagSettings {
     widthPx: number;
     /** Visual style for tags: 'badge' shows an icon, 'tag' shows a colored pill */
     displayStyle?: 'badge' | 'tag';
+    /** Icon weight for badge display: 'regular' (outline) or 'fill' */
+    iconWeight?: 'regular' | 'fill';
   };
   /** Optional per-preset overrides (preset id -> partial TagGroup) */
   presetOverrides?: Record<string, Partial<TagGroup>>;

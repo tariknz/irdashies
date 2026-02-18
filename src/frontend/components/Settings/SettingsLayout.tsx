@@ -114,11 +114,6 @@ export const SettingsLayout = () => {
                 General
               </Link>
             </li>
-            <li>
-              <Link to="/settings/driver-tags" className={menuItemClass('/driver-tags')}>
-                Driver Tags
-              </Link>
-            </li>
           </ul>
           <ul className="flex flex-col gap-2 flex-1 mb-2">
             <li>
@@ -127,6 +122,14 @@ export const SettingsLayout = () => {
                 className={menuItemClass('/blindspotmonitor')}
               >
                 Blind Spot Monitor
+              </Link>
+            </li>
+            <li>
+              <Link
+                to="/settings/driver-tags"
+                className={menuItemClass('/driver-tags')}
+              >
+                Driver Tags
               </Link>
             </li>
             <li>
@@ -210,7 +213,6 @@ export const SettingsLayout = () => {
                 Weather
               </Link>
             </li>
-            
           </ul>
           {/* Advanced settings pushed to bottom */}
           <ul className="mt-auto pt-2 border-t border-slate-700 flex flex-col gap-2">
@@ -251,6 +253,7 @@ const SettingsLoader = () => {
 
   // 1. Handle non-widget pages
   if (widgetId === 'general') return <GeneralSettings />;
+  if (widgetId === 'driver-tags') return <TagGroupsSettings />;
   if (widgetId === 'profiles') return <ProfileSettings />;
   if (widgetId === 'advanced') return <AdvancedSettings />;
   if (widgetId === 'car-setup') return <CarSetupSettings />;

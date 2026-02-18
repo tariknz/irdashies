@@ -86,6 +86,7 @@
   },
   "license": "MIT",
   "dependencies": {
+    "@phosphor-icons/core": "^2.1.1",
     "@phosphor-icons/react": "^2.1.10",
     "d3": "^7.9.0",
     "electron-squirrel-startup": "^1.0.1",

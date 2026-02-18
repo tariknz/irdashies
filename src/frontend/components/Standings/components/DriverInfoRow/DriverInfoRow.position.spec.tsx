@@ -6,6 +6,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 vi.mock('@irdashies/context', () => ({
   useDashboard: vi.fn(),
   usePitStopDuration: () => [],
+  useSessionDrivers: () => [],
 }));
 
 import { DriverInfoRow } from './DriverInfoRow';
@@ -14,9 +15,7 @@ import { useDashboard } from '@irdashies/context';
 const renderInTable = (component: React.ReactElement) =>
   render(
     <table>
-      <tbody>
-        {component}
-      </tbody>
+      <tbody>{component}</tbody>
     </table>
   );
 
@@ -25,19 +24,19 @@ describe('DriverInfoRow tag placement fallback', () => {
     vi.resetAllMocks();
   });
 
-    it('renders the tag before the name when displayOrder places driverTag before driverName', () => {
+  it('renders the tag before the name when displayOrder places driverTag before driverName', () => {
     // Arrange: mock dashboard with driverTagSettings that map the driver to a custom group
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (useDashboard as unknown as any).mockReturnValue({
       currentDashboard: {
         generalSettings: {
           driverTagSettings: {
-            groups: [ { id: 'g1', name: 'G1', icon: '🔥', color: 0xff0000 } ],
+            groups: [{ id: 'g1', name: 'G1', icon: '🔥', color: 0xff0000 }],
             mapping: { 'Driver A': 'g1' },
-              display: { enabled: true, widthPx: 6, displayStyle: 'badge' }
-          }
-        }
-      }
+            display: { enabled: true, widthPx: 6, displayStyle: 'badge' },
+          },
+        },
+      },
     });
 
     const { container } = renderInTable(
@@ -53,7 +52,7 @@ describe('DriverInfoRow tag placement fallback', () => {
         penalty={false}
         slowdown={false}
         deltaDecimalPlaces={2}
-        displayOrder={[ 'driverTag', 'driverName' ]}
+        displayOrder={['driverTag', 'driverName']}
       />
     );
 
@@ -66,18 +65,18 @@ describe('DriverInfoRow tag placement fallback', () => {
     expect(idxTag).toBeLessThan(idxName);
   });
 
-    it('renders the tag after the name when displayOrder places driverName before driverTag', () => {
+  it('renders the tag after the name when displayOrder places driverName before driverTag', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (useDashboard as unknown as any).mockReturnValue({
       currentDashboard: {
         generalSettings: {
           driverTagSettings: {
-            groups: [ { id: 'g1', name: 'G1', icon: '🔥', color: 0xff0000 } ],
+            groups: [{ id: 'g1', name: 'G1', icon: '🔥', color: 0xff0000 }],
             mapping: { 'Driver A': 'g1' },
-              display: { enabled: true, widthPx: 6, displayStyle: 'badge' }
-          }
-        }
-      }
+            display: { enabled: true, widthPx: 6, displayStyle: 'badge' },
+          },
+        },
+      },
     });
 
     const { container } = renderInTable(
@@ -93,7 +92,7 @@ describe('DriverInfoRow tag placement fallback', () => {
         penalty={false}
         slowdown={false}
         deltaDecimalPlaces={2}
-        displayOrder={[ 'driverName', 'driverTag' ]}
+        displayOrder={['driverName', 'driverTag']}
       />
     );
 

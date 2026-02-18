@@ -14,8 +14,9 @@ export const useDriverTag = (
   tagSettings?: DriverTagSettings,
   widgetTagEnabled?: boolean,
   skipWidgetTag = false,
+  userId?: number
 ): ResolvedDriverTag | undefined => {
-  // Create stable lower-cased mapping and group lookup to avoid expensive finds on every render
+  // Create stable mapping: numeric ID keys stored as-is, name keys lower-cased
   const lcMapping = useMemo(() => {
     const map = new Map<string, string>();
     const m = tagSettings?.mapping;
@@ -28,7 +29,10 @@ export const useDriverTag = (
   }, [tagSettings?.mapping]);
 
   const groupsById = useMemo(() => {
-    const map = new Map<string, { id: string; name?: string; icon?: unknown; color?: number }>();
+    const map = new Map<
+      string,
+      { id: string; name?: string; icon?: unknown; color?: number }
+    >();
     const g = tagSettings?.groups;
     if (g) {
       for (const grp of g) {
@@ -40,25 +44,62 @@ export const useDriverTag = (
 
   return useMemo(() => {
     const presetOverrides = tagSettings?.presetOverrides ?? {};
-    
+
     if (skipWidgetTag) return undefined;
     if (!tagSettings) return undefined;
     const displayEnabled = widgetTagEnabled ?? tagSettings.display?.enabled;
     if (!displayEnabled) return undefined;
     const key = (rawKey ?? '').trim();
-    if (!key) return undefined;
-    const groupId = lcMapping.get(key.toLowerCase());
+    const idKey = userId != null ? String(userId) : undefined;
+
+    // Check entries first: ID priority, then name
+    let groupId: string | undefined;
+    const entries = tagSettings.entries ?? [];
+    if (idKey) {
+      groupId = entries.find((e) => e.id === idKey)?.groupId;
+    }
+    if (!groupId && key) {
+      groupId = entries.find(
+        (e) => e.name && e.name.toLowerCase() === key.toLowerCase()
+      )?.groupId;
+    }
+    // Fall back to legacy mapping
+    if (!groupId) {
+      groupId =
+        (idKey ? lcMapping.get(idKey) : undefined) ??
+        (key ? lcMapping.get(key.toLowerCase()) : undefined);
+    }
     if (!groupId) return undefined;
 
     const custom = groupsById.get(groupId);
-    if (custom) return { id: custom.id, name: custom.name, icon: custom.icon, color: custom.color };
+    if (custom)
+      return {
+        id: custom.id,
+        name: custom.name,
+        icon: custom.icon,
+        color: custom.color,
+      };
 
     const presetOverride = presetOverrides[groupId];
     const preset = getPresetTag(groupId);
-    if (presetOverride) return { id: groupId, name: presetOverride.name ?? preset?.name, icon: presetOverride.icon ?? preset?.icon, color: presetOverride.color ?? preset?.color };
+    if (presetOverride)
+      return {
+        id: groupId,
+        name: presetOverride.name ?? preset?.name,
+        icon: presetOverride.icon ?? preset?.icon,
+        color: presetOverride.color ?? preset?.color,
+      };
     if (preset) return preset;
     return undefined;
-  }, [rawKey, widgetTagEnabled, skipWidgetTag, lcMapping, groupsById, tagSettings]);
+  }, [
+    rawKey,
+    widgetTagEnabled,
+    skipWidgetTag,
+    lcMapping,
+    groupsById,
+    tagSettings,
+    userId,
+  ]);
 };
 
 export default useDriverTag;
