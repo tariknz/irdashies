@@ -23,7 +23,7 @@ export const BadgeFormatPreview = ({
         );
       case 'fullrating-white-no-license':
         return (
-          <div className="text-gray-700 text-nowrap border-2 px-1 rounded-md text-xs leading-tight bg-white border-transparent">
+          <div className="bg-white/90 text-gray-700 text-nowrap border-2 px-1 rounded-md text-xs leading-tight border-transparent">
             1412
           </div>
         );

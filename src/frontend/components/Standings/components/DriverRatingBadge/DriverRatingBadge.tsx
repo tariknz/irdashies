@@ -40,7 +40,7 @@ export const DriverRatingBadge = ({
       return (
         <div className="flex gap-1 items-center">
           <div
-            className={`text-white text-nowrap border-2 px-1 rounded-md text-xs leading-tight min-w-[3.5em] ${color}`}>
+            className={`text-white text-nowrap border-2 px-1 rounded-md text-xs leading-tight min-w-[3.6em] ${color}`}>
             {formattedLicense} {safetyRating}
           </div>
           <div className="bg-white/90 text-gray-700 border-2 border-transparent px-1 rounded-md text-xs leading-tight min-w-[3.4em]">
@@ -64,7 +64,7 @@ export const DriverRatingBadge = ({
       return (
         <div className="flex gap-1 items-center">
           <div
-            className={`text-white text-nowrap border-2 px-1 rounded-md text-xs leading-tight min-w-[3.5em] ${color}`}>
+            className={`text-white text-nowrap border-2 px-1 rounded-md text-xs leading-tight min-w-[3.6em] ${color}`}>
             {formattedLicense} {safetyRating}
           </div>
           <div className="bg-white/10 text-white border-2 border-transparent px-1 rounded-md text-xs leading-tight min-w-[3.4em]">
@@ -78,7 +78,7 @@ export const DriverRatingBadge = ({
       return (
         <div className="flex gap-1 items-center mx-2">
           <div
-            className={`text-white text-nowrap border-2 px-1 rounded-md text-xs leading-tight min-w-[3.5em] ${color}`}>
+            className={`text-white text-nowrap border-2 px-1 rounded-md text-xs leading-tight min-w-[3.6em] ${color}`}>
             {formattedLicense} {safetyRating}
           </div>
           <div className="bg-white/10 text-white border-2 border-transparent px-1 rounded-md text-xs leading-tight min-w-[3em]">
@@ -130,7 +130,7 @@ export const DriverRatingBadge = ({
       // All B&W badges - license without safety rating (like current but B&W)
       return (
         <div className="flex gap-1 items-center mx-2">
-          <div className="bg-white/10 text-white border-2 border-transparent px-1 rounded-md text-xs leading-tight min-w-[3.5em]">
+          <div className="bg-white/10 text-white border-2 border-transparent px-1 rounded-md text-xs leading-tight min-w-[3.6em]">
             {formattedLicense} {safetyRating}
           </div>
           <div className="bg-white/10 text-white border-2 border-transparent px-1 rounded-md text-xs leading-tight min-w-[3em]">
@@ -191,7 +191,7 @@ export const DriverRatingBadge = ({
       return (
         <div className="flex gap-1 items-center mx-2">
           <div
-            className={`text-white text-nowrap border-2 px-1 rounded-md text-xs leading-tight min-w-[3.5em] ${color}`}>
+            className={`text-white text-nowrap border-2 px-1 rounded-md text-xs leading-tight min-w-[3.6em] ${color}`}>
             {formattedLicense} {safetyRating}
           </div>
           <div className="bg-white/10 text-white border-2 border-transparent px-1 rounded-md text-xs leading-tight min-w-[3em]">
