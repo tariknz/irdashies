@@ -214,7 +214,7 @@ export const TrackMapSettings = () => {
             <div>
               <span className="text-sm text-slate-300">High Contrast Turn Names</span>
               <p className="text-xs text-slate-400">
-                Use black background for turn numbers and turns name for better legibility
+                Use black background for turn numbers and turn names for better legibility
               </p>
             </div>
             <ToggleSwitch
