@@ -258,6 +258,8 @@ export const FasterCarsFromBehindSettings = () => {
               <div className="flex flex-wrap gap-3 justify-end">
                 {(
                   [
+                    'license-color-fullrating-white',
+                    'fullrating-white-no-license',
                     'license-color-fullrating-bw',
                     'license-color-rating-bw',
                     'rating-only-color-rating-bw',
@@ -267,6 +269,7 @@ export const FasterCarsFromBehindSettings = () => {
                     'rating-only-bw-rating-bw',
                     'license-bw-rating-bw-no-license',
                     'rating-bw-no-license',
+                    'fullrating-bw-no-license',                     
                   ] as const
                 ).map((format) => (
                   <BadgeFormatPreview

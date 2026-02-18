@@ -10,6 +10,23 @@ export const BadgeFormatPreview = ({
 }) => {
   const renderPreview = () => {
     switch (format) {
+      case 'license-color-fullrating-white':
+        return (
+          <div className="flex gap-1 items-center">
+            <div className="text-white text-nowrap border-2 px-1 rounded-md text-xs leading-tight border-green-500 bg-green-800">
+              B 3.8
+            </div>
+            <div className="bg-white/90 text-gray-700 border-2 border-transparent px-1 rounded-md text-xs leading-tight">
+              1412
+            </div>
+          </div>
+        );
+      case 'fullrating-white-no-license':
+        return (
+          <div className="text-gray-700 text-nowrap border-2 px-1 rounded-md text-xs leading-tight bg-white border-transparent">
+            1412
+          </div>
+        );
       case 'license-color-fullrating-bw':
         return (
           <div className="flex gap-1 items-center">
@@ -99,6 +116,12 @@ export const BadgeFormatPreview = ({
             1.4k
           </div>
         );
+      case 'fullrating-bw-no-license':
+        return (
+          <div className="text-white text-nowrap border-2 px-1 rounded-md text-xs leading-tight bg-white/10 border-transparent">
+            1412
+          </div>
+        );
       default:
         return null;
     }
@@ -108,10 +131,10 @@ export const BadgeFormatPreview = ({
     <button
       type="button"
       onClick={onClick}
-      className={`px-3 py-1 rounded cursor-pointer transition-colors inline-flex items-center justify-center ${
+      className={`px-3 py-1 rounded border cursor-pointer transition-colors inline-flex items-center justify-center ${
         selected
-          ? 'border border-blue-500 bg-blue-500/10'
-          : 'hover:bg-slate-800'
+          ? 'border-blue-500 bg-blue-500/10'
+          : 'border-transparent hover:bg-slate-800'
       }`}
     >
       {renderPreview()}

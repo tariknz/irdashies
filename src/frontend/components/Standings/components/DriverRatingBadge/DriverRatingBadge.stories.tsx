@@ -113,3 +113,12 @@ export const FormatLicenseColorFullRatingBw: Story = {
     format: 'license-color-fullrating-bw',
   },
 };
+
+export const FormatLicenseColorFullRatingWhite: Story = {
+  args: {
+    license: 'A 4.99',
+    rating: 4999,
+    format: 'license-color-fullrating-white',
+  },
+};
+

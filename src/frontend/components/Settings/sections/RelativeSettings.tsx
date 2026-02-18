@@ -119,7 +119,7 @@ const migrateConfig = (savedConfig: unknown): RelativeWidgetSettings['config'] =
     },
     badge: {
       enabled: (config.badge as { enabled?: boolean })?.enabled ?? true,
-      badgeFormat: ((config.badge as { badgeFormat?: string })?.badgeFormat as 'license-color-fullrating-bw' | 'license-color-rating-bw' | 'license-color-rating-bw-no-license' | 'rating-color-no-license' | 'license-bw-rating-bw' | 'rating-only-bw-rating-bw' | 'license-bw-rating-bw-no-license' | 'rating-bw-no-license') ?? 'license-color-rating-bw'
+      badgeFormat: ((config.badge as { badgeFormat?: string })?.badgeFormat as 'license-color-fullrating-white' | 'fullrating-white-no-license' | 'license-color-fullrating-bw' | 'license-color-rating-bw' | 'license-color-rating-bw-no-license' | 'rating-color-no-license' | 'license-bw-rating-bw' | 'rating-only-bw-rating-bw' | 'license-bw-rating-bw-no-license' | 'rating-bw-no-license' | 'fullrating-bw-no-license') ?? 'license-color-rating-bw'
     },
     iratingChange: { enabled: (config.iratingChange as { enabled?: boolean })?.enabled ?? false },
     delta: { enabled: (config.delta as { enabled?: boolean })?.enabled ?? true, precision: (config.delta as { precision?: number })?.precision ?? 2 },
@@ -240,7 +240,7 @@ const DisplaySettingsList = ({ itemsOrder, onReorder, settings, handleConfigChan
             {setting.configKey === 'badge' && (configValue as { enabled: boolean }).enabled && (
               <div className="mt-3">
                 <div className="flex flex-wrap gap-3 justify-end">
-                  {(['license-color-fullrating-bw', 'license-color-rating-bw', 'rating-only-color-rating-bw', 'license-color-rating-bw-no-license', 'rating-color-no-license', 'license-bw-rating-bw', 'rating-only-bw-rating-bw', 'license-bw-rating-bw-no-license', 'rating-bw-no-license'] as const).map((format) => (
+                  {(['license-color-fullrating-white', 'fullrating-white-no-license', 'license-color-fullrating-bw', 'license-color-rating-bw', 'rating-only-color-rating-bw', 'license-color-rating-bw-no-license', 'rating-color-no-license', 'license-bw-rating-bw', 'rating-only-bw-rating-bw', 'license-bw-rating-bw-no-license', 'rating-bw-no-license', 'fullrating-bw-no-license'] as const).map((format) => (
                     <BadgeFormatPreview
                       key={format}
                       format={format}
