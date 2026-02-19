@@ -19,7 +19,7 @@ export interface StandingsWidgetSettings extends BaseWidgetSettings {
     badge: {
       enabled: boolean;
       badgeFormat:
-        | 'license-color-fullrating-white'
+        | 'license-color-fullrating-combo'
         | 'license-color-fullrating-bw'
         | 'license-color-rating-bw'
         | 'license-color-rating-bw-no-license'
@@ -29,7 +29,7 @@ export interface StandingsWidgetSettings extends BaseWidgetSettings {
         | 'license-bw-rating-bw-no-license'
         | 'rating-bw-no-license'
         | 'fullrating-bw-no-license' 
-        | 'fullrating-white-no-license';
+        | 'fullrating-color-no-license';
     };
     delta: { enabled: boolean };
     gap: { enabled: boolean };
@@ -185,8 +185,8 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
     badge: {
       enabled: boolean;
       badgeFormat:
-        | 'license-color-fullrating-white'
-        | 'fullrating-white-no-license'
+        | 'license-color-fullrating-combo'
+        | 'fullrating-color-no-license'
         | 'license-color-fullrating-bw'
         | 'license-color-rating-bw'
         | 'license-color-rating-bw-no-license'

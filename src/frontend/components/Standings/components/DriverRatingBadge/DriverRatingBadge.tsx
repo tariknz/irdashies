@@ -3,7 +3,7 @@
 export interface DriverRatingBadgeProps {
   license?: string;
   rating?: number;
-  format?: 'license-color-fullrating-white' | 'fullrating-white-no-license' | 'license-color-fullrating-bw' |'license-color-rating-bw' | 'license-color-rating-bw-no-license' | 'rating-color-no-license' | 'license-bw-rating-bw' | 'rating-only-bw-rating-bw' | 'license-bw-rating-bw-no-license' | 'rating-bw-no-license' | 'fullrating-bw-no-license' | 'rating-only-color-rating-bw';
+  format?: 'license-color-fullrating-combo' | 'fullrating-color-no-license' | 'license-color-fullrating-bw' |'license-color-rating-bw' | 'license-color-rating-bw-no-license' | 'rating-color-no-license' | 'license-bw-rating-bw' | 'rating-only-bw-rating-bw' | 'license-bw-rating-bw-no-license' | 'rating-bw-no-license' | 'fullrating-bw-no-license' | 'rating-only-color-rating-bw';
 }
 
 export const DriverRatingBadge = ({
@@ -35,27 +35,23 @@ export const DriverRatingBadge = ({
   }) || license || 'R 0.0';
 
   switch (format) {
-    case 'license-color-fullrating-white':
-      // License = colored badge, full irating (no 1.4k approx), rating in white
+    case 'license-color-fullrating-combo':
+      // License = colored badge, full irating combined
       return (
-        <div className="flex gap-1 items-center">
-          <div
-            className={`text-white text-nowrap border-2 px-1 rounded-md text-xs leading-tight min-w-[3.6em] ${color}`}>
-            {formattedLicense} {safetyRating}
-          </div>
-          <div className="flex-1 flex justify-center">
-            <div className="bg-white/90 text-gray-700 border-2 border-transparent px-1 rounded-md text-xs leading-tight">
-              {rating}
-            </div>
-          </div>
+         <div className="flex gap-1 items-center justify-center mx-2">
+          <div className={`flex justify-between items-center text-white text-nowrap border-2 px-1 rounded-md text-xs leading-tight min-w-[6.4em] ${color}`}>
+            <span>{formattedLicense} {safetyRating} </span>
+            <span>{rating}</span>
+          </div>          
         </div>
       );
 
-    case 'fullrating-white-no-license':
+    case 'fullrating-color-no-license':
       // Full rating only in white
       return (
         <div className="flex gap-1 items-center justify-center mx-2">
-          <div className="bg-white/90 text-gray-700 text-nowrap border-2 px-1 rounded-md text-xs leading-tight bg-white/10 border-transparent">
+          <div
+            className={`text-white text-nowrap border-2 px-1 rounded-md text-xs leading-tight min-w-[3.6em] ${color}`}>
             {rating}
           </div>
         </div>

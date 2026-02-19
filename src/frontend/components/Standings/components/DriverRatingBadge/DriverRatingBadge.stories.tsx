@@ -118,7 +118,7 @@ export const FormatLicenseColorFullRatingWhite: Story = {
   args: {
     license: 'A 4.99',
     rating: 4999,
-    format: 'license-color-fullrating-white',
+    format: 'license-color-fullrating-combo',
   },
 };
 
