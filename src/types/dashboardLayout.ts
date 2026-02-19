@@ -25,11 +25,13 @@ export interface DashboardWidget {
   config?: Record<string, unknown>;
 }
 
-export type FontSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl';
+export type FontType = 'lato' | 'notosans' | 'figtree' | 'inter' | 'roboto';
+export type FontSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | '5xl' | '6xl' | '7xl' | '8xl' | '9xl';
 
 export interface GeneralSettingsType {
+  fontType?: FontType;
   fontSize?: FontSize;
-  fontWeight?: 'normal' | 'bold' | 'extrabold';
+  fontWeight?: 'light' | 'normal' | 'medium' | 'semibold' | 'bold' | 'extrabold';
   colorPalette?:
     | 'default'
     | 'black'
@@ -77,6 +79,7 @@ export interface DashboardProfile {
   lastModified?: string;
   /** Optional theme settings that override dashboard general settings */
   themeSettings?: {
+    fontType?: FontType;
     fontSize?: FontSize;
     colorPalette?: GeneralSettingsType['colorPalette'];
   };
