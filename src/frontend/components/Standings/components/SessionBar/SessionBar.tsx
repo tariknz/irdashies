@@ -55,15 +55,25 @@ const formatTotalTime = (
     }
   } else {
     // minimal
-    if (hours > 0) {
-      result =
-        compact && minutes === 0
-          ? `${hours}`
-          : `${hours}:${String(minutes).padStart(2, '0')}`;
+    if (compact) {
+      if (hours > 0) {
+        result =
+          minutes === 0
+            ? `${hours}`
+            : `${hours}:${String(minutes).padStart(2, '0')}`;
+      } else {
+        result = `${minutes}`;
+      }
     } else {
-      result = `${minutes}`;
+      // elapsed/remaining: trim leading zero components
+      if (hours > 0) {
+        result = `${hours}:${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+      } else if (minutes > 0) {
+        result = `${minutes}:${String(secs).padStart(2, '0')}`;
+      } else {
+        result = `${secs}`;
+      }
     }
-    if (!compact) result += `:${String(secs).padStart(2, '0')}`;
   }
 
   if (labelStyle === 'short')
