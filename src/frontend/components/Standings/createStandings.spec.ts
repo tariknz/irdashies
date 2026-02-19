@@ -4,7 +4,7 @@ import {
   groupStandingsByClass,
   sliceRelevantDrivers,
 } from './createStandings';
-import type { Session, Telemetry, SessionInfo } from '@irdashies/types';
+import type { Session, Telemetry, SessionInfo, Driver } from '@irdashies/types';
 
 describe('createStandings', () => {
   const mockSessionData: Session = {
@@ -234,6 +234,109 @@ describe('createStandings', () => {
     expect(standings[2].driver.name).toBe('Driver B');
     expect(standings[2].position).toBe(3);
     expect(standings[2].isPlayer).toBe(true);
+  });
+
+  it('should show drivers with laps first, then drivers without laps sorted by car number', () => {
+    const makeDriver = (carIdx: number, carNumber: string) => ({
+      CarIdx: carIdx,
+      UserName: `Driver ${carNumber}`,
+      CarNumber: carNumber,
+      CarClassID: 1,
+      CarClassShortName: 'Class 1',
+      CarClassRelSpeed: 1.0,
+      IRating: 1500,
+      LicString: 'B 2.00',
+      CarIsPaceCar: 0,
+      IsSpectator: 0,
+    });
+
+    // Cars 5 and 8 have done a lap (FastestTime > 0), rest haven't
+    const standings = createDriverStandings(
+      {
+        playerIdx: 0,
+        drivers: [1, 2, 3, 4, 5, 6, 8].map((n) =>
+          makeDriver(n, String(n))
+        ) as unknown as Driver[],
+      },
+      {},
+      {
+        resultsPositions: [
+          // Car 8 is faster
+          {
+            CarIdx: 8,
+            Position: 1,
+            ClassPosition: 0,
+            FastestTime: 90,
+            LastTime: 90,
+            LapsComplete: 1,
+          },
+          {
+            CarIdx: 5,
+            Position: 2,
+            ClassPosition: 1,
+            FastestTime: 95,
+            LastTime: 95,
+            LapsComplete: 1,
+          },
+          // Cars 1-4, 6 haven't done a lap
+          {
+            CarIdx: 1,
+            Position: 3,
+            ClassPosition: 2,
+            FastestTime: -1,
+            LastTime: -1,
+            LapsComplete: 0,
+          },
+          {
+            CarIdx: 4,
+            Position: 4,
+            ClassPosition: 3,
+            FastestTime: -1,
+            LastTime: -1,
+            LapsComplete: 0,
+          },
+          {
+            CarIdx: 2,
+            Position: 5,
+            ClassPosition: 4,
+            FastestTime: -1,
+            LastTime: -1,
+            LapsComplete: 0,
+          },
+          {
+            CarIdx: 6,
+            Position: 6,
+            ClassPosition: 5,
+            FastestTime: -1,
+            LastTime: -1,
+            LapsComplete: 0,
+          },
+          {
+            CarIdx: 3,
+            Position: 7,
+            ClassPosition: 6,
+            FastestTime: -1,
+            LastTime: -1,
+            LapsComplete: 0,
+          },
+        ] as unknown as SessionInfo['ResultsPositions'],
+        resultsFastestLap: [{ CarIdx: 8, FastestLap: 1, FastestTime: 90 }],
+        sessionType: 'Practice',
+      },
+      [],
+      [],
+      []
+    );
+
+    // First come the cars with laps, ordered by position
+    expect(standings[0].driver.carNum).toBe('8');
+    expect(standings[1].driver.carNum).toBe('5');
+    // Then cars without laps, sorted by car number ascending
+    expect(standings[2].driver.carNum).toBe('1');
+    expect(standings[3].driver.carNum).toBe('2');
+    expect(standings[4].driver.carNum).toBe('3');
+    expect(standings[5].driver.carNum).toBe('4');
+    expect(standings[6].driver.carNum).toBe('6');
   });
 
   it('should exclude pace car and spectators from fallback standings', () => {

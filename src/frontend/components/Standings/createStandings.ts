@@ -205,7 +205,17 @@ export const createDriverStandings = (
   const fastestDriverIdx = currentSession.resultsFastestLap?.[0]?.CarIdx;
   const fastestDriver = results?.find((r) => r.CarIdx === fastestDriverIdx);
 
-  return results
+  const sortByCarNumber = (a: Driver, b: Driver) => {
+    const numA = parseInt(a.CarNumber, 10);
+    const numB = parseInt(b.CarNumber, 10);
+    if (isNaN(numA) && isNaN(numB))
+      return a.CarNumber.localeCompare(b.CarNumber);
+    if (isNaN(numA)) return 1;
+    if (isNaN(numB)) return -1;
+    return numA - numB;
+  };
+
+  const mapped = results
     .map((result) => {
       const driver = session.drivers?.find(
         (driver) => driver.CarIdx === result.CarIdx
@@ -287,6 +297,20 @@ export const createDriverStandings = (
       };
     })
     .filter((s) => !!s);
+
+  // In practice/warmup sessions, cars that haven't completed a lap yet have
+  // FastestTime <= 0. Keep them visible at the bottom, sorted by car number.
+  const withLap = mapped.filter((s) => s.fastestTime > 0);
+  const noLap = mapped
+    .filter((s) => s.fastestTime <= 0)
+    .sort((a, b) => {
+      const driverA = session.drivers?.find((d) => d.CarIdx === a.carIdx);
+      const driverB = session.drivers?.find((d) => d.CarIdx === b.carIdx);
+      if (!driverA || !driverB) return 0;
+      return sortByCarNumber(driverA, driverB);
+    });
+
+  return [...withLap, ...noLap];
 };
 
 /**
