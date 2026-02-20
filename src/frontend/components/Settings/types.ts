@@ -67,7 +67,12 @@ export interface StandingsWidgetSettings extends BaseWidgetSettings {
     headerBar: {
       enabled: boolean;
       sessionName: { enabled: boolean };
-      sessionTime: { enabled: boolean; mode: 'Remaining' | 'Elapsed' };
+      sessionTime: {
+        enabled: boolean;
+        mode: 'Remaining' | 'Elapsed';
+        totalFormat: 'hh:mm' | 'minimal';
+        labelStyle: 'none' | 'short' | 'minimal';
+      };
       sessionLaps: { enabled: boolean };
       incidentCount: { enabled: boolean };
       brakeBias: { enabled: boolean };
@@ -82,7 +87,12 @@ export interface StandingsWidgetSettings extends BaseWidgetSettings {
     footerBar: {
       enabled: boolean;
       sessionName: { enabled: boolean };
-      sessionTime: { enabled: boolean; mode: 'Remaining' | 'Elapsed' };
+      sessionTime: {
+        enabled: boolean;
+        mode: 'Remaining' | 'Elapsed';
+        totalFormat: 'hh:mm' | 'minimal';
+        labelStyle: 'none' | 'short' | 'minimal';
+      };
       sessionLaps: { enabled: boolean };
       incidentCount: { enabled: boolean };
       brakeBias: { enabled: boolean };
@@ -151,7 +161,12 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
     headerBar: {
       enabled: boolean;
       sessionName: { enabled: boolean };
-      sessionTime: { enabled: boolean; mode: 'Remaining' | 'Elapsed' };
+      sessionTime: {
+        enabled: boolean;
+        mode: 'Remaining' | 'Elapsed';
+        totalFormat: 'hh:mm' | 'minimal';
+        labelStyle: 'none' | 'short' | 'minimal';
+      };
       sessionLaps: { enabled: boolean };
       incidentCount: { enabled: boolean };
       brakeBias: { enabled: boolean };
@@ -166,7 +181,12 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
     footerBar: {
       enabled: boolean;
       sessionName: { enabled: boolean };
-      sessionTime: { enabled: boolean; mode: 'Remaining' | 'Elapsed' };
+      sessionTime: {
+        enabled: boolean;
+        mode: 'Remaining' | 'Elapsed';
+        totalFormat: 'hh:mm' | 'minimal';
+        labelStyle: 'none' | 'short' | 'minimal';
+      };
       sessionLaps: { enabled: boolean };
       incidentCount: { enabled: boolean };
       brakeBias: { enabled: boolean };
