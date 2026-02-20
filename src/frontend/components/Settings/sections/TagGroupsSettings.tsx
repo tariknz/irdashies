@@ -12,6 +12,7 @@ interface EntryRow {
   uiKey: string;
   id: string;
   name: string;
+  label: string;
   groupId: string;
 }
 
@@ -24,6 +25,7 @@ const loadEntryRows = (existing: DriverTagSettings | undefined): EntryRow[] => {
       uiKey: `entry-${i}`,
       id: e.id ?? '',
       name: e.name ?? '',
+      label: e.label ?? '',
       groupId: e.groupId,
     }));
   }
@@ -35,6 +37,7 @@ const loadEntryRows = (existing: DriverTagSettings | undefined): EntryRow[] => {
       uiKey: `entry-migrated-${k}`,
       id: /^\d+$/.test(k) ? k : '',
       name: /^\d+$/.test(k) ? '' : k,
+      label: '',
       groupId: v,
     }));
 };
@@ -105,6 +108,7 @@ export const TagGroupsSettings = () => {
       .map((r) => ({
         id: r.id.trim() || undefined,
         name: r.name.trim() || undefined,
+        label: r.label.trim() || undefined,
         groupId: r.groupId,
       }))
       .filter((e) => !!(e.id || e.name)) as DriverTagEntry[];
@@ -166,14 +170,14 @@ export const TagGroupsSettings = () => {
       '';
     setEntryRows((prev) => [
       ...prev,
-      { uiKey, id: '', name: '', groupId: defaultGroup },
+      { uiKey, id: '', name: '', label: '', groupId: defaultGroup },
     ]);
     setLastAddedKey(uiKey);
   };
 
   const updateEntryDraft = (
     uiKey: string,
-    field: 'id' | 'name',
+    field: 'id' | 'name' | 'label',
     value: string
   ) => {
     setEntryRows((prev) =>
@@ -721,15 +725,20 @@ export const TagGroupsSettings = () => {
             </div>
 
             {filteredEntries.length > 0 && (
-              <div className="flex items-center gap-2 text-xs text-slate-400 pb-1">
-                <span className="w-32">iRacing ID</span>
-                <span className="w-48">iRacing Name</span>
+              <div className="grid grid-cols-[5rem_9rem_9rem_1fr_auto] gap-2 items-center text-xs text-slate-400 pb-1">
+                <span>iRacing ID</span>
+                <span>iRacing Name</span>
+                <span>Driver Label</span>
                 <span>Group</span>
+                <span />
               </div>
             )}
 
             {filteredEntries.map((row) => (
-              <div key={row.uiKey} className="flex items-center gap-2">
+              <div
+                key={row.uiKey}
+                className="grid grid-cols-[5rem_9rem_9rem_1fr_auto] gap-2 items-center"
+              >
                 <input
                   ref={(el) => {
                     inputRefs.current[`${row.uiKey}-id`] = el;
@@ -739,9 +748,12 @@ export const TagGroupsSettings = () => {
                     updateEntryDraft(row.uiKey, 'id', e.target.value)
                   }
                   onBlur={(e) => {
-                    // Don't auto-remove if focus is moving to the name input of the same row
+                    // Don't auto-remove if focus is moving to another input in the same row
                     if (
-                      e.relatedTarget === inputRefs.current[`${row.uiKey}-name`]
+                      e.relatedTarget ===
+                        inputRefs.current[`${row.uiKey}-name`] ||
+                      e.relatedTarget ===
+                        inputRefs.current[`${row.uiKey}-label`]
                     )
                       return;
                     commitEntry(row.uiKey);
@@ -751,7 +763,7 @@ export const TagGroupsSettings = () => {
                       (e.currentTarget as HTMLInputElement).blur();
                   }}
                   placeholder="e.g. 123456"
-                  className="px-2 py-1 bg-slate-700 rounded w-32"
+                  className="px-2 py-1 bg-slate-700 rounded w-full"
                 />
                 <input
                   ref={(el) => {
@@ -767,12 +779,28 @@ export const TagGroupsSettings = () => {
                       (e.currentTarget as HTMLInputElement).blur();
                   }}
                   placeholder="Display name"
-                  className="px-2 py-1 bg-slate-700 rounded w-48"
+                  className="px-2 py-1 bg-slate-700 rounded w-full"
+                />
+                <input
+                  ref={(el) => {
+                    inputRefs.current[`${row.uiKey}-label`] = el;
+                  }}
+                  value={row.label}
+                  onChange={(e) =>
+                    updateEntryDraft(row.uiKey, 'label', e.target.value)
+                  }
+                  onBlur={() => commitEntry(row.uiKey)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter')
+                      (e.currentTarget as HTMLInputElement).blur();
+                  }}
+                  placeholder="Badge label"
+                  className="px-2 py-1 bg-slate-700 rounded w-full"
                 />
                 <select
                   value={row.groupId}
                   onChange={(e) => updateEntryGroup(row.uiKey, e.target.value)}
-                  className="px-2 py-1 bg-slate-700 rounded"
+                  className="px-2 py-1 bg-slate-700 rounded w-full"
                 >
                   {PRESET_DRIVER_TAGS.map((g) => (
                     <option key={g.id} value={g.id}>
@@ -799,6 +827,66 @@ export const TagGroupsSettings = () => {
               as a fallback if no ID is set or no match is found. If a driver
               changes their display name, update the Name field accordingly.
             </p>
+          </div>
+        </div>
+
+        <div className="pt-4">
+          <h3 className="text-lg">Name Display</h3>
+          <p className="text-sm text-slate-400">
+            When a Driver Label is provided, choose what is displayed for the
+            Driver Name in the Standings and Relatives.
+          </p>
+
+          <div className="space-y-3 mt-3">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-slate-300">Display mode</span>
+              <select
+                value={settings.display?.nameDisplay ?? 'both'}
+                onChange={(e) =>
+                  updateDashboard({
+                    ...settings,
+                    display: {
+                      ...(settings.display ?? {}),
+                      nameDisplay: e.target.value as 'both' | 'label' | 'name',
+                    },
+                  })
+                }
+                className="px-2 py-1 bg-slate-700 rounded text-sm"
+              >
+                <option value="both">Both (Alternate)</option>
+                <option value="label">Label</option>
+                <option value="name">Name</option>
+              </select>
+            </div>
+
+            {(settings.display?.nameDisplay ?? 'both') === 'both' && (
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-slate-300">
+                  Alternate Frequency
+                </span>
+                <div className="flex items-center text-end">
+                  <input
+                    type="range"
+                    min="2"
+                    max="60"
+                    value={settings.display?.alternateFrequency ?? 5}
+                    onChange={(e) =>
+                      updateDashboard({
+                        ...settings,
+                        display: {
+                          ...(settings.display ?? {}),
+                          alternateFrequency: parseInt(e.target.value),
+                        },
+                      })
+                    }
+                    className="h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer"
+                  />
+                  <span className="text-xs text-slate-400 w-8">
+                    {settings.display?.alternateFrequency ?? 5}s
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

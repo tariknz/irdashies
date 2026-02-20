@@ -127,6 +127,8 @@ export interface DriverTagEntry {
   id?: string;
   /** iRacing display name — fallback lookup key */
   name?: string;
+  /** Custom display label shown on the badge/tag */
+  label?: string;
   /** The tag group id this driver belongs to */
   groupId: string;
 }
@@ -147,6 +149,10 @@ export interface DriverTagSettings {
     displayStyle?: 'badge' | 'tag';
     /** Icon weight for badge display: 'regular' (outline) or 'fill' */
     iconWeight?: 'regular' | 'fill';
+    /** What to show in the driver name cell when a label is set: 'both' alternates, 'label' shows only the label, 'name' shows only the name */
+    nameDisplay?: 'both' | 'label' | 'name';
+    /** Seconds between name/label alternation when nameDisplay is 'both' (2–60, default 5) */
+    alternateFrequency?: number;
   };
   /** Optional per-preset overrides (preset id -> partial TagGroup) */
   presetOverrides?: Record<string, Partial<TagGroup>>;
