@@ -7,6 +7,8 @@ export interface ResolvedDriverTag {
   name?: string;
   icon?: ReactNode | string | unknown;
   color?: number;
+  /** Per-driver display label from the tag entry */
+  label?: string;
 }
 
 export const useDriverTag = (
@@ -54,16 +56,25 @@ export const useDriverTag = (
 
     // Check entries first: ID priority, then name
     let groupId: string | undefined;
+    let entryLabel: string | undefined;
     const entries = tagSettings.entries ?? [];
     if (idKey) {
-      groupId = entries.find((e) => e.id === idKey)?.groupId;
+      const match = entries.find((e) => e.id === idKey);
+      if (match) {
+        groupId = match.groupId;
+        entryLabel = match.label;
+      }
     }
     if (!groupId && key) {
-      groupId = entries.find(
+      const match = entries.find(
         (e) => e.name && e.name.toLowerCase() === key.toLowerCase()
-      )?.groupId;
+      );
+      if (match) {
+        groupId = match.groupId;
+        entryLabel = match.label;
+      }
     }
-    // Fall back to legacy mapping
+    // Fall back to legacy mapping (no label support)
     if (!groupId) {
       groupId =
         (idKey ? lcMapping.get(idKey) : undefined) ??
@@ -78,6 +89,7 @@ export const useDriverTag = (
         name: custom.name,
         icon: custom.icon,
         color: custom.color,
+        label: entryLabel,
       };
 
     const presetOverride = presetOverrides[groupId];
@@ -88,8 +100,9 @@ export const useDriverTag = (
         name: presetOverride.name ?? preset?.name,
         icon: presetOverride.icon ?? preset?.icon,
         color: presetOverride.color ?? preset?.color,
+        label: entryLabel,
       };
-    if (preset) return preset;
+    if (preset) return { ...preset, label: entryLabel };
     return undefined;
   }, [
     rawKey,

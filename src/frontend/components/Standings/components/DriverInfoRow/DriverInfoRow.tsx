@@ -265,9 +265,9 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
           <td
             key="driverTag"
             data-column="driverTag"
-            className="w-auto px-0 whitespace-nowrap"
+            className="w-auto px-0 py-0.5 whitespace-nowrap align-middle"
           >
-            <div className="flex h-full items-center justify-center">
+            <div className="flex items-center justify-center">
               {hidden ? null : (
                 <DriverTagBadge
                   tag={resolvedTag}
@@ -302,6 +302,9 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
             showStatusBadges={config?.driverName?.showStatusBadges ?? true}
             fullName={name}
             nameFormat={config?.driverName?.nameFormat}
+            label={resolvedTag?.label}
+            nameDisplay={tagSettings?.display?.nameDisplay}
+            alternateFrequency={tagSettings?.display?.alternateFrequency}
           />
         ),
       },
