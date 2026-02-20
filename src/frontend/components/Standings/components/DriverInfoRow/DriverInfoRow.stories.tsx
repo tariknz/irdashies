@@ -450,6 +450,10 @@ const AllBadgeFormats = () => {
     name: string;
     format: StandingsWidgetSettings['config']['badge']['badgeFormat'];
   }[] = [
+    { name: 'License Color Full Rating Combined', format: 'license-color-fullrating-combo' },
+    { name: 'Full Rating Color (No License)', format: 'fullrating-color-no-license' },
+    { name: 'License Color Full Rating B&W', format: 'license-color-fullrating-bw' },
+    { name: 'Rating Only Color Rating B&W', format: 'rating-only-color-rating-bw' },
     { name: 'License Color Rating B&W', format: 'license-color-rating-bw' },
     { name: 'License Color Rating B&W (No License)', format: 'license-color-rating-bw-no-license' },
     { name: 'Rating Color (No License)', format: 'rating-color-no-license' },
@@ -457,6 +461,7 @@ const AllBadgeFormats = () => {
     { name: 'Rating Only B&W Rating B&W', format: 'rating-only-bw-rating-bw' },
     { name: 'License B&W Rating B&W (No License)', format: 'license-bw-rating-bw-no-license' },
     { name: 'Rating B&W (No License)', format: 'rating-bw-no-license' },
+    { name: 'Full Rating B&W (No License)', format: 'fullrating-bw-no-license' },
   ];
 
   return (
