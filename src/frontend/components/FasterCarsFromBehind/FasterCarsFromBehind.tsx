@@ -67,12 +67,12 @@ export const FasterCarsFromBehindDisplay = ({
 
   return (
     <div
-      className={`w-full rounded-sm font-bold ${background} ${animate}`}
+      className={`w-full rounded-sm ${background} ${animate}`}
     >
       <div className={`flex p-1 ${(settings?.showName || settings?.showBadge) && settings?.showDistance ? 'justify-between' : settings?.showDistance ? 'justify-end' : 'justify-start'}`}>
         <div className="flex gap-1">
           {settings?.showName && (
-            <div className="rounded-sm bg-gray-700 p-1">{name}</div>
+            <div className="rounded-sm text-lg bg-gray-700 p-1 px-2">{name}</div>
           )}
           {settings?.showBadge && (
             <div className="flex align-center">
@@ -85,7 +85,7 @@ export const FasterCarsFromBehindDisplay = ({
           )}
         </div>
         {settings?.showDistance && (
-          <div className="rounded-sm bg-gray-700 p-1">{distance?.toFixed(1)}</div>
+          <div className="rounded-sm text-lg bg-gray-700 p-1 px-2">{distance?.toFixed(1)}</div>
         )}
       </div>
 
