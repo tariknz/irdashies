@@ -254,6 +254,7 @@ export interface TrackMapWidgetSettings extends BaseWidgetSettings {
     showCarNumbers: boolean;
     displayMode: 'carNumber' | 'sessionPosition';
     invertTrackColors: boolean;
+    highContrastTurns: boolean;
     driverCircleSize: number;
     playerCircleSize: number;
     trackmapFontSize: number;

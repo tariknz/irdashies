@@ -493,6 +493,7 @@ export const defaultDashboard: DashboardLayout = {
         enableTurnNames: false,
         showCarNumbers: true,
         invertTrackColors: false,
+        highContrastTurns: false,
         driverCircleSize: 40,
         playerCircleSize: 40,
         trackmapFontSize: 100,

@@ -11,6 +11,7 @@ export default {
     enableTurnNames: false,
     showCarNumbers: true,
     invertTrackColors: false,
+    highContrastTurns: false,
     driverCircleSize: 40,
     playerCircleSize: 40,
     trackmapFontSize: 100,
@@ -30,6 +31,9 @@ export default {
       control: { type: 'boolean' },
     },
     invertTrackColors: {
+      control: { type: 'boolean' },
+    },
+    highContrastTurns: {
       control: { type: 'boolean' },
     },
     driverCircleSize: {
@@ -356,6 +360,7 @@ export const Primary: Story = {
     enableTurnNames: true,
     showCarNumbers: true,
     invertTrackColors: false,
+    highContrastTurns: false,
     driverCircleSize: 40,
     playerCircleSize: 40,
     trackmapFontSize: 100,
@@ -372,6 +377,7 @@ export const InvertedTrackColors: Story = {
     enableTurnNames: true,
     showCarNumbers: true,
     invertTrackColors: true,
+    highContrastTurns: true,
     driverCircleSize: 40,
     playerCircleSize: 40,
     trackmapFontSize: 100,
@@ -388,6 +394,7 @@ export const SingleClass: Story = {
     enableTurnNames: true,
     showCarNumbers: true,
     invertTrackColors: false,
+    highContrastTurns: false,
     driverCircleSize: 40,
     playerCircleSize: 40,
     trackmapFontSize: 100,
@@ -438,6 +445,7 @@ export const SingleDriver: Story = {
         enableTurnNames={args.enableTurnNames}
         showCarNumbers={args.showCarNumbers ?? true}
         invertTrackColors={args.invertTrackColors ?? false}
+        highContrastTurns={args.highContrastTurns ?? false}
         driverCircleSize={args.driverCircleSize ?? 40}
         playerCircleSize={args.playerCircleSize ?? 40}
         trackmapFontSize={args.trackmapFontSize ?? 100}
@@ -479,6 +487,7 @@ export const CirclingAround: Story = {
         enableTurnNames={args.enableTurnNames}
         showCarNumbers={args.showCarNumbers ?? true}
         invertTrackColors={args.invertTrackColors ?? false}
+        highContrastTurns={args.highContrastTurns ?? false}
         driverCircleSize={args.driverCircleSize ?? 40}
         playerCircleSize={args.playerCircleSize ?? 40}
         trackmapFontSize={args.trackmapFontSize ?? 100}
@@ -531,6 +540,7 @@ export const CirclingAroundSingleDriver: Story = {
         enableTurnNames={args.enableTurnNames}
         showCarNumbers={args.showCarNumbers ?? true}
         invertTrackColors={args.invertTrackColors ?? false}
+        highContrastTurns={args.highContrastTurns ?? false}
         driverCircleSize={args.driverCircleSize ?? 40}
         playerCircleSize={args.playerCircleSize ?? 40}
         trackmapFontSize={args.trackmapFontSize ?? 100}
@@ -587,6 +597,7 @@ export const AllTracksGrid: Story = {
                   enableTurnNames={args.enableTurnNames}
                   showCarNumbers={args.showCarNumbers ?? true}
                   invertTrackColors={args.invertTrackColors ?? false}
+                  highContrastTurns={args.highContrastTurns ?? false}
                   driverCircleSize={args.driverCircleSize ?? 40}
                   playerCircleSize={args.playerCircleSize ?? 40}
                   trackmapFontSize={args.trackmapFontSize ?? 100}
@@ -638,6 +649,7 @@ export const BrokenTracksGrid: Story = {
                   enableTurnNames={args.enableTurnNames}
                   showCarNumbers={args.showCarNumbers ?? true}
                   invertTrackColors={args.invertTrackColors ?? false}
+                  highContrastTurns={args.highContrastTurns ?? false}
                   driverCircleSize={args.driverCircleSize ?? 40}
                   playerCircleSize={args.playerCircleSize ?? 40}
                   trackmapFontSize={args.trackmapFontSize ?? 100}
