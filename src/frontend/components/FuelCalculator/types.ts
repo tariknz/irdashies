@@ -206,3 +206,43 @@ export type FuelWidgetType =
   | 'graph'
   | 'confidence'
   | 'economyPredict';
+
+/**
+ * Shared props interface for all Fuel Calculator sub-widgets
+ */
+export interface FuelCalculatorWidgetProps {
+  /** The primary (potentially throttled) fuel calculation data */
+  fuelData: FuelCalculation | null;
+  /** Live calculation data for items that need real-time feedback (e.g. gauge) */
+  liveFuelData?: FuelCalculation | null;
+  /** Direct live fuel level from telemetry */
+  liveFuelLevel?: number;
+  /** Formatted display data, often snapped to specific points (e.g. pit entry) */
+  displayData: FuelCalculation | null | undefined;
+  /** Current fuel units */
+  fuelUnits?: 'L' | 'gal';
+  /** Calculator settings */
+  settings?: FuelCalculatorSettings;
+  /** Unique ID for the widget instance */
+  widgetId?: string;
+  /** Expected or predictive fuel usage for comparison */
+  predictiveUsage?: number;
+  /** Custom style overrides */
+  customStyles?: {
+    fontSize?: number;
+    labelFontSize?: number;
+    valueFontSize?: number;
+    barFontSize?: number;
+    height?: number;
+  };
+  /** Whether the widget should render in compact mode */
+  isCompact?: boolean;
+  /** Current session number */
+  sessionNum?: number;
+  /** Current session flags (bitmask) */
+  sessionFlags?: number;
+  /** Current session type name */
+  sessionType?: string;
+  /** Estimated total laps in the session */
+  totalRaceLaps?: number;
+}

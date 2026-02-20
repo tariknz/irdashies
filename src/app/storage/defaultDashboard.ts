@@ -616,7 +616,7 @@ export const defaultDashboard: DashboardLayout = {
         height: 420,
       },
       config: {
-        showOnlyWhenOnTrack: true,
+        showOnlyWhenOnTrack: false,
         fuelUnits: 'L',
         layout: 'vertical',
         showConsumption: true,

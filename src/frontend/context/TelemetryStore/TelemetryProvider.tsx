@@ -1,6 +1,7 @@
 import type { IrSdkBridge } from '@irdashies/types';
 import { useTelemetryStore } from './TelemetryStore';
 import { useEffect } from 'react';
+import { HeadlessTelemetryOrchestrator } from './HeadlessTelemetryOrchestrator';
 
 export interface TelemetryProviderProps {
   bridge: IrSdkBridge | Promise<IrSdkBridge>;
@@ -42,5 +43,5 @@ export const TelemetryProvider = ({ bridge }: TelemetryProviderProps) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bridge]);
 
-  return <></>;
+  return <HeadlessTelemetryOrchestrator />;
 };
