@@ -8,11 +8,7 @@ interface DeltaCellProps {
 }
 
 export const DeltaCell = memo(
-  ({
-    delta,
-    showForUndefined = '-',
-    decimalPlaces = 2,
-  }: DeltaCellProps) => {
+  ({ delta, showForUndefined = '-', decimalPlaces = 2 }: DeltaCellProps) => {
     // Helper function to check if delta is a Gap object
     const isGapObject = (val: number | Gap | undefined): val is Gap => {
       return typeof val === 'object' && val !== undefined && 'laps' in val;
@@ -40,7 +36,7 @@ export const DeltaCell = memo(
     return (
       <td
         data-column="delta"
-        className="w-auto px-2 whitespace-nowrap text-center"
+        className="w-auto px-2 whitespace-nowrap text-center tabular-nums"
       >
         {displayValue}
       </td>
