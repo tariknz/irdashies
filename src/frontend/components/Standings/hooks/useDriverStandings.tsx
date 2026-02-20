@@ -23,12 +23,15 @@ import {
   augmentStandingsWithIRating,
   augmentStandingsWithGap,
   augmentStandingsWithInterval,
+  augmentStandingsWithPositionChange,
 } from '../createStandings';
 import type { StandingsWidgetSettings } from '../../Settings/types';
 import { useDriverLivePositions } from './useDriverLivePositions';
 import { useStandingsSettings } from './useStandingsSettings';
 
-export const useDriverStandings = (settings?: StandingsWidgetSettings['config']) => {
+export const useDriverStandings = (
+  settings?: StandingsWidgetSettings['config']
+) => {
   const {
     driverStandings: {
       buffer,
@@ -38,7 +41,10 @@ export const useDriverStandings = (settings?: StandingsWidgetSettings['config'])
     } = {},
     gap: { enabled: gapEnabled } = { enabled: false },
     interval: { enabled: intervalEnabled } = { enabled: false },
-    lapTimeDeltas: { enabled: lapTimeDeltasEnabled, numLaps: numLapDeltas } = { enabled: false, numLaps: 3 },
+    lapTimeDeltas: { enabled: lapTimeDeltasEnabled, numLaps: numLapDeltas } = {
+      enabled: false,
+      numLaps: 3,
+    },
   } = settings ?? {};
 
   const sessionDrivers = useSessionDrivers();
@@ -63,9 +69,8 @@ export const useDriverStandings = (settings?: StandingsWidgetSettings['config'])
   const lastLap = useCarLap();
   const prevCarTrackSurface = usePrevCarTrackSurface();
   const driverClass = useMemo(() => {
-    return sessionDrivers?.find(
-      (driver) => driver.CarIdx === driverCarIdx
-    )?.CarClassID;
+    return sessionDrivers?.find((driver) => driver.CarIdx === driverCarIdx)
+      ?.CarClassID;
   }, [sessionDrivers, driverCarIdx]);
   const lapDeltasVsPlayer = useLapDeltasVsPlayer();
 
@@ -87,7 +92,7 @@ export const useDriverStandings = (settings?: StandingsWidgetSettings['config'])
         carIdxTrackSurfaceValue: carIdxTrackSurface?.value,
         radioTransmitCarIdx: radioTransmitCarIdx?.value,
         carIdxTireCompoundValue: carIdxTireCompound?.value,
-        carIdxSessionFlags: carIdxSessionFlags?.value
+        carIdxSessionFlags: carIdxSessionFlags?.value,
       },
       {
         resultsPositions: positions,
@@ -98,7 +103,7 @@ export const useDriverStandings = (settings?: StandingsWidgetSettings['config'])
       lastLap,
       prevCarTrackSurface,
       lapTimeDeltasEnabled ? numLapDeltas : undefined,
-      lapDeltasForCalc,
+      lapDeltasForCalc
     );
 
     if (useLivePositionStandings) {
@@ -114,20 +119,29 @@ export const useDriverStandings = (settings?: StandingsWidgetSettings['config'])
     if (useLivePositionStandings) {
       groupedByClass = groupedByClass.map(([classId, classStandings]) => [
         classId,
-        classStandings.slice().sort((a, b) => (a.classPosition ?? 999) - (b.classPosition ?? 999)),
+        classStandings
+          .slice()
+          .sort((a, b) => (a.classPosition ?? 999) - (b.classPosition ?? 999)),
       ]) as [string, typeof initialStandings][];
     }
+
+    // Calculate position changes vs qualifying grid for race sessions
+    const positionChangeAugmentedGroupedByClass =
+      sessionType === 'Race'
+        ? augmentStandingsWithPositionChange(groupedByClass, qualifyingResults)
+        : groupedByClass;
 
     // Calculate iRating changes for race sessions
     const iratingAugmentedGroupedByClass =
       sessionType === 'Race' && isOfficial
-        ? augmentStandingsWithIRating(groupedByClass)
-        : groupedByClass;
+        ? augmentStandingsWithIRating(positionChangeAugmentedGroupedByClass)
+        : positionChangeAugmentedGroupedByClass;
 
     // Calculate gap to class leader when enabled OR when interval is enabled (interval needs gap data)
-    const gapAugmentedGroupedByClass = gapEnabled || intervalEnabled
-      ? augmentStandingsWithGap(iratingAugmentedGroupedByClass)
-      : iratingAugmentedGroupedByClass;
+    const gapAugmentedGroupedByClass =
+      gapEnabled || intervalEnabled
+        ? augmentStandingsWithGap(iratingAugmentedGroupedByClass)
+        : iratingAugmentedGroupedByClass;
 
     // Calculate interval to player when enabled
     const intervalAugmentedGroupedByClass = intervalEnabled

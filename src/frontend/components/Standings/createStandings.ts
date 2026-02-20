@@ -59,6 +59,7 @@ export interface Standings {
   penalty: boolean;
   slowdown: boolean;
   relativePct: number;
+  positionChange?: number;
 }
 
 const calculateDelta = (
@@ -618,5 +619,46 @@ export const sliceRelevantDrivers = <T extends { isPlayer?: boolean }>(
     );
 
     return [classIdx, sortedDrivers];
+  });
+};
+
+/**
+ * Augments standings with the number of positions gained or lost compared to
+ * the driver's qualifying grid position. Positive = gained positions,
+ * negative = lost positions. Only meaningful for race sessions.
+ */
+export const augmentStandingsWithPositionChange = (
+  groupedStandings: [string, Standings[]][],
+  qualifyingResults: SessionResults[] | undefined
+): [string, Standings[]][] => {
+  if (!qualifyingResults || qualifyingResults.length === 0) {
+    return groupedStandings;
+  }
+
+  // Build a map of carIdx -> qualifying class position (1-based)
+  const qualifyingClassPositionByCarIdx = new Map<number, number>();
+  qualifyingResults.forEach((result) => {
+    qualifyingClassPositionByCarIdx.set(
+      result.CarIdx,
+      result.ClassPosition + 1
+    );
+  });
+
+  return groupedStandings.map(([classId, classStandings]) => {
+    const augmented = classStandings.map((standing) => {
+      const qualifyingClassPos = qualifyingClassPositionByCarIdx.get(
+        standing.carIdx
+      );
+      if (
+        qualifyingClassPos === undefined ||
+        standing.classPosition === undefined
+      ) {
+        return standing;
+      }
+      // Positive = moved up (e.g. started P5, now P3 → +2)
+      const positionChange = qualifyingClassPos - standing.classPosition;
+      return { ...standing, positionChange };
+    });
+    return [classId, augmented];
   });
 };
