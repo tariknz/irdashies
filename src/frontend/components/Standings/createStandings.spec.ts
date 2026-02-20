@@ -250,7 +250,8 @@ describe('createStandings', () => {
       IsSpectator: 0,
     });
 
-    // Cars 5 and 8 have done a lap (FastestTime > 0), rest haven't
+    // Cars 5 and 8 have done a lap and appear in resultsPositions.
+    // Cars 1-4 and 6 haven't done a lap so they are absent from resultsPositions.
     const standings = createDriverStandings(
       {
         playerIdx: 0,
@@ -277,47 +278,6 @@ describe('createStandings', () => {
             FastestTime: 95,
             LastTime: 95,
             LapsComplete: 1,
-          },
-          // Cars 1-4, 6 haven't done a lap
-          {
-            CarIdx: 1,
-            Position: 3,
-            ClassPosition: 2,
-            FastestTime: -1,
-            LastTime: -1,
-            LapsComplete: 0,
-          },
-          {
-            CarIdx: 4,
-            Position: 4,
-            ClassPosition: 3,
-            FastestTime: -1,
-            LastTime: -1,
-            LapsComplete: 0,
-          },
-          {
-            CarIdx: 2,
-            Position: 5,
-            ClassPosition: 4,
-            FastestTime: -1,
-            LastTime: -1,
-            LapsComplete: 0,
-          },
-          {
-            CarIdx: 6,
-            Position: 6,
-            ClassPosition: 5,
-            FastestTime: -1,
-            LastTime: -1,
-            LapsComplete: 0,
-          },
-          {
-            CarIdx: 3,
-            Position: 7,
-            ClassPosition: 6,
-            FastestTime: -1,
-            LastTime: -1,
-            LapsComplete: 0,
           },
         ] as unknown as SessionInfo['ResultsPositions'],
         resultsFastestLap: [{ CarIdx: 8, FastestLap: 1, FastestTime: 90 }],

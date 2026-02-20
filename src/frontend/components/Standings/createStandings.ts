@@ -298,19 +298,62 @@ export const createDriverStandings = (
     })
     .filter((s) => !!s);
 
-  // In practice/warmup sessions, cars that haven't completed a lap yet have
-  // FastestTime <= 0. Keep them visible at the bottom, sorted by car number.
-  const withLap = mapped.filter((s) => s.fastestTime > 0);
-  const noLap = mapped
-    .filter((s) => s.fastestTime <= 0)
-    .sort((a, b) => {
-      const driverA = session.drivers?.find((d) => d.CarIdx === a.carIdx);
-      const driverB = session.drivers?.find((d) => d.CarIdx === b.carIdx);
-      if (!driverA || !driverB) return 0;
-      return sortByCarNumber(driverA, driverB);
-    });
+  // In practice/warmup sessions, drivers only appear in resultsPositions once
+  // they complete a lap. Drivers yet to set a time won't be in results at all.
+  // Keep them visible at the bottom, sorted by car number.
+  const mappedCarIdxs = new Set(mapped.map((s) => s.carIdx));
+  const notYetInResults = (session.drivers ?? [])
+    .filter(
+      (driver) =>
+        !driver.CarIsPaceCar &&
+        !driver.IsSpectator &&
+        !mappedCarIdxs.has(driver.CarIdx)
+    )
+    .sort(sortByCarNumber)
+    .map((driver, index) => ({
+      carIdx: driver.CarIdx,
+      position: mapped.length + index + 1,
+      classPosition: mapped.length + index + 1,
+      isPlayer: driver.CarIdx === session.playerIdx,
+      driver: {
+        name: driver.UserName,
+        carNum: driver.CarNumber,
+        license: driver.LicString,
+        rating: driver.IRating,
+        flairId: driver.FlairID,
+        teamName: driver.TeamName,
+      },
+      fastestTime: -1,
+      hasFastestTime: false,
+      lastTime: -1,
+      lastTimeState: undefined as LastTimeState,
+      onPitRoad: telemetry?.carIdxOnPitRoadValue?.[driver.CarIdx] ?? false,
+      onTrack: (telemetry?.carIdxTrackSurfaceValue?.[driver.CarIdx] ?? -1) > -1,
+      tireCompound: telemetry?.carIdxTireCompoundValue?.[driver.CarIdx] ?? 0,
+      carClass: {
+        id: driver.CarClassID,
+        color: driver.CarClassColor,
+        name: driver.CarClassShortName,
+        relativeSpeed: driver.CarClassRelSpeed,
+        estLapTime: driver.CarClassEstLapTime,
+      },
+      radioActive: telemetry.radioTransmitCarIdx?.includes(driver.CarIdx),
+      carId: driver.CarID,
+      lapTimeDeltas: undefined,
+      lastPitLap: lastPitLap[driver.CarIdx] ?? undefined,
+      lastLap: lastLap[driver.CarIdx] ?? undefined,
+      prevCarTrackSurface: prevCarTrackSurface[driver.CarIdx] ?? undefined,
+      carTrackSurface:
+        telemetry?.carIdxTrackSurfaceValue?.[driver.CarIdx] ?? undefined,
+      currentSessionType: currentSession.sessionType,
+      dnf: false,
+      repair: false,
+      penalty: false,
+      slowdown: false,
+      relativePct: 0,
+    }));
 
-  return [...withLap, ...noLap];
+  return [...mapped, ...notYetInResults];
 };
 
 /**
