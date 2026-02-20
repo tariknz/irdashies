@@ -13,13 +13,14 @@ import {
   drawDrivers,
 } from './trackDrawingUtils';
 import { useDriverOffTrack } from './hooks/useDriverOffTrack';
+import { useDriverLivePositions } from '../Standings/hooks/useDriverLivePositions';
 
 export interface TrackProps {
   trackId: number;
   drivers: TrackDriver[];
   enableTurnNames?: boolean;
   showCarNumbers?: boolean;
-  displayMode?: 'carNumber' | 'sessionPosition';
+  displayMode?: 'carNumber' | 'sessionPosition' | 'livePosition';
   invertTrackColors?: boolean;
   driverCircleSize?: number;
   playerCircleSize?: number;
@@ -87,6 +88,7 @@ export const TrackCanvas = ({
   const shouldShow = shouldShowTrack(trackId, trackDrawing);
 
   const driversOffTrack = useDriverOffTrack();
+  const driverLivePositions = useDriverLivePositions();
 
   // Memoize Path2D objects to avoid re-creating them on every render
   // this is used to draw the track and start/finish line
@@ -376,7 +378,8 @@ export const TrackCanvas = ({
       playerCircleSize,
       trackmapFontSize,
       showCarNumbers,
-      displayMode
+      displayMode,
+      driverLivePositions
     );
     ctx.restore();
   }, [
@@ -393,6 +396,7 @@ export const TrackCanvas = ({
     trackOutlineWidth,
     startFinishLine,
     driversOffTrack,
+    driverLivePositions,
     driverCircleSize,
     playerCircleSize,
     trackmapFontSize,

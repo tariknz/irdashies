@@ -5,6 +5,7 @@ import { render } from '@testing-library/react';
 
 vi.mock('./hooks/useTrackId');
 vi.mock('./hooks/useDriverProgress');
+vi.mock('../Standings/hooks/useDriverLivePositions');
 vi.mock('./hooks/useFlatTrackMapSettings');
 vi.mock('./hooks/useHighlightColor');
 vi.mock('@irdashies/context', () => ({
@@ -20,6 +21,7 @@ vi.mock('./tracks/tracks.json', () => ({
 
 import { useTrackId } from './hooks/useTrackId';
 import { useDriverProgress } from './hooks/useDriverProgress';
+import { useDriverLivePositions } from '../Standings/hooks/useDriverLivePositions';
 import { useFlatTrackMapSettings } from './hooks/useFlatTrackMapSettings';
 import { useHighlightColor } from './hooks/useHighlightColor';
 import { useSessionVisibility, useTelemetryValue } from '@irdashies/context';
@@ -30,6 +32,7 @@ describe('FlatTrackMap', () => {
     vi.mocked(useTrackId).mockReturnValue(1);
     vi.mocked(useDriverProgress).mockReturnValue([]);
     vi.mocked(useHighlightColor).mockReturnValue(undefined);
+    vi.mocked(useDriverLivePositions).mockReturnValue([0, 0]);
     vi.mocked(useSessionVisibility).mockReturnValue(true);
   });
 
@@ -44,7 +47,7 @@ describe('FlatTrackMap', () => {
       trackOutlineWidth: 40,
       invertTrackColors: false,
       useHighlightColor: false,
-      showOnlyWhenOnTrack: false,
+      showOnlyWhenOnTrack: false,      
       sessionVisibility: { race: true, loneQualify: true, openQualify: true, practice: true, offlineTesting: true },
     });
     vi.mocked(useTelemetryValue).mockReturnValue(true);
