@@ -393,7 +393,33 @@ export function runFuelLogic({
     sessionTimeTotal: sessionTimeTotal || 0,
     stopsRemaining: 0,
     lapsPerStint: 0,
-    targetScenarios: [],
+    targetScenarios: (() => {
+      const scenarios: {
+        laps: number;
+        fuelPerLap: number;
+        isCurrentTarget: boolean;
+      }[] = [];
+      if (fuelLevel > 0 && lapsRemaining > 0) {
+        if (lapsRemaining > 1) {
+          scenarios.push({
+            laps: lapsRemaining - 1,
+            fuelPerLap: fuelLevel / (lapsRemaining - 1),
+            isCurrentTarget: false,
+          });
+        }
+        scenarios.push({
+          laps: lapsRemaining,
+          fuelPerLap: fuelLevel / lapsRemaining,
+          isCurrentTarget: true,
+        });
+        scenarios.push({
+          laps: lapsRemaining + 1,
+          fuelPerLap: fuelLevel / (lapsRemaining + 1),
+          isCurrentTarget: false,
+        });
+      }
+      return scenarios;
+    })(),
     earliestPitLap: 0,
     fuelTankCapacity,
     fuelStatus: 'safe',
