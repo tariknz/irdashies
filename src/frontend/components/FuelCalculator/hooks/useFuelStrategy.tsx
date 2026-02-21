@@ -77,23 +77,22 @@ export function useFuelStrategy({
   // Target consumption for fuel saving
   const targetConsumption = lapsRemaining > 0 ? fuelLevel / lapsRemaining : 0;
 
-  // Pit Service Awareness
-  // Bit 4 (16) indicates fuel service request? I need to verify this bitmask.
-  // Standard iRacing: 0x10 = refueling.
+  // Pit Service Awareness — Mirrors Kapps Mode 2
+  // Bit 4 (0x10) = fuel service requested. Read PitSvFuel for queued amount.
   const isFuelServiceRequested =
     pitSvFlags !== undefined && (pitSvFlags & 0x10) !== 0;
-  const queuedFuel =
+  const rawQueuedFuel =
     isFuelServiceRequested && pitSvFuel !== undefined ? pitSvFuel : 0;
 
-  // Calculate fuel at finish
-  // If we have queued fuel, we assume it will be added.
-  // BUT: logic from reference says "if extraAvg >= -2 then fuelOnPit = 0".
-  // This implies if we are finishing comfortably, don't count pit fuel?
-  // Or rather, if we are close to finishing, maybe the queue is irrelevant or stale?
-  // Let's stick to: Fuel At Finish = (Current + Queued) - Needed.
+  // Kapps guard: if raw deficit is small (< 2L), queued fuel is likely stale
+  // (e.g. left over from a previous stint). Ignore it to avoid under-recommending.
+  const rawDeficit = fuelNeeded - fuelLevel;
+  const effectiveQueuedFuel = rawDeficit > 2 ? rawQueuedFuel : 0;
+  const queuedFuel = effectiveQueuedFuel;
 
+  // Fuel at finish: accounts for queued fuel if significant
   const fuelAtFinish =
-    fuelLevel + queuedFuel - lapsRemaining * trendAdjustedConsumption;
+    fuelLevel + effectiveQueuedFuel - lapsRemaining * trendAdjustedConsumption;
 
   // Calculate stops remaining
   let stopsRemaining: number | undefined;
@@ -123,12 +122,9 @@ export function useFuelStrategy({
     // Fill to capacity
     fuelToAdd = Math.max(0, tankCapacity - fuelLevel);
   } else {
-    // 0 or 1 stop: Add exactly what is needed
-    // If queuedFuel is present, should we subtract it?
-    // "Fuel To Add" usually means "Recommended add".
-    // If I already queued 50L, and I need 50L, the recommendation is 50L.
-    // The UI might show "Queued: 50L" separately.
-    fuelToAdd = Math.max(0, fuelNeeded - fuelLevel);
+    // 0 or 1 stop: Add exactly what we still need on top of any already-queued fuel.
+    // Subtract effectiveQueuedFuel so we don't double-recommend what's already ordered.
+    fuelToAdd = Math.max(0, fuelNeeded - fuelLevel - effectiveQueuedFuel);
   }
 
   // Calculate earliest pit lap (Strategy)

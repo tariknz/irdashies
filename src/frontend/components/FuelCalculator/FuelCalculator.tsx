@@ -134,6 +134,7 @@ interface FuelCalculatorViewProps {
   fuelUnits: 'L' | 'gal';
   sessionFlags: number;
   sessionType: string | undefined;
+  totalRaceLaps: number | undefined;
   backgroundOpacity: number;
 }
 
@@ -157,6 +158,7 @@ const FuelCalculatorView = memo<FuelCalculatorViewProps>((props) => {
     sessionFlags,
     sessionType,
     backgroundOpacity,
+    totalRaceLaps,
   } = props;
   const renderWidget = (widgetId: string) => {
     const widgetStyles = derivedFontStyles[widgetId] || derivedFontStyles;
@@ -164,6 +166,7 @@ const FuelCalculatorView = memo<FuelCalculatorViewProps>((props) => {
       widgetId: widgetId,
       fuelData: throttledFuelData,
       displayData: displayData,
+      totalRaceLaps,
       fuelUnits: fuelUnits,
       settings: settings,
       customStyles: widgetStyles,
@@ -186,6 +189,7 @@ const FuelCalculatorView = memo<FuelCalculatorViewProps>((props) => {
             displayData={frozenDisplayData}
             sessionFlags={sessionFlags}
             sessionType={sessionType}
+            totalRaceLaps={totalRaceLaps}
           />
         );
       case 'fuelScenarios':
@@ -345,6 +349,7 @@ interface BridgeRef {
   sessionFlags: number;
   qualifyConsumption: number | null;
   sessionType: string | undefined;
+  totalSessionLaps: number | undefined;
   isSessionVisible: boolean;
 }
 
@@ -382,8 +387,43 @@ const HeadlessTelemetryBridge = ({
       const fuelStore = useFuelStore.getState();
       const { settings: s, safetyMargin: sm } = settingsRef.current;
 
+      // Compute session type from telemetry
+      const rawSessionNum = telemetry.SessionNum?.value?.[0] as
+        | number
+        | undefined;
+      const sessionNum = rawSessionNum ?? 0;
+      const sessionInfo = useSessionStore.getState().session;
+      const currentSession = sessionInfo?.SessionInfo?.Sessions?.[sessionNum];
+      const sessionTypeStr = currentSession?.SessionType as string | undefined;
+
+      // Extract total laps (official) and estimated lap time
+      const totalSessionLapsStr = currentSession?.SessionLaps as
+        | string
+        | number
+        | undefined;
+      const parsedLaps =
+        typeof totalSessionLapsStr === 'string'
+          ? parseInt(totalSessionLapsStr, 10)
+          : totalSessionLapsStr;
+      const totalSessionLaps =
+        parsedLaps && parsedLaps > 0 && parsedLaps < 32767
+          ? parsedLaps
+          : undefined;
+
+      const driverCarIdx = sessionInfo?.DriverInfo?.DriverCarIdx;
+      const drivers = sessionInfo?.DriverInfo?.Drivers;
+      const driver = drivers?.find((d) => d.CarIdx === driverCarIdx);
+      const rawEstLapTime = driver?.CarClassEstLapTime;
+      const estLapTime =
+        rawEstLapTime && isFinite(rawEstLapTime) && rawEstLapTime > 0
+          ? rawEstLapTime
+          : undefined;
+
       const { calculation, nextInternalState, actions } = runFuelLogic({
         telemetry,
+        sessionType: sessionTypeStr,
+        totalSessionLaps,
+        estLapTime,
         fuelStore,
         internalState: internalStateRef.current,
         settings: s,
@@ -414,22 +454,9 @@ const HeadlessTelemetryBridge = ({
         storeActions.setQualifyConsumption(actions.setQualifyConsumption);
       }
 
-      // Compute session type from telemetry for session visibility
-      const rawSessionNum = telemetry.SessionNum?.value?.[0] as
-        | number
-        | undefined;
-      const sessionNum = rawSessionNum ?? null;
-
-      // Update the render ref (not a setState — zero re-renders)
       const currentFuelLevel = Number(telemetry.FuelLevel?.value?.[0] || 0);
       const sessionFlags = Number(telemetry.SessionFlags?.value?.[0] || 0);
       const isOnTrack = !!telemetry.IsOnTrack?.value?.[0];
-
-      // Compute isSessionVisible from telemetry inside interval — no React subscriptions needed
-      const sessionInfo = useSessionStore.getState().session;
-      const sessionTypeStr = sessionInfo?.SessionInfo?.Sessions?.[
-        sessionNum ?? 0
-      ]?.SessionType as string | undefined;
 
       // Evaluate session visibility by checking the settings
       const sv = s.sessionVisibility;
@@ -453,6 +480,7 @@ const HeadlessTelemetryBridge = ({
         sessionFlags,
         qualifyConsumption: useFuelStore.getState().qualifyConsumption,
         sessionType: sessionTypeStr,
+        totalSessionLaps,
         isSessionVisible,
       };
     }, 100); // 10Hz
@@ -492,6 +520,7 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
     isOnTrack: false,
     sessionFlags: 0,
     qualifyConsumption: null,
+    totalSessionLaps: undefined,
     sessionType: undefined,
     isSessionVisible: true,
   });
@@ -545,6 +574,7 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
   // --- Throttling Logic: pull from dataRef at 10Hz, update React state ---
   const [throttledState, setThrottledState] = useState<{
     displayData: FuelCalculation;
+    totalRaceLaps?: number;
     frozenFuelData: FuelCalculation | null;
     frozenDisplayData: FuelCalculation;
     predictiveUsage: number;
@@ -569,7 +599,6 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
     const interval = setInterval(() => {
       const {
         fuelData: currentData,
-        qualifyConsumption,
         currentFuelLevel: liveFuel,
         isOnTrack: liveOnTrack,
         sessionFlags: liveFlags,
@@ -597,32 +626,43 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
         }
 
         let nextFrozenDisplay = prev.frozenDisplayData;
-        if (
-          nextFrozen &&
-          (nextFrozen !== prev.frozenFuelData ||
-            qualifyConsumption !== prev.frozenDisplayData.maxQualify)
-        ) {
+        if (nextFrozen && nextFrozen !== prev.frozenFuelData) {
           const level = nextFrozen.fuelLevel;
           const avgFuelPerLap =
             nextFrozen.avgLaps || nextFrozen.lastLapUsage || 0;
           const lapsWithFuel = avgFuelPerLap > 0 ? level / avgFuelPerLap : 0;
-          const fuelAtFinish =
-            level - (nextFrozen.lapsRemaining || 0) * avgFuelPerLap;
+
+          // At lap crossing, SessionLapsRemain can be one lap too high because
+          // it may not have decremented by the time the `Lap` telemetry tick is processed.
+          // If nextFrozen.lapsRemaining > (totalLaps - currentLap + 1), it's stale.
+          // Clamp it: the true lapsRemaining cannot exceed (totalLaps - currentLap).
+          // This prevents the surplus from being inflated at the crossing frame.
+          let correctedLapsRemaining = nextFrozen.lapsRemaining || 0;
+          const maxPossibleLapsRemaining =
+            nextFrozen.totalLaps > 0
+              ? nextFrozen.totalLaps - nextFrozen.currentLap + 1
+              : correctedLapsRemaining;
+          if (correctedLapsRemaining > maxPossibleLapsRemaining + 0.05) {
+            correctedLapsRemaining = maxPossibleLapsRemaining;
+          }
+
+          const fuelAtFinish = level - correctedLapsRemaining * avgFuelPerLap;
 
           nextFrozenDisplay = {
             ...nextFrozen,
             fuelLevel: level,
+            lapsRemaining: correctedLapsRemaining,
             lapsWithFuel,
             pitWindowClose: nextFrozen.currentLap + lapsWithFuel - 1,
             fuelAtFinish,
             targetScenarios: nextFrozen.targetScenarios || [],
-            maxQualify: qualifyConsumption,
             lastLapUsage: nextFrozen.lastLapUsage || 0,
           };
         }
 
         return {
           displayData: currentData,
+          totalRaceLaps: latestDataRef.current.totalSessionLaps,
           frozenFuelData: nextFrozen,
           frozenDisplayData: nextFrozenDisplay,
           predictiveUsage: currentData.projectedLapUsage || 0,
@@ -664,6 +704,7 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
         fuelUnits={fuelUnits}
         sessionFlags={throttledState.sessionFlags}
         sessionType={throttledState.sessionType}
+        totalRaceLaps={throttledState.totalRaceLaps}
         backgroundOpacity={
           settings.background?.opacity !== undefined
             ? settings.background.opacity / 100

@@ -44,19 +44,23 @@ export const FuelCalculatorConsumptionGrid = memo<FuelCalculatorWidgetProps>(
     // Check for "Offline Testing" or "Practice"
     const isTesting =
       sessionType === 'Offline Testing' || sessionType === 'Practice';
-    const isRace = sessionType === 'Race';
 
     // Use frozen displayData directly - it is already snapshotted by the parent
     // We do NOT want live updates here.
     const lapsRemainingToUse = displayData?.lapsRemaining || 0;
     const currentLap = displayData?.currentLap || 0;
+    const estimatedTotalLaps = displayData?.totalLaps || 0;
     const fuelLevelToUse = displayData?.fuelLevel ?? 0;
     // Check for White (0x0002) or Checkered (0x0004) flag
     const isFinalLapOrFinished =
       sessionFlags && (sessionFlags & 0x0002 || sessionFlags & 0x0004);
 
     // If final lap/finished, we clamp the total race laps to the current lap (so it shows X / X)
-    let effectiveTotalLaps = Math.max(totalRaceLaps, currentLap);
+    let effectiveTotalLaps = Math.max(
+      estimatedTotalLaps,
+      totalRaceLaps,
+      currentLap
+    );
     if (isFinalLapOrFinished) {
       effectiveTotalLaps = currentLap;
     }
@@ -168,6 +172,8 @@ export const FuelCalculatorConsumptionGrid = memo<FuelCalculatorWidgetProps>(
     // But if the rows below (AVG/MAX) are calculating based on OLD length, then header showing NEW length is confusing.
     // Verdict: Header should match the rows context. Since most rows are frozen, Header uses frozenTotalLaps.
 
+    // Usage values (AVG, MAX, LAST, MIN, QUAL) are frozen at lap crossing for stability.
+    // REFUEL and balance use the frozen lap context — snapshot should be accurate.
     const avgData = calcCol(
       avg,
       frozenTotalLaps,
@@ -241,9 +247,9 @@ export const FuelCalculatorConsumptionGrid = memo<FuelCalculatorWidgetProps>(
         >
           <div style={{ fontSize: '0.8em', opacity: 0.7 }}>IN RACE</div>
           <div style={{ color: '#fff' }}>
-            {currentLap}
-            {isRace && effectiveTotalLaps > 0
-              ? ` / ${effectiveTotalLaps.toFixed(2)}`
+            {Math.max(1, currentLap)}
+            {effectiveTotalLaps > 0
+              ? ` / ${Number.isInteger(effectiveTotalLaps) ? effectiveTotalLaps : effectiveTotalLaps.toFixed(2)}`
               : ''}
           </div>
         </div>
@@ -317,20 +323,26 @@ export const FuelCalculatorConsumptionGrid = memo<FuelCalculatorWidgetProps>(
                       className={`${currentData.isDeficit ? 'text-red-500 bg-red-500/10' : 'text-green-400 bg-green-500/10'} text-center ${rowPadding} font-bold rounded mx-0.5`}
                       style={{ fontSize: valueFontSize }}
                     >
-                      {!currentData.isDeficit ? '+' : ''}
-                      {fmt(currentData.refuel, true)}
+                      {currentUsage > 0 ? (
+                        <>
+                          {!currentData.isDeficit ? '+' : ''}
+                          {fmt(currentData.refuel, true)}
+                        </>
+                      ) : (
+                        '--'
+                      )}
                     </div>
                     <div
                       className={`text-white text-center ${rowPadding} opacity-90`}
                       style={{ fontSize: valueFontSize }}
                     >
-                      {fmt(currentData.totalReq, true)}
+                      {fmt(currentData.totalReq, currentUsage > 0)}
                     </div>
                   </React.Fragment>
                 );
               case 'avg': {
                 if (!showAvg) return null;
-                const avgLabel = `AVG ${settings?.avgLapsCount || 3}`;
+                const avgLabel = `AVG ${settings?.avgLapsCount || 5}`;
                 return (
                   <React.Fragment key="avg">
                     <div
@@ -343,27 +355,33 @@ export const FuelCalculatorConsumptionGrid = memo<FuelCalculatorWidgetProps>(
                       className={`text-white text-center ${rowPadding}`}
                       style={{ fontSize: valueFontSize }}
                     >
-                      {avg.toFixed(2)}
+                      {avg > 0 ? avg.toFixed(2) : '--'}
                     </div>
                     <div
                       className={`text-white text-center ${rowPadding}`}
                       style={{ fontSize: valueFontSize }}
                     >
-                      {fmt(avgData.laps, isFinite(avgData.laps))}
+                      {fmt(avgData.laps, avg > 0 && isFinite(avgData.laps))}
                     </div>
 
                     <div
                       className={`${avgData.isDeficit ? 'text-red-500 bg-red-500/10' : 'text-green-400 bg-green-500/10'} text-center ${rowPadding} font-bold rounded mx-0.5`}
                       style={{ fontSize: valueFontSize }}
                     >
-                      {!avgData.isDeficit ? '+' : ''}
-                      {fmt(avgData.refuel, true)}
+                      {avg > 0 ? (
+                        <>
+                          {!avgData.isDeficit ? '+' : ''}
+                          {fmt(avgData.refuel, true)}
+                        </>
+                      ) : (
+                        '--'
+                      )}
                     </div>
                     <div
                       className={`text-white text-center ${rowPadding}`}
                       style={{ fontSize: valueFontSize }}
                     >
-                      {fmt(avgData.totalReq, true)}
+                      {fmt(avgData.totalReq, avg > 0)}
                     </div>
                   </React.Fragment>
                 );
@@ -382,27 +400,33 @@ export const FuelCalculatorConsumptionGrid = memo<FuelCalculatorWidgetProps>(
                       className={`text-orange-400 text-center ${rowPadding}`}
                       style={{ fontSize: valueFontSize }}
                     >
-                      {max.toFixed(2)}
+                      {max > 0 ? max.toFixed(2) : '--'}
                     </div>
                     <div
                       className={`text-white text-center ${rowPadding}`}
                       style={{ fontSize: valueFontSize }}
                     >
-                      {fmt(maxData.laps, isFinite(maxData.laps))}
+                      {fmt(maxData.laps, max > 0 && isFinite(maxData.laps))}
                     </div>
 
                     <div
                       className={`${maxData.isDeficit ? 'text-red-500 bg-red-500/10' : 'text-green-400 bg-green-500/10'} text-center ${rowPadding} font-bold rounded mx-0.5`}
                       style={{ fontSize: valueFontSize }}
                     >
-                      {!maxData.isDeficit ? '+' : ''}
-                      {fmt(maxData.refuel, true)}
+                      {max > 0 ? (
+                        <>
+                          {!maxData.isDeficit ? '+' : ''}
+                          {fmt(maxData.refuel, true)}
+                        </>
+                      ) : (
+                        '--'
+                      )}
                     </div>
                     <div
                       className={`text-white text-center ${rowPadding}`}
                       style={{ fontSize: valueFontSize }}
                     >
-                      {fmt(maxData.totalReq, true)}
+                      {fmt(maxData.totalReq, max > 0)}
                     </div>
                   </React.Fragment>
                 );
@@ -420,27 +444,33 @@ export const FuelCalculatorConsumptionGrid = memo<FuelCalculatorWidgetProps>(
                       className={`text-white text-center ${rowPadding}`}
                       style={{ fontSize: valueFontSize }}
                     >
-                      {last.toFixed(2)}
+                      {last > 0 ? last.toFixed(2) : '--'}
                     </div>
                     <div
                       className={`text-white text-center ${rowPadding}`}
                       style={{ fontSize: valueFontSize }}
                     >
-                      {fmt(lastData.laps, isFinite(lastData.laps))}
+                      {fmt(lastData.laps, last > 0 && isFinite(lastData.laps))}
                     </div>
 
                     <div
                       className={`${lastData.isDeficit ? 'text-red-500 bg-red-500/10' : 'text-green-400 bg-green-500/10'} text-center ${rowPadding} font-bold rounded mx-0.5`}
                       style={{ fontSize: valueFontSize }}
                     >
-                      {!lastData.isDeficit ? '+' : ''}
-                      {fmt(lastData.refuel, true)}
+                      {last > 0 ? (
+                        <>
+                          {!lastData.isDeficit ? '+' : ''}
+                          {fmt(lastData.refuel, true)}
+                        </>
+                      ) : (
+                        '--'
+                      )}
                     </div>
                     <div
                       className={`text-white text-center ${rowPadding}`}
                       style={{ fontSize: valueFontSize }}
                     >
-                      {fmt(lastData.totalReq, true)}
+                      {fmt(lastData.totalReq, last > 0)}
                     </div>
                   </React.Fragment>
                 );
@@ -458,27 +488,33 @@ export const FuelCalculatorConsumptionGrid = memo<FuelCalculatorWidgetProps>(
                       className={`text-green-400 text-center ${rowPadding}`}
                       style={{ fontSize: valueFontSize }}
                     >
-                      {min.toFixed(2)}
+                      {min > 0 ? min.toFixed(2) : '--'}
                     </div>
                     <div
                       className={`text-white text-center ${rowPadding}`}
                       style={{ fontSize: valueFontSize }}
                     >
-                      {fmt(minData.laps, isFinite(minData.laps))}
+                      {fmt(minData.laps, min > 0 && isFinite(minData.laps))}
                     </div>
 
                     <div
                       className={`${minData.isDeficit ? 'text-red-500 bg-red-500/10' : 'text-green-400 bg-green-500/10'} text-center ${rowPadding} font-bold rounded mx-0.5`}
                       style={{ fontSize: valueFontSize }}
                     >
-                      {!minData.isDeficit ? '+' : ''}
-                      {fmt(minData.refuel, true)}
+                      {min > 0 ? (
+                        <>
+                          {!minData.isDeficit ? '+' : ''}
+                          {fmt(minData.refuel, true)}
+                        </>
+                      ) : (
+                        '--'
+                      )}
                     </div>
                     <div
                       className={`text-white text-center ${rowPadding}`}
                       style={{ fontSize: valueFontSize }}
                     >
-                      {fmt(minData.totalReq, true)}
+                      {fmt(minData.totalReq, min > 0)}
                     </div>
                   </React.Fragment>
                 );
@@ -511,7 +547,7 @@ export const FuelCalculatorConsumptionGrid = memo<FuelCalculatorWidgetProps>(
                       className={`${qualData.isDeficit ? 'text-red-500 bg-red-500/10' : 'text-green-400 bg-green-500/10'} text-center ${rowPadding} font-bold rounded mx-0.5`}
                       style={{ fontSize: valueFontSize }}
                     >
-                      {isRace && qual > 0 ? (
+                      {qual > 0 ? (
                         <>
                           {!qualData.isDeficit ? '+' : ''}
                           {fmt(qualData.refuel, true)}
@@ -521,10 +557,10 @@ export const FuelCalculatorConsumptionGrid = memo<FuelCalculatorWidgetProps>(
                       )}
                     </div>
                     <div
-                      className={`text-white text-center ${rowPadding}`}
+                      className={`text-white text-center ${rowPadding} opacity-90`}
                       style={{ fontSize: valueFontSize }}
                     >
-                      {isRace && qual > 0 ? fmt(qualData.totalReq, true) : '--'}
+                      {fmt(qualData.totalReq, qual > 0)}
                     </div>
                   </React.Fragment>
                 );
