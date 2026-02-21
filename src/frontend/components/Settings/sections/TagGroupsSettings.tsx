@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 // colorNumToHex is handled by the shared renderer
-import { useDashboard } from '@irdashies/context';
-import type { DriverTagSettings, DriverTagEntry } from '@irdashies/types';
+import type { DriverTagEntry, DriverTagSettings } from '@irdashies/types';
 import { PRESET_DRIVER_TAGS } from '../../../constants/driverTagBadges';
 import { renderDriverIcon } from '../../../utils/driverIcons';
 import { IconPicker } from '../IconPicker';
+import { useDriverTagGlobalSettings } from './useDriverTagGlobalSettings';
 
 // Preset badge groups are provided by code; colors and dynamic groups removed.
 
@@ -43,19 +43,17 @@ const loadEntryRows = (existing: DriverTagSettings | undefined): EntryRow[] => {
 };
 
 export const TagGroupsSettings = () => {
-  const { currentDashboard, onDashboardUpdated } = useDashboard();
+  const {
+    tagSettings: globalTagSettings,
+    loading,
+    saveTagSettings,
+  } = useDriverTagGlobalSettings();
 
-  const existing = currentDashboard?.generalSettings?.driverTagSettings;
-  const [settings, setSettings] = useState<DriverTagSettings>(
-    existing ?? {
-      groups: [],
-      mapping: {},
-      display: { enabled: false, widthPx: 6, displayStyle: 'badge' },
-    }
-  );
+  const [settings, setSettings] =
+    useState<DriverTagSettings>(globalTagSettings);
 
   const [entryRows, setEntryRows] = useState<EntryRow[]>(() =>
-    loadEntryRows(existing)
+    loadEntryRows(globalTagSettings)
   );
   const [activeGroupFilter, setActiveGroupFilter] = useState<string | null>(
     null
@@ -86,18 +84,11 @@ export const TagGroupsSettings = () => {
     }
   }, [lastAddedKey, entryRows]);
 
-  if (!currentDashboard || !onDashboardUpdated) return <>Loading...</>;
+  if (loading) return <>Loading...</>;
 
   const updateDashboard = (newSettings: DriverTagSettings) => {
-    const updated = {
-      ...currentDashboard,
-      generalSettings: {
-        ...(currentDashboard.generalSettings ?? {}),
-        driverTagSettings: newSettings,
-      },
-    };
     setSettings(newSettings);
-    onDashboardUpdated(updated);
+    saveTagSettings(newSettings);
   };
 
   // use shared renderer
