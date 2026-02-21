@@ -2,7 +2,6 @@ import { ReactNode, useState } from 'react';
 import { ToggleSwitch } from './ToggleSwitch';
 import { BaseWidgetSettings } from '../types';
 import { useDashboard } from '@irdashies/context';
-import { Copy, Check } from '@phosphor-icons/react';
 
 interface BaseSettingsSectionProps<T> {
   title: string;
@@ -30,19 +29,6 @@ export const BaseSettingsSection = <T,>({
   const { currentDashboard, onDashboardUpdated } = useDashboard();
   const [localSettings, setLocalSettings] =
     useState<BaseWidgetSettings<T>>(settings);
-  const [copied, setCopied] = useState(false);
-
-  const browserSourceUrl = `http://localhost:3000/component/${widgetId}`;
-
-  const handleCopyUrl = async () => {
-    try {
-      await navigator.clipboard.writeText(browserSourceUrl);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      console.error('Failed to copy URL:', err);
-    }
-  };
 
   // Clean synchronization pattern: track what we last synced to detect external changes
   const updatedWidget = currentDashboard?.widgets.find(
@@ -133,23 +119,6 @@ export const BaseSettingsSection = <T,>({
             />
           </div>
           <p className="text-slate-400 text-sm">{description}</p>
-          <div className="mt-3 flex items-center gap-2">
-            <span className="text-slate-400 text-xs">Browser Source:</span>
-            <code className="text-xs bg-slate-800 px-2 py-1 rounded font-mono text-slate-300">
-              {browserSourceUrl}
-            </code>
-            <button
-              onClick={handleCopyUrl}
-              className="p-1 rounded hover:bg-slate-600 transition-colors"
-              title="Copy URL"
-            >
-              {copied ? (
-                <Check size={14} className="text-green-400" />
-              ) : (
-                <Copy size={14} className="text-slate-400" />
-              )}
-            </button>
-          </div>
         </div>
       </div>
 

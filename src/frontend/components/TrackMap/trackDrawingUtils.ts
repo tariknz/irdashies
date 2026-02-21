@@ -73,16 +73,18 @@ export const drawStartFinishLine = (
 export const drawTurnNames = (
   ctx: CanvasRenderingContext2D,
   turns: TrackDrawing['turns'],
-  enableTurnNames: boolean | undefined
+  enableTurnNames: boolean | undefined,
+  trackmapFontSize: number
 ) => {
   if (!enableTurnNames || !turns) return;
 
   turns.forEach((turn) => {
     if (!turn.content || !turn.x || !turn.y) return;
+    const fontSize = 2 * (trackmapFontSize / 100);
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillStyle = 'white';
-    ctx.font = '2rem sans-serif';
+    ctx.font = `${fontSize}rem sans-serif`;
     ctx.fillText(turn.content, turn.x, turn.y);
   });
 };
@@ -100,6 +102,7 @@ export const drawDrivers = (
   driversOffTrack: boolean[],
   driverCircleSize: number,
   playerCircleSize: number,
+  trackmapFontSize: number,
   showCarNumbers: boolean,
   displayMode: 'carNumber' | 'sessionPosition' = 'carNumber'
 ) => {
@@ -110,7 +113,7 @@ export const drawDrivers = (
       if (!color) return;
 
       const circleRadius = isPlayer ? playerCircleSize : driverCircleSize;
-      const fontSize = circleRadius * 0.75;
+      const fontSize = circleRadius * (trackmapFontSize / 100);
 
       ctx.fillStyle = color.fill;
       ctx.beginPath();
@@ -138,7 +141,10 @@ export const drawDrivers = (
           displayText = driver.CarNumber;
         }
         if (displayText) {
-          ctx.fillText(displayText, position.x, position.y);
+          const m = ctx.measureText(displayText);
+          const visualOffset =
+            (m.actualBoundingBoxAscent - m.actualBoundingBoxDescent) / 2;
+          ctx.fillText(displayText, position.x, position.y + visualOffset);
         }
       }
     });

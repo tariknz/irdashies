@@ -1,6 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { createDriverStandings, groupStandingsByClass, sliceRelevantDrivers } from './createStandings';
-import type { Session, Telemetry, SessionInfo } from '@irdashies/types';
+import {
+  createDriverStandings,
+  groupStandingsByClass,
+  sliceRelevantDrivers,
+} from './createStandings';
+import type { Session, Telemetry, SessionInfo, Driver } from '@irdashies/types';
 
 describe('createStandings', () => {
   const mockSessionData: Session = {
@@ -135,22 +139,240 @@ describe('createStandings', () => {
     const mockTelemetryWithConnected = {
       ...mockTelemetry,
       CarIdxTrackSurface: {
-        value: [1]
-      }
+        value: [1],
+      },
     } as Telemetry;
 
     const standings = createStandings(
       mockSessionData,
       mockTelemetryWithConnected,
-      mockCurrentSession,
+      mockCurrentSession
     );
 
     expect(standings[0][1][0].onTrack).toBe(true);
   });
 
+  it('should show all drivers from session when no results positions exist yet, sorted by car number', () => {
+    const sessionWithNoResults: Session = {
+      DriverInfo: {
+        DriverCarIdx: 2,
+        Drivers: [
+          {
+            CarIdx: 2,
+            UserName: 'Driver B',
+            CarNumber: '42',
+            CarClassID: 1,
+            CarClassShortName: 'Class 1',
+            CarClassRelSpeed: 1.0,
+            IRating: 1800,
+            LicString: 'B 3.50',
+            CarIsPaceCar: 0,
+            IsSpectator: 0,
+          },
+          {
+            CarIdx: 0,
+            UserName: 'Driver A',
+            CarNumber: '3',
+            CarClassID: 1,
+            CarClassShortName: 'Class 1',
+            CarClassRelSpeed: 1.0,
+            IRating: 2000,
+            LicString: 'A 4.99',
+            CarIsPaceCar: 0,
+            IsSpectator: 0,
+          },
+          {
+            CarIdx: 1,
+            UserName: 'Driver C',
+            CarNumber: '7',
+            CarClassID: 1,
+            CarClassShortName: 'Class 1',
+            CarClassRelSpeed: 1.0,
+            IRating: 1500,
+            LicString: 'B 2.00',
+            CarIsPaceCar: 0,
+            IsSpectator: 0,
+          },
+        ],
+      },
+      SessionInfo: {
+        Sessions: [
+          {
+            SessionType: 'Race',
+            ResultsPositions: [],
+            ResultsFastestLap: [],
+          },
+        ],
+      },
+    } as unknown as Session;
+
+    const standings = createDriverStandings(
+      {
+        playerIdx: 2,
+        drivers: sessionWithNoResults.DriverInfo.Drivers,
+      },
+      {},
+      {
+        resultsPositions: [],
+        resultsFastestLap: [],
+        sessionType: 'Race',
+      },
+      [],
+      [],
+      []
+    );
+
+    expect(standings).toHaveLength(3);
+    // Sorted by car number: 3, 7, 42
+    expect(standings[0].driver.carNum).toBe('3');
+    expect(standings[0].driver.name).toBe('Driver A');
+    expect(standings[0].position).toBe(1);
+    expect(standings[1].driver.carNum).toBe('7');
+    expect(standings[1].driver.name).toBe('Driver C');
+    expect(standings[1].position).toBe(2);
+    expect(standings[2].driver.carNum).toBe('42');
+    expect(standings[2].driver.name).toBe('Driver B');
+    expect(standings[2].position).toBe(3);
+    expect(standings[2].isPlayer).toBe(true);
+  });
+
+  it('should show drivers with laps first, then drivers without laps sorted by car number', () => {
+    const makeDriver = (carIdx: number, carNumber: string) => ({
+      CarIdx: carIdx,
+      UserName: `Driver ${carNumber}`,
+      CarNumber: carNumber,
+      CarClassID: 1,
+      CarClassShortName: 'Class 1',
+      CarClassRelSpeed: 1.0,
+      IRating: 1500,
+      LicString: 'B 2.00',
+      CarIsPaceCar: 0,
+      IsSpectator: 0,
+    });
+
+    // Cars 5 and 8 have done a lap and appear in resultsPositions.
+    // Cars 1-4 and 6 haven't done a lap so they are absent from resultsPositions.
+    const standings = createDriverStandings(
+      {
+        playerIdx: 0,
+        drivers: [1, 2, 3, 4, 5, 6, 8].map((n) =>
+          makeDriver(n, String(n))
+        ) as unknown as Driver[],
+      },
+      {},
+      {
+        resultsPositions: [
+          // Car 8 is faster
+          {
+            CarIdx: 8,
+            Position: 1,
+            ClassPosition: 0,
+            FastestTime: 90,
+            LastTime: 90,
+            LapsComplete: 1,
+          },
+          {
+            CarIdx: 5,
+            Position: 2,
+            ClassPosition: 1,
+            FastestTime: 95,
+            LastTime: 95,
+            LapsComplete: 1,
+          },
+        ] as unknown as SessionInfo['ResultsPositions'],
+        resultsFastestLap: [{ CarIdx: 8, FastestLap: 1, FastestTime: 90 }],
+        sessionType: 'Practice',
+      },
+      [],
+      [],
+      []
+    );
+
+    // First come the cars with laps, ordered by position
+    expect(standings[0].driver.carNum).toBe('8');
+    expect(standings[1].driver.carNum).toBe('5');
+    // Then cars without laps, sorted by car number ascending
+    expect(standings[2].driver.carNum).toBe('1');
+    expect(standings[3].driver.carNum).toBe('2');
+    expect(standings[4].driver.carNum).toBe('3');
+    expect(standings[5].driver.carNum).toBe('4');
+    expect(standings[6].driver.carNum).toBe('6');
+  });
+
+  it('should exclude pace car and spectators from fallback standings', () => {
+    const sessionWithPaceCar: Session = {
+      DriverInfo: {
+        DriverCarIdx: 1,
+        Drivers: [
+          {
+            CarIdx: 0,
+            UserName: 'Pace Car',
+            CarNumber: '0',
+            CarClassID: 1,
+            CarClassShortName: 'Class 1',
+            CarClassRelSpeed: 1.0,
+            CarIsPaceCar: 1,
+            IsSpectator: 0,
+          },
+          {
+            CarIdx: 1,
+            UserName: 'Driver 1',
+            CarNumber: '1',
+            CarClassID: 1,
+            CarClassShortName: 'Class 1',
+            CarClassRelSpeed: 1.0,
+            CarIsPaceCar: 0,
+            IsSpectator: 0,
+          },
+          {
+            CarIdx: 2,
+            UserName: 'Spectator',
+            CarNumber: '99',
+            CarClassID: 1,
+            CarClassShortName: 'Class 1',
+            CarClassRelSpeed: 1.0,
+            CarIsPaceCar: 0,
+            IsSpectator: 1,
+          },
+        ],
+      },
+      SessionInfo: {
+        Sessions: [
+          {
+            SessionType: 'Race',
+            ResultsPositions: [],
+            ResultsFastestLap: [],
+          },
+        ],
+      },
+    } as unknown as Session;
+
+    const standings = createDriverStandings(
+      {
+        playerIdx: 1,
+        drivers: sessionWithPaceCar.DriverInfo.Drivers,
+      },
+      {},
+      {
+        resultsPositions: [],
+        resultsFastestLap: [],
+        sessionType: 'Race',
+      },
+      [],
+      [],
+      []
+    );
+
+    expect(standings).toHaveLength(1);
+    expect(standings[0].driver.name).toBe('Driver 1');
+  });
+
   describe('sliceRelevantDrivers', () => {
-    interface DummyStanding { name: string; isPlayer?: boolean }
-    it('should return only top 3 drivers for classes outside of player\'s class', () => {
+    interface DummyStanding {
+      name: string;
+      isPlayer?: boolean;
+    }
+    it("should return only top 3 drivers for classes outside of player's class", () => {
       const results: [string, DummyStanding[]][] = [
         [
           'GT3',
@@ -194,7 +416,7 @@ describe('createStandings', () => {
       ]);
     });
 
-    it('should return all player\'s class even when player is not in standings', () => {
+    it("should return all player's class even when player is not in standings", () => {
       const results: [string, DummyStanding[]][] = [
         [
           'GT3',
@@ -415,11 +637,10 @@ describe('createStandings', () => {
   });
 });
 
-
 /**
  * This method will create the standings for the current session
  * It will group the standings by class and slice the relevant drivers
- * 
+ *
  * Only used to simplify testing
  */
 function createStandings(
@@ -455,11 +676,11 @@ function createStandings(
     [],
     [],
     undefined,
-    undefined,
+    undefined
   );
   const driverClass = session?.DriverInfo?.Drivers?.find(
     (driver) => driver.CarIdx === session?.DriverInfo?.DriverCarIdx
   )?.CarClassID;
   const grouped = groupStandingsByClass(standings);
   return sliceRelevantDrivers(grouped, driverClass, options);
-};
+}

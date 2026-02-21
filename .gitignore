@@ -96,6 +96,7 @@ test-data/**/*.png
 test-data/unused
 src/**/tracks/*.svg
 asset-data
+tmp-data/
 
 # native build
 build/

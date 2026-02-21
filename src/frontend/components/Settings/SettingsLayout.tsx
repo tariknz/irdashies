@@ -12,7 +12,6 @@ import {
   Navigate,
   useParams,
 } from 'react-router-dom';
-import { getWidgetName } from '../../constants/widgetNames';
 import { StandingsSettings } from './sections/StandingsSettings';
 import { RelativeSettings } from './sections/RelativeSettings';
 import { WeatherSettings } from './sections/WeatherSettings';
@@ -30,6 +29,7 @@ import { BlindSpotMonitorSettings } from './sections/BlindSpotMonitorSettings';
 import { GarageCoverSettings } from './sections/GarageCoverSettings';
 import { ProfileSettings } from './sections/ProfileSettings';
 import { FlagSettings } from './sections/FlagSettings';
+import { CarSetupSettings } from './sections/CarSetupSettings';
 import { useDashboard } from '@irdashies/context';
 import { useState } from 'react';
 
@@ -45,13 +45,11 @@ export const SettingsLayout = () => {
   } = useDashboard();
   const [isLocked, setIsLocked] = useState(!editMode);
 
-  const isActive = (path: string) => {
-    return location.pathname === `/settings${path}`;
-  };
-
   const menuItemClass = (path: string) =>
     `block w-full p-2 rounded cursor-pointer ${
-      isActive(path) ? 'bg-slate-700' : 'hover:bg-slate-700'
+      location.pathname.startsWith(`/settings${path}`)
+        ? 'bg-slate-700'
+        : 'hover:bg-slate-700'
     }`;
 
   const handleToggleLock = async () => {
@@ -132,87 +130,105 @@ export const SettingsLayout = () => {
                 Profiles
               </Link>
             </li>
+            <li>
+              <Link
+                to="/settings/car-setup"
+                className={menuItemClass('/car-setup')}
+              >
+                Setup Comparison Tool
+              </Link>
+            </li>
           </ul>
           <ul className="flex flex-col gap-2 flex-1 mb-2">
-            {(() => {
-              // Widgets handled elsewhere (e.g. in Advanced settings)
-              const hiddenWidgets = new Set(['telemetryinspector']);
-
-              // Deduplicate fuel widgets and filter hidden widgets
-              const seenTypes = new Set<string>();
-              const filteredWidgets = currentDashboard.widgets.filter(
-                (widget) => {
-                  const type = widget.type || widget.id;
-                  if (hiddenWidgets.has(type)) return false;
-                  if (type === 'fuel') {
-                    if (seenTypes.has('fuel')) return false;
-                    seenTypes.add('fuel');
-                  }
-                  return true;
-                }
-              );
-
-              // Pin certain widgets at the top in a specific order
-              const pinnedOrder: Record<string, number> = {
-                standings: 0,
-                relative: 1,
-                fuel: 2,
-                input: 3,
-              };
-
-              const sortedWidgets = [...filteredWidgets].sort((a, b) => {
-                const typeA = a.type || a.id;
-                const typeB = b.type || b.id;
-                const pinA = pinnedOrder[typeA];
-                const pinB = pinnedOrder[typeB];
-
-                // Both pinned: sort by pin order
-                if (pinA !== undefined && pinB !== undefined)
-                  return pinA - pinB;
-                // Only one pinned: pinned comes first
-                if (pinA !== undefined) return -1;
-                if (pinB !== undefined) return 1;
-                // Neither pinned: alphabetical by display name
-                const nameA = getWidgetName(typeA);
-                const nameB = getWidgetName(typeB);
-                return nameA.localeCompare(nameB);
-              });
-
-              return sortedWidgets.map((widget) => {
-                const type = widget.type || widget.id;
-                let label = widget.id; // Default fallback
-
-                const name = getWidgetName(type);
-                label = name;
-
-                // Need to handle the case where the widget id is not the same as the type
-                // This is the case for fuel widgets, where the id is "fuel-1", "fuel-2", etc.
-                // and the type is "fuel"
-                if (widget.id !== type && type !== 'fuel') {
-                  label += ` (${widget.id})`;
-                }
-
-                // Fuel Calculator gets special path handling
-                const linkPath =
-                  type === 'fuel' ? '/settings/fuel' : `/settings/${widget.id}`;
-
-                const isActive =
-                  type === 'fuel'
-                    ? location.pathname.includes('/settings/fuel')
-                    : location.pathname === `/settings/${widget.id}`;
-
-                return (
-                  <li key={widget.id}>
-                    <Link
-                      to={linkPath}
-                      className={`block w-full p-2 rounded cursor-pointer ${isActive ? 'bg-slate-700' : 'hover:bg-slate-700'}`}
-                    >
-                      {label}
-                    </Link>
-                  </li>
-                );
-              });
-            })()}
+            <li>
+              <Link
+                to="/settings/blindspotmonitor"
+                className={menuItemClass('/blindspotmonitor')}
+              >
+                Blind Spot Monitor
+              </Link>
+            </li>
+            <li>
+              <Link
+                to="/settings/fastercarsfrombehind"
+                className={menuItemClass('/fastercarsfrombehind')}
+              >
+                Faster Cars From Behind
+              </Link>
+            </li>
+            <li>
+              <Link to="/settings/flag" className={menuItemClass('/flag')}>
+                Flag
+              </Link>
+            </li>
+            <li>
+              <Link
+                to="/settings/flatmap"
+                className={menuItemClass('/flatmap')}
+              >
+                Flat Track Map
+              </Link>
+            </li>
+            <li>
+              <Link to="/settings/fuel" className={menuItemClass('/fuel')}>
+                Fuel Calculator
+              </Link>
+            </li>
+            <li>
+              <Link
+                to="/settings/garagecover"
+                className={menuItemClass('/garagecover')}
+              >
+                Garage Cover
+              </Link>
+            </li>
+            <li>
+              <Link to="/settings/input" className={menuItemClass('/input')}>
+                Input
+              </Link>
+            </li>
+            <li>
+              <Link
+                to="/settings/pitlanehelper"
+                className={menuItemClass('/pitlanehelper')}
+              >
+                Pitlane Helper
+              </Link>
+            </li>
+            <li>
+              <Link to="/settings/rejoin" className={menuItemClass('/rejoin')}>
+                Rejoin Indicator
+              </Link>
+            </li>
+            <li>
+              <Link
+                to="/settings/relative"
+                className={menuItemClass('/relative')}
+              >
+                Relative
+              </Link>
+            </li>
+            <li>
+              <Link
+                to="/settings/standings"
+                className={menuItemClass('/standings')}
+              >
+                Standings
+              </Link>
+            </li>
+            <li>
+              <Link to="/settings/map" className={menuItemClass('/map')}>
+                Track Map
+              </Link>
+            </li>
+            <li>
+              <Link
+                to="/settings/weather"
+                className={menuItemClass('/weather')}
+              >
+                Weather
+              </Link>
+            </li>
           </ul>
           {/* Advanced settings pushed to bottom */}
           <ul className="mt-auto pt-2 border-t border-slate-700 flex flex-col gap-2">
@@ -255,6 +271,7 @@ const SettingsLoader = () => {
   if (widgetId === 'general') return <GeneralSettings />;
   if (widgetId === 'profiles') return <ProfileSettings />;
   if (widgetId === 'advanced') return <AdvancedSettings />;
+  if (widgetId === 'car-setup') return <CarSetupSettings />;
   if (widgetId === 'about') return <AboutSettings />;
 
   // 2. Special Manager Pages
