@@ -47,9 +47,9 @@ export const FuelCalculatorEconomyPredict = memo<FuelCalculatorWidgetProps>(
         {scenariosToShow.map((scenario) => {
           const isCurrent = scenario.isCurrentTarget;
           const lapsRemaining = scenario.laps;
-          const absoluteTargetLap = (
+          const absoluteTargetLap = Math.floor(
             displayData.currentLap + lapsRemaining
-          ).toFixed(2);
+          ).toString();
           const fuelPerLap = scenario.fuelPerLap.toFixed(2);
 
           // Highlight current target

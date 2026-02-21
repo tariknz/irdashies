@@ -340,8 +340,19 @@ export function runFuelLogic({
     //
     // Without the ceil: 5.68 laps predicted, but 6 actually run (0.32 laps undercount)
     // With the ceil:    ceil(0.01 + 5.68) - 0.01 = 6 - 0.01 = 5.99 ≈ 6 ✓
+    //
+    // iRacing also returns 604800 (1 week) before the race has actually started/timer counting down.
+    // If the time is that large, we fall back to the totalSessionTime which is the allocated race time.
+    const effectiveTimeRemain =
+      sessionTimeRemain > 600000 &&
+      sessionTimeTotal !== undefined &&
+      sessionTimeTotal > 0 &&
+      sessionTimeTotal < 600000
+        ? sessionTimeTotal
+        : sessionTimeRemain;
+
     const lapTime = avgLapTime || 100;
-    const timeFraction = sessionTimeRemain / lapTime;
+    const timeFraction = effectiveTimeRemain / lapTime;
     lapsRemaining = Math.ceil(lapDistPct + timeFraction) - lapDistPct;
 
     // For IN RACE display: use estLapTime from session info when fewer than 3 laps have
@@ -350,7 +361,7 @@ export function runFuelLogic({
     const lapTimeForDisplay =
       recentLaps.length >= 3 ? lapTime : estLapTime || lapTime;
     rawTimeFractionForDisplay =
-      sessionTimeRemain / lapTimeForDisplay - lapDistPct;
+      effectiveTimeRemain / lapTimeForDisplay - lapDistPct;
   }
 
   // totalLaps: use raw float for display so header shows "X / 5.68" for timed races
@@ -399,22 +410,23 @@ export function runFuelLogic({
         fuelPerLap: number;
         isCurrentTarget: boolean;
       }[] = [];
-      if (fuelLevel > 0 && lapsRemaining > 0) {
-        if (lapsRemaining > 1) {
+      const baseLaps = Math.floor(lapsWithFuel);
+      if (fuelLevel > 0 && baseLaps > 0) {
+        if (baseLaps > 1) {
           scenarios.push({
-            laps: lapsRemaining - 1,
-            fuelPerLap: fuelLevel / (lapsRemaining - 1),
+            laps: baseLaps - 1,
+            fuelPerLap: fuelLevel / (baseLaps - 1),
             isCurrentTarget: false,
           });
         }
         scenarios.push({
-          laps: lapsRemaining,
-          fuelPerLap: fuelLevel / lapsRemaining,
+          laps: baseLaps,
+          fuelPerLap: fuelLevel / baseLaps,
           isCurrentTarget: true,
         });
         scenarios.push({
-          laps: lapsRemaining + 1,
-          fuelPerLap: fuelLevel / (lapsRemaining + 1),
+          laps: baseLaps + 1,
+          fuelPerLap: fuelLevel / (baseLaps + 1),
           isCurrentTarget: false,
         });
       }
