@@ -55,27 +55,37 @@ const mockBridge: (editMode: boolean) => DashboardBridge = (editMode) => ({
   getGarageCoverImage: () => Promise.resolve(null),
   getGarageCoverImageAsDataUrl: () => Promise.resolve(null),
   // Profile management methods
-  listProfiles: () => Promise.resolve([
-    { id: 'default', name: 'Default', createdAt: new Date().toISOString(), lastModified: new Date().toISOString() }
-  ]),
-  createProfile: (name: string) => Promise.resolve({
-    id: 'mock-id',
-    name,
-    createdAt: new Date().toISOString(),
-    lastModified: new Date().toISOString()
-  }),
+  listProfiles: () =>
+    Promise.resolve([
+      {
+        id: 'default',
+        name: 'Default',
+        createdAt: new Date().toISOString(),
+        lastModified: new Date().toISOString(),
+      },
+    ]),
+  createProfile: (name: string) =>
+    Promise.resolve({
+      id: 'mock-id',
+      name,
+      createdAt: new Date().toISOString(),
+      lastModified: new Date().toISOString(),
+    }),
   deleteProfile: () => Promise.resolve(),
   renameProfile: () => Promise.resolve(),
   switchProfile: () => Promise.resolve(),
-  getCurrentProfile: () => Promise.resolve({
-    id: 'default',
-    name: 'Default',
-    createdAt: new Date().toISOString(),
-    lastModified: new Date().toISOString()
-  }),
+  getCurrentProfile: () =>
+    Promise.resolve({
+      id: 'default',
+      name: 'Default',
+      createdAt: new Date().toISOString(),
+      lastModified: new Date().toISOString(),
+    }),
   updateProfileTheme: async () => undefined,
   getDashboardForProfile: async () => null,
-  setAutoStart: () => Promise.resolve()
+  setAutoStart: () => Promise.resolve(),
+  getDriverTagSettings: async () => undefined,
+  saveDriverTagSettings: async () => undefined,
 });
 
 export const Primary = {
@@ -99,7 +109,7 @@ export const WithInput = {
       <div className="h-[140px] w-[420px]">
         <DashboardProvider bridge={mockBridge(args.editMode)}>
           <EditMode>
-            <Input/>
+            <Input />
           </EditMode>
         </DashboardProvider>
       </div>

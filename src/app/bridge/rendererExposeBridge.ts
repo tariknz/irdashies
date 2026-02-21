@@ -122,7 +122,10 @@ export function exposeBridge() {
     getDashboardForProfile: (profileId: string) => {
       return ipcRenderer.invoke('getDashboardForProfile', profileId);
     },
-    updateProfileTheme: (profileId: string, themeSettings: DashboardProfile['themeSettings']) => {
+    updateProfileTheme: (
+      profileId: string,
+      themeSettings: DashboardProfile['themeSettings']
+    ) => {
       return ipcRenderer.invoke('updateProfileTheme', profileId, themeSettings);
     },
     stop: () => {
@@ -133,6 +136,12 @@ export function exposeBridge() {
     },
     setAutoStart: (enabled: boolean) => {
       return ipcRenderer.invoke('autostart:set', enabled);
+    },
+    getDriverTagSettings: () => {
+      return ipcRenderer.invoke('getDriverTagSettings');
+    },
+    saveDriverTagSettings: (settings: unknown) => {
+      return ipcRenderer.invoke('saveDriverTagSettings', settings);
     },
     getCurrentDashboard: () => {
       // This is a synchronous getter used in overlay container mode

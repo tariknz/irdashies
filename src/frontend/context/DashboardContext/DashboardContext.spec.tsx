@@ -28,7 +28,9 @@ const mockBridge: DashboardBridge = {
   getCurrentProfile: vi.fn().mockResolvedValue(null),
   updateProfileTheme: vi.fn(),
   getDashboardForProfile: vi.fn(),
-  setAutoStart: vi.fn()
+  setAutoStart: vi.fn(),
+  getDriverTagSettings: vi.fn(),
+  saveDriverTagSettings: vi.fn(),
 };
 
 const TestComponent: React.FC = () => {
@@ -98,15 +100,18 @@ describe('DashboardContext', () => {
     });
 
     await waitFor(() => {
-      expect(mockBridge.saveDashboard).toHaveBeenCalledWith({
-        widgets: [
-          {
-            id: 'test',
-            enabled: true,
-            layout: { x: 0, y: 0, width: 1, height: 1 },
-          },
-        ],
-      }, { profileId: undefined });
+      expect(mockBridge.saveDashboard).toHaveBeenCalledWith(
+        {
+          widgets: [
+            {
+              id: 'test',
+              enabled: true,
+              layout: { x: 0, y: 0, width: 1, height: 1 },
+            },
+          ],
+        },
+        { profileId: undefined }
+      );
     });
   });
 
@@ -171,15 +176,30 @@ describe('DashboardContext', () => {
   describe('Browser view with profileId', () => {
     it('loads profile synchronously when profileId is provided', async () => {
       const profileId = 'test-profile-id';
-      const testProfile = { id: profileId, name: 'Test Profile', createdAt: new Date().toISOString(), lastModified: new Date().toISOString() };
+      const testProfile = {
+        id: profileId,
+        name: 'Test Profile',
+        createdAt: new Date().toISOString(),
+        lastModified: new Date().toISOString(),
+      };
       mockBridge.listProfiles = vi.fn().mockResolvedValue([testProfile]);
       mockBridge.getDashboardForProfile = vi.fn().mockResolvedValue({
-        widgets: [{ id: 'test', enabled: true, layout: { x: 0, y: 0, width: 1, height: 1 } }]
+        widgets: [
+          {
+            id: 'test',
+            enabled: true,
+            layout: { x: 0, y: 0, width: 1, height: 1 },
+          },
+        ],
       });
 
       const TestComponentWithProfile: React.FC = () => {
         const { currentProfile } = useDashboard();
-        return <div data-testid="current-profile">{currentProfile?.id || 'No Profile'}</div>;
+        return (
+          <div data-testid="current-profile">
+            {currentProfile?.id || 'No Profile'}
+          </div>
+        );
       };
 
       act(() => {
@@ -191,7 +211,9 @@ describe('DashboardContext', () => {
       });
 
       await waitFor(() => {
-        expect(screen.getByTestId('current-profile').textContent).toBe(profileId);
+        expect(screen.getByTestId('current-profile').textContent).toBe(
+          profileId
+        );
       });
     });
 
@@ -199,12 +221,22 @@ describe('DashboardContext', () => {
       const profileId = 'inactive-profile-id';
       mockBridge.listProfiles = vi.fn().mockResolvedValue([]); // Profile not in active list
       mockBridge.getDashboardForProfile = vi.fn().mockResolvedValue({
-        widgets: [{ id: 'test', enabled: true, layout: { x: 0, y: 0, width: 1, height: 1 } }]
+        widgets: [
+          {
+            id: 'test',
+            enabled: true,
+            layout: { x: 0, y: 0, width: 1, height: 1 },
+          },
+        ],
       });
 
       const TestComponentWithProfile: React.FC = () => {
         const { currentProfile } = useDashboard();
-        return <div data-testid="current-profile">{currentProfile?.id || 'No Profile'}</div>;
+        return (
+          <div data-testid="current-profile">
+            {currentProfile?.id || 'No Profile'}
+          </div>
+        );
       };
 
       act(() => {
@@ -216,7 +248,9 @@ describe('DashboardContext', () => {
       });
 
       await waitFor(() => {
-        expect(screen.getByTestId('current-profile').textContent).toBe(profileId);
+        expect(screen.getByTestId('current-profile').textContent).toBe(
+          profileId
+        );
       });
     });
 
@@ -224,7 +258,13 @@ describe('DashboardContext', () => {
       const profileId = 'inactive-profile-id';
       mockBridge.listProfiles = vi.fn().mockResolvedValue([]); // Profile not in active list
       mockBridge.getDashboardForProfile = vi.fn().mockResolvedValue({
-        widgets: [{ id: 'test', enabled: true, layout: { x: 0, y: 0, width: 1, height: 1 } }]
+        widgets: [
+          {
+            id: 'test',
+            enabled: true,
+            layout: { x: 0, y: 0, width: 1, height: 1 },
+          },
+        ],
       });
 
       act(() => {
@@ -256,5 +296,4 @@ describe('DashboardContext', () => {
       );
     });
   });
-}
-);
+});

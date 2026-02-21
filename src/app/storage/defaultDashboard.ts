@@ -49,6 +49,9 @@ export const defaultDashboard: DashboardLayout = {
           enabled: true,
           showStatusBadges: true,
         },
+        driverTag: {
+          enabled: false,
+        },
         teamName: {
           enabled: false,
         },
@@ -182,6 +185,7 @@ export const defaultDashboard: DashboardLayout = {
           'position',
           'carNumber',
           'countryFlags',
+          'driverTag',
           'driverName',
           'teamName',
           'pitStatus',
@@ -313,6 +317,9 @@ export const defaultDashboard: DashboardLayout = {
           enabled: true,
           showStatusBadges: true,
         },
+        driverTag: {
+          enabled: false,
+        },
         teamName: {
           enabled: false,
         },
@@ -349,6 +356,7 @@ export const defaultDashboard: DashboardLayout = {
           'position',
           'carNumber',
           'countryFlags',
+          'driverTag',
           'driverName',
           'teamName',
           'pitStatus',

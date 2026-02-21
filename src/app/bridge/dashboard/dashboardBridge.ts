@@ -2,6 +2,7 @@ import type {
   DashboardBridge,
   DashboardLayout,
   DashboardProfile,
+  DriverTagSettings,
   SaveDashboardOptions,
 } from '@irdashies/types';
 import { app, ipcMain } from 'electron';
@@ -23,6 +24,10 @@ import {
   updateProfileTheme,
   getOrCreateDefaultDashboardForProfile,
 } from '../../storage/dashboards';
+import {
+  getDriverTagSettings,
+  saveDriverTagSettings,
+} from '../../storage/driverTagSettings';
 import { writeData } from '../../storage/storage';
 import { OverlayManager } from '../../overlayManager';
 import {
@@ -38,6 +43,25 @@ const dashboardUpdateCallbacks = new Set<
 const demoModeCallbacks = new Set<(isDemoMode: boolean) => void>();
 
 /**
+ * Injects global driver tag settings into a dashboard layout before broadcasting.
+ * Overlays read from generalSettings.driverTagSettings, so merging here keeps them
+ * compatible without requiring any changes to overlay components.
+ */
+const mergeDriverTagsIntoLayout = (
+  dashboard: DashboardLayout,
+  tagSettings: DriverTagSettings | undefined
+): DashboardLayout => {
+  if (!tagSettings) return dashboard;
+  return {
+    ...dashboard,
+    generalSettings: {
+      ...dashboard.generalSettings,
+      driverTagSettings: tagSettings,
+    },
+  };
+};
+
+/**
  * Main dashboard bridge instance exposed to component server
  */
 export const dashboardBridge: DashboardBridge = {
@@ -45,7 +69,9 @@ export const dashboardBridge: DashboardBridge = {
     // Not used by component server, but required by interface
     return undefined;
   },
-  dashboardUpdated: (callback: (dashboard: DashboardLayout, profileId?: string) => void) => {
+  dashboardUpdated: (
+    callback: (dashboard: DashboardLayout, profileId?: string) => void
+  ) => {
     dashboardUpdateCallbacks.add(callback);
     return () => dashboardUpdateCallbacks.delete(callback);
   },
@@ -133,7 +159,10 @@ export const dashboardBridge: DashboardBridge = {
     const currentProfileId = getCurrentProfileId();
     return getProfile(currentProfileId);
   },
-  updateProfileTheme: async (profileId: string, themeSettings: DashboardProfile['themeSettings']) => {
+  updateProfileTheme: async (
+    profileId: string,
+    themeSettings: DashboardProfile['themeSettings']
+  ) => {
     updateProfileTheme(profileId, themeSettings);
   },
   stop: () => {
@@ -150,6 +179,12 @@ export const dashboardBridge: DashboardBridge = {
       openAtLogin: enabled,
     });
   },
+  getDriverTagSettings: async () => {
+    return getDriverTagSettings();
+  },
+  saveDriverTagSettings: async (settings: DriverTagSettings) => {
+    saveDriverTagSettings(settings);
+  },
 };
 
 export async function publishDashboardUpdates(
@@ -157,13 +192,14 @@ export async function publishDashboardUpdates(
   analytics: Analytics
 ) {
   onDashboardUpdated((dashboard) => {
-    overlayManager.closeOrCreateWindows(dashboard);
-    overlayManager.publishMessage('dashboardUpdated', dashboard);
+    const merged = mergeDriverTagsIntoLayout(dashboard, getDriverTagSettings());
+    overlayManager.closeOrCreateWindows(merged);
+    overlayManager.publishMessage('dashboardUpdated', merged);
     // Notify component server bridge subscribers
     dashboardUpdateCallbacks.forEach((callback) => {
       try {
         // We don't know the profileId here, so we pass undefined
-        callback(dashboard, undefined);
+        callback(merged, undefined);
       } catch (err) {
         console.error('Error in dashboard update callback:', err);
       }
@@ -283,18 +319,25 @@ export async function publishDashboardUpdates(
     return dashboardBridge.getDashboardForProfile(profileId);
   });
 
-  ipcMain.handle('updateProfileTheme', (_, profileId: string, themeSettings: DashboardProfile['themeSettings']) => {
-    updateProfileTheme(profileId, themeSettings);
+  ipcMain.handle(
+    'updateProfileTheme',
+    (
+      _,
+      profileId: string,
+      themeSettings: DashboardProfile['themeSettings']
+    ) => {
+      updateProfileTheme(profileId, themeSettings);
 
-    // If updating the current profile, force refresh overlays
-    const currentProfileId = getCurrentProfileId();
-    if (profileId === currentProfileId) {
-      const dashboard = getDashboard(profileId);
-      if (dashboard) {
-        overlayManager.forceRefreshOverlays(dashboard);
+      // If updating the current profile, force refresh overlays
+      const currentProfileId = getCurrentProfileId();
+      if (profileId === currentProfileId) {
+        const dashboard = getDashboard(profileId);
+        if (dashboard) {
+          overlayManager.forceRefreshOverlays(dashboard);
+        }
       }
     }
-  });
+  );
 
   ipcMain.handle('autostart:set', (_event, enabled: boolean) => {
     app.setLoginItemSettings({
@@ -307,7 +350,40 @@ export async function publishDashboardUpdates(
   ipcMain.handle('autostart:get', () => {
     return app.getLoginItemSettings().openAtLogin;
   });
-};
+
+  ipcMain.handle('getDriverTagSettings', () => {
+    const settings = getDriverTagSettings();
+    if (!settings) {
+      // Auto-migrate from current profile's dashboard if global is not yet set
+      const currentProfileId = getCurrentProfileId();
+      const dashboard = getDashboard(currentProfileId);
+      const profileTagSettings = dashboard?.generalSettings?.driverTagSettings;
+      if (profileTagSettings) {
+        saveDriverTagSettings(profileTagSettings);
+        return profileTagSettings;
+      }
+    }
+    return settings;
+  });
+
+  ipcMain.handle('saveDriverTagSettings', (_, settings: DriverTagSettings) => {
+    saveDriverTagSettings(settings);
+    // Broadcast merged dashboard to all overlays so they reflect the new tags
+    const currentProfileId = getCurrentProfileId();
+    const dashboard = getDashboard(currentProfileId);
+    if (dashboard) {
+      const merged = mergeDriverTagsIntoLayout(dashboard, settings);
+      overlayManager.publishMessage('dashboardUpdated', merged);
+      dashboardUpdateCallbacks.forEach((callback) => {
+        try {
+          callback(merged, currentProfileId);
+        } catch (err) {
+          console.error('Error in dashboard update callback:', err);
+        }
+      });
+    }
+  });
+}
 
 /**
  * Notify all registered callbacks that demo mode has changed
@@ -326,4 +402,3 @@ export function notifyDemoModeChanged(isDemoMode: boolean) {
     }
   });
 }
-

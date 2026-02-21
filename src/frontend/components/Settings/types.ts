@@ -97,6 +97,11 @@ export interface StandingsWidgetSettings extends BaseWidgetSettings {
     showOnlyWhenOnTrack: boolean;
     useLivePosition: boolean;
     position: { enabled: boolean };
+    driverTag?: {
+      enabled: boolean;
+      position: 'before-name' | 'after-name' | 'before-logo' | 'after-logo';
+      widthPx: number;
+    };
     driverName: {
       enabled: boolean;
       showStatusBadges: boolean;
@@ -197,6 +202,11 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
       precision: number;
     };
     position: { enabled: boolean };
+    driverTag?: {
+      enabled: boolean;
+      position: 'before-name' | 'after-name' | 'before-logo' | 'after-logo';
+      widthPx: number;
+    };
     driverName: {
       enabled: boolean;
       showStatusBadges: boolean;
