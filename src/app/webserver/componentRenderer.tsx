@@ -291,7 +291,9 @@ export class WebSocketBridge implements IrSdkBridge {
     return () => this.sessionCallbacks.delete(callback);
   }
 
-  onRunningState(callback: (running: boolean) => void): (() => void) | undefined {
+  onRunningState(
+    callback: (running: boolean) => void
+  ): (() => void) | undefined {
     if (!callback) return undefined;
     this.runningCallbacks.add(callback);
     return () => this.runningCallbacks.delete(callback);
@@ -362,6 +364,14 @@ export class WebSocketBridge implements IrSdkBridge {
   setAutoStart(): Promise<void> {
     // Not supported by component browser
     return new Promise<void>((resolve) => resolve());
+  }
+
+  getDriverTagSettings(): Promise<undefined> {
+    return Promise.resolve(undefined);
+  }
+
+  saveDriverTagSettings(): Promise<void> {
+    return Promise.resolve();
   }
 
   async resetDashboard(resetEverything: boolean): Promise<any> {
@@ -510,7 +520,9 @@ export class WebSocketBridge implements IrSdkBridge {
     }
   }
 
-  onDemoModeChanged(callback: (value: boolean) => void): (() => void) | undefined {
+  onDemoModeChanged(
+    callback: (value: boolean) => void
+  ): (() => void) | undefined {
     this.demoModeCallbacks.add(callback);
     if (this.currentIsDemoMode !== undefined) {
       try {

@@ -44,26 +44,36 @@ export const mockDashboardBridge: DashboardBridge = {
   getAnalyticsOptOut: () => Promise.resolve(false),
   setAnalyticsOptOut: () => Promise.resolve(),
   // Profile management mocks
-  listProfiles: () => Promise.resolve([
-    { id: 'default', name: 'Default', createdAt: new Date().toISOString(), lastModified: new Date().toISOString() }
-  ]),
-  createProfile: (name: string) => Promise.resolve({
-    id: 'mock-id',
-    name,
-    createdAt: new Date().toISOString(),
-    lastModified: new Date().toISOString()
-  }),
+  listProfiles: () =>
+    Promise.resolve([
+      {
+        id: 'default',
+        name: 'Default',
+        createdAt: new Date().toISOString(),
+        lastModified: new Date().toISOString(),
+      },
+    ]),
+  createProfile: (name: string) =>
+    Promise.resolve({
+      id: 'mock-id',
+      name,
+      createdAt: new Date().toISOString(),
+      lastModified: new Date().toISOString(),
+    }),
   deleteProfile: () => Promise.resolve(),
   renameProfile: () => Promise.resolve(),
   switchProfile: () => Promise.resolve(),
-  getCurrentProfile: () => Promise.resolve({
-    id: 'default',
-    name: 'Default',
-    createdAt: new Date().toISOString(),
-    lastModified: new Date().toISOString()
-  }),
+  getCurrentProfile: () =>
+    Promise.resolve({
+      id: 'default',
+      name: 'Default',
+      createdAt: new Date().toISOString(),
+      lastModified: new Date().toISOString(),
+    }),
   updateProfileTheme: async () => undefined,
   getDashboardForProfile: async () => null,
   stop: () => undefined,
-  setAutoStart:() => Promise.resolve()
+  setAutoStart: () => Promise.resolve(),
+  getDriverTagSettings: async () => undefined,
+  saveDriverTagSettings: async () => undefined,
 };

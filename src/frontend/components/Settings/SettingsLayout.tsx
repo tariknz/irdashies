@@ -114,6 +114,14 @@ export const SettingsLayout = () => {
                 General
               </Link>
             </li>
+            <li>
+              <Link
+                to="/settings/driver-tags"
+                className={menuItemClass('/driver-tags')}
+              >
+                Driver Tags
+              </Link>
+            </li>
           </ul>
           <ul className="flex flex-col gap-2 flex-1 mb-2">
             <li>
@@ -122,14 +130,6 @@ export const SettingsLayout = () => {
                 className={menuItemClass('/blindspotmonitor')}
               >
                 Blind Spot Monitor
-              </Link>
-            </li>
-            <li>
-              <Link
-                to="/settings/driver-tags"
-                className={menuItemClass('/driver-tags')}
-              >
-                Driver Tags
               </Link>
             </li>
             <li>

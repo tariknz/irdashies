@@ -70,6 +70,15 @@ export const TagGroupsSettings = () => {
   const [pendingNewGroup, setPendingNewGroup] = useState<{ id: string } | null>(
     null
   );
+  // Sync local state once global settings finishes loading
+  useEffect(() => {
+    if (!loading) {
+      setSettings(globalTagSettings);
+      setEntryRows(loadEntryRows(globalTagSettings));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading]);
+
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [lastAddedKey, setLastAddedKey] = useState<string | null>(null);
   const inputRefs = useRef<Record<string, HTMLInputElement | null>>({});
