@@ -62,7 +62,7 @@ export const SettingsLayout = () => {
   }
 
   return (
-    <div className="flex flex-col gap-4 bg-slate-700 p-4 rounded-md w-full h-full">
+    <div className="flex flex-col gap-4 bg-slate-700 p-4 w-full h-full rounded-md">
       <div className="flex flex-row gap-4 items-center justify-between">
         <div className="flex flex-row gap-4 items-center">
           <GearIcon size={32} weight="bold" />

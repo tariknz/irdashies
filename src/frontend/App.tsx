@@ -12,6 +12,7 @@ import { Settings } from './components/Settings/Settings';
 import { ThemeManager } from './components/ThemeManager/ThemeManager';
 import { HideUIWrapper } from './components/HideUIWrapper/HideUIWrapper';
 import { OverlayContainer } from './components/OverlayContainer';
+import { TitleBar } from './components/TitleBar/TitleBar';
 
 /**
  * Check if this window is the settings window based on URL hash
@@ -25,11 +26,18 @@ const isSettingsWindow = () => {
  */
 const SettingsApp = () => {
   return (
-    <HashRouter>
-      <Routes>
-        <Route path="/settings/*" element={<Settings />} />
-      </Routes>
-    </HashRouter>
+    <div className="flex flex-col h-full bg-slate-950">
+      <div className="m-3">
+        <TitleBar />
+      </div>
+      <div className="flex-1 min-h-0 mx-3 mb-3">
+        <HashRouter>
+          <Routes>
+            <Route path="/settings/*" element={<Settings />} />
+          </Routes>
+        </HashRouter>
+      </div>
+    </div>
   );
 };
 

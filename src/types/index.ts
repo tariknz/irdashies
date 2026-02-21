@@ -7,3 +7,4 @@ export * from './telemetry';
 export * from './pitLane';
 export * from './fuelCalculatorBridge';
 export * from './widgetId';
+export * from './windowControlsBridge';
