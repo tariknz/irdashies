@@ -16,6 +16,7 @@ export interface SessionVisibilitySettings {
 export interface StandingsWidgetSettings extends BaseWidgetSettings {
   config: {
     iratingChange: { enabled: boolean };
+    positionChange: { enabled: boolean };
     badge: {
       enabled: boolean;
       badgeFormat:

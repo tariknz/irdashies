@@ -3,7 +3,9 @@ import {
   createDriverStandings,
   groupStandingsByClass,
   sliceRelevantDrivers,
+  augmentStandingsWithPositionChange,
 } from './createStandings';
+import type { Standings } from './createStandings';
 import type { Session, Telemetry, SessionInfo, Driver } from '@irdashies/types';
 
 describe('createStandings', () => {
@@ -365,6 +367,109 @@ describe('createStandings', () => {
 
     expect(standings).toHaveLength(1);
     expect(standings[0].driver.name).toBe('Driver 1');
+  });
+
+  describe('augmentStandingsWithPositionChange', () => {
+    const makeStanding = (carIdx: number, classPosition: number): Standings =>
+      ({
+        carIdx,
+        classPosition,
+        isPlayer: false,
+        driver: {
+          name: `Driver ${carIdx}`,
+          carNum: `${carIdx}`,
+          license: 'A',
+          rating: 1000,
+        },
+        carClass: {
+          id: 1,
+          color: 0,
+          name: 'GT3',
+          relativeSpeed: 1,
+          estLapTime: 0,
+        },
+      }) as Standings;
+
+    it('should return standings unchanged when no qualifying results', () => {
+      const grouped: [string, Standings[]][] = [
+        ['1', [makeStanding(0, 1), makeStanding(1, 2)]],
+      ];
+      const result = augmentStandingsWithPositionChange(grouped, undefined);
+      expect(result[0][1][0].positionChange).toBeUndefined();
+      expect(result[0][1][1].positionChange).toBeUndefined();
+    });
+
+    it('should return standings unchanged when qualifying results are empty', () => {
+      const grouped: [string, Standings[]][] = [['1', [makeStanding(0, 1)]]];
+      const result = augmentStandingsWithPositionChange(grouped, []);
+      expect(result[0][1][0].positionChange).toBeUndefined();
+    });
+
+    it('should calculate positive positionChange when driver moved up', () => {
+      // Started P3, now P1 → +2
+      const grouped: [string, Standings[]][] = [['1', [makeStanding(0, 1)]]];
+      const qualifyingResults = [{ CarIdx: 0, ClassPosition: 2 }] as never;
+      const result = augmentStandingsWithPositionChange(
+        grouped,
+        qualifyingResults
+      );
+      expect(result[0][1][0].positionChange).toBe(2); // qualifyPos(3) - currentPos(1) = +2
+    });
+
+    it('should calculate negative positionChange when driver dropped back', () => {
+      // Started P1, now P3 → -2
+      const grouped: [string, Standings[]][] = [['1', [makeStanding(0, 3)]]];
+      const qualifyingResults = [{ CarIdx: 0, ClassPosition: 0 }] as never;
+      const result = augmentStandingsWithPositionChange(
+        grouped,
+        qualifyingResults
+      );
+      expect(result[0][1][0].positionChange).toBe(-2); // qualifyPos(1) - currentPos(3) = -2
+    });
+
+    it('should return zero positionChange when position unchanged', () => {
+      const grouped: [string, Standings[]][] = [['1', [makeStanding(0, 2)]]];
+      const qualifyingResults = [{ CarIdx: 0, ClassPosition: 1 }] as never;
+      const result = augmentStandingsWithPositionChange(
+        grouped,
+        qualifyingResults
+      );
+      expect(result[0][1][0].positionChange).toBe(0);
+    });
+
+    it('should leave positionChange undefined for cars not in qualifying results', () => {
+      const grouped: [string, Standings[]][] = [
+        ['1', [makeStanding(0, 1), makeStanding(99, 2)]],
+      ];
+      const qualifyingResults = [{ CarIdx: 0, ClassPosition: 0 }] as never;
+      const result = augmentStandingsWithPositionChange(
+        grouped,
+        qualifyingResults
+      );
+      expect(result[0][1][0].positionChange).toBe(0);
+      expect(result[0][1][1].positionChange).toBeUndefined();
+    });
+
+    it('should handle multiple classes independently', () => {
+      const grouped: [string, Standings[]][] = [
+        ['1', [makeStanding(0, 1), makeStanding(1, 2)]],
+        ['2', [makeStanding(2, 1), makeStanding(3, 2)]],
+      ];
+      const qualifyingResults = [
+        { CarIdx: 0, ClassPosition: 1 }, // started P2, now P1 → +1
+        { CarIdx: 1, ClassPosition: 0 }, // started P1, now P2 → -1
+        { CarIdx: 2, ClassPosition: 0 }, // started P1, now P1 → 0
+        { CarIdx: 3, ClassPosition: 2 }, // started P3, now P2 → +1
+      ] as never;
+      const result = augmentStandingsWithPositionChange(
+        grouped,
+        qualifyingResults
+      );
+      expect(result[0][1][0].positionChange).toBe(1);
+      expect(result[0][1][1].positionChange).toBe(-1);
+      expect(result[1][1][0].positionChange).toBe(0);
+      expect(result[1][1][1].positionChange).toBe(1);
+    });
   });
 
   describe('sliceRelevantDrivers', () => {

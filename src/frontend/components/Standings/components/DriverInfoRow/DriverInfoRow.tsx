@@ -17,6 +17,7 @@ import { DriverNameCell } from './cells/DriverNameCell';
 import { FastestTimeCell } from './cells/FastestTimeCell';
 import { IratingChangeCell } from './cells/IratingChangeCell';
 import { LapTimeDeltasCell } from './cells/LapTimeDeltasCell';
+import { PositionChangeCell } from './cells/PositionChangeCell';
 import { LastTimeCell } from './cells/LastTimeCell';
 import { PitStatusCell } from './cells/PitStatusCell';
 import { PositionCell } from './cells/PositionCell';
@@ -38,6 +39,7 @@ interface DriverRowInfoProps {
   license?: string;
   rating?: number;
   iratingChangeValue?: number;
+  positionChange?: number;
   lastTime?: number;
   fastestTime?: number;
   lastTimeState?: LastTimeState;
@@ -115,6 +117,7 @@ const getDisplayProps = (props: DriverRowInfoProps) => {
     license: dummyData.license,
     rating: dummyData.rating,
     iratingChangeValue: dummyData.iratingChangeValue,
+    positionChange: 0,
     lapTimeDeltas: dummyData.lapTimeDeltas,
     gap: dummyData.gap,
     interval: dummyData.interval,
@@ -148,6 +151,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
     license,
     rating,
     iratingChangeValue,
+    positionChange,
     lastTime,
     fastestTime,
     lastTimeState,
@@ -330,6 +334,20 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
         ),
       },
       {
+        id: 'positionChange',
+        shouldRender:
+          (displayOrder ? displayOrder.includes('positionChange') : true) &&
+          (config && 'positionChange' in config
+            ? config.positionChange.enabled
+            : false),
+        component: (
+          <PositionChangeCell
+            key="positionChange"
+            positionChange={positionChange}
+          />
+        ),
+      },
+      {
         id: 'delta',
         shouldRender:
           (displayOrder ? displayOrder.includes('delta') : true) &&
@@ -474,6 +492,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
     license,
     rating,
     iratingChangeValue,
+    positionChange,
     delta,
     deltaDecimalPlaces,
     gap,

@@ -49,6 +49,11 @@ const sortableSettings: SortableSetting[] = [
   },
   { id: 'badge', label: 'Driver Badge', configKey: 'badge' },
   { id: 'iratingChange', label: 'iRating Change', configKey: 'iratingChange' },
+  {
+    id: 'positionChange',
+    label: 'Position Change',
+    configKey: 'positionChange',
+  },
   { id: 'gap', label: 'Gap', configKey: 'gap' },
   { id: 'interval', label: 'Interval', configKey: 'interval' },
   { id: 'fastestTime', label: 'Best Time', configKey: 'fastestTime' },
@@ -64,6 +69,7 @@ const sortableSettings: SortableSetting[] = [
 
 const defaultConfig: StandingsWidgetSettings['config'] = {
   iratingChange: { enabled: true },
+  positionChange: { enabled: false },
   badge: { enabled: true, badgeFormat: 'license-color-rating-bw' },
   delta: { enabled: true },
   gap: { enabled: false },
@@ -149,6 +155,10 @@ const migrateConfig = (
   return {
     iratingChange: {
       enabled: (config.iratingChange as { enabled?: boolean })?.enabled ?? true,
+    },
+    positionChange: {
+      enabled:
+        (config.positionChange as { enabled?: boolean })?.enabled ?? false,
     },
     badge: {
       enabled: (config.badge as { enabled?: boolean })?.enabled ?? true,
