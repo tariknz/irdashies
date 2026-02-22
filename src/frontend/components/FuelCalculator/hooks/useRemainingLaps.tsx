@@ -40,22 +40,18 @@ export function useRemainingLaps({
       ? parseInt(sessionLaps, 10)
       : sessionLaps || 0;
 
-  // Check for white/checkered flag
   if (sessionFlags !== undefined && isFinalLap(sessionFlags)) {
     const remainingDistance = Math.max(0, 1 - (lapDistPct || 0));
     lapsRemaining = remainingDistance;
     lapsRemainingRefuel = remainingDistance;
     totalLaps = (lap || 0) + 1;
   } else if (sessionLapsRemain === TIMED_RACE_LAPS_REMAINING) {
-    // Timed Race Logic
     if (calculatedTotalRaceLaps > 0 && lap !== undefined) {
-      // Use the hook's result directly
       totalLaps = Math.ceil(calculatedTotalRaceLaps);
       lapsRemaining = Math.max(0, totalLaps - (lap - 1) - (lapDistPct || 0));
 
-      // Add safety buffer for refuel calculations
       const TIME_PADDING_REFUEL = 45.0;
-      const avgLapTimeForBuffer = avgLapTime > 0 ? avgLapTime : 90; // Default 90s if unknown
+      const avgLapTimeForBuffer = avgLapTime > 0 ? avgLapTime : 90;
       const bufferLaps = TIME_PADDING_REFUEL / avgLapTimeForBuffer;
       lapsRemainingRefuel = lapsRemaining + bufferLaps;
     } else if (
@@ -63,7 +59,6 @@ export function useRemainingLaps({
       sessionTimeRemain > 0 &&
       lap !== undefined
     ) {
-      // Fallback to local calculation
       const projectionLapTime = avgLapTime > 0 ? avgLapTime : 90;
 
       const timeAtLine =
@@ -96,9 +91,7 @@ export function useRemainingLaps({
         lapsRemainingRefuel = 1 + futureLapsRefuel;
       }
     } else {
-      // Fallback or Timer ended
       if (sessionTimeRemain === -1) {
-        // Infinite time? Fallback to fuel estimate
         const estimatedLapsFromFuel =
           trendAdjustedConsumption > 0 && fuelLevel !== undefined
             ? Math.floor(fuelLevel / trendAdjustedConsumption)
@@ -107,19 +100,14 @@ export function useRemainingLaps({
         lapsRemainingRefuel = lapsRemaining;
         if (lap !== undefined) totalLaps = lap + lapsRemaining;
       } else {
-        // Timer <= 0
         const remainingDistance = Math.max(0, 1 - (lapDistPct || 0));
         lapsRemaining = remainingDistance;
         lapsRemainingRefuel = lapsRemaining;
         if (lap !== undefined) totalLaps = lap + 1;
       }
     }
-  } else {
-    // Not a timed race, sync refuel count
-    lapsRemainingRefuel = lapsRemaining;
   }
 
-  // Sanity Checks
   if (lapsRemaining > 1000) {
     lapsRemaining = 1000;
     lapsRemainingRefuel = 1000;

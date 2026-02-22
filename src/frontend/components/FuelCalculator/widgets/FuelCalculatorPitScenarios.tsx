@@ -7,7 +7,6 @@ import type {
 
 /* eslint-disable react/prop-types */
 
-// Helper component for the Target row to avoid duplication
 const TargetScenarioRow: React.FC<{
   targetLap: number;
   fuelData: FuelCalculation;
@@ -25,7 +24,6 @@ const TargetScenarioRow: React.FC<{
 }) => {
   const lapsLeftAfterPit = Math.max(0, fuelData.totalLaps - targetLap);
   const safetyMargin = settings?.safetyMargin ?? 0.05;
-  // Select consumption based on basis setting
   const basis = settings?.targetPitLapBasis || 'avg';
   let consumption = displayData.avgLaps;
 
@@ -50,7 +48,6 @@ const TargetScenarioRow: React.FC<{
       break;
   }
 
-  // Fallback if selected is 0 or null
   consumption =
     consumption || displayData.avgLaps || displayData.avg10Laps || 0;
   const fuelToAddHypothetical =
@@ -111,7 +108,6 @@ export const FuelCalculatorPitScenarios = memo<FuelCalculatorWidgetProps>(
   }) => {
     if (!fuelData || !displayData) return null;
 
-    // Custom style handling for separate label/value sizes
     const widgetStyle =
       customStyles || (widgetId && settings?.widgetStyles?.[widgetId]) || {};
     const labelFontSize = widgetStyle.labelFontSize
@@ -127,7 +123,6 @@ export const FuelCalculatorPitScenarios = memo<FuelCalculatorWidgetProps>(
 
     const isTesting = sessionType === 'Offline Testing';
 
-    // Determine visibility based on settings (default true if missing)
     if (settings && settings.showFuelScenarios === false) return null;
 
     if (
@@ -135,7 +130,6 @@ export const FuelCalculatorPitScenarios = memo<FuelCalculatorWidgetProps>(
       !displayData.targetScenarios ||
       displayData.targetScenarios.length === 0
     ) {
-      // Show "Pit scenarios available after more laps" placeholder if empty
       return (
         <div>
           <div className="border-t border-slate-600/30 mb-2"></div>
@@ -184,24 +178,12 @@ export const FuelCalculatorPitScenarios = memo<FuelCalculatorWidgetProps>(
           </div>
 
           {displayData.targetScenarios.map((scenario) => {
-            // Calculate values for this scenario
-            // const fuelPerLap = scenario.fuelPerLap;
-            // const lapsToCover = fuelData.lapsRemaining; // Rough estimate, technically depends on when we pit
-
             const pitLap = fuelData.currentLap + scenario.laps;
 
-            // Fuel to Add calculation:
-            // Color coding
-            // let colorClass = 'text-cyan-400';
-            // if (scenario.isCurrentTarget) colorClass = 'text-green-400 font-medium';
-
-            // Calculate hypothetical ADD
-            // If we drive `scenario.laps` laps, we arrive at pit.
             const lapsLeftAfterPit = Math.max(0, fuelData.totalLaps - pitLap);
             const safetyMargin = settings?.safetyMargin ?? 0.05;
             const consumption =
               displayData.avgLaps || displayData.avg10Laps || 0;
-            // Additive Safety Margin logic (value is in Liters/Gallons)
             const marginAmount =
               settings?.fuelUnits === 'gal'
                 ? safetyMargin * 3.78541
@@ -210,7 +192,6 @@ export const FuelCalculatorPitScenarios = memo<FuelCalculatorWidgetProps>(
               lapsLeftAfterPit * consumption + marginAmount;
             const fuelToAddHypothetical = Math.max(0, calculationFuelNeeded);
 
-            // Calculate estimated fuel at finish: (Added) - (Needed for remaining laps)
             const fuelBurnedToFinish = lapsLeftAfterPit * consumption;
             const estimatedFinishFuel = Math.max(
               0,
@@ -234,8 +215,7 @@ export const FuelCalculatorPitScenarios = memo<FuelCalculatorWidgetProps>(
               : estimatedFinishFuel.toFixed(1);
             const windowDisplay = isTesting ? '--' : windowStatus;
 
-            // Row Color Logic determines the color for ALL text in the row
-            let rowColor = 'text-cyan-400'; // Default
+            let rowColor = 'text-cyan-400';
             if (windowStatus === 'Ideal') rowColor = 'text-green-400 font-bold';
             else if (windowStatus === '+1 Lap')
               rowColor = 'text-cyan-400 font-bold';
@@ -271,7 +251,6 @@ export const FuelCalculatorPitScenarios = memo<FuelCalculatorWidgetProps>(
             );
           })}
 
-          {/* Optional 4th Row for Fixed Target */}
           {settings?.enableTargetPitLap && settings.targetPitLap && (
             <TargetScenarioRow
               targetLap={settings.targetPitLap}

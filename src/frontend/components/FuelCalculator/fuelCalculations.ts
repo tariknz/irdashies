@@ -39,9 +39,6 @@ export function validateLapData(
   // Basic validation
   if (fuelUsed <= 0 || lapTime <= 0) return false;
 
-  // Filter to use only VALID laps for statistical baseline
-  // This prevents invalid laps (tows, out-laps, etc.) from polluting the baseline
-  // and causing a "death spiral" where valid recovery laps are rejected against a bad baseline.
   const validHistory = recentLaps.filter((l) => l.isValidForCalc);
 
   // Need at least 3 valid laps for statistical validation
@@ -58,8 +55,6 @@ export function validateLapData(
   const lowerBound = q1 - factor * iqr;
   const upperBound = q3 + factor * iqr;
 
-  // Additional safety: ensure we don't discard laps that are within 15% of the mean
-  // to avoid over-filtering in very consistent sessions
   const mean = fuelValues.reduce((a, b) => a + b, 0) / fuelValues.length;
   const tolerance = mean * 0.15;
 
@@ -203,8 +198,6 @@ export function detectLapCrossing(
   currentDistPct: number,
   lastDistPct: number
 ): boolean {
-  // Use stricter threshold to avoid false positives at exact 0.0/1.0
-  // Broadened to handle potential telemetry gaps or exact 1.0 values
   return (
     lastDistPct > 0.8 && currentDistPct < 0.2 && currentDistPct < lastDistPct
   );

@@ -27,7 +27,6 @@ export const FuelCalculatorTargetMessage = memo<FuelCalculatorWidgetProps>(
     const targetLap = settings.targetPitLap;
     const lapsLeftAfterPit = Math.max(0, fuelData.totalLaps - targetLap);
     const safetyMargin = settings?.safetyMargin ?? 0.05;
-    // Select consumption based on basis setting
     const basis = settings?.targetPitLapBasis || 'avg';
     let consumption: number | null = displayData.avgLaps;
 
@@ -52,10 +51,8 @@ export const FuelCalculatorTargetMessage = memo<FuelCalculatorWidgetProps>(
         break;
     }
 
-    // Fallback if selected is 0 or null
     consumption =
       consumption || displayData.avgLaps || displayData.avg10Laps || 0;
-    // Additive Safety Margin logic
     const marginAmount =
       settings?.fuelUnits === 'gal' ? safetyMargin * 3.78541 : safetyMargin;
     const fuelNeeded = lapsLeftAfterPit * consumption + marginAmount;

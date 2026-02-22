@@ -38,14 +38,12 @@ export function useLapDetection({
   sessionTimeRemain,
   settings,
 }: UseLapDetectionProps) {
-  // Store actions
   const updateLapCrossing = useFuelStore((state) => state.updateLapCrossing);
   const updateLapDistPct = useFuelStore((state) => state.updateLapDistPct);
   const addLapData = useFuelStore((state) => state.addLapData);
   const storedTrackId = useFuelStore((state) => state.trackId);
   const storedCarName = useFuelStore((state) => state.carName);
 
-  // Refs for internal logic loop
   const lastSessionTimeRef = useRef<number | undefined>(undefined);
   const lastRefuelTimeRef = useRef<number | undefined>(undefined);
   const prevFuelLevelRef = useRef<number | undefined>(undefined);
@@ -53,29 +51,21 @@ export function useLapDetection({
   const wasOnPitRoadDuringLapRef = useRef(false);
   const isLapFullyGreenRef = useRef(true);
 
-  // State for Derived Calculations
   const [prevLapDistPct, setPrevLapDistPct] = useState<number | undefined>(
     undefined
   );
   const [isLapDistPctReset, setIsLapDistPctReset] = useState(false);
 
-  // State for Race Finish
   const [isRaceFinished, setIsRaceFinished] = useState(false);
   const [checkFlagLap, setCheckFlagLap] = useState<number | null>(null);
 
-  // --------------------------------------------------------------------------
-  // Detect lapDistPct resets (Derived State Calculation)
-  // --------------------------------------------------------------------------
-  // Check for changes in prop
   if (lapDistPct !== prevLapDistPct) {
     setPrevLapDistPct(lapDistPct);
 
     if (lapDistPct !== undefined && prevLapDistPct !== undefined) {
-      // Logic from original effect:
       if (lapDistPct < prevLapDistPct - LAP_DIST_RESET_THRESHOLD) {
         if (!isLapDistPctReset) setIsLapDistPctReset(true);
       } else if (isLapDistPctReset) {
-        // Hysteresis release
         if (lapDistPct > prevLapDistPct + 0.05) {
           setIsLapDistPctReset(false);
         }
@@ -83,11 +73,6 @@ export function useLapDetection({
     }
   }
 
-  // --------------------------------------------------------------------------
-  // Flags & Status Monitoring
-  // --------------------------------------------------------------------------
-
-  // Update session flags state
   const lastSessionFlagsRef = useRef<number | undefined>(undefined);
   useEffect(() => {
     if (
@@ -113,7 +98,6 @@ export function useLapDetection({
     }
   }, [onPitRoad]);
 
-  // Track if ENTIRE lap was Green
   useEffect(() => {
     if (sessionFlags !== undefined) {
       if (!isGreenFlag(sessionFlags)) {
@@ -122,9 +106,6 @@ export function useLapDetection({
     }
   }, [sessionFlags]);
 
-  // --------------------------------------------------------------------------
-  // Race Finish Monitor (Render-Phase Derived State Update Logic)
-  // --------------------------------------------------------------------------
   if (
     sessionFlags !== undefined &&
     lap !== undefined &&
@@ -158,9 +139,6 @@ export function useLapDetection({
     }
   }
 
-  // --------------------------------------------------------------------------
-  // Main Lap & Fuel Processing
-  // --------------------------------------------------------------------------
   useEffect(() => {
     if (
       lapDistPct === undefined ||
@@ -174,12 +152,10 @@ export function useLapDetection({
 
     const state = useFuelStore.getState();
 
-    // Detect Refueling
     if (prevFuelLevelRef.current !== undefined) {
       const fuelDelta = fuelLevel - prevFuelLevelRef.current;
       const timeDelta = sessionTime - (lastRefuelTimeRef.current || 0);
 
-      // Detect if: significant increase AND not recently
       if (fuelDelta > 0.05 && timeDelta > 5) {
         useFuelStore.getState().addRefuel(fuelDelta);
         lastRefuelTimeRef.current = sessionTime;
@@ -187,11 +163,9 @@ export function useLapDetection({
     }
     prevFuelLevelRef.current = fuelLevel;
 
-    // Detect lap crossing
     const distCrossing = detectLapCrossing(lapDistPct, state.lastLapDistPct);
     const lapIncremented = lap > state.lastLap;
 
-    // Check for Session Reset / Lap count backwards
     if (lap < state.lastLap) {
       if (
         lastSessionTimeRef.current !== undefined &&
@@ -232,7 +206,6 @@ export function useLapDetection({
       const fuelUsed = state.lapStartFuel + state.accumulatedRefuel - fuelLevel;
       const lapTime = timeSinceLastCrossing;
 
-      // Record lap data
       if (completedLap >= 1 && fuelUsed > 0 && lapTime >= MIN_LAP_TIME) {
         const recentLaps = state.getRecentLaps(10);
         const isGreen = isLapFullyGreenRef.current;
@@ -261,7 +234,8 @@ export function useLapDetection({
           storedCarName !== undefined &&
           (settings?.enableStorage ?? true)
         ) {
-          window.fuelCalculatorBridge.saveLap(
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (window as any).fuelCalculatorBridge.saveLap(
             storedTrackId,
             storedCarName,
             lapData
@@ -278,10 +252,8 @@ export function useLapDetection({
 
       updateLapCrossing(lapDistPct, fuelLevel, sessionTime, nextLap, onPitRoad);
     } else if (state.lastLapDistPct === 0) {
-      // Initialize
       updateLapCrossing(lapDistPct, fuelLevel, sessionTime, lap, onPitRoad);
     } else {
-      // Always update distance
       updateLapDistPct(lapDistPct);
     }
   }, [

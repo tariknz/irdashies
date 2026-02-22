@@ -6,7 +6,6 @@ import { getFuelStatusColors } from './FuelCalculatorGauge';
 
 export const FuelCalculatorTimeEmpty = memo<FuelCalculatorWidgetProps>(
   ({ fuelData, displayData, settings, widgetId, customStyles, isCompact }) => {
-    // Custom style handling for separate label/value sizes
     const widgetStyle =
       customStyles || (widgetId && settings?.widgetStyles?.[widgetId]) || {};
     const labelFontSize = widgetStyle.labelFontSize
@@ -22,11 +21,8 @@ export const FuelCalculatorTimeEmpty = memo<FuelCalculatorWidgetProps>(
 
     if (!fuelData || !displayData) return null;
 
-    // Calculate time until empty
-    // lapsWithFuel * avgLapTime
     const secondsLeft = displayData.lapsWithFuel * (fuelData.avgLapTime || 0);
 
-    // Format to HH:MM:SS
     const formatTime = (secs: number) => {
       if (!secs || secs < 0) return '00:00:00';
       const h = Math.floor(secs / 3600);
@@ -35,7 +31,6 @@ export const FuelCalculatorTimeEmpty = memo<FuelCalculatorWidgetProps>(
       return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
     };
 
-    // Fuel status border color
     const status = fuelData.fuelStatus || 'safe';
     const statusColors = getFuelStatusColors(status);
     const borderColor = statusColors.border;

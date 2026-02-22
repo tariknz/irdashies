@@ -5,10 +5,8 @@ import type { FuelCalculatorWidgetProps } from '../types';
 
 export const FuelCalculatorEconomyPredict = memo<FuelCalculatorWidgetProps>(
   ({ fuelData, displayData, settings, widgetId, customStyles, isCompact }) => {
-    // Custom style handling for separate label/value sizes
     const widgetStyle =
       customStyles || (widgetId && settings?.widgetStyles?.[widgetId]) || {};
-    // Use slightly larger default value font size for readability
     const labelFontSize = widgetStyle.labelFontSize
       ? `${widgetStyle.labelFontSize}px`
       : widgetStyle.fontSize
@@ -20,8 +18,6 @@ export const FuelCalculatorEconomyPredict = memo<FuelCalculatorWidgetProps>(
         ? `${widgetStyle.fontSize * 1.2}px`
         : '14px';
 
-    // Determine which data to show
-    // Reverted to always 'live' mode as per user request
     const scenariosToShow = displayData?.targetScenarios || [];
 
     if (
@@ -52,7 +48,6 @@ export const FuelCalculatorEconomyPredict = memo<FuelCalculatorWidgetProps>(
           ).toString();
           const fuelPerLap = scenario.fuelPerLap.toFixed(2);
 
-          // Highlight current target
           const textColor = isCurrent ? 'text-green-400' : 'text-slate-300';
           const valueColor = isCurrent
             ? 'text-green-400 font-bold'

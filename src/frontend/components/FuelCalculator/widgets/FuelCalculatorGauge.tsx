@@ -53,7 +53,6 @@ export const FuelCalculatorGauge = memo<FuelCalculatorWidgetProps>(
     customStyles,
     isCompact,
   }) => {
-    // Custom style handling for separate label/value sizes
     const widgetStyle =
       customStyles || (widgetId && settings?.widgetStyles?.[widgetId]) || {};
     const labelFontSize = widgetStyle.labelFontSize
@@ -81,8 +80,6 @@ export const FuelCalculatorGauge = memo<FuelCalculatorWidgetProps>(
     const colors = getFuelStatusColors(status);
     const gradient = colors.bar;
     const lapsWithFuel = displayData.lapsWithFuel;
-    // const isDanger = lapsWithFuel < (settings?.dangerLapsThreshold || 1.5); // Removed as per instruction
-    // const isCaution = lapsWithFuel < (settings?.cautionLapsThreshold || 3); // Removed as per instruction
 
     const levelStr = formatFuel(currentLevel, unit, 1);
     const lapsStr = lapsWithFuel.toFixed(1);

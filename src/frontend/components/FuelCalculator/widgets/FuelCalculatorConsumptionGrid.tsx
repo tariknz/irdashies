@@ -18,7 +18,6 @@ export const FuelCalculatorConsumptionGrid = memo<FuelCalculatorWidgetProps>(
     sessionType,
     totalRaceLaps = 0,
   }) => {
-    // Custom style handling for separate label/value sizes
     const widgetStyle =
       customStyles || (widgetId && settings?.widgetStyles?.[widgetId]) || {};
 
@@ -33,7 +32,6 @@ export const FuelCalculatorConsumptionGrid = memo<FuelCalculatorWidgetProps>(
         ? `${widgetStyle.fontSize}px`
         : '12px';
 
-    // Container style for other props like padding/margins if needed, but font size is handled per element now
     const containerStyle: React.CSSProperties = {
       ...(customStyles ||
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -41,12 +39,9 @@ export const FuelCalculatorConsumptionGrid = memo<FuelCalculatorWidgetProps>(
         {}),
     };
 
-    // Check for "Offline Testing" or "Practice"
     const isTesting =
       sessionType === 'Offline Testing' || sessionType === 'Practice';
 
-    // Use frozen displayData directly - it is already snapshotted by the parent
-    // We do NOT want live updates here.
     const lapsRemainingToUse = displayData?.lapsRemaining || 0;
     const currentLap = displayData?.currentLap || 0;
     const estimatedTotalLaps = displayData?.totalLaps || 0;
@@ -65,32 +60,11 @@ export const FuelCalculatorConsumptionGrid = memo<FuelCalculatorWidgetProps>(
       effectiveTotalLaps = currentLap;
     }
 
-    // Grid Data (Frozen Values from Parent)
     const avg = displayData?.avgLaps || displayData?.avg10Laps || 0;
     const max = displayData?.maxLapUsage || 0;
     const last = displayData?.lastLapUsage || 0;
     const min = displayData?.minLapUsage || 0;
     const qual = displayData?.maxQualify || 0;
-    // Current usage can be live if wanted, but user asked to remove "Real Time Update"
-    // so we use the frozen LAST lap usage or similar?
-    // actually "CURR" usually means "Current Lap Projection".
-    // The user said "remove real time update from consumption grid".
-    // If we freeze "CURR", it will show 0 or the start of lap value?
-    // Usually "CURR" in the grid implies the Projected usage for the *current* lap.
-    // If we freeze it, it won't move.
-    // Let's use the 'predictiveUsage' passed prop which might be throttled or frozen,
-    // OR just use displayData?.projectedLapUsage if we want it frozen at lap start (which would be 0).
-    // However, "CURR" row usually implies "What am I doing NOW".
-    // If the user wants NO real time updates, then "CURR" might be misleading or should just be static "Last Lap"?
-    // Re-reading request: "Quero remover a atualização em tempo real do consumption grid".
-    // This likely means the "Refuel" / "At Finish" numbers shouldn't dance around.
-    // Those numbers depend on Fuel Level and Laps Remaining.
-    // If we freeze Fuel Level and Laps Remaining, the "Refuel/At Finish" columns will be stable.
-    // The "CURR" *value* (the usage itself) might still want to be live?
-    // Let's stick to using the `displayData` fully, which is frozen in parent 'frozenDisplayData'.
-    // If parent logic freezes it, then `displayData.projectedLapUsage` will be frozen too.
-    // Use frozen displayData for stable columns
-    // BUT use predictiveUsage (passed from parent's throttled trigger) for the CURR column
     const currentUsage = predictiveUsage ?? displayData?.projectedLapUsage ?? 0;
 
     // Calculate derivates (Laps, Refuel, Finish)
@@ -110,22 +84,13 @@ export const FuelCalculatorConsumptionGrid = memo<FuelCalculatorWidgetProps>(
           hideRefuel: true,
         };
 
-      // Laps calculation
       const laps = contextFuelLevel / usage;
 
-      // Total Required for Race (Distance * Usage)
-      // We use contextTotalLaps which might be live or frozen depending on the row
       const totalReq = contextTotalLaps * usage;
 
-      // Finish (Fuel at finish) -> This is effectively our BALANCE for coloring
-      // Formula: CurrentFuel - FuelNeeded
-      // FuelNeeded = LapsRemaining * Usage
       const fuelNeeded = contextLapsRemaining * usage;
       const balance = contextFuelLevel - fuelNeeded;
 
-      // Logic for Refuel Column:
-      // If Balance < 0 (Deficit): Show POSITIVE amount to ADD.
-      // If Balance >= 0 (Surplus): Show POSITIVE amount EXTRA.
       const refuelValue = balance < 0 ? Math.abs(balance) : balance;
       const isDeficit = balance < 0;
 
@@ -151,7 +116,6 @@ export const FuelCalculatorConsumptionGrid = memo<FuelCalculatorWidgetProps>(
       };
     };
 
-    // Frozen Context Data (for static rows)
     const frozenFuelLevel = fuelLevelToUse;
     const frozenLapsRemaining = lapsRemainingToUse;
     const frozenTotalLaps = effectiveTotalLaps; // Already based on displayData (frozen)
@@ -164,16 +128,6 @@ export const FuelCalculatorConsumptionGrid = memo<FuelCalculatorWidgetProps>(
       liveFuelData?.lapsRemaining ?? frozenLapsRemaining;
     const dataLiveFuelLevel = liveFuelLevel || frozenFuelLevel;
 
-    // Header Logic: Usually headers should be stable too if the grid is stable,
-    // but "Total Laps" changing is a major event.
-    // The user requested removing update in middle of lap.
-    // Let's keep the Header reflecting the FROZEN state effectively to match the grid rows?
-    // Or should it be live? If I change race length, I likely want to see it up top.
-    // But if the rows below (AVG/MAX) are calculating based on OLD length, then header showing NEW length is confusing.
-    // Verdict: Header should match the rows context. Since most rows are frozen, Header uses frozenTotalLaps.
-
-    // Usage values (AVG, MAX, LAST, MIN, QUAL) are frozen at lap crossing for stability.
-    // REFUEL and balance use the frozen lap context — snapshot should be accurate.
     const avgData = calcCol(
       avg,
       frozenTotalLaps,

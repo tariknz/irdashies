@@ -30,7 +30,6 @@ export function useFuelStrategy({
   const pitSvFlags = useTelemetryValue('PitSvFlags');
   const pitSvFuel = useTelemetryValue('PitSvFuel');
 
-  // Enhanced confidence calculation
   const calculateConfidence = () => {
     if (validLapsCount >= 8) return 'high';
     if (validLapsCount >= 4) return 'medium';
@@ -40,7 +39,6 @@ export function useFuelStrategy({
 
   const confidence = calculateConfidence();
 
-  // Adjust safety margin based on confidence
   const confidenceMultiplier =
     {
       'very-low': 1.5,
@@ -51,7 +49,6 @@ export function useFuelStrategy({
 
   const safetyMargin = settings?.safetyMargin ?? 0.3;
 
-  // Calculate fuel needed with dynamic safety margin
   const marginAmount =
     settings?.fuelUnits === 'gal' ? safetyMargin * 3.78541 : safetyMargin;
   const intrinsicMargin =
@@ -62,39 +59,30 @@ export function useFuelStrategy({
   const adjustedMargin =
     (marginAmount + intrinsicMargin) * confidenceMultiplier;
 
-  // CRITICAL: Use lapsRemainingRefuel (Optimistic) for fuel calculation
   const fuelNeeded =
     lapsRemainingRefuel * trendAdjustedConsumption + adjustedMargin;
   const canFinish = fuelLevel >= fuelNeeded;
 
-  // Calculate pit window
   const pitWindowOpen = lap + 1;
   const pitWindowClose = Math.max(
     pitWindowOpen,
     lap + Math.floor(lapsWithFuel * 0.8)
   );
 
-  // Target consumption for fuel saving
   const targetConsumption = lapsRemaining > 0 ? fuelLevel / lapsRemaining : 0;
 
-  // Pit Service Awareness — Mirrors Kapps Mode 2
-  // Bit 4 (0x10) = fuel service requested. Read PitSvFuel for queued amount.
   const isFuelServiceRequested =
     pitSvFlags !== undefined && (pitSvFlags & 0x10) !== 0;
   const rawQueuedFuel =
     isFuelServiceRequested && pitSvFuel !== undefined ? pitSvFuel : 0;
 
-  // Kapps guard: if raw deficit is small (< 2L), queued fuel is likely stale
-  // (e.g. left over from a previous stint). Ignore it to avoid under-recommending.
   const rawDeficit = fuelNeeded - fuelLevel;
   const effectiveQueuedFuel = rawDeficit > 2 ? rawQueuedFuel : 0;
   const queuedFuel = effectiveQueuedFuel;
 
-  // Fuel at finish: accounts for queued fuel if significant
   const fuelAtFinish =
     fuelLevel + effectiveQueuedFuel - lapsRemaining * trendAdjustedConsumption;
 
-  // Calculate stops remaining
   let stopsRemaining: number | undefined;
   let lapsPerStint: number | undefined;
 
@@ -116,18 +104,13 @@ export function useFuelStrategy({
     }
   }
 
-  // Calculate fuel to add
   let fuelToAdd = 0;
   if (stopsRemaining !== undefined && stopsRemaining > 1) {
-    // Fill to capacity
     fuelToAdd = Math.max(0, tankCapacity - fuelLevel);
   } else {
-    // 0 or 1 stop: Add exactly what we still need on top of any already-queued fuel.
-    // Subtract effectiveQueuedFuel so we don't double-recommend what's already ordered.
     fuelToAdd = Math.max(0, fuelNeeded - fuelLevel - effectiveQueuedFuel);
   }
 
-  // Calculate earliest pit lap (Strategy)
   let earliestPitLap: number | undefined;
   if (
     stopsRemaining !== undefined &&
@@ -162,6 +145,6 @@ export function useFuelStrategy({
     targetConsumption,
     confidence,
     fuelAtFinish,
-    queuedFuel, // Expose this for UI
+    queuedFuel,
   };
 }

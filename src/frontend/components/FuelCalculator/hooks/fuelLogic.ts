@@ -252,10 +252,6 @@ export function runFuelLogic({
   }
   nextInternalState.prevFuelLevel = fuelLevel;
 
-  // 4. Calculations (Stats, Strategy, Projections)
-  // PERFORMANCE: If we just added a lap, inject it into the local calculation array
-  // so the statistics (AVG, MIN, MAX, LAST) update IMMEDIATELY without waiting
-  // for the next store update cycle.
   let lapHistory = fuelStore.getLapHistory();
   let qMax = fuelStore.qualifyConsumption;
 
@@ -304,20 +300,11 @@ export function runFuelLogic({
   const trendAdjustedConsumption =
     avgFuelPerLapBase * (1 + settings.safetyMargin / 100);
 
-  // Use the same recent-lap window for lap time as for fuel consumption.
-  // Using ALL laps can skew the estimate with slow early/formation laps,
-  // causing lapsRemaining to be underestimated for timed-race sessions.
   const recentLaps = lapsToUse.slice(0, avgLapsCount);
   const avgLapTime = calculateAvgLapTime(recentLaps) || estLapTime || 0;
   const lapsWithFuel =
     trendAdjustedConsumption > 0 ? fuelLevel / trendAdjustedConsumption : 0;
 
-  // Laps Remaining
-  // SessionLapsRemain counts the *current* in-progress lap as a full lap remaining.
-  // We subtract lapDistPct (fraction of current lap already driven) to get the true distance remaining.
-  // IMPORTANT: At lap crossing, `Lap` increments in the same telemetry frame but `SessionLapsRemain`
-  // may NOT have decremented yet (1-frame SDK lag). We cap using the official totalSessionLaps
-  // to avoid counting 1 lap too many during the snapshot at crossing.
   let lapsRemaining = 0;
   let rawTimeFractionForDisplay: number | undefined;
   if (
@@ -326,24 +313,12 @@ export function runFuelLogic({
     sessionLapsRemain < 32767
   ) {
     let lr = sessionLapsRemain - lapDistPct;
-    // Cap: laps remaining cannot exceed (totalSessionLaps - completedLaps)
-    // completedLaps = lap - 1 (laps fully completed so far)
     if (totalSessionLaps && totalSessionLaps > 0 && totalSessionLaps < 32767) {
       const completedLaps = lap - 1;
       lr = Math.min(lr, totalSessionLaps - completedLaps);
     }
     lapsRemaining = Math.max(0, lr);
   } else if (sessionTimeRemain !== undefined && sessionTimeRemain > 0) {
-    // For timed races, SessionTimeRemain is the time until the session clock hits 0
-    // (when the white flag/checkered is shown). However, iRacing mandates that ALL
-    // drivers complete the lap they're currently on when the timer expires.
-    // This means the actual laps remaining = ceil(lapDistPct + timeRemain/avgLapTime) - lapDistPct.
-    //
-    // Without the ceil: 5.68 laps predicted, but 6 actually run (0.32 laps undercount)
-    // With the ceil:    ceil(0.01 + 5.68) - 0.01 = 6 - 0.01 = 5.99 ≈ 6 ✓
-    //
-    // iRacing also returns 604800 (1 week) before the race has actually started/timer counting down.
-    // If the time is that large, we fall back to the totalSessionTime which is the allocated race time.
     const effectiveTimeRemain =
       sessionTimeRemain > 600000 &&
       sessionTimeTotal !== undefined &&
@@ -356,17 +331,12 @@ export function runFuelLogic({
     const timeFraction = effectiveTimeRemain / lapTime;
     lapsRemaining = Math.ceil(lapDistPct + timeFraction) - lapDistPct;
 
-    // For IN RACE display: use estLapTime from session info when fewer than 3 laps have
-    // been recorded, so the total laps estimate is stable from lap 0 (not just after 5 laps).
-    // estLapTime comes from CarClassEstLapTime and is calibrated per car/track.
     const lapTimeForDisplay =
       recentLaps.length >= 3 ? lapTime : estLapTime || lapTime;
     rawTimeFractionForDisplay =
       effectiveTimeRemain / lapTimeForDisplay - lapDistPct;
   }
 
-  // totalLaps: use raw float for display so header shows "X / 5.68" for timed races
-  // while lapsRemaining (ceil-based) is used for accurate refuel calculations.
   const totalLaps =
     totalSessionLaps && totalSessionLaps > 0 && totalSessionLaps < 32767
       ? totalSessionLaps

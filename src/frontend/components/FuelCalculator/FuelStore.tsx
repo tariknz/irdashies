@@ -61,7 +61,6 @@ interface FuelStoreActions {
     isOnPitRoad: boolean
   ) => void;
 
-
   /**
    * Update just the lap distance percentage (for tracking lap crossing)
    */
@@ -119,9 +118,80 @@ function sortLapsDescending(laps: FuelLapData[]): FuelLapData[] {
 /**
  * Main Zustand store for fuel calculations
  */
-export const useFuelStore = create<FuelStore>()(
-    (set, get) => ({
-      // Initial state
+export const useFuelStore = create<FuelStore>()((set, get) => ({
+  // Initial state
+  lapHistory: new Map(),
+  _sortedLapHistoryCache: null,
+  _oldestLapNumber: Infinity,
+  lastLap: 0,
+  lapStartFuel: 0,
+  lapCrossingTime: 0,
+  lastLapDistPct: 0,
+  sessionNum: -1,
+  wasOnPitRoad: false,
+  lastSessionFlags: 0,
+  qualifyConsumption: null,
+  accumulatedRefuel: 0,
+  trackId: undefined,
+  carName: undefined,
+
+  // Actions
+  addLapData: (lapData: FuelLapData) => {
+    set((state) => {
+      const newHistory = new Map(state.lapHistory);
+      newHistory.set(lapData.lapNumber, lapData);
+
+      // Track oldest lap number for efficient pruning
+      let oldestLapNumber = Math.min(state._oldestLapNumber, lapData.lapNumber);
+
+      // Prune if over limit - use tracked oldest lap number instead of searching
+      if (newHistory.size > MAX_LAP_HISTORY) {
+        newHistory.delete(oldestLapNumber);
+        // Find new oldest - only needed after deletion
+        oldestLapNumber = Infinity;
+        for (const key of newHistory.keys()) {
+          if (key < oldestLapNumber) {
+            oldestLapNumber = key;
+          }
+        }
+      }
+
+      return {
+        lapHistory: newHistory,
+        _sortedLapHistoryCache: null, // Invalidate cache
+        _oldestLapNumber: oldestLapNumber,
+        lastLap: lapData.lapNumber,
+      };
+    });
+  },
+
+  addRefuel: (amount: number) => {
+    set((state) => ({ accumulatedRefuel: state.accumulatedRefuel + amount }));
+  },
+
+  updateLapCrossing: (
+    lapDistPct: number,
+    fuelLevel: number,
+    sessionTime: number,
+    currentLap: number,
+    isOnPitRoad: boolean
+  ) => {
+    set({
+      lastLapDistPct: lapDistPct,
+      lapStartFuel: fuelLevel,
+      lapCrossingTime: sessionTime,
+      lastLap: currentLap,
+      wasOnPitRoad: isOnPitRoad,
+      accumulatedRefuel: 0, // Reset accumulated refuel for the new lap
+    });
+  },
+
+  updateLapDistPct: (lapDistPct: number) => {
+    set({ lastLapDistPct: lapDistPct });
+  },
+
+  clearAllData: () => {
+    set({
       lapHistory: new Map(),
       _sortedLapHistoryCache: null,
       _oldestLapNumber: Infinity,
@@ -129,164 +199,81 @@ export const useFuelStore = create<FuelStore>()(
       lapStartFuel: 0,
       lapCrossingTime: 0,
       lastLapDistPct: 0,
-      sessionNum: -1,
       wasOnPitRoad: false,
       lastSessionFlags: 0,
-      qualifyConsumption: null,
       accumulatedRefuel: 0,
-      trackId: undefined,
-      carName: undefined,
+      // qualifyConsumption is INTENTIONALLY preservation across session changes
+      // It should only be cleared if we detect a track change (handled in useFuelCalculation)
+      // or if we decide to add a hard reset button later.
+    });
+  },
 
-      // Actions
-      addLapData: (lapData: FuelLapData) => {
-        set((state) => {
-          const newHistory = new Map(state.lapHistory);
-          newHistory.set(lapData.lapNumber, lapData);
+  updateSessionInfo: (sessionNum: number) => {
+    set({ sessionNum });
+  },
 
-          // Track oldest lap number for efficient pruning
-          let oldestLapNumber = Math.min(
-            state._oldestLapNumber,
-            lapData.lapNumber
-          );
+  getLapHistory: () => {
+    const state = get();
 
-          // Prune if over limit - use tracked oldest lap number instead of searching
-          if (newHistory.size > MAX_LAP_HISTORY) {
-            newHistory.delete(oldestLapNumber);
-            // Find new oldest - only needed after deletion
-            oldestLapNumber = Infinity;
-            for (const key of newHistory.keys()) {
-              if (key < oldestLapNumber) {
-                oldestLapNumber = key;
-              }
-            }
-          }
+    // Return cached version if available
+    if (state._sortedLapHistoryCache !== null) {
+      return state._sortedLapHistoryCache;
+    }
 
-          return {
-            lapHistory: newHistory,
-            _sortedLapHistoryCache: null, // Invalidate cache
-            _oldestLapNumber: oldestLapNumber,
-            lastLap: lapData.lapNumber,
-          };
-        });
-      },
+    // Build and cache sorted array
+    const sorted = sortLapsDescending(Array.from(state.lapHistory.values()));
 
-      addRefuel: (amount: number) => {
-        set((state) => ({ accumulatedRefuel: state.accumulatedRefuel + amount }));
-      },
+    return sorted;
+  },
 
-      updateLapCrossing: (
-        lapDistPct: number,
-        fuelLevel: number,
-        sessionTime: number,
-        currentLap: number,
-        isOnPitRoad: boolean
-      ) => {
-        set({
-          lastLapDistPct: lapDistPct,
-          lapStartFuel: fuelLevel,
-          lapCrossingTime: sessionTime,
-          lastLap: currentLap,
-          wasOnPitRoad: isOnPitRoad,
-          accumulatedRefuel: 0, // Reset accumulated refuel for the new lap
-        });
-      },
+  getRecentLaps: (count: number) => {
+    const state = get();
 
-      updateLapDistPct: (lapDistPct: number) => {
-        set({ lastLapDistPct: lapDistPct });
-      },
+    // For small counts, it's faster to iterate the map directly
+    // than to sort the entire history
+    if (state.lapHistory.size <= count) {
+      return sortLapsDescending(Array.from(state.lapHistory.values()));
+    }
 
-      clearAllData: () => {
-        set({
-          lapHistory: new Map(),
-          _sortedLapHistoryCache: null,
-          _oldestLapNumber: Infinity,
-          lastLap: 0,
-          lapStartFuel: 0,
-          lapCrossingTime: 0,
-          lastLapDistPct: 0,
-          wasOnPitRoad: false,
-          lastSessionFlags: 0,
-          accumulatedRefuel: 0,
-          // qualifyConsumption is INTENTIONALLY preservation across session changes
-          // It should only be cleared if we detect a track change (handled in useFuelCalculation)
-          // or if we decide to add a hard reset button later.
-        });
-      },
+    // Use cached sorted array if available
+    if (state._sortedLapHistoryCache !== null) {
+      return state._sortedLapHistoryCache.slice(0, count);
+    }
 
-      updateSessionInfo: (sessionNum: number) => {
-        // Don't clear data on session change - preserve fuel consumption data
-        // across warmup/qualifying/race within the same iRacing session
-        // Data will only be cleared when explicitly leaving the session
-        set({ sessionNum });
-      },
+    // Otherwise get full sorted array and slice
+    return get().getLapHistory().slice(0, count);
+  },
 
-      getLapHistory: () => {
-        const state = get();
+  setQualifyConsumption: (val) => {
+    set({ qualifyConsumption: val });
+  },
 
-        // Return cached version if available
-        if (state._sortedLapHistoryCache !== null) {
-          return state._sortedLapHistoryCache;
+  setContextInfo: (trackId, carName) => {
+    set({ trackId, carName });
+  },
+
+  setLapHistory: (laps) => {
+    set(() => {
+      const newHistory = new Map();
+      let oldestLapNumber = Infinity;
+
+      laps.forEach((lap) => {
+        newHistory.set(lap.lapNumber, { ...lap, isHistorical: true });
+        if (lap.lapNumber < oldestLapNumber) {
+          oldestLapNumber = lap.lapNumber;
         }
+      });
 
-        // Build and cache sorted array
-        const sorted = sortLapsDescending(
-          Array.from(state.lapHistory.values())
-        );
-
-        // Note: We can't set state here as it would cause infinite loop
-        // The cache is primarily useful when accessed multiple times in same render
-        // For cross-render caching, we invalidate on addLapData
-        return sorted;
-      },
-
-      getRecentLaps: (count: number) => {
-        const state = get();
-
-        // For small counts, it's faster to iterate the map directly
-        // than to sort the entire history
-        if (state.lapHistory.size <= count) {
-          return sortLapsDescending(Array.from(state.lapHistory.values()));
-        }
-
-        // Use cached sorted array if available
-        if (state._sortedLapHistoryCache !== null) {
-          return state._sortedLapHistoryCache.slice(0, count);
-        }
-
-        // Otherwise get full sorted array and slice
-        return get().getLapHistory().slice(0, count);
-      },
-
-      setQualifyConsumption: (val) => {
-        set({ qualifyConsumption: val });
-      },
-
-      setContextInfo: (trackId, carName) => {
-        set({ trackId, carName });
-      },
- 
-      setLapHistory: (laps) => {
-        set(() => {
-          const newHistory = new Map();
-          let oldestLapNumber = Infinity;
- 
-          laps.forEach((lap) => {
-            newHistory.set(lap.lapNumber, { ...lap, isHistorical: true });
-            if (lap.lapNumber < oldestLapNumber) {
-              oldestLapNumber = lap.lapNumber;
-            }
-          });
- 
-          return {
-            lapHistory: newHistory,
-            _sortedLapHistoryCache: null,
-            _oldestLapNumber: oldestLapNumber,
-            lastLap: laps.length > 0 ? Math.max(...laps.map((l) => l.lapNumber)) : 0,
-          };
-        });
-      },
-    })
-);
+      return {
+        lapHistory: newHistory,
+        _sortedLapHistoryCache: null,
+        _oldestLapNumber: oldestLapNumber,
+        lastLap:
+          laps.length > 0 ? Math.max(...laps.map((l) => l.lapNumber)) : 0,
+      };
+    });
+  },
+}));
 
 // ============================================================================
 // Selectors for optimized component subscriptions
@@ -304,7 +291,7 @@ export const selectLapHistorySize = (state: FuelStore): number =>
  */
 export const selectLastLapData = (state: FuelStore): FuelLapData | null => {
   if (state.lapHistory.size === 0) return null;
-  
+
   // Use lastLap as the primary key, but if it doesn't exist in history (e.g. we just moved to next lap),
   // find the highest lap number actually present in the history.
   if (state.lastLap > 0 && state.lapHistory.has(state.lastLap)) {

@@ -35,10 +35,6 @@ export function calculateFuelAlerts({
   fuelNeeded,
   settings,
 }: CalculateFuelAlertsProps) {
-  // --------------------------------------------------------------------------
-  // Fuel Status (Safe/Caution/Danger)
-  // --------------------------------------------------------------------------
-
   const statusThresholds = settings?.fuelStatusThresholds || {
     green: 60,
     amber: 30,
@@ -69,7 +65,6 @@ export function calculateFuelAlerts({
     fuelStatus = 'danger';
   }
 
-  // Laps remaining override
   const basisUsageValue =
     statusBasis === 'max'
       ? maxLapUsage
@@ -98,20 +93,7 @@ export function calculateFuelAlerts({
     fuelStatus = 'caution';
   }
 
-  // --------------------------------------------------------------------------
-  // Grid Fuel Warning
-  // --------------------------------------------------------------------------
-
   let gridWarning: GridWarningType = null;
-
-  // Check if in Grid/Warmup (State < 2 usually means Warmup/Grid, 2=StartHidden, 3=StartReady, 4=Racing)
-  // Reference says "SessionState < 2". iRacing docs: 0=Invalid, 1=GetInCar, 2=Warmup, 3=Parade, 4=Racing, 5=Checkered, 6=CoolDown
-  // Wait, Reference Check: "3 conditions checked when SessionState < 2 (pre-race)"
-  // iRacing SessionState:
-  // kSessionState_GetInCar = 1
-  // kSessionState_Warmup = 2
-  // kSessionState_ParadeLaps = 3
-  // kSessionState_Racing = 4
 
   const isPreRace =
     sessionState !== undefined && sessionState < 4 && !isQualifyingOrPractice;
@@ -125,16 +107,11 @@ export function calculateFuelAlerts({
     const lapsInTank = fuelLevel / trendAdjustedConsumption;
     const fullTankLaps = tankCapacity / trendAdjustedConsumption;
 
-    // Condition 1: Tank CAN hold full race, but is not full enough
     if (tankCapacity >= fuelNeeded && fuelLevel < fuelNeeded) {
       gridWarning = 'can_finish_fill';
-    }
-    // Condition 2: Tank holds > 5 laps but current fuel < 5 laps (and race is long enough)
-    else if (fullTankLaps > 5 && lapsInTank < 5 && lapsRemaining > 5) {
+    } else if (fullTankLaps > 5 && lapsInTank < 5 && lapsRemaining > 5) {
       gridWarning = 'low_fuel';
-    }
-    // Condition 3: Tank too small for full race, but current fuel is not full ( < tank - 2L)
-    else if (tankCapacity < fuelNeeded && fuelLevel < tankCapacity - 2) {
+    } else if (tankCapacity < fuelNeeded && fuelLevel < tankCapacity - 2) {
       gridWarning = 'fill_tank';
     }
   }

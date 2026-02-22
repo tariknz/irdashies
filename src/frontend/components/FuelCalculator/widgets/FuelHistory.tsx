@@ -11,7 +11,6 @@ import {
 
 export const FuelHistory = memo<FuelCalculatorWidgetProps>(
   ({ settings, fuelUnits, widgetId, customStyles, isCompact }) => {
-    // Custom style handling
     const widgetStyle = useMemo(
       () =>
         customStyles || (widgetId && settings?.widgetStyles?.[widgetId]) || {},
@@ -26,28 +25,23 @@ export const FuelHistory = memo<FuelCalculatorWidgetProps>(
       };
     }, [widgetStyle.fontSize]);
 
-    // Access store directly to be self-contained
     const lapHistory = useFuelStore((state) => state.lapHistory);
     const { isDemoMode } = useDashboard();
 
-    // Default to histogram if not specified in settings
     const fuelHistoryType = settings?.fuelHistoryType || 'histogram';
 
     const graphData = useMemo(() => {
       const lapCount = fuelHistoryType === 'line' ? 30 : 15; // default to fewer for compact
-      // Convert Map to array and sort by lap number descending
       const history = Array.from(lapHistory.values()).sort(
         (a, b) => b.lapNumber - a.lapNumber
       );
 
-      // Filter to valid laps (not out-laps) and take last N
-      // Allow Lap 1 even if it's an out-lap (e.g. standing start) as long as it has valid fuel data
       const validLaps = history
         .filter(
           (lap) => (!lap.isOutLap || lap.lapNumber >= 1) && lap.fuelUsed > 0
         )
         .slice(0, lapCount)
-        .reverse(); // Oldest to newest for graph
+        .reverse();
 
       if (validLaps.length < 2) return null;
 
@@ -66,7 +60,6 @@ export const FuelHistory = memo<FuelCalculatorWidgetProps>(
       } as ConsumptionGraphData;
     }, [lapHistory, fuelHistoryType]);
 
-    // Reuse the existing widget!
     if (settings && settings.showFuelHistory === false) return null;
 
     return (

@@ -28,8 +28,6 @@ import {
   defaultFuelCalculatorSettings,
 } from './defaults';
 
-// Custom equality check to prevent React from re-rendering the whole tree 10 times a second
-// when fuelLevel just floats by 0.001L. It will re-render only if large changes happen.
 function isFuelDataEqual(
   a: FuelCalculation | null,
   b: FuelCalculation | null
@@ -52,8 +50,6 @@ function isFuelDataEqual(
       continue;
     }
     if (key === 'lapsRemaining') {
-      // sessionTimeRemain ticks down constantly, so lapsRemaining drifts.
-      // Only re-render if it changes by a significant margin (e.g. 0.05 laps)
       if (Math.abs((a.lapsRemaining || 0) - (b.lapsRemaining || 0)) > 0.05)
         return false;
       continue;
@@ -354,11 +350,6 @@ interface BridgeRef {
 }
 
 // --- Performance Bridge ---
-/**
- * This component handles high-frequency telemetry and calculations
- * but NEVER triggers a re-render of the parent FuelCalculator.
- * It updates a shared ref that is sampled by the throttled interval.
- */
 const HeadlessTelemetryBridge = ({
   settings,
   safetyMargin,
@@ -432,7 +423,6 @@ const HeadlessTelemetryBridge = ({
 
       internalStateRef.current = nextInternalState;
 
-      // Write actions directly via getState() — zero re-renders
       const storeActions = useFuelStore.getState();
       if (actions.addLapData) storeActions.addLapData(actions.addLapData);
       if (actions.addRefuel) storeActions.addRefuel(actions.addRefuel);
@@ -609,7 +599,6 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
       if (!currentData) return;
 
       setThrottledState((prev) => {
-        // --- OBJECT STABILITY: Skip re-render if nothing important changed ---
         if (
           isFuelDataEqual(prev.displayData, currentData) &&
           Math.abs(prev.currentFuelLevel - liveFuel) < 0.05 &&
@@ -632,11 +621,6 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
             nextFrozen.avgLaps || nextFrozen.lastLapUsage || 0;
           const lapsWithFuel = avgFuelPerLap > 0 ? level / avgFuelPerLap : 0;
 
-          // At lap crossing, SessionLapsRemain can be one lap too high because
-          // it may not have decremented by the time the `Lap` telemetry tick is processed.
-          // If nextFrozen.lapsRemaining > (totalLaps - currentLap + 1), it's stale.
-          // Clamp it: the true lapsRemaining cannot exceed (totalLaps - currentLap).
-          // This prevents the surplus from being inflated at the crossing frame.
           let correctedLapsRemaining = nextFrozen.lapsRemaining || 0;
           const maxPossibleLapsRemaining =
             nextFrozen.totalLaps > 0

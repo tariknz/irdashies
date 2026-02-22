@@ -3,7 +3,6 @@ import type { FuelCalculatorWidgetProps } from '../types';
 
 /* eslint-disable react/prop-types */
 
-// Map confidence to colors and text
 const getConfidenceConfig = (confidence: string) => {
   switch (confidence) {
     case 'high':
@@ -37,7 +36,6 @@ const getConfidenceConfig = (confidence: string) => {
 
 export const FuelCalculatorHeader = memo<FuelCalculatorWidgetProps>(
   ({ fuelData, settings, widgetId, customStyles, isCompact }) => {
-    // Custom style handling for separate label/value sizes
     const widgetStyle =
       customStyles || (widgetId && settings?.widgetStyles?.[widgetId]) || {};
     const labelFontSize = widgetStyle.labelFontSize
@@ -56,23 +54,19 @@ export const FuelCalculatorHeader = memo<FuelCalculatorWidgetProps>(
     const stopsRemaining = fuelData.stopsRemaining ?? 0;
     const pitWindowOpen = fuelData.pitWindowOpen;
 
-    // Confidence logic (mapping from existing data)
     const confidence = fuelData.confidence || 'low';
     const confConfig = getConfidenceConfig(confidence);
 
-    // Format laps remaining for confidence pill
     let lapsText = `${Math.ceil(fuelData.lapsRemaining)} LAPS`;
     if (confidence === 'medium')
       lapsText = `~${Math.ceil(fuelData.lapsRemaining)} LAPS`;
     if (confidence === 'low' || confidence === 'very-low')
       lapsText = `${Math.floor(fuelData.lapsRemaining)}-${Math.ceil(fuelData.lapsRemaining + 2)} LAPS`;
 
-    // If no data (avgLaps is 0), show --
     if ((fuelData.avgLaps || 0) <= 0) {
       lapsText = '--';
     }
 
-    // Grid Warning Logic
     if (fuelData.gridWarning) {
       let warningMsg = '';
       let warningColor = 'text-red-400';

@@ -70,9 +70,9 @@ export interface FuelCalculation {
   lapsPerStint?: number;
   /** Target scenarios for making current fuel last different lap counts */
   targetScenarios?: {
-    laps: number; // Target lap count (e.g., 19, 20, 21)
-    fuelPerLap: number; // Required L/lap to achieve this (e.g., 2.63)
-    isCurrentTarget: boolean; // True for the middle/current value
+    laps: number;
+    fuelPerLap: number;
+    isCurrentTarget: boolean;
   }[];
   /** Earliest lap to pit while still being able to finish (for safety car strategy) */
   earliestPitLap?: number;
