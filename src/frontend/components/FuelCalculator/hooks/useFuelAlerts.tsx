@@ -1,9 +1,8 @@
-import { useSessionStore } from '@irdashies/context';
 import { FuelCalculatorSettings } from '../types';
 
-interface UseFuelAlertsProps {
+interface CalculateFuelAlertsProps {
   fuelLevelPct: number | undefined;
-  sessionNum: number | undefined;
+  sessionType: string | undefined;
   fuelLevel: number | undefined;
   trendAdjustedConsumption: number;
   maxLapUsage: number;
@@ -22,9 +21,9 @@ export type GridWarningType =
   | 'can_finish_fill'
   | null;
 
-export function useFuelAlerts({
+export function calculateFuelAlerts({
   fuelLevelPct,
-  sessionNum,
+  sessionType,
   fuelLevel,
   trendAdjustedConsumption,
   maxLapUsage,
@@ -35,7 +34,7 @@ export function useFuelAlerts({
   tankCapacity,
   fuelNeeded,
   settings,
-}: UseFuelAlertsProps) {
+}: CalculateFuelAlertsProps) {
   // --------------------------------------------------------------------------
   // Fuel Status (Safe/Caution/Danger)
   // --------------------------------------------------------------------------
@@ -51,11 +50,6 @@ export function useFuelAlerts({
   let fuelStatus: 'safe' | 'caution' | 'danger' = 'safe';
 
   const currentFuelPctValue = (fuelLevelPct ?? 0) * 100;
-  const sessionType = useSessionStore
-    .getState()
-    .session?.SessionInfo?.Sessions?.find(
-      (s) => s.SessionNum === sessionNum
-    )?.SessionType;
 
   const isQualifyingOrPractice =
     sessionType &&

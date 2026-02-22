@@ -9,6 +9,7 @@ import {
   getGreenFlagLaps,
 } from '../fuelCalculations';
 import { Telemetry } from '@irdashies/types';
+import { calculateFuelAlerts } from './useFuelAlerts';
 
 export interface FuelInternalState {
   lastSessionTime?: number;
@@ -373,6 +374,26 @@ export function runFuelLogic({
         ? lap + rawTimeFractionForDisplay
         : lap + lapsRemaining - (1 - lapDistPct);
 
+  const fuelNeededToFinish = Math.max(
+    0,
+    lapsRemaining * trendAdjustedConsumption - fuelLevel
+  );
+
+  const { fuelStatus, gridWarning } = calculateFuelAlerts({
+    fuelLevelPct,
+    sessionType,
+    fuelLevel,
+    trendAdjustedConsumption,
+    maxLapUsage: findFuelMinMax(lapsToUse).max,
+    minLapUsage: findFuelMinMax(lapsToUse).min,
+    lastLapUsage,
+    lapsRemaining,
+    sessionState,
+    tankCapacity: fuelTankCapacity,
+    fuelNeeded: fuelNeededToFinish,
+    settings,
+  });
+
   const result: FuelCalculation = {
     fuelLevel,
     lastLapUsage,
@@ -389,10 +410,7 @@ export function runFuelLogic({
     lapsRemaining,
     totalLaps,
     currentLap: lap,
-    fuelToFinish: Math.max(
-      0,
-      lapsRemaining * trendAdjustedConsumption - fuelLevel
-    ),
+    fuelToFinish: fuelNeededToFinish,
     fuelToAdd: 0,
     pitWindowOpen: 0,
     pitWindowClose: 0,
@@ -434,9 +452,9 @@ export function runFuelLogic({
     })(),
     earliestPitLap: 0,
     fuelTankCapacity,
-    fuelStatus: 'safe',
+    fuelStatus,
     lapsRange: [0, 0],
-    gridWarning: undefined,
+    gridWarning,
     queuedFuel: 0,
   };
 
