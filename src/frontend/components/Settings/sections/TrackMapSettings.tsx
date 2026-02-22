@@ -30,7 +30,7 @@ const migrateConfig = (savedConfig: unknown): TrackMapWidgetSettings['config'] =
   return {
     enableTurnNames: (config.enableTurnNames as boolean) ?? defaultConfig.enableTurnNames,
     showCarNumbers: (config.showCarNumbers as boolean) ?? defaultConfig.showCarNumbers,
-    displayMode: (config.displayMode as 'carNumber' | 'sessionPosition') ?? defaultConfig.displayMode,
+    displayMode: (config.displayMode as 'carNumber' | 'sessionPosition' | 'livePosition') ?? defaultConfig.displayMode,
     invertTrackColors: (config.invertTrackColors as boolean) ?? defaultConfig.invertTrackColors,
     highContrastTurns: (config.highContrastTurns as boolean) ?? defaultConfig.highContrastTurns,
     driverCircleSize: (config.driverCircleSize as number) ?? defaultConfig.driverCircleSize,
@@ -116,6 +116,15 @@ export const TrackMapSettings = () => {
                   }`}
               >
                 Session Position
+              </button>
+              <button
+                onClick={() => handleConfigChange({ displayMode: 'livePosition' })}
+                className={`px-3 py-1 rounded text-sm transition-colors ${settings.config.displayMode === 'livePosition'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
+                  }`}
+              >
+                Live Position
               </button>
             </div>
           </div>

@@ -48,9 +48,11 @@ export const useDriverStandings = (settings?: StandingsWidgetSettings['config'])
   const sessionNum = useTelemetryValue('SessionNum');
   const sessionType = useSessionType(sessionNum);
   const positions = useSessionPositions(sessionNum);
-  const driverLivePositions = useDriverLivePositions();
   const standingsSettings = useStandingsSettings();
   const useLivePositionStandings = standingsSettings?.useLivePosition ?? false;
+  const driverLivePositions = useDriverLivePositions({
+    enabled: useLivePositionStandings,
+  });
   const fastestLaps = useSessionFastestLaps(sessionNum);
   const carIdxF2Time = useTelemetry('CarIdxF2Time');
   const carIdxOnPitRoad = useTelemetry<boolean[]>('CarIdxOnPitRoad');

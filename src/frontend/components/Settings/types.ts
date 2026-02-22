@@ -268,7 +268,7 @@ export interface TrackMapWidgetSettings extends BaseWidgetSettings {
   config: {
     enableTurnNames: boolean;
     showCarNumbers: boolean;
-    displayMode: 'carNumber' | 'sessionPosition';
+    displayMode: 'carNumber' | 'sessionPosition' | 'livePosition';
     invertTrackColors: boolean;
     highContrastTurns: boolean;
     driverCircleSize: number;
@@ -499,7 +499,7 @@ export interface FlagWidgetSettings extends BaseWidgetSettings {
 export interface FlatTrackMapWidgetSettings extends BaseWidgetSettings {
   config: {
     showCarNumbers: boolean;
-    displayMode: 'carNumber' | 'sessionPosition';
+    displayMode: 'carNumber' | 'sessionPosition' | 'livePosition';
     driverCircleSize: number;
     playerCircleSize: number;
     trackmapFontSize: number;
