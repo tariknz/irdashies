@@ -31,7 +31,7 @@ export const useReferenceRegistryUpdater = (bridge: ReferenceLapBridge) => {
     const ids = drivers.map((d) => d.CarClassID);
     const uniqueIds = Array.from(new Set(ids));
 
-    const paceCarClassId = drivers[paceCarIdx].CarClassID;
+    const paceCarClassId = drivers[paceCarIdx]?.CarClassID;
     return uniqueIds
       .filter((classId) => classId !== paceCarClassId)
       .sort((a, b) => a - b);
@@ -40,16 +40,18 @@ export const useReferenceRegistryUpdater = (bridge: ReferenceLapBridge) => {
   }, [classIdsString]);
 
   useEffect(() => {
+    console.log('Resetting Session!');
     completeSession();
     initialize(bridge, seriesId, trackId, classList);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
-    classList,
-    completeSession,
-    initialize,
+    // classList,
+    // completeSession,
+    // initialize,
     seriesId,
     trackId,
     sessionNum,
-    bridge,
+    // bridge,
   ]);
 
   const carIdxLapDistPct = useTelemetryValues('CarIdxLapDistPct');
@@ -67,6 +69,7 @@ export const useReferenceRegistryUpdater = (bridge: ReferenceLapBridge) => {
 
       if (trackPct > -1) {
         collectLapData(
+          bridge,
           idx,
           classId,
           trackPct,
@@ -77,5 +80,13 @@ export const useReferenceRegistryUpdater = (bridge: ReferenceLapBridge) => {
         );
       }
     }
-  }, [carIdxLapDistPct, carIdxOnPitRoad, sessionTime, collectLapData, drivers]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    carIdxLapDistPct,
+    carIdxOnPitRoad,
+    sessionTime,
+    // collectLapData,
+    drivers,
+    // bridge,
+  ]);
 };

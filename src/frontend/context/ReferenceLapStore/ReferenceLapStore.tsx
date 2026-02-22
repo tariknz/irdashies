@@ -46,6 +46,7 @@ interface ReferenceRegistryState {
     classList: number[]
   ) => Promise<void>;
   collectLapData: (
+    bridge: ReferenceLapBridge,
     carIdx: number,
     classId: number,
     trackPct: number,
@@ -99,6 +100,7 @@ export const useReferenceLapStore = create<ReferenceRegistryState>(
     },
 
     collectLapData: (
+      bridge,
       carIdx,
       classId,
       trackPct,
@@ -157,7 +159,7 @@ export const useReferenceLapStore = create<ReferenceRegistryState>(
               persistedLaps.set(refLap.classId, refLap);
 
               if (seriesId !== null && trackId !== null) {
-                window.referenceLapsBridge
+                bridge
                   .saveReferenceLap(seriesId, trackId, refLap.classId, refLap)
                   .catch((err: Error) => {
                     console.error(

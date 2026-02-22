@@ -17,7 +17,6 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
   const drivers = useDriverStandings();
   const carIdxLapDistPct = useTelemetryValues('CarIdxLapDistPct');
   const carIdxIsOnPitRoad = useTelemetryValues('CarIdxOnPitRoad');
-  // CarIdxEstTime - iRacing's native estimated time gap calculation
   const carIdxEstTime = useTelemetryValues('CarIdxEstTime');
   // Use focus car index which handles spectator mode (uses CamCarIdx when spectating)
   const focusCarIdx = useFocusCarIdx();
@@ -121,50 +120,28 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
     [focusCarIdx, paceCarIdx]
   );
 
-  // ===========================================================================
-  // 1. DATA COLLECTION PHASE (Side Effect)
-  // Run this in an Effect so it happens reliably after every frame update.
-  // ===========================================================================
-  // useEffect(() => {
-  //   drivers.forEach((d) => {
-  //     if (isValidDriver(d)) {
-  //       const idx = d.carIdx;
-  //       const classId = d.carClass.id;
-  //       collectLapData(
-  //         idx,
-  //         classId,
-  //         carIdxLapDistPct[idx],
-  //         sessionTime,
-  //         TRACK_SURFACES.OnTrack,
-  //         // carIdxTrackSurface[idx],
-  //         carIdxIsOnPitRoad[idx] === 1
-  //       );
-  //     }
-  //   });
-  // }, [
-  //   sessionTime,
-  //   drivers,
-  //   focusCarIdx,
-  //   paceCarIdx,
-  //   carIdxLapDistPct,
-  //   // carIdxTrackSurface,
-  //   carIdxIsOnPitRoad,
-  //   collectLapData,
-  //   isValidDriver,
-  // ]);
-
-  // ===========================================================================
-  // 2. VIEW PROJECTION PHASE (Pure Calculation)
-  // ===========================================================================
   const standings = useMemo(() => {
     // A. Filter & Map (Calculate Relative Pct immutably)
-    const processed = drivers
-      .filter(isValidDriver)
-      .map((d) => ({
-        ...d,
-        relativePct: calculateRelativePct(d.carIdx),
-      }))
-      .filter((d) => !isNaN(d.relativePct));
+    const processed = [] as Standings[];
+    for (const d of drivers) {
+      if (isValidDriver(d)) {
+        const relativePct = calculateRelativePct(d.carIdx);
+
+        if (!isNaN(relativePct)) {
+          processed.push({
+            ...d,
+            relativePct,
+          });
+        }
+      }
+    }
+    // const processed = drivers
+    //   .filter(isValidDriver)
+    //   .map((d) => ({
+    //     ...d,
+    //     relativePct: calculateRelativePct(d.carIdx),
+    //   }))
+    //   .filter((d) => !isNaN(d.relativePct));
 
     // B. Sort (Descending)
     processed.sort((a, b) => b.relativePct - a.relativePct);
