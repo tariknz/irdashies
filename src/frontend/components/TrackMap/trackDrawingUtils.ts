@@ -74,6 +74,7 @@ export const drawTurnNames = (
   ctx: CanvasRenderingContext2D,
   turns: TrackDrawing['turns'],
   enableTurnNames: boolean | undefined,
+  highContrastTurns: boolean,
   trackmapFontSize: number
 ) => {
   if (!enableTurnNames || !turns) return;
@@ -83,9 +84,34 @@ export const drawTurnNames = (
     const fontSize = 2 * (trackmapFontSize / 100);
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillStyle = 'white';
     ctx.font = `${fontSize}rem sans-serif`;
-    ctx.fillText(turn.content, turn.x, turn.y);
+    // measure text      
+    const m = ctx.measureText(turn.content); 
+    if (highContrastTurns) {      
+      const padding = 20;
+      const textWidth = m.width;
+      const textHeight = m.actualBoundingBoxAscent + m.actualBoundingBoxDescent;
+      const rectX = turn.x - textWidth / 2 - padding / 2;
+      const rectY = turn.y - textHeight / 2 - padding / 2;
+      const rectW = textWidth + padding;
+      const rectH = textHeight + padding;      
+      const radius = Math.min(20, rectW / 2, rectH / 2);
+      // rounded rect
+      ctx.beginPath();
+      ctx.moveTo(rectX + radius, rectY);
+      ctx.arcTo(rectX + rectW, rectY, rectX + rectW, rectY + rectH, radius);
+      ctx.arcTo(rectX + rectW, rectY + rectH, rectX, rectY + rectH, radius);
+      ctx.arcTo(rectX, rectY + rectH, rectX, rectY, radius);
+      ctx.arcTo(rectX, rectY, rectX + rectW, rectY, radius);
+      ctx.closePath();
+      // fill rect
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+      ctx.fill();          
+    } 
+    ctx.fillStyle = 'white';     
+    // visual offset
+    const visualOffset = (m.actualBoundingBoxAscent - m.actualBoundingBoxDescent) / 2;
+    ctx.fillText(turn.content, turn.x, turn.y + visualOffset);
   });
 };
 
