@@ -7,11 +7,8 @@ interface PositionChangeCellProps {
 
 export const PositionChangeCell = memo(
   ({ positionChange }: PositionChangeCellProps) => (
-    <td
-      data-column="positionChange"
-      className="w-auto px-2 text-center whitespace-nowrap"
-    >
-      <RatingChange value={positionChange} />
+    <td data-column="positionChange" className="w-auto px-2 whitespace-nowrap">
+      <RatingChange value={positionChange} justify="start" />
     </td>
   )
 );

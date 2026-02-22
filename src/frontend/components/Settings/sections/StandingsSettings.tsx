@@ -102,7 +102,6 @@ const defaultConfig: StandingsWidgetSettings['config'] = {
     airTemperature: { enabled: false, unit: 'Metric' },
     trackTemperature: { enabled: false, unit: 'Metric' },
     wind: { enabled: false, speedPosition: 'right' },
-=======
     displayOrder: DEFAULT_SESSION_BAR_DISPLAY_ORDER,
   },
   footerBar: {
@@ -119,7 +118,6 @@ const defaultConfig: StandingsWidgetSettings['config'] = {
     airTemperature: { enabled: true, unit: 'Metric' },
     trackTemperature: { enabled: true, unit: 'Metric' },
     wind: { enabled: false, speedPosition: 'right' },
-=======
     displayOrder: DEFAULT_SESSION_BAR_DISPLAY_ORDER,
   },
   showOnlyWhenOnTrack: false,
@@ -157,7 +155,6 @@ const migrateConfig = (
   return {
     iratingChange: {
       enabled: (config.iratingChange as { enabled?: boolean })?.enabled ?? true,
-=======
     },
     positionChange: {
       enabled:
@@ -339,7 +336,6 @@ const migrateConfig = (
           ((config.headerBar as { wind?: { speedPosition?: string } })?.wind
             ?.speedPosition as 'left' | 'right') ?? 'right',
       },
-=======
       displayOrder: mergeDisplayOrder(
         [...VALID_SESSION_BAR_ITEM_KEYS],
         (config.headerBar as { displayOrder?: string[] })?.displayOrder
@@ -425,7 +421,6 @@ const migrateConfig = (
           ((config.footerBar as { wind?: { speedPosition?: string } })?.wind
             ?.speedPosition as 'left' | 'right') ?? 'right',
       },
-=======
       displayOrder: mergeDisplayOrder(
         [...VALID_SESSION_BAR_ITEM_KEYS],
         (config.footerBar as { displayOrder?: string[] })?.displayOrder
@@ -861,7 +856,6 @@ const BarItemsList = ({
                   const currentSpeedPosition =
                     (itemConfig as { speedPosition?: 'left' | 'right' })
                       ?.speedPosition ?? 'right';
-=======
                   handleConfigChange({
                     [barType]: {
                       ...settings.config[barType],
@@ -875,8 +869,6 @@ const BarItemsList = ({
                                 speedPosition: currentSpeedPosition,
                               }
                             : { enabled },
-=======
-                          : { enabled },
                     },
                   });
                 }}
@@ -969,7 +961,6 @@ const BarItemsList = ({
                   })}
                 </div>
               )}
-=======
             {item.id === 'sessionTime' &&
               itemConfig &&
               'enabled' in itemConfig &&
