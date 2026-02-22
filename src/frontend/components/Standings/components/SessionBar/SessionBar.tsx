@@ -31,8 +31,8 @@ import { useSessionCurrentTime } from '../../hooks/useSessionCurrentTime';
 import { usePrecipitation } from '../../hooks/usePrecipitation';
 import { useTotalRaceLaps } from '../../../../context/shared/useTotalRaceLaps';
 import { useLapTimeHistory } from '../../../../context/LapTimesStore/LapTimesStore';
-import { useThrottledWeather } from '../../../Weather/hooks/useThrottledWeather';
-import { WindArrow } from '../../../Weather/WindDirection/WindArrow';
+import { useThrottledWeather } from '@irdashies/context';
+import { WindArrow } from '../../../shared/WindArrow';
 
 interface SessionBarProps {
   position?: 'header' | 'footer';
