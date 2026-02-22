@@ -270,7 +270,9 @@ export const createDriverStandings = (
             : lapDeltasVsPlayer &&
                 lapDeltasVsPlayer[result.CarIdx] &&
                 lapDeltasVsPlayer[result.CarIdx].length > 0
-              ? lapDeltasVsPlayer[result.CarIdx].slice(0, numLapsToShow) // Use pre-calculated deltas
+              ? lapDeltasVsPlayer[result.CarIdx].slice(
+                  -(numLapsToShow ?? lapDeltasVsPlayer[result.CarIdx].length)
+                ) // Use most recent laps
               : undefined,
         lastPitLap: lastPitLap[result.CarIdx] ?? undefined,
         lastLap: lastLap[result.CarIdx] ?? undefined,

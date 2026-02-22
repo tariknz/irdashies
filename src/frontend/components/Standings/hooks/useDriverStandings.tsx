@@ -10,7 +10,7 @@ import {
   useTelemetryValue,
   useFocusCarIdx,
 } from '@irdashies/context';
-import { useLapDeltasVsPlayer } from '../../../context/LapTimesStore/LapTimesStore';
+import { useLapTimeHistory } from '../../../context/LapTimesStore/LapTimesStore';
 import {
   useCarLap,
   usePitLap,
@@ -74,12 +74,28 @@ export const useDriverStandings = (
     return sessionDrivers?.find((driver) => driver.CarIdx === driverCarIdx)
       ?.CarClassID;
   }, [sessionDrivers, driverCarIdx]);
-  const lapDeltasVsPlayer = useLapDeltasVsPlayer();
+  const lapTimeHistory = useLapTimeHistory();
 
-  // Note: gap and interval calculations are now purely delta-based, no telemetry needed
+  // Compute deltas at read time against the current focus car (driverCarIdx).
+  // This means switching spectated car instantly updates deltas without any
+  // history reset, since we just change the reference car.
+  const lapDeltasForCalc = useMemo(() => {
+    if (!lapTimeDeltasEnabled || driverCarIdx === undefined) return undefined;
+    const focusHistory = lapTimeHistory[driverCarIdx];
+    if (!focusHistory || focusHistory.length === 0) return undefined;
 
-  // Only pass deltas when feature is enabled to avoid unnecessary calculations
-  const lapDeltasForCalc = lapTimeDeltasEnabled ? lapDeltasVsPlayer : undefined;
+    // Use the most recent focus car lap as the reference for all comparisons.
+    // This is the fairest available comparison regardless of when each car
+    // completed their laps.
+    const focusLapTime = focusHistory[focusHistory.length - 1];
+    if (!focusLapTime || focusLapTime <= 0) return undefined;
+
+    return lapTimeHistory.map((carHistory, carIdx) => {
+      if (carIdx === driverCarIdx || !carHistory || carHistory.length === 0)
+        return [];
+      return carHistory.map((lapTime) => lapTime - focusLapTime);
+    });
+  }, [lapTimeDeltasEnabled, lapTimeHistory, driverCarIdx]);
 
   const standingsWithGain = useMemo(() => {
     const initialStandings = createDriverStandings(
