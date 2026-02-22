@@ -61,7 +61,8 @@ export const SessionBar = ({
   const brakeBias = useBrakeBias();
   const { trackWetness } = useTrackWetness();
   const { precipitation } = usePrecipitation();
-  const { windDirection, windVelocity } = useThrottledWeather();
+  const { windDirection, windVelocity, windYaw } = useThrottledWeather();
+  const relativeWindDirection = (windDirection ?? 0) - (windYaw ?? 0);
   const { trackTemp, airTemp } = useTrackTemperature({
     airTempUnit: effectiveBarSettings?.airTemperature?.unit ?? 'Metric',
     trackTempUnit: effectiveBarSettings?.trackTemperature?.unit ?? 'Metric',
@@ -388,7 +389,10 @@ export const SessionBar = ({
             : '-';
         const speedEl = <span>{speed}</span>;
         const arrowEl = (
-          <WindArrow direction={windDirection} className="mx-1 w-3.5 h-4" />
+          <WindArrow
+            direction={relativeWindDirection}
+            className="mx-1 w-3.5 h-4"
+          />
         );
         return (
           <div className="flex justify-center gap-1 items-center">
