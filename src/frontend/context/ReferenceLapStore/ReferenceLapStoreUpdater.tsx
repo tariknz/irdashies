@@ -21,6 +21,8 @@ export const useReferenceRegistryUpdater = (bridge: ReferenceLapBridge) => {
     useSessionStore((s) => s.session?.WeekendInfo.SeriesID) ?? -1;
   const trackId = useSessionStore((s) => s.session?.WeekendInfo.TrackID) ?? -1;
   const drivers = useSessionDrivers() ?? EMPTY_DRIVER_ARRAY;
+  const subSessionId =
+    useSessionStore((s) => s.session?.WeekendInfo.SubSessionID) ?? -1;
   const sessionNum = useTelemetryValue('SessionNum') ?? -1;
   const paceCarIdx =
     useSessionStore((s) => s.session?.DriverInfo?.PaceCarIdx) ?? -1;
@@ -51,6 +53,7 @@ export const useReferenceRegistryUpdater = (bridge: ReferenceLapBridge) => {
     seriesId,
     trackId,
     sessionNum,
+    subSessionId,
     // bridge,
   ]);
 

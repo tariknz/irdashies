@@ -135,13 +135,6 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
         }
       }
     }
-    // const processed = drivers
-    //   .filter(isValidDriver)
-    //   .map((d) => ({
-    //     ...d,
-    //     relativePct: calculateRelativePct(d.carIdx),
-    //   }))
-    //   .filter((d) => !isNaN(d.relativePct));
 
     // B. Sort (Descending)
     processed.sort((a, b) => b.relativePct - a.relativePct);
@@ -161,9 +154,9 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
       delta: calculateDelta(d.carIdx, d.relativePct),
     }));
   }, [
+    buffer,
     drivers,
     isValidDriver,
-    buffer,
     calculateRelativePct,
     focusCarIdx,
     calculateDelta,
