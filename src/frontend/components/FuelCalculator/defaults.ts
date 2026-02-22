@@ -11,18 +11,14 @@ export const DEFAULT_FUEL_LAYOUT_TREE: LayoutNode = {
       id: 'box-1',
       type: 'box',
       direction: 'col',
-      widgets: [
-        'fuelHeader',
-        'fuelGauge',
-        'fuelGrid',
-      ],
+      widgets: ['fuelHeader', 'fuelGauge', 'fuelGrid'],
     },
   ],
 };
 
 // Default Configuration Object
 export const defaultFuelCalculatorSettings: FuelCalculatorSettings = {
-  showOnlyWhenOnTrack: true,
+  showOnlyWhenOnTrack: false,
   fuelUnits: 'L',
   layout: 'vertical',
   showConsumption: true,
@@ -63,7 +59,12 @@ export const defaultFuelCalculatorSettings: FuelCalculatorSettings = {
   fuelStatusBasis: 'avg',
   fuelStatusRedLaps: 3,
   widgetStyles: {
-    fuelGraph: { height: 64, labelFontSize: 10, valueFontSize: 12, barFontSize: 8 },
+    fuelGraph: {
+      height: 64,
+      labelFontSize: 10,
+      valueFontSize: 12,
+      barFontSize: 8,
+    },
     fuelHeader: { labelFontSize: 10, valueFontSize: 14 },
     fuelConfidence: { labelFontSize: 10, valueFontSize: 12 },
     fuelGauge: { labelFontSize: 10, valueFontSize: 12 },

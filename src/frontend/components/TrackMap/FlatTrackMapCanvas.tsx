@@ -193,9 +193,10 @@ export const FlatTrackMapCanvas = ({
         const color = driverColors[driver.CarIdx];
         if (!color) return;
 
-      const x = HORIZONTAL_PADDING + progress * usableWidth;
-      const radius = (isPlayer ? playerCircleSize : driverCircleSize) * circleScale;
-      const fontSize = radius * (trackmapFontSize / 100);
+        const x = HORIZONTAL_PADDING + progress * usableWidth;
+        const radius =
+          (isPlayer ? playerCircleSize : driverCircleSize) * circleScale;
+        const fontSize = radius * (trackmapFontSize / 100);
 
         ctx.fillStyle = color.fill;
         ctx.beginPath();
@@ -224,7 +225,8 @@ export const FlatTrackMapCanvas = ({
           }
           if (displayText) {
             const m = ctx.measureText(displayText);
-            const visualOffset = (m.actualBoundingBoxAscent - m.actualBoundingBoxDescent) / 2;
+            const visualOffset =
+              (m.actualBoundingBoxAscent - m.actualBoundingBoxDescent) / 2;
             ctx.fillText(displayText, x, centerY + visualOffset);
           }
         }

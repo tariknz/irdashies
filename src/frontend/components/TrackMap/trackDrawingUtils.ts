@@ -142,7 +142,8 @@ export const drawDrivers = (
         }
         if (displayText) {
           const m = ctx.measureText(displayText);
-          const visualOffset = (m.actualBoundingBoxAscent - m.actualBoundingBoxDescent) / 2;
+          const visualOffset =
+            (m.actualBoundingBoxAscent - m.actualBoundingBoxDescent) / 2;
           ctx.fillText(displayText, position.x, position.y + visualOffset);
         }
       }

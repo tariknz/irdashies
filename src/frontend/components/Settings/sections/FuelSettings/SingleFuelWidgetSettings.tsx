@@ -1,11 +1,14 @@
-import { useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { BaseSettingsSection } from '../../components/BaseSettingsSection';
 import { FuelWidgetSettings, LayoutNode } from '../../types';
 import { useDashboard } from '@irdashies/context';
 import { SessionVisibility } from '../../components/SessionVisibility';
 import { ToggleSwitch } from '../../components/ToggleSwitch';
 import { LayoutVisualizer, migrateToTree } from '../LayoutVisualizer';
-import { DEFAULT_FUEL_LAYOUT_TREE, defaultFuelCalculatorSettings } from '../../../FuelCalculator/defaults';
+import {
+  DEFAULT_FUEL_LAYOUT_TREE,
+  defaultFuelCalculatorSettings,
+} from '../../../FuelCalculator/defaults';
 import { DualFontSizeInput } from './FontSizeInputs';
 import { GridOrderSettingsList } from './GridOrderSettingsList';
 import { migrateConfig, AVAILABLE_WIDGETS_FUEL } from './utils';
@@ -18,7 +21,13 @@ import { HistoricalStorageSection } from './HistoricalStorageSection';
 const defaultConfig = defaultFuelCalculatorSettings;
 const DEFAULT_TREE_FUEL = DEFAULT_FUEL_LAYOUT_TREE;
 
-export const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => {
+export const SingleFuelWidgetSettings = ({
+  widgetId,
+  managerBar,
+}: {
+  widgetId: string;
+  managerBar?: React.ReactNode;
+}) => {
   const { currentDashboard } = useDashboard();
   const savedSettings = currentDashboard?.widgets.find(
     (w) => w.id === widgetId
@@ -28,7 +37,11 @@ export const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => 
     const initialConfig = migrateConfig(savedSettings?.config);
 
     // Use DEFAULT_TREE_FUEL if no layout is defined
-    if ((!initialConfig.layoutConfig || initialConfig.layoutConfig.length === 0) && !initialConfig.layoutTree) {
+    if (
+      (!initialConfig.layoutConfig ||
+        initialConfig.layoutConfig.length === 0) &&
+      !initialConfig.layoutTree
+    ) {
       initialConfig.layoutTree = DEFAULT_TREE_FUEL;
     }
     return {
@@ -42,13 +55,16 @@ export const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => 
   // Calculate tree state from settings (migrating if needed)
   const currentTree = useMemo(() => {
     // Validate that the tree has a type before using it
-    if (settings.config.layoutTree && settings.config.layoutTree.type) return settings.config.layoutTree;
+    if (settings.config.layoutTree && settings.config.layoutTree.type)
+      return settings.config.layoutTree;
     // Auto-migrate legacy list to tree for the visualizer
     return migrateToTree(settings.config.layoutConfig || []);
   }, [settings.config.layoutTree, settings.config.layoutConfig]);
 
   if (!currentDashboard || !savedSettings) {
-    return <div className="p-4 text-slate-400">Widget not found or loading...</div>;
+    return (
+      <div className="p-4 text-slate-400">Widget not found or loading...</div>
+    );
   }
 
   return (
@@ -67,11 +83,16 @@ export const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => 
 
         return (
           <div className="space-y-6">
+            {managerBar}
             {/* Main Visual Layout Editor */}
             <div className="space-y-4">
               <div className="flex justify-between items-center">
-                <h3 className="text-md font-medium text-slate-200">Layout Editor</h3>
-                <span className="text-xs text-slate-500">Drag to Split (Right/Bottom)</span>
+                <h3 className="text-md font-medium text-slate-200">
+                  Layout Editor
+                </h3>
+                <span className="text-xs text-slate-500">
+                  Drag to Split (Right/Bottom)
+                </span>
               </div>
 
               {currentTree && (
@@ -86,33 +107,51 @@ export const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => 
               <div className="bg-slate-800/50 p-4 rounded border border-slate-700 space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <span className="text-sm font-medium text-slate-300">Use General font Sizes</span>
-                    <span className="block text-[10px] text-slate-500">Syncs with Font Size slider in General tab</span>
+                    <span className="text-sm font-medium text-slate-300">
+                      Use General font Sizes
+                    </span>
+                    <span className="block text-[10px] text-slate-500">
+                      Syncs with Font Size slider in General tab
+                    </span>
                   </div>
                   <ToggleSwitch
                     enabled={settings.config.useGeneralFontSize ?? false}
-                    onToggle={(val) => handleConfigChange({ useGeneralFontSize: val })}
+                    onToggle={(val) =>
+                      handleConfigChange({ useGeneralFontSize: val })
+                    }
                   />
                 </div>
 
                 <div className="flex items-center justify-between">
                   <div>
-                    <span className="text-sm font-medium text-slate-300">Use General Compact Mode</span>
-                    <span className="block text-[10px] text-slate-500">Syncs with Compact Mode in General tab</span>
+                    <span className="text-sm font-medium text-slate-300">
+                      Use General Compact Mode
+                    </span>
+                    <span className="block text-[10px] text-slate-500">
+                      Syncs with Compact Mode in General tab
+                    </span>
                   </div>
                   <ToggleSwitch
                     enabled={settings.config.useGeneralCompactMode ?? false}
-                    onToggle={(val) => handleConfigChange({ useGeneralCompactMode: val })}
+                    onToggle={(val) =>
+                      handleConfigChange({ useGeneralCompactMode: val })
+                    }
                   />
                 </div>
               </div>
             </div>
 
             {/* Widget Font Size Settings */}
-            <WidgetFontSizeSettings settings={settings} onChange={handleConfigChange} />
+            <WidgetFontSizeSettings
+              settings={settings}
+              onChange={handleConfigChange}
+            />
 
             {/* Fuel Status Alerts */}
-            <FuelStatusAlertsSection settings={settings} onChange={handleConfigChange} />
+            <FuelStatusAlertsSection
+              settings={settings}
+              onChange={handleConfigChange}
+            />
 
             {/* Fuel Units */}
             <div className="flex items-center justify-between">
@@ -136,18 +175,30 @@ export const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => 
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm text-slate-300">
                   Consumption Details
-                  <span className="block text-xs text-slate-500">Configures rows in Consumption Grid</span>
+                  <span className="block text-xs text-slate-500">
+                    Configures rows in Consumption Grid
+                  </span>
                 </span>
                 <div className="flex items-center gap-4">
-                  <DualFontSizeInput widgetId="fuelGrid" settings={settings} onChange={handleConfigChange} />
+                  <DualFontSizeInput
+                    widgetId="fuelGrid"
+                    settings={settings}
+                    onChange={handleConfigChange}
+                  />
                 </div>
               </div>
 
               {/* Fuel 2 Grid Reordering */}
               <div className="pl-2 pr-1">
                 <GridOrderSettingsList
-                  itemsOrder={settings.config.consumptionGridOrder || defaultConfig.consumptionGridOrder || []}
-                  onReorder={(newOrder) => handleConfigChange({ consumptionGridOrder: newOrder })}
+                  itemsOrder={
+                    settings.config.consumptionGridOrder ||
+                    defaultConfig.consumptionGridOrder ||
+                    []
+                  }
+                  onReorder={(newOrder) =>
+                    handleConfigChange({ consumptionGridOrder: newOrder })
+                  }
                   settings={settings}
                   handleConfigChange={handleConfigChange}
                 />
@@ -158,15 +209,24 @@ export const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => 
             <div className="flex items-center justify-between pr-20 py-4 border-b border-white/5">
               <div>
                 <span className="text-sm text-slate-300">Economy Predict</span>
-                <span className="block text-[10px] text-slate-500">Predicts fuel usage vs target. Adjust Label/Value sizes.</span>
+                <span className="block text-[10px] text-slate-500">
+                  Predicts fuel usage vs target. Adjust Label/Value sizes.
+                </span>
               </div>
               <div className="flex items-center gap-4">
-                <DualFontSizeInput widgetId="fuelEconomyPredict" settings={settings} onChange={handleConfigChange} />
+                <DualFontSizeInput
+                  widgetId="fuelEconomyPredict"
+                  settings={settings}
+                  onChange={handleConfigChange}
+                />
               </div>
             </div>
 
             {/* Fuel History */}
-            <FuelHistorySection settings={settings} onChange={handleConfigChange} />
+            <FuelHistorySection
+              settings={settings}
+              onChange={handleConfigChange}
+            />
 
             {/* Safety Margin */}
             <div className="flex items-center justify-between pr-20">
@@ -185,7 +245,8 @@ export const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => 
                   value={settings.config.safetyMargin}
                   onChange={(e) =>
                     handleConfigChange({
-                      safetyMargin: parseFloat(e.target.value.replace(',', '.')) || 0,
+                      safetyMargin:
+                        parseFloat(e.target.value.replace(',', '.')) || 0,
                     })
                   }
                   className="w-16 px-2 py-1 bg-slate-700 text-slate-200 rounded text-xs text-right focus:border-blue-500 focus:outline-none"
@@ -219,7 +280,10 @@ export const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => 
             </div>
 
             {/* Pit Strategy Section */}
-            <PitStrategySection settings={settings} onChange={handleConfigChange} />
+            <PitStrategySection
+              settings={settings}
+              onChange={handleConfigChange}
+            />
 
             {/* Session Visibility Settings */}
             <div className="space-y-4 border-t border-slate-600/50 pt-6">
@@ -240,7 +304,8 @@ export const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => 
                       Show only when on track
                     </h4>
                     <span className="block text-[10px] text-slate-500">
-                      If enabled, calculator will only be shown when you are driving.
+                      If enabled, calculator will only be shown when you are
+                      driving.
                     </span>
                   </div>
                   <ToggleSwitch
@@ -256,7 +321,10 @@ export const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => 
             </div>
 
             {/* Historical Storage Section */}
-            <HistoricalStorageSection settings={settings} onChange={handleConfigChange} />
+            <HistoricalStorageSection
+              settings={settings}
+              onChange={handleConfigChange}
+            />
           </div>
         );
       }}

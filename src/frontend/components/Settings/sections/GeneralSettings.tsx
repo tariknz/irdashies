@@ -7,15 +7,15 @@ const FONT_PRESETS = {
   notosans: 'Noto Sans',
   figtree: 'Figtree',
   inter: 'Inter',
-  roboto: 'Roboto'
+  roboto: 'Roboto',
 };
 
 const FONT_SIZE_PRESETS = {
-  'xs': 'Extra Small',
-  'sm': 'Small',
-  'md': 'Medium',
-  'lg': 'Large',
-  'xl': 'Extra Large',
+  xs: 'Extra Small',
+  sm: 'Small',
+  md: 'Medium',
+  lg: 'Large',
+  xl: 'Extra Large',
   '2xl': '2X Large',
   '3xl': '3X Large',
   '4xl': '4X Large',
@@ -32,11 +32,11 @@ const FONT_WEIGHT_PRESETS = {
   medium: 'Medium',
   semibold: 'Semibold',
   bold: 'Bold',
-  extrabold: 'Extrabold'
+  extrabold: 'Extrabold',
 };
 
 const FONT_WEIGHT_RESTRICTIONS: Record<string, string[]> = {
-  lato: ['medium','semibold']
+  lato: ['medium', 'semibold'],
 };
 
 const HIGHLIGHT_COLOR_PRESETS = new Map([
@@ -118,7 +118,7 @@ export const GeneralSettings = () => {
     '6xl',
     '7xl',
     '8xl',
-    '9xl'
+    '9xl',
   ];
 
   const getSliderValue = (size: string | undefined): number => {
@@ -143,7 +143,20 @@ export const GeneralSettings = () => {
   };
 
   const handleFontSizeChange = (
-    newSize: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | '5xl' | '6xl' | '7xl' | '8xl' | '9xl'
+    newSize:
+      | 'xs'
+      | 'sm'
+      | 'md'
+      | 'lg'
+      | 'xl'
+      | '2xl'
+      | '3xl'
+      | '4xl'
+      | '5xl'
+      | '6xl'
+      | '7xl'
+      | '8xl'
+      | '9xl'
   ) => {
     const newSettings = { ...settings, fontSize: newSize };
     setSettings(newSettings);
@@ -168,9 +181,9 @@ export const GeneralSettings = () => {
   );
 
   const resolvedFontWeight =
-  settings.fontWeight && filteredWeights[settings.fontWeight]
-    ? settings.fontWeight
-    : 'normal';
+    settings.fontWeight && filteredWeights[settings.fontWeight]
+      ? settings.fontWeight
+      : 'normal';
 
   if (settings.fontWeight != resolvedFontWeight) {
     handleFontWeightChange(resolvedFontWeight);
@@ -248,10 +261,7 @@ export const GeneralSettings = () => {
         </p>
       </div>
 
-      
-
       <div className="flex-1 overflow-y-auto min-h-0 space-y-6 p-4 mt-4">
-
         {/* Font Settings */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
@@ -263,9 +273,7 @@ export const GeneralSettings = () => {
               value={settings.fontType ?? 'lato'}
               onChange={(e) =>
                 handleFontChange(
-                  e.target.value as NonNullable<
-                    GeneralSettingsType['fontType']
-                  >
+                  e.target.value as NonNullable<GeneralSettingsType['fontType']>
                 )
               }
               className="w-full px-3 py-2 bg-slate-700 text-slate-300 rounded border border-slate-600 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"

@@ -14,7 +14,7 @@ describe('trackDrawingUtils', () => {
       fillText: vi.fn(),
       measureText: vi.fn(() => ({
         actualBoundingBoxAscent: 10,
-        actualBoundingBoxDescent: 4
+        actualBoundingBoxDescent: 4,
       })),
       save: vi.fn(),
       restore: vi.fn(),

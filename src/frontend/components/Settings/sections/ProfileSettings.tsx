@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useDashboard } from '@irdashies/context';
-import type {
-  DashboardProfile
-} from '@irdashies/types';
+import type { DashboardProfile } from '@irdashies/types';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 
 export const ProfileSettings = () => {
@@ -13,7 +11,7 @@ export const ProfileSettings = () => {
     deleteProfile,
     renameProfile,
     switchProfile,
-    refreshProfiles
+    refreshProfiles,
   } = useDashboard();
 
   const [newProfileName, setNewProfileName] = useState('');

@@ -1,36 +1,10 @@
-import { useEffect } from 'react';
-import { useTelemetryValue, useTelemetryValues, useTelemetryStore } from '../TelemetryStore/TelemetryStore';
-import { usePitLapStore } from './PitLapStore';
-import { useStore } from 'zustand';
-
 /**
- * Hook that automatically updates the PitLapStore with telemetry data.
- * This ensures pit lap tracking is always up-to-date without manual updates in components.
- *
- * Use this hook in components that need pit lap tracking (e.g., Standings overlay).
+ * Passive hook for PitLap calculations.
+ * In Phase 2, this hook no longer subscribes to raw telemetry.
+ * The updates are pushed from HeadlessTelemetryOrchestrator.
  */
 export const usePitLapStoreUpdater = () => {
-  const carIdxOnPitRoad = useTelemetryValues<boolean[]>('CarIdxOnPitRoad');
-  const carIdxLap = useTelemetryValues<number[]>('CarIdxLap');
-  const sessionUniqueID = useTelemetryValue('SessionUniqueID');
-  const carIdxTrackSurface = useTelemetryValues<number[]>('CarIdxTrackSurface');
-  const sessionState = useTelemetryValue('SessionState');
-  const updatePitLapTimes = usePitLapStore(state => state.updatePitLaps);
-
-  const throttledSessionTime = useStore(useTelemetryStore, (state) => {
-    const rawTime = state.telemetry?.SessionTime?.value?.[0];
-    if (rawTime == null) return null;
-    return Math.floor(rawTime);
-  });
-
-  useEffect(() => {
-    updatePitLapTimes(
-      carIdxOnPitRoad ?? [],
-      carIdxLap ?? [],
-      sessionUniqueID ?? 0,
-      throttledSessionTime ?? 0,
-      carIdxTrackSurface ?? [],
-      sessionState ?? 0
-    );
-  }, [carIdxOnPitRoad, carIdxLap, sessionUniqueID, throttledSessionTime, carIdxTrackSurface, sessionState, updatePitLapTimes]);
+  // Now does nothing, or could be used for logic that doesn't
+  // require high-frequency telemetry subscriptions.
+  return null;
 };

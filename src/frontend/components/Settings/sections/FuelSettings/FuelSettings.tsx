@@ -17,7 +17,9 @@ export const FuelSettings = ({ widgetId }: FuelSettingsProps) => {
   const { currentDashboard, onDashboardUpdated } = useDashboard();
   const navigate = useNavigate();
 
-  const fuelWidgets = currentDashboard?.widgets.filter(w => (w.type || w.id) === widgetType) || [];
+  const fuelWidgets =
+    currentDashboard?.widgets.filter((w) => (w.type || w.id) === widgetType) ||
+    [];
 
   const [selectedId, setSelectedId] = useState(() => {
     if (widgetId) return widgetId;
@@ -36,10 +38,9 @@ export const FuelSettings = ({ widgetId }: FuelSettingsProps) => {
     }
   }
 
-
   const handleWidgetChange = (newId: string) => {
-      setSelectedId(newId);
-      navigate(`/settings/${newId}`);
+    setSelectedId(newId);
+    navigate(`/settings/${newId}`);
   };
 
   const handleAddWidget = () => {
@@ -57,12 +58,10 @@ export const FuelSettings = ({ widgetId }: FuelSettingsProps) => {
     };
 
     // Update Dashboard
-    onDashboardUpdated(
-      {
-        ...currentDashboard,
-        widgets: [...currentDashboard.widgets, newWidget],
-      }
-    );
+    onDashboardUpdated({
+      ...currentDashboard,
+      widgets: [...currentDashboard.widgets, newWidget],
+    });
 
     // Select the new widget
     handleWidgetChange(newId);
@@ -71,17 +70,17 @@ export const FuelSettings = ({ widgetId }: FuelSettingsProps) => {
   const handleDeleteWidget = () => {
     if (!currentDashboard || !onDashboardUpdated) return;
 
-    const newWidgets = currentDashboard.widgets.filter((w) => w.id !== selectedId);
-
-    onDashboardUpdated(
-      {
-        ...currentDashboard,
-        widgets: newWidgets,
-      }
+    const newWidgets = currentDashboard.widgets.filter(
+      (w) => w.id !== selectedId
     );
 
+    onDashboardUpdated({
+      ...currentDashboard,
+      widgets: newWidgets,
+    });
+
     // Reset selection
-    const remaining = newWidgets.filter(w => w.type === widgetType);
+    const remaining = newWidgets.filter((w) => w.type === widgetType);
     if (remaining.length > 0) handleWidgetChange(remaining[0].id);
     else navigate('/settings/fuel'); // Stay on fuel page but empty state
   };
@@ -104,45 +103,58 @@ export const FuelSettings = ({ widgetId }: FuelSettingsProps) => {
 
   return (
     <div className="space-y-4 h-full overflow-y-auto p-1">
-      {/* Top Manager Bar */}
-      <div className="bg-slate-800 p-3 rounded flex items-center justify-between border border-slate-700">
-        <div className="flex items-center gap-3">
-          <span className="text-sm font-bold text-slate-200">Editing Widget:</span>
-          <select
-            value={selectedId}
-            onChange={(e) => handleWidgetChange(e.target.value)}
-            className="bg-slate-900 border border-slate-600 text-white text-sm rounded px-2 py-1"
-          >
-            {fuelWidgets.map(w => (
-              <option key={w.id} value={w.id}>
-                {w.id}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <button
-            onClick={handleDeleteWidget}
-            disabled={selectedId === 'fuel'}
-            title={selectedId === 'fuel' ? "Default widget cannot be deleted. Disable it instead." : "Delete this layout configuration"}
-            className={`px-3 py-1 text-xs rounded border transition-colors ${selectedId === 'fuel' 
-              ? 'bg-slate-800 text-slate-500 border-slate-700 cursor-not-allowed opacity-50' 
-              : 'bg-red-900/50 hover:bg-red-900 text-red-200 border-red-800'}`}
-          >
-            {selectedId === 'fuel' ? 'Default (Locked)' : 'Delete Layout'}
-          </button>
-          <button
-            onClick={handleAddWidget}
-            className="flex items-center gap-1 px-3 py-1 bg-green-700 hover:bg-green-600 text-white text-xs rounded transition-colors"
-          >
-            <PlusIcon /> New Layout
-          </button>
-        </div>
-      </div>
-
       {/* Render settings for selected ID */}
-      {selectedId && <SingleFuelWidgetSettings key={selectedId} widgetId={selectedId} />}
+      {selectedId && (
+        <SingleFuelWidgetSettings
+          key={selectedId}
+          widgetId={selectedId}
+          managerBar={
+            <div className="bg-slate-800 p-3 rounded flex items-center justify-between border border-slate-700">
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-bold text-slate-200">
+                  Editing Widget:
+                </span>
+                <select
+                  value={selectedId}
+                  onChange={(e) => handleWidgetChange(e.target.value)}
+                  className="bg-slate-900 border border-slate-600 text-white text-sm rounded px-2 py-1"
+                >
+                  {fuelWidgets.map((w) => (
+                    <option key={w.id} value={w.id}>
+                      {w.id}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleDeleteWidget}
+                  disabled={selectedId === 'fuel'}
+                  title={
+                    selectedId === 'fuel'
+                      ? 'Default widget cannot be deleted. Disable it instead.'
+                      : 'Delete this layout configuration'
+                  }
+                  className={`px-3 py-1 text-xs rounded border transition-colors ${
+                    selectedId === 'fuel'
+                      ? 'bg-slate-800 text-slate-500 border-slate-700 cursor-not-allowed opacity-50'
+                      : 'bg-red-900/50 hover:bg-red-900 text-red-200 border-red-800'
+                  }`}
+                >
+                  {selectedId === 'fuel' ? 'Default (Locked)' : 'Delete Layout'}
+                </button>
+                <button
+                  onClick={handleAddWidget}
+                  className="flex items-center gap-1 px-3 py-1 bg-green-700 hover:bg-green-600 text-white text-xs rounded transition-colors"
+                >
+                  <PlusIcon /> New Layout
+                </button>
+              </div>
+            </div>
+          }
+        />
+      )}
     </div>
   );
 };

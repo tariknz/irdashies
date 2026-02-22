@@ -1,4 +1,4 @@
-import { useMemo, useRef, useEffect } from 'react';
+import { useMemo, useRef, useEffect, memo } from 'react';
 import {
   DefaultB,
   DefaultW,
@@ -44,42 +44,51 @@ export interface InputSteerProps {
   wheelColor?: 'dark' | 'light';
 }
 
-export function InputSteer({
-  angleRad = 0,
-  wheelStyle = 'default',
-  wheelColor = 'light',
-}: InputSteerProps) {
-  const wheelRef = useRef<HTMLDivElement>(null);
-  
-  // Memoize the wheel component selection (only changes when style/color change)
-  const WheelComponent = useMemo(() => {
-    return wheelStyle in wheelComponentMap
-      ? wheelComponentMap[wheelStyle][wheelColor]
-      : wheelComponentMap.default[wheelColor];
-  }, [wheelStyle, wheelColor]);
+export const InputSteer = memo(
+  ({
+    angleRad = 0,
+    wheelStyle = 'default',
+    wheelColor = 'light',
+  }: InputSteerProps) => {
+    const wheelRef = useRef<HTMLDivElement>(null);
 
-  // Use CSS custom properties for smooth updates without React re-renders
-  useEffect(() => {
-    if (wheelRef.current) {
-      wheelRef.current.style.setProperty('--wheel-rotation', `${angleRad * -1}rad`);
-    }
-  }, [angleRad]);
+    // Memoize the wheel component selection (only changes when style/color change)
+    const WheelComponent = useMemo(() => {
+      return wheelStyle in wheelComponentMap
+        ? wheelComponentMap[wheelStyle as keyof typeof wheelComponentMap][
+            wheelColor
+          ]
+        : wheelComponentMap.default[wheelColor];
+    }, [wheelStyle, wheelColor]);
 
-  return (
-    <div className="w-full h-full flex fill-white relative">
-      <div
-        ref={wheelRef}
-        className='w-full h-full flex justify-center'
-        style={{
-          transform: 'rotate(var(--wheel-rotation, 0rad))',
-          transformBox: 'fill-box',
-          transformOrigin: 'center',
-          willChange: 'transform',
-        }}
-      >
-        <WheelComponent />
+    // Use CSS custom properties for smooth updates without React re-renders
+    useEffect(() => {
+      if (wheelRef.current) {
+        wheelRef.current.style.setProperty(
+          '--wheel-rotation',
+          `${angleRad * -1}rad`
+        );
+      }
+    }, [angleRad]);
+
+    return (
+      <div className="w-full h-full flex fill-white relative">
+        <div
+          ref={wheelRef}
+          className="w-full h-full flex justify-center"
+          style={{
+            transform: 'rotate(var(--wheel-rotation, 0rad))',
+            transformBox: 'fill-box',
+            transformOrigin: 'center',
+            willChange: 'transform',
+          }}
+        >
+          <WheelComponent />
+        </div>
+        <RotationIndicator currentAngleRad={angleRad} />
       </div>
-      <RotationIndicator currentAngleRad={angleRad} />
-    </div>
-  );
-}
+    );
+  }
+);
+
+InputSteer.displayName = 'InputSteer';

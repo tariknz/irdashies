@@ -26,12 +26,31 @@ export interface DashboardWidget {
 }
 
 export type FontType = 'lato' | 'notosans' | 'figtree' | 'inter' | 'roboto';
-export type FontSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | '5xl' | '6xl' | '7xl' | '8xl' | '9xl';
+export type FontSize =
+  | 'xs'
+  | 'sm'
+  | 'md'
+  | 'lg'
+  | 'xl'
+  | '2xl'
+  | '3xl'
+  | '4xl'
+  | '5xl'
+  | '6xl'
+  | '7xl'
+  | '8xl'
+  | '9xl';
 
 export interface GeneralSettingsType {
   fontType?: FontType;
   fontSize?: FontSize;
-  fontWeight?: 'light' | 'normal' | 'medium' | 'semibold' | 'bold' | 'extrabold';
+  fontWeight?:
+    | 'light'
+    | 'normal'
+    | 'medium'
+    | 'semibold'
+    | 'bold'
+    | 'extrabold';
   colorPalette?:
     | 'default'
     | 'black'

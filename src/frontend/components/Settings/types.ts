@@ -116,6 +116,7 @@ export interface StandingsWidgetSettings extends BaseWidgetSettings {
     };
     displayOrder: string[];
     sessionVisibility: SessionVisibilitySettings;
+    refreshRate?: 10 | 20 | 30 | 60;
   };
 }
 
@@ -217,6 +218,7 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
     displayOrder: string[];
     useLivePosition: boolean;
     sessionVisibility: SessionVisibilitySettings;
+    refreshRate?: 10 | 20 | 30 | 60;
   };
 }
 
@@ -397,6 +399,7 @@ export interface FuelWidgetSettings extends BaseWidgetSettings {
     enableLogging?: boolean;
     /** Whether to show the fuel status border color (green/orange/red) */
     showFuelStatusBorder?: boolean;
+    refreshRate?: 10 | 20 | 30 | 60;
   };
 }
 

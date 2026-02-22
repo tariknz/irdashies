@@ -22,11 +22,13 @@ export const useCarBehind = ({
 
   const fasterCarsFromBehind = useMemo(() => {
     // Get all cars behind the player (negative delta means behind: other - player < 0)
-    const carsBehind = drivers.filter((driver) => driver.delta < 0);
+    const carsBehind = drivers.filter(
+      (driver) => driver.delta !== undefined && driver.delta < 0
+    );
 
     const filtered = carsBehind.filter((car) => {
       // Check distance threshold
-      if (car.delta < threshold) return false;
+      if (car.delta === undefined || car.delta < threshold) return false;
 
       // If onlyShowFasterClasses is enabled, only show cars from faster classes
       if (settings.onlyShowFasterClasses) {
@@ -41,7 +43,7 @@ export const useCarBehind = ({
     });
 
     return filtered
-      .sort((a, b) => b.delta - a.delta) // Sort by closest first (least negative delta)
+      .sort((a, b) => (b.delta ?? 0) - (a.delta ?? 0)) // Sort by closest first (least negative delta)
       .slice(0, settings.numberDriversBehind) // Take only the configured number
       .map((car) => {
         const percent = parseInt(

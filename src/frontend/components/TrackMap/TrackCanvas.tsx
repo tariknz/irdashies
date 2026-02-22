@@ -345,7 +345,12 @@ export const TrackCanvas = ({
           trackOutlineWidth
         );
         drawStartFinishLine(cacheCtx, startFinishLine);
-        drawTurnNames(cacheCtx, trackDrawing.turns, enableTurnNames, trackmapFontSize);
+        drawTurnNames(
+          cacheCtx,
+          trackDrawing.turns,
+          enableTurnNames,
+          trackmapFontSize
+        );
         cacheCtx.restore();
 
         cacheParamsRef.current = currentParams;

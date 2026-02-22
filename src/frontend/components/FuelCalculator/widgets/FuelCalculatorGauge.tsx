@@ -1,21 +1,8 @@
-import React from 'react';
+import { memo } from 'react';
 import { formatFuel } from '../fuelCalculations';
-import type { FuelCalculation, FuelCalculatorSettings } from '../types';
+import type { FuelCalculatorWidgetProps } from '../types';
 
-interface FuelCalculatorWidgetProps {
-  fuelData: FuelCalculation | null;
-  displayData: FuelCalculation;
-  fuelUnits: 'L' | 'gal';
-  settings?: FuelCalculatorSettings;
-  widgetId?: string;
-  customStyles?: {
-    fontSize?: number;
-    labelFontSize?: number;
-    valueFontSize?: number;
-    barFontSize?: number;
-  };
-  isCompact?: boolean;
-}
+/* eslint-disable react/prop-types */
 
 export const getFuelStatusColors = (
   status: 'safe' | 'caution' | 'danger' = 'safe'
@@ -56,75 +43,94 @@ export const getFuelStatusColors = (
   }
 };
 
-export const FuelCalculatorGauge: React.FC<FuelCalculatorWidgetProps> = ({
-  fuelData,
-  displayData,
-  fuelUnits,
-  settings,
-  widgetId,
-  customStyles,
-  isCompact,
-}) => {
-  // Custom style handling for separate label/value sizes
-  const widgetStyle =
-    customStyles || (widgetId && settings?.widgetStyles?.[widgetId]) || {};
-  const labelFontSize = widgetStyle.labelFontSize
-    ? `${widgetStyle.labelFontSize}px`
-    : widgetStyle.fontSize
-      ? `${widgetStyle.fontSize}px`
-      : '10px';
-  const valueFontSize = widgetStyle.valueFontSize
-    ? `${widgetStyle.valueFontSize}px`
-    : widgetStyle.fontSize
-      ? `${widgetStyle.fontSize}px`
-      : '18px';
+export const FuelCalculatorGauge = memo<FuelCalculatorWidgetProps>(
+  ({
+    fuelData,
+    displayData,
+    fuelUnits,
+    settings,
+    widgetId,
+    customStyles,
+    isCompact,
+  }) => {
+    const widgetStyle =
+      customStyles || (widgetId && settings?.widgetStyles?.[widgetId]) || {};
+    const labelFontSize = widgetStyle.labelFontSize
+      ? `${widgetStyle.labelFontSize}px`
+      : widgetStyle.fontSize
+        ? `${widgetStyle.fontSize}px`
+        : '10px';
+    const valueFontSize = widgetStyle.valueFontSize
+      ? `${widgetStyle.valueFontSize}px`
+      : widgetStyle.fontSize
+        ? `${widgetStyle.fontSize}px`
+        : '18px';
 
-  if (!fuelData) return null;
+    if (!fuelData || !displayData) return null;
 
-  const currentFuel = displayData.fuelLevel;
-  const tankCapacity = fuelData.fuelTankCapacity ?? 60;
-  const fuelPct = Math.min(
-    100,
-    Math.max(0, (currentFuel / tankCapacity) * 100)
-  );
+    const currentLevel = fuelData.fuelLevel || 0;
+    const unit = fuelUnits || 'L';
+    const tankCapacity = fuelData.fuelTankCapacity ?? 60;
+    const fuelPct = Math.min(
+      100,
+      Math.max(0, (currentLevel / tankCapacity) * 100)
+    );
 
-  const status = fuelData.fuelStatus || 'safe';
-  const statusColors = getFuelStatusColors(status);
-  const gradient = statusColors.bar;
+    const status = fuelData.fuelStatus || 'safe';
+    const colors = getFuelStatusColors(status);
+    const gradient = colors.bar;
+    const lapsWithFuel = displayData.lapsWithFuel;
 
-  const fuelString = formatFuel(currentFuel, fuelUnits, 1);
-  const lapsString = displayData.lapsWithFuel.toFixed(1);
-  const tankString = formatFuel(tankCapacity, fuelUnits, 0);
+    const levelStr = formatFuel(currentLevel, unit, 1);
+    const lapsStr = lapsWithFuel.toFixed(1);
 
-  return (
-    <div className={isCompact ? 'mb-1' : 'mb-4'}>
-      <div
-        className={`flex justify-between text-[0.75em] text-slate-400 font-medium items-end ${isCompact ? 'mb-0.5' : 'mb-2'}`}
-      >
-        <span className="mb-0.5" style={{ fontSize: labelFontSize }}>
-          E
-        </span>
-        <span
-          className="text-white font-bold tracking-wide"
-          style={{ fontSize: valueFontSize }}
-        >
-          {fuelString} / {lapsString} laps
-        </span>
-        <span className="mb-0.5" style={{ fontSize: labelFontSize }}>
-          {tankString}
-        </span>
-      </div>
-      <div
-        className={`h-2 bg-slate-700 rounded-full overflow-hidden shadow-inner`}
-      >
+    return (
+      <div className={isCompact ? 'mb-1' : 'mb-4'}>
+        <div className="flex justify-between items-baseline mb-0.5">
+          <span
+            className="font-medium text-slate-400"
+            style={{ fontSize: labelFontSize }}
+          >
+            FUEL
+          </span>
+          <div className="flex items-baseline gap-1">
+            <span
+              className="font-bold tabular-nums"
+              style={{ fontSize: valueFontSize, color: colors.text }}
+            >
+              {levelStr}
+            </span>
+            <span className="text-slate-500 font-medium px-1">/</span>
+            <span
+              className="font-bold tabular-nums text-slate-300"
+              style={{ fontSize: valueFontSize }}
+            >
+              {lapsStr}
+              <span className="text-[0.6em] ml-0.5 opacity-70 uppercase">
+                LAPS
+              </span>
+            </span>
+          </div>
+        </div>
         <div
-          className={`h-full bg-gradient-to-r ${gradient} rounded-full transition-all duration-500 relative`}
-          style={{ width: `${fuelPct}%` }}
+          className={`h-2 bg-slate-700 rounded-full overflow-hidden shadow-inner`}
         >
-          <div className="absolute right-0 top-0 bottom-0 w-[1px] bg-white/20 shadow-[0_0_10px_rgba(255,255,255,0.5)]"></div>
-          <div className="absolute top-0 bottom-0 right-0 left-0 bg-gradient-to-b from-white/10 to-transparent"></div>
+          <div
+            className={`h-full w-full origin-left transition-transform duration-1000 ease-out bg-linear-to-r will-change-transform ${gradient}`}
+            style={{ transform: `scaleX(${fuelPct / 100}) translateZ(0)` }}
+          />
+        </div>
+        <div className="flex justify-between mt-1 text-[0.6em] text-slate-500 font-bold uppercase tracking-wider">
+          <span>EMPTY</span>
+          <div className="flex gap-4">
+            <div className="flex items-center gap-1">
+              <span>FULL</span>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
-  );
-};
+    );
+  }
+);
+
+FuelCalculatorGauge.displayName = 'FuelCalculatorGauge';

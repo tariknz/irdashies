@@ -29,8 +29,13 @@ import { getSdkOrMock } from './get-sdk';
 
 function copyTelemData<
   K extends keyof TelemetryVarList = keyof TelemetryVarList,
-  T extends TelemetryVarList[K] = TelemetryVarList[K]
->(src: T, key: K, dest: TelemetryVarList, cache?: Partial<TelemetryVarList>): void {
+  T extends TelemetryVarList[K] = TelemetryVarList[K],
+>(
+  src: T,
+  key: K,
+  dest: TelemetryVarList,
+  cache?: Partial<TelemetryVarList>
+): void {
   // Check if we have a cached entry to reuse
   const cached = cache?.[key];
   const useCache = cached && cached.value && Array.isArray(cached.value);
@@ -54,7 +59,8 @@ function copyTelemData<
     return;
   }
   // numbers
-  if (src.varType === 2 || src.varType === 3) { // int
+  if (src.varType === 2 || src.varType === 3) {
+    // int
     const srcArray = new Int32Array(src.value as number[]);
     if (useCache) {
       const targetArray = dest[key].value as number[];
@@ -64,7 +70,8 @@ function copyTelemData<
     } else {
       dest[key].value = [...srcArray];
     }
-  } else if (src.varType === 4) { // float
+  } else if (src.varType === 4) {
+    // float
     const srcArray = new Float32Array(src.value as number[]);
     if (useCache) {
       const targetArray = dest[key].value as number[];
@@ -74,7 +81,8 @@ function copyTelemData<
     } else {
       dest[key].value = [...srcArray];
     }
-  } else if (src.varType === 5) { // double
+  } else if (src.varType === 5) {
+    // double
     const srcArray = new Float64Array(src.value as number[]);
     if (useCache) {
       const targetArray = dest[key].value as number[];
@@ -206,17 +214,21 @@ export class IRacingSDK {
     if (!this._sdk) return null;
 
     try {
-      const seshString = this._sdk?.getSessionData();
-      // currDataVersion is only updated after getSessionData is called
-      if (this._sessionData && this._dataVer === this.currDataVersion) return this._sessionData;
+      // Check version first before fetching the string to avoid expensive SDK calls and parsing
+      const currentVersion = this.currDataVersion;
+      if (this._sessionData && this._dataVer === currentVersion)
+        return this._sessionData;
 
-      // Handle leading commas in YAML values. 
-      // First regex will drop the comma if no values follow (e.g. 'field: ,' => 'field: ')
-      // Second regex will put value in quotes, if leading comma is followed by values (e.g. 'field: ,data' => 'field: ",data"')
-      const fixedYaml = seshString?.replace(/(\w+: ) *, *\n/g, '$1 \n')
+      const seshString = this._sdk.getSessionData();
+      if (!seshString) return null;
+
+      // Handle leading commas in YAML values.
+      const fixedYaml = seshString
+        .replace(/(\w+: ) *, *\n/g, '$1 \n')
         .replace(/(\w+: )(,.*)/g, '$1"$2" \n');
+
       this._sessionData = yaml.load(fixedYaml, { json: true }) as SessionData;
-      this._dataVer = this.currDataVersion;
+      this._dataVer = currentVersion;
       return this._sessionData;
     } catch (err) {
       console.error('There was an error getting session data:', err);
@@ -301,7 +313,7 @@ export class IRacingSDK {
           rawData[dataKey as keyof TelemetryVarList],
           dataKey as keyof TelemetryVarList,
           data as TelemetryVarList,
-          this._telemetryCache,
+          this._telemetryCache
         );
       });
       // Update cache with the new data
@@ -313,18 +325,11 @@ export class IRacingSDK {
 
   /**
    * Request the value of the given telemetry variable.
-   * @param index The number index of the variable. Only use if you know what you are doing!
+   * @param telemVar The name (keyof TelemetryVarList) or index (number) of the variable to retrieve.
    */
-  public getTelemetryVariable<T extends boolean | number | string>(index: number): TelemetryVariable<T[]> | null;
-
-  /**
-   * Request the value of the given telemetry variable.
-   * @param varName The name of the variable to retrieve.
-   */
-  // eslint-disable-next-line @typescript-eslint/unified-signatures
-  public getTelemetryVariable<T extends boolean | number | string>(varName: keyof TelemetryVarList): TelemetryVariable<T[]> | null;
-
-  public getTelemetryVariable<T extends boolean | number | string>(telemVar: number | keyof TelemetryVarList): TelemetryVariable<T[]> | null {
+  public getTelemetryVariable<T extends boolean | number | string>(
+    telemVar: number | keyof TelemetryVarList
+  ): TelemetryVariable<T[]> | null {
     if (!this._sdk) return null;
 
     const rawData = this._sdk?.getTelemetryVariable(telemVar as string);
@@ -333,10 +338,12 @@ export class IRacingSDK {
     copyTelemData(
       rawData as TelemetryVariable,
       rawData.name as keyof TelemetryVarList,
-      parsed as TelemetryVarList,
+      parsed as TelemetryVarList
     );
 
-    return parsed[rawData.name as keyof TelemetryVarList] as TelemetryVariable<T[]>;
+    return parsed[rawData.name as keyof TelemetryVarList] as TelemetryVariable<
+      T[]
+    >;
   }
 
   // Broadcast commands
@@ -346,16 +353,37 @@ export class IRacingSDK {
   }
 
   public restartTelemetry(): void {
-    this._sdk?.broadcast(BroadcastMessages.TelemCommand, TelemetryCommand.Restart);
+    this._sdk?.broadcast(
+      BroadcastMessages.TelemCommand,
+      TelemetryCommand.Restart
+    );
   }
 
-  public changeCameraPosition(position: number, group: number, camera: number): void {
-    this._sdk?.broadcast(BroadcastMessages.CameraSwitchPos, position, group, camera);
+  public changeCameraPosition(
+    position: number,
+    group: number,
+    camera: number
+  ): void {
+    this._sdk?.broadcast(
+      BroadcastMessages.CameraSwitchPos,
+      position,
+      group,
+      camera
+    );
   }
 
   // @todo: needs to be padded
-  public changeCameraNumber(driver: number, group: number, camera: number): void {
-    this._sdk?.broadcast(BroadcastMessages.CameraSwitchNum, driver, group, camera);
+  public changeCameraNumber(
+    driver: number,
+    group: number,
+    camera: number
+  ): void {
+    this._sdk?.broadcast(
+      BroadcastMessages.CameraSwitchNum,
+      driver,
+      group,
+      camera
+    );
   }
 
   public changeCameraState(state: CameraState): void {
@@ -363,11 +391,22 @@ export class IRacingSDK {
   }
 
   public changeReplaySpeed(speed: number, slowMotion: boolean): void {
-    this._sdk?.broadcast(BroadcastMessages.ReplaySetPlaySpeed, speed, slowMotion ? 1 : 0);
+    this._sdk?.broadcast(
+      BroadcastMessages.ReplaySetPlaySpeed,
+      speed,
+      slowMotion ? 1 : 0
+    );
   }
 
-  public changeReplayPosition(position: ReplayPositionCommand, frame: number): void {
-    this._sdk?.broadcast(BroadcastMessages.ReplaySetPlayPosition, position, frame);
+  public changeReplayPosition(
+    position: ReplayPositionCommand,
+    frame: number
+  ): void {
+    this._sdk?.broadcast(
+      BroadcastMessages.ReplaySetPlayPosition,
+      position,
+      frame
+    );
   }
 
   public searchReplay(command: ReplaySearchCommand): void {
@@ -379,18 +418,32 @@ export class IRacingSDK {
   }
 
   public triggerReplaySessionSearch(session: number, time: number): void {
-    this._sdk?.broadcast(BroadcastMessages.ReplaySearchSessionTime, session, time);
+    this._sdk?.broadcast(
+      BroadcastMessages.ReplaySearchSessionTime,
+      session,
+      time
+    );
   }
 
   public reloadAllTextures(): void {
-    this._sdk?.broadcast(BroadcastMessages.ReloadTextures, ReloadTexturesCommand.All, 0);
+    this._sdk?.broadcast(
+      BroadcastMessages.ReloadTextures,
+      ReloadTexturesCommand.All,
+      0
+    );
   }
 
   public reloadCarTextures(car: number): void {
-    this._sdk?.broadcast(BroadcastMessages.ReloadTextures, ReloadTexturesCommand.CarIndex, car);
+    this._sdk?.broadcast(
+      BroadcastMessages.ReloadTextures,
+      ReloadTexturesCommand.CarIndex,
+      car
+    );
   }
 
-  public triggerChatState(state: ChatCommand.BeginChat | ChatCommand.Cancel | ChatCommand.Reply): void {
+  public triggerChatState(
+    state: ChatCommand.BeginChat | ChatCommand.Cancel | ChatCommand.Reply
+  ): void {
     this._sdk?.broadcast(BroadcastMessages.ChatCommand, state, 1);
   }
 
@@ -399,24 +452,36 @@ export class IRacingSDK {
    */
   public triggerChatMacro(macro: number): void {
     const clamped = Math.min(15, Math.max(1, macro));
-    this._sdk?.broadcast(BroadcastMessages.ChatCommand, ChatCommand.Macro, clamped);
+    this._sdk?.broadcast(
+      BroadcastMessages.ChatCommand,
+      ChatCommand.Macro,
+      clamped
+    );
   }
 
   public triggerPitClearCommand(
-    command: PitCommand.Clear | PitCommand.ClearTires | PitCommand.ClearWS | PitCommand.ClearFR | PitCommand.ClearFuel,
+    command:
+      | PitCommand.Clear
+      | PitCommand.ClearTires
+      | PitCommand.ClearWS
+      | PitCommand.ClearFR
+      | PitCommand.ClearFuel
   ): void {
     this._sdk?.broadcast(BroadcastMessages.PitCommand, command);
   }
 
-  public triggerPitCommand(
-    command: PitCommand.WS | PitCommand.FR,
-  ): void {
+  public triggerPitCommand(command: PitCommand.WS | PitCommand.FR): void {
     this._sdk?.broadcast(BroadcastMessages.PitCommand, command);
   }
 
   public triggerPitChange(
-    command: PitCommand.Fuel | PitCommand.LF | PitCommand.RF | PitCommand.LR | PitCommand.RR,
-    amount: number,
+    command:
+      | PitCommand.Fuel
+      | PitCommand.LF
+      | PitCommand.RF
+      | PitCommand.LR
+      | PitCommand.RR,
+    amount: number
   ): void {
     this._sdk?.broadcast(BroadcastMessages.PitCommand, command, amount);
   }
