@@ -339,11 +339,53 @@ export class OverlayManager {
   }
 
   /**
+   * Create windows for any displays that need them but don't have one yet.
+   * Uses widget center-point assignment (same logic as createOverlays) to
+   * determine which displays are required. Safe to call during drag operations
+   * since it never destroys existing windows.
+   */
+  public ensureDisplayWindows(dashboardLayout: DashboardLayout): void {
+    const allDisplays = screen.getAllDisplays();
+    const primaryDisplay = screen.getPrimaryDisplay();
+
+    const displaysWithWidgets = new Set<number>();
+    for (const widget of dashboardLayout.widgets) {
+      if (!widget.enabled) continue;
+      const centerX = widget.layout.x + widget.layout.width / 2;
+      const centerY = widget.layout.y + widget.layout.height / 2;
+      for (const display of allDisplays) {
+        const { x, y, width, height } = display.bounds;
+        if (
+          centerX >= x &&
+          centerX < x + width &&
+          centerY >= y &&
+          centerY < y + height
+        ) {
+          displaysWithWidgets.add(display.id);
+          break;
+        }
+      }
+    }
+    displaysWithWidgets.add(primaryDisplay.id);
+
+    for (const display of allDisplays) {
+      if (!displaysWithWidgets.has(display.id)) continue;
+      const existing = this.displayWindows.get(display.id);
+      if (existing && !existing.isDestroyed()) continue;
+      const isPrimary = display.id === primaryDisplay.id;
+      this.createWindowForDisplay(display, isPrimary);
+    }
+  }
+
+  /**
    * Ensure at least one overlay window exists per active display.
    * Widget visibility is handled by the React OverlayContainer.
    */
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  public closeOrCreateWindows(_dashboardLayout?: DashboardLayout): void {
+  public closeOrCreateWindows(dashboardLayout?: DashboardLayout): void {
+    if (dashboardLayout) {
+      this.ensureDisplayWindows(dashboardLayout);
+      return;
+    }
     if (this.displayWindows.size === 0) {
       const allDisplays = screen.getAllDisplays();
       const primaryDisplay = screen.getPrimaryDisplay();
