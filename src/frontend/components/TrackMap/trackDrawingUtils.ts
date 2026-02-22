@@ -109,7 +109,10 @@ export const drawTurnNames = (
       ctx.fill();          
     } 
     ctx.fillStyle = 'white';     
-    ctx.fillText(turn.content, turn.x, turn.y);
+    // visual offset
+    const m = ctx.measureText(turn.content);
+    const visualOffset = (m.actualBoundingBoxAscent - m.actualBoundingBoxDescent) / 2;
+    ctx.fillText(turn.content, turn.x, turn.y + visualOffset);
   });
 };
 
