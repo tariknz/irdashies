@@ -10,7 +10,7 @@ import {
   useTelemetryValue,
   useFocusCarIdx,
 } from '@irdashies/context';
-import { useLapDeltasVsPlayer } from '../../../context/LapTimesStore/LapTimesStore';
+import { useLapTimeHistory } from '../../../context/LapTimesStore/LapTimesStore';
 import {
   useCarLap,
   usePitLap,
@@ -28,7 +28,9 @@ import type { StandingsWidgetSettings } from '../../Settings/types';
 import { useDriverLivePositions } from './useDriverLivePositions';
 import { useStandingsSettings } from './useStandingsSettings';
 
-export const useDriverStandings = (settings?: StandingsWidgetSettings['config']) => {
+export const useDriverStandings = (
+  settings?: StandingsWidgetSettings['config']
+) => {
   const {
     driverStandings: {
       buffer,
@@ -38,7 +40,10 @@ export const useDriverStandings = (settings?: StandingsWidgetSettings['config'])
     } = {},
     gap: { enabled: gapEnabled } = { enabled: false },
     interval: { enabled: intervalEnabled } = { enabled: false },
-    lapTimeDeltas: { enabled: lapTimeDeltasEnabled, numLaps: numLapDeltas } = { enabled: false, numLaps: 3 },
+    lapTimeDeltas: { enabled: lapTimeDeltasEnabled, numLaps: numLapDeltas } = {
+      enabled: false,
+      numLaps: 3,
+    },
   } = settings ?? {};
 
   const sessionDrivers = useSessionDrivers();
@@ -63,16 +68,31 @@ export const useDriverStandings = (settings?: StandingsWidgetSettings['config'])
   const lastLap = useCarLap();
   const prevCarTrackSurface = usePrevCarTrackSurface();
   const driverClass = useMemo(() => {
-    return sessionDrivers?.find(
-      (driver) => driver.CarIdx === driverCarIdx
-    )?.CarClassID;
+    return sessionDrivers?.find((driver) => driver.CarIdx === driverCarIdx)
+      ?.CarClassID;
   }, [sessionDrivers, driverCarIdx]);
-  const lapDeltasVsPlayer = useLapDeltasVsPlayer();
+  const lapTimeHistory = useLapTimeHistory();
 
-  // Note: gap and interval calculations are now purely delta-based, no telemetry needed
+  // Compute deltas at read time against the current focus car (driverCarIdx).
+  // This means switching spectated car instantly updates deltas without any
+  // history reset, since we just change the reference car.
+  const lapDeltasForCalc = useMemo(() => {
+    if (!lapTimeDeltasEnabled || driverCarIdx === undefined) return undefined;
+    const focusHistory = lapTimeHistory[driverCarIdx];
+    if (!focusHistory || focusHistory.length === 0) return undefined;
 
-  // Only pass deltas when feature is enabled to avoid unnecessary calculations
-  const lapDeltasForCalc = lapTimeDeltasEnabled ? lapDeltasVsPlayer : undefined;
+    // Use the most recent focus car lap as the reference for all comparisons.
+    // This is the fairest available comparison regardless of when each car
+    // completed their laps.
+    const focusLapTime = focusHistory[focusHistory.length - 1];
+    if (!focusLapTime || focusLapTime <= 0) return undefined;
+
+    return lapTimeHistory.map((carHistory, carIdx) => {
+      if (carIdx === driverCarIdx || !carHistory || carHistory.length === 0)
+        return [];
+      return carHistory.map((lapTime) => lapTime - focusLapTime);
+    });
+  }, [lapTimeDeltasEnabled, lapTimeHistory, driverCarIdx]);
 
   const standingsWithGain = useMemo(() => {
     const initialStandings = createDriverStandings(
@@ -87,7 +107,7 @@ export const useDriverStandings = (settings?: StandingsWidgetSettings['config'])
         carIdxTrackSurfaceValue: carIdxTrackSurface?.value,
         radioTransmitCarIdx: radioTransmitCarIdx?.value,
         carIdxTireCompoundValue: carIdxTireCompound?.value,
-        carIdxSessionFlags: carIdxSessionFlags?.value
+        carIdxSessionFlags: carIdxSessionFlags?.value,
       },
       {
         resultsPositions: positions,
@@ -98,7 +118,7 @@ export const useDriverStandings = (settings?: StandingsWidgetSettings['config'])
       lastLap,
       prevCarTrackSurface,
       lapTimeDeltasEnabled ? numLapDeltas : undefined,
-      lapDeltasForCalc,
+      lapDeltasForCalc
     );
 
     if (useLivePositionStandings) {
@@ -114,7 +134,9 @@ export const useDriverStandings = (settings?: StandingsWidgetSettings['config'])
     if (useLivePositionStandings) {
       groupedByClass = groupedByClass.map(([classId, classStandings]) => [
         classId,
-        classStandings.slice().sort((a, b) => (a.classPosition ?? 999) - (b.classPosition ?? 999)),
+        classStandings
+          .slice()
+          .sort((a, b) => (a.classPosition ?? 999) - (b.classPosition ?? 999)),
       ]) as [string, typeof initialStandings][];
     }
 
@@ -125,9 +147,10 @@ export const useDriverStandings = (settings?: StandingsWidgetSettings['config'])
         : groupedByClass;
 
     // Calculate gap to class leader when enabled OR when interval is enabled (interval needs gap data)
-    const gapAugmentedGroupedByClass = gapEnabled || intervalEnabled
-      ? augmentStandingsWithGap(iratingAugmentedGroupedByClass)
-      : iratingAugmentedGroupedByClass;
+    const gapAugmentedGroupedByClass =
+      gapEnabled || intervalEnabled
+        ? augmentStandingsWithGap(iratingAugmentedGroupedByClass)
+        : iratingAugmentedGroupedByClass;
 
     // Calculate interval to player when enabled
     const intervalAugmentedGroupedByClass = intervalEnabled
