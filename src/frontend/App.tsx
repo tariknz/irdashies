@@ -49,13 +49,21 @@ const OverlayApp = () => {
 const App = () => {
   const isSettings = isSettingsWindow();
 
+  if (isSettings) {
+    return (
+      <DashboardProvider bridge={window.dashboardBridge}>
+        <SettingsApp />
+      </DashboardProvider>
+    );
+  }
+
   return (
     <DashboardProvider bridge={window.dashboardBridge}>
       <RunningStateProvider bridge={window.irsdkBridge}>
         <SessionProvider bridge={window.irsdkBridge} />
         <TelemetryProvider bridge={window.irsdkBridge} />
         <PitLaneProvider bridge={window.pitLaneBridge} />
-        {isSettings ? <SettingsApp /> : <OverlayApp />}
+        <OverlayApp />
       </RunningStateProvider>
     </DashboardProvider>
   );
