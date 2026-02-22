@@ -77,6 +77,10 @@ export interface StandingsWidgetSettings extends BaseWidgetSettings {
       precipitation: { enabled: boolean };
       airTemperature: { enabled: boolean; unit: 'Metric' | 'Imperial' };
       trackTemperature: { enabled: boolean; unit: 'Metric' | 'Imperial' };
+      wind: {
+        enabled: boolean;
+        speedPosition: 'left' | 'right';
+      };
       displayOrder: string[];
     };
     footerBar: {
@@ -92,6 +96,10 @@ export interface StandingsWidgetSettings extends BaseWidgetSettings {
       precipitation: { enabled: boolean };
       airTemperature: { enabled: boolean; unit: 'Metric' | 'Imperial' };
       trackTemperature: { enabled: boolean; unit: 'Metric' | 'Imperial' };
+      wind: {
+        enabled: boolean;
+        speedPosition: 'left' | 'right';
+      };
       displayOrder: string[];
     };
     showOnlyWhenOnTrack: boolean;
@@ -161,6 +169,10 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
       precipitation: { enabled: boolean };
       airTemperature: { enabled: boolean; unit: 'Metric' | 'Imperial' };
       trackTemperature: { enabled: boolean; unit: 'Metric' | 'Imperial' };
+      wind: {
+        enabled: boolean;
+        speedPosition: 'left' | 'right';
+      };
       displayOrder: string[];
     };
     footerBar: {
@@ -176,6 +188,10 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
       precipitation: { enabled: boolean };
       airTemperature: { enabled: boolean; unit: 'Metric' | 'Imperial' };
       trackTemperature: { enabled: boolean; unit: 'Metric' | 'Imperial' };
+      wind: {
+        enabled: boolean;
+        speedPosition: 'left' | 'right';
+      };
       displayOrder: string[];
     };
     showOnlyWhenOnTrack: boolean;
