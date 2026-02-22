@@ -85,12 +85,12 @@ export const drawTurnNames = (
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.font = `${fontSize}rem sans-serif`;
-    if (highContrastTurns) {
-      // measure text      
-      const metrics = ctx.measureText(turn.content); 
+    // measure text      
+    const m = ctx.measureText(turn.content); 
+    if (highContrastTurns) {      
       const padding = 20;
-      const textWidth = metrics.width;
-      const textHeight = metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent;
+      const textWidth = m.width;
+      const textHeight = m.actualBoundingBoxAscent + m.actualBoundingBoxDescent;
       const rectX = turn.x - textWidth / 2 - padding / 2;
       const rectY = turn.y - textHeight / 2 - padding / 2;
       const rectW = textWidth + padding;
@@ -110,7 +110,6 @@ export const drawTurnNames = (
     } 
     ctx.fillStyle = 'white';     
     // visual offset
-    const m = ctx.measureText(turn.content);
     const visualOffset = (m.actualBoundingBoxAscent - m.actualBoundingBoxDescent) / 2;
     ctx.fillText(turn.content, turn.x, turn.y + visualOffset);
   });
