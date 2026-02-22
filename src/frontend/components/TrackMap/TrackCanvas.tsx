@@ -88,7 +88,9 @@ export const TrackCanvas = ({
   const shouldShow = shouldShowTrack(trackId, trackDrawing);
 
   const driversOffTrack = useDriverOffTrack();
-  const driverLivePositions = useDriverLivePositions();
+  const driverLivePositions = useDriverLivePositions({
+    enabled: displayMode === 'livePosition',
+  });
 
   // Memoize Path2D objects to avoid re-creating them on every render
   // this is used to draw the track and start/finish line

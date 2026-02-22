@@ -16,7 +16,9 @@ export const FlatTrackMap = () => {
   const settings = useFlatTrackMapSettings();
   const highlightColor = useHighlightColor();
   const isOnTrack = useTelemetryValue('IsOnTrack');
-  const driverLivePositions = useDriverLivePositions();
+  const driverLivePositions = useDriverLivePositions({
+    enabled: (settings?.displayMode ?? 'carNumber') === 'livePosition',
+  });
 
   if (!useSessionVisibility(settings?.sessionVisibility)) return <></>;
 
