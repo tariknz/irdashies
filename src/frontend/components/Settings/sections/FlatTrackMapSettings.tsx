@@ -102,6 +102,15 @@ export const FlatTrackMapSettings = () => {
               >
                 Session Position
               </button>
+              <button
+                onClick={() => handleConfigChange({ displayMode: 'livePosition' })}
+                className={`px-3 py-1 rounded text-sm transition-colors ${settings.config.displayMode === 'livePosition'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
+                  }`}
+              >
+                Live Position
+              </button>
             </div>
           </div>
 

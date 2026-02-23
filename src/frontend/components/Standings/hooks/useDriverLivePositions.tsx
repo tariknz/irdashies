@@ -26,7 +26,7 @@ interface DriverData {
  *
  * @returns Record of driverIdx -> 1-based class position; empty when not applicable.
  */
-export const useDriverLivePositions = (): Record<number, number> => {
+export const useDriverLivePositions = ({ enabled }: { enabled: boolean }): Record<number, number> => {
 
   // Old variables, not used anymore. Left here for reference.
   // const carIdxClassPosition = useTelemetryValues<number[]>('CarIdxClassPosition');
@@ -53,6 +53,8 @@ export const useDriverLivePositions = (): Record<number, number> => {
 
   // Handle ref updates in an effect, not during render
   useEffect(() => {
+
+    if (!enabled) return;
 
     //console.log(lastLapSnapshotRef.current, p1CarRef.current, p1Car?.CarIdx, JSON.stringify(carIdxLapCompleted));
 
@@ -94,6 +96,8 @@ export const useDriverLivePositions = (): Record<number, number> => {
   }, [sessionState, p1LapCompleted, p1Car]);
 
   return useMemo(() => {
+
+    if (!enabled) return {};
 
     /*
     Return empty object to fall back to default position system when:
@@ -219,5 +223,5 @@ export const useDriverLivePositions = (): Record<number, number> => {
     });
 
     return livePositions;
-  }, [carIdxLapCompleted, carIdxLapDistPct, carIdxClass, sessionPositions, paceCarIdx, sessionType, sessionState]);
+  }, [enabled, carIdxLapCompleted, carIdxLapDistPct, carIdxClass, sessionPositions, paceCarIdx, sessionType, sessionState]);
 };

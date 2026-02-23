@@ -10,7 +10,9 @@
       "Bash(git pull:*)",
       "mcp__ide__getDiagnostics",
       "Bash(npx eslint:*)",
-      "WebFetch(domain:github.com)"
+      "WebFetch(domain:github.com)",
+      "WebSearch",
+      "Bash(xargs cat:*)"
     ],
     "deny": [],
     "ask": []

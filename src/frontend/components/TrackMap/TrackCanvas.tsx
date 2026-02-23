@@ -13,14 +13,16 @@ import {
   drawDrivers,
 } from './trackDrawingUtils';
 import { useDriverOffTrack } from './hooks/useDriverOffTrack';
+import { useDriverLivePositions } from '../Standings/hooks/useDriverLivePositions';
 
 export interface TrackProps {
   trackId: number;
   drivers: TrackDriver[];
   enableTurnNames?: boolean;
   showCarNumbers?: boolean;
-  displayMode?: 'carNumber' | 'sessionPosition';
+  displayMode?: 'carNumber' | 'sessionPosition' | 'livePosition';
   invertTrackColors?: boolean;
+  highContrastTurns?: boolean;
   driverCircleSize?: number;
   playerCircleSize?: number;
   trackmapFontSize?: number;
@@ -67,6 +69,7 @@ export const TrackCanvas = ({
   showCarNumbers = true,
   displayMode = 'carNumber',
   invertTrackColors = false,
+  highContrastTurns = false,
   driverCircleSize = 40,
   playerCircleSize = 40,
   trackmapFontSize = 100,
@@ -87,6 +90,9 @@ export const TrackCanvas = ({
   const shouldShow = shouldShowTrack(trackId, trackDrawing);
 
   const driversOffTrack = useDriverOffTrack();
+  const driverLivePositions = useDriverLivePositions({
+    enabled: displayMode === 'livePosition',
+  });
 
   // Memoize Path2D objects to avoid re-creating them on every render
   // this is used to draw the track and start/finish line
@@ -313,6 +319,7 @@ export const TrackCanvas = ({
       height: canvasSize.height,
       enableTurnNames,
       invertTrackColors,
+      highContrastTurns,
       trackLineWidth,
       trackOutlineWidth,
       trackmapFontSize,
@@ -345,7 +352,7 @@ export const TrackCanvas = ({
           trackOutlineWidth
         );
         drawStartFinishLine(cacheCtx, startFinishLine);
-        drawTurnNames(cacheCtx, trackDrawing.turns, enableTurnNames, trackmapFontSize);
+        drawTurnNames(cacheCtx, trackDrawing.turns, enableTurnNames, highContrastTurns, trackmapFontSize);
         cacheCtx.restore();
 
         cacheParamsRef.current = currentParams;
@@ -376,7 +383,8 @@ export const TrackCanvas = ({
       playerCircleSize,
       trackmapFontSize,
       showCarNumbers,
-      displayMode
+      displayMode,
+      driverLivePositions
     );
     ctx.restore();
   }, [
@@ -389,10 +397,12 @@ export const TrackCanvas = ({
     showCarNumbers,
     displayMode,
     invertTrackColors,
+    highContrastTurns,
     trackLineWidth,
     trackOutlineWidth,
     startFinishLine,
     driversOffTrack,
+    driverLivePositions,
     driverCircleSize,
     playerCircleSize,
     trackmapFontSize,
