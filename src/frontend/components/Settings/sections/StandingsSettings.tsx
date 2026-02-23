@@ -84,6 +84,7 @@ const defaultConfig: StandingsWidgetSettings['config'] = {
     numNonClassDrivers: 3,
     minPlayerClassDrivers: 10,
     numTopDrivers: 3,
+    topDriverDivider: 'highlight' as const,
   },
   compound: { enabled: true },
   carManufacturer: { enabled: true, hideIfSingleMake: false },
@@ -223,6 +224,9 @@ const migrateConfig = (
       numTopDrivers:
         (config.driverStandings as { numTopDrivers?: number })?.numTopDrivers ??
         defaultConfig.driverStandings.numTopDrivers,
+      topDriverDivider:
+        ((config.driverStandings as { topDriverDivider?: string })
+          ?.topDriverDivider as 'none' | 'theme' | 'highlight') ?? 'highlight',
     },
     compound: {
       enabled: (config.compound as { enabled?: boolean })?.enabled ?? true,
@@ -1137,6 +1141,35 @@ export const StandingsSettings = () => {
                     className="bg-slate-700 text-white rounded-md px-2 py-1"
                   />
                 </div>
+                {settings.config.driverStandings.numTopDrivers > 0 && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-slate-300">
+                      Top driver divider
+                    </span>
+                    <select
+                      value={
+                        settings.config.driverStandings.topDriverDivider ??
+                        'highlight'
+                      }
+                      onChange={(e) =>
+                        handleConfigChange({
+                          driverStandings: {
+                            ...settings.config.driverStandings,
+                            topDriverDivider: e.target.value as
+                              | 'none'
+                              | 'theme'
+                              | 'highlight',
+                          },
+                        })
+                      }
+                      className="bg-slate-700 text-white rounded-md px-2 py-1"
+                    >
+                      <option value="highlight">Highlight Color</option>
+                      <option value="theme">Theme Color</option>
+                      <option value="none">None</option>
+                    </select>
+                  </div>
+                )}
               </div>
             </div>
 
