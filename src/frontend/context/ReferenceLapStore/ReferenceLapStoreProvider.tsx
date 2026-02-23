@@ -1,5 +1,5 @@
 import { ReferenceLapBridge } from '../../../types/referenceLaps';
-import { useReferenceRegistryUpdater } from './ReferenceLapStoreUpdater';
+import { useReferenceLapStoreUpdater } from './ReferenceLapStoreUpdater';
 
 export interface ReferenceRegistryProviderProps {
   bridge: ReferenceLapBridge;
@@ -12,6 +12,6 @@ export interface ReferenceRegistryProviderProps {
 export const ReferenceStoreProvider = ({
   bridge,
 }: ReferenceRegistryProviderProps) => {
-  useReferenceRegistryUpdater(bridge);
+  useReferenceLapStoreUpdater(bridge);
   return null;
 };

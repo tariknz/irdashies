@@ -3,17 +3,17 @@ import { renderHook } from '@testing-library/react';
 import { useDriverRelatives } from './useDriverRelatives';
 import type { Standings } from '../createStandings';
 import {
-  normalizeKey,
-  REFERENCE_INTERVAL,
-  ReferenceLap,
-  ReferencePoint,
-} from './useReferenceRegistry';
-import {
   calculateClassEstimatedGap,
   calculateReferenceDelta,
   getStats,
   getTimeAtPosition,
 } from '../relativeGapHelpers';
+import {
+  normalizeKey,
+  REFERENCE_INTERVAL,
+  ReferenceLap,
+  ReferencePoint,
+} from '../../../context/ReferenceLapStore/ReferenceLapStore';
 
 // Mock the context hooks
 vi.mock('@irdashies/context', async (importOriginal) => {

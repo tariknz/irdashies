@@ -1,8 +1,8 @@
 import {
-  ReferenceLap,
   normalizeKey,
   REFERENCE_INTERVAL,
-} from './hooks/useReferenceRegistry';
+  ReferenceLap,
+} from '../../context/ReferenceLapStore/ReferenceLapStore';
 
 /**
  * Pre-computes and stores Fritsch-Carlson PCHIP tangents for each point in the lap.

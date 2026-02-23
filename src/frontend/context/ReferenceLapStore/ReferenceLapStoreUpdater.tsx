@@ -14,7 +14,7 @@ import { Driver } from '@irdashies/types';
 
 const EMPTY_DRIVER_ARRAY = [] as Driver[];
 
-export const useReferenceRegistryUpdater = (bridge: ReferenceLapBridge) => {
+export const useReferenceLapStoreUpdater = (bridge: ReferenceLapBridge) => {
   const { collectLapData, initialize, completeSession } =
     useReferenceLapStore.getState();
   const seriesId =
@@ -23,9 +23,9 @@ export const useReferenceRegistryUpdater = (bridge: ReferenceLapBridge) => {
   const drivers = useSessionDrivers() ?? EMPTY_DRIVER_ARRAY;
   const subSessionId =
     useSessionStore((s) => s.session?.WeekendInfo.SubSessionID) ?? -1;
-  const sessionNum = useTelemetryValue('SessionNum') ?? -1;
   const paceCarIdx =
     useSessionStore((s) => s.session?.DriverInfo?.PaceCarIdx) ?? -1;
+  const sessionNum = useTelemetryValue('SessionNum') ?? -1;
 
   const classIdsString = drivers.map((d) => d.CarClassID).join(',');
 
@@ -46,16 +46,7 @@ export const useReferenceRegistryUpdater = (bridge: ReferenceLapBridge) => {
     completeSession();
     initialize(bridge, seriesId, trackId, classList);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    // classList,
-    // completeSession,
-    // initialize,
-    seriesId,
-    trackId,
-    sessionNum,
-    subSessionId,
-    // bridge,
-  ]);
+  }, [seriesId, trackId, sessionNum, subSessionId]);
 
   const carIdxLapDistPct = useTelemetryValues('CarIdxLapDistPct');
   const carIdxOnPitRoad = useTelemetryValues('CarIdxOnPitRoad');
@@ -84,12 +75,5 @@ export const useReferenceRegistryUpdater = (bridge: ReferenceLapBridge) => {
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    carIdxLapDistPct,
-    carIdxOnPitRoad,
-    sessionTime,
-    // collectLapData,
-    drivers,
-    // bridge,
-  ]);
+  }, [carIdxLapDistPct, carIdxOnPitRoad, sessionTime, drivers]);
 };

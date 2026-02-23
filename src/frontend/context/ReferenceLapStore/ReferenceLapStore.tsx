@@ -85,7 +85,7 @@ export const useReferenceLapStore = create<ReferenceRegistryState>(
             return { classId, lap };
           } catch (error) {
             console.error(
-              `Failed to load reference lap for class ${classId}:`,
+              `[RefLapStore] Failed to load reference lap for class ${classId}:`,
               error
             );
             return { classId, lap: null };
@@ -163,7 +163,7 @@ export const useReferenceLapStore = create<ReferenceRegistryState>(
                   .saveReferenceLap(seriesId, trackId, refLap.classId, refLap)
                   .catch((err: Error) => {
                     console.error(
-                      `[Session] Failed to save class ${refLap.classId}`,
+                      `[RefLapStore] Failed to save class ${refLap.classId}`,
                       err
                     );
                   });
@@ -187,7 +187,7 @@ export const useReferenceLapStore = create<ReferenceRegistryState>(
 
       if (
         refLap.isCleanLap &&
-        trackSurface !== TRACK_SURFACES.OnTrack &&
+        // trackSurface !== TRACK_SURFACES.OnTrack &&
         isOnPitRoad
       ) {
         refLap.isCleanLap = false;
@@ -223,10 +223,13 @@ export const useReferenceLapStore = create<ReferenceRegistryState>(
     },
 
     completeSession: () => {
-      const { activeLaps, bestLaps, persistedLaps } = get();
-      activeLaps.clear();
-      bestLaps.clear();
-      persistedLaps.clear();
+      set({
+        activeLaps: new Map(),
+        bestLaps: new Map(),
+        persistedLaps: new Map(),
+        seriesId: null,
+        trackId: null,
+      });
     },
   })
 );

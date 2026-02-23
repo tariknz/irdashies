@@ -1,9 +1,9 @@
-import { Standings } from './createStandings';
 import {
   normalizeKey,
-  ReferenceLap,
   REFERENCE_INTERVAL,
-} from './hooks/useReferenceRegistry';
+  ReferenceLap,
+} from '../../context/ReferenceLapStore/ReferenceLapStore';
+import { Standings } from './createStandings';
 import { interpolateAtPoint } from './splineInterpolation';
 
 export const TRACK_SURFACES = {
