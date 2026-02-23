@@ -42,6 +42,14 @@ export const AllRatings: Story = {
   ),
 };
 
+export const FormatLicenseColorRatingCombined: Story = {
+  args: {
+    license: 'A 4.99',
+    rating: 4999,
+    format: 'license-color-fullrating-combo',
+  },
+};
+
 export const FormatLicenseColorRatingBw: Story = {
   args: {
     license: 'A 4.99',
@@ -63,6 +71,14 @@ export const FormatRatingColorNoLicense: Story = {
     license: 'A 4.99',
     rating: 4999,
     format: 'rating-color-no-license',
+  },
+};
+
+export const FormatFullRatingColorNoLicense: Story = {
+  args: {
+    license: 'A 4.99',
+    rating: 4999,
+    format: 'fullrating-color-no-license',
   },
 };
 
@@ -98,6 +114,14 @@ export const FormatRatingBwNoLicense: Story = {
   },
 };
 
+export const FormatFullRatingBwNoLicense: Story = {
+  args: {
+    license: 'A 4.99',
+    rating: 4999,
+    format: 'fullrating-bw-no-license',
+  },
+};
+
 export const FormatRatingOnlyColorRatingBw: Story = {
   args: {
     license: 'A 4.99',
@@ -113,3 +137,4 @@ export const FormatLicenseColorFullRatingBw: Story = {
     format: 'license-color-fullrating-bw',
   },
 };
+

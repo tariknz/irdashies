@@ -20,14 +20,18 @@ export interface StandingsWidgetSettings extends BaseWidgetSettings {
     badge: {
       enabled: boolean;
       badgeFormat:
-        | 'license-color-fullrating-bw'
-        | 'license-color-rating-bw'
-        | 'license-color-rating-bw-no-license'
-        | 'rating-color-no-license'
-        | 'license-bw-rating-bw'
-        | 'rating-only-bw-rating-bw'
-        | 'license-bw-rating-bw-no-license'
-        | 'rating-bw-no-license';
+      | 'license-color-fullrating-combo'
+      | 'fullrating-color-no-license'
+      | 'rating-color-no-license'
+      | 'license-color-fullrating-bw'
+      | 'license-color-rating-bw'
+      | 'rating-only-color-rating-bw'
+      | 'license-color-rating-bw-no-license'
+      | 'license-bw-rating-bw'
+      | 'rating-only-bw-rating-bw'
+      | 'license-bw-rating-bw-no-license'
+      | 'rating-bw-no-license'
+      | 'fullrating-bw-no-license';
     };
     delta: { enabled: boolean };
     gap: { enabled: boolean };
@@ -199,6 +203,8 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
     badge: {
       enabled: boolean;
       badgeFormat:
+        | 'license-color-fullrating-combo'
+        | 'fullrating-color-no-license'
         | 'license-color-fullrating-bw'
         | 'license-color-rating-bw'
         | 'license-color-rating-bw-no-license'
@@ -206,7 +212,8 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
         | 'license-bw-rating-bw'
         | 'rating-only-bw-rating-bw'
         | 'license-bw-rating-bw-no-license'
-        | 'rating-bw-no-license';
+        | 'rating-bw-no-license'
+        | 'fullrating-bw-no-license';
     };
     iratingChange: { enabled: boolean };
     delta: {
