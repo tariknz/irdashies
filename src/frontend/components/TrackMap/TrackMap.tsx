@@ -12,6 +12,7 @@ export const TrackMap = () => {
   const driversTrackData = useDriverProgress();
   const settings = useTrackMapSettings();
   const highlightColor = useHighlightColor();
+  const isMinimal = settings?.uiStyle === 'minimal';
   const isOnTrack = useTelemetryValue('IsOnTrack');
 
   if (!useSessionVisibility(settings?.sessionVisibility)) return <></>;
@@ -38,7 +39,10 @@ export const TrackMap = () => {
         trackmapFontSize={settings?.trackmapFontSize ?? 100}
         trackLineWidth={settings?.trackLineWidth ?? 20}
         trackOutlineWidth={settings?.trackOutlineWidth ?? 40}
-        highlightColor={settings?.useHighlightColor ? highlightColor : undefined}
+        highlightColor={
+          settings?.useHighlightColor ? highlightColor : undefined
+        }
+        isMinimal={isMinimal}
         debug={debug}
       />
     </div>

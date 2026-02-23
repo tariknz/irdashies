@@ -122,6 +122,7 @@ const defaultConfig: StandingsWidgetSettings['config'] = {
   },
   showOnlyWhenOnTrack: false,
   useLivePosition: false,
+  uiStyle: 'default',
   lapTimeDeltas: { enabled: false, numLaps: 3 },
   position: { enabled: true },
   driverName: {
@@ -428,6 +429,7 @@ const migrateConfig = (
     },
     showOnlyWhenOnTrack: (config.showOnlyWhenOnTrack as boolean) ?? false,
     useLivePosition: (config.useLivePosition as boolean) ?? false,
+    uiStyle: (config.uiStyle as 'default' | 'minimal') ?? 'default',
     sessionVisibility:
       (config.sessionVisibility as SessionVisibilitySettings) ??
       defaultConfig.sessionVisibility,
@@ -1330,6 +1332,30 @@ export const StandingsSettings = () => {
                       {settings.config.background.opacity}%
                     </span>
                   </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Style Settings */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-medium text-slate-200">Style</h3>
+              </div>
+              <div className="space-y-3 pl-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-300">Widget Style</span>
+                  <select
+                    value={settings.config.uiStyle ?? 'default'}
+                    onChange={(e) =>
+                      handleConfigChange({
+                        uiStyle: e.target.value as 'default' | 'minimal',
+                      })
+                    }
+                    className="bg-slate-700 text-white rounded-md px-2 py-1"
+                  >
+                    <option value="default">Default</option>
+                    <option value="minimal">Minimal</option>
+                  </select>
                 </div>
               </div>
             </div>

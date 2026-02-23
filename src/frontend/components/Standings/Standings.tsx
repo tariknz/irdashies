@@ -53,6 +53,8 @@ export const Standings = () => {
     ? 'border-spacing-y-0'
     : 'border-spacing-y-0.5';
 
+  const isMinimal = settings?.uiStyle === 'minimal';
+
   if (!isSessionVisible) return <></>;
 
   // Show only when on track setting
@@ -88,6 +90,7 @@ export const Standings = () => {
                   sof={classStats?.[classId]?.sof}
                   highlightColor={highlightColor}
                   isMultiClass={isMultiClass}
+                  isMinimal={isMinimal}
                   colSpan={12}
                 />
                 {classStandings.map((result) => (
@@ -170,6 +173,7 @@ export const Standings = () => {
                     penalty={result.penalty}
                     slowdown={result.slowdown}
                     hideCarManufacturer={hideCarManufacturer}
+                    isMinimal={isMinimal}
                   />
                 ))}
                 {index < standings.length - 1 &&

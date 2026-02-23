@@ -8,6 +8,7 @@ interface DriverClassHeaderProps {
   sof: number | undefined;
   highlightColor?: number;
   isMultiClass: boolean;
+  isMinimal?: boolean;
   colSpan?: number;
 }
 
@@ -18,6 +19,7 @@ export const DriverClassHeader = ({
   sof,
   highlightColor,
   isMultiClass,
+  isMinimal,
   colSpan,
 }: DriverClassHeaderProps) => {
   if (!className) {
@@ -39,7 +41,7 @@ export const DriverClassHeader = ({
             {className}
           </span>
           <span
-            className={`${getTailwindStyle(classColor, highlightColor, isMultiClass).driverIcon} px-2 py-1 flex items-center gap-1`}
+            className={`${getTailwindStyle(classColor, highlightColor, isMultiClass, isMinimal).driverIcon} px-2 py-1 flex items-center gap-1`}
           >
             {sof ? (
               <>
@@ -48,7 +50,7 @@ export const DriverClassHeader = ({
             ) : (
               ''
             )}{' '}
-            <UsersIcon className={sof ? "ml-3" : ""} />
+            <UsersIcon className={sof ? 'ml-3' : ''} />
             <span>{totalDrivers}</span>
           </span>
         </div>

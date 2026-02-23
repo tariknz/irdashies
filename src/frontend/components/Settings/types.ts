@@ -125,6 +125,7 @@ export interface StandingsWidgetSettings extends BaseWidgetSettings {
     };
     displayOrder: string[];
     sessionVisibility: SessionVisibilitySettings;
+    uiStyle?: 'default' | 'minimal';
   };
 }
 
@@ -234,6 +235,7 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
     displayOrder: string[];
     useLivePosition: boolean;
     sessionVisibility: SessionVisibilitySettings;
+    uiStyle?: 'default' | 'minimal';
   };
 }
 
@@ -280,6 +282,7 @@ export interface TrackMapWidgetSettings extends BaseWidgetSettings {
     useHighlightColor: boolean;
     showOnlyWhenOnTrack: boolean;
     sessionVisibility: SessionVisibilitySettings;
+    uiStyle?: 'default' | 'minimal';
   };
 }
 
