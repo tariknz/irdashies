@@ -125,6 +125,11 @@ export interface StandingsWidgetSettings extends BaseWidgetSettings {
     };
     displayOrder: string[];
     sessionVisibility: SessionVisibilitySettings;
+    driverTag?: {
+      enabled: boolean;
+      position: 'before-name' | 'after-name';
+      widthPx: number;
+    };
   };
 }
 
@@ -234,6 +239,11 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
     displayOrder: string[];
     useLivePosition: boolean;
     sessionVisibility: SessionVisibilitySettings;
+    driverTag?: {
+      enabled: boolean;
+      position: 'before-name' | 'after-name';
+      widthPx: number;
+    };
   };
 }
 

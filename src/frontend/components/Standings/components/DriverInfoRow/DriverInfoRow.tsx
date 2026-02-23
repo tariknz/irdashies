@@ -1,7 +1,14 @@
 import { memo, useMemo } from 'react';
 import { getTailwindStyle } from '@irdashies/utils/colors';
 import { formatTime, type TimeFormat } from '@irdashies/utils/time';
-import { usePitStopDuration, usePitLaneStore } from '@irdashies/context';
+import {
+  usePitStopDuration,
+  usePitLaneStore,
+  useDashboard,
+  useSessionDrivers,
+} from '@irdashies/context';
+import { useDriverTag } from './useDriverTag';
+import { DriverTagBadge } from './DriverTagBadge';
 import type { Gap, LastTimeState } from '../../createStandings';
 import type {
   RelativeWidgetSettings,
@@ -188,6 +195,22 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
     pitStopDurationProp ?? pitStopDurations[carIdx] ?? null;
 
   const pitExitPct = usePitLaneStore((s) => s.pitExitPct);
+
+  const { currentDashboard } = useDashboard();
+  const tagSettings = currentDashboard?.generalSettings?.driverTagSettings;
+  const widgetTagEnabled = config?.driverTag?.enabled;
+  const sessionDrivers = useSessionDrivers();
+  const userId = useMemo(
+    () => sessionDrivers?.find((d) => d.CarIdx === carIdx)?.UserID,
+    [sessionDrivers, carIdx]
+  );
+  const resolvedTag = useDriverTag(
+    name ?? '',
+    tagSettings,
+    widgetTagEnabled,
+    false,
+    userId
+  );
   // When pit exit is in the last 15% of the lap, the S/F line is reached
   // very shortly after exiting pits. OUT must persist for one extra lap count.
   const pitExitAfterSF = pitExitPct !== null && pitExitPct > 0.85;
@@ -244,6 +267,30 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
         ),
       },
       {
+        id: 'driverTag',
+        shouldRender:
+          (displayOrder ? displayOrder.includes('driverTag') : true) &&
+          !!(widgetTagEnabled ?? tagSettings?.display?.enabled),
+        component: (
+          <td
+            key="driverTag"
+            data-column="driverTag"
+            className="w-auto px-0 py-0.5 whitespace-nowrap align-middle"
+          >
+            <div className="flex items-center justify-center">
+              {hidden ? null : (
+                <DriverTagBadge
+                  tag={resolvedTag}
+                  widthPx={tagSettings?.display?.widthPx}
+                  displayStyle={tagSettings?.display?.displayStyle ?? 'badge'}
+                  iconWeight={tagSettings?.display?.iconWeight}
+                />
+              )}
+            </div>
+          </td>
+        ),
+      },
+      {
         id: 'countryFlags',
         shouldRender:
           (displayOrder ? displayOrder.includes('countryFlags') : true) &&
@@ -265,6 +312,9 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
             showStatusBadges={config?.driverName?.showStatusBadges ?? true}
             fullName={name}
             nameFormat={config?.driverName?.nameFormat}
+            label={resolvedTag?.label}
+            nameDisplay={tagSettings?.display?.nameDisplay}
+            alternateFrequency={tagSettings?.display?.alternateFrequency}
           />
         ),
       },
@@ -506,6 +556,10 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
     emptyLapDeltaPlaceholders,
     hideCarManufacturer,
     pitExitAfterSF,
+    tagSettings,
+    resolvedTag,
+    widgetTagEnabled,
+    hidden,
   ]);
 
   return (
