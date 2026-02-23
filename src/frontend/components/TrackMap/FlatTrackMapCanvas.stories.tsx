@@ -16,6 +16,7 @@ export default {
     trackOutlineWidth: 40,
     invertTrackColors: false,
     highlightColor: undefined,
+    driverLivePositions: [0, 0],
   },
   argTypes: {
     showCarNumbers: {
@@ -336,6 +337,7 @@ export const Primary: Story = {
     trackOutlineWidth: 40,
     invertTrackColors: false,
     highlightColor: undefined,
+    driverLivePositions: [0, 0],
   },
 };
 
@@ -351,6 +353,7 @@ export const InvertedTrackColors: Story = {
     trackOutlineWidth: 40,
     invertTrackColors: true,
     highlightColor: undefined,
+    driverLivePositions: [0, 0],
   },
 };
 
@@ -366,6 +369,7 @@ export const SingleClass: Story = {
     trackOutlineWidth: 40,
     invertTrackColors: false,
     highlightColor: undefined,
+    driverLivePositions: [0, 0],
   },
 };
 
@@ -413,6 +417,7 @@ export const SingleDriver: Story = {
         trackOutlineWidth={args.trackOutlineWidth ?? 40}
         invertTrackColors={args.invertTrackColors ?? false}
         highlightColor={args.highlightColor}
+        driverLivePositions={args.driverLivePositions}
       />
     );
   },
@@ -452,6 +457,7 @@ export const CirclingAround: Story = {
         trackOutlineWidth={args.trackOutlineWidth ?? 40}
         invertTrackColors={args.invertTrackColors ?? false}
         highlightColor={args.highlightColor}
+        driverLivePositions={args.driverLivePositions}
       />
     );
   },

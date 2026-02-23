@@ -32,6 +32,7 @@ export const TrackMap = () => {
         showCarNumbers={settings?.showCarNumbers ?? true}
         displayMode={settings?.displayMode ?? 'carNumber'}
         invertTrackColors={settings?.invertTrackColors ?? false}
+        highContrastTurns={settings?.highContrastTurns ?? false}
         driverCircleSize={settings?.driverCircleSize ?? 40}
         playerCircleSize={settings?.playerCircleSize ?? 40}
         trackmapFontSize={settings?.trackmapFontSize ?? 100}

@@ -15,6 +15,9 @@ export const defaultDashboard: DashboardLayout = {
         iratingChange: {
           enabled: true,
         },
+        positionChange: {
+          enabled: false,
+        },
         badge: {
           enabled: true,
           badgeFormat: 'license-color-rating-bw',
@@ -188,6 +191,7 @@ export const defaultDashboard: DashboardLayout = {
           'carManufacturer',
           'badge',
           'iratingChange',
+          'positionChange',
           'gap',
           'interval',
           'fastestTime',
@@ -330,6 +334,9 @@ export const defaultDashboard: DashboardLayout = {
         iratingChange: {
           enabled: false,
         },
+        positionChange: {
+          enabled: false,
+        },
         delta: {
           enabled: true,
           precision: 2,
@@ -355,6 +362,7 @@ export const defaultDashboard: DashboardLayout = {
           'carManufacturer',
           'badge',
           'iratingChange',
+          'positionChange',
           'delta',
           'fastestTime',
           'lastTime',
@@ -493,6 +501,7 @@ export const defaultDashboard: DashboardLayout = {
         enableTurnNames: false,
         showCarNumbers: true,
         invertTrackColors: false,
+        highContrastTurns: false,
         driverCircleSize: 40,
         playerCircleSize: 40,
         trackmapFontSize: 100,
