@@ -131,17 +131,23 @@ export const drawDrivers = (
   trackmapFontSize: number,
   showCarNumbers: boolean,
   displayMode: 'carNumber' | 'sessionPosition' | 'livePosition' = 'carNumber',
-  driverLivePositions: Record<number, number>
+  driverLivePositions: Record<number, number>,
+  carIdxIsOnPitRoad?: number[],
 ) => {
 
   Object.values(calculatePositions)
     .sort((a, b) => Number(a.isPlayer) - Number(b.isPlayer)) // draws player last to be on top
     .forEach(({ driver, position, isPlayer, sessionPosition }) => {
-      const color = driverColors[driver.CarIdx];
+      let color = driverColors[driver.CarIdx];
       if (!color) return;
 
       const circleRadius = isPlayer ? playerCircleSize : driverCircleSize;
-      const fontSize = circleRadius * (trackmapFontSize / 100);      
+      const fontSize = circleRadius * (trackmapFontSize / 100);
+
+      const onPitRoad = !!(carIdxIsOnPitRoad && carIdxIsOnPitRoad[driver.CarIdx] === 1);
+      if (onPitRoad) {
+        color = { fill: '#999999', text: 'white' };
+      }
 
       ctx.fillStyle = color.fill;
       ctx.beginPath();
@@ -159,8 +165,10 @@ export const drawDrivers = (
         ctx.textBaseline = 'middle';
         ctx.fillStyle = color.text;
         ctx.font = `${fontSize}px sans-serif`;
-        let displayText = '';       
-        if (displayMode === 'livePosition') {
+        let displayText = '';
+        if (onPitRoad) {
+          displayText = 'P';
+        } else if (displayMode === 'livePosition') {
           const livePosition = driverLivePositions[driver.CarIdx];
           displayText =
             livePosition && livePosition > 0
