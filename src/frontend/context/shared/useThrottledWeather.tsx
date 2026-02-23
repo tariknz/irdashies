@@ -6,7 +6,7 @@ const WEATHER_UPDATE_INTERVAL_MS = 1000;
 
 interface ThrottledWeatherState {
   trackMoisture: number | undefined;
-  yawNorthValues: number[];
+  yawNorthValues: number | undefined;
   windDirection: number | undefined;
   windVelocity: number | undefined;
   humidity: number | undefined;
@@ -60,7 +60,7 @@ export const useThrottledWeather = (): WeatherData => {
 
   return {
     trackMoisture: data.trackMoisture,
-    windYaw: data.yawNorthValues[0],
+    windYaw: data.yawNorthValues,
     windDirection: data.windDirection,
     windVelocity: data.windVelocity,
     humidity: data.humidity,
