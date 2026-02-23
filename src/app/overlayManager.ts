@@ -21,15 +21,14 @@ function getIconPath(): string {
 }
 
 export class OverlayManager {
-  private containerWindow: BrowserWindow | undefined;
+  private displayWindows = new Map<number, BrowserWindow>();
+  private displayBoundsInfo = new Map<number, ContainerBoundsInfo>();
   private currentSettingsWindow: BrowserWindow | undefined;
   private isLocked = true;
   private skipTaskbar = true;
   private overlayAlwaysOnTop = true;
   private hasSingleInstanceLock = false;
   private onWindowReadyCallbacks = new Set<(windowId: string) => void>();
-  // Track container bounds for coordinate compensation
-  private containerBoundsInfo: ContainerBoundsInfo | null = null;
 
   public getVersion(): string {
     const version = app.getVersion();
@@ -38,41 +37,29 @@ export class OverlayManager {
   }
 
   /**
-   * Get the container window (for backwards compatibility with IPC)
+   * Get all display overlay windows
    */
   public getOverlays(): { window: BrowserWindow }[] {
-    if (this.containerWindow && !this.containerWindow.isDestroyed()) {
-      return [{ window: this.containerWindow }];
+    const result: { window: BrowserWindow }[] = [];
+    for (const win of this.displayWindows.values()) {
+      if (!win.isDestroyed()) {
+        result.push({ window: win });
+      }
     }
-    return [];
+    return result;
   }
 
   /**
-   * Create the single overlay container window that holds all widgets
+   * Create one overlay window per display
    */
   public createOverlays(dashboardLayout: DashboardLayout): void {
     const { generalSettings } = dashboardLayout;
     this.skipTaskbar = generalSettings?.skipTaskbar ?? true;
     this.overlayAlwaysOnTop = generalSettings?.overlayAlwaysOnTop ?? true;
 
-    this.createContainerWindow();
-    this.createSettingsWindow();
-  }
-
-  /**
-   * Create a single fullscreen transparent window that contains all overlays
-   * Spans across all connected monitors
-   */
-  private createContainerWindow(): BrowserWindow {
-    if (this.containerWindow && !this.containerWindow.isDestroyed()) {
-      return this.containerWindow;
-    }
-
-    // Calculate combined bounds of all displays to span all monitors
     const allDisplays = screen.getAllDisplays();
     const primaryDisplay = screen.getPrimaryDisplay();
 
-    // Log display info for debugging
     console.log(`[OverlayManager] Found ${allDisplays.length} display(s):`);
     for (const display of allDisplays) {
       const isPrimary = display.id === primaryDisplay.id;
@@ -81,16 +68,64 @@ export class OverlayManager {
       );
     }
 
-    const bounds = this.calculateCombinedDisplayBounds(allDisplays);
+    // Determine which displays have widgets assigned (by center-point)
+    const displaysWithWidgets = new Set<number>();
+    for (const widget of dashboardLayout.widgets) {
+      if (!widget.enabled) continue;
+      const centerX = widget.layout.x + widget.layout.width / 2;
+      const centerY = widget.layout.y + widget.layout.height / 2;
+      for (const display of allDisplays) {
+        const { x, y, width, height } = display.bounds;
+        if (
+          centerX >= x &&
+          centerX < x + width &&
+          centerY >= y &&
+          centerY < y + height
+        ) {
+          displaysWithWidgets.add(display.id);
+          break;
+        }
+      }
+    }
+
+    // Always create a window for the primary display (fallback for unmatched widgets)
+    displaysWithWidgets.add(primaryDisplay.id);
+
+    for (const display of allDisplays) {
+      if (!displaysWithWidgets.has(display.id)) {
+        console.log(
+          `[OverlayManager] Skipping display ${display.id} — no widgets assigned`
+        );
+        continue;
+      }
+      const isPrimary = display.id === primaryDisplay.id;
+      this.createWindowForDisplay(display, isPrimary);
+    }
+
+    this.createSettingsWindow();
+  }
+
+  /**
+   * Create a transparent overlay window sized exactly to one display
+   */
+  private createWindowForDisplay(
+    display: Electron.Display,
+    isPrimary: boolean
+  ): BrowserWindow {
+    const existing = this.displayWindows.get(display.id);
+    if (existing && !existing.isDestroyed()) {
+      return existing;
+    }
+
     const expectedBounds = {
-      x: bounds.x,
-      y: bounds.y,
-      width: bounds.width,
-      height: bounds.height,
+      x: display.bounds.x,
+      y: display.bounds.y,
+      width: display.bounds.width,
+      height: display.bounds.height,
     };
 
     console.log(
-      `[OverlayManager] Creating container window at: x=${expectedBounds.x}, y=${expectedBounds.y}, ${expectedBounds.width}x${expectedBounds.height}`
+      `[OverlayManager] Creating window for display ${display.id}${isPrimary ? ' (PRIMARY)' : ''}: x=${expectedBounds.x}, y=${expectedBounds.y}, ${expectedBounds.width}x${expectedBounds.height}`
     );
 
     const browserWindow = new BrowserWindow({
@@ -107,10 +142,9 @@ export class OverlayManager {
       movable: false,
       roundedCorners: false,
       hasShadow: false,
-      show: false, // Don't show until ready
-      alwaysOnTop: true, // Set in constructor for better Windows compatibility
-      backgroundColor: '#00000000', // Explicit transparent background
-      enableLargerThanScreen: true, // Allow window to span multiple monitors
+      show: false,
+      alwaysOnTop: true,
+      backgroundColor: '#00000000',
       icon: getIconPath(),
       webPreferences: {
         preload: path.join(__dirname, 'preload.js'),
@@ -118,32 +152,21 @@ export class OverlayManager {
       },
     });
 
-    // Force set bounds after creation - more reliable on Windows
     browserWindow.setBounds(expectedBounds);
 
     browserWindow.on('page-title-updated', (evt) => {
       evt.preventDefault();
     });
 
-    // Enable click-through when locked (no forwarding to avoid per-mousemove IPC overhead)
     browserWindow.setIgnoreMouseEvents(this.isLocked);
     browserWindow.setVisibleOnAllWorkspaces(true, {
       visibleOnFullScreen: true,
     });
 
     if (this.overlayAlwaysOnTop) {
-      // Use 'screen-saver' level to stay above fullscreen games
-      // This is the highest z-order level available in Electron
       browserWindow.setAlwaysOnTop(true, 'screen-saver', 1);
     }
 
-    // Check actual bounds vs expected after initial setup
-    const initialBounds = browserWindow.getBounds();
-    console.log(
-      `[OverlayManager] Initial bounds after setBounds: x=${initialBounds.x}, y=${initialBounds.y}, ${initialBounds.width}x${initialBounds.height}`
-    );
-
-    // Load the app WITHOUT a hash route - container mode
     if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
       browserWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
     } else {
@@ -152,17 +175,15 @@ export class OverlayManager {
       );
     }
 
-    this.containerWindow = browserWindow;
+    this.displayWindows.set(display.id, browserWindow);
 
     browserWindow.on('closed', () => {
-      console.log('Container window closed');
-      this.containerWindow = undefined;
-      this.containerBoundsInfo = null;
+      console.log(`Display ${display.id} overlay window closed`);
+      this.displayWindows.delete(display.id);
+      this.displayBoundsInfo.delete(display.id);
     });
 
-    // Track readiness of both events to avoid race condition:
-    // In packaged mode, did-finish-load can fire before ready-to-show,
-    // which would send null containerBoundsInfo to the frontend.
+    // Track readiness of both events to avoid race condition
     let boundsReady = false;
     let pageLoaded = false;
 
@@ -170,51 +191,41 @@ export class OverlayManager {
       if (!boundsReady || !pageLoaded) return;
       if (browserWindow.isDestroyed()) return;
 
-      browserWindow.webContents.send(
-        'containerBoundsInfo',
-        this.containerBoundsInfo
-      );
-      this.onWindowReadyCallbacks.forEach((cb) => cb('container'));
+      const boundsInfo = this.displayBoundsInfo.get(display.id);
+      browserWindow.webContents.send('containerBoundsInfo', boundsInfo);
+      this.onWindowReadyCallbacks.forEach((cb) => cb(`display-${display.id}`));
     };
 
-    // Show window and retry positioning when ready
     browserWindow.once('ready-to-show', () => {
       if (browserWindow.isDestroyed()) return;
 
-      // Retry setting bounds - Windows sometimes allows it after window is visible
       browserWindow.setPosition(expectedBounds.x, expectedBounds.y);
       browserWindow.setSize(expectedBounds.width, expectedBounds.height);
       browserWindow.show();
 
-      // Check final bounds
       const actualBounds = browserWindow.getBounds();
       const offset = {
         x: actualBounds.x - expectedBounds.x,
         y: actualBounds.y - expectedBounds.y,
       };
 
-      this.containerBoundsInfo = {
+      const boundsInfo: ContainerBoundsInfo = {
         expected: expectedBounds,
         actual: actualBounds,
         offset,
+        displayId: display.id,
+        isPrimary,
       };
 
+      this.displayBoundsInfo.set(display.id, boundsInfo);
+
       console.log(
-        `[OverlayManager] Final window bounds: x=${actualBounds.x}, y=${actualBounds.y}, ${actualBounds.width}x${actualBounds.height}`
+        `[OverlayManager] Display ${display.id} final bounds: x=${actualBounds.x}, y=${actualBounds.y}, ${actualBounds.width}x${actualBounds.height}`
       );
 
       if (offset.x !== 0 || offset.y !== 0) {
         console.warn(
-          `[OverlayManager] OS constrained window position! Offset: (${offset.x}, ${offset.y})`
-        );
-      }
-
-      if (
-        actualBounds.width !== expectedBounds.width ||
-        actualBounds.height !== expectedBounds.height
-      ) {
-        console.warn(
-          `[OverlayManager] Window size mismatch! Expected ${expectedBounds.width}x${expectedBounds.height}, got ${actualBounds.width}x${actualBounds.height}`
+          `[OverlayManager] Display ${display.id} OS constrained position! Offset: (${offset.x}, ${offset.y})`
         );
       }
 
@@ -233,48 +244,11 @@ export class OverlayManager {
   }
 
   /**
-   * Get the container bounds info (expected vs actual position)
+   * Get the primary display's bounds info (backward compatibility)
    */
   public getContainerBoundsInfo(): ContainerBoundsInfo | null {
-    return this.containerBoundsInfo;
-  }
-
-  /**
-   * Calculate the bounding rectangle that encompasses all displays
-   * This creates one large virtual screen spanning all monitors
-   */
-  private calculateCombinedDisplayBounds(
-    displays: Electron.Display[]
-  ): Electron.Rectangle {
-    if (displays.length === 0) {
-      // Fallback to a default if no displays (shouldn't happen)
-      return { x: 0, y: 0, width: 1920, height: 1080 };
-    }
-
-    if (displays.length === 1) {
-      return displays[0].bounds;
-    }
-
-    // Find the bounding box that contains all displays
-    let minX = Infinity;
-    let minY = Infinity;
-    let maxX = -Infinity;
-    let maxY = -Infinity;
-
-    for (const display of displays) {
-      const { x, y, width, height } = display.bounds;
-      minX = Math.min(minX, x);
-      minY = Math.min(minY, y);
-      maxX = Math.max(maxX, x + width);
-      maxY = Math.max(maxY, y + height);
-    }
-
-    return {
-      x: minX,
-      y: minY,
-      width: maxX - minX,
-      height: maxY - minY,
-    };
+    const primaryDisplay = screen.getPrimaryDisplay();
+    return this.displayBoundsInfo.get(primaryDisplay.id) ?? null;
   }
 
   /**
@@ -283,15 +257,12 @@ export class OverlayManager {
   public toggleLockOverlays(): boolean {
     this.isLocked = !this.isLocked;
 
-    if (this.containerWindow && !this.containerWindow.isDestroyed()) {
-      // In edit mode, allow mouse events; in locked mode, pass through
-      // Don't use forward:true when locked - it causes per-mousemove IPC overhead
-      this.containerWindow.setIgnoreMouseEvents(this.isLocked);
-      this.containerWindow.webContents.send('editModeToggled', !this.isLocked);
-
+    for (const win of this.displayWindows.values()) {
+      if (win.isDestroyed()) continue;
+      win.setIgnoreMouseEvents(this.isLocked);
+      win.webContents.send('editModeToggled', !this.isLocked);
       if (!this.isLocked) {
-        // In edit mode, bring to focus for interaction
-        this.containerWindow.focus();
+        win.focus();
       }
     }
 
@@ -309,12 +280,13 @@ export class OverlayManager {
   ]);
 
   public publishMessage(key: string, value: unknown): void {
-    // Send to container window
-    if (this.containerWindow && !this.containerWindow.isDestroyed()) {
+    // Send to all display overlay windows
+    for (const win of this.displayWindows.values()) {
+      if (win.isDestroyed()) continue;
       try {
-        this.containerWindow.webContents.send(key, value);
+        win.webContents.send(key, value);
       } catch (e) {
-        console.error(`Failed to send message ${key} to container window`, e);
+        console.error(`Failed to send message ${key} to overlay window`, e);
       }
     }
 
@@ -354,36 +326,91 @@ export class OverlayManager {
   }
 
   /**
-   * Close the container window
+   * Close all display overlay windows
    */
   public closeAllOverlays(): void {
-    if (this.containerWindow && !this.containerWindow.isDestroyed()) {
-      this.containerWindow.close();
+    for (const win of this.displayWindows.values()) {
+      if (!win.isDestroyed()) {
+        win.close();
+      }
     }
-    this.containerWindow = undefined;
+    this.displayWindows.clear();
+    this.displayBoundsInfo.clear();
   }
 
   /**
-   * In container mode, we don't need to close/create windows for widget changes
-   * The container handles widget visibility internally via React state
+   * Create windows for any displays that need them but don't have one yet.
+   * Uses widget center-point assignment (same logic as createOverlays) to
+   * determine which displays are required. Safe to call during drag operations
+   * since it never destroys existing windows.
    */
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  public closeOrCreateWindows(_dashboardLayout?: DashboardLayout): void {
-    // In container mode, widget visibility is handled by the React OverlayContainer
-    // We only need to ensure the container window exists
-    if (!this.containerWindow || this.containerWindow.isDestroyed()) {
-      this.createContainerWindow();
+  public ensureDisplayWindows(dashboardLayout: DashboardLayout): void {
+    const allDisplays = screen.getAllDisplays();
+    const primaryDisplay = screen.getPrimaryDisplay();
+
+    const displaysWithWidgets = new Set<number>();
+    for (const widget of dashboardLayout.widgets) {
+      if (!widget.enabled) continue;
+      const centerX = widget.layout.x + widget.layout.width / 2;
+      const centerY = widget.layout.y + widget.layout.height / 2;
+      for (const display of allDisplays) {
+        const { x, y, width, height } = display.bounds;
+        if (
+          centerX >= x &&
+          centerX < x + width &&
+          centerY >= y &&
+          centerY < y + height
+        ) {
+          displaysWithWidgets.add(display.id);
+          break;
+        }
+      }
     }
-    // The dashboard update is already published via IPC, so React will handle the rest
+    displaysWithWidgets.add(primaryDisplay.id);
+
+    for (const display of allDisplays) {
+      if (!displaysWithWidgets.has(display.id)) continue;
+      const existing = this.displayWindows.get(display.id);
+      if (existing && !existing.isDestroyed()) continue;
+      const isPrimary = display.id === primaryDisplay.id;
+      this.createWindowForDisplay(display, isPrimary);
+    }
   }
 
   /**
-   * Force refresh by recreating the container window
+   * Ensure at least one overlay window exists per active display.
+   * Widget visibility is handled by the React OverlayContainer.
    */
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  public forceRefreshOverlays(_dashboardLayout?: DashboardLayout): void {
+  public closeOrCreateWindows(dashboardLayout?: DashboardLayout): void {
+    if (dashboardLayout) {
+      this.ensureDisplayWindows(dashboardLayout);
+      return;
+    }
+    if (this.displayWindows.size === 0) {
+      const allDisplays = screen.getAllDisplays();
+      const primaryDisplay = screen.getPrimaryDisplay();
+      for (const display of allDisplays) {
+        const isPrimary = display.id === primaryDisplay.id;
+        this.createWindowForDisplay(display, isPrimary);
+      }
+    }
+  }
+
+  /**
+   * Force refresh by closing all overlay windows and recreating them
+   */
+  public forceRefreshOverlays(dashboardLayout?: DashboardLayout): void {
     this.closeAllOverlays();
-    this.createContainerWindow();
+    if (dashboardLayout) {
+      this.createOverlays(dashboardLayout);
+    } else {
+      const allDisplays = screen.getAllDisplays();
+      const primaryDisplay = screen.getPrimaryDisplay();
+      for (const display of allDisplays) {
+        const isPrimary = display.id === primaryDisplay.id;
+        this.createWindowForDisplay(display, isPrimary);
+      }
+    }
   }
 
   public focusSettingsWindow(): void {
@@ -462,6 +489,7 @@ export class OverlayManager {
       icon: getIconPath(),
       webPreferences: {
         preload: path.join(__dirname, 'preload.js'),
+        backgroundThrottling: false,
       },
     };
 

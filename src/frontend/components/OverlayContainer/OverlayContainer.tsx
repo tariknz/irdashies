@@ -6,8 +6,13 @@ import { WIDGET_MAP } from '../../WidgetIndex';
 import { XIcon } from '@phosphor-icons/react';
 
 export const OverlayContainer = memo(() => {
-  const { currentDashboard, editMode, onDashboardUpdated, bridge } =
-    useDashboard();
+  const {
+    currentDashboard,
+    editMode,
+    onDashboardUpdated,
+    bridge,
+    containerBoundsInfo,
+  } = useDashboard();
   const { running } = useRunningState();
 
   const handleExitEditMode = useCallback(() => {
@@ -51,6 +56,25 @@ export const OverlayContainer = memo(() => {
     (widget) => widget.enabled
   );
 
+  // When running per-display windows, each window only renders its own widgets.
+  // A widget belongs to a display if its center point falls within that display's bounds.
+  // Unmatched widgets (e.g. default positions that fall in no display) render on the primary.
+  const widgetsForThisDisplay = containerBoundsInfo?.displayId
+    ? enabledWidgets.filter((widget) => {
+        const displayBounds = containerBoundsInfo.expected;
+        const centerX = widget.layout.x + widget.layout.width / 2;
+        const centerY = widget.layout.y + widget.layout.height / 2;
+        const inThisDisplay =
+          centerX >= displayBounds.x &&
+          centerX < displayBounds.x + displayBounds.width &&
+          centerY >= displayBounds.y &&
+          centerY < displayBounds.y + displayBounds.height;
+        return (
+          inThisDisplay || (!inThisDisplay && containerBoundsInfo.isPrimary)
+        );
+      })
+    : enabledWidgets;
+
   return (
     <div
       className={[
@@ -58,7 +82,7 @@ export const OverlayContainer = memo(() => {
         editMode ? 'bg-blue-900/20' : '',
       ].join(' ')}
     >
-      {enabledWidgets.map((widget, index) => {
+      {widgetsForThisDisplay.map((widget, index) => {
         const WidgetComponent = WIDGET_MAP[widget.type || widget.id];
         if (!WidgetComponent) {
           return null;

@@ -1,5 +1,11 @@
 import { useMemo, useRef, useEffect } from 'react';
-import { useCurrentSessionType, useSessionPositions, useSessionStore, useTelemetryValue, useTelemetryValues } from '@irdashies/context';
+import {
+  useCurrentSessionType,
+  useSessionPositions,
+  useSessionStore,
+  useTelemetryValue,
+  useTelemetryValues,
+} from '@irdashies/context';
 import { SessionState } from '@irdashies/types';
 
 interface DriverData {
@@ -26,8 +32,11 @@ interface DriverData {
  *
  * @returns Record of driverIdx -> 1-based class position; empty when not applicable.
  */
-export const useDriverLivePositions = (): Record<number, number> => {
-
+export const useDriverLivePositions = ({
+  enabled,
+}: {
+  enabled: boolean;
+}): Record<number, number> => {
   // Old variables, not used anymore. Left here for reference.
   // const carIdxClassPosition = useTelemetryValues<number[]>('CarIdxClassPosition');
   // const sessionDrivers = useSessionDrivers();
@@ -47,18 +56,23 @@ export const useDriverLivePositions = (): Record<number, number> => {
   const carIdxLapCompleted = useTelemetryValues<number[]>('CarIdxLapCompleted');
   const carIdxLapDistPct = useTelemetryValues<number[]>('CarIdxLapDistPct');
   const carIdxClass = useTelemetryValues<number[]>('CarIdxClass');
-  const paceCarIdx = useSessionStore((s) => s.session?.DriverInfo?.PaceCarIdx) ?? -1;
-  const p1Car = sessionPositions?.find(pos => pos.Position === 1); // Position is 1-based
+  const paceCarIdx =
+    useSessionStore((s) => s.session?.DriverInfo?.PaceCarIdx) ?? -1;
+  const p1Car = sessionPositions?.find((pos) => pos.Position === 1); // Position is 1-based
   const p1LapCompleted = p1Car ? (carIdxLapCompleted[p1Car.CarIdx] ?? 0) : 0;
 
   // Handle ref updates in an effect, not during render
   useEffect(() => {
+    if (!enabled) return;
 
     //console.log(lastLapSnapshotRef.current, p1CarRef.current, p1Car?.CarIdx, JSON.stringify(carIdxLapCompleted));
 
     // Clear ref variables based on session state changes
-    if (lastLapSnapshotRef.current !== undefined &&
-      (sessionState === SessionState.Racing || sessionState === SessionState.CoolDown)) {
+    if (
+      lastLapSnapshotRef.current !== undefined &&
+      (sessionState === SessionState.Racing ||
+        sessionState === SessionState.CoolDown)
+    ) {
       // Reset last lap snapshot when not racing
       lastLapSnapshotRef.current = undefined;
       p1LapCompletedRef.current = undefined;
@@ -67,25 +81,34 @@ export const useDriverLivePositions = (): Record<number, number> => {
       //console.log('reset var');
 
       // Capture p1Car and p1LapCompleted when checkered flag is shown
-    } else if (lastLapSnapshotRef.current === undefined &&
+    } else if (
+      lastLapSnapshotRef.current === undefined &&
       p1CarRef.current !== p1Car?.CarIdx &&
-      sessionState === SessionState.Checkered) {
+      sessionState === SessionState.Checkered
+    ) {
       p1CarRef.current = p1Car?.CarIdx;
       p1LapCompletedRef.current = p1LapCompleted;
 
       //console.log('set p1 lap');
 
       // Capture last lap array snapshot when p1 completes a lap after checkered flag
-    } else if (lastLapSnapshotRef.current === undefined &&
+    } else if (
+      lastLapSnapshotRef.current === undefined &&
       p1LapCompletedRef.current !== undefined &&
-      p1LapCompleted > (p1LapCompletedRef.current ?? -1)) {
-
+      p1LapCompleted > (p1LapCompletedRef.current ?? -1)
+    ) {
       //console.log('set lap array');
 
-      lastLapSnapshotRef.current = new Map(carIdxLapCompleted.map((lapCompleted, carIdx) => [carIdx, lapCompleted]));
-      const p1carIdx = p1Car?.CarIdx ?? 0
+      lastLapSnapshotRef.current = new Map(
+        carIdxLapCompleted.map((lapCompleted, carIdx) => [carIdx, lapCompleted])
+      );
+      const p1carIdx = p1Car?.CarIdx ?? 0;
       // Adjust p1 car lap count back by 1 to reflect lap count at checkered
-      if (p1carIdx !== 0) lastLapSnapshotRef.current.set(p1carIdx, (lastLapSnapshotRef.current.get(p1carIdx) ?? 0) - 1);
+      if (p1carIdx !== 0)
+        lastLapSnapshotRef.current.set(
+          p1carIdx,
+          (lastLapSnapshotRef.current.get(p1carIdx) ?? 0) - 1
+        );
     }
 
     // console.log('lastLapSnapshot:', lastLapSnapshotRef.current ? JSON.stringify(Object.fromEntries(lastLapSnapshotRef.current), ) : undefined, lastLapSnapshotRef.current, p1CarRef.current, p1Car?.CarIdx);
@@ -94,6 +117,7 @@ export const useDriverLivePositions = (): Record<number, number> => {
   }, [sessionState, p1LapCompleted, p1Car]);
 
   return useMemo(() => {
+    if (!enabled) return {};
 
     /*
     Return empty object to fall back to default position system when:
@@ -105,9 +129,17 @@ export const useDriverLivePositions = (): Record<number, number> => {
     // if (isReplayPlaying) return {};
     if (sessionType !== 'Race') return {};
     if (sessionType === 'Race') {
-      if (sessionState !== SessionState.Racing && sessionState !== SessionState.Checkered) return {};
+      if (
+        sessionState !== SessionState.Racing &&
+        sessionState !== SessionState.Checkered
+      )
+        return {};
     }
-    if (carIdxClass.length > 0 && carIdxClass.every(classId => classId === -1)) return {};
+    if (
+      carIdxClass.length > 0 &&
+      carIdxClass.every((classId) => classId === -1)
+    )
+      return {};
 
     // console.log('Live !!!');
 
@@ -115,13 +147,18 @@ export const useDriverLivePositions = (): Record<number, number> => {
     const driversByClass = new Map<number, DriverData[]>();
 
     // Ensure all necessary data is available
-    if (carIdxLapCompleted.length > 0 && carIdxLapDistPct.length > 0 && carIdxClass.length > 0) {
+    if (
+      carIdxLapCompleted.length > 0 &&
+      carIdxLapDistPct.length > 0 &&
+      carIdxClass.length > 0
+    ) {
       // Create a map for O(1) lookup instead of O(n) find
       //const qualifyingResultsMap = new Map(sessionQualifyingResults?.map(result => [result.CarIdx, result]) ?? []);
-      const sessionPositionsMap = new Map(sessionPositions?.map(position => [position.CarIdx, position]) ?? []);
+      const sessionPositionsMap = new Map(
+        sessionPositions?.map((position) => [position.CarIdx, position]) ?? []
+      );
 
       carIdxLapCompleted.forEach((lapCompleted, driverIdx) => {
-
         // Skip the pace car
         if (driverIdx === paceCarIdx) return;
 
@@ -132,7 +169,9 @@ export const useDriverLivePositions = (): Record<number, number> => {
 
         // Collect necessary data
         const sessionPositionSource = sessionPositionsMap.get(driverIdx);
-        const sessionClassPosition = sessionPositionSource ? sessionPositionSource.ClassPosition + 1 : -1;
+        const sessionClassPosition = sessionPositionSource
+          ? sessionPositionSource.ClassPosition + 1
+          : -1;
         const sessionLapsCompleted = sessionPositionSource?.LapsComplete ?? 0;
         const classId = carIdxClass[driverIdx] ?? -1;
         const distPct = carIdxLapDistPct[driverIdx] ?? 0;
@@ -161,9 +200,7 @@ export const useDriverLivePositions = (): Record<number, number> => {
 
     // Calculate live positions within each class
     driversByClass.forEach((drivers) => {
-
       drivers.sort((a, b) => {
-
         // if(a.driverIdx === 39) {
         //   // console.log('Debug 39', lastLapSnapshotRef.current?.get(a.driverIdx));
         //   // console.log('Debug 39', JSON.stringify(lastLapSnapshotRef.current));
@@ -171,38 +208,58 @@ export const useDriverLivePositions = (): Record<number, number> => {
 
         // After the race has ended, if a driver gets out of the car, their lapCompleted
         // telemetry can go to -1. In that case, use sessionLapsCompleted for comparison.
-        const driverALapsCompleted = a.lapCompleted === -1 && a.sessionLapsCompleted > -1 
-          ? a.sessionLapsCompleted 
-          : a.lapCompleted;
-        const driverBLapsCompleted = b.lapCompleted === -1 && b.sessionLapsCompleted > -1 
-          ? b.sessionLapsCompleted 
-          : b.lapCompleted;
+        const driverALapsCompleted =
+          a.lapCompleted === -1 && a.sessionLapsCompleted > -1
+            ? a.sessionLapsCompleted
+            : a.lapCompleted;
+        const driverBLapsCompleted =
+          b.lapCompleted === -1 && b.sessionLapsCompleted > -1
+            ? b.sessionLapsCompleted
+            : b.lapCompleted;
 
         if (driverALapsCompleted > driverBLapsCompleted) return -1; // cars on different laps
         if (driverALapsCompleted < driverBLapsCompleted) return 1; // cars on different laps
 
         // both cars are on the same lap
         // during checkered flag, handle finished vs unfinished cars
-        if (sessionState === SessionState.Checkered && lastLapSnapshotRef.current !== undefined) { // Tower is showing checkered flag, not all cars have finished
+        if (
+          sessionState === SessionState.Checkered &&
+          lastLapSnapshotRef.current !== undefined
+        ) {
+          // Tower is showing checkered flag, not all cars have finished
 
           // If cars are on the same lap, the one that has crossed the finish line is behind.
           // Yes, behind, it's counter-intuitive.
-          if ((driverALapsCompleted > (lastLapSnapshotRef.current?.get(a.driverIdx) ?? 0)) &&
-            (driverBLapsCompleted <= (lastLapSnapshotRef.current?.get(b.driverIdx) ?? 0))) { // a finished, b didn't
+          if (
+            driverALapsCompleted >
+              (lastLapSnapshotRef.current?.get(a.driverIdx) ?? 0) &&
+            driverBLapsCompleted <=
+              (lastLapSnapshotRef.current?.get(b.driverIdx) ?? 0)
+          ) {
+            // a finished, b didn't
             // if (a.lapCompleted > b.lapCompleted) return -1;
             return 1;
           }
 
           // If cars are on the same lap, the one that has crossed the finish line is behind.
           // Yes, behind, it's counter-intuitive.
-          if ((driverBLapsCompleted > (lastLapSnapshotRef.current?.get(b.driverIdx) ?? 0)) &&
-            (driverALapsCompleted <= (lastLapSnapshotRef.current?.get(a.driverIdx) ?? 0))) { // b finished, a didn't
+          if (
+            driverBLapsCompleted >
+              (lastLapSnapshotRef.current?.get(b.driverIdx) ?? 0) &&
+            driverALapsCompleted <=
+              (lastLapSnapshotRef.current?.get(a.driverIdx) ?? 0)
+          ) {
+            // b finished, a didn't
             // if (b.lapCompleted > a.lapCompleted) return 1;
             return -1;
           }
 
-          if (driverALapsCompleted > (lastLapSnapshotRef.current?.get(a.driverIdx) ?? 0) &&
-            driverBLapsCompleted > (lastLapSnapshotRef.current?.get(b.driverIdx) ?? 0)) {
+          if (
+            driverALapsCompleted >
+              (lastLapSnapshotRef.current?.get(a.driverIdx) ?? 0) &&
+            driverBLapsCompleted >
+              (lastLapSnapshotRef.current?.get(b.driverIdx) ?? 0)
+          ) {
             return a.sessionClassPosition - b.sessionClassPosition; // both cars finished
           }
         }
@@ -215,9 +272,17 @@ export const useDriverLivePositions = (): Record<number, number> => {
       drivers.forEach((driver, index) => {
         livePositions[driver.driverIdx] = index + 1;
       });
-
     });
 
     return livePositions;
-  }, [carIdxLapCompleted, carIdxLapDistPct, carIdxClass, sessionPositions, paceCarIdx, sessionType, sessionState]);
+  }, [
+    enabled,
+    carIdxLapCompleted,
+    carIdxLapDistPct,
+    carIdxClass,
+    sessionPositions,
+    paceCarIdx,
+    sessionType,
+    sessionState,
+  ]);
 };

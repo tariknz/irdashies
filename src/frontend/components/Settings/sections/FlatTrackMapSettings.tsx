@@ -2,7 +2,10 @@ import { useState } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import { useDashboard } from '@irdashies/context';
 import { ToggleSwitch } from '../components/ToggleSwitch';
-import { FlatTrackMapWidgetSettings, SessionVisibilitySettings } from '../types';
+import {
+  FlatTrackMapWidgetSettings,
+  SessionVisibilitySettings,
+} from '../types';
 import { SessionVisibility } from '../components/SessionVisibility';
 
 const SETTING_ID = 'flatmap';
@@ -18,31 +21,55 @@ const defaultConfig: FlatTrackMapWidgetSettings['config'] = {
   invertTrackColors: false,
   useHighlightColor: false,
   showOnlyWhenOnTrack: false,
-  sessionVisibility: { race: true, loneQualify: true, openQualify: true, practice: true, offlineTesting: true }
+  sessionVisibility: {
+    race: true,
+    loneQualify: true,
+    openQualify: true,
+    practice: true,
+    offlineTesting: true,
+  },
 };
 
-const migrateConfig = (savedConfig: unknown): FlatTrackMapWidgetSettings['config'] => {
+const migrateConfig = (
+  savedConfig: unknown
+): FlatTrackMapWidgetSettings['config'] => {
   if (!savedConfig || typeof savedConfig !== 'object') return defaultConfig;
 
   const config = savedConfig as Record<string, unknown>;
   return {
-    showCarNumbers: (config.showCarNumbers as boolean) ?? defaultConfig.showCarNumbers,
-    displayMode: (config.displayMode as 'carNumber' | 'sessionPosition') ?? defaultConfig.displayMode,
-    driverCircleSize: (config.driverCircleSize as number) ?? defaultConfig.driverCircleSize,
-    playerCircleSize: (config.playerCircleSize as number) ?? defaultConfig.playerCircleSize,
-    trackmapFontSize: (config.trackmapFontSize as number) ?? defaultConfig.trackmapFontSize,
-    trackLineWidth: (config.trackLineWidth as number) ?? defaultConfig.trackLineWidth,
-    trackOutlineWidth: (config.trackOutlineWidth as number) ?? defaultConfig.trackOutlineWidth,
-    invertTrackColors: (config.invertTrackColors as boolean) ?? defaultConfig.invertTrackColors,
-    useHighlightColor: (config.useHighlightColor as boolean) ?? defaultConfig.useHighlightColor,
-    showOnlyWhenOnTrack: (config.showOnlyWhenOnTrack as boolean) ?? defaultConfig.showOnlyWhenOnTrack,
-    sessionVisibility: (config.sessionVisibility as SessionVisibilitySettings) ?? defaultConfig.sessionVisibility,
+    showCarNumbers:
+      (config.showCarNumbers as boolean) ?? defaultConfig.showCarNumbers,
+    displayMode:
+      (config.displayMode as 'carNumber' | 'sessionPosition') ??
+      defaultConfig.displayMode,
+    driverCircleSize:
+      (config.driverCircleSize as number) ?? defaultConfig.driverCircleSize,
+    playerCircleSize:
+      (config.playerCircleSize as number) ?? defaultConfig.playerCircleSize,
+    trackmapFontSize:
+      (config.trackmapFontSize as number) ?? defaultConfig.trackmapFontSize,
+    trackLineWidth:
+      (config.trackLineWidth as number) ?? defaultConfig.trackLineWidth,
+    trackOutlineWidth:
+      (config.trackOutlineWidth as number) ?? defaultConfig.trackOutlineWidth,
+    invertTrackColors:
+      (config.invertTrackColors as boolean) ?? defaultConfig.invertTrackColors,
+    useHighlightColor:
+      (config.useHighlightColor as boolean) ?? defaultConfig.useHighlightColor,
+    showOnlyWhenOnTrack:
+      (config.showOnlyWhenOnTrack as boolean) ??
+      defaultConfig.showOnlyWhenOnTrack,
+    sessionVisibility:
+      (config.sessionVisibility as SessionVisibilitySettings) ??
+      defaultConfig.sessionVisibility,
   };
 };
 
 export const FlatTrackMapSettings = () => {
   const { currentDashboard } = useDashboard();
-  const savedSettings = currentDashboard?.widgets.find((w) => w.id === SETTING_ID) as FlatTrackMapWidgetSettings | undefined;
+  const savedSettings = currentDashboard?.widgets.find(
+    (w) => w.id === SETTING_ID
+  ) as FlatTrackMapWidgetSettings | undefined;
   const [settings, setSettings] = useState<FlatTrackMapWidgetSettings>({
     enabled:
       currentDashboard?.widgets.find((w) => w.id === SETTING_ID)?.enabled ??
@@ -86,21 +113,37 @@ export const FlatTrackMapSettings = () => {
             <div className="flex items-center gap-2">
               <button
                 onClick={() => handleConfigChange({ displayMode: 'carNumber' })}
-                className={`px-3 py-1 rounded text-sm transition-colors ${settings.config.displayMode === 'carNumber'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
-                  }`}
+                className={`px-3 py-1 rounded text-sm transition-colors ${
+                  settings.config.displayMode === 'carNumber'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
+                }`}
               >
                 Car Number
               </button>
               <button
-                onClick={() => handleConfigChange({ displayMode: 'sessionPosition' })}
-                className={`px-3 py-1 rounded text-sm transition-colors ${settings.config.displayMode === 'sessionPosition'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
-                  }`}
+                onClick={() =>
+                  handleConfigChange({ displayMode: 'sessionPosition' })
+                }
+                className={`px-3 py-1 rounded text-sm transition-colors ${
+                  settings.config.displayMode === 'sessionPosition'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
+                }`}
               >
                 Session Position
+              </button>
+              <button
+                onClick={() =>
+                  handleConfigChange({ displayMode: 'livePosition' })
+                }
+                className={`px-3 py-1 rounded text-sm transition-colors ${
+                  settings.config.displayMode === 'livePosition'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
+                }`}
+              >
+                Live Position
               </button>
             </div>
           </div>
@@ -123,7 +166,8 @@ export const FlatTrackMapSettings = () => {
               className="w-full"
             />
             <p className="text-slate-400 text-sm">
-              Size of the circle for other drivers (matches curved track map scale)
+              Size of the circle for other drivers (matches curved track map
+              scale)
             </p>
           </div>
 
@@ -193,7 +237,9 @@ export const FlatTrackMapSettings = () => {
 
           <div className="flex items-center justify-between">
             <div>
-              <span className="text-sm text-slate-300">Invert Track Colors</span>
+              <span className="text-sm text-slate-300">
+                Invert Track Colors
+              </span>
               <p className="text-xs text-slate-400">
                 Swap black and white colors for the track
               </p>
@@ -254,7 +300,9 @@ export const FlatTrackMapSettings = () => {
 
           <div className="flex items-center justify-between">
             <div>
-              <span className="text-sm text-slate-300">Show Only When On Track</span>
+              <span className="text-sm text-slate-300">
+                Show Only When On Track
+              </span>
               <p className="text-xs text-slate-400">
                 Hide the flat track map when not actively driving on track
               </p>
@@ -272,7 +320,9 @@ export const FlatTrackMapSettings = () => {
           {/* Session Visibility Settings */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-medium text-slate-200">Session Visibility</h3>
+              <h3 className="text-lg font-medium text-slate-200">
+                Session Visibility
+              </h3>
             </div>
             <div className="space-y-3 pl-4">
               <SessionVisibility

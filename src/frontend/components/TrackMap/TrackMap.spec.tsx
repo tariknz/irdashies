@@ -35,6 +35,7 @@ describe('TrackMap', () => {
       showCarNumbers: true,
       displayMode: 'carNumber',
       invertTrackColors: false,
+      highContrastTurns: false,
       driverCircleSize: 40,
       playerCircleSize: 40,
       trackmapFontSize: 100,
@@ -42,7 +43,13 @@ describe('TrackMap', () => {
       trackOutlineWidth: 40,
       useHighlightColor: false,
       showOnlyWhenOnTrack: false,
-      sessionVisibility: { race: true, loneQualify: true, openQualify: true, practice: true, offlineTesting: true },
+      sessionVisibility: {
+        race: true,
+        loneQualify: true,
+        openQualify: true,
+        practice: true,
+        offlineTesting: true,
+      },
     });
     vi.mocked(useTelemetryValue).mockReturnValue(true);
 
@@ -57,6 +64,7 @@ describe('TrackMap', () => {
       showCarNumbers: true,
       displayMode: 'carNumber',
       invertTrackColors: false,
+      highContrastTurns: false,
       driverCircleSize: 40,
       playerCircleSize: 40,
       trackmapFontSize: 100,
@@ -64,7 +72,13 @@ describe('TrackMap', () => {
       trackOutlineWidth: 40,
       useHighlightColor: false,
       showOnlyWhenOnTrack: true,
-      sessionVisibility: { race: true, loneQualify: true, openQualify: true, practice: true, offlineTesting: true },
+      sessionVisibility: {
+        race: true,
+        loneQualify: true,
+        openQualify: true,
+        practice: true,
+        offlineTesting: true,
+      },
     });
     vi.mocked(useTelemetryValue).mockReturnValue(false);
 
@@ -79,6 +93,7 @@ describe('TrackMap', () => {
       showCarNumbers: true,
       displayMode: 'carNumber',
       invertTrackColors: false,
+      highContrastTurns: false,
       driverCircleSize: 40,
       playerCircleSize: 40,
       trackmapFontSize: 100,
@@ -86,7 +101,13 @@ describe('TrackMap', () => {
       trackOutlineWidth: 40,
       useHighlightColor: false,
       showOnlyWhenOnTrack: true,
-      sessionVisibility: { race: true, loneQualify: true, openQualify: true, practice: true, offlineTesting: true },
+      sessionVisibility: {
+        race: true,
+        loneQualify: true,
+        openQualify: true,
+        practice: true,
+        offlineTesting: true,
+      },
     });
     vi.mocked(useTelemetryValue).mockReturnValue(true);
 
@@ -101,6 +122,7 @@ describe('TrackMap', () => {
       showCarNumbers: true,
       displayMode: 'carNumber',
       invertTrackColors: false,
+      highContrastTurns: false,
       driverCircleSize: 40,
       playerCircleSize: 40,
       trackmapFontSize: 100,
@@ -108,7 +130,13 @@ describe('TrackMap', () => {
       trackOutlineWidth: 40,
       useHighlightColor: false,
       showOnlyWhenOnTrack: false,
-      sessionVisibility: { race: true, loneQualify: true, openQualify: true, practice: true, offlineTesting: true },
+      sessionVisibility: {
+        race: true,
+        loneQualify: true,
+        openQualify: true,
+        practice: true,
+        offlineTesting: true,
+      },
     });
     vi.mocked(useSessionVisibility).mockReturnValue(false);
     vi.mocked(useTelemetryValue).mockReturnValue(true);
@@ -124,6 +152,7 @@ describe('TrackMap', () => {
       showCarNumbers: true,
       displayMode: 'carNumber',
       invertTrackColors: false,
+      highContrastTurns: false,
       driverCircleSize: 40,
       playerCircleSize: 40,
       trackmapFontSize: 100,
@@ -131,7 +160,13 @@ describe('TrackMap', () => {
       trackOutlineWidth: 40,
       useHighlightColor: false,
       showOnlyWhenOnTrack: false,
-      sessionVisibility: { race: true, loneQualify: true, openQualify: true, practice: true, offlineTesting: true },
+      sessionVisibility: {
+        race: true,
+        loneQualify: true,
+        openQualify: true,
+        practice: true,
+        offlineTesting: true,
+      },
     });
     vi.mocked(useTrackId).mockReturnValue(undefined);
     vi.mocked(useTelemetryValue).mockReturnValue(true);
@@ -147,6 +182,7 @@ describe('TrackMap', () => {
       showCarNumbers: true,
       displayMode: 'sessionPosition',
       invertTrackColors: false,
+      highContrastTurns: false,
       driverCircleSize: 40,
       playerCircleSize: 40,
       trackmapFontSize: 100,
@@ -154,7 +190,13 @@ describe('TrackMap', () => {
       trackOutlineWidth: 40,
       useHighlightColor: false,
       showOnlyWhenOnTrack: false,
-      sessionVisibility: { race: true, loneQualify: true, openQualify: true, practice: true, offlineTesting: true },
+      sessionVisibility: {
+        race: true,
+        loneQualify: true,
+        openQualify: true,
+        practice: true,
+        offlineTesting: true,
+      },
     });
     vi.mocked(useTelemetryValue).mockReturnValue(true);
 

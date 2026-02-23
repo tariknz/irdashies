@@ -8,13 +8,14 @@ export interface FlatTrackMapCanvasProps {
   drivers: TrackDriver[];
   highlightColor?: number;
   showCarNumbers?: boolean;
-  displayMode?: 'carNumber' | 'sessionPosition';
+  displayMode?: 'carNumber' | 'sessionPosition' | 'livePosition';
   driverCircleSize?: number;
   playerCircleSize?: number;
   trackmapFontSize?: number;
   trackLineWidth?: number;
   trackOutlineWidth?: number;
   invertTrackColors?: boolean;
+  driverLivePositions?: Record<number, number>;
 }
 
 const HORIZONTAL_PADDING = 40; // Fixed padding on each side
@@ -30,6 +31,7 @@ export const FlatTrackMapCanvas = ({
   trackLineWidth = 20,
   trackOutlineWidth = 40,
   invertTrackColors = false,
+  driverLivePositions = [0, 0],
 }: FlatTrackMapCanvasProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
@@ -193,9 +195,10 @@ export const FlatTrackMapCanvas = ({
         const color = driverColors[driver.CarIdx];
         if (!color) return;
 
-      const x = HORIZONTAL_PADDING + progress * usableWidth;
-      const radius = (isPlayer ? playerCircleSize : driverCircleSize) * circleScale;
-      const fontSize = radius * (trackmapFontSize / 100);
+        const x = HORIZONTAL_PADDING + progress * usableWidth;
+        const radius =
+          (isPlayer ? playerCircleSize : driverCircleSize) * circleScale;
+        const fontSize = radius * (trackmapFontSize / 100);
 
         ctx.fillStyle = color.fill;
         ctx.beginPath();
@@ -214,7 +217,13 @@ export const FlatTrackMapCanvas = ({
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
           let displayText = '';
-          if (displayMode === 'sessionPosition') {
+          if (displayMode === 'livePosition') {
+            const livePosition = driverLivePositions[driver.CarIdx];
+            displayText =
+              livePosition !== undefined && livePosition > 0
+                ? livePosition.toString()
+                : '';
+          } else if (displayMode === 'sessionPosition') {
             displayText =
               classPosition !== undefined && classPosition > 0
                 ? classPosition.toString()
@@ -224,7 +233,8 @@ export const FlatTrackMapCanvas = ({
           }
           if (displayText) {
             const m = ctx.measureText(displayText);
-            const visualOffset = (m.actualBoundingBoxAscent - m.actualBoundingBoxDescent) / 2;
+            const visualOffset =
+              (m.actualBoundingBoxAscent - m.actualBoundingBoxDescent) / 2;
             ctx.fillText(displayText, x, centerY + visualOffset);
           }
         }
@@ -242,6 +252,7 @@ export const FlatTrackMapCanvas = ({
     trackLineWidth,
     trackOutlineWidth,
     invertTrackColors,
+    driverLivePositions,
   ]);
 
   return (

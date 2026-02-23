@@ -16,6 +16,7 @@ export default {
     trackOutlineWidth: 40,
     invertTrackColors: false,
     highlightColor: undefined,
+    driverLivePositions: [0, 0],
   },
   argTypes: {
     showCarNumbers: {
@@ -41,7 +42,8 @@ export default {
     },
     highlightColor: {
       control: { type: 'number' },
-      description: 'Highlight color for player circle (RGB number). Leave undefined to use amber (16096779).',
+      description:
+        'Highlight color for player circle (RGB number). Leave undefined to use amber (16096779).',
     },
   },
   decorators: [
@@ -108,7 +110,7 @@ const sampleData = [
       CarClassColor: 16734344,
       CarClassEstLapTime: 126.9374,
     },
-    progress: 0.8862644433975220,
+    progress: 0.886264443397522,
     isPlayer: false,
   },
   {
@@ -336,6 +338,7 @@ export const Primary: Story = {
     trackOutlineWidth: 40,
     invertTrackColors: false,
     highlightColor: undefined,
+    driverLivePositions: [0, 0],
   },
 };
 
@@ -351,6 +354,7 @@ export const InvertedTrackColors: Story = {
     trackOutlineWidth: 40,
     invertTrackColors: true,
     highlightColor: undefined,
+    driverLivePositions: [0, 0],
   },
 };
 
@@ -366,6 +370,7 @@ export const SingleClass: Story = {
     trackOutlineWidth: 40,
     invertTrackColors: false,
     highlightColor: undefined,
+    driverLivePositions: [0, 0],
   },
 };
 
@@ -389,22 +394,24 @@ export const SingleDriver: Story = {
   },
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   render: (args: any) => {
-    const drivers = [{
-      driver: {
-        CarIdx: 39,
-        CarNumber: args.carNumber || '29',
-        CarClassID: 3,
-        CarClassColor: args.carClassColor || 11430911,
-        CarClassEstLapTime: 126.2284,
+    const drivers = [
+      {
+        driver: {
+          CarIdx: 39,
+          CarNumber: args.carNumber || '29',
+          CarClassID: 3,
+          CarClassColor: args.carClassColor || 11430911,
+          CarClassEstLapTime: 126.2284,
+        },
+        progress: args.progress || 0,
+        isPlayer: args.isPlayer || false,
       },
-      progress: args.progress || 0,
-      isPlayer: args.isPlayer || false,
-    }] as TrackDriver[];
+    ] as TrackDriver[];
 
     return (
-      <FlatTrackMapCanvas 
+      <FlatTrackMapCanvas
         trackDrawing={trackDrawing}
-        drivers={drivers} 
+        drivers={drivers}
         showCarNumbers={args.showCarNumbers ?? true}
         driverCircleSize={args.driverCircleSize ?? 40}
         playerCircleSize={args.playerCircleSize ?? 40}
@@ -413,6 +420,7 @@ export const SingleDriver: Story = {
         trackOutlineWidth={args.trackOutlineWidth ?? 40}
         invertTrackColors={args.invertTrackColors ?? false}
         highlightColor={args.highlightColor}
+        driverLivePositions={args.driverLivePositions}
       />
     );
   },
@@ -441,9 +449,9 @@ export const CirclingAround: Story = {
     });
 
     return (
-      <FlatTrackMapCanvas 
+      <FlatTrackMapCanvas
         trackDrawing={trackDrawing}
-        drivers={drivers} 
+        drivers={drivers}
         showCarNumbers={args.showCarNumbers ?? true}
         driverCircleSize={args.driverCircleSize ?? 40}
         playerCircleSize={args.playerCircleSize ?? 40}
@@ -452,6 +460,7 @@ export const CirclingAround: Story = {
         trackOutlineWidth={args.trackOutlineWidth ?? 40}
         invertTrackColors={args.invertTrackColors ?? false}
         highlightColor={args.highlightColor}
+        driverLivePositions={args.driverLivePositions}
       />
     );
   },

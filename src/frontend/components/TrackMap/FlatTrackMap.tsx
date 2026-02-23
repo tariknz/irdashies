@@ -6,6 +6,7 @@ import { FlatTrackMapCanvas } from './FlatTrackMapCanvas';
 import tracks from './tracks/tracks.json';
 import { TrackDrawing } from './TrackCanvas';
 import { useSessionVisibility, useTelemetryValue } from '@irdashies/context';
+import { useDriverLivePositions } from '../Standings/hooks/useDriverLivePositions';
 
 const debug = import.meta.env.DEV || import.meta.env.MODE === 'storybook';
 
@@ -15,6 +16,9 @@ export const FlatTrackMap = () => {
   const settings = useFlatTrackMapSettings();
   const highlightColor = useHighlightColor();
   const isOnTrack = useTelemetryValue('IsOnTrack');
+  const driverLivePositions = useDriverLivePositions({
+    enabled: (settings?.displayMode ?? 'carNumber') === 'livePosition',
+  });
 
   if (!useSessionVisibility(settings?.sessionVisibility)) return <></>;
 
@@ -23,14 +27,18 @@ export const FlatTrackMap = () => {
     return <></>;
   }
 
-  const trackDrawing = trackId ? (tracks as unknown as TrackDrawing[])[trackId] : null;
+  const trackDrawing = trackId
+    ? (tracks as unknown as TrackDrawing[])[trackId]
+    : null;
 
   if (!trackId || !trackDrawing) {
     return debug ? (
       <div className="w-full h-full flex items-center justify-center text-white">
         <p>No track data available</p>
       </div>
-    ) : <></>;
+    ) : (
+      <></>
+    );
   }
 
   return (
@@ -38,7 +46,9 @@ export const FlatTrackMap = () => {
       <FlatTrackMapCanvas
         trackDrawing={trackDrawing}
         drivers={driversTrackData}
-        highlightColor={settings?.useHighlightColor ? highlightColor : undefined}
+        highlightColor={
+          settings?.useHighlightColor ? highlightColor : undefined
+        }
         showCarNumbers={settings?.showCarNumbers ?? true}
         displayMode={settings?.displayMode ?? 'carNumber'}
         driverCircleSize={settings?.driverCircleSize ?? 40}
@@ -47,6 +57,7 @@ export const FlatTrackMap = () => {
         trackLineWidth={settings?.trackLineWidth ?? 20}
         trackOutlineWidth={settings?.trackOutlineWidth ?? 40}
         invertTrackColors={settings?.invertTrackColors ?? false}
+        driverLivePositions={driverLivePositions}
       />
     </div>
   );
