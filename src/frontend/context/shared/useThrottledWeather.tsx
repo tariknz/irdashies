@@ -24,7 +24,7 @@ const selectWeatherData = (
   telemetry: Telemetry | null
 ): ThrottledWeatherState => ({
   trackMoisture: telemetry?.TrackWetness?.value?.[0],
-  yawNorthValues: telemetry?.YawNorth?.value ?? [],
+  yawNorthValues: telemetry?.YawNorth?.value?.[0],
   windDirection: telemetry?.WindDir?.value?.[0],
   windVelocity: telemetry?.WindVel?.value?.[0],
   humidity: telemetry?.RelativeHumidity?.value?.[0],
