@@ -60,6 +60,7 @@ export interface StandingsWidgetSettings extends BaseWidgetSettings {
       numNonClassDrivers: number;
       minPlayerClassDrivers: number;
       numTopDrivers: number;
+      topDriverDivider?: 'none' | 'theme' | 'highlight';
     };
     compound: { enabled: boolean };
     carManufacturer: { enabled: boolean; hideIfSingleMake?: boolean };
