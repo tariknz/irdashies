@@ -5,6 +5,12 @@ import {
   CalculationResult,
 } from '@irdashies/utils/iratingGain';
 import { GlobalFlags } from '@irdashies/types';
+import { useReferenceLapStore } from '../../context/ReferenceLapStore/ReferenceLapStore';
+import {
+  calculateClassEstimatedGap,
+  calculateReferenceDelta,
+  getStats,
+} from './relativeGapHelpers';
 
 export type LastTimeState = 'session-fastest' | 'personal-best' | undefined;
 
@@ -428,7 +434,10 @@ export const augmentStandingsWithIRating = (
  * Gap = driver_delta - class_leader_delta (both relative to session leader)
  */
 export const augmentStandingsWithGap = (
-  groupedStandings: [string, Standings[]][]
+  groupedStandings: [string, Standings[]][],
+  carIdxEstTime: number[],
+  carIdxLapDistPct: number[],
+  carIdxIsOnPitRoad: boolean[]
 ): [string, Standings[]][] => {
   return groupedStandings.map(([classId, classStandings]) => {
     // Find class leader (lowest class position)
@@ -441,35 +450,90 @@ export const augmentStandingsWithGap = (
       return [classId, classStandings];
     }
 
-    // Calculate gap for each driver: gap = driver_delta - class_leader_delta
-    const augmentedClassStandings = classStandings.map((driverStanding) => {
-      if (driverStanding.carIdx === classLeader.carIdx) {
-        // Class leader shows as dash (undefined gap)
-        return { ...driverStanding, gap: { value: undefined, laps: 0 } };
+    // Calculate gap for each driver
+    const augmentedClassStandings = classStandings.map(
+      (driverStanding, index) => {
+        if (driverStanding.carIdx === classLeader.carIdx) {
+          // Class leader shows as dash (undefined gap)
+          return { ...driverStanding, gap: { value: undefined, laps: 0 } };
+        }
+
+        const driverIdx = driverStanding.carIdx;
+        const classId = driverStanding.carClass.id;
+        const isStartingLap = (driverStanding?.lap ?? -1) <= 1;
+
+        const refLap = useReferenceLapStore
+          .getState()
+          .getReferenceLap(driverIdx, classId, isStartingLap);
+
+        const isOnPitRoadAhead = carIdxIsOnPitRoad[classLeader.carIdx];
+        const isOnPitRoadBehind = carIdxIsOnPitRoad[driverIdx];
+        const isAnyoneOnPitRoad = isOnPitRoadAhead || isOnPitRoadBehind;
+
+        const isOnPitOrHasNoData = isAnyoneOnPitRoad || refLap.finishTime < 0;
+
+        let calculatedGap = 0;
+        let calculatedInterval = 0;
+
+        const driverAhead = classStandings[index - 1];
+
+        if (isOnPitOrHasNoData) {
+          const aheadEstTime = carIdxEstTime[classLeader.carIdx];
+          const behindEstTime = carIdxEstTime[driverIdx];
+
+          const driverStats = getStats(behindEstTime, driverStanding);
+
+          calculatedGap = calculateClassEstimatedGap(
+            getStats(aheadEstTime, classLeader),
+            driverStats,
+            false //isTargetAhead
+          );
+          calculatedInterval = calculateClassEstimatedGap(
+            getStats(aheadEstTime, driverAhead),
+            driverStats,
+            false //isTargetAhead
+          );
+        } else {
+          const classLeaderTrckPct = carIdxLapDistPct[classLeader.carIdx];
+          const driverTrckPct = carIdxLapDistPct[driverIdx];
+          const driverAheadTrckPct = carIdxLapDistPct[driverAhead.carIdx];
+
+          calculatedGap = calculateReferenceDelta(
+            refLap,
+            driverTrckPct,
+            classLeaderTrckPct
+          );
+          calculatedInterval = calculateReferenceDelta(
+            refLap,
+            driverTrckPct,
+            driverAheadTrckPct
+          );
+        }
+
+        // Gap is simply the difference between this driver's delta and the class leader's delta
+        const gapValue =
+          driverStanding.delta !== undefined && classLeader.delta !== undefined
+            ? driverStanding.delta - classLeader.delta
+            : undefined;
+
+        const gap = {
+          value: calculatedGap,
+          laps: 0,
+        };
+
+        if (gapValue && classLeader.fastestTime > 0) {
+          const lapsOfGap = -Math.floor(gapValue / classLeader.fastestTime);
+          gap.laps = lapsOfGap;
+        }
+
+        // Only show positive gaps (drivers behind class leader)
+        return {
+          ...driverStanding,
+          gap: gapValue && gapValue > 0 ? gap : undefined,
+          interval: Math.abs(calculatedInterval),
+        };
       }
-
-      // Gap is simply the difference between this driver's delta and the class leader's delta
-      const gapValue =
-        driverStanding.delta !== undefined && classLeader.delta !== undefined
-          ? driverStanding.delta - classLeader.delta
-          : undefined;
-
-      const gap = {
-        value: gapValue,
-        laps: 0,
-      };
-
-      if (gapValue && classLeader.fastestTime > 0) {
-        const lapsOfGap = -Math.floor(gapValue / classLeader.fastestTime);
-        gap.laps = lapsOfGap;
-      }
-
-      // Only show positive gaps (drivers behind class leader)
-      return {
-        ...driverStanding,
-        gap: gapValue && gapValue > 0 ? gap : undefined,
-      };
-    });
+    );
 
     return [classId, augmentedClassStandings];
   });
