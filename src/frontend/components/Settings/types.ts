@@ -114,6 +114,7 @@ export interface StandingsWidgetSettings extends BaseWidgetSettings {
     driverName: {
       enabled: boolean;
       showStatusBadges: boolean;
+      removeNumbersFromName: boolean,
       nameFormat:
         | 'name-middlename-surname'
         | 'name-m.-surname'
@@ -225,6 +226,7 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
     driverName: {
       enabled: boolean;
       showStatusBadges: boolean;
+      removeNumbersFromName: boolean,
       nameFormat:
         | 'name-middlename-surname'
         | 'name-m.-surname'

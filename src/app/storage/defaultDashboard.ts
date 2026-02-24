@@ -51,6 +51,7 @@ export const defaultDashboard: DashboardLayout = {
         driverName: {
           enabled: true,
           showStatusBadges: true,
+          removeNumbersFromName: false,
         },
         teamName: {
           enabled: false,
@@ -316,6 +317,7 @@ export const defaultDashboard: DashboardLayout = {
         driverName: {
           enabled: true,
           showStatusBadges: true,
+          removeNumbersFromName: false,
         },
         teamName: {
           enabled: false,
