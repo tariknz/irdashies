@@ -19,6 +19,7 @@ const defaultConfig: FasterCarsFromBehindWidgetSettings['config'] = {
   alignDriverBoxes: 'Top',
   closestDriverBox: 'Top',
   showName: true,
+  removeNumbersFromName: false,
   showDistance: true,
   showBadge: true,
   badgeFormat: 'license-color-rating-bw',
@@ -53,6 +54,7 @@ const migrateConfig = (
         (config.closestDriverBox as 'Top' | 'Reverse') ??
         defaultConfig.closestDriverBox,
       showName: (config.showName as boolean) ?? defaultConfig.showName,
+      removeNumbersFromName: (config.removeNumbersFromName as boolean) ?? defaultConfig.removeNumbersFromName,
       showDistance:
         (config.showDistance as boolean) ?? defaultConfig.showDistance,
       showBadge: (config.showBadge as boolean) ?? defaultConfig.showBadge,
@@ -231,6 +233,25 @@ export const FasterCarsFromBehindSettings = () => {
               }
             />
           </div>
+
+          {settings.config.showName && (
+          <div className="flex items-center justify-between pr-4">
+            <div>
+              <h4 className="text-md font-medium text-slate-300">Remove Numbers From Names</h4>
+              <span className="block text-xs text-slate-500">
+                Remove numbers from the displayed driver name.
+              </span>
+            </div>
+            <ToggleSwitch
+              enabled={settings.config.removeNumbersFromName}
+              onToggle={(newValue) =>
+                handleConfigChange({
+                  removeNumbersFromName: newValue,
+                })
+              }
+            />
+          </div>
+          )}
 
           {/* Show Badge Section */}
           <div className="flex items-center justify-between pr-4">

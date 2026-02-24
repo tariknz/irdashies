@@ -548,6 +548,7 @@ export interface FasterCarsFromBehindWidgetSettings extends BaseWidgetSettings {
     alignDriverBoxes: 'Top' | 'Bottom';
     closestDriverBox: 'Top' | 'Reverse';
     showName: boolean;
+    removeNumbersFromName: boolean;
     showDistance: boolean;
     showBadge: boolean;
     badgeFormat: string;
