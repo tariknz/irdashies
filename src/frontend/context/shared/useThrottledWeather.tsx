@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
-import { useTelemetryStore, useFocusCarIdx } from '@irdashies/context';
+import { useTelemetryStore } from '@irdashies/context';
 import type { Telemetry } from '@irdashies/types';
 
 const WEATHER_UPDATE_INTERVAL_MS = 1000;
 
 interface ThrottledWeatherState {
   trackMoisture: number | undefined;
-  yawNorthValues: number[];
+  yawNorthValues: number | undefined;
   windDirection: number | undefined;
   windVelocity: number | undefined;
   humidity: number | undefined;
@@ -24,7 +24,7 @@ const selectWeatherData = (
   telemetry: Telemetry | null
 ): ThrottledWeatherState => ({
   trackMoisture: telemetry?.TrackWetness?.value?.[0],
-  yawNorthValues: telemetry?.YawNorth?.value ?? [],
+  yawNorthValues: telemetry?.YawNorth?.value?.[0],
   windDirection: telemetry?.WindDir?.value?.[0],
   windVelocity: telemetry?.WindVel?.value?.[0],
   humidity: telemetry?.RelativeHumidity?.value?.[0],
@@ -35,13 +35,11 @@ const selectWeatherData = (
  * at a throttled interval. Weather data changes slowly so 60 FPS
  * updates are unnecessary.
  *
- * windYaw is derived from the YawNorth array indexed by focusCarIdx so
- * the wind arrow rotates correctly both when driving and when spectating.
- * Because focusCarIdx is reactive, switching cameras updates windYaw
- * immediately on re-render without needing a separate setState-in-effect.
+ * YawNorth is a single player-perspective value (length 1) — not a per-car
+ * array. It does not follow CamCarIdx when spectating, so windYaw always
+ * reflects the player's own car heading.
  */
 export const useThrottledWeather = (): WeatherData => {
-  const focusCarIdx = useFocusCarIdx();
   const [data, setData] = useState<ThrottledWeatherState>(() =>
     selectWeatherData(useTelemetryStore.getState().telemetry)
   );
@@ -62,7 +60,7 @@ export const useThrottledWeather = (): WeatherData => {
 
   return {
     trackMoisture: data.trackMoisture,
-    windYaw: data.yawNorthValues[focusCarIdx ?? 0],
+    windYaw: data.yawNorthValues,
     windDirection: data.windDirection,
     windVelocity: data.windVelocity,
     humidity: data.humidity,
