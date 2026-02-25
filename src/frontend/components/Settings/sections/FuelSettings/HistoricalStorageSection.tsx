@@ -12,7 +12,7 @@ export const HistoricalStorageSection = ({
   onChange,
 }: HistoricalStorageSectionProps) => {
   return (
-    <div className="space-y-4 border-t border-slate-600/50 pt-6">
+    <div className="space-y-4">
       <h3 className="text-lg font-medium text-slate-200">Historical Storage</h3>
       <div className="bg-slate-800/50 p-4 rounded border border-slate-700 space-y-4">
         <div className="flex items-center justify-between">

@@ -9,7 +9,7 @@ interface PitStrategySectionProps {
 
 export const PitStrategySection = ({ settings, onChange }: PitStrategySectionProps) => {
   return (
-    <div className="border-t border-slate-600/50 pt-6 space-y-4">
+    <div className="space-y-4">
       <h3 className="text-lg font-medium text-slate-200">Pit Strategy</h3>
 
       <div className="flex items-center justify-between">
@@ -71,7 +71,7 @@ export const PitStrategySection = ({ settings, onChange }: PitStrategySectionPro
 
       {/* Moved Fuel Scenarios here for better organization */}
       <div className="pt-4 mt-4 border-t border-slate-700/30">
-        <div className="flex items-center justify-between pr-20">
+        <div className="flex items-center justify-between">
           <div>
             <span className="text-sm text-slate-300">Fuel Scenarios</span>
             <span className="block text-xs text-slate-500">Pit stop calculations (-1, Ideal, +1 Lap)</span>

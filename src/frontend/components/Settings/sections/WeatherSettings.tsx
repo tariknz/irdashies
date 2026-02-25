@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import { SessionVisibilitySettings, WeatherWidgetSettings } from '../types';
 import { useDashboard } from '@irdashies/context';
@@ -133,6 +133,15 @@ export const WeatherSettings = () => {
 
   const [itemsOrder, setItemsOrder] = useState(settings.config.displayOrder);
 
+  // Tab state with persistence
+  const [activeTab, setActiveTab] = useState<'display' | 'options' | 'visibility'>(
+    () => (localStorage.getItem('weatherTab') as any) || 'display'
+  );
+
+  useEffect(() => {
+    localStorage.setItem('weatherTab', activeTab);
+  }, [activeTab]);
+
   if (!currentDashboard) {
     return <>Loading...</>;
   }
@@ -153,12 +162,27 @@ export const WeatherSettings = () => {
           handleConfigChange({ displayOrder: newOrder });
         };
 
-
         return (
           <div className="space-y-4">
 
-            {/* Display Settings */}
-            <div className="space-y-4">
+          {/* Tabs */}
+          <div className="flex border-b border-slate-700/50">
+            <TabButton id="display" activeTab={activeTab} setActiveTab={setActiveTab}>
+              Display
+            </TabButton>
+            <TabButton id="options" activeTab={activeTab} setActiveTab={setActiveTab}>
+              Options
+            </TabButton>
+            <TabButton id="visibility" activeTab={activeTab} setActiveTab={setActiveTab}>
+              Visibility
+            </TabButton>
+          </div>
+
+          <div className="pt-4">
+
+            {/* DISPLAY TAB */}
+            {activeTab === 'display' && (
+              <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-medium text-slate-200">Display</h3>
                 <button
@@ -180,9 +204,12 @@ export const WeatherSettings = () => {
                   handleConfigChange={handleConfigChange}
                 />
               </div>
-            </div>
+            </div>            
+            )}
 
-            <div className="space-y-4">
+            {/* OPTIONS TAB */}
+            {activeTab === 'options' && (
+              <div className="space-y-4">
               <h3 className="text-lg font-medium text-slate-200">Options</h3>   
               <div className="pl-4 space-y-4">  
 
@@ -240,39 +267,70 @@ export const WeatherSettings = () => {
 
               </div>
             </div>  
+            )}
 
-            {/* Session Visibility Settings */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium text-slate-200">Session Visibility</h3>
-              </div>
-              <div className="space-y-3 pl-4">
-                <SessionVisibility
-                  sessionVisibility={settings.config.sessionVisibility}
-                  handleConfigChange={handleConfigChange}
-                />
-              </div>
-            </div>
+            {/* VISIBILITY TAB */}
+            {activeTab === 'visibility' && (
+              <div className="space-y-4">
 
-            {/* Show Only When On Track Setting */}
-            <div className="flex items-center justify-between border-t border-slate-700/50 pl-4 pt-4">
-              <div>
-                <h4 className="text-md font-medium text-slate-300">Show Only When On Track</h4>
-                <p className="text-xs text-slate-500">
-                  If enabled, weather will only be shown when you are driving.
-                </p>
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium text-slate-200">
+                    Session Visibility
+                  </h3>
+                  <div className="space-y-3 pl-4">
+                    <SessionVisibility
+                      sessionVisibility={settings.config.sessionVisibility}
+                      handleConfigChange={handleConfigChange}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between pt-4 border-t border-slate-700/50 pl-4">
+                  <div>
+                    <h4 className="text-md font-medium text-slate-300">
+                      Show only when on track
+                    </h4>
+                    <span className="block text-xs text-slate-500">
+                      If enabled, weather will only be shown when driving.
+                    </span>
+                  </div>
+                  <ToggleSwitch
+                    enabled={settings.config.showOnlyWhenOnTrack}
+                    onToggle={(newValue) =>
+                      handleConfigChange({
+                        showOnlyWhenOnTrack: newValue,
+                      })
+                    }
+                  />
+                </div>
+
               </div>
-              <ToggleSwitch
-                enabled={settings.config.showOnlyWhenOnTrack ?? true}
-                onToggle={(enabled) =>
-                  handleConfigChange({ showOnlyWhenOnTrack: enabled })
-                }
-              />
-            </div>
+            )}
 
           </div>
+        </div>            
         );
       }}
     </BaseSettingsSection>
   );
 };
+
+type TabButtonProps = {
+  id: 'display' | 'options' | 'visibility';
+  activeTab: string;
+  setActiveTab: (tab: any) => void;
+  children: React.ReactNode;
+};
+
+const TabButton = ({ id, activeTab, setActiveTab, children }: TabButtonProps) => (
+  <button
+    onClick={() => setActiveTab(id)}
+    className={`px-4 py-2 text-sm border-b-2 transition-colors ${
+      activeTab === id
+        ? 'text-white border-blue-500'
+        : 'text-slate-400 border-transparent hover:text-slate-200'
+    }`}
+  >
+    {children}
+  </button>
+);

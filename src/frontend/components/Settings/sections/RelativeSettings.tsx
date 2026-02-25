@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import { useDashboard } from '@irdashies/context';
 import { RelativeWidgetSettings, SessionVisibilitySettings } from '../types';
@@ -930,6 +930,15 @@ export const RelativeSettings = () => {
   });
   const [itemsOrder, setItemsOrder] = useState(settings.config.displayOrder);
 
+  // Tab state with persistence
+  const [activeTab, setActiveTab] = useState<'display' | 'options' | 'header' | 'footer' |'visibility'>(
+    () => (localStorage.getItem('standingsTab') as any) || 'display'
+  );
+
+  useEffect(() => {
+    localStorage.setItem('standingsTab', activeTab);
+  }, [activeTab]);  
+
   if (!currentDashboard) {
     return <>Loading...</>;
   }
@@ -949,9 +958,50 @@ export const RelativeSettings = () => {
         };
 
         return (
-          <div className="space-y-8">
-            {/* Display Settings */}
-            <div className="space-y-4">
+          <div className="space-y-4">
+            {/* Tabs */}
+            <div className="flex border-b border-slate-700/50">
+              <TabButton
+                id="display"
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+              >
+                Display
+              </TabButton>
+              <TabButton
+                id="options"
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+              >
+                Options
+              </TabButton>
+              <TabButton
+                id="header"
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+              >
+                Header
+              </TabButton>
+              <TabButton
+                id="footer"
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+              >
+                Footer
+              </TabButton>
+              <TabButton
+                id="visibility"
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+              >
+                Visibility
+              </TabButton>
+            </div>
+
+            <div className="pt-4">
+              {/* DISPLAY TAB */}
+              {activeTab === 'display' && (
+                <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-medium text-slate-200">Display</h3>
                 <button
@@ -975,8 +1025,13 @@ export const RelativeSettings = () => {
               </div>
             </div>
 
-            {/* Driver Standings Settings */}
-            <div className="space-y-4">
+              )}
+
+
+              {/* OPTIONS TAB */}
+              {activeTab === 'options' && (
+                <div className="space-y-4">
+                  <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-medium text-slate-200">
                   Driver Standings
@@ -1002,7 +1057,6 @@ export const RelativeSettings = () => {
                   </select>
                 </div>
               </div>
-              {/* Use Live Position Standings */}
               <div className="flex items-center justify-between gap-4 pl-4">
                 <div>
                   <h4 className="text-md font-medium text-slate-300">
@@ -1022,9 +1076,7 @@ export const RelativeSettings = () => {
                 />
               </div>
             </div>
-
-            {/* Title Bar Settings */}
-            <div className="space-y-4">
+                <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-medium text-slate-200">
                   Title Bar
@@ -1065,9 +1117,81 @@ export const RelativeSettings = () => {
                 )}
               </div>
             </div>
-
-            {/* Header Bar Settings */}
             <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-medium text-slate-200">
+                  Background
+                </h3>
+              </div>
+              <div className="space-y-3 pl-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-300">
+                    Background Opacity
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={settings.config.background.opacity}
+                      onChange={(e) =>
+                        handleConfigChange({
+                          background: { opacity: parseInt(e.target.value) },
+                        })
+                      }
+                      className="h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer"
+                    />
+                    <span className="text-xs text-slate-400 w-8">
+                      {settings.config.background.opacity}%
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-medium text-slate-200">
+                  Relative Time
+                </h3>
+              </div>
+              <div className="space-y-3 pl-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-sm text-slate-300">
+                      Decimal places
+                    </span>
+                    <p className="text-xs text-slate-500">
+                      Number of decimal places to display
+                    </p>
+                  </div>
+                  <select
+                    value={settings.config.delta.precision}
+                    onChange={(e) => {
+                      handleConfigChange({
+                        delta: {
+                          ...settings.config.delta,
+                          precision: parseInt(e.target.value),
+                        },
+                      });
+                    }}
+                    className="bg-slate-700 text-slate-200 px-3 py-1 rounded border border-slate-600 focus:border-blue-500 focus:outline-none"
+                  >
+                    {[0, 1, 2, 3].map((num) => (
+                      <option key={num} value={num}>
+                        {num}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+            </div>
+              )}
+
+              {/* HEADER TAB */}
+              {activeTab === 'header' && (
+                <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-medium text-slate-200">
                   Header Bar
@@ -1121,9 +1245,11 @@ export const RelativeSettings = () => {
                 )}
               </div>
             </div>
+              )}
 
-            {/* Footer Bar Settings */}
-            <div className="space-y-4">
+              {/* FOOTER TAB */}
+              {activeTab === 'footer' && (
+               <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-medium text-slate-200">
                   Footer Bar
@@ -1177,110 +1303,67 @@ export const RelativeSettings = () => {
                 )}
               </div>
             </div>
+              )}
 
-            {/* Background Settings */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium text-slate-200">
-                  Background
-                </h3>
-              </div>
-              <div className="space-y-3 pl-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-slate-300">
-                    Background Opacity
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="range"
-                      min="0"
-                      max="100"
-                      value={settings.config.background.opacity}
-                      onChange={(e) =>
+              {/* VISIBILITY TAB */}
+              {activeTab === 'visibility' && (
+                <div className="space-y-4">
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-medium text-slate-200">
+                      Session Visibility
+                    </h3>
+                    <div className="space-y-3 pl-4">
+                      <SessionVisibility
+                        sessionVisibility={settings.config.sessionVisibility}
+                        handleConfigChange={handleConfigChange}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-4 border-t border-slate-700/50 pl-4">
+                    <div>
+                      <h4 className="text-md font-medium text-slate-300">
+                        Show only when on track
+                      </h4>
+                      <span className="block text-xs text-slate-500">
+                        If enabled, relatives will only be shown when driving.
+                      </span>
+                    </div>
+                    <ToggleSwitch
+                      enabled={settings.config.showOnlyWhenOnTrack}
+                      onToggle={(newValue) =>
                         handleConfigChange({
-                          background: { opacity: parseInt(e.target.value) },
+                          showOnlyWhenOnTrack: newValue,
                         })
                       }
-                      className="h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer"
                     />
-                    <span className="text-xs text-slate-400 w-8">
-                      {settings.config.background.opacity}%
-                    </span>
                   </div>
                 </div>
-              </div>
+              )}
             </div>
-
-            {/* Relative Precision Settings */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium text-slate-200">
-                  Relative Time
-                </h3>
-              </div>
-              <div className="space-y-3 pl-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <span className="text-sm text-slate-300">
-                      Decimal places
-                    </span>
-                    <p className="text-xs text-slate-500">
-                      Number of decimal places to display
-                    </p>
-                  </div>
-                  <select
-                    value={settings.config.delta.precision}
-                    onChange={(e) => {
-                      handleConfigChange({
-                        delta: {
-                          ...settings.config.delta,
-                          precision: parseInt(e.target.value),
-                        },
-                      });
-                    }}
-                    className="bg-slate-700 text-slate-200 px-3 py-1 rounded border border-slate-600 focus:border-blue-500 focus:outline-none"
-                  >
-                    {[0, 1, 2, 3].map((num) => (
-                      <option key={num} value={num}>
-                        {num}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            {/* Session Visibility Settings */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium text-slate-200">Session Visibility</h3>
-              </div>
-              <div className="space-y-3 pl-4">
-                <SessionVisibility
-                  sessionVisibility={settings.config.sessionVisibility}
-                  handleConfigChange={handleConfigChange}
-                />
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between pl-4 pt-4 border-t border-slate-700/50">
-              <div>
-                <span className="text-md text-slate-300">Show Only When On Track</span>
-                <p className="text-xs text-slate-500">
-                  If enabled, relatives will only be shown when you are driving.
-                </p>
-              </div>
-              <ToggleSwitch
-                enabled={settings.config.showOnlyWhenOnTrack ?? false}
-                onToggle={(enabled) => handleConfigChange({
-                  showOnlyWhenOnTrack: enabled
-                })}
-              />
-            </div>
-
           </div>
         );
       }}
     </BaseSettingsSection>
   );
 };
+
+type TabButtonProps = {
+  id: 'display' | 'options' | 'header' | 'footer' |'visibility';
+  activeTab: string;
+  setActiveTab: (tab: any) => void;
+  children: React.ReactNode;
+};
+
+const TabButton = ({ id, activeTab, setActiveTab, children }: TabButtonProps) => (
+  <button
+    onClick={() => setActiveTab(id)}
+    className={`px-4 py-2 text-sm border-b-2 transition-colors ${
+      activeTab === id
+        ? 'text-white border-blue-500'
+        : 'text-slate-400 border-transparent hover:text-slate-200'
+    }`}
+  >
+    {children}
+  </button>
+);

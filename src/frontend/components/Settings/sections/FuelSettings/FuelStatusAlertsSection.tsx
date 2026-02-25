@@ -15,7 +15,7 @@ export const FuelStatusAlertsSection = ({ settings, onChange }: FuelStatusAlerts
       <h4 className="text-lg font-medium text-slate-300">Fuel Status Alerts</h4>
 
       {/* Border Color Toggle */}
-      <div className="flex items-center justify-between pr-20">
+      <div className="flex items-center justify-between">
         <div>
           <span className="text-sm text-slate-300">Show Border Color</span>
           <span className="block text-xs text-slate-500">Green (safe), Orange (caution), Red (danger)</span>
@@ -28,7 +28,7 @@ export const FuelStatusAlertsSection = ({ settings, onChange }: FuelStatusAlerts
 
       <div className="space-y-3">
         {/* Green Threshold */}
-        <div className="flex items-center justify-between pr-20">
+        <div className="flex items-center justify-between">
           <span className="text-sm text-slate-300">Green Threshold (%)</span>
           <div className="flex items-center gap-2">
             <input
@@ -51,7 +51,7 @@ export const FuelStatusAlertsSection = ({ settings, onChange }: FuelStatusAlerts
         </div>
 
         {/* Amber Threshold */}
-        <div className="flex items-center justify-between pr-20">
+        <div className="flex items-center justify-between ">
           <span className="text-sm text-slate-300">Amber Threshold (%)</span>
           <div className="flex items-center gap-2">
             <input
