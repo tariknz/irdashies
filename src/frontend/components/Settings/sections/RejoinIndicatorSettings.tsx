@@ -3,6 +3,8 @@ import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import {
   RejoinIndicatorWidgetSettings,
   SessionVisibilitySettings,
+  SettingsTabType,
+  TabButtonProps,
 } from '../types';
 import { useDashboard } from '@irdashies/context';
 import { SessionVisibility } from '../components/SessionVisibility';
@@ -48,8 +50,8 @@ export const RejoinIndicatorSettings = () => {
   });
 
   // Tab state with persistence
-  const [activeTab, setActiveTab] = useState<'options' | 'visibility'>(
-    () => (localStorage.getItem('rejoinTab') as any) || 'options'
+  const [activeTab, setActiveTab] = useState<SettingsTabType>(
+    () => (localStorage.getItem('rejoinTab') as SettingsTabType) || 'options'
   );
 
   useEffect(() => {
@@ -170,13 +172,6 @@ export const RejoinIndicatorSettings = () => {
       )}
     </BaseSettingsSection>
   );
-};
-
-type TabButtonProps = {
-  id: 'options' | 'visibility';
-  activeTab: string;
-  setActiveTab: (tab: any) => void;
-  children: React.ReactNode;
 };
 
 const TabButton = ({ id, activeTab, setActiveTab, children }: TabButtonProps) => (

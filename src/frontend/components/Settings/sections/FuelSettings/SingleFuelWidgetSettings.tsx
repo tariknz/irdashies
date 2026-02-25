@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { BaseSettingsSection } from '../../components/BaseSettingsSection';
-import { FuelWidgetSettings, LayoutNode } from '../../types';
+import { FuelWidgetSettings, LayoutNode, SettingsTabType, TabButtonProps } from '../../types';
 import { useDashboard } from '@irdashies/context';
 import { SessionVisibility } from '../../components/SessionVisibility';
 import { ToggleSwitch } from '../../components/ToggleSwitch';
@@ -48,8 +48,8 @@ export const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => 
   }, [settings.config.layoutTree, settings.config.layoutConfig]);
 
   // Tab state with persistence
-  const [activeTab, setActiveTab] = useState<'layout' | 'options' | 'fuel' | 'pit' | 'history' | 'visibility'>(
-    () => (localStorage.getItem('fuelWidgetTab') as any) || 'layout'
+  const [activeTab, setActiveTab] = useState<SettingsTabType>(
+    () => (localStorage.getItem('fuelWidgetTab') as SettingsTabType) || 'layout'
   );
 
   useEffect(() => {
@@ -402,13 +402,6 @@ export const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => 
       }}
     </BaseSettingsSection>
   );
-};
-
-type TabButtonProps = {
-  id: 'layout' | 'options' | 'fuel' | 'pit' | 'history' | 'visibility';
-  activeTab: string;
-  setActiveTab: (tab: any) => void;
-  children: React.ReactNode;
 };
 
 const TabButton = ({ id, activeTab, setActiveTab, children }: TabButtonProps) => (

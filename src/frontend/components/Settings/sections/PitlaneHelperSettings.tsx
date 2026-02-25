@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import { ToggleSwitch } from '../components/ToggleSwitch';
-import type { PitlaneHelperWidgetSettings } from '../types';
+import type { PitlaneHelperWidgetSettings, SettingsTabType, TabButtonProps } from '../types';
 import { useDashboard } from '@irdashies/context';
 
 const SETTING_ID = 'pitlanehelper';
@@ -56,8 +56,8 @@ export const PitlaneHelperSettings = () => {
   });
 
   // Tab state with persistence
-  const [activeTab, setActiveTab] = useState<'display' | 'options' | 'visibility'>(
-    () => (localStorage.getItem('weatherTab') as any) || 'display'
+  const [activeTab, setActiveTab] = useState<SettingsTabType>(
+    () => (localStorage.getItem('weatherTab') as SettingsTabType) || 'display'
   );
 
   useEffect(() => {
@@ -441,13 +441,6 @@ export const PitlaneHelperSettings = () => {
       )}
     </BaseSettingsSection>
   );
-};
-
-type TabButtonProps = {
-  id: 'display' | 'options';
-  activeTab: string;
-  setActiveTab: (tab: 'display' | 'options') => void;
-  children: React.ReactNode;
 };
 
 const TabButton = ({ id, activeTab, setActiveTab, children }: TabButtonProps) => (

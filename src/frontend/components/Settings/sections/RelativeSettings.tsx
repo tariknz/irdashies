@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import { useDashboard } from '@irdashies/context';
-import { RelativeWidgetSettings, SessionVisibilitySettings } from '../types';
+import { RelativeWidgetSettings, SessionVisibilitySettings, SettingsTabType, TabButtonProps } from '../types';
 import { ToggleSwitch } from '../components/ToggleSwitch';
 import { useSortableList } from '../../SortableList';
 import { DotsSixVerticalIcon } from '@phosphor-icons/react';
@@ -931,8 +931,8 @@ export const RelativeSettings = () => {
   const [itemsOrder, setItemsOrder] = useState(settings.config.displayOrder);
 
   // Tab state with persistence
-  const [activeTab, setActiveTab] = useState<'display' | 'options' | 'header' | 'footer' |'visibility'>(
-    () => (localStorage.getItem('standingsTab') as any) || 'display'
+  const [activeTab, setActiveTab] = useState<SettingsTabType>(
+    () => (localStorage.getItem('standingsTab') as SettingsTabType) || 'display'
   );
 
   useEffect(() => {
@@ -1346,13 +1346,6 @@ export const RelativeSettings = () => {
       }}
     </BaseSettingsSection>
   );
-};
-
-type TabButtonProps = {
-  id: 'display' | 'options' | 'header' | 'footer' |'visibility';
-  activeTab: string;
-  setActiveTab: (tab: any) => void;
-  children: React.ReactNode;
 };
 
 const TabButton = ({ id, activeTab, setActiveTab, children }: TabButtonProps) => (

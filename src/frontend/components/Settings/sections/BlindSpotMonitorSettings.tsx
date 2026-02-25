@@ -4,6 +4,8 @@ import { useDashboard } from '@irdashies/context';
 import {
   BlindSpotMonitorWidgetSettings,
   SessionVisibilitySettings,
+  SettingsTabType,
+  TabButtonProps,
 } from '../types';
 import { SessionVisibility } from '../components/SessionVisibility';
 import { ToggleSwitch } from '../components/ToggleSwitch';
@@ -62,8 +64,8 @@ export const BlindSpotMonitorSettings = () => {
   });
 
   // Tab state with persistence
-  const [activeTab, setActiveTab] = useState<'display' | 'options' | 'visibility'>(
-    () => (localStorage.getItem('bsmTab') as any) || 'display'
+  const [activeTab, setActiveTab] = useState<SettingsTabType>(
+    () => (localStorage.getItem('bsmTab') as SettingsTabType) || 'display'
   );
 
   useEffect(() => {
@@ -246,13 +248,6 @@ export const BlindSpotMonitorSettings = () => {
       )}
     </BaseSettingsSection>
   );
-};
-
-type TabButtonProps = {
-  id: 'display' | 'options' | 'visibility';
-  activeTab: string;
-  setActiveTab: (tab: any) => void;
-  children: React.ReactNode;
 };
 
 const TabButton = ({ id, activeTab, setActiveTab, children }: TabButtonProps) => (

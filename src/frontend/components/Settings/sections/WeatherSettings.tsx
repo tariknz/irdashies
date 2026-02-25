@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
-import { SessionVisibilitySettings, WeatherWidgetSettings } from '../types';
+import { SessionVisibilitySettings, WeatherWidgetSettings, SettingsTabType, TabButtonProps } from '../types';
 import { useDashboard } from '@irdashies/context';
 import { ToggleSwitch } from '../components/ToggleSwitch';
 import { mergeDisplayOrder } from '@irdashies/utils/displayOrder';
@@ -134,8 +134,8 @@ export const WeatherSettings = () => {
   const [itemsOrder, setItemsOrder] = useState(settings.config.displayOrder);
 
   // Tab state with persistence
-  const [activeTab, setActiveTab] = useState<'display' | 'options' | 'visibility'>(
-    () => (localStorage.getItem('weatherTab') as any) || 'display'
+  const [activeTab, setActiveTab] = useState<SettingsTabType>(
+    () => (localStorage.getItem('weatherTab') as SettingsTabType) || 'display'
   );
 
   useEffect(() => {
@@ -313,13 +313,6 @@ export const WeatherSettings = () => {
       }}
     </BaseSettingsSection>
   );
-};
-
-type TabButtonProps = {
-  id: 'display' | 'options' | 'visibility';
-  activeTab: string;
-  setActiveTab: (tab: any) => void;
-  children: React.ReactNode;
 };
 
 const TabButton = ({ id, activeTab, setActiveTab, children }: TabButtonProps) => (

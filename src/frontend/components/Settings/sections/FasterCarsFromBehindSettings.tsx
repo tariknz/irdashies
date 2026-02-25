@@ -3,6 +3,8 @@ import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import {
   FasterCarsFromBehindWidgetSettings,
   SessionVisibilitySettings,
+  SettingsTabType,
+  TabButtonProps,
 } from '../types';
 import { SessionVisibility } from '../components/SessionVisibility';
 import { BadgeFormatPreview } from '../components/BadgeFormatPreview';
@@ -78,8 +80,8 @@ export const FasterCarsFromBehindSettings = () => {
   });
 
   // Tab state with persistence
-  const [activeTab, setActiveTab] = useState<'display' | 'visibility'>(
-    () => (localStorage.getItem('fasterCarsFromBehindTab') as any) || 'display'
+  const [activeTab, setActiveTab] = useState<SettingsTabType>(
+    () => (localStorage.getItem('fasterCarsFromBehindTab') as SettingsTabType) || 'display'
   );
 
   useEffect(() => {
@@ -362,13 +364,6 @@ export const FasterCarsFromBehindSettings = () => {
       )}
     </BaseSettingsSection>
   );
-};
-
-type TabButtonProps = {
-  id: 'display' | 'distances' | 'session';
-  activeTab: string;
-  setActiveTab: (tab: any) => void;
-  children: React.ReactNode;
 };
 
 const TabButton = ({ id, activeTab, setActiveTab, children }: TabButtonProps) => (

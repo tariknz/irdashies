@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import { useDashboard } from '@irdashies/context';
 import { ToggleSwitch } from '../components/ToggleSwitch';
-import { FlatTrackMapWidgetSettings, SessionVisibilitySettings } from '../types';
+import { FlatTrackMapWidgetSettings, SessionVisibilitySettings, SettingsTabType, TabButtonProps } from '../types';
 import { SessionVisibility } from '../components/SessionVisibility';
 
 const SETTING_ID = 'flatmap';
@@ -51,8 +51,8 @@ export const FlatTrackMapSettings = () => {
   });
 
   // Tab state with persistence
-  const [activeTab, setActiveTab] = useState<'track' | 'drivers' | 'visibility'>(
-    () => (localStorage.getItem('flatTrackMapTab') as any) || 'track'
+  const [activeTab, setActiveTab] = useState<SettingsTabType>(
+    () => (localStorage.getItem('flatTrackMapTab') as SettingsTabType) || 'track'
   );
 
   useEffect(() => {
@@ -351,13 +351,6 @@ export const FlatTrackMapSettings = () => {
       )}
     </BaseSettingsSection>
   );
-};
-
-type TabButtonProps = {
-  id: 'track' | 'drivers' | 'visibility';
-  activeTab: string;
-  setActiveTab: (tab: any) => void;
-  children: React.ReactNode;
 };
 
 const TabButton = ({ id, activeTab, setActiveTab, children }: TabButtonProps) => (

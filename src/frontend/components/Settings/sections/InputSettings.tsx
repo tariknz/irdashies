@@ -7,7 +7,7 @@ import { useSortableList } from '../../SortableList';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import { SessionVisibility } from '../components/SessionVisibility';
 import { ToggleSwitch } from '../components/ToggleSwitch';
-import { InputWidgetSettings, SessionVisibilitySettings } from '../types';
+import { InputWidgetSettings, SessionVisibilitySettings, SettingsTabType, TabButtonProps } from '../types';
 
 const SETTING_ID = 'input';
 
@@ -641,8 +641,8 @@ export const InputSettings = () => {
   const [itemsOrder, setItemsOrder] = useState(settings.config.displayOrder);
 
   // Tab state with persistence
-  const [activeTab, setActiveTab] = useState<'display' | 'options' | 'visibility'>(
-    () => (localStorage.getItem('weatherTab') as any) || 'display'
+  const [activeTab, setActiveTab] = useState<SettingsTabType>(
+    () => (localStorage.getItem('weatherTab') as SettingsTabType) || 'display'
   );
 
   useEffect(() => {
@@ -1276,13 +1276,6 @@ export const InputSettings = () => {
       }}
     </BaseSettingsSection>
   );
-};
-
-type TabButtonProps = {
-  id: 'display' | 'options' | 'visibility';
-  activeTab: string;
-  setActiveTab: (tab: any) => void;
-  children: React.ReactNode;
 };
 
 const TabButton = ({ id, activeTab, setActiveTab, children }: TabButtonProps) => (

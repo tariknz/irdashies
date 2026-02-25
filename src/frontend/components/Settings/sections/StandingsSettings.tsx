@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
-import { SessionVisibilitySettings, StandingsWidgetSettings } from '../types';
+import { SessionVisibilitySettings, StandingsWidgetSettings, SettingsTabType, TabButtonProps } from '../types';
 import { useDashboard } from '@irdashies/context';
 import { ToggleSwitch } from '../components/ToggleSwitch';
 import { useSortableList } from '../../SortableList';
@@ -1011,8 +1011,8 @@ export const StandingsSettings = () => {
   const [itemsOrder, setItemsOrder] = useState(settings.config.displayOrder);
 
   // Tab state with persistence
-  const [activeTab, setActiveTab] = useState<'display' | 'options' | 'header' | 'footer' |'visibility'>(
-    () => (localStorage.getItem('standingsTab') as any) || 'display'
+  const [activeTab, setActiveTab] = useState<SettingsTabType>(
+    () => (localStorage.getItem('standingsTab') as SettingsTabType) || 'display'
   );
 
   useEffect(() => {
@@ -1493,13 +1493,6 @@ export const StandingsSettings = () => {
       }}
     </BaseSettingsSection>
   );
-};
-
-type TabButtonProps = {
-  id: 'display' | 'options' | 'header' | 'footer' |'visibility';
-  activeTab: string;
-  setActiveTab: (tab: any) => void;
-  children: React.ReactNode;
 };
 
 const TabButton = ({ id, activeTab, setActiveTab, children }: TabButtonProps) => (
