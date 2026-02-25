@@ -30,6 +30,7 @@ import { GarageCoverSettings } from './sections/GarageCoverSettings';
 import { ProfileSettings } from './sections/ProfileSettings';
 import { FlagSettings } from './sections/FlagSettings';
 import { CarSetupSettings } from './sections/CarSetupSettings';
+import { TagGroupsSettings } from './sections/TagGroupsSettings';
 import { useDashboard } from '@irdashies/context';
 import { useState } from 'react';
 
@@ -128,6 +129,14 @@ export const SettingsLayout = () => {
                 className={menuItemClass('/profiles')}
               >
                 Profiles
+              </Link>
+            </li>
+            <li>
+              <Link
+                to="/settings/driver-tags"
+                className={menuItemClass('/driver-tags')}
+              >
+                Driver Tags
               </Link>
             </li>
             <li>
@@ -272,6 +281,7 @@ const SettingsLoader = () => {
   if (widgetId === 'profiles') return <ProfileSettings />;
   if (widgetId === 'advanced') return <AdvancedSettings />;
   if (widgetId === 'car-setup') return <CarSetupSettings />;
+  if (widgetId === 'driver-tags') return <TagGroupsSettings />;
   if (widgetId === 'about') return <AboutSettings />;
 
   // 2. Special Manager Pages

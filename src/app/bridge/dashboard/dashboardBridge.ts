@@ -2,10 +2,15 @@ import type {
   DashboardBridge,
   DashboardLayout,
   DashboardProfile,
+  DriverTagSettings,
   SaveDashboardOptions,
 } from '@irdashies/types';
 import { app, ipcMain } from 'electron';
 import { onDashboardUpdated } from '../../storage/dashboardEvents';
+import {
+  getDriverTagSettings,
+  saveDriverTagSettings,
+} from '../../storage/driverTagSettings';
 import {
   getDashboard,
   saveDashboard,
@@ -30,6 +35,25 @@ import {
   setAnalyticsOptOut as setAnalyticsOptOutStorage,
 } from '../../storage/analytics';
 import { Analytics } from '../../analytics';
+
+/**
+ * Injects global driver tag settings into a dashboard layout before broadcasting.
+ * Overlays read from generalSettings.driverTagSettings, so merging here keeps them
+ * compatible without requiring any changes to overlay components.
+ */
+const mergeDriverTagsIntoLayout = (
+  dashboard: DashboardLayout,
+  tagSettings: DriverTagSettings | undefined
+): DashboardLayout => {
+  if (!tagSettings) return dashboard;
+  return {
+    ...dashboard,
+    generalSettings: {
+      ...dashboard.generalSettings,
+      driverTagSettings: tagSettings,
+    },
+  };
+};
 
 // Store callbacks for dashboard updates
 const dashboardUpdateCallbacks = new Set<
@@ -155,6 +179,12 @@ export const dashboardBridge: DashboardBridge = {
       openAtLogin: enabled,
     });
   },
+  getDriverTagSettings: async () => {
+    return getDriverTagSettings();
+  },
+  saveDriverTagSettings: async (settings: DriverTagSettings) => {
+    saveDriverTagSettings(settings);
+  },
 };
 
 export async function publishDashboardUpdates(
@@ -162,13 +192,14 @@ export async function publishDashboardUpdates(
   analytics: Analytics
 ) {
   onDashboardUpdated((dashboard) => {
-    overlayManager.closeOrCreateWindows(dashboard);
-    overlayManager.publishMessage('dashboardUpdated', dashboard);
+    const merged = mergeDriverTagsIntoLayout(dashboard, getDriverTagSettings());
+    overlayManager.closeOrCreateWindows(merged);
+    overlayManager.publishMessage('dashboardUpdated', merged);
     // Notify component server bridge subscribers
     dashboardUpdateCallbacks.forEach((callback) => {
       try {
         // We don't know the profileId here, so we pass undefined
-        callback(dashboard, undefined);
+        callback(merged, undefined);
       } catch (err) {
         console.error('Error in dashboard update callback:', err);
       }
@@ -320,6 +351,37 @@ export async function publishDashboardUpdates(
 
   ipcMain.handle('autostart:get', () => {
     return app.getLoginItemSettings().openAtLogin;
+  });
+
+  ipcMain.handle('getDriverTagSettings', () => {
+    return getDriverTagSettings();
+  });
+
+  ipcMain.handle('saveDriverTagSettings', (_, settings: DriverTagSettings) => {
+    saveDriverTagSettings(settings);
+
+    // Refresh Electron overlay windows (active profile only)
+    const currentProfileId = getCurrentProfileId();
+    const currentDashboard = getDashboard(currentProfileId);
+    if (currentDashboard) {
+      const merged = mergeDriverTagsIntoLayout(currentDashboard, settings);
+      overlayManager.publishMessage('dashboardUpdated', merged);
+    }
+
+    // Notify all profiles' browser views (e.g. OBS stream overlays).
+    // Driver tag settings are global, so every profile's view needs refreshing.
+    listProfiles().forEach((profile) => {
+      const dashboard = getDashboard(profile.id);
+      if (!dashboard) return;
+      const merged = mergeDriverTagsIntoLayout(dashboard, settings);
+      dashboardUpdateCallbacks.forEach((callback) => {
+        try {
+          callback(merged, profile.id);
+        } catch {
+          // ignore
+        }
+      });
+    });
   });
 }
 

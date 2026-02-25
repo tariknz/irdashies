@@ -47,6 +47,7 @@ const sortableSettings: SortableSetting[] = [
     configKey: 'carManufacturer',
     hasSubSetting: true,
   },
+  { id: 'driverTag', label: 'Driver Tag', configKey: 'driverTag' },
   { id: 'badge', label: 'Driver Badge', configKey: 'badge' },
   { id: 'iratingChange', label: 'iRating Change', configKey: 'iratingChange' },
   { id: 'delta', label: 'Relative', configKey: 'delta' },
@@ -121,6 +122,11 @@ const defaultConfig: RelativeWidgetSettings['config'] = {
     openQualify: true,
     practice: true,
     offlineTesting: true,
+  },
+  driverTag: {
+    enabled: false,
+    position: 'before-name' as const,
+    widthPx: 28,
   },
 };
 
@@ -412,6 +418,14 @@ const migrateConfig = (
     sessionVisibility:
       (config.sessionVisibility as SessionVisibilitySettings) ??
       defaultConfig.sessionVisibility,
+    driverTag: {
+      enabled: (config.driverTag as { enabled?: boolean })?.enabled ?? false,
+      position:
+        ((config.driverTag as { position?: string })?.position as
+          | 'before-name'
+          | 'after-name') ?? 'before-name',
+      widthPx: (config.driverTag as { widthPx?: number })?.widthPx ?? 28,
+    },
   };
 };
 

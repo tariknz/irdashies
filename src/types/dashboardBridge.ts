@@ -1,4 +1,8 @@
-import type { DashboardLayout, DashboardProfile } from './dashboardLayout';
+import type {
+  DashboardLayout,
+  DashboardProfile,
+  DriverTagSettings,
+} from './dashboardLayout';
 
 export interface SaveDashboardOptions {
   forceReload?: boolean;
@@ -66,4 +70,6 @@ export interface DashboardBridge {
   onContainerBoundsInfo?: (
     callback: (value: ContainerBoundsInfo) => void
   ) => (() => void) | undefined;
+  getDriverTagSettings?: () => Promise<DriverTagSettings | undefined>;
+  saveDriverTagSettings?: (settings: DriverTagSettings) => Promise<void>;
 }
