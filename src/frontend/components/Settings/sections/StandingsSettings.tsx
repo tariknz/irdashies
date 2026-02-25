@@ -85,6 +85,7 @@ const defaultConfig: StandingsWidgetSettings['config'] = {
     numNonClassDrivers: 3,
     minPlayerClassDrivers: 10,
     numTopDrivers: 3,
+    topDriverDivider: 'highlight' as const,
   },
   compound: { enabled: true },
   carManufacturer: { enabled: true, hideIfSingleMake: false },
@@ -168,16 +169,7 @@ const migrateConfig = (
     },
     badge: {
       enabled: (config.badge as { enabled?: boolean })?.enabled ?? true,
-      badgeFormat:
-        ((config.badge as { badgeFormat?: string })?.badgeFormat as
-          | 'license-color-fullrating-bw'
-          | 'license-color-rating-bw'
-          | 'license-color-rating-bw-no-license'
-          | 'rating-color-no-license'
-          | 'license-bw-rating-bw'
-          | 'rating-only-bw-rating-bw'
-          | 'license-bw-rating-bw-no-license'
-          | 'rating-bw-no-license') ?? 'license-color-rating-bw',
+      badgeFormat: ((config.badge as { badgeFormat?: string })?.badgeFormat as 'license-color-fullrating-combo' | 'fullrating-color-no-license' | 'license-color-fullrating-bw' | 'license-color-rating-bw' | 'license-color-rating-bw-no-license' | 'rating-color-no-license' | 'license-bw-rating-bw' | 'rating-only-bw-rating-bw' | 'license-bw-rating-bw-no-license' | 'rating-bw-no-license' | 'fullrating-bw-no-license') ?? 'license-color-rating-bw'
     },
     delta: {
       enabled: (config.delta as { enabled?: boolean })?.enabled ?? true,
@@ -238,6 +230,9 @@ const migrateConfig = (
       numTopDrivers:
         (config.driverStandings as { numTopDrivers?: number })?.numTopDrivers ??
         defaultConfig.driverStandings.numTopDrivers,
+      topDriverDivider:
+        ((config.driverStandings as { topDriverDivider?: string })
+          ?.topDriverDivider as 'none' | 'theme' | 'highlight') ?? 'highlight',
     },
     compound: {
       enabled: (config.compound as { enabled?: boolean })?.enabled ?? true,
@@ -679,15 +674,18 @@ const DisplaySettingsList = ({
                   <div className="flex flex-wrap gap-3 justify-end">
                     {(
                       [
-                        'license-color-fullrating-bw',
-                        'license-color-rating-bw',
-                        'rating-only-color-rating-bw',
-                        'license-color-rating-bw-no-license',
-                        'rating-color-no-license',
-                        'license-bw-rating-bw',
-                        'rating-only-bw-rating-bw',
-                        'license-bw-rating-bw-no-license',
-                        'rating-bw-no-license',
+                        'license-color-fullrating-combo', 
+                        'fullrating-color-no-license', 
+                        'rating-color-no-license', 
+                        'license-color-fullrating-bw', 
+                        'license-color-rating-bw', 
+                        'rating-only-color-rating-bw', 
+                        'license-color-rating-bw-no-license', 
+                        'license-bw-rating-bw', 
+                        'rating-only-bw-rating-bw', 
+                        'license-bw-rating-bw-no-license', 
+                        'rating-bw-no-license', 
+                        'fullrating-bw-no-license',
                       ] as const
                     ).map((format) => (
                       <BadgeFormatPreview
@@ -1157,6 +1155,35 @@ export const StandingsSettings = () => {
                     className="bg-slate-700 text-white rounded-md px-2 py-1"
                   />
                 </div>
+                {settings.config.driverStandings.numTopDrivers > 0 && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-slate-300">
+                      Top driver divider
+                    </span>
+                    <select
+                      value={
+                        settings.config.driverStandings.topDriverDivider ??
+                        'highlight'
+                      }
+                      onChange={(e) =>
+                        handleConfigChange({
+                          driverStandings: {
+                            ...settings.config.driverStandings,
+                            topDriverDivider: e.target.value as
+                              | 'none'
+                              | 'theme'
+                              | 'highlight',
+                          },
+                        })
+                      }
+                      className="bg-slate-700 text-white rounded-md px-2 py-1"
+                    >
+                      <option value="highlight">Highlight Color</option>
+                      <option value="theme">Theme Color</option>
+                      <option value="none">None</option>
+                    </select>
+                  </div>
+                )}
               </div>
             </div>
 
