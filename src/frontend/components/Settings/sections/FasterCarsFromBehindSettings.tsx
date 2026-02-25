@@ -115,7 +115,7 @@ export const FasterCarsFromBehindSettings = () => {
                   }
                   className="w-full"
                 />
-                <p className="text-slate-500 text-xs">
+                <p className="text-xs text-slate-500">
                   Minimum gap to a faster car before it is displayed. Smaller values
                   show cars that are closer behind you.
                 </p>

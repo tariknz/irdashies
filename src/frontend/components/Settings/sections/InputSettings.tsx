@@ -486,7 +486,7 @@ const CustomShiftPointsSection = ({ config, handleConfigChange }: { config: Inpu
               onChange={(e) => updateCustomShiftPoints({ indicatorColor: e.target.value })}
               className="w-12 h-8 bg-slate-700 border border-slate-600 rounded cursor-pointer"
             />
-            <span className="text-xs text-slate-400">{customShiftPoints.indicatorColor}</span>
+            <span className="text-xs text-slate-500">{customShiftPoints.indicatorColor}</span>
           </div>
           
           {error && (
@@ -544,7 +544,7 @@ const CustomShiftPointsSection = ({ config, handleConfigChange }: { config: Inpu
               <div className="flex items-center justify-between mb-2">
                 <div>
                   <div className="text-sm text-slate-200">{car.carName}</div>
-                  <div className="text-xs text-slate-400">{car.gearCount} gears • {car.redlineRpm} RPM redline</div>
+                  <div className="text-xs text-slate-500">{car.gearCount} gears • {car.redlineRpm} RPM redline</div>
                 </div>
                 <div className="flex items-center gap-2">
                   <button
@@ -609,7 +609,7 @@ const CustomShiftPointsSection = ({ config, handleConfigChange }: { config: Inpu
                           }}
                           className="flex-1 bg-slate-600 text-slate-200 rounded px-1 py-1 text-xs"
                         />
-                        <span className="text-xs text-slate-400">RPM</span>
+                        <span className="text-xs text-slate-500">RPM</span>
                       </div>
                     );
                   })}

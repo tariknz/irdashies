@@ -116,7 +116,7 @@ export const BlindSpotMonitorSettings = () => {
                   }
                   className="w-full"
                 />
-                <p className="text-slate-500 text-xs">
+                <p className="text-xs text-slate-500">
                   Width of the blind spot indicator in pixels.
                 </p>
               </div>
@@ -144,7 +144,7 @@ export const BlindSpotMonitorSettings = () => {
                   }
                   className="w-full"
                 />
-                <p className="text-slate-500 text-xs">
+                <p className="text-xs text-slate-500">
                   Distance to car ahead in meters. Distance at which point line
                   starts to appear at the top.
                 </p>
@@ -166,7 +166,7 @@ export const BlindSpotMonitorSettings = () => {
                   }
                   className="w-full"
                 />
-                <p className="text-slate-500 text-xs">
+                <p className="text-xs text-slate-500">
                   Distance to car behind in meters. Distance at which point line
                   starts to appear at the bottom.
                 </p>

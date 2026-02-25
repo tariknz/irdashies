@@ -42,7 +42,7 @@ export const PitStrategySection = ({ settings, onChange }: PitStrategySectionPro
 
           <div className="flex items-center justify-between pr-2">
             <div>
-              <span className="text-xs text-slate-400">Calculated From</span>
+              <span className="text-xs text-slate-500">Calculated From</span>
             </div>
             <select
               value={settings.config.targetPitLapBasis ?? 'avg'}
@@ -59,7 +59,7 @@ export const PitStrategySection = ({ settings, onChange }: PitStrategySectionPro
           </div>
 
           <div className="flex items-center justify-between pr-2">
-            <span className="text-xs text-slate-400">Target Message Font</span>
+            <span className="text-xs text-slate-500">Target Message Font</span>
             <DualFontSizeInput widgetId="fuelTargetMessage" settings={settings} onChange={onChange} />
           </div>
 

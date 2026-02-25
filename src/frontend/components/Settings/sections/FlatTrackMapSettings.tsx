@@ -87,7 +87,7 @@ export const FlatTrackMapSettings = () => {
                   }
                   className="w-full"
                 />
-                <p className="text-slate-500 text-xs">
+                <p className="text-xs text-slate-500">
                   Thickness of the track line (matches curved track map scale)
                 </p>
               </div>
@@ -109,7 +109,7 @@ export const FlatTrackMapSettings = () => {
                   }
                   className="w-full"
                 />
-                <p className="text-slate-500 text-xs">
+                <p className="text-xs text-slate-500">
                   Thickness of the outline around the track
                 </p>
               </div>
@@ -252,7 +252,7 @@ export const FlatTrackMapSettings = () => {
                   }
                   className="w-full"
                 />
-                <p className="text-slate-500 text-xs">
+                <p className="text-xs text-slate-500">
                   Relative size of the font within the trackmap
                 </p>
               </div>
@@ -296,7 +296,7 @@ export const FlatTrackMapSettings = () => {
           <div className="flex items-center justify-between pl-4 border-t border-slate-700/50 pt-4">
             <div>
               <span className="text-md text-slate-300">Show Only When On Track</span>
-              <p className="text-slate-500 text-xs">
+              <p className="text-xs text-slate-500">
                 If enabled, the flat map will only be shown when you are driving.
               </p>
             </div>

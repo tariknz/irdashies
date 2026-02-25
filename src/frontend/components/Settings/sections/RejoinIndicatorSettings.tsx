@@ -69,7 +69,7 @@ export const RejoinIndicatorSettings = () => {
               {/* Show At Speed */}
               <div className="space-y-2">
                 <span className="text-slate-300">Show At Speed</span>
-                <p className="text-slate-500 text-xs">
+                <p className="text-xs text-slate-500">
                   Display the rejoin indicator widget when you are at or below this
                   speed
                 </p>
@@ -89,7 +89,7 @@ export const RejoinIndicatorSettings = () => {
               {/* Care gap to rejoin */}
               <div className="space-y-2">
                 <span className="text-slate-300">Care Gap</span>
-                <p className="text-slate-500 text-xs">
+                <p className="text-xs text-slate-500">
                   Distance to the car behind where you need to be cautious when
                   rejoining. Note: the clear status will show when next car is above
                   this gap
@@ -109,7 +109,7 @@ export const RejoinIndicatorSettings = () => {
               {/* Do not rejoin gap */}
               <div className="space-y-2">
                 <span className="text-slate-300">Stop Gap</span>
-                <p className="text-slate-500 text-xs">
+                <p className="text-xs text-slate-500">
                   Distance to the car behind where it is not safe to rejoin
                 </p>
                 <input
