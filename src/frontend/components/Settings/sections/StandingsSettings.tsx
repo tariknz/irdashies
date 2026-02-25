@@ -535,7 +535,7 @@ const DisplaySettingsList = ({
             {setting.hasSubSetting &&
               setting.configKey === 'lapTimeDeltas' &&
               settings.config.lapTimeDeltas.enabled && (
-                <div className="flex items-center justify-between pl-8 mt-2">
+                <div className="flex items-center justify-between pl-8 mt-2 indent-8">
                   <span className="text-sm text-slate-300">
                     Number of Laps to Show
                   </span>
@@ -562,7 +562,7 @@ const DisplaySettingsList = ({
             {setting.hasSubSetting &&
               setting.configKey === 'pitStatus' &&
               settings.config.pitStatus.enabled && (
-                <div className="flex items-center justify-between pl-8 mt-2">
+                <div className="flex items-center justify-between pl-8 mt-2 indent-8">
                   <span className="text-sm text-slate-300">Pit Time</span>
                   <ToggleSwitch
                     enabled={settings.config.pitStatus.showPitTime ?? false}
@@ -611,7 +611,7 @@ const DisplaySettingsList = ({
             {setting.hasSubSetting &&
               setting.configKey === 'carManufacturer' &&
               settings.config.carManufacturer.enabled && (
-                <div className="flex items-center justify-between pl-8 mt-2">
+                <div className="flex items-center justify-between pl-8 mt-2 indent-8">
                   <span className="text-sm text-slate-300">
                     Hide If Single Make
                   </span>
@@ -724,7 +724,7 @@ const DisplaySettingsList = ({
             {setting.hasSubSetting &&
               setting.configKey === 'driverName' &&
               settings.config.driverName.enabled && (
-                <div className="flex items-center justify-between pl-8 mt-2">
+                <div className="flex items-center justify-between pl-8 mt-2 indent-8">
                   <span className="text-sm text-slate-300">Remove Numbers From Names</span>
                   <ToggleSwitch
                     enabled={settings.config.driverName.removeNumbersFromName}
@@ -747,7 +747,7 @@ const DisplaySettingsList = ({
             {setting.hasSubSetting &&
               setting.configKey === 'driverName' &&
               settings.config.driverName.enabled && (
-                <div className="flex items-center justify-between pl-8 mt-2">
+                <div className="flex items-center justify-between pl-8 mt-2 indent-8">
                   <span className="text-sm text-slate-300">Status Badges</span>
                   <ToggleSwitch
                     enabled={settings.config.driverName.showStatusBadges}

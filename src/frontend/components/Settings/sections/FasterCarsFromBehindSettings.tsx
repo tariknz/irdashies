@@ -94,7 +94,7 @@ export const FasterCarsFromBehindSettings = () => {
       {(handleConfigChange) => (
         <div className="space-y-4">
           {/* Distance Threshold */}
-          <div className="space-y-2 px-4">
+          <div className="space-y-2">
             <label className="text-slate-300">
               Distance Threshold:{' '}
               {Math.abs(settings.config.distanceThreshold).toFixed(1)} seconds
@@ -118,7 +118,7 @@ export const FasterCarsFromBehindSettings = () => {
             </p>
           </div>
 
-          <div className="space-y-3 px-4">
+          <div className="space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-sm text-slate-300">Drivers Behind</span>
               <select
@@ -139,7 +139,7 @@ export const FasterCarsFromBehindSettings = () => {
             </div>
           </div>
 
-          <div className="space-y-3 px-4">
+          <div className="space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-sm text-slate-300">Align Driver Boxes</span>
               <select
@@ -157,7 +157,7 @@ export const FasterCarsFromBehindSettings = () => {
             </div>
           </div>
 
-          <div className="space-y-3 px-4">
+          <div className="space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-sm text-slate-300">Closest Driver</span>
               <select
@@ -176,7 +176,7 @@ export const FasterCarsFromBehindSettings = () => {
           </div>
 
           {/* IsOnTrack Section */}
-          <div className="flex items-center justify-between pr-4">
+          <div className="flex items-center justify-between">
             <div>
               <h4 className="text-md font-medium text-slate-300">
                 Show only when on track
@@ -196,7 +196,7 @@ export const FasterCarsFromBehindSettings = () => {
           </div>
 
           {/* Only Show Faster Classes Section */}
-          <div className="flex items-center justify-between pr-4">
+          <div className="flex items-center justify-between">
             <div>
               <h4 className="text-md font-medium text-slate-300">
                 Only show faster classes
@@ -217,7 +217,7 @@ export const FasterCarsFromBehindSettings = () => {
           </div>
 
           {/* Show Name Section */}
-          <div className="flex items-center justify-between pr-4">
+          <div className="flex items-center justify-between">
             <div>
               <h4 className="text-md font-medium text-slate-300">Show Name</h4>
               <span className="block text-xs text-slate-500">
@@ -235,7 +235,7 @@ export const FasterCarsFromBehindSettings = () => {
           </div>
 
           {settings.config.showName && (
-          <div className="flex items-center justify-between pr-4">
+          <div className="flex items-center justify-between indent-8">
             <div>
               <h4 className="text-md font-medium text-slate-300">Remove Numbers From Names</h4>
               <span className="block text-xs text-slate-500">
@@ -254,7 +254,7 @@ export const FasterCarsFromBehindSettings = () => {
           )}
 
           {/* Show Badge Section */}
-          <div className="flex items-center justify-between pr-4">
+          <div className="flex items-center justify-between">
             <div>
               <h4 className="text-md font-medium text-slate-300">
                 Show Driver Badge
@@ -309,7 +309,7 @@ export const FasterCarsFromBehindSettings = () => {
           )}
 
           {/* Show Distance Section */}
-          <div className="flex items-center justify-between pr-4">
+          <div className="flex items-center justify-between">
             <div>
               <h4 className="text-md font-medium text-slate-300">
                 Show Distance
@@ -335,7 +335,7 @@ export const FasterCarsFromBehindSettings = () => {
                 Session Visibility
               </h3>
             </div>
-            <div className="space-y-3 px-4">
+            <div className="space-y-3 pl-4">
               <SessionVisibility
                 sessionVisibility={settings.config.sessionVisibility}
                 handleConfigChange={handleConfigChange}
