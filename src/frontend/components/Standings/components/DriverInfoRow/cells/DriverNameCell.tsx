@@ -16,6 +16,7 @@ interface DriverNameCellProps {
   penalty?: boolean;
   slowdown?: boolean;
   showStatusBadges?: boolean;
+  isMinimal?: boolean;
 }
 
 export const DriverNameCell = memo(
@@ -28,13 +29,14 @@ export const DriverNameCell = memo(
     penalty,
     slowdown,
     showStatusBadges = true,
+    isMinimal,
   }: DriverNameCellProps) => {
     const displayName = fullName
       ? formatDriverName(
           extractDriverName(fullName),
           nameFormat ?? 'name-middlename-surname'
         )
-      : name ?? '';
+      : (name ?? '');
 
     return (
       <td data-column="driverName" className="w-full max-w-0 px-1 py-0.5">
@@ -57,6 +59,7 @@ export const DriverNameCell = memo(
               penalty={penalty}
               slowdown={slowdown}
               className="shrink-0"
+              isMinimal={isMinimal}
             />
           )}
         </div>

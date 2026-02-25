@@ -123,6 +123,7 @@ const defaultConfig: StandingsWidgetSettings['config'] = {
   },
   showOnlyWhenOnTrack: false,
   useLivePosition: false,
+  uiStyle: 'default',
   lapTimeDeltas: { enabled: false, numLaps: 3 },
   position: { enabled: true },
   driverName: {
@@ -163,7 +164,19 @@ const migrateConfig = (
     },
     badge: {
       enabled: (config.badge as { enabled?: boolean })?.enabled ?? true,
-      badgeFormat: ((config.badge as { badgeFormat?: string })?.badgeFormat as 'license-color-fullrating-combo' | 'fullrating-color-no-license' | 'license-color-fullrating-bw' | 'license-color-rating-bw' | 'license-color-rating-bw-no-license' | 'rating-color-no-license' | 'license-bw-rating-bw' | 'rating-only-bw-rating-bw' | 'license-bw-rating-bw-no-license' | 'rating-bw-no-license' | 'fullrating-bw-no-license') ?? 'license-color-rating-bw'
+      badgeFormat:
+        ((config.badge as { badgeFormat?: string })?.badgeFormat as
+          | 'license-color-fullrating-combo'
+          | 'fullrating-color-no-license'
+          | 'license-color-fullrating-bw'
+          | 'license-color-rating-bw'
+          | 'license-color-rating-bw-no-license'
+          | 'rating-color-no-license'
+          | 'license-bw-rating-bw'
+          | 'rating-only-bw-rating-bw'
+          | 'license-bw-rating-bw-no-license'
+          | 'rating-bw-no-license'
+          | 'fullrating-bw-no-license') ?? 'license-color-rating-bw',
     },
     delta: {
       enabled: (config.delta as { enabled?: boolean })?.enabled ?? true,
@@ -423,6 +436,7 @@ const migrateConfig = (
     },
     showOnlyWhenOnTrack: (config.showOnlyWhenOnTrack as boolean) ?? false,
     useLivePosition: (config.useLivePosition as boolean) ?? false,
+    uiStyle: (config.uiStyle as 'default' | 'minimal') ?? 'default',
     sessionVisibility:
       (config.sessionVisibility as SessionVisibilitySettings) ??
       defaultConfig.sessionVisibility,
@@ -660,17 +674,17 @@ const DisplaySettingsList = ({
                   <div className="flex flex-wrap gap-3 justify-end">
                     {(
                       [
-                        'license-color-fullrating-combo', 
-                        'fullrating-color-no-license', 
-                        'rating-color-no-license', 
-                        'license-color-fullrating-bw', 
-                        'license-color-rating-bw', 
-                        'rating-only-color-rating-bw', 
-                        'license-color-rating-bw-no-license', 
-                        'license-bw-rating-bw', 
-                        'rating-only-bw-rating-bw', 
-                        'license-bw-rating-bw-no-license', 
-                        'rating-bw-no-license', 
+                        'license-color-fullrating-combo',
+                        'fullrating-color-no-license',
+                        'rating-color-no-license',
+                        'license-color-fullrating-bw',
+                        'license-color-rating-bw',
+                        'rating-only-color-rating-bw',
+                        'license-color-rating-bw-no-license',
+                        'license-bw-rating-bw',
+                        'rating-only-bw-rating-bw',
+                        'license-bw-rating-bw-no-license',
+                        'rating-bw-no-license',
                         'fullrating-bw-no-license',
                       ] as const
                     ).map((format) => (
@@ -1357,6 +1371,30 @@ export const StandingsSettings = () => {
                       {settings.config.background.opacity}%
                     </span>
                   </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Style Settings */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-medium text-slate-200">Style</h3>
+              </div>
+              <div className="space-y-3 pl-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-300">Widget Style</span>
+                  <select
+                    value={settings.config.uiStyle ?? 'default'}
+                    onChange={(e) =>
+                      handleConfigChange({
+                        uiStyle: e.target.value as 'default' | 'minimal',
+                      })
+                    }
+                    className="bg-slate-700 text-white rounded-md px-2 py-1"
+                  >
+                    <option value="default">Default</option>
+                    <option value="minimal">Minimal</option>
+                  </select>
                 </div>
               </div>
             </div>

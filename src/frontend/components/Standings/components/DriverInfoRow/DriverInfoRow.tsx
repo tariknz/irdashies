@@ -70,6 +70,7 @@ interface DriverRowInfoProps {
   slowdown: boolean;
   deltaDecimalPlaces?: number;
   hideCarManufacturer?: boolean;
+  isMinimal?: boolean;
 }
 
 // Helper function to provide dummy data for hidden rows
@@ -182,6 +183,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
     deltaDecimalPlaces,
     pitStopDuration: pitStopDurationProp,
     hideCarManufacturer,
+    isMinimal,
   } = displayProps;
   const pitStopDurations = usePitStopDuration();
   const pitStopDuration =
@@ -205,8 +207,13 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
   const offTrack = carTrackSurface === 0 ? true : false;
 
   const tailwindStyles = useMemo(() => {
-    return getTailwindStyle(classColor, highlightColor, isMultiClass);
-  }, [classColor, highlightColor, isMultiClass]);
+    return getTailwindStyle(
+      classColor,
+      highlightColor,
+      isMultiClass,
+      isMinimal
+    );
+  }, [classColor, highlightColor, isMultiClass, isMinimal]);
 
   const emptyLapDeltaPlaceholders = useMemo(() => {
     if (!numLapDeltasToShow) return null;
@@ -265,6 +272,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
             showStatusBadges={config?.driverName?.showStatusBadges ?? true}
             fullName={name}
             nameFormat={config?.driverName?.nameFormat}
+            isMinimal={isMinimal}
           />
         ),
       },
@@ -296,6 +304,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
             showPitTime={config?.pitStatus?.showPitTime ?? false}
             pitLapDisplayMode={config?.pitStatus?.pitLapDisplayMode}
             pitExitAfterSF={pitExitAfterSF}
+            isMinimal={isMinimal}
           />
         ),
       },
@@ -318,6 +327,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
             license={license}
             rating={rating}
             badgeFormat={config?.badge?.badgeFormat}
+            isMinimal={isMinimal}
           />
         ),
       },
@@ -506,6 +516,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
     emptyLapDeltaPlaceholders,
     hideCarManufacturer,
     pitExitAfterSF,
+    isMinimal,
   ]);
 
   return (
