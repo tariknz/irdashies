@@ -7,8 +7,10 @@ import {
 import { GlobalFlags } from '@irdashies/types';
 import { useReferenceLapStore } from '../../context/ReferenceLapStore/ReferenceLapStore';
 import {
+  calculateClassEstimatedDelta,
   calculateClassEstimatedGap,
   calculateReferenceDelta,
+  calculateReferenceGap,
   getStats,
 } from './relativeGapHelpers';
 
@@ -483,12 +485,12 @@ export const augmentStandingsWithGap = (
 
           const driverStats = getStats(behindEstTime, driverStanding);
 
-          calculatedGap = calculateClassEstimatedGap(
+          calculatedGap = calculateClassEstimatedDelta(
             getStats(aheadEstTime, classLeader),
             driverStats,
             false //isTargetAhead
           );
-          calculatedInterval = calculateClassEstimatedGap(
+          calculatedInterval = calculateClassEstimatedDelta(
             getStats(aheadEstTime, driverAhead),
             driverStats,
             false //isTargetAhead
@@ -726,5 +728,192 @@ export const augmentStandingsWithPositionChange = (
       return { ...standing, positionChange };
     });
     return [classId, augmented];
+  });
+};
+
+export interface AugmentOptions {
+  sessionType: 'Race' | 'Practice' | 'Qualify';
+  isOfficial: boolean;
+  gapEnabled: boolean;
+  intervalEnabled: boolean;
+  qualifyingResults?: SessionResults[];
+  carIdxEstTime: number[];
+  carIdxLap: number[];
+  carIdxLapDistPct: number[];
+  carIdxOnPitRoad: boolean[];
+}
+
+/**
+ * Single-pass augmentation of standings with position change, iRating, gap and interval data.
+ * Replaces augmentStandingsWithPositionChange + augmentStandingsWithIRating + augmentStandingsWithGap.
+ */
+export const augmentStandings = (
+  groupedStandings: [string, Standings[]][],
+  options: AugmentOptions
+): [string, Standings[]][] => {
+  const {
+    sessionType,
+    isOfficial,
+    gapEnabled,
+    intervalEnabled,
+    qualifyingResults,
+    carIdxEstTime,
+    carIdxLap,
+    carIdxLapDistPct,
+    carIdxOnPitRoad,
+  } = options;
+
+  const isRace = sessionType === 'Race';
+  const needsGap = gapEnabled || intervalEnabled;
+
+  // --- Pre-compute qualifying position map (used per-driver below) ---
+  const qualifyingClassPositionByCarIdx = new Map<number, number>();
+  if (isRace && qualifyingResults && qualifyingResults.length > 0) {
+    qualifyingResults.forEach((result) => {
+      qualifyingClassPositionByCarIdx.set(
+        result.CarIdx,
+        result.ClassPosition + 1
+      );
+    });
+  }
+
+  return groupedStandings.map(([classId, classStandings]) => {
+    // --- Pre-compute iRating change map for this class (requires all drivers) ---
+    const iratingChangeMap = new Map<number, number>();
+    if (isRace && isOfficial) {
+      const raceResultsInput: RaceResult<number>[] = classStandings
+        .filter((s) => !!s.classPosition)
+        .map((s) => ({
+          driver: s.carIdx,
+          finishRank: s.classPosition ?? 0,
+          startIRating: s.driver.rating,
+          started: true,
+        }));
+
+      if (raceResultsInput.length > 0) {
+        calculateIRatingGain(raceResultsInput).forEach(
+          (calcResult: CalculationResult<number>) => {
+            iratingChangeMap.set(
+              calcResult.raceResult.driver,
+              calcResult.iratingChange
+            );
+          }
+        );
+      }
+    }
+
+    // --- Pre-compute class leader for gap calculations ---
+    const classLeader = needsGap
+      ? classStandings
+          .filter((s) => s.classPosition && s.classPosition > 0)
+          .sort(
+            (a, b) => (a.classPosition ?? 999) - (b.classPosition ?? 999)
+          )[0]
+      : undefined;
+
+    const leaderHasData = classLeader && classLeader.delta !== undefined;
+
+    // --- Single pass over drivers ---
+    return [
+      classId,
+      classStandings.map((standing, index) => {
+        const augmented = { ...standing };
+
+        // Position change
+        if (isRace && qualifyingClassPositionByCarIdx.size > 0) {
+          const qualifyingClassPos = qualifyingClassPositionByCarIdx.get(
+            standing.carIdx
+          );
+          if (
+            qualifyingClassPos !== undefined &&
+            standing.classPosition !== undefined
+          ) {
+            augmented.positionChange =
+              qualifyingClassPos - standing.classPosition;
+          }
+        }
+
+        // iRating change
+        if (isRace && isOfficial) {
+          augmented.iratingChange = iratingChangeMap.get(standing.carIdx);
+        }
+
+        // Gap + interval
+        if (needsGap && classLeader) {
+          if (!leaderHasData) {
+            // No-op: leave gap/interval undefined
+          } else if (standing.carIdx === classLeader.carIdx) {
+            augmented.gap = { value: undefined, laps: 0 };
+          } else {
+            const driverIdx = standing.carIdx;
+            const driverClassId = standing.carClass.id;
+            const isStartingLap = (standing?.lap ?? -1) <= 1;
+
+            const refLap = useReferenceLapStore
+              .getState()
+              .getReferenceLap(driverIdx, driverClassId, isStartingLap);
+
+            const isOnPitRoadAhead = carIdxOnPitRoad[classLeader.carIdx];
+            const isOnPitRoadBehind = carIdxOnPitRoad[driverIdx];
+            const isOnPitOrHasNoData =
+              isOnPitRoadAhead || isOnPitRoadBehind || refLap.finishTime < 0;
+
+            const driverAhead = classStandings[index - 1];
+
+            let calculatedGap = 0;
+            let calculatedInterval = 0;
+
+            if (isOnPitOrHasNoData) {
+              const classLeaderEstTime = carIdxEstTime[classLeader.carIdx];
+              const aheadEstTime = carIdxEstTime[driverAhead.carIdx];
+              const behindEstTime = carIdxEstTime[driverIdx];
+              const driverStats = getStats(behindEstTime, standing);
+
+              calculatedGap = calculateClassEstimatedGap(
+                getStats(classLeaderEstTime, classLeader),
+                driverStats
+              );
+              calculatedInterval = calculateClassEstimatedDelta(
+                getStats(aheadEstTime, driverAhead),
+                driverStats,
+                false
+              );
+            } else {
+              const classLeaderTrckPct = carIdxLapDistPct[classLeader.carIdx];
+              const driverTrckPct = carIdxLapDistPct[driverIdx];
+              const driverAheadTrckPct = carIdxLapDistPct[driverAhead.carIdx];
+
+              calculatedGap = calculateReferenceGap(
+                refLap,
+                classLeaderTrckPct,
+                driverTrckPct
+              );
+              calculatedInterval = calculateReferenceDelta(
+                refLap,
+                driverAheadTrckPct,
+                driverTrckPct
+              );
+            }
+
+            const gap = { value: Math.abs(calculatedGap), laps: 0 };
+
+            if (classLeader.fastestTime > 0) {
+              const driverLapNumber = carIdxLap[driverIdx];
+              const classLeaderLapNumber = carIdxLap[classLeader.carIdx];
+              gap.laps = Math.floor(
+                classLeaderLapNumber +
+                  carIdxLapDistPct[classLeader.carIdx] -
+                  (driverLapNumber + carIdxLapDistPct[driverIdx])
+              );
+            }
+
+            augmented.gap = gap;
+            augmented.interval = Math.abs(calculatedInterval);
+          }
+        }
+
+        return augmented;
+      }),
+    ];
   });
 };
