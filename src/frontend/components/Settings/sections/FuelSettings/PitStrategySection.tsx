@@ -63,7 +63,7 @@ export const PitStrategySection = ({ settings, onChange }: PitStrategySectionPro
             <DualFontSizeInput widgetId="fuelTargetMessage" settings={settings} onChange={onChange} />
           </div>
 
-          <p className="text-[10px] text-slate-500 italic">
+          <p className="text-xs text-slate-500 italic">
             Scenarios will include this lap as a 4th row. Target message will show fuel required.
           </p>
         </div>
@@ -74,7 +74,7 @@ export const PitStrategySection = ({ settings, onChange }: PitStrategySectionPro
         <div className="flex items-center justify-between pr-20">
           <div>
             <span className="text-sm text-slate-300">Fuel Scenarios</span>
-            <span className="block text-[10px] text-slate-500">Pit stop calculations (-1, Ideal, +1 Lap)</span>
+            <span className="block text-xs text-slate-500">Pit stop calculations (-1, Ideal, +1 Lap)</span>
           </div>
           <div className="flex items-center gap-4">
             <DualFontSizeInput widgetId="fuelScenarios" settings={settings} onChange={onChange} />

@@ -47,7 +47,7 @@ export const FuelHistorySection = ({ settings, onChange }: FuelHistorySectionPro
             <div className="flex items-center justify-between pr-20">
               <div className="flex flex-col">
                 <span className="text-xs text-slate-500">Target Line</span>
-                <span className="text-[10px] text-slate-500">Optional ref (0 to hide)</span>
+                <span className="text-xs text-slate-500">Optional ref (0 to hide)</span>
               </div>
               <div className="flex items-center gap-2">
                 <input
@@ -62,7 +62,7 @@ export const FuelHistorySection = ({ settings, onChange }: FuelHistorySectionPro
                   }}
                   className="w-16 px-2 py-1 bg-slate-700 text-slate-200 rounded text-xs text-right focus:border-blue-500 focus:outline-none"
                 />
-                <span className="text-[10px] text-slate-500">{settings.config.fuelUnits}</span>
+                <span className="text-xs text-slate-500">{settings.config.fuelUnits}</span>
               </div>
             </div>
           </div>
