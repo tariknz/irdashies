@@ -35,7 +35,7 @@ layer(base);
   --font-sans: 'Lato', sans-serif;
   --animate-pulse-border: pulse-border 1s infinite;
   --animate-blink: blink 1s infinite;
-  --text-xs: 12.5px;
+  --text-xs: 12px;
   --text-sm: 13px;
   --text-base: 14px;
   --text-lg: 18px;
