@@ -619,7 +619,7 @@ const CustomShiftPointsSection = ({ config, handleConfigChange }: { config: Inpu
           ))}
           
           {Object.keys(customShiftPoints.carConfigs).length === 0 && (
-            <div className="text-sm text-slate-400">
+            <div className="text-xs text-slate-500">
               No cars configured. Select a car above to add custom shift points.
             </div>
           )}
