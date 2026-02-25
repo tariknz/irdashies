@@ -45,6 +45,10 @@ export const Standings = () => {
     settings?.carManufacturer?.hideIfSingleMake && isSingleMake
   );
 
+  const topDriverDivider =
+    settings?.driverStandings?.topDriverDivider ?? 'none';
+  const numTopDrivers = settings?.driverStandings?.numTopDrivers ?? 0;
+
   // Check if this is a team racing session
   const isTeamRacing = useWeekendInfoTeamRacing();
 
@@ -77,8 +81,25 @@ export const Standings = () => {
         className={`w-full table-auto text-sm border-separate ${tableBorderSpacing}`}
       >
         <tbody>
-          {standings.map(([classId, classStandings], index) =>
-            classStandings.length > 0 ? (
+          {standings.map(([classId, classStandings], index) => {
+            // Compute divider color once per class
+            // Priority: theme selected → CSS theme var; multi-class → class color; else → highlight
+            const classColorNum = classStats?.[classId]?.color;
+            const classColorHex =
+              classColorNum !== undefined
+                ? `#${classColorNum.toString(16).padStart(6, '0')}`
+                : undefined;
+            const highlightHex = `#${highlightColor.toString(16).padStart(6, '0')}`;
+            // var(--color-slate-500) inherits from ThemeManager's CSS remapping,
+            // resolving to the user's selected theme color at runtime.
+            const dividerColor =
+              topDriverDivider === 'theme'
+                ? 'var(--color-slate-500)'
+                : isMultiClass
+                  ? (classColorHex ?? highlightHex)
+                  : highlightHex;
+
+            return classStandings.length > 0 ? (
               <Fragment key={classId}>
                 <DriverClassHeader
                   key={classId}
@@ -93,89 +114,123 @@ export const Standings = () => {
                   isMinimal={isMinimal}
                   colSpan={12}
                 />
-                {classStandings.map((result) => (
-                  <DriverInfoRow
-                    key={result.carIdx}
-                    carIdx={result.carIdx}
-                    classColor={result.carClass.color}
-                    carNumber={
-                      (settings?.carNumber?.enabled ?? true)
-                        ? result.driver?.carNum || ''
-                        : undefined
-                    }
-                    name={result.driver?.name || ''}
-                    teamName={
-                      settings?.teamName?.enabled && isTeamRacing
-                        ? result.driver?.teamName || ''
-                        : undefined
-                    }
-                    isPlayer={result.isPlayer}
-                    hasFastestTime={result.hasFastestTime}
-                    delta={settings?.delta?.enabled ? result.delta : undefined}
-                    gap={settings?.gap?.enabled ? result.gap : undefined}
-                    interval={
-                      settings?.interval?.enabled ? result.interval : undefined
-                    }
-                    position={result.classPosition}
-                    lap={result.lastLap}
-                    iratingChangeValue={result.iratingChange}
-                    positionChange={result.positionChange}
-                    lastTime={
-                      settings?.lastTime?.enabled ? result.lastTime : undefined
-                    }
-                    fastestTime={
-                      settings?.fastestTime?.enabled
-                        ? result.fastestTime
-                        : undefined
-                    }
-                    lastTimeState={
-                      settings?.lastTime?.enabled
-                        ? result.lastTimeState
-                        : undefined
-                    }
-                    onPitRoad={result.onPitRoad}
-                    onTrack={result.onTrack}
-                    radioActive={result.radioActive}
-                    isMultiClass={isMultiClass}
-                    flairId={
-                      (settings?.countryFlags?.enabled ?? true)
-                        ? result.driver?.flairId
-                        : undefined
-                    }
-                    tireCompound={
-                      (settings?.compound?.enabled ?? true)
-                        ? result.tireCompound
-                        : undefined
-                    }
-                    carId={result.carId}
-                    lastPitLap={result.lastPitLap}
-                    lastLap={result.lastLap}
-                    carTrackSurface={result.carTrackSurface}
-                    prevCarTrackSurface={result.prevCarTrackSurface}
-                    license={result.driver?.license}
-                    rating={result.driver?.rating}
-                    lapTimeDeltas={
-                      settings?.lapTimeDeltas?.enabled
-                        ? result.lapTimeDeltas
-                        : undefined
-                    }
-                    numLapDeltasToShow={
-                      settings?.lapTimeDeltas?.enabled
-                        ? settings.lapTimeDeltas.numLaps
-                        : undefined
-                    }
-                    displayOrder={settings?.displayOrder}
-                    currentSessionType={result.currentSessionType}
-                    config={settings}
-                    highlightColor={highlightColor}
-                    dnf={result.dnf}
-                    repair={result.repair}
-                    penalty={result.penalty}
-                    slowdown={result.slowdown}
-                    hideCarManufacturer={hideCarManufacturer}
-                    isMinimal={isMinimal}
-                  />
-                ))}
+                {classStandings.map((result, driverIndex) => {
+                  const prev = classStandings[driverIndex - 1];
+                  const showDivider =
+                    topDriverDivider !== 'none' &&
+                    numTopDrivers > 0 &&
+                    driverIndex > 0 &&
+                    prev?.classPosition !== undefined &&
+                    result.classPosition !== undefined &&
+                    prev.classPosition <= numTopDrivers &&
+                    result.classPosition > numTopDrivers &&
+                    result.classPosition > prev.classPosition + 1;
+
+                  return (
+                    <Fragment key={result.carIdx}>
+                      {showDivider && (
+                        <tr>
+                          <td colSpan={12} className="px-2 py-0.5">
+                            <hr
+                              className="border-2 border-t"
+                              style={{
+                                borderColor: dividerColor,
+                                opacity: 0.5,
+                              }}
+                            />
+                          </td>
+                        </tr>
+                      )}
+                      <DriverInfoRow
+                        key={result.carIdx}
+                        carIdx={result.carIdx}
+                        classColor={result.carClass.color}
+                        carNumber={
+                          (settings?.carNumber?.enabled ?? true)
+                            ? result.driver?.carNum || ''
+                            : undefined
+                        }
+                        name={result.driver?.name || ''}
+                        teamName={
+                          settings?.teamName?.enabled && isTeamRacing
+                            ? result.driver?.teamName || ''
+                            : undefined
+                        }
+                        isPlayer={result.isPlayer}
+                        hasFastestTime={result.hasFastestTime}
+                        delta={
+                          settings?.delta?.enabled ? result.delta : undefined
+                        }
+                        gap={settings?.gap?.enabled ? result.gap : undefined}
+                        interval={
+                          settings?.interval?.enabled
+                            ? result.interval
+                            : undefined
+                        }
+                        position={result.classPosition}
+                        lap={result.lastLap}
+                        iratingChangeValue={result.iratingChange}
+                        positionChange={result.positionChange}
+                        lastTime={
+                          settings?.lastTime?.enabled
+                            ? result.lastTime
+                            : undefined
+                        }
+                        fastestTime={
+                          settings?.fastestTime?.enabled
+                            ? result.fastestTime
+                            : undefined
+                        }
+                        lastTimeState={
+                          settings?.lastTime?.enabled
+                            ? result.lastTimeState
+                            : undefined
+                        }
+                        onPitRoad={result.onPitRoad}
+                        onTrack={result.onTrack}
+                        radioActive={result.radioActive}
+                        isMultiClass={isMultiClass}
+                        flairId={
+                          (settings?.countryFlags?.enabled ?? true)
+                            ? result.driver?.flairId
+                            : undefined
+                        }
+                        tireCompound={
+                          (settings?.compound?.enabled ?? true)
+                            ? result.tireCompound
+                            : undefined
+                        }
+                        carId={result.carId}
+                        lastPitLap={result.lastPitLap}
+                        lastLap={result.lastLap}
+                        carTrackSurface={result.carTrackSurface}
+                        prevCarTrackSurface={result.prevCarTrackSurface}
+                        license={result.driver?.license}
+                        rating={result.driver?.rating}
+                        lapTimeDeltas={
+                          settings?.lapTimeDeltas?.enabled
+                            ? result.lapTimeDeltas
+                            : undefined
+                        }
+                        numLapDeltasToShow={
+                          settings?.lapTimeDeltas?.enabled
+                            ? settings.lapTimeDeltas.numLaps
+                            : undefined
+                        }
+                        displayOrder={settings?.displayOrder}
+                        currentSessionType={result.currentSessionType}
+                        config={settings}
+                        highlightColor={highlightColor}
+                        dnf={result.dnf}
+                        repair={result.repair}
+                        penalty={result.penalty}
+                        slowdown={result.slowdown}
+                        hideCarManufacturer={hideCarManufacturer}
+                        isMinimal={isMinimal}
+                      />
+                    </Fragment>
+                  );
+                })}
                 {index < standings.length - 1 &&
                   !generalSettings?.compactMode && (
                     <tr>
@@ -183,8 +238,8 @@ export const Standings = () => {
                     </tr>
                   )}
               </Fragment>
-            ) : null
-          )}
+            ) : null;
+          })}
         </tbody>
       </table>
       {(settings?.footerBar?.enabled ?? true) && (

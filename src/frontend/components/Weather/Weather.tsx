@@ -7,7 +7,7 @@ import { WindDirection } from './WindDirection/WindDirection';
 import { useTrackRubberedState } from './hooks/useTrackRubberedState';
 import { useWeatherSettings } from './hooks/useWeatherSettings';
 import { WeatherHumidity } from './WeatherHumidity/WeatherHumidity';
-import { useThrottledWeather } from './hooks/useThrottledWeather';
+import { useThrottledWeather } from '@irdashies/context';
 import { useMemo } from 'react';
 
 type WeatherColumnId =
