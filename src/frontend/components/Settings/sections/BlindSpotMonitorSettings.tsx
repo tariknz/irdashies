@@ -75,111 +75,105 @@ export const BlindSpotMonitorSettings = () => {
     >
       {(handleConfigChange) => (
         <div className="space-y-4">
-          {/* Background Opacity */}
-          <div className="space-y-2">
-            <label className="text-slate-300">
-              Background Opacity: {settings.config.background?.opacity ?? 30}%
-            </label>
-            <input
-              type="range"
-              min="0"
-              max="100"
-              step="5"
-              value={settings.config.background?.opacity ?? 30}
-              onChange={(e) =>
-                handleConfigChange({
-                  background: { opacity: parseInt(e.target.value) },
-                })
-              }
-              className="w-full"
-            />
-          </div>
 
-          {/* Distance Ahead */}
-          <div className="space-y-2">
-            <label className="text-slate-300">
-              Distance Ahead: {settings.config.distAhead}m
-            </label>
-            <input
-              type="range"
-              min="3"
-              max="6"
-              step="0.1"
-              value={settings.config.distAhead}
-              onChange={(e) =>
-                handleConfigChange({ distAhead: parseFloat(e.target.value) })
-              }
-              className="w-full"
-            />
-            <p className="text-slate-400 text-sm">
-              Distance to car ahead in meters. Distance at which point line
-              starts to appear at the top.
-            </p>
-          </div>
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium text-slate-200">Display</h3>   
+            <div className="pl-4 space-y-4">  
 
-          {/* Distance Behind */}
-          <div className="space-y-2">
-            <label className="text-slate-300">
-              Distance Behind: {settings.config.distBehind}m
-            </label>
-            <input
-              type="range"
-              min="3"
-              max="6"
-              step="0.1"
-              value={settings.config.distBehind}
-              onChange={(e) =>
-                handleConfigChange({ distBehind: parseFloat(e.target.value) })
-              }
-              className="w-full"
-            />
-            <p className="text-slate-400 text-sm">
-              Distance to car behind in meters. Distance at which point line
-              starts to appear at the bottom.
-            </p>
-          </div>
+              {/* Background Opacity */}
+              <div className="space-y-2">
+                <label className="text-slate-300">
+                  Background Opacity: {settings.config.background?.opacity ?? 30}%
+                </label>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  step="5"
+                  value={settings.config.background?.opacity ?? 30}
+                  onChange={(e) =>
+                    handleConfigChange({
+                      background: { opacity: parseInt(e.target.value) },
+                    })
+                  }
+                  className="w-full"
+                />
+              </div>
 
-          {/* Width */}
-          <div className="space-y-2">
-            <label className="text-slate-300">
-              Width: {settings.config.width ?? 20}px
-            </label>
-            <input
-              type="range"
-              min="5"
-              max="100"
-              step="1"
-              value={settings.config.width ?? 20}
-              onChange={(e) =>
-                handleConfigChange({ width: parseInt(e.target.value) })
-              }
-              className="w-full"
-            />
-            <p className="text-slate-400 text-sm">
-              Width of the blind spot indicator in pixels.
-            </p>
-          </div>
+              {/* Width */}
+              <div className="space-y-2">
+                <label className="text-slate-300">
+                  Width: {settings.config.width ?? 20}px
+                </label>
+                <input
+                  type="range"
+                  min="5"
+                  max="100"
+                  step="1"
+                  value={settings.config.width ?? 20}
+                  onChange={(e) =>
+                    handleConfigChange({ width: parseInt(e.target.value) })
+                  }
+                  className="w-full"
+                />
+                <p className="text-slate-500 text-xs">
+                  Width of the blind spot indicator in pixels.
+                </p>
+              </div>
 
-          {/* IsOnTrack Section */}
-          <div className="flex items-center justify-between">
-            <div>
-              <h4 className="text-md font-medium text-slate-300">
-                Show only when on track
-              </h4>
-              <span className="block text-xs text-slate-500">
-                If enabled, blind spotter will only be shown when you are
-                driving.
-              </span>
             </div>
-            <ToggleSwitch
-              enabled={settings.config.showOnlyWhenOnTrack}
-              onToggle={(newValue) =>
-                handleConfigChange({
-                  showOnlyWhenOnTrack: newValue,
-                })
-              }
-            />
           </div>
+
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium text-slate-200">Distances</h3>   
+            <div className="pl-4 space-y-4"> 
+
+              {/* Distance Ahead */}
+              <div className="space-y-2">
+                <label className="text-slate-300">
+                  Distance Ahead: {settings.config.distAhead}m
+                </label>
+                <input
+                  type="range"
+                  min="3"
+                  max="6"
+                  step="0.1"
+                  value={settings.config.distAhead}
+                  onChange={(e) =>
+                    handleConfigChange({ distAhead: parseFloat(e.target.value) })
+                  }
+                  className="w-full"
+                />
+                <p className="text-slate-500 text-xs">
+                  Distance to car ahead in meters. Distance at which point line
+                  starts to appear at the top.
+                </p>
+              </div>          
+
+              {/* Distance Behind */}
+              <div className="space-y-2">
+                <label className="text-slate-300">
+                  Distance Behind: {settings.config.distBehind}m
+                </label>
+                <input
+                  type="range"
+                  min="3"
+                  max="6"
+                  step="0.1"
+                  value={settings.config.distBehind}
+                  onChange={(e) =>
+                    handleConfigChange({ distBehind: parseFloat(e.target.value) })
+                  }
+                  className="w-full"
+                />
+                <p className="text-slate-500 text-xs">
+                  Distance to car behind in meters. Distance at which point line
+                  starts to appear at the bottom.
+                </p>
+              </div>    
+
+            </div>
+          </div>      
 
           {/* Session Visibility Settings */}
           <div className="space-y-4">
@@ -194,7 +188,27 @@ export const BlindSpotMonitorSettings = () => {
                 handleConfigChange={handleConfigChange}
               />
             </div>
+          </div>        
+
+          <div className="flex items-center justify-between pt-4 border-t border-slate-700/50 pl-4">
+            <div>
+              <h4 className="text-md font-medium text-slate-300">
+                Show only when on track
+              </h4>
+              <span className="block text-xs text-slate-500">
+                If enabled, blind spotter will only be shown when you are driving.
+              </span>
+            </div>
+            <ToggleSwitch
+              enabled={settings.config.showOnlyWhenOnTrack}
+              onToggle={(newValue) =>
+                handleConfigChange({
+                  showOnlyWhenOnTrack: newValue,
+                })
+              }
+            />
           </div>
+
         </div>
       )}
     </BaseSettingsSection>

@@ -688,52 +688,39 @@ export const InputSettings = () => {
             </div>
 
             {/* Background Settings */}
-            <div className="flex items-center gap-3">
-              <label className="text-sm text-slate-200">
-                Background Opacity:
-              </label>
-              <input
-                type="range"
-                min="0"
-                max="100"
-                value={settings.config.background.opacity}
-                onChange={(e) =>
-                  handleConfigChange({
-                    background: { opacity: parseInt(e.target.value) },
-                  })
-                }
-                className="flex-1 h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer slider"
-              />
-              <input
-                type="number"
-                min="0"
-                max="100"
-                value={settings.config.background.opacity}
-                onChange={(e) =>
-                  handleConfigChange({
-                    background: { opacity: parseInt(e.target.value) },
-                  })
-                }
-                className="w-20 bg-slate-700 text-slate-200 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-
-            {/* Show Only When On Track Settings */}
-            <div className="flex items-center justify-between">
-              <div>
-                <h4 className="text-md font-medium text-slate-300">
-                  Show Only When On Track
-                </h4>
-                <p className="text-sm text-slate-400">
-                  If enabled, inputs will only be shown when you are driving.
-                </p>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-medium text-slate-200">Background</h3>
+                <div className="flex items-center gap-3">
+                  <label className="text-sm text-slate-200">
+                    Background Opacity:
+                  </label>
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={settings.config.background.opacity}
+                    onChange={(e) =>
+                      handleConfigChange({
+                        background: { opacity: parseInt(e.target.value) },
+                      })
+                    }
+                    className="flex-1 h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer slider"
+                  />
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={settings.config.background.opacity}
+                    onChange={(e) =>
+                      handleConfigChange({
+                        background: { opacity: parseInt(e.target.value) },
+                      })
+                    }
+                    className="w-20 bg-slate-700 text-slate-200 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
               </div>
-              <ToggleSwitch
-                enabled={settings.config.showOnlyWhenOnTrack ?? true}
-                onToggle={(enabled) =>
-                  handleConfigChange({ showOnlyWhenOnTrack: enabled })
-                }
-              />
             </div>
 
             {/* Trace Settings */}
@@ -1210,12 +1197,11 @@ export const InputSettings = () => {
                 </div>
               )}
             </div>
+
             {/* Session Visibility Settings */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium text-slate-200">
-                  Session Visibility
-                </h3>
+                <h3 className="text-lg font-medium text-slate-200">Session Visibility</h3>
               </div>
               <div className="space-y-3 pl-4">
                 <SessionVisibility
@@ -1224,6 +1210,22 @@ export const InputSettings = () => {
                 />
               </div>
             </div>
+
+            <div className="flex items-center justify-between pl-4 pt-4 border-t border-slate-700/50">
+              <div>
+                <span className="text-md text-slate-300">Show Only When On Track</span>
+                <p className="text-xs text-slate-500">
+                  If enabled, inputs will only be shown when you are driving.
+                </p>
+              </div>
+              <ToggleSwitch
+                enabled={settings.config.showOnlyWhenOnTrack ?? false}
+                onToggle={(enabled) => handleConfigChange({
+                  showOnlyWhenOnTrack: enabled
+                })}
+              />
+            </div>
+
           </div>
         );
       }}

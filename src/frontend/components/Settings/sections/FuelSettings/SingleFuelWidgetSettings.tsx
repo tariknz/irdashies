@@ -70,7 +70,7 @@ export const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => 
             {/* Main Visual Layout Editor */}
             <div className="space-y-4">
               <div className="flex justify-between items-center">
-                <h3 className="text-md font-medium text-slate-200">Layout Editor</h3>
+                <h3 className="text-lg font-medium text-slate-200">Layout Editor</h3>
                 <span className="text-xs text-slate-500">Drag to Split (Right/Bottom)</span>
               </div>
 
@@ -87,7 +87,7 @@ export const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => 
                 <div className="flex items-center justify-between">
                   <div>
                     <span className="text-sm font-medium text-slate-300">Use General font Sizes</span>
-                    <span className="block text-[10px] text-slate-500">Syncs with Font Size slider in General tab</span>
+                    <span className="block text-xs text-slate-500">Syncs with Font Size slider in General tab</span>
                   </div>
                   <ToggleSwitch
                     enabled={settings.config.useGeneralFontSize ?? false}
@@ -98,7 +98,7 @@ export const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => 
                 <div className="flex items-center justify-between">
                   <div>
                     <span className="text-sm font-medium text-slate-300">Use General Compact Mode</span>
-                    <span className="block text-[10px] text-slate-500">Syncs with Compact Mode in General tab</span>
+                    <span className="block text-xs text-slate-500">Syncs with Compact Mode in General tab</span>
                   </div>
                   <ToggleSwitch
                     enabled={settings.config.useGeneralCompactMode ?? false}
@@ -158,7 +158,7 @@ export const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => 
             <div className="flex items-center justify-between pr-20 py-4 border-b border-white/5">
               <div>
                 <span className="text-sm text-slate-300">Economy Predict</span>
-                <span className="block text-[10px] text-slate-500">Predicts fuel usage vs target. Adjust Label/Value sizes.</span>
+                <span className="block text-xs text-slate-500">Predicts fuel usage vs target. Adjust Label/Value sizes.</span>
               </div>
               <div className="flex items-center gap-4">
                 <DualFontSizeInput widgetId="fuelEconomyPredict" settings={settings} onChange={handleConfigChange} />
@@ -236,10 +236,10 @@ export const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => 
 
                 <div className="flex items-center justify-between pt-4 border-t border-slate-700/50">
                   <div>
-                    <h4 className="text-sm font-medium text-slate-300">
+                    <h4 className="text-md font-medium text-slate-300">
                       Show only when on track
                     </h4>
-                    <span className="block text-[10px] text-slate-500">
+                    <span className="block text-xs text-slate-500">
                       If enabled, calculator will only be shown when you are driving.
                     </span>
                   </div>

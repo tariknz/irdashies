@@ -10,7 +10,7 @@ interface PitStrategySectionProps {
 export const PitStrategySection = ({ settings, onChange }: PitStrategySectionProps) => {
   return (
     <div className="border-t border-slate-600/50 pt-6 space-y-4">
-      <h3 className="text-md font-medium text-slate-200">Pit Strategy</h3>
+      <h3 className="text-lg font-medium text-slate-200">Pit Strategy</h3>
 
       <div className="flex items-center justify-between">
         <div>

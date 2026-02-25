@@ -12,13 +12,13 @@ interface FuelStatusAlertsSectionProps {
 export const FuelStatusAlertsSection = ({ settings, onChange }: FuelStatusAlertsSectionProps) => {
   return (
     <div className="space-y-4 pb-4 mb-4 border-b border-slate-700">
-      <h4 className="text-sm font-medium text-slate-300">Fuel Status Alerts</h4>
+      <h4 className="text-lg font-medium text-slate-300">Fuel Status Alerts</h4>
 
       {/* Border Color Toggle */}
       <div className="flex items-center justify-between pr-20">
         <div>
-          <span className="text-xs text-slate-400">Show Border Color</span>
-          <span className="block text-[10px] text-slate-500">Green (safe), Orange (caution), Red (danger)</span>
+          <span className="text-sm text-slate-300">Show Border Color</span>
+          <span className="block text-xs text-slate-500">Green (safe), Orange (caution), Red (danger)</span>
         </div>
         <ToggleSwitch
           enabled={settings.config.showFuelStatusBorder ?? true}
@@ -29,7 +29,7 @@ export const FuelStatusAlertsSection = ({ settings, onChange }: FuelStatusAlerts
       <div className="space-y-3">
         {/* Green Threshold */}
         <div className="flex items-center justify-between pr-20">
-          <span className="text-xs text-slate-400">Green Threshold (%)</span>
+          <span className="text-sm text-slate-300">Green Threshold (%)</span>
           <div className="flex items-center gap-2">
             <input
               type="range" min="0" max="100" step="1"
@@ -52,7 +52,7 @@ export const FuelStatusAlertsSection = ({ settings, onChange }: FuelStatusAlerts
 
         {/* Amber Threshold */}
         <div className="flex items-center justify-between pr-20">
-          <span className="text-xs text-slate-400">Amber Threshold (%)</span>
+          <span className="text-sm text-slate-300">Amber Threshold (%)</span>
           <div className="flex items-center gap-2">
             <input
               type="range" min="0" max="100" step="1"

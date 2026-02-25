@@ -78,7 +78,7 @@ export const PitlaneHelperSettings = () => {
                   <span className="text-sm text-slate-300">
                     Show when approaching pit
                   </span>
-                  <p className="text-xs text-slate-400">
+                  <p className="text-xs text-slate-500">
                     Display overlay before entering pit lane
                   </p>
                 </div>
@@ -129,7 +129,7 @@ export const PitlaneHelperSettings = () => {
                   <span className="text-sm text-slate-300">
                     Pit Limiter Warning
                   </span>
-                  <p className="text-xs text-slate-400">
+                  <p className="text-xs text-slate-500">
                     Flash warning if entering pit without limiter
                   </p>
                 </div>
@@ -146,7 +146,7 @@ export const PitlaneHelperSettings = () => {
                   <span className="text-sm text-slate-300">
                     Early Pitbox Warning
                   </span>
-                  <p className="text-xs text-slate-400">
+                  <p className="text-xs text-slate-500">
                     Alert when pitbox is near pit entry
                   </p>
                 </div>
@@ -195,7 +195,7 @@ export const PitlaneHelperSettings = () => {
                   <span className="text-sm text-slate-300">
                     Show Pitlane Traffic
                   </span>
-                  <p className="text-xs text-slate-400">
+                  <p className="text-xs text-slate-500">
                     Display count of cars ahead/behind in pitlane
                   </p>
                 </div>
@@ -216,7 +216,7 @@ export const PitlaneHelperSettings = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <span className="text-sm text-slate-300">Speed Bar</span>
-                  <p className="text-xs text-slate-400">
+                  <p className="text-xs text-slate-500">
                     Show vertical bar indicating speed relative to pit limit
                   </p>
                 </div>
@@ -277,7 +277,7 @@ export const PitlaneHelperSettings = () => {
                   <span className="text-sm text-slate-300">
                     Show Pit Exit Inputs
                   </span>
-                  <p className="text-xs text-slate-400">
+                  <p className="text-xs text-slate-500">
                     Display throttle/clutch bars for pit exit
                   </p>
                 </div>

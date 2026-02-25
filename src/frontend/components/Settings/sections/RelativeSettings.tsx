@@ -564,7 +564,7 @@ const DisplaySettingsList = ({
             {(setting.configKey === 'fastestTime' ||
               setting.configKey === 'lastTime') &&
               (configValue as { enabled: boolean }).enabled && (
-                <div className="flex items-center justify-between pl-8 mt-2">
+                <div className="flex items-center justify-between pl-4 mt-2">
                   <span className="text-sm text-slate-300"></span>
                   <select
                     value={
@@ -796,7 +796,7 @@ const BarItemsList = ({
               itemConfig &&
               'enabled' in itemConfig &&
               itemConfig.enabled && (
-                <div className="flex items-center justify-between pl-8 mt-2">
+                <div className="flex items-center justify-between pl-4 mt-2">
                   <span></span>
                   <select
                     value={
@@ -829,7 +829,7 @@ const BarItemsList = ({
               itemConfig &&
               'enabled' in itemConfig &&
               itemConfig.enabled && (
-                <div className="flex items-center justify-end gap-2 pl-8 mt-2">
+                <div className="flex items-center justify-end gap-2 pl-4 mt-2">
                   {(['left', 'right'] as const).map((pos) => {
                     const currentPos =
                       (itemConfig as { speedPosition?: 'left' | 'right' })
@@ -883,7 +883,7 @@ const BarItemsList = ({
               itemConfig &&
               'enabled' in itemConfig &&
               itemConfig.enabled && (
-                <div className="flex items-center justify-between pl-8 mt-2">
+                <div className="flex items-center justify-between pl-4 mt-2">
                   <span></span>
                   <select
                     value={
@@ -1001,6 +1001,25 @@ export const RelativeSettings = () => {
                     ))}
                   </select>
                 </div>
+              </div>
+              {/* Use Live Position Standings */}
+              <div className="flex items-center justify-between gap-4 pl-4">
+                <div>
+                  <h4 className="text-md font-medium text-slate-300">
+                    Use Live Position Standings
+                  </h4>
+                  <p className="text-xs text-slate-500">
+                    If enabled, live telemetry will be used to compute driver
+                    positions. This may be less stable but will update live and
+                    not only on start/finish line.
+                  </p>
+                </div>
+                <ToggleSwitch
+                  enabled={settings.config.useLivePosition ?? false}
+                  onToggle={(enabled) =>
+                    handleConfigChange({ useLivePosition: enabled })
+                  }
+                />
               </div>
             </div>
 
@@ -1205,7 +1224,7 @@ export const RelativeSettings = () => {
                     <span className="text-sm text-slate-300">
                       Decimal places
                     </span>
-                    <p className="text-xs text-slate-400">
+                    <p className="text-xs text-slate-500">
                       Number of decimal places to display
                     </p>
                   </div>
@@ -1231,50 +1250,10 @@ export const RelativeSettings = () => {
               </div>
             </div>
 
-            {/* Show Only When On Track Settings */}
-            <div className="flex items-center justify-between">
-              <div>
-                <h4 className="text-md font-medium text-slate-300">
-                  Show Only When On Track
-                </h4>
-                <p className="text-sm text-slate-400">
-                  If enabled, relatives will only be shown when you are driving.
-                </p>
-              </div>
-              <ToggleSwitch
-                enabled={settings.config.showOnlyWhenOnTrack ?? false}
-                onToggle={(enabled) =>
-                  handleConfigChange({ showOnlyWhenOnTrack: enabled })
-                }
-              />
-            </div>
-
-            {/* Use Live Position Standings */}
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <h4 className="text-md font-medium text-slate-300">
-                  Use Live Position Standings
-                </h4>
-                <p className="text-sm text-slate-400">
-                  If enabled, live telemetry will be used to compute driver
-                  positions. This may be less stable but will update live and
-                  not only on start/finish line.
-                </p>
-              </div>
-              <ToggleSwitch
-                enabled={settings.config.useLivePosition ?? false}
-                onToggle={(enabled) =>
-                  handleConfigChange({ useLivePosition: enabled })
-                }
-              />
-            </div>
-
             {/* Session Visibility Settings */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium text-slate-200">
-                  Session Visibility
-                </h3>
+                <h3 className="text-lg font-medium text-slate-200">Session Visibility</h3>
               </div>
               <div className="space-y-3 pl-4">
                 <SessionVisibility
@@ -1283,6 +1262,22 @@ export const RelativeSettings = () => {
                 />
               </div>
             </div>
+
+            <div className="flex items-center justify-between pl-4 pt-4 border-t border-slate-700/50">
+              <div>
+                <span className="text-md text-slate-300">Show Only When On Track</span>
+                <p className="text-xs text-slate-500">
+                  If enabled, relatives will only be shown when you are driving.
+                </p>
+              </div>
+              <ToggleSwitch
+                enabled={settings.config.showOnlyWhenOnTrack ?? false}
+                onToggle={(enabled) => handleConfigChange({
+                  showOnlyWhenOnTrack: enabled
+                })}
+              />
+            </div>
+
           </div>
         );
       }}

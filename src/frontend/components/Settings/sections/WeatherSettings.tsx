@@ -156,6 +156,7 @@ export const WeatherSettings = () => {
 
         return (
           <div className="space-y-4">
+
             {/* Display Settings */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
@@ -180,73 +181,65 @@ export const WeatherSettings = () => {
                 />
               </div>
             </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-slate-300">Background Opacity</span>
-              <div className="flex items-center gap-2">
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  value={settings.config.background.opacity}
-                  onChange={(e) =>
-                    handleConfigChange({ background: { opacity: parseInt(e.target.value) } })
-                  }
-                  className="w-20 h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer"
-                />
-                <span className="text-xs text-slate-400 w-8">
-                  {settings.config.background.opacity}%
-                </span>
-              </div>
-            </div>
 
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-slate-300">Temperature Units</span>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => handleConfigChange({ units: 'auto' })}
-                  className={`px-3 py-1 rounded text-sm transition-colors ${settings.config.units === 'auto'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
-                    }`}
-                >
-                  auto
-                </button>
-                <button
-                  onClick={() => handleConfigChange({ units: 'Metric' })}
-                  className={`px-3 py-1 rounded text-sm transition-colors ${settings.config.units === 'Metric'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
-                    }`}
-                >
-                  °C
-                </button>
-                <button
-                  onClick={() => handleConfigChange({ units: 'Imperial' })}
-                  className={`px-3 py-1 rounded text-sm transition-colors ${settings.config.units === 'Imperial'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
-                    }`}
-                >
-                  °F
-                </button>
-              </div>
-            </div>
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium text-slate-200">Options</h3>   
+              <div className="pl-4 space-y-4">  
 
-            {/* Show Only When On Track Setting */}
-            <div className="flex items-center justify-between">
-              <div>
-                <h4 className="text-md font-medium text-slate-300">Show Only When On Track</h4>
-                <p className="text-sm text-slate-400">
-                  If enabled, weather will only be shown when you are driving.
-                </p>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-300">Background Opacity</span>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={settings.config.background.opacity}
+                      onChange={(e) =>
+                        handleConfigChange({ background: { opacity: parseInt(e.target.value) } })
+                      }
+                      className="w-20 h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer"
+                    />
+                    <span className="text-xs text-slate-400 w-8">
+                      {settings.config.background.opacity}%
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-300">Temperature Units</span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleConfigChange({ units: 'auto' })}
+                      className={`px-3 py-1 rounded text-sm transition-colors ${settings.config.units === 'auto'
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
+                        }`}
+                    >
+                      auto
+                    </button>
+                    <button
+                      onClick={() => handleConfigChange({ units: 'Metric' })}
+                      className={`px-3 py-1 rounded text-sm transition-colors ${settings.config.units === 'Metric'
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
+                        }`}
+                    >
+                      °C
+                    </button>
+                    <button
+                      onClick={() => handleConfigChange({ units: 'Imperial' })}
+                      className={`px-3 py-1 rounded text-sm transition-colors ${settings.config.units === 'Imperial'
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
+                        }`}
+                    >
+                      °F
+                    </button>
+                  </div>
+                </div>  
+
               </div>
-              <ToggleSwitch
-                enabled={settings.config.showOnlyWhenOnTrack ?? true}
-                onToggle={(enabled) =>
-                  handleConfigChange({ showOnlyWhenOnTrack: enabled })
-                }
-              />
-            </div>
+            </div>  
 
             {/* Session Visibility Settings */}
             <div className="space-y-4">
@@ -260,6 +253,23 @@ export const WeatherSettings = () => {
                 />
               </div>
             </div>
+
+            {/* Show Only When On Track Setting */}
+            <div className="flex items-center justify-between border-t border-slate-700/50 pl-4 pt-4">
+              <div>
+                <h4 className="text-md font-medium text-slate-300">Show Only When On Track</h4>
+                <p className="text-xs text-slate-500">
+                  If enabled, weather will only be shown when you are driving.
+                </p>
+              </div>
+              <ToggleSwitch
+                enabled={settings.config.showOnlyWhenOnTrack ?? true}
+                onToggle={(enabled) =>
+                  handleConfigChange({ showOnlyWhenOnTrack: enabled })
+                }
+              />
+            </div>
+
           </div>
         );
       }}
