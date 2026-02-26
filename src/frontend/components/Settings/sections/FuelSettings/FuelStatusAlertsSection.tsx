@@ -12,7 +12,7 @@ interface FuelStatusAlertsSectionProps {
 export const FuelStatusAlertsSection = ({ settings, onChange }: FuelStatusAlertsSectionProps) => {
   return (
     <div className="space-y-4 pb-4 mb-4 border-b border-slate-700">
-      <h4 className="text-lg font-medium text-slate-300">Fuel Status Alerts</h4>
+      <h4 className="text-lg font-medium text-slate-200">Fuel Status Alerts</h4>
 
       {/* Border Color Toggle */}
       <div className="flex items-center justify-between">

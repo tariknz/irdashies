@@ -7,7 +7,8 @@ import { useSortableList } from '../../SortableList';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import { SessionVisibility } from '../components/SessionVisibility';
 import { ToggleSwitch } from '../components/ToggleSwitch';
-import { InputWidgetSettings, SessionVisibilitySettings, SettingsTabType, TabButtonProps } from '../types';
+import { TabButton } from '../components/TabButton';
+import { InputWidgetSettings, SessionVisibilitySettings, SettingsTabType } from '../types';
 
 const SETTING_ID = 'input';
 
@@ -691,7 +692,7 @@ export const InputSettings = () => {
             {activeTab === 'display' && (
               <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium text-slate-200">Display</h3>
+                <h3 className="text-lg font-medium text-slate-200">Display Order</h3>
                 <button
                   onClick={() => {
                     const defaultOrder = sortableSettings.map((s) => s.id);
@@ -1277,16 +1278,3 @@ export const InputSettings = () => {
     </BaseSettingsSection>
   );
 };
-
-const TabButton = ({ id, activeTab, setActiveTab, children }: TabButtonProps) => (
-  <button
-    onClick={() => setActiveTab(id)}
-    className={`px-4 py-2 text-sm border-b-2 transition-colors ${
-      activeTab === id
-        ? 'text-white border-blue-500'
-        : 'text-slate-400 border-transparent hover:text-slate-200'
-    }`}
-  >
-    {children}
-  </button>
-);

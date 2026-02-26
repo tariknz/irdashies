@@ -8,16 +8,13 @@ interface FuelHistorySectionProps {
 
 export const FuelHistorySection = ({ settings, onChange }: FuelHistorySectionProps) => {
   return (
-    <div className="py-4 border-b border-white/5">
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-sm text-slate-300">Fuel History</span>
-        <DualFontSizeInput widgetId="fuelGraph" settings={settings} onChange={onChange} />
-      </div>
+    <div className="pb-4 border-b border-white/5">
+      <h3 className="text-lg font-medium text-slate-200 pb-4">Fuel History</h3>
 
       {/* Sub-settings container */}
       <div className="ml-1 pl-3 border-l border-slate-700/50 space-y-3">
         <div className="flex items-center justify-between">
-          <span className="text-xs text-slate-500">Graph Properties</span>
+          <span className="text-sm text-slate-300">Graph Properties</span>
           <div className="flex items-center gap-4">
             <BarFontSizeInput widgetId="fuelGraph" settings={settings} onChange={onChange} />
             <HeightInput widgetId="fuelGraph" settings={settings} onChange={onChange} />
@@ -29,7 +26,7 @@ export const FuelHistorySection = ({ settings, onChange }: FuelHistorySectionPro
           <div className="space-y-3">
             {/* Graph Type & Target Wrapper */}
             <div className="flex items-center justify-between">
-              <span className="text-xs text-slate-500">Graph Type</span>
+              <span className="text-sm text-slate-300">Graph Type</span>
               <select
                 value={settings.config.fuelHistoryType}
                 onChange={(e) =>
@@ -46,7 +43,7 @@ export const FuelHistorySection = ({ settings, onChange }: FuelHistorySectionPro
 
             <div className="flex items-center justify-between">
               <div className="flex flex-col">
-                <span className="text-xs text-slate-500">Target Line</span>
+                <span className="text-sm text-slate-300">Target Line</span>
                 <span className="text-xs text-slate-500">Optional ref (0 to hide)</span>
               </div>
               <div className="flex items-center gap-2">

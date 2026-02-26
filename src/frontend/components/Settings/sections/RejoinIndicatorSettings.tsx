@@ -4,10 +4,10 @@ import {
   RejoinIndicatorWidgetSettings,
   SessionVisibilitySettings,
   SettingsTabType,
-  TabButtonProps,
 } from '../types';
 import { useDashboard } from '@irdashies/context';
 import { SessionVisibility } from '../components/SessionVisibility';
+import { TabButton } from '../components/TabButton';
 
 const SETTING_ID = 'rejoin';
 
@@ -173,16 +173,3 @@ export const RejoinIndicatorSettings = () => {
     </BaseSettingsSection>
   );
 };
-
-const TabButton = ({ id, activeTab, setActiveTab, children }: TabButtonProps) => (
-  <button
-    onClick={() => setActiveTab(id)}
-    className={`px-4 py-2 text-sm border-b-2 transition-colors ${
-      activeTab === id
-        ? 'text-white border-blue-500'
-        : 'text-slate-400 border-transparent hover:text-slate-200'
-    }`}
-  >
-    {children}
-  </button>
-);

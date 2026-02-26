@@ -12,7 +12,7 @@ export const WidgetFontSizeSettings = ({ settings, onChange }: WidgetFontSizeSet
       <h3 className="text-lg font-medium text-slate-200">Widget Settings</h3>
 
       {/* Widget Styles for Fuel 2 specific components without toggles */}
-      <div className="space-y-4 pb-4 mb-4 border-b border-slate-700">
+      <div className="pl-4">
         <div className="flex items-center justify-between pb-4 border-b border-white/5">
           <div>
             <span className="text-sm text-slate-300">Header</span>

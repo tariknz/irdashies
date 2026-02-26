@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
-import { SessionVisibilitySettings, WeatherWidgetSettings, SettingsTabType, TabButtonProps } from '../types';
+import { SessionVisibilitySettings, WeatherWidgetSettings, SettingsTabType } from '../types';
 import { useDashboard } from '@irdashies/context';
 import { ToggleSwitch } from '../components/ToggleSwitch';
+import { TabButton } from '../components/TabButton';
 import { mergeDisplayOrder } from '@irdashies/utils/displayOrder';
 import { DotsSixVerticalIcon } from '@phosphor-icons/react';
 import { useSortableList } from '../../SortableList';
@@ -184,7 +185,7 @@ export const WeatherSettings = () => {
             {activeTab === 'display' && (
               <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium text-slate-200">Display</h3>
+                <h3 className="text-lg font-medium text-slate-200">Display Order</h3>
                 <button
                   onClick={() => {
                     const defaultOrder = sortableSettings.map((s) => s.id);
@@ -314,16 +315,3 @@ export const WeatherSettings = () => {
     </BaseSettingsSection>
   );
 };
-
-const TabButton = ({ id, activeTab, setActiveTab, children }: TabButtonProps) => (
-  <button
-    onClick={() => setActiveTab(id)}
-    className={`px-4 py-2 text-sm border-b-2 transition-colors ${
-      activeTab === id
-        ? 'text-white border-blue-500'
-        : 'text-slate-400 border-transparent hover:text-slate-200'
-    }`}
-  >
-    {children}
-  </button>
-);

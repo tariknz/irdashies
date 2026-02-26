@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
-import { TrackMapWidgetSettings, SessionVisibilitySettings, SettingsTabType, TabButtonProps } from '../types';
+import { TrackMapWidgetSettings, SessionVisibilitySettings, SettingsTabType } from '../types';
 import { useDashboard } from '@irdashies/context';
 import { ToggleSwitch } from '../components/ToggleSwitch';
+import { TabButton } from '../components/TabButton';
 import { SessionVisibility } from '../components/SessionVisibility';
 
 const SETTING_ID = 'map';
@@ -94,7 +95,7 @@ export const TrackMapSettings = () => {
             {/* TRACK TAB */}
             {activeTab === 'track' && (                       
               <div className="space-y-4">
-                <h3 className="text-lg font-medium text-slate-200">Track</h3>   
+                <h3 className="text-lg font-medium text-slate-200">Track Settings</h3>   
                 <div className="pl-4 space-y-4">  
               
                   <div className="space-y-2">
@@ -192,7 +193,7 @@ export const TrackMapSettings = () => {
             {/* DRIVERS TAB */}
             {activeTab === 'drivers' && (            
               <div className="space-y-4">
-                <h3 className="text-lg font-medium text-slate-200">Drivers</h3>   
+                <h3 className="text-lg font-medium text-slate-200">Driver Circles</h3>   
                 <div className="pl-4 space-y-4">  
 
                   <div className="flex items-center justify-between">
@@ -368,16 +369,3 @@ export const TrackMapSettings = () => {
     </BaseSettingsSection>
   );
 };
-
-const TabButton = ({ id, activeTab, setActiveTab, children }: TabButtonProps) => (
-  <button
-    onClick={() => setActiveTab(id)}
-    className={`px-4 py-2 text-sm border-b-2 transition-colors ${
-      activeTab === id
-        ? 'text-white border-blue-500'
-        : 'text-slate-400 border-transparent hover:text-slate-200'
-    }`}
-  >
-    {children}
-  </button>
-);

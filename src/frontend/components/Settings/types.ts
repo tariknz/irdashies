@@ -477,16 +477,7 @@ export type SettingsTabType =
   | 'layout'
   | 'header'
   | 'footer'
-  | 'pit'
-  | 'fuel'
   | 'history';
-
- export interface TabButtonProps {
-  id: SettingsTabType;
-  activeTab: SettingsTabType;
-  setActiveTab: (tab: SettingsTabType) => void;
-  children: React.ReactNode;
-};
 
 export interface BlindSpotMonitorWidgetSettings extends BaseWidgetSettings {
   config: {

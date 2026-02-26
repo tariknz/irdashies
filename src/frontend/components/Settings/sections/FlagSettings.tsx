@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
-import { FlagWidgetSettings, SessionVisibilitySettings, SettingsTabType, TabButtonProps } from '../types';
+import { FlagWidgetSettings, SessionVisibilitySettings, SettingsTabType } from '../types';
 import { useDashboard } from '@irdashies/context';
 import { ToggleSwitch } from '../components/ToggleSwitch';
+import { TabButton } from '../components/TabButton';
 import { SessionVisibility } from '../components/SessionVisibility';
 
 const SETTING_ID = 'flag';
@@ -67,7 +68,7 @@ export const FlagSettings = () => {
   
   // Tab state with persistence
   const [activeTab, setActiveTab] = useState<SettingsTabType>(
-    () => (localStorage.getItem('flagTab') as SettingsTabType) || 'display'
+    () => (localStorage.getItem('flagTab') as SettingsTabType) || 'options'
   );
 
   useEffect(() => {
@@ -89,8 +90,8 @@ export const FlagSettings = () => {
 
           {/* Tabs */}
           <div className="flex border-b border-slate-700/50">
-            <TabButton id="display" activeTab={activeTab} setActiveTab={setActiveTab}>
-              Display
+            <TabButton id="options" activeTab={activeTab} setActiveTab={setActiveTab}>
+              Options
             </TabButton>
             <TabButton id="visibility" activeTab={activeTab} setActiveTab={setActiveTab}>
               Visibility
@@ -99,10 +100,10 @@ export const FlagSettings = () => {
 
           <div className="pt-4">
 
-            {/* DISPLAY TAB */}
-            {activeTab === 'display' && (
+            {/* OPTIONS TAB */}
+            {activeTab === 'options' && (
             <div className="space-y-4">
-              <h3 className="text-lg font-medium text-slate-200">Display</h3>   
+              <h3 className="text-lg font-medium text-slate-200">Options</h3>   
               <div className="pl-4 space-y-4"> 
 
                 <div className="flex items-center justify-between">
@@ -285,16 +286,3 @@ export const FlagSettings = () => {
     </BaseSettingsSection>
   );
 };
-
-const TabButton = ({ id, activeTab, setActiveTab, children }: TabButtonProps) => (
-  <button
-    onClick={() => setActiveTab(id)}
-    className={`px-4 py-2 text-sm border-b-2 transition-colors ${
-      activeTab === id
-        ? 'text-white border-blue-500'
-        : 'text-slate-400 border-transparent hover:text-slate-200'
-    }`}
-  >
-    {children}
-  </button>
-);
