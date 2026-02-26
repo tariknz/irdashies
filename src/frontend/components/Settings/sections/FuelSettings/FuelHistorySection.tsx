@@ -1,5 +1,5 @@
 import { FuelWidgetSettings } from '../../types';
-import { DualFontSizeInput, BarFontSizeInput, HeightInput } from './FontSizeInputs';
+import { BarFontSizeInput, HeightInput } from './FontSizeInputs';
 
 interface FuelHistorySectionProps {
   settings: FuelWidgetSettings;

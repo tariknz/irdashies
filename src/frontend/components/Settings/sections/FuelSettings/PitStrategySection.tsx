@@ -1,6 +1,5 @@
 import { FuelWidgetSettings } from '../../types';
 import { ToggleSwitch } from '../../components/ToggleSwitch';
-import { DualFontSizeInput } from './FontSizeInputs';
 
 interface PitStrategySectionProps {
   settings: FuelWidgetSettings;

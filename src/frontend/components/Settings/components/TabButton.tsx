@@ -1,3 +1,5 @@
+import { SettingsTabType } from '../types';
+
  interface TabButtonProps {
   id: SettingsTabType;
   activeTab: SettingsTabType;
