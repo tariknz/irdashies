@@ -21,6 +21,7 @@ const defaultConfig: FasterCarsFromBehindWidgetSettings['config'] = {
   alignDriverBoxes: 'Top',
   closestDriverBox: 'Top',
   showName: true,
+  removeNumbersFromName: false,
   showDistance: true,
   showBadge: true,
   badgeFormat: 'license-color-rating-bw',
@@ -55,6 +56,7 @@ const migrateConfig = (
         (config.closestDriverBox as 'Top' | 'Reverse') ??
         defaultConfig.closestDriverBox,
       showName: (config.showName as boolean) ?? defaultConfig.showName,
+      removeNumbersFromName: (config.removeNumbersFromName as boolean) ?? defaultConfig.removeNumbersFromName,
       showDistance:
         (config.showDistance as boolean) ?? defaultConfig.showDistance,
       showBadge: (config.showBadge as boolean) ?? defaultConfig.showBadge,

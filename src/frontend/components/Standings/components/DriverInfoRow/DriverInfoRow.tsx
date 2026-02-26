@@ -263,6 +263,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
             penalty={penalty}
             slowdown={slowdown}
             showStatusBadges={config?.driverName?.showStatusBadges ?? true}
+            removeNumbersFromName={config?.driverName?.removeNumbersFromName ?? false}
             fullName={name}
             nameFormat={config?.driverName?.nameFormat}
           />

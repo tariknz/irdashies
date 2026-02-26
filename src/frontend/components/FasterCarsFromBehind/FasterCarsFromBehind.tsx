@@ -65,6 +65,8 @@ export const FasterCarsFromBehindDisplay = ({
   const green = 100 - (percent || 0);
   const background = getTailwindStyle(classColor, undefined, true).classHeader;
 
+  name = settings?.removeNumbersFromName ? name.replace(/\d/g, '') : name;
+
   return (
     <div
       className={`w-full rounded-sm ${background} ${animate}`}

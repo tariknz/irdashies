@@ -114,6 +114,7 @@ export interface StandingsWidgetSettings extends BaseWidgetSettings {
     driverName: {
       enabled: boolean;
       showStatusBadges: boolean;
+      removeNumbersFromName: boolean,
       nameFormat:
         | 'name-middlename-surname'
         | 'name-m.-surname'
@@ -225,6 +226,7 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
     driverName: {
       enabled: boolean;
       showStatusBadges: boolean;
+      removeNumbersFromName: boolean,
       nameFormat:
         | 'name-middlename-surname'
         | 'name-m.-surname'
@@ -558,6 +560,7 @@ export interface FasterCarsFromBehindWidgetSettings extends BaseWidgetSettings {
     alignDriverBoxes: 'Top' | 'Bottom';
     closestDriverBox: 'Top' | 'Reverse';
     showName: boolean;
+    removeNumbersFromName: boolean;
     showDistance: boolean;
     showBadge: boolean;
     badgeFormat: string;
