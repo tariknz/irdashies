@@ -186,6 +186,25 @@ export const FasterCarsFromBehindSettings = () => {
                     />
                   </div>
 
+                  {settings.config.showName && (
+                  <div className="flex items-center justify-between indent-8">
+                    <div>
+                      <h4 className="text-md font-medium text-slate-300">Remove Numbers From Names</h4>
+                      <span className="block text-xs text-slate-500">
+                        Remove numbers from the displayed driver name.
+                      </span>
+                    </div>
+                    <ToggleSwitch
+                      enabled={settings.config.removeNumbersFromName}
+                      onToggle={(newValue) =>
+                        handleConfigChange({
+                          removeNumbersFromName: newValue,
+                        })
+                      }
+                    />
+                  </div>
+                  )}
+
                   {/* Show Badge Section */}
                   <div className="flex items-center justify-between">
                     <div>
