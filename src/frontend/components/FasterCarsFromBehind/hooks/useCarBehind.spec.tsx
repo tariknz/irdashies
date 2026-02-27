@@ -60,6 +60,7 @@ describe('useCarBehind', () => {
     alignDriverBoxes: 'Top' as const,
     closestDriverBox: 'Top' as const,
     showName: true,
+    removeNumbersFromName: false,
     showDistance: true,
     showBadge: true,
     badgeFormat: 'license-color-rating-bw',

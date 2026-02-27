@@ -169,7 +169,7 @@ export const drawDrivers = (
         if (onPitRoad) {
           displayText = 'P';
         } else if (displayMode === 'livePosition') {
-          const livePosition = driverLivePositions[driver.CarIdx];
+          const livePosition = driverLivePositions[driver.CarIdx] ?? sessionPosition;
           displayText =
             livePosition && livePosition > 0
               ? livePosition.toString()

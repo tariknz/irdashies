@@ -225,8 +225,8 @@ export const FlatTrackMapCanvas = ({
           let displayText = '';
           if (onPitRoad) {
             displayText = 'P';
-          } else if (displayMode === 'livePosition') {
-            const livePosition = driverLivePositions[driver.CarIdx];
+          } else if (displayMode === 'livePosition') {           
+            const livePosition = driverLivePositions[driver.CarIdx] ?? classPosition;
             displayText =
               livePosition !== undefined && livePosition > 0
                 ? livePosition.toString()

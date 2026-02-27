@@ -64,6 +64,7 @@ const defaultConfig: RelativeWidgetSettings['config'] = {
   driverName: {
     enabled: true,
     showStatusBadges: true,
+    removeNumbersFromName: false,
     nameFormat: 'name-surname',
   },
   teamName: { enabled: false },
@@ -148,6 +149,9 @@ const migrateConfig = (
       showStatusBadges:
         (config.driverName as { showStatusBadges?: boolean })
           ?.showStatusBadges ?? true,
+        removeNumbersFromName:
+        (config.driverName as { removeNumbersFromName?: boolean })
+          ?.removeNumbersFromName ?? false,
       nameFormat:
         (
           config.driverName as {
@@ -604,7 +608,7 @@ const DisplaySettingsList = ({
             {setting.hasSubSetting &&
               setting.configKey === 'pitStatus' &&
               settings.config.pitStatus.enabled && (
-                <div className="flex items-center justify-between pl-8 mt-2">
+                <div className="flex items-center justify-between pl-8 mt-2 indent-8">
                   <span className="text-sm text-slate-300">Pit Time</span>
                   <ToggleSwitch
                     enabled={settings.config.pitStatus.showPitTime ?? false}
@@ -649,11 +653,34 @@ const DisplaySettingsList = ({
                     </option>
                   </select>
                 </div>
+              )}            
+            {setting.hasSubSetting &&
+              setting.configKey === 'driverName' &&
+              settings.config.driverName.enabled && (
+                <div className="flex items-center justify-between pl-8 mt-2 indent-8">
+                  <span className="text-sm text-slate-300">Remove Numbers From Names</span>
+                  <ToggleSwitch
+                    enabled={settings.config.driverName.removeNumbersFromName}
+                    onToggle={(enabled) => {
+                      const cv = settings.config[setting.configKey] as {
+                        enabled: boolean;
+                        removeNumbersFromName: boolean;
+                        [key: string]: unknown;
+                      };
+                      handleConfigChange({
+                        [setting.configKey]: {
+                          ...cv,
+                          removeNumbersFromName: enabled,
+                        },
+                      });
+                    }}
+                  />
+                </div>
               )}
             {setting.hasSubSetting &&
               setting.configKey === 'driverName' &&
               settings.config.driverName.enabled && (
-                <div className="flex items-center justify-between pl-8 mt-2">
+                <div className="flex items-center justify-between pl-8 mt-2 indent-8">
                   <span className="text-sm text-slate-300">Status Badges</span>
                   <ToggleSwitch
                     enabled={settings.config.driverName.showStatusBadges}
@@ -676,7 +703,7 @@ const DisplaySettingsList = ({
             {setting.hasSubSetting &&
               setting.configKey === 'carManufacturer' &&
               settings.config.carManufacturer.enabled && (
-                <div className="flex items-center justify-between pl-8 mt-2">
+                <div className="flex items-center justify-between pl-8 mt-2 indent-8">
                   <span className="text-sm text-slate-300">
                     Hide If Single Make
                   </span>
