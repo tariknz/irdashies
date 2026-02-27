@@ -173,16 +173,18 @@ export const TrackMapSettings = () => {
                 />
 
                 {settings.config.showCarNumbers && (
-                  <SettingButtonGroupRow<'carNumber' | 'sessionPosition' | 'livePosition'>
-                    title="Display Mode"
-                    value={settings.config.displayMode}
-                    options={[
-                      { label: 'Car Number', value: 'carNumber' },
-                      { label: 'Session Position', value: 'sessionPosition' },
-                      { label: 'Live Position', value: 'livePosition' },
-                    ]}
-                    onChange={(v) => handleConfigChange({ displayMode: v })}
-                  />                  
+                  <SettingsSection>
+                    <SettingButtonGroupRow<'carNumber' | 'sessionPosition' | 'livePosition'>
+                      title="Display Mode"
+                      value={settings.config.displayMode}
+                      options={[
+                        { label: 'Car Number', value: 'carNumber' },
+                        { label: 'Session Position', value: 'sessionPosition' },
+                        { label: 'Live Position', value: 'livePosition' },
+                      ]}
+                      onChange={(v) => handleConfigChange({ displayMode: v })}
+                    /> 
+                  </SettingsSection>                 
                 )}
 
                 <SettingSliderRow

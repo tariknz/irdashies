@@ -161,14 +161,16 @@ export const FasterCarsFromBehindSettings = () => {
                 />                
 
                 {settings.config.showName && (
-                  <SettingToggleRow
-                    title="Remove Numbers From Names"
-                    description="Remove numbers from the displayed driver name."
-                    enabled={settings.config.removeNumbersFromName ?? false}
-                    onToggle={(newValue) =>
-                      handleConfigChange({ removeNumbersFromName: newValue })
-                    }
-                  /> 
+                  <SettingsSection>
+                    <SettingToggleRow
+                      title="Remove Numbers From Names"
+                      description="Remove numbers from the displayed driver name."
+                      enabled={settings.config.removeNumbersFromName ?? false}
+                      onToggle={(newValue) =>
+                        handleConfigChange({ removeNumbersFromName: newValue })
+                      }
+                    /> 
+                  </SettingsSection>
                 )}
 
                 {/* Show Badge Section */}

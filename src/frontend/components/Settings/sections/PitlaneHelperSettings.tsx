@@ -99,9 +99,10 @@ export const PitlaneHelperSettings = () => {
             {/* OPTIONS TAB */}
             {activeTab === 'options' && (
               <>
-              <SettingsSection title="Visibility">
-              
-                <SettingToggleRow
+               {/* Display Settings */}
+              <SettingsSection title="Display">  
+
+                  <SettingToggleRow
                     title="Show when approaching pit"
                     description="Display overlay before entering pit lane"
                     enabled={settings.config.showMode === 'approaching'}
@@ -111,62 +112,20 @@ export const PitlaneHelperSettings = () => {
                   />
 
                   {settings.config.showMode === 'approaching' && (
-                    <SettingSliderRow
-                      title="Approach Distance"
-                      description="Size of the circle for other drivers (matches curved track map scale)"
-                      value={settings.config.approachDistance}
-                      units="m"
-                      min={100}
-                      max={500}
-                      step={10}
-                      onChange={(v) =>
-                        handleConfigChange({ approachDistance: v })
-                      }
-                    />
+                    <SettingsSection>
+                      <SettingSliderRow
+                        title="Approach Distance"                     
+                        value={settings.config.approachDistance}
+                        units="m"
+                        min={100}
+                        max={500}
+                        step={10}
+                        onChange={(v) =>
+                          handleConfigChange({ approachDistance: v })
+                        }
+                      />
+                    </SettingsSection>
                   )}
-
-              </SettingsSection>      
-      
-              {/* Warning Settings */}
-              <SettingsSection title="Warnings">
-            
-                <SettingToggleRow
-                  title="Pit Limiter Warning"
-                  description="Flash warning if entering pit without limiter"
-                  enabled={settings.config.enablePitLimiterWarning}
-                  onToggle={(enabled) =>
-                    handleConfigChange({ enablePitLimiterWarning: enabled })
-                  }
-                />
-
-                <SettingToggleRow
-                  title="Early Pitbox Warning"
-                  description="Alert when pitbox is near pit entry"
-                  enabled={settings.config.enableEarlyPitboxWarning}
-                  onToggle={(enabled) =>
-                    handleConfigChange({ enableEarlyPitboxWarning: enabled })
-                  }
-                />
-
-                {settings.config.enableEarlyPitboxWarning && (
-                  <SettingSliderRow
-                    title="Early Warning Threshold"
-                    description="Distance from pitbox to trigger warning (meters)"
-                    value={settings.config.earlyPitboxThreshold}
-                    units="m"
-                    min={25}
-                    max={300}
-                    step={10}
-                    onChange={(v) =>
-                      handleConfigChange({ earlyPitboxThreshold: v })
-                    }
-                  />
-                )}
-
-              </SettingsSection>    
-
-              {/* Display Settings */}
-              <SettingsSection title="Display">  
 
                  <SettingToggleRow
                   title="Show Pitlane Traffic"
@@ -207,8 +166,46 @@ export const PitlaneHelperSettings = () => {
                     handleConfigChange({ background: { opacity: v } })
                   }
                 />
+                
+              </SettingsSection>       
+      
+              {/* Warning Settings */}
+              <SettingsSection title="Warnings">
+            
+                <SettingToggleRow
+                  title="Pit Limiter Warning"
+                  description="Flash warning if entering pit without limiter"
+                  enabled={settings.config.enablePitLimiterWarning}
+                  onToggle={(enabled) =>
+                    handleConfigChange({ enablePitLimiterWarning: enabled })
+                  }
+                />
 
-              </SettingsSection>    
+                <SettingToggleRow
+                  title="Early Pitbox Warning"
+                  description="Alert when pitbox is near pit entry"
+                  enabled={settings.config.enableEarlyPitboxWarning}
+                  onToggle={(enabled) =>
+                    handleConfigChange({ enableEarlyPitboxWarning: enabled })
+                  }
+                />
+
+                {settings.config.enableEarlyPitboxWarning && (
+                  <SettingSliderRow
+                    title="Early Warning Threshold"
+                    description="Distance from pitbox to trigger warning (meters)"
+                    value={settings.config.earlyPitboxThreshold}
+                    units="m"
+                    min={25}
+                    max={300}
+                    step={10}
+                    onChange={(v) =>
+                      handleConfigChange({ earlyPitboxThreshold: v })
+                    }
+                  />
+                )}
+
+              </SettingsSection>  
   
               {/* Pit Exit Inputs Settings */}
               <SettingsSection title="Pit Exit Inputs">  
