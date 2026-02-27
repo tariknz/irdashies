@@ -8,7 +8,7 @@ interface WidgetFontSizeSettingsProps {
 
 export const WidgetFontSizeSettings = ({ settings, onChange }: WidgetFontSizeSettingsProps) => {
   return (
-    <div className="space-y-4">
+    <>
       {/* Widget Styles for Fuel 2 specific components without toggles */}     
 
       <DualFontSizeInput 
@@ -43,6 +43,6 @@ export const WidgetFontSizeSettings = ({ settings, onChange }: WidgetFontSizeSet
         onChange={onChange} 
       />
       
-    </div>
+    </>
   );
 };

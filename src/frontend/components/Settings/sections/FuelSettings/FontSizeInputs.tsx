@@ -12,7 +12,7 @@ export const DualFontSizeInput = ({ widgetId, title, description, settings, onCh
   };
 
   return (
-    <div className="flex items-center justify-between py-4 border-b border-white/5">
+    <div className="flex items-center justify-between py-4 mb-0 border-b border-white/5">
       <div>
         <span className="text-sm text-slate-300">{title}</span>
         {description && (
