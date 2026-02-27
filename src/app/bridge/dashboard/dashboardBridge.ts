@@ -45,7 +45,9 @@ export const dashboardBridge: DashboardBridge = {
     // Not used by component server, but required by interface
     return undefined;
   },
-  dashboardUpdated: (callback: (dashboard: DashboardLayout, profileId?: string) => void) => {
+  dashboardUpdated: (
+    callback: (dashboard: DashboardLayout, profileId?: string) => void
+  ) => {
     dashboardUpdateCallbacks.add(callback);
     return () => dashboardUpdateCallbacks.delete(callback);
   },
@@ -133,7 +135,10 @@ export const dashboardBridge: DashboardBridge = {
     const currentProfileId = getCurrentProfileId();
     return getProfile(currentProfileId);
   },
-  updateProfileTheme: async (profileId: string, themeSettings: DashboardProfile['themeSettings']) => {
+  updateProfileTheme: async (
+    profileId: string,
+    themeSettings: DashboardProfile['themeSettings']
+  ) => {
     updateProfileTheme(profileId, themeSettings);
   },
   stop: () => {
@@ -177,6 +182,8 @@ export async function publishDashboardUpdates(
       const existingDashboards = listDashboards();
       existingDashboards[currentProfileId] = dashboard;
       writeData('dashboards', existingDashboards);
+      // Create windows for any new displays the widget may have been dragged to
+      overlayManager.ensureDisplayWindows(dashboard);
       // Still notify renderer of the update
       overlayManager.publishMessage('dashboardUpdated', dashboard);
       return;
@@ -283,18 +290,25 @@ export async function publishDashboardUpdates(
     return dashboardBridge.getDashboardForProfile(profileId);
   });
 
-  ipcMain.handle('updateProfileTheme', (_, profileId: string, themeSettings: DashboardProfile['themeSettings']) => {
-    updateProfileTheme(profileId, themeSettings);
+  ipcMain.handle(
+    'updateProfileTheme',
+    (
+      _,
+      profileId: string,
+      themeSettings: DashboardProfile['themeSettings']
+    ) => {
+      updateProfileTheme(profileId, themeSettings);
 
-    // If updating the current profile, force refresh overlays
-    const currentProfileId = getCurrentProfileId();
-    if (profileId === currentProfileId) {
-      const dashboard = getDashboard(profileId);
-      if (dashboard) {
-        overlayManager.forceRefreshOverlays(dashboard);
+      // If updating the current profile, force refresh overlays
+      const currentProfileId = getCurrentProfileId();
+      if (profileId === currentProfileId) {
+        const dashboard = getDashboard(profileId);
+        if (dashboard) {
+          overlayManager.forceRefreshOverlays(dashboard);
+        }
       }
     }
-  });
+  );
 
   ipcMain.handle('autostart:set', (_event, enabled: boolean) => {
     app.setLoginItemSettings({
@@ -307,7 +321,7 @@ export async function publishDashboardUpdates(
   ipcMain.handle('autostart:get', () => {
     return app.getLoginItemSettings().openAtLogin;
   });
-};
+}
 
 /**
  * Notify all registered callbacks that demo mode has changed
@@ -326,4 +340,3 @@ export function notifyDemoModeChanged(isDemoMode: boolean) {
     }
   });
 }
-

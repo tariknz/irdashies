@@ -15,6 +15,9 @@ export const defaultDashboard: DashboardLayout = {
         iratingChange: {
           enabled: true,
         },
+        positionChange: {
+          enabled: false,
+        },
         badge: {
           enabled: true,
           badgeFormat: 'license-color-rating-bw',
@@ -48,6 +51,7 @@ export const defaultDashboard: DashboardLayout = {
         driverName: {
           enabled: true,
           showStatusBadges: true,
+          removeNumbersFromName: false,
         },
         teamName: {
           enabled: false,
@@ -188,6 +192,7 @@ export const defaultDashboard: DashboardLayout = {
           'carManufacturer',
           'badge',
           'iratingChange',
+          'positionChange',
           'gap',
           'interval',
           'fastestTime',
@@ -312,6 +317,7 @@ export const defaultDashboard: DashboardLayout = {
         driverName: {
           enabled: true,
           showStatusBadges: true,
+          removeNumbersFromName: false,
         },
         teamName: {
           enabled: false,
@@ -328,6 +334,9 @@ export const defaultDashboard: DashboardLayout = {
           badgeFormat: 'license-color-rating-bw',
         },
         iratingChange: {
+          enabled: false,
+        },
+        positionChange: {
           enabled: false,
         },
         delta: {
@@ -355,6 +364,7 @@ export const defaultDashboard: DashboardLayout = {
           'carManufacturer',
           'badge',
           'iratingChange',
+          'positionChange',
           'delta',
           'fastestTime',
           'lastTime',
@@ -493,8 +503,10 @@ export const defaultDashboard: DashboardLayout = {
         enableTurnNames: false,
         showCarNumbers: true,
         invertTrackColors: false,
+        highContrastTurns: false,
         driverCircleSize: 40,
         playerCircleSize: 40,
+        trackmapFontSize: 100,
         trackLineWidth: 20,
         trackOutlineWidth: 40,
         useHighlightColor: false,
@@ -522,6 +534,7 @@ export const defaultDashboard: DashboardLayout = {
         displayMode: 'carNumber',
         driverCircleSize: 40,
         playerCircleSize: 40,
+        trackmapFontSize: 100,
         trackLineWidth: 20,
         trackOutlineWidth: 40,
         invertTrackColors: false,

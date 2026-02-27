@@ -12,15 +12,15 @@ export const HistoricalStorageSection = ({
   onChange,
 }: HistoricalStorageSectionProps) => {
   return (
-    <div className="space-y-4 border-t border-slate-600/50 pt-6">
-      <h3 className="text-md font-medium text-slate-200">Historical Storage</h3>
+    <div className="space-y-4">
+      <h3 className="text-lg font-medium text-slate-200">Historical Storage</h3>
       <div className="bg-slate-800/50 p-4 rounded border border-slate-700 space-y-4">
         <div className="flex items-center justify-between">
           <div>
             <span className="text-sm font-medium text-slate-300">
               Enable Historical Persistence
             </span>
-            <span className="block text-[10px] text-slate-500">
+            <span className="block text-xs text-slate-500">
               Saves the last 10 laps for each car/track to provide immediate
               estimates.
             </span>
@@ -36,7 +36,7 @@ export const HistoricalStorageSection = ({
             <span className="text-sm font-medium text-slate-300">
               Enable Debug Logging
             </span>
-            <span className="block text-[10px] text-slate-500">
+            <span className="block text-xs text-slate-500">
               Log comprehensive data to file for troubleshooting.
             </span>
           </div>
@@ -52,7 +52,7 @@ export const HistoricalStorageSection = ({
               <span className="text-sm font-medium text-slate-300 text-red-400">
                 Clear Data Storage
               </span>
-              <span className="block text-[10px] text-slate-500">
+              <span className="block text-xs text-slate-500">
                 Wipe all saved fuel consumption history from the database.
               </span>
             </div>

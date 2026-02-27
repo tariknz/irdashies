@@ -8,7 +8,11 @@
       "Bash(npm test:*)",
       "Bash(gh pr view:*)",
       "Bash(git pull:*)",
-      "mcp__ide__getDiagnostics"
+      "mcp__ide__getDiagnostics",
+      "Bash(npx eslint:*)",
+      "WebFetch(domain:github.com)",
+      "WebSearch",
+      "Bash(xargs cat:*)"
     ],
     "deny": [],
     "ask": []

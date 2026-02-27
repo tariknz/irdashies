@@ -1,9 +1,26 @@
 @import url('https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&display=swap')
 layer(base);
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans:ital,wght@0,100..900;1,100..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,100..900;1,100..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,100..900;1,100..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100..900;1,100..900&display=swap');
+
 @import 'tailwindcss';
+
+.overlay-window.overlay-theme-font-weight-light {
+  font-weight: var(--font-weight-light);
+}
 
 .overlay-window.overlay-theme-font-weight-normal {
   font-weight: var(--font-weight-normal);
+}
+
+.overlay-window.overlay-theme-font-weight-medium {
+  font-weight: var(--font-weight-medium);
+}
+
+.overlay-window.overlay-theme-font-weight-semibold {
+  font-weight: var(--font-weight-semibold);
 }
 
 .overlay-window.overlay-theme-font-weight-bold {
@@ -38,7 +55,8 @@ layer(base);
   }
 
   @keyframes pulse {
-    0%, 100% {
+    0%,
+    100% {
       opacity: 1;
     }
     50% {
@@ -47,7 +65,8 @@ layer(base);
   }
 
   @keyframes blink {
-    0%, 100% {
+    0%,
+    100% {
       opacity: 1;
     }
     50% {
@@ -60,67 +79,155 @@ html {
   color-scheme: dark;
 }
 
+.overlay-window.overlay-theme-font-face-lato {
+  font-family: 'Lato', sans-serif;
+}
+
+.overlay-window.overlay-theme-font-face-notosans {
+  font-family: 'Noto Sans', sans-serif;
+}
+
+.overlay-window.overlay-theme-font-face-figtree {
+  font-family: 'Figtree', sans-serif;
+}
+
+.overlay-window.overlay-theme-font-face-inter {
+  font-family: 'Inter', sans-serif;
+}
+
+.overlay-window.overlay-theme-font-face-roboto {
+  font-family: 'Roboto', sans-serif;
+}
+
 /* Theme classes for different font sizes */
 .overlay-window.overlay-theme-xs {
-  --text-xs: 8px;
-  --text-sm: 10px;
+  --text-xs: 10px;
+  --text-sm: 11px;
   --text-base: 12px;
-  --text-lg: 14px;
-  --text-xl: 16px;
+  --text-lg: 13px;
+  --text-xl: 14px;
+  --text-2xl: 15px;
+  --text-3xl: 16px;
 }
 
 .overlay-window.overlay-theme-sm {
-  --text-xs: 10px;
+  --text-xs: 11px;
   --text-sm: 12px;
-  --text-base: 14px;
-  --text-lg: 16px;
-  --text-xl: 18px;
+  --text-base: 13px;
+  --text-lg: 14px;
+  --text-xl: 15px;
+  --text-2xl: 16px;
+  --text-3xl: 17px;
 }
 
 .overlay-window.overlay-theme-md {
   --text-xs: 12px;
-  --text-sm: 14px;
-  --text-base: 16px;
-  --text-lg: 18px;
-  --text-xl: 20px;
+  --text-sm: 13px;
+  --text-base: 14px;
+  --text-lg: 15px;
+  --text-xl: 16px;
+  --text-2xl: 17px;
+  --text-3xl: 18px;
 }
 
 .overlay-window.overlay-theme-lg {
-  --text-xs: 14px;
-  --text-sm: 16px;
-  --text-base: 18px;
-  --text-lg: 20px;
-  --text-xl: 22px;
+  --text-xs: 13px;
+  --text-sm: 14px;
+  --text-base: 15px;
+  --text-lg: 16px;
+  --text-xl: 17px;
+  --text-2xl: 18px;
+  --text-3xl: 19px;
 }
 
 .overlay-window.overlay-theme-xl {
-  --text-xs: 16px;
-  --text-sm: 18px;
-  --text-base: 20px;
-  --text-lg: 22px;
-  --text-xl: 24px;
-  --text-2xl: 28px;
-  --text-3xl: 32px;
+  --text-xs: 14px;
+  --text-sm: 15px;
+  --text-base: 16px;
+  --text-lg: 17px;
+  --text-xl: 18px;
+  --text-2xl: 19px;
+  --text-3xl: 20px;
 }
 
 .overlay-window.overlay-theme-2xl {
-  --text-xs: 18px;
-  --text-sm: 20px;
-  --text-base: 22px;
-  --text-lg: 24px;
-  --text-xl: 26px;
-  --text-2xl: 32px;
-  --text-3xl: 36px;
+  --text-xs: 15px;
+  --text-sm: 16px;
+  --text-base: 17px;
+  --text-lg: 18px;
+  --text-xl: 19px;
+  --text-2xl: 20px;
+  --text-3xl: 21px;
 }
 
 .overlay-window.overlay-theme-3xl {
+  --text-xs: 16px;
+  --text-sm: 17px;
+  --text-base: 18px;
+  --text-lg: 19px;
+  --text-xl: 20px;
+  --text-2xl: 21px;
+  --text-3xl: 22px;
+}
+
+.overlay-window.overlay-theme-4xl {
+  --text-xs: 17px;
+  --text-sm: 18px;
+  --text-base: 19px;
+  --text-lg: 20px;
+  --text-xl: 21px;
+  --text-2xl: 22px;
+  --text-3xl: 23px;
+}
+
+.overlay-window.overlay-theme-5xl {
+  --text-xs: 18px;
+  --text-sm: 19px;
+  --text-base: 20px;
+  --text-lg: 21px;
+  --text-xl: 22px;
+  --text-2xl: 23px;
+  --text-3xl: 24px;
+}
+
+.overlay-window.overlay-theme-6xl {
+  --text-xs: 19px;
+  --text-sm: 20px;
+  --text-base: 21px;
+  --text-lg: 22px;
+  --text-xl: 23px;
+  --text-2xl: 24px;
+  --text-3xl: 25px;
+}
+
+.overlay-window.overlay-theme-7xl {
   --text-xs: 20px;
+  --text-sm: 21px;
+  --text-base: 22px;
+  --text-lg: 23px;
+  --text-xl: 24px;
+  --text-2xl: 25px;
+  --text-3xl: 26px;
+}
+
+.overlay-window.overlay-theme-8xl {
+  --text-xs: 21px;
   --text-sm: 22px;
+  --text-base: 23px;
+  --text-lg: 24px;
+  --text-xl: 25px;
+  --text-2xl: 26px;
+  --text-3xl: 27px;
+}
+
+.overlay-window.overlay-theme-9xl {
+  --text-xs: 22px;
+  --text-sm: 23px;
   --text-base: 24px;
-  --text-lg: 26px;
-  --text-xl: 28px;
-  --text-2xl: 36px;
-  --text-3xl: 40px;
+  --text-lg: 25px;
+  --text-xl: 26px;
+  --text-2xl: 27px;
+  --text-3xl: 28px;
 }
 
 .overlay-window.overlay-theme-color-black {
