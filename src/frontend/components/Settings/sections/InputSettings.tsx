@@ -643,11 +643,11 @@ export const InputSettings = () => {
 
   // Tab state with persistence
   const [activeTab, setActiveTab] = useState<SettingsTabType>(
-    () => (localStorage.getItem('weatherTab') as SettingsTabType) || 'display'
+    () => (localStorage.getItem('inputTab') as SettingsTabType) || 'display'
   );
 
   useEffect(() => {
-    localStorage.setItem('weatherTab', activeTab);
+    localStorage.setItem('inputTab', activeTab);
   }, [activeTab]);
 
   if (!currentDashboard) {
