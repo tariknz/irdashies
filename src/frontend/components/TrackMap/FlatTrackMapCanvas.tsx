@@ -16,6 +16,7 @@ export interface FlatTrackMapCanvasProps {
   trackOutlineWidth?: number;
   invertTrackColors?: boolean;
   driverLivePositions?: Record<number, number>;
+  carIdxIsOnPitRoad?: number[];
 }
 
 const HORIZONTAL_PADDING = 40; // Fixed padding on each side
@@ -32,6 +33,7 @@ export const FlatTrackMapCanvas = ({
   trackOutlineWidth = 40,
   invertTrackColors = false,
   driverLivePositions = [0, 0],
+  carIdxIsOnPitRoad = [],
 }: FlatTrackMapCanvasProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
@@ -192,13 +194,18 @@ export const FlatTrackMapCanvas = ({
     [...drivers]
       .sort((a, b) => Number(a.isPlayer) - Number(b.isPlayer))
       .forEach(({ driver, progress, isPlayer, classPosition }) => {
-        const color = driverColors[driver.CarIdx];
+        let color = driverColors[driver.CarIdx];
         if (!color) return;
 
         const x = HORIZONTAL_PADDING + progress * usableWidth;
         const radius =
           (isPlayer ? playerCircleSize : driverCircleSize) * circleScale;
         const fontSize = radius * (trackmapFontSize / 100);
+
+        const onPitRoad = !!carIdxIsOnPitRoad?.[driver.CarIdx];
+        if (onPitRoad) {
+          color = { fill: '#999999', text: 'white' };
+        }
 
         ctx.fillStyle = color.fill;
         ctx.beginPath();
@@ -217,7 +224,9 @@ export const FlatTrackMapCanvas = ({
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
           let displayText = '';
-          if (displayMode === 'livePosition') {
+          if (onPitRoad) {
+            displayText = 'P';
+          } else if (displayMode === 'livePosition') {
             const livePosition =
               driverLivePositions[driver.CarIdx] ?? classPosition;
             displayText =
@@ -254,6 +263,7 @@ export const FlatTrackMapCanvas = ({
     trackOutlineWidth,
     invertTrackColors,
     driverLivePositions,
+    carIdxIsOnPitRoad,
   ]);
 
   return (
