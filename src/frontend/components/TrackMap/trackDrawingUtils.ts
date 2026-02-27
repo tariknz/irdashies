@@ -161,7 +161,7 @@ export const drawDrivers = (
         ctx.font = `${fontSize}px sans-serif`;
         let displayText = '';       
         if (displayMode === 'livePosition') {
-          const livePosition = driverLivePositions[driver.CarIdx];
+          const livePosition = driverLivePositions[driver.CarIdx] ?? sessionPosition;
           displayText =
             livePosition && livePosition > 0
               ? livePosition.toString()
