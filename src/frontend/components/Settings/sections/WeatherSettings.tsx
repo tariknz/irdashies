@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
-import { SessionVisibilitySettings, WeatherWidgetSettings } from '../types';
+import { SessionVisibilitySettings, WeatherWidgetSettings, SettingsTabType } from '../types';
 import { useDashboard } from '@irdashies/context';
 import { ToggleSwitch } from '../components/ToggleSwitch';
+import { TabButton } from '../components/TabButton';
 import { mergeDisplayOrder } from '@irdashies/utils/displayOrder';
 import { DotsSixVerticalIcon } from '@phosphor-icons/react';
 import { useSortableList } from '../../SortableList';
@@ -133,6 +134,15 @@ export const WeatherSettings = () => {
 
   const [itemsOrder, setItemsOrder] = useState(settings.config.displayOrder);
 
+  // Tab state with persistence
+  const [activeTab, setActiveTab] = useState<SettingsTabType>(
+    () => (localStorage.getItem('weatherTab') as SettingsTabType) || 'display'
+  );
+
+  useEffect(() => {
+    localStorage.setItem('weatherTab', activeTab);
+  }, [activeTab]);
+
   if (!currentDashboard) {
     return <>Loading...</>;
   }
@@ -153,13 +163,29 @@ export const WeatherSettings = () => {
           handleConfigChange({ displayOrder: newOrder });
         };
 
-
         return (
           <div className="space-y-4">
-            {/* Display Settings */}
-            <div className="space-y-4">
+
+          {/* Tabs */}
+          <div className="flex border-b border-slate-700/50">
+            <TabButton id="display" activeTab={activeTab} setActiveTab={setActiveTab}>
+              Display
+            </TabButton>
+            <TabButton id="options" activeTab={activeTab} setActiveTab={setActiveTab}>
+              Options
+            </TabButton>
+            <TabButton id="visibility" activeTab={activeTab} setActiveTab={setActiveTab}>
+              Visibility
+            </TabButton>
+          </div>
+
+          <div className="pt-4">
+
+            {/* DISPLAY TAB */}
+            {activeTab === 'display' && (
+              <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium text-slate-200">Display</h3>
+                <h3 className="text-lg font-medium text-slate-200">Display Order</h3>
                 <button
                   onClick={() => {
                     const defaultOrder = sortableSettings.map((s) => s.id);
@@ -179,88 +205,111 @@ export const WeatherSettings = () => {
                   handleConfigChange={handleConfigChange}
                 />
               </div>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-slate-300">Background Opacity</span>
-              <div className="flex items-center gap-2">
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  value={settings.config.background.opacity}
-                  onChange={(e) =>
-                    handleConfigChange({ background: { opacity: parseInt(e.target.value) } })
-                  }
-                  className="w-20 h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer"
-                />
-                <span className="text-xs text-slate-400 w-8">
-                  {settings.config.background.opacity}%
-                </span>
-              </div>
-            </div>
+            </div>            
+            )}
 
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-slate-300">Temperature Units</span>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => handleConfigChange({ units: 'auto' })}
-                  className={`px-3 py-1 rounded text-sm transition-colors ${settings.config.units === 'auto'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
-                    }`}
-                >
-                  auto
-                </button>
-                <button
-                  onClick={() => handleConfigChange({ units: 'Metric' })}
-                  className={`px-3 py-1 rounded text-sm transition-colors ${settings.config.units === 'Metric'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
-                    }`}
-                >
-                  °C
-                </button>
-                <button
-                  onClick={() => handleConfigChange({ units: 'Imperial' })}
-                  className={`px-3 py-1 rounded text-sm transition-colors ${settings.config.units === 'Imperial'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
-                    }`}
-                >
-                  °F
-                </button>
-              </div>
-            </div>
+            {/* OPTIONS TAB */}
+            {activeTab === 'options' && (
+              <div className="space-y-4">
+              <h3 className="text-lg font-medium text-slate-200">Options</h3>   
+              <div className="pl-4 space-y-4">  
 
-            {/* Show Only When On Track Setting */}
-            <div className="flex items-center justify-between">
-              <div>
-                <h4 className="text-md font-medium text-slate-300">Show Only When On Track</h4>
-                <p className="text-sm text-slate-400">
-                  If enabled, weather will only be shown when you are driving.
-                </p>
-              </div>
-              <ToggleSwitch
-                enabled={settings.config.showOnlyWhenOnTrack ?? true}
-                onToggle={(enabled) =>
-                  handleConfigChange({ showOnlyWhenOnTrack: enabled })
-                }
-              />
-            </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-300">Background Opacity</span>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={settings.config.background.opacity}
+                      onChange={(e) =>
+                        handleConfigChange({ background: { opacity: parseInt(e.target.value) } })
+                      }
+                      className="w-20 h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer"
+                    />
+                    <span className="text-xs text-slate-400 w-8">
+                      {settings.config.background.opacity}%
+                    </span>
+                  </div>
+                </div>
 
-            {/* Session Visibility Settings */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium text-slate-200">Session Visibility</h3>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-300">Temperature Units</span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleConfigChange({ units: 'auto' })}
+                      className={`px-3 py-1 rounded text-sm transition-colors ${settings.config.units === 'auto'
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
+                        }`}
+                    >
+                      auto
+                    </button>
+                    <button
+                      onClick={() => handleConfigChange({ units: 'Metric' })}
+                      className={`px-3 py-1 rounded text-sm transition-colors ${settings.config.units === 'Metric'
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
+                        }`}
+                    >
+                      °C
+                    </button>
+                    <button
+                      onClick={() => handleConfigChange({ units: 'Imperial' })}
+                      className={`px-3 py-1 rounded text-sm transition-colors ${settings.config.units === 'Imperial'
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
+                        }`}
+                    >
+                      °F
+                    </button>
+                  </div>
+                </div>  
+
               </div>
-              <div className="space-y-3 pl-4">
-                <SessionVisibility
-                  sessionVisibility={settings.config.sessionVisibility}
-                  handleConfigChange={handleConfigChange}
-                />
+            </div>  
+            )}
+
+            {/* VISIBILITY TAB */}
+            {activeTab === 'visibility' && (
+              <div className="space-y-4">
+
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium text-slate-200">
+                    Session Visibility
+                  </h3>
+                  <div className="space-y-3 pl-4">
+                    <SessionVisibility
+                      sessionVisibility={settings.config.sessionVisibility}
+                      handleConfigChange={handleConfigChange}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between pt-4 border-t border-slate-700/50 pl-4">
+                  <div>
+                    <h4 className="text-md font-medium text-slate-300">
+                      Show only when on track
+                    </h4>
+                    <span className="block text-xs text-slate-500">
+                      If enabled, weather will only be shown when driving.
+                    </span>
+                  </div>
+                  <ToggleSwitch
+                    enabled={settings.config.showOnlyWhenOnTrack}
+                    onToggle={(newValue) =>
+                      handleConfigChange({
+                        showOnlyWhenOnTrack: newValue,
+                      })
+                    }
+                  />
+                </div>
+
               </div>
-            </div>
+            )}
+
           </div>
+        </div>            
         );
       }}
     </BaseSettingsSection>

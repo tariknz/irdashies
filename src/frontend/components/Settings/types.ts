@@ -469,6 +469,18 @@ export type FuelWidgetType =
   | 'confidence'
   | 'keyInfo';
 
+/** Available widgets for the Fuel Calculator */
+export type SettingsTabType =
+  | 'display'
+  | 'options'
+  | 'visibility'
+  | 'track'
+  | 'drivers'
+  | 'layout'
+  | 'header'
+  | 'footer'
+  | 'history';
+
 export interface BlindSpotMonitorWidgetSettings extends BaseWidgetSettings {
   config: {
     showOnlyWhenOnTrack: boolean;

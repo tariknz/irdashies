@@ -73,7 +73,7 @@ export const GridOrderSettingsList = ({ itemsOrder, onReorder, settings, handleC
 
               {row.id === 'avg' && (
                 <div className="mt-2 pl-7 pr-1 flex items-center justify-between animate-in fade-in slide-in-from-top-1 duration-200">
-                  <span className="text-[10px] text-slate-400">Average Laps</span>
+                  <span className="text-xs text-slate-400">Average Laps</span>
                   <div className="flex items-center gap-2">
                     <input
                       type="number"
@@ -82,9 +82,9 @@ export const GridOrderSettingsList = ({ itemsOrder, onReorder, settings, handleC
                       step="1"
                       value={settings.config.avgLapsCount ?? 3}
                       onChange={(e) => handleConfigChange({ avgLapsCount: parseInt(e.target.value) || 1 })}
-                      className="w-12 px-1 py-0.5 bg-slate-700 text-slate-200 rounded text-[10px] text-center"
+                      className="w-12 px-1 py-0.5 bg-slate-700 text-slate-200 rounded text-xs text-center"
                     />
-                    <span className="text-[10px] text-slate-500">Laps</span>
+                    <span className="text-xs text-slate-500">Laps</span>
                   </div>
                 </div>
               )}
