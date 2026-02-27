@@ -1,11 +1,11 @@
 import { SettingsTabType } from '../types';
 
- interface TabButtonProps {
+interface TabButtonProps {
   id: SettingsTabType;
   activeTab: SettingsTabType;
   setActiveTab: (tab: SettingsTabType) => void;
   children: React.ReactNode;
-};
+}
 
 export const TabButton = ({ id, activeTab, setActiveTab, children }: TabButtonProps) => (
     <button

@@ -12,14 +12,23 @@ interface SortableRow {
 
 export const getSortableRows = (avgLapsCount: number): SortableRow[] => [
   { id: 'curr', label: 'Current Lap', configKey: 'showCurrentLap' },
-  { id: 'avg', label: `Average (${avgLapsCount} Lap)`, configKey: 'show3LapAvg' },
+  {
+    id: 'avg',
+    label: `Average (${avgLapsCount} Lap)`,
+    configKey: 'show3LapAvg',
+  },
   { id: 'max', label: 'Max Consumption', configKey: 'showMax' },
   { id: 'last', label: 'Last Lap', configKey: 'showLastLap' },
   { id: 'min', label: 'Min Consumption', configKey: 'showMin' },
   { id: 'qual', label: 'Qualify Max', configKey: 'showQualifyConsumption' },
 ];
 
-export const GridOrderSettingsList = ({ itemsOrder, onReorder, settings, handleConfigChange }: {
+export const GridOrderSettingsList = ({
+  itemsOrder,
+  onReorder,
+  settings,
+  handleConfigChange,
+}: {
   itemsOrder: string[];
   onReorder: (newOrder: string[]) => void;
   settings: FuelWidgetSettings;
@@ -28,7 +37,7 @@ export const GridOrderSettingsList = ({ itemsOrder, onReorder, settings, handleC
   const rows = getSortableRows(settings.config.avgLapsCount || 3);
   const validIds = rows.map((r: SortableRow) => r.id);
   const items = itemsOrder
-    .filter(id => validIds.includes(id))
+    .filter((id) => validIds.includes(id))
     .map((id) => {
       const row = rows.find((r: SortableRow) => r.id === id);
       return row ? { ...row } : null;
@@ -36,7 +45,7 @@ export const GridOrderSettingsList = ({ itemsOrder, onReorder, settings, handleC
     .filter((r): r is SortableRow => r !== null);
 
   rows.forEach((def: SortableRow) => {
-    if (!items.find(i => i.id === def.id)) items.push(def);
+    if (!items.find((i) => i.id === def.id)) items.push(def);
   });
 
   const { getItemProps, displayItems } = useSortableList({

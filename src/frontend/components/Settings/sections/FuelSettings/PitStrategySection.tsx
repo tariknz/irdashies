@@ -9,7 +9,10 @@ interface PitStrategySectionProps {
   onChange: (change: Partial<FuelWidgetSettings['config']>) => void;
 }
 
-export const PitStrategySection = ({ settings, onChange }: PitStrategySectionProps) => {
+export const PitStrategySection = ({
+  settings,
+  onChange,
+}: PitStrategySectionProps) => {
   return (
     <SettingsSection title="Pit Strategy">  
 

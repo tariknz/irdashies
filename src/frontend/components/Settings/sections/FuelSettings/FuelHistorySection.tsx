@@ -9,7 +9,10 @@ interface FuelHistorySectionProps {
   onChange: (change: Partial<FuelWidgetSettings['config']>) => void;
 }
 
-export const FuelHistorySection = ({ settings, onChange }: FuelHistorySectionProps) => {
+export const FuelHistorySection = ({
+  settings,
+  onChange,
+}: FuelHistorySectionProps) => {
   return (
     <SettingsSection title="Fuel History">  
 
@@ -17,8 +20,16 @@ export const FuelHistorySection = ({ settings, onChange }: FuelHistorySectionPro
         <div className="flex items-center justify-between">
           <span className="text-sm text-slate-300">Graph Properties</span>
           <div className="flex items-center gap-4">
-            <BarFontSizeInput widgetId="fuelGraph" settings={settings} onChange={onChange} />
-            <HeightInput widgetId="fuelGraph" settings={settings} onChange={onChange} />
+            <BarFontSizeInput
+              widgetId="fuelGraph"
+              settings={settings}
+              onChange={onChange}
+            />
+            <HeightInput
+              widgetId="fuelGraph"
+              settings={settings}
+              onChange={onChange}
+            />
           </div>
         </div>
 

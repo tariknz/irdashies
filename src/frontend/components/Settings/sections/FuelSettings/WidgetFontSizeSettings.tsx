@@ -6,7 +6,10 @@ interface WidgetFontSizeSettingsProps {
   onChange: (change: Partial<FuelWidgetSettings['config']>) => void;
 }
 
-export const WidgetFontSizeSettings = ({ settings, onChange }: WidgetFontSizeSettingsProps) => {
+export const WidgetFontSizeSettings = ({
+  settings,
+  onChange,
+}: WidgetFontSizeSettingsProps) => {
   return (
     <>
       {/* Widget Styles for Fuel 2 specific components without toggles */}     

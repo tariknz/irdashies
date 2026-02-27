@@ -40,7 +40,8 @@ const migrateConfig = (savedConfig: unknown): TelemetryInspectorConfig => {
         defaultConfig.background?.opacity ??
         80,
     },
-    properties: (config.properties as PropertyConfig[]) ?? defaultConfig.properties,
+    properties:
+      (config.properties as PropertyConfig[]) ?? defaultConfig.properties,
   };
 };
 

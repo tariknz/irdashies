@@ -89,22 +89,32 @@ export const BlindSpotMonitorSettings = () => {
     >
       {(handleConfigChange) => (
         <div className="space-y-4">
-
           {/* Tabs */}
           <div className="flex border-b border-slate-700/50">
-            <TabButton id="display" activeTab={activeTab} setActiveTab={setActiveTab}>
+            <TabButton
+              id="display"
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+            >
               Display
             </TabButton>
-            <TabButton id="options" activeTab={activeTab} setActiveTab={setActiveTab}>
+            <TabButton
+              id="options"
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+            >
               Options
             </TabButton>
-            <TabButton id="visibility" activeTab={activeTab} setActiveTab={setActiveTab}>
+            <TabButton
+              id="visibility"
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+            >
               Visibility
             </TabButton>
           </div>
 
           <div className="pt-4">
-
             {/* DISPLAY TAB */}
             {activeTab === 'display' && (
               <SettingsSection title="Display">
@@ -196,7 +206,6 @@ export const BlindSpotMonitorSettings = () => {
 
               </SettingsSection>
             )}
-
           </div>
         </div>
       )}

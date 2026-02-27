@@ -1,6 +1,10 @@
 import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
-import { FlagWidgetSettings, SessionVisibilitySettings, SettingsTabType } from '../types';
+import {
+  FlagWidgetSettings,
+  SessionVisibilitySettings,
+  SettingsTabType,
+} from '../types';
 import { useDashboard } from '@irdashies/context';
 import { TabButton } from '../components/TabButton';
 import { SessionVisibility } from '../components/SessionVisibility';
@@ -69,7 +73,6 @@ export const FlagSettings = () => {
     config: migrateConfig(savedSettings?.config),
   });
 
-  
   // Tab state with persistence
   const [activeTab, setActiveTab] = useState<SettingsTabType>(
     () => (localStorage.getItem('flagTab') as SettingsTabType) || 'options'
@@ -90,20 +93,26 @@ export const FlagSettings = () => {
       widgetId={SETTING_ID}
     >
       {(handleConfigChange) => (
-      <div className="space-y-4">
-
+        <div className="space-y-4">
           {/* Tabs */}
           <div className="flex border-b border-slate-700/50">
-            <TabButton id="options" activeTab={activeTab} setActiveTab={setActiveTab}>
+            <TabButton
+              id="options"
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+            >
               Options
             </TabButton>
-            <TabButton id="visibility" activeTab={activeTab} setActiveTab={setActiveTab}>
+            <TabButton
+              id="visibility"
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+            >
               Visibility
             </TabButton>
           </div>
 
           <div className="pt-4">
-
             {/* OPTIONS TAB */}
             {activeTab === 'options' && (
               <SettingsSection title="Display">
@@ -200,9 +209,8 @@ export const FlagSettings = () => {
 
               </SettingsSection>
             )}
-
+          </div>
         </div>
-      </div>
       )}
     </BaseSettingsSection>
   );

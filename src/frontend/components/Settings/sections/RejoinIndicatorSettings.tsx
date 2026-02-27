@@ -73,20 +73,26 @@ export const RejoinIndicatorSettings = () => {
       widgetId={SETTING_ID}
     >
       {(handleConfigChange) => (
-          <div className="space-y-4">
-
+        <div className="space-y-4">
           {/* Tabs */}
           <div className="flex border-b border-slate-700/50">
-            <TabButton id="options" activeTab={activeTab} setActiveTab={setActiveTab}>
+            <TabButton
+              id="options"
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+            >
               Options
             </TabButton>
-            <TabButton id="visibility" activeTab={activeTab} setActiveTab={setActiveTab}>
+            <TabButton
+              id="visibility"
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+            >
               Visibility
             </TabButton>
           </div>
 
           <div className="pt-4">
-
             {/* DISPLAY TAB */}
             {activeTab === 'options' && (
               <SettingsSection title="Options">

@@ -17,6 +17,7 @@ import { GarageCoverSettings } from './sections/GarageCoverSettings';
 import { ProfileSettings } from './sections/ProfileSettings';
 import { FlagSettings } from './sections/FlagSettings';
 import { CarSetupSettings } from './sections/CarSetupSettings';
+import { TwitchChatSettings } from './sections/TwitchChatSettings';
 import { useDashboard } from '@irdashies/context';
 
 export const SettingsLoader = () => {
@@ -61,6 +62,8 @@ export const SettingsLoader = () => {
       return <GarageCoverSettings />;
     case 'flag':
       return <FlagSettings />;
+    case 'twitchchat':
+      return <TwitchChatSettings />;
     default:
       return widget ? (
         <div className="text-red-400">No settings available for {type}</div>

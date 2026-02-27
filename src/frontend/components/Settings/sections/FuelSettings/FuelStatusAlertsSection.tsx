@@ -10,7 +10,10 @@ interface FuelStatusAlertsSectionProps {
   onChange: (change: Partial<FuelWidgetSettings['config']>) => void;
 }
 
-export const FuelStatusAlertsSection = ({ settings, onChange }: FuelStatusAlertsSectionProps) => {
+export const FuelStatusAlertsSection = ({
+  settings,
+  onChange,
+}: FuelStatusAlertsSectionProps) => {
   return (
     <SettingsSection title="Fuel Status Alerts">  
 
@@ -30,7 +33,10 @@ export const FuelStatusAlertsSection = ({ settings, onChange }: FuelStatusAlerts
           <span className="text-sm text-slate-300">Green Threshold (%)</span>
           <div className="flex items-center gap-2">
             <input
-              type="range" min="0" max="100" step="1"
+              type="range"
+              min="0"
+              max="100"
+              step="1"
               value={settings.config.fuelStatusThresholds?.green ?? 60}
               onChange={(e) => {
                 const val = parseInt(e.target.value);
@@ -38,13 +44,17 @@ export const FuelStatusAlertsSection = ({ settings, onChange }: FuelStatusAlerts
                   fuelStatusThresholds: {
                     ...defaultConfig.fuelStatusThresholds,
                     ...settings.config.fuelStatusThresholds,
-                    green: val
-                  } as NonNullable<FuelWidgetSettings['config']['fuelStatusThresholds']>
+                    green: val,
+                  } as NonNullable<
+                    FuelWidgetSettings['config']['fuelStatusThresholds']
+                  >,
                 });
               }}
               className="w-32 h-1.5 bg-slate-600 rounded-lg appearance-none cursor-pointer"
             />
-            <span className="text-xs text-slate-300 w-8 text-right">{settings.config.fuelStatusThresholds?.green ?? 60}%</span>
+            <span className="text-xs text-slate-300 w-8 text-right">
+              {settings.config.fuelStatusThresholds?.green ?? 60}%
+            </span>
           </div>
         </div>
 
@@ -53,7 +63,10 @@ export const FuelStatusAlertsSection = ({ settings, onChange }: FuelStatusAlerts
           <span className="text-sm text-slate-300">Amber Threshold (%)</span>
           <div className="flex items-center gap-2">
             <input
-              type="range" min="0" max="100" step="1"
+              type="range"
+              min="0"
+              max="100"
+              step="1"
               value={settings.config.fuelStatusThresholds?.amber ?? 30}
               onChange={(e) => {
                 const val = parseInt(e.target.value);
@@ -61,13 +74,17 @@ export const FuelStatusAlertsSection = ({ settings, onChange }: FuelStatusAlerts
                   fuelStatusThresholds: {
                     ...defaultConfig.fuelStatusThresholds,
                     ...settings.config.fuelStatusThresholds,
-                    amber: val
-                  } as NonNullable<FuelWidgetSettings['config']['fuelStatusThresholds']>
+                    amber: val,
+                  } as NonNullable<
+                    FuelWidgetSettings['config']['fuelStatusThresholds']
+                  >,
                 });
               }}
               className="w-32 h-1.5 bg-slate-600 rounded-lg appearance-none cursor-pointer"
             />
-            <span className="text-xs text-slate-300 w-8 text-right">{settings.config.fuelStatusThresholds?.amber ?? 30}%</span>
+            <span className="text-xs text-slate-300 w-8 text-right">
+              {settings.config.fuelStatusThresholds?.amber ?? 30}%
+            </span>
           </div>
         </div>
       </div>

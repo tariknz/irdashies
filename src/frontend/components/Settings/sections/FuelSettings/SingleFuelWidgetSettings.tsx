@@ -5,7 +5,10 @@ import { useDashboard } from '@irdashies/context';
 import { SessionVisibility } from '../../components/SessionVisibility';
 import { TabButton } from '../../components/TabButton';
 import { LayoutVisualizer, migrateToTree } from '../LayoutVisualizer';
-import { DEFAULT_FUEL_LAYOUT_TREE, defaultFuelCalculatorSettings } from '../../../FuelCalculator/defaults';
+import {
+  DEFAULT_FUEL_LAYOUT_TREE,
+  defaultFuelCalculatorSettings,
+} from '../../../FuelCalculator/defaults';
 import { DualFontSizeInput } from './FontSizeInputs';
 import { GridOrderSettingsList } from './GridOrderSettingsList';
 import { migrateConfig, AVAILABLE_WIDGETS_FUEL } from './utils';
@@ -24,7 +27,11 @@ import { SettingNumberRow } from '../../components/SettingNumberRow';
 const defaultConfig = defaultFuelCalculatorSettings;
 const DEFAULT_TREE_FUEL = DEFAULT_FUEL_LAYOUT_TREE;
 
-export const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => {
+export const SingleFuelWidgetSettings = ({
+  widgetId,
+}: {
+  widgetId: string;
+}) => {
   const { currentDashboard } = useDashboard();
   const savedSettings = currentDashboard?.widgets.find(
     (w) => w.id === widgetId
@@ -34,7 +41,11 @@ export const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => 
     const initialConfig = migrateConfig(savedSettings?.config);
 
     // Use DEFAULT_TREE_FUEL if no layout is defined
-    if ((!initialConfig.layoutConfig || initialConfig.layoutConfig.length === 0) && !initialConfig.layoutTree) {
+    if (
+      (!initialConfig.layoutConfig ||
+        initialConfig.layoutConfig.length === 0) &&
+      !initialConfig.layoutTree
+    ) {
       initialConfig.layoutTree = DEFAULT_TREE_FUEL;
     }
     return {
@@ -48,7 +59,8 @@ export const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => 
   // Calculate tree state from settings (migrating if needed)
   const currentTree = useMemo(() => {
     // Validate that the tree has a type before using it
-    if (settings.config.layoutTree && settings.config.layoutTree.type) return settings.config.layoutTree;
+    if (settings.config.layoutTree && settings.config.layoutTree.type)
+      return settings.config.layoutTree;
     // Auto-migrate legacy list to tree for the visualizer
     return migrateToTree(settings.config.layoutConfig || []);
   }, [settings.config.layoutTree, settings.config.layoutConfig]);
@@ -63,7 +75,9 @@ export const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => 
   }, [activeTab]);
 
   if (!currentDashboard || !savedSettings) {
-    return <div className="p-4 text-slate-400">Widget not found or loading...</div>;
+    return (
+      <div className="p-4 text-slate-400">Widget not found or loading...</div>
+    );
   }
 
   return (

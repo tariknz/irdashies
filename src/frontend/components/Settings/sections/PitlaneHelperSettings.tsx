@@ -252,7 +252,6 @@ export const PitlaneHelperSettings = () => {
 
               </>
             )}
-
           </div>
         </div>
       )}

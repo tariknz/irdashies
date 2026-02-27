@@ -57,7 +57,8 @@ layer(base);
   }
 
   @keyframes pulse {
-    0%, 100% {
+    0%,
+    100% {
       opacity: 1;
     }
     50% {
@@ -66,7 +67,8 @@ layer(base);
   }
 
   @keyframes blink {
-    0%, 100% {
+    0%,
+    100% {
       opacity: 1;
     }
     50% {
