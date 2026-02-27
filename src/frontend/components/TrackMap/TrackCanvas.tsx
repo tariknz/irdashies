@@ -14,6 +14,7 @@ import {
 } from './trackDrawingUtils';
 import { useDriverOffTrack } from './hooks/useDriverOffTrack';
 import { useDriverLivePositions } from '../Standings/hooks/useDriverLivePositions';
+import { useTelemetryValues } from '@irdashies/context';
 
 export interface TrackProps {
   trackId: number;
@@ -93,6 +94,7 @@ export const TrackCanvas = ({
   const driverLivePositions = useDriverLivePositions({
     enabled: displayMode === 'livePosition',
   });
+  const carIdxIsOnPitRoad = useTelemetryValues('CarIdxOnPitRoad');
 
   // Memoize Path2D objects to avoid re-creating them on every render
   // this is used to draw the track and start/finish line
@@ -384,7 +386,8 @@ export const TrackCanvas = ({
       trackmapFontSize,
       showCarNumbers,
       displayMode,
-      driverLivePositions
+      driverLivePositions,
+      carIdxIsOnPitRoad,
     );
     ctx.restore();
   }, [
@@ -403,6 +406,7 @@ export const TrackCanvas = ({
     startFinishLine,
     driversOffTrack,
     driverLivePositions,
+    carIdxIsOnPitRoad,
     driverCircleSize,
     playerCircleSize,
     trackmapFontSize,
