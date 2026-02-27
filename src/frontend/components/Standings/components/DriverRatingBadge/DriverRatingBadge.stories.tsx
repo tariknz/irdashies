@@ -137,4 +137,3 @@ export const FormatLicenseColorFullRatingBw: Story = {
     format: 'license-color-fullrating-bw',
   },
 };
-

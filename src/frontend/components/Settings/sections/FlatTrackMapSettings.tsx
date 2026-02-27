@@ -3,7 +3,11 @@ import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import { useDashboard } from '@irdashies/context';
 import { ToggleSwitch } from '../components/ToggleSwitch';
 import { TabButton } from '../components/TabButton';
-import { FlatTrackMapWidgetSettings, SessionVisibilitySettings, SettingsTabType } from '../types';
+import {
+  FlatTrackMapWidgetSettings,
+  SessionVisibilitySettings,
+  SettingsTabType,
+} from '../types';
 import { SessionVisibility } from '../components/SessionVisibility';
 
 const SETTING_ID = 'flatmap';
@@ -19,31 +23,55 @@ const defaultConfig: FlatTrackMapWidgetSettings['config'] = {
   invertTrackColors: false,
   useHighlightColor: false,
   showOnlyWhenOnTrack: false,
-  sessionVisibility: { race: true, loneQualify: true, openQualify: true, practice: true, offlineTesting: true }
+  sessionVisibility: {
+    race: true,
+    loneQualify: true,
+    openQualify: true,
+    practice: true,
+    offlineTesting: true,
+  },
 };
 
-const migrateConfig = (savedConfig: unknown): FlatTrackMapWidgetSettings['config'] => {
+const migrateConfig = (
+  savedConfig: unknown
+): FlatTrackMapWidgetSettings['config'] => {
   if (!savedConfig || typeof savedConfig !== 'object') return defaultConfig;
 
   const config = savedConfig as Record<string, unknown>;
   return {
-    showCarNumbers: (config.showCarNumbers as boolean) ?? defaultConfig.showCarNumbers,
-    displayMode: (config.displayMode as 'carNumber' | 'sessionPosition') ?? defaultConfig.displayMode,
-    driverCircleSize: (config.driverCircleSize as number) ?? defaultConfig.driverCircleSize,
-    playerCircleSize: (config.playerCircleSize as number) ?? defaultConfig.playerCircleSize,
-    trackmapFontSize: (config.trackmapFontSize as number) ?? defaultConfig.trackmapFontSize,
-    trackLineWidth: (config.trackLineWidth as number) ?? defaultConfig.trackLineWidth,
-    trackOutlineWidth: (config.trackOutlineWidth as number) ?? defaultConfig.trackOutlineWidth,
-    invertTrackColors: (config.invertTrackColors as boolean) ?? defaultConfig.invertTrackColors,
-    useHighlightColor: (config.useHighlightColor as boolean) ?? defaultConfig.useHighlightColor,
-    showOnlyWhenOnTrack: (config.showOnlyWhenOnTrack as boolean) ?? defaultConfig.showOnlyWhenOnTrack,
-    sessionVisibility: (config.sessionVisibility as SessionVisibilitySettings) ?? defaultConfig.sessionVisibility,
+    showCarNumbers:
+      (config.showCarNumbers as boolean) ?? defaultConfig.showCarNumbers,
+    displayMode:
+      (config.displayMode as 'carNumber' | 'sessionPosition') ??
+      defaultConfig.displayMode,
+    driverCircleSize:
+      (config.driverCircleSize as number) ?? defaultConfig.driverCircleSize,
+    playerCircleSize:
+      (config.playerCircleSize as number) ?? defaultConfig.playerCircleSize,
+    trackmapFontSize:
+      (config.trackmapFontSize as number) ?? defaultConfig.trackmapFontSize,
+    trackLineWidth:
+      (config.trackLineWidth as number) ?? defaultConfig.trackLineWidth,
+    trackOutlineWidth:
+      (config.trackOutlineWidth as number) ?? defaultConfig.trackOutlineWidth,
+    invertTrackColors:
+      (config.invertTrackColors as boolean) ?? defaultConfig.invertTrackColors,
+    useHighlightColor:
+      (config.useHighlightColor as boolean) ?? defaultConfig.useHighlightColor,
+    showOnlyWhenOnTrack:
+      (config.showOnlyWhenOnTrack as boolean) ??
+      defaultConfig.showOnlyWhenOnTrack,
+    sessionVisibility:
+      (config.sessionVisibility as SessionVisibilitySettings) ??
+      defaultConfig.sessionVisibility,
   };
 };
 
 export const FlatTrackMapSettings = () => {
   const { currentDashboard } = useDashboard();
-  const savedSettings = currentDashboard?.widgets.find((w) => w.id === SETTING_ID) as FlatTrackMapWidgetSettings | undefined;
+  const savedSettings = currentDashboard?.widgets.find(
+    (w) => w.id === SETTING_ID
+  ) as FlatTrackMapWidgetSettings | undefined;
   const [settings, setSettings] = useState<FlatTrackMapWidgetSettings>({
     enabled:
       currentDashboard?.widgets.find((w) => w.id === SETTING_ID)?.enabled ??
@@ -53,7 +81,8 @@ export const FlatTrackMapSettings = () => {
 
   // Tab state with persistence
   const [activeTab, setActiveTab] = useState<SettingsTabType>(
-    () => (localStorage.getItem('flatTrackMapTab') as SettingsTabType) || 'track'
+    () =>
+      (localStorage.getItem('flatTrackMapTab') as SettingsTabType) || 'track'
   );
 
   useEffect(() => {
@@ -74,28 +103,39 @@ export const FlatTrackMapSettings = () => {
     >
       {(handleConfigChange) => (
         <div className="space-y-4">
-
           {/* Tabs */}
           <div className="flex border-b border-slate-700/50">
-            <TabButton id="track" activeTab={activeTab} setActiveTab={setActiveTab}>
+            <TabButton
+              id="track"
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+            >
               Track
             </TabButton>
-            <TabButton id="drivers" activeTab={activeTab} setActiveTab={setActiveTab}>
+            <TabButton
+              id="drivers"
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+            >
               Drivers
             </TabButton>
-            <TabButton id="visibility" activeTab={activeTab} setActiveTab={setActiveTab}>
+            <TabButton
+              id="visibility"
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+            >
               Visibility
             </TabButton>
           </div>
 
           <div className="pt-4">
-
             {/* TRACK TAB */}
             {activeTab === 'track' && (
               <div className="space-y-4">
-                <h3 className="text-lg font-medium text-slate-200">Track Settings</h3>   
-                <div className="pl-4 space-y-4">  
-
+                <h3 className="text-lg font-medium text-slate-200">
+                  Track Settings
+                </h3>
+                <div className="pl-4 space-y-4">
                   <div className="space-y-2">
                     <label className="text-slate-300">
                       Track Line Width: {settings.config.trackLineWidth ?? 20}px
@@ -114,13 +154,15 @@ export const FlatTrackMapSettings = () => {
                       className="w-full"
                     />
                     <p className="text-xs text-slate-500">
-                      Thickness of the track line (matches curved track map scale)
+                      Thickness of the track line (matches curved track map
+                      scale)
                     </p>
                   </div>
 
                   <div className="space-y-2">
                     <label className="text-slate-300">
-                      Track Outline Width: {settings.config.trackOutlineWidth ?? 40}px
+                      Track Outline Width:{' '}
+                      {settings.config.trackOutlineWidth ?? 40}px
                     </label>
                     <input
                       type="range"
@@ -142,7 +184,9 @@ export const FlatTrackMapSettings = () => {
 
                   <div className="flex items-center justify-between">
                     <div>
-                      <span className="text-sm text-slate-300">Invert Track Colors</span>
+                      <span className="text-sm text-slate-300">
+                        Invert Track Colors
+                      </span>
                       <p className="text-xs text-slate-500">
                         Swap black and white colors for the track
                       </p>
@@ -156,7 +200,6 @@ export const FlatTrackMapSettings = () => {
                       }
                     />
                   </div>
-
                 </div>
               </div>
             )}
@@ -164,12 +207,15 @@ export const FlatTrackMapSettings = () => {
             {/* DRIVERS TAB */}
             {activeTab === 'drivers' && (
               <div className="space-y-4">
-                <h3 className="text-lg font-medium text-slate-200">Driver Circles</h3>   
-                <div className="pl-4 space-y-4">  
-
+                <h3 className="text-lg font-medium text-slate-200">
+                  Driver Circles
+                </h3>
+                <div className="pl-4 space-y-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <span className="text-sm text-slate-300">Show Car Numbers</span>
+                      <span className="text-sm text-slate-300">
+                        Show Car Numbers
+                      </span>
                       <p className="text-xs text-slate-500">
                         Display car numbers on driver circles
                       </p>
@@ -185,43 +231,57 @@ export const FlatTrackMapSettings = () => {
                   </div>
 
                   {settings.config.showCarNumbers && (
-                  <div className="flex items-center justify-between pl-4">
-                    <span className="text-sm text-slate-300">Display Mode</span>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => handleConfigChange({ displayMode: 'carNumber' })}
-                        className={`px-3 py-1 rounded text-sm transition-colors ${settings.config.displayMode === 'carNumber'
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
+                    <div className="flex items-center justify-between pl-4">
+                      <span className="text-sm text-slate-300">
+                        Display Mode
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() =>
+                            handleConfigChange({ displayMode: 'carNumber' })
+                          }
+                          className={`px-3 py-1 rounded text-sm transition-colors ${
+                            settings.config.displayMode === 'carNumber'
+                              ? 'bg-blue-600 text-white'
+                              : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
                           }`}
-                      >
-                        Car Number
-                      </button>
-                      <button
-                        onClick={() => handleConfigChange({ displayMode: 'sessionPosition' })}
-                        className={`px-3 py-1 rounded text-sm transition-colors ${settings.config.displayMode === 'sessionPosition'
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
+                        >
+                          Car Number
+                        </button>
+                        <button
+                          onClick={() =>
+                            handleConfigChange({
+                              displayMode: 'sessionPosition',
+                            })
+                          }
+                          className={`px-3 py-1 rounded text-sm transition-colors ${
+                            settings.config.displayMode === 'sessionPosition'
+                              ? 'bg-blue-600 text-white'
+                              : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
                           }`}
-                      >
-                        Session Position
-                      </button>
-                      <button
-                        onClick={() => handleConfigChange({ displayMode: 'livePosition' })}
-                        className={`px-3 py-1 rounded text-sm transition-colors ${settings.config.displayMode === 'livePosition'
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
+                        >
+                          Session Position
+                        </button>
+                        <button
+                          onClick={() =>
+                            handleConfigChange({ displayMode: 'livePosition' })
+                          }
+                          className={`px-3 py-1 rounded text-sm transition-colors ${
+                            settings.config.displayMode === 'livePosition'
+                              ? 'bg-blue-600 text-white'
+                              : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
                           }`}
-                      >
-                        Live Position
-                      </button>
+                        >
+                          Live Position
+                        </button>
+                      </div>
                     </div>
-                  </div>
                   )}
 
                   <div className="space-y-2">
                     <label className="text-slate-300">
-                      Driver Circle Size: {settings.config.driverCircleSize ?? 40}px
+                      Driver Circle Size:{' '}
+                      {settings.config.driverCircleSize ?? 40}px
                     </label>
                     <input
                       type="range"
@@ -237,13 +297,15 @@ export const FlatTrackMapSettings = () => {
                       className="w-full"
                     />
                     <p className="text-xs text-slate-500">
-                      Size of the circle for other drivers (matches curved track map scale)
+                      Size of the circle for other drivers (matches curved track
+                      map scale)
                     </p>
                   </div>
 
                   <div className="space-y-2">
                     <label className="text-slate-300">
-                      Player Circle Size: {settings.config.playerCircleSize ?? 40}px
+                      Player Circle Size:{' '}
+                      {settings.config.playerCircleSize ?? 40}px
                     </label>
                     <input
                       type="range"
@@ -259,13 +321,15 @@ export const FlatTrackMapSettings = () => {
                       className="w-full"
                     />
                     <p className="text-xs text-slate-500">
-                      Size of the circle for your car (matches curved track map scale)
+                      Size of the circle for your car (matches curved track map
+                      scale)
                     </p>
                   </div>
 
                   <div className="space-y-2">
                     <label className="text-slate-300">
-                      Relative Font Size: {settings.config.trackmapFontSize ?? 100}%
+                      Relative Font Size:{' '}
+                      {settings.config.trackmapFontSize ?? 100}%
                     </label>
                     <input
                       type="range"
@@ -291,8 +355,8 @@ export const FlatTrackMapSettings = () => {
                         Use Highlight Color for Player
                       </span>
                       <p className="text-xs text-slate-500">
-                        Use your custom highlight color for the player car instead of
-                        class color
+                        Use your custom highlight color for the player car
+                        instead of class color
                       </p>
                     </div>
                     <ToggleSwitch
@@ -304,7 +368,6 @@ export const FlatTrackMapSettings = () => {
                       }
                     />
                   </div>
-
                 </div>
               </div>
             )}
@@ -312,7 +375,6 @@ export const FlatTrackMapSettings = () => {
             {/* VISIBILITY TAB */}
             {activeTab === 'visibility' && (
               <div className="space-y-4">
-
                 <div className="space-y-4">
                   <h3 className="text-lg font-medium text-slate-200">
                     Session Visibility
@@ -343,12 +405,10 @@ export const FlatTrackMapSettings = () => {
                     }
                   />
                 </div>
-
               </div>
             )}
-
+          </div>
         </div>
-      </div>
       )}
     </BaseSettingsSection>
   );

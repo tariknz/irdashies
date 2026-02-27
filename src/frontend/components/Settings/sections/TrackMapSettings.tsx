@@ -1,6 +1,10 @@
 import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
-import { TrackMapWidgetSettings, SessionVisibilitySettings, SettingsTabType } from '../types';
+import {
+  TrackMapWidgetSettings,
+  SessionVisibilitySettings,
+  SettingsTabType,
+} from '../types';
 import { useDashboard } from '@irdashies/context';
 import { ToggleSwitch } from '../components/ToggleSwitch';
 import { TabButton } from '../components/TabButton';
@@ -21,36 +25,66 @@ const defaultConfig: TrackMapWidgetSettings['config'] = {
   trackOutlineWidth: 40,
   useHighlightColor: false,
   showOnlyWhenOnTrack: false,
-  sessionVisibility: { race: true, loneQualify: true, openQualify: true, practice: true, offlineTesting: true }
+  sessionVisibility: {
+    race: true,
+    loneQualify: true,
+    openQualify: true,
+    practice: true,
+    offlineTesting: true,
+  },
 };
 
-const migrateConfig = (savedConfig: unknown): TrackMapWidgetSettings['config'] => {
+const migrateConfig = (
+  savedConfig: unknown
+): TrackMapWidgetSettings['config'] => {
   if (!savedConfig || typeof savedConfig !== 'object') return defaultConfig;
 
   const config = savedConfig as Record<string, unknown>;
   return {
-    enableTurnNames: (config.enableTurnNames as boolean) ?? defaultConfig.enableTurnNames,
-    showCarNumbers: (config.showCarNumbers as boolean) ?? defaultConfig.showCarNumbers,
-    displayMode: (config.displayMode as 'carNumber' | 'sessionPosition' | 'livePosition') ?? defaultConfig.displayMode,
-    invertTrackColors: (config.invertTrackColors as boolean) ?? defaultConfig.invertTrackColors,
-    highContrastTurns: (config.highContrastTurns as boolean) ?? defaultConfig.highContrastTurns,
-    driverCircleSize: (config.driverCircleSize as number) ?? defaultConfig.driverCircleSize,
-    playerCircleSize: (config.playerCircleSize as number) ?? defaultConfig.playerCircleSize,
-    trackmapFontSize: (config.trackmapFontSize as number) ?? defaultConfig.trackmapFontSize,
-    trackLineWidth: (config.trackLineWidth as number) ?? defaultConfig.trackLineWidth,
-    trackOutlineWidth: (config.trackOutlineWidth as number) ?? defaultConfig.trackOutlineWidth,
-    useHighlightColor: (config.useHighlightColor as boolean) ?? defaultConfig.useHighlightColor,
-    showOnlyWhenOnTrack: (config.showOnlyWhenOnTrack as boolean) ?? defaultConfig.showOnlyWhenOnTrack,
-    sessionVisibility: (config.sessionVisibility as SessionVisibilitySettings) ?? defaultConfig.sessionVisibility,
+    enableTurnNames:
+      (config.enableTurnNames as boolean) ?? defaultConfig.enableTurnNames,
+    showCarNumbers:
+      (config.showCarNumbers as boolean) ?? defaultConfig.showCarNumbers,
+    displayMode:
+      (config.displayMode as
+        | 'carNumber'
+        | 'sessionPosition'
+        | 'livePosition') ?? defaultConfig.displayMode,
+    invertTrackColors:
+      (config.invertTrackColors as boolean) ?? defaultConfig.invertTrackColors,
+    highContrastTurns:
+      (config.highContrastTurns as boolean) ?? defaultConfig.highContrastTurns,
+    driverCircleSize:
+      (config.driverCircleSize as number) ?? defaultConfig.driverCircleSize,
+    playerCircleSize:
+      (config.playerCircleSize as number) ?? defaultConfig.playerCircleSize,
+    trackmapFontSize:
+      (config.trackmapFontSize as number) ?? defaultConfig.trackmapFontSize,
+    trackLineWidth:
+      (config.trackLineWidth as number) ?? defaultConfig.trackLineWidth,
+    trackOutlineWidth:
+      (config.trackOutlineWidth as number) ?? defaultConfig.trackOutlineWidth,
+    useHighlightColor:
+      (config.useHighlightColor as boolean) ?? defaultConfig.useHighlightColor,
+    showOnlyWhenOnTrack:
+      (config.showOnlyWhenOnTrack as boolean) ??
+      defaultConfig.showOnlyWhenOnTrack,
+    sessionVisibility:
+      (config.sessionVisibility as SessionVisibilitySettings) ??
+      defaultConfig.sessionVisibility,
   };
 };
 
 export const TrackMapSettings = () => {
   const { currentDashboard } = useDashboard();
-  const savedSettings = currentDashboard?.widgets.find(w => w.id === SETTING_ID) as TrackMapWidgetSettings | undefined;
+  const savedSettings = currentDashboard?.widgets.find(
+    (w) => w.id === SETTING_ID
+  ) as TrackMapWidgetSettings | undefined;
   const [settings, setSettings] = useState<TrackMapWidgetSettings>({
-    enabled: currentDashboard?.widgets.find(w => w.id === SETTING_ID)?.enabled ?? false,
-    config: migrateConfig(savedSettings?.config)
+    enabled:
+      currentDashboard?.widgets.find((w) => w.id === SETTING_ID)?.enabled ??
+      false,
+    config: migrateConfig(savedSettings?.config),
   });
 
   // Tab state with persistence
@@ -76,28 +110,39 @@ export const TrackMapSettings = () => {
     >
       {(handleConfigChange) => (
         <div className="space-y-4">
-
           {/* Tabs */}
           <div className="flex border-b border-slate-700/50">
-            <TabButton id="track" activeTab={activeTab} setActiveTab={setActiveTab}>
+            <TabButton
+              id="track"
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+            >
               Track
             </TabButton>
-            <TabButton id="drivers" activeTab={activeTab} setActiveTab={setActiveTab}>
+            <TabButton
+              id="drivers"
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+            >
               Drivers
             </TabButton>
-            <TabButton id="visibility" activeTab={activeTab} setActiveTab={setActiveTab}>
+            <TabButton
+              id="visibility"
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+            >
               Visibility
             </TabButton>
           </div>
 
           <div className="pt-4">
-
             {/* TRACK TAB */}
-            {activeTab === 'track' && (                       
+            {activeTab === 'track' && (
               <div className="space-y-4">
-                <h3 className="text-lg font-medium text-slate-200">Track Settings</h3>   
-                <div className="pl-4 space-y-4">  
-              
+                <h3 className="text-lg font-medium text-slate-200">
+                  Track Settings
+                </h3>
+                <div className="pl-4 space-y-4">
                   <div className="space-y-2">
                     <label className="text-slate-300">
                       Track Line Width: {settings.config.trackLineWidth ?? 20}px
@@ -109,7 +154,9 @@ export const TrackMapSettings = () => {
                       step="1"
                       value={settings.config.trackLineWidth ?? 20}
                       onChange={(e) =>
-                        handleConfigChange({ trackLineWidth: parseInt(e.target.value) ?? 20 })
+                        handleConfigChange({
+                          trackLineWidth: parseInt(e.target.value) ?? 20,
+                        })
                       }
                       className="w-full"
                     />
@@ -120,7 +167,8 @@ export const TrackMapSettings = () => {
 
                   <div className="space-y-2">
                     <label className="text-slate-300">
-                      Track Outline Width: {settings.config.trackOutlineWidth ?? 40}px
+                      Track Outline Width:{' '}
+                      {settings.config.trackOutlineWidth ?? 40}px
                     </label>
                     <input
                       type="range"
@@ -129,7 +177,9 @@ export const TrackMapSettings = () => {
                       step="1"
                       value={settings.config.trackOutlineWidth ?? 40}
                       onChange={(e) =>
-                        handleConfigChange({ trackOutlineWidth: parseInt(e.target.value) ?? 40 })
+                        handleConfigChange({
+                          trackOutlineWidth: parseInt(e.target.value) ?? 40,
+                        })
                       }
                       className="w-full"
                     />
@@ -140,115 +190,146 @@ export const TrackMapSettings = () => {
 
                   <div className="flex items-center justify-between">
                     <div>
-                      <span className="text-sm text-slate-300">Invert Track Colors</span>
+                      <span className="text-sm text-slate-300">
+                        Invert Track Colors
+                      </span>
                       <p className="text-xs text-slate-500">
-                        Use black track with white outline instead of white track with black outline
+                        Use black track with white outline instead of white
+                        track with black outline
                       </p>
                     </div>
                     <ToggleSwitch
                       enabled={settings.config.invertTrackColors ?? false}
-                      onToggle={(enabled) => handleConfigChange({
-                        invertTrackColors: enabled
-                      })}
+                      onToggle={(enabled) =>
+                        handleConfigChange({
+                          invertTrackColors: enabled,
+                        })
+                      }
                     />
                   </div>
 
                   <div className="flex items-center justify-between">
                     <div>
-                      <span className="text-sm text-slate-300">Enable Turn Names</span>
+                      <span className="text-sm text-slate-300">
+                        Enable Turn Names
+                      </span>
                       <p className="text-xs text-slate-500">
                         Show turn numbers and names on the track map
                       </p>
                     </div>
                     <ToggleSwitch
                       enabled={settings.config.enableTurnNames}
-                      onToggle={(enabled) => handleConfigChange({
-                        enableTurnNames: enabled
-                      })}
+                      onToggle={(enabled) =>
+                        handleConfigChange({
+                          enableTurnNames: enabled,
+                        })
+                      }
                     />
                   </div>
 
                   {settings.config.enableTurnNames && (
-                  <div className="flex items-center justify-between pl-4">
-                    <div>
-                      <span className="text-sm text-slate-300">High Contrast Turn Names</span>
-                      <p className="text-xs text-slate-500">
-                        Use black background for turn numbers and turn names for better legibility
-                      </p>
+                    <div className="flex items-center justify-between pl-4">
+                      <div>
+                        <span className="text-sm text-slate-300">
+                          High Contrast Turn Names
+                        </span>
+                        <p className="text-xs text-slate-500">
+                          Use black background for turn numbers and turn names
+                          for better legibility
+                        </p>
+                      </div>
+                      <ToggleSwitch
+                        enabled={settings.config.highContrastTurns ?? false}
+                        onToggle={(enabled) =>
+                          handleConfigChange({
+                            highContrastTurns: enabled,
+                          })
+                        }
+                      />
                     </div>
-                    <ToggleSwitch
-                      enabled={settings.config.highContrastTurns ?? false}
-                      onToggle={(enabled) => handleConfigChange({
-                        highContrastTurns: enabled
-                      })}
-                    />
-                  </div>
                   )}
-
                 </div>
               </div>
             )}
 
-
             {/* DRIVERS TAB */}
-            {activeTab === 'drivers' && (            
+            {activeTab === 'drivers' && (
               <div className="space-y-4">
-                <h3 className="text-lg font-medium text-slate-200">Driver Circles</h3>   
-                <div className="pl-4 space-y-4">  
-
+                <h3 className="text-lg font-medium text-slate-200">
+                  Driver Circles
+                </h3>
+                <div className="pl-4 space-y-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <span className="text-sm text-slate-300">Show Car Numbers</span>
+                      <span className="text-sm text-slate-300">
+                        Show Car Numbers
+                      </span>
                       <p className="text-xs text-slate-500">
                         Display car numbers on driver circles
                       </p>
                     </div>
                     <ToggleSwitch
                       enabled={settings.config.showCarNumbers ?? true}
-                      onToggle={(enabled) => handleConfigChange({
-                        showCarNumbers: enabled
-                      })}
+                      onToggle={(enabled) =>
+                        handleConfigChange({
+                          showCarNumbers: enabled,
+                        })
+                      }
                     />
                   </div>
 
                   {settings.config.showCarNumbers && (
-                  <div className="flex items-center justify-between pl-4">
-                    <span className="text-sm text-slate-300">Display Mode</span>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => handleConfigChange({ displayMode: 'carNumber' })}
-                        className={`px-3 py-1 rounded text-sm transition-colors ${settings.config.displayMode === 'carNumber'
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
+                    <div className="flex items-center justify-between pl-4">
+                      <span className="text-sm text-slate-300">
+                        Display Mode
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() =>
+                            handleConfigChange({ displayMode: 'carNumber' })
+                          }
+                          className={`px-3 py-1 rounded text-sm transition-colors ${
+                            settings.config.displayMode === 'carNumber'
+                              ? 'bg-blue-600 text-white'
+                              : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
                           }`}
-                      >
-                        Car Number
-                      </button>
-                      <button
-                        onClick={() => handleConfigChange({ displayMode: 'sessionPosition' })}
-                        className={`px-3 py-1 rounded text-sm transition-colors ${settings.config.displayMode === 'sessionPosition'
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
+                        >
+                          Car Number
+                        </button>
+                        <button
+                          onClick={() =>
+                            handleConfigChange({
+                              displayMode: 'sessionPosition',
+                            })
+                          }
+                          className={`px-3 py-1 rounded text-sm transition-colors ${
+                            settings.config.displayMode === 'sessionPosition'
+                              ? 'bg-blue-600 text-white'
+                              : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
                           }`}
-                      >
-                        Session Position
-                      </button>
-                      <button
-                        onClick={() => handleConfigChange({ displayMode: 'livePosition' })}
-                        className={`px-3 py-1 rounded text-sm transition-colors ${settings.config.displayMode === 'livePosition'
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
+                        >
+                          Session Position
+                        </button>
+                        <button
+                          onClick={() =>
+                            handleConfigChange({ displayMode: 'livePosition' })
+                          }
+                          className={`px-3 py-1 rounded text-sm transition-colors ${
+                            settings.config.displayMode === 'livePosition'
+                              ? 'bg-blue-600 text-white'
+                              : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
                           }`}
-                      >
-                        Live Position
-                      </button>
+                        >
+                          Live Position
+                        </button>
+                      </div>
                     </div>
-                  </div>
                   )}
 
                   <div className="space-y-2">
                     <label className="text-slate-300">
-                      Driver Circle Size: {settings.config.driverCircleSize ?? 40}px
+                      Driver Circle Size:{' '}
+                      {settings.config.driverCircleSize ?? 40}px
                     </label>
                     <input
                       type="range"
@@ -257,7 +338,9 @@ export const TrackMapSettings = () => {
                       step="1"
                       value={settings.config.driverCircleSize ?? 40}
                       onChange={(e) =>
-                        handleConfigChange({ driverCircleSize: parseInt(e.target.value) || 40 })
+                        handleConfigChange({
+                          driverCircleSize: parseInt(e.target.value) || 40,
+                        })
                       }
                       className="w-full"
                     />
@@ -268,7 +351,8 @@ export const TrackMapSettings = () => {
 
                   <div className="space-y-2">
                     <label className="text-slate-300">
-                      Player Circle Size: {settings.config.playerCircleSize ?? 40}px
+                      Player Circle Size:{' '}
+                      {settings.config.playerCircleSize ?? 40}px
                     </label>
                     <input
                       type="range"
@@ -277,7 +361,9 @@ export const TrackMapSettings = () => {
                       step="1"
                       value={settings.config.playerCircleSize ?? 40}
                       onChange={(e) =>
-                        handleConfigChange({ playerCircleSize: parseInt(e.target.value) || 40 })
+                        handleConfigChange({
+                          playerCircleSize: parseInt(e.target.value) || 40,
+                        })
                       }
                       className="w-full"
                     />
@@ -288,7 +374,8 @@ export const TrackMapSettings = () => {
 
                   <div className="space-y-2">
                     <label className="text-slate-300">
-                      Relative Font Size: {settings.config.trackmapFontSize ?? 100}%
+                      Relative Font Size:{' '}
+                      {settings.config.trackmapFontSize ?? 100}%
                     </label>
                     <input
                       type="range"
@@ -297,7 +384,9 @@ export const TrackMapSettings = () => {
                       step="1"
                       value={settings.config.trackmapFontSize ?? 100}
                       onChange={(e) =>
-                        handleConfigChange({ trackmapFontSize: parseInt(e.target.value) || 100 })
+                        handleConfigChange({
+                          trackmapFontSize: parseInt(e.target.value) || 100,
+                        })
                       }
                       className="w-full"
                     />
@@ -308,19 +397,23 @@ export const TrackMapSettings = () => {
 
                   <div className="flex items-center justify-between">
                     <div>
-                      <span className="text-sm text-slate-300">Use Highlight Color</span>
+                      <span className="text-sm text-slate-300">
+                        Use Highlight Color
+                      </span>
                       <p className="text-xs text-slate-500">
-                        Use the highlight color from general settings for the player&apos;s circle
+                        Use the highlight color from general settings for the
+                        player&apos;s circle
                       </p>
                     </div>
                     <ToggleSwitch
                       enabled={settings.config.useHighlightColor ?? false}
-                      onToggle={(enabled) => handleConfigChange({
-                        useHighlightColor: enabled
-                      })}
+                      onToggle={(enabled) =>
+                        handleConfigChange({
+                          useHighlightColor: enabled,
+                        })
+                      }
                     />
                   </div>
-
                 </div>
               </div>
             )}
@@ -328,7 +421,6 @@ export const TrackMapSettings = () => {
             {/* VISIBILITY TAB */}
             {activeTab === 'visibility' && (
               <div className="space-y-4">
-
                 <div className="space-y-4">
                   <h3 className="text-lg font-medium text-slate-200">
                     Session Visibility
@@ -359,12 +451,10 @@ export const TrackMapSettings = () => {
                     }
                   />
                 </div>
-
               </div>
             )}
-
+          </div>
         </div>
-      </div>
       )}
     </BaseSettingsSection>
   );

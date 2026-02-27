@@ -2,7 +2,7 @@
 export const BadgeFormatPreview = ({
   format,
   selected,
-  onClick
+  onClick,
 }: {
   format: string;
   selected: boolean;
@@ -11,10 +11,10 @@ export const BadgeFormatPreview = ({
   const renderPreview = () => {
     switch (format) {
       case 'license-color-fullrating-combo':
-        return (          
-            <div className="text-white text-nowrap border-2 px-1 rounded-md text-xs leading-tight border-green-500 bg-green-800">
-              B 3.8 &nbsp; 1412
-            </div>  
+        return (
+          <div className="text-white text-nowrap border-2 px-1 rounded-md text-xs leading-tight border-green-500 bg-green-800">
+            B 3.8 &nbsp; 1412
+          </div>
         );
       case 'fullrating-color-no-license':
         return (

@@ -1,6 +1,10 @@
 import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
-import { SessionVisibilitySettings, StandingsWidgetSettings, SettingsTabType } from '../types';
+import {
+  SessionVisibilitySettings,
+  StandingsWidgetSettings,
+  SettingsTabType,
+} from '../types';
 import { useDashboard } from '@irdashies/context';
 import { ToggleSwitch } from '../components/ToggleSwitch';
 import { TabButton } from '../components/TabButton';
@@ -165,7 +169,19 @@ const migrateConfig = (
     },
     badge: {
       enabled: (config.badge as { enabled?: boolean })?.enabled ?? true,
-      badgeFormat: ((config.badge as { badgeFormat?: string })?.badgeFormat as 'license-color-fullrating-combo' | 'fullrating-color-no-license' | 'license-color-fullrating-bw' | 'license-color-rating-bw' | 'license-color-rating-bw-no-license' | 'rating-color-no-license' | 'license-bw-rating-bw' | 'rating-only-bw-rating-bw' | 'license-bw-rating-bw-no-license' | 'rating-bw-no-license' | 'fullrating-bw-no-license') ?? 'license-color-rating-bw'
+      badgeFormat:
+        ((config.badge as { badgeFormat?: string })?.badgeFormat as
+          | 'license-color-fullrating-combo'
+          | 'fullrating-color-no-license'
+          | 'license-color-fullrating-bw'
+          | 'license-color-rating-bw'
+          | 'license-color-rating-bw-no-license'
+          | 'rating-color-no-license'
+          | 'license-bw-rating-bw'
+          | 'rating-only-bw-rating-bw'
+          | 'license-bw-rating-bw-no-license'
+          | 'rating-bw-no-license'
+          | 'fullrating-bw-no-license') ?? 'license-color-rating-bw',
     },
     delta: {
       enabled: (config.delta as { enabled?: boolean })?.enabled ?? true,
@@ -642,17 +658,17 @@ const DisplaySettingsList = ({
                   <div className="flex flex-wrap gap-3 justify-end">
                     {(
                       [
-                        'license-color-fullrating-combo', 
-                        'fullrating-color-no-license', 
-                        'rating-color-no-license', 
-                        'license-color-fullrating-bw', 
-                        'license-color-rating-bw', 
-                        'rating-only-color-rating-bw', 
-                        'license-color-rating-bw-no-license', 
-                        'license-bw-rating-bw', 
-                        'rating-only-bw-rating-bw', 
-                        'license-bw-rating-bw-no-license', 
-                        'rating-bw-no-license', 
+                        'license-color-fullrating-combo',
+                        'fullrating-color-no-license',
+                        'rating-color-no-license',
+                        'license-color-fullrating-bw',
+                        'license-color-rating-bw',
+                        'rating-only-color-rating-bw',
+                        'license-color-rating-bw-no-license',
+                        'license-bw-rating-bw',
+                        'rating-only-bw-rating-bw',
+                        'license-bw-rating-bw-no-license',
+                        'rating-bw-no-license',
                         'fullrating-bw-no-license',
                       ] as const
                     ).map((format) => (
@@ -721,12 +737,14 @@ const DisplaySettingsList = ({
                     ))}
                   </div>
                 </div>
-              )}            
+              )}
             {setting.hasSubSetting &&
               setting.configKey === 'driverName' &&
               settings.config.driverName.enabled && (
                 <div className="flex items-center justify-between pl-8 mt-2 indent-8">
-                  <span className="text-sm text-slate-300">Remove Numbers From Names</span>
+                  <span className="text-sm text-slate-300">
+                    Remove Numbers From Names
+                  </span>
                   <ToggleSwitch
                     enabled={settings.config.driverName.removeNumbersFromName}
                     onToggle={(enabled) => {
@@ -1045,7 +1063,7 @@ export const StandingsSettings = () => {
 
   useEffect(() => {
     localStorage.setItem('standingsTab', activeTab);
-  }, [activeTab]);  
+  }, [activeTab]);
 
   if (!currentDashboard) {
     return <>Loading...</>;
@@ -1136,145 +1154,146 @@ export const StandingsSettings = () => {
                 </div>
               )}
 
-                {/* OPTIONS TAB */}
+              {/* OPTIONS TAB */}
               {activeTab === 'options' && (
                 <div className="space-y-4">
                   <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-medium text-slate-200">
-                      Driver Standings
-                    </h3>
-                  </div>
-                  <div className="space-y-3 pl-4">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-slate-300">
-                        Drivers to show around player
-                      </span>
-                      <input
-                        type="number"
-                        min={0}
-                        value={settings.config.driverStandings.buffer}
-                        onChange={(e) =>
-                          handleConfigChange({
-                            driverStandings: {
-                              ...settings.config.driverStandings,
-                              buffer: parseInt(e.target.value),
-                            },
-                          })
-                        }
-                        className="bg-slate-700 text-white rounded-md px-2 py-1"
-                      />
+                      <h3 className="text-lg font-medium text-slate-200">
+                        Driver Standings
+                      </h3>
                     </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-slate-300">
-                        Drivers to show in other classes
-                      </span>
-                      <input
-                        type="number"
-                        min={0}
-                        value={
-                          settings.config.driverStandings.numNonClassDrivers
-                        }
-                        onChange={(e) =>
-                          handleConfigChange({
-                            driverStandings: {
-                              ...settings.config.driverStandings,
-                              numNonClassDrivers: parseInt(e.target.value),
-                            },
-                          })
-                        }
-                        className="bg-slate-700 text-white rounded-md px-2 py-1"
-                      />
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-slate-300">
-                        Minimum drivers in player&apos;s class
-                      </span>
-                      <input
-                        type="number"
-                        min={0}
-                        value={
-                          settings.config.driverStandings.minPlayerClassDrivers
-                        }
-                        onChange={(e) =>
-                          handleConfigChange({
-                            driverStandings: {
-                              ...settings.config.driverStandings,
-                              minPlayerClassDrivers: parseInt(e.target.value),
-                            },
-                          })
-                        }
-                        className="bg-slate-700 text-white rounded-md px-2 py-1"
-                      />
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-slate-300">
-                        Top drivers to always show in player&apos;s class
-                      </span>
-                      <input
-                        type="number"
-                        min={0}
-                        value={settings.config.driverStandings.numTopDrivers}
-                        onChange={(e) =>
-                          handleConfigChange({
-                            driverStandings: {
-                              ...settings.config.driverStandings,
-                              numTopDrivers: parseInt(e.target.value),
-                            },
-                          })
-                        }
-                        className="bg-slate-700 text-white rounded-md px-2 py-1"
-                      />
-                    </div>
-                    {settings.config.driverStandings.numTopDrivers > 0 && (
+                    <div className="space-y-3 pl-4">
                       <div className="flex items-center justify-between">
                         <span className="text-sm text-slate-300">
-                          Top driver divider
+                          Drivers to show around player
                         </span>
-                        <select
+                        <input
+                          type="number"
+                          min={0}
+                          value={settings.config.driverStandings.buffer}
+                          onChange={(e) =>
+                            handleConfigChange({
+                              driverStandings: {
+                                ...settings.config.driverStandings,
+                                buffer: parseInt(e.target.value),
+                              },
+                            })
+                          }
+                          className="bg-slate-700 text-white rounded-md px-2 py-1"
+                        />
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-slate-300">
+                          Drivers to show in other classes
+                        </span>
+                        <input
+                          type="number"
+                          min={0}
                           value={
-                            settings.config.driverStandings.topDriverDivider ??
-                            'highlight'
+                            settings.config.driverStandings.numNonClassDrivers
                           }
                           onChange={(e) =>
                             handleConfigChange({
                               driverStandings: {
                                 ...settings.config.driverStandings,
-                                topDriverDivider: e.target.value as
-                                  | 'none'
-                                  | 'theme'
-                                  | 'highlight',
+                                numNonClassDrivers: parseInt(e.target.value),
                               },
                             })
                           }
                           className="bg-slate-700 text-white rounded-md px-2 py-1"
-                        >
-                          <option value="highlight">Highlight Color</option>
-                          <option value="theme">Theme Color</option>
-                          <option value="none">None</option>
-                        </select>
+                        />
                       </div>
-                    )}
-                    <div className="flex items-center justify-between gap-4">
-                      <div>
-                        <h4 className="text-md font-medium text-slate-300">
-                          Use Live Position Standings
-                        </h4>
-                        <p className="text-xs text-slate-500">
-                          If enabled, live telemetry will be used to compute
-                          driver positions. This may be less stable but will
-                          update live and not only on start/finish line.
-                        </p>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-slate-300">
+                          Minimum drivers in player&apos;s class
+                        </span>
+                        <input
+                          type="number"
+                          min={0}
+                          value={
+                            settings.config.driverStandings
+                              .minPlayerClassDrivers
+                          }
+                          onChange={(e) =>
+                            handleConfigChange({
+                              driverStandings: {
+                                ...settings.config.driverStandings,
+                                minPlayerClassDrivers: parseInt(e.target.value),
+                              },
+                            })
+                          }
+                          className="bg-slate-700 text-white rounded-md px-2 py-1"
+                        />
                       </div>
-                      <ToggleSwitch
-                        enabled={settings.config.useLivePosition ?? false}
-                        onToggle={(enabled) =>
-                          handleConfigChange({ useLivePosition: enabled })
-                        }
-                      />
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-slate-300">
+                          Top drivers to always show in player&apos;s class
+                        </span>
+                        <input
+                          type="number"
+                          min={0}
+                          value={settings.config.driverStandings.numTopDrivers}
+                          onChange={(e) =>
+                            handleConfigChange({
+                              driverStandings: {
+                                ...settings.config.driverStandings,
+                                numTopDrivers: parseInt(e.target.value),
+                              },
+                            })
+                          }
+                          className="bg-slate-700 text-white rounded-md px-2 py-1"
+                        />
+                      </div>
+                      {settings.config.driverStandings.numTopDrivers > 0 && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-slate-300">
+                            Top driver divider
+                          </span>
+                          <select
+                            value={
+                              settings.config.driverStandings
+                                .topDriverDivider ?? 'highlight'
+                            }
+                            onChange={(e) =>
+                              handleConfigChange({
+                                driverStandings: {
+                                  ...settings.config.driverStandings,
+                                  topDriverDivider: e.target.value as
+                                    | 'none'
+                                    | 'theme'
+                                    | 'highlight',
+                                },
+                              })
+                            }
+                            className="bg-slate-700 text-white rounded-md px-2 py-1"
+                          >
+                            <option value="highlight">Highlight Color</option>
+                            <option value="theme">Theme Color</option>
+                            <option value="none">None</option>
+                          </select>
+                        </div>
+                      )}
+                      <div className="flex items-center justify-between gap-4">
+                        <div>
+                          <h4 className="text-md font-medium text-slate-300">
+                            Use Live Position Standings
+                          </h4>
+                          <p className="text-xs text-slate-500">
+                            If enabled, live telemetry will be used to compute
+                            driver positions. This may be less stable but will
+                            update live and not only on start/finish line.
+                          </p>
+                        </div>
+                        <ToggleSwitch
+                          enabled={settings.config.useLivePosition ?? false}
+                          onToggle={(enabled) =>
+                            handleConfigChange({ useLivePosition: enabled })
+                          }
+                        />
+                      </div>
                     </div>
                   </div>
-                </div>
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <h3 className="text-lg font-medium text-slate-200">

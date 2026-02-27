@@ -85,16 +85,16 @@ export const drawTurnNames = (
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.font = `${fontSize}rem sans-serif`;
-    // measure text      
-    const m = ctx.measureText(turn.content); 
-    if (highContrastTurns) {      
+    // measure text
+    const m = ctx.measureText(turn.content);
+    if (highContrastTurns) {
       const padding = 20;
       const textWidth = m.width;
       const textHeight = m.actualBoundingBoxAscent + m.actualBoundingBoxDescent;
       const rectX = turn.x - textWidth / 2 - padding / 2;
       const rectY = turn.y - textHeight / 2 - padding / 2;
       const rectW = textWidth + padding;
-      const rectH = textHeight + padding;      
+      const rectH = textHeight + padding;
       const radius = Math.min(20, rectW / 2, rectH / 2);
       // rounded rect
       ctx.beginPath();
@@ -106,11 +106,12 @@ export const drawTurnNames = (
       ctx.closePath();
       // fill rect
       ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-      ctx.fill();          
-    } 
-    ctx.fillStyle = 'white';     
+      ctx.fill();
+    }
+    ctx.fillStyle = 'white';
     // visual offset
-    const visualOffset = (m.actualBoundingBoxAscent - m.actualBoundingBoxDescent) / 2;
+    const visualOffset =
+      (m.actualBoundingBoxAscent - m.actualBoundingBoxDescent) / 2;
     ctx.fillText(turn.content, turn.x, turn.y + visualOffset);
   });
 };
@@ -132,9 +133,8 @@ export const drawDrivers = (
   showCarNumbers: boolean,
   displayMode: 'carNumber' | 'sessionPosition' | 'livePosition' = 'carNumber',
   driverLivePositions: Record<number, number>,
-  carIdxIsOnPitRoad?: number[],
+  carIdxIsOnPitRoad?: number[]
 ) => {
-
   Object.values(calculatePositions)
     .sort((a, b) => Number(a.isPlayer) - Number(b.isPlayer)) // draws player last to be on top
     .forEach(({ driver, position, isPlayer, sessionPosition }) => {
@@ -169,13 +169,12 @@ export const drawDrivers = (
         if (onPitRoad) {
           displayText = 'P';
         } else if (displayMode === 'livePosition') {
-          const livePosition = driverLivePositions[driver.CarIdx] ?? sessionPosition;
+          const livePosition =
+            driverLivePositions[driver.CarIdx] ?? sessionPosition;
           displayText =
-            livePosition && livePosition > 0
-              ? livePosition.toString()
-              : '';
+            livePosition && livePosition > 0 ? livePosition.toString() : '';
         } else if (displayMode === 'sessionPosition') {
-           displayText =
+          displayText =
             sessionPosition && sessionPosition > 0
               ? sessionPosition.toString()
               : '';
@@ -184,7 +183,8 @@ export const drawDrivers = (
         }
         if (displayText) {
           const m = ctx.measureText(displayText);
-          const visualOffset = (m.actualBoundingBoxAscent - m.actualBoundingBoxDescent) / 2;
+          const visualOffset =
+            (m.actualBoundingBoxAscent - m.actualBoundingBoxDescent) / 2;
           ctx.fillText(displayText, position.x, position.y + visualOffset);
         }
       }

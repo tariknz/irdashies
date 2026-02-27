@@ -56,7 +56,9 @@ const migrateConfig = (
         (config.closestDriverBox as 'Top' | 'Reverse') ??
         defaultConfig.closestDriverBox,
       showName: (config.showName as boolean) ?? defaultConfig.showName,
-      removeNumbersFromName: (config.removeNumbersFromName as boolean) ?? defaultConfig.removeNumbersFromName,
+      removeNumbersFromName:
+        (config.removeNumbersFromName as boolean) ??
+        defaultConfig.removeNumbersFromName,
       showDistance:
         (config.showDistance as boolean) ?? defaultConfig.showDistance,
       showBadge: (config.showBadge as boolean) ?? defaultConfig.showBadge,
@@ -83,7 +85,9 @@ export const FasterCarsFromBehindSettings = () => {
 
   // Tab state with persistence
   const [activeTab, setActiveTab] = useState<SettingsTabType>(
-    () => (localStorage.getItem('fasterCarsFromBehindTab') as SettingsTabType) || 'display'
+    () =>
+      (localStorage.getItem('fasterCarsFromBehindTab') as SettingsTabType) ||
+      'display'
   );
 
   useEffect(() => {
@@ -104,30 +108,36 @@ export const FasterCarsFromBehindSettings = () => {
     >
       {(handleConfigChange) => (
         <div className="space-y-4">
-
           {/* Tabs */}
           <div className="flex border-b border-slate-700/50">
-            <TabButton id="display" activeTab={activeTab} setActiveTab={setActiveTab}>
+            <TabButton
+              id="display"
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+            >
               Display
             </TabButton>
-            <TabButton id="visibility" activeTab={activeTab} setActiveTab={setActiveTab}>
+            <TabButton
+              id="visibility"
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+            >
               Visibility
             </TabButton>
           </div>
 
           <div className="pt-4">
-
             {/* DISPLAY TAB */}
             {activeTab === 'display' && (
-            <div className="space-y-4">
-                <h3 className="text-lg font-medium text-slate-200">Display</h3>   
-                <div className="pl-4 space-y-4">  
-
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium text-slate-200">Display</h3>
+                <div className="pl-4 space-y-4">
                   {/* Distance Threshold */}
                   <div className="space-y-2">
                     <label className="text-slate-300">
                       Distance Threshold:{' '}
-                      {Math.abs(settings.config.distanceThreshold).toFixed(1)} seconds
+                      {Math.abs(settings.config.distanceThreshold).toFixed(1)}{' '}
+                      seconds
                     </label>
                     <input
                       type="range"
@@ -143,8 +153,8 @@ export const FasterCarsFromBehindSettings = () => {
                       className="w-full"
                     />
                     <p className="text-xs text-slate-500">
-                      Minimum gap to a faster car before it is displayed. Smaller values
-                      show cars that are closer behind you.
+                      Minimum gap to a faster car before it is displayed.
+                      Smaller values show cars that are closer behind you.
                     </p>
                   </div>
 
@@ -171,7 +181,9 @@ export const FasterCarsFromBehindSettings = () => {
                   {/* Show Name Section */}
                   <div className="flex items-center justify-between">
                     <div>
-                      <h4 className="text-md font-medium text-slate-300">Show Name</h4>
+                      <h4 className="text-md font-medium text-slate-300">
+                        Show Name
+                      </h4>
                       <span className="block text-xs text-slate-500">
                         Display the driver name in the faster cars widget.
                       </span>
@@ -187,22 +199,24 @@ export const FasterCarsFromBehindSettings = () => {
                   </div>
 
                   {settings.config.showName && (
-                  <div className="flex items-center justify-between indent-8">
-                    <div>
-                      <h4 className="text-md font-medium text-slate-300">Remove Numbers From Names</h4>
-                      <span className="block text-xs text-slate-500">
-                        Remove numbers from the displayed driver name.
-                      </span>
+                    <div className="flex items-center justify-between indent-8">
+                      <div>
+                        <h4 className="text-md font-medium text-slate-300">
+                          Remove Numbers From Names
+                        </h4>
+                        <span className="block text-xs text-slate-500">
+                          Remove numbers from the displayed driver name.
+                        </span>
+                      </div>
+                      <ToggleSwitch
+                        enabled={settings.config.removeNumbersFromName}
+                        onToggle={(newValue) =>
+                          handleConfigChange({
+                            removeNumbersFromName: newValue,
+                          })
+                        }
+                      />
                     </div>
-                    <ToggleSwitch
-                      enabled={settings.config.removeNumbersFromName}
-                      onToggle={(newValue) =>
-                        handleConfigChange({
-                          removeNumbersFromName: newValue,
-                        })
-                      }
-                    />
-                  </div>
                   )}
 
                   {/* Show Badge Section */}
@@ -237,12 +251,12 @@ export const FasterCarsFromBehindSettings = () => {
                             'license-color-fullrating-bw',
                             'license-color-rating-bw',
                             'rating-only-color-rating-bw',
-                            'license-color-rating-bw-no-license',                    
+                            'license-color-rating-bw-no-license',
                             'license-bw-rating-bw',
                             'rating-only-bw-rating-bw',
                             'license-bw-rating-bw-no-license',
                             'rating-bw-no-license',
-                            'fullrating-bw-no-license',                     
+                            'fullrating-bw-no-license',
                           ] as const
                         ).map((format) => (
                           <BadgeFormatPreview
@@ -262,7 +276,9 @@ export const FasterCarsFromBehindSettings = () => {
 
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-slate-300">Drivers Behind</span>
+                      <span className="text-sm text-slate-300">
+                        Drivers Behind
+                      </span>
                       <select
                         value={settings.config.numberDriversBehind}
                         onChange={(e) =>
@@ -272,50 +288,64 @@ export const FasterCarsFromBehindSettings = () => {
                         }
                         className="bg-slate-700 text-white rounded-md px-2 py-1"
                       >
-                        {Array.from({ length: 10 }, (_, i) => i + 1).map((num) => (
-                          <option key={num} value={num}>
-                            {num}
-                          </option>
-                        ))}
+                        {Array.from({ length: 10 }, (_, i) => i + 1).map(
+                          (num) => (
+                            <option key={num} value={num}>
+                              {num}
+                            </option>
+                          )
+                        )}
                       </select>
                     </div>
                   </div>
 
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-slate-300">Align Driver Boxes</span>
+                      <span className="text-sm text-slate-300">
+                        Align Driver Boxes
+                      </span>
                       <select
                         value={settings.config.alignDriverBoxes}
                         onChange={(e) =>
                           handleConfigChange({
-                            alignDriverBoxes: e.target.value as 'Top' | 'Bottom',
+                            alignDriverBoxes: e.target.value as
+                              | 'Top'
+                              | 'Bottom',
                           })
                         }
                         className="bg-slate-700 text-white rounded-md px-2 py-1"
                       >
                         <option value="Top">Align to Top of Widget</option>
-                        <option value="Bottom">Align to Bottom of Widget</option>
+                        <option value="Bottom">
+                          Align to Bottom of Widget
+                        </option>
                       </select>
                     </div>
                   </div>
 
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-slate-300">Closest Driver</span>
+                      <span className="text-sm text-slate-300">
+                        Closest Driver
+                      </span>
                       <select
                         value={settings.config.closestDriverBox}
                         onChange={(e) =>
                           handleConfigChange({
-                            closestDriverBox: e.target.value as 'Top' | 'Reverse',
+                            closestDriverBox: e.target.value as
+                              | 'Top'
+                              | 'Reverse',
                           })
                         }
                         className="bg-slate-700 text-white rounded-md px-2 py-1"
                       >
                         <option value="Top">Closest Driver at Top</option>
-                        <option value="Reverse">Closest Driver at Bottom</option>
+                        <option value="Reverse">
+                          Closest Driver at Bottom
+                        </option>
                       </select>
                     </div>
-                  </div>          
+                  </div>
 
                   {/* Only Show Faster Classes Section */}
                   <div className="flex items-center justify-between">
@@ -337,7 +367,6 @@ export const FasterCarsFromBehindSettings = () => {
                       }
                     />
                   </div>
-
                 </div>
               </div>
             )}
@@ -345,7 +374,6 @@ export const FasterCarsFromBehindSettings = () => {
             {/* VISIBILITY TAB */}
             {activeTab === 'visibility' && (
               <div className="space-y-4">
-
                 <div className="space-y-4">
                   <h3 className="text-lg font-medium text-slate-200">
                     Session Visibility
@@ -376,12 +404,10 @@ export const FasterCarsFromBehindSettings = () => {
                     }
                   />
                 </div>
-
               </div>
             )}
-                   
+          </div>
         </div>
-      </div>
       )}
     </BaseSettingsSection>
   );

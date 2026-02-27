@@ -2,17 +2,17 @@ export interface DriverNameParts {
   firstName: string;
   middleName: string | null;
   surname: string;
-};
+}
 
 export const extractDriverName = (
   fullName = '',
   removeNumbersFromName = false
 ): DriverNameParts => {
   const parts = fullName
-  .trim()
-  .split(/\s+/)
-  .filter(Boolean)
-  .map(part => removeNumbersFromName ? part.replace(/\d/g, '') : part);
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((part) => (removeNumbersFromName ? part.replace(/\d/g, '') : part));
 
   if (parts.length === 0) {
     return { firstName: '', middleName: null, surname: '' };
@@ -28,10 +28,7 @@ export const extractDriverName = (
 
   return {
     firstName: parts[0],
-    middleName:
-      parts.length > 2
-        ? parts.slice(1, -1).join(' ')
-        : null,
+    middleName: parts.length > 2 ? parts.slice(1, -1).join(' ') : null,
     surname: parts[parts.length - 1],
   };
 };
@@ -61,7 +58,9 @@ export const DriverName = (
       return [firstName, middleName, surname].filter(Boolean).join(' ');
 
     case 'name-m.-surname':
-      return [firstName, middleInitial && `${middleInitial}.`, surname].filter(Boolean).join(' ');
+      return [firstName, middleInitial && `${middleInitial}.`, surname]
+        .filter(Boolean)
+        .join(' ');
 
     case 'name-surname':
       return [firstName, surname].filter(Boolean).join(' ');

@@ -20,18 +20,18 @@ export interface StandingsWidgetSettings extends BaseWidgetSettings {
     badge: {
       enabled: boolean;
       badgeFormat:
-      | 'license-color-fullrating-combo'
-      | 'fullrating-color-no-license'
-      | 'rating-color-no-license'
-      | 'license-color-fullrating-bw'
-      | 'license-color-rating-bw'
-      | 'rating-only-color-rating-bw'
-      | 'license-color-rating-bw-no-license'
-      | 'license-bw-rating-bw'
-      | 'rating-only-bw-rating-bw'
-      | 'license-bw-rating-bw-no-license'
-      | 'rating-bw-no-license'
-      | 'fullrating-bw-no-license';
+        | 'license-color-fullrating-combo'
+        | 'fullrating-color-no-license'
+        | 'rating-color-no-license'
+        | 'license-color-fullrating-bw'
+        | 'license-color-rating-bw'
+        | 'rating-only-color-rating-bw'
+        | 'license-color-rating-bw-no-license'
+        | 'license-bw-rating-bw'
+        | 'rating-only-bw-rating-bw'
+        | 'license-bw-rating-bw-no-license'
+        | 'rating-bw-no-license'
+        | 'fullrating-bw-no-license';
     };
     delta: { enabled: boolean };
     gap: { enabled: boolean };
@@ -114,7 +114,7 @@ export interface StandingsWidgetSettings extends BaseWidgetSettings {
     driverName: {
       enabled: boolean;
       showStatusBadges: boolean;
-      removeNumbersFromName: boolean,
+      removeNumbersFromName: boolean;
       nameFormat:
         | 'name-middlename-surname'
         | 'name-m.-surname'
@@ -226,7 +226,7 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
     driverName: {
       enabled: boolean;
       showStatusBadges: boolean;
-      removeNumbersFromName: boolean,
+      removeNumbersFromName: boolean;
       nameFormat:
         | 'name-middlename-surname'
         | 'name-m.-surname'
@@ -469,7 +469,7 @@ export type FuelWidgetType =
   | 'confidence'
   | 'keyInfo';
 
-  /** Available widgets for the Fuel Calculator */
+/** Available widgets for the Fuel Calculator */
 export type SettingsTabType =
   | 'display'
   | 'options'

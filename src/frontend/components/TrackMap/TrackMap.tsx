@@ -38,7 +38,9 @@ export const TrackMap = () => {
         trackmapFontSize={settings?.trackmapFontSize ?? 100}
         trackLineWidth={settings?.trackLineWidth ?? 20}
         trackOutlineWidth={settings?.trackOutlineWidth ?? 40}
-        highlightColor={settings?.useHighlightColor ? highlightColor : undefined}
+        highlightColor={
+          settings?.useHighlightColor ? highlightColor : undefined
+        }
         debug={debug}
       />
     </div>
