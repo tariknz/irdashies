@@ -23,9 +23,9 @@ export function SettingSliderRow({
 }: SettingSliderRowProps) {
   return (
     <div className="space-y-2">
-      <label className="text-slate-300">
+      <label className="text-md text-slate-300">
         {title}
-        <span className="text-slate-400">{showValue && `: ${value}${units ? ` ${units}` : ''}`}</span>
+        <span className="text-md text-slate-400">{showValue && `: ${value}${units ? ` ${units}` : ''}`}</span>
       </label>
       <input
         type="range"
@@ -37,7 +37,7 @@ export function SettingSliderRow({
         className="w-full cursor-pointer"
       />
       {description && (
-        <p className="text-xs text-slate-500">{description}</p>
+        <p className="text-sm text-slate-500">{description}</p>
       )}
     </div>
   );

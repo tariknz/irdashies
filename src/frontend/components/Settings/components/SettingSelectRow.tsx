@@ -18,7 +18,7 @@ export function SettingSelectRow<T extends string>({
       <div className="max-w-[70%]">
         <h4 className="text-md font-medium text-slate-300">{title}</h4>
         {description && (
-          <p className="text-xs text-slate-500 mt-1">{description}</p>
+          <p className="text-sm text-slate-500 mt-1">{description}</p>
         )}
       </div>
 

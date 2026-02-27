@@ -14,31 +14,31 @@ export const DualFontSizeInput = ({ widgetId, title, description, settings, onCh
   return (
     <div className="flex items-center justify-between py-4 mb-0 border-b border-white/5">
       <div>
-        <span className="text-sm text-slate-300">{title}</span>
+        <span className="text-md text-slate-300">{title}</span>
         {description && (
-          <span className="block text-xs text-slate-500">{description}</span>
+          <span className="block text-sm text-slate-500 pr-8">{description}</span>
         )}        
       </div>
       <div className="flex flex-col gap-1 w-full max-w-[140px] mr-20">
         <div className="flex items-center gap-2">
-          <span className="text-[10px] text-slate-400 w-8">Label</span>
+          <span className="text-xs text-slate-400 w-8">Label</span>
           <input
             type="range" min="8" max="48" step="1"
             value={labelSize}
             onChange={(e) => updateStyle('labelFontSize', parseInt(e.target.value))}
             className="flex-1 h-1.5 bg-slate-600 rounded-lg appearance-none cursor-pointer slider"
           />
-          <span className="text-[10px] text-slate-300 w-4 text-right">{labelSize}</span>
+          <span className="text-xs text-slate-300 w-4 text-right">{labelSize}</span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-[10px] text-slate-400 w-8">Value</span>
+          <span className="text-xs text-slate-400 w-8">Value</span>
           <input
             type="range" min="8" max="64" step="1"
             value={valueSize}
             onChange={(e) => updateStyle('valueFontSize', parseInt(e.target.value))}
             className="flex-1 h-1.5 bg-slate-600 rounded-lg appearance-none cursor-pointer slider"
           />
-          <span className="text-[10px] text-slate-300 w-4 text-right">{valueSize}</span>
+          <span className="text-xs text-slate-300 w-4 text-right">{valueSize}</span>
         </div>
       </div>
     </div>
@@ -51,7 +51,7 @@ export const BarFontSizeInput = ({ widgetId, settings, onChange }: { widgetId: s
 
   return (
     <div className="flex items-center gap-2">
-      <span className="text-[10px] text-slate-400 w-8">Inside</span>
+      <span className="text-xs text-slate-400 w-8">Inside</span>
       <input
         type="range"
         min="6"
@@ -66,7 +66,7 @@ export const BarFontSizeInput = ({ widgetId, settings, onChange }: { widgetId: s
         }}
         className="flex-1 h-1.5 bg-slate-600 rounded-lg appearance-none cursor-pointer slider w-[60px]"
       />
-      <span className="text-[10px] text-slate-300 w-4 text-right">{fontSize ?? 8}</span>
+      <span className="text-xs text-slate-300 w-4 text-right">{fontSize ?? 8}</span>
     </div>
   );
 };

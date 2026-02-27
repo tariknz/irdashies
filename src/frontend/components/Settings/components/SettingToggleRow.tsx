@@ -20,7 +20,7 @@ export function SettingToggleRow({
           {title}
         </h4>
         {description && (
-          <p className="text-xs text-slate-500 pr-8">
+          <p className="text-sm text-slate-500 pr-8">
             {description}
           </p>
         )}

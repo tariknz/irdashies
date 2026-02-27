@@ -13,7 +13,7 @@ export function SettingButtonGroupRow<T extends string>({
 }: SettingButtonGroupRowProps<T>) {
   return (
     <div className="flex items-center justify-between">
-      <span className="text-sm text-slate-300">{title}</span>
+      <span className="text-md text-slate-300">{title}</span>
       <div className="flex items-center gap-2">
         {options.map((opt) => {
           const isActive = opt.value === value;
