@@ -1,6 +1,5 @@
 import { FuelWidgetSettings } from '../../types';
 import { ToggleSwitch } from '../../components/ToggleSwitch';
-import { DualFontSizeInput } from './FontSizeInputs';
 
 interface PitStrategySectionProps {
   settings: FuelWidgetSettings;
@@ -9,8 +8,8 @@ interface PitStrategySectionProps {
 
 export const PitStrategySection = ({ settings, onChange }: PitStrategySectionProps) => {
   return (
-    <div className="border-t border-slate-600/50 pt-6 space-y-4">
-      <h3 className="text-md font-medium text-slate-200">Pit Strategy</h3>
+    <div className="space-y-4">
+      <h3 className="text-lg font-medium text-slate-200">Pit Strategy</h3>
 
       <div className="flex items-center justify-between">
         <div>
@@ -26,7 +25,10 @@ export const PitStrategySection = ({ settings, onChange }: PitStrategySectionPro
       {(settings.config.enableTargetPitLap) && (
         <div className="ml-1 pl-3 border-l-2 border-slate-700/50 space-y-3">
           <div className="flex items-center justify-between pr-2">
-            <span className="text-sm text-slate-300">Target Pit Lap</span>
+            <div>
+              <span className="text-sm text-slate-300">Target Pit Lap</span>
+              <span className="block text-xs text-slate-500">Scenarios will include this lap as a 4th row. Target message will show fuel required.</span>
+            </div>
             <div className="flex items-center gap-2">
               <span className="text-xs text-slate-500">L</span>
               <input
@@ -42,7 +44,8 @@ export const PitStrategySection = ({ settings, onChange }: PitStrategySectionPro
 
           <div className="flex items-center justify-between pr-2">
             <div>
-              <span className="text-xs text-slate-400">Calculated From</span>
+              <span className="text-sm text-slate-300">Calculated From</span>
+              <span className="block text-xs text-slate-500">Lap or laps to base the caluclation on.</span>
             </div>
             <select
               value={settings.config.targetPitLapBasis ?? 'avg'}
@@ -58,29 +61,9 @@ export const PitStrategySection = ({ settings, onChange }: PitStrategySectionPro
             </select>
           </div>
 
-          <div className="flex items-center justify-between pr-2">
-            <span className="text-xs text-slate-400">Target Message Font</span>
-            <DualFontSizeInput widgetId="fuelTargetMessage" settings={settings} onChange={onChange} />
-          </div>
-
-          <p className="text-[10px] text-slate-500 italic">
-            Scenarios will include this lap as a 4th row. Target message will show fuel required.
-          </p>
         </div>
       )}
-
-      {/* Moved Fuel Scenarios here for better organization */}
-      <div className="pt-4 mt-4 border-t border-slate-700/30">
-        <div className="flex items-center justify-between pr-20">
-          <div>
-            <span className="text-sm text-slate-300">Fuel Scenarios</span>
-            <span className="block text-[10px] text-slate-500">Pit stop calculations (-1, Ideal, +1 Lap)</span>
-          </div>
-          <div className="flex items-center gap-4">
-            <DualFontSizeInput widgetId="fuelScenarios" settings={settings} onChange={onChange} />
-          </div>
-        </div>
-      </div>
+      
     </div>
   );
 };

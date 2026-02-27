@@ -47,8 +47,14 @@ describe('FlatTrackMap', () => {
       trackOutlineWidth: 40,
       invertTrackColors: false,
       useHighlightColor: false,
-      showOnlyWhenOnTrack: false,      
-      sessionVisibility: { race: true, loneQualify: true, openQualify: true, practice: true, offlineTesting: true },
+      showOnlyWhenOnTrack: false,
+      sessionVisibility: {
+        race: true,
+        loneQualify: true,
+        openQualify: true,
+        practice: true,
+        offlineTesting: true,
+      },
     });
     vi.mocked(useTelemetryValue).mockReturnValue(true);
 
@@ -69,7 +75,13 @@ describe('FlatTrackMap', () => {
       invertTrackColors: false,
       useHighlightColor: false,
       showOnlyWhenOnTrack: true,
-      sessionVisibility: { race: true, loneQualify: true, openQualify: true, practice: true, offlineTesting: true },
+      sessionVisibility: {
+        race: true,
+        loneQualify: true,
+        openQualify: true,
+        practice: true,
+        offlineTesting: true,
+      },
     });
     vi.mocked(useTelemetryValue).mockReturnValue(false);
 
@@ -90,7 +102,13 @@ describe('FlatTrackMap', () => {
       invertTrackColors: false,
       useHighlightColor: false,
       showOnlyWhenOnTrack: true,
-      sessionVisibility: { race: true, loneQualify: true, openQualify: true, practice: true, offlineTesting: true },
+      sessionVisibility: {
+        race: true,
+        loneQualify: true,
+        openQualify: true,
+        practice: true,
+        offlineTesting: true,
+      },
     });
     vi.mocked(useTelemetryValue).mockReturnValue(true);
 
@@ -111,7 +129,13 @@ describe('FlatTrackMap', () => {
       invertTrackColors: false,
       useHighlightColor: false,
       showOnlyWhenOnTrack: false,
-      sessionVisibility: { race: true, loneQualify: true, openQualify: true, practice: true, offlineTesting: true },
+      sessionVisibility: {
+        race: true,
+        loneQualify: true,
+        openQualify: true,
+        practice: true,
+        offlineTesting: true,
+      },
     });
     vi.mocked(useSessionVisibility).mockReturnValue(false);
     vi.mocked(useTelemetryValue).mockReturnValue(true);
@@ -133,7 +157,13 @@ describe('FlatTrackMap', () => {
       invertTrackColors: false,
       useHighlightColor: false,
       showOnlyWhenOnTrack: false,
-      sessionVisibility: { race: true, loneQualify: true, openQualify: true, practice: true, offlineTesting: true },
+      sessionVisibility: {
+        race: true,
+        loneQualify: true,
+        openQualify: true,
+        practice: true,
+        offlineTesting: true,
+      },
     });
     vi.mocked(useTrackId).mockReturnValue(undefined);
     vi.mocked(useTelemetryValue).mockReturnValue(true);
@@ -157,13 +187,34 @@ describe('FlatTrackMap', () => {
       invertTrackColors: false,
       useHighlightColor: false,
       showOnlyWhenOnTrack: false,
-      sessionVisibility: { race: true, loneQualify: true, openQualify: true, practice: true, offlineTesting: true },
+      sessionVisibility: {
+        race: true,
+        loneQualify: true,
+        openQualify: true,
+        practice: true,
+        offlineTesting: true,
+      },
     });
     vi.mocked(useTrackId).mockReturnValue(1);
     vi.mocked(useDriverProgress).mockReturnValue([
-      { driver: { CarIdx: 0, CarNumber: '1', CarClassID: 1 } as any, progress: 0.5, isPlayer: true, position: 1 },
-      { driver: { CarIdx: 1, CarNumber: '2', CarClassID: 2 } as any, progress: 0.4, isPlayer: false, position: 2 },
-      { driver: { CarIdx: 2, CarNumber: '3', CarClassID: 1 } as any, progress: 0.6, isPlayer: false, position: 3 },
+      {
+        driver: { CarIdx: 0, CarNumber: '1', CarClassID: 1 } as any,
+        progress: 0.5,
+        isPlayer: true,
+        position: 1,
+      },
+      {
+        driver: { CarIdx: 1, CarNumber: '2', CarClassID: 2 } as any,
+        progress: 0.4,
+        isPlayer: false,
+        position: 2,
+      },
+      {
+        driver: { CarIdx: 2, CarNumber: '3', CarClassID: 1 } as any,
+        progress: 0.6,
+        isPlayer: false,
+        position: 3,
+      },
     ] as any);
     vi.mocked(useTelemetryValue).mockReturnValue(true);
 
@@ -186,12 +237,26 @@ describe('FlatTrackMap', () => {
       invertTrackColors: false,
       useHighlightColor: false,
       showOnlyWhenOnTrack: false,
-      sessionVisibility: { race: true, loneQualify: true, openQualify: true, practice: true, offlineTesting: true },
+      sessionVisibility: {
+        race: true,
+        loneQualify: true,
+        openQualify: true,
+        practice: true,
+        offlineTesting: true,
+      },
     });
     vi.mocked(useTrackId).mockReturnValue(1);
     vi.mocked(useDriverProgress).mockReturnValue([
-      { driver: { CarIdx: 0, CarNumber: '1', CarClassID: 1 } as any, progress: 0.5, isPlayer: true },
-      { driver: { CarIdx: 1, CarNumber: '2', CarClassID: 1 } as any, progress: 0.4, isPlayer: false },
+      {
+        driver: { CarIdx: 0, CarNumber: '1', CarClassID: 1 } as any,
+        progress: 0.5,
+        isPlayer: true,
+      },
+      {
+        driver: { CarIdx: 1, CarNumber: '2', CarClassID: 1 } as any,
+        progress: 0.4,
+        isPlayer: false,
+      },
     ] as any);
     vi.mocked(useTelemetryValue).mockReturnValue(true);
 

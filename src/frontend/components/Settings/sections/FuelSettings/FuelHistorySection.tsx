@@ -1,5 +1,5 @@
 import { FuelWidgetSettings } from '../../types';
-import { DualFontSizeInput, BarFontSizeInput, HeightInput } from './FontSizeInputs';
+import { BarFontSizeInput, HeightInput } from './FontSizeInputs';
 
 interface FuelHistorySectionProps {
   settings: FuelWidgetSettings;
@@ -8,16 +8,13 @@ interface FuelHistorySectionProps {
 
 export const FuelHistorySection = ({ settings, onChange }: FuelHistorySectionProps) => {
   return (
-    <div className="py-4 border-b border-white/5">
-      <div className="flex items-center justify-between pr-20 mb-2">
-        <span className="text-sm text-slate-300">Fuel History</span>
-        <DualFontSizeInput widgetId="fuelGraph" settings={settings} onChange={onChange} />
-      </div>
+    <div className="pb-4 border-b border-white/5">
+      <h3 className="text-lg font-medium text-slate-200 pb-4">Fuel History</h3>
 
       {/* Sub-settings container */}
       <div className="ml-1 pl-3 border-l border-slate-700/50 space-y-3">
-        <div className="flex items-center justify-between pr-20">
-          <span className="text-xs text-slate-400">Graph Properties</span>
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-slate-300">Graph Properties</span>
           <div className="flex items-center gap-4">
             <BarFontSizeInput widgetId="fuelGraph" settings={settings} onChange={onChange} />
             <HeightInput widgetId="fuelGraph" settings={settings} onChange={onChange} />
@@ -28,8 +25,8 @@ export const FuelHistorySection = ({ settings, onChange }: FuelHistorySectionPro
         {settings.config.showFuelHistory !== false && (
           <div className="space-y-3">
             {/* Graph Type & Target Wrapper */}
-            <div className="flex items-center justify-between pr-20">
-              <span className="text-xs text-slate-400">Graph Type</span>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-slate-300">Graph Type</span>
               <select
                 value={settings.config.fuelHistoryType}
                 onChange={(e) =>
@@ -44,10 +41,10 @@ export const FuelHistorySection = ({ settings, onChange }: FuelHistorySectionPro
               </select>
             </div>
 
-            <div className="flex items-center justify-between pr-20">
+            <div className="flex items-center justify-between">
               <div className="flex flex-col">
-                <span className="text-xs text-slate-400">Target Line</span>
-                <span className="text-[10px] text-slate-500">Optional ref (0 to hide)</span>
+                <span className="text-sm text-slate-300">Target Line</span>
+                <span className="text-xs text-slate-500">Optional ref (0 to hide)</span>
               </div>
               <div className="flex items-center gap-2">
                 <input
@@ -62,7 +59,7 @@ export const FuelHistorySection = ({ settings, onChange }: FuelHistorySectionPro
                   }}
                   className="w-16 px-2 py-1 bg-slate-700 text-slate-200 rounded text-xs text-right focus:border-blue-500 focus:outline-none"
                 />
-                <span className="text-[10px] text-slate-500">{settings.config.fuelUnits}</span>
+                <span className="text-xs text-slate-500">{settings.config.fuelUnits}</span>
               </div>
             </div>
           </div>
