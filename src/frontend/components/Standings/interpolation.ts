@@ -1,8 +1,5 @@
-import {
-  normalizeKey,
-  REFERENCE_INTERVAL,
-  ReferenceLap,
-} from '@irdashies/context';
+import { normalizeKey, REFERENCE_INTERVAL } from '@irdashies/context';
+import { ReferenceLap } from '@irdashies/types';
 
 /**
  * O(1) Interpolation using direct Map lookups.
