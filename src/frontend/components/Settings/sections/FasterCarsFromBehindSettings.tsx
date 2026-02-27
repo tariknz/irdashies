@@ -19,6 +19,7 @@ const defaultConfig: FasterCarsFromBehindWidgetSettings['config'] = {
   alignDriverBoxes: 'Top',
   closestDriverBox: 'Top',
   showName: true,
+  removeNumbersFromName: false,
   showDistance: true,
   showBadge: true,
   badgeFormat: 'license-color-rating-bw',
@@ -53,6 +54,7 @@ const migrateConfig = (
         (config.closestDriverBox as 'Top' | 'Reverse') ??
         defaultConfig.closestDriverBox,
       showName: (config.showName as boolean) ?? defaultConfig.showName,
+      removeNumbersFromName: (config.removeNumbersFromName as boolean) ?? defaultConfig.removeNumbersFromName,
       showDistance:
         (config.showDistance as boolean) ?? defaultConfig.showDistance,
       showBadge: (config.showBadge as boolean) ?? defaultConfig.showBadge,
@@ -92,7 +94,7 @@ export const FasterCarsFromBehindSettings = () => {
       {(handleConfigChange) => (
         <div className="space-y-4">
           {/* Distance Threshold */}
-          <div className="space-y-2 px-4">
+          <div className="space-y-2">
             <label className="text-slate-300">
               Distance Threshold:{' '}
               {Math.abs(settings.config.distanceThreshold).toFixed(1)} seconds
@@ -116,7 +118,7 @@ export const FasterCarsFromBehindSettings = () => {
             </p>
           </div>
 
-          <div className="space-y-3 px-4">
+          <div className="space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-sm text-slate-300">Drivers Behind</span>
               <select
@@ -137,7 +139,7 @@ export const FasterCarsFromBehindSettings = () => {
             </div>
           </div>
 
-          <div className="space-y-3 px-4">
+          <div className="space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-sm text-slate-300">Align Driver Boxes</span>
               <select
@@ -155,7 +157,7 @@ export const FasterCarsFromBehindSettings = () => {
             </div>
           </div>
 
-          <div className="space-y-3 px-4">
+          <div className="space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-sm text-slate-300">Closest Driver</span>
               <select
@@ -174,7 +176,7 @@ export const FasterCarsFromBehindSettings = () => {
           </div>
 
           {/* IsOnTrack Section */}
-          <div className="flex items-center justify-between pr-4">
+          <div className="flex items-center justify-between">
             <div>
               <h4 className="text-md font-medium text-slate-300">
                 Show only when on track
@@ -194,7 +196,7 @@ export const FasterCarsFromBehindSettings = () => {
           </div>
 
           {/* Only Show Faster Classes Section */}
-          <div className="flex items-center justify-between pr-4">
+          <div className="flex items-center justify-between">
             <div>
               <h4 className="text-md font-medium text-slate-300">
                 Only show faster classes
@@ -215,7 +217,7 @@ export const FasterCarsFromBehindSettings = () => {
           </div>
 
           {/* Show Name Section */}
-          <div className="flex items-center justify-between pr-4">
+          <div className="flex items-center justify-between">
             <div>
               <h4 className="text-md font-medium text-slate-300">Show Name</h4>
               <span className="block text-xs text-slate-500">
@@ -232,8 +234,27 @@ export const FasterCarsFromBehindSettings = () => {
             />
           </div>
 
+          {settings.config.showName && (
+          <div className="flex items-center justify-between indent-8">
+            <div>
+              <h4 className="text-md font-medium text-slate-300">Remove Numbers From Names</h4>
+              <span className="block text-xs text-slate-500">
+                Remove numbers from the displayed driver name.
+              </span>
+            </div>
+            <ToggleSwitch
+              enabled={settings.config.removeNumbersFromName}
+              onToggle={(newValue) =>
+                handleConfigChange({
+                  removeNumbersFromName: newValue,
+                })
+              }
+            />
+          </div>
+          )}
+
           {/* Show Badge Section */}
-          <div className="flex items-center justify-between pr-4">
+          <div className="flex items-center justify-between">
             <div>
               <h4 className="text-md font-medium text-slate-300">
                 Show Driver Badge
@@ -258,15 +279,18 @@ export const FasterCarsFromBehindSettings = () => {
               <div className="flex flex-wrap gap-3 justify-end">
                 {(
                   [
+                    'license-color-fullrating-combo',
+                    'fullrating-color-no-license',
+                    'rating-color-no-license',
                     'license-color-fullrating-bw',
                     'license-color-rating-bw',
                     'rating-only-color-rating-bw',
-                    'license-color-rating-bw-no-license',
-                    'rating-color-no-license',
+                    'license-color-rating-bw-no-license',                    
                     'license-bw-rating-bw',
                     'rating-only-bw-rating-bw',
                     'license-bw-rating-bw-no-license',
                     'rating-bw-no-license',
+                    'fullrating-bw-no-license',                     
                   ] as const
                 ).map((format) => (
                   <BadgeFormatPreview
@@ -285,7 +309,7 @@ export const FasterCarsFromBehindSettings = () => {
           )}
 
           {/* Show Distance Section */}
-          <div className="flex items-center justify-between pr-4">
+          <div className="flex items-center justify-between">
             <div>
               <h4 className="text-md font-medium text-slate-300">
                 Show Distance
@@ -311,7 +335,7 @@ export const FasterCarsFromBehindSettings = () => {
                 Session Visibility
               </h3>
             </div>
-            <div className="space-y-3 px-4">
+            <div className="space-y-3 pl-4">
               <SessionVisibility
                 sessionVisibility={settings.config.sessionVisibility}
                 handleConfigChange={handleConfigChange}

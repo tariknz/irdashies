@@ -5,9 +5,14 @@ export interface DriverNameParts {
 };
 
 export const extractDriverName = (
-  fullName = ''
+  fullName = '',
+  removeNumbersFromName = false
 ): DriverNameParts => {
-  const parts = fullName.trim().split(/\s+/).filter(Boolean);
+  const parts = fullName
+  .trim()
+  .split(/\s+/)
+  .filter(Boolean)
+  .map(part => removeNumbersFromName ? part.replace(/\d/g, '') : part);
 
   if (parts.length === 0) {
     return { firstName: '', middleName: null, surname: '' };

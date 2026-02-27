@@ -69,6 +69,8 @@ export const FasterCarsFromBehindDisplay = ({
   const green = 100 - (percent || 0);
   const background = getTailwindStyle(classColor, undefined, true).classHeader;
 
+  name = settings?.removeNumbersFromName ? name.replace(/\d/g, '') : name;
+
   return (
     <div className={`w-full rounded-sm ${background} ${animate}`}>
       <div
@@ -85,18 +87,7 @@ export const FasterCarsFromBehindDisplay = ({
               <DriverRatingBadge
                 license={license}
                 rating={rating}
-                format={
-                  settings.badgeFormat as
-                    | 'license-color-fullrating-bw'
-                    | 'license-color-rating-bw'
-                    | 'license-color-rating-bw-no-license'
-                    | 'rating-color-no-license'
-                    | 'license-bw-rating-bw'
-                    | 'rating-only-bw-rating-bw'
-                    | 'license-bw-rating-bw-no-license'
-                    | 'rating-bw-no-license'
-                    | 'rating-only-color-rating-bw'
-                }
+                format={settings.badgeFormat as 'license-color-fullrating-combo' | 'fullrating-color-no-license' | 'license-color-fullrating-bw' | 'license-color-rating-bw' | 'license-color-rating-bw-no-license' | 'rating-color-no-license' | 'license-bw-rating-bw' | 'rating-only-bw-rating-bw' | 'license-bw-rating-bw-no-license' | 'rating-bw-no-license' | 'fullrating-bw-no-license' | 'rating-only-color-rating-bw'}
               />
             </div>
           )}
