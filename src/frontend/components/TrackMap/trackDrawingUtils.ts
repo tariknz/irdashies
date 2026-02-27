@@ -144,7 +144,7 @@ export const drawDrivers = (
       const circleRadius = isPlayer ? playerCircleSize : driverCircleSize;
       const fontSize = circleRadius * (trackmapFontSize / 100);
 
-      const onPitRoad = !!(carIdxIsOnPitRoad && carIdxIsOnPitRoad[driver.CarIdx] == 1);
+      const onPitRoad = !!carIdxIsOnPitRoad?.[driver.CarIdx];
       if (onPitRoad) {
         color = { fill: '#999999', text: 'white' };
       }

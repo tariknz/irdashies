@@ -201,7 +201,7 @@ export const FlatTrackMapCanvas = ({
         const radius = (isPlayer ? playerCircleSize : driverCircleSize) * circleScale;
         const fontSize = radius * (trackmapFontSize / 100);
 
-        const onPitRoad = !!(carIdxIsOnPitRoad && carIdxIsOnPitRoad[driver.CarIdx] == 1);
+        const onPitRoad = !!carIdxIsOnPitRoad?.[driver.CarIdx];
         if (onPitRoad) {
           color = { fill: '#999999', text: 'white' };
         }
