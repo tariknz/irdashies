@@ -277,11 +277,12 @@ const PitlaneHelperDisplay = ({
 
   return (
     <div
-      className="flex flex-col gap-2 p-2 rounded text-white font-medium"
+      className="flex flex-col gap-2 p-2 rounded text-white font-medium bg-slate-800/(--bg-opacity)"
       style={{
-        backgroundColor: `rgb(30 41 59 / ${config.background.opacity}%)`,
+        ['--bg-opacity' as string]: `${config.background.opacity ?? 0}%`,
       }}
     >
+
       {/* Row 1: Speed delta + speed bar */}
       <div className="flex items-end gap-2 w-full">
         <div
