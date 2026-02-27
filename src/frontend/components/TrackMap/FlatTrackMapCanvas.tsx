@@ -218,7 +218,8 @@ export const FlatTrackMapCanvas = ({
           ctx.textBaseline = 'middle';
           let displayText = '';
           if (displayMode === 'livePosition') {
-            const livePosition = driverLivePositions[driver.CarIdx];
+            const livePosition =
+              driverLivePositions[driver.CarIdx] ?? classPosition;
             displayText =
               livePosition !== undefined && livePosition > 0
                 ? livePosition.toString()

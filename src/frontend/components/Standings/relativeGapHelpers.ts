@@ -1,8 +1,5 @@
-import {
-  normalizeKey,
-  REFERENCE_INTERVAL,
-  ReferenceLap,
-} from '@irdashies/context';
+import { ReferenceLap } from '@irdashies/types';
+import { normalizeKey, REFERENCE_INTERVAL } from '@irdashies/context';
 import { Standings } from './createStandings';
 import { interpolateAtPoint } from './interpolation';
 

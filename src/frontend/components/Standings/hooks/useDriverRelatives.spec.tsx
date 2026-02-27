@@ -11,9 +11,8 @@ import {
 import {
   normalizeKey,
   REFERENCE_INTERVAL,
-  ReferenceLap,
-  ReferencePoint,
 } from '../../../context/ReferenceLapStore/ReferenceLapStore';
+import { ReferenceLap, ReferencePoint } from '@irdashies/types';
 
 // Mock the context hooks
 vi.mock('@irdashies/context', async (importOriginal) => {

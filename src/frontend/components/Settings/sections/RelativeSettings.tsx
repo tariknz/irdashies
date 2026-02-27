@@ -64,6 +64,7 @@ const defaultConfig: RelativeWidgetSettings['config'] = {
   driverName: {
     enabled: true,
     showStatusBadges: true,
+    removeNumbersFromName: false,
     nameFormat: 'name-surname',
   },
   teamName: { enabled: false },
@@ -148,6 +149,9 @@ const migrateConfig = (
       showStatusBadges:
         (config.driverName as { showStatusBadges?: boolean })
           ?.showStatusBadges ?? true,
+      removeNumbersFromName:
+        (config.driverName as { removeNumbersFromName?: boolean })
+          ?.removeNumbersFromName ?? false,
       nameFormat:
         (
           config.driverName as {
@@ -186,6 +190,8 @@ const migrateConfig = (
       enabled: (config.badge as { enabled?: boolean })?.enabled ?? true,
       badgeFormat:
         ((config.badge as { badgeFormat?: string })?.badgeFormat as
+          | 'license-color-fullrating-combo'
+          | 'fullrating-color-no-license'
           | 'license-color-fullrating-bw'
           | 'license-color-rating-bw'
           | 'license-color-rating-bw-no-license'
@@ -193,7 +199,8 @@ const migrateConfig = (
           | 'license-bw-rating-bw'
           | 'rating-only-bw-rating-bw'
           | 'license-bw-rating-bw-no-license'
-          | 'rating-bw-no-license') ?? 'license-color-rating-bw',
+          | 'rating-bw-no-license'
+          | 'fullrating-bw-no-license') ?? 'license-color-rating-bw',
     },
     iratingChange: {
       enabled:
@@ -490,15 +497,18 @@ const DisplaySettingsList = ({
                   <div className="flex flex-wrap gap-3 justify-end">
                     {(
                       [
+                        'license-color-fullrating-combo',
+                        'fullrating-color-no-license',
+                        'rating-color-no-license',
                         'license-color-fullrating-bw',
                         'license-color-rating-bw',
                         'rating-only-color-rating-bw',
                         'license-color-rating-bw-no-license',
-                        'rating-color-no-license',
                         'license-bw-rating-bw',
                         'rating-only-bw-rating-bw',
                         'license-bw-rating-bw-no-license',
                         'rating-bw-no-license',
+                        'fullrating-bw-no-license',
                       ] as const
                     ).map((format) => (
                       <BadgeFormatPreview
@@ -610,7 +620,7 @@ const DisplaySettingsList = ({
             {setting.hasSubSetting &&
               setting.configKey === 'pitStatus' &&
               settings.config.pitStatus.enabled && (
-                <div className="flex items-center justify-between pl-8 mt-2">
+                <div className="flex items-center justify-between pl-8 mt-2 indent-8">
                   <span className="text-sm text-slate-300">Pit Time</span>
                   <ToggleSwitch
                     enabled={settings.config.pitStatus.showPitTime ?? false}
@@ -659,7 +669,32 @@ const DisplaySettingsList = ({
             {setting.hasSubSetting &&
               setting.configKey === 'driverName' &&
               settings.config.driverName.enabled && (
-                <div className="flex items-center justify-between pl-8 mt-2">
+                <div className="flex items-center justify-between pl-8 mt-2 indent-8">
+                  <span className="text-sm text-slate-300">
+                    Remove Numbers From Names
+                  </span>
+                  <ToggleSwitch
+                    enabled={settings.config.driverName.removeNumbersFromName}
+                    onToggle={(enabled) => {
+                      const cv = settings.config[setting.configKey] as {
+                        enabled: boolean;
+                        removeNumbersFromName: boolean;
+                        [key: string]: unknown;
+                      };
+                      handleConfigChange({
+                        [setting.configKey]: {
+                          ...cv,
+                          removeNumbersFromName: enabled,
+                        },
+                      });
+                    }}
+                  />
+                </div>
+              )}
+            {setting.hasSubSetting &&
+              setting.configKey === 'driverName' &&
+              settings.config.driverName.enabled && (
+                <div className="flex items-center justify-between pl-8 mt-2 indent-8">
                   <span className="text-sm text-slate-300">Status Badges</span>
                   <ToggleSwitch
                     enabled={settings.config.driverName.showStatusBadges}
@@ -682,7 +717,7 @@ const DisplaySettingsList = ({
             {setting.hasSubSetting &&
               setting.configKey === 'carManufacturer' &&
               settings.config.carManufacturer.enabled && (
-                <div className="flex items-center justify-between pl-8 mt-2">
+                <div className="flex items-center justify-between pl-8 mt-2 indent-8">
                   <span className="text-sm text-slate-300">
                     Hide If Single Make
                   </span>

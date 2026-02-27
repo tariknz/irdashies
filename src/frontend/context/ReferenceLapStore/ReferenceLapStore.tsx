@@ -1,24 +1,13 @@
-import { TrackLocation, ReferenceLapBridge } from '@irdashies/types';
+import {
+  TrackLocation,
+  ReferenceLapBridge,
+  ReferenceLap,
+} from '@irdashies/types';
 import { precomputePCHIPTangents } from './pchipTangents';
 import { create } from 'zustand';
 
 export const REFERENCE_INTERVAL = 0.0025;
 const DECIMAL_PLACES = REFERENCE_INTERVAL.toString().split('.')[1]?.length || 0;
-
-export interface ReferencePoint {
-  trackPct: number;
-  timeElapsedSinceStart: number;
-  tangent: number | undefined;
-}
-
-export interface ReferenceLap {
-  classId: number;
-  refPoints: Map<number, ReferencePoint>;
-  startTime: number;
-  finishTime: number;
-  lastTrackedPct: number;
-  isCleanLap: boolean;
-}
 
 export function normalizeKey(key: number): number {
   const normalizedKey = parseFloat(

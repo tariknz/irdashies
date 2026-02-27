@@ -1,4 +1,4 @@
-import { ReferenceLapBridge } from '../../../types/referenceLaps';
+import { ReferenceLapBridge } from '@irdashies/types';
 import { useReferenceLapStoreUpdater } from './ReferenceLapStoreUpdater';
 
 export interface ReferenceRegistryProviderProps {

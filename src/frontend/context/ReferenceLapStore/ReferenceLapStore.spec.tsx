@@ -1,11 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import {
-  useReferenceLapStore,
-  normalizeKey,
-  ReferencePoint,
-  ReferenceLap,
-} from './ReferenceLapStore';
-import { TrackLocation } from '@irdashies/types';
+import { useReferenceLapStore, normalizeKey } from './ReferenceLapStore';
+import { ReferenceLap, ReferencePoint, TrackLocation } from '@irdashies/types';
 import { precomputePCHIPTangents } from './pchipTangents';
 import { ReferenceLapBridge } from '@irdashies/types';
 

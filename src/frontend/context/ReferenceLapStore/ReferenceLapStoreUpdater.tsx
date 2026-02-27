@@ -38,6 +38,7 @@ export const useReferenceLapStoreUpdater = (bridge: ReferenceLapBridge) => {
       .filter((classId) => classId !== paceCarClassId)
       .sort((a, b) => a - b);
 
+    // INFO: only recreate this if actual class list changes and not each time drivers update
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [classIdsString]);
 
@@ -45,6 +46,7 @@ export const useReferenceLapStoreUpdater = (bridge: ReferenceLapBridge) => {
     console.log('Resetting Session!');
     completeSession();
     initialize(bridge, seriesId, trackId, classList);
+    // INFO: reset session only if the below change, i.e we moved from practice -> quali or we switched series
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [seriesId, trackId, sessionNum, subSessionId]);
 
@@ -74,6 +76,7 @@ export const useReferenceLapStoreUpdater = (bridge: ReferenceLapBridge) => {
         );
       }
     }
+    // INFO: run collection only in this specific case
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [carIdxLapDistPct, carIdxOnPitRoad, sessionTime, drivers]);
 };
