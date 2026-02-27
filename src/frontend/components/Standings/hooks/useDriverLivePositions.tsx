@@ -1,5 +1,5 @@
 import { useMemo, useRef, useEffect } from 'react';
-import { useCurrentSessionType, useSessionPositions, useSessionStore, useTelemetryValue, useTelemetryValues } from '@irdashies/context';
+import { useCurrentSessionType, useSessionPositions, useSessionStore, useTelemetryValue, useTelemetryValues, useThrottledValue } from '@irdashies/context';
 import { SessionState } from '@irdashies/types';
 
 interface DriverData {
@@ -44,9 +44,17 @@ export const useDriverLivePositions = ({ enabled }: { enabled: boolean }): Recor
   const sessionNum = useTelemetryValue('SessionNum');
   const sessionPositions = useSessionPositions(sessionNum);
   const sessionState = useTelemetryValue('SessionState') ?? 0;
-  const carIdxLapCompleted = useTelemetryValues<number[]>('CarIdxLapCompleted');
-  const carIdxLapDistPct = useTelemetryValues<number[]>('CarIdxLapDistPct');
-  const carIdxClass = useTelemetryValues<number[]>('CarIdxClass');
+  
+  // Throttle telemetry updates to 10Hz (100ms) instead of 60Hz
+  // Position updates don't need to be as frequent as raw telemetry
+  const carIdxLapCompletedRaw = useTelemetryValues<number[]>('CarIdxLapCompleted');
+  const carIdxLapDistPctRaw = useTelemetryValues<number[]>('CarIdxLapDistPct');
+  const carIdxClassRaw = useTelemetryValues<number[]>('CarIdxClass');
+  
+  const carIdxLapCompleted = useThrottledValue(carIdxLapCompletedRaw, 250);
+  const carIdxLapDistPct = useThrottledValue(carIdxLapDistPctRaw, 250);
+  const carIdxClass = useThrottledValue(carIdxClassRaw, 250);
+  
   const paceCarIdx = useSessionStore((s) => s.session?.DriverInfo?.PaceCarIdx) ?? -1;
   const p1Car = sessionPositions?.find(pos => pos.Position === 1); // Position is 1-based
   const p1LapCompleted = p1Car ? (carIdxLapCompleted[p1Car.CarIdx] ?? 0) : 0;

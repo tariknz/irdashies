@@ -8,3 +8,4 @@ export * from './useResetOnDisconnect';
 export * from './useSessionVisibility';
 export * from './useThrottledWeather';
 export * from './useTotalRaceLaps';
+export * from './useThrottledValue';
