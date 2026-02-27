@@ -960,11 +960,11 @@ export const RelativeSettings = () => {
 
   // Tab state with persistence
   const [activeTab, setActiveTab] = useState<SettingsTabType>(
-    () => (localStorage.getItem('standingsTab') as SettingsTabType) || 'display'
+    () => (localStorage.getItem('relativeTab') as SettingsTabType) || 'display'
   );
 
   useEffect(() => {
-    localStorage.setItem('standingsTab', activeTab);
+    localStorage.setItem('relativeTab', activeTab);
   }, [activeTab]);  
 
   if (!currentDashboard) {
