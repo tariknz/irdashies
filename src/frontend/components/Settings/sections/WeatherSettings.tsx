@@ -224,30 +224,6 @@ export const WeatherSettings = () => {
 
         return (
           <div className="space-y-4">
-            {/* Tabs */}
-            <div className="flex border-b border-slate-700/50">
-              <TabButton
-                id="display"
-                activeTab={activeTab}
-                setActiveTab={setActiveTab}
-              >
-                Display
-              </TabButton>
-              <TabButton
-                id="options"
-                activeTab={activeTab}
-                setActiveTab={setActiveTab}
-              >
-                Options
-              </TabButton>
-              <TabButton
-                id="visibility"
-                activeTab={activeTab}
-                setActiveTab={setActiveTab}
-              >
-                Visibility
-              </TabButton>
-            </div>
 
           {/* Tabs */}
           <div className="flex border-b border-slate-700/50">
@@ -340,28 +316,8 @@ export const WeatherSettings = () => {
               </SettingsSection>
             )}
 
-                  <div className="flex items-center justify-between pt-4 border-t border-slate-700/50 pl-4">
-                    <div>
-                      <h4 className="text-md font-medium text-slate-300">
-                        Show only when on track
-                      </h4>
-                      <span className="block text-xs text-slate-500">
-                        If enabled, weather will only be shown when driving.
-                      </span>
-                    </div>
-                    <ToggleSwitch
-                      enabled={settings.config.showOnlyWhenOnTrack}
-                      onToggle={(newValue) =>
-                        handleConfigChange({
-                          showOnlyWhenOnTrack: newValue,
-                        })
-                      }
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
           </div>
+        </div>            
         );
       }}
     </BaseSettingsSection>

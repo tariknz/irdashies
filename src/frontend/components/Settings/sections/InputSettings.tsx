@@ -1095,7 +1095,7 @@ export const InputSettings = () => {
               </>
             )}
 
-            {/* VISIBILITY TAB */}
+             {/* VISIBILITY TAB */}
             {activeTab === 'visibility' && (
               <SettingsSection title="Session Visibility">
                             
@@ -1119,6 +1119,7 @@ export const InputSettings = () => {
             )}
 
           </div>
+        </div>            
         );
       }}
     </BaseSettingsSection>
