@@ -26,12 +26,12 @@ export const PitCountdownBar = memo(
 
     if (orientation === 'vertical') {
       return (
-        <div className="flex flex-col items-center gap-1">
+        <div className="flex flex-col flex-1 items-center gap-1">
           <span className="text-xs text-white font-medium tabular-nums leading-none">
             {valueLabel}
           </span>
           <div
-            className="relative w-8 bg-slate-700/50 rounded overflow-hidden"
+            className="relative w-full bg-slate-700/50 rounded overflow-hidden"
             style={{ height: '80px' }}
           >
             <div
@@ -55,7 +55,7 @@ export const PitCountdownBar = memo(
             {valueLabel}
           </span>
         </div>
-        <div className="relative h-4 w-full bg-slate-700/50 rounded overflow-hidden">
+        <div className="relative h-8 w-full bg-slate-700/50 rounded overflow-hidden">
           <div
             className="absolute left-0 top-0 h-full transition-all duration-200 ease-out"
             style={{ width: `${progressPercent}%`, backgroundColor: color }}
