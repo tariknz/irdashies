@@ -3,6 +3,7 @@ import {
   useSessionStore,
   useTelemetryValues,
   useFocusCarIdx,
+  useReferenceLapStore,
 } from '@irdashies/context';
 import { useDriverStandings } from './useDriverPositions';
 import {
@@ -11,7 +12,6 @@ import {
   getStats,
 } from '../relativeGapHelpers';
 import { Standings } from '../createStandings';
-import { useReferenceLapStore } from '../../../context/ReferenceLapStore/ReferenceLapStore';
 
 export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
   const drivers = useDriverStandings();

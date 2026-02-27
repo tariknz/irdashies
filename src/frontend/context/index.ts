@@ -9,4 +9,5 @@ export * from './PitLaneStore/PitLaneStore';
 export * from './PitLaneStore/PitLaneProvider';
 export * from './PitLaneStore/usePitLaneDetection';
 export * from './ReferenceLapStore/ReferenceLapStoreProvider';
+export { useReferenceLapStore } from './ReferenceLapStore/ReferenceLapStore';
 export * from './shared';
