@@ -31,6 +31,64 @@ export default defineConfig([
       }]
     }
   },
+  // Enforce @irdashies/types alias — no relative imports into src/types/
+  {
+    files: ['src/frontend/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': ['error', {
+        patterns: [
+          {
+            group: ['../**/types/**', 'src/types/**'],
+            message: 'Import from @irdashies/types instead of using a relative path to src/types/.'
+          }
+        ]
+      }]
+    }
+  },
+  // Enforce @irdashies/context alias — files outside context/ must not use relative paths into it
+  {
+    files: ['src/frontend/**/*.{ts,tsx}'],
+    ignores: ['src/frontend/context/**'],
+    rules: {
+      'no-restricted-imports': ['error', {
+        patterns: [
+          {
+            group: ['../**/context/**'],
+            message: 'Import from @irdashies/context instead of using a relative path to context/.'
+          }
+        ]
+      }]
+    }
+  },
+  // Enforce @irdashies/utils/* alias — files outside utils/ must not use relative paths into it
+  {
+    files: ['src/frontend/**/*.{ts,tsx}'],
+    ignores: ['src/frontend/utils/**'],
+    rules: {
+      'no-restricted-imports': ['error', {
+        patterns: [
+          {
+            group: ['../**/utils/**'],
+            message: 'Import from @irdashies/utils/* instead of using a relative path to utils/.'
+          }
+        ]
+      }]
+    }
+  },
+  // Architectural boundary: context/ must not import from components/
+  {
+    files: ['src/frontend/context/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': ['error', {
+        patterns: [
+          {
+            group: ['**/components/**'],
+            message: 'Context stores must not import from components/. Move shared logic to context/ or utils/.'
+          }
+        ]
+      }]
+    }
+  },
   {
     files: ['src/app/**/*.{ts,tsx}'],
     ignores: ['src/app/webserver/**/*.{ts,tsx}'],

@@ -186,6 +186,20 @@ import { formatTime } from '@irdashies/utils/time';
 import type { DashboardLayout } from '@irdashies/types';
 ```
 
+### Import Rules (enforced by ESLint)
+
+Always use path aliases — never relative paths that cross architectural boundaries:
+
+| What you need            | Use                          | Never use                             |
+| ------------------------ | ---------------------------- | ------------------------------------- |
+| Stores, hooks, providers | `@irdashies/context`         | `../../context/SomeStore`             |
+| Shared types & enums     | `@irdashies/types`           | `../../../types/foo`, `src/types/foo` |
+| Utility functions        | `@irdashies/utils/time` etc. | `../../utils/time`                    |
+
+**Context must not import from components.** If logic is needed in both, move it to `context/` or `src/types/`.
+
+Relative imports are only allowed within the same architectural layer (e.g. a component importing a sibling component, or a store importing another store).
+
 ### Naming Conventions
 
 - Props: `ComponentNameProps`
