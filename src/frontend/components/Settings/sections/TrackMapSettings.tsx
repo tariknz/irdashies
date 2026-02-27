@@ -25,36 +25,66 @@ const defaultConfig: TrackMapWidgetSettings['config'] = {
   trackOutlineWidth: 40,
   useHighlightColor: false,
   showOnlyWhenOnTrack: false,
-  sessionVisibility: { race: true, loneQualify: true, openQualify: true, practice: true, offlineTesting: true }
+  sessionVisibility: {
+    race: true,
+    loneQualify: true,
+    openQualify: true,
+    practice: true,
+    offlineTesting: true,
+  },
 };
 
-const migrateConfig = (savedConfig: unknown): TrackMapWidgetSettings['config'] => {
+const migrateConfig = (
+  savedConfig: unknown
+): TrackMapWidgetSettings['config'] => {
   if (!savedConfig || typeof savedConfig !== 'object') return defaultConfig;
 
   const config = savedConfig as Record<string, unknown>;
   return {
-    enableTurnNames: (config.enableTurnNames as boolean) ?? defaultConfig.enableTurnNames,
-    showCarNumbers: (config.showCarNumbers as boolean) ?? defaultConfig.showCarNumbers,
-    displayMode: (config.displayMode as 'carNumber' | 'sessionPosition' | 'livePosition') ?? defaultConfig.displayMode,
-    invertTrackColors: (config.invertTrackColors as boolean) ?? defaultConfig.invertTrackColors,
-    highContrastTurns: (config.highContrastTurns as boolean) ?? defaultConfig.highContrastTurns,
-    driverCircleSize: (config.driverCircleSize as number) ?? defaultConfig.driverCircleSize,
-    playerCircleSize: (config.playerCircleSize as number) ?? defaultConfig.playerCircleSize,
-    trackmapFontSize: (config.trackmapFontSize as number) ?? defaultConfig.trackmapFontSize,
-    trackLineWidth: (config.trackLineWidth as number) ?? defaultConfig.trackLineWidth,
-    trackOutlineWidth: (config.trackOutlineWidth as number) ?? defaultConfig.trackOutlineWidth,
-    useHighlightColor: (config.useHighlightColor as boolean) ?? defaultConfig.useHighlightColor,
-    showOnlyWhenOnTrack: (config.showOnlyWhenOnTrack as boolean) ?? defaultConfig.showOnlyWhenOnTrack,
-    sessionVisibility: (config.sessionVisibility as SessionVisibilitySettings) ?? defaultConfig.sessionVisibility,
+    enableTurnNames:
+      (config.enableTurnNames as boolean) ?? defaultConfig.enableTurnNames,
+    showCarNumbers:
+      (config.showCarNumbers as boolean) ?? defaultConfig.showCarNumbers,
+    displayMode:
+      (config.displayMode as
+        | 'carNumber'
+        | 'sessionPosition'
+        | 'livePosition') ?? defaultConfig.displayMode,
+    invertTrackColors:
+      (config.invertTrackColors as boolean) ?? defaultConfig.invertTrackColors,
+    highContrastTurns:
+      (config.highContrastTurns as boolean) ?? defaultConfig.highContrastTurns,
+    driverCircleSize:
+      (config.driverCircleSize as number) ?? defaultConfig.driverCircleSize,
+    playerCircleSize:
+      (config.playerCircleSize as number) ?? defaultConfig.playerCircleSize,
+    trackmapFontSize:
+      (config.trackmapFontSize as number) ?? defaultConfig.trackmapFontSize,
+    trackLineWidth:
+      (config.trackLineWidth as number) ?? defaultConfig.trackLineWidth,
+    trackOutlineWidth:
+      (config.trackOutlineWidth as number) ?? defaultConfig.trackOutlineWidth,
+    useHighlightColor:
+      (config.useHighlightColor as boolean) ?? defaultConfig.useHighlightColor,
+    showOnlyWhenOnTrack:
+      (config.showOnlyWhenOnTrack as boolean) ??
+      defaultConfig.showOnlyWhenOnTrack,
+    sessionVisibility:
+      (config.sessionVisibility as SessionVisibilitySettings) ??
+      defaultConfig.sessionVisibility,
   };
 };
 
 export const TrackMapSettings = () => {
   const { currentDashboard } = useDashboard();
-  const savedSettings = currentDashboard?.widgets.find(w => w.id === SETTING_ID) as TrackMapWidgetSettings | undefined;
+  const savedSettings = currentDashboard?.widgets.find(
+    (w) => w.id === SETTING_ID
+  ) as TrackMapWidgetSettings | undefined;
   const [settings, setSettings] = useState<TrackMapWidgetSettings>({
-    enabled: currentDashboard?.widgets.find(w => w.id === SETTING_ID)?.enabled ?? false,
-    config: migrateConfig(savedSettings?.config)
+    enabled:
+      currentDashboard?.widgets.find((w) => w.id === SETTING_ID)?.enabled ??
+      false,
+    config: migrateConfig(savedSettings?.config),
   });
 
   // Tab state with persistence

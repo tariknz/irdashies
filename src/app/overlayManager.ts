@@ -1,4 +1,9 @@
-import { app, BrowserWindow, screen } from 'electron';
+import {
+  app,
+  BrowserWindow,
+  BrowserWindowConstructorOptions,
+  screen,
+} from 'electron';
 import type { DashboardLayout, ContainerBoundsInfo } from '@irdashies/types';
 import path from 'node:path';
 import { Notification } from 'electron';
@@ -133,7 +138,7 @@ export class OverlayManager {
       y: expectedBounds.y,
       width: expectedBounds.width,
       height: expectedBounds.height,
-      title: 'iRacing Dashies - Overlay Container',
+      title: `irDashies - Display ${display.id} (${isPrimary ? 'Main' : ''})`,
       transparent: true,
       frame: false,
       skipTaskbar: this.skipTaskbar,
@@ -480,12 +485,13 @@ export class OverlayManager {
 
     // Load saved window bounds
     const savedBounds = loadWindowBounds();
-    const defaultOptions = {
-      title: `iRacing Dashies - Settings`,
+    const defaultOptions: BrowserWindowConstructorOptions = {
+      title: `irDashies - Settings`,
       frame: true,
       width: 800,
       height: 700,
       autoHideMenuBar: true,
+      acceptFirstMouse: true,
       icon: getIconPath(),
       webPreferences: {
         preload: path.join(__dirname, 'preload.js'),
@@ -518,7 +524,7 @@ export class OverlayManager {
       const trayNotificationShown = readData<boolean>('trayNotificationShown');
       if (!trayNotificationShown) {
         new Notification({
-          title: 'iRacing Dashies',
+          title: 'irDashies',
           body: 'Settings window is still accessible via the system tray icon',
         }).show();
         writeData('trayNotificationShown', true);

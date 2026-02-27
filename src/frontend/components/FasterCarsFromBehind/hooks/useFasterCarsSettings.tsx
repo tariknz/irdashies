@@ -42,7 +42,8 @@ export const useFasterCarsSettings = () => {
     closestDriverBox:
       settings?.closestDriverBox ?? DEFAULT_CONFIG.closestDriverBox,
     showName: settings?.showName ?? DEFAULT_CONFIG.showName,
-    removeNumbersFromName: settings?.removeNumbersFromName ?? DEFAULT_CONFIG.removeNumbersFromName,
+    removeNumbersFromName:
+      settings?.removeNumbersFromName ?? DEFAULT_CONFIG.removeNumbersFromName,
     showDistance: settings?.showDistance ?? DEFAULT_CONFIG.showDistance,
     showBadge: settings?.showBadge ?? DEFAULT_CONFIG.showBadge,
     badgeFormat: settings?.badgeFormat ?? DEFAULT_CONFIG.badgeFormat,

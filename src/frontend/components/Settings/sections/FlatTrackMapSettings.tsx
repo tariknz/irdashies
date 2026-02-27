@@ -23,31 +23,55 @@ const defaultConfig: FlatTrackMapWidgetSettings['config'] = {
   invertTrackColors: false,
   useHighlightColor: false,
   showOnlyWhenOnTrack: false,
-  sessionVisibility: { race: true, loneQualify: true, openQualify: true, practice: true, offlineTesting: true }
+  sessionVisibility: {
+    race: true,
+    loneQualify: true,
+    openQualify: true,
+    practice: true,
+    offlineTesting: true,
+  },
 };
 
-const migrateConfig = (savedConfig: unknown): FlatTrackMapWidgetSettings['config'] => {
+const migrateConfig = (
+  savedConfig: unknown
+): FlatTrackMapWidgetSettings['config'] => {
   if (!savedConfig || typeof savedConfig !== 'object') return defaultConfig;
 
   const config = savedConfig as Record<string, unknown>;
   return {
-    showCarNumbers: (config.showCarNumbers as boolean) ?? defaultConfig.showCarNumbers,
-    displayMode: (config.displayMode as 'carNumber' | 'sessionPosition') ?? defaultConfig.displayMode,
-    driverCircleSize: (config.driverCircleSize as number) ?? defaultConfig.driverCircleSize,
-    playerCircleSize: (config.playerCircleSize as number) ?? defaultConfig.playerCircleSize,
-    trackmapFontSize: (config.trackmapFontSize as number) ?? defaultConfig.trackmapFontSize,
-    trackLineWidth: (config.trackLineWidth as number) ?? defaultConfig.trackLineWidth,
-    trackOutlineWidth: (config.trackOutlineWidth as number) ?? defaultConfig.trackOutlineWidth,
-    invertTrackColors: (config.invertTrackColors as boolean) ?? defaultConfig.invertTrackColors,
-    useHighlightColor: (config.useHighlightColor as boolean) ?? defaultConfig.useHighlightColor,
-    showOnlyWhenOnTrack: (config.showOnlyWhenOnTrack as boolean) ?? defaultConfig.showOnlyWhenOnTrack,
-    sessionVisibility: (config.sessionVisibility as SessionVisibilitySettings) ?? defaultConfig.sessionVisibility,
+    showCarNumbers:
+      (config.showCarNumbers as boolean) ?? defaultConfig.showCarNumbers,
+    displayMode:
+      (config.displayMode as 'carNumber' | 'sessionPosition') ??
+      defaultConfig.displayMode,
+    driverCircleSize:
+      (config.driverCircleSize as number) ?? defaultConfig.driverCircleSize,
+    playerCircleSize:
+      (config.playerCircleSize as number) ?? defaultConfig.playerCircleSize,
+    trackmapFontSize:
+      (config.trackmapFontSize as number) ?? defaultConfig.trackmapFontSize,
+    trackLineWidth:
+      (config.trackLineWidth as number) ?? defaultConfig.trackLineWidth,
+    trackOutlineWidth:
+      (config.trackOutlineWidth as number) ?? defaultConfig.trackOutlineWidth,
+    invertTrackColors:
+      (config.invertTrackColors as boolean) ?? defaultConfig.invertTrackColors,
+    useHighlightColor:
+      (config.useHighlightColor as boolean) ?? defaultConfig.useHighlightColor,
+    showOnlyWhenOnTrack:
+      (config.showOnlyWhenOnTrack as boolean) ??
+      defaultConfig.showOnlyWhenOnTrack,
+    sessionVisibility:
+      (config.sessionVisibility as SessionVisibilitySettings) ??
+      defaultConfig.sessionVisibility,
   };
 };
 
 export const FlatTrackMapSettings = () => {
   const { currentDashboard } = useDashboard();
-  const savedSettings = currentDashboard?.widgets.find((w) => w.id === SETTING_ID) as FlatTrackMapWidgetSettings | undefined;
+  const savedSettings = currentDashboard?.widgets.find(
+    (w) => w.id === SETTING_ID
+  ) as FlatTrackMapWidgetSettings | undefined;
   const [settings, setSettings] = useState<FlatTrackMapWidgetSettings>({
     enabled:
       currentDashboard?.widgets.find((w) => w.id === SETTING_ID)?.enabled ??
