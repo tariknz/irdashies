@@ -10,8 +10,9 @@ import type {
   ContainerBoundsInfo,
   FuelCalculatorBridge,
   FuelLapData,
+  ReferenceLap,
+  ReferenceLapBridge,
 } from '@irdashies/types';
-import { ReferenceLap, ReferenceLapBridge } from 'src/types/referenceLaps';
 
 export function exposeBridge() {
   contextBridge.exposeInMainWorld('irsdkBridge', {

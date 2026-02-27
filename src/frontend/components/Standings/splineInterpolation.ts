@@ -1,7 +1,7 @@
+import { ReferenceLap } from '@irdashies/types';
 import {
   normalizeKey,
   REFERENCE_INTERVAL,
-  ReferenceLap,
 } from '../../context/ReferenceLapStore/ReferenceLapStore';
 
 /**

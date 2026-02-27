@@ -15,6 +15,7 @@ export interface ReferenceLap {
   finishTime: number;
   lastTrackedPct: number;
   isCleanLap: boolean;
+  classId: number;
 }
 
 export interface ReferenceLapBridge {

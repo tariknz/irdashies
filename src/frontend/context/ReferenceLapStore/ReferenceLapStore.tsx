@@ -1,25 +1,10 @@
 import { TRACK_SURFACES } from '../../components/Standings/relativeGapHelpers';
 import { precomputePCHIPTangents } from '../../components/Standings/splineInterpolation';
-import { ReferenceLapBridge } from '../../../types/referenceLaps';
+import { ReferenceLap, ReferenceLapBridge } from '@irdashies/types';
 import { create } from 'zustand';
 
 export const REFERENCE_INTERVAL = 0.0025;
 const DECIMAL_PLACES = REFERENCE_INTERVAL.toString().split('.')[1]?.length || 0;
-
-export interface ReferencePoint {
-  trackPct: number;
-  timeElapsedSinceStart: number;
-  tangent: number | undefined;
-}
-
-export interface ReferenceLap {
-  classId: number;
-  refPoints: Map<number, ReferencePoint>;
-  startTime: number;
-  finishTime: number;
-  lastTrackedPct: number;
-  isCleanLap: boolean;
-}
 
 export function normalizeKey(key: number): number {
   const normalizedKey = parseFloat(

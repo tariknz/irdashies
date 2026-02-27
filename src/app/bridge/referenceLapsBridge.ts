@@ -34,11 +34,4 @@ export const setupReferenceLapsBridge = () => {
       }
     }
   );
-
-  /*
-  ipcMain.handle('reference:delete', (_, seriesId: number, trackId: number, classId: number) => {
-    console.log(`[Main] Deleting reference lap for Series: ${seriesId}, Track: ${trackId}, Class: ${classId}`);
-    return deleteReferenceLap(seriesId, trackId, classId);
-  });
-  */
 };

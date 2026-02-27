@@ -1,14 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import {
-  useReferenceLapStore,
-  normalizeKey,
-  ReferencePoint,
-  ReferenceLap,
-} from './ReferenceLapStore';
+import { useReferenceLapStore, normalizeKey } from './ReferenceLapStore';
 import { TRACK_SURFACES } from '../../components/Standings/relativeGapHelpers';
 import { precomputePCHIPTangents } from '../../components/Standings/splineInterpolation';
-import { ReferenceLapBridge } from 'src/types/referenceLaps';
-
+import {
+  ReferenceLap,
+  ReferenceLapBridge,
+  ReferencePoint,
+} from '@irdashies/types';
 // Mock external dependencies
 vi.mock('../../components/Standings/splineInterpolation', () => ({
   precomputePCHIPTangents: vi.fn(),
