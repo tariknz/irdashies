@@ -48,21 +48,7 @@ const EMPTY_DATA: FuelCalculation = {
   fuelStatus: 'safe',
 };
 
-// --- Data & Calculation ---
 export const FuelCalculator = (props: FuelCalculatorProps) => {
-  // Replay Logic - REMOVED
-
-  // Use specific settings from props or defaults (though this component usually receives merged settings or direct usage)
-  // For standard usage in a dashboard widget, we should grab global settings context?
-  // In `FuelCalculator.tsx` it did `useFuelSettings()` then merged.
-  // Here we are likely passed `settings` directly from `WidgetRenderer` if used there, OR we need to fetch them.
-  // The `FuelSettings.tsx` updates `currentDashboard.widgets`.
-  // The `WidgetRenderer` likely passes `settings.config` as props to the component.
-  // Let's assume `props` contains the configuration.
-
-  // NOTE: In standard usage, we might be inside a provider or context.
-  // But let's follow the pattern:
-
   const settings = props as FuelCalculatorSettings;
 
   const { fuelUnits, safetyMargin } = settings;
@@ -126,9 +112,6 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
     generalSettings?.fontSize,
   ]);
 
-  // We need to parse the layout if it's a string or use the object directly
-  // However, `DEFAULT_FUEL_LAYOUT_TREE` is a const.
-  // In `FuelSettings` we save `layoutTree`.
   const layoutTree: LayoutNode = useMemo(() => {
     // If we have a custom layout tree in settings, use it
     if (
@@ -143,126 +126,23 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
   }, [settings.layoutTree]);
 
   const isOnTrack = useTelemetryValue('IsOnTrack');
-  // const sessionId = useTelemetryValue('SessionUniqueID');
 
-  // We need to force a re-render periodically or subscribe to data?
-  // `useTelemetryValues` subscribes to the store.
-  // `useFuelCalculation` subscribes to the store.
-  // So components should update automatically.
-
-  // HACK: To ensure updates even if only low-freq data changes
-  // we might want to subscribe to a clock or sessionTime?
-  const sessionTime = useTelemetryValue('SessionTime');
-
-  // Also subscribe to specific fuel values to pass to sub-components?
-  // `useFuelCalculation` returns the calculation object.
   const fuelData = useFuelCalculation(safetyMargin, settings);
 
-  // We should also consume the "Live" data from the store for direct display if needed
-  // BUT `useFuelCalculation` already provides the computed state.
-
-  // For the GRID, we want to show PREDICTIVE vs ACTUAL vs REQUIRED
-  // `fuelData` has `fuelToFinish`, `fuelToAdd`, etc.
-
-  // Laps Remaining from Telemetry vs Calculated
-  // Telemetry: FuelLevel / FuelUsePerHour? No iRacing gives FuelLevelPct.
-  // We rely on our calculation.
-
   const currentFuelLevel = useTelemetryValue('FuelLevel');
-
-  // Pit Window
-  // If we have `fuelData.pitWindowOpen` (lap number), we can show it.
-
-  // Predictive Usage (for the grid)
-  // `fuelData.avgLaps` is the average consumption.
-  // We might want `fuelData.lastLapUsage` for comparison.
 
   const predictiveUsage = fuelData?.projectedLapUsage || 0;
   const qualifyConsumption = fuelData?.maxQualify || null;
 
-  // --- Frozen Snapshot Logic ---
-  // When not on track (and not in edit mode), we might want to "freeze" the data
-  // so the driver can see the last calculated values (e.g. while in the pits).
-  // `useFuelCalculation` handles some of this via `enableStorage`.
-  // Here we just display what `fuelData` gives us.
-
-  // However, when we are in the pits, `FuelLevel` might go up (refueling).
-  // If `FuelLevel` changes, `fuelData` updates.
-  // We want the "Fuel To Add" to update dynamically as we refuel.
-  // This is handled by `fuelToAdd = target - current`. So it IS dynamic.
-
-  // The ONLY thing we might want to freeze is the "Consumption" stats if we want to read them.
-  // But usually we always want live data.
-
-  // Snapshot for "At Pit Entry" vs "Now"?
-  // The user didn't ask for this yet.
-
-  // Snapshot for "At Pit Entry" vs "Now"?
-  // The user didn't ask for this yet.
-
-  // --- Display Data ---
-  // We want to format data for the widgets.
   const displayData = useMemo(() => {
     if (!fuelData) return EMPTY_DATA;
-
-    // Enhance with any extra derived state if needed
     return fuelData;
   }, [fuelData]);
 
-  // Handle "Snapshot" for the Grid when in Pits
-  // If we are in the pits, we might want to see the "Plan" based on valid laps,
-  // not based on the idle fuel usage.
-  // `useFuelCalculation` filters out invalid laps.
-  // So `avgLaps` should remain stable.
-
-  // But `fuelLevel` changes.
-  // We want to pass `currentFuelLevel` explicitly?
-  // `fuelData` already contains `fuelLevel` from the hook.
-
-  // For the "Fuel Grid", we generally want stable numbers.
-  // Let's rely on `fuelData`.
-
-  // --- Session State Handling ---
-  // If we change session (Practice -> Race), we want to reset?
-  // `useFuelCalculation` handles session transitions.
-
-  // --- UI Refresh Rate ---
-  // We might want to throttle updates if performance is an issue.
-  // But strict React should be fine.
-
-  // --- Snapshot on Pit Entry ---
-  // To allow the driver to see "Fuel at Pit Entry" vs "Fuel Now".
-  // This is useful for "Fuel Added".
-  const sessionState = useTelemetryValue('SessionState');
-  const sessionFlags = useTelemetryValue('SessionFlags');
-
+  // Frozen snapshot of fuel data, updated only on lap changes.
+  // Used by grid/scenarios/target widgets so pit-entry numbers stay
+  // stable while live fuel level changes during refuelling.
   const [frozenFuelData, setFrozenFuelData] = useState(fuelData);
-
-  // When crossing into pit lane, snapshot?
-  // Or just rely on `fuelData` which is live.
-  // Actually, existing dashboards often FREEZE the "Laps Remaining" calculation when in pits
-  // so it doesn't fluctuate with idle fuel usage (if any).
-  // But our calculation uses "Avg Laps", which is stable.
-  // The only moving part is "Fuel Level".
-  // So "Laps Remaining" = CurrentFuel / Avg.
-  // This is correct: as we refuel, laps remaining increases.
-
-  // So we probably don't need to freeze unless the user wants to see "Stint Summary".
-
-  // Update frozen data only when valid (e.g. on track)
-  // Or update always?
-  // Let's stick to live `fuelData`.
-  /*
-    useEffect(() => {
-        if (isOnTrack) {
-            setFrozenFuelData(fuelData);
-        }
-    }, [fuelData, isOnTrack]);
-    */
-  // Actually, let's just alias it for now.
-  // If `fuelData` is null (initial load), use null.
-  // But we want to persist the last known good data if possible?
-  // `useFuelCalculation` returns `initialCalculation` if no data.
 
   useEffect(() => {
     if (fuelData) {
@@ -282,30 +162,6 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
       });
     }
   }, [fuelData]);
-
-  // Force update every second for time-based items (like clock) if needed?
-  // Not needed if we use `sessionTime`.
-
-  // Layout Debug
-  // console.log('Layout Tree:', layoutTree);
-
-  // We need to support "Blinking" or "Alerts".
-  // `FuelCalculatorTargetMessage` handles this internally via `fuelData.fuelStatus`.
-
-  // --- Widget Renderer ---
-  // Recursive function to build the grid
-
-  // We need to manage the "Blinking" state for the border.
-  // We can do this with CSS animation or React state.
-  // Let's use CSS transitions based on `fuelStatus`.
-
-  // Add timeout to force re-render if connection is lost?
-  // No, `useTelemetryvalues` handles that.
-
-  // Add simple "Heartbeat" to ensure smooth gauge updates?
-  // The gauge animates via CSS/SVG transitions.
-
-  // The gauge animates via CSS/SVG transitions.
 
   // Frozen Display Data (for Grid)
   const frozenDisplayData = useMemo(() => {
@@ -329,45 +185,7 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
     };
   }, [frozenFuelData, qualifyConsumption]);
 
-  // Helper for safety check later
   const hasSettings = !!settings;
-
-  // Render Loop
-  // We use `requestAnimationFrame` for smooth updates if we were doing canvas.
-  // For DOM, React updates are sufficient.
-
-  // HACK: Sometimes `fuelData` is stale if no telemetry update.
-  const [, setTick] = useState(0);
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      setTick((t) => t + 1);
-    }, 1000); // 1Hz fallback refresh
-    return () => clearTimeout(timeoutId);
-  });
-
-  // Also sync with `SessionTime` for faster updates
-  useEffect(() => {
-    // This effect runs whenever sessionTime changes (approx 60Hz or 20Hz depending on app setting)
-    // We can trigger a re-render if necessary, but changing state `tick` above does it slowly.
-    // `useTelemetryValue` hooks trigger renders on change anyway.
-  }, [sessionTime]);
-
-  // HACK: Re-implement the blinking/updates properly
-  useEffect(() => {
-    let timeoutId: NodeJS.Timeout;
-
-    const scheduleNextUpdate = () => {
-      timeoutId = setTimeout(() => {
-        setTick((t) => t + 1);
-        scheduleNextUpdate();
-      }, 100);
-    };
-
-    // Start the cycle
-    scheduleNextUpdate();
-
-    return () => clearTimeout(timeoutId);
-  }, [sessionState, sessionFlags]);
 
   // Safety fallback
   if (!hasSettings) return <div className="text-red-500">Missing Settings</div>;
@@ -502,7 +320,6 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
         : 'rgba(34, 197, 94, 0.3)'
     : 'none';
 
-  // Static styling since we removed blinkState
   const backgroundStyle: React.CSSProperties = {
     fontFamily:
       "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
