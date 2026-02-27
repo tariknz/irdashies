@@ -1,6 +1,5 @@
-import { TRACK_SURFACES } from '../../components/Standings/relativeGapHelpers';
-import { precomputePCHIPTangents } from '../../components/Standings/splineInterpolation';
-import { ReferenceLapBridge } from '../../../types/referenceLaps';
+import { TrackLocation, ReferenceLapBridge } from '@irdashies/types';
+import { precomputePCHIPTangents } from './pchipTangents';
 import { create } from 'zustand';
 
 export const REFERENCE_INTERVAL = 0.0025;
@@ -29,7 +28,7 @@ export function normalizeKey(key: number): number {
 }
 
 function isLapClean(trackSurface: number, isOnPitRoad: boolean): boolean {
-  return trackSurface === TRACK_SURFACES.OnTrack && !isOnPitRoad;
+  return trackSurface === TrackLocation.OnTrack && !isOnPitRoad;
 }
 
 interface ReferenceRegistryState {

@@ -5,7 +5,7 @@ import {
 } from '../TelemetryStore/TelemetryStore';
 import { useReferenceLapStore } from './ReferenceLapStore';
 import type { ReferenceLapBridge } from '../../../types/referenceLaps';
-import { TRACK_SURFACES } from '../../components/Standings/relativeGapHelpers';
+import { TrackLocation } from '@irdashies/types';
 import {
   useSessionDrivers,
   useSessionStore,
@@ -69,7 +69,7 @@ export const useReferenceLapStoreUpdater = (bridge: ReferenceLapBridge) => {
           trackPct,
           sessionTime,
           // Not tracking off tracks for now.
-          TRACK_SURFACES.OnTrack,
+          TrackLocation.OnTrack,
           isOnPitRoad
         );
       }

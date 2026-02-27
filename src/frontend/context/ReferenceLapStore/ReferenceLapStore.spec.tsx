@@ -5,12 +5,12 @@ import {
   ReferencePoint,
   ReferenceLap,
 } from './ReferenceLapStore';
-import { TRACK_SURFACES } from '../../components/Standings/relativeGapHelpers';
-import { precomputePCHIPTangents } from '../../components/Standings/splineInterpolation';
-import { ReferenceLapBridge } from 'src/types/referenceLaps';
+import { TrackLocation } from '@irdashies/types';
+import { precomputePCHIPTangents } from './pchipTangents';
+import { ReferenceLapBridge } from '@irdashies/types';
 
 // Mock external dependencies
-vi.mock('../../components/Standings/splineInterpolation', () => ({
+vi.mock('./pchipTangents', () => ({
   precomputePCHIPTangents: vi.fn(),
 }));
 
@@ -68,7 +68,7 @@ describe('ReferenceLapStore', () => {
           classId,
           0.1,
           1000,
-          TRACK_SURFACES.OnTrack,
+          TrackLocation.OnTrack,
           false
         );
 
@@ -88,7 +88,7 @@ describe('ReferenceLapStore', () => {
           classId,
           0.1,
           1000,
-          TRACK_SURFACES.OnTrack,
+          TrackLocation.OnTrack,
           false
         );
 
@@ -101,7 +101,7 @@ describe('ReferenceLapStore', () => {
           classId,
           0.31,
           1001,
-          TRACK_SURFACES.OnTrack,
+          TrackLocation.OnTrack,
           true
         );
 
@@ -122,7 +122,7 @@ describe('ReferenceLapStore', () => {
         classId,
         0.96,
         1000,
-        TRACK_SURFACES.OnTrack,
+        TrackLocation.OnTrack,
         false
       );
 
@@ -139,7 +139,7 @@ describe('ReferenceLapStore', () => {
         classId,
         0.01,
         1060,
-        TRACK_SURFACES.OnTrack,
+        TrackLocation.OnTrack,
         false
       );
 
@@ -161,7 +161,7 @@ describe('ReferenceLapStore', () => {
         classId,
         0.96,
         1000,
-        TRACK_SURFACES.OnTrack,
+        TrackLocation.OnTrack,
         true
       );
       const activeLap = store.activeLaps.get(carIdx);
@@ -176,7 +176,7 @@ describe('ReferenceLapStore', () => {
         classId,
         0.01,
         1060,
-        TRACK_SURFACES.OnTrack,
+        TrackLocation.OnTrack,
         false
       );
 

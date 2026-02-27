@@ -2,17 +2,9 @@ import {
   normalizeKey,
   REFERENCE_INTERVAL,
   ReferenceLap,
-} from '../../context/ReferenceLapStore/ReferenceLapStore';
+} from '@irdashies/context';
 import { Standings } from './createStandings';
-import { interpolateAtPoint } from './splineInterpolation';
-
-export const TRACK_SURFACES = {
-  NotInWorld: -1,
-  OffTrack: 0,
-  InPitStall: 1,
-  ApproachingPits: 2,
-  OnTrack: 3,
-};
+import { interpolateAtPoint } from './interpolation';
 
 const FALLBACK_LAPTIME = 90;
 // Helper to grab clean numbers (prevents null/undefined mess)
