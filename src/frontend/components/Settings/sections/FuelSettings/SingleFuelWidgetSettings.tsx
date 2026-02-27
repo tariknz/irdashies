@@ -189,49 +189,50 @@ export const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => 
                   <WidgetFontSizeSettings settings={settings} onChange={handleConfigChange} />
 
                   {/* Consumption Details Section */}
-                  <div className="flex items-center justify-between pb-4 border-b border-white/5">
-                    <div>
-                      <span className="text-sm text-slate-300">Consumption Details</span>
-                      <span className="block text-xs text-slate-500">Configures rows in Consumption Grid.</span>
-                    </div>
-                    <DualFontSizeInput widgetId="fuelGrid" settings={settings} onChange={handleConfigChange} />
-                  </div>
+                  <DualFontSizeInput 
+                    widgetId="fuelGrid" 
+                    title="Consumption Details" 
+                    description="Configures rows in Consumption Grid." 
+                    settings={settings} 
+                    onChange={handleConfigChange} 
+                  />
+
 
                   {/* Economy Predict */}
-                  <div className="flex items-center justify-between py-4 border-b border-white/5">
-                    <div>
-                      <span className="text-sm text-slate-300">Economy Predict</span>
-                      <span className="block text-xs text-slate-500">Predicts fuel usage vs target. Adjust Label/Value sizes.</span>
-                    </div>
-                    <DualFontSizeInput widgetId="fuelEconomyPredict" settings={settings} onChange={handleConfigChange} />
-                  </div>
-
+                  <DualFontSizeInput 
+                    widgetId="fuelEconomyPredict" 
+                    title="Economy Predict" 
+                    description="Predicts fuel usage vs target. Adjust Label/Value sizes." 
+                    settings={settings} 
+                    onChange={handleConfigChange} 
+                  />
+    
                   {/* Fuel History */}
-                  <div className="flex items-center justify-between py-4 border-b border-white/5">
-                    <div>
-                      <span className="text-sm text-slate-300">Fuel History</span>
-                      <span className="block text-xs text-slate-500">Used for Fuel History - see options.</span>
-                    </div>
-                    <DualFontSizeInput widgetId="fuelGraph" settings={settings} onChange={handleConfigChange} />
-                  </div>
-
+                  <DualFontSizeInput 
+                    widgetId="fuelGraph" 
+                    title="Fuel History" 
+                    description="Used for Fuel History - see options." 
+                    settings={settings} 
+                    onChange={handleConfigChange} 
+                  />
+   
                   {/* Moved Fuel Scenarios here for better organization */}
-                  <div className="flex items-center justify-between py-4 border-b border-white/5">
-                    <div>
-                      <span className="text-sm text-slate-300">Fuel Scenarios</span>
-                      <span className="block text-xs text-slate-500">Pit stop calculations (-1, Ideal, +1 Lap).</span>
-                    </div>
-                    <DualFontSizeInput widgetId="fuelScenarios" settings={settings} onChange={handleConfigChange} />
-                  </div>
-
+                  <DualFontSizeInput 
+                    widgetId="Fuel Scenarios" 
+                    title="Consumption Details" 
+                    description="Pit stop calculations (-1, Ideal, +1 Lap)." 
+                    settings={settings} 
+                    onChange={handleConfigChange} 
+                  />
+   
                   {/* Target Message Font */}
-                  <div className="flex items-center justify-between py-4 border-b border-white/5">
-                    <div>
-                      <span className="text-sm text-slate-300">Target Message Font</span>
-                      <span className="block text-xs text-slate-500">Used for Pit Strategy - see options.</span>
-                    </div>
-                    <DualFontSizeInput widgetId="fuelTargetMessage" settings={settings} onChange={handleConfigChange} />
-                  </div>
+                  <DualFontSizeInput 
+                    widgetId="fuelTargetMessage" 
+                    title="Target Message Font" 
+                    description="Used for Pit Strategy - see options." 
+                    settings={settings} 
+                    onChange={handleConfigChange} 
+                  />      
 
                 </SettingsSection>
                 </>

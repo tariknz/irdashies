@@ -1,6 +1,6 @@
 import { FuelWidgetSettings } from '../../types';
 
-export const DualFontSizeInput = ({ widgetId, settings, onChange }: { widgetId: string, settings: FuelWidgetSettings, onChange: (change: Partial<FuelWidgetSettings['config']>) => void }) => {
+export const DualFontSizeInput = ({ widgetId, title, description, settings, onChange }: { widgetId: string, title: string, description: string, settings: FuelWidgetSettings, onChange: (change: Partial<FuelWidgetSettings['config']>) => void }) => {
   const style = settings.config.widgetStyles?.[widgetId] || {};
   const labelSize = style.labelFontSize ?? style.fontSize ?? 12;
   const valueSize = style.valueFontSize ?? style.fontSize ?? 20;
@@ -12,26 +12,34 @@ export const DualFontSizeInput = ({ widgetId, settings, onChange }: { widgetId: 
   };
 
   return (
-    <div className="flex flex-col gap-1 w-full max-w-[140px] mr-20">
-      <div className="flex items-center gap-2">
-        <span className="text-[10px] text-slate-400 w-8">Label</span>
-        <input
-          type="range" min="8" max="48" step="1"
-          value={labelSize}
-          onChange={(e) => updateStyle('labelFontSize', parseInt(e.target.value))}
-          className="flex-1 h-1.5 bg-slate-600 rounded-lg appearance-none cursor-pointer slider"
-        />
-        <span className="text-[10px] text-slate-300 w-4 text-right">{labelSize}</span>
+    <div className="flex items-center justify-between py-4 border-b border-white/5">
+      <div>
+        <span className="text-sm text-slate-300">{title}</span>
+        {description && (
+          <span className="block text-xs text-slate-500">{description}</span>
+        )}        
       </div>
-      <div className="flex items-center gap-2">
-        <span className="text-[10px] text-slate-400 w-8">Value</span>
-        <input
-          type="range" min="8" max="64" step="1"
-          value={valueSize}
-          onChange={(e) => updateStyle('valueFontSize', parseInt(e.target.value))}
-          className="flex-1 h-1.5 bg-slate-600 rounded-lg appearance-none cursor-pointer slider"
-        />
-        <span className="text-[10px] text-slate-300 w-4 text-right">{valueSize}</span>
+      <div className="flex flex-col gap-1 w-full max-w-[140px] mr-20">
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] text-slate-400 w-8">Label</span>
+          <input
+            type="range" min="8" max="48" step="1"
+            value={labelSize}
+            onChange={(e) => updateStyle('labelFontSize', parseInt(e.target.value))}
+            className="flex-1 h-1.5 bg-slate-600 rounded-lg appearance-none cursor-pointer slider"
+          />
+          <span className="text-[10px] text-slate-300 w-4 text-right">{labelSize}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] text-slate-400 w-8">Value</span>
+          <input
+            type="range" min="8" max="64" step="1"
+            value={valueSize}
+            onChange={(e) => updateStyle('valueFontSize', parseInt(e.target.value))}
+            className="flex-1 h-1.5 bg-slate-600 rounded-lg appearance-none cursor-pointer slider"
+          />
+          <span className="text-[10px] text-slate-300 w-4 text-right">{valueSize}</span>
+        </div>
       </div>
     </div>
   );
