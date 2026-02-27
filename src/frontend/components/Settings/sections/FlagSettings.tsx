@@ -2,9 +2,13 @@ import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import { FlagWidgetSettings, SessionVisibilitySettings, SettingsTabType } from '../types';
 import { useDashboard } from '@irdashies/context';
-import { ToggleSwitch } from '../components/ToggleSwitch';
 import { TabButton } from '../components/TabButton';
 import { SessionVisibility } from '../components/SessionVisibility';
+import { SettingToggleRow } from '../components/SettingToggleRow';
+import { SettingsSection } from '../components/SettingSection';
+import { SettingDivider } from '../components/SettingDivider';
+import { SettingNumberRow } from '../components/SettingNumberRow';
+import { SettingSelectRow } from '../components/SettingSelectRow';
 
 const SETTING_ID = 'flag';
 
@@ -102,182 +106,99 @@ export const FlagSettings = () => {
 
             {/* OPTIONS TAB */}
             {activeTab === 'options' && (
-            <div className="space-y-4">
-              <h3 className="text-lg font-medium text-slate-200">Options</h3>   
-              <div className="pl-4 space-y-4"> 
+              <SettingsSection title="Display">
 
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="text-md font-medium text-slate-300">
-                      Double Flag
-                    </h4>
-                    <p className="text-xs text-slate-500">
-                      When enabled two flags will be displayed
-                    </p>
-                  </div>
-                  <ToggleSwitch
-                    enabled={settings.config.doubleFlag ?? false}
-                    onToggle={(enabled) =>
-                      handleConfigChange({ doubleFlag: enabled })
-                    }
-                  />
-                </div>
+                <SettingToggleRow
+                  title="Double Flag"
+                  description="When enabled two flags will be displayed"
+                  enabled={settings.config.doubleFlag ?? false}
+                  onToggle={(enabled) =>
+                    handleConfigChange({ doubleFlag: enabled })
+                  }
+                />
+           
+                <SettingSelectRow<'8x8' | '16x16' | 'uniform'>
+                  title="Matrix Mode"
+                  description="Choose between 8x8, 16x16, or uniform color rendering."
+                  value={settings.config.matrixMode ?? '16x16'}
+                  options={[
+                    { label: '8x8', value: '8x8' },
+                    { label: '16x16', value: '16x16' },
+                    { label: 'Uniform (1x1)', value: 'uniform' },
+                  ]}
+                  onChange={(v) => handleConfigChange({ matrixMode: v })}
+                />
 
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="text-md font-medium text-slate-300">
-                      Matrix Mode
-                    </h4>
-                    <p className="text-xs text-slate-500">
-                      Choose between 8x8, 16x16, or uniform color rendering.
-                    </p>
-                  </div>
-                  <div>
-                    <select
-                      className="rounded-md bg-slate-800 text-slate-200 px-3 py-1 text-center"
-                      value={settings.config.matrixMode ?? '16x16'}
-                      onChange={(e) =>
-                        handleConfigChange({
-                          matrixMode: e.target.value as '8x8' | '16x16' | 'uniform',
-                        })
-                      }
-                    >
-                      <option value="8x8">8x8</option>
-                      <option value="16x16">16x16</option>
-                      <option value="uniform">Uniform (1x1)</option>
-                    </select>
-                  </div>
-                </div>
+                <SettingToggleRow
+                  title="Animate Flag"
+                  description="When enabled the flag will blink on/off"
+                  enabled={settings.config.animate ?? false}
+                  onToggle={(enabled) =>
+                    handleConfigChange({ animate: enabled })
+                  }
+                />
 
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="text-md font-medium text-slate-300">
-                      Animate Flag
-                    </h4>
-                    <p className="text-xs text-slate-500">
-                      When enabled the flag will blink on/off.
-                    </p>
-                  </div>
-                  <ToggleSwitch
-                    enabled={settings.config.animate ?? false}
-                    onToggle={(enabled) => handleConfigChange({ animate: enabled })}
-                  />
-                </div>
+                <SettingNumberRow
+                  title="Blink Period (s)"
+                  description="Set how many seconds between on/off when animation is enabled. Min 0.1s, Max 3s."
+                  value={settings.config.blinkPeriod ?? 0.5}
+                  min={0.1}
+                  max={3}
+                  step={0.1}
+                  onChange={(v) => handleConfigChange({ blinkPeriod: v })}
+                />
 
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="text-md font-medium text-slate-300">
-                      Blink Period (s)
-                    </h4>
-                    <p className="text-xs text-slate-500">
-                      Set how many seconds between on/off when animation is enabled.
-                      Min 0.1s, Max 3s.
-                    </p>
-                  </div>
-                  <input
-                    type="number"
-                    step="0.1"
-                    min="0.1"
-                    max="3"
-                    className="w-24 rounded-md bg-slate-800 text-slate-200 px-2 py-1 text-right"
-                    value={settings.config.blinkPeriod ?? 0.5}
-                    disabled={!settings.config.animate}
-                    onChange={(e) => {
-                      const v = parseFloat(e.target.value);
-                      if (!Number.isNaN(v)) handleConfigChange({ blinkPeriod: v });
-                    }}
-                  />
-                </div>
+                <SettingToggleRow
+                  title="Show Flag Label"
+                  description="Toggle display of the flag name text"
+                  enabled={settings.config.showLabel ?? false}
+                  onToggle={(enabled) =>
+                    handleConfigChange({ showLabel: enabled })
+                  }
+                />
 
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="text-md font-medium text-slate-300">
-                      Show Flag Label
-                    </h4>
-                    <p className="text-xs text-slate-500">
-                      Toggle display of the flag name text.
-                    </p>
-                  </div>
-                  <ToggleSwitch
-                    enabled={settings.config.showLabel ?? true}
-                    onToggle={(enabled) => handleConfigChange({ showLabel: enabled })}
-                  />
-                </div>
+                <SettingToggleRow
+                  title="Show No Flag State"
+                  description="Display &apos;no flag&apos; (grey leds) when no flags are waved"
+                  enabled={settings.config.showNoFlagState ?? false}
+                  onToggle={(enabled) =>
+                    handleConfigChange({ showNoFlagState: enabled })
+                  }
+                />
 
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="text-md font-medium text-slate-300">
-                      Show No Flag State
-                    </h4>
-                    <p className="text-xs text-slate-500">
-                      Display &apos;no flag&apos; (grey leds) when no flags are waved.
-                    </p>
-                  </div>
-                  <ToggleSwitch
-                    enabled={settings.config.showNoFlagState ?? true}
-                    onToggle={(enabled) =>
-                      handleConfigChange({ showNoFlagState: enabled })
-                    }
-                  />
-                </div>
+                <SettingToggleRow
+                  title="Enable Glow Effect"
+                  description="Add a glow effect around the matrix lights"
+                  enabled={settings.config.enableGlow ?? false}
+                  onToggle={(enabled) =>
+                    handleConfigChange({ enableGlow: enabled })
+                  }
+                />
 
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="text-md font-medium text-slate-300">
-                      Enable Glow Effect
-                    </h4>
-                    <p className="text-xs text-slate-500">
-                      Add a glow effect around the matrix lights.
-                    </p>
-                  </div>
-                  <ToggleSwitch
-                    enabled={settings.config.enableGlow ?? true}
-                    onToggle={(enabled) =>
-                      handleConfigChange({ enableGlow: enabled })
-                    }
-                  />
-                </div>
-
-              </div>
-            </div>
+              </SettingsSection>
             )}
 
             {/* VISIBILITY TAB */}
             {activeTab === 'visibility' && (
-              <div className="space-y-4">
+              <SettingsSection title="Session Visibility">
 
-                <div className="space-y-4">
-                  <h3 className="text-lg font-medium text-slate-200">
-                    Session Visibility
-                  </h3>
-                  <div className="space-y-3 pl-4">
-                    <SessionVisibility
-                      sessionVisibility={settings.config.sessionVisibility}
-                      handleConfigChange={handleConfigChange}
-                    />
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between pt-4 border-t border-slate-700/50 pl-4">
-                  <div>
-                    <h4 className="text-md font-medium text-slate-300">
-                      Show only when on track
-                    </h4>
-                    <span className="block text-xs text-slate-500">
-                      If enabled, flags will only be shown when driving.
-                    </span>
-                  </div>
-                  <ToggleSwitch
-                    enabled={settings.config.showOnlyWhenOnTrack}
-                    onToggle={(newValue) =>
-                      handleConfigChange({
-                        showOnlyWhenOnTrack: newValue,
-                      })
-                    }
+                <SessionVisibility
+                    sessionVisibility={settings.config.sessionVisibility}
+                    handleConfigChange={handleConfigChange}
                   />
-                </div>
 
-              </div>
+                <SettingDivider />
+
+                <SettingToggleRow
+                  title="Show only when on track"
+                  description="If enabled, flags will only be shown when driving"
+                  enabled={settings.config.showOnlyWhenOnTrack ?? false}
+                  onToggle={(newValue) =>
+                    handleConfigChange({ showOnlyWhenOnTrack: newValue })
+                  }
+                />
+
+              </SettingsSection>
             )}
 
         </div>

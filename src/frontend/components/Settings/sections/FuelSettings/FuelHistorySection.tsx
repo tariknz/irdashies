@@ -1,3 +1,6 @@
+import { SettingNumberRow } from '../../components/SettingNumberRow';
+import { SettingsSection } from '../../components/SettingSection';
+import { SettingSelectRow } from '../../components/SettingSelectRow';
 import { FuelWidgetSettings } from '../../types';
 import { BarFontSizeInput, HeightInput } from './FontSizeInputs';
 
@@ -8,11 +11,9 @@ interface FuelHistorySectionProps {
 
 export const FuelHistorySection = ({ settings, onChange }: FuelHistorySectionProps) => {
   return (
-    <div className="pb-4 border-b border-white/5">
-      <h3 className="text-lg font-medium text-slate-200 pb-4">Fuel History</h3>
+    <SettingsSection title="Fuel History">  
 
       {/* Sub-settings container */}
-      <div className="ml-1 pl-3 border-l border-slate-700/50 space-y-3">
         <div className="flex items-center justify-between">
           <span className="text-sm text-slate-300">Graph Properties</span>
           <div className="flex items-center gap-4">
@@ -22,49 +23,30 @@ export const FuelHistorySection = ({ settings, onChange }: FuelHistorySectionPro
         </div>
 
         {/* Allow configuring graph type for Fuel 2 as well */}
-        {settings.config.showFuelHistory !== false && (
-          <div className="space-y-3">
+        {settings.config.showFuelHistory !== false && (          
+          <>
             {/* Graph Type & Target Wrapper */}
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-slate-300">Graph Type</span>
-              <select
-                value={settings.config.fuelHistoryType}
-                onChange={(e) =>
-                  onChange({
-                    fuelHistoryType: e.target.value as 'line' | 'histogram',
-                  })
-                }
-                className="px-2 py-0.5 bg-slate-700 text-slate-200 rounded text-xs"
-              >
-                <option value="line">Line Chart</option>
-                <option value="histogram">Histogram</option>
-              </select>
-            </div>
+            <SettingSelectRow<'line' | 'histogram'>
+              title="Graph Type"             
+              value={settings.config.fuelHistoryType ?? 'line'}
+              options={[
+                { label: 'Line Chart', value: 'line' },
+                { label: 'Histogram', value: 'histogram' },
+              ]}
+              onChange={(e) => onChange({ fuelHistoryType: e })}
+            />       
 
-            <div className="flex items-center justify-between">
-              <div className="flex flex-col">
-                <span className="text-sm text-slate-300">Target Line</span>
-                <span className="text-xs text-slate-500">Optional ref (0 to hide)</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <input
-                  type="number"
-                  min="0"
-                  step="0.1"
-                  placeholder="None"
-                  value={settings.config.manualTarget ?? ''}
-                  onChange={(e) => {
-                    const val = e.target.value ? parseFloat(e.target.value.replace(',', '.')) : undefined;
-                    onChange({ manualTarget: val });
-                  }}
-                  className="w-16 px-2 py-1 bg-slate-700 text-slate-200 rounded text-xs text-right focus:border-blue-500 focus:outline-none"
-                />
-                <span className="text-xs text-slate-500">{settings.config.fuelUnits}</span>
-              </div>
-            </div>
-          </div>
+            <SettingNumberRow
+              title="Target Line"
+              description="Optional ref (0 to hide)."
+              value={settings.config.manualTarget ?? 0}
+              min={0}
+              step={0.1}
+              onChange={(e) => onChange({ manualTarget: e })}
+            />   
+          </>        
         )}
-      </div>
-    </div>
+
+    </SettingsSection>
   );
 };

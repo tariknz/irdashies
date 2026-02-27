@@ -8,6 +8,8 @@ import {
 import { useDashboard } from '@irdashies/context';
 import { SessionVisibility } from '../components/SessionVisibility';
 import { TabButton } from '../components/TabButton';
+import { SettingsSection } from '../components/SettingSection';
+import { SettingNumberRow } from '../components/SettingNumberRow';
 
 const SETTING_ID = 'rejoin';
 
@@ -87,85 +89,52 @@ export const RejoinIndicatorSettings = () => {
 
             {/* DISPLAY TAB */}
             {activeTab === 'options' && (
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium text-slate-200">Options</h3>   
-                <div className="pl-4 space-y-4">  
+              <SettingsSection title="Options">
 
-                <div className="space-y-2">
-                  <span className="text-slate-300">Show At Speed</span>
-                  <p className="text-xs text-slate-500">
-                    Display the rejoin indicator widget when you are at or below this
-                    speed
-                  </p>
-                  <input
-                    type="number"
-                    value={settings.config.showAtSpeed}
-                    onChange={(e) =>
-                      handleConfigChange({
-                        showAtSpeed: parseFloat(e.target.value),
-                      })
-                    }
-                    className="w-full rounded border-gray-600 bg-gray-700 p-2 text-slate-300"
-                    step="0.1"
-                  />
-                </div>
+                <SettingNumberRow
+                  title="Show At Speed"
+                  description="Display the rejoin indicator widget when you are at or below this
+                    speed"
+                  value={settings.config.showAtSpeed}
+                  min={0}
+                  step={0.1}
+                  onChange={(v) => handleConfigChange({ showAtSpeed: v })}
+                />
 
-                <div className="space-y-2">
-                  <span className="text-slate-300">Care Gap</span>
-                  <p className="text-xs text-slate-500">
-                    Distance to the car behind where you need to be cautious when
+                <SettingNumberRow
+                  title="Care Gap"
+                  description="Distance to the car behind where you need to be cautious when
                     rejoining. Note: the clear status will show when next car is above
-                    this gap
-                  </p>
-                  <input
-                    type="number"
-                    value={settings.config.careGap}
-                    onChange={(e) =>
-                      handleConfigChange({
-                        careGap: parseFloat(e.target.value),
-                      })
-                    }
-                    className="w-full rounded border-gray-600 bg-gray-700 p-2 text-slate-300"
-                    step="0.1"
-                  />
-                </div>
+                    this gap"
+                  value={settings.config.careGap}
+                  min={0}
+                  step={0.1}
+                  onChange={(v) => handleConfigChange({ careGap: v })}
+                />
 
-                <div className="space-y-2">
-                  <span className="text-slate-300">Stop Gap</span>
-                  <p className="text-xs text-slate-500">
-                    Distance to the car behind where it is not safe to rejoin
-                  </p>
-                  <input
-                    type="number"
-                    value={settings.config.stopGap}
-                    onChange={(e) =>
-                      handleConfigChange({
-                        stopGap: parseFloat(e.target.value),
-                      })
-                    }
-                    className="w-full rounded border-gray-600 bg-gray-700 p-2 text-slate-300"
-                    step="0.1"
-                  />
-                </div>
+                <SettingNumberRow
+                  title="Stop Gap"
+                  description="Distance to the car behind where it is not safe to rejoin"
+                  value={settings.config.stopGap}
+                  min={0}
+                  step={0.1}
+                  onChange={(v) => handleConfigChange({ stopGap: v })}
+                />
 
-              </div>
-            </div>
+              </SettingsSection>
             )}
 
           {/* VISIBILITY TAB */}
-            {activeTab === 'visibility' && (
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium text-slate-200">
-                  Session Visibility
-                </h3>
-                <div className="space-y-3 pl-4">
-                  <SessionVisibility
-                    sessionVisibility={settings.config.sessionVisibility}
-                    handleConfigChange={handleConfigChange}
-                  />
-                </div>
-              </div>
-            )}
+          {activeTab === 'visibility' && (
+            <SettingsSection title="Session Visibility">
+                          
+              <SessionVisibility
+                  sessionVisibility={settings.config.sessionVisibility}
+                  handleConfigChange={handleConfigChange}
+                />
+
+            </SettingsSection>
+          )}
 
           </div>
         </div>

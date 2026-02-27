@@ -10,6 +10,12 @@ import { useSortableList } from '../../SortableList';
 // sortable list is not used right now — keep import commented until needed
 // import { useSortableList } from '../../SortableList';
 import { SessionVisibility } from '../components/SessionVisibility';
+import { SettingToggleRow } from '../components/SettingToggleRow';
+import { SettingDivider } from '../components/SettingDivider';
+import { SettingsSection } from '../components/SettingSection';
+import { SettingSliderRow } from '../components/SettingSliderRow';
+import { SettingButtonGroupRow } from '../components/SettingButtonGroupRow';
+import { SettingActionButton } from '../components/SettingActionButton';
 
 const SETTING_ID = 'weather';
 
@@ -183,129 +189,78 @@ export const WeatherSettings = () => {
 
             {/* DISPLAY TAB */}
             {activeTab === 'display' && (
-              <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium text-slate-200">Display Order</h3>
-                <button
-                  onClick={() => {
-                    const defaultOrder = sortableSettings.map((s) => s.id);
-                    setItemsOrder(defaultOrder);
-                    handleConfigChange({ displayOrder: defaultOrder });
-                  }}
-                  className="px-3 py-1 text-sm bg-slate-600 hover:bg-slate-500 text-slate-300 rounded-md transition-colors"
-                >
-                  Reset to Default Order
-                </button>
-              </div>
-              <div className="pl-4">
+              <SettingsSection title="Display Order">
+
                 <DisplaySettingsList
                   itemsOrder={itemsOrder}
                   onReorder={handleDisplayOrderChange}
                   settings={settings}
                   handleConfigChange={handleConfigChange}
                 />
-              </div>
-            </div>            
+
+                <SettingActionButton
+                  label="Reset to Default Order"
+                  onClick={() => {
+                    const defaultOrder = sortableSettings.map((s) => s.id);
+                    setItemsOrder(defaultOrder);
+                    handleConfigChange({ displayOrder: defaultOrder });
+                  }}
+                />
+
+              </SettingsSection>        
             )}
 
             {/* OPTIONS TAB */}
             {activeTab === 'options' && (
-              <div className="space-y-4">
-              <h3 className="text-lg font-medium text-slate-200">Options</h3>   
-              <div className="pl-4 space-y-4">  
+              <SettingsSection title="Options">
 
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-slate-300">Background Opacity</span>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="range"
-                      min="0"
-                      max="100"
-                      value={settings.config.background.opacity}
-                      onChange={(e) =>
-                        handleConfigChange({ background: { opacity: parseInt(e.target.value) } })
-                      }
-                      className="w-20 h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer"
-                    />
-                    <span className="text-xs text-slate-400 w-8">
-                      {settings.config.background.opacity}%
-                    </span>
-                  </div>
-                </div>
+                <SettingSliderRow
+                  title="Background Opacity"
+                  value={settings.config.background.opacity ?? 40}
+                  units="%"
+                  min={0}
+                  max={100}
+                  step={1}
+                  onChange={(v) =>
+                    handleConfigChange({ background: { opacity: v } })
+                  }
+                />
 
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-slate-300">Temperature Units</span>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => handleConfigChange({ units: 'auto' })}
-                      className={`px-3 py-1 rounded text-sm transition-colors ${settings.config.units === 'auto'
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
-                        }`}
-                    >
-                      auto
-                    </button>
-                    <button
-                      onClick={() => handleConfigChange({ units: 'Metric' })}
-                      className={`px-3 py-1 rounded text-sm transition-colors ${settings.config.units === 'Metric'
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
-                        }`}
-                    >
-                      °C
-                    </button>
-                    <button
-                      onClick={() => handleConfigChange({ units: 'Imperial' })}
-                      className={`px-3 py-1 rounded text-sm transition-colors ${settings.config.units === 'Imperial'
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
-                        }`}
-                    >
-                      °F
-                    </button>
-                  </div>
-                </div>  
+                <SettingButtonGroupRow<'auto' | 'Metric' | 'Imperial'>
+                  title="Temperature Units"
+                  value={settings.config.units ?? 'auto'}
+                  options={[
+                    { label: 'Auto', value: 'auto' },
+                    { label: '°C', value: 'Metric' },
+                    { label: '°F', value: 'Imperial' },
+                  ]}
+                  onChange={(v) => handleConfigChange({ units: v })}
+                />    
 
-              </div>
-            </div>  
+              </SettingsSection>
             )}
 
             {/* VISIBILITY TAB */}
             {activeTab === 'visibility' && (
-              <div className="space-y-4">
-
-                <div className="space-y-4">
-                  <h3 className="text-lg font-medium text-slate-200">
-                    Session Visibility
-                  </h3>
-                  <div className="space-y-3 pl-4">
-                    <SessionVisibility
-                      sessionVisibility={settings.config.sessionVisibility}
-                      handleConfigChange={handleConfigChange}
-                    />
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between pt-4 border-t border-slate-700/50 pl-4">
-                  <div>
-                    <h4 className="text-md font-medium text-slate-300">
-                      Show only when on track
-                    </h4>
-                    <span className="block text-xs text-slate-500">
-                      If enabled, weather will only be shown when driving.
-                    </span>
-                  </div>
-                  <ToggleSwitch
-                    enabled={settings.config.showOnlyWhenOnTrack}
-                    onToggle={(newValue) =>
-                      handleConfigChange({
-                        showOnlyWhenOnTrack: newValue,
-                      })
-                    }
+              <SettingsSection title="Session Visibility">
+                            
+                <SessionVisibility
+                    sessionVisibility={settings.config.sessionVisibility}
+                    handleConfigChange={handleConfigChange}
                   />
-                </div>
 
-              </div>
+                <SettingDivider />
+
+                <SettingToggleRow
+                  title="Show only when on track"
+                  description="If enabled, weather will only be shown when driving"
+                  enabled={settings.config.showOnlyWhenOnTrack ?? false}
+                  onToggle={(newValue) =>
+                    handleConfigChange({ showOnlyWhenOnTrack: newValue })
+                  }
+                />
+
+              </SettingsSection>
             )}
 
           </div>
