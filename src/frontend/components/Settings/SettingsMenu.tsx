@@ -109,6 +109,14 @@ export const SettingsMenu = () => {
           </Link>
         </li>
         <li>
+          <Link
+            to="/settings/twitchchat"
+            className={menuItemClass('/twitchchat')}
+          >
+            Twitch Chat
+          </Link>
+        </li>
+        <li>
           <Link to="/settings/weather" className={menuItemClass('/weather')}>
             Weather
           </Link>

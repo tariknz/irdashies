@@ -6,7 +6,10 @@ interface FuelHistorySectionProps {
   onChange: (change: Partial<FuelWidgetSettings['config']>) => void;
 }
 
-export const FuelHistorySection = ({ settings, onChange }: FuelHistorySectionProps) => {
+export const FuelHistorySection = ({
+  settings,
+  onChange,
+}: FuelHistorySectionProps) => {
   return (
     <div className="pb-4 border-b border-white/5">
       <h3 className="text-lg font-medium text-slate-200 pb-4">Fuel History</h3>
@@ -16,8 +19,16 @@ export const FuelHistorySection = ({ settings, onChange }: FuelHistorySectionPro
         <div className="flex items-center justify-between">
           <span className="text-sm text-slate-300">Graph Properties</span>
           <div className="flex items-center gap-4">
-            <BarFontSizeInput widgetId="fuelGraph" settings={settings} onChange={onChange} />
-            <HeightInput widgetId="fuelGraph" settings={settings} onChange={onChange} />
+            <BarFontSizeInput
+              widgetId="fuelGraph"
+              settings={settings}
+              onChange={onChange}
+            />
+            <HeightInput
+              widgetId="fuelGraph"
+              settings={settings}
+              onChange={onChange}
+            />
           </div>
         </div>
 
@@ -44,7 +55,9 @@ export const FuelHistorySection = ({ settings, onChange }: FuelHistorySectionPro
             <div className="flex items-center justify-between">
               <div className="flex flex-col">
                 <span className="text-sm text-slate-300">Target Line</span>
-                <span className="text-xs text-slate-500">Optional ref (0 to hide)</span>
+                <span className="text-xs text-slate-500">
+                  Optional ref (0 to hide)
+                </span>
               </div>
               <div className="flex items-center gap-2">
                 <input
@@ -54,12 +67,16 @@ export const FuelHistorySection = ({ settings, onChange }: FuelHistorySectionPro
                   placeholder="None"
                   value={settings.config.manualTarget ?? ''}
                   onChange={(e) => {
-                    const val = e.target.value ? parseFloat(e.target.value.replace(',', '.')) : undefined;
+                    const val = e.target.value
+                      ? parseFloat(e.target.value.replace(',', '.'))
+                      : undefined;
                     onChange({ manualTarget: val });
                   }}
                   className="w-16 px-2 py-1 bg-slate-700 text-slate-200 rounded text-xs text-right focus:border-blue-500 focus:outline-none"
                 />
-                <span className="text-xs text-slate-500">{settings.config.fuelUnits}</span>
+                <span className="text-xs text-slate-500">
+                  {settings.config.fuelUnits}
+                </span>
               </div>
             </div>
           </div>

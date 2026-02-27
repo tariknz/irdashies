@@ -91,14 +91,14 @@ export const PitlaneHelperSettings = () => {
           </div>
 
           <div className="pt-4">
-
             {/* OPTIONS TAB */}
             {activeTab === 'options' && (
               <div className="space-y-4">
-
                 {/* Visibility Settings */}
                 <div className="space-y-4">
-                  <h3 className="text-lg font-medium text-slate-200">Visibility</h3>
+                  <h3 className="text-lg font-medium text-slate-200">
+                    Visibility
+                  </h3>
                   <div className="space-y-3 pl-4">
                     <div className="flex items-center justify-between">
                       <div>
@@ -149,7 +149,9 @@ export const PitlaneHelperSettings = () => {
 
                 {/* Warning Settings */}
                 <div className="space-y-4">
-                  <h3 className="text-lg font-medium text-slate-200">Warnings</h3>
+                  <h3 className="text-lg font-medium text-slate-200">
+                    Warnings
+                  </h3>
                   <div className="space-y-3 pl-4">
                     <div className="flex items-center justify-between">
                       <div>
@@ -163,7 +165,9 @@ export const PitlaneHelperSettings = () => {
                       <ToggleSwitch
                         enabled={settings.config.enablePitLimiterWarning}
                         onToggle={(enabled) =>
-                          handleConfigChange({ enablePitLimiterWarning: enabled })
+                          handleConfigChange({
+                            enablePitLimiterWarning: enabled,
+                          })
                         }
                       />
                     </div>
@@ -180,7 +184,9 @@ export const PitlaneHelperSettings = () => {
                       <ToggleSwitch
                         enabled={settings.config.enableEarlyPitboxWarning}
                         onToggle={(enabled) =>
-                          handleConfigChange({ enableEarlyPitboxWarning: enabled })
+                          handleConfigChange({
+                            enableEarlyPitboxWarning: enabled,
+                          })
                         }
                       />
                     </div>
@@ -215,7 +221,9 @@ export const PitlaneHelperSettings = () => {
 
                 {/* Traffic Settings */}
                 <div className="space-y-4">
-                  <h3 className="text-lg font-medium text-slate-200">Traffic</h3>
+                  <h3 className="text-lg font-medium text-slate-200">
+                    Traffic
+                  </h3>
                   <div className="space-y-3 pl-4">
                     <div className="flex items-center justify-between">
                       <div>
@@ -238,13 +246,18 @@ export const PitlaneHelperSettings = () => {
 
                 {/* Display Settings */}
                 <div className="space-y-4">
-                  <h3 className="text-lg font-medium text-slate-200">Display</h3>
+                  <h3 className="text-lg font-medium text-slate-200">
+                    Display
+                  </h3>
                   <div className="space-y-3 pl-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <span className="text-sm text-slate-300">Speed Bar</span>
+                        <span className="text-sm text-slate-300">
+                          Speed Bar
+                        </span>
                         <p className="text-xs text-slate-500">
-                          Show vertical bar indicating speed relative to pit limit
+                          Show vertical bar indicating speed relative to pit
+                          limit
                         </p>
                       </div>
                       <ToggleSwitch
@@ -268,7 +281,8 @@ export const PitlaneHelperSettings = () => {
                           }
                           className={[
                             'px-3 py-1 text-xs font-medium rounded transition-colors',
-                            settings.config.progressBarOrientation === 'horizontal'
+                            settings.config.progressBarOrientation ===
+                            'horizontal'
                               ? 'bg-blue-600 text-white'
                               : 'bg-slate-700 text-slate-300 hover:bg-slate-600',
                           ].join(' ')}
@@ -277,11 +291,14 @@ export const PitlaneHelperSettings = () => {
                         </button>
                         <button
                           onClick={() =>
-                            handleConfigChange({ progressBarOrientation: 'vertical' })
+                            handleConfigChange({
+                              progressBarOrientation: 'vertical',
+                            })
                           }
                           className={[
                             'px-3 py-1 text-xs font-medium rounded transition-colors',
-                            settings.config.progressBarOrientation === 'vertical'
+                            settings.config.progressBarOrientation ===
+                            'vertical'
                               ? 'bg-blue-600 text-white'
                               : 'bg-slate-700 text-slate-300 hover:bg-slate-600',
                           ].join(' ')}
@@ -336,7 +353,9 @@ export const PitlaneHelperSettings = () => {
                         </div>
 
                         <div className="flex items-center justify-between pl-4">
-                          <span className="text-sm text-slate-300">Show Clutch</span>
+                          <span className="text-sm text-slate-300">
+                            Show Clutch
+                          </span>
                           <ToggleSwitch
                             enabled={settings.config.pitExitInputs.clutch}
                             onToggle={(enabled) =>
@@ -351,7 +370,9 @@ export const PitlaneHelperSettings = () => {
                         </div>
 
                         <div className="flex items-center justify-between pl-4">
-                          <span className="text-sm text-slate-300">When to Show</span>
+                          <span className="text-sm text-slate-300">
+                            When to Show
+                          </span>
                           <select
                             value={settings.config.showInputsPhase}
                             onChange={(e) =>
@@ -376,7 +397,9 @@ export const PitlaneHelperSettings = () => {
 
                 {/* Background Settings */}
                 <div className="space-y-4">
-                  <h3 className="text-lg font-medium text-slate-200">Background</h3>
+                  <h3 className="text-lg font-medium text-slate-200">
+                    Background
+                  </h3>
                   <div className="space-y-3 pl-4">
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-slate-300">
@@ -402,10 +425,8 @@ export const PitlaneHelperSettings = () => {
                     </div>
                   </div>
                 </div>
-
               </div>
             )}
-
           </div>
         </div>
       )}

@@ -9,3 +9,4 @@ export * from './TelemetryInspectorSettings';
 export * from './AdvancedSettings';
 export * from './ProfileSettings';
 export * from './PitlaneHelperSettings';
+export * from './TwitchChatSettings';

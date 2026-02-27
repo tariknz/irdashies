@@ -86,32 +86,42 @@ export const BlindSpotMonitorSettings = () => {
     >
       {(handleConfigChange) => (
         <div className="space-y-4">
-
           {/* Tabs */}
           <div className="flex border-b border-slate-700/50">
-            <TabButton id="display" activeTab={activeTab} setActiveTab={setActiveTab}>
+            <TabButton
+              id="display"
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+            >
               Display
             </TabButton>
-            <TabButton id="options" activeTab={activeTab} setActiveTab={setActiveTab}>
+            <TabButton
+              id="options"
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+            >
               Options
             </TabButton>
-            <TabButton id="visibility" activeTab={activeTab} setActiveTab={setActiveTab}>
+            <TabButton
+              id="visibility"
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+            >
               Visibility
             </TabButton>
           </div>
 
           <div className="pt-4">
-
             {/* DISPLAY TAB */}
             {activeTab === 'display' && (
               <div className="space-y-4">
                 <h3 className="text-lg font-medium text-slate-200">Display</h3>
                 <div className="pl-4 space-y-4">
-
                   {/* Background Opacity */}
                   <div className="space-y-2">
                     <label className="text-slate-300">
-                      Background Opacity: {settings.config.background?.opacity ?? 30}%
+                      Background Opacity:{' '}
+                      {settings.config.background?.opacity ?? 30}%
                     </label>
                     <input
                       type="range"
@@ -148,7 +158,6 @@ export const BlindSpotMonitorSettings = () => {
                       Width of the blind spot indicator in pixels.
                     </p>
                   </div>
-
                 </div>
               </div>
             )}
@@ -158,7 +167,6 @@ export const BlindSpotMonitorSettings = () => {
               <div className="space-y-4">
                 <h3 className="text-lg font-medium text-slate-200">Options</h3>
                 <div className="pl-4 space-y-4">
-
                   {/* Distance Ahead */}
                   <div className="space-y-2">
                     <label className="text-slate-300">
@@ -171,7 +179,9 @@ export const BlindSpotMonitorSettings = () => {
                       step="0.1"
                       value={settings.config.distAhead}
                       onChange={(e) =>
-                        handleConfigChange({ distAhead: parseFloat(e.target.value) })
+                        handleConfigChange({
+                          distAhead: parseFloat(e.target.value),
+                        })
                       }
                       className="w-full"
                     />
@@ -192,7 +202,9 @@ export const BlindSpotMonitorSettings = () => {
                       step="0.1"
                       value={settings.config.distBehind}
                       onChange={(e) =>
-                        handleConfigChange({ distBehind: parseFloat(e.target.value) })
+                        handleConfigChange({
+                          distBehind: parseFloat(e.target.value),
+                        })
                       }
                       className="w-full"
                     />
@@ -200,7 +212,6 @@ export const BlindSpotMonitorSettings = () => {
                       Distance to car behind in meters.
                     </p>
                   </div>
-
                 </div>
               </div>
             )}
@@ -208,7 +219,6 @@ export const BlindSpotMonitorSettings = () => {
             {/* VISIBILITY TAB */}
             {activeTab === 'visibility' && (
               <div className="space-y-4">
-
                 <div className="space-y-4">
                   <h3 className="text-lg font-medium text-slate-200">
                     Session Visibility
@@ -239,10 +249,8 @@ export const BlindSpotMonitorSettings = () => {
                     }
                   />
                 </div>
-
               </div>
             )}
-
           </div>
         </div>
       )}

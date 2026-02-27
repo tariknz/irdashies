@@ -19,6 +19,8 @@ export interface DashboardWidget {
   type?: string;
   /** Show/hide widget */
   enabled: boolean;
+  /** When true, widget remains visible even when iRacing is not running. */
+  alwaysEnabled?: boolean;
   /** The layout of the window for the widget on the dashboard. */
   layout: WidgetLayout;
   /** Configuration for the widget. */
@@ -26,12 +28,31 @@ export interface DashboardWidget {
 }
 
 export type FontType = 'lato' | 'notosans' | 'figtree' | 'inter' | 'roboto';
-export type FontSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | '5xl' | '6xl' | '7xl' | '8xl' | '9xl';
+export type FontSize =
+  | 'xs'
+  | 'sm'
+  | 'md'
+  | 'lg'
+  | 'xl'
+  | '2xl'
+  | '3xl'
+  | '4xl'
+  | '5xl'
+  | '6xl'
+  | '7xl'
+  | '8xl'
+  | '9xl';
 
 export interface GeneralSettingsType {
   fontType?: FontType;
   fontSize?: FontSize;
-  fontWeight?: 'light' | 'normal' | 'medium' | 'semibold' | 'bold' | 'extrabold';
+  fontWeight?:
+    | 'light'
+    | 'normal'
+    | 'medium'
+    | 'semibold'
+    | 'bold'
+    | 'extrabold';
   colorPalette?:
     | 'default'
     | 'black'

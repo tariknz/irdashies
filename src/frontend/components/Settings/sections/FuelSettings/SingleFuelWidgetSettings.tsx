@@ -6,7 +6,10 @@ import { SessionVisibility } from '../../components/SessionVisibility';
 import { ToggleSwitch } from '../../components/ToggleSwitch';
 import { TabButton } from '../../components/TabButton';
 import { LayoutVisualizer, migrateToTree } from '../LayoutVisualizer';
-import { DEFAULT_FUEL_LAYOUT_TREE, defaultFuelCalculatorSettings } from '../../../FuelCalculator/defaults';
+import {
+  DEFAULT_FUEL_LAYOUT_TREE,
+  defaultFuelCalculatorSettings,
+} from '../../../FuelCalculator/defaults';
 import { DualFontSizeInput } from './FontSizeInputs';
 import { GridOrderSettingsList } from './GridOrderSettingsList';
 import { migrateConfig, AVAILABLE_WIDGETS_FUEL } from './utils';
@@ -19,7 +22,11 @@ import { HistoricalStorageSection } from './HistoricalStorageSection';
 const defaultConfig = defaultFuelCalculatorSettings;
 const DEFAULT_TREE_FUEL = DEFAULT_FUEL_LAYOUT_TREE;
 
-export const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => {
+export const SingleFuelWidgetSettings = ({
+  widgetId,
+}: {
+  widgetId: string;
+}) => {
   const { currentDashboard } = useDashboard();
   const savedSettings = currentDashboard?.widgets.find(
     (w) => w.id === widgetId
@@ -29,7 +36,11 @@ export const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => 
     const initialConfig = migrateConfig(savedSettings?.config);
 
     // Use DEFAULT_TREE_FUEL if no layout is defined
-    if ((!initialConfig.layoutConfig || initialConfig.layoutConfig.length === 0) && !initialConfig.layoutTree) {
+    if (
+      (!initialConfig.layoutConfig ||
+        initialConfig.layoutConfig.length === 0) &&
+      !initialConfig.layoutTree
+    ) {
       initialConfig.layoutTree = DEFAULT_TREE_FUEL;
     }
     return {
@@ -43,7 +54,8 @@ export const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => 
   // Calculate tree state from settings (migrating if needed)
   const currentTree = useMemo(() => {
     // Validate that the tree has a type before using it
-    if (settings.config.layoutTree && settings.config.layoutTree.type) return settings.config.layoutTree;
+    if (settings.config.layoutTree && settings.config.layoutTree.type)
+      return settings.config.layoutTree;
     // Auto-migrate legacy list to tree for the visualizer
     return migrateToTree(settings.config.layoutConfig || []);
   }, [settings.config.layoutTree, settings.config.layoutConfig]);
@@ -58,7 +70,9 @@ export const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => 
   }, [activeTab]);
 
   if (!currentDashboard || !savedSettings) {
-    return <div className="p-4 text-slate-400">Widget not found or loading...</div>;
+    return (
+      <div className="p-4 text-slate-400">Widget not found or loading...</div>
+    );
   }
 
   return (
@@ -142,7 +156,6 @@ export const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => 
               {/* DISPLAY TAB */}
               {activeTab === 'display' && (
                 <div className="space-y-4">
-
                   {/* General Control Toggles */}
                   <div className="flex justify-between items-center">
                     <h3 className="text-lg font-medium text-slate-200">
@@ -154,23 +167,35 @@ export const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => 
                   <div className="bg-slate-800/50 p-4 rounded border border-slate-700 space-y-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <span className="text-sm font-medium text-slate-300">Use General font Sizes</span>
-                        <span className="block text-xs text-slate-500">Syncs with Font Size slider in General tab</span>
+                        <span className="text-sm font-medium text-slate-300">
+                          Use General font Sizes
+                        </span>
+                        <span className="block text-xs text-slate-500">
+                          Syncs with Font Size slider in General tab
+                        </span>
                       </div>
                       <ToggleSwitch
                         enabled={settings.config.useGeneralFontSize ?? false}
-                        onToggle={(val) => handleConfigChange({ useGeneralFontSize: val })}
+                        onToggle={(val) =>
+                          handleConfigChange({ useGeneralFontSize: val })
+                        }
                       />
                     </div>
 
                     <div className="flex items-center justify-between">
                       <div>
-                        <span className="text-sm font-medium text-slate-300">Use General Compact Mode</span>
-                        <span className="block text-xs text-slate-500">Syncs with Compact Mode in General tab</span>
+                        <span className="text-sm font-medium text-slate-300">
+                          Use General Compact Mode
+                        </span>
+                        <span className="block text-xs text-slate-500">
+                          Syncs with Compact Mode in General tab
+                        </span>
                       </div>
                       <ToggleSwitch
                         enabled={settings.config.useGeneralCompactMode ?? false}
-                        onToggle={(val) => handleConfigChange({ useGeneralCompactMode: val })}
+                        onToggle={(val) =>
+                          handleConfigChange({ useGeneralCompactMode: val })
+                        }
                       />
                     </div>
                   </div>
@@ -199,58 +224,99 @@ export const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => 
                     </div>
                   </div>
 
-                    {/* Widget Font Size Settings */}
-                  <WidgetFontSizeSettings settings={settings} onChange={handleConfigChange} />
+                  {/* Widget Font Size Settings */}
+                  <WidgetFontSizeSettings
+                    settings={settings}
+                    onChange={handleConfigChange}
+                  />
 
                   <div className="pl-4">
-
                     {/* Consumption Details Section */}
                     <div className="flex items-center justify-between pb-4 border-b border-white/5">
                       <div>
-                        <span className="text-sm text-slate-300">Consumption Details</span>
-                        <span className="block text-xs text-slate-500">Configures rows in Consumption Grid.</span>
+                        <span className="text-sm text-slate-300">
+                          Consumption Details
+                        </span>
+                        <span className="block text-xs text-slate-500">
+                          Configures rows in Consumption Grid.
+                        </span>
                       </div>
-                      <DualFontSizeInput widgetId="fuelGrid" settings={settings} onChange={handleConfigChange} />
+                      <DualFontSizeInput
+                        widgetId="fuelGrid"
+                        settings={settings}
+                        onChange={handleConfigChange}
+                      />
                     </div>
 
                     {/* Economy Predict */}
                     <div className="flex items-center justify-between py-4 border-b border-white/5">
                       <div>
-                        <span className="text-sm text-slate-300">Economy Predict</span>
-                        <span className="block text-xs text-slate-500">Predicts fuel usage vs target. Adjust Label/Value sizes.</span>
+                        <span className="text-sm text-slate-300">
+                          Economy Predict
+                        </span>
+                        <span className="block text-xs text-slate-500">
+                          Predicts fuel usage vs target. Adjust Label/Value
+                          sizes.
+                        </span>
                       </div>
-                      <DualFontSizeInput widgetId="fuelEconomyPredict" settings={settings} onChange={handleConfigChange} />
+                      <DualFontSizeInput
+                        widgetId="fuelEconomyPredict"
+                        settings={settings}
+                        onChange={handleConfigChange}
+                      />
                     </div>
 
                     {/* Fuel History */}
                     <div className="flex items-center justify-between py-4 border-b border-white/5">
                       <div>
-                        <span className="text-sm text-slate-300">Fuel History</span>
-                        <span className="block text-xs text-slate-500">Used for Fuel History - see options.</span>
+                        <span className="text-sm text-slate-300">
+                          Fuel History
+                        </span>
+                        <span className="block text-xs text-slate-500">
+                          Used for Fuel History - see options.
+                        </span>
                       </div>
-                      <DualFontSizeInput widgetId="fuelGraph" settings={settings} onChange={handleConfigChange} />
+                      <DualFontSizeInput
+                        widgetId="fuelGraph"
+                        settings={settings}
+                        onChange={handleConfigChange}
+                      />
                     </div>
 
                     {/* Moved Fuel Scenarios here for better organization */}
                     <div className="flex items-center justify-between py-4 border-b border-white/5">
                       <div>
-                        <span className="text-sm text-slate-300">Fuel Scenarios</span>
-                        <span className="block text-xs text-slate-500">Pit stop calculations (-1, Ideal, +1 Lap).</span>
+                        <span className="text-sm text-slate-300">
+                          Fuel Scenarios
+                        </span>
+                        <span className="block text-xs text-slate-500">
+                          Pit stop calculations (-1, Ideal, +1 Lap).
+                        </span>
                       </div>
-                      <DualFontSizeInput widgetId="fuelScenarios" settings={settings} onChange={handleConfigChange} />
+                      <DualFontSizeInput
+                        widgetId="fuelScenarios"
+                        settings={settings}
+                        onChange={handleConfigChange}
+                      />
                     </div>
 
                     {/* Target Message Font */}
                     <div className="flex items-center justify-between py-4 border-b border-white/5">
                       <div>
-                        <span className="text-sm text-slate-300">Target Message Font</span>
-                        <span className="block text-xs text-slate-500">Used for Pit Strategy - see options.</span>
+                        <span className="text-sm text-slate-300">
+                          Target Message Font
+                        </span>
+                        <span className="block text-xs text-slate-500">
+                          Used for Pit Strategy - see options.
+                        </span>
                       </div>
-                      <DualFontSizeInput widgetId="fuelTargetMessage" settings={settings} onChange={handleConfigChange} />
+                      <DualFontSizeInput
+                        widgetId="fuelTargetMessage"
+                        settings={settings}
+                        onChange={handleConfigChange}
+                      />
                     </div>
-
                   </div>
-
                 </div>
               )}
 
@@ -258,7 +324,7 @@ export const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => 
               {activeTab === 'options' && (
                 <div className="space-y-4">
                   <h3 className="text-lg font-medium text-slate-200">
-                      Options
+                    Options
                   </h3>
 
                   {/* Fuel Units */}
@@ -281,7 +347,7 @@ export const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => 
                       <option value="L">Liters (L)</option>
                       <option value="gal">Gallons (gal)</option>
                     </select>
-                  </div>                  
+                  </div>
 
                   {/* Safety Margin */}
                   <div className="flex items-center justify-between pb-4 border-b border-slate-700">
@@ -300,7 +366,8 @@ export const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => 
                         value={settings.config.safetyMargin}
                         onChange={(e) =>
                           handleConfigChange({
-                            safetyMargin: parseFloat(e.target.value.replace(',', '.')) || 0,
+                            safetyMargin:
+                              parseFloat(e.target.value.replace(',', '.')) || 0,
                           })
                         }
                         className="w-16 px-2 py-1 bg-slate-700 text-slate-200 rounded text-xs text-right focus:border-blue-500 focus:outline-none"
@@ -312,16 +379,27 @@ export const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => 
                   </div>
 
                   {/* Fuel Status Alerts */}
-                  <FuelStatusAlertsSection settings={settings} onChange={handleConfigChange} />
+                  <FuelStatusAlertsSection
+                    settings={settings}
+                    onChange={handleConfigChange}
+                  />
 
                   {/* Consumption Details Section */}
-                  <div className="pb-4 border-b border-white/5">    
-                    <h4 className="text-lg font-medium text-slate-300">Fuel Consumption</h4>
+                  <div className="pb-4 border-b border-white/5">
+                    <h4 className="text-lg font-medium text-slate-300">
+                      Fuel Consumption
+                    </h4>
                     {/* Fuel 2 Grid Reordering */}
                     <div className="pl-2 pr-1">
                       <GridOrderSettingsList
-                        itemsOrder={settings.config.consumptionGridOrder || defaultConfig.consumptionGridOrder || []}
-                        onReorder={(newOrder) => handleConfigChange({ consumptionGridOrder: newOrder })}
+                        itemsOrder={
+                          settings.config.consumptionGridOrder ||
+                          defaultConfig.consumptionGridOrder ||
+                          []
+                        }
+                        onReorder={(newOrder) =>
+                          handleConfigChange({ consumptionGridOrder: newOrder })
+                        }
                         settings={settings}
                         handleConfigChange={handleConfigChange}
                       />
@@ -329,11 +407,16 @@ export const SingleFuelWidgetSettings = ({ widgetId }: { widgetId: string }) => 
                   </div>
 
                   {/* Fuel History */}
-                  <FuelHistorySection settings={settings} onChange={handleConfigChange} />                  
+                  <FuelHistorySection
+                    settings={settings}
+                    onChange={handleConfigChange}
+                  />
 
                   {/* Pit Strategy Section */}
-                  <PitStrategySection settings={settings} onChange={handleConfigChange} />
-
+                  <PitStrategySection
+                    settings={settings}
+                    onChange={handleConfigChange}
+                  />
                 </div>
               )}
 

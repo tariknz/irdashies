@@ -13,8 +13,7 @@ type Story = StoryObj<typeof TabButton>;
 
 export const Interactive: Story = {
   render: () => {
-    const [activeTab, setActiveTab] =
-      useState<SettingsTabType>('layout');
+    const [activeTab, setActiveTab] = useState<SettingsTabType>('layout');
 
     return (
       <div className="bg-slate-900 p-6 flex gap-4">

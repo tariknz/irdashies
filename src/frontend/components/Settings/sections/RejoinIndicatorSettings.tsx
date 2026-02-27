@@ -71,88 +71,92 @@ export const RejoinIndicatorSettings = () => {
       widgetId={SETTING_ID}
     >
       {(handleConfigChange) => (
-          <div className="space-y-4">
-
+        <div className="space-y-4">
           {/* Tabs */}
           <div className="flex border-b border-slate-700/50">
-            <TabButton id="options" activeTab={activeTab} setActiveTab={setActiveTab}>
+            <TabButton
+              id="options"
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+            >
               Options
             </TabButton>
-            <TabButton id="visibility" activeTab={activeTab} setActiveTab={setActiveTab}>
+            <TabButton
+              id="visibility"
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+            >
               Visibility
             </TabButton>
           </div>
 
           <div className="pt-4">
-
             {/* DISPLAY TAB */}
             {activeTab === 'options' && (
               <div className="space-y-4">
-                <h3 className="text-lg font-medium text-slate-200">Options</h3>   
-                <div className="pl-4 space-y-4">  
+                <h3 className="text-lg font-medium text-slate-200">Options</h3>
+                <div className="pl-4 space-y-4">
+                  <div className="space-y-2">
+                    <span className="text-slate-300">Show At Speed</span>
+                    <p className="text-xs text-slate-500">
+                      Display the rejoin indicator widget when you are at or
+                      below this speed
+                    </p>
+                    <input
+                      type="number"
+                      value={settings.config.showAtSpeed}
+                      onChange={(e) =>
+                        handleConfigChange({
+                          showAtSpeed: parseFloat(e.target.value),
+                        })
+                      }
+                      className="w-full rounded border-gray-600 bg-gray-700 p-2 text-slate-300"
+                      step="0.1"
+                    />
+                  </div>
 
-                <div className="space-y-2">
-                  <span className="text-slate-300">Show At Speed</span>
-                  <p className="text-xs text-slate-500">
-                    Display the rejoin indicator widget when you are at or below this
-                    speed
-                  </p>
-                  <input
-                    type="number"
-                    value={settings.config.showAtSpeed}
-                    onChange={(e) =>
-                      handleConfigChange({
-                        showAtSpeed: parseFloat(e.target.value),
-                      })
-                    }
-                    className="w-full rounded border-gray-600 bg-gray-700 p-2 text-slate-300"
-                    step="0.1"
-                  />
+                  <div className="space-y-2">
+                    <span className="text-slate-300">Care Gap</span>
+                    <p className="text-xs text-slate-500">
+                      Distance to the car behind where you need to be cautious
+                      when rejoining. Note: the clear status will show when next
+                      car is above this gap
+                    </p>
+                    <input
+                      type="number"
+                      value={settings.config.careGap}
+                      onChange={(e) =>
+                        handleConfigChange({
+                          careGap: parseFloat(e.target.value),
+                        })
+                      }
+                      className="w-full rounded border-gray-600 bg-gray-700 p-2 text-slate-300"
+                      step="0.1"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <span className="text-slate-300">Stop Gap</span>
+                    <p className="text-xs text-slate-500">
+                      Distance to the car behind where it is not safe to rejoin
+                    </p>
+                    <input
+                      type="number"
+                      value={settings.config.stopGap}
+                      onChange={(e) =>
+                        handleConfigChange({
+                          stopGap: parseFloat(e.target.value),
+                        })
+                      }
+                      className="w-full rounded border-gray-600 bg-gray-700 p-2 text-slate-300"
+                      step="0.1"
+                    />
+                  </div>
                 </div>
-
-                <div className="space-y-2">
-                  <span className="text-slate-300">Care Gap</span>
-                  <p className="text-xs text-slate-500">
-                    Distance to the car behind where you need to be cautious when
-                    rejoining. Note: the clear status will show when next car is above
-                    this gap
-                  </p>
-                  <input
-                    type="number"
-                    value={settings.config.careGap}
-                    onChange={(e) =>
-                      handleConfigChange({
-                        careGap: parseFloat(e.target.value),
-                      })
-                    }
-                    className="w-full rounded border-gray-600 bg-gray-700 p-2 text-slate-300"
-                    step="0.1"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <span className="text-slate-300">Stop Gap</span>
-                  <p className="text-xs text-slate-500">
-                    Distance to the car behind where it is not safe to rejoin
-                  </p>
-                  <input
-                    type="number"
-                    value={settings.config.stopGap}
-                    onChange={(e) =>
-                      handleConfigChange({
-                        stopGap: parseFloat(e.target.value),
-                      })
-                    }
-                    className="w-full rounded border-gray-600 bg-gray-700 p-2 text-slate-300"
-                    step="0.1"
-                  />
-                </div>
-
               </div>
-            </div>
             )}
 
-          {/* VISIBILITY TAB */}
+            {/* VISIBILITY TAB */}
             {activeTab === 'visibility' && (
               <div className="space-y-4">
                 <h3 className="text-lg font-medium text-slate-200">
@@ -166,7 +170,6 @@ export const RejoinIndicatorSettings = () => {
                 </div>
               </div>
             )}
-
           </div>
         </div>
       )}
