@@ -34,7 +34,7 @@ export function SettingSliderRow({
         step={step}
         value={value}
         onChange={(e) => onChange(parseFloat(e.target.value))}
-        className="w-full"
+        className="w-full cursor-pointer"
       />
       {description && (
         <p className="text-xs text-slate-500">{description}</p>
