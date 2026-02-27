@@ -198,7 +198,8 @@ export const FlatTrackMapCanvas = ({
         if (!color) return;
 
         const x = HORIZONTAL_PADDING + progress * usableWidth;
-        const radius = (isPlayer ? playerCircleSize : driverCircleSize) * circleScale;
+        const radius =
+          (isPlayer ? playerCircleSize : driverCircleSize) * circleScale;
         const fontSize = radius * (trackmapFontSize / 100);
 
         const onPitRoad = !!carIdxIsOnPitRoad?.[driver.CarIdx];
@@ -225,8 +226,9 @@ export const FlatTrackMapCanvas = ({
           let displayText = '';
           if (onPitRoad) {
             displayText = 'P';
-          } else if (displayMode === 'livePosition') {           
-            const livePosition = driverLivePositions[driver.CarIdx] ?? classPosition;
+          } else if (displayMode === 'livePosition') {
+            const livePosition =
+              driverLivePositions[driver.CarIdx] ?? classPosition;
             displayText =
               livePosition !== undefined && livePosition > 0
                 ? livePosition.toString()
@@ -241,7 +243,8 @@ export const FlatTrackMapCanvas = ({
           }
           if (displayText) {
             const m = ctx.measureText(displayText);
-            const visualOffset = (m.actualBoundingBoxAscent - m.actualBoundingBoxDescent) / 2;
+            const visualOffset =
+              (m.actualBoundingBoxAscent - m.actualBoundingBoxDescent) / 2;
             ctx.fillText(displayText, x, centerY + visualOffset);
           }
         }

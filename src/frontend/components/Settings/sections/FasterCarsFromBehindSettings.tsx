@@ -54,7 +54,9 @@ const migrateConfig = (
         (config.closestDriverBox as 'Top' | 'Reverse') ??
         defaultConfig.closestDriverBox,
       showName: (config.showName as boolean) ?? defaultConfig.showName,
-      removeNumbersFromName: (config.removeNumbersFromName as boolean) ?? defaultConfig.removeNumbersFromName,
+      removeNumbersFromName:
+        (config.removeNumbersFromName as boolean) ??
+        defaultConfig.removeNumbersFromName,
       showDistance:
         (config.showDistance as boolean) ?? defaultConfig.showDistance,
       showBadge: (config.showBadge as boolean) ?? defaultConfig.showBadge,
@@ -235,22 +237,24 @@ export const FasterCarsFromBehindSettings = () => {
           </div>
 
           {settings.config.showName && (
-          <div className="flex items-center justify-between indent-8">
-            <div>
-              <h4 className="text-md font-medium text-slate-300">Remove Numbers From Names</h4>
-              <span className="block text-xs text-slate-500">
-                Remove numbers from the displayed driver name.
-              </span>
+            <div className="flex items-center justify-between indent-8">
+              <div>
+                <h4 className="text-md font-medium text-slate-300">
+                  Remove Numbers From Names
+                </h4>
+                <span className="block text-xs text-slate-500">
+                  Remove numbers from the displayed driver name.
+                </span>
+              </div>
+              <ToggleSwitch
+                enabled={settings.config.removeNumbersFromName}
+                onToggle={(newValue) =>
+                  handleConfigChange({
+                    removeNumbersFromName: newValue,
+                  })
+                }
+              />
             </div>
-            <ToggleSwitch
-              enabled={settings.config.removeNumbersFromName}
-              onToggle={(newValue) =>
-                handleConfigChange({
-                  removeNumbersFromName: newValue,
-                })
-              }
-            />
-          </div>
           )}
 
           {/* Show Badge Section */}
@@ -285,12 +289,12 @@ export const FasterCarsFromBehindSettings = () => {
                     'license-color-fullrating-bw',
                     'license-color-rating-bw',
                     'rating-only-color-rating-bw',
-                    'license-color-rating-bw-no-license',                    
+                    'license-color-rating-bw-no-license',
                     'license-bw-rating-bw',
                     'rating-only-bw-rating-bw',
                     'license-bw-rating-bw-no-license',
                     'rating-bw-no-license',
-                    'fullrating-bw-no-license',                     
+                    'fullrating-bw-no-license',
                   ] as const
                 ).map((format) => (
                   <BadgeFormatPreview

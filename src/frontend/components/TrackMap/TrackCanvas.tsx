@@ -354,7 +354,13 @@ export const TrackCanvas = ({
           trackOutlineWidth
         );
         drawStartFinishLine(cacheCtx, startFinishLine);
-        drawTurnNames(cacheCtx, trackDrawing.turns, enableTurnNames, highContrastTurns, trackmapFontSize);
+        drawTurnNames(
+          cacheCtx,
+          trackDrawing.turns,
+          enableTurnNames,
+          highContrastTurns,
+          trackmapFontSize
+        );
         cacheCtx.restore();
 
         cacheParamsRef.current = currentParams;
@@ -387,7 +393,7 @@ export const TrackCanvas = ({
       showCarNumbers,
       displayMode,
       driverLivePositions,
-      carIdxIsOnPitRoad,
+      carIdxIsOnPitRoad
     );
     ctx.restore();
   }, [
