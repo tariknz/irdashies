@@ -469,7 +469,7 @@ export type FuelWidgetType =
   | 'confidence'
   | 'keyInfo';
 
-/** Available widgets for the Fuel Calculator */
+  /** Available widgets for the Fuel Calculator */
 export type SettingsTabType =
   | 'display'
   | 'options'

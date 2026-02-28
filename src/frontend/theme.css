@@ -37,7 +37,9 @@ layer(base);
   --animate-blink: blink 1s infinite;
   --text-xs: 10px;
   --text-sm: 12px;
+  --text-md: 13px;
   --text-base: 14px;
+  --text-lg: 18px;
 
   @keyframes pulse-border {
     0% {
