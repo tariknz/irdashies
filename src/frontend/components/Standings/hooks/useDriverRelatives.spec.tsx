@@ -3,7 +3,7 @@ import { renderHook } from '@testing-library/react';
 import { useDriverRelatives } from './useDriverRelatives';
 import type { Standings } from '../createStandings';
 import {
-  calculateClassEstimatedGap,
+  calculateClassEstimatedDelta,
   calculateReferenceDelta,
   getStats,
   getTimeAtPosition,
@@ -444,7 +444,7 @@ describe('calculateClassEstimatedGap', () => {
       const carAhead = { estTime: 60, classEstTime: 100 };
       const carBehind = { estTime: 50, classEstTime: 100 };
 
-      const result = calculateClassEstimatedGap(carAhead, carBehind, true);
+      const result = calculateClassEstimatedDelta(carAhead, carBehind, true);
 
       // Delta = 60 - 50 = +10s
       expect(result).toBeCloseTo(10);
@@ -454,7 +454,7 @@ describe('calculateClassEstimatedGap', () => {
       const carAhead = { estTime: 50, classEstTime: 100 };
       const carBehind = { estTime: 40, classEstTime: 100 };
 
-      const result = calculateClassEstimatedGap(carAhead, carBehind, false);
+      const result = calculateClassEstimatedDelta(carAhead, carBehind, false);
 
       // Delta = 40 - 50 = -10s
       expect(result).toBeCloseTo(-10);
@@ -465,7 +465,7 @@ describe('calculateClassEstimatedGap', () => {
       const carAhead = { estTime: 1, classEstTime: 100 };
       const carBehind = { estTime: 99, classEstTime: 100 };
 
-      const result = calculateClassEstimatedGap(carAhead, carBehind, true);
+      const result = calculateClassEstimatedDelta(carAhead, carBehind, true);
 
       // Raw: 1 - 99 = -98s
       // Wrapped: -98 + 100 = +2s (ahead just crossed)
@@ -477,7 +477,7 @@ describe('calculateClassEstimatedGap', () => {
       const carAhead = { estTime: 99, classEstTime: 100 };
       const carBehind = { estTime: 1, classEstTime: 100 };
 
-      const result = calculateClassEstimatedGap(carAhead, carBehind, false);
+      const result = calculateClassEstimatedDelta(carAhead, carBehind, false);
 
       // Raw: 1 - 99 = -98s
       // This is already negative, no wrap needed
@@ -492,7 +492,7 @@ describe('calculateClassEstimatedGap', () => {
       const carAhead = { estTime: 48, classEstTime: 80 }; // GTP
       const carBehind = { estTime: 50, classEstTime: 100 }; // GT3
 
-      const result = calculateClassEstimatedGap(carAhead, carBehind, true);
+      const result = calculateClassEstimatedDelta(carAhead, carBehind, true);
 
       // Scaling: 100/80 = 1.25
       // Scaled ahead: 48 * 1.25 = 60s
@@ -508,7 +508,7 @@ describe('calculateClassEstimatedGap', () => {
       const carAhead = { estTime: 50, classEstTime: 100 }; // GT3
       const carBehind = { estTime: 32, classEstTime: 80 }; // GTP
 
-      const result = calculateClassEstimatedGap(carAhead, carBehind, false);
+      const result = calculateClassEstimatedDelta(carAhead, carBehind, false);
 
       // Scaling: 80/100 = 0.8
       // Scaled ahead: 50 * 0.8 = 40s
@@ -524,7 +524,7 @@ describe('calculateClassEstimatedGap', () => {
       const carAhead = { estTime: 50, classEstTime: 100 }; // GT3
       const carBehind = { estTime: 32, classEstTime: 80 }; // GTP
 
-      const result = calculateClassEstimatedGap(carAhead, carBehind, true);
+      const result = calculateClassEstimatedDelta(carAhead, carBehind, true);
 
       // Scaling: 80/100 = 0.8
       // Scaled ahead: 50 * 0.8 = 40s
@@ -540,7 +540,7 @@ describe('calculateClassEstimatedGap', () => {
       const carAhead = { estTime: 48, classEstTime: 80 }; // GTP
       const carBehind = { estTime: 50, classEstTime: 100 }; // GT3
 
-      const result = calculateClassEstimatedGap(carAhead, carBehind, false);
+      const result = calculateClassEstimatedDelta(carAhead, carBehind, false);
 
       // Scaling: 100/80 = 1.25
       // Scaled ahead: 48 * 1.25 = 60s

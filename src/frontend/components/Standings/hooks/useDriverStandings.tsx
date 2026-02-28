@@ -6,9 +6,9 @@ import {
   useSessionPositions,
   useSessionQualifyingResults,
   useSessionType,
-  useTelemetry,
   useTelemetryValue,
   useFocusCarIdx,
+  useTelemetryValues,
 } from '@irdashies/context';
 import { useLapTimeHistory } from '../../../context/LapTimesStore/LapTimesStore';
 import {
@@ -20,10 +20,11 @@ import {
   createDriverStandings,
   groupStandingsByClass,
   sliceRelevantDrivers,
-  augmentStandingsWithIRating,
-  augmentStandingsWithGap,
-  augmentStandingsWithInterval,
-  augmentStandingsWithPositionChange,
+  // augmentStandingsWithIRating,
+  // augmentStandingsWithGap,
+  // // augmentStandingsWithInterval,
+  // augmentStandingsWithPositionChange,
+  augmentStandings,
 } from '../createStandings';
 import type { StandingsWidgetSettings } from '../../Settings/types';
 import { useDriverLivePositions } from './useDriverLivePositions';
@@ -60,12 +61,16 @@ export const useDriverStandings = (
     enabled: useLivePositionStandings,
   });
   const fastestLaps = useSessionFastestLaps(sessionNum);
-  const carIdxF2Time = useTelemetry('CarIdxF2Time');
-  const carIdxOnPitRoad = useTelemetry<boolean[]>('CarIdxOnPitRoad');
-  const carIdxTrackSurface = useTelemetry('CarIdxTrackSurface');
-  const radioTransmitCarIdx = useTelemetry('RadioTransmitCarIdx');
-  const carIdxTireCompound = useTelemetry<number[]>('CarIdxTireCompound');
-  const carIdxSessionFlags = useTelemetry<number[]>('CarIdxSessionFlags');
+  const carIdxEstTime = useTelemetryValues<number[]>('CarIdxEstTime');
+  const carIdxLap = useTelemetryValues<number[]>('CarIdxLap');
+  const carIdxOnPitRoad = useTelemetryValues<boolean[]>('CarIdxOnPitRoad');
+  const carIdxLapDistPct = useTelemetryValues<number[]>('CarIdxLapDistPct');
+  const carIdxTrackSurface = useTelemetryValues<number[]>('CarIdxTrackSurface');
+  const radioTransmitCarIdx = useTelemetryValues<number[]>(
+    'RadioTransmitCarIdx'
+  );
+  const carIdxTireCompound = useTelemetryValues<number[]>('CarIdxTireCompound');
+  const carIdxSessionFlags = useTelemetryValues<number[]>('CarIdxSessionFlags');
   const isOfficial = useSessionIsOfficial();
   const lastPitLap = usePitLap();
   const lastLap = useCarLap();
@@ -105,12 +110,12 @@ export const useDriverStandings = (
         qualifyingResults: qualifyingResults,
       },
       {
-        carIdxF2TimeValue: carIdxF2Time?.value,
-        carIdxOnPitRoadValue: carIdxOnPitRoad?.value,
-        carIdxTrackSurfaceValue: carIdxTrackSurface?.value,
-        radioTransmitCarIdx: radioTransmitCarIdx?.value,
-        carIdxTireCompoundValue: carIdxTireCompound?.value,
-        carIdxSessionFlags: carIdxSessionFlags?.value,
+        carIdxF2TimeValue: carIdxEstTime,
+        carIdxOnPitRoadValue: carIdxOnPitRoad,
+        carIdxTrackSurfaceValue: carIdxTrackSurface,
+        radioTransmitCarIdx: radioTransmitCarIdx,
+        carIdxTireCompoundValue: carIdxTireCompound,
+        carIdxSessionFlags: carIdxSessionFlags,
       },
       {
         resultsPositions: positions,
@@ -143,30 +148,47 @@ export const useDriverStandings = (
       ]) as [string, typeof initialStandings][];
     }
 
-    // Calculate position changes vs qualifying grid for race sessions
-    const positionChangeAugmentedGroupedByClass =
-      sessionType === 'Race'
-        ? augmentStandingsWithPositionChange(groupedByClass, qualifyingResults)
-        : groupedByClass;
+    const augmentedStandings = augmentStandings(groupedByClass, {
+      sessionType: sessionType as 'Race' | 'Practice' | 'Qualify',
+      isOfficial,
+      gapEnabled,
+      intervalEnabled,
+      qualifyingResults,
+      carIdxEstTime,
+      carIdxLap: carIdxLap,
+      carIdxLapDistPct,
+      carIdxOnPitRoad,
+    });
 
-    // Calculate iRating changes for race sessions
-    const iratingAugmentedGroupedByClass =
-      sessionType === 'Race' && isOfficial
-        ? augmentStandingsWithIRating(positionChangeAugmentedGroupedByClass)
-        : positionChangeAugmentedGroupedByClass;
-
-    // Calculate gap to class leader when enabled OR when interval is enabled (interval needs gap data)
-    const gapAugmentedGroupedByClass =
-      gapEnabled || intervalEnabled
-        ? augmentStandingsWithGap(iratingAugmentedGroupedByClass)
-        : iratingAugmentedGroupedByClass;
+    // // Calculate position changes vs qualifying grid for race sessions
+    // const positionChangeAugmentedGroupedByClass =
+    //   sessionType === 'Race'
+    //     ? augmentStandingsWithPositionChange(groupedByClass, qualifyingResults)
+    //     : groupedByClass;
+    //
+    // // Calculate iRating changes for race sessions
+    // const iratingAugmentedGroupedByClass =
+    //   sessionType === 'Race' && isOfficial
+    //     ? augmentStandingsWithIRating(positionChangeAugmentedGroupedByClass)
+    //     : positionChangeAugmentedGroupedByClass;
+    //
+    // // Calculate gap to class leader when enabled OR when interval is enabled (interval needs gap data)
+    // const gapAugmentedGroupedByClass =
+    //   gapEnabled || intervalEnabled
+    //     ? augmentStandingsWithGap(
+    //         iratingAugmentedGroupedByClass,
+    //         carIdxEstTime,
+    //         carIdxLapDistPct,
+    //         carIdxOnPitRoad
+    //       )
+    //     : iratingAugmentedGroupedByClass;
 
     // Calculate interval to player when enabled
-    const intervalAugmentedGroupedByClass = intervalEnabled
-      ? augmentStandingsWithInterval(gapAugmentedGroupedByClass)
-      : gapAugmentedGroupedByClass;
+    // const intervalAugmentedGroupedByClass = intervalEnabled
+    //   ? augmentStandingsWithInterval(gapAugmentedGroupedByClass)
+    //   : gapAugmentedGroupedByClass;
 
-    return sliceRelevantDrivers(intervalAugmentedGroupedByClass, driverClass, {
+    return sliceRelevantDrivers(augmentedStandings, driverClass, {
       buffer,
       numNonClassDrivers,
       minPlayerClassDrivers,
@@ -176,30 +198,32 @@ export const useDriverStandings = (
     driverCarIdx,
     sessionDrivers,
     qualifyingResults,
-    carIdxF2Time?.value,
-    carIdxOnPitRoad?.value,
-    carIdxTrackSurface?.value,
-    radioTransmitCarIdx?.value,
+    carIdxEstTime,
+    carIdxOnPitRoad,
+    carIdxTrackSurface,
+    radioTransmitCarIdx,
+    carIdxTireCompound,
+    carIdxSessionFlags,
     positions,
     fastestLaps,
     sessionType,
+    lastPitLap,
+    lastLap,
+    prevCarTrackSurface,
+    lapTimeDeltasEnabled,
+    numLapDeltas,
+    lapDeltasForCalc,
+    useLivePositionStandings,
     isOfficial,
+    gapEnabled,
+    intervalEnabled,
+    carIdxLap,
+    carIdxLapDistPct,
+    driverClass,
     buffer,
     numNonClassDrivers,
     minPlayerClassDrivers,
     numTopDrivers,
-    carIdxTireCompound?.value,
-    driverClass,
-    lapTimeDeltasEnabled,
-    numLapDeltas,
-    lapDeltasForCalc,
-    lastLap,
-    lastPitLap,
-    prevCarTrackSurface,
-    gapEnabled,
-    intervalEnabled,
-    carIdxSessionFlags?.value,
-    useLivePositionStandings,
     driverLivePositions,
   ]);
 

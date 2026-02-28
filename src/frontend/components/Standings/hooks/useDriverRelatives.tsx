@@ -7,7 +7,7 @@ import {
 } from '@irdashies/context';
 import { useDriverStandings } from './useDriverPositions';
 import {
-  calculateClassEstimatedGap,
+  calculateClassEstimatedDelta,
   calculateReferenceDelta,
   getStats,
 } from '../relativeGapHelpers';
@@ -85,7 +85,7 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
 
         const behindEstTime = carIdxEstTime[behindIdx];
 
-        calculatedDelta = calculateClassEstimatedGap(
+        calculatedDelta = calculateClassEstimatedDelta(
           getStats(aheadEstTime, aheadDriver),
           getStats(behindEstTime, behindDriver),
           isTargetAhead
