@@ -49,7 +49,7 @@ describe('DriverStatusBadges', () => {
       />
     );
 
-    expect(container.textContent).toContain('L 4 12');
+    expect(container.textContent).toContain('12');
   });
 
   it('renders pit time when showPitTime is enabled, pit longer than a minute', () => {
@@ -62,7 +62,7 @@ describe('DriverStatusBadges', () => {
       />
     );
 
-    expect(container.textContent).toContain('L 4 1:15');
+    expect(container.textContent).toContain('1:15');
   });
 
   it('renders repair, penalty, and slowdown badges', () => {

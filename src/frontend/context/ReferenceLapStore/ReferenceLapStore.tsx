@@ -1,25 +1,13 @@
-import { TRACK_SURFACES } from '../../components/Standings/relativeGapHelpers';
-import { precomputePCHIPTangents } from '../../components/Standings/splineInterpolation';
-import { ReferenceLapBridge } from '../../../types/referenceLaps';
+import {
+  TrackLocation,
+  ReferenceLapBridge,
+  ReferenceLap,
+} from '@irdashies/types';
+import { precomputePCHIPTangents } from './pchipTangents';
 import { create } from 'zustand';
 
 export const REFERENCE_INTERVAL = 0.0025;
 const DECIMAL_PLACES = REFERENCE_INTERVAL.toString().split('.')[1]?.length || 0;
-
-export interface ReferencePoint {
-  trackPct: number;
-  timeElapsedSinceStart: number;
-  tangent: number | undefined;
-}
-
-export interface ReferenceLap {
-  classId: number;
-  refPoints: Map<number, ReferencePoint>;
-  startTime: number;
-  finishTime: number;
-  lastTrackedPct: number;
-  isCleanLap: boolean;
-}
 
 export function normalizeKey(key: number): number {
   const normalizedKey = parseFloat(
@@ -29,7 +17,7 @@ export function normalizeKey(key: number): number {
 }
 
 function isLapClean(trackSurface: number, isOnPitRoad: boolean): boolean {
-  return trackSurface === TRACK_SURFACES.OnTrack && !isOnPitRoad;
+  return trackSurface === TrackLocation.OnTrack && !isOnPitRoad;
 }
 
 interface ReferenceRegistryState {

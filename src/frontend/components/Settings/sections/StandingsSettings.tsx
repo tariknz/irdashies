@@ -1,8 +1,13 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
-import { SessionVisibilitySettings, StandingsWidgetSettings } from '../types';
+import {
+  SessionVisibilitySettings,
+  StandingsWidgetSettings,
+  SettingsTabType,
+} from '../types';
 import { useDashboard } from '@irdashies/context';
 import { ToggleSwitch } from '../components/ToggleSwitch';
+import { TabButton } from '../components/TabButton';
 import { useSortableList } from '../../SortableList';
 import { DotsSixVerticalIcon } from '@phosphor-icons/react';
 import { BadgeFormatPreview } from '../components/BadgeFormatPreview';
@@ -84,6 +89,7 @@ const defaultConfig: StandingsWidgetSettings['config'] = {
     numNonClassDrivers: 3,
     minPlayerClassDrivers: 10,
     numTopDrivers: 3,
+    topDriverDivider: 'highlight' as const,
   },
   compound: { enabled: true },
   carManufacturer: { enabled: true, hideIfSingleMake: false },
@@ -127,6 +133,7 @@ const defaultConfig: StandingsWidgetSettings['config'] = {
   driverName: {
     enabled: true,
     showStatusBadges: true,
+    removeNumbersFromName: false,
     nameFormat: 'name-surname',
   },
   teamName: { enabled: false },
@@ -164,6 +171,8 @@ const migrateConfig = (
       enabled: (config.badge as { enabled?: boolean })?.enabled ?? true,
       badgeFormat:
         ((config.badge as { badgeFormat?: string })?.badgeFormat as
+          | 'license-color-fullrating-combo'
+          | 'fullrating-color-no-license'
           | 'license-color-fullrating-bw'
           | 'license-color-rating-bw'
           | 'license-color-rating-bw-no-license'
@@ -171,7 +180,8 @@ const migrateConfig = (
           | 'license-bw-rating-bw'
           | 'rating-only-bw-rating-bw'
           | 'license-bw-rating-bw-no-license'
-          | 'rating-bw-no-license') ?? 'license-color-rating-bw',
+          | 'rating-bw-no-license'
+          | 'fullrating-bw-no-license') ?? 'license-color-rating-bw',
     },
     delta: {
       enabled: (config.delta as { enabled?: boolean })?.enabled ?? true,
@@ -232,6 +242,9 @@ const migrateConfig = (
       numTopDrivers:
         (config.driverStandings as { numTopDrivers?: number })?.numTopDrivers ??
         defaultConfig.driverStandings.numTopDrivers,
+      topDriverDivider:
+        ((config.driverStandings as { topDriverDivider?: string })
+          ?.topDriverDivider as 'none' | 'theme' | 'highlight') ?? 'highlight',
     },
     compound: {
       enabled: (config.compound as { enabled?: boolean })?.enabled ?? true,
@@ -439,6 +452,9 @@ const migrateConfig = (
       showStatusBadges:
         (config.driverName as { showStatusBadges?: boolean })
           ?.showStatusBadges ?? true,
+      removeNumbersFromName:
+        (config.driverName as { removeNumbersFromName?: boolean })
+          ?.removeNumbersFromName ?? false,
       nameFormat:
         (
           config.driverName as {
@@ -536,7 +552,7 @@ const DisplaySettingsList = ({
             {setting.hasSubSetting &&
               setting.configKey === 'lapTimeDeltas' &&
               settings.config.lapTimeDeltas.enabled && (
-                <div className="flex items-center justify-between pl-8 mt-2">
+                <div className="flex items-center justify-between pl-8 mt-2 indent-8">
                   <span className="text-sm text-slate-300">
                     Number of Laps to Show
                   </span>
@@ -563,7 +579,7 @@ const DisplaySettingsList = ({
             {setting.hasSubSetting &&
               setting.configKey === 'pitStatus' &&
               settings.config.pitStatus.enabled && (
-                <div className="flex items-center justify-between pl-8 mt-2">
+                <div className="flex items-center justify-between pl-8 mt-2 indent-8">
                   <span className="text-sm text-slate-300">Pit Time</span>
                   <ToggleSwitch
                     enabled={settings.config.pitStatus.showPitTime ?? false}
@@ -610,32 +626,9 @@ const DisplaySettingsList = ({
                 </div>
               )}
             {setting.hasSubSetting &&
-              setting.configKey === 'driverName' &&
-              settings.config.driverName.enabled && (
-                <div className="flex items-center justify-between pl-8 mt-2">
-                  <span className="text-sm text-slate-300">Status Badges</span>
-                  <ToggleSwitch
-                    enabled={settings.config.driverName.showStatusBadges}
-                    onToggle={(enabled) => {
-                      const cv = settings.config[setting.configKey] as {
-                        enabled: boolean;
-                        showStatusBadges: boolean;
-                        [key: string]: unknown;
-                      };
-                      handleConfigChange({
-                        [setting.configKey]: {
-                          ...cv,
-                          showStatusBadges: enabled,
-                        },
-                      });
-                    }}
-                  />
-                </div>
-              )}
-            {setting.hasSubSetting &&
               setting.configKey === 'carManufacturer' &&
               settings.config.carManufacturer.enabled && (
-                <div className="flex items-center justify-between pl-8 mt-2">
+                <div className="flex items-center justify-between pl-8 mt-2 indent-8">
                   <span className="text-sm text-slate-300">
                     Hide If Single Make
                   </span>
@@ -665,15 +658,18 @@ const DisplaySettingsList = ({
                   <div className="flex flex-wrap gap-3 justify-end">
                     {(
                       [
+                        'license-color-fullrating-combo',
+                        'fullrating-color-no-license',
+                        'rating-color-no-license',
                         'license-color-fullrating-bw',
                         'license-color-rating-bw',
                         'rating-only-color-rating-bw',
                         'license-color-rating-bw-no-license',
-                        'rating-color-no-license',
                         'license-bw-rating-bw',
                         'rating-only-bw-rating-bw',
                         'license-bw-rating-bw-no-license',
                         'rating-bw-no-license',
+                        'fullrating-bw-no-license',
                       ] as const
                     ).map((format) => (
                       <BadgeFormatPreview
@@ -742,10 +738,58 @@ const DisplaySettingsList = ({
                   </div>
                 </div>
               )}
+            {setting.hasSubSetting &&
+              setting.configKey === 'driverName' &&
+              settings.config.driverName.enabled && (
+                <div className="flex items-center justify-between pl-8 mt-2 indent-8">
+                  <span className="text-sm text-slate-300">
+                    Remove Numbers From Names
+                  </span>
+                  <ToggleSwitch
+                    enabled={settings.config.driverName.removeNumbersFromName}
+                    onToggle={(enabled) => {
+                      const cv = settings.config[setting.configKey] as {
+                        enabled: boolean;
+                        removeNumbersFromName: boolean;
+                        [key: string]: unknown;
+                      };
+                      handleConfigChange({
+                        [setting.configKey]: {
+                          ...cv,
+                          removeNumbersFromName: enabled,
+                        },
+                      });
+                    }}
+                  />
+                </div>
+              )}
+            {setting.hasSubSetting &&
+              setting.configKey === 'driverName' &&
+              settings.config.driverName.enabled && (
+                <div className="flex items-center justify-between pl-8 mt-2 indent-8">
+                  <span className="text-sm text-slate-300">Status Badges</span>
+                  <ToggleSwitch
+                    enabled={settings.config.driverName.showStatusBadges}
+                    onToggle={(enabled) => {
+                      const cv = settings.config[setting.configKey] as {
+                        enabled: boolean;
+                        showStatusBadges: boolean;
+                        [key: string]: unknown;
+                      };
+                      handleConfigChange({
+                        [setting.configKey]: {
+                          ...cv,
+                          showStatusBadges: enabled,
+                        },
+                      });
+                    }}
+                  />
+                </div>
+              )}
             {(setting.configKey === 'fastestTime' ||
               setting.configKey === 'lastTime') &&
               (configValue as { enabled: boolean }).enabled && (
-                <div className="flex items-center justify-between pl-8 mt-2">
+                <div className="flex items-center justify-between pl-4 mt-2">
                   <span className="text-sm text-slate-300"></span>
                   <select
                     value={
@@ -878,7 +922,7 @@ const BarItemsList = ({
               itemConfig &&
               'enabled' in itemConfig &&
               itemConfig.enabled && (
-                <div className="flex items-center justify-between pl-8 mt-2">
+                <div className="flex items-center justify-between pl-4 mt-2">
                   <span></span>
                   <select
                     value={
@@ -911,7 +955,7 @@ const BarItemsList = ({
               itemConfig &&
               'enabled' in itemConfig &&
               itemConfig.enabled && (
-                <div className="flex items-center justify-end gap-2 pl-8 mt-2">
+                <div className="flex items-center justify-end gap-2 pl-4 mt-2">
                   {(['left', 'right'] as const).map((pos) => {
                     const currentPos =
                       (itemConfig as { speedPosition?: 'left' | 'right' })
@@ -965,7 +1009,7 @@ const BarItemsList = ({
               itemConfig &&
               'enabled' in itemConfig &&
               itemConfig.enabled && (
-                <div className="flex items-center justify-between pl-8 mt-2">
+                <div className="flex items-center justify-between pl-4 mt-2">
                   <span></span>
                   <select
                     value={
@@ -1012,6 +1056,15 @@ export const StandingsSettings = () => {
   });
   const [itemsOrder, setItemsOrder] = useState(settings.config.displayOrder);
 
+  // Tab state with persistence
+  const [activeTab, setActiveTab] = useState<SettingsTabType>(
+    () => (localStorage.getItem('standingsTab') as SettingsTabType) || 'display'
+  );
+
+  useEffect(() => {
+    localStorage.setItem('standingsTab', activeTab);
+  }, [activeTab]);
+
   if (!currentDashboard) {
     return <>Loading...</>;
   }
@@ -1031,360 +1084,456 @@ export const StandingsSettings = () => {
         };
 
         return (
-          <div className="space-y-8">
-            {/* Display Settings */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium text-slate-200">Display</h3>
-                <button
-                  onClick={() => {
-                    const defaultOrder = sortableSettings.map((s) => s.id);
-                    setItemsOrder(defaultOrder);
-                    handleConfigChange({ displayOrder: defaultOrder });
-                  }}
-                  className="px-3 py-1 text-sm bg-slate-600 hover:bg-slate-500 text-slate-300 rounded-md transition-colors"
-                >
-                  Reset to Default Order
-                </button>
-              </div>
-              <div className="pl-4">
-                <DisplaySettingsList
-                  itemsOrder={itemsOrder}
-                  onReorder={handleDisplayOrderChange}
-                  settings={settings}
-                  handleConfigChange={handleConfigChange}
-                />
-              </div>
+          <div className="space-y-4">
+            {/* Tabs */}
+            <div className="flex border-b border-slate-700/50">
+              <TabButton
+                id="display"
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+              >
+                Display
+              </TabButton>
+              <TabButton
+                id="options"
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+              >
+                Options
+              </TabButton>
+              <TabButton
+                id="header"
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+              >
+                Header
+              </TabButton>
+              <TabButton
+                id="footer"
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+              >
+                Footer
+              </TabButton>
+              <TabButton
+                id="visibility"
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+              >
+                Visibility
+              </TabButton>
             </div>
 
-            {/* Driver Standings Settings */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium text-slate-200">
-                  Driver Standings
-                </h3>
-              </div>
-              <div className="space-y-3 pl-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-slate-300">
-                    Drivers to show around player
-                  </span>
-                  <input
-                    type="number"
-                    min={0}
-                    value={settings.config.driverStandings.buffer}
-                    onChange={(e) =>
-                      handleConfigChange({
-                        driverStandings: {
-                          ...settings.config.driverStandings,
-                          buffer: parseInt(e.target.value),
-                        },
-                      })
-                    }
-                    className="bg-slate-700 text-white rounded-md px-2 py-1"
-                  />
+            <div className="pt-4">
+              {/* DISPLAY TAB */}
+              {activeTab === 'display' && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-medium text-slate-200">
+                      Display Order
+                    </h3>
+                    <button
+                      onClick={() => {
+                        const defaultOrder = sortableSettings.map((s) => s.id);
+                        setItemsOrder(defaultOrder);
+                        handleConfigChange({ displayOrder: defaultOrder });
+                      }}
+                      className="px-3 py-1 text-sm bg-slate-600 hover:bg-slate-500 text-slate-300 rounded-md transition-colors"
+                    >
+                      Reset to Default Order
+                    </button>
+                  </div>
+                  <div className="pl-4">
+                    <DisplaySettingsList
+                      itemsOrder={itemsOrder}
+                      onReorder={handleDisplayOrderChange}
+                      settings={settings}
+                      handleConfigChange={handleConfigChange}
+                    />
+                  </div>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-slate-300">
-                    Drivers to show in other classes
-                  </span>
-                  <input
-                    type="number"
-                    min={0}
-                    value={settings.config.driverStandings.numNonClassDrivers}
-                    onChange={(e) =>
-                      handleConfigChange({
-                        driverStandings: {
-                          ...settings.config.driverStandings,
-                          numNonClassDrivers: parseInt(e.target.value),
-                        },
-                      })
-                    }
-                    className="bg-slate-700 text-white rounded-md px-2 py-1"
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-slate-300">
-                    Minimum drivers in player&apos;s class
-                  </span>
-                  <input
-                    type="number"
-                    min={0}
-                    value={
-                      settings.config.driverStandings.minPlayerClassDrivers
-                    }
-                    onChange={(e) =>
-                      handleConfigChange({
-                        driverStandings: {
-                          ...settings.config.driverStandings,
-                          minPlayerClassDrivers: parseInt(e.target.value),
-                        },
-                      })
-                    }
-                    className="bg-slate-700 text-white rounded-md px-2 py-1"
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-slate-300">
-                    Top drivers to always show in player&apos;s class
-                  </span>
-                  <input
-                    type="number"
-                    min={0}
-                    value={settings.config.driverStandings.numTopDrivers}
-                    onChange={(e) =>
-                      handleConfigChange({
-                        driverStandings: {
-                          ...settings.config.driverStandings,
-                          numTopDrivers: parseInt(e.target.value),
-                        },
-                      })
-                    }
-                    className="bg-slate-700 text-white rounded-md px-2 py-1"
-                  />
-                </div>
-              </div>
-            </div>
+              )}
 
-            {/* Title Bar Settings */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium text-slate-200">
-                  Title Bar
-                </h3>
-              </div>
-              <div className="space-y-3 pl-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-slate-300">Show Title Bar</span>
-                  <ToggleSwitch
-                    enabled={settings.config.titleBar.enabled}
-                    onToggle={(enabled) =>
-                      handleConfigChange({
-                        titleBar: {
-                          ...settings.config.titleBar,
-                          enabled,
-                        },
-                      })
-                    }
-                  />
+              {/* OPTIONS TAB */}
+              {activeTab === 'options' && (
+                <div className="space-y-4">
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-medium text-slate-200">
+                        Driver Standings
+                      </h3>
+                    </div>
+                    <div className="space-y-3 pl-4">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-slate-300">
+                          Drivers to show around player
+                        </span>
+                        <input
+                          type="number"
+                          min={0}
+                          value={settings.config.driverStandings.buffer}
+                          onChange={(e) =>
+                            handleConfigChange({
+                              driverStandings: {
+                                ...settings.config.driverStandings,
+                                buffer: parseInt(e.target.value),
+                              },
+                            })
+                          }
+                          className="bg-slate-700 text-white rounded-md px-2 py-1"
+                        />
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-slate-300">
+                          Drivers to show in other classes
+                        </span>
+                        <input
+                          type="number"
+                          min={0}
+                          value={
+                            settings.config.driverStandings.numNonClassDrivers
+                          }
+                          onChange={(e) =>
+                            handleConfigChange({
+                              driverStandings: {
+                                ...settings.config.driverStandings,
+                                numNonClassDrivers: parseInt(e.target.value),
+                              },
+                            })
+                          }
+                          className="bg-slate-700 text-white rounded-md px-2 py-1"
+                        />
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-slate-300">
+                          Minimum drivers in player&apos;s class
+                        </span>
+                        <input
+                          type="number"
+                          min={0}
+                          value={
+                            settings.config.driverStandings
+                              .minPlayerClassDrivers
+                          }
+                          onChange={(e) =>
+                            handleConfigChange({
+                              driverStandings: {
+                                ...settings.config.driverStandings,
+                                minPlayerClassDrivers: parseInt(e.target.value),
+                              },
+                            })
+                          }
+                          className="bg-slate-700 text-white rounded-md px-2 py-1"
+                        />
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-slate-300">
+                          Top drivers to always show in player&apos;s class
+                        </span>
+                        <input
+                          type="number"
+                          min={0}
+                          value={settings.config.driverStandings.numTopDrivers}
+                          onChange={(e) =>
+                            handleConfigChange({
+                              driverStandings: {
+                                ...settings.config.driverStandings,
+                                numTopDrivers: parseInt(e.target.value),
+                              },
+                            })
+                          }
+                          className="bg-slate-700 text-white rounded-md px-2 py-1"
+                        />
+                      </div>
+                      {settings.config.driverStandings.numTopDrivers > 0 && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-slate-300">
+                            Top driver divider
+                          </span>
+                          <select
+                            value={
+                              settings.config.driverStandings
+                                .topDriverDivider ?? 'highlight'
+                            }
+                            onChange={(e) =>
+                              handleConfigChange({
+                                driverStandings: {
+                                  ...settings.config.driverStandings,
+                                  topDriverDivider: e.target.value as
+                                    | 'none'
+                                    | 'theme'
+                                    | 'highlight',
+                                },
+                              })
+                            }
+                            className="bg-slate-700 text-white rounded-md px-2 py-1"
+                          >
+                            <option value="highlight">Highlight Color</option>
+                            <option value="theme">Theme Color</option>
+                            <option value="none">None</option>
+                          </select>
+                        </div>
+                      )}
+                      <div className="flex items-center justify-between gap-4">
+                        <div>
+                          <h4 className="text-md font-medium text-slate-300">
+                            Use Live Position Standings
+                          </h4>
+                          <p className="text-xs text-slate-500">
+                            If enabled, live telemetry will be used to compute
+                            driver positions. This may be less stable but will
+                            update live and not only on start/finish line.
+                          </p>
+                        </div>
+                        <ToggleSwitch
+                          enabled={settings.config.useLivePosition ?? false}
+                          onToggle={(enabled) =>
+                            handleConfigChange({ useLivePosition: enabled })
+                          }
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-medium text-slate-200">
+                        Title Bar
+                      </h3>
+                    </div>
+                    <div className="space-y-3 pl-4">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-slate-300">
+                          Show Title Bar
+                        </span>
+                        <ToggleSwitch
+                          enabled={settings.config.titleBar.enabled}
+                          onToggle={(enabled) =>
+                            handleConfigChange({
+                              titleBar: {
+                                ...settings.config.titleBar,
+                                enabled,
+                              },
+                            })
+                          }
+                        />
+                      </div>
+                      {settings.config.titleBar.enabled && (
+                        <div className="flex items-center justify-between pl-4">
+                          <span className="text-sm text-slate-300">
+                            Show Progress Bar
+                          </span>
+                          <ToggleSwitch
+                            enabled={
+                              settings.config.titleBar.progressBar.enabled
+                            }
+                            onToggle={(enabled) =>
+                              handleConfigChange({
+                                titleBar: {
+                                  ...settings.config.titleBar,
+                                  progressBar: { enabled },
+                                },
+                              })
+                            }
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-medium text-slate-200">
+                        Background
+                      </h3>
+                    </div>
+                    <div className="space-y-3 pl-4">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-slate-300">
+                          Background Opacity
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="range"
+                            min="0"
+                            max="100"
+                            value={settings.config.background.opacity}
+                            onChange={(e) =>
+                              handleConfigChange({
+                                background: {
+                                  opacity: parseInt(e.target.value),
+                                },
+                              })
+                            }
+                            className="h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer"
+                          />
+                          <span className="text-xs text-slate-400 w-8">
+                            {settings.config.background.opacity}%
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                {settings.config.titleBar.enabled && (
-                  <div className="flex items-center justify-between pl-4">
-                    <span className="text-sm text-slate-300">
-                      Show Progress Bar
-                    </span>
+              )}
+
+              {/* HEADER TAB */}
+              {activeTab === 'header' && (
+                <div className="space-y-4">
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-medium text-slate-200">
+                        Header Bar
+                      </h3>
+                      <button
+                        onClick={() => {
+                          handleConfigChange({
+                            headerBar: {
+                              ...settings.config.headerBar,
+                              displayOrder: [
+                                ...DEFAULT_SESSION_BAR_DISPLAY_ORDER,
+                              ],
+                            },
+                          });
+                        }}
+                        className="px-3 py-1 text-sm bg-slate-600 hover:bg-slate-500 text-slate-300 rounded-md transition-colors"
+                      >
+                        Reset to Default Order
+                      </button>
+                    </div>
+                    <div className="space-y-3 pl-4">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-slate-300">
+                          Show Header Bar
+                        </span>
+                        <ToggleSwitch
+                          enabled={settings.config.headerBar.enabled}
+                          onToggle={(enabled) =>
+                            handleConfigChange({
+                              headerBar: {
+                                ...settings.config.headerBar,
+                                enabled,
+                              },
+                            })
+                          }
+                        />
+                      </div>
+                      {settings.config.headerBar.enabled && (
+                        <BarItemsList
+                          items={settings.config.headerBar.displayOrder}
+                          onReorder={(newOrder) => {
+                            handleConfigChange({
+                              headerBar: {
+                                ...settings.config.headerBar,
+                                displayOrder: newOrder,
+                              },
+                            });
+                          }}
+                          barType="headerBar"
+                          settings={settings}
+                          handleConfigChange={handleConfigChange}
+                        />
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* FOOTER TAB */}
+              {activeTab === 'footer' && (
+                <div className="space-y-4">
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-medium text-slate-200">
+                        Footer Bar
+                      </h3>
+                      <button
+                        onClick={() => {
+                          handleConfigChange({
+                            footerBar: {
+                              ...settings.config.footerBar,
+                              displayOrder: [
+                                ...DEFAULT_SESSION_BAR_DISPLAY_ORDER,
+                              ],
+                            },
+                          });
+                        }}
+                        className="px-3 py-1 text-sm bg-slate-600 hover:bg-slate-500 text-slate-300 rounded-md transition-colors"
+                      >
+                        Reset to Default Order
+                      </button>
+                    </div>
+                    <div className="space-y-3 pl-4">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-slate-300">
+                          Show Footer Bar
+                        </span>
+                        <ToggleSwitch
+                          enabled={settings.config.footerBar.enabled}
+                          onToggle={(enabled) =>
+                            handleConfigChange({
+                              footerBar: {
+                                ...settings.config.footerBar,
+                                enabled,
+                              },
+                            })
+                          }
+                        />
+                      </div>
+                      {settings.config.footerBar.enabled && (
+                        <BarItemsList
+                          items={settings.config.footerBar.displayOrder}
+                          onReorder={(newOrder) => {
+                            handleConfigChange({
+                              footerBar: {
+                                ...settings.config.footerBar,
+                                displayOrder: newOrder,
+                              },
+                            });
+                          }}
+                          barType="footerBar"
+                          settings={settings}
+                          handleConfigChange={handleConfigChange}
+                        />
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* VISIBILITY TAB */}
+              {activeTab === 'visibility' && (
+                <div className="space-y-4">
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-medium text-slate-200">
+                      Session Visibility
+                    </h3>
+                    <div className="space-y-3 pl-4">
+                      <SessionVisibility
+                        sessionVisibility={settings.config.sessionVisibility}
+                        handleConfigChange={handleConfigChange}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-4 border-t border-slate-700/50 pl-4">
+                    <div>
+                      <h4 className="text-md font-medium text-slate-300">
+                        Show only when on track
+                      </h4>
+                      <span className="block text-xs text-slate-500">
+                        If enabled, standings will only be shown when driving.
+                      </span>
+                    </div>
                     <ToggleSwitch
-                      enabled={settings.config.titleBar.progressBar.enabled}
-                      onToggle={(enabled) =>
+                      enabled={settings.config.showOnlyWhenOnTrack}
+                      onToggle={(newValue) =>
                         handleConfigChange({
-                          titleBar: {
-                            ...settings.config.titleBar,
-                            progressBar: { enabled },
-                          },
+                          showOnlyWhenOnTrack: newValue,
                         })
                       }
                     />
                   </div>
-                )}
-              </div>
-            </div>
-
-            {/* Header Bar Settings */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium text-slate-200">
-                  Header Bar
-                </h3>
-                <button
-                  onClick={() => {
-                    handleConfigChange({
-                      headerBar: {
-                        ...settings.config.headerBar,
-                        displayOrder: [...DEFAULT_SESSION_BAR_DISPLAY_ORDER],
-                      },
-                    });
-                  }}
-                  className="px-3 py-1 text-sm bg-slate-600 hover:bg-slate-500 text-slate-300 rounded-md transition-colors"
-                >
-                  Reset to Default Order
-                </button>
-              </div>
-              <div className="space-y-3 pl-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-slate-300">
-                    Show Header Bar
-                  </span>
-                  <ToggleSwitch
-                    enabled={settings.config.headerBar.enabled}
-                    onToggle={(enabled) =>
-                      handleConfigChange({
-                        headerBar: {
-                          ...settings.config.headerBar,
-                          enabled,
-                        },
-                      })
-                    }
-                  />
                 </div>
-                {settings.config.headerBar.enabled && (
-                  <BarItemsList
-                    items={settings.config.headerBar.displayOrder}
-                    onReorder={(newOrder) => {
-                      handleConfigChange({
-                        headerBar: {
-                          ...settings.config.headerBar,
-                          displayOrder: newOrder,
-                        },
-                      });
-                    }}
-                    barType="headerBar"
-                    settings={settings}
-                    handleConfigChange={handleConfigChange}
-                  />
-                )}
-              </div>
-            </div>
-
-            {/* Footer Bar Settings */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium text-slate-200">
-                  Footer Bar
-                </h3>
-                <button
-                  onClick={() => {
-                    handleConfigChange({
-                      footerBar: {
-                        ...settings.config.footerBar,
-                        displayOrder: [...DEFAULT_SESSION_BAR_DISPLAY_ORDER],
-                      },
-                    });
-                  }}
-                  className="px-3 py-1 text-sm bg-slate-600 hover:bg-slate-500 text-slate-300 rounded-md transition-colors"
-                >
-                  Reset to Default Order
-                </button>
-              </div>
-              <div className="space-y-3 pl-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-slate-300">
-                    Show Footer Bar
-                  </span>
-                  <ToggleSwitch
-                    enabled={settings.config.footerBar.enabled}
-                    onToggle={(enabled) =>
-                      handleConfigChange({
-                        footerBar: {
-                          ...settings.config.footerBar,
-                          enabled,
-                        },
-                      })
-                    }
-                  />
-                </div>
-                {settings.config.footerBar.enabled && (
-                  <BarItemsList
-                    items={settings.config.footerBar.displayOrder}
-                    onReorder={(newOrder) => {
-                      handleConfigChange({
-                        footerBar: {
-                          ...settings.config.footerBar,
-                          displayOrder: newOrder,
-                        },
-                      });
-                    }}
-                    barType="footerBar"
-                    settings={settings}
-                    handleConfigChange={handleConfigChange}
-                  />
-                )}
-              </div>
-            </div>
-
-            {/* Background Settings */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium text-slate-200">
-                  Background
-                </h3>
-              </div>
-              <div className="space-y-3 pl-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-slate-300">
-                    Background Opacity
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="range"
-                      min="0"
-                      max="100"
-                      value={settings.config.background.opacity}
-                      onChange={(e) =>
-                        handleConfigChange({
-                          background: { opacity: parseInt(e.target.value) },
-                        })
-                      }
-                      className="h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer"
-                    />
-                    <span className="text-xs text-slate-400 w-8">
-                      {settings.config.background.opacity}%
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Show Only When On Track Settings */}
-            <div className="flex items-center justify-between">
-              <div>
-                <h4 className="text-md font-medium text-slate-300">
-                  Show Only When On Track
-                </h4>
-                <p className="text-sm text-slate-400">
-                  If enabled, standings will only be shown when you are driving.
-                </p>
-              </div>
-              <ToggleSwitch
-                enabled={settings.config.showOnlyWhenOnTrack ?? false}
-                onToggle={(enabled) =>
-                  handleConfigChange({ showOnlyWhenOnTrack: enabled })
-                }
-              />
-            </div>
-
-            {/* Use Live Position Standings */}
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <h4 className="text-md font-medium text-slate-300">
-                  Use Live Position Standings
-                </h4>
-                <p className="text-sm text-slate-400">
-                  If enabled, live telemetry will be used to compute driver
-                  positions. This may be less stable but will update live and
-                  not only on start/finish line.
-                </p>
-              </div>
-              <ToggleSwitch
-                enabled={settings.config.useLivePosition ?? false}
-                onToggle={(enabled) =>
-                  handleConfigChange({ useLivePosition: enabled })
-                }
-              />
-            </div>
-
-            {/* Session Visibility Settings */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium text-slate-200">
-                  Session Visibility
-                </h3>
-              </div>
-              <div className="space-y-3 pl-4">
-                <SessionVisibility
-                  sessionVisibility={settings.config.sessionVisibility}
-                  handleConfigChange={handleConfigChange}
-                />
-              </div>
+              )}
             </div>
           </div>
         );

@@ -10,7 +10,8 @@ const isSettingsPage = () => {
 };
 
 export const ThemeManager = ({ children }: PropsWithChildren) => {
-  const { fontSize, colorPalette, fontType, fontWeight } = useGeneralSettings() || {};
+  const { fontSize, colorPalette, fontType, fontWeight } =
+    useGeneralSettings() || {};
 
   // Don't apply theme changes to the settings page since
   // they share the same theme as the rest of the overlays

@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useDashboard } from '@irdashies/context';
-import type {
-  DashboardProfile
-} from '@irdashies/types';
+import type { DashboardProfile } from '@irdashies/types';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 
 export const ProfileSettings = () => {
@@ -13,7 +11,7 @@ export const ProfileSettings = () => {
     deleteProfile,
     renameProfile,
     switchProfile,
-    refreshProfiles
+    refreshProfiles,
   } = useDashboard();
 
   const [newProfileName, setNewProfileName] = useState('');
@@ -130,18 +128,16 @@ export const ProfileSettings = () => {
   };
 
   return (
-    <div className="h-full max-h-screen overflow-y-auto">
-      <div className="p-6 space-y-6">
-        <div>
-          <h2 className="text-2xl font-bold text-white mb-2">
-            Configuration Profiles
-          </h2>
-          <p className="text-gray-400 text-sm">
-            Manage different dashboard configurations for various scenarios.
-            Each profile stores separate widget configurations and layouts.
-          </p>
-        </div>
+    <div className="flex flex-col h-full">
+      <div className="flex-none p-4 bg-slate-700 rounded">
+        <h2 className="text-xl mb-1">Configuration Profiles</h2>
+        <p className="text-slate-400">
+          Manage different dashboard configurations for various scenarios. Each
+          profile stores separate widget configurations and layouts.
+        </p>
+      </div>
 
+      <div className="flex-1 overflow-y-auto min-h-0 space-y-6 p-4 mt-4">
         {error && (
           <div className="bg-red-500/20 border border-red-500 text-red-200 px-4 py-3 rounded">
             {error}

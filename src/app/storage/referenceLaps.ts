@@ -1,7 +1,7 @@
+import { ReferenceLap, ReferencePoint } from '@irdashies/types';
 import { app } from 'electron';
 import fs from 'node:fs';
 import path from 'node:path';
-import type { ReferenceLap, ReferencePoint } from 'src/types/referenceLaps';
 
 const dataPath = app.getPath('userData');
 const filePath = path.join(dataPath, 'referenceLaps.json');
@@ -91,20 +91,3 @@ export const saveReferenceLap = (
 
   writeReferenceLaps(allData);
 };
-
-// /**
-//  * Deletes a reference lap if it exists
-//  */
-// export const deleteReferenceLap = (
-//   seriesId: number,
-//   trackId: number,
-//   classId: number
-// ) => {
-//   const allData = readReferenceLaps();
-//   const key = generateKey(seriesId, trackId, classId);
-//
-//   if (allData[key]) {
-//     delete allData[key];
-//     writeReferenceLaps(allData);
-//   }
-// };
