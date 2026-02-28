@@ -39,8 +39,7 @@ export const PitSpeedBar = memo(({ speedKph, limitKph }: PitSpeedBarProps) => {
 
       {/* Bar */}
       <div
-        className="relative w-full bg-slate-700/50 rounded overflow-hidden"
-        style={{ height: '80px' }}
+        className="relative w-full bg-slate-700/50 rounded overflow-hidden min-h-[20px] h-full"
       >
         <div
           className="absolute bottom-0 w-full transition-all duration-150 ease-out"
@@ -53,7 +52,7 @@ export const PitSpeedBar = memo(({ speedKph, limitKph }: PitSpeedBarProps) => {
         />
       </div>
 
-      <span className="text-[10px] text-slate-400 leading-none">spd</span>
+      <span className="text-xs text-slate-400 leading-none">spd</span>
     </div>
   );
 });

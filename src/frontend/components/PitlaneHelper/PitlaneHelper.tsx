@@ -181,7 +181,7 @@ const PitlaneHelperBody = ({
 }: PitlaneHelperBodyProps) => {
   return (
     <div
-      className="flex flex-col gap-2 p-2 rounded text-white font-medium bg-slate-800/(--bg-opacity)"
+      className="flex h-full flex-col gap-2 p-2 rounded text-white font-medium bg-slate-800/(--bg-opacity)"
       style={{
         ['--bg-opacity' as string]: `${config.background.opacity ?? 0}%`,
       }}
@@ -235,11 +235,11 @@ const PitlaneHelperBody = ({
           position.distanceToPitExit > 0 &&
           position.distanceToPitExit <= 150)) && (
 
-        <div className="flex flex-col gap-3 w-full">
+        <div className="flex flex-col gap-3 w-full flex-1">
 
           {/* Row 1: Countdown bars */}
           <div
-            className={`flex gap-3 w-full ${
+            className={`flex gap-3 w-full flex-1 ${
               config.progressBarOrientation === 'vertical'
                 ? 'flex-row'
                 : 'flex-col'
@@ -292,7 +292,7 @@ const PitlaneHelperBody = ({
 
           {/* Row 2: Speed + Inputs */}
           {(config.showSpeedBar || shouldShowInputs) && (
-            <div className="flex gap-3 w-full">
+            <div className="flex gap-3 w-full flex-1">
               {config.showSpeedBar && (
                   <PitSpeedBar
                     speedKph={speed.speedKph}
