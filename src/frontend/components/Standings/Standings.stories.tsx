@@ -13,7 +13,7 @@ import {
 } from '@irdashies/context';
 import { generateMockDataFromPath } from '../../../app/bridge/iracingSdk/mock-data/generateMockData';
 import type { DashboardBridge } from '@irdashies/types';
-import { useState, Fragment, useCallback } from 'react';
+import { useState, Fragment } from 'react';
 import { DriverClassHeader } from './components/DriverClassHeader/DriverClassHeader';
 import { DriverInfoRow } from './components/DriverInfoRow/DriverInfoRow';
 import { SessionBar } from './components/SessionBar/SessionBar';
@@ -81,8 +81,6 @@ const StandingsWithoutHeaderFooter = () => {
   const numCarClasses = useWeekendInfoNumCarClasses();
   const isMultiClass = (numCarClasses ?? 0) > 1;
   const highlightColor = useHighlightColor();
-  const [colSpan, setColSpan] = useState(12);
-  const handleColSpan = useCallback((n: number) => setColSpan(n), []);
 
   // Show only when on track setting
   if (settings?.showOnlyWhenOnTrack && !isDriving) {
@@ -113,9 +111,9 @@ const StandingsWithoutHeaderFooter = () => {
                   sof={classStats?.[classId]?.sof}
                   highlightColor={highlightColor}
                   isMultiClass={isMultiClass}
-                  colSpan={colSpan}
+                  colSpan={100}
                 />
-                {classStandings.map((result, driverIndex) => (
+                {classStandings.map((result) => (
                   <DriverInfoRow
                     key={result.carIdx}
                     carIdx={result.carIdx}
@@ -200,7 +198,6 @@ const StandingsWithoutHeaderFooter = () => {
                     repair={result.repair}
                     penalty={result.penalty}
                     slowdown={result.slowdown}
-                    onColSpan={driverIndex === 0 ? handleColSpan : undefined}
                   />
                 ))}
               </Fragment>
@@ -335,8 +332,6 @@ const StandingsWithoutHeader = () => {
   const numCarClasses = useWeekendInfoNumCarClasses();
   const isMultiClass = (numCarClasses ?? 0) > 1;
   const highlightColor = useHighlightColor();
-  const [colSpan, setColSpan] = useState(12);
-  const handleColSpan = useCallback((n: number) => setColSpan(n), []);
 
   // Show only when on track setting
   if (settings?.showOnlyWhenOnTrack && !isDriving) {
@@ -367,9 +362,9 @@ const StandingsWithoutHeader = () => {
                   sof={classStats?.[classId]?.sof}
                   highlightColor={highlightColor}
                   isMultiClass={isMultiClass}
-                  colSpan={colSpan}
+                  colSpan={100}
                 />
-                {classStandings.map((result, driverIndex) => (
+                {classStandings.map((result) => (
                   <DriverInfoRow
                     key={result.carIdx}
                     carIdx={result.carIdx}
@@ -454,7 +449,6 @@ const StandingsWithoutHeader = () => {
                     repair={result.repair}
                     penalty={result.penalty}
                     slowdown={result.slowdown}
-                    onColSpan={driverIndex === 0 ? handleColSpan : undefined}
                   />
                 ))}
               </Fragment>
@@ -494,8 +488,6 @@ const StandingsWithoutFooter = () => {
   const numCarClasses = useWeekendInfoNumCarClasses();
   const isMultiClass = (numCarClasses ?? 0) > 1;
   const highlightColor = useHighlightColor();
-  const [colSpan, setColSpan] = useState(12);
-  const handleColSpan = useCallback((n: number) => setColSpan(n), []);
 
   // Show only when on track setting
   if (settings?.showOnlyWhenOnTrack && !isDriving) {
@@ -527,9 +519,9 @@ const StandingsWithoutFooter = () => {
                   sof={classStats?.[classId]?.sof}
                   highlightColor={highlightColor}
                   isMultiClass={isMultiClass}
-                  colSpan={colSpan}
+                  colSpan={100}
                 />
-                {classStandings.map((result, driverIndex) => (
+                {classStandings.map((result) => (
                   <DriverInfoRow
                     key={result.carIdx}
                     carIdx={result.carIdx}
@@ -614,7 +606,6 @@ const StandingsWithoutFooter = () => {
                     repair={result.repair}
                     penalty={result.penalty}
                     slowdown={result.slowdown}
-                    onColSpan={driverIndex === 0 ? handleColSpan : undefined}
                   />
                 ))}
               </Fragment>
@@ -752,8 +743,6 @@ const StandingsWithFullHeader = () => {
   const numCarClasses = useWeekendInfoNumCarClasses();
   const isMultiClass = (numCarClasses ?? 0) > 1;
   const highlightColor = useHighlightColor();
-  const [colSpan, setColSpan] = useState(12);
-  const handleColSpan = useCallback((n: number) => setColSpan(n), []);
 
   // Show only when on track setting
   if (settings?.showOnlyWhenOnTrack && !isDriving) {
@@ -785,9 +774,9 @@ const StandingsWithFullHeader = () => {
                   sof={classStats?.[classId]?.sof}
                   highlightColor={highlightColor}
                   isMultiClass={isMultiClass}
-                  colSpan={colSpan}
+                  colSpan={100}
                 />
-                {classStandings.map((result, driverIndex) => (
+                {classStandings.map((result) => (
                   <DriverInfoRow
                     key={result.carIdx}
                     carIdx={result.carIdx}
@@ -872,7 +861,6 @@ const StandingsWithFullHeader = () => {
                     repair={result.repair}
                     penalty={result.penalty}
                     slowdown={result.slowdown}
-                    onColSpan={driverIndex === 0 ? handleColSpan : undefined}
                   />
                 ))}
               </Fragment>

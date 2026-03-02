@@ -1,4 +1,4 @@
-import { Fragment, useState, useCallback } from 'react';
+import { Fragment } from 'react';
 import { DriverClassHeader } from './components/DriverClassHeader/DriverClassHeader';
 import { DriverInfoRow } from './components/DriverInfoRow/DriverInfoRow';
 import { SessionBar } from './components/SessionBar/SessionBar';
@@ -51,11 +51,6 @@ export const Standings = () => {
 
   // Check if this is a team racing session
   const isTeamRacing = useWeekendInfoTeamRacing();
-
-  // Tracks the actual number of <td> cells rendered per row.
-  // Updated by the first DriverInfoRow via useLayoutEffect (before paint).
-  const [colSpan, setColSpan] = useState(12);
-  const handleColSpan = useCallback((n: number) => setColSpan(n), []);
 
   // Determine table border spacing based on compact mode
   const tableBorderSpacing = generalSettings?.compactMode
@@ -114,7 +109,7 @@ export const Standings = () => {
                   sof={classStats?.[classId]?.sof}
                   highlightColor={highlightColor}
                   isMultiClass={isMultiClass}
-                  colSpan={colSpan}
+                  colSpan={100}
                 />
                 {classStandings.map((result, driverIndex) => {
                   const prev = classStandings[driverIndex - 1];
@@ -132,7 +127,7 @@ export const Standings = () => {
                     <Fragment key={result.carIdx}>
                       {showDivider && (
                         <tr>
-                          <td colSpan={colSpan} className="px-2 py-0.5">
+                          <td colSpan={100} className="px-2 py-0.5">
                             <hr
                               className="border-2 border-t"
                               style={{
@@ -228,9 +223,6 @@ export const Standings = () => {
                         penalty={result.penalty}
                         slowdown={result.slowdown}
                         hideCarManufacturer={hideCarManufacturer}
-                        onColSpan={
-                          driverIndex === 0 ? handleColSpan : undefined
-                        }
                       />
                     </Fragment>
                   );
@@ -238,7 +230,7 @@ export const Standings = () => {
                 {index < standings.length - 1 &&
                   !generalSettings?.compactMode && (
                     <tr>
-                      <td colSpan={colSpan} className="h-2"></td>
+                      <td colSpan={100} className="h-2"></td>
                     </tr>
                   )}
               </Fragment>
