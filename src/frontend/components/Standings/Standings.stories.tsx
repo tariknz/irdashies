@@ -111,7 +111,7 @@ const StandingsWithoutHeaderFooter = () => {
                   sof={classStats?.[classId]?.sof}
                   highlightColor={highlightColor}
                   isMultiClass={isMultiClass}
-                  colSpan={12}
+                  colSpan={100}
                 />
                 {classStandings.map((result) => (
                   <DriverInfoRow
@@ -362,7 +362,7 @@ const StandingsWithoutHeader = () => {
                   sof={classStats?.[classId]?.sof}
                   highlightColor={highlightColor}
                   isMultiClass={isMultiClass}
-                  colSpan={12}
+                  colSpan={100}
                 />
                 {classStandings.map((result) => (
                   <DriverInfoRow
@@ -519,7 +519,7 @@ const StandingsWithoutFooter = () => {
                   sof={classStats?.[classId]?.sof}
                   highlightColor={highlightColor}
                   isMultiClass={isMultiClass}
-                  colSpan={12}
+                  colSpan={100}
                 />
                 {classStandings.map((result) => (
                   <DriverInfoRow
@@ -774,7 +774,7 @@ const StandingsWithFullHeader = () => {
                   sof={classStats?.[classId]?.sof}
                   highlightColor={highlightColor}
                   isMultiClass={isMultiClass}
-                  colSpan={12}
+                  colSpan={100}
                 />
                 {classStandings.map((result) => (
                   <DriverInfoRow
@@ -889,5 +889,69 @@ export const CompactMode: Story = {
         </DashboardProvider>
       </>
     ),
+  ],
+};
+
+export const PositionDividerHighlight: Story = {
+  name: 'Position Divider (Highlight)',
+  decorators: [
+    TelemetryDecoratorWithConfig('/test-data/1732355190142', {
+      standings: {
+        driverStandings: {
+          numTopDrivers: 3,
+          topDriverDivider: 'highlight',
+        },
+      },
+    }),
+  ],
+};
+
+export const PositionDividerTheme: Story = {
+  name: 'Position Divider (Theme)',
+  decorators: [
+    TelemetryDecoratorWithConfig('/test-data/1731637331038', {
+      standings: {
+        driverStandings: {
+          numTopDrivers: 3,
+          topDriverDivider: 'theme',
+        },
+      },
+    }),
+  ],
+};
+
+export const PositionDividerNone: Story = {
+  name: 'Position Divider (None)',
+  decorators: [
+    TelemetryDecoratorWithConfig('/test-data/1731637331038', {
+      standings: {
+        driverStandings: {
+          numTopDrivers: 3,
+          topDriverDivider: 'none',
+        },
+      },
+    }),
+  ],
+};
+
+export const PositionDividerNumerousCells: Story = {
+  name: 'Position Divider (Numerous Cells)',
+  decorators: [
+    TelemetryDecoratorWithConfig('/test-data/1731637331038', {
+      standings: {
+        driverStandings: {
+          numTopDrivers: 3,
+          topDriverDivider: 'highlight',
+        },
+        gap: { enabled: true },
+        delta: { enabled: true },
+        interval: { enabled: true },
+        lastTime: { enabled: true },
+        fastestTime: { enabled: true },
+        lapTimeDeltas: { enabled: true, numLaps: 3 },
+        badge: { enabled: true },
+        iratingChange: { enabled: true },
+      },
+    }),
   ],
 };
