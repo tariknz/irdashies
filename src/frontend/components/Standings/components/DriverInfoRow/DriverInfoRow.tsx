@@ -1,4 +1,4 @@
-import { memo, useMemo } from 'react';
+import { memo, useMemo, useLayoutEffect } from 'react';
 import { getTailwindStyle } from '@irdashies/utils/colors';
 import { formatTime, type TimeFormat } from '@irdashies/utils/time';
 import { usePitStopDuration, usePitLaneStore } from '@irdashies/context';
@@ -70,6 +70,7 @@ interface DriverRowInfoProps {
   slowdown: boolean;
   deltaDecimalPlaces?: number;
   hideCarManufacturer?: boolean;
+  onColSpan?: (colSpan: number) => void;
 }
 
 // Helper function to provide dummy data for hidden rows
@@ -182,6 +183,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
     deltaDecimalPlaces,
     pitStopDuration: pitStopDurationProp,
     hideCarManufacturer,
+    onColSpan,
   } = displayProps;
   const pitStopDurations = usePitStopDuration();
   const pitStopDuration =
@@ -217,6 +219,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
     const columns = [
       {
         id: 'position',
+        tdCount: 1,
         shouldRender:
           (displayOrder ? displayOrder.includes('position') : true) &&
           (config?.position?.enabled ?? true),
@@ -232,6 +235,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
       },
       {
         id: 'carNumber',
+        tdCount: 1,
         shouldRender:
           (displayOrder ? displayOrder.includes('carNumber') : true) &&
           (config?.carNumber?.enabled ?? true),
@@ -245,6 +249,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
       },
       {
         id: 'countryFlags',
+        tdCount: 1,
         shouldRender:
           (displayOrder ? displayOrder.includes('countryFlags') : true) &&
           (config?.countryFlags?.enabled ?? true),
@@ -252,6 +257,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
       },
       {
         id: 'driverName',
+        tdCount: 1,
         shouldRender:
           (displayOrder ? displayOrder.includes('driverName') : true) &&
           (config?.driverName?.enabled ?? true),
@@ -273,6 +279,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
       },
       {
         id: 'teamName',
+        tdCount: 1,
         shouldRender:
           teamName !== undefined &&
           (displayOrder ? displayOrder.includes('teamName') : false) &&
@@ -281,6 +288,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
       },
       {
         id: 'pitStatus',
+        tdCount: 1,
         shouldRender:
           (displayOrder ? displayOrder.includes('pitStatus') : true) &&
           (config?.pitStatus?.enabled ?? true),
@@ -304,6 +312,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
       },
       {
         id: 'carManufacturer',
+        tdCount: 1,
         shouldRender:
           (displayOrder ? displayOrder.includes('carManufacturer') : true) &&
           (config?.carManufacturer?.enabled ?? true) &&
@@ -312,6 +321,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
       },
       {
         id: 'badge',
+        tdCount: 1,
         shouldRender:
           (displayOrder ? displayOrder.includes('badge') : true) &&
           (config?.badge?.enabled ?? true),
@@ -326,6 +336,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
       },
       {
         id: 'iratingChange',
+        tdCount: 1,
         shouldRender:
           (displayOrder ? displayOrder.includes('iratingChange') : true) &&
           (config?.iratingChange?.enabled ?? false),
@@ -338,6 +349,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
       },
       {
         id: 'positionChange',
+        tdCount: 1,
         shouldRender:
           (displayOrder ? displayOrder.includes('positionChange') : true) &&
           (config && 'positionChange' in config
@@ -352,6 +364,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
       },
       {
         id: 'delta',
+        tdCount: 1,
         shouldRender:
           (displayOrder ? displayOrder.includes('delta') : true) &&
           (config?.delta?.enabled ?? true) &&
@@ -366,6 +379,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
       },
       {
         id: 'gap',
+        tdCount: 1,
         shouldRender:
           (displayOrder ? displayOrder.includes('gap') : true) &&
           (config && 'gap' in config ? config.gap.enabled : false) &&
@@ -381,6 +395,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
       },
       {
         id: 'interval',
+        tdCount: 1,
         shouldRender:
           (displayOrder ? displayOrder.includes('interval') : true) &&
           (config && 'interval' in config ? config.interval.enabled : false) &&
@@ -396,6 +411,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
       },
       {
         id: 'fastestTime',
+        tdCount: 1,
         shouldRender:
           (displayOrder ? displayOrder.includes('fastestTime') : true) &&
           (config?.fastestTime?.enabled ?? false),
@@ -409,6 +425,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
       },
       {
         id: 'lastTime',
+        tdCount: 1,
         shouldRender:
           (displayOrder ? displayOrder.includes('lastTime') : true) &&
           (config?.lastTime?.enabled ?? false),
@@ -422,6 +439,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
       },
       {
         id: 'compound',
+        tdCount: 1,
         shouldRender:
           (displayOrder ? displayOrder.includes('compound') : true) &&
           (config?.compound?.enabled ?? false),
@@ -435,6 +453,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
       },
       {
         id: 'lapTimeDeltas',
+        tdCount: numLapDeltasToShow ?? 0,
         shouldRender:
           (displayOrder ? displayOrder.includes('lapTimeDeltas') : false) &&
           (config && 'lapTimeDeltas' in config
@@ -506,10 +525,20 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
     lastTimeState,
     tireCompound,
     lapTimeDeltas,
+    numLapDeltasToShow,
     emptyLapDeltaPlaceholders,
     hideCarManufacturer,
     pitExitAfterSF,
   ]);
+
+  const totalTdCount = columnDefinitions.reduce(
+    (sum, col) => sum + col.tdCount,
+    0
+  );
+
+  useLayoutEffect(() => {
+    onColSpan?.(totalTdCount);
+  }, [totalTdCount, onColSpan]);
 
   return (
     <tr

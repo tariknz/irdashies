@@ -13,7 +13,7 @@ import {
 } from '@irdashies/context';
 import { generateMockDataFromPath } from '../../../app/bridge/iracingSdk/mock-data/generateMockData';
 import type { DashboardBridge } from '@irdashies/types';
-import { useState, Fragment } from 'react';
+import { useState, Fragment, useCallback } from 'react';
 import { DriverClassHeader } from './components/DriverClassHeader/DriverClassHeader';
 import { DriverInfoRow } from './components/DriverInfoRow/DriverInfoRow';
 import { SessionBar } from './components/SessionBar/SessionBar';
@@ -81,6 +81,8 @@ const StandingsWithoutHeaderFooter = () => {
   const numCarClasses = useWeekendInfoNumCarClasses();
   const isMultiClass = (numCarClasses ?? 0) > 1;
   const highlightColor = useHighlightColor();
+  const [colSpan, setColSpan] = useState(12);
+  const handleColSpan = useCallback((n: number) => setColSpan(n), []);
 
   // Show only when on track setting
   if (settings?.showOnlyWhenOnTrack && !isDriving) {
@@ -111,9 +113,9 @@ const StandingsWithoutHeaderFooter = () => {
                   sof={classStats?.[classId]?.sof}
                   highlightColor={highlightColor}
                   isMultiClass={isMultiClass}
-                  colSpan={12}
+                  colSpan={colSpan}
                 />
-                {classStandings.map((result) => (
+                {classStandings.map((result, driverIndex) => (
                   <DriverInfoRow
                     key={result.carIdx}
                     carIdx={result.carIdx}
@@ -198,6 +200,7 @@ const StandingsWithoutHeaderFooter = () => {
                     repair={result.repair}
                     penalty={result.penalty}
                     slowdown={result.slowdown}
+                    onColSpan={driverIndex === 0 ? handleColSpan : undefined}
                   />
                 ))}
               </Fragment>
@@ -332,6 +335,8 @@ const StandingsWithoutHeader = () => {
   const numCarClasses = useWeekendInfoNumCarClasses();
   const isMultiClass = (numCarClasses ?? 0) > 1;
   const highlightColor = useHighlightColor();
+  const [colSpan, setColSpan] = useState(12);
+  const handleColSpan = useCallback((n: number) => setColSpan(n), []);
 
   // Show only when on track setting
   if (settings?.showOnlyWhenOnTrack && !isDriving) {
@@ -362,9 +367,9 @@ const StandingsWithoutHeader = () => {
                   sof={classStats?.[classId]?.sof}
                   highlightColor={highlightColor}
                   isMultiClass={isMultiClass}
-                  colSpan={12}
+                  colSpan={colSpan}
                 />
-                {classStandings.map((result) => (
+                {classStandings.map((result, driverIndex) => (
                   <DriverInfoRow
                     key={result.carIdx}
                     carIdx={result.carIdx}
@@ -449,6 +454,7 @@ const StandingsWithoutHeader = () => {
                     repair={result.repair}
                     penalty={result.penalty}
                     slowdown={result.slowdown}
+                    onColSpan={driverIndex === 0 ? handleColSpan : undefined}
                   />
                 ))}
               </Fragment>
@@ -488,6 +494,8 @@ const StandingsWithoutFooter = () => {
   const numCarClasses = useWeekendInfoNumCarClasses();
   const isMultiClass = (numCarClasses ?? 0) > 1;
   const highlightColor = useHighlightColor();
+  const [colSpan, setColSpan] = useState(12);
+  const handleColSpan = useCallback((n: number) => setColSpan(n), []);
 
   // Show only when on track setting
   if (settings?.showOnlyWhenOnTrack && !isDriving) {
@@ -519,9 +527,9 @@ const StandingsWithoutFooter = () => {
                   sof={classStats?.[classId]?.sof}
                   highlightColor={highlightColor}
                   isMultiClass={isMultiClass}
-                  colSpan={12}
+                  colSpan={colSpan}
                 />
-                {classStandings.map((result) => (
+                {classStandings.map((result, driverIndex) => (
                   <DriverInfoRow
                     key={result.carIdx}
                     carIdx={result.carIdx}
@@ -606,6 +614,7 @@ const StandingsWithoutFooter = () => {
                     repair={result.repair}
                     penalty={result.penalty}
                     slowdown={result.slowdown}
+                    onColSpan={driverIndex === 0 ? handleColSpan : undefined}
                   />
                 ))}
               </Fragment>
@@ -743,6 +752,8 @@ const StandingsWithFullHeader = () => {
   const numCarClasses = useWeekendInfoNumCarClasses();
   const isMultiClass = (numCarClasses ?? 0) > 1;
   const highlightColor = useHighlightColor();
+  const [colSpan, setColSpan] = useState(12);
+  const handleColSpan = useCallback((n: number) => setColSpan(n), []);
 
   // Show only when on track setting
   if (settings?.showOnlyWhenOnTrack && !isDriving) {
@@ -774,9 +785,9 @@ const StandingsWithFullHeader = () => {
                   sof={classStats?.[classId]?.sof}
                   highlightColor={highlightColor}
                   isMultiClass={isMultiClass}
-                  colSpan={12}
+                  colSpan={colSpan}
                 />
-                {classStandings.map((result) => (
+                {classStandings.map((result, driverIndex) => (
                   <DriverInfoRow
                     key={result.carIdx}
                     carIdx={result.carIdx}
@@ -861,6 +872,7 @@ const StandingsWithFullHeader = () => {
                     repair={result.repair}
                     penalty={result.penalty}
                     slowdown={result.slowdown}
+                    onColSpan={driverIndex === 0 ? handleColSpan : undefined}
                   />
                 ))}
               </Fragment>
@@ -889,5 +901,69 @@ export const CompactMode: Story = {
         </DashboardProvider>
       </>
     ),
+  ],
+};
+
+export const PositionDividerHighlight: Story = {
+  name: 'Position Divider (Highlight)',
+  decorators: [
+    TelemetryDecoratorWithConfig('/test-data/1732355190142', {
+      standings: {
+        driverStandings: {
+          numTopDrivers: 3,
+          topDriverDivider: 'highlight',
+        },
+      },
+    }),
+  ],
+};
+
+export const PositionDividerTheme: Story = {
+  name: 'Position Divider (Theme)',
+  decorators: [
+    TelemetryDecoratorWithConfig('/test-data/1731637331038', {
+      standings: {
+        driverStandings: {
+          numTopDrivers: 3,
+          topDriverDivider: 'theme',
+        },
+      },
+    }),
+  ],
+};
+
+export const PositionDividerNone: Story = {
+  name: 'Position Divider (None)',
+  decorators: [
+    TelemetryDecoratorWithConfig('/test-data/1731637331038', {
+      standings: {
+        driverStandings: {
+          numTopDrivers: 3,
+          topDriverDivider: 'none',
+        },
+      },
+    }),
+  ],
+};
+
+export const PositionDividerNumerousCells: Story = {
+  name: 'Position Divider (Numerous Cells)',
+  decorators: [
+    TelemetryDecoratorWithConfig('/test-data/1731637331038', {
+      standings: {
+        driverStandings: {
+          numTopDrivers: 3,
+          topDriverDivider: 'highlight',
+        },
+        gap: { enabled: true },
+        delta: { enabled: true },
+        interval: { enabled: true },
+        lastTime: { enabled: true },
+        fastestTime: { enabled: true },
+        lapTimeDeltas: { enabled: true, numLaps: 3 },
+        badge: { enabled: true },
+        iratingChange: { enabled: true },
+      },
+    }),
   ],
 };
