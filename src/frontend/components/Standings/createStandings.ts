@@ -1,15 +1,13 @@
-import type { SessionResults, Driver } from '@irdashies/types';
+import { SessionResults, Driver, TrackLocation } from '@irdashies/types';
 import {
   calculateIRatingGain,
   RaceResult,
   CalculationResult,
 } from '@irdashies/utils/iratingGain';
 import { GlobalFlags } from '@irdashies/types';
-import { useReferenceLapStore } from '../../context/ReferenceLapStore/ReferenceLapStore';
+import { useReferenceLapStore } from '@irdashies/context';
 import {
-  calculateClassEstimatedDelta,
   calculateClassEstimatedGap,
-  calculateReferenceDelta,
   calculateReferenceGap,
   getStats,
 } from './relativeGapHelpers';
@@ -122,7 +120,7 @@ export const createDriverStandings = (
   telemetry: {
     carIdxF2TimeValue?: number[];
     carIdxOnPitRoadValue?: boolean[];
-    carIdxTrackSurfaceValue?: number[];
+    carIdxTrackSurfaceValue?: TrackLocation[];
     radioTransmitCarIdx?: number[];
     carIdxTireCompoundValue?: number[];
     isOnTrack?: boolean;
@@ -139,7 +137,7 @@ export const createDriverStandings = (
   },
   lastPitLap: number[],
   lastLap: number[],
-  prevCarTrackSurface: number[],
+  prevCarTrackSurface: TrackLocation[],
   numLapsToShow?: number,
   lapDeltasVsPlayer?: number[][] // NEW: Pre-calculated deltas from LapTimesStore
 ): Standings[] => {
@@ -261,7 +259,8 @@ export const createDriverStandings = (
         ),
         onPitRoad: telemetry?.carIdxOnPitRoadValue?.[result.CarIdx] ?? false,
         onTrack:
-          (telemetry?.carIdxTrackSurfaceValue?.[result.CarIdx] ?? -1) > -1,
+          (telemetry?.carIdxTrackSurfaceValue?.[result.CarIdx] ??
+            TrackLocation.NotInWorld) > TrackLocation.NotInWorld,
         tireCompound: telemetry?.carIdxTireCompoundValue?.[result.CarIdx] ?? 0,
         carClass: {
           id: driver.CarClassID,
@@ -339,7 +338,9 @@ export const createDriverStandings = (
       lastTime: -1,
       lastTimeState: undefined as LastTimeState,
       onPitRoad: telemetry?.carIdxOnPitRoadValue?.[driver.CarIdx] ?? false,
-      onTrack: (telemetry?.carIdxTrackSurfaceValue?.[driver.CarIdx] ?? -1) > -1,
+      onTrack:
+        (telemetry?.carIdxTrackSurfaceValue?.[driver.CarIdx] ??
+          TrackLocation.NotInWorld) > TrackLocation.NotInWorld,
       tireCompound: telemetry?.carIdxTireCompoundValue?.[driver.CarIdx] ?? 0,
       carClass: {
         id: driver.CarClassID,
@@ -437,105 +438,93 @@ export const augmentStandingsWithIRating = (
  */
 export const augmentStandingsWithGap = (
   groupedStandings: [string, Standings[]][],
-  carIdxEstTime: number[],
+  carIdxLap: number[],
   carIdxLapDistPct: number[],
-  carIdxIsOnPitRoad: boolean[]
+  carIdxOnPitRoad: boolean[],
+  carIdxEstTime: number[],
+  useLivePositionStandings: boolean
 ): [string, Standings[]][] => {
   return groupedStandings.map(([classId, classStandings]) => {
     // Find class leader (lowest class position)
-    const sortedByClassPosition = classStandings
-      .filter((s) => s.classPosition && s.classPosition > 0)
-      .sort((a, b) => (a.classPosition ?? 999) - (b.classPosition ?? 999));
-
-    const classLeader = sortedByClassPosition[0];
+    const classLeader = classStandings[0];
     if (!classLeader || classLeader.delta === undefined) {
       return [classId, classStandings];
     }
 
-    // Calculate gap for each driver
-    const augmentedClassStandings = classStandings.map(
-      (driverStanding, index) => {
-        if (driverStanding.carIdx === classLeader.carIdx) {
-          // Class leader shows as dash (undefined gap)
-          return { ...driverStanding, gap: { value: undefined, laps: 0 } };
-        }
+    // Calculate gap for each driver: gap = driver_delta - class_leader_delta
+    const augmentedClassStandings = classStandings.map((driverStanding) => {
+      if (driverStanding.carIdx === classLeader.carIdx) {
+        // Class leader shows as dash (undefined gap)
+        return { ...driverStanding, gap: { value: undefined, laps: 0 } };
+      }
 
-        const driverIdx = driverStanding.carIdx;
-        const classId = driverStanding.carClass.id;
+      // Gap is simply the difference between this driver's delta and the class leader's delta
+      let gapValue;
+      const classLeaderTrckPct = carIdxLapDistPct[classLeader.carIdx];
+
+      const driverIdx = driverStanding.carIdx;
+      const driverTrckPct = carIdxLapDistPct[driverIdx];
+
+      if (
+        useLivePositionStandings &&
+        classLeaderTrckPct > -1 &&
+        driverTrckPct > -1
+      ) {
+        const driverClassId = driverStanding.carClass.id;
         const isStartingLap = (driverStanding?.lap ?? -1) <= 1;
 
         const refLap = useReferenceLapStore
           .getState()
-          .getReferenceLap(driverIdx, classId, isStartingLap);
+          .getReferenceLap(driverIdx, driverClassId, isStartingLap);
 
-        const isOnPitRoadAhead = carIdxIsOnPitRoad[classLeader.carIdx];
-        const isOnPitRoadBehind = carIdxIsOnPitRoad[driverIdx];
-        const isAnyoneOnPitRoad = isOnPitRoadAhead || isOnPitRoadBehind;
-
-        const isOnPitOrHasNoData = isAnyoneOnPitRoad || refLap.finishTime < 0;
-
-        let calculatedGap = 0;
-        let calculatedInterval = 0;
-
-        const driverAhead = classStandings[index - 1];
+        const isOnPitRoadAhead = carIdxOnPitRoad[classLeader.carIdx];
+        const isOnPitRoadBehind = carIdxOnPitRoad[driverIdx];
+        const isOnPitOrHasNoData =
+          isOnPitRoadAhead || isOnPitRoadBehind || refLap.finishTime < 0;
 
         if (isOnPitOrHasNoData) {
-          const aheadEstTime = carIdxEstTime[classLeader.carIdx];
+          const classLeaderEstTime = carIdxEstTime[classLeader.carIdx];
           const behindEstTime = carIdxEstTime[driverIdx];
-
           const driverStats = getStats(behindEstTime, driverStanding);
 
-          calculatedGap = calculateClassEstimatedDelta(
-            getStats(aheadEstTime, classLeader),
-            driverStats,
-            false //isTargetAhead
-          );
-          calculatedInterval = calculateClassEstimatedDelta(
-            getStats(aheadEstTime, driverAhead),
-            driverStats,
-            false //isTargetAhead
+          gapValue = calculateClassEstimatedGap(
+            getStats(classLeaderEstTime, classLeader),
+            driverStats
           );
         } else {
-          const classLeaderTrckPct = carIdxLapDistPct[classLeader.carIdx];
-          const driverTrckPct = carIdxLapDistPct[driverIdx];
-          const driverAheadTrckPct = carIdxLapDistPct[driverAhead.carIdx];
-
-          calculatedGap = calculateReferenceDelta(
+          gapValue = calculateReferenceGap(
             refLap,
-            driverTrckPct,
-            classLeaderTrckPct
-          );
-          calculatedInterval = calculateReferenceDelta(
-            refLap,
-            driverTrckPct,
-            driverAheadTrckPct
+            classLeaderTrckPct,
+            driverTrckPct
           );
         }
-
-        // Gap is simply the difference between this driver's delta and the class leader's delta
-        const gapValue =
+      } else {
+        gapValue =
           driverStanding.delta !== undefined && classLeader.delta !== undefined
             ? driverStanding.delta - classLeader.delta
             : undefined;
-
-        const gap = {
-          value: calculatedGap,
-          laps: 0,
-        };
-
-        if (gapValue && classLeader.fastestTime > 0) {
-          const lapsOfGap = -Math.floor(gapValue / classLeader.fastestTime);
-          gap.laps = lapsOfGap;
-        }
-
-        // Only show positive gaps (drivers behind class leader)
-        return {
-          ...driverStanding,
-          gap: gapValue && gapValue > 0 ? gap : undefined,
-          interval: Math.abs(calculatedInterval),
-        };
       }
-    );
+
+      const gap = {
+        value: gapValue ? Math.abs(gapValue) : undefined,
+        laps: 0,
+      };
+
+      const driverLapNumber = carIdxLap[driverStanding.carIdx];
+      const classLeaderLapNumber = carIdxLap[classLeader.carIdx];
+
+      // NOTE: iRacing shows laps behind as a negative number
+      gap.laps = -Math.floor(
+        classLeaderLapNumber +
+          carIdxLapDistPct[classLeader.carIdx] -
+          (driverLapNumber + carIdxLapDistPct[driverStanding.carIdx])
+      );
+
+      return {
+        ...driverStanding,
+        gap,
+      };
+    });
 
     return [classId, augmentedClassStandings];
   });
@@ -552,49 +541,38 @@ export const augmentStandingsWithInterval = (
 ): [string, Standings[]][] => {
   return groupedStandings.map(([classId, classStandings]) => {
     // Sort drivers by their gap values (ascending - smallest gaps first = closest to leader)
-    const sortedByGap = classStandings
-      .filter((s) => s.gap !== undefined && !s.isPlayer) // Only drivers with gap data
-      .sort((a, b) => (a.gap?.value ?? 999) - (b.gap?.value ?? 999));
+    const augmentedClassStandings = classStandings.map(
+      (driverStanding, index) => {
+        // The driver physically in front of this one in the standings
+        const driverAhead = classStandings[index - 1];
 
-    // Create a map of gap differences
-    const intervalMap = new Map<number, number | undefined>();
+        let interval: number | undefined = undefined;
 
-    // Calculate intervals: for each driver, subtract their gap from the gap of the driver immediately behind them
-    for (let i = 0; i < sortedByGap.length - 1; i++) {
-      const currentDriver = sortedByGap[i];
-      const driverBehind = sortedByGap[i + 1];
+        // If there's no one ahead (P1 in class), the interval is typically undefined or 0
+        if (!driverAhead) {
+          interval = undefined;
+        }
+        // If the car ahead is the leader (who has no gap value),
+        // the interval for P2 is simply their own gap to the leader.
+        else if (driverAhead.gap?.value === undefined) {
+          interval = driverStanding.gap?.value;
+        }
+        // Standard case: Interval = Current Driver's Gap - Driver Ahead's Gap
+        else if (
+          driverStanding.gap?.value !== undefined &&
+          driverStanding.onTrack
+        ) {
+          // We use Math.abs to handle edge cases where deltas and positions
+          // are slightly out of sync in a telemetry frame.
+          interval = Math.abs(driverStanding.gap.value - driverAhead.gap.value);
+        }
 
-      if (
-        currentDriver.gap?.value !== undefined &&
-        driverBehind.gap?.value !== undefined &&
-        driverBehind.carIdx
-      ) {
-        // interval = gap_behind - gap_current (positive means behind is farther from leader)
-        intervalMap.set(
-          driverBehind.carIdx,
-          driverBehind.gap.value - currentDriver.gap.value
-        );
+        return {
+          ...driverStanding,
+          interval,
+        };
       }
-    }
-
-    // Set interval for the driver with the smallest gap (2nd place) to show how far behind P1 they are
-    if (
-      sortedByGap.length > 0 &&
-      sortedByGap[0].gap?.value !== undefined &&
-      sortedByGap[0].carIdx !== undefined
-    ) {
-      intervalMap.set(sortedByGap[0].carIdx, sortedByGap[0].gap.value);
-    }
-
-    // Apply intervals to all drivers in this class
-    const augmentedClassStandings = classStandings.map((driverStanding) => {
-      // Player shows as undefined (no interval)
-      const interval = driverStanding.isPlayer
-        ? undefined
-        : intervalMap.get(driverStanding.carIdx);
-
-      return { ...driverStanding, interval };
-    });
+    );
 
     return [classId, augmentedClassStandings];
   });
@@ -728,192 +706,5 @@ export const augmentStandingsWithPositionChange = (
       return { ...standing, positionChange };
     });
     return [classId, augmented];
-  });
-};
-
-export interface AugmentOptions {
-  sessionType: 'Race' | 'Practice' | 'Qualify';
-  isOfficial: boolean;
-  gapEnabled: boolean;
-  intervalEnabled: boolean;
-  qualifyingResults?: SessionResults[];
-  carIdxEstTime: number[];
-  carIdxLap: number[];
-  carIdxLapDistPct: number[];
-  carIdxOnPitRoad: boolean[];
-}
-
-/**
- * Single-pass augmentation of standings with position change, iRating, gap and interval data.
- * Replaces augmentStandingsWithPositionChange + augmentStandingsWithIRating + augmentStandingsWithGap.
- */
-export const augmentStandings = (
-  groupedStandings: [string, Standings[]][],
-  options: AugmentOptions
-): [string, Standings[]][] => {
-  const {
-    sessionType,
-    isOfficial,
-    gapEnabled,
-    intervalEnabled,
-    qualifyingResults,
-    carIdxEstTime,
-    carIdxLap,
-    carIdxLapDistPct,
-    carIdxOnPitRoad,
-  } = options;
-
-  const isRace = sessionType === 'Race';
-  const needsGap = gapEnabled || intervalEnabled;
-
-  // --- Pre-compute qualifying position map (used per-driver below) ---
-  const qualifyingClassPositionByCarIdx = new Map<number, number>();
-  if (isRace && qualifyingResults && qualifyingResults.length > 0) {
-    qualifyingResults.forEach((result) => {
-      qualifyingClassPositionByCarIdx.set(
-        result.CarIdx,
-        result.ClassPosition + 1
-      );
-    });
-  }
-
-  return groupedStandings.map(([classId, classStandings]) => {
-    // --- Pre-compute iRating change map for this class (requires all drivers) ---
-    const iratingChangeMap = new Map<number, number>();
-    if (isRace && isOfficial) {
-      const raceResultsInput: RaceResult<number>[] = classStandings
-        .filter((s) => !!s.classPosition)
-        .map((s) => ({
-          driver: s.carIdx,
-          finishRank: s.classPosition ?? 0,
-          startIRating: s.driver.rating,
-          started: true,
-        }));
-
-      if (raceResultsInput.length > 0) {
-        calculateIRatingGain(raceResultsInput).forEach(
-          (calcResult: CalculationResult<number>) => {
-            iratingChangeMap.set(
-              calcResult.raceResult.driver,
-              calcResult.iratingChange
-            );
-          }
-        );
-      }
-    }
-
-    // --- Pre-compute class leader for gap calculations ---
-    const classLeader = needsGap
-      ? classStandings
-          .filter((s) => s.classPosition && s.classPosition > 0)
-          .sort(
-            (a, b) => (a.classPosition ?? 999) - (b.classPosition ?? 999)
-          )[0]
-      : undefined;
-
-    const leaderHasData = classLeader && classLeader.delta !== undefined;
-
-    // --- Single pass over drivers ---
-    return [
-      classId,
-      classStandings.map((standing, index) => {
-        const augmented = { ...standing };
-
-        // Position change
-        if (isRace && qualifyingClassPositionByCarIdx.size > 0) {
-          const qualifyingClassPos = qualifyingClassPositionByCarIdx.get(
-            standing.carIdx
-          );
-          if (
-            qualifyingClassPos !== undefined &&
-            standing.classPosition !== undefined
-          ) {
-            augmented.positionChange =
-              qualifyingClassPos - standing.classPosition;
-          }
-        }
-
-        // iRating change
-        if (isRace && isOfficial) {
-          augmented.iratingChange = iratingChangeMap.get(standing.carIdx);
-        }
-
-        // Gap + interval
-        if (needsGap && classLeader) {
-          if (!leaderHasData) {
-            // No-op: leave gap/interval undefined
-          } else if (standing.carIdx === classLeader.carIdx) {
-            augmented.gap = { value: undefined, laps: 0 };
-          } else {
-            const driverIdx = standing.carIdx;
-            const driverClassId = standing.carClass.id;
-            const isStartingLap = (standing?.lap ?? -1) <= 1;
-
-            const refLap = useReferenceLapStore
-              .getState()
-              .getReferenceLap(driverIdx, driverClassId, isStartingLap);
-
-            const isOnPitRoadAhead = carIdxOnPitRoad[classLeader.carIdx];
-            const isOnPitRoadBehind = carIdxOnPitRoad[driverIdx];
-            const isOnPitOrHasNoData =
-              isOnPitRoadAhead || isOnPitRoadBehind || refLap.finishTime < 0;
-
-            const driverAhead = classStandings[index - 1];
-
-            let calculatedGap = 0;
-            let calculatedInterval = 0;
-
-            if (isOnPitOrHasNoData) {
-              const classLeaderEstTime = carIdxEstTime[classLeader.carIdx];
-              const aheadEstTime = carIdxEstTime[driverAhead.carIdx];
-              const behindEstTime = carIdxEstTime[driverIdx];
-              const driverStats = getStats(behindEstTime, standing);
-
-              calculatedGap = calculateClassEstimatedGap(
-                getStats(classLeaderEstTime, classLeader),
-                driverStats
-              );
-              calculatedInterval = calculateClassEstimatedDelta(
-                getStats(aheadEstTime, driverAhead),
-                driverStats,
-                false
-              );
-            } else {
-              const classLeaderTrckPct = carIdxLapDistPct[classLeader.carIdx];
-              const driverTrckPct = carIdxLapDistPct[driverIdx];
-              const driverAheadTrckPct = carIdxLapDistPct[driverAhead.carIdx];
-
-              calculatedGap = calculateReferenceGap(
-                refLap,
-                classLeaderTrckPct,
-                driverTrckPct
-              );
-              calculatedInterval = calculateReferenceDelta(
-                refLap,
-                driverAheadTrckPct,
-                driverTrckPct
-              );
-            }
-
-            const gap = { value: Math.abs(calculatedGap), laps: 0 };
-
-            if (classLeader.fastestTime > 0) {
-              const driverLapNumber = carIdxLap[driverIdx];
-              const classLeaderLapNumber = carIdxLap[classLeader.carIdx];
-              gap.laps = Math.floor(
-                classLeaderLapNumber +
-                  carIdxLapDistPct[classLeader.carIdx] -
-                  (driverLapNumber + carIdxLapDistPct[driverIdx])
-              );
-            }
-
-            augmented.gap = gap;
-            augmented.interval = Math.abs(calculatedInterval);
-          }
-        }
-
-        return augmented;
-      }),
-    ];
   });
 };
