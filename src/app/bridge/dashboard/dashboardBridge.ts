@@ -230,8 +230,9 @@ export async function publishDashboardUpdates(
     const currentProfileId = getCurrentProfileId();
     const dashboard = getDashboard(currentProfileId);
     if (!dashboard) return;
-    overlayManager.closeOrCreateWindows(dashboard);
-    overlayManager.publishMessage('dashboardUpdated', dashboard);
+    const merged = mergeDriverTagsIntoLayout(dashboard, getDriverTagSettings());
+    overlayManager.closeOrCreateWindows(merged);
+    overlayManager.publishMessage('dashboardUpdated', merged);
   });
 
   ipcMain.handle('resetDashboard', (_, resetEverything: boolean) => {
@@ -318,7 +319,9 @@ export async function publishDashboardUpdates(
   });
 
   ipcMain.handle('getDashboardForProfile', async (_, profileId: string) => {
-    return dashboardBridge.getDashboardForProfile(profileId);
+    const dashboard = await dashboardBridge.getDashboardForProfile(profileId);
+    if (!dashboard) return dashboard;
+    return mergeDriverTagsIntoLayout(dashboard, getDriverTagSettings());
   });
 
   ipcMain.handle(

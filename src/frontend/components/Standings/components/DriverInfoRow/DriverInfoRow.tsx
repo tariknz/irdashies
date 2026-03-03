@@ -5,10 +5,8 @@ import {
   usePitStopDuration,
   usePitLaneStore,
   useDashboard,
-  useSessionDrivers,
 } from '@irdashies/context';
-import { useDriverTag } from './useDriverTag';
-import { DriverTagBadge } from './DriverTagBadge';
+import type { ResolvedDriverTag } from './useDriverTag';
 import type { Gap, LastTimeState } from '../../createStandings';
 import type {
   RelativeWidgetSettings,
@@ -21,6 +19,7 @@ import { CompoundCell } from './cells/CompoundCell';
 import { CountryFlagsCell } from './cells/CountryFlagsCell';
 import { DeltaCell } from './cells/DeltaCell';
 import { DriverNameCell } from './cells/DriverNameCell';
+import { DriverTagCell } from './cells/DriverTagCell';
 import { FastestTimeCell } from './cells/FastestTimeCell';
 import { IratingChangeCell } from './cells/IratingChangeCell';
 import { LapTimeDeltasCell } from './cells/LapTimeDeltasCell';
@@ -77,6 +76,8 @@ interface DriverRowInfoProps {
   slowdown: boolean;
   deltaDecimalPlaces?: number;
   hideCarManufacturer?: boolean;
+  resolvedTag?: ResolvedDriverTag;
+  hasAnyDriverTag?: boolean;
 }
 
 // Helper function to provide dummy data for hidden rows
@@ -189,6 +190,8 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
     deltaDecimalPlaces,
     pitStopDuration: pitStopDurationProp,
     hideCarManufacturer,
+    resolvedTag,
+    hasAnyDriverTag,
   } = displayProps;
   const pitStopDurations = usePitStopDuration();
   const pitStopDuration =
@@ -198,19 +201,6 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
 
   const { currentDashboard } = useDashboard();
   const tagSettings = currentDashboard?.generalSettings?.driverTagSettings;
-  const widgetTagEnabled = config?.driverTag?.enabled;
-  const sessionDrivers = useSessionDrivers();
-  const userId = useMemo(
-    () => sessionDrivers?.find((d) => d.CarIdx === carIdx)?.UserID,
-    [sessionDrivers, carIdx]
-  );
-  const resolvedTag = useDriverTag(
-    name ?? '',
-    tagSettings,
-    widgetTagEnabled,
-    false,
-    userId
-  );
   // When pit exit is in the last 15% of the lap, the S/F line is reached
   // very shortly after exiting pits. OUT must persist for one extra lap count.
   const pitExitAfterSF = pitExitPct !== null && pitExitPct > 0.85;
@@ -270,18 +260,20 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
         id: 'driverTag',
         shouldRender:
           (displayOrder ? displayOrder.includes('driverTag') : true) &&
-          !!(widgetTagEnabled ?? tagSettings?.display?.enabled),
+          (hasAnyDriverTag ?? false),
         component: (
           <td
             key="driverTag"
             data-column="driverTag"
-            className="w-auto px-0 py-0.5 whitespace-nowrap align-middle"
+            className="w-auto px-0 py-0.5 whitespace-nowrap align-middle min-w-[22px]"
           >
             <div className="flex items-center justify-center">
               {hidden ? null : (
-                <DriverTagBadge
+                <DriverTagCell
                   tag={resolvedTag}
-                  widthPx={tagSettings?.display?.widthPx}
+                  widthPx={
+                    tagSettings?.display?.widthPx ?? config?.driverTag?.widthPx
+                  }
                   displayStyle={tagSettings?.display?.displayStyle ?? 'badge'}
                   iconWeight={tagSettings?.display?.iconWeight}
                 />
@@ -561,7 +553,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
     pitExitAfterSF,
     tagSettings,
     resolvedTag,
-    widgetTagEnabled,
+    hasAnyDriverTag,
     hidden,
   ]);
 

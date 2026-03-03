@@ -9,3 +9,4 @@ export * from './useRelativeSettings';
 export * from './useHighlightColor';
 export * from './useFuelSettings';
 export * from './useTrackMapSettings';
+export * from './useDriverTagMap';

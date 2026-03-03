@@ -100,9 +100,7 @@ export const DriverTagsSettings = () => {
   );
 
   const syncedDrafts = useMemo(() => {
-    // New (uncommitted) drafts appear first, in insertion order
-    const newDrafts = entryDrafts.filter((d) => d.uiKey.startsWith('new-'));
-    // Committed entries follow in their saved order; use draft value if being edited
+    // Committed entries first in their saved order; use draft value if being edited
     const committed = committedEntries.map((entry, idx) => {
       const key = entry.id
         ? `id-${entry.id}`
@@ -113,7 +111,9 @@ export const DriverTagsSettings = () => {
         entryDrafts.find((d) => d.uiKey === key) ?? toEntryDraft(entry, key)
       );
     });
-    return [...newDrafts, ...committed];
+    // New (uncommitted) drafts appear at the bottom, in insertion order
+    const newDrafts = entryDrafts.filter((d) => d.uiKey.startsWith('new-'));
+    return [...committed, ...newDrafts];
   }, [committedEntries, entryDrafts]);
 
   const addEntry = useCallback(() => {
@@ -191,6 +191,55 @@ export const DriverTagsSettings = () => {
       }
     },
     [committedEntries, settings, updateDashboard]
+  );
+
+  const commitEntryDraft = useCallback(
+    (key: string) => {
+      const draft = entryDrafts.find((d) => d.uiKey === key);
+      if (!draft) return;
+
+      if (key.startsWith('new-')) {
+        if (!draft.id.trim() && !draft.name.trim()) return;
+        updateDashboard({
+          ...settings,
+          entries: [
+            ...(settings.entries ?? []),
+            {
+              ...(draft.id.trim() ? { id: draft.id.trim() } : {}),
+              ...(draft.name.trim() ? { name: draft.name.trim() } : {}),
+              ...(draft.label.trim() ? { label: draft.label.trim() } : {}),
+              groupId: draft.groupId,
+            },
+          ],
+        });
+        setEntryDrafts((prev) => prev.filter((d) => d.uiKey !== key));
+      } else {
+        const existing = committedEntries.find((e) => {
+          const eKey = e.id
+            ? `id-${e.id}`
+            : e.name
+              ? `name-${e.name}`
+              : undefined;
+          return eKey === key;
+        });
+        if (!existing) return;
+        updateDashboard({
+          ...settings,
+          entries: committedEntries.map((e) =>
+            e === existing
+              ? {
+                  ...e,
+                  id: draft.id.trim() || undefined,
+                  name: draft.name.trim() || undefined,
+                  label: draft.label.trim() || undefined,
+                }
+              : e
+          ),
+        });
+        setEntryDrafts((prev) => prev.filter((d) => d.uiKey !== key));
+      }
+    },
+    [entryDrafts, settings, committedEntries, updateDashboard]
   );
 
   const renderIcon = (
@@ -738,15 +787,6 @@ export const DriverTagsSettings = () => {
               ))}
             </div>
 
-            <div className="flex mb-3 justify-center pb-2">
-              <button
-                onClick={addEntry}
-                className="px-3 py-1 bg-green-600 rounded"
-              >
-                Add Driver
-              </button>
-            </div>
-
             {filteredEntries.length > 0 && (
               <div className="grid grid-cols-[5rem_9rem_9rem_1fr_auto] gap-2 items-center text-xs text-slate-400 pb-1">
                 <span>iRacing ID</span>
@@ -771,13 +811,12 @@ export const DriverTagsSettings = () => {
                     updateEntryDraft(row.uiKey, 'id', e.target.value)
                   }
                   onBlur={(e) => {
-                    if (
+                    const stayingInRow =
                       e.relatedTarget ===
                         inputRefs.current[`${row.uiKey}-name`] ||
                       e.relatedTarget ===
-                        inputRefs.current[`${row.uiKey}-label`]
-                    )
-                      return;
+                        inputRefs.current[`${row.uiKey}-label`];
+                    if (!stayingInRow) commitEntryDraft(row.uiKey);
                   }}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter')
@@ -794,6 +833,14 @@ export const DriverTagsSettings = () => {
                   onChange={(e) =>
                     updateEntryDraft(row.uiKey, 'name', e.target.value)
                   }
+                  onBlur={(e) => {
+                    const stayingInRow =
+                      e.relatedTarget ===
+                        inputRefs.current[`${row.uiKey}-id`] ||
+                      e.relatedTarget ===
+                        inputRefs.current[`${row.uiKey}-label`];
+                    if (!stayingInRow) commitEntryDraft(row.uiKey);
+                  }}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter')
                       (e.currentTarget as HTMLInputElement).blur();
@@ -809,6 +856,14 @@ export const DriverTagsSettings = () => {
                   onChange={(e) =>
                     updateEntryDraft(row.uiKey, 'label', e.target.value)
                   }
+                  onBlur={(e) => {
+                    const stayingInRow =
+                      e.relatedTarget ===
+                        inputRefs.current[`${row.uiKey}-id`] ||
+                      e.relatedTarget ===
+                        inputRefs.current[`${row.uiKey}-name`];
+                    if (!stayingInRow) commitEntryDraft(row.uiKey);
+                  }}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter')
                       (e.currentTarget as HTMLInputElement).blur();
@@ -840,6 +895,15 @@ export const DriverTagsSettings = () => {
                 </button>
               </div>
             ))}
+
+            <div className="flex mb-3 justify-center pb-2">
+              <button
+                onClick={addEntry}
+                className="px-3 py-1 bg-green-600 rounded"
+              >
+                Add Driver
+              </button>
+            </div>
 
             {filteredEntries.length > 0 && (
               <p className="mt-1 text-sm italic text-white/40">

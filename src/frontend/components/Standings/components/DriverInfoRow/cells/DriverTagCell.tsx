@@ -1,22 +1,22 @@
 import { memo, useMemo } from 'react';
 import type { CSSProperties } from 'react';
-import type { ResolvedDriverTag } from './useDriverTag';
+import type { ResolvedDriverTag } from '../useDriverTag';
 import { colorNumToHex } from '@irdashies/utils/colors';
 import { renderDriverIcon } from '@irdashies/utils/driverIcons';
 
-interface DriverTagBadgeProps {
+interface DriverTagCellProps {
   tag?: ResolvedDriverTag | null;
   widthPx?: number;
   displayStyle?: 'badge' | 'tag';
   iconWeight?: string;
 }
 
-export const DriverTagBadge = memo(function DriverTagBadge({
+export const DriverTagCell = memo(function DriverTagCell({
   tag,
   widthPx,
   displayStyle = 'badge',
   iconWeight,
-}: DriverTagBadgeProps) {
+}: DriverTagCellProps) {
   const name = tag?.name ?? '';
   const defaultBadgeSize = 28;
   const minBadgeSize = 22;
@@ -104,6 +104,6 @@ export const DriverTagBadge = memo(function DriverTagBadge({
   );
 });
 
-DriverTagBadge.displayName = 'DriverTagBadge';
+DriverTagCell.displayName = 'DriverTagCell';
 
-export default DriverTagBadge;
+export default DriverTagCell;
