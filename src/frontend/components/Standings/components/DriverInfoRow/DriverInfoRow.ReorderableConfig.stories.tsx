@@ -350,6 +350,7 @@ const RelativeWithReorderableConfig = () => {
       driverName: {
         enabled: true,
         showStatusBadges: true,
+        removeNumbersFromName: false,
         nameFormat: 'name-surname',
       },
       teamName: { enabled: true },

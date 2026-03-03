@@ -143,7 +143,7 @@ export const useCarState = () => {
 // currently there's still a few bugs to handle but is only used in relative right now
 export const useDriverStandings = () => {
   const driverPositions = useDriverPositions();
-  const relativeSettings = useRelativeSettings();  
+  const relativeSettings = useRelativeSettings();
   const useLivePositionStandings = relativeSettings?.useLivePosition ?? false;
   const driverLivePositions = useDriverLivePositions({
     enabled: useLivePositionStandings,
