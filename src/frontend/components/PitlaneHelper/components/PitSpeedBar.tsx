@@ -42,7 +42,7 @@ export const PitSpeedBar = memo(({ speedKph, limitKph, orientation }: PitSpeedBa
 
           {/* Bar */}
           <div
-            className="relative w-full bg-slate-700/50 rounded overflow-hidden h-full"
+            className="relative w-full min-w-10 bg-slate-700/50 rounded overflow-hidden h-full"
           >
             <div
               className="absolute bottom-0 w-full transition-all duration-150 ease-out"
