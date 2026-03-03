@@ -129,7 +129,7 @@ const SpeedDeltaRow = ({
   unit,
   isSpeeding,
   isSeverelyOver,
-  colorClass,
+  colorClass,  
   showSpeedBar,
   speedKph,
   limitKph,

@@ -18,6 +18,7 @@ export const usePitlaneHelperSettings = () => {
     background: { opacity: 80 },
     progressBarOrientation: 'horizontal' as const,
     speedBarOrientation: 'horizontal' as const,
+    showProgressBar: true,
     showSpeedBar: true,
     showPitExitInputs: false,
     pitExitInputs: {

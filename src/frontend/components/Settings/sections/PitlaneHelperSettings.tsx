@@ -20,6 +20,8 @@ const defaultConfig: PitlaneHelperWidgetSettings['config'] = {
   showPitlaneTraffic: true,
   background: { opacity: 80 },
   progressBarOrientation: 'horizontal',
+  speedBarOrientation: 'horizontal',
+  showProgressBar: true,
   showSpeedBar: true,
   showPitExitInputs: false,
   pitExitInputs: {
@@ -43,6 +45,11 @@ export const PitlaneHelperSettings = () => {
         progressBarOrientation:
           savedSettings.config.progressBarOrientation ??
           defaultConfig.progressBarOrientation,
+        speedBarOrientation:
+          savedSettings.config.speedBarOrientation ??
+          defaultConfig.speedBarOrientation,
+        showProgressBar:
+          savedSettings.config.showProgressBar ?? defaultConfig.showProgressBar,
         showSpeedBar:
           savedSettings.config.showSpeedBar ?? defaultConfig.showSpeedBar,
         showPitExitInputs:
@@ -138,22 +145,49 @@ export const PitlaneHelperSettings = () => {
 
                  <SettingToggleRow
                   title="Speed Bar"
-                  description="Show vertical bar indicating speed relative to pit limit"
+                  description="Show bar indicating speed relative to pit limit"
                   enabled={settings.config.showSpeedBar}
                   onToggle={(newValue) =>
                     handleConfigChange({ showSpeedBar: newValue })
                   }
                 /> 
 
-                <SettingButtonGroupRow<'horizontal' | 'vertical'>
-                  title="Progress Bar Orientation"
-                  value={settings.config.progressBarOrientation ?? 'horizontal'}
-                  options={[
-                    { label: 'Horizontal', value: 'horizontal' },
-                    { label: 'Vertical', value: 'vertical' },
-                  ]}
-                  onChange={(v) => handleConfigChange({ progressBarOrientation: v })}
-                />    
+                {settings.config.showSpeedBar && (
+                  <SettingsSection>
+                    <SettingButtonGroupRow<'horizontal' | 'vertical'>
+                      title="Speed Bar Orientation"
+                      value={settings.config.speedBarOrientation ?? 'horizontal'}
+                      options={[
+                        { label: 'Horizontal', value: 'horizontal' },
+                        { label: 'Vertical', value: 'vertical' },
+                      ]}
+                      onChange={(v) => handleConfigChange({ speedBarOrientation: v })}
+                    />    
+                  </SettingsSection>
+                )}
+
+                <SettingToggleRow
+                  title="Progress Bar"
+                  description="Show bar indicating distance to pit box"
+                  enabled={settings.config.showProgressBar}
+                  onToggle={(newValue) =>
+                    handleConfigChange({ showProgressBar: newValue })
+                  }
+                /> 
+
+                {settings.config.showProgressBar && (
+                  <SettingsSection>
+                    <SettingButtonGroupRow<'horizontal' | 'vertical'>
+                      title="Progress Bar Orientation"
+                      value={settings.config.progressBarOrientation ?? 'horizontal'}
+                      options={[
+                        { label: 'Horizontal', value: 'horizontal' },
+                        { label: 'Vertical', value: 'vertical' },
+                      ]}
+                      onChange={(v) => handleConfigChange({ progressBarOrientation: v })}
+                    />    
+                  </SettingsSection>
+                )}
 
                 <SettingSliderRow
                   title="Background Opacity"

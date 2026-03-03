@@ -54,7 +54,7 @@ export const PitCountdownBar = memo(
             {valueLabel}
           </span>
         </div>
-        <div className="relative h-full min-h-5 w-full bg-slate-700/50 rounded overflow-hidden">
+        <div className="relative h-full min-h-10 w-full bg-slate-700/50 rounded overflow-hidden">
           <div
             className="absolute left-0 top-0 h-full transition-all duration-200 ease-out"
             style={{ width: `${progressPercent}%`, backgroundColor: color }}

@@ -234,7 +234,7 @@ const PitlaneHelperBody = ({
                 <PitSpeedBar
                   speedKph={speed.speedKph}
                   limitKph={speed.limitKph}
-                  orientation={config.progressBarOrientation}
+                  orientation={config.speedBarOrientation}
                 />     
             )}
           </div>
@@ -244,6 +244,7 @@ const PitlaneHelperBody = ({
 
       {/* Row 2: Countdown bars (entry/box/exit) */}
       {((!onPitRoad &&
+      (shouldShowInputs || config.showProgressBar) &&
         position.distanceToPitEntry > 0 &&
         position.distanceToPitEntry <= config.approachDistance) ||
         (onPitRoad && Math.abs(position.distanceToPit) >= 5) ||
@@ -252,14 +253,19 @@ const PitlaneHelperBody = ({
           position.distanceToPitExit > 0 &&
           position.distanceToPitExit <= 150)) && (
 
-        <div className="flex flex-col gap-3 w-full flex-2">
+        <div className={`flex flex-col gap-3 w-full flex-1 ${
+            config.progressBarOrientation === 'vertical'
+              ? 'flex-2'
+              : 'flex-1' 
+          }`}>
 
           {/* Row 1: Countdown bars */}
+          {config.showProgressBar && (
           <div
-            className={`flex gap-3 w-full flex-1 ${
+            className={`flex gap-3 w-full ${
               config.progressBarOrientation === 'vertical'
-                ? 'flex-row'
-                : 'flex-col'
+                ? 'flex-row flex-2'
+                : 'flex-col flex-1 ' 
             }`}
           >
             {!onPitRoad &&
@@ -306,10 +312,11 @@ const PitlaneHelperBody = ({
                 />
               )}
           </div>
+          )}
 
           {/* Row 2: Speed + Inputs */}
           {(shouldShowInputs) && (
-            <div className="flex gap-3 w-full flex-1">             
+            <div className="flex gap-3 w-full flex-2">             
               {shouldShowInputs && (        
                   <PitExitInputs
                     showThrottle={config.pitExitInputs.throttle}

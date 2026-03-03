@@ -41,6 +41,7 @@ export interface PitlaneHelperSettings {
   approachDistance: number;
   progressBarOrientation: 'vertical' | 'horizontal';
   speedBarOrientation: 'vertical' | 'horizontal';
+  showProgressBar: boolean;
   showSpeedBar: boolean;
   showPitExitInputs: boolean;
   pitExitInputs: {

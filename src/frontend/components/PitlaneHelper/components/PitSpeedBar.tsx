@@ -35,8 +35,8 @@ export const PitSpeedBar = memo(({ speedKph, limitKph, orientation }: PitSpeedBa
 
   if (orientation === 'vertical') {
       return (
-        <div className="flex flex-col flex-1 items-center gap-1">
-          <span className="text-xs text-white font-medium tabular-nums leading-none">
+        <div className="flex flex-col flex-1 relative items-center gap-1">
+          <span className="absolute top-2 z-10 text-sm text-white font-medium tabular-nums leading-none">
             {Math.round(speedKph)}
           </span>
 
@@ -55,7 +55,7 @@ export const PitSpeedBar = memo(({ speedKph, limitKph, orientation }: PitSpeedBa
             />
           </div>
 
-          <span className="text-xs text-slate-400 leading-none">Speed</span>
+          <span className="absolute bottom-2 z-10 text-xs text-slate-200 leading-none">Speed</span>
         </div>
       );
     }
