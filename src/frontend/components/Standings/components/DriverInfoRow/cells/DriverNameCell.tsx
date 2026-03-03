@@ -16,6 +16,7 @@ interface DriverNameCellProps {
   penalty?: boolean;
   slowdown?: boolean;
   showStatusBadges?: boolean;
+  removeNumbersFromName?: boolean;
   isMinimal?: boolean;
 }
 
@@ -29,11 +30,12 @@ export const DriverNameCell = memo(
     penalty,
     slowdown,
     showStatusBadges = true,
+    removeNumbersFromName = false,
     isMinimal,
   }: DriverNameCellProps) => {
     const displayName = fullName
       ? formatDriverName(
-          extractDriverName(fullName),
+          extractDriverName(fullName, removeNumbersFromName),
           nameFormat ?? 'name-middlename-surname'
         )
       : (name ?? '');

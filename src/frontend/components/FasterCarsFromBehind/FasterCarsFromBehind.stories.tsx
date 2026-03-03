@@ -1,5 +1,8 @@
 import { Meta, StoryObj } from '@storybook/react-vite';
-import {  FasterCarsFromBehind, FasterCarsFromBehindDisplay } from './FasterCarsFromBehind';
+import {
+  FasterCarsFromBehind,
+  FasterCarsFromBehindDisplay,
+} from './FasterCarsFromBehind';
 import { TelemetryDecorator } from '@irdashies/storybook';
 
 // Mock the settings hook for stories
@@ -10,6 +13,7 @@ const mockSettings = {
   alignDriverBoxes: 'Top' as const,
   closestDriverBox: 'Top' as const,
   showName: true,
+  removeNumbersFromName: true,
   showDistance: true,
   showBadge: true,
   badgeFormat: 'license-color-rating-bw' as const,
@@ -55,7 +59,7 @@ export const Primary: Story = {
 
 export const Display: Story = {
   args: {
-    name: 'Tom Wilson',
+    name: 'Tom Wilson2',
     license: 'A 4.2',
     rating: 1420,
     distance: -1.0,
@@ -69,7 +73,7 @@ export const MultipleDrivers: Story = {
   render: () => (
     <div className="flex flex-col gap-2">
       <FasterCarsFromBehindDisplay
-        name="Tom Wilson"
+        name="Tom Wilson2"
         license="A 4.2"
         rating={1420}
         distance={-1.0}

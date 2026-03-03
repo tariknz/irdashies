@@ -19,7 +19,7 @@ import { updateElectronApp } from 'update-electron-app';
 import started from 'electron-squirrel-startup';
 import { Analytics } from './app/analytics';
 import { registerHideUiShortcut } from './app/globalShortcuts';
-
+import { setupReferenceLapsBridge } from './app/bridge/referenceLapsBridge';
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) app.quit();
@@ -49,6 +49,7 @@ app.on('ready', async () => {
   // Setup IPC bridges
   setupFuelCalculatorBridge();
   setupPitLaneBridge();
+  setupReferenceLapsBridge();
 
   // Start component server for browser components
   await startComponentServer(bridge, dashboardBridge);

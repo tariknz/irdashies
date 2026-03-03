@@ -37,7 +37,9 @@ layer(base);
   --animate-blink: blink 1s infinite;
   --text-xs: 10px;
   --text-sm: 12px;
+  --text-md: 13px;
   --text-base: 14px;
+  --text-lg: 18px;
 
   @keyframes pulse-border {
     0% {
@@ -55,7 +57,8 @@ layer(base);
   }
 
   @keyframes pulse {
-    0%, 100% {
+    0%,
+    100% {
       opacity: 1;
     }
     50% {
@@ -64,7 +67,8 @@ layer(base);
   }
 
   @keyframes blink {
-    0%, 100% {
+    0%,
+    100% {
       opacity: 1;
     }
     50% {

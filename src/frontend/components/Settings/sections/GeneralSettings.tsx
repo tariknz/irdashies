@@ -255,8 +255,8 @@ export const GeneralSettings = () => {
   return (
     <div className="flex flex-col h-full">
       <div className="flex-none p-4 bg-slate-700 rounded">
-        <h2 className="text-xl mb-4">General</h2>
-        <p className="text-slate-400 mb-4">
+        <h2 className="text-xl mb-1">General</h2>
+        <p className="text-slate-400">
           Configure general application settings and preferences.
         </p>
       </div>

@@ -10,6 +10,8 @@ import type {
   ContainerBoundsInfo,
   FuelCalculatorBridge,
   FuelLapData,
+  ReferenceLap,
+  ReferenceLapBridge,
 } from '@irdashies/types';
 
 export function exposeBridge() {
@@ -122,7 +124,10 @@ export function exposeBridge() {
     getDashboardForProfile: (profileId: string) => {
       return ipcRenderer.invoke('getDashboardForProfile', profileId);
     },
-    updateProfileTheme: (profileId: string, themeSettings: DashboardProfile['themeSettings']) => {
+    updateProfileTheme: (
+      profileId: string,
+      themeSettings: DashboardProfile['themeSettings']
+    ) => {
       return ipcRenderer.invoke('updateProfileTheme', profileId, themeSettings);
     },
     stop: () => {
@@ -176,4 +181,24 @@ export function exposeBridge() {
       return ipcRenderer.invoke('fuel:logData', data);
     },
   } as FuelCalculatorBridge);
+
+  contextBridge.exposeInMainWorld('referenceLapsBridge', {
+    getReferenceLap: (seriesId: number, trackId: number, classId: number) => {
+      return ipcRenderer.invoke('reference:get', seriesId, trackId, classId);
+    },
+    saveReferenceLap: (
+      seriesId: number,
+      trackId: number,
+      classId: number,
+      lap: ReferenceLap
+    ) => {
+      return ipcRenderer.invoke(
+        'reference:save',
+        seriesId,
+        trackId,
+        classId,
+        lap
+      );
+    },
+  } as ReferenceLapBridge);
 }

@@ -114,6 +114,7 @@ export interface StandingsWidgetSettings extends BaseWidgetSettings {
     driverName: {
       enabled: boolean;
       showStatusBadges: boolean;
+      removeNumbersFromName: boolean;
       nameFormat:
         | 'name-middlename-surname'
         | 'name-m.-surname'
@@ -226,6 +227,7 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
     driverName: {
       enabled: boolean;
       showStatusBadges: boolean;
+      removeNumbersFromName: boolean;
       nameFormat:
         | 'name-middlename-surname'
         | 'name-m.-surname'
@@ -470,6 +472,18 @@ export type FuelWidgetType =
   | 'confidence'
   | 'keyInfo';
 
+/** Available widgets for the Fuel Calculator */
+export type SettingsTabType =
+  | 'display'
+  | 'options'
+  | 'visibility'
+  | 'track'
+  | 'drivers'
+  | 'layout'
+  | 'header'
+  | 'footer'
+  | 'history';
+
 export interface BlindSpotMonitorWidgetSettings extends BaseWidgetSettings {
   config: {
     showOnlyWhenOnTrack: boolean;
@@ -549,6 +563,7 @@ export interface FasterCarsFromBehindWidgetSettings extends BaseWidgetSettings {
     alignDriverBoxes: 'Top' | 'Bottom';
     closestDriverBox: 'Top' | 'Reverse';
     showName: boolean;
+    removeNumbersFromName: boolean;
     showDistance: boolean;
     showBadge: boolean;
     badgeFormat: string;
@@ -574,6 +589,14 @@ export interface PitlaneHelperWidgetSettings extends BaseWidgetSettings {
       clutch: boolean;
     };
     showInputsPhase: 'atPitbox' | 'afterPitbox' | 'always';
+  };
+}
+
+export interface TwitchChatWidgetSettings extends BaseWidgetSettings {
+  config: {
+    fontSize: number;
+    channel: string;
+    background: { opacity: number };
   };
 }
 

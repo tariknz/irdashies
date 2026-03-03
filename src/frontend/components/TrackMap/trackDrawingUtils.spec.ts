@@ -14,7 +14,7 @@ describe('trackDrawingUtils', () => {
       fillText: vi.fn(),
       measureText: vi.fn(() => ({
         actualBoundingBoxAscent: 10,
-        actualBoundingBoxDescent: 4
+        actualBoundingBoxDescent: 4,
       })),
       save: vi.fn(),
       restore: vi.fn(),
@@ -119,7 +119,7 @@ describe('trackDrawingUtils', () => {
         100,
         true,
         'sessionPosition',
-         driverLivePositions
+        driverLivePositions
       );
 
       // Should render at least some positions
@@ -338,7 +338,7 @@ describe('trackDrawingUtils', () => {
 
       const multiClassDriverLivePositions = {
         1: 0,
-        2: 0        
+        2: 0,
       };
 
       drawDrivers(

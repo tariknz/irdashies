@@ -25,7 +25,7 @@ export const DriverClassHeader = ({
   if (!className) {
     return (
       <tr>
-        <td colSpan={colSpan ? colSpan + 1 : 6} className="pb-3"></td>
+        <td colSpan={colSpan ? colSpan : 6} className="pb-3"></td>
       </tr>
     );
   }

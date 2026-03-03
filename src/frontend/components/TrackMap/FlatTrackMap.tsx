@@ -27,14 +27,18 @@ export const FlatTrackMap = () => {
     return <></>;
   }
 
-  const trackDrawing = trackId ? (tracks as unknown as TrackDrawing[])[trackId] : null;
+  const trackDrawing = trackId
+    ? (tracks as unknown as TrackDrawing[])[trackId]
+    : null;
 
   if (!trackId || !trackDrawing) {
     return debug ? (
       <div className="w-full h-full flex items-center justify-center text-white">
         <p>No track data available</p>
       </div>
-    ) : <></>;
+    ) : (
+      <></>
+    );
   }
 
   return (
@@ -42,7 +46,9 @@ export const FlatTrackMap = () => {
       <FlatTrackMapCanvas
         trackDrawing={trackDrawing}
         drivers={driversTrackData}
-        highlightColor={settings?.useHighlightColor ? highlightColor : undefined}
+        highlightColor={
+          settings?.useHighlightColor ? highlightColor : undefined
+        }
         showCarNumbers={settings?.showCarNumbers ?? true}
         displayMode={settings?.displayMode ?? 'carNumber'}
         driverCircleSize={settings?.driverCircleSize ?? 40}
