@@ -17,6 +17,7 @@ export const usePitlaneHelperSettings = () => {
     showPitlaneTraffic: true,
     background: { opacity: 80 },
     progressBarOrientation: 'horizontal' as const,
+    speedBarOrientation: 'horizontal' as const,
     showSpeedBar: true,
     showPitExitInputs: false,
     pitExitInputs: {
@@ -31,6 +32,8 @@ export const usePitlaneHelperSettings = () => {
     ...config,
     progressBarOrientation:
       config.progressBarOrientation ?? ('horizontal' as const),
+    speedsBarOrientation:
+      config.speedsBarOrientation ?? ('horizontal' as const),
     showSpeedBar: config.showSpeedBar ?? true,
     showPitExitInputs: config.showPitExitInputs ?? false,
     pitExitInputs: config.pitExitInputs ?? { throttle: true, clutch: true },

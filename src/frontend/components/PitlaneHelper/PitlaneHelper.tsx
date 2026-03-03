@@ -187,10 +187,15 @@ const PitlaneHelperBody = ({
       }}
     >
       {/* Row 1: Speed delta + speed bar */}
-     <div className="flex items-end gap-2 w-full">
+     <div className={[
+              'flex flex-1 gap-2 w-full h-full"',
+              config.speedBarOrientation == 'vertical'
+                ? 'flex-row'
+                : 'flex-col',
+            ].join(' ')}>
         <div
           className={[
-            'flex flex-col justify-center px-2 py-1 rounded transition-all text-center w-full',
+            'flex flex-col flex-2 justify-center px-2 py-4 rounded transition-all text-center w-full h-full',
             speed.isSeverelyOver
               ? 'bg-red-600 animate-pulse'
               : speed.isSpeeding
@@ -200,7 +205,7 @@ const PitlaneHelperBody = ({
         >
           <div
             className={[
-              'text-3xl font-bold leading-none transition-colors tabular-nums',
+              'text-[200%] font-bold leading-none transition-colors tabular-nums',
               speed.isSeverelyOver || speed.isSpeeding
                 ? 'text-white'
                 : speed.colorClass,
@@ -223,6 +228,18 @@ const PitlaneHelperBody = ({
           </div>
         </div>
 
+        {(config.showSpeedBar) && (
+          <div className="flex gap-3 w-full h-full flex-1">
+            {config.showSpeedBar && (
+                <PitSpeedBar
+                  speedKph={speed.speedKph}
+                  limitKph={speed.limitKph}
+                  orientation={config.progressBarOrientation}
+                />     
+            )}
+          </div>
+        )}
+
       </div>
 
       {/* Row 2: Countdown bars (entry/box/exit) */}
@@ -235,7 +252,7 @@ const PitlaneHelperBody = ({
           position.distanceToPitExit > 0 &&
           position.distanceToPitExit <= 150)) && (
 
-        <div className="flex flex-col gap-3 w-full flex-1">
+        <div className="flex flex-col gap-3 w-full flex-2">
 
           {/* Row 1: Countdown bars */}
           <div
@@ -291,19 +308,12 @@ const PitlaneHelperBody = ({
           </div>
 
           {/* Row 2: Speed + Inputs */}
-          {(config.showSpeedBar || shouldShowInputs) && (
-            <div className="flex gap-3 w-full flex-1">
-              {config.showSpeedBar && (
-                  <PitSpeedBar
-                    speedKph={speed.speedKph}
-                    limitKph={speed.limitKph}
-                  />     
-              )}
-
+          {(shouldShowInputs) && (
+            <div className="flex gap-3 w-full flex-1">             
               {shouldShowInputs && (        
                   <PitExitInputs
                     showThrottle={config.pitExitInputs.throttle}
-                    showClutch={config.pitExitInputs.clutch}
+                    showClutch={config.pitExitInputs.clutch}                    
                   />    
               )}
             </div>

@@ -47,6 +47,7 @@ describe('PitlaneHelper', () => {
     approachDistance: 200,
     earlyPitboxThreshold: 75,
     progressBarOrientation: 'vertical' as const,
+    speedBarOrientation: 'vertical' as const,
     showSpeedBar: true,
     background: { opacity: 80 },
     showPitExitInputs: false,

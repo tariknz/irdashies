@@ -5,6 +5,8 @@ export interface PitSpeedBarProps {
   speedKph: number;
   /** Pit speed limit in km/h */
   limitKph: number;
+  /** orientation */
+  orientation: 'horizontal' | 'vertical';
 }
 
 /**
@@ -16,7 +18,7 @@ export interface PitSpeedBarProps {
  * - Amber:  within 5 km/h below limit
  * - Red:    at or above limit
  */
-export const PitSpeedBar = memo(({ speedKph, limitKph }: PitSpeedBarProps) => {
+export const PitSpeedBar = memo(({ speedKph, limitKph, orientation }: PitSpeedBarProps) => {
   // The bar represents 0 → 2× the limit. The midpoint (50%) = limit.
   const maxSpeed = limitKph * 2;
   const clampedSpeed = Math.max(0, Math.min(speedKph, maxSpeed));
@@ -31,30 +33,56 @@ export const PitSpeedBar = memo(({ speedKph, limitKph }: PitSpeedBarProps) => {
     fillColor = 'rgb(234, 179, 8)'; // yellow-500
   }
 
-  return (
-    <div className="flex flex-col flex-1 items-center gap-1">
-      <span className="text-xs text-white font-medium tabular-nums leading-none">
-        {Math.round(speedKph)}
-      </span>
+  if (orientation === 'vertical') {
+      return (
+        <div className="flex flex-col flex-1 items-center gap-1">
+          <span className="text-xs text-white font-medium tabular-nums leading-none">
+            {Math.round(speedKph)}
+          </span>
 
-      {/* Bar */}
-      <div
-        className="relative w-full bg-slate-700/50 rounded overflow-hidden min-h-[20px] h-full"
-      >
-        <div
-          className="absolute bottom-0 w-full transition-all duration-150 ease-out"
-          style={{ height: `${fillPercent}%`, backgroundColor: fillColor }}
-        />
-        {/* Limit marker at midpoint */}
-        <div
-          className="absolute w-full border-t-2 border-white/70"
-          style={{ bottom: '50%' }}
-        />
+          {/* Bar */}
+          <div
+            className="relative w-full bg-slate-700/50 rounded overflow-hidden h-full"
+          >
+            <div
+              className="absolute bottom-0 w-full transition-all duration-150 ease-out"
+              style={{ height: `${fillPercent}%`, backgroundColor: fillColor }}
+            />
+            {/* Limit marker at midpoint */}
+            <div
+              className="absolute w-full border-t-2 border-white/70"
+              style={{ bottom: '50%' }}
+            />
+          </div>
+
+          <span className="text-xs text-slate-400 leading-none">Speed</span>
+        </div>
+      );
+    }
+
+    // Horizontal orientation
+    return (
+      <div className="flex flex-col flex-1 gap-1">
+        <div className="flex justify-between items-center text-xs">
+          <span className="text-slate-400">Speed</span>
+          <span className="text-white font-medium tabular-nums">
+            {Math.round(speedKph)}
+          </span>
+        </div>
+        {/* Horizontal bar */}
+        <div className="relative min-h-10 h-full bg-slate-700/50 rounded overflow-hidden flex-1">
+          <div
+            className="absolute left-0 top-0 h-full transition-all duration-150 ease-out"
+            style={{ width: `${fillPercent}%`, backgroundColor: fillColor }}
+          />
+          {/* Midpoint marker */}
+          <div
+            className="absolute left-1/2 top-0 h-full border-l-2 border-white/70"
+          />
+        </div>
       </div>
-
-      <span className="text-xs text-slate-400 leading-none">spd</span>
-    </div>
-  );
+    );
+  
 });
 
 PitSpeedBar.displayName = 'PitSpeedBar';
