@@ -39,7 +39,7 @@ export const useDriverLivePositions = ({ enabled }: { enabled: boolean }): Recor
   const lastLapSnapshotRef = useRef<Map<number, number> | undefined>(undefined);
   const p1LapCompletedRef = useRef<number | undefined>(undefined);
   const p1CarRef = useRef<number | undefined>(undefined);
-
+  const lastProgressRef = useRef<Map<number, number>>(new Map());
   const sessionType = useCurrentSessionType();
   const sessionNum = useTelemetryValue('SessionNum');
   const sessionPositions = useSessionPositions(sessionNum);
@@ -47,6 +47,7 @@ export const useDriverLivePositions = ({ enabled }: { enabled: boolean }): Recor
   const carIdxLapCompleted = useTelemetryValues<number[]>('CarIdxLapCompleted');
   const carIdxLapDistPct = useTelemetryValues<number[]>('CarIdxLapDistPct');
   const carIdxClass = useTelemetryValues<number[]>('CarIdxClass');
+  const carIdxTrackSurface = useTelemetryValues<number[]>('CarIdxTrackSurface');
   const paceCarIdx = useSessionStore((s) => s.session?.DriverInfo?.PaceCarIdx) ?? -1;
   const p1Car = sessionPositions?.find(pos => pos.Position === 1); // Position is 1-based
   const p1LapCompleted = p1Car ? (carIdxLapCompleted[p1Car.CarIdx] ?? 0) : 0;
@@ -140,13 +141,23 @@ export const useDriverLivePositions = ({ enabled }: { enabled: boolean }): Recor
         const sessionLapsCompleted = sessionPositionSource?.LapsComplete ?? 0;
         const classId = carIdxClass[driverIdx] ?? -1;
         const distPct = carIdxLapDistPct[driverIdx] ?? 0;
+        const isOnTow = (carIdxTrackSurface?.[driverIdx] ?? 3) === 0;
 
         // const lapCompleted = lapCompleted ?? 0;
+        
+        // cache progress for when off track (towing)
+        const rawProgress = lapCompleted + distPct;
+        let effectiveProgress = rawProgress;
+        if (isOnTow) {
+          effectiveProgress = lastProgressRef.current.get(driverIdx) ?? rawProgress;
+        } else {
+          lastProgressRef.current.set(driverIdx, rawProgress);
+        }
 
         // Create driver data object
         const driverData: DriverData = {
           driverIdx: driverIdx,
-          progress: lapCompleted + distPct,
+          progress: effectiveProgress,
           lapCompleted,
           sessionLapsCompleted,
           sessionClassPosition,
