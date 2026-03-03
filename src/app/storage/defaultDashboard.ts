@@ -51,6 +51,7 @@ export const defaultDashboard: DashboardLayout = {
         driverName: {
           enabled: true,
           showStatusBadges: true,
+          removeNumbersFromName: false,
         },
         teamName: {
           enabled: false,
@@ -184,6 +185,7 @@ export const defaultDashboard: DashboardLayout = {
         displayOrder: [
           'position',
           'carNumber',
+          'driverTag',
           'countryFlags',
           'driverName',
           'teamName',
@@ -316,6 +318,7 @@ export const defaultDashboard: DashboardLayout = {
         driverName: {
           enabled: true,
           showStatusBadges: true,
+          removeNumbersFromName: false,
         },
         teamName: {
           enabled: false,
@@ -355,6 +358,7 @@ export const defaultDashboard: DashboardLayout = {
         displayOrder: [
           'position',
           'carNumber',
+          'driverTag',
           'countryFlags',
           'driverName',
           'teamName',
@@ -834,6 +838,24 @@ export const defaultDashboard: DashboardLayout = {
         earlyPitboxThreshold: 75,
         showPitlaneTraffic: true,
         background: { opacity: 80 },
+      },
+    },
+    {
+      id: 'twitchchat',
+      alwaysEnabled: true,
+      enabled: false,
+      layout: {
+        x: 378,
+        y: 102,
+        width: 400,
+        height: 500,
+      },
+      config: {
+        fontSize: 16,
+        channel: '',
+        background: {
+          opacity: 30,
+        },
       },
     },
   ],
