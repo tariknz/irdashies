@@ -138,7 +138,7 @@ export class OverlayManager {
       y: expectedBounds.y,
       width: expectedBounds.width,
       height: expectedBounds.height,
-      title: `irDashies - Display ${display.id} (${isPrimary ? 'Main' : ''})`,
+      title: `irDashies - ${display.id}${isPrimary ? ' (Primary)' : ''})`,
       transparent: true,
       frame: false,
       skipTaskbar: this.skipTaskbar,

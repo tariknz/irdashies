@@ -1,6 +1,7 @@
 import { FuelWidgetSettings } from '../../types';
 import { defaultFuelCalculatorSettings } from '../../../FuelCalculator/defaults';
-import { ToggleSwitch } from '../../components/ToggleSwitch';
+import { SettingsSection } from '../../components/SettingSection';
+import { SettingToggleRow } from '../../components/SettingToggleRow';
 
 const defaultConfig = defaultFuelCalculatorSettings;
 
@@ -14,22 +15,17 @@ export const FuelStatusAlertsSection = ({
   onChange,
 }: FuelStatusAlertsSectionProps) => {
   return (
-    <div className="space-y-4 pb-4 mb-4 border-b border-slate-700">
-      <h4 className="text-lg font-medium text-slate-200">Fuel Status Alerts</h4>
+    <SettingsSection title="Fuel Status Alerts">  
 
       {/* Border Color Toggle */}
-      <div className="flex items-center justify-between">
-        <div>
-          <span className="text-sm text-slate-300">Show Border Color</span>
-          <span className="block text-xs text-slate-500">
-            Green (safe), Orange (caution), Red (danger)
-          </span>
-        </div>
-        <ToggleSwitch
-          enabled={settings.config.showFuelStatusBorder ?? true}
-          onToggle={(val) => onChange({ showFuelStatusBorder: val })}
-        />
-      </div>
+      <SettingToggleRow
+        title="Show Border Color"
+        description="Green (safe), Orange (caution), Red (danger)"
+        enabled={settings.config.showFuelStatusBorder ?? true}
+        onToggle={(enabled) =>
+          onChange({ showFuelStatusBorder: enabled })
+        }
+      />
 
       <div className="space-y-3">
         {/* Green Threshold */}
@@ -92,6 +88,6 @@ export const FuelStatusAlertsSection = ({
           </div>
         </div>
       </div>
-    </div>
+    </SettingsSection>
   );
 };

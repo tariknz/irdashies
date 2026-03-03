@@ -168,7 +168,7 @@ export const GarageCoverSettings = () => {
 
                         {/* Image Upload */}
                         <div className="space-y-2">
-                            <label className="text-slate-300">Garage Image</label>
+                            <div className="text-slate-300">Garage Image</div>
                             <div
                                 onDrop={handleImageDrop}
                                 onDragOver={(e) => {

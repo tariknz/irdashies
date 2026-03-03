@@ -13,7 +13,7 @@ export const ToggleSwitch = ({ enabled, onToggle, label }: ToggleSwitchProps) =>
         role="switch"
         aria-checked={enabled}
         onClick={() => onToggle(!enabled)}
-        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+        className={`relative inline-flex cursor-pointer h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
           enabled ? 'bg-blue-600' : 'bg-slate-600'
         }`}
       >
