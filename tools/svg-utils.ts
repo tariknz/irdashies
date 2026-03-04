@@ -260,10 +260,10 @@ export const findDirection = (trackId: number) => {
     332, 333, 336, 337, 338, 343, 350, 351, 357, 364, 365, 366, 371, 381, 386,
     397, 398, 404, 405, 407, 413, 414, 418, 424, 426, 427, 429, 431, 436, 438,
     443, 444, 445, 448, 449, 451, 453, 454, 455, 456, 463, 469, 473, 474, 481,
-    483, 498, 509, 510, 511, 512, 514, 518, 519, 520, 522, 526, 527, 528, 529,
-    530, 532, 536, 537, 540, 541, 542, 543, 544, 545, 546, 551, 559, 561, 562,
-    563, 564, 565, 566, 567, 568, 569, 570, 571, 572, 573, 574, 575, 576, 577,
-    580,
+    483, 498, 509, 510, 511, 512, 514, 515, 516, 517, 518, 519, 520, 522, 526,
+    527, 528, 529, 530, 532, 536, 537, 540, 541, 542, 543, 544, 545, 546, 551,
+    559, 561, 562, 563, 564, 565, 566, 567, 568, 569, 570, 571, 572, 573, 574,
+    575, 576, 577, 578, 580,
   ];
 
   return anticlockwiseTracks.includes(trackId) ? 'anticlockwise' : 'clockwise';
@@ -338,6 +338,71 @@ export const rectToPath = (rect: SVGRectElement): string => {
   return `M${centerX},${y}L${centerX},${y + height}`;
 };
 
+// Parse an SVG transform string into a 2D matrix [a,b,c,d,e,f]
+// where: x' = a*x + c*y + e,  y' = b*x + d*y + f
+const parseTransformMatrix = (
+  transform: string
+): [number, number, number, number, number, number] => {
+  type Mat = [number, number, number, number, number, number];
+  let mat: Mat = [1, 0, 0, 1, 0, 0];
+
+  const multiply = (m1: Mat, m2: Mat): Mat => [
+    m1[0] * m2[0] + m1[2] * m2[1],
+    m1[1] * m2[0] + m1[3] * m2[1],
+    m1[0] * m2[2] + m1[2] * m2[3],
+    m1[1] * m2[2] + m1[3] * m2[3],
+    m1[0] * m2[4] + m1[2] * m2[5] + m1[4],
+    m1[1] * m2[4] + m1[3] * m2[5] + m1[5],
+  ];
+
+  const funcRe = /(matrix|translate|scale|rotate|skewX|skewY)\(([^)]+)\)/g;
+  let match: RegExpExecArray | null;
+  while ((match = funcRe.exec(transform)) !== null) {
+    const func = match[1];
+    const args = match[2]
+      .trim()
+      .split(/[\s,]+/)
+      .map(Number);
+    let m: Mat;
+    switch (func) {
+      case 'translate':
+        m = [1, 0, 0, 1, args[0], args[1] ?? 0];
+        break;
+      case 'scale':
+        m = [args[0], 0, 0, args[1] ?? args[0], 0, 0];
+        break;
+      case 'rotate': {
+        const angle = (args[0] * Math.PI) / 180;
+        const c = Math.cos(angle),
+          s = Math.sin(angle);
+        if (args.length >= 3) {
+          const [, cx, cy] = args;
+          m = [c, s, -s, c, cx * (1 - c) + cy * s, cy * (1 - c) - cx * s];
+        } else {
+          m = [c, s, -s, c, 0, 0];
+        }
+        break;
+      }
+      case 'matrix':
+        m = args as Mat;
+        break;
+      default:
+        continue;
+    }
+    mat = multiply(mat, m);
+  }
+  return mat;
+};
+
+const applyMatrix = (
+  mat: [number, number, number, number, number, number],
+  x: number,
+  y: number
+) => ({
+  x: mat[0] * x + mat[2] * y + mat[4],
+  y: mat[1] * x + mat[3] * y + mat[5],
+});
+
 // Extract start-finish line data from various SVG element types
 export const extractStartFinishData = (
   svg: SVGSVGElement
@@ -359,34 +424,24 @@ export const extractStartFinishData = (
         const symbol = svg.querySelector(`symbol[id="${symbolId}"]`);
 
         if (symbol) {
-          // Extract transform values
-          const translateMatch = transform.match(
-            /translate\(([^,\s]+)\s+([^)]+)\)/
-          );
-          const translateX = translateMatch ? parseFloat(translateMatch[1]) : 0;
-          const translateY = translateMatch ? parseFloat(translateMatch[2]) : 0;
+          const mat = parseTransformMatrix(transform);
 
           // Check if this is a line (rect) or arrow (polygon)
           const rect = symbol.querySelector('rect');
           const polygon = symbol.querySelector('polygon');
 
           if (rect) {
-            // Convert rect to path and apply transform
             const x = parseFloat(rect.getAttribute('x') || '0');
             const y = parseFloat(rect.getAttribute('y') || '0');
             const width = parseFloat(rect.getAttribute('width') || '0');
             const height = parseFloat(rect.getAttribute('height') || '0');
 
-            // Create line through center of rect
             const centerX = x + width / 2;
-            const lineX1 = translateX + centerX;
-            const lineY1 = translateY + y;
-            const lineX2 = translateX + centerX;
-            const lineY2 = translateY + y + height;
+            const p1 = applyMatrix(mat, centerX, y);
+            const p2 = applyMatrix(mat, centerX, y + height);
 
-            linePath = `M${lineX1},${lineY1}L${lineX2},${lineY2}`;
+            linePath = `M${p1.x},${p1.y}L${p2.x},${p2.y}`;
           } else if (polygon) {
-            // Convert polygon to path and apply transform
             const points = polygon.getAttribute('points');
             if (points) {
               const coords = points
@@ -394,12 +449,11 @@ export const extractStartFinishData = (
                 .split(/\s+/)
                 .map(parseFloat)
                 .filter((n) => !isNaN(n));
-              const transformedPoints = [];
+              const transformedPoints: string[] = [];
               for (let i = 0; i < coords.length; i += 2) {
                 if (i + 1 < coords.length) {
-                  transformedPoints.push(
-                    `${coords[i] + translateX},${coords[i + 1] + translateY}`
-                  );
+                  const p = applyMatrix(mat, coords[i], coords[i + 1]);
+                  transformedPoints.push(`${p.x},${p.y}`);
                 }
               }
               if (transformedPoints.length >= 3) {
