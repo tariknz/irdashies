@@ -37,6 +37,11 @@ export const PitCountdownBar = memo(
               className="absolute bottom-0 w-full transition-all duration-200 ease-out"
               style={{ height: `${progressPercent}%`, backgroundColor: color }}
             />
+            {/* Limit marker at top */}
+            <div
+              className="absolute w-full border-t-2 border-white/70"
+              style={{ top: '0%' }}
+            />
           </div>
           <span className="text-xs text-slate-400 leading-none">
             {targetName}
@@ -59,6 +64,11 @@ export const PitCountdownBar = memo(
             className="absolute left-0 top-0 h-full transition-all duration-200 ease-out"
             style={{ width: `${progressPercent}%`, backgroundColor: color }}
           />
+           {/* Limit marker at right */}
+            <div
+              className="absolute h-full border-r-2 border-white/70"
+              style={{ right: '0%' }}
+            />
         </div>
       </div>
     );
