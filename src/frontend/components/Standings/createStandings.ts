@@ -455,7 +455,8 @@ export const augmentStandingsWithGap = (
     const augmentedClassStandings = classStandings.map((driverStanding) => {
       if (
         driverStanding.carIdx === classLeader.carIdx ||
-        !classLeader.onTrack
+        !classLeader.onTrack ||
+        !driverStanding.onTrack
       ) {
         // Class leader shows as dash (undefined gap)
         return { ...driverStanding, gap: { value: undefined, laps: 0 } };
