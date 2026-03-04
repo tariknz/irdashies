@@ -115,6 +115,8 @@ const createMockBridge = (
     }),
   updateProfileTheme: async () => undefined,
   getDashboardForProfile: async () => null,
+  exportDashboardToFile: async () => false,
+  importDashboardFromFile: async () => null,
   setAutoStart: () => Promise.resolve(),
 });
 
