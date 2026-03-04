@@ -167,7 +167,7 @@ interface PitlaneHelperBodyProps {
   traffic: PitlaneTrafficResult;
 }
 
-const PitlaneHelperBody = ({
+export const PitlaneHelperBody = ({
   speed,
   position,
   config,
@@ -181,21 +181,21 @@ const PitlaneHelperBody = ({
 }: PitlaneHelperBodyProps) => {
   return (
     <div
-      className="flex h-full flex-col gap-2 p-2 rounded text-white font-medium bg-slate-800/(--bg-opacity)"
+      className="flex h-full flex-col gap-2 p-2 text-white font-medium rounded bg-slate-800/(--bg-opacity)"
       style={{
         ['--bg-opacity' as string]: `${config.background.opacity ?? 0}%`,
       }}
     >
       {/* Row 1: Speed delta + speed bar */}
-     <div className={[
-              'flex flex-1 gap-2 w-full h-full"',
-              config.speedBarOrientation == 'vertical'
-                ? 'flex-row'
-                : 'flex-col',
-            ].join(' ')}>
+      <div
+        className={[
+          'flex flex-1 gap-2 w-full h-full"',
+          config.speedBarOrientation == 'vertical' ? 'flex-row' : 'flex-col',
+        ].join(' ')}
+      >
         <div
           className={[
-            'flex flex-col flex-2 justify-center px-2 py-4 rounded transition-all text-center w-full h-full',
+            'flex flex-col flex-2 justify-center px-2 py-4 rounded transition-all text-center w-full h-full ',
             speed.isSeverelyOver
               ? 'bg-red-600 animate-pulse'
               : speed.isSpeeding
@@ -205,7 +205,7 @@ const PitlaneHelperBody = ({
         >
           <div
             className={[
-              'text-[200%] font-bold leading-none transition-colors tabular-nums',
+              'text-3xl font-bold leading-none transition-colors tabular-nums',
               speed.isSeverelyOver || speed.isSpeeding
                 ? 'text-white'
                 : speed.colorClass,
@@ -228,23 +228,22 @@ const PitlaneHelperBody = ({
           </div>
         </div>
 
-        {(config.showSpeedBar) && (
+        {config.showSpeedBar && (
           <div className="flex gap-3 w-full h-full flex-1">
             {config.showSpeedBar && (
-                <PitSpeedBar
-                  speedKph={speed.speedKph}
-                  limitKph={speed.limitKph}
-                  orientation={config.speedBarOrientation}
-                />     
+              <PitSpeedBar
+                speedKph={speed.speedKph}
+                limitKph={speed.limitKph}
+                orientation={config.speedBarOrientation}
+              />
             )}
           </div>
         )}
-
       </div>
 
       {/* Row 2: Countdown bars (entry/box/exit) */}
       {((!onPitRoad &&
-      (shouldShowInputs || config.showProgressBar) &&
+        (shouldShowInputs || config.showProgressBar) &&
         position.distanceToPitEntry > 0 &&
         position.distanceToPitEntry <= config.approachDistance) ||
         (onPitRoad && Math.abs(position.distanceToPit) >= 5) ||
@@ -252,80 +251,77 @@ const PitlaneHelperBody = ({
           position.distanceToPit < -5 &&
           position.distanceToPitExit > 0 &&
           position.distanceToPitExit <= 150)) && (
-
-        <div className={`flex flex-col gap-3 w-full flex-1 ${
-            config.progressBarOrientation === 'vertical'
-              ? 'flex-2'
-              : 'flex-1' 
-          }`}>
-
+        <div
+          className={`flex flex-col gap-3 w-full flex-1 ${
+            config.progressBarOrientation === 'vertical' ? 'flex-2' : 'flex-1'
+          }`}
+        >
           {/* Row 1: Countdown bars */}
           {config.showProgressBar && (
-          <div
-            className={`flex gap-3 w-full ${
-              config.progressBarOrientation === 'vertical'
-                ? 'flex-row flex-2'
-                : 'flex-col flex-1 ' 
-            }`}
-          >
-            {!onPitRoad &&
-              position.distanceToPitEntry > 0 &&
-              position.distanceToPitEntry <= config.approachDistance && (
+            <div
+              className={`flex gap-3 w-full ${
+                config.progressBarOrientation === 'vertical'
+                  ? 'flex-row flex-2'
+                  : 'flex-col flex-1 '
+              }`}
+            >
+              {!onPitRoad &&
+                position.distanceToPitEntry > 0 &&
+                position.distanceToPitEntry <= config.approachDistance && (
+                  <PitCountdownBar
+                    distance={position.distanceToPitEntry}
+                    maxDistance={config.approachDistance}
+                    orientation={config.progressBarOrientation}
+                    color={getCountdownColor(
+                      position.distanceToPitEntry,
+                      config.approachDistance
+                    )}
+                    targetName="Pit Entry"
+                  />
+                )}
+
+              {onPitRoad && Math.abs(position.distanceToPit) >= 5 && (
                 <PitCountdownBar
-                  distance={position.distanceToPitEntry}
-                  maxDistance={config.approachDistance}
+                  distance={Math.abs(position.distanceToPit)}
+                  maxDistance={100}
                   orientation={config.progressBarOrientation}
-                  color={getCountdownColor(
-                    position.distanceToPitEntry,
-                    config.approachDistance
-                  )}
-                  targetName="Pit Entry"
+                  color={
+                    position.distanceToPit > 0
+                      ? getCountdownColor(position.distanceToPit, 100)
+                      : 'rgb(34, 197, 94)'
+                  }
+                  targetName={
+                    position.distanceToPit > 0 ? 'Pitbox' : 'Past Box'
+                  }
                 />
               )}
 
-            {onPitRoad && Math.abs(position.distanceToPit) >= 5 && (
-              <PitCountdownBar
-                distance={Math.abs(position.distanceToPit)}
-                maxDistance={100}
-                orientation={config.progressBarOrientation}
-                color={
-                  position.distanceToPit > 0
-                    ? getCountdownColor(position.distanceToPit, 100)
-                    : 'rgb(34, 197, 94)'
-                }
-                targetName={
-                  position.distanceToPit > 0 ? 'Pitbox' : 'Past Box'
-                }
-              />
-            )}
-
-            {onPitRoad &&
-              position.distanceToPit < -5 &&
-              position.distanceToPitExit > 0 &&
-              position.distanceToPitExit <= 150 && (
-                <PitCountdownBar
-                  distance={position.distanceToPitExit}
-                  maxDistance={150}
-                  orientation={config.progressBarOrientation}
-                  color={getCountdownColor(position.distanceToPitExit, 150)}
-                  targetName="Pit Exit"
-                />
-              )}
-          </div>
-          )}
-
-          {/* Row 2: Speed + Inputs */}
-          {(shouldShowInputs) && (
-            <div className="flex gap-3 w-full flex-2">             
-              {shouldShowInputs && (        
-                  <PitExitInputs
-                    showThrottle={config.pitExitInputs.throttle}
-                    showClutch={config.pitExitInputs.clutch}                    
-                  />    
-              )}
+              {onPitRoad &&
+                position.distanceToPit < -5 &&
+                position.distanceToPitExit > 0 &&
+                position.distanceToPitExit <= 150 && (
+                  <PitCountdownBar
+                    distance={position.distanceToPitExit}
+                    maxDistance={150}
+                    orientation={config.progressBarOrientation}
+                    color={getCountdownColor(position.distanceToPitExit, 150)}
+                    targetName="Pit Exit"
+                  />
+                )}
             </div>
           )}
 
+          {/* Row 2: Speed + Inputs */}
+          {config.showPitExitInputs && (
+            <div className="flex gap-3 w-full flex-2">
+              {shouldShowInputs && (
+                <PitExitInputs
+                  showThrottle={config.pitExitInputs.throttle}
+                  showClutch={config.pitExitInputs.clutch}
+                />
+              )}
+            </div>
+          )}
         </div>
       )}
 
