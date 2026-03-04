@@ -453,22 +453,25 @@ export const augmentStandingsWithGap = (
 
     // Calculate gap for each driver: gap = driver_delta - class_leader_delta
     const augmentedClassStandings = classStandings.map((driverStanding) => {
-      if (driverStanding.carIdx === classLeader.carIdx) {
+      if (
+        driverStanding.carIdx === classLeader.carIdx ||
+        !classLeader.onTrack
+      ) {
         // Class leader shows as dash (undefined gap)
         return { ...driverStanding, gap: { value: undefined, laps: 0 } };
       }
 
       // Gap is simply the difference between this driver's delta and the class leader's delta
       let gapValue;
-      const classLeaderTrckPct = carIdxLapDistPct[classLeader.carIdx];
+      const classLeaderTrackPct = carIdxLapDistPct[classLeader.carIdx];
 
       const driverIdx = driverStanding.carIdx;
-      const driverTrckPct = carIdxLapDistPct[driverIdx];
+      const driverTrackPct = carIdxLapDistPct[driverIdx];
 
       if (
         useLivePositionStandings &&
-        classLeaderTrckPct > -1 &&
-        driverTrckPct > -1
+        classLeaderTrackPct > -1 &&
+        driverTrackPct > -1
       ) {
         const driverClassId = driverStanding.carClass.id;
         const isStartingLap = (driverStanding?.lap ?? -1) <= 1;
@@ -494,8 +497,8 @@ export const augmentStandingsWithGap = (
         } else {
           gapValue = calculateReferenceGap(
             refLap,
-            classLeaderTrckPct,
-            driverTrckPct
+            classLeaderTrackPct,
+            driverTrackPct
           );
         }
       } else {
@@ -516,8 +519,8 @@ export const augmentStandingsWithGap = (
       // NOTE: iRacing shows laps behind as a negative number
       gap.laps = -Math.floor(
         classLeaderLapNumber +
-          carIdxLapDistPct[classLeader.carIdx] -
-          (driverLapNumber + carIdxLapDistPct[driverStanding.carIdx])
+          classLeaderTrackPct -
+          (driverLapNumber + driverTrackPct)
       );
 
       return {
