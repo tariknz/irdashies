@@ -246,18 +246,20 @@ export const PitlaneHelperSettings = () => {
                   />
 
                   {settings.config.enableEarlyPitboxWarning && (
-                    <SettingSliderRow
-                      title="Early Warning Threshold"
-                      description="Distance from pitbox to trigger warning (meters)"
-                      value={settings.config.earlyPitboxThreshold}
-                      units="m"
-                      min={25}
-                      max={300}
-                      step={10}
-                      onChange={(v) =>
-                        handleConfigChange({ earlyPitboxThreshold: v })
-                      }
-                    />
+                    <SettingsSection>
+                      <SettingSliderRow
+                        title="Early Warning Threshold"
+                        description="Distance from pitbox to trigger warning (meters)"
+                        value={settings.config.earlyPitboxThreshold}
+                        units="m"
+                        min={25}
+                        max={300}
+                        step={10}
+                        onChange={(v) =>
+                          handleConfigChange({ earlyPitboxThreshold: v })
+                        }
+                      />
+                    </SettingsSection>
                   )}
                 </SettingsSection>
 
@@ -273,7 +275,7 @@ export const PitlaneHelperSettings = () => {
                   />
 
                   {settings.config.showPitExitInputs && (
-                    <>
+                    <SettingsSection>
                       <SettingToggleRow
                         title="Show Throttle"
                         enabled={settings.config.pitExitInputs.throttle}
@@ -310,7 +312,7 @@ export const PitlaneHelperSettings = () => {
                           handleConfigChange({ showInputsPhase: v })
                         }
                       />
-                    </>
+                    </SettingsSection>
                   )}
                 </SettingsSection>
               </>
