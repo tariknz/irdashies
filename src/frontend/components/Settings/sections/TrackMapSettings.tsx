@@ -13,6 +13,7 @@ import { SettingToggleRow } from '../components/SettingToggleRow';
 import { SettingSliderRow } from '../components/SettingSliderRow';
 import { SettingButtonGroupRow } from '../components/SettingButtonGroupRow';
 import { SettingDivider } from '../components/SettingDivider';
+import { SettingSelectRow } from '../components/SettingSelectRow';
 
 const SETTING_ID = 'map';
 
@@ -139,6 +140,13 @@ export const TrackMapSettings = () => {
             >
               Visibility
             </TabButton>
+            <TabButton
+              id="styling"
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+            >
+              Styling
+            </TabButton>
           </div>
 
           <div className="pt-4">
@@ -226,22 +234,6 @@ export const TrackMapSettings = () => {
                     />
                   </SettingsSection>
                 )}
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-slate-300">Widget Style</span>
-                  <select
-                    value={settings.config.uiStyle ?? 'default'}
-                    onChange={(e) =>
-                      handleConfigChange({
-                        uiStyle: e.target.value as 'default' | 'minimal',
-                      })
-                    }
-                    className="bg-slate-700 text-white rounded-md px-2 py-1"
-                  >
-                    <option value="default">Default</option>
-                    <option value="minimal">Minimal</option>
-                  </select>
-                </div>
-
                 <SettingSliderRow
                   title="Driver Circle Size"
                   description="Size of the circle for other drivers (matches curved track map scale)"
@@ -304,6 +296,22 @@ export const TrackMapSettings = () => {
                   onToggle={(newValue) =>
                     handleConfigChange({ showOnlyWhenOnTrack: newValue })
                   }
+                />
+              </SettingsSection>
+            )}
+
+            {/* STYLING TAB */}
+            {activeTab === 'styling' && (
+              <SettingsSection title="Appearance">
+                <SettingSelectRow<'default' | 'minimal'>
+                  title="UI Style"
+                  description="Visual style of the widget"
+                  value={settings.config.uiStyle ?? 'default'}
+                  options={[
+                    { label: 'Default', value: 'default' },
+                    { label: 'Minimal', value: 'minimal' },
+                  ]}
+                  onChange={(v) => handleConfigChange({ uiStyle: v })}
                 />
               </SettingsSection>
             )}

@@ -70,7 +70,9 @@ interface DriverRowInfoProps {
   slowdown: boolean;
   deltaDecimalPlaces?: number;
   hideCarManufacturer?: boolean;
-  isMinimal?: boolean;
+  isMinimalBadge?: boolean;
+  isMinimalStatusBadges?: boolean;
+  isMinimalRowColors?: boolean;
 }
 
 // Helper function to provide dummy data for hidden rows
@@ -183,7 +185,9 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
     deltaDecimalPlaces,
     pitStopDuration: pitStopDurationProp,
     hideCarManufacturer,
-    isMinimal,
+    isMinimalBadge,
+    isMinimalStatusBadges,
+    isMinimalRowColors,
   } = displayProps;
   const pitStopDurations = usePitStopDuration();
   const pitStopDuration =
@@ -211,9 +215,9 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
       classColor,
       highlightColor,
       isMultiClass,
-      isMinimal
+      isMinimalRowColors
     );
-  }, [classColor, highlightColor, isMultiClass, isMinimal]);
+  }, [classColor, highlightColor, isMultiClass, isMinimalRowColors]);
 
   const emptyLapDeltaPlaceholders = useMemo(() => {
     if (!numLapDeltasToShow) return null;
@@ -275,7 +279,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
             }
             fullName={name}
             nameFormat={config?.driverName?.nameFormat}
-            isMinimal={isMinimal}
+            isMinimal={isMinimalStatusBadges}
           />
         ),
       },
@@ -307,7 +311,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
             showPitTime={config?.pitStatus?.showPitTime ?? false}
             pitLapDisplayMode={config?.pitStatus?.pitLapDisplayMode}
             pitExitAfterSF={pitExitAfterSF}
-            isMinimal={isMinimal}
+            isMinimal={isMinimalStatusBadges}
           />
         ),
       },
@@ -330,7 +334,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
             license={license}
             rating={rating}
             badgeFormat={config?.badge?.badgeFormat}
-            isMinimal={isMinimal}
+            isMinimal={isMinimalBadge}
           />
         ),
       },
@@ -519,7 +523,8 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
     emptyLapDeltaPlaceholders,
     hideCarManufacturer,
     pitExitAfterSF,
-    isMinimal,
+    isMinimalBadge,
+    isMinimalStatusBadges,
   ]);
 
   return (

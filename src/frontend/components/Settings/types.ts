@@ -131,7 +131,11 @@ export interface StandingsWidgetSettings extends BaseWidgetSettings {
     };
     displayOrder: string[];
     sessionVisibility: SessionVisibilitySettings;
-    uiStyle?: 'default' | 'minimal';
+    minimalStyle?: {
+      badge?: boolean;
+      statusBadges?: boolean;
+      rowColors?: boolean;
+    };
   };
 }
 
@@ -245,7 +249,11 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
     displayOrder: string[];
     useLivePosition: boolean;
     sessionVisibility: SessionVisibilitySettings;
-    uiStyle?: 'default' | 'minimal';
+    minimalStyle?: {
+      badge?: boolean;
+      statusBadges?: boolean;
+      rowColors?: boolean;
+    };
   };
 }
 
@@ -482,7 +490,8 @@ export type SettingsTabType =
   | 'layout'
   | 'header'
   | 'footer'
-  | 'history';
+  | 'history'
+  | 'styling';
 
 export interface BlindSpotMonitorWidgetSettings extends BaseWidgetSettings {
   config: {

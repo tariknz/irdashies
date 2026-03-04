@@ -35,13 +35,13 @@ export const DriverRatingBadge = ({
     R: 'border-red-500 bg-red-800',
   };
   const minimalColorMap: Record<string, string> = {
-    W: 'border-zinc-500 bg-zinc-500',
+    W: 'border-zinc-400 bg-zinc-400',
     P: 'border-purple-800 bg-purple-800',
     A: 'border-blue-800 bg-blue-800',
-    B: 'border-green-800 bg-green-800',
-    C: 'border-yellow-700 bg-yellow-700',
-    D: 'border-orange-700 bg-orange-700',
-    R: 'border-red-800 bg-red-800',
+    B: 'border-green-700 bg-green-700',
+    C: 'border-yellow-600 bg-yellow-600',
+    D: 'border-orange-600 bg-orange-600',
+    R: 'border-red-700 bg-red-700',
   };
   const color =
     (isMinimal ? minimalColorMap : defaultColorMap)[licenseLevel] ?? '';
@@ -49,9 +49,7 @@ export const DriverRatingBadge = ({
   // In minimal mode, strip the border from badges — keep only the bg class
   const colorBg = color.split(' ').find((c) => c.startsWith('bg-')) ?? '';
   const coloredClass = `${colorBg} border-2 ${color}`;
-  const bwClass = isMinimal
-    ? 'bg-white/10 border-transparent'
-    : 'bg-white/10 border-2 border-transparent';
+  const bwClass = 'bg-white/10 border-2 border-transparent';
 
   const decimal = String(rating / 1000);
   const dotIndex = decimal.indexOf('.') > -1 ? decimal.indexOf('.') : 0;

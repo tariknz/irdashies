@@ -134,7 +134,7 @@ const defaultConfig: StandingsWidgetSettings['config'] = {
   },
   showOnlyWhenOnTrack: false,
   useLivePosition: false,
-  uiStyle: 'default',
+  minimalStyle: { badge: false, statusBadges: false, rowColors: false },
   lapTimeDeltas: { enabled: false, numLaps: 3 },
   position: { enabled: true },
   driverName: {
@@ -448,7 +448,14 @@ const migrateConfig = (
     },
     showOnlyWhenOnTrack: (config.showOnlyWhenOnTrack as boolean) ?? false,
     useLivePosition: (config.useLivePosition as boolean) ?? false,
-    uiStyle: (config.uiStyle as 'default' | 'minimal') ?? 'default',
+    minimalStyle: {
+      badge: (config.minimalStyle as { badge?: boolean })?.badge ?? false,
+      statusBadges:
+        (config.minimalStyle as { statusBadges?: boolean })?.statusBadges ??
+        false,
+      rowColors:
+        (config.minimalStyle as { rowColors?: boolean })?.rowColors ?? false,
+    },
     sessionVisibility:
       (config.sessionVisibility as SessionVisibilitySettings) ??
       defaultConfig.sessionVisibility,
@@ -1130,6 +1137,13 @@ export const StandingsSettings = () => {
               >
                 Visibility
               </TabButton>
+              <TabButton
+                id="styling"
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+              >
+                Styling
+              </TabButton>
             </div>
 
             <div className="pt-4 space-y-4">
@@ -1427,6 +1441,53 @@ export const StandingsSettings = () => {
                     enabled={settings.config.showOnlyWhenOnTrack ?? false}
                     onToggle={(newValue) =>
                       handleConfigChange({ showOnlyWhenOnTrack: newValue })
+                    }
+                  />
+                </SettingsSection>
+              )}
+
+              {/* STYLING TAB */}
+              {activeTab === 'styling' && (
+                <SettingsSection title="Minimal Styling">
+                  <SettingToggleRow
+                    title="Driver Badge"
+                    description="Use minimal styling for the iRating/license badge"
+                    enabled={settings.config.minimalStyle?.badge ?? false}
+                    onToggle={(v) =>
+                      handleConfigChange({
+                        minimalStyle: {
+                          ...settings.config.minimalStyle,
+                          badge: v,
+                        },
+                      })
+                    }
+                  />
+                  <SettingToggleRow
+                    title="Status Badges"
+                    description="Use minimal styling for pit, penalty, and other status badges"
+                    enabled={
+                      settings.config.minimalStyle?.statusBadges ?? false
+                    }
+                    onToggle={(v) =>
+                      handleConfigChange({
+                        minimalStyle: {
+                          ...settings.config.minimalStyle,
+                          statusBadges: v,
+                        },
+                      })
+                    }
+                  />
+                  <SettingToggleRow
+                    title="Row Colors"
+                    description="Use minimal styling for class color highlighting on position and car number"
+                    enabled={settings.config.minimalStyle?.rowColors ?? false}
+                    onToggle={(v) =>
+                      handleConfigChange({
+                        minimalStyle: {
+                          ...settings.config.minimalStyle,
+                          rowColors: v,
+                        },
+                      })
                     }
                   />
                 </SettingsSection>
