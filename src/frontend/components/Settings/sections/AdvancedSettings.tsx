@@ -1,12 +1,16 @@
 import { useState } from 'react';
 import { useDashboard } from '@irdashies/context';
 import { TelemetryInspectorSettings } from './TelemetryInspectorSettings';
+import { TabButton } from '../components/TabButton';
+import { SettingsTabType } from '../types';
 
 export const AdvancedSettings = () => {
-  const { currentDashboard, onDashboardUpdated, resetDashboard } = useDashboard();
+  const { currentDashboard, onDashboardUpdated, resetDashboard } =
+    useDashboard();
   const [dashboardInput, setDashboardInput] = useState<string | undefined>(
     JSON.stringify(currentDashboard, undefined, 2)
   );
+  const [activeTab, setActiveTab] = useState<SettingsTabType>('dashboard');
 
   if (!currentDashboard || !onDashboardUpdated) {
     return <>Loading...</>;
@@ -31,7 +35,11 @@ export const AdvancedSettings = () => {
   };
 
   const handleResetConfigs = async () => {
-    if (!confirm('Reset all widget configurations to defaults? This will preserve widget positions and enabled states.')) {
+    if (
+      !confirm(
+        'Reset all widget configurations to defaults? This will preserve widget positions and enabled states.'
+      )
+    ) {
       return;
     }
 
@@ -45,7 +53,11 @@ export const AdvancedSettings = () => {
   };
 
   const handleResetCompletely = async () => {
-    if (!confirm('Reset everything to defaults? This will reset all widget positions, enabled states, and configurations.')) {
+    if (
+      !confirm(
+        'Reset everything to defaults? This will reset all widget positions, enabled states, and configurations.'
+      )
+    ) {
       return;
     }
 
@@ -60,42 +72,38 @@ export const AdvancedSettings = () => {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex-none space-y-6 p-4 bg-slate-700 rounded">
-        <div>
-          <h2 className="text-xl">Advanced</h2>
-          <p className="text-slate-400 text-sm">Configure advanced system settings and preferences.</p>
-        </div>
+      <div className="flex-none p-4 bg-slate-700 rounded">
+        <h2 className="text-xl mb-1">Advanced</h2>
+        <p className="text-slate-400 text-sm">
+          Configure advanced system settings and preferences.
+        </p>
       </div>
 
       <div className="flex-1 overflow-y-auto min-h-0 mt-4">
         <div className="space-y-4 p-4">
-          {/* Telemetry Inspector Section */}
-          <div className="border border-slate-600 rounded-md">
-            <details className="group">
-              <summary className="cursor-pointer p-4 hover:bg-slate-700 rounded-t-md transition-colors list-none">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-medium">Telemetry Inspector</h3>
-                  <span className="text-slate-400 group-open:rotate-90 transition-transform">▶</span>
-                </div>
-                <p className="text-sm text-slate-400 mt-1">Debug widget to display raw telemetry and session values</p>
-              </summary>
-              <div className="p-4 border-t border-slate-600">
-                <TelemetryInspectorSettings />
-              </div>
-            </details>
+          <div className="flex border-b border-slate-700/50">
+            <TabButton
+              id="dashboard"
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+            >
+              Dashboard
+            </TabButton>
+            <TabButton
+              id="telemetry"
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+            >
+              Telemetry Inspector
+            </TabButton>
           </div>
 
-          {/* Dashboard Configuration Section */}
-          <div className="border border-slate-600 rounded-md">
-            <details className="group" open>
-              <summary className="cursor-pointer p-4 hover:bg-slate-700 rounded-t-md transition-colors list-none">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-medium">Dashboard Configuration</h3>
-                  <span className="text-slate-400 group-open:rotate-90 transition-transform">▶</span>
-                </div>
-                <p className="text-sm text-slate-400 mt-1">Edit raw dashboard JSON and reset settings</p>
-              </summary>
-              <div className="p-4 border-t border-slate-600 flex flex-col space-y-4">
+          <div className="pt-2 space-y-4">
+            {activeTab === 'dashboard' && (
+              <div className="flex flex-col space-y-4">
+                <p className="text-sm text-slate-400">
+                  Edit raw dashboard JSON and reset settings
+                </p>
                 <div className="flex space-x-2">
                   <button
                     type="button"
@@ -120,17 +128,24 @@ export const AdvancedSettings = () => {
                   placeholder="Dashboard configuration JSON..."
                 />
 
-                <div>
-                  <button
-                    type="button"
-                    onClick={handleSave}
-                    className="w-full bg-slate-700 hover:bg-slate-600 rounded px-4 py-2 transition-colors cursor-pointer"
-                  >
-                    Save
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  onClick={handleSave}
+                  className="w-full bg-slate-700 hover:bg-slate-600 rounded px-4 py-2 transition-colors cursor-pointer"
+                >
+                  Save
+                </button>
               </div>
-            </details>
+            )}
+
+            {activeTab === 'telemetry' && (
+              <div>
+                <p className="text-sm text-slate-400 mb-4">
+                  Debug widget to display raw telemetry and session values
+                </p>
+                <TelemetryInspectorSettings />
+              </div>
+            )}
           </div>
         </div>
       </div>
