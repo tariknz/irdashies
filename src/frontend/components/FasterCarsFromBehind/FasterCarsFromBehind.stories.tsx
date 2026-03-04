@@ -1,5 +1,8 @@
 import { Meta, StoryObj } from '@storybook/react-vite';
-import {  FasterCarsFromBehind, FasterCarsFromBehindDisplay } from './FasterCarsFromBehind';
+import {
+  FasterCarsFromBehind,
+  FasterCarsFromBehindDisplay,
+} from './FasterCarsFromBehind';
 import { TelemetryDecorator } from '@irdashies/storybook';
 
 // Mock the settings hook for stories

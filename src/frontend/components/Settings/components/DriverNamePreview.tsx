@@ -1,7 +1,7 @@
 export const DriverNamePreview = ({
   format,
   selected,
-  onClick
+  onClick,
 }: {
   format: string;
   selected: boolean;

@@ -36,7 +36,7 @@ export const DriverNameCell = memo(
           extractDriverName(fullName, removeNumbersFromName),
           nameFormat ?? 'name-middlename-surname'
         )
-      : name ?? '';
+      : (name ?? '');
 
     return (
       <td data-column="driverName" className="w-full max-w-0 px-1 py-0.5">

@@ -40,7 +40,8 @@ const migrateConfig = (savedConfig: unknown): TelemetryInspectorConfig => {
         defaultConfig.background?.opacity ??
         80,
     },
-    properties: (config.properties as PropertyConfig[]) ?? defaultConfig.properties,
+    properties:
+      (config.properties as PropertyConfig[]) ?? defaultConfig.properties,
   };
 };
 
@@ -176,7 +177,7 @@ export const TelemetryInspectorSettings = () => {
 
             {/* Add Custom Property */}
             <div className="space-y-2 border-t border-slate-600 pt-4">
-              <h3 className="text-md font-medium text-slate-200">
+              <h3 className="text-lg font-medium text-slate-200">
                 Add Custom Property
               </h3>
               <div className="flex gap-2">
@@ -227,7 +228,7 @@ export const TelemetryInspectorSettings = () => {
 
             {/* Quick Add Common Properties */}
             <div className="space-y-2 border-t border-slate-600 pt-4">
-              <h3 className="text-md font-medium text-slate-200">
+              <h3 className="text-lg font-medium text-slate-200">
                 Quick Add - Telemetry
               </h3>
               <div className="flex flex-wrap gap-1">
@@ -250,7 +251,7 @@ export const TelemetryInspectorSettings = () => {
             </div>
 
             <div className="space-y-2">
-              <h3 className="text-md font-medium text-slate-200">
+              <h3 className="text-lg font-medium text-slate-200">
                 Quick Add - Session
               </h3>
               <div className="flex flex-wrap gap-1">
