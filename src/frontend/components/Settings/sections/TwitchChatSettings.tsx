@@ -89,7 +89,7 @@ export const TwitchChatSettings = () => {
           <SettingsSection title="Channel">
             {/* Twitch channel name */}
             <div className="space-y-2">
-              <label className="text-slate-300">Twitch channel:</label>
+              <label className="text-md text-slate-300">Twitch channel:</label>
               <input
                 type="text"
                 value={settings.config.channel}
@@ -98,7 +98,7 @@ export const TwitchChatSettings = () => {
                 }
                 className="w-full rounded border-gray-600 bg-gray-700 p-2 text-slate-300"
               />
-              <p className="text-sm text-slate-400">
+              <p className="text-sm text-slate-500">
                 Name of Twitch channel to display chat from
               </p>
             </div>
