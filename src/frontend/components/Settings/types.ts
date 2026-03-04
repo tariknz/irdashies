@@ -300,7 +300,10 @@ export interface TrackMapWidgetSettings extends BaseWidgetSettings {
     useHighlightColor: boolean;
     showOnlyWhenOnTrack: boolean;
     sessionVisibility: SessionVisibilitySettings;
-    uiStyle?: 'default' | 'minimal';
+    styling?: {
+      isMinimalTrack?: boolean;
+      isMinimalCar?: boolean;
+    };
   };
 }
 

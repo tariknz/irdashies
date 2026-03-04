@@ -13,7 +13,6 @@ import { SettingToggleRow } from '../components/SettingToggleRow';
 import { SettingSliderRow } from '../components/SettingSliderRow';
 import { SettingButtonGroupRow } from '../components/SettingButtonGroupRow';
 import { SettingDivider } from '../components/SettingDivider';
-import { SettingSelectRow } from '../components/SettingSelectRow';
 
 const SETTING_ID = 'map';
 
@@ -30,7 +29,7 @@ const defaultConfig: TrackMapWidgetSettings['config'] = {
   trackOutlineWidth: 40,
   useHighlightColor: false,
   showOnlyWhenOnTrack: false,
-  uiStyle: 'default',
+  styling: { isMinimalTrack: false, isMinimalCar: false },
   sessionVisibility: {
     race: true,
     loneQualify: true,
@@ -46,8 +45,14 @@ const migrateConfig = (
   if (!savedConfig || typeof savedConfig !== 'object') return defaultConfig;
 
   const config = savedConfig as Record<string, unknown>;
+  const savedStyling = config.styling as
+    | { isMinimalTrack?: boolean; isMinimalCar?: boolean }
+    | undefined;
   return {
-    uiStyle: (config.uiStyle as 'default' | 'minimal') ?? 'default',
+    styling: {
+      isMinimalTrack: savedStyling?.isMinimalTrack ?? false,
+      isMinimalCar: savedStyling?.isMinimalCar ?? false,
+    },
     enableTurnNames:
       (config.enableTurnNames as boolean) ?? defaultConfig.enableTurnNames,
     showCarNumbers:
@@ -302,16 +307,32 @@ export const TrackMapSettings = () => {
 
             {/* STYLING TAB */}
             {activeTab === 'styling' && (
-              <SettingsSection title="Appearance">
-                <SettingSelectRow<'default' | 'minimal'>
-                  title="UI Style"
-                  description="Visual style of the widget"
-                  value={settings.config.uiStyle ?? 'default'}
-                  options={[
-                    { label: 'Default', value: 'default' },
-                    { label: 'Minimal', value: 'minimal' },
-                  ]}
-                  onChange={(v) => handleConfigChange({ uiStyle: v })}
+              <SettingsSection title="Minimal Styling">
+                <SettingToggleRow
+                  title="Track"
+                  description="Use minimal styling on the track line"
+                  enabled={settings.config.styling?.isMinimalTrack ?? false}
+                  onToggle={(newValue) =>
+                    handleConfigChange({
+                      styling: {
+                        ...settings.config.styling,
+                        isMinimalTrack: newValue,
+                      },
+                    })
+                  }
+                />
+                <SettingToggleRow
+                  title="Car"
+                  description="Use minimal styling on driver circles"
+                  enabled={settings.config.styling?.isMinimalCar ?? false}
+                  onToggle={(newValue) =>
+                    handleConfigChange({
+                      styling: {
+                        ...settings.config.styling,
+                        isMinimalCar: newValue,
+                      },
+                    })
+                  }
                 />
               </SettingsSection>
             )}

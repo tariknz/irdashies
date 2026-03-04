@@ -6,13 +6,13 @@ export const setupCanvasContext = (
   scale: number,
   offsetX: number,
   offsetY: number,
-  isMinimal = false
+  showShadow = true
 ) => {
   ctx.save();
   ctx.translate(offsetX, offsetY);
   ctx.scale(scale, scale);
 
-  if (!isMinimal) {
+  if (showShadow) {
     // Apply shadow (now efficient thanks to canvas caching)
     ctx.shadowColor = 'black';
     ctx.shadowBlur = 2;
