@@ -57,6 +57,13 @@ describe('PitlaneHelper', () => {
     enablePitLimiterWarning: true,
     enableEarlyPitboxWarning: true,
     showPitlaneTraffic: true,
+    sessionVisibility: {
+      race: true,
+      loneQualify: false,
+      openQualify: false,
+      practice: true,
+      offlineTesting: true,
+    },
   };
 
   const defaultSpeedResult = {

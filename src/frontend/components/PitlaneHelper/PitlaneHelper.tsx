@@ -4,7 +4,7 @@ import { usePitboxPosition } from './hooks/usePitboxPosition';
 import { usePitlaneVisibility } from './hooks/usePitlaneVisibility';
 import { usePitLimiterWarning } from './hooks/usePitLimiterWarning';
 import { usePitlaneTraffic } from './hooks/usePitlaneTraffic';
-import { useTelemetryValue, useDashboard } from '@irdashies/context';
+import { useTelemetryValue, useDashboard, useSessionVisibility } from '@irdashies/context';
 import {
   getDemoPitlaneData,
   PitlaneHelperSettings,
@@ -28,6 +28,11 @@ const getCountdownColor = (distance: number, maxDistance: number): string => {
 export const PitlaneHelper = () => {
   const { isDemoMode } = useDashboard();
   const config = usePitlaneHelperSettings();
+
+  const isSessionVisible = useSessionVisibility(
+    config?.sessionVisibility
+  );
+
   const surface = (useTelemetryValue('PlayerTrackSurface') ?? 3) as number;
   const onPitRoadTelemetry = useTelemetryValue<boolean>('OnPitRoad') ?? false;
 
@@ -48,7 +53,7 @@ export const PitlaneHelper = () => {
   }
 
   // Don't render if not visible
-  if (!isVisible) {
+  if (!isVisible || !isSessionVisible) {
     return null;
   }
 

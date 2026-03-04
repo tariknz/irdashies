@@ -8,6 +8,7 @@ import { SettingToggleRow } from '../components/SettingToggleRow';
 import { SettingSliderRow } from '../components/SettingSliderRow';
 import { SettingButtonGroupRow } from '../components/SettingButtonGroupRow';
 import { SettingSelectRow } from '../components/SettingSelectRow';
+import { SessionVisibility } from '../components/SessionVisibility';
 
 const SETTING_ID = 'pitlanehelper';
 
@@ -29,6 +30,13 @@ const defaultConfig: PitlaneHelperWidgetSettings['config'] = {
     clutch: true,
   },
   showInputsPhase: 'afterPitbox',
+  sessionVisibility: {
+    race: true,
+    loneQualify: false,
+    openQualify: false,
+    practice: true,
+    offlineTesting: true,
+  },
 };
 
 export const PitlaneHelperSettings = () => {
@@ -69,7 +77,7 @@ export const PitlaneHelperSettings = () => {
 
   // Tab state with persistence
   const [activeTab, setActiveTab] = useState<SettingsTabType>(
-    () => (localStorage.getItem('pitLaneTab') as SettingsTabType) || 'display'
+    () => (localStorage.getItem('pitLaneTab') as SettingsTabType) || 'options'
   );
 
   useEffect(() => {
@@ -93,27 +101,27 @@ export const PitlaneHelperSettings = () => {
           {/* Tabs */}
           <div className="flex border-b border-slate-700/50">
             <TabButton
-              id="display"
-              activeTab={activeTab}
-              setActiveTab={setActiveTab}
-            >
-              Display
-            </TabButton>
-            <TabButton
               id="options"
               activeTab={activeTab}
               setActiveTab={setActiveTab}
             >
               Options
             </TabButton>
+            <TabButton
+              id="visibility"
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+            >
+              Visibility
+            </TabButton>
           </div>
 
           <div className="pt-4 space-y-4">
-            {/* DISPLAY TAB */}
-            {activeTab === 'display' && (
+            {/* OPTIONS TAB */}
+            {activeTab === 'options' && (
               <>
                 {/* Display Settings */}
-                <SettingsSection title="Display">
+                <SettingsSection title="Options">
                   <SettingToggleRow
                     title="Show when approaching pit"
                     description="Display overlay before entering pit lane"
@@ -215,13 +223,7 @@ export const PitlaneHelperSettings = () => {
                       handleConfigChange({ background: { opacity: v } })
                     }
                   />
-                </SettingsSection>
-            </>
-            )}
-
-            {/* OPTIONS TAB */}
-            {activeTab === 'options' && (
-              <>
+                </SettingsSection>           
 
                 {/* Warning Settings */}
                 <SettingsSection title="Warnings">
@@ -312,6 +314,18 @@ export const PitlaneHelperSettings = () => {
                   )}
                 </SettingsSection>
               </>
+            )}
+
+            {/* VISIBILITY TAB */}
+            {activeTab === 'visibility' && (
+              <SettingsSection title="Session Visibility">
+                            
+                <SessionVisibility
+                    sessionVisibility={settings.config.sessionVisibility}
+                    handleConfigChange={handleConfigChange}
+                  />
+  
+              </SettingsSection>
             )}
           </div>
         </div>

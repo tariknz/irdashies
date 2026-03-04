@@ -588,6 +588,7 @@ export interface PitlaneHelperWidgetSettings extends BaseWidgetSettings {
       clutch: boolean;
     };
     showInputsPhase: 'atPitbox' | 'afterPitbox' | 'always';
+    sessionVisibility: SessionVisibilitySettings;
   };
 }
 

@@ -24,17 +24,22 @@ const mockSpeed = (overrides = {}) => ({
   limitMph: 50,
   isSpeeding: false,
   isSeverelyOver: false,
+  isPulsing: false,
   colorClass: 'text-green-500',
   ...overrides,
-});
+} as const);
 
 const mockPosition = (overrides = {}) => ({
   distanceToPitEntry: 500,
   distanceToPit: 100,
   distanceToPitExit: 200,
   isEarlyPitbox: false,
+  progressPercent: 0,
+  isApproaching: false,
+  pitboxPct: 0,
+  playerPct: 0,
   ...overrides,
-});
+} as const);
 
 const mockConfig = (overrides = {}) => ({
   background: { opacity: 80 },
@@ -43,6 +48,8 @@ const mockConfig = (overrides = {}) => ({
   showProgressBar: true,
   progressBarOrientation: 'horizontal' as const,
   approachDistance: 500,
+  showMode: 'approaching' as const,
+  earlyPitboxThreshold: 75,
   showPitExitInputs: false,
   pitExitInputs: { throttle: true, clutch: true },
   showInputsPhase: 'always' as const,
@@ -50,21 +57,21 @@ const mockConfig = (overrides = {}) => ({
   enableEarlyPitboxWarning: true,
   showPitlaneTraffic: true,
   ...overrides,
-});
+} as const);
 
 const mockLimiterWarning = (overrides = {}) => ({
   showWarning: false,
   warningText: '',
   isTeamRaceWarning: false,
   ...overrides,
-});
+} as const);
 
 const mockTraffic = (overrides = {}) => ({
   totalCars: 0,
   carsAhead: 0,
   carsBehind: 0,
   ...overrides,
-});
+} as const);
 
 // Documentation component showing the actual widget states
 export const Documentation = () => {
