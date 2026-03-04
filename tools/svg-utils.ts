@@ -26,6 +26,100 @@ export const lineIntersection = (
   return { x, y };
 };
 
+// Extract a path as a sequence of {x1,y1,x2,y2} line segments by parsing SVG
+// path commands. Arcs and curves are approximated as chords (start→end point).
+// This is used as a fallback when svg-path-properties cannot parse the path
+// (e.g. degenerate arcs where chord length exceeds diameter).
+const extractSegmentsFromPath = (
+  d: string
+): { x1: number; y1: number; x2: number; y2: number }[] => {
+  const NUM_RE = /-?[0-9]*\.?[0-9]+(?:e[-+]?\d+)?/gi;
+  const CMD_RE = /([MmLlHhVvAaCcSsQqTtZz])([^MmLlHhVvAaCcSsQqTtZz]*)/g;
+  const segments: { x1: number; y1: number; x2: number; y2: number }[] = [];
+  let cx = 0,
+    cy = 0,
+    startX = 0,
+    startY = 0;
+
+  let match: RegExpExecArray | null;
+  while ((match = CMD_RE.exec(d)) !== null) {
+    const cmd = match[1];
+    const nums = (match[2].match(NUM_RE) || []).map(Number);
+    const rel = cmd === cmd.toLowerCase() && cmd !== 'Z' && cmd !== 'z';
+
+    switch (cmd.toUpperCase()) {
+      case 'M': {
+        cx = rel ? cx + nums[0] : nums[0];
+        cy = rel ? cy + nums[1] : nums[1];
+        startX = cx;
+        startY = cy;
+        break;
+      }
+      case 'L': {
+        const nx = rel ? cx + nums[0] : nums[0];
+        const ny = rel ? cy + nums[1] : nums[1];
+        segments.push({ x1: cx, y1: cy, x2: nx, y2: ny });
+        cx = nx;
+        cy = ny;
+        break;
+      }
+      case 'H': {
+        const nx = rel ? cx + nums[0] : nums[0];
+        segments.push({ x1: cx, y1: cy, x2: nx, y2: cy });
+        cx = nx;
+        break;
+      }
+      case 'V': {
+        const ny = rel ? cy + nums[0] : nums[0];
+        segments.push({ x1: cx, y1: cy, x2: cx, y2: ny });
+        cy = ny;
+        break;
+      }
+      case 'A': {
+        // Arc: approximate as chord from current to endpoint
+        const nx = rel ? cx + nums[5] : nums[5];
+        const ny = rel ? cy + nums[6] : nums[6];
+        segments.push({ x1: cx, y1: cy, x2: nx, y2: ny });
+        cx = nx;
+        cy = ny;
+        break;
+      }
+      case 'C': {
+        const nx = rel ? cx + nums[4] : nums[4];
+        const ny = rel ? cy + nums[5] : nums[5];
+        segments.push({ x1: cx, y1: cy, x2: nx, y2: ny });
+        cx = nx;
+        cy = ny;
+        break;
+      }
+      case 'S':
+      case 'Q': {
+        const nx = rel ? cx + nums[2] : nums[2];
+        const ny = rel ? cy + nums[3] : nums[3];
+        segments.push({ x1: cx, y1: cy, x2: nx, y2: ny });
+        cx = nx;
+        cy = ny;
+        break;
+      }
+      case 'T': {
+        const nx = rel ? cx + nums[0] : nums[0];
+        const ny = rel ? cy + nums[1] : nums[1];
+        segments.push({ x1: cx, y1: cy, x2: nx, y2: ny });
+        cx = nx;
+        cy = ny;
+        break;
+      }
+      case 'Z': {
+        segments.push({ x1: cx, y1: cy, x2: startX, y2: startY });
+        cx = startX;
+        cy = startY;
+        break;
+      }
+    }
+  }
+  return segments;
+};
+
 // Find the intersection point using a more efficient approach
 export const findIntersectionPoint = (
   path1: string, // Inside path
@@ -38,46 +132,78 @@ export const findIntersectionPoint = (
 
   const path1Length = p1.getTotalLength();
   const path2Length = p2.getTotalLength();
-  const initialStep = Math.max(path1Length, path2Length) / 500; // Initial coarse step
 
-  for (let i = 0; i < path1Length; i += initialStep) {
+  if (isNaN(path1Length)) return null;
+
+  const step1 = path1Length / 500;
+
+  // When path2Length is NaN, svg-path-properties cannot parse path2 (e.g. due to
+  // a degenerate arc where chord > diameter). In that case getPointAtLength always
+  // returns the initial point, making sampling useless. Fall back to extracting
+  // explicit line segments from the path string instead.
+  const path2Segments = isNaN(path2Length)
+    ? extractSegmentsFromPath(path2)
+    : null;
+
+  for (let i = 0; i < path1Length; i += step1) {
     const point1 = p1.getPointAtLength(i);
-    const point2 = p1.getPointAtLength(Math.min(i + initialStep, path1Length));
+    const point2 = p1.getPointAtLength(Math.min(i + step1, path1Length));
 
-    for (let j = 0; j < path2Length; j += initialStep) {
-      const point3 = p2.getPointAtLength(j);
-      const point4 = p2.getPointAtLength(
-        Math.min(j + initialStep, path2Length)
-      );
+    const bbox1 = {
+      xMin: Math.min(point1.x, point2.x),
+      xMax: Math.max(point1.x, point2.x),
+      yMin: Math.min(point1.y, point2.y),
+      yMax: Math.max(point1.y, point2.y),
+    };
 
-      // Skip if bounding boxes don't overlap
-      const bbox1 = {
-        xMin: Math.min(point1.x, point2.x),
-        xMax: Math.max(point1.x, point2.x),
-        yMin: Math.min(point1.y, point2.y),
-        yMax: Math.max(point1.y, point2.y),
-      };
-      const bbox2 = {
-        xMin: Math.min(point3.x, point4.x),
-        xMax: Math.max(point3.x, point4.x),
-        yMin: Math.min(point3.y, point4.y),
-        yMax: Math.max(point3.y, point4.y),
-      };
+    if (path2Segments) {
+      for (const seg of path2Segments) {
+        const point3 = { x: seg.x1, y: seg.y1 };
+        const point4 = { x: seg.x2, y: seg.y2 };
 
-      if (
-        bbox1.xMax < bbox2.xMin ||
-        bbox1.xMin > bbox2.xMax ||
-        bbox1.yMax < bbox2.yMin ||
-        bbox1.yMin > bbox2.yMax
-      ) {
-        continue; // No overlap, skip
+        if (
+          bbox1.xMax < Math.min(point3.x, point4.x) ||
+          bbox1.xMin > Math.max(point3.x, point4.x) ||
+          bbox1.yMax < Math.min(point3.y, point4.y) ||
+          bbox1.yMin > Math.max(point3.y, point4.y)
+        ) {
+          continue;
+        }
+
+        const intersection = lineIntersection(point1, point2, point3, point4);
+        if (intersection) {
+          return { x: intersection.x, y: intersection.y, length: i };
+        }
       }
+    } else {
+      const step2 = path2Length / 100;
+      for (let j = 0; j < path2Length; j += step2) {
+        const point3 = p2.getPointAtLength(j);
+        const point4 = p2.getPointAtLength(Math.min(j + step2, path2Length));
 
-      // Check intersection if bounding boxes overlap
-      const intersection = lineIntersection(point1, point2, point3, point4);
+        // Skip if bounding boxes don't overlap
+        const bbox2 = {
+          xMin: Math.min(point3.x, point4.x),
+          xMax: Math.max(point3.x, point4.x),
+          yMin: Math.min(point3.y, point4.y),
+          yMax: Math.max(point3.y, point4.y),
+        };
 
-      if (intersection) {
-        return { x: intersection.x, y: intersection.y, length: i };
+        if (
+          bbox1.xMax < bbox2.xMin ||
+          bbox1.xMin > bbox2.xMax ||
+          bbox1.yMax < bbox2.yMin ||
+          bbox1.yMin > bbox2.yMax
+        ) {
+          continue; // No overlap, skip
+        }
+
+        // Check intersection if bounding boxes overlap
+        const intersection = lineIntersection(point1, point2, point3, point4);
+
+        if (intersection) {
+          return { x: intersection.x, y: intersection.y, length: i };
+        }
       }
     }
   }
@@ -136,7 +262,8 @@ export const findDirection = (trackId: number) => {
     443, 444, 445, 448, 449, 451, 453, 454, 455, 456, 463, 469, 473, 474, 481,
     483, 498, 509, 510, 511, 512, 514, 518, 519, 520, 522, 526, 527, 528, 529,
     530, 532, 536, 537, 540, 541, 542, 543, 544, 545, 546, 551, 559, 561, 562,
-    563, 564, 565, 567, 568, 569, 570, 571, 572, 573, 574, 575, 576, 577, 580,
+    563, 564, 565, 566, 567, 568, 569, 570, 571, 572, 573, 574, 575, 576, 577,
+    580,
   ];
 
   return anticlockwiseTracks.includes(trackId) ? 'anticlockwise' : 'clockwise';
