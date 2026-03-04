@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { useDashboard } from '@irdashies/context';
+import { UploadSimpleIcon, DownloadSimpleIcon } from '@phosphor-icons/react';
 import { TelemetryInspectorSettings } from './TelemetryInspectorSettings';
 import { TabButton } from '../components/TabButton';
 import { SettingsTabType } from '../types';
 
 export const AdvancedSettings = () => {
-  const { currentDashboard, onDashboardUpdated, resetDashboard } =
+  const { currentDashboard, onDashboardUpdated, resetDashboard, bridge } =
     useDashboard();
   const [dashboardInput, setDashboardInput] = useState<string | undefined>(
     JSON.stringify(currentDashboard, undefined, 2)
@@ -31,6 +32,25 @@ export const AdvancedSettings = () => {
     } catch (e) {
       console.error(e);
       alert('Invalid JSON format');
+    }
+  };
+
+  const handleExport = async () => {
+    if (!dashboardInput) return;
+    try {
+      const dashboard = JSON.parse(dashboardInput);
+      await bridge.exportDashboardToFile(dashboard);
+    } catch (e) {
+      console.error('Export failed:', e);
+      alert('Invalid JSON — fix errors before exporting');
+    }
+  };
+
+  const handleImport = async () => {
+    const imported = await bridge.importDashboardFromFile();
+    if (imported) {
+      setDashboardInput(JSON.stringify(imported, undefined, 2));
+      onDashboardUpdated(imported, { forceReload: true });
     }
   };
 
@@ -121,12 +141,37 @@ export const AdvancedSettings = () => {
                   </button>
                 </div>
 
-                <textarea
-                  className="w-full h-96 bg-slate-800 p-4 font-mono text-sm rounded border border-slate-600 focus:border-slate-500 focus:outline-none"
-                  value={dashboardInput}
-                  onChange={onInputUpdated}
-                  placeholder="Dashboard configuration JSON..."
-                />
+                <div className="flex flex-col rounded border border-slate-600 overflow-hidden">
+                  <div className="flex items-center justify-between px-3 py-1.5 bg-slate-700/60 border-b border-slate-600">
+                    <span className="text-xs text-slate-400 font-mono">
+                      dashboard.json
+                    </span>
+                    <div className="flex gap-1">
+                      <button
+                        type="button"
+                        onClick={handleImport}
+                        className="flex items-center gap-1.5 text-xs text-slate-300 hover:text-white hover:bg-slate-600 rounded px-2 py-1 transition-colors cursor-pointer"
+                      >
+                        <UploadSimpleIcon size={13} />
+                        Import
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleExport}
+                        className="flex items-center gap-1.5 text-xs text-slate-300 hover:text-white hover:bg-slate-600 rounded px-2 py-1 transition-colors cursor-pointer"
+                      >
+                        <DownloadSimpleIcon size={13} />
+                        Export
+                      </button>
+                    </div>
+                  </div>
+                  <textarea
+                    className="w-full h-96 bg-slate-800 p-4 font-mono text-sm focus:outline-none resize-none"
+                    value={dashboardInput}
+                    onChange={onInputUpdated}
+                    placeholder="Dashboard configuration JSON..."
+                  />
+                </div>
 
                 <button
                   type="button"
