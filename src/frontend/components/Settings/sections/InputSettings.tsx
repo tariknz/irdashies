@@ -8,11 +8,14 @@ import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import { SessionVisibility } from '../components/SessionVisibility';
 import { ToggleSwitch } from '../components/ToggleSwitch';
 import { TabButton } from '../components/TabButton';
-import {
-  InputWidgetSettings,
-  SessionVisibilitySettings,
-  SettingsTabType,
-} from '../types';
+import { InputWidgetSettings, SessionVisibilitySettings, SettingsTabType } from '../types';
+import { SettingDivider } from '../components/SettingDivider';
+import { SettingsSection } from '../components/SettingSection';
+import { SettingToggleRow } from '../components/SettingToggleRow';
+import { SettingActionButton } from '../components/SettingActionButton';
+import { SettingSliderRow } from '../components/SettingSliderRow';
+import { SettingSelectRow } from '../components/SettingSelectRow';
+import { SettingButtonGroupRow } from '../components/SettingButtonGroupRow';
 
 const SETTING_ID = 'input';
 
@@ -730,640 +733,393 @@ export const InputSettings = () => {
 
         return (
           <div className="space-y-4">
-            {/* Tabs */}
-            <div className="flex border-b border-slate-700/50">
-              <TabButton
-                id="display"
-                activeTab={activeTab}
-                setActiveTab={setActiveTab}
-              >
-                Display
-              </TabButton>
-              <TabButton
-                id="options"
-                activeTab={activeTab}
-                setActiveTab={setActiveTab}
-              >
-                Options
-              </TabButton>
-              <TabButton
-                id="visibility"
-                activeTab={activeTab}
-                setActiveTab={setActiveTab}
-              >
-                Visibility
-              </TabButton>
-            </div>
 
-            <div className="pt-4">
-              {/* DISPLAY TAB */}
-              {activeTab === 'display' && (
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-medium text-slate-200">
-                      Display Order
-                    </h3>
-                    <button
-                      onClick={() => {
-                        const defaultOrder = sortableSettings.map((s) => s.id);
-                        setItemsOrder(defaultOrder);
-                        handleConfigChange({ displayOrder: defaultOrder });
-                      }}
-                      className="px-3 py-1 text-sm bg-slate-600 hover:bg-slate-500 text-slate-300 rounded-md transition-colors"
-                    >
-                      Reset to Default Order
-                    </button>
-                  </div>
-                  <div className="pl-4">
-                    <DisplaySettingsList
-                      itemsOrder={itemsOrder}
-                      onReorder={handleDisplayOrderChange}
-                      settings={settings}
-                      handleConfigChange={handleConfigChange}
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* OPTIONS TAB */}
-              {activeTab === 'options' && (
-                <div className="space-y-4">
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-lg font-medium text-slate-200">
-                        Background
-                      </h3>
-                      <div className="flex items-center gap-3">
-                        <label className="text-sm text-slate-200">
-                          Background Opacity:
-                        </label>
-                        <input
-                          type="range"
-                          min="0"
-                          max="100"
-                          value={settings.config.background.opacity}
-                          onChange={(e) =>
-                            handleConfigChange({
-                              background: { opacity: parseInt(e.target.value) },
-                            })
-                          }
-                          className="flex-1 h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer slider"
-                        />
-                        <input
-                          type="number"
-                          min="0"
-                          max="100"
-                          value={settings.config.background.opacity}
-                          onChange={(e) =>
-                            handleConfigChange({
-                              background: { opacity: parseInt(e.target.value) },
-                            })
-                          }
-                          className="w-20 bg-slate-700 text-slate-200 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Trace Settings */}
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-lg font-medium text-slate-200">
-                        Trace
-                      </h3>
-                      <div className="flex items-center gap-3">
-                        <span className="text-sm text-slate-300">
-                          Enable Trace Display
-                        </span>
-                        <ToggleSwitch
-                          enabled={config.trace.enabled}
-                          onToggle={(enabled) =>
-                            handleConfigChange({
-                              trace: { ...config.trace, enabled },
-                            })
-                          }
-                        />
-                      </div>
-                    </div>
-                    {config.trace.enabled && (
-                      <div className="space-y-2 pl-4 pt-2">
-                        <div className="flex items-center justify-between gap-3">
-                          <span className="text-sm text-slate-200">
-                            Show Clutch Trace
-                          </span>
-                          <ToggleSwitch
-                            enabled={config.trace.includeClutch}
-                            onToggle={(newValue) =>
-                              handleConfigChange({
-                                trace: {
-                                  ...config.trace,
-                                  includeClutch: newValue,
-                                },
-                              })
-                            }
-                          />
-                        </div>
-                        <div className="flex items-center justify-between gap-3">
-                          <span className="text-sm text-slate-200">
-                            Show Throttle Trace
-                          </span>
-                          <ToggleSwitch
-                            enabled={config.trace.includeThrottle}
-                            onToggle={(newValue) =>
-                              handleConfigChange({
-                                trace: {
-                                  ...config.trace,
-                                  includeThrottle: newValue,
-                                },
-                              })
-                            }
-                          />
-                        </div>
-                        <div className="flex items-center justify-between gap-3">
-                          <span className="text-sm text-slate-200">
-                            Show Brake Trace
-                          </span>
-                          <ToggleSwitch
-                            enabled={config.trace.includeBrake}
-                            onToggle={(newValue) =>
-                              handleConfigChange({
-                                trace: {
-                                  ...config.trace,
-                                  includeBrake: newValue,
-                                },
-                              })
-                            }
-                          />
-                        </div>
-                        <div className="flex items-center justify-between gap-3">
-                          <span className="text-sm text-slate-200">
-                            Show ABS
-                          </span>
-                          <ToggleSwitch
-                            enabled={config.trace.includeAbs}
-                            onToggle={(newValue) =>
-                              handleConfigChange({
-                                trace: {
-                                  ...config.trace,
-                                  includeAbs: newValue,
-                                },
-                              })
-                            }
-                          />
-                        </div>
-                        <div className="flex items-center justify-between gap-3">
-                          <span className="text-sm text-slate-200">
-                            Show Steering Trace
-                          </span>
-                          <ToggleSwitch
-                            enabled={config.trace.includeSteer ?? true}
-                            onToggle={(newValue) =>
-                              handleConfigChange({
-                                trace: {
-                                  ...config.trace,
-                                  includeSteer: newValue,
-                                },
-                              })
-                            }
-                          />
-                        </div>
-                        <div className="flex items-center gap-3 pt-2">
-                          <label className="text-sm text-slate-200">
-                            Stroke Width:
-                          </label>
-                          <input
-                            type="range"
-                            min="1"
-                            max="10"
-                            value={config.trace.strokeWidth ?? 3}
-                            onChange={(e) =>
-                              handleConfigChange({
-                                trace: {
-                                  ...config.trace,
-                                  strokeWidth: parseInt(e.target.value),
-                                },
-                              })
-                            }
-                            className="flex-1 h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer slider"
-                          />
-                          <input
-                            type="number"
-                            min="1"
-                            max="10"
-                            value={config.trace.strokeWidth ?? 3}
-                            onChange={(e) =>
-                              handleConfigChange({
-                                trace: {
-                                  ...config.trace,
-                                  strokeWidth: parseInt(e.target.value),
-                                },
-                              })
-                            }
-                            className="w-20 bg-slate-700 text-slate-200 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          />
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <label className="text-sm text-slate-200">
-                            Max Samples:
-                          </label>
-                          <input
-                            type="range"
-                            min="50"
-                            max="1000"
-                            step="50"
-                            value={config.trace.maxSamples}
-                            onChange={(e) =>
-                              handleConfigChange({
-                                trace: {
-                                  ...config.trace,
-                                  maxSamples: parseInt(e.target.value),
-                                },
-                              })
-                            }
-                            className="flex-1 h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer slider"
-                          />
-                          <input
-                            type="number"
-                            min="50"
-                            max="1000"
-                            value={config.trace.maxSamples}
-                            onChange={(e) =>
-                              handleConfigChange({
-                                trace: {
-                                  ...config.trace,
-                                  maxSamples: parseInt(e.target.value),
-                                },
-                              })
-                            }
-                            className="w-20 bg-slate-700 text-slate-200 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          />
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Bar Settings */}
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-lg font-medium text-slate-200">
-                        Bar
-                      </h3>
-                      <div className="flex items-center gap-3">
-                        <span className="text-sm text-slate-300">
-                          Enable Bar Display
-                        </span>
-                        <ToggleSwitch
-                          enabled={config.bar.enabled}
-                          onToggle={(enabled) =>
-                            handleConfigChange({
-                              bar: { ...config.bar, enabled },
-                            })
-                          }
-                        />
-                      </div>
-                    </div>
-                    {config.bar.enabled && (
-                      <div className="space-y-2 pl-4 pt-2">
-                        <div className="flex items-center justify-between gap-3">
-                          <span className="text-sm text-slate-200">
-                            Show Clutch Bar
-                          </span>
-                          <ToggleSwitch
-                            enabled={config.bar.includeClutch}
-                            onToggle={(newValue) =>
-                              handleConfigChange({
-                                bar: {
-                                  ...config.bar,
-                                  includeClutch: newValue,
-                                },
-                              })
-                            }
-                          />
-                        </div>
-                        <div className="flex items-center justify-between gap-3">
-                          <span className="text-sm text-slate-200">
-                            Show Brake Bar
-                          </span>
-                          <ToggleSwitch
-                            enabled={config.bar.includeBrake}
-                            onToggle={(newValue) =>
-                              handleConfigChange({
-                                bar: {
-                                  ...config.bar,
-                                  includeBrake: newValue,
-                                },
-                              })
-                            }
-                          />
-                        </div>
-                        <div className="flex items-center justify-between gap-3">
-                          <span className="text-sm text-slate-200">
-                            Show Throttle Bar
-                          </span>
-                          <ToggleSwitch
-                            enabled={config.bar.includeThrottle}
-                            onToggle={(newValue) =>
-                              handleConfigChange({
-                                bar: {
-                                  ...config.bar,
-                                  includeThrottle: newValue,
-                                },
-                              })
-                            }
-                          />
-                        </div>
-                        <div className="flex items-center justify-between gap-3">
-                          <span className="text-sm text-slate-200">
-                            Show ABS Indicator
-                          </span>
-                          <ToggleSwitch
-                            enabled={config.bar.includeAbs}
-                            onToggle={(newValue) =>
-                              handleConfigChange({
-                                bar: {
-                                  ...config.bar,
-                                  includeAbs: newValue,
-                                },
-                              })
-                            }
-                          />
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* ABS Settings */}
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-lg font-medium text-slate-200">
-                        ABS Indicator
-                      </h3>
-                      <div className="flex items-center gap-3">
-                        <span className="text-sm text-slate-300">
-                          Enable ABS Indicator
-                        </span>
-                        <ToggleSwitch
-                          enabled={config.abs.enabled}
-                          onToggle={(enabled) =>
-                            handleConfigChange({
-                              abs: { ...config.abs, enabled },
-                            })
-                          }
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Steer Settings */}
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-lg font-medium text-slate-200">
-                        Steer
-                      </h3>
-                      <div className="flex items-center gap-3">
-                        <span className="text-sm text-slate-300">
-                          Enable Steer Display
-                        </span>
-                        <ToggleSwitch
-                          enabled={config.steer.enabled}
-                          onToggle={(enabled) =>
-                            handleConfigChange({
-                              steer: { ...config.steer, enabled },
-                            })
-                          }
-                        />
-                      </div>
-                    </div>
-                    {config.steer.enabled && (
-                      <div className="space-y-3 pl-4 pt-2">
-                        <div className="flex items-center gap-3">
-                          <label className="text-sm text-slate-200">
-                            Wheel Style:
-                          </label>
-                          <select
-                            value={config.steer.config.style}
-                            onChange={(e) =>
-                              handleConfigChange({
-                                steer: {
-                                  ...config.steer,
-                                  config: {
-                                    ...config.steer.config,
-                                    style: e.target.value as
-                                      | 'formula'
-                                      | 'lmp'
-                                      | 'nascar'
-                                      | 'ushape'
-                                      | 'default',
-                                  },
-                                },
-                              })
-                            }
-                            className="bg-slate-700 text-slate-200 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          >
-                            <option value="default">Default</option>
-                            <option value="formula">Formula</option>
-                            <option value="lmp">LMP</option>
-                            <option value="nascar">NASCAR</option>
-                            <option value="ushape">U-Shape</option>
-                          </select>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <label className="text-sm text-slate-200">
-                            Wheel Color:
-                          </label>
-                          <select
-                            value={config.steer.config.color}
-                            onChange={(e) =>
-                              handleConfigChange({
-                                steer: {
-                                  ...config.steer,
-                                  config: {
-                                    ...config.steer.config,
-                                    color: e.target.value as 'dark' | 'light',
-                                  },
-                                },
-                              })
-                            }
-                            className="bg-slate-700 text-slate-200 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          >
-                            <option value="light">Light</option>
-                            <option value="dark">Dark</option>
-                          </select>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Gear Settings */}
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-lg font-medium text-slate-200">
-                        Gear
-                      </h3>
-                      <div className="flex items-center gap-3">
-                        <span className="text-sm text-slate-300">
-                          Enable Gear Display
-                        </span>
-                        <ToggleSwitch
-                          enabled={config.gear.enabled}
-                          onToggle={(enabled) =>
-                            handleConfigChange({
-                              gear: { ...config.gear, enabled },
-                            })
-                          }
-                        />
-                      </div>
-                    </div>
-                    {config.gear.enabled && (
-                      <div className="space-y-3 pl-4 pt-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-slate-200">
-                            Speed Unit
-                          </span>
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={() =>
-                                handleConfigChange({
-                                  gear: {
-                                    ...config.gear,
-                                    unit: 'auto',
-                                  },
-                                })
-                              }
-                              className={`px-3 py-1 rounded text-sm transition-colors ${
-                                config.gear.unit === 'auto'
-                                  ? 'bg-blue-600 text-white'
-                                  : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
-                              }`}
-                            >
-                              auto
-                            </button>
-                            <button
-                              onClick={() =>
-                                handleConfigChange({
-                                  gear: {
-                                    ...config.gear,
-                                    unit: 'mph',
-                                  },
-                                })
-                              }
-                              className={`px-3 py-1 rounded text-sm transition-colors ${
-                                config.gear.unit === 'mph'
-                                  ? 'bg-blue-600 text-white'
-                                  : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
-                              }`}
-                            >
-                              mph
-                            </button>
-                            <button
-                              onClick={() =>
-                                handleConfigChange({
-                                  gear: {
-                                    ...config.gear,
-                                    unit: 'km/h',
-                                  },
-                                })
-                              }
-                              className={`px-3 py-1 rounded text-sm transition-colors ${
-                                config.gear.unit === 'km/h'
-                                  ? 'bg-blue-600 text-white'
-                                  : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
-                              }`}
-                            >
-                              km/h
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Tachometer Settings */}
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-lg font-medium text-slate-200">
-                        Tachometer
-                      </h3>
-                      <div className="flex items-center gap-3">
-                        <span className="text-sm text-slate-300">
-                          Enable Tachometer Display
-                        </span>
-                        <ToggleSwitch
-                          enabled={config.tachometer.enabled}
-                          onToggle={(enabled) =>
-                            handleConfigChange({
-                              tachometer: { ...config.tachometer, enabled },
-                            })
-                          }
-                        />
-                      </div>
-                    </div>
-                    {config.tachometer.enabled && (
-                      <div className="space-y-3 pl-4 pt-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-slate-300">
-                            Show RPM Text
-                          </span>
-                          <ToggleSwitch
-                            enabled={config.tachometer.showRpmText}
-                            onToggle={(showRpmText) =>
-                              handleConfigChange({
-                                tachometer: {
-                                  ...config.tachometer,
-                                  showRpmText,
-                                },
-                              })
-                            }
-                          />
-                        </div>
-
-                        <CustomShiftPointsSection
-                          config={config}
-                          handleConfigChange={handleConfigChange}
-                        />
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* VISIBILITY TAB */}
-              {activeTab === 'visibility' && (
-                <div className="space-y-4">
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-medium text-slate-200">
-                      Session Visibility
-                    </h3>
-                    <div className="space-y-3 pl-4">
-                      <SessionVisibility
-                        sessionVisibility={settings.config.sessionVisibility}
-                        handleConfigChange={handleConfigChange}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between pt-4 border-t border-slate-700/50 pl-4">
-                    <div>
-                      <h4 className="text-md font-medium text-slate-300">
-                        Show only when on track
-                      </h4>
-                      <span className="block text-xs text-slate-500">
-                        If enabled, inputs will only be shown when driving.
-                      </span>
-                    </div>
-                    <ToggleSwitch
-                      enabled={settings.config.showOnlyWhenOnTrack}
-                      onToggle={(newValue) =>
-                        handleConfigChange({
-                          showOnlyWhenOnTrack: newValue,
-                        })
-                      }
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
+          {/* Tabs */}
+          <div className="flex border-b border-slate-700/50">
+            <TabButton id="display" activeTab={activeTab} setActiveTab={setActiveTab}>
+              Display
+            </TabButton>
+            <TabButton id="options" activeTab={activeTab} setActiveTab={setActiveTab}>
+              Options
+            </TabButton>
+            <TabButton id="visibility" activeTab={activeTab} setActiveTab={setActiveTab}>
+              Visibility
+            </TabButton>
           </div>
+
+          <div className="pt-4 space-y-4">
+
+            {/* DISPLAY TAB */}
+            {activeTab === 'display' && (
+              <SettingsSection title="Display Order">
+
+                <DisplaySettingsList
+                  itemsOrder={itemsOrder}
+                  onReorder={handleDisplayOrderChange}
+                  settings={settings}
+                  handleConfigChange={handleConfigChange}
+                />
+
+                <SettingActionButton
+                  label="Reset to Default Order"
+                  onClick={() => {
+                    const defaultOrder = sortableSettings.map((s) => s.id);
+                    setItemsOrder(defaultOrder);
+                    handleConfigChange({ displayOrder: defaultOrder });
+                  }}
+                />           
+              
+              </SettingsSection>
+            )}
+
+            {/* OPTIONS TAB */}
+            {activeTab === 'options' && (   
+            <>           
+              <SettingsSection title="Options">
+
+                <SettingSliderRow
+                  title="Background Opacity"
+                  value={settings.config.background.opacity ?? 40}
+                  units="%"
+                  min={0}
+                  max={100}
+                  step={1}
+                  onChange={(v) =>
+                    handleConfigChange({ background: { opacity: v } })
+                  }
+                />
+
+              </SettingsSection>
+
+              {/* Trace Settings */}
+              <SettingsSection title="Trace">
+                
+                <SettingToggleRow
+                  title="Enable Trace Display"
+                  enabled={config.trace.enabled}
+                  onToggle={(enabled) =>
+                    handleConfigChange({ trace: { ...config.trace, enabled } })
+                  }
+                /> 
+      
+                {config.trace.enabled && (
+                <SettingsSection>
+                  <SettingToggleRow
+                    title="Show Clutch Trace"
+                    enabled={config.trace.includeClutch}
+                    onToggle={(enabled) =>
+                      handleConfigChange({
+                        trace: {
+                          ...config.trace,
+                          includeClutch: enabled,
+                        },
+                      })
+                    }
+                  /> 
+
+                  <SettingToggleRow
+                    title="Show Throttle Trace"
+                    enabled={config.trace.includeThrottle}
+                    onToggle={(enabled) =>
+                      handleConfigChange({
+                        trace: {
+                          ...config.trace,
+                          includeThrottle: enabled,
+                        },
+                      })
+                    }
+                  /> 
+
+                  <SettingToggleRow
+                    title="Show Brake Trace"
+                    enabled={config.trace.includeBrake}
+                    onToggle={(enabled) =>
+                      handleConfigChange({
+                        trace: {
+                          ...config.trace,
+                          includeBrake: enabled,
+                        },
+                      })
+                    }
+                  /> 
+
+                  <SettingToggleRow
+                    title="Show ABS"
+                    enabled={config.trace.includeAbs}
+                    onToggle={(enabled) =>
+                      handleConfigChange({
+                        trace: {
+                          ...config.trace,
+                          includeAbs: enabled,
+                        },
+                      })
+                    }
+                  /> 
+
+                  <SettingToggleRow
+                    title="Show Steering Trace"
+                    enabled={config.trace.includeSteer ?? true}
+                    onToggle={(enabled) =>
+                      handleConfigChange({
+                        trace: {
+                          ...config.trace,
+                          includeSteer: enabled,
+                        },
+                      })
+                    }
+                  /> 
+
+                  <SettingSliderRow
+                    title="Stroke Width"
+                    value={config.trace.strokeWidth ?? 3}
+                    units="px"
+                    min={0}
+                    max={10}
+                    step={1}
+                    onChange={(v) =>
+                      handleConfigChange({
+                        trace: {
+                          ...config.trace,
+                          strokeWidth: v,
+                        },
+                      })
+                    }
+                  />
+
+                  <SettingSliderRow
+                    title="Max Samples"
+                    value={config.trace.maxSamples ?? 40}
+                    units=" samples"
+                    min={40}
+                    max={1000}
+                    step={1}
+                    onChange={(v) =>
+                      handleConfigChange({
+                        trace: {
+                          ...config.trace,
+                          maxSamples: v,
+                        },
+                      })
+                    }
+                  />
+
+                </SettingsSection>
+                )}
+
+              </SettingsSection>
+
+
+              {/* Bar Settings */}
+              <SettingsSection title="Bar">
+                
+                <SettingToggleRow
+                  title="Enable Bar Display"
+                  enabled={config.bar.enabled}
+                  onToggle={(enabled) =>
+                    handleConfigChange({ bar: { ...config.bar, enabled } })
+                  }
+                /> 
+      
+                {config.bar.enabled && (
+                <SettingsSection>
+                  <SettingToggleRow
+                    title="Show Clutch Bar"
+                    enabled={config.bar.includeClutch}
+                    onToggle={(enabled) =>
+                      handleConfigChange({
+                        bar: {
+                          ...config.bar,
+                          includeClutch: enabled,
+                        },
+                      })
+                    }
+                  /> 
+
+                  <SettingToggleRow
+                    title="Show Throttle Bar"
+                    enabled={config.bar.includeThrottle}
+                    onToggle={(enabled) =>
+                      handleConfigChange({
+                        bar: {
+                          ...config.bar,
+                          includeThrottle: enabled,
+                        },
+                      })
+                    }
+                  /> 
+
+                  <SettingToggleRow
+                    title="Show Brake Bar"
+                    enabled={config.bar.includeBrake}
+                    onToggle={(enabled) =>
+                      handleConfigChange({
+                        bar: {
+                          ...config.bar,
+                          includeBrake: enabled,
+                        },
+                      })
+                    }
+                  /> 
+
+                  <SettingToggleRow
+                    title="Show ABS Indicator"
+                    enabled={config.bar.includeAbs}
+                    onToggle={(enabled) =>
+                      handleConfigChange({
+                        bar: {
+                          ...config.bar,
+                          includeAbs: enabled,
+                        },
+                      })
+                    }
+                  /> 
+                 
+                </SettingsSection>
+                )}
+
+              </SettingsSection>
+
+              {/* ABS Settings */}
+              <SettingsSection title="ABS Indicator">
+
+                <SettingToggleRow
+                  title="Enable ABS Indicator"
+                  enabled={config.abs.enabled}
+                  onToggle={(newValue) =>
+                    handleConfigChange({ abs: { ...config.abs, enabled: newValue } })
+                  }
+                />                
+
+              </SettingsSection>
+
+              {/* Steer Settings */}
+              <SettingsSection title="Steer">  
+
+                  <SettingToggleRow
+                    title="Enable Steer Display"
+                    enabled={config.steer.enabled}
+                    onToggle={(newValue) =>
+                      handleConfigChange({ steer: { ...config.steer, enabled: newValue } })
+                    }
+                  />   
+
+                  {config.steer.enabled && (
+                    <SettingsSection>
+
+                      <SettingSelectRow<'default' | 'formula' | 'lmp' | 'nascar' | 'ushape'>
+                        title="Wheel Style"
+                        value={config.steer.config.style ?? 'default'}
+                        options={[
+                          { label: 'Default', value: 'default' },
+                          { label: 'Formula', value: 'formula' },
+                          { label: 'LMP', value: 'lmp' },
+                          { label: 'NASCAR', value: 'nascar' },
+                          { label: 'U-Shape', value: 'ushape' },                          
+                        ]}
+                        onChange={(v) => handleConfigChange({ steer: { ...config.steer, config: { ...config.steer.config, style: v } } })}
+                      />
+
+                      <SettingSelectRow<'dark' | 'light'>
+                        title="Wheel Color"
+                        value={config.steer.config.color ?? 'light'}
+                        options={[
+                          { label: 'Light', value: 'light' },
+                          { label: 'Dark', value: 'dark' },                          
+                        ]}
+                        onChange={(v) => handleConfigChange({ steer: { ...config.steer, config: { ...config.steer.config, color: v } } })}
+                      />
+                    
+                    </SettingsSection>
+                  )}
+
+              </SettingsSection>
+
+              {/* Gear Settings */}
+              <SettingsSection title="Gear">  
+
+                  <SettingToggleRow
+                    title="Enable Gear Display"
+                    enabled={config.gear.enabled}
+                    onToggle={(newValue) =>
+                      handleConfigChange({ gear: { ...config.gear, enabled: newValue } })
+                    }
+                  />   
+
+                  {config.gear.enabled && (
+                    <SettingsSection>
+
+                      <SettingButtonGroupRow<'auto' | 'mph' | 'km/h'>
+                        title="Speed Unit"
+                        value={config.gear.unit ?? 'auto'}
+                        options={[
+                          { label: 'Auto', value: 'auto' },
+                          { label: 'MPH', value: 'mph' },
+                          { label: 'KM/H', value: 'km/h' },
+                        ]}
+                        onChange={(v) => handleConfigChange({ gear: { ...config.gear, unit: v } })}
+                      />          
+                    
+                    </SettingsSection>
+                  )}
+
+              </SettingsSection>
+
+              {/* Tachometer Settings */}
+              <SettingsSection title="Tachometer">
+
+                <SettingToggleRow
+                  title="Enable Tachometer Display"
+                  enabled={config.tachometer.enabled}
+                  onToggle={(newValue) =>
+                    handleConfigChange({ tachometer: { ...config.tachometer, enabled: newValue } })
+                  }
+                />   
+
+                {config.tachometer.enabled && (
+                  <SettingsSection>
+
+                    <SettingToggleRow
+                      title="Show RPM Text"
+                      enabled={config.tachometer.showRpmText}
+                      onToggle={(newValue) =>
+                        handleConfigChange({ tachometer: { ...config.tachometer, showRpmText: newValue } })
+                      }
+                    />   
+
+                    <CustomShiftPointsSection config={config} handleConfigChange={handleConfigChange} />
+                  
+                  </SettingsSection>
+                )}
+
+              </SettingsSection>
+              </>
+            )}
+
+             {/* VISIBILITY TAB */}
+            {activeTab === 'visibility' && (
+              <SettingsSection title="Session Visibility">
+                            
+                <SessionVisibility
+                    sessionVisibility={settings.config.sessionVisibility}
+                    handleConfigChange={handleConfigChange}
+                  />
+
+                <SettingDivider />
+
+                <SettingToggleRow
+                  title="Show only when on track"
+                  description="If enabled, inputs will only be shown when driving"
+                  enabled={settings.config.showOnlyWhenOnTrack ?? false}
+                  onToggle={(newValue) =>
+                    handleConfigChange({ showOnlyWhenOnTrack: newValue })
+                  }
+                />
+
+              </SettingsSection>
+            )}
+
+          </div>
+        </div>            
         );
       }}
     </BaseSettingsSection>

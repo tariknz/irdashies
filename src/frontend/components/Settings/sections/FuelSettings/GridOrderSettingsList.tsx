@@ -2,6 +2,7 @@ import { DotsSixVerticalIcon } from '@phosphor-icons/react';
 import { ToggleSwitch } from '../../components/ToggleSwitch';
 import { useSortableList } from '../../../SortableList';
 import { FuelWidgetSettings } from '../../types';
+import { SettingNumberRow } from '../../components/SettingNumberRow';
 
 interface SortableRow {
   id: string;
@@ -70,9 +71,7 @@ export const GridOrderSettingsList = ({
                   >
                     <DotsSixVerticalIcon size={14} />
                   </div>
-                  <span className="text-xs text-slate-300 font-medium">
-                    {row.label}
-                  </span>
+                  <span className="text-sm text-slate-300 font-medium">{row.label}</span>
                 </div>
                 <ToggleSwitch
                   enabled={isEnabled}
@@ -82,25 +81,16 @@ export const GridOrderSettingsList = ({
                 />
               </div>
 
-              {row.id === 'avg' && (
-                <div className="mt-2 pl-7 pr-1 flex items-center justify-between animate-in fade-in slide-in-from-top-1 duration-200">
-                  <span className="text-xs text-slate-400">Average Laps</span>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      min="1"
-                      max="50"
-                      step="1"
-                      value={settings.config.avgLapsCount ?? 3}
-                      onChange={(e) =>
-                        handleConfigChange({
-                          avgLapsCount: parseInt(e.target.value) || 1,
-                        })
-                      }
-                      className="w-12 px-1 py-0.5 bg-slate-700 text-slate-200 rounded text-xs text-center"
-                    />
-                    <span className="text-xs text-slate-500">Laps</span>
-                  </div>
+              {row.id === 'avg' && isEnabled && (
+                <div className="pl-12 pt-4">
+                  <SettingNumberRow
+                    title="Average Laps"                 
+                    value={settings.config.avgLapsCount ?? 3}
+                    min={1}
+                    max={50}
+                    step={1}
+                    onChange={(v) => handleConfigChange({ avgLapsCount: v })}
+                  />
                 </div>
               )}
             </div>

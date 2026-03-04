@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import type { TwitchChatWidgetSettings } from '../types';
 import { useDashboard } from '@irdashies/context';
+import { SettingSliderRow } from '../components/SettingSliderRow';
+import { SettingsSection } from '../components/SettingSection';
 
 const SETTING_ID = 'twitchchat';
 
@@ -51,61 +53,57 @@ export const TwitchChatSettings = () => {
       widgetId={SETTING_ID}
     >
       {(handleConfigChange) => (
-        <div className="space-y-4">
-          {/* Background Opacity */}
-          <div className="space-y-2">
-            <label className="text-slate-300">
-              Background Opacity: {settings.config.background?.opacity ?? 30}%
-            </label>
-            <input
-              type="range"
-              min="0"
-              max="100"
-              step="5"
+        <>
+          <SettingsSection title="Display">
+            {/* Background Opacity */}
+            <SettingSliderRow
+              title="Background Opacity"
               value={settings.config.background?.opacity ?? 30}
-              onChange={(e) =>
+              units="%"
+              min={0}
+              max={100}
+              step={5}
+              onChange={(v) =>
                 handleConfigChange({
-                  background: { opacity: parseInt(e.target.value) },
+                  background: { opacity: v },
                 })
               }
-              className="w-full"
             />
-          </div>
 
-          {/* Font size */}
-          <div className="space-y-2">
-            <label className="text-slate-300">
-              Font size: {settings.config.fontSize ?? 16}px
-            </label>
-            <input
-              type="range"
-              min="8"
-              max="45"
-              step="1"
+            {/* Font size */}
+            <SettingSliderRow
+              title="Font size"
               value={settings.config.fontSize ?? 16}
-              onChange={(e) =>
+              units="px"
+              min={8}
+              max={45}
+              step={1}
+              onChange={(v) =>
                 handleConfigChange({
-                  fontSize: parseInt(e.target.value),
+                  fontSize: v,
                 })
               }
-              className="w-full"
             />
-          </div>
+          </SettingsSection>
 
-          {/* Twitch channel name */}
-          <div className="space-y-2">
-            <label className="text-slate-300">Twitch channel:</label>
-            <input
-              type="text"
-              value={settings.config.channel}
-              onChange={(e) => handleConfigChange({ channel: e.target.value })}
-              className="w-full rounded border-gray-600 bg-gray-700 p-2 text-slate-300"
-            />
-            <p className="text-sm text-slate-400">
-              Name of Twitch channel to display chat from
-            </p>
-          </div>
-        </div>
+          <SettingsSection title="Channel">
+            {/* Twitch channel name */}
+            <div className="space-y-2">
+              <label className="text-md text-slate-300">Twitch channel:</label>
+              <input
+                type="text"
+                value={settings.config.channel}
+                onChange={(e) =>
+                  handleConfigChange({ channel: e.target.value })
+                }
+                className="w-full rounded border-gray-600 bg-gray-700 p-2 text-slate-300"
+              />
+              <p className="text-sm text-slate-500">
+                Name of Twitch channel to display chat from
+              </p>
+            </div>
+          </SettingsSection>
+        </>
       )}
     </BaseSettingsSection>
   );
