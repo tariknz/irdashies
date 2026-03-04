@@ -469,7 +469,7 @@ export type FuelWidgetType =
   | 'confidence'
   | 'keyInfo';
 
-  /** Available widgets for the Fuel Calculator */
+/** Available widgets for the Fuel Calculator */
 export type SettingsTabType =
   | 'display'
   | 'options'
@@ -479,7 +479,9 @@ export type SettingsTabType =
   | 'layout'
   | 'header'
   | 'footer'
-  | 'history';
+  | 'history'
+  | 'telemetry'
+  | 'dashboard';
 
 export interface BlindSpotMonitorWidgetSettings extends BaseWidgetSettings {
   config: {
