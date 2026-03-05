@@ -233,6 +233,8 @@ describe('useDriverRelatives', () => {
         resetSession: vi.fn(),
         setGreenFlagTimestamp: vi.fn(),
         greenFlagTimestamp: null,
+        checkeredLap: null,
+        setCheckeredLap: vi.fn(),
       })
     );
   });

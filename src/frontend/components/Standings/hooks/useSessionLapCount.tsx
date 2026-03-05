@@ -5,9 +5,12 @@ import {
   useFocusCarIdx,
   useGreenFlagTimestamp,
   useSetGreenFlagTimestamp,
+  useCheckeredLap,
+  useSetCheckeredLap,
   useCurrentSessionType,
   useCarIdxClassEstLapTime,
 } from '@irdashies/context';
+import { SessionState } from '@irdashies/types';
 import { useEffect, useMemo, useRef } from 'react';
 import { useCarIdxAverageLapTime } from '../../../context/shared/useCarIdxAverageLapTime';
 
@@ -47,6 +50,8 @@ export const useSessionLapCount = () => {
   // Get store hooks for tracking green flag time
   const greenFlagTimestamp = useGreenFlagTimestamp();
   const setGreenFlagTimestamp = useSetGreenFlagTimestamp();
+  const checkeredLap = useCheckeredLap();
+  const setCheckeredLap = useSetCheckeredLap();
 
   useEffect(() => {
     if (
@@ -91,6 +96,20 @@ export const useSessionLapCount = () => {
       }
     }
 
+    // Track checkered lap: freeze once when checkered is shown, reset for new sessions
+    if (sessionState !== undefined && sessionState >= SessionState.Checkered) {
+      if (checkeredLap === null && currentLap !== undefined && currentLap > 0) {
+        setCheckeredLap(currentLap);
+      }
+    } else if (
+      sessionState !== undefined &&
+      sessionState < SessionState.Checkered
+    ) {
+      if (checkeredLap !== null) {
+        setCheckeredLap(null);
+      }
+    }
+
     prevSessionState.current = sessionState;
     prevLeaderLap.current = leaderLap;
   }, [
@@ -104,6 +123,9 @@ export const useSessionLapCount = () => {
     classEstLapTimes,
     focusCarIdx,
     setGreenFlagTimestamp,
+    checkeredLap,
+    currentLap,
+    setCheckeredLap,
   ]);
 
   const result = useMemo(() => {
@@ -128,7 +150,10 @@ export const useSessionLapCount = () => {
     result.state = sessionState ?? 0;
     result.time = time ?? 0;
     result.timeTotal = timeTotal ?? 0;
-    result.currentLap = currentLap ?? 0;
+    const isPostCheckered = (sessionState ?? 0) >= SessionState.Checkered;
+    result.currentLap = isPostCheckered
+      ? (checkeredLap ?? currentLap ?? 0)
+      : (currentLap ?? 0);
     result.timeRemaining = timeRemaining ?? 0;
     result.greenFlagTimestamp = greenFlagTimestamp ?? 0;
 
@@ -141,6 +166,7 @@ export const useSessionLapCount = () => {
     timeTotal,
     timeRemaining,
     greenFlagTimestamp,
+    checkeredLap,
   ]);
 
   return result;
