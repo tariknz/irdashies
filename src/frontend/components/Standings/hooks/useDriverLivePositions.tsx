@@ -305,5 +305,6 @@ export const useDriverLivePositions = ({
     paceCarIdx,
     sessionType,
     sessionState,
+    carIdxTrackSurface
   ]);
 };
