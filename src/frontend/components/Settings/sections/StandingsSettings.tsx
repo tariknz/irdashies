@@ -1,6 +1,10 @@
 import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
-import { SessionVisibilitySettings, StandingsWidgetSettings, SettingsTabType } from '../types';
+import {
+  SessionVisibilitySettings,
+  StandingsWidgetSettings,
+  SettingsTabType,
+} from '../types';
 import { useDashboard } from '@irdashies/context';
 import { ToggleSwitch } from '../components/ToggleSwitch';
 import { TabButton } from '../components/TabButton';
@@ -99,7 +103,12 @@ const defaultConfig: StandingsWidgetSettings['config'] = {
   headerBar: {
     enabled: true,
     sessionName: { enabled: true },
-    sessionTime: { enabled: true, mode: 'Remaining' },
+    sessionTime: {
+      enabled: true,
+      mode: 'Remaining',
+      totalFormat: 'minimal',
+      labelStyle: 'minimal',
+    },
     sessionLaps: { enabled: true },
     incidentCount: { enabled: true },
     brakeBias: { enabled: false },
@@ -115,7 +124,12 @@ const defaultConfig: StandingsWidgetSettings['config'] = {
   footerBar: {
     enabled: true,
     sessionName: { enabled: false },
-    sessionTime: { enabled: false, mode: 'Remaining' },
+    sessionTime: {
+      enabled: false,
+      mode: 'Remaining',
+      totalFormat: 'minimal',
+      labelStyle: 'minimal',
+    },
     sessionLaps: { enabled: false },
     incidentCount: { enabled: false },
     brakeBias: { enabled: false },
@@ -285,6 +299,13 @@ const migrateConfig = (
         mode:
           ((config.headerBar as { sessionTime?: { mode?: string } })
             ?.sessionTime?.mode as 'Remaining' | 'Elapsed') ?? 'Remaining',
+        totalFormat:
+          ((config.headerBar as { sessionTime?: { totalFormat?: string } })
+            ?.sessionTime?.totalFormat as 'hh:mm' | 'minimal') ?? 'minimal',
+        labelStyle:
+          ((config.headerBar as { sessionTime?: { labelStyle?: string } })
+            ?.sessionTime?.labelStyle as 'none' | 'short' | 'minimal') ??
+          'minimal',
       },
       sessionLaps: {
         enabled:
@@ -370,6 +391,13 @@ const migrateConfig = (
         mode:
           ((config.footerBar as { sessionTime?: { mode?: string } })
             ?.sessionTime?.mode as 'Remaining' | 'Elapsed') ?? 'Remaining',
+        totalFormat:
+          ((config.footerBar as { sessionTime?: { totalFormat?: string } })
+            ?.sessionTime?.totalFormat as 'hh:mm' | 'minimal') ?? 'minimal',
+        labelStyle:
+          ((config.footerBar as { sessionTime?: { labelStyle?: string } })
+            ?.sessionTime?.labelStyle as 'none' | 'short' | 'minimal') ??
+          'minimal',
       },
       sessionLaps: {
         enabled:
@@ -870,7 +898,12 @@ const BarItemsList = ({
           ] as StandingsWidgetSettings['config']['headerBar']
         )?.[item.id as keyof StandingsWidgetSettings['config']['headerBar']] as
           | { enabled: boolean; unit?: 'Metric' | 'Imperial' }
-          | { enabled: boolean; mode?: 'Remaining' | 'Elapsed' }
+          | {
+              enabled: boolean;
+              mode?: 'Remaining' | 'Elapsed';
+              totalFormat?: 'hh:mm' | 'minimal';
+              labelStyle?: 'none' | 'short' | 'minimal';
+            }
           | undefined;
 
         // Safety check: skip rendering if itemConfig is undefined
@@ -914,7 +947,9 @@ const BarItemsList = ({
                                 enabled,
                                 speedPosition: currentSpeedPosition,
                               }
-                            : { enabled },
+                            : item.id === 'sessionTime'
+                              ? { ...(itemConfig as object), enabled }
+                              : { enabled },
                     },
                   });
                 }}
@@ -1014,29 +1049,70 @@ const BarItemsList = ({
                 <div className="flex items-center justify-between pl-4 mt-2">
                   <span></span>
                   <select
+                    value={'mode' in itemConfig ? itemConfig.mode : 'Remaining'}
+                    onChange={(e) => {
+                      handleConfigChange({
+                        [barType]: {
+                          ...settings.config[barType],
+                          [item.id]: {
+                            ...(itemConfig as object),
+                            mode: e.target.value as 'Remaining' | 'Elapsed',
+                          },
+                        },
+                      });
+                    }}
+                    className="bg-slate-700 text-white rounded-md px-2 py-1 flex-1"
+                  >
+                    <option value="Remaining">Remaining</option>
+                    <option value="Elapsed">Elapsed</option>
+                  </select>
+                  <select
                     value={
-                      itemConfig && 'mode' in itemConfig
-                        ? itemConfig.mode
-                        : 'Remaining'
+                      'totalFormat' in itemConfig
+                        ? itemConfig.totalFormat
+                        : 'minimal'
                     }
                     onChange={(e) => {
                       handleConfigChange({
                         [barType]: {
                           ...settings.config[barType],
                           [item.id]: {
-                            enabled:
-                              itemConfig && 'enabled' in itemConfig
-                                ? itemConfig.enabled
-                                : true,
-                            mode: e.target.value as 'Remaining' | 'Elapsed',
+                            ...(itemConfig as object),
+                            totalFormat: e.target.value as 'hh:mm' | 'minimal',
                           },
                         },
                       });
                     }}
-                    className="bg-slate-700 text-white rounded-md px-2 py-1"
+                    className="bg-slate-700 text-white rounded-md px-2 py-1 flex-1"
                   >
-                    <option value="Remaining">Remaining</option>
-                    <option value="Elapsed">Elapsed</option>
+                    <option value="minimal">2:34</option>
+                    <option value="hh:mm">00:12:34</option>
+                  </select>
+                  <select
+                    value={
+                      'labelStyle' in itemConfig
+                        ? itemConfig.labelStyle
+                        : 'minimal'
+                    }
+                    onChange={(e) => {
+                      handleConfigChange({
+                        [barType]: {
+                          ...settings.config[barType],
+                          [item.id]: {
+                            ...(itemConfig as object),
+                            labelStyle: e.target.value as
+                              | 'none'
+                              | 'short'
+                              | 'minimal',
+                          },
+                        },
+                      });
+                    }}
+                    className="bg-slate-700 text-white rounded-md px-2 py-1 flex-1"
+                  >
+                    <option value="minimal">Minimal Labels</option>
+                    <option value="short">Short Labels</option>
+                    <option value="none">Hide Labels</option>
                   </select>
                 </div>
               )}
@@ -1065,7 +1141,7 @@ export const StandingsSettings = () => {
 
   useEffect(() => {
     localStorage.setItem('standingsTab', activeTab);
-  }, [activeTab]);  
+  }, [activeTab]);
 
   if (!currentDashboard) {
     return <>Loading...</>;
@@ -1130,7 +1206,6 @@ export const StandingsSettings = () => {
               {/* DISPLAY TAB */}
               {activeTab === 'display' && (
                 <SettingsSection title="Display Order">
-
                   <DisplaySettingsList
                     itemsOrder={itemsOrder}
                     onReorder={handleDisplayOrderChange}
@@ -1146,16 +1221,14 @@ export const StandingsSettings = () => {
                       handleConfigChange({ displayOrder: defaultOrder });
                     }}
                   />
-                 
                 </SettingsSection>
               )}
 
-                {/* OPTIONS TAB */}
+              {/* OPTIONS TAB */}
               {activeTab === 'options' && (
                 <>
-                <SettingsSection title="Driver Standings">
-                
-                  <SettingSelectRow
+                  <SettingsSection title="Driver Standings">
+                    <SettingSelectRow
                       title="Drivers to show around player"
                       value={settings.config.driverStandings.buffer.toString()}
                       options={Array.from({ length: 10 }, (_, i) => {
@@ -1164,11 +1237,11 @@ export const StandingsSettings = () => {
                       })}
                       onChange={(v) =>
                         handleConfigChange({
-                            driverStandings: {
-                              ...settings.config.driverStandings,
-                              buffer: parseInt(v),
-                            },
-                          })
+                          driverStandings: {
+                            ...settings.config.driverStandings,
+                            buffer: parseInt(v),
+                          },
+                        })
                       }
                     />
 
@@ -1181,16 +1254,16 @@ export const StandingsSettings = () => {
                       })}
                       onChange={(v) =>
                         handleConfigChange({
-                            driverStandings: {
-                              ...settings.config.driverStandings,
-                              numNonClassDrivers: parseInt(v),
-                            },
-                          })
+                          driverStandings: {
+                            ...settings.config.driverStandings,
+                            numNonClassDrivers: parseInt(v),
+                          },
+                        })
                       }
                     />
 
                     <SettingSelectRow
-                      title="Minimum drivers in player&apos;s class"
+                      title="Minimum drivers in player's class"
                       value={settings.config.driverStandings.minPlayerClassDrivers.toString()}
                       options={Array.from({ length: 10 }, (_, i) => {
                         const num = i + 1;
@@ -1198,16 +1271,16 @@ export const StandingsSettings = () => {
                       })}
                       onChange={(v) =>
                         handleConfigChange({
-                            driverStandings: {
-                              ...settings.config.driverStandings,
-                              minPlayerClassDrivers: parseInt(v),
-                            },
-                          })
+                          driverStandings: {
+                            ...settings.config.driverStandings,
+                            minPlayerClassDrivers: parseInt(v),
+                          },
+                        })
                       }
                     />
 
                     <SettingSelectRow
-                      title="Top drivers to always show in player&apos;s class"
+                      title="Top drivers to always show in player's class"
                       value={settings.config.driverStandings.numTopDrivers.toString()}
                       options={Array.from({ length: 10 }, (_, i) => {
                         const num = i + 1;
@@ -1215,18 +1288,21 @@ export const StandingsSettings = () => {
                       })}
                       onChange={(v) =>
                         handleConfigChange({
-                            driverStandings: {
-                              ...settings.config.driverStandings,
-                              numTopDrivers: parseInt(v),
-                            },
-                          })
+                          driverStandings: {
+                            ...settings.config.driverStandings,
+                            numTopDrivers: parseInt(v),
+                          },
+                        })
                       }
                     />
-               
+
                     {settings.config.driverStandings.numTopDrivers > 0 && (
                       <SettingSelectRow<'none' | 'theme' | 'highlight'>
                         title="Top driver divider"
-                        value={settings.config.driverStandings.topDriverDivider ?? 'highlight'}
+                        value={
+                          settings.config.driverStandings.topDriverDivider ??
+                          'highlight'
+                        }
                         options={[
                           { label: 'None', value: 'none' },
                           { label: 'Theme Color', value: 'theme' },
@@ -1240,8 +1316,8 @@ export const StandingsSettings = () => {
                             },
                           })
                         }
-                      />                      
-                    )}                    
+                      />
+                    )}
 
                     <SettingToggleRow
                       title="Use Live Position Standings"
@@ -1253,24 +1329,22 @@ export const StandingsSettings = () => {
                         handleConfigChange({ useLivePosition: newValue })
                       }
                     />
-
                   </SettingsSection>
-                  
+
                   <SettingsSection title="Title Bar">
-                  
                     <SettingToggleRow
                       title="Show Title Bar"
                       enabled={settings.config.titleBar.enabled}
                       onToggle={(enabled) =>
-                          handleConfigChange({
+                        handleConfigChange({
                           titleBar: {
                             ...settings.config.titleBar,
                             enabled,
                           },
                         })
                       }
-                    />    
-  
+                    />
+
                     {settings.config.titleBar.enabled && (
                       <SettingsSection>
                         <SettingToggleRow
@@ -1284,142 +1358,139 @@ export const StandingsSettings = () => {
                               },
                             })
                           }
-                        />    
+                        />
                       </SettingsSection>
-                    )}    
-  
-                  </SettingsSection>
-  
-                  <SettingsSection title="Background">
-                      <SettingSliderRow
-                        title="Background Opacity"
-                        value={settings.config.background.opacity ?? 40}
-                        units="%"
-                        min={0}
-                        max={100}
-                        step={1}
-                        onChange={(v) =>
-                          handleConfigChange({ background: { opacity: v } })
-                        }
-                      />
+                    )}
                   </SettingsSection>
 
+                  <SettingsSection title="Background">
+                    <SettingSliderRow
+                      title="Background Opacity"
+                      value={settings.config.background.opacity ?? 40}
+                      units="%"
+                      min={0}
+                      max={100}
+                      step={1}
+                      onChange={(v) =>
+                        handleConfigChange({ background: { opacity: v } })
+                      }
+                    />
+                  </SettingsSection>
                 </>
               )}
 
               {/* HEADER TAB */}
               {activeTab === 'header' && (
                 <SettingsSection title="Header Bar">
-
                   <SettingToggleRow
-                    title="Show Header Bar"                  
+                    title="Show Header Bar"
                     enabled={settings.config.headerBar.enabled}
                     onToggle={(enabled) =>
-                        handleConfigChange({
-                          headerBar: {
-                            ...settings.config.headerBar,
-                            enabled,
-                          },
-                        })
-                      }
+                      handleConfigChange({
+                        headerBar: {
+                          ...settings.config.headerBar,
+                          enabled,
+                        },
+                      })
+                    }
                   />
 
                   {settings.config.headerBar.enabled && (
-                  <SettingsSection>
-                    <BarItemsList
-                      items={settings.config.headerBar.displayOrder}
-                      onReorder={(newOrder) => {
-                        handleConfigChange({
-                          headerBar: {
-                            ...settings.config.headerBar,
-                            displayOrder: newOrder,
-                          },
-                        });
-                      }}
-                      barType="headerBar"
-                      settings={settings}
-                      handleConfigChange={handleConfigChange}
-                    />
+                    <SettingsSection>
+                      <BarItemsList
+                        items={settings.config.headerBar.displayOrder}
+                        onReorder={(newOrder) => {
+                          handleConfigChange({
+                            headerBar: {
+                              ...settings.config.headerBar,
+                              displayOrder: newOrder,
+                            },
+                          });
+                        }}
+                        barType="headerBar"
+                        settings={settings}
+                        handleConfigChange={handleConfigChange}
+                      />
 
-                    <SettingActionButton
-                      label="Reset to Default Order"
-                      onClick={() => {
-                        handleConfigChange({
-                          headerBar: {
-                            ...settings.config.headerBar,
-                            displayOrder: [...DEFAULT_SESSION_BAR_DISPLAY_ORDER],
-                          },
-                        });
-                      }}
-                    />
-                  </SettingsSection>
+                      <SettingActionButton
+                        label="Reset to Default Order"
+                        onClick={() => {
+                          handleConfigChange({
+                            headerBar: {
+                              ...settings.config.headerBar,
+                              displayOrder: [
+                                ...DEFAULT_SESSION_BAR_DISPLAY_ORDER,
+                              ],
+                            },
+                          });
+                        }}
+                      />
+                    </SettingsSection>
                   )}
-                    
                 </SettingsSection>
               )}
 
               {/* FOOTER TAB */}
               {activeTab === 'footer' && (
                 <SettingsSection title="Footer Bar">
-
                   <SettingToggleRow
-                    title="Show Footer Bar"                  
+                    title="Show Footer Bar"
                     enabled={settings.config.footerBar.enabled}
                     onToggle={(enabled) =>
-                        handleConfigChange({
-                          footerBar: {
-                            ...settings.config.footerBar,
-                            enabled,
-                          },
-                        })
-                      }
+                      handleConfigChange({
+                        footerBar: {
+                          ...settings.config.footerBar,
+                          enabled,
+                        },
+                      })
+                    }
                   />
 
                   {settings.config.footerBar.enabled && (
-                  <SettingsSection>
-                    <BarItemsList
-                      items={settings.config.footerBar.displayOrder}
-                      onReorder={(newOrder) => {
-                        handleConfigChange({
-                          footerBar: {
-                            ...settings.config.footerBar,
-                            displayOrder: newOrder,
-                          },
-                        });
-                      }}
-                      barType="footerBar"
-                      settings={settings}
-                      handleConfigChange={handleConfigChange}
-                    />
+                    <SettingsSection>
+                      <BarItemsList
+                        items={settings.config.footerBar.displayOrder}
+                        onReorder={(newOrder) => {
+                          handleConfigChange({
+                            footerBar: {
+                              ...settings.config.footerBar,
+                              displayOrder: newOrder,
+                            },
+                          });
+                        }}
+                        barType="footerBar"
+                        settings={settings}
+                        handleConfigChange={handleConfigChange}
+                      />
 
-                    <SettingActionButton
-                      label="Reset to Default Order"
-                      onClick={() => {
-                        handleConfigChange({
-                          footerBar: {
-                            ...settings.config.footerBar,
-                            displayOrder: [...DEFAULT_SESSION_BAR_DISPLAY_ORDER],
-                          },
-                        });
-                      }}
-                    />
-                  </SettingsSection>
+                      <SettingActionButton
+                        label="Reset to Default Order"
+                        onClick={() => {
+                          handleConfigChange({
+                            footerBar: {
+                              ...settings.config.footerBar,
+                              displayOrder: [
+                                ...DEFAULT_SESSION_BAR_DISPLAY_ORDER,
+                              ],
+                            },
+                          });
+                        }}
+                      />
+                    </SettingsSection>
                   )}
-                    
                 </SettingsSection>
               )}
 
               {/* VISIBILITY TAB */}
               {activeTab === 'visibility' && (
                 <SettingsSection title="Session Visibility">
-                              
                   <SessionVisibility
-                      sessionVisibility={settings.config.sessionVisibility}
-                      handleConfigChange={handleConfigChange}
-                    />
-  
+                    sessionVisibility={settings.config.sessionVisibility}
+                    handleConfigChange={handleConfigChange}
+                  />
+
                   <SettingDivider />
-  
+
                   <SettingToggleRow
                     title="Show only when on track"
                     description="If enabled, standings will only be shown when driving"
@@ -1428,10 +1499,8 @@ export const StandingsSettings = () => {
                       handleConfigChange({ showOnlyWhenOnTrack: newValue })
                     }
                   />
-  
                 </SettingsSection>
               )}
-
             </div>
           </div>
         );

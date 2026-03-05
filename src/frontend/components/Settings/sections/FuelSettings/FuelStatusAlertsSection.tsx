@@ -15,16 +15,13 @@ export const FuelStatusAlertsSection = ({
   onChange,
 }: FuelStatusAlertsSectionProps) => {
   return (
-    <SettingsSection title="Fuel Status Alerts">  
-
+    <SettingsSection title="Fuel Status Alerts">
       {/* Border Color Toggle */}
       <SettingToggleRow
         title="Show Border Color"
         description="Green (safe), Orange (caution), Red (danger)"
         enabled={settings.config.showFuelStatusBorder ?? true}
-        onToggle={(enabled) =>
-          onChange({ showFuelStatusBorder: enabled })
-        }
+        onToggle={(enabled) => onChange({ showFuelStatusBorder: enabled })}
       />
 
       <div className="space-y-3">

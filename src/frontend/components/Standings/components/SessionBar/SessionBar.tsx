@@ -1,14 +1,7 @@
-import { useState } from 'react';
 import {
-  useSessionName,
-  useSessionLaps,
-  useTelemetryValue,
-  useTelemetryValues,
-  useSessionQualifyingResults,
-  useSessionPositions,
   useGeneralSettings,
+  useTelemetryValue,
 } from '@irdashies/context';
-import { formatTime } from '@irdashies/utils/time';
 import {
   useDriverIncidents,
   useSessionLapCount,
@@ -29,10 +22,66 @@ import {
 } from '@phosphor-icons/react';
 import { useSessionCurrentTime } from '../../hooks/useSessionCurrentTime';
 import { usePrecipitation } from '../../hooks/usePrecipitation';
-import { useTotalRaceLaps } from '../../../../context/shared/useTotalRaceLaps';
-import { useLapTimeHistory } from '../../../../context/LapTimesStore/LapTimesStore';
-import { useThrottledWeather } from '@irdashies/context';
+import {
+  useCurrentSessionType,
+  useThrottledWeather,
+  useTotalRaceLaps,
+  useTotalRaceTime,
+} from '../../../../context/shared';
+import { SessionState } from '@irdashies/types';
 import { WindArrow } from '../../../shared/WindArrow';
+
+// compact=true (total time): trims trailing zero components, never shows seconds
+// compact=false (elapsed/remaining): always shows full HH:MM:SS
+const formatTotalTime = (
+  seconds: number,
+  totalFormat: 'hh:mm' | 'minimal',
+  compact: boolean,
+  labelStyle: 'none' | 'short' | 'minimal'
+): string => {
+  if (seconds < 0) return '-';
+  const totalSecs = Math.floor(seconds);
+  const hours = Math.floor(totalSecs / 3600);
+  const minutes = Math.floor((totalSecs % 3600) / 60);
+  const secs = totalSecs % 60;
+
+  let result: string;
+  if (totalFormat === 'hh:mm') {
+    if (compact && minutes === 0 && hours > 0) {
+      result = String(hours).padStart(2, '0');
+    } else {
+      result = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+      if (!compact) result += `:${String(secs).padStart(2, '0')}`;
+    }
+  } else {
+    // minimal
+    if (compact) {
+      if (hours > 0) {
+        result =
+          minutes === 0
+            ? `${hours}`
+            : `${hours}:${String(minutes).padStart(2, '0')}`;
+      } else {
+        result = `${minutes}`;
+      }
+    } else {
+      // elapsed/remaining: trim leading zero components
+      if (hours > 0) {
+        result = `${hours}:${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+      } else if (minutes > 0) {
+        result = `${minutes}:${String(secs).padStart(2, '0')}`;
+      } else {
+        result = `${secs}`;
+      }
+    }
+  }
+
+  if (labelStyle === 'short')
+    result += hours > 0 ? ' hrs' : minutes > 0 ? ' mins' : ' secs';
+  else if (labelStyle === 'minimal')
+    result += hours > 0 ? ' h' : minutes > 0 ? ' m' : ' s';
+  return result;
+};
 
 interface SessionBarProps {
   position?: 'header' | 'footer';
@@ -51,13 +100,18 @@ export const SessionBar = ({
     variant === 'relative' ? relativeSettings : standingsSettings;
   const effectiveBarSettings =
     position === 'footer' ? settings?.footerBar : settings?.headerBar;
-  const sessionNum = useTelemetryValue('SessionNum');
+  const session = useCurrentSessionType();
   const displayUnits = useTelemetryValue('DisplayUnits'); // 0 = imperial, 1 = metric
-  const sessionName = useSessionName(sessionNum);
-  const sessionLaps = useSessionLaps(sessionNum);
   const { incidentLimit, incidents } = useDriverIncidents();
-  const { state, currentLap, totalLaps, time, timeTotal, timeRemaining } =
-    useSessionLapCount();
+  const {
+    currentLap,
+    time,
+    timeRemaining,
+    timeTotal,
+    totalLaps,
+    state,
+    greenFlagTimestamp,
+  } = useSessionLapCount();
   const brakeBias = useBrakeBias();
   const { trackWetness } = useTrackWetness();
   const { precipitation } = usePrecipitation();
@@ -70,21 +124,7 @@ export const SessionBar = ({
   const localTime = useCurrentTime();
   const sessionClockTime = useSessionCurrentTime();
   const { totalRaceLaps, isFixedLapRace } = useTotalRaceLaps();
-  const qualifyingResults = useSessionQualifyingResults();
-  const racePositions = useSessionPositions(sessionNum);
-
-  // Get lap time history for all cars
-  const lapTimeHistory = useLapTimeHistory();
-
-  // Get lap distance percentages for tie-breaking
-  const lapDistPcts = useTelemetryValues<number[]>('CarIdxLapDistPct');
-
-  // Cache for estimated total time to prevent continuous updates
-  const [cachedTotalTime, setCachedTotalTime] = useState<{
-    totalTime: number;
-    leaderCarIdx: number;
-    leaderLaps: number;
-  } | null>(null);
+  const { totalRaceTime, adjustedRaceTime } = useTotalRaceTime();
 
   // Define all possible items with their render functions
   const itemDefinitions = {
@@ -92,193 +132,118 @@ export const SessionBar = ({
       enabled:
         effectiveBarSettings?.sessionName?.enabled ??
         (position === 'header' ? true : false),
-      render: () => <div className="flex">{sessionName}</div>,
+      render: () => <div className="flex">{session}</div>,
     },
     sessionTime: {
       enabled:
         effectiveBarSettings?.sessionTime?.enabled ??
         (position === 'header' ? true : false),
       render: () => {
-        const mode = effectiveBarSettings?.sessionTime?.mode ?? 'Remaining';
-
-        // For time-based sessions
-        if (sessionLaps === 'unlimited') {
-          let elapsedTime, remainingTime, totalTime;
-
-          if (state === 4) {
-            // active session
-            elapsedTime = Math.max(0, timeTotal - timeRemaining);
-            remainingTime = Math.max(0, timeRemaining);
-            totalTime = timeTotal;
-          } else if (state === 1) {
-            // waiting/pre-session
-            elapsedTime = time;
-            remainingTime = Math.max(0, timeRemaining);
-            totalTime = time + Math.max(0, timeRemaining);
-          } else {
-            // other states
-            elapsedTime = timeTotal;
-            remainingTime = timeTotal;
-            totalTime = timeTotal;
+        let elapsedTime = -1;
+        let remainingTime = -1;
+        let totalTime = -1;
+        if (session === 'Race') {
+          switch (state) {
+            case SessionState.GetInCar:
+              // Before grid, there is a ~2min countdown
+              elapsedTime = time;
+              remainingTime = timeRemaining;
+              totalTime = time + timeRemaining;
+              break;
+            case SessionState.Warmup:
+            case SessionState.ParadeLaps:
+              // Freeze the race timers until green
+              elapsedTime = 0;
+              if (isFixedLapRace) {
+                remainingTime = totalRaceTime;
+                totalTime = totalRaceTime;
+              } else {
+                remainingTime = timeRemaining;
+                totalTime = timeTotal;
+              }
+              break;
+            case SessionState.Racing:
+            case SessionState.Checkered:
+              // Session timer does not restart at green
+              elapsedTime = time - greenFlagTimestamp;
+              if (isFixedLapRace) {
+                remainingTime = adjustedRaceTime - elapsedTime;
+                totalTime = totalRaceTime;
+              } else {
+                remainingTime = timeRemaining;
+                totalTime = timeTotal;
+              }
+              break;
+            case SessionState.CoolDown:
+            default:
+              elapsedTime = 0;
+              remainingTime = 0;
+              totalTime = 0;
+              break;
           }
-
-          const elapsedStr =
-            elapsedTime < totalTime
-              ? formatTime(elapsedTime, 'duration')
-              : null;
-          const remainingStr =
-            remainingTime < totalTime
-              ? formatTime(remainingTime, 'duration')
-              : null;
-          const totalStr = formatTime(totalTime, 'duration-wlabels');
-
-          let timeStr = '';
-          if (mode === 'Elapsed') {
-            timeStr = elapsedStr
-              ? `${elapsedStr} / ${totalStr}`
-              : totalStr || '';
-          } else if (mode === 'Remaining') {
-            timeStr = remainingStr
-              ? `${remainingStr} / ${totalStr}`
-              : totalStr || '';
-          }
-
-          return timeStr ? (
-            <div className="flex justify-center">{timeStr}</div>
-          ) : null;
+        } else {
+          elapsedTime = time;
+          remainingTime = timeRemaining;
+          totalTime = timeTotal;
         }
 
-        // For lap-based races
-        if (sessionName?.toLowerCase() === 'race' && totalLaps) {
-          // Calculate time elapsed
-          const timeElapsed =
-            state === 4 ? timeTotal - timeRemaining : state === 1 ? time : 0;
+        const sessionTimeSettings = effectiveBarSettings?.sessionTime;
+        const totalFormat = sessionTimeSettings?.totalFormat ?? 'minimal';
+        const labelStyle = sessionTimeSettings?.labelStyle ?? 'minimal';
 
-          // Get overall fastest qualifying time
-          const validQualifyingTimes =
-            qualifyingResults?.map((r) => r.FastestTime).filter((t) => t > 0) ||
-            [];
-          const fastestQualifyingTime =
-            validQualifyingTimes.length > 0
-              ? Math.min(...validQualifyingTimes)
-              : 0;
+        const elapsedStr =
+          elapsedTime >= 0
+            ? formatTotalTime(elapsedTime, totalFormat, false, labelStyle)
+            : '-';
+        const remainingStr =
+          remainingTime >= 0
+            ? formatTotalTime(remainingTime, totalFormat, false, labelStyle)
+            : '-';
+        let totalStr =
+          totalTime >= 0
+            ? formatTotalTime(totalTime, totalFormat, true, labelStyle)
+            : '-';
 
-          // Find race leader (position 1 with most laps, tie-break by lap percent)
-          const positionOneDrivers =
-            racePositions?.filter((driver) => driver.Position === 1) || [];
-          const raceLeader =
-            positionOneDrivers.length > 0
-              ? positionOneDrivers.reduce((best, current) => {
-                  if (!best || current.LapsComplete > best.LapsComplete)
-                    return current;
-                  if (current.LapsComplete === best.LapsComplete) {
-                    const bestPct = lapDistPcts?.[best.CarIdx] ?? 0;
-                    const currentPct = lapDistPcts?.[current.CarIdx] ?? 0;
-                    return currentPct > bestPct ? current : best;
-                  }
-                  return best;
-                })
-              : null;
-
-          // Calculate simple average lap time
-          let avgLapTime = 0;
-          if (raceLeader) {
-            const leaderLapTimes = lapTimeHistory[raceLeader.CarIdx] || [];
-
-            // Include qualifying time if <3 race laps completed
-            const lapTimes = [...leaderLapTimes];
-            if (raceLeader.LapsComplete < 3 && raceLeader.LastTime > 0) {
-              lapTimes.push(raceLeader.LastTime);
-            }
-
-            // Simple average of all valid lap times
-            const validTimes = lapTimes.filter((t) => t > 0);
-            if (validTimes.length > 0) {
-              avgLapTime =
-                validTimes.reduce((sum, t) => sum + t, 0) / validTimes.length;
-            }
-          }
-
-          // Fallback to fastest qualifying time
-          if (!avgLapTime) {
-            avgLapTime = fastestQualifyingTime;
-          }
-
-          // Calculate and cache estimates
-          if (avgLapTime > 0) {
-            const lapsRemaining = Math.max(
-              0,
-              totalLaps - (raceLeader?.LapsComplete ?? 0)
-            );
-            const estimatedTotalTime = timeElapsed + lapsRemaining * avgLapTime;
-
-            // Only update cached total time when leader changes or completes more laps
-            const shouldUpdateCache =
-              !cachedTotalTime ||
-              cachedTotalTime.leaderCarIdx !== (raceLeader?.CarIdx ?? -1) ||
-              cachedTotalTime.leaderLaps !== (raceLeader?.LapsComplete ?? 0);
-
-            if (shouldUpdateCache) {
-              setCachedTotalTime({
-                totalTime: estimatedTotalTime,
-                leaderCarIdx: raceLeader?.CarIdx ?? -1,
-                leaderLaps: raceLeader?.LapsComplete ?? 0,
-              });
-            }
-
-            // Use cached total time for display (stable between calculations)
-            const displayTotalTime =
-              cachedTotalTime?.totalTime ?? estimatedTotalTime;
-            const displayRemaining = Math.max(
-              0,
-              displayTotalTime - timeElapsed
-            );
-
-            // Display logic
-            if (state === 4) {
-              const elapsedStr = formatTime(timeElapsed, 'duration');
-              const totalStr = formatTime(displayTotalTime, 'duration');
-              const remainingStr = formatTime(displayRemaining, 'duration');
-
-              if (mode === 'Elapsed' && elapsedStr && totalStr) {
-                return (
-                  <div className="flex justify-center">{`${elapsedStr} / ≈ ${totalStr}`}</div>
-                );
-              } else if (mode === 'Remaining' && remainingStr && totalStr) {
-                return (
-                  <div className="flex justify-center">{`${remainingStr} / ≈ ${totalStr}`}</div>
-                );
-              }
-            } else {
-              // Pre-race or other states
-              const totalStr = formatTime(displayTotalTime, 'duration-wlabels');
-              if (totalStr) {
-                return <div className="flex justify-center">≈ {totalStr}</div>;
-              }
-            }
-          }
+        if (session === 'Race' && state >= 2 && isFixedLapRace) {
+          totalStr = '~' + totalStr;
         }
 
-        return <div className="flex justify-center"></div>;
+        const mode = sessionTimeSettings?.mode ?? 'Remaining';
+        if (mode === 'Remaining') {
+          return (
+            <div className="flex justify-center tabular-nums">
+              {remainingStr} / {totalStr}
+            </div>
+          );
+        } else {
+          // mode === Elapsed
+          return (
+            <div className="flex justify-center tabular-nums">
+              {elapsedStr} / {totalStr}
+            </div>
+          );
+        }
       },
     },
     sessionLaps: {
       enabled: effectiveBarSettings?.sessionLaps?.enabled ?? true,
       render: () => {
-        if (totalRaceLaps > 0)
+        const lapDisplay = Math.max(currentLap, 0);
+        const lapsTotal = session === 'Race' ? totalRaceLaps : totalLaps;
+        if (lapsTotal > 0)
           if (isFixedLapRace)
             return (
               <div className="flex justify-center">
-                L{currentLap}/{totalRaceLaps.toFixed(0)}
+                L{lapDisplay}/{lapsTotal.toFixed(0)}
               </div>
             );
           else
             return (
               <div className="flex justify-center">
-                L{currentLap}/{totalRaceLaps.toFixed(1)}
+                L{lapDisplay}/{lapsTotal.toFixed(1)}
               </div>
             );
-        else return <div className="flex justify-center">L{currentLap}</div>;
+        else return <div className="flex justify-center">L{lapDisplay}</div>;
       },
     },
     incidentCount: {
