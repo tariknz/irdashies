@@ -49,6 +49,7 @@ export const useDriverLivePositions = ({
   const p1LapCompletedRef = useRef<number | undefined>(undefined);
   const p1CarRef = useRef<number | undefined>(undefined);
   const lastProgressRef = useRef<Map<number, number>>(new Map());
+  const prevTrackSurfaceRef = useRef<Map<number, number>>(new Map());
   const sessionType = useCurrentSessionType();
   const sessionNum = useTelemetryValue('SessionNum');
   const sessionPositions = useSessionPositions(sessionNum);
@@ -175,7 +176,17 @@ export const useDriverLivePositions = ({
         const sessionLapsCompleted = sessionPositionSource?.LapsComplete ?? 0;
         const classId = carIdxClass[driverIdx] ?? -1;
         const distPct = carIdxLapDistPct[driverIdx] ?? 0;
-        const isOnTow = (carIdxTrackSurface?.[driverIdx] ?? 3) === 0;
+
+        // check for tow
+        const carTrackSurface = carIdxTrackSurface?.[driverIdx] ?? 3;
+        const prevCarTrackSurface = prevTrackSurfaceRef.current.get(driverIdx);
+        const isOnTow =
+          carTrackSurface == 1 &&
+          prevCarTrackSurface != undefined &&
+          prevCarTrackSurface !== 2;
+        if (prevCarTrackSurface !== carTrackSurface) {
+          prevTrackSurfaceRef.current.set(driverIdx, carTrackSurface);
+        }
 
         // const lapCompleted = lapCompleted ?? 0;
         
