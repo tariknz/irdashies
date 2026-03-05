@@ -200,7 +200,7 @@ export const PitlaneHelperBody = ({
       >
         <div
           className={[
-            'flex flex-col flex-2 justify-center px-2 py-4 rounded transition-all text-center w-full h-full ',
+            'flex flex-col flex-2 justify-center p-2 rounded transition-all text-center w-full h-full ',
             speed.isSeverelyOver
               ? 'bg-red-600 animate-pulse'
               : speed.isSpeeding
@@ -247,17 +247,8 @@ export const PitlaneHelperBody = ({
       </div>
 
       {/* Row 2: Countdown bars (entry/box/exit) */}
-      {((!onPitRoad &&
-        (shouldShowInputs || config.showProgressBar) &&
-        position.distanceToPitEntry > 0 &&
-        position.distanceToPitEntry <= config.approachDistance) ||
-        (onPitRoad && Math.abs(position.distanceToPit) >= 5) ||
-        (onPitRoad &&
-          position.distanceToPit < -5 &&
-          position.distanceToPitExit > 0 &&
-          position.distanceToPitExit <= 150)) && (
         <div
-          className={`flex flex-col gap-3 w-full flex-1 ${
+          className={`flex flex-col gap-3 w-full ${
             config.progressBarOrientation === 'vertical' ? 'flex-2' : 'flex-1'
           }`}
         >
@@ -285,7 +276,7 @@ export const PitlaneHelperBody = ({
                   />
                 )}
 
-              {onPitRoad && Math.abs(position.distanceToPit) >= 5 && (
+              {onPitRoad && (position.distanceToPit >= 5 || (config.showPastPitBox && position.distanceToPit <= -5)) && (
                 <PitCountdownBar
                   distance={Math.abs(position.distanceToPit)}
                   maxDistance={100}
@@ -328,7 +319,6 @@ export const PitlaneHelperBody = ({
             </div>
           )}
         </div>
-      )}
 
       {/* Status & warning badges */}
       {onPitRoad && Math.abs(position.distanceToPit) < 5 && (

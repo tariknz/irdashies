@@ -602,6 +602,7 @@ export interface PitlaneHelperWidgetSettings extends BaseWidgetSettings {
     background: { opacity: number };
     progressBarOrientation: 'horizontal' | 'vertical';
     speedBarOrientation: 'horizontal' | 'vertical';
+    showPastPitBox: boolean;
     showProgressBar: boolean;
     showSpeedBar: boolean;
     showPitExitInputs: boolean;

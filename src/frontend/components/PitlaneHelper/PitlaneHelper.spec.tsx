@@ -51,6 +51,7 @@ describe('PitlaneHelper', () => {
     speedBarOrientation: 'vertical' as const,
     showProgressBar: true,
     showSpeedBar: true,
+    showPastPitBox: false,
     background: { opacity: 80 },
     showPitExitInputs: false,
     showInputsPhase: 'always' as const,
@@ -285,6 +286,11 @@ describe('PitlaneHelper', () => {
         return undefined;
       });
 
+      vi.mocked(usePitlaneHelperSettings).mockReturnValue({
+        ...defaultConfig,
+        showPastPitBox: true,
+      });
+
       vi.mocked(usePitboxPosition).mockReturnValue({
         ...defaultPositionResult,
         distanceToPit: -25, // Past pitbox
@@ -299,6 +305,11 @@ describe('PitlaneHelper', () => {
       vi.mocked(context.useTelemetryValue).mockImplementation((key) => {
         if (key === 'OnPitRoad') return true;
         return undefined;
+      });
+
+      vi.mocked(usePitlaneHelperSettings).mockReturnValue({
+        ...defaultConfig,
+        showPastPitBox: true,
       });
 
       vi.mocked(usePitboxPosition).mockReturnValue({

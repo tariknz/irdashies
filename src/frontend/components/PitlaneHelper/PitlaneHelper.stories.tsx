@@ -47,6 +47,7 @@ const mockConfig = (overrides = {}) => ({
   speedBarOrientation: 'vertical' as const,
   showProgressBar: true,
   progressBarOrientation: 'horizontal' as const,
+  showPastPitBox: true,
   approachDistance: 500,
   showMode: 'approaching' as const,
   earlyPitboxThreshold: 75,

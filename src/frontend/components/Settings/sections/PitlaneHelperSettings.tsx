@@ -22,6 +22,7 @@ const defaultConfig: PitlaneHelperWidgetSettings['config'] = {
   background: { opacity: 80 },
   progressBarOrientation: 'horizontal',
   speedBarOrientation: 'horizontal',
+  showPastPitBox: false,
   showProgressBar: true,
   showSpeedBar: true,
   showPitExitInputs: false,
@@ -63,6 +64,9 @@ export const PitlaneHelperSettings = () => {
         showPitExitInputs:
           savedSettings.config.showPitExitInputs ??
           defaultConfig.showPitExitInputs,
+        showPastPitBox:
+          savedSettings.config.showPastPitBox ??
+          defaultConfig.showPastPitBox,
         pitExitInputs:
           savedSettings.config.pitExitInputs ?? defaultConfig.pitExitInputs,
         showInputsPhase:
@@ -207,6 +211,15 @@ export const PitlaneHelperSettings = () => {
                         ]}
                         onChange={(v) =>
                           handleConfigChange({ progressBarOrientation: v })
+                        }
+                      />
+
+                      <SettingToggleRow
+                        title="Show Past Box"
+                        description="Show bar indicating distance past the pit box"
+                        enabled={settings.config.showPastPitBox}
+                        onToggle={(newValue) =>
+                          handleConfigChange({ showPastPitBox: newValue })
                         }
                       />
                     </SettingsSection>
