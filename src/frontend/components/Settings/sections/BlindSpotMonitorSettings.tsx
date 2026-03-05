@@ -118,80 +118,69 @@ export const BlindSpotMonitorSettings = () => {
             {/* DISPLAY TAB */}
             {activeTab === 'display' && (
               <SettingsSection title="Display">
+                {/* Background Opacity */}
+                <SettingSliderRow
+                  title="Background Opacity"
+                  value={settings.config.background?.opacity ?? 30}
+                  units="%"
+                  min={0}
+                  max={100}
+                  step={5}
+                  onChange={(v) =>
+                    handleConfigChange({ background: { opacity: v } })
+                  }
+                />
 
-                  {/* Background Opacity */}
-                  <SettingSliderRow
-                    title="Background Opacity"
-                    value={settings.config.background?.opacity ?? 30}
-                    units="%"
-                    min={0}
-                    max={100}
-                    step={5}
-                    onChange={(v) =>
-                      handleConfigChange({ background: { opacity: v } })
-                    }
-                  />
-
-                  {/* Width */}
-                  <SettingSliderRow
-                    title="Width"
-                    description="Width of the blind spot indicator in pixels."
-                    value={settings.config.width ?? 20}
-                    units="px"
-                    min={5}
-                    max={100}
-                    step={1}
-                    onChange={(v) =>
-                      handleConfigChange({ width: v })
-                    }
-                  />
-
-                </SettingsSection>
+                {/* Width */}
+                <SettingSliderRow
+                  title="Width"
+                  description="Width of the blind spot indicator in pixels."
+                  value={settings.config.width ?? 20}
+                  units="px"
+                  min={5}
+                  max={100}
+                  step={1}
+                  onChange={(v) => handleConfigChange({ width: v })}
+                />
+              </SettingsSection>
             )}
 
             {/* OPTIONS TAB */}
             {activeTab === 'options' && (
               <SettingsSection title="Options">
+                {/* Distance Ahead */}
+                <SettingSliderRow
+                  title="Distance Ahead"
+                  description="Distance to car ahead in meters."
+                  value={settings.config.distAhead ?? 20}
+                  units="m"
+                  min={3}
+                  max={6}
+                  step={0.1}
+                  onChange={(v) => handleConfigChange({ distAhead: v })}
+                />
 
-                  {/* Distance Ahead */}
-                  <SettingSliderRow
-                    title="Distance Ahead"
-                    description="Distance to car ahead in meters."
-                    value={settings.config.distAhead ?? 20}
-                    units="m"
-                    min={3}
-                    max={6}
-                    step={0.1}
-                    onChange={(v) =>
-                      handleConfigChange({ distAhead: v })
-                    }
-                  />
-
-                  {/* Distance Behind */}
-                  <SettingSliderRow
-                    title="Distance Behind"
-                    description="Distance to car behind in meters."
-                    value={settings.config.distBehind ?? 20}
-                    units="m"
-                    min={3}
-                    max={6}
-                    step={0.1}
-                    onChange={(v) =>
-                      handleConfigChange({ distBehind: v })
-                    }
-                  />
-
-                </SettingsSection>
+                {/* Distance Behind */}
+                <SettingSliderRow
+                  title="Distance Behind"
+                  description="Distance to car behind in meters."
+                  value={settings.config.distBehind ?? 20}
+                  units="m"
+                  min={3}
+                  max={6}
+                  step={0.1}
+                  onChange={(v) => handleConfigChange({ distBehind: v })}
+                />
+              </SettingsSection>
             )}
 
             {/* VISIBILITY TAB */}
             {activeTab === 'visibility' && (
               <SettingsSection title="Session Visibility">
-              
                 <SessionVisibility
-                    sessionVisibility={settings.config.sessionVisibility}
-                    handleConfigChange={handleConfigChange}
-                  />
+                  sessionVisibility={settings.config.sessionVisibility}
+                  handleConfigChange={handleConfigChange}
+                />
 
                 <SettingDivider />
 
@@ -203,7 +192,6 @@ export const BlindSpotMonitorSettings = () => {
                     handleConfigChange({ showOnlyWhenOnTrack: newValue })
                   }
                 />
-
               </SettingsSection>
             )}
           </div>

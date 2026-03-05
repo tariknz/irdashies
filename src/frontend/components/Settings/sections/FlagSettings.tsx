@@ -116,7 +116,6 @@ export const FlagSettings = () => {
             {/* OPTIONS TAB */}
             {activeTab === 'options' && (
               <SettingsSection title="Display">
-
                 <SettingToggleRow
                   title="Double Flag"
                   description="When enabled two flags will be displayed"
@@ -125,7 +124,7 @@ export const FlagSettings = () => {
                     handleConfigChange({ doubleFlag: enabled })
                   }
                 />
-           
+
                 <SettingSelectRow<'8x8' | '16x16' | 'uniform'>
                   title="Matrix Mode"
                   description="Choose between 8x8, 16x16, or uniform color rendering."
@@ -168,7 +167,7 @@ export const FlagSettings = () => {
 
                 <SettingToggleRow
                   title="Show No Flag State"
-                  description="Display &apos;no flag&apos; (grey leds) when no flags are waved"
+                  description="Display 'no flag' (grey leds) when no flags are waved"
                   enabled={settings.config.showNoFlagState ?? false}
                   onToggle={(enabled) =>
                     handleConfigChange({ showNoFlagState: enabled })
@@ -183,18 +182,16 @@ export const FlagSettings = () => {
                     handleConfigChange({ enableGlow: enabled })
                   }
                 />
-
               </SettingsSection>
             )}
 
             {/* VISIBILITY TAB */}
             {activeTab === 'visibility' && (
               <SettingsSection title="Session Visibility">
-
                 <SessionVisibility
-                    sessionVisibility={settings.config.sessionVisibility}
-                    handleConfigChange={handleConfigChange}
-                  />
+                  sessionVisibility={settings.config.sessionVisibility}
+                  handleConfigChange={handleConfigChange}
+                />
 
                 <SettingDivider />
 
@@ -206,7 +203,6 @@ export const FlagSettings = () => {
                     handleConfigChange({ showOnlyWhenOnTrack: newValue })
                   }
                 />
-
               </SettingsSection>
             )}
           </div>

@@ -64,12 +64,12 @@ export const SubSections: Story = {
           onToggle={setToggle}
         />
         <SettingsSection>
-            <SettingToggleRow
+          <SettingToggleRow
             title="Sub Debug Mode"
             description="Sub menu for developer debugging features"
             enabled={toggle}
             onToggle={setToggle}
-            />
+          />
         </SettingsSection>
       </SettingsSection>
     );
