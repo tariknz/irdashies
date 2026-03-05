@@ -224,100 +224,103 @@ export const WeatherSettings = () => {
 
         return (
           <div className="space-y-4">
+            {/* Tabs */}
+            <div className="flex border-b border-slate-700/50">
+              <TabButton
+                id="display"
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+              >
+                Display
+              </TabButton>
+              <TabButton
+                id="options"
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+              >
+                Options
+              </TabButton>
+              <TabButton
+                id="visibility"
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+              >
+                Visibility
+              </TabButton>
+            </div>
 
-          {/* Tabs */}
-          <div className="flex border-b border-slate-700/50">
-            <TabButton id="display" activeTab={activeTab} setActiveTab={setActiveTab}>
-              Display
-            </TabButton>
-            <TabButton id="options" activeTab={activeTab} setActiveTab={setActiveTab}>
-              Options
-            </TabButton>
-            <TabButton id="visibility" activeTab={activeTab} setActiveTab={setActiveTab}>
-              Visibility
-            </TabButton>
-          </div>
+            <div className="pt-4">
+              {/* DISPLAY TAB */}
+              {activeTab === 'display' && (
+                <SettingsSection title="Display Order">
+                  <DisplaySettingsList
+                    itemsOrder={itemsOrder}
+                    onReorder={handleDisplayOrderChange}
+                    settings={settings}
+                    handleConfigChange={handleConfigChange}
+                  />
 
-          <div className="pt-4">
+                  <SettingActionButton
+                    label="Reset to Default Order"
+                    onClick={() => {
+                      const defaultOrder = sortableSettings.map((s) => s.id);
+                      setItemsOrder(defaultOrder);
+                      handleConfigChange({ displayOrder: defaultOrder });
+                    }}
+                  />
+                </SettingsSection>
+              )}
 
-            {/* DISPLAY TAB */}
-            {activeTab === 'display' && (
-              <SettingsSection title="Display Order">
+              {/* OPTIONS TAB */}
+              {activeTab === 'options' && (
+                <SettingsSection title="Options">
+                  <SettingSliderRow
+                    title="Background Opacity"
+                    value={settings.config.background.opacity ?? 40}
+                    units="%"
+                    min={0}
+                    max={100}
+                    step={1}
+                    onChange={(v) =>
+                      handleConfigChange({ background: { opacity: v } })
+                    }
+                  />
 
-                <DisplaySettingsList
-                  itemsOrder={itemsOrder}
-                  onReorder={handleDisplayOrderChange}
-                  settings={settings}
-                  handleConfigChange={handleConfigChange}
-                />
+                  <SettingButtonGroupRow<'auto' | 'Metric' | 'Imperial'>
+                    title="Temperature Units"
+                    value={settings.config.units ?? 'auto'}
+                    options={[
+                      { label: 'Auto', value: 'auto' },
+                      { label: '°C', value: 'Metric' },
+                      { label: '°F', value: 'Imperial' },
+                    ]}
+                    onChange={(v) => handleConfigChange({ units: v })}
+                  />
+                </SettingsSection>
+              )}
 
-                <SettingActionButton
-                  label="Reset to Default Order"
-                  onClick={() => {
-                    const defaultOrder = sortableSettings.map((s) => s.id);
-                    setItemsOrder(defaultOrder);
-                    handleConfigChange({ displayOrder: defaultOrder });
-                  }}
-                />
-
-              </SettingsSection>        
-            )}
-
-            {/* OPTIONS TAB */}
-            {activeTab === 'options' && (
-              <SettingsSection title="Options">
-
-                <SettingSliderRow
-                  title="Background Opacity"
-                  value={settings.config.background.opacity ?? 40}
-                  units="%"
-                  min={0}
-                  max={100}
-                  step={1}
-                  onChange={(v) =>
-                    handleConfigChange({ background: { opacity: v } })
-                  }
-                />
-
-                <SettingButtonGroupRow<'auto' | 'Metric' | 'Imperial'>
-                  title="Temperature Units"
-                  value={settings.config.units ?? 'auto'}
-                  options={[
-                    { label: 'Auto', value: 'auto' },
-                    { label: '°C', value: 'Metric' },
-                    { label: '°F', value: 'Imperial' },
-                  ]}
-                  onChange={(v) => handleConfigChange({ units: v })}
-                />    
-
-              </SettingsSection>
-            )}
-
-            {/* VISIBILITY TAB */}
-            {activeTab === 'visibility' && (
-              <SettingsSection title="Session Visibility">
-                            
-                <SessionVisibility
+              {/* VISIBILITY TAB */}
+              {activeTab === 'visibility' && (
+                <SettingsSection title="Session Visibility">
+                  <SessionVisibility
                     sessionVisibility={settings.config.sessionVisibility}
                     handleConfigChange={handleConfigChange}
                   />
 
-                <SettingDivider />
+                  <SettingDivider />
 
-                <SettingToggleRow
-                  title="Show only when on track"
-                  description="If enabled, weather will only be shown when driving"
-                  enabled={settings.config.showOnlyWhenOnTrack ?? false}
-                  onToggle={(newValue) =>
-                    handleConfigChange({ showOnlyWhenOnTrack: newValue })
-                  }
-                />
-
-              </SettingsSection>
-            )}
-
+                  <SettingToggleRow
+                    title="Show only when on track"
+                    description="If enabled, weather will only be shown when driving"
+                    enabled={settings.config.showOnlyWhenOnTrack ?? false}
+                    onToggle={(newValue) =>
+                      handleConfigChange({ showOnlyWhenOnTrack: newValue })
+                    }
+                  />
+                </SettingsSection>
+              )}
+            </div>
           </div>
-        </div>            
         );
       }}
     </BaseSettingsSection>

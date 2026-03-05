@@ -368,7 +368,12 @@ const RelativeWithReorderableConfig = () => {
       headerBar: {
         enabled: true,
         sessionName: { enabled: true },
-        sessionTime: { enabled: true, mode: 'Remaining' },
+        sessionTime: {
+          enabled: true,
+          mode: 'Remaining',
+          totalFormat: 'minimal',
+          labelStyle: 'minimal',
+        },
         sessionLaps: { enabled: true },
         incidentCount: { enabled: true },
         brakeBias: { enabled: false },
@@ -378,7 +383,7 @@ const RelativeWithReorderableConfig = () => {
         precipitation: { enabled: false },
         airTemperature: { enabled: false, unit: 'Metric' },
         trackTemperature: { enabled: false, unit: 'Metric' },
-        wind: { enabled: false, unit: 'Metric', speedPosition: 'right' },
+        wind: { enabled: false, speedPosition: 'right' },
         displayOrder: [
           'sessionName',
           'sessionTime',
@@ -390,7 +395,12 @@ const RelativeWithReorderableConfig = () => {
       footerBar: {
         enabled: true,
         sessionName: { enabled: false },
-        sessionTime: { enabled: false, mode: 'Remaining' },
+        sessionTime: {
+          enabled: false,
+          mode: 'Remaining',
+          totalFormat: 'minimal',
+          labelStyle: 'minimal',
+        },
         sessionLaps: { enabled: true },
         incidentCount: { enabled: false },
         brakeBias: { enabled: true },
@@ -400,7 +410,7 @@ const RelativeWithReorderableConfig = () => {
         precipitation: { enabled: false },
         airTemperature: { enabled: true, unit: 'Metric' },
         trackTemperature: { enabled: true, unit: 'Metric' },
-        wind: { enabled: false, unit: 'Metric', speedPosition: 'right' },
+        wind: { enabled: false, speedPosition: 'right' },
         displayOrder: [
           'localTime',
           'trackWetness',
