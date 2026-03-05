@@ -1,6 +1,7 @@
 import { FuelWidgetSettings } from '../../types';
-import { ToggleSwitch } from '../../components/ToggleSwitch';
 import { useFuelStore } from '../../../FuelCalculator/FuelStore';
+import { SettingToggleRow } from '../../components/SettingToggleRow';
+import { SettingsSection } from '../../components/SettingSection';
 
 interface HistoricalStorageSectionProps {
   settings: FuelWidgetSettings;
@@ -12,39 +13,26 @@ export const HistoricalStorageSection = ({
   onChange,
 }: HistoricalStorageSectionProps) => {
   return (
-    <div className="space-y-4">
-      <h3 className="text-lg font-medium text-slate-200">Historical Storage</h3>
-      <div className="bg-slate-800/50 p-4 rounded border border-slate-700 space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <span className="text-sm font-medium text-slate-300">
-              Enable Historical Persistence
-            </span>
-            <span className="block text-xs text-slate-500">
-              Saves the last 10 laps for each car/track to provide immediate
-              estimates.
-            </span>
-          </div>
-          <ToggleSwitch
-            enabled={settings.config.enableStorage ?? true}
-            onToggle={(val) => onChange({ enableStorage: val })}
-          />
-        </div>
+    <SettingsSection title="Historical Storage">
+        
+        <SettingToggleRow
+          title="Enable Historical Persistence"
+          description="Saves the last 10 laps for each car/track to provide immediate
+              estimates."
+          enabled={settings.config.enableStorage ?? false}
+          onToggle={(newValue) =>
+            onChange({ enableStorage: newValue })
+          }
+        /> 
 
-        <div className="flex items-center justify-between pt-4 border-t border-slate-700/50">
-          <div>
-            <span className="text-sm font-medium text-slate-300">
-              Enable Debug Logging
-            </span>
-            <span className="block text-xs text-slate-500">
-              Log comprehensive data to file for troubleshooting.
-            </span>
-          </div>
-          <ToggleSwitch
-            enabled={settings.config.enableLogging ?? false}
-            onToggle={(val) => onChange({ enableLogging: val })}
-          />
-        </div>
+        <SettingToggleRow
+          title="Enable Debug Logging"
+          description="Log comprehensive data to file for troubleshooting."
+          enabled={settings.config.enableLogging ?? false}
+          onToggle={(newValue) =>
+            onChange({ enableLogging: newValue })
+          }
+        /> 
 
         <div className="pt-4 border-t border-slate-700/50">
           <div className="flex items-center justify-between">
@@ -83,7 +71,7 @@ export const HistoricalStorageSection = ({
             </button>
           </div>
         </div>
-      </div>
-    </div>
+
+    </SettingsSection>
   );
 };

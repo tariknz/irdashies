@@ -109,7 +109,7 @@ export const Standings = () => {
                   sof={classStats?.[classId]?.sof}
                   highlightColor={highlightColor}
                   isMultiClass={isMultiClass}
-                  colSpan={12}
+                  colSpan={100}
                 />
                 {classStandings.map((result, driverIndex) => {
                   const prev = classStandings[driverIndex - 1];
@@ -127,7 +127,7 @@ export const Standings = () => {
                     <Fragment key={result.carIdx}>
                       {showDivider && (
                         <tr>
-                          <td colSpan={12} className="px-2 py-0.5">
+                          <td colSpan={100} className="px-2 py-0.5">
                             <hr
                               className="border-2 border-t"
                               style={{
@@ -230,7 +230,7 @@ export const Standings = () => {
                 {index < standings.length - 1 &&
                   !generalSettings?.compactMode && (
                     <tr>
-                      <td colSpan={12} className="h-2"></td>
+                      <td colSpan={100} className="h-2"></td>
                     </tr>
                   )}
               </Fragment>
