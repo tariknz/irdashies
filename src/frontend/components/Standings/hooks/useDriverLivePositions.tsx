@@ -6,7 +6,7 @@ import {
   useTelemetryValue,
   useTelemetryValues,
 } from '@irdashies/context';
-import { SessionState } from '@irdashies/types';
+import { SessionState, TrackLocation  } from '@irdashies/types';
 
 interface DriverData {
   driverIdx: number;
@@ -181,9 +181,9 @@ export const useDriverLivePositions = ({
         const carTrackSurface = carIdxTrackSurface?.[driverIdx] ?? 3;
         const prevCarTrackSurface = prevTrackSurfaceRef.current.get(driverIdx);
         const isOnTow =
-          carTrackSurface == 1 &&
+          carTrackSurface == TrackLocation.InPitStall &&
           prevCarTrackSurface != undefined &&
-          prevCarTrackSurface !== 2;
+          prevCarTrackSurface !== TrackLocation.ApproachingPits;
         if (prevCarTrackSurface !== carTrackSurface) {
           prevTrackSurfaceRef.current.set(driverIdx, carTrackSurface);
         }
