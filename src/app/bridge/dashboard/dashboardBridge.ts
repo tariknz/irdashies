@@ -174,6 +174,8 @@ export const dashboardBridge: DashboardBridge = {
   getGarageCoverImageAsDataUrl: (imagePath: string) => {
     return getGarageCoverImageAsDataUrl(imagePath);
   },
+  exportDashboardToFile: async () => false,
+  importDashboardFromFile: async () => null,
   setAutoStart: async (enabled: boolean) => {
     app.setLoginItemSettings({
       openAtLogin: enabled,
@@ -343,6 +345,35 @@ export async function publishDashboardUpdates(
       }
     }
   );
+
+  ipcMain.handle(
+    'exportDashboardToFile',
+    async (_, dashboard: DashboardLayout) => {
+      const { dialog } = await import('electron');
+      const { canceled, filePath } = await dialog.showSaveDialog({
+        title: 'Export Dashboard',
+        defaultPath: 'dashboard.json',
+        filters: [{ name: 'JSON', extensions: ['json'] }],
+      });
+      if (canceled || !filePath) return false;
+      const { writeFile } = await import('node:fs/promises');
+      await writeFile(filePath, JSON.stringify(dashboard, null, 2), 'utf-8');
+      return true;
+    }
+  );
+
+  ipcMain.handle('importDashboardFromFile', async () => {
+    const { dialog } = await import('electron');
+    const { canceled, filePaths } = await dialog.showOpenDialog({
+      title: 'Import Dashboard',
+      filters: [{ name: 'JSON', extensions: ['json'] }],
+      properties: ['openFile'],
+    });
+    if (canceled || !filePaths[0]) return null;
+    const { readFile } = await import('node:fs/promises');
+    const content = await readFile(filePaths[0], 'utf-8');
+    return JSON.parse(content) as DashboardLayout;
+  });
 
   ipcMain.handle('autostart:set', (_event, enabled: boolean) => {
     app.setLoginItemSettings({

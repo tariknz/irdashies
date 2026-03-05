@@ -65,6 +65,8 @@ export interface DashboardBridge {
   getDashboardForProfile: (
     profileId: string
   ) => Promise<DashboardLayout | null>;
+  exportDashboardToFile: (dashboard: DashboardLayout) => Promise<boolean>;
+  importDashboardFromFile: () => Promise<DashboardLayout | null>;
   stop: () => void;
   setAutoStart: (autoStart: boolean) => Promise<void>;
   onContainerBoundsInfo?: (

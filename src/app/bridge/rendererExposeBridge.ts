@@ -145,6 +145,12 @@ export function exposeBridge() {
     saveDriverTagSettings: (settings: unknown) => {
       return ipcRenderer.invoke('saveDriverTagSettings', settings);
     },
+    exportDashboardToFile: (dashboard: DashboardLayout) => {
+      return ipcRenderer.invoke('exportDashboardToFile', dashboard);
+    },
+    importDashboardFromFile: () => {
+      return ipcRenderer.invoke('importDashboardFromFile');
+    },
     getCurrentDashboard: () => {
       // This is a synchronous getter used in overlay container mode
       // The actual dashboard state is managed by the OverlayContainer component
