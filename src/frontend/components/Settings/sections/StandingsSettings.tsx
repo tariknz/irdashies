@@ -9,7 +9,11 @@ import { useDashboard } from '@irdashies/context';
 import { ToggleSwitch } from '../components/ToggleSwitch';
 import { TabButton } from '../components/TabButton';
 import { useSortableList } from '../../SortableList';
-import { DotsSixVerticalIcon } from '@phosphor-icons/react';
+import {
+  DotsSixVerticalIcon,
+  BarbellIcon,
+  UsersIcon,
+} from '@phosphor-icons/react';
 import { BadgeFormatPreview } from '../components/BadgeFormatPreview';
 import { DriverNamePreview } from '../components/DriverNamePreview';
 import {
@@ -25,6 +29,8 @@ import { SettingToggleRow } from '../components/SettingToggleRow';
 import { SettingActionButton } from '../components/SettingActionButton';
 import { SettingSliderRow } from '../components/SettingSliderRow';
 import { SettingSelectRow } from '../components/SettingSelectRow';
+import { DriverRatingBadge } from '../../Standings/components/DriverRatingBadge/DriverRatingBadge';
+import { DriverStatusBadges } from '../../Standings/components/DriverInfoRow/cells/DriverStatusBadges';
 
 const SETTING_ID = 'standings';
 
@@ -134,7 +140,12 @@ const defaultConfig: StandingsWidgetSettings['config'] = {
   },
   showOnlyWhenOnTrack: false,
   useLivePosition: false,
-  minimalStyle: { badge: false, statusBadges: false, rowColors: false },
+  minimalStyle: {
+    classHeader: false,
+    badge: false,
+    statusBadges: false,
+    driverPositionNumber: false,
+  },
   lapTimeDeltas: { enabled: false, numLaps: 3 },
   position: { enabled: true },
   driverName: {
@@ -449,12 +460,16 @@ const migrateConfig = (
     showOnlyWhenOnTrack: (config.showOnlyWhenOnTrack as boolean) ?? false,
     useLivePosition: (config.useLivePosition as boolean) ?? false,
     minimalStyle: {
+      classHeader:
+        (config.minimalStyle as { classHeader?: boolean })?.classHeader ??
+        false,
       badge: (config.minimalStyle as { badge?: boolean })?.badge ?? false,
       statusBadges:
         (config.minimalStyle as { statusBadges?: boolean })?.statusBadges ??
         false,
-      rowColors:
-        (config.minimalStyle as { rowColors?: boolean })?.rowColors ?? false,
+      driverPositionNumber:
+        (config.minimalStyle as { driverPositionNumber?: boolean })
+          ?.driverPositionNumber ?? false,
     },
     sessionVisibility:
       (config.sessionVisibility as SessionVisibilitySettings) ??
@@ -1448,49 +1463,224 @@ export const StandingsSettings = () => {
 
               {/* STYLING TAB */}
               {activeTab === 'styling' && (
-                <SettingsSection title="Minimal Styling">
-                  <SettingToggleRow
-                    title="Driver Badge"
-                    description="Use minimal styling for the iRating/license badge"
-                    enabled={settings.config.minimalStyle?.badge ?? false}
-                    onToggle={(v) =>
-                      handleConfigChange({
-                        minimalStyle: {
-                          ...settings.config.minimalStyle,
-                          badge: v,
-                        },
-                      })
-                    }
-                  />
-                  <SettingToggleRow
-                    title="Status Badges"
-                    description="Use minimal styling for pit, penalty, and other status badges"
-                    enabled={
-                      settings.config.minimalStyle?.statusBadges ?? false
-                    }
-                    onToggle={(v) =>
-                      handleConfigChange({
-                        minimalStyle: {
-                          ...settings.config.minimalStyle,
-                          statusBadges: v,
-                        },
-                      })
-                    }
-                  />
-                  <SettingToggleRow
-                    title="Row Colors"
-                    description="Use minimal styling for class color highlighting on position and car number"
-                    enabled={settings.config.minimalStyle?.rowColors ?? false}
-                    onToggle={(v) =>
-                      handleConfigChange({
-                        minimalStyle: {
-                          ...settings.config.minimalStyle,
-                          rowColors: v,
-                        },
-                      })
-                    }
-                  />
-                </SettingsSection>
+                <div>
+                  <div className="mb-6">
+                    <SettingsSection title="Class Header">
+                      <div className="flex gap-3">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleConfigChange({
+                              minimalStyle: {
+                                ...settings.config.minimalStyle,
+                                classHeader: false,
+                              },
+                            })
+                          }
+                          className={`flex flex-col items-center gap-1 px-3 py-2 rounded border cursor-pointer transition-colors ${
+                            !settings.config.minimalStyle?.classHeader
+                              ? 'border-blue-500 bg-blue-500/10'
+                              : 'border-transparent hover:bg-slate-800'
+                          }`}
+                        >
+                          <div className="flex items-center text-white text-xs [text-shadow:_1px_1px_1px_rgba(0_0_0/0.2)]">
+                            <span className="bg-yellow-500 border-yellow-500 px-2 py-1 font-bold border-l-4">
+                              BMW M4 GT4
+                            </span>
+                            <span className="bg-yellow-800 border-yellow-500 px-2 py-1 flex items-center gap-1">
+                              <BarbellIcon /> <span>1253</span>
+                              <UsersIcon className="ml-3" />
+                              <span>11</span>
+                            </span>
+                          </div>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleConfigChange({
+                              minimalStyle: {
+                                ...settings.config.minimalStyle,
+                                classHeader: true,
+                              },
+                            })
+                          }
+                          className={`flex flex-col items-center gap-1 px-3 py-2 rounded border cursor-pointer transition-colors ${
+                            settings.config.minimalStyle?.classHeader
+                              ? 'border-blue-500 bg-blue-500/10'
+                              : 'border-transparent hover:bg-slate-800'
+                          }`}
+                        >
+                          <div className="flex items-center text-white text-xs [text-shadow:_1px_1px_1px_rgba(0_0_0/0.2)]">
+                            <span className="bg-yellow-500 border-yellow-500 px-2 py-1 font-bold border-l-4">
+                              BMW M4 GT4
+                            </span>
+                            <span className="border-yellow-500 px-2 py-1 flex items-center gap-1">
+                              <BarbellIcon /> <span>1253</span>
+                              <UsersIcon className="ml-3" />
+                              <span>11</span>
+                            </span>
+                          </div>
+                        </button>
+                      </div>
+                    </SettingsSection>
+                  </div>
+                  <div className="mb-6">
+                    <SettingsSection title="Driver Position / Number">
+                      <div className="flex gap-3">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleConfigChange({
+                              minimalStyle: {
+                                ...settings.config.minimalStyle,
+                                driverPositionNumber: false,
+                              },
+                            })
+                          }
+                          className={`flex flex-col items-center gap-1 px-3 py-2 rounded border cursor-pointer transition-colors ${
+                            !settings.config.minimalStyle?.driverPositionNumber
+                              ? 'border-blue-500 bg-blue-500/10'
+                              : 'border-transparent hover:bg-slate-800'
+                          }`}
+                        >
+                          <div className="flex items-center text-white text-xs">
+                            <div className="bg-yellow-500 px-2 py-0.5 text-center">
+                              4
+                            </div>
+                            <div className="bg-yellow-800 border-l-4 border-yellow-500 px-1 py-0.5">
+                              #33
+                            </div>
+                          </div>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleConfigChange({
+                              minimalStyle: {
+                                ...settings.config.minimalStyle,
+                                driverPositionNumber: true,
+                              },
+                            })
+                          }
+                          className={`flex flex-col items-center gap-1 px-3 py-2 rounded border cursor-pointer transition-colors ${
+                            settings.config.minimalStyle?.driverPositionNumber
+                              ? 'border-blue-500 bg-blue-500/10'
+                              : 'border-transparent hover:bg-slate-800'
+                          }`}
+                        >
+                          <div className="flex items-center text-white text-xs">
+                            <div className="bg-yellow-500 px-2 py-0.5 text-center">
+                              4
+                            </div>
+                            <div className="border-l-4 border-yellow-500 px-1 py-0.5">
+                              #33
+                            </div>
+                          </div>
+                        </button>
+                      </div>
+                    </SettingsSection>
+                  </div>
+                  <div className="mb-6">
+                    <SettingsSection title="Driver Badge">
+                      <div className="flex gap-3">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleConfigChange({
+                              minimalStyle: {
+                                ...settings.config.minimalStyle,
+                                badge: false,
+                              },
+                            })
+                          }
+                          className={`flex flex-col items-center gap-1 px-3 py-2 rounded border cursor-pointer transition-colors ${
+                            !settings.config.minimalStyle?.badge
+                              ? 'border-blue-500 bg-blue-500/10'
+                              : 'border-transparent hover:bg-slate-800'
+                          }`}
+                        >
+                          <DriverRatingBadge
+                            license="B 3.8"
+                            rating={1412}
+                            format={
+                              settings.config.badge?.badgeFormat ??
+                              'license-color-rating-bw'
+                            }
+                            isMinimal={false}
+                          />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleConfigChange({
+                              minimalStyle: {
+                                ...settings.config.minimalStyle,
+                                badge: true,
+                              },
+                            })
+                          }
+                          className={`flex flex-col items-center gap-1 px-3 py-2 rounded border cursor-pointer transition-colors ${
+                            settings.config.minimalStyle?.badge
+                              ? 'border-blue-500 bg-blue-500/10'
+                              : 'border-transparent hover:bg-slate-800'
+                          }`}
+                        >
+                          <DriverRatingBadge
+                            license="B 3.8"
+                            rating={1412}
+                            format={
+                              settings.config.badge?.badgeFormat ??
+                              'license-color-rating-bw'
+                            }
+                            isMinimal={true}
+                          />
+                        </button>
+                      </div>
+                    </SettingsSection>
+                  </div>
+                  <div className="mb-6">
+                    <SettingsSection title="Status Badges">
+                      <div className="flex gap-3">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleConfigChange({
+                              minimalStyle: {
+                                ...settings.config.minimalStyle,
+                                statusBadges: false,
+                              },
+                            })
+                          }
+                          className={`flex flex-col items-center gap-1 px-3 py-2 rounded border cursor-pointer transition-colors ${
+                            !settings.config.minimalStyle?.statusBadges
+                              ? 'border-blue-500 bg-blue-500/10'
+                              : 'border-transparent hover:bg-slate-800'
+                          }`}
+                        >
+                          <DriverStatusBadges pit tow out isMinimal={false} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleConfigChange({
+                              minimalStyle: {
+                                ...settings.config.minimalStyle,
+                                statusBadges: true,
+                              },
+                            })
+                          }
+                          className={`flex flex-col items-center gap-1 px-3 py-2 rounded border cursor-pointer transition-colors ${
+                            settings.config.minimalStyle?.statusBadges
+                              ? 'border-blue-500 bg-blue-500/10'
+                              : 'border-transparent hover:bg-slate-800'
+                          }`}
+                        >
+                          <DriverStatusBadges pit tow out isMinimal={true} />
+                        </button>
+                      </div>
+                    </SettingsSection>
+                  </div>
+                </div>
               )}
             </div>
           </div>

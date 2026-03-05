@@ -46,7 +46,8 @@ export const Relative = () => {
 
   const isMinimalBadge = settings?.minimalStyle?.badge ?? false;
   const isMinimalStatusBadges = settings?.minimalStyle?.statusBadges ?? false;
-  const isMinimalRowColors = settings?.minimalStyle?.rowColors ?? false;
+  const isMinimalDriverPositionNumber =
+    settings?.minimalStyle?.driverPositionNumber ?? false;
 
   // Always render 2 * buffer + 1 rows (buffer above + player + buffer below)
   const totalRows = 2 * buffer + 1;
@@ -100,7 +101,7 @@ export const Relative = () => {
           hideCarManufacturer={hideCarManufacturer}
           isMinimalBadge={isMinimalBadge}
           isMinimalStatusBadges={isMinimalStatusBadges}
-          isMinimalRowColors={isMinimalRowColors}
+          isMinimalDriverPositionNumber={isMinimalDriverPositionNumber}
         />
       ));
     }
@@ -156,7 +157,7 @@ export const Relative = () => {
             hideCarManufacturer={hideCarManufacturer}
             isMinimalBadge={isMinimalBadge}
             isMinimalStatusBadges={isMinimalStatusBadges}
-            isMinimalRowColors={isMinimalRowColors}
+            isMinimalDriverPositionNumber={isMinimalDriverPositionNumber}
           />
         );
       }
@@ -223,7 +224,7 @@ export const Relative = () => {
           hideCarManufacturer={hideCarManufacturer}
           isMinimalBadge={isMinimalBadge}
           isMinimalStatusBadges={isMinimalStatusBadges}
-          isMinimalRowColors={isMinimalRowColors}
+          isMinimalDriverPositionNumber={isMinimalDriverPositionNumber}
         />
       );
     });
@@ -238,7 +239,7 @@ export const Relative = () => {
     isTeamRacing,
     isMinimalBadge,
     isMinimalStatusBadges,
-    isMinimalRowColors,
+    isMinimalDriverPositionNumber,
   ]);
 
   if (!isSessionVisible) return <></>;

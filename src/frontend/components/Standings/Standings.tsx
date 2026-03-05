@@ -57,9 +57,11 @@ export const Standings = () => {
     ? 'border-spacing-y-0'
     : 'border-spacing-y-0.5';
 
+  const isMinimalClassHeader = settings?.minimalStyle?.classHeader ?? false;
   const isMinimalBadge = settings?.minimalStyle?.badge ?? false;
   const isMinimalStatusBadges = settings?.minimalStyle?.statusBadges ?? false;
-  const isMinimalRowColors = settings?.minimalStyle?.rowColors ?? false;
+  const isMinimalDriverPositionNumber =
+    settings?.minimalStyle?.driverPositionNumber ?? false;
 
   if (!isSessionVisible) return <></>;
 
@@ -114,7 +116,7 @@ export const Standings = () => {
                   highlightColor={highlightColor}
                   isMultiClass={isMultiClass}
                   colSpan={100}
-                  isMinimal={isMinimalRowColors}
+                  isMinimal={isMinimalClassHeader}
                 />
                 {classStandings.map((result, driverIndex) => {
                   const prev = classStandings[driverIndex - 1];
@@ -230,7 +232,9 @@ export const Standings = () => {
                         hideCarManufacturer={hideCarManufacturer}
                         isMinimalBadge={isMinimalBadge}
                         isMinimalStatusBadges={isMinimalStatusBadges}
-                        isMinimalRowColors={isMinimalRowColors}
+                        isMinimalDriverPositionNumber={
+                          isMinimalDriverPositionNumber
+                        }
                       />
                     </Fragment>
                   );

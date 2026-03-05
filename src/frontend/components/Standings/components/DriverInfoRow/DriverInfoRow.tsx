@@ -72,7 +72,7 @@ interface DriverRowInfoProps {
   hideCarManufacturer?: boolean;
   isMinimalBadge?: boolean;
   isMinimalStatusBadges?: boolean;
-  isMinimalRowColors?: boolean;
+  isMinimalDriverPositionNumber?: boolean;
 }
 
 // Helper function to provide dummy data for hidden rows
@@ -187,7 +187,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
     hideCarManufacturer,
     isMinimalBadge,
     isMinimalStatusBadges,
-    isMinimalRowColors,
+    isMinimalDriverPositionNumber,
   } = displayProps;
   const pitStopDurations = usePitStopDuration();
   const pitStopDuration =
@@ -215,9 +215,9 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
       classColor,
       highlightColor,
       isMultiClass,
-      isMinimalRowColors
+      isMinimalDriverPositionNumber
     );
-  }, [classColor, highlightColor, isMultiClass, isMinimalRowColors]);
+  }, [classColor, highlightColor, isMultiClass, isMinimalDriverPositionNumber]);
 
   const emptyLapDeltaPlaceholders = useMemo(() => {
     if (!numLapDeltasToShow) return null;

@@ -132,9 +132,10 @@ export interface StandingsWidgetSettings extends BaseWidgetSettings {
     displayOrder: string[];
     sessionVisibility: SessionVisibilitySettings;
     minimalStyle?: {
+      classHeader?: boolean;
       badge?: boolean;
       statusBadges?: boolean;
-      rowColors?: boolean;
+      driverPositionNumber?: boolean;
     };
   };
 }
@@ -252,7 +253,7 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
     minimalStyle?: {
       badge?: boolean;
       statusBadges?: boolean;
-      rowColors?: boolean;
+      driverPositionNumber?: boolean;
     };
   };
 }
