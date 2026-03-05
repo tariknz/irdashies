@@ -12,7 +12,6 @@ export const SessionVisibility = ({
 }: SessionVisibilityProps) => {
   return (
     <div className="space-y-4">
-
       {/* Show In Race Session */}
       <SettingToggleRow
         title="Race"
@@ -33,7 +32,7 @@ export const SessionVisibility = ({
             sessionVisibility: { ...sessionVisibility, loneQualify: enabled },
           })
         }
-      />      
+      />
 
       {/* Show In Open Qualify Session */}
       <SettingToggleRow
@@ -44,7 +43,7 @@ export const SessionVisibility = ({
             sessionVisibility: { ...sessionVisibility, openQualify: enabled },
           })
         }
-      />     
+      />
 
       {/* Show In Practice Session */}
       <SettingToggleRow
@@ -55,7 +54,7 @@ export const SessionVisibility = ({
             sessionVisibility: { ...sessionVisibility, practice: enabled },
           })
         }
-      />    
+      />
 
       {/* Show In Offline Testing Session */}
       <SettingToggleRow
@@ -63,11 +62,13 @@ export const SessionVisibility = ({
         enabled={sessionVisibility.offlineTesting ?? false}
         onToggle={(enabled) =>
           handleConfigChange({
-            sessionVisibility: { ...sessionVisibility, offlineTesting: enabled },
+            sessionVisibility: {
+              ...sessionVisibility,
+              offlineTesting: enabled,
+            },
           })
         }
       />
-
     </div>
   );
 };

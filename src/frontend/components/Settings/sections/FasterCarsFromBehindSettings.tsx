@@ -89,7 +89,9 @@ export const FasterCarsFromBehindSettings = () => {
 
   // Tab state with persistence
   const [activeTab, setActiveTab] = useState<SettingsTabType>(
-    () => (localStorage.getItem('fasterCarsFromBehindTab') as SettingsTabType) || 'display'
+    () =>
+      (localStorage.getItem('fasterCarsFromBehindTab') as SettingsTabType) ||
+      'display'
   );
 
   useEffect(() => {
@@ -110,23 +112,28 @@ export const FasterCarsFromBehindSettings = () => {
     >
       {(handleConfigChange) => (
         <div className="space-y-4">
-
           {/* Tabs */}
           <div className="flex border-b border-slate-700/50">
-            <TabButton id="display" activeTab={activeTab} setActiveTab={setActiveTab}>
+            <TabButton
+              id="display"
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+            >
               Display
             </TabButton>
-            <TabButton id="visibility" activeTab={activeTab} setActiveTab={setActiveTab}>
+            <TabButton
+              id="visibility"
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+            >
               Visibility
             </TabButton>
           </div>
 
           <div className="pt-4">
-
             {/* DISPLAY TAB */}
             {activeTab === 'display' && (
               <SettingsSection title="Display">
-
                 {/* Distance Threshold */}
                 <SettingSliderRow
                   title="Distance Threshold"
@@ -137,9 +144,7 @@ export const FasterCarsFromBehindSettings = () => {
                   min={0.3}
                   max={20}
                   step={0.1}
-                  onChange={(v) =>
-                    handleConfigChange({ distanceThreshold: v })
-                  }
+                  onChange={(v) => handleConfigChange({ distanceThreshold: v })}
                 />
 
                 {/* Show Distance Section */}
@@ -160,7 +165,7 @@ export const FasterCarsFromBehindSettings = () => {
                   onToggle={(newValue) =>
                     handleConfigChange({ showName: newValue })
                   }
-                />                
+                />
 
                 {settings.config.showName && (
                   <SettingsSection>
@@ -171,7 +176,7 @@ export const FasterCarsFromBehindSettings = () => {
                       onToggle={(newValue) =>
                         handleConfigChange({ removeNumbersFromName: newValue })
                       }
-                    /> 
+                    />
                   </SettingsSection>
                 )}
 
@@ -183,7 +188,7 @@ export const FasterCarsFromBehindSettings = () => {
                   onToggle={(newValue) =>
                     handleConfigChange({ showBadge: newValue })
                   }
-                /> 
+                />
 
                 {/* Badge Format Selector */}
                 {settings.config.showBadge && (
@@ -197,12 +202,12 @@ export const FasterCarsFromBehindSettings = () => {
                           'license-color-fullrating-bw',
                           'license-color-rating-bw',
                           'rating-only-color-rating-bw',
-                          'license-color-rating-bw-no-license',                    
+                          'license-color-rating-bw-no-license',
                           'license-bw-rating-bw',
                           'rating-only-bw-rating-bw',
                           'license-bw-rating-bw-no-license',
                           'rating-bw-no-license',
-                          'fullrating-bw-no-license',                     
+                          'fullrating-bw-no-license',
                         ] as const
                       ).map((format) => (
                         <BadgeFormatPreview
@@ -262,18 +267,16 @@ export const FasterCarsFromBehindSettings = () => {
                     handleConfigChange({ onlyShowFasterClasses: newValue })
                   }
                 />
-
               </SettingsSection>
             )}
 
             {/* VISIBILITY TAB */}
             {activeTab === 'visibility' && (
               <SettingsSection title="Session Visibility">
-                            
                 <SessionVisibility
-                    sessionVisibility={settings.config.sessionVisibility}
-                    handleConfigChange={handleConfigChange}
-                  />
+                  sessionVisibility={settings.config.sessionVisibility}
+                  handleConfigChange={handleConfigChange}
+                />
 
                 <SettingDivider />
 
@@ -285,12 +288,10 @@ export const FasterCarsFromBehindSettings = () => {
                     handleConfigChange({ showOnlyWhenOnTrack: newValue })
                   }
                 />
-
               </SettingsSection>
             )}
-                   
+          </div>
         </div>
-      </div>
       )}
     </BaseSettingsSection>
   );

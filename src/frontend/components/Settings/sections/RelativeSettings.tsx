@@ -1,7 +1,11 @@
 import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import { useDashboard } from '@irdashies/context';
-import { RelativeWidgetSettings, SessionVisibilitySettings, SettingsTabType } from '../types';
+import {
+  RelativeWidgetSettings,
+  SessionVisibilitySettings,
+  SettingsTabType,
+} from '../types';
 import { ToggleSwitch } from '../components/ToggleSwitch';
 import { TabButton } from '../components/TabButton';
 import { useSortableList } from '../../SortableList';
@@ -92,7 +96,12 @@ const defaultConfig: RelativeWidgetSettings['config'] = {
   headerBar: {
     enabled: true,
     sessionName: { enabled: true },
-    sessionTime: { enabled: true, mode: 'Remaining' },
+    sessionTime: {
+      enabled: true,
+      mode: 'Remaining',
+      totalFormat: 'minimal',
+      labelStyle: 'minimal',
+    },
     sessionLaps: { enabled: true },
     incidentCount: { enabled: true },
     brakeBias: { enabled: true },
@@ -108,7 +117,12 @@ const defaultConfig: RelativeWidgetSettings['config'] = {
   footerBar: {
     enabled: true,
     sessionName: { enabled: false },
-    sessionTime: { enabled: false, mode: 'Remaining' },
+    sessionTime: {
+      enabled: false,
+      mode: 'Remaining',
+      totalFormat: 'minimal',
+      labelStyle: 'minimal',
+    },
     sessionLaps: { enabled: false },
     incidentCount: { enabled: false },
     brakeBias: { enabled: false },
@@ -274,6 +288,13 @@ const migrateConfig = (
         mode:
           ((config.headerBar as { sessionTime?: { mode?: string } })
             ?.sessionTime?.mode as 'Remaining' | 'Elapsed') ?? 'Remaining',
+        totalFormat:
+          ((config.headerBar as { sessionTime?: { totalFormat?: string } })
+            ?.sessionTime?.totalFormat as 'hh:mm' | 'minimal') ?? 'minimal',
+        labelStyle:
+          ((config.headerBar as { sessionTime?: { labelStyle?: string } })
+            ?.sessionTime?.labelStyle as 'none' | 'short' | 'minimal') ??
+          'minimal',
       },
       sessionLaps: {
         enabled:
@@ -359,6 +380,13 @@ const migrateConfig = (
         mode:
           ((config.footerBar as { sessionTime?: { mode?: string } })
             ?.sessionTime?.mode as 'Remaining' | 'Elapsed') ?? 'Remaining',
+        totalFormat:
+          ((config.footerBar as { sessionTime?: { totalFormat?: string } })
+            ?.sessionTime?.totalFormat as 'hh:mm' | 'minimal') ?? 'minimal',
+        labelStyle:
+          ((config.footerBar as { sessionTime?: { labelStyle?: string } })
+            ?.sessionTime?.labelStyle as 'none' | 'short' | 'minimal') ??
+          'minimal',
       },
       sessionLaps: {
         enabled:
@@ -790,7 +818,12 @@ const BarItemsList = ({
           ] as RelativeWidgetSettings['config']['headerBar']
         )?.[item.id as keyof RelativeWidgetSettings['config']['headerBar']] as
           | { enabled: boolean; unit?: 'Metric' | 'Imperial' }
-          | { enabled: boolean; mode?: 'Remaining' | 'Elapsed' }
+          | {
+              enabled: boolean;
+              mode?: 'Remaining' | 'Elapsed';
+              totalFormat?: 'hh:mm' | 'minimal';
+              labelStyle?: 'none' | 'short' | 'minimal';
+            }
           | undefined;
 
         // Safety check: skip rendering if itemConfig is undefined
@@ -834,7 +867,9 @@ const BarItemsList = ({
                                 enabled,
                                 speedPosition: currentSpeedPosition,
                               }
-                            : { enabled },
+                            : item.id === 'sessionTime'
+                              ? { ...(itemConfig as object), enabled }
+                              : { enabled },
                     },
                   });
                 }}
@@ -934,29 +969,70 @@ const BarItemsList = ({
                 <div className="flex items-center justify-between pl-4 mt-2">
                   <span></span>
                   <select
+                    value={'mode' in itemConfig ? itemConfig.mode : 'Remaining'}
+                    onChange={(e) => {
+                      handleConfigChange({
+                        [barType]: {
+                          ...settings.config[barType],
+                          [item.id]: {
+                            ...(itemConfig as object),
+                            mode: e.target.value as 'Remaining' | 'Elapsed',
+                          },
+                        },
+                      });
+                    }}
+                    className="bg-slate-700 text-white rounded-md px-2 py-1 flex-1"
+                  >
+                    <option value="Remaining">Remaining</option>
+                    <option value="Elapsed">Elapsed</option>
+                  </select>
+                  <select
                     value={
-                      itemConfig && 'mode' in itemConfig
-                        ? itemConfig.mode
-                        : 'Remaining'
+                      'totalFormat' in itemConfig
+                        ? itemConfig.totalFormat
+                        : 'minimal'
                     }
                     onChange={(e) => {
                       handleConfigChange({
                         [barType]: {
                           ...settings.config[barType],
                           [item.id]: {
-                            enabled:
-                              itemConfig && 'enabled' in itemConfig
-                                ? itemConfig.enabled
-                                : true,
-                            mode: e.target.value as 'Remaining' | 'Elapsed',
+                            ...(itemConfig as object),
+                            totalFormat: e.target.value as 'hh:mm' | 'minimal',
                           },
                         },
                       });
                     }}
-                    className="bg-slate-700 text-white rounded-md px-2 py-1"
+                    className="bg-slate-700 text-white rounded-md px-2 py-1 flex-1"
                   >
-                    <option value="Remaining">Remaining</option>
-                    <option value="Elapsed">Elapsed</option>
+                    <option value="minimal">2:34</option>
+                    <option value="hh:mm">00:12:34</option>
+                  </select>
+                  <select
+                    value={
+                      'labelStyle' in itemConfig
+                        ? itemConfig.labelStyle
+                        : 'minimal'
+                    }
+                    onChange={(e) => {
+                      handleConfigChange({
+                        [barType]: {
+                          ...settings.config[barType],
+                          [item.id]: {
+                            ...(itemConfig as object),
+                            labelStyle: e.target.value as
+                              | 'none'
+                              | 'short'
+                              | 'minimal',
+                          },
+                        },
+                      });
+                    }}
+                    className="bg-slate-700 text-white rounded-md px-2 py-1 flex-1"
+                  >
+                    <option value="minimal">Minimal Labels</option>
+                    <option value="short">Short Labels</option>
+                    <option value="none">Hide Labels</option>
                   </select>
                 </div>
               )}
@@ -985,7 +1061,7 @@ export const RelativeSettings = () => {
 
   useEffect(() => {
     localStorage.setItem('relativeTab', activeTab);
-  }, [activeTab]);  
+  }, [activeTab]);
 
   if (!currentDashboard) {
     return <>Loading...</>;
@@ -1047,11 +1123,9 @@ export const RelativeSettings = () => {
             </div>
 
             <div className="pt-4 space-y-4">
-
               {/* DISPLAY TAB */}
               {activeTab === 'display' && (
                 <SettingsSection title="Display Order">
-
                   <DisplaySettingsList
                     itemsOrder={itemsOrder}
                     onReorder={handleDisplayOrderChange}
@@ -1067,16 +1141,13 @@ export const RelativeSettings = () => {
                       handleConfigChange({ displayOrder: defaultOrder });
                     }}
                   />
-  
                 </SettingsSection>
               )}
-
 
               {/* OPTIONS TAB */}
               {activeTab === 'options' && (
                 <>
-                <SettingsSection title="Driver Standings">        
-
+                  <SettingsSection title="Driver Standings">
                     <SettingSelectRow
                       title="Drivers to show around player"
                       value={settings.config.buffer.toString()}
@@ -1099,44 +1170,41 @@ export const RelativeSettings = () => {
                         handleConfigChange({ useLivePosition: newValue })
                       }
                     />
-                    
-                </SettingsSection>
+                  </SettingsSection>
 
-                <SettingsSection title="Title Bar">
+                  <SettingsSection title="Title Bar">
+                    <SettingToggleRow
+                      title="Show Title Bar"
+                      enabled={settings.config.titleBar.enabled}
+                      onToggle={(enabled) =>
+                        handleConfigChange({
+                          titleBar: {
+                            ...settings.config.titleBar,
+                            enabled,
+                          },
+                        })
+                      }
+                    />
 
-                  <SettingToggleRow
-                    title="Show Title Bar"
-                    enabled={settings.config.titleBar.enabled}
-                    onToggle={(enabled) =>
-                       handleConfigChange({
-                        titleBar: {
-                          ...settings.config.titleBar,
-                          enabled,
-                        },
-                      })
-                    }
-                  />    
+                    {settings.config.titleBar.enabled && (
+                      <SettingsSection>
+                        <SettingToggleRow
+                          title="Show Progress Bar"
+                          enabled={settings.config.titleBar.progressBar.enabled}
+                          onToggle={(enabled) =>
+                            handleConfigChange({
+                              titleBar: {
+                                ...settings.config.titleBar,
+                                progressBar: { enabled },
+                              },
+                            })
+                          }
+                        />
+                      </SettingsSection>
+                    )}
+                  </SettingsSection>
 
-                  {settings.config.titleBar.enabled && (
-                    <SettingsSection>
-                      <SettingToggleRow
-                        title="Show Progress Bar"
-                        enabled={settings.config.titleBar.progressBar.enabled}
-                        onToggle={(enabled) =>
-                          handleConfigChange({
-                            titleBar: {
-                              ...settings.config.titleBar,
-                              progressBar: { enabled },
-                            },
-                          })
-                        }
-                      />    
-                    </SettingsSection>
-                  )}    
-
-                </SettingsSection>
-
-                <SettingsSection title="Background">
+                  <SettingsSection title="Background">
                     <SettingSliderRow
                       title="Background Opacity"
                       value={settings.config.background.opacity ?? 40}
@@ -1148,11 +1216,10 @@ export const RelativeSettings = () => {
                         handleConfigChange({ background: { opacity: v } })
                       }
                     />
-                </SettingsSection>
+                  </SettingsSection>
 
-                <SettingsSection title="Relative Time">
-
-                  <SettingSelectRow
+                  <SettingsSection title="Relative Time">
+                    <SettingSelectRow
                       title="Decimal places"
                       description="Number of decimal places to display"
                       value={settings.config.delta.precision.toString()}
@@ -1169,19 +1236,17 @@ export const RelativeSettings = () => {
                         })
                       }
                     />
-                      
-                </SettingsSection>
-              </>
+                  </SettingsSection>
+                </>
               )}
 
-            {/* HEADER TAB */}
-            {activeTab === 'header' && (
-              <SettingsSection title="Header Bar">
-
-                <SettingToggleRow
-                  title="Show Header Bar"                  
-                  enabled={settings.config.headerBar.enabled}
-                  onToggle={(enabled) =>
+              {/* HEADER TAB */}
+              {activeTab === 'header' && (
+                <SettingsSection title="Header Bar">
+                  <SettingToggleRow
+                    title="Show Header Bar"
+                    enabled={settings.config.headerBar.enabled}
+                    onToggle={(enabled) =>
                       handleConfigChange({
                         headerBar: {
                           ...settings.config.headerBar,
@@ -1189,50 +1254,50 @@ export const RelativeSettings = () => {
                         },
                       })
                     }
-                />
-
-                {settings.config.headerBar.enabled && (
-                <SettingsSection>
-                  <BarItemsList
-                    items={settings.config.headerBar.displayOrder}
-                    onReorder={(newOrder) => {
-                      handleConfigChange({
-                        headerBar: {
-                          ...settings.config.headerBar,
-                          displayOrder: newOrder,
-                        },
-                      });
-                    }}
-                    barType="headerBar"
-                    settings={settings}
-                    handleConfigChange={handleConfigChange}
                   />
 
-                  <SettingActionButton
-                    label="Reset to Default Order"
-                    onClick={() => {
-                      handleConfigChange({
-                        headerBar: {
-                          ...settings.config.headerBar,
-                          displayOrder: [...DEFAULT_SESSION_BAR_DISPLAY_ORDER],
-                        },
-                      });
-                    }}
-                  />
+                  {settings.config.headerBar.enabled && (
+                    <SettingsSection>
+                      <BarItemsList
+                        items={settings.config.headerBar.displayOrder}
+                        onReorder={(newOrder) => {
+                          handleConfigChange({
+                            headerBar: {
+                              ...settings.config.headerBar,
+                              displayOrder: newOrder,
+                            },
+                          });
+                        }}
+                        barType="headerBar"
+                        settings={settings}
+                        handleConfigChange={handleConfigChange}
+                      />
+
+                      <SettingActionButton
+                        label="Reset to Default Order"
+                        onClick={() => {
+                          handleConfigChange({
+                            headerBar: {
+                              ...settings.config.headerBar,
+                              displayOrder: [
+                                ...DEFAULT_SESSION_BAR_DISPLAY_ORDER,
+                              ],
+                            },
+                          });
+                        }}
+                      />
+                    </SettingsSection>
+                  )}
                 </SettingsSection>
-                )}
-                  
-              </SettingsSection>
-            )}
+              )}
 
-            {/* FOOTER TAB */}
-            {activeTab === 'footer' && (
-              <SettingsSection title="Footer Bar">
-
-                <SettingToggleRow
-                  title="Show Footer Bar"                  
-                  enabled={settings.config.footerBar.enabled}
-                  onToggle={(enabled) =>
+              {/* FOOTER TAB */}
+              {activeTab === 'footer' && (
+                <SettingsSection title="Footer Bar">
+                  <SettingToggleRow
+                    title="Show Footer Bar"
+                    enabled={settings.config.footerBar.enabled}
+                    onToggle={(enabled) =>
                       handleConfigChange({
                         footerBar: {
                           ...settings.config.footerBar,
@@ -1240,53 +1305,53 @@ export const RelativeSettings = () => {
                         },
                       })
                     }
-                />
-
-                {settings.config.footerBar.enabled && (
-                <SettingsSection>
-                  <BarItemsList
-                    items={settings.config.footerBar.displayOrder}
-                    onReorder={(newOrder) => {
-                      handleConfigChange({
-                        footerBar: {
-                          ...settings.config.footerBar,
-                          displayOrder: newOrder,
-                        },
-                      });
-                    }}
-                    barType="footerBar"
-                    settings={settings}
-                    handleConfigChange={handleConfigChange}
                   />
 
-                  <SettingActionButton
-                    label="Reset to Default Order"
-                    onClick={() => {
-                      handleConfigChange({
-                        footerBar: {
-                          ...settings.config.footerBar,
-                          displayOrder: [...DEFAULT_SESSION_BAR_DISPLAY_ORDER],
-                        },
-                      });
-                    }}
-                  />
+                  {settings.config.footerBar.enabled && (
+                    <SettingsSection>
+                      <BarItemsList
+                        items={settings.config.footerBar.displayOrder}
+                        onReorder={(newOrder) => {
+                          handleConfigChange({
+                            footerBar: {
+                              ...settings.config.footerBar,
+                              displayOrder: newOrder,
+                            },
+                          });
+                        }}
+                        barType="footerBar"
+                        settings={settings}
+                        handleConfigChange={handleConfigChange}
+                      />
+
+                      <SettingActionButton
+                        label="Reset to Default Order"
+                        onClick={() => {
+                          handleConfigChange({
+                            footerBar: {
+                              ...settings.config.footerBar,
+                              displayOrder: [
+                                ...DEFAULT_SESSION_BAR_DISPLAY_ORDER,
+                              ],
+                            },
+                          });
+                        }}
+                      />
+                    </SettingsSection>
+                  )}
                 </SettingsSection>
-                )}
-                  
-              </SettingsSection>
-            )}
+              )}
 
               {/* VISIBILITY TAB */}
               {activeTab === 'visibility' && (
                 <SettingsSection title="Session Visibility">
-                              
                   <SessionVisibility
-                      sessionVisibility={settings.config.sessionVisibility}
-                      handleConfigChange={handleConfigChange}
-                    />
-  
+                    sessionVisibility={settings.config.sessionVisibility}
+                    handleConfigChange={handleConfigChange}
+                  />
+
                   <SettingDivider />
-  
+
                   <SettingToggleRow
                     title="Show only when on track"
                     description="If enabled, relatives will only be shown when driving"
@@ -1295,10 +1360,8 @@ export const RelativeSettings = () => {
                       handleConfigChange({ showOnlyWhenOnTrack: newValue })
                     }
                   />
-  
                 </SettingsSection>
               )}
-
             </div>
           </div>
         );

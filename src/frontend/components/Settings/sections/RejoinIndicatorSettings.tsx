@@ -96,7 +96,6 @@ export const RejoinIndicatorSettings = () => {
             {/* DISPLAY TAB */}
             {activeTab === 'options' && (
               <SettingsSection title="Options">
-
                 <SettingNumberRow
                   title="Show At Speed"
                   description="Display the rejoin indicator widget when you are at or below this
@@ -126,22 +125,18 @@ export const RejoinIndicatorSettings = () => {
                   step={0.1}
                   onChange={(v) => handleConfigChange({ stopGap: v })}
                 />
-
               </SettingsSection>
             )}
 
-          {/* VISIBILITY TAB */}
-          {activeTab === 'visibility' && (
-            <SettingsSection title="Session Visibility">
-                          
-              <SessionVisibility
+            {/* VISIBILITY TAB */}
+            {activeTab === 'visibility' && (
+              <SettingsSection title="Session Visibility">
+                <SessionVisibility
                   sessionVisibility={settings.config.sessionVisibility}
                   handleConfigChange={handleConfigChange}
                 />
-
-            </SettingsSection>
-          )}
-
+              </SettingsSection>
+            )}
           </div>
         </div>
       )}
