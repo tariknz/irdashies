@@ -1,7 +1,20 @@
-export type TimeFormat = 'full' | 'mixed' | 'minutes' | 'seconds-full' | 'seconds-mixed' | 'seconds' | 'duration' | 'duration-wlabels';
+export type TimeFormat =
+  | 'full'
+  | 'mixed'
+  | 'minutes'
+  | 'seconds-full'
+  | 'seconds-mixed'
+  | 'seconds'
+  | 'duration'
+  | 'duration-wlabels'
+  | 'duration-hh:mm:ss'
+  | 'duration-hh:mm-wlabel';
 
-export const formatTime = (seconds?: number, format: TimeFormat = 'full'): string => {
-  if (!seconds) return '';
+export const formatTime = (
+  seconds?: number,
+  format: TimeFormat = 'full'
+): string => {
+  if (seconds === undefined) return '';
   if (seconds < 0) return '';
 
   const ms = Math.round((seconds % 1) * 1000); // Get milliseconds
@@ -59,6 +72,17 @@ export const formatTime = (seconds?: number, format: TimeFormat = 'full'): strin
         formattedTime = `${remainingSeconds}`;
       }
       break;
+    case 'duration-hh:mm:ss':
+      formattedTime = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`;
+      break;
+    case 'duration-hh:mm-wlabel':
+      formattedTime = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+      if (hours > 0) {
+        formattedTime += 'h';
+      } else {
+        formattedTime += 'min';
+      }
+      break;
     case 'duration-wlabels':
       formattedTime = '';
       if (hours > 0) {
@@ -73,7 +97,6 @@ export const formatTime = (seconds?: number, format: TimeFormat = 'full'): strin
         formattedTime += `${remainingSeconds} sec${remainingSeconds > 1 ? 's' : ''}`;
       }
       break;
-
   }
 
   return formattedTime;
