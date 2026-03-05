@@ -260,10 +260,10 @@ export const findDirection = (trackId: number) => {
     332, 333, 336, 337, 338, 343, 350, 351, 357, 364, 365, 366, 371, 381, 386,
     397, 398, 404, 405, 407, 413, 414, 418, 424, 426, 427, 429, 431, 436, 438,
     443, 444, 445, 448, 449, 451, 453, 454, 455, 456, 463, 469, 473, 474, 481,
-    483, 498, 509, 510, 511, 512, 514, 515, 516, 517, 518, 519, 520, 522, 526,
-    527, 528, 529, 530, 532, 536, 537, 540, 541, 542, 543, 544, 545, 546, 551,
-    559, 561, 562, 563, 564, 565, 566, 567, 568, 569, 570, 571, 572, 573, 574,
-    575, 576, 577, 578, 580,
+    483, 498, 501, 502, 503, 504, 505, 509, 510, 511, 512, 514, 515, 516, 517,
+    518, 519, 520, 522, 526, 527, 528, 529, 530, 532, 536, 537, 540, 541, 542,
+    543, 544, 545, 546, 550, 551, 559, 561, 562, 563, 564, 565, 566, 567, 568,
+    569, 570, 571, 572, 573, 574, 575, 576, 577, 578, 580,
   ];
 
   return anticlockwiseTracks.includes(trackId) ? 'anticlockwise' : 'clockwise';
@@ -312,30 +312,26 @@ export const rectToPath = (rect: SVGRectElement): string => {
   const width = parseFloat(rect.getAttribute('width') || '0');
   const height = parseFloat(rect.getAttribute('height') || '0');
 
-  // Handle transform if present
+  const centerX = x + width / 2;
+  const centerY = y + height / 2;
+
+  // Use the long axis of the rect for the start-finish line
+  const useLongAxisAlongWidth = width > height;
+  const rawP1 = useLongAxisAlongWidth ? { x, y: centerY } : { x: centerX, y };
+  const rawP2 = useLongAxisAlongWidth
+    ? { x: x + width, y: centerY }
+    : { x: centerX, y: y + height };
+
+  // Handle transform if present - apply the full transform matrix to the line endpoints
   const transform = rect.getAttribute('transform');
   if (transform) {
-    // For simplicity, we'll use the center line of the rect
-    // This should work for most start-finish lines
-    const centerX = x + width / 2;
-    const centerY = y + height / 2;
-
-    // Create a simple line through the center of the rect
-    // For rotated rects, we'll use the longer dimension
-    const isRotated = transform.includes('rotate');
-    if (isRotated) {
-      // For rotated rects, use the diagonal
-      const halfLength = Math.sqrt(width * width + height * height) / 2;
-      return `M${centerX - halfLength},${centerY}L${centerX + halfLength},${centerY}`;
-    } else {
-      // For non-rotated rects, use the center line
-      return `M${centerX},${y}L${centerX},${y + height}`;
-    }
+    const mat = parseTransformMatrix(transform);
+    const p1 = applyMatrix(mat, rawP1.x, rawP1.y);
+    const p2 = applyMatrix(mat, rawP2.x, rawP2.y);
+    return `M${p1.x},${p1.y}L${p2.x},${p2.y}`;
   }
 
-  // For non-rotated rects, use the center line
-  const centerX = x + width / 2;
-  return `M${centerX},${y}L${centerX},${y + height}`;
+  return `M${rawP1.x},${rawP1.y}L${rawP2.x},${rawP2.y}`;
 };
 
 // Parse an SVG transform string into a 2D matrix [a,b,c,d,e,f]
