@@ -97,7 +97,12 @@ const defaultConfig: RelativeWidgetSettings['config'] = {
   headerBar: {
     enabled: true,
     sessionName: { enabled: true },
-    sessionTime: { enabled: true, mode: 'Remaining' },
+    sessionTime: {
+      enabled: true,
+      mode: 'Remaining',
+      totalFormat: 'minimal',
+      labelStyle: 'minimal',
+    },
     sessionLaps: { enabled: true },
     incidentCount: { enabled: true },
     brakeBias: { enabled: true },
@@ -113,7 +118,12 @@ const defaultConfig: RelativeWidgetSettings['config'] = {
   footerBar: {
     enabled: true,
     sessionName: { enabled: false },
-    sessionTime: { enabled: false, mode: 'Remaining' },
+    sessionTime: {
+      enabled: false,
+      mode: 'Remaining',
+      totalFormat: 'minimal',
+      labelStyle: 'minimal',
+    },
     sessionLaps: { enabled: false },
     incidentCount: { enabled: false },
     brakeBias: { enabled: false },
@@ -284,6 +294,13 @@ const migrateConfig = (
         mode:
           ((config.headerBar as { sessionTime?: { mode?: string } })
             ?.sessionTime?.mode as 'Remaining' | 'Elapsed') ?? 'Remaining',
+        totalFormat:
+          ((config.headerBar as { sessionTime?: { totalFormat?: string } })
+            ?.sessionTime?.totalFormat as 'hh:mm' | 'minimal') ?? 'minimal',
+        labelStyle:
+          ((config.headerBar as { sessionTime?: { labelStyle?: string } })
+            ?.sessionTime?.labelStyle as 'none' | 'short' | 'minimal') ??
+          'minimal',
       },
       sessionLaps: {
         enabled:
@@ -369,6 +386,13 @@ const migrateConfig = (
         mode:
           ((config.footerBar as { sessionTime?: { mode?: string } })
             ?.sessionTime?.mode as 'Remaining' | 'Elapsed') ?? 'Remaining',
+        totalFormat:
+          ((config.footerBar as { sessionTime?: { totalFormat?: string } })
+            ?.sessionTime?.totalFormat as 'hh:mm' | 'minimal') ?? 'minimal',
+        labelStyle:
+          ((config.footerBar as { sessionTime?: { labelStyle?: string } })
+            ?.sessionTime?.labelStyle as 'none' | 'short' | 'minimal') ??
+          'minimal',
       },
       sessionLaps: {
         enabled:
@@ -808,7 +832,12 @@ const BarItemsList = ({
           ] as RelativeWidgetSettings['config']['headerBar']
         )?.[item.id as keyof RelativeWidgetSettings['config']['headerBar']] as
           | { enabled: boolean; unit?: 'Metric' | 'Imperial' }
-          | { enabled: boolean; mode?: 'Remaining' | 'Elapsed' }
+          | {
+              enabled: boolean;
+              mode?: 'Remaining' | 'Elapsed';
+              totalFormat?: 'hh:mm' | 'minimal';
+              labelStyle?: 'none' | 'short' | 'minimal';
+            }
           | undefined;
 
         // Safety check: skip rendering if itemConfig is undefined
@@ -852,7 +881,9 @@ const BarItemsList = ({
                                 enabled,
                                 speedPosition: currentSpeedPosition,
                               }
-                            : { enabled },
+                            : item.id === 'sessionTime'
+                              ? { ...(itemConfig as object), enabled }
+                              : { enabled },
                     },
                   });
                 }}
@@ -952,29 +983,70 @@ const BarItemsList = ({
                 <div className="flex items-center justify-between pl-4 mt-2">
                   <span></span>
                   <select
+                    value={'mode' in itemConfig ? itemConfig.mode : 'Remaining'}
+                    onChange={(e) => {
+                      handleConfigChange({
+                        [barType]: {
+                          ...settings.config[barType],
+                          [item.id]: {
+                            ...(itemConfig as object),
+                            mode: e.target.value as 'Remaining' | 'Elapsed',
+                          },
+                        },
+                      });
+                    }}
+                    className="bg-slate-700 text-white rounded-md px-2 py-1 flex-1"
+                  >
+                    <option value="Remaining">Remaining</option>
+                    <option value="Elapsed">Elapsed</option>
+                  </select>
+                  <select
                     value={
-                      itemConfig && 'mode' in itemConfig
-                        ? itemConfig.mode
-                        : 'Remaining'
+                      'totalFormat' in itemConfig
+                        ? itemConfig.totalFormat
+                        : 'minimal'
                     }
                     onChange={(e) => {
                       handleConfigChange({
                         [barType]: {
                           ...settings.config[barType],
                           [item.id]: {
-                            enabled:
-                              itemConfig && 'enabled' in itemConfig
-                                ? itemConfig.enabled
-                                : true,
-                            mode: e.target.value as 'Remaining' | 'Elapsed',
+                            ...(itemConfig as object),
+                            totalFormat: e.target.value as 'hh:mm' | 'minimal',
                           },
                         },
                       });
                     }}
-                    className="bg-slate-700 text-white rounded-md px-2 py-1"
+                    className="bg-slate-700 text-white rounded-md px-2 py-1 flex-1"
                   >
-                    <option value="Remaining">Remaining</option>
-                    <option value="Elapsed">Elapsed</option>
+                    <option value="minimal">2:34</option>
+                    <option value="hh:mm">00:12:34</option>
+                  </select>
+                  <select
+                    value={
+                      'labelStyle' in itemConfig
+                        ? itemConfig.labelStyle
+                        : 'minimal'
+                    }
+                    onChange={(e) => {
+                      handleConfigChange({
+                        [barType]: {
+                          ...settings.config[barType],
+                          [item.id]: {
+                            ...(itemConfig as object),
+                            labelStyle: e.target.value as
+                              | 'none'
+                              | 'short'
+                              | 'minimal',
+                          },
+                        },
+                      });
+                    }}
+                    className="bg-slate-700 text-white rounded-md px-2 py-1 flex-1"
+                  >
+                    <option value="minimal">Minimal Labels</option>
+                    <option value="short">Short Labels</option>
+                    <option value="none">Hide Labels</option>
                   </select>
                 </div>
               )}
