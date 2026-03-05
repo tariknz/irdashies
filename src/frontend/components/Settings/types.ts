@@ -494,7 +494,9 @@ export type SettingsTabType =
   | 'header'
   | 'footer'
   | 'history'
-  | 'styling';
+  | 'styling'
+  | 'telemetry'
+  | 'dashboard';
 
 export interface BlindSpotMonitorWidgetSettings extends BaseWidgetSettings {
   config: {
