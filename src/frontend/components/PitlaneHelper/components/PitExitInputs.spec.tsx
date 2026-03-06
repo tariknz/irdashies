@@ -185,7 +185,7 @@ describe('PitExitInputs', () => {
         <PitExitInputs showThrottle={true} showClutch={true} />
       );
 
-      const bars = container.querySelectorAll('.w-8');
+      const bars = container.querySelectorAll('.min-h-10');
       expect(bars.length).toBeGreaterThan(0);
     });
   });

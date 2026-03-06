@@ -26,20 +26,22 @@ export const PitCountdownBar = memo(
 
     if (orientation === 'vertical') {
       return (
-        <div className="flex flex-col items-center gap-1">
+        <div className="flex flex-col flex-1 items-center gap-1">
           <span className="text-xs text-white font-medium tabular-nums leading-none">
             {valueLabel}
           </span>
-          <div
-            className="relative w-8 bg-slate-700/50 rounded overflow-hidden"
-            style={{ height: '80px' }}
-          >
+          <div className="relative w-full h-full min-h-10 bg-slate-700/50 rounded overflow-hidden">
             <div
               className="absolute bottom-0 w-full transition-all duration-200 ease-out"
               style={{ height: `${progressPercent}%`, backgroundColor: color }}
             />
+            {/* Limit marker at top */}
+            <div
+              className="absolute w-full border-t-2 border-white/70"
+              style={{ top: '0%' }}
+            />
           </div>
-          <span className="text-[10px] text-slate-400 leading-none">
+          <span className="text-xs text-slate-400 leading-none">
             {targetName}
           </span>
         </div>
@@ -48,17 +50,22 @@ export const PitCountdownBar = memo(
 
     // Horizontal orientation
     return (
-      <div className="flex flex-col gap-1">
+      <div className="flex flex-col flex-1 gap-1">
         <div className="flex justify-between items-center text-xs">
           <span className="text-slate-400">{targetName}</span>
           <span className="text-white font-medium tabular-nums">
             {valueLabel}
           </span>
         </div>
-        <div className="relative h-4 w-full bg-slate-700/50 rounded overflow-hidden">
+        <div className="relative h-full min-h-10 w-full bg-slate-700/50 rounded overflow-hidden">
           <div
             className="absolute left-0 top-0 h-full transition-all duration-200 ease-out"
             style={{ width: `${progressPercent}%`, backgroundColor: color }}
+          />
+          {/* Limit marker at right */}
+          <div
+            className="absolute h-full border-r-2 border-white/70"
+            style={{ right: '0%' }}
           />
         </div>
       </div>

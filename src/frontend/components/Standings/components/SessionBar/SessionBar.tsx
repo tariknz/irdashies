@@ -54,12 +54,18 @@ const formatTotalTime = (
     // minimal
     if (compact) {
       if (hours > 0) {
-        result =
-          minutes === 0
-            ? `${hours}`
-            : `${hours}:${String(minutes).padStart(2, '0')}`;
+        if (minutes === 0) {
+          result = `${hours}`;
+        } else if (secs > 0) {
+          result = `${hours}:${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        } else {
+          result = `${hours}:${String(minutes).padStart(2, '0')}`;
+        }
       } else {
-        result = `${minutes}`;
+        result =
+          secs > 0
+            ? `${minutes}:${String(secs).padStart(2, '0')}`
+            : `${minutes}`;
       }
     } else {
       // elapsed/remaining: trim leading zero components
@@ -227,17 +233,26 @@ export const SessionBar = ({
       render: () => {
         const lapDisplay = Math.max(currentLap, 0);
         const lapsTotal = session === 'Race' ? totalRaceLaps : totalLaps;
+        const lapsMode = effectiveBarSettings?.sessionLaps?.mode ?? 'Elapsed';
+        // Round up the total if the current lap has exceeded it
+        const overrun = lapDisplay > lapsTotal;
+        const effectiveTotal = overrun ? lapDisplay : lapsTotal;
+        const lapValue =
+          lapsMode === 'Remaining'
+            ? Math.max(Math.ceil(effectiveTotal) - lapDisplay + 1, 0)
+            : lapDisplay;
         if (lapsTotal > 0)
           if (isFixedLapRace)
             return (
               <div className="flex justify-center">
-                L{lapDisplay}/{lapsTotal.toFixed(0)}
+                L{lapValue} / {lapsTotal.toFixed(0)}
               </div>
             );
           else
             return (
               <div className="flex justify-center">
-                L{lapDisplay}/{lapsTotal.toFixed(1)}
+                L{lapValue} /{' '}
+                {overrun ? effectiveTotal.toFixed(0) : lapsTotal.toFixed(1)}
               </div>
             );
         else return <div className="flex justify-center">L{lapDisplay}</div>;

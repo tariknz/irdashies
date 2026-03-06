@@ -17,6 +17,9 @@ export const usePitlaneHelperSettings = () => {
     showPitlaneTraffic: true,
     background: { opacity: 80 },
     progressBarOrientation: 'horizontal' as const,
+    speedBarOrientation: 'horizontal' as const,
+    showPastPitBox: false,
+    showProgressBar: true,
     showSpeedBar: true,
     showPitExitInputs: false,
     pitExitInputs: {
@@ -24,6 +27,13 @@ export const usePitlaneHelperSettings = () => {
       clutch: true,
     },
     showInputsPhase: 'afterPitbox' as const,
+    sessionVisibility: {
+      race: true,
+      loneQualify: false,
+      openQualify: false,
+      practice: true,
+      offlineTesting: true,
+    },
   };
 
   // Migrate old configs to include new fields
@@ -31,7 +41,9 @@ export const usePitlaneHelperSettings = () => {
     ...config,
     progressBarOrientation:
       config.progressBarOrientation ?? ('horizontal' as const),
+    speedBarOrientation: config.speedBarOrientation ?? ('horizontal' as const),
     showSpeedBar: config.showSpeedBar ?? true,
+    showPastPitBox: config.showPastPitBox ?? false,
     showPitExitInputs: config.showPitExitInputs ?? false,
     pitExitInputs: config.pitExitInputs ?? { throttle: true, clutch: true },
     showInputsPhase: config.showInputsPhase ?? ('afterPitbox' as const),

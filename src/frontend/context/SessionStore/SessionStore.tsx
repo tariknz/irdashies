@@ -10,6 +10,8 @@ interface SessionState {
   resetSession: () => void;
   greenFlagTimestamp: number | null;
   setGreenFlagTimestamp: (time: number | null) => void;
+  checkeredLap: number | null;
+  setCheckeredLap: (lap: number | null) => void;
 }
 
 export const useSessionStore = create<SessionState>((set) => ({
@@ -19,6 +21,8 @@ export const useSessionStore = create<SessionState>((set) => ({
   greenFlagTimestamp: null as number | null,
   setGreenFlagTimestamp: (time: number | null) =>
     set({ greenFlagTimestamp: time }),
+  checkeredLap: null as number | null,
+  setCheckeredLap: (lap: number | null) => set({ checkeredLap: lap }),
 }));
 
 export const useSessionDrivers = () =>
@@ -155,6 +159,12 @@ export const useGreenFlagTimestamp = () =>
 
 export const useSetGreenFlagTimestamp = () =>
   useStore(useSessionStore, (state) => state.setGreenFlagTimestamp);
+
+export const useCheckeredLap = () =>
+  useStore(useSessionStore, (state) => state.checkeredLap);
+
+export const useSetCheckeredLap = () =>
+  useStore(useSessionStore, (state) => state.setCheckeredLap);
 
 export const useCarSetup = () =>
   useStore(useSessionStore, (state) => state.session?.CarSetup);

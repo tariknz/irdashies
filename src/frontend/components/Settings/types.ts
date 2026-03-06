@@ -79,7 +79,7 @@ export interface StandingsWidgetSettings extends BaseWidgetSettings {
         totalFormat: 'hh:mm' | 'minimal';
         labelStyle: 'none' | 'short' | 'minimal';
       };
-      sessionLaps: { enabled: boolean };
+      sessionLaps: { enabled: boolean; mode: 'Elapsed' | 'Remaining' };
       incidentCount: { enabled: boolean };
       brakeBias: { enabled: boolean };
       localTime: { enabled: boolean };
@@ -103,7 +103,7 @@ export interface StandingsWidgetSettings extends BaseWidgetSettings {
         totalFormat: 'hh:mm' | 'minimal';
         labelStyle: 'none' | 'short' | 'minimal';
       };
-      sessionLaps: { enabled: boolean };
+      sessionLaps: { enabled: boolean; mode: 'Elapsed' | 'Remaining' };
       incidentCount: { enabled: boolean };
       brakeBias: { enabled: boolean };
       localTime: { enabled: boolean };
@@ -188,7 +188,7 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
         totalFormat: 'hh:mm' | 'minimal';
         labelStyle: 'none' | 'short' | 'minimal';
       };
-      sessionLaps: { enabled: boolean };
+      sessionLaps: { enabled: boolean; mode: 'Elapsed' | 'Remaining' };
       incidentCount: { enabled: boolean };
       brakeBias: { enabled: boolean };
       localTime: { enabled: boolean };
@@ -212,7 +212,7 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
         totalFormat: 'hh:mm' | 'minimal';
         labelStyle: 'none' | 'short' | 'minimal';
       };
-      sessionLaps: { enabled: boolean };
+      sessionLaps: { enabled: boolean; mode: 'Elapsed' | 'Remaining' };
       incidentCount: { enabled: boolean };
       brakeBias: { enabled: boolean };
       localTime: { enabled: boolean };
@@ -617,6 +617,9 @@ export interface PitlaneHelperWidgetSettings extends BaseWidgetSettings {
     showPitlaneTraffic: boolean;
     background: { opacity: number };
     progressBarOrientation: 'horizontal' | 'vertical';
+    speedBarOrientation: 'horizontal' | 'vertical';
+    showPastPitBox: boolean;
+    showProgressBar: boolean;
     showSpeedBar: boolean;
     showPitExitInputs: boolean;
     pitExitInputs: {
@@ -624,6 +627,7 @@ export interface PitlaneHelperWidgetSettings extends BaseWidgetSettings {
       clutch: boolean;
     };
     showInputsPhase: 'atPitbox' | 'afterPitbox' | 'always';
+    sessionVisibility: SessionVisibilitySettings;
   };
 }
 
