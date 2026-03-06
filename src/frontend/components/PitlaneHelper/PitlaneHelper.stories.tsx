@@ -1,187 +1,81 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import { TelemetryDecorator } from '@irdashies/storybook';
+import { PitlaneHelperBody } from './PitlaneHelper';
 
-// A static speed bar preview matching the actual PitSpeedBar component
-const SpeedBarPreview = ({
-  speedKph,
-  limitKph,
-}: {
-  speedKph: number;
-  limitKph: number;
-}) => {
-  const maxSpeed = limitKph * 2;
-  const fillPercent =
-    (Math.max(0, Math.min(speedKph, maxSpeed)) / maxSpeed) * 100;
-  const delta = speedKph - limitKph;
-  let fillColor = 'rgb(34, 197, 94)';
-  if (delta >= 0) fillColor = 'rgb(239, 68, 68)';
-  else if (delta > -5) fillColor = 'rgb(234, 179, 8)';
-
-  return (
-    <div className="flex flex-col items-center gap-1">
-      <span className="text-xs text-white font-medium tabular-nums leading-none">
-        {Math.round(speedKph)}
-      </span>
-      <div
-        className="relative w-8 bg-slate-700/50 rounded overflow-hidden"
-        style={{ height: '80px' }}
-      >
-        <div
-          className="absolute bottom-0 w-full"
-          style={{ height: `${fillPercent}%`, backgroundColor: fillColor }}
-        />
-        <div
-          className="absolute w-full border-t-2 border-white/70"
-          style={{ bottom: '50%' }}
-        />
-      </div>
-      <span className="text-[10px] text-slate-400 leading-none">spd</span>
-    </div>
-  );
+const meta: Meta<typeof PitlaneHelperBody> = {
+  title: 'Widgets/PitlaneHelper',
+  component: PitlaneHelperBody,
+  decorators: [TelemetryDecorator()],
+  parameters: {
+    layout: 'centered',
+  }
 };
 
-// A static countdown bar matching the actual PitCountdownBar vertical component
-const CountdownBarPreview = ({
-  distance,
-  maxDistance,
-  color,
-  label,
-}: {
-  distance: number;
-  maxDistance: number;
-  color: string;
-  label: string;
-}) => {
-  const progress = Math.max(
-    0,
-    Math.min(100, ((maxDistance - distance) / maxDistance) * 100)
-  );
-  const valueLabel = distance > 0 ? `${Math.round(distance)}m` : 'here';
+export default meta;
+type Story = StoryObj<typeof meta>;
 
-  return (
-    <div className="flex flex-col items-center gap-1">
-      <span className="text-xs text-white font-medium tabular-nums leading-none">
-        {valueLabel}
-      </span>
-      <div
-        className="relative w-8 bg-slate-700/50 rounded overflow-hidden"
-        style={{ height: '80px' }}
-      >
-        <div
-          className="absolute bottom-0 w-full"
-          style={{ height: `${progress}%`, backgroundColor: color }}
-        />
-      </div>
-      <span className="text-[10px] text-slate-400 leading-none">{label}</span>
-    </div>
-  );
-};
+// Mock data factories
+const mockSpeed = (overrides = {}) => ({
+  speedKph: 100,
+  speedMph: 62,
+  deltaKph: 0,
+  deltaMph: 0,
+  limitKph: 80,
+  limitMph: 50,
+  isSpeeding: false,
+  isSeverelyOver: false,
+  isPulsing: false,
+  colorClass: 'text-green-500',
+  ...overrides,
+} as const);
 
-// A static input bar matching the actual InputBarColumn component
-const InputBarPreview = ({
-  value,
-  color,
-  label,
-}: {
-  value: number;
-  color: string;
-  label: string;
-}) => (
-  <div className="flex flex-col items-center gap-1">
-    <span className="text-xs text-white font-medium tabular-nums leading-none">
-      {Math.round(value * 100)}
-    </span>
-    <div
-      className="relative w-8 bg-slate-700/50 rounded overflow-hidden"
-      style={{ height: '80px' }}
-    >
-      <div
-        className="absolute bottom-0 w-full"
-        style={{ height: `${value * 100}%`, backgroundColor: color }}
-      />
-    </div>
-    <span className="text-[10px] text-slate-400 leading-none">{label}</span>
-  </div>
-);
+const mockPosition = (overrides = {}) => ({
+  distanceToPitEntry: 500,
+  distanceToPit: 100,
+  distanceToPitExit: 200,
+  isEarlyPitbox: false,
+  progressPercent: 0,
+  isApproaching: false,
+  pitboxPct: 0,
+  playerPct: 0,
+  ...overrides,
+} as const);
 
-// Shared container for all widget previews
-const WidgetContainer = ({
-  children,
-  label,
-}: {
-  children: React.ReactNode;
-  label: string;
-}) => (
-  <div>
-    <p className="text-sm font-medium mb-2 text-slate-300">{label}</p>
-    <div
-      className="flex flex-col gap-2 p-2 rounded text-white font-medium"
-      style={{ backgroundColor: 'rgb(30 41 59 / 80%)', minWidth: '120px' }}
-    >
-      {children}
-    </div>
-  </div>
-);
+const mockConfig = (overrides = {}) => ({
+  background: { opacity: 80 },
+  showSpeedBar: true,
+  speedBarOrientation: 'vertical' as const,
+  showProgressBar: true,
+  progressBarOrientation: 'horizontal' as const,
+  showPastPitBox: true,
+  approachDistance: 500,
+  showMode: 'approaching' as const,
+  earlyPitboxThreshold: 75,
+  showPitExitInputs: false,
+  pitExitInputs: { throttle: true, clutch: true },
+  showInputsPhase: 'always' as const,
+  enablePitLimiterWarning: true,
+  enableEarlyPitboxWarning: true,
+  showPitlaneTraffic: true,
+  ...overrides,
+} as const);
 
-// Speed delta row matching the actual PitlaneHelper Row 1
-const SpeedDeltaRow = ({
-  delta,
-  limit,
-  unit,
-  isSpeeding,
-  isSeverelyOver,
-  colorClass,
-  showSpeedBar,
-  speedKph,
-  limitKph,
-}: {
-  delta: number;
-  limit: number;
-  unit: 'km/h' | 'mph';
-  isSpeeding: boolean;
-  isSeverelyOver: boolean;
-  colorClass: string;
-  showSpeedBar: boolean;
-  speedKph: number;
-  limitKph: number;
-}) => (
-  <div className="flex items-end gap-2">
-    <div
-      className={[
-        'flex flex-col justify-center px-2 py-1 rounded',
-        isSeverelyOver
-          ? 'bg-red-600 animate-pulse'
-          : isSpeeding
-            ? 'bg-red-600/50'
-            : '',
-      ].join(' ')}
-    >
-      <div
-        className={[
-          'text-2xl font-bold leading-none tabular-nums',
-          isSeverelyOver || isSpeeding ? 'text-white' : colorClass,
-        ].join(' ')}
-      >
-        {delta > 0 ? '+' : ''}
-        {delta.toFixed(1)}
-      </div>
-      <div className="text-xs text-slate-400 leading-tight">{unit}</div>
-      <div
-        className={[
-          'text-xs leading-tight',
-          isSpeeding ? 'text-white/70' : 'text-slate-500',
-        ].join(' ')}
-      >
-        lim {limit.toFixed(0)}
-      </div>
-    </div>
-    {showSpeedBar && (
-      <SpeedBarPreview speedKph={speedKph} limitKph={limitKph} />
-    )}
-  </div>
-);
+const mockLimiterWarning = (overrides = {}) => ({
+  showWarning: false,
+  warningText: '',
+  isTeamRaceWarning: false,
+  ...overrides,
+} as const);
+
+const mockTraffic = (overrides = {}) => ({
+  totalCars: 0,
+  carsAhead: 0,
+  carsBehind: 0,
+  ...overrides,
+} as const);
 
 // Documentation component showing the actual widget states
-const PitlaneHelperDocs = () => {
+export const Documentation = () => {
   return (
     <div className="max-w-5xl space-y-6 text-slate-200 p-6">
       <div>
@@ -238,195 +132,6 @@ const PitlaneHelperDocs = () => {
             behind in pitlane
           </li>
         </ul>
-      </div>
-
-      <div className="space-y-4">
-        <h2 className="text-2xl font-semibold">Example Display States</h2>
-
-        <div className="flex flex-wrap gap-6">
-          {/* Approaching pit entry */}
-          <WidgetContainer label="Approaching Pit Entry">
-            <SpeedDeltaRow
-              delta={-8.0}
-              limit={72}
-              unit="km/h"
-              isSpeeding={false}
-              isSeverelyOver={false}
-              colorClass="text-green-500"
-              showSpeedBar={true}
-              speedKph={64}
-              limitKph={72}
-            />
-            <div className="flex gap-3">
-              <CountdownBarPreview
-                distance={150}
-                maxDistance={200}
-                color="rgb(34, 197, 94)"
-                label="Pit Entry"
-              />
-            </div>
-          </WidgetContainer>
-
-          {/* On pit road approaching pitbox */}
-          <WidgetContainer label="On Pit Road – Approaching Pitbox">
-            <SpeedDeltaRow
-              delta={1.0}
-              limit={72}
-              unit="km/h"
-              isSpeeding={true}
-              isSeverelyOver={false}
-              colorClass="text-white"
-              showSpeedBar={true}
-              speedKph={73}
-              limitKph={72}
-            />
-            <div className="flex gap-3">
-              <CountdownBarPreview
-                distance={45}
-                maxDistance={100}
-                color="rgb(59, 130, 246)"
-                label="Pitbox"
-              />
-            </div>
-          </WidgetContainer>
-
-          {/* Severely over limit with limiter warning */}
-          <WidgetContainer label="Severely Over Limit">
-            <SpeedDeltaRow
-              delta={4.2}
-              limit={72}
-              unit="km/h"
-              isSpeeding={true}
-              isSeverelyOver={true}
-              colorClass="text-white"
-              showSpeedBar={true}
-              speedKph={76.2}
-              limitKph={72}
-            />
-            <div className="flex gap-3">
-              <CountdownBarPreview
-                distance={60}
-                maxDistance={100}
-                color="rgb(234, 179, 8)"
-                label="Pitbox"
-              />
-            </div>
-            <div className="text-center text-xs font-bold py-1 px-2 rounded bg-red-700 animate-pulse">
-              ACTIVATE LIMITER
-            </div>
-          </WidgetContainer>
-
-          {/* Past pitbox - approaching pit exit */}
-          <WidgetContainer label="Past Pitbox – Approaching Pit Exit">
-            <SpeedDeltaRow
-              delta={-5.0}
-              limit={72}
-              unit="km/h"
-              isSpeeding={false}
-              isSeverelyOver={false}
-              colorClass="text-green-500"
-              showSpeedBar={true}
-              speedKph={67}
-              limitKph={72}
-            />
-            <div className="flex gap-3">
-              <CountdownBarPreview
-                distance={25}
-                maxDistance={100}
-                color="rgb(34, 197, 94)"
-                label="Past Box"
-              />
-              <CountdownBarPreview
-                distance={80}
-                maxDistance={150}
-                color="rgb(234, 179, 8)"
-                label="Pit Exit"
-              />
-            </div>
-          </WidgetContainer>
-
-          {/* At pitbox with exit inputs */}
-          <WidgetContainer label="At Pitbox with Exit Inputs">
-            <SpeedDeltaRow
-              delta={-2.0}
-              limit={72}
-              unit="km/h"
-              isSpeeding={false}
-              isSeverelyOver={false}
-              colorClass="text-amber-400"
-              showSpeedBar={true}
-              speedKph={70}
-              limitKph={72}
-            />
-            <div className="text-center text-xs font-bold py-1 px-2 bg-green-600 rounded">
-              At Pitbox
-            </div>
-            <div className="flex gap-3">
-              <InputBarPreview
-                value={0.2}
-                color="rgb(59, 130, 246)"
-                label="clt"
-              />
-              <InputBarPreview
-                value={0.65}
-                color="rgb(34, 197, 94)"
-                label="thr"
-              />
-            </div>
-          </WidgetContainer>
-
-          {/* Early pitbox + traffic */}
-          <WidgetContainer label="Early Pitbox + Traffic">
-            <SpeedDeltaRow
-              delta={-6.0}
-              limit={72}
-              unit="km/h"
-              isSpeeding={false}
-              isSeverelyOver={false}
-              colorClass="text-green-500"
-              showSpeedBar={true}
-              speedKph={66}
-              limitKph={72}
-            />
-            <div className="flex gap-3">
-              <CountdownBarPreview
-                distance={10}
-                maxDistance={100}
-                color="rgb(59, 130, 246)"
-                label="Pitbox"
-              />
-            </div>
-            <div className="bg-amber-600 text-center text-xs font-bold py-1 px-2 rounded">
-              EARLY PITBOX
-            </div>
-            <div className="bg-blue-700 text-center text-xs py-1 px-2 rounded">
-              2 ahead · 1 behind
-            </div>
-          </WidgetContainer>
-
-          {/* Speed bar only - no countdown bars */}
-          <WidgetContainer label="Speed Bar Disabled">
-            <SpeedDeltaRow
-              delta={-3.5}
-              limit={56}
-              unit="mph"
-              isSpeeding={false}
-              isSeverelyOver={false}
-              colorClass="text-amber-400"
-              showSpeedBar={false}
-              speedKph={85}
-              limitKph={90}
-            />
-            <div className="flex gap-3">
-              <CountdownBarPreview
-                distance={30}
-                maxDistance={100}
-                color="rgb(59, 130, 246)"
-                label="Pitbox"
-              />
-            </div>
-          </WidgetContainer>
-        </div>
       </div>
 
       <div className="space-y-3">
@@ -534,17 +239,290 @@ const PitlaneHelperDocs = () => {
   );
 };
 
-const meta: Meta<typeof PitlaneHelperDocs> = {
-  title: 'Widgets/PitlaneHelper',
-  component: PitlaneHelperDocs,
-  parameters: {
-    layout: 'fullscreen',
+// Approaching pit lane
+export const ApproachingPitEntry: Story = {
+  render: (args) => (
+    <div style={{ height: '300px', width: '200px' }}>
+      <PitlaneHelperBody {...args} />
+    </div>
+  ),
+  args: {
+    speed: mockSpeed({ deltaKph: -15, deltaMph: -9 }),
+    position: mockPosition({ distanceToPitEntry: 500 }),
+    config: mockConfig(),
+    displayKph: true,
+    onPitRoad: false,
+    inBlendZone: false,
+    limiterWarning: mockLimiterWarning(),
+    shouldShowInputs: false,
+    showEarlyPitboxWarning: false,
+    traffic: mockTraffic(),
   },
 };
 
-export default meta;
-type Story = StoryObj<typeof PitlaneHelperDocs>;
+// Blend zone - entering pit lane
+export const BlendZoneEntry: Story = {
+  render: (args) => (
+    <div style={{ height: '300px', width: '200px' }}>
+      <PitlaneHelperBody {...args} />
+    </div>
+  ),
+  args: {
+    speed: mockSpeed({ deltaKph: -20, deltaMph: -12 }),
+    position: mockPosition({ distanceToPitEntry: 100 }),
+    config: mockConfig(),
+    displayKph: true,
+    onPitRoad: false,
+    inBlendZone: true,
+    limiterWarning: mockLimiterWarning(),
+    shouldShowInputs: false,
+    showEarlyPitboxWarning: false,
+    traffic: mockTraffic(),
+  },
+};
 
-export const Documentation: Story = {
-  name: 'Widget Documentation & Examples',
+// On pit road approaching pitbox
+export const OnPitRoad: Story = {
+  render: (args) => (
+    <div style={{ height: '300px', width: '400px' }}>
+      <PitlaneHelperBody {...args} />
+    </div>
+  ),
+  args: {
+    speed: mockSpeed({ speedKph: 70, speedMph: 43, deltaKph: -10, deltaMph: -6 }),
+    position: mockPosition({ distanceToPit: 80 }),
+    config: mockConfig(),
+    displayKph: true,
+    onPitRoad: true,
+    inBlendZone: false,
+    limiterWarning: mockLimiterWarning(),
+    shouldShowInputs: true,
+    showEarlyPitboxWarning: false,
+    traffic: mockTraffic(),
+  },
+};
+
+// At the pitbox
+export const AtPitbox: Story = {
+  render: (args) => (
+    <div style={{ height: '150px', width: '250px' }}>
+      <PitlaneHelperBody {...args} />
+    </div>
+  ),
+  args: {
+    speed: mockSpeed({ speedKph: 35, speedMph: 22, deltaKph: -45, deltaMph: -28 }),
+    position: mockPosition({ distanceToPit: 0 }),
+    config: mockConfig(),
+    displayKph: true,
+    onPitRoad: true,
+    inBlendZone: false,
+    limiterWarning: mockLimiterWarning(),
+    shouldShowInputs: true,
+    showEarlyPitboxWarning: false,
+    traffic: mockTraffic(),
+  },
+};
+
+// Speeding - with inactive inputs
+export const SpeedingInactiveInputs: Story = {
+  render: (args) => (
+    <div style={{ height: '400px', width: '200px' }}>
+      <PitlaneHelperBody {...args} />
+    </div>
+  ),
+  args: {
+    speed: mockSpeed({
+      speedKph: 95,
+      speedMph: 59,
+      deltaKph: 15,
+      deltaMph: 9,
+      isSpeeding: true,
+      colorClass: 'text-red-600',
+    }),
+    position: mockPosition({ distanceToPit: 80 }),
+    config: mockConfig({ showPitExitInputs: true }),
+    displayKph: true,
+    onPitRoad: true,
+    inBlendZone: false,
+    limiterWarning: mockLimiterWarning({
+      showWarning: true,
+      warningText: 'Pit speed limit violation',
+    }),
+    shouldShowInputs: false,
+    showEarlyPitboxWarning: false,
+    traffic: mockTraffic(),
+  },
+};
+
+// Severely over pit limit - pulsing animation
+export const SeverelyOver: Story = {
+  render: (args) => (
+    <div style={{ height: '350px', width: '250px' }}>
+      <PitlaneHelperBody {...args} />
+    </div>
+  ),
+  args: {
+    speed: mockSpeed({
+      speedKph: 115,
+      speedMph: 71,
+      deltaKph: 35,
+      deltaMph: 21,
+      isSeverelyOver: true,
+      colorClass: 'text-white',
+    }),
+    position: mockPosition({ distanceToPit: 30 }),
+    config: mockConfig(),
+    displayKph: true,
+    onPitRoad: true,
+    inBlendZone: false,
+    limiterWarning: mockLimiterWarning({
+      showWarning: true,
+      warningText: 'Dangerous pit speed',
+      isTeamRaceWarning: true,
+    }),
+    shouldShowInputs: true,
+    showEarlyPitboxWarning: false,
+    traffic: mockTraffic(),
+  },
+};
+
+// Early pitbox warning
+export const EarlyPitbox: Story = {
+  render: (args) => (
+    <div style={{ height: '200px', width: '300px' }}>
+      <PitlaneHelperBody {...args} />
+    </div>
+  ),
+  args: {
+    speed: mockSpeed({ speedKph: 50, speedMph: 31, deltaKph: -30, deltaMph: -19 }),
+    position: mockPosition({ distanceToPit: 20, isEarlyPitbox: true }),
+    config: mockConfig(),
+    displayKph: true,
+    onPitRoad: true,
+    inBlendZone: false,
+    limiterWarning: mockLimiterWarning(),
+    shouldShowInputs: false,
+    showEarlyPitboxWarning: true,
+    traffic: mockTraffic(),
+  },
+};
+
+// With traffic
+export const WithTraffic: Story = {
+  render: (args) => (
+    <div style={{ height: '500px', width: '300px' }}>
+      <PitlaneHelperBody {...args} />
+    </div>
+  ),
+  args: {
+    speed: mockSpeed({ speedKph: 75, deltaMph: -5 }),
+    position: mockPosition({ distanceToPit: 60 }),
+    config: mockConfig({ showPitExitInputs: true }),
+    displayKph: true,
+    onPitRoad: true,
+    inBlendZone: false,
+    limiterWarning: mockLimiterWarning(),
+    shouldShowInputs: true,
+    showEarlyPitboxWarning: false,
+    traffic: mockTraffic({ totalCars: 5, carsAhead: 2, carsBehind: 3 }),
+  },
+};
+
+// Horizontal Speed
+export const HorizontalSpeed: Story = {
+  render: (args) => (
+    <div style={{ height: '250px', width: '200px' }}>
+      <PitlaneHelperBody {...args} />
+    </div>
+  ),
+  args: {
+    speed: mockSpeed({
+      speedKph: 100,
+      speedMph: 62,
+      deltaKph: 0,
+      deltaMph: 0,
+      limitKph: 80,
+      limitMph: 50,
+    }),
+    position: mockPosition({ distanceToPitEntry: 160 }),
+    config: mockConfig({ speedBarOrientation: 'horizontal' }),
+    displayKph: false,
+    onPitRoad: false,
+    inBlendZone: false,
+    limiterWarning: mockLimiterWarning(),
+    shouldShowInputs: false,
+    showEarlyPitboxWarning: false,
+    traffic: mockTraffic(),
+  },
+};
+
+// Vertical Progress
+export const VerticalProgress: Story = {
+  render: (args) => (
+    <div style={{ height: '250px', width: '200px' }}>
+      <PitlaneHelperBody {...args} />
+    </div>
+  ),
+  args: {
+    speed: mockSpeed({
+      speedKph: 100,
+      speedMph: 62,
+      deltaKph: 0,
+      deltaMph: 0,
+      limitKph: 80,
+      limitMph: 50,
+    }),
+    position: mockPosition({ distanceToPitEntry: 160 }),
+    config: mockConfig({ progressBarOrientation: 'vertical' }),
+    displayKph: false,
+    onPitRoad: false,
+    inBlendZone: false,
+    limiterWarning: mockLimiterWarning(),
+    shouldShowInputs: false,
+    showEarlyPitboxWarning: false,
+    traffic: mockTraffic(),
+  },
+};
+
+
+// Exiting pit lane
+export const ExitingPitLane: Story = {
+  render: (args) => (
+    <div style={{ height: '400px', width: '400px' }}>
+      <PitlaneHelperBody {...args} />
+    </div>
+  ),
+  args: {
+    speed: mockSpeed({ speedKph: 120, speedMph: 75, deltaKph: 40, deltaMph: 25 }),
+    position: mockPosition({ distanceToPit: -50, distanceToPitExit: 100 }),
+    config: mockConfig(),
+    displayKph: true,
+    onPitRoad: true,
+    inBlendZone: false,
+    limiterWarning: mockLimiterWarning(),
+    shouldShowInputs: false,
+    showEarlyPitboxWarning: false,
+    traffic: mockTraffic(),
+  },
+};
+
+// Exiting pit lane (with inputs)
+export const ExitingWithInputs: Story = {
+  render: (args) => (
+    <div style={{ height: '400px', width: '400px' }}>
+      <PitlaneHelperBody {...args} />
+    </div>
+  ),
+  args: {
+    speed: mockSpeed({ speedKph: 120, speedMph: 75, deltaKph: 40, deltaMph: 25 }),
+    position: mockPosition({ distanceToPit: -50, distanceToPitExit: 100 }),
+    config: mockConfig({ showPitExitInputs: true }),
+    displayKph: true,
+    onPitRoad: true,
+    inBlendZone: false,
+    limiterWarning: mockLimiterWarning(),
+    shouldShowInputs: true,
+    showEarlyPitboxWarning: false,
+    traffic: mockTraffic(),
+  },
 };

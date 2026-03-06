@@ -8,6 +8,7 @@ import { SettingToggleRow } from '../components/SettingToggleRow';
 import { SettingSliderRow } from '../components/SettingSliderRow';
 import { SettingButtonGroupRow } from '../components/SettingButtonGroupRow';
 import { SettingSelectRow } from '../components/SettingSelectRow';
+import { SessionVisibility } from '../components/SessionVisibility';
 
 const SETTING_ID = 'pitlanehelper';
 
@@ -20,6 +21,9 @@ const defaultConfig: PitlaneHelperWidgetSettings['config'] = {
   showPitlaneTraffic: true,
   background: { opacity: 80 },
   progressBarOrientation: 'horizontal',
+  speedBarOrientation: 'horizontal',
+  showPastPitBox: false,
+  showProgressBar: true,
   showSpeedBar: true,
   showPitExitInputs: false,
   pitExitInputs: {
@@ -27,6 +31,13 @@ const defaultConfig: PitlaneHelperWidgetSettings['config'] = {
     clutch: true,
   },
   showInputsPhase: 'afterPitbox',
+  sessionVisibility: {
+    race: true,
+    loneQualify: false,
+    openQualify: false,
+    practice: true,
+    offlineTesting: true,
+  },
 };
 
 export const PitlaneHelperSettings = () => {
@@ -43,11 +54,19 @@ export const PitlaneHelperSettings = () => {
         progressBarOrientation:
           savedSettings.config.progressBarOrientation ??
           defaultConfig.progressBarOrientation,
+        speedBarOrientation:
+          savedSettings.config.speedBarOrientation ??
+          defaultConfig.speedBarOrientation,
+        showProgressBar:
+          savedSettings.config.showProgressBar ?? defaultConfig.showProgressBar,
         showSpeedBar:
           savedSettings.config.showSpeedBar ?? defaultConfig.showSpeedBar,
         showPitExitInputs:
           savedSettings.config.showPitExitInputs ??
           defaultConfig.showPitExitInputs,
+        showPastPitBox:
+          savedSettings.config.showPastPitBox ??
+          defaultConfig.showPastPitBox,
         pitExitInputs:
           savedSettings.config.pitExitInputs ?? defaultConfig.pitExitInputs,
         showInputsPhase:
@@ -92,6 +111,13 @@ export const PitlaneHelperSettings = () => {
             >
               Options
             </TabButton>
+            <TabButton
+              id="visibility"
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+            >
+              Visibility
+            </TabButton>
           </div>
 
           <div className="pt-4 space-y-4">
@@ -99,7 +125,7 @@ export const PitlaneHelperSettings = () => {
             {activeTab === 'options' && (
               <>
                 {/* Display Settings */}
-                <SettingsSection title="Display">
+                <SettingsSection title="Options">
                   <SettingToggleRow
                     title="Show when approaching pit"
                     description="Display overlay before entering pit lane"
@@ -138,26 +164,66 @@ export const PitlaneHelperSettings = () => {
 
                   <SettingToggleRow
                     title="Speed Bar"
-                    description="Show vertical bar indicating speed relative to pit limit"
+                    description="Show bar indicating speed relative to pit limit"
                     enabled={settings.config.showSpeedBar}
                     onToggle={(newValue) =>
                       handleConfigChange({ showSpeedBar: newValue })
                     }
                   />
 
-                  <SettingButtonGroupRow<'horizontal' | 'vertical'>
-                    title="Progress Bar Orientation"
-                    value={
-                      settings.config.progressBarOrientation ?? 'horizontal'
-                    }
-                    options={[
-                      { label: 'Horizontal', value: 'horizontal' },
-                      { label: 'Vertical', value: 'vertical' },
-                    ]}
-                    onChange={(v) =>
-                      handleConfigChange({ progressBarOrientation: v })
+                  {settings.config.showSpeedBar && (
+                    <SettingsSection>
+                      <SettingButtonGroupRow<'horizontal' | 'vertical'>
+                        title="Speed Bar Orientation"
+                        value={
+                          settings.config.speedBarOrientation ?? 'horizontal'
+                        }
+                        options={[
+                          { label: 'Horizontal', value: 'horizontal' },
+                          { label: 'Vertical', value: 'vertical' },
+                        ]}
+                        onChange={(v) =>
+                          handleConfigChange({ speedBarOrientation: v })
+                        }
+                      />
+                    </SettingsSection>
+                  )}
+
+                  <SettingToggleRow
+                    title="Progress Bar"
+                    description="Show bar indicating distance to pit box"
+                    enabled={settings.config.showProgressBar}
+                    onToggle={(newValue) =>
+                      handleConfigChange({ showProgressBar: newValue })
                     }
                   />
+
+                  {settings.config.showProgressBar && (
+                    <SettingsSection>
+                      <SettingButtonGroupRow<'horizontal' | 'vertical'>
+                        title="Progress Bar Orientation"
+                        value={
+                          settings.config.progressBarOrientation ?? 'horizontal'
+                        }
+                        options={[
+                          { label: 'Horizontal', value: 'horizontal' },
+                          { label: 'Vertical', value: 'vertical' },
+                        ]}
+                        onChange={(v) =>
+                          handleConfigChange({ progressBarOrientation: v })
+                        }
+                      />
+
+                      <SettingToggleRow
+                        title="Show Past Box"
+                        description="Show bar indicating distance past the pit box"
+                        enabled={settings.config.showPastPitBox}
+                        onToggle={(newValue) =>
+                          handleConfigChange({ showPastPitBox: newValue })
+                        }
+                      />
+                    </SettingsSection>
+                  )}
 
                   <SettingSliderRow
                     title="Background Opacity"
@@ -170,7 +236,7 @@ export const PitlaneHelperSettings = () => {
                       handleConfigChange({ background: { opacity: v } })
                     }
                   />
-                </SettingsSection>
+                </SettingsSection>           
 
                 {/* Warning Settings */}
                 <SettingsSection title="Warnings">
@@ -193,18 +259,20 @@ export const PitlaneHelperSettings = () => {
                   />
 
                   {settings.config.enableEarlyPitboxWarning && (
-                    <SettingSliderRow
-                      title="Early Warning Threshold"
-                      description="Distance from pitbox to trigger warning (meters)"
-                      value={settings.config.earlyPitboxThreshold}
-                      units="m"
-                      min={25}
-                      max={300}
-                      step={10}
-                      onChange={(v) =>
-                        handleConfigChange({ earlyPitboxThreshold: v })
-                      }
-                    />
+                    <SettingsSection>
+                      <SettingSliderRow
+                        title="Early Warning Threshold"
+                        description="Distance from pitbox to trigger warning (meters)"
+                        value={settings.config.earlyPitboxThreshold}
+                        units="m"
+                        min={25}
+                        max={300}
+                        step={10}
+                        onChange={(v) =>
+                          handleConfigChange({ earlyPitboxThreshold: v })
+                        }
+                      />
+                    </SettingsSection>
                   )}
                 </SettingsSection>
 
@@ -220,7 +288,7 @@ export const PitlaneHelperSettings = () => {
                   />
 
                   {settings.config.showPitExitInputs && (
-                    <>
+                    <SettingsSection>
                       <SettingToggleRow
                         title="Show Throttle"
                         enabled={settings.config.pitExitInputs.throttle}
@@ -257,10 +325,22 @@ export const PitlaneHelperSettings = () => {
                           handleConfigChange({ showInputsPhase: v })
                         }
                       />
-                    </>
+                    </SettingsSection>
                   )}
                 </SettingsSection>
               </>
+            )}
+
+            {/* VISIBILITY TAB */}
+            {activeTab === 'visibility' && (
+              <SettingsSection title="Session Visibility">
+                            
+                <SessionVisibility
+                    sessionVisibility={settings.config.sessionVisibility}
+                    handleConfigChange={handleConfigChange}
+                  />
+  
+              </SettingsSection>
             )}
           </div>
         </div>
