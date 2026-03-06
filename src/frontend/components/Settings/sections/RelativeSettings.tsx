@@ -103,7 +103,7 @@ const defaultConfig: RelativeWidgetSettings['config'] = {
       totalFormat: 'minimal',
       labelStyle: 'minimal',
     },
-    sessionLaps: { enabled: true },
+    sessionLaps: { enabled: true, mode: 'Elapsed' },
     incidentCount: { enabled: true },
     brakeBias: { enabled: true },
     localTime: { enabled: false },
@@ -124,7 +124,7 @@ const defaultConfig: RelativeWidgetSettings['config'] = {
       totalFormat: 'minimal',
       labelStyle: 'minimal',
     },
-    sessionLaps: { enabled: false },
+    sessionLaps: { enabled: false, mode: 'Elapsed' },
     incidentCount: { enabled: false },
     brakeBias: { enabled: false },
     localTime: { enabled: true },
@@ -306,6 +306,9 @@ const migrateConfig = (
         enabled:
           (config.headerBar as { sessionLaps?: { enabled?: boolean } })
             ?.sessionLaps?.enabled ?? true,
+        mode:
+          ((config.headerBar as { sessionLaps?: { mode?: string } })
+            ?.sessionLaps?.mode as 'Elapsed' | 'Remaining') ?? 'Elapsed',
       },
       incidentCount: {
         enabled:
@@ -398,6 +401,9 @@ const migrateConfig = (
         enabled:
           (config.footerBar as { sessionLaps?: { enabled?: boolean } })
             ?.sessionLaps?.enabled ?? true,
+        mode:
+          ((config.footerBar as { sessionLaps?: { mode?: string } })
+            ?.sessionLaps?.mode as 'Elapsed' | 'Remaining') ?? 'Elapsed',
       },
       incidentCount: {
         enabled:
@@ -881,7 +887,8 @@ const BarItemsList = ({
                                 enabled,
                                 speedPosition: currentSpeedPosition,
                               }
-                            : item.id === 'sessionTime'
+                            : item.id === 'sessionTime' ||
+                                item.id === 'sessionLaps'
                               ? { ...(itemConfig as object), enabled }
                               : { enabled },
                     },
@@ -976,11 +983,37 @@ const BarItemsList = ({
                   })}
                 </div>
               )}
+            {item.id === 'sessionLaps' &&
+              itemConfig &&
+              'enabled' in itemConfig &&
+              itemConfig.enabled && (
+                <div className="flex items-center justify-end gap-3pl-4 mt-2">
+                  <span></span>
+                  <select
+                    value={'mode' in itemConfig ? itemConfig.mode : 'Elapsed'}
+                    onChange={(e) => {
+                      handleConfigChange({
+                        [barType]: {
+                          ...settings.config[barType],
+                          [item.id]: {
+                            ...(itemConfig as object),
+                            mode: e.target.value as 'Elapsed' | 'Remaining',
+                          },
+                        },
+                      });
+                    }}
+                    className="bg-slate-700 text-white rounded-md px-2 py-1"
+                  >
+                    <option value="Elapsed">Elapsed</option>
+                    <option value="Remaining">Remaining</option>
+                  </select>
+                </div>
+              )}
             {item.id === 'sessionTime' &&
               itemConfig &&
               'enabled' in itemConfig &&
               itemConfig.enabled && (
-                <div className="flex items-center justify-between pl-4 mt-2">
+                <div className="flex items-center justify-end gap-3 pl-4 mt-2">
                   <span></span>
                   <select
                     value={'mode' in itemConfig ? itemConfig.mode : 'Remaining'}
@@ -995,7 +1028,7 @@ const BarItemsList = ({
                         },
                       });
                     }}
-                    className="bg-slate-700 text-white rounded-md px-2 py-1 flex-1"
+                    className="bg-slate-700 text-white rounded-md px-2 py-1"
                   >
                     <option value="Remaining">Remaining</option>
                     <option value="Elapsed">Elapsed</option>
@@ -1017,7 +1050,7 @@ const BarItemsList = ({
                         },
                       });
                     }}
-                    className="bg-slate-700 text-white rounded-md px-2 py-1 flex-1"
+                    className="bg-slate-700 text-white rounded-md px-2 py-1"
                   >
                     <option value="minimal">2:34</option>
                     <option value="hh:mm">00:12:34</option>
@@ -1042,7 +1075,7 @@ const BarItemsList = ({
                         },
                       });
                     }}
-                    className="bg-slate-700 text-white rounded-md px-2 py-1 flex-1"
+                    className="bg-slate-700 text-white rounded-md px-2 py-1"
                   >
                     <option value="minimal">Minimal Labels</option>
                     <option value="short">Short Labels</option>

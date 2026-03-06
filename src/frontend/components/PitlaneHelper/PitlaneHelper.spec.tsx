@@ -7,6 +7,7 @@ import * as context from '@irdashies/context';
 vi.mock('@irdashies/context', () => ({
   useTelemetryValue: vi.fn(),
   useDashboard: vi.fn(),
+  useSessionVisibility: vi.fn(),
 }));
 
 // Mock the custom hooks
@@ -47,7 +48,10 @@ describe('PitlaneHelper', () => {
     approachDistance: 200,
     earlyPitboxThreshold: 75,
     progressBarOrientation: 'vertical' as const,
+    speedBarOrientation: 'vertical' as const,
+    showProgressBar: true,
     showSpeedBar: true,
+    showPastPitBox: false,
     background: { opacity: 80 },
     showPitExitInputs: false,
     showInputsPhase: 'always' as const,
@@ -55,6 +59,13 @@ describe('PitlaneHelper', () => {
     enablePitLimiterWarning: true,
     enableEarlyPitboxWarning: true,
     showPitlaneTraffic: true,
+    sessionVisibility: {
+      race: true,
+      loneQualify: false,
+      openQualify: false,
+      practice: true,
+      offlineTesting: true,
+    },
   };
 
   const defaultSpeedResult = {
@@ -116,6 +127,7 @@ describe('PitlaneHelper', () => {
       refreshProfiles: vi.fn(),
     });
 
+    vi.mocked(context.useSessionVisibility).mockReturnValue(true);
     vi.mocked(usePitlaneHelperSettings).mockReturnValue(defaultConfig);
     vi.mocked(usePitSpeed).mockReturnValue(defaultSpeedResult);
     vi.mocked(usePitboxPosition).mockReturnValue(defaultPositionResult);
@@ -274,6 +286,11 @@ describe('PitlaneHelper', () => {
         return undefined;
       });
 
+      vi.mocked(usePitlaneHelperSettings).mockReturnValue({
+        ...defaultConfig,
+        showPastPitBox: true,
+      });
+
       vi.mocked(usePitboxPosition).mockReturnValue({
         ...defaultPositionResult,
         distanceToPit: -25, // Past pitbox
@@ -288,6 +305,11 @@ describe('PitlaneHelper', () => {
       vi.mocked(context.useTelemetryValue).mockImplementation((key) => {
         if (key === 'OnPitRoad') return true;
         return undefined;
+      });
+
+      vi.mocked(usePitlaneHelperSettings).mockReturnValue({
+        ...defaultConfig,
+        showPastPitBox: true,
       });
 
       vi.mocked(usePitboxPosition).mockReturnValue({
@@ -535,6 +557,11 @@ describe('PitlaneHelper', () => {
       vi.mocked(context.useTelemetryValue).mockImplementation((key) => {
         if (key === 'OnPitRoad') return true;
         return undefined;
+      });
+
+      vi.mocked(usePitboxPosition).mockReturnValue({
+        ...defaultPositionResult,
+        distanceToPit: 50,
       });
 
       const { getByText } = render(<PitlaneHelper />);

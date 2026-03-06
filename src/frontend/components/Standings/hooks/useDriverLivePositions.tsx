@@ -6,7 +6,7 @@ import {
   useTelemetryValue,
   useTelemetryValues,
 } from '@irdashies/context';
-import { SessionState } from '@irdashies/types';
+import { SessionState, TrackLocation  } from '@irdashies/types';
 
 interface DriverData {
   driverIdx: number;
@@ -48,7 +48,8 @@ export const useDriverLivePositions = ({
   const lastLapSnapshotRef = useRef<Map<number, number> | undefined>(undefined);
   const p1LapCompletedRef = useRef<number | undefined>(undefined);
   const p1CarRef = useRef<number | undefined>(undefined);
-
+  const lastProgressRef = useRef<Map<number, number>>(new Map());
+  const prevTrackSurfaceRef = useRef<Map<number, number>>(new Map());
   const sessionType = useCurrentSessionType();
   const sessionNum = useTelemetryValue('SessionNum');
   const sessionPositions = useSessionPositions(sessionNum);
@@ -56,9 +57,9 @@ export const useDriverLivePositions = ({
   const carIdxLapCompleted = useTelemetryValues<number[]>('CarIdxLapCompleted');
   const carIdxLapDistPct = useTelemetryValues<number[]>('CarIdxLapDistPct');
   const carIdxClass = useTelemetryValues<number[]>('CarIdxClass');
-  const paceCarIdx =
-    useSessionStore((s) => s.session?.DriverInfo?.PaceCarIdx) ?? -1;
-  const p1Car = sessionPositions?.find((pos) => pos.Position === 1); // Position is 1-based
+  const carIdxTrackSurface = useTelemetryValues<number[]>('CarIdxTrackSurface');
+  const paceCarIdx = useSessionStore((s) => s.session?.DriverInfo?.PaceCarIdx) ?? -1;
+  const p1Car = sessionPositions?.find(pos => pos.Position === 1); // Position is 1-based
   const p1LapCompleted = p1Car ? (carIdxLapCompleted[p1Car.CarIdx] ?? 0) : 0;
 
   // Handle ref updates in an effect, not during render
@@ -176,12 +177,32 @@ export const useDriverLivePositions = ({
         const classId = carIdxClass[driverIdx] ?? -1;
         const distPct = carIdxLapDistPct[driverIdx] ?? 0;
 
+        // check for tow
+        const carTrackSurface = carIdxTrackSurface?.[driverIdx] ?? 3;
+        const prevCarTrackSurface = prevTrackSurfaceRef.current.get(driverIdx);
+        const isOnTow =
+          carTrackSurface == TrackLocation.InPitStall &&
+          prevCarTrackSurface != undefined &&
+          prevCarTrackSurface !== TrackLocation.ApproachingPits;
+        if (prevCarTrackSurface !== carTrackSurface) {
+          prevTrackSurfaceRef.current.set(driverIdx, carTrackSurface);
+        }
+
         // const lapCompleted = lapCompleted ?? 0;
+        
+        // cache progress for when off track (towing)
+        const rawProgress = lapCompleted + distPct;
+        let effectiveProgress = rawProgress;
+        if (isOnTow) {
+          effectiveProgress = lastProgressRef.current.get(driverIdx) ?? rawProgress;
+        } else {
+          lastProgressRef.current.set(driverIdx, rawProgress);
+        }
 
         // Create driver data object
         const driverData: DriverData = {
           driverIdx: driverIdx,
-          progress: lapCompleted + distPct,
+          progress: effectiveProgress,
           lapCompleted,
           sessionLapsCompleted,
           sessionClassPosition,
@@ -284,5 +305,6 @@ export const useDriverLivePositions = ({
     paceCarIdx,
     sessionType,
     sessionState,
+    carIdxTrackSurface
   ]);
 };
