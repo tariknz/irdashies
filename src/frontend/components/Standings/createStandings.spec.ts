@@ -6,7 +6,13 @@ import {
   augmentStandingsWithPositionChange,
 } from './createStandings';
 import type { Standings } from './createStandings';
-import type { Session, Telemetry, SessionInfo, Driver } from '@irdashies/types';
+import type {
+  Session,
+  Telemetry,
+  SessionInfo,
+  SessionResults,
+  Driver,
+} from '@irdashies/types';
 
 describe('createStandings', () => {
   const mockSessionData: Session = {
@@ -238,6 +244,105 @@ describe('createStandings', () => {
     expect(standings[2].isPlayer).toBe(true);
   });
 
+  it('should order drivers by qualifying grid (QualifyPositions) at heat race start when no race results exist yet', () => {
+    // Simulates heat race format: ResultsPositions is null, QualifyResultsInfo.Results is null,
+    // but Sessions[n].QualifyPositions holds the starting grid. useDriverStandings normalizes
+    // these to SessionResults-compatible objects (Position becomes 1-based) before passing them.
+    const makeDriver = (carIdx: number, carNumber: string) => ({
+      CarIdx: carIdx,
+      UserName: `Driver ${carNumber}`,
+      CarNumber: carNumber,
+      CarClassID: 1,
+      CarClassShortName: 'Class 1',
+      CarClassRelSpeed: 1.0,
+      IRating: 1500,
+      LicString: 'B 2.00',
+      CarIsPaceCar: 0,
+      IsSpectator: 0,
+    });
+
+    // Cars are deliberately listed out of car-number order to prove sorting is by
+    // qualifying position, not car number.
+    const drivers = [
+      makeDriver(0, '42'), // car 42 qualifies P1
+      makeDriver(1, '3'), // car 3  qualifies P2
+      makeDriver(2, '7'), // car 7  qualifies P3
+    ] as unknown as Driver[];
+
+    // Normalized QualifyPositions (Position already converted to 1-based by useDriverStandings)
+    const normalizedQualifyPositions = [
+      {
+        CarIdx: 0,
+        Position: 1,
+        ClassPosition: 0,
+        Lap: 2,
+        Time: 80.0,
+        FastestLap: 2,
+        FastestTime: 80.0,
+        LastTime: -1,
+        LapsLed: 0,
+        LapsComplete: 0,
+        JokerLapsComplete: 0,
+        LapsDriven: 0,
+        Incidents: 0,
+        ReasonOutId: 0,
+        ReasonOutStr: 'Running',
+      },
+      {
+        CarIdx: 1,
+        Position: 2,
+        ClassPosition: 1,
+        Lap: 2,
+        Time: 81.0,
+        FastestLap: 2,
+        FastestTime: 81.0,
+        LastTime: -1,
+        LapsLed: 0,
+        LapsComplete: 0,
+        JokerLapsComplete: 0,
+        LapsDriven: 0,
+        Incidents: 0,
+        ReasonOutId: 0,
+        ReasonOutStr: 'Running',
+      },
+      {
+        CarIdx: 2,
+        Position: 3,
+        ClassPosition: 2,
+        Lap: 1,
+        Time: 82.0,
+        FastestLap: 1,
+        FastestTime: 82.0,
+        LastTime: -1,
+        LapsLed: 0,
+        LapsComplete: 0,
+        JokerLapsComplete: 0,
+        LapsDriven: 0,
+        Incidents: 0,
+        ReasonOutId: 0,
+        ReasonOutStr: 'Running',
+      },
+    ];
+
+    const standings = createDriverStandings(
+      { playerIdx: 0, drivers, qualifyingResults: normalizedQualifyPositions },
+      {},
+      { resultsPositions: [], resultsFastestLap: [], sessionType: 'Race' },
+      [],
+      [],
+      []
+    );
+
+    expect(standings).toHaveLength(3);
+    // P1 = car 42 (CarIdx 0), P2 = car 3 (CarIdx 1), P3 = car 7 (CarIdx 2)
+    expect(standings[0].driver.carNum).toBe('42');
+    expect(standings[0].classPosition).toBe(1);
+    expect(standings[1].driver.carNum).toBe('3');
+    expect(standings[1].classPosition).toBe(2);
+    expect(standings[2].driver.carNum).toBe('7');
+    expect(standings[2].classPosition).toBe(3);
+  });
+
   it('should show drivers with laps first, then drivers without laps sorted by car number', () => {
     const makeDriver = (carIdx: number, carNumber: string) => ({
       CarIdx: carIdx,
@@ -281,7 +386,7 @@ describe('createStandings', () => {
             LastTime: 95,
             LapsComplete: 1,
           },
-        ] as unknown as SessionInfo['ResultsPositions'],
+        ] as unknown as SessionResults[],
         resultsFastestLap: [{ CarIdx: 8, FastestLap: 1, FastestTime: 90 }],
         sessionType: 'Practice',
       },
@@ -763,7 +868,7 @@ function createStandings(
     {
       playerIdx: session?.DriverInfo?.DriverCarIdx,
       drivers: session?.DriverInfo?.Drivers,
-      qualifyingResults: session?.QualifyResultsInfo?.Results,
+      qualifyingResults: session?.QualifyResultsInfo?.Results ?? undefined,
     },
     {
       carIdxF2TimeValue: telemetry?.CarIdxF2Time?.value,
@@ -773,7 +878,7 @@ function createStandings(
       radioTransmitCarIdx: telemetry?.RadioTransmitCarIdx?.value,
     },
     {
-      resultsPositions: currentSession?.ResultsPositions,
+      resultsPositions: currentSession?.ResultsPositions ?? undefined,
       resultsFastestLap: currentSession?.ResultsFastestLap,
       sessionType: currentSession?.SessionType,
     },
