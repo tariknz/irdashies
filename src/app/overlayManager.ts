@@ -457,9 +457,18 @@ export class OverlayManager {
     const gotTheLock = app.requestSingleInstanceLock();
 
     if (!gotTheLock) {
-      app.quit();
-      this.hasSingleInstanceLock = false;
-      return false;
+      console.warn('[OverlayManager] Failed to get single instance lock.');
+      const isDev = !!MAIN_WINDOW_VITE_DEV_SERVER_URL;
+      if (!isDev) {
+        app.quit();
+        this.hasSingleInstanceLock = false;
+        return false;
+      }
+      // In dev mode, we allow it to continue because Forge might not have
+      // fully killed the previous process's lock yet.
+      console.warn('[OverlayManager] Dev mode detected, continuing anyway...');
+      this.hasSingleInstanceLock = true;
+      return true;
     }
 
     this.hasSingleInstanceLock = true;
