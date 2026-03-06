@@ -79,7 +79,7 @@ export interface StandingsWidgetSettings extends BaseWidgetSettings {
         totalFormat: 'hh:mm' | 'minimal';
         labelStyle: 'none' | 'short' | 'minimal';
       };
-      sessionLaps: { enabled: boolean };
+      sessionLaps: { enabled: boolean; mode: 'Elapsed' | 'Remaining' };
       incidentCount: { enabled: boolean };
       brakeBias: { enabled: boolean };
       localTime: { enabled: boolean };
@@ -103,7 +103,7 @@ export interface StandingsWidgetSettings extends BaseWidgetSettings {
         totalFormat: 'hh:mm' | 'minimal';
         labelStyle: 'none' | 'short' | 'minimal';
       };
-      sessionLaps: { enabled: boolean };
+      sessionLaps: { enabled: boolean; mode: 'Elapsed' | 'Remaining' };
       incidentCount: { enabled: boolean };
       brakeBias: { enabled: boolean };
       localTime: { enabled: boolean };
@@ -182,7 +182,7 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
         totalFormat: 'hh:mm' | 'minimal';
         labelStyle: 'none' | 'short' | 'minimal';
       };
-      sessionLaps: { enabled: boolean };
+      sessionLaps: { enabled: boolean; mode: 'Elapsed' | 'Remaining' };
       incidentCount: { enabled: boolean };
       brakeBias: { enabled: boolean };
       localTime: { enabled: boolean };
@@ -206,7 +206,7 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
         totalFormat: 'hh:mm' | 'minimal';
         labelStyle: 'none' | 'short' | 'minimal';
       };
-      sessionLaps: { enabled: boolean };
+      sessionLaps: { enabled: boolean; mode: 'Elapsed' | 'Remaining' };
       incidentCount: { enabled: boolean };
       brakeBias: { enabled: boolean };
       localTime: { enabled: boolean };
