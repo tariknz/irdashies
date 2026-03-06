@@ -5,6 +5,7 @@ import {
   useSessionIsOfficial,
   useSessionPositions,
   useSessionQualifyingResults,
+  useSessionQualifyPositions,
   useSessionType,
   useTelemetryValue,
   useFocusCarIdx,
@@ -29,6 +30,7 @@ import type { StandingsWidgetSettings } from '../../Settings/types';
 import { useDriverLivePositions } from './useDriverLivePositions';
 import { useStandingsSettings } from './useStandingsSettings';
 import { TrackLocation } from '@irdashies/types';
+import type { SessionResults } from '@irdashies/types';
 
 export const useDriverStandings = (
   settings?: StandingsWidgetSettings['config']
@@ -51,10 +53,34 @@ export const useDriverStandings = (
   const sessionDrivers = useSessionDrivers();
   // Use focus car index which handles spectator mode (uses CamCarIdx when spectating)
   const driverCarIdx = useFocusCarIdx();
-  const qualifyingResults = useSessionQualifyingResults();
+  const qualifyingResultsRaw = useSessionQualifyingResults();
   const sessionNum = useTelemetryValue('SessionNum');
   const sessionType = useSessionType(sessionNum);
   const positions = useSessionPositions(sessionNum);
+  const sessionQualifyPositions = useSessionQualifyPositions(sessionNum);
+
+  // In heat race format QualifyResultsInfo.Results is null; fall back to the
+  // race session's QualifyPositions which holds the actual starting grid order.
+  const qualifyingResults: SessionResults[] | undefined =
+    qualifyingResultsRaw?.length
+      ? qualifyingResultsRaw
+      : sessionQualifyPositions?.map((q) => ({
+          Position: q.Position + 1,
+          ClassPosition: q.ClassPosition,
+          CarIdx: q.CarIdx,
+          Lap: q.FastestLap,
+          Time: q.FastestTime,
+          FastestLap: q.FastestLap,
+          FastestTime: q.FastestTime,
+          LastTime: -1,
+          LapsLed: 0,
+          LapsComplete: 0,
+          JokerLapsComplete: 0,
+          LapsDriven: 0,
+          Incidents: 0,
+          ReasonOutId: 0,
+          ReasonOutStr: 'Running',
+        }));
   const standingsSettings = useStandingsSettings();
   const useLivePositionStandings = standingsSettings?.useLivePosition ?? false;
   const driverLivePositions = useDriverLivePositions({
