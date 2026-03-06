@@ -1,4 +1,8 @@
-import type { Session } from '@irdashies/types';
+import type {
+  Session,
+  SessionQualifyPosition,
+  SessionResults,
+} from '@irdashies/types';
 import { create, useStore } from 'zustand';
 import { useStoreWithEqualityFn } from 'zustand/traditional';
 import { arrayShallowCompare } from './arrayShallowCompare';
@@ -93,10 +97,10 @@ export const useDriverCarIdx = () =>
 export const useSessionPositions = (sessionNum: number | undefined) =>
   useStoreWithEqualityFn(
     useSessionStore,
-    (state) =>
+    (state): SessionResults[] | undefined =>
       state.session?.SessionInfo?.Sessions?.find(
-        (state) => state.SessionNum === sessionNum
-      )?.ResultsPositions,
+        (s) => s.SessionNum === sessionNum
+      )?.ResultsPositions ?? undefined,
     arrayShallowCompare
   );
 
@@ -113,7 +117,18 @@ export const useSessionFastestLaps = (sessionNum: number | undefined) =>
 export const useSessionQualifyingResults = () =>
   useStoreWithEqualityFn(
     useSessionStore,
-    (state) => state.session?.QualifyResultsInfo?.Results,
+    (state): SessionResults[] | undefined =>
+      state.session?.QualifyResultsInfo?.Results ?? undefined,
+    arrayShallowCompare
+  );
+
+export const useSessionQualifyPositions = (sessionNum: number | undefined) =>
+  useStoreWithEqualityFn(
+    useSessionStore,
+    (state): SessionQualifyPosition[] | undefined =>
+      state.session?.SessionInfo?.Sessions?.find(
+        (s) => s.SessionNum === sessionNum
+      )?.QualifyPositions,
     arrayShallowCompare
   );
 
