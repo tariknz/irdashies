@@ -25,6 +25,8 @@ const defaultConfig: PitlaneHelperWidgetSettings['config'] = {
   showPastPitBox: false,
   showProgressBar: true,
   showSpeedBar: true,
+  showSpeedSummary: true,
+  speedLimitStyle: 'european',
   showPitExitInputs: false,
   pitExitInputs: {
     throttle: true,
@@ -61,6 +63,10 @@ export const PitlaneHelperSettings = () => {
           savedSettings.config.showProgressBar ?? defaultConfig.showProgressBar,
         showSpeedBar:
           savedSettings.config.showSpeedBar ?? defaultConfig.showSpeedBar,
+        showSpeedSummary:
+          savedSettings.config.showSpeedSummary ?? defaultConfig.showSpeedSummary,
+        speedLimitStyle:
+          savedSettings.config.speedLimitStyle ?? defaultConfig.speedLimitStyle,
         showPitExitInputs:
           savedSettings.config.showPitExitInputs ??
           defaultConfig.showPitExitInputs,
@@ -161,6 +167,33 @@ export const PitlaneHelperSettings = () => {
                       handleConfigChange({ showPitlaneTraffic: newValue })
                     }
                   />
+
+                  <SettingToggleRow
+                    title="Show Speed Summary"
+                    description="Show summary of speed delta, speed unit and speed limit"
+                    enabled={settings.config.showSpeedSummary}
+                    onToggle={(newValue) =>
+                      handleConfigChange({ showSpeedSummary: newValue })
+                    }
+                  />
+
+                  {settings.config.showSpeedSummary && (
+                    <SettingsSection>
+                      <SettingButtonGroupRow<'european' | 'american'>
+                        title="Speed Limit Style"
+                        value={
+                          settings.config.speedLimitStyle ?? 'european'
+                        }
+                        options={[
+                          { label: 'European', value: 'european' },
+                          { label: 'American', value: 'american' },
+                        ]}
+                        onChange={(v) =>
+                          handleConfigChange({ speedLimitStyle: v })
+                        }
+                      />
+                    </SettingsSection>
+                  )}
 
                   <SettingToggleRow
                     title="Speed Bar"

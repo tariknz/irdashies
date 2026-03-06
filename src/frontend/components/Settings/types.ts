@@ -605,6 +605,8 @@ export interface PitlaneHelperWidgetSettings extends BaseWidgetSettings {
     showPastPitBox: boolean;
     showProgressBar: boolean;
     showSpeedBar: boolean;
+    showSpeedSummary: boolean;
+    speedLimitStyle: 'european' | 'american';
     showPitExitInputs: boolean;
     pitExitInputs: {
       throttle: boolean;
