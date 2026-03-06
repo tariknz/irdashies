@@ -119,6 +119,7 @@ const defaultConfig: StandingsWidgetSettings['config'] = {
     airTemperature: { enabled: false, unit: 'Metric' },
     trackTemperature: { enabled: false, unit: 'Metric' },
     wind: { enabled: false, speedPosition: 'right' },
+    trackName: { enabled: false },
     displayOrder: DEFAULT_SESSION_BAR_DISPLAY_ORDER,
   },
   footerBar: {
@@ -140,6 +141,7 @@ const defaultConfig: StandingsWidgetSettings['config'] = {
     airTemperature: { enabled: true, unit: 'Metric' },
     trackTemperature: { enabled: true, unit: 'Metric' },
     wind: { enabled: false, speedPosition: 'right' },
+    trackName: { enabled: false },
     displayOrder: DEFAULT_SESSION_BAR_DISPLAY_ORDER,
   },
   showOnlyWhenOnTrack: false,
@@ -375,6 +377,11 @@ const migrateConfig = (
           ((config.headerBar as { wind?: { speedPosition?: string } })?.wind
             ?.speedPosition as 'left' | 'right') ?? 'right',
       },
+      trackName: {
+        enabled:
+          (config.headerBar as { trackName?: { enabled?: boolean } })?.trackName
+            ?.enabled ?? false,
+      },
       displayOrder: mergeDisplayOrder(
         [...VALID_SESSION_BAR_ITEM_KEYS],
         (config.headerBar as { displayOrder?: string[] })?.displayOrder
@@ -469,6 +476,11 @@ const migrateConfig = (
         speedPosition:
           ((config.footerBar as { wind?: { speedPosition?: string } })?.wind
             ?.speedPosition as 'left' | 'right') ?? 'right',
+      },
+      trackName: {
+        enabled:
+          (config.footerBar as { trackName?: { enabled?: boolean } })?.trackName
+            ?.enabled ?? false,
       },
       displayOrder: mergeDisplayOrder(
         [...VALID_SESSION_BAR_ITEM_KEYS],

@@ -120,6 +120,9 @@ export const defaultDashboard: DashboardLayout = {
             enabled: false,
             unit: 'Metric',
           },
+          trackName: {
+            enabled: false,
+          },
           displayOrder: [
             'sessionName',
             'sessionTime',
@@ -131,6 +134,7 @@ export const defaultDashboard: DashboardLayout = {
             'trackWetness',
             'airTemperature',
             'trackTemperature',
+            'trackName',
           ],
         },
         footerBar: {
@@ -168,6 +172,9 @@ export const defaultDashboard: DashboardLayout = {
             enabled: true,
             unit: 'Metric',
           },
+          trackName: {
+            enabled: false,
+          },
           displayOrder: [
             'sessionName',
             'sessionTime',
@@ -179,6 +186,7 @@ export const defaultDashboard: DashboardLayout = {
             'trackWetness',
             'airTemperature',
             'trackTemperature',
+            'trackName',
           ],
         },
         showOnlyWhenOnTrack: false,
@@ -414,6 +422,9 @@ export const defaultDashboard: DashboardLayout = {
             enabled: false,
             unit: 'Metric',
           },
+          trackName: {
+            enabled: false,
+          },
           displayOrder: [
             'sessionName',
             'sessionTime',
@@ -426,6 +437,7 @@ export const defaultDashboard: DashboardLayout = {
             'precipitation',
             'airTemperature',
             'trackTemperature',
+            'trackName',
           ],
         },
         footerBar: {
@@ -466,6 +478,9 @@ export const defaultDashboard: DashboardLayout = {
             enabled: true,
             unit: 'Metric',
           },
+          trackName: {
+            enabled: false,
+          },
           displayOrder: [
             'sessionName',
             'sessionTime',
@@ -478,6 +493,7 @@ export const defaultDashboard: DashboardLayout = {
             'precipitation',
             'airTemperature',
             'trackTemperature',
+            'trackName',
           ],
         },
         showOnlyWhenOnTrack: false,

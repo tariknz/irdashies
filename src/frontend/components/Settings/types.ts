@@ -92,6 +92,7 @@ export interface StandingsWidgetSettings extends BaseWidgetSettings {
         enabled: boolean;
         speedPosition: 'left' | 'right';
       };
+      trackName: { enabled: boolean };
       displayOrder: string[];
     };
     footerBar: {
@@ -116,6 +117,7 @@ export interface StandingsWidgetSettings extends BaseWidgetSettings {
         enabled: boolean;
         speedPosition: 'left' | 'right';
       };
+      trackName: { enabled: boolean };
       displayOrder: string[];
     };
     showOnlyWhenOnTrack: boolean;
@@ -195,6 +197,7 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
         enabled: boolean;
         speedPosition: 'left' | 'right';
       };
+      trackName: { enabled: boolean };
       displayOrder: string[];
     };
     footerBar: {
@@ -219,6 +222,7 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
         enabled: boolean;
         speedPosition: 'left' | 'right';
       };
+      trackName: { enabled: boolean };
       displayOrder: string[];
     };
     showOnlyWhenOnTrack: boolean;
