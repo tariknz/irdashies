@@ -304,6 +304,10 @@ export const SuzukaGT3EnduranceRace: Story = {
   decorators: [TelemetryDecorator('/test-data/1763227688917')],
 };
 
+export const HeatRaceFormatRaceStart: Story = {
+  decorators: [TelemetryDecorator('/test-data/1772788167371')],
+};
+
 export const TeamSession: Story = {
   decorators: [
     TelemetryDecoratorWithConfig('/test-data/1763227688917', {
