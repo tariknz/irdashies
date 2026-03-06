@@ -56,7 +56,22 @@ const createMockBridgeWithCompactMode = (): DashboardBridge => ({
     callback({
       widgets: [],
       generalSettings: {
-        compactMode: true,
+        compactMode: 'compact',
+      },
+    });
+    return () => {
+      // No-op cleanup function
+    };
+  },
+});
+
+const createMockBridgeWithCompactUltraMode = (): DashboardBridge => ({
+  ...mockDashboardBridge,
+  dashboardUpdated: (callback) => {
+    callback({
+      widgets: [],
+      generalSettings: {
+        compactMode: 'ultra',
       },
     });
     return () => {
@@ -885,6 +900,20 @@ export const CompactMode: Story = {
         <SessionProvider bridge={generateMockDataFromPath()} />
         <TelemetryProvider bridge={generateMockDataFromPath()} />
         <DashboardProvider bridge={createMockBridgeWithCompactMode()}>
+          <Story />
+        </DashboardProvider>
+      </>
+    ),
+  ],
+};
+
+export const CompactUltraMode: Story = {
+  decorators: [
+    (Story) => (
+      <>
+        <SessionProvider bridge={generateMockDataFromPath()} />
+        <TelemetryProvider bridge={generateMockDataFromPath()} />
+        <DashboardProvider bridge={createMockBridgeWithCompactUltraMode()}>
           <Story />
         </DashboardProvider>
       </>

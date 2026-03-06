@@ -61,7 +61,8 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
 
   // Derived Settings based on General linkage
   const derivedCompactMode = settings.useGeneralCompactMode
-    ? (generalSettings?.compactMode ?? false)
+    ? generalSettings?.compactMode === 'compact' ||
+      generalSettings?.compactMode === 'ultra'
     : false;
 
   const derivedFontStyles = useMemo(() => {

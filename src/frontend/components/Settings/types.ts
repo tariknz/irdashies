@@ -141,11 +141,21 @@ export interface StandingsWidgetSettings extends BaseWidgetSettings {
     };
     displayOrder: string[];
     sessionVisibility: SessionVisibilitySettings;
-    minimalStyle?: {
-      classHeader?: boolean;
+    stylingOptions?: {
       badge?: boolean;
       statusBadges?: boolean;
-      driverPositionNumber?: boolean;
+      driverPosition?: {
+        background?: boolean;
+      };
+      driverNumber?: {
+        background?: boolean;
+        border?: boolean;
+      };
+    };
+    classHeaderStyle?: {
+      className?: { colorBackground?: boolean };
+      classInfo?: { colorBackground?: boolean };
+      classDivider?: { bottomBorder?: boolean };
     };
   };
 }
@@ -270,10 +280,16 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
     displayOrder: string[];
     useLivePosition: boolean;
     sessionVisibility: SessionVisibilitySettings;
-    minimalStyle?: {
+    stylingOptions?: {
       badge?: boolean;
       statusBadges?: boolean;
-      driverPositionNumber?: boolean;
+      driverPosition?: {
+        background?: boolean;
+      };
+      driverNumber?: {
+        background?: boolean;
+        border?: boolean;
+      };
     };
   };
 }

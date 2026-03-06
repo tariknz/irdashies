@@ -1,5 +1,6 @@
 import { memo } from 'react';
 import { SpeakerHighIcon } from '@phosphor-icons/react';
+import { useGeneralSettings } from '@irdashies/context';
 import { DriverStatusBadges } from './DriverStatusBadges';
 import {
   DriverName as formatDriverName,
@@ -33,6 +34,7 @@ export const DriverNameCell = memo(
     removeNumbersFromName = false,
     isMinimal,
   }: DriverNameCellProps) => {
+    const generalSettings = useGeneralSettings();
     const displayName = fullName
       ? formatDriverName(
           extractDriverName(fullName, removeNumbersFromName),
@@ -41,7 +43,10 @@ export const DriverNameCell = memo(
       : (name ?? '');
 
     return (
-      <td data-column="driverName" className="w-full max-w-0 px-1 py-0.5">
+      <td
+        data-column="driverName"
+        className={`w-full max-w-0 px-1${generalSettings?.compactMode !== 'ultra' ? ' py-0.5' : ''}`}
+      >
         <div className="flex items-center overflow-hidden">
           <span
             className={`animate-pulse transition-[width] duration-300 ${

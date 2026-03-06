@@ -1,4 +1,5 @@
 import { BarbellIcon, UsersIcon } from '@phosphor-icons/react';
+import { useGeneralSettings } from '@irdashies/context';
 import { getTailwindStyle } from '@irdashies/utils/colors';
 
 interface DriverClassHeaderProps {
@@ -8,7 +9,9 @@ interface DriverClassHeaderProps {
   sof: number | undefined;
   highlightColor?: number;
   isMultiClass: boolean;
-  isMinimal?: boolean;
+  classNameColorBackground?: boolean;
+  classInfoColorBackground?: boolean;
+  classDividerBottomBorder?: boolean;
   colSpan?: number;
 }
 
@@ -19,9 +22,20 @@ export const DriverClassHeader = ({
   sof,
   highlightColor,
   isMultiClass,
-  isMinimal,
+  classNameColorBackground = true,
+  classInfoColorBackground = true,
+  classDividerBottomBorder = false,
   colSpan,
 }: DriverClassHeaderProps) => {
+  const generalSettings = useGeneralSettings();
+  const styles = getTailwindStyle(classColor, highlightColor, isMultiClass);
+  const classNameStyle = classNameColorBackground
+    ? styles.classHeader
+    : styles.borderColor;
+  const classInfoStyle = classInfoColorBackground
+    ? styles.driverIcon
+    : styles.borderColor;
+
   if (!className) {
     return (
       <tr>
@@ -32,16 +46,21 @@ export const DriverClassHeader = ({
 
   return (
     <tr>
-      <td></td>
-      <td colSpan={colSpan ?? 4} className="p-0">
+      <td
+        className={`${classDividerBottomBorder ? ` border-b-4 ${styles.borderColor}` : ''}`}
+      ></td>
+      <td
+        colSpan={colSpan ?? 4}
+        className={`p-0${classDividerBottomBorder ? ` border-b-4 ${styles.borderColor}` : ''}`}
+      >
         <div className={`[text-shadow:_1px_1px_1px_rgba(0_0_0/0.2)] flex`}>
           <span
-            className={`${getTailwindStyle(classColor, highlightColor, isMultiClass).classHeader} px-2 py-1 font-bold border-l-4`}
+            className={`${classNameStyle} px-2${generalSettings?.compactMode !== 'ultra' ? ' py-1' : ''} font-bold${classNameColorBackground ? ' border-l-4' : ''}`}
           >
             {className}
           </span>
           <span
-            className={`${getTailwindStyle(classColor, highlightColor, isMultiClass, isMinimal).driverIcon} px-2 py-1 flex items-center gap-1`}
+            className={`${classInfoStyle} px-2${generalSettings?.compactMode !== 'ultra' ? ' py-1' : ''} flex items-center gap-1`}
           >
             {sof ? (
               <>

@@ -418,7 +418,15 @@ export const SessionBar = ({
 
   return (
     <div
-      className={`bg-slate-900/70 text-sm px-3 py-1 flex justify-between ${!generalSettings?.compactMode ? (position === 'header' ? 'mb-3' : 'mt-3') : ''}`}
+      className={[
+        'bg-slate-900/70 text-sm px-3 flex justify-between',
+        generalSettings?.compactMode !== 'ultra' ? 'py-1' : '',
+        generalSettings?.compactMode === 'off' || !generalSettings?.compactMode
+          ? position === 'header'
+            ? 'mb-3'
+            : 'mt-3'
+          : '',
+      ].join(' ')}
     >
       {itemsToRender}
     </div>

@@ -40,14 +40,21 @@ export const Relative = () => {
   const isTeamRacing = useWeekendInfoTeamRacing();
 
   // Determine table border spacing based on compact mode
-  const tableBorderSpacing = generalSettings?.compactMode
+  const isCompact =
+    generalSettings?.compactMode === 'compact' ||
+    generalSettings?.compactMode === 'ultra';
+  const tableBorderSpacing = isCompact
     ? 'border-spacing-y-0'
     : 'border-spacing-y-0.5';
 
-  const isMinimalBadge = settings?.minimalStyle?.badge ?? false;
-  const isMinimalStatusBadges = settings?.minimalStyle?.statusBadges ?? false;
-  const isMinimalDriverPositionNumber =
-    settings?.minimalStyle?.driverPositionNumber ?? false;
+  const badgeStyling = settings?.stylingOptions?.badge ?? false;
+  const statusBadgesStyling = settings?.stylingOptions?.statusBadges ?? false;
+  const driverPositionBackground =
+    settings?.stylingOptions?.driverPosition?.background ?? true;
+  const driverNumberBackground =
+    settings?.stylingOptions?.driverNumber?.background ?? true;
+  const driverNumberBorder =
+    settings?.stylingOptions?.driverNumber?.border ?? true;
 
   // Always render 2 * buffer + 1 rows (buffer above + player + buffer below)
   const totalRows = 2 * buffer + 1;
@@ -99,9 +106,11 @@ export const Relative = () => {
           penalty={false}
           slowdown={false}
           hideCarManufacturer={hideCarManufacturer}
-          isMinimalBadge={isMinimalBadge}
-          isMinimalStatusBadges={isMinimalStatusBadges}
-          isMinimalDriverPositionNumber={isMinimalDriverPositionNumber}
+          badgeStyling={badgeStyling}
+          statusBadgesStyling={statusBadgesStyling}
+          driverPositionBackground={driverPositionBackground}
+          driverNumberBackground={driverNumberBackground}
+          driverNumberBorder={driverNumberBorder}
         />
       ));
     }
@@ -155,9 +164,11 @@ export const Relative = () => {
             slowdown={false}
             deltaDecimalPlaces={settings?.delta?.precision}
             hideCarManufacturer={hideCarManufacturer}
-            isMinimalBadge={isMinimalBadge}
-            isMinimalStatusBadges={isMinimalStatusBadges}
-            isMinimalDriverPositionNumber={isMinimalDriverPositionNumber}
+            badgeStyling={badgeStyling}
+            statusBadgesStyling={statusBadgesStyling}
+            driverPositionBackground={driverPositionBackground}
+            driverNumberBackground={driverNumberBackground}
+            driverNumberBorder={driverNumberBorder}
           />
         );
       }
@@ -222,9 +233,11 @@ export const Relative = () => {
           slowdown={result.slowdown}
           deltaDecimalPlaces={settings?.delta?.precision}
           hideCarManufacturer={hideCarManufacturer}
-          isMinimalBadge={isMinimalBadge}
-          isMinimalStatusBadges={isMinimalStatusBadges}
-          isMinimalDriverPositionNumber={isMinimalDriverPositionNumber}
+          badgeStyling={badgeStyling}
+          statusBadgesStyling={statusBadgesStyling}
+          driverPositionBackground={driverPositionBackground}
+          driverNumberBackground={driverNumberBackground}
+          driverNumberBorder={driverNumberBorder}
         />
       );
     });
@@ -237,9 +250,11 @@ export const Relative = () => {
     highlightColor,
     hideCarManufacturer,
     isTeamRacing,
-    isMinimalBadge,
-    isMinimalStatusBadges,
-    isMinimalDriverPositionNumber,
+    badgeStyling,
+    statusBadgesStyling,
+    driverPositionBackground,
+    driverNumberBackground,
+    driverNumberBorder,
   ]);
 
   if (!isSessionVisible) return <></>;
@@ -271,7 +286,7 @@ export const Relative = () => {
 
   return (
     <div
-      className={`w-full bg-slate-800/(--bg-opacity) rounded-sm ${!generalSettings?.compactMode ? 'p-2' : ''} overflow-hidden`}
+      className={`w-full bg-slate-800/(--bg-opacity) rounded-sm ${!isCompact ? 'p-2' : ''} overflow-hidden`}
       style={{
         ['--bg-opacity' as string]: `${settings?.background?.opacity ?? 0}%`,
       }}
