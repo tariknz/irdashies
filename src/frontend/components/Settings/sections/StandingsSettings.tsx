@@ -75,8 +75,13 @@ const sortableSettings: SortableSetting[] = [
     label: 'Position Change',
     configKey: 'positionChange',
   },
-  { id: 'gap', label: 'Gap', configKey: 'gap' },
-  { id: 'interval', label: 'Interval', configKey: 'interval' },
+  { id: 'gap', label: 'Gap', configKey: 'gap', hasSubSetting: true },
+  {
+    id: 'interval',
+    label: 'Interval',
+    configKey: 'interval',
+    hasSubSetting: true,
+  },
   { id: 'fastestTime', label: 'Best Time', configKey: 'fastestTime' },
   { id: 'lastTime', label: 'Last Time', configKey: 'lastTime' },
   { id: 'compound', label: 'Tire Compound', configKey: 'compound' },
@@ -93,8 +98,8 @@ const defaultConfig: StandingsWidgetSettings['config'] = {
   positionChange: { enabled: false },
   badge: { enabled: true, badgeFormat: 'license-color-rating-bw' },
   delta: { enabled: true },
-  gap: { enabled: false },
-  interval: { enabled: false },
+  gap: { enabled: false, decimalPlaces: 1 },
+  interval: { enabled: false, decimalPlaces: 1 },
   lastTime: { enabled: true, timeFormat: 'full' },
   fastestTime: { enabled: true, timeFormat: 'full' },
   background: { opacity: 0 },
@@ -129,6 +134,7 @@ const defaultConfig: StandingsWidgetSettings['config'] = {
     airTemperature: { enabled: false, unit: 'Metric' },
     trackTemperature: { enabled: false, unit: 'Metric' },
     wind: { enabled: false, speedPosition: 'right' },
+    trackName: { enabled: false },
     displayOrder: DEFAULT_SESSION_BAR_DISPLAY_ORDER,
   },
   footerBar: {
@@ -150,6 +156,7 @@ const defaultConfig: StandingsWidgetSettings['config'] = {
     airTemperature: { enabled: true, unit: 'Metric' },
     trackTemperature: { enabled: true, unit: 'Metric' },
     wind: { enabled: false, speedPosition: 'right' },
+    trackName: { enabled: false },
     displayOrder: DEFAULT_SESSION_BAR_DISPLAY_ORDER,
   },
   showOnlyWhenOnTrack: false,
@@ -223,9 +230,15 @@ const migrateConfig = (
     delta: {
       enabled: (config.delta as { enabled?: boolean })?.enabled ?? true,
     },
-    gap: { enabled: (config.gap as { enabled?: boolean })?.enabled ?? true },
+    gap: {
+      enabled: (config.gap as { enabled?: boolean })?.enabled ?? true,
+      decimalPlaces:
+        (config.gap as { decimalPlaces?: number })?.decimalPlaces ?? 1,
+    },
     interval: {
       enabled: (config.interval as { enabled?: boolean })?.enabled ?? false,
+      decimalPlaces:
+        (config.interval as { decimalPlaces?: number })?.decimalPlaces ?? 1,
     },
     lastTime: {
       enabled:
@@ -396,6 +409,11 @@ const migrateConfig = (
           ((config.headerBar as { wind?: { speedPosition?: string } })?.wind
             ?.speedPosition as 'left' | 'right') ?? 'right',
       },
+      trackName: {
+        enabled:
+          (config.headerBar as { trackName?: { enabled?: boolean } })?.trackName
+            ?.enabled ?? false,
+      },
       displayOrder: mergeDisplayOrder(
         [...VALID_SESSION_BAR_ITEM_KEYS],
         (config.headerBar as { displayOrder?: string[] })?.displayOrder
@@ -490,6 +508,11 @@ const migrateConfig = (
         speedPosition:
           ((config.footerBar as { wind?: { speedPosition?: string } })?.wind
             ?.speedPosition as 'left' | 'right') ?? 'right',
+      },
+      trackName: {
+        enabled:
+          (config.footerBar as { trackName?: { enabled?: boolean } })?.trackName
+            ?.enabled ?? false,
       },
       displayOrder: mergeDisplayOrder(
         [...VALID_SESSION_BAR_ITEM_KEYS],
@@ -755,6 +778,41 @@ const DisplaySettingsList = ({
                       });
                     }}
                   />
+                </div>
+              )}
+            {setting.hasSubSetting &&
+              (setting.configKey === 'gap' ||
+                setting.configKey === 'interval') &&
+              (configValue as { enabled: boolean }).enabled && (
+                <div className="flex items-center justify-between pl-8 mt-2 indent-8">
+                  <span className="text-sm text-slate-300">Decimal Places</span>
+                  <select
+                    value={
+                      (
+                        settings.config[setting.configKey] as {
+                          decimalPlaces: number;
+                        }
+                      ).decimalPlaces
+                    }
+                    onChange={(e) => {
+                      const cv = settings.config[setting.configKey] as {
+                        enabled: boolean;
+                        decimalPlaces: number;
+                        [key: string]: unknown;
+                      };
+                      handleConfigChange({
+                        [setting.configKey]: {
+                          ...cv,
+                          decimalPlaces: parseInt(e.target.value),
+                        },
+                      });
+                    }}
+                    className="bg-slate-700 text-white rounded-md px-2 py-1"
+                  >
+                    <option value={1}>1</option>
+                    <option value={2}>2</option>
+                    <option value={3}>3</option>
+                  </select>
                 </div>
               )}
             {setting.configKey === 'badge' &&

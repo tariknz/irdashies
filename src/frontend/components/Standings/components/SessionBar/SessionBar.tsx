@@ -25,6 +25,7 @@ import {
   useTotalRaceLaps,
   useTotalRaceTime,
 } from '../../../../context/shared';
+import { useTrackDisplayName } from '@irdashies/context';
 import { SessionState } from '@irdashies/types';
 import { WindArrow } from '../../../shared/WindArrow';
 
@@ -128,6 +129,7 @@ export const SessionBar = ({
   const sessionClockTime = useSessionCurrentTime();
   const { totalRaceLaps, isFixedLapRace } = useTotalRaceLaps();
   const { totalRaceTime, adjustedRaceTime } = useTotalRaceTime();
+  const trackDisplayName = useTrackDisplayName();
 
   // Define all possible items with their render functions
   const itemDefinitions = {
@@ -353,6 +355,10 @@ export const SessionBar = ({
           <span>{trackTemp}</span>
         </div>
       ),
+    },
+    trackName: {
+      enabled: effectiveBarSettings?.trackName?.enabled ?? false,
+      render: () => <div className="flex">{trackDisplayName}</div>,
     },
     wind: {
       enabled: effectiveBarSettings?.wind?.enabled ?? false,

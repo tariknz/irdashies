@@ -34,8 +34,8 @@ export interface StandingsWidgetSettings extends BaseWidgetSettings {
         | 'fullrating-bw-no-license';
     };
     delta: { enabled: boolean };
-    gap: { enabled: boolean };
-    interval: { enabled: boolean };
+    gap: { enabled: boolean; decimalPlaces: number };
+    interval: { enabled: boolean; decimalPlaces: number };
     lastTime: {
       enabled: boolean;
       timeFormat:
@@ -92,6 +92,7 @@ export interface StandingsWidgetSettings extends BaseWidgetSettings {
         enabled: boolean;
         speedPosition: 'left' | 'right';
       };
+      trackName: { enabled: boolean };
       displayOrder: string[];
     };
     footerBar: {
@@ -116,6 +117,7 @@ export interface StandingsWidgetSettings extends BaseWidgetSettings {
         enabled: boolean;
         speedPosition: 'left' | 'right';
       };
+      trackName: { enabled: boolean };
       displayOrder: string[];
     };
     showOnlyWhenOnTrack: boolean;
@@ -211,6 +213,7 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
         enabled: boolean;
         speedPosition: 'left' | 'right';
       };
+      trackName: { enabled: boolean };
       displayOrder: string[];
     };
     footerBar: {
@@ -235,6 +238,7 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
         enabled: boolean;
         speedPosition: 'left' | 'right';
       };
+      trackName: { enabled: boolean };
       displayOrder: string[];
     };
     showOnlyWhenOnTrack: boolean;
