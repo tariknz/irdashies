@@ -22,11 +22,8 @@ export const defaultDashboard: DashboardLayout = {
           enabled: true,
           badgeFormat: 'license-color-rating-bw',
         },
-        delta: {
-          enabled: true,
-        },
         gap: {
-          enabled: false,
+          enabled: true,
         },
         interval: {
           enabled: false,
