@@ -74,7 +74,11 @@ app.on('ready', async () => {
   }
 });
 
-app.on('window-all-closed', () => app.quit());
+app.on('window-all-closed', () => {
+  if (process.platform !== 'darwin') {
+    app.quit();
+  }
+});
 app.on('quit', () => {
   console.log('App quit');
   analytics.shutdown();
