@@ -1,4 +1,5 @@
 import { memo } from 'react';
+import { useGeneralSettings } from '@irdashies/context';
 
 interface TailwindStyles {
   classHeader: string;
@@ -20,6 +21,8 @@ export const CarNumberCell = memo(
     showBackground = true,
     showBorder = true,
   }: CarNumberCellProps) => {
+    const compactMode = useGeneralSettings()?.compactMode;
+    const pxClass = compactMode === 'ultra' ? '' : 'px-1';
     const colorClass = showBackground
       ? tailwindStyles.driverIcon
       : showBorder
@@ -30,7 +33,7 @@ export const CarNumberCell = memo(
     return (
       <td
         data-column="carNumber"
-        className={`w-auto ${colorClass} ${borderWidthClass} text-white text-right px-1 whitespace-nowrap`}
+        className={`w-auto ${colorClass} ${borderWidthClass} text-white text-right ${pxClass} whitespace-nowrap`}
       >
         {`#${carNumber}`}
       </td>

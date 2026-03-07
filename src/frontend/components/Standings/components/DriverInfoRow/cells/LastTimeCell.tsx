@@ -1,4 +1,5 @@
 import { memo } from 'react';
+import { useGeneralSettings } from '@irdashies/context';
 import type { LastTimeState } from '../../../createStandings';
 
 interface LastTimeCellProps {
@@ -12,11 +13,24 @@ const getLastTimeColorClass = (state?: LastTimeState): string => {
   return '';
 };
 
-export const LastTimeCell = memo(({ lastTimeString, lastTimeState }: LastTimeCellProps) => (
-  <td data-column="lastTime" className={`w-auto px-2 whitespace-nowrap ${getLastTimeColorClass(lastTimeState)}`}>
-    {lastTimeString}
-  </td>
-));
+export const LastTimeCell = memo(
+  ({ lastTimeString, lastTimeState }: LastTimeCellProps) => {
+    const compactMode = useGeneralSettings()?.compactMode;
+    const pxClass =
+      compactMode === 'ultra'
+        ? ''
+        : compactMode === 'compact'
+          ? 'px-1'
+          : 'px-2';
+    return (
+      <td
+        data-column="lastTime"
+        className={`w-auto ${pxClass} whitespace-nowrap ${getLastTimeColorClass(lastTimeState)}`}
+      >
+        {lastTimeString}
+      </td>
+    );
+  }
+);
 
 LastTimeCell.displayName = 'LastTimeCell';
-

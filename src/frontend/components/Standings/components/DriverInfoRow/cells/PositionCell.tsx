@@ -1,4 +1,5 @@
 import { memo } from 'react';
+import { useGeneralSettings } from '@irdashies/context';
 
 interface TailwindStyles {
   classHeader: string;
@@ -21,6 +22,13 @@ export const PositionCell = memo(
     tailwindStyles,
     showBackground = true,
   }: PositionCellProps) => {
+    const compactMode = useGeneralSettings()?.compactMode;
+    const pxClass =
+      compactMode === 'ultra'
+        ? ''
+        : compactMode === 'compact'
+          ? 'px-1'
+          : 'px-2';
     const positionColor = offTrack
       ? 'bg-yellow-400'
       : isPlayer && showBackground
@@ -31,7 +39,7 @@ export const PositionCell = memo(
     return (
       <td
         data-column="position"
-        className={`w-auto text-center px-2 whitespace-nowrap ${positionColor} ${textColor}`}
+        className={`w-auto text-center ${pxClass} whitespace-nowrap ${positionColor} ${textColor}`}
       >
         {position}
       </td>
