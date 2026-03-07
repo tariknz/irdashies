@@ -25,6 +25,14 @@ export const SettingsMenu = () => {
         </li>
         <li>
           <Link
+            to="/settings/driver-tags"
+            className={menuItemClass('/driver-tags')}
+          >
+            Driver Tags
+          </Link>
+        </li>
+        <li>
+          <Link
             to="/settings/car-setup"
             className={menuItemClass('/car-setup')}
           >

@@ -193,6 +193,7 @@ export const defaultDashboard: DashboardLayout = {
         displayOrder: [
           'position',
           'carNumber',
+          'driverTag',
           'countryFlags',
           'driverName',
           'teamName',
@@ -365,6 +366,7 @@ export const defaultDashboard: DashboardLayout = {
         displayOrder: [
           'position',
           'carNumber',
+          'driverTag',
           'countryFlags',
           'driverName',
           'teamName',

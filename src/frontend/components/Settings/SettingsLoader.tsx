@@ -18,6 +18,7 @@ import { ProfileSettings } from './sections/ProfileSettings';
 import { FlagSettings } from './sections/FlagSettings';
 import { CarSetupSettings } from './sections/CarSetupSettings';
 import { TwitchChatSettings } from './sections/TwitchChatSettings';
+import { DriverTagsSettings } from './sections/DriverTagsSettings';
 import { useDashboard } from '@irdashies/context';
 
 export const SettingsLoader = () => {
@@ -30,6 +31,7 @@ export const SettingsLoader = () => {
   if (widgetId === 'advanced') return <AdvancedSettings />;
   if (widgetId === 'car-setup') return <CarSetupSettings />;
   if (widgetId === 'about') return <AboutSettings />;
+  if (widgetId === 'driver-tags') return <DriverTagsSettings />;
 
   // 2. Find specific widget instance (may be undefined if widgetId is a type name)
   const widget = currentDashboard?.widgets.find((w) => w.id === widgetId);
