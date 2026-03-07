@@ -129,8 +129,14 @@ const PitlaneHelperDisplay = ({
 
   // Early pitbox warning: show when on pit road AND pitbox is within threshold of pit entry
   const onPitRoad = surface === 2;
-  const showEarlyPitboxWarning =
-    config.enableEarlyPitboxWarning && onPitRoad && position.isEarlyPitbox;
+  const showEarlyPitboxWarning = config.enableEarlyPitboxWarning; // always show for demo
+
+  // Toggle for demo
+  const demnoLimiter = {
+    showWarning: config.enablePitLimiterWarning,
+    warningText: limiterWarning.warningText,
+    isTeamRaceWarning: limiterWarning.isTeamRaceWarning,
+  }
 
   // Determine if we should show the pit exit inputs based on distance
   const atPitbox = Math.abs(position.distanceToPit) < 10;
@@ -150,7 +156,7 @@ const PitlaneHelperDisplay = ({
         displayKph={displayKph}
         onPitRoad={onPitRoad}
         inBlendZone={false}
-        limiterWarning={limiterWarning}
+        limiterWarning={demnoLimiter}
         shouldShowInputs={shouldShowInputs}
         showEarlyPitboxWarning={showEarlyPitboxWarning}
         traffic={traffic}
@@ -185,6 +191,7 @@ export const PitlaneHelperBody = ({
   traffic,
 }: PitlaneHelperBodyProps) => {
   return (
+    <>
     <div
       className="flex h-full flex-col gap-2 p-2 text-white font-medium rounded bg-slate-800/(--bg-opacity)"
       style={{
@@ -338,44 +345,51 @@ export const PitlaneHelperBody = ({
           )}
         </div>
       )}
+      </div>
 
       {/* Status & warning badges */}
-      {onPitRoad && Math.abs(position.distanceToPit) < 5 && (
-        <div className="text-center text-xs font-bold py-1 px-2 bg-green-600 rounded">
-          At Pitbox
-        </div>
-      )}
+      <div className="flex flex-col gap-2 p-2 rounded bg-slate-800/(--bg-opacity)" 
+      style={{
+        ['--bg-opacity' as string]: `${config.background.opacity ?? 0}%`,
+      }}>
+        {onPitRoad && Math.abs(position.distanceToPit) < 5 && (
+          <div className="text-center text-xs font-bold py-1 px-2 bg-green-600 rounded">
+            At Pitbox
+          </div>
+        )}
 
-      {inBlendZone && position.distanceToPitEntry === 0 && (
-        <div className="text-center text-xs font-bold py-1 px-2 bg-amber-600 rounded">
-          Entering Pit Lane
-        </div>
-      )}
+        {inBlendZone && position.distanceToPitEntry === 0 && (
+          <div className="text-center text-xs font-bold py-1 px-2 bg-amber-600 rounded">
+            Entering Pit Lane
+          </div>
+        )}
 
-      {limiterWarning.showWarning && (
-        <div
-          className={[
-            'text-center text-xs font-bold py-1 px-2 rounded',
-            limiterWarning.isTeamRaceWarning
-              ? 'bg-red-700 animate-pulse'
-              : 'bg-red-600',
-          ].join(' ')}
-        >
-          {limiterWarning.warningText}
-        </div>
-      )}
+        {limiterWarning.showWarning && (
+          <div
+            className={[
+              'text-center text-xs font-bold py-1 px-2 rounded',
+              limiterWarning.isTeamRaceWarning
+                ? 'bg-red-700 animate-pulse'
+                : 'bg-red-600',
+            ].join(' ')}
+          >
+            {limiterWarning.warningText}
+          </div>
+        )}
 
-      {showEarlyPitboxWarning && (
-        <div className="bg-amber-600 text-center text-xs font-bold py-1 px-2 rounded">
-          EARLY PITBOX
-        </div>
-      )}
+        {showEarlyPitboxWarning && (
+          <div className="bg-amber-600 text-center text-xs font-bold py-1 px-2 rounded">
+            EARLY PITBOX
+          </div>
+        )}
 
-      {config.showPitlaneTraffic && traffic.totalCars > 0 && (
-        <div className="bg-blue-700 text-center text-xs py-1 px-2 rounded">
-          {traffic.carsAhead} ahead · {traffic.carsBehind} behind
-        </div>
-      )}
-    </div>
+        {config.showPitlaneTraffic && traffic.totalCars > 0 && (
+          <div className="bg-blue-700 text-center text-xs py-1 px-2 rounded">
+            {traffic.carsAhead} ahead · {traffic.carsBehind} behind
+          </div>
+        )}
+      </div>
+
+   </>
   );
 };
