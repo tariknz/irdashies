@@ -10,7 +10,7 @@ import { create } from 'zustand';
 export const REFERENCE_INTERVAL = 0.0025;
 const DECIMAL_PLACES = REFERENCE_INTERVAL.toString().split('.')[1]?.length || 0;
 const TARGET_POINTS_FOR_VALID_LAP = 1 / REFERENCE_INTERVAL;
-const MIN_POINTS_FOR_VALID_LAP = (1 / REFERENCE_INTERVAL) * 0.9;
+const MIN_POINTS_FOR_VALID_LAP = (1 / REFERENCE_INTERVAL) * 0.75;
 
 export function normalizeKey(key: number): number {
   const normalizedKey = parseFloat(
