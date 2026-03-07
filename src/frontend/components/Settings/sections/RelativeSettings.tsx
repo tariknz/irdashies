@@ -5,7 +5,7 @@ import {
   RelativeWidgetSettings,
   SessionVisibilitySettings,
   SettingsTabType,
-} from '../types';
+} from '@irdashies/types';
 import { ToggleSwitch } from '../components/ToggleSwitch';
 import { TabButton } from '../components/TabButton';
 import { useSortableList } from '../../SortableList';

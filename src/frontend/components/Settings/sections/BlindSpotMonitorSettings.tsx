@@ -5,7 +5,7 @@ import {
   BlindSpotMonitorWidgetSettings,
   SessionVisibilitySettings,
   SettingsTabType,
-} from '../types';
+} from '@irdashies/types';
 import { SessionVisibility } from '../components/SessionVisibility';
 import { TabButton } from '../components/TabButton';
 import { SettingSliderRow } from '../components/SettingSliderRow';

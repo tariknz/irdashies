@@ -6,7 +6,7 @@ import {
   FlatTrackMapWidgetSettings,
   SessionVisibilitySettings,
   SettingsTabType,
-} from '../types';
+} from '@irdashies/types';
 import { SessionVisibility } from '../components/SessionVisibility';
 import { SettingsSection } from '../components/SettingSection';
 import { SettingSliderRow } from '../components/SettingSliderRow';

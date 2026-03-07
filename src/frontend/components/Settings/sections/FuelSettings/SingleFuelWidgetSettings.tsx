@@ -1,6 +1,10 @@
 import { useState, useMemo, useEffect } from 'react';
 import { BaseSettingsSection } from '../../components/BaseSettingsSection';
-import { FuelWidgetSettings, LayoutNode, SettingsTabType } from '../../types';
+import {
+  FuelWidgetSettings,
+  LayoutNode,
+  SettingsTabType,
+} from '@irdashies/types';
 import { useDashboard } from '@irdashies/context';
 import { SessionVisibility } from '../../components/SessionVisibility';
 import { TabButton } from '../../components/TabButton';

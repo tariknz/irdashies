@@ -1,6 +1,12 @@
-import type { DashboardLayout } from '@irdashies/types';
+import type {
+  GeneralSettingsType,
+  TypedDashboardWidget,
+} from '@irdashies/types';
 
-export const defaultDashboard: DashboardLayout = {
+export const defaultDashboard: {
+  widgets: TypedDashboardWidget[];
+  generalSettings?: GeneralSettingsType;
+} = {
   widgets: [
     {
       id: 'standings',
@@ -852,6 +858,13 @@ export const defaultDashboard: DashboardLayout = {
         earlyPitboxThreshold: 75,
         showPitlaneTraffic: true,
         background: { opacity: 80 },
+        sessionVisibility: {
+          race: true,
+          loneQualify: false,
+          openQualify: false,
+          practice: true,
+          offlineTesting: true,
+        },
       },
     },
     {

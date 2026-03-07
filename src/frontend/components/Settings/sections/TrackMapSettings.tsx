@@ -4,7 +4,7 @@ import {
   TrackMapWidgetSettings,
   SessionVisibilitySettings,
   SettingsTabType,
-} from '../types';
+} from '@irdashies/types';
 import { useDashboard } from '@irdashies/context';
 import { TabButton } from '../components/TabButton';
 import { SessionVisibility } from '../components/SessionVisibility';
@@ -214,7 +214,7 @@ export const TrackMapSettings = () => {
                       'carNumber' | 'sessionPosition' | 'livePosition'
                     >
                       title="Display Mode"
-                      value={settings.config.displayMode}
+                      value={settings.config.displayMode ?? 'carNumber'}
                       options={[
                         { label: 'Car Number', value: 'carNumber' },
                         { label: 'Session Position', value: 'sessionPosition' },

@@ -4,7 +4,7 @@ import {
   RejoinIndicatorWidgetSettings,
   SessionVisibilitySettings,
   SettingsTabType,
-} from '../types';
+} from '@irdashies/types';
 import { useDashboard } from '@irdashies/context';
 import { SessionVisibility } from '../components/SessionVisibility';
 import { TabButton } from '../components/TabButton';

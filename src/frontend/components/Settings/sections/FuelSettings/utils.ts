@@ -1,9 +1,16 @@
-import { FuelWidgetSettings, SessionVisibilitySettings, BoxConfig, LayoutNode } from '../../types';
+import {
+  FuelWidgetSettings,
+  SessionVisibilitySettings,
+  BoxConfig,
+  LayoutNode,
+} from '@irdashies/types';
 import { defaultFuelCalculatorSettings } from '../../../FuelCalculator/defaults';
 
 const defaultConfig = defaultFuelCalculatorSettings;
 
-export const migrateConfig = (savedConfig: unknown): FuelWidgetSettings['config'] => {
+export const migrateConfig = (
+  savedConfig: unknown
+): FuelWidgetSettings['config'] => {
   if (!savedConfig || typeof savedConfig !== 'object') return defaultConfig;
   const config = savedConfig as Record<string, unknown>;
   return {
@@ -13,18 +20,34 @@ export const migrateConfig = (savedConfig: unknown): FuelWidgetSettings['config'
       (config.sessionVisibility as SessionVisibilitySettings) ??
       defaultConfig.sessionVisibility,
     layoutConfig: (config.layoutConfig as BoxConfig[]) ?? [],
-    layoutTree: (config.layoutTree && (config.layoutTree as LayoutNode).type ? (config.layoutTree as LayoutNode) : undefined),
-    consumptionGridOrder: (config.consumptionGridOrder as string[]) ?? defaultConfig.consumptionGridOrder,
-    enableTargetPitLap: (config.enableTargetPitLap as boolean) ?? defaultConfig.enableTargetPitLap,
+    layoutTree:
+      config.layoutTree && (config.layoutTree as LayoutNode).type
+        ? (config.layoutTree as LayoutNode)
+        : undefined,
+    consumptionGridOrder:
+      (config.consumptionGridOrder as string[]) ??
+      defaultConfig.consumptionGridOrder,
+    enableTargetPitLap:
+      (config.enableTargetPitLap as boolean) ??
+      defaultConfig.enableTargetPitLap,
     targetPitLap: (config.targetPitLap as number) ?? defaultConfig.targetPitLap,
-    targetPitLapBasis: (config.targetPitLapBasis as FuelWidgetSettings['config']['targetPitLapBasis']) ?? defaultConfig.targetPitLapBasis,
+    targetPitLapBasis:
+      (config.targetPitLapBasis as FuelWidgetSettings['config']['targetPitLapBasis']) ??
+      defaultConfig.targetPitLapBasis,
 
-    fuelStatusThresholds: (config.fuelStatusThresholds as FuelWidgetSettings['config']['fuelStatusThresholds']) ?? defaultConfig.fuelStatusThresholds,
-    fuelStatusBasis: (config.fuelStatusBasis as FuelWidgetSettings['config']['fuelStatusBasis']) ?? defaultConfig.fuelStatusBasis,
-    fuelStatusRedLaps: (config.fuelStatusRedLaps as number) ?? defaultConfig.fuelStatusRedLaps,
+    fuelStatusThresholds:
+      (config.fuelStatusThresholds as FuelWidgetSettings['config']['fuelStatusThresholds']) ??
+      defaultConfig.fuelStatusThresholds,
+    fuelStatusBasis:
+      (config.fuelStatusBasis as FuelWidgetSettings['config']['fuelStatusBasis']) ??
+      defaultConfig.fuelStatusBasis,
+    fuelStatusRedLaps:
+      (config.fuelStatusRedLaps as number) ?? defaultConfig.fuelStatusRedLaps,
     avgLapsCount: (config.avgLapsCount as number) ?? defaultConfig.avgLapsCount,
-    enableStorage: (config.enableStorage as boolean) ?? defaultConfig.enableStorage,
-    enableLogging: (config.enableLogging as boolean) ?? defaultConfig.enableLogging,
+    enableStorage:
+      (config.enableStorage as boolean) ?? defaultConfig.enableStorage,
+    enableLogging:
+      (config.enableLogging as boolean) ?? defaultConfig.enableLogging,
   };
 };
 

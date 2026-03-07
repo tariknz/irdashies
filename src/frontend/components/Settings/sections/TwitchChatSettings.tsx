@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
-import type { TwitchChatWidgetSettings } from '../types';
+import type { TwitchChatWidgetSettings } from '@irdashies/types';
 import { useDashboard } from '@irdashies/context';
 import { SettingSliderRow } from '../components/SettingSliderRow';
 import { SettingsSection } from '../components/SettingSection';

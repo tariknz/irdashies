@@ -4,7 +4,7 @@ import {
   FasterCarsFromBehindWidgetSettings,
   SessionVisibilitySettings,
   SettingsTabType,
-} from '../types';
+} from '@irdashies/types';
 import { SessionVisibility } from '../components/SessionVisibility';
 import { BadgeFormatPreview } from '../components/BadgeFormatPreview';
 import { useDashboard } from '@irdashies/context';
@@ -227,7 +227,7 @@ export const FasterCarsFromBehindSettings = () => {
 
                 <SettingSelectRow
                   title="Drivers Behind"
-                  value={settings.config.numberDriversBehind.toString()}
+                  value={(settings.config.numberDriversBehind ?? 1).toString()}
                   options={Array.from({ length: 10 }, (_, i) => {
                     const num = i + 1;
                     return { label: num.toString(), value: num.toString() };
@@ -249,7 +249,7 @@ export const FasterCarsFromBehindSettings = () => {
 
                 <SettingSelectRow<'Top' | 'Reverse'>
                   title="Closest Driver"
-                  value={settings.config.closestDriverBox ?? '16x16'}
+                  value={settings.config.closestDriverBox ?? 'Top'}
                   options={[
                     { label: 'Closest Driver at Top', value: 'Top' },
                     { label: 'Closest Driver at Bottom', value: 'Reverse' },

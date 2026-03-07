@@ -12,7 +12,7 @@ import {
   InputWidgetSettings,
   SessionVisibilitySettings,
   SettingsTabType,
-} from '../types';
+} from '@irdashies/types';
 import { SettingDivider } from '../components/SettingDivider';
 import { SettingsSection } from '../components/SettingSection';
 import { SettingToggleRow } from '../components/SettingToggleRow';
@@ -171,7 +171,8 @@ const migrateConfig = (savedConfig: unknown): InputWidgetSettings['config'] => {
     abs: {
       enabled:
         (config.abs as { enabled?: boolean })?.enabled ??
-        defaultConfig.abs.enabled,
+        defaultConfig.abs?.enabled ??
+        false,
     },
     steer: {
       enabled:
@@ -988,7 +989,7 @@ export const InputSettings = () => {
                   <SettingsSection title="ABS Indicator">
                     <SettingToggleRow
                       title="Enable ABS Indicator"
-                      enabled={config.abs.enabled}
+                      enabled={config.abs?.enabled ?? false}
                       onToggle={(newValue) =>
                         handleConfigChange({
                           abs: { ...config.abs, enabled: newValue },

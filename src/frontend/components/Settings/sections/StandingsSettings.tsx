@@ -4,7 +4,7 @@ import {
   SessionVisibilitySettings,
   StandingsWidgetSettings,
   SettingsTabType,
-} from '../types';
+} from '@irdashies/types';
 import { useDashboard } from '@irdashies/context';
 import { ToggleSwitch } from '../components/ToggleSwitch';
 import { TabButton } from '../components/TabButton';

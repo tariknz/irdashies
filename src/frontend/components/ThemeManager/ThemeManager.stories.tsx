@@ -486,7 +486,7 @@ export const WithAllAvailableWidgets = {
       setFontWeight,
       colorPalette,
       setColorPalette,
-      defaultDashboard.widgets
+      defaultDashboard.widgets as DashboardLayout['widgets']
     );
 
     return (

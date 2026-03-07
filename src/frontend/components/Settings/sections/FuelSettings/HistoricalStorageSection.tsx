@@ -1,4 +1,4 @@
-import { FuelWidgetSettings } from '../../types';
+import { FuelWidgetSettings } from '@irdashies/types';
 import { useFuelStore } from '../../../FuelCalculator/FuelStore';
 import { SettingToggleRow } from '../../components/SettingToggleRow';
 import { SettingsSection } from '../../components/SettingSection';

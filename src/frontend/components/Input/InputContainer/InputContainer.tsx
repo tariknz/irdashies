@@ -1,5 +1,5 @@
 import { Fragment, useMemo } from 'react';
-import { InputWidgetSettings } from '../../Settings/types';
+import { InputWidgetSettings } from '@irdashies/types';
 import { InputAbsIndicator } from '../InputAbsIndicator/InputAbsIndicator';
 import { InputBar } from '../InputBar/InputBar';
 import { InputGear } from '../InputGear/InputGear';

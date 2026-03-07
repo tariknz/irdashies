@@ -1,7 +1,7 @@
 import { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
 import { TabButton } from './TabButton';
-import type { SettingsTabType } from '../types';
+import type { SettingsTabType } from '@irdashies/types';
 
 const meta = {
   component: TabButton,
