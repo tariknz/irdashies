@@ -87,9 +87,8 @@ const defaultConfig: StandingsWidgetSettings['config'] = {
   iratingChange: { enabled: true },
   positionChange: { enabled: false },
   badge: { enabled: true, badgeFormat: 'license-color-rating-bw' },
-  delta: { enabled: true },
   gap: { enabled: false, decimalPlaces: 1 },
-  interval: { enabled: false, decimalPlaces: 1 },
+  interval: { enabled: true, decimalPlaces: 1 },
   lastTime: { enabled: true, timeFormat: 'full' },
   fastestTime: { enabled: true, timeFormat: 'full' },
   background: { opacity: 0 },
@@ -206,16 +205,13 @@ const migrateConfig = (
           | 'rating-bw-no-license'
           | 'fullrating-bw-no-license') ?? 'license-color-rating-bw',
     },
-    delta: {
-      enabled: (config.delta as { enabled?: boolean })?.enabled ?? true,
-    },
     gap: {
       enabled: (config.gap as { enabled?: boolean })?.enabled ?? true,
       decimalPlaces:
         (config.gap as { decimalPlaces?: number })?.decimalPlaces ?? 1,
     },
     interval: {
-      enabled: (config.interval as { enabled?: boolean })?.enabled ?? false,
+      enabled: (config.interval as { enabled?: boolean })?.enabled ?? true,
       decimalPlaces:
         (config.interval as { decimalPlaces?: number })?.decimalPlaces ?? 1,
     },

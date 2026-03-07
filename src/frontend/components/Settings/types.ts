@@ -33,7 +33,6 @@ export interface StandingsWidgetSettings extends BaseWidgetSettings {
         | 'rating-bw-no-license'
         | 'fullrating-bw-no-license';
     };
-    delta: { enabled: boolean };
     gap: { enabled: boolean; decimalPlaces: number };
     interval: { enabled: boolean; decimalPlaces: number };
     lastTime: {
