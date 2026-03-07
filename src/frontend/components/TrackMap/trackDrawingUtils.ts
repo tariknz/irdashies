@@ -5,17 +5,24 @@ export const setupCanvasContext = (
   ctx: CanvasRenderingContext2D,
   scale: number,
   offsetX: number,
-  offsetY: number
+  offsetY: number,
+  showShadow = true
 ) => {
   ctx.save();
   ctx.translate(offsetX, offsetY);
   ctx.scale(scale, scale);
 
-  // Apply shadow (now efficient thanks to canvas caching)
-  ctx.shadowColor = 'black';
-  ctx.shadowBlur = 2;
-  ctx.shadowOffsetX = 1;
-  ctx.shadowOffsetY = 1;
+  if (showShadow) {
+    // Apply shadow (now efficient thanks to canvas caching)
+    ctx.shadowColor = 'black';
+    ctx.shadowBlur = 2;
+    ctx.shadowOffsetX = 1;
+    ctx.shadowOffsetY = 1;
+  } else {
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 0;
+  }
 };
 
 export const drawTrack = (

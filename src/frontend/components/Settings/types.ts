@@ -143,6 +143,22 @@ export interface StandingsWidgetSettings extends BaseWidgetSettings {
     };
     displayOrder: string[];
     sessionVisibility: SessionVisibilitySettings;
+    stylingOptions?: {
+      badge?: boolean;
+      statusBadges?: boolean;
+      driverPosition?: {
+        background?: boolean;
+      };
+      driverNumber?: {
+        background?: boolean;
+        border?: boolean;
+      };
+    };
+    classHeaderStyle?: {
+      className?: { colorBackground?: boolean };
+      classInfo?: { colorBackground?: boolean };
+      classDivider?: { bottomBorder?: boolean };
+    };
   };
 }
 
@@ -268,6 +284,17 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
     displayOrder: string[];
     useLivePosition: boolean;
     sessionVisibility: SessionVisibilitySettings;
+    stylingOptions?: {
+      badge?: boolean;
+      statusBadges?: boolean;
+      driverPosition?: {
+        background?: boolean;
+      };
+      driverNumber?: {
+        background?: boolean;
+        border?: boolean;
+      };
+    };
   };
 }
 
@@ -314,6 +341,10 @@ export interface TrackMapWidgetSettings extends BaseWidgetSettings {
     useHighlightColor: boolean;
     showOnlyWhenOnTrack: boolean;
     sessionVisibility: SessionVisibilitySettings;
+    styling?: {
+      isMinimalTrack?: boolean;
+      isMinimalCar?: boolean;
+    };
   };
 }
 
@@ -504,6 +535,7 @@ export type SettingsTabType =
   | 'header'
   | 'footer'
   | 'history'
+  | 'styling'
   | 'telemetry'
   | 'dashboard';
 

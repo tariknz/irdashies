@@ -41,8 +41,7 @@ export const usePitlaneHelperSettings = () => {
     ...config,
     progressBarOrientation:
       config.progressBarOrientation ?? ('horizontal' as const),
-    speedBarOrientation:
-      config.speedBarOrientation ?? ('horizontal' as const),
+    speedBarOrientation: config.speedBarOrientation ?? ('horizontal' as const),
     showSpeedBar: config.showSpeedBar ?? true,
     showPastPitBox: config.showPastPitBox ?? false,
     showPitExitInputs: config.showPitExitInputs ?? false,

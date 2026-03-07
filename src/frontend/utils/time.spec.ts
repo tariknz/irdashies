@@ -198,7 +198,9 @@ describe('time', () => {
       });
 
       it('should format with labels for hours, minutes and seconds', () => {
-        expect(formatTime(3661.789, 'duration-wlabels')).toBe('1 hr 1 min 1 sec');
+        expect(formatTime(3661.789, 'duration-wlabels')).toBe(
+          '1 hr 1 min 1 sec'
+        );
       });
 
       it('should return empty string for zero seconds', () => {

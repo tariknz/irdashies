@@ -12,6 +12,8 @@ export const TrackMap = () => {
   const driversTrackData = useDriverProgress();
   const settings = useTrackMapSettings();
   const highlightColor = useHighlightColor();
+  const isMinimalTrack = settings?.styling?.isMinimalTrack ?? true;
+  const isMinimalCar = settings?.styling?.isMinimalCar ?? true;
   const isOnTrack = useTelemetryValue('IsOnTrack');
 
   if (!useSessionVisibility(settings?.sessionVisibility)) return <></>;
@@ -41,6 +43,8 @@ export const TrackMap = () => {
         highlightColor={
           settings?.useHighlightColor ? highlightColor : undefined
         }
+        isMinimalTrack={isMinimalTrack}
+        isMinimalCar={isMinimalCar}
         debug={debug}
       />
     </div>

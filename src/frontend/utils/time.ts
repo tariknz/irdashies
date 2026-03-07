@@ -1,6 +1,19 @@
-export type TimeFormat = 'full' | 'mixed' | 'minutes' | 'seconds-full' | 'seconds-mixed' | 'seconds' | 'duration' | 'duration-wlabels' | 'duration-hh:mm:ss' | 'duration-hh:mm-wlabel';
+export type TimeFormat =
+  | 'full'
+  | 'mixed'
+  | 'minutes'
+  | 'seconds-full'
+  | 'seconds-mixed'
+  | 'seconds'
+  | 'duration'
+  | 'duration-wlabels'
+  | 'duration-hh:mm:ss'
+  | 'duration-hh:mm-wlabel';
 
-export const formatTime = (seconds?: number, format: TimeFormat = 'full'): string => {
+export const formatTime = (
+  seconds?: number,
+  format: TimeFormat = 'full'
+): string => {
   if (seconds === undefined) return '';
   if (seconds < 0) return '';
 
@@ -84,7 +97,6 @@ export const formatTime = (seconds?: number, format: TimeFormat = 'full'): strin
         formattedTime += `${remainingSeconds} sec${remainingSeconds > 1 ? 's' : ''}`;
       }
       break;
-
   }
 
   return formattedTime;

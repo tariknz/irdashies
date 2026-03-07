@@ -65,8 +65,7 @@ export const PitlaneHelperSettings = () => {
           savedSettings.config.showPitExitInputs ??
           defaultConfig.showPitExitInputs,
         showPastPitBox:
-          savedSettings.config.showPastPitBox ??
-          defaultConfig.showPastPitBox,
+          savedSettings.config.showPastPitBox ?? defaultConfig.showPastPitBox,
         pitExitInputs:
           savedSettings.config.pitExitInputs ?? defaultConfig.pitExitInputs,
         showInputsPhase:
@@ -236,7 +235,7 @@ export const PitlaneHelperSettings = () => {
                       handleConfigChange({ background: { opacity: v } })
                     }
                   />
-                </SettingsSection>           
+                </SettingsSection>
 
                 {/* Warning Settings */}
                 <SettingsSection title="Warnings">
@@ -334,12 +333,10 @@ export const PitlaneHelperSettings = () => {
             {/* VISIBILITY TAB */}
             {activeTab === 'visibility' && (
               <SettingsSection title="Session Visibility">
-                            
                 <SessionVisibility
-                    sessionVisibility={settings.config.sessionVisibility}
-                    handleConfigChange={handleConfigChange}
-                  />
-  
+                  sessionVisibility={settings.config.sessionVisibility}
+                  handleConfigChange={handleConfigChange}
+                />
               </SettingsSection>
             )}
           </div>
