@@ -26,7 +26,7 @@ export const defaultDashboard: DashboardLayout = {
           enabled: true,
         },
         interval: {
-          enabled: true,
+          enabled: false,
         },
         lastTime: {
           enabled: true,
