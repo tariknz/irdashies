@@ -10,7 +10,9 @@ import { create } from 'zustand';
 export const REFERENCE_INTERVAL = 0.0025;
 const DECIMAL_PLACES = REFERENCE_INTERVAL.toString().split('.')[1]?.length || 0;
 const TARGET_POINTS_FOR_VALID_LAP = 1 / REFERENCE_INTERVAL;
-const MIN_POINTS_FOR_VALID_LAP = (1 / REFERENCE_INTERVAL) * 0.75;
+const MAX_PCT_MISSING_DATA = 0.25;
+const MIN_POINTS_FOR_VALID_LAP =
+  (1 / REFERENCE_INTERVAL) * (1 - MAX_PCT_MISSING_DATA);
 
 export function normalizeKey(key: number): number {
   const normalizedKey = parseFloat(
@@ -134,21 +136,20 @@ export const useReferenceLapStore = create<ReferenceRegistryState>(
             : true;
 
           if (isNewBestLap && refLap.isCleanLap) {
-            // Mutate in place
-            bestLaps.set(carIdx, refLap);
-
             const savedLap = persistedLaps.get(refLap.classId);
             const savedLapTime = savedLap
               ? savedLap.finishTime - savedLap.startTime
               : Infinity;
 
+            if (refLap.refPoints.size < TARGET_POINTS_FOR_VALID_LAP) {
+              fillReferenceGaps(refLap, TARGET_POINTS_FOR_VALID_LAP);
+            }
+
+            precomputePCHIPTangents(refLap);
+            // Mutate in place
+            bestLaps.set(carIdx, refLap);
+
             if (currentLapTime < savedLapTime) {
-              if (refLap.refPoints.size < TARGET_POINTS_FOR_VALID_LAP) {
-                fillReferenceGaps(refLap, TARGET_POINTS_FOR_VALID_LAP);
-              }
-
-              precomputePCHIPTangents(refLap);
-
               // Mutate in place
               persistedLaps.set(refLap.classId, refLap);
 
