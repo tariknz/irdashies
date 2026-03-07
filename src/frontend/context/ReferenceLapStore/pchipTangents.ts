@@ -1,4 +1,88 @@
 import { ReferenceLap } from '@irdashies/types';
+import { normalizeKey, REFERENCE_INTERVAL } from './ReferenceLapStore';
+
+/**
+ * Fills missing points in a ReferenceLap using Cubic Hermite Interpolation.
+ * Should be called BEFORE precomputePCHIPTangents.
+ */
+export function fillReferenceGaps(
+  lap: ReferenceLap,
+  targetCount: number
+): void {
+  const actualCount = lap.refPoints.size;
+
+  // Only fill if we are missing a small amount (e.g., within 5-10%)
+  // If we are missing 50%, the lap is likely too broken to interpolate accurately.
+  if (actualCount >= targetCount || actualCount < targetCount * 0.9) {
+    return;
+  }
+
+  // 1. Get existing points sorted
+  const sorted = Array.from(lap.refPoints.values()).sort(
+    (a, b) => a.trackPct - b.trackPct
+  );
+
+  // 2. We need tangents to perform Cubic Hermite Interpolation
+  // (We use a temporary tangent calculation to fill gaps)
+  const x = sorted.map((p) => p.trackPct);
+  const y = sorted.map((p) => p.timeElapsedSinceStart);
+  const lapTime = lap.finishTime - lap.startTime;
+  const tangents = computePCHIPTangents(x, y, lapTime);
+
+  // 3. Iterate through the expected grid and find holes
+  for (let i = 0; i < targetCount; i++) {
+    const expectedPct = normalizeKey(i * REFERENCE_INTERVAL + 0.0001);
+
+    if (!lap.refPoints.has(expectedPct)) {
+      // Find bounding indices in the sorted array
+      let idx = sorted.findIndex((p) => p.trackPct > expectedPct);
+      if (idx === -1) idx = 0; // Wrap around case
+
+      const i0 = idx === 0 ? sorted.length - 1 : idx - 1;
+      const i1 = idx;
+
+      // Cubic Hermite Interpolation Formula
+      const x0 =
+        sorted[i0].trackPct > expectedPct
+          ? sorted[i0].trackPct - 1
+          : sorted[i0].trackPct;
+      const x1 =
+        sorted[i1].trackPct < expectedPct
+          ? sorted[i1].trackPct + 1
+          : sorted[i1].trackPct;
+      const y0 =
+        sorted[i0].trackPct > expectedPct
+          ? sorted[i0].timeElapsedSinceStart - lapTime
+          : sorted[i0].timeElapsedSinceStart;
+      const y1 =
+        sorted[i1].trackPct < expectedPct
+          ? sorted[i1].timeElapsedSinceStart + lapTime
+          : sorted[i1].timeElapsedSinceStart;
+      const m0 = tangents[i0];
+      const m1 = tangents[i1];
+
+      const h = x1 - x0;
+      const t = (expectedPct - x0) / h;
+      const t2 = t * t;
+      const t3 = t2 * t;
+
+      // Hermite Basis Functions
+      const h00 = 2 * t3 - 3 * t2 + 1;
+      const h10 = t3 - 2 * t2 + t;
+      const h01 = -2 * t3 + 3 * t2;
+      const h11 = t3 - t2;
+
+      const interpolatedTime =
+        h00 * y0 + h10 * h * m0 + h01 * y1 + h11 * h * m1;
+
+      lap.refPoints.set(expectedPct, {
+        trackPct: expectedPct,
+        timeElapsedSinceStart: interpolatedTime,
+        tangent: undefined,
+      });
+    }
+  }
+}
 
 /**
  * Pre-computes and stores Fritsch-Carlson PCHIP tangents for each point in the lap.
