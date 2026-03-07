@@ -1,17 +1,14 @@
 import { useState } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import type { TwitchChatWidgetSettings } from '@irdashies/types';
+import { getWidgetDefaultConfig } from '@irdashies/types';
 import { useDashboard } from '@irdashies/context';
 import { SettingSliderRow } from '../components/SettingSliderRow';
 import { SettingsSection } from '../components/SettingSection';
 
 const SETTING_ID = 'twitchchat';
 
-const defaultConfig: TwitchChatWidgetSettings['config'] = {
-  fontSize: 16,
-  background: { opacity: 30 },
-  channel: '',
-};
+const defaultConfig = getWidgetDefaultConfig('twitchchat');
 
 const migrateConfig = (
   savedConfig: unknown

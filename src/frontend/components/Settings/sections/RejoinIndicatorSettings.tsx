@@ -4,6 +4,7 @@ import {
   RejoinIndicatorWidgetSettings,
   SessionVisibilitySettings,
   SettingsTabType,
+  getWidgetDefaultConfig,
 } from '@irdashies/types';
 import { useDashboard } from '@irdashies/context';
 import { SessionVisibility } from '../components/SessionVisibility';
@@ -13,18 +14,7 @@ import { SettingNumberRow } from '../components/SettingNumberRow';
 
 const SETTING_ID = 'rejoin';
 
-const defaultConfig: RejoinIndicatorWidgetSettings['config'] = {
-  showAtSpeed: 30,
-  careGap: 2,
-  stopGap: 1,
-  sessionVisibility: {
-    race: true,
-    loneQualify: false,
-    openQualify: true,
-    practice: true,
-    offlineTesting: true,
-  },
-};
+const defaultConfig = getWidgetDefaultConfig('rejoin');
 
 const migrateConfig = (
   savedConfig: unknown

@@ -4,6 +4,7 @@ import {
   TrackMapWidgetSettings,
   SessionVisibilitySettings,
   SettingsTabType,
+  getWidgetDefaultConfig,
 } from '@irdashies/types';
 import { useDashboard } from '@irdashies/context';
 import { TabButton } from '../components/TabButton';
@@ -16,27 +17,7 @@ import { SettingDivider } from '../components/SettingDivider';
 
 const SETTING_ID = 'map';
 
-const defaultConfig: TrackMapWidgetSettings['config'] = {
-  enableTurnNames: false,
-  showCarNumbers: true,
-  displayMode: 'carNumber',
-  invertTrackColors: false,
-  highContrastTurns: false,
-  driverCircleSize: 40,
-  playerCircleSize: 40,
-  trackmapFontSize: 100,
-  trackLineWidth: 20,
-  trackOutlineWidth: 40,
-  useHighlightColor: false,
-  showOnlyWhenOnTrack: false,
-  sessionVisibility: {
-    race: true,
-    loneQualify: true,
-    openQualify: true,
-    practice: true,
-    offlineTesting: true,
-  },
-};
+const defaultConfig = getWidgetDefaultConfig('map');
 
 const migrateConfig = (
   savedConfig: unknown

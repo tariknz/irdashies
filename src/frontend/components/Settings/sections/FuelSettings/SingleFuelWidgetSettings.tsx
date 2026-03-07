@@ -9,10 +9,8 @@ import { useDashboard } from '@irdashies/context';
 import { SessionVisibility } from '../../components/SessionVisibility';
 import { TabButton } from '../../components/TabButton';
 import { LayoutVisualizer, migrateToTree } from '../LayoutVisualizer';
-import {
-  DEFAULT_FUEL_LAYOUT_TREE,
-  defaultFuelCalculatorSettings,
-} from '../../../FuelCalculator/defaults';
+import { DEFAULT_FUEL_LAYOUT_TREE } from '../../../FuelCalculator/defaults';
+import { getWidgetDefaultConfig } from '@irdashies/types';
 import { DualFontSizeInput } from './FontSizeInputs';
 import { GridOrderSettingsList } from './GridOrderSettingsList';
 import { migrateConfig, AVAILABLE_WIDGETS_FUEL } from './utils';
@@ -28,7 +26,7 @@ import { SettingSliderRow } from '../../components/SettingSliderRow';
 import { SettingSelectRow } from '../../components/SettingSelectRow';
 import { SettingNumberRow } from '../../components/SettingNumberRow';
 
-const defaultConfig = defaultFuelCalculatorSettings;
+const defaultConfig = getWidgetDefaultConfig('fuel');
 const DEFAULT_TREE_FUEL = DEFAULT_FUEL_LAYOUT_TREE;
 
 export const SingleFuelWidgetSettings = ({

@@ -4,6 +4,7 @@ import {
   SessionVisibilitySettings,
   WeatherWidgetSettings,
   SettingsTabType,
+  getWidgetDefaultConfig,
 } from '@irdashies/types';
 import { useDashboard } from '@irdashies/context';
 import { ToggleSwitch } from '../components/ToggleSwitch';
@@ -47,27 +48,7 @@ const sortableSettings: SortableSetting[] = [
   { id: 'trackState', label: 'Track State', configKey: 'trackState' },
 ];
 
-const defaultConfig: WeatherWidgetSettings['config'] = {
-  displayOrder: sortableSettings.map((s) => s.id),
-  background: { opacity: 0 },
-  airTemp: { enabled: true },
-  trackTemp: { enabled: true },
-  wetness: { enabled: true },
-  trackState: { enabled: true },
-  wind: { enabled: true },
-  units: 'auto',
-  humidity: {
-    enabled: true,
-  },
-  showOnlyWhenOnTrack: true,
-  sessionVisibility: {
-    race: true,
-    loneQualify: true,
-    openQualify: true,
-    practice: true,
-    offlineTesting: true,
-  },
-};
+const defaultConfig = getWidgetDefaultConfig('weather');
 
 const migrateConfig = (
   savedConfig: unknown

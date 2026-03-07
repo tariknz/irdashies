@@ -5,6 +5,7 @@ import {
   BlindSpotMonitorWidgetSettings,
   SessionVisibilitySettings,
   SettingsTabType,
+  getWidgetDefaultConfig,
 } from '@irdashies/types';
 import { SessionVisibility } from '../components/SessionVisibility';
 import { TabButton } from '../components/TabButton';
@@ -15,22 +16,7 @@ import { SettingToggleRow } from '../components/SettingToggleRow';
 
 const SETTING_ID = 'blindspotmonitor';
 
-const defaultConfig: BlindSpotMonitorWidgetSettings['config'] = {
-  showOnlyWhenOnTrack: true,
-  distAhead: 4,
-  distBehind: 4,
-  background: {
-    opacity: 30,
-  },
-  width: 20,
-  sessionVisibility: {
-    race: true,
-    loneQualify: false,
-    openQualify: true,
-    practice: true,
-    offlineTesting: true,
-  },
-};
+const defaultConfig = getWidgetDefaultConfig('blindspotmonitor');
 
 const migrateConfig = (
   savedConfig: unknown

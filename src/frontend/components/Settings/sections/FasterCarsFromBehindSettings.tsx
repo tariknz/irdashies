@@ -4,6 +4,7 @@ import {
   FasterCarsFromBehindWidgetSettings,
   SessionVisibilitySettings,
   SettingsTabType,
+  getWidgetDefaultConfig,
 } from '@irdashies/types';
 import { SessionVisibility } from '../components/SessionVisibility';
 import { BadgeFormatPreview } from '../components/BadgeFormatPreview';
@@ -18,26 +19,7 @@ import { SettingSelectRow } from '../components/SettingSelectRow';
 
 const SETTING_ID = 'fastercarsfrombehind';
 
-const defaultConfig: FasterCarsFromBehindWidgetSettings['config'] = {
-  showOnlyWhenOnTrack: true,
-  distanceThreshold: -0.3,
-  numberDriversBehind: 1,
-  alignDriverBoxes: 'Top',
-  closestDriverBox: 'Top',
-  showName: true,
-  removeNumbersFromName: false,
-  showDistance: true,
-  showBadge: true,
-  badgeFormat: 'license-color-rating-bw',
-  onlyShowFasterClasses: true,
-  sessionVisibility: {
-    race: true,
-    loneQualify: false,
-    openQualify: true,
-    practice: true,
-    offlineTesting: true,
-  },
-};
+const defaultConfig = getWidgetDefaultConfig('fastercarsfrombehind');
 
 const migrateConfig = (
   savedConfig: unknown

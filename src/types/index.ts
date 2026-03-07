@@ -9,3 +9,4 @@ export * from './fuelCalculatorBridge';
 export * from './widgetId';
 export * from './referenceLaps';
 export * from './widgetConfigs';
+export * from './defaultDashboard';

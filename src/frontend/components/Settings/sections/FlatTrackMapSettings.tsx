@@ -6,6 +6,7 @@ import {
   FlatTrackMapWidgetSettings,
   SessionVisibilitySettings,
   SettingsTabType,
+  getWidgetDefaultConfig,
 } from '@irdashies/types';
 import { SessionVisibility } from '../components/SessionVisibility';
 import { SettingsSection } from '../components/SettingSection';
@@ -16,25 +17,7 @@ import { SettingDivider } from '../components/SettingDivider';
 
 const SETTING_ID = 'flatmap';
 
-const defaultConfig: FlatTrackMapWidgetSettings['config'] = {
-  showCarNumbers: true,
-  displayMode: 'carNumber',
-  driverCircleSize: 40,
-  playerCircleSize: 40,
-  trackmapFontSize: 100,
-  trackLineWidth: 20,
-  trackOutlineWidth: 40,
-  invertTrackColors: false,
-  useHighlightColor: false,
-  showOnlyWhenOnTrack: false,
-  sessionVisibility: {
-    race: true,
-    loneQualify: true,
-    openQualify: true,
-    practice: true,
-    offlineTesting: true,
-  },
-};
+const defaultConfig = getWidgetDefaultConfig('flatmap');
 
 const migrateConfig = (
   savedConfig: unknown

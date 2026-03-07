@@ -3,10 +3,10 @@ import {
   SessionVisibilitySettings,
   BoxConfig,
   LayoutNode,
+  getWidgetDefaultConfig,
 } from '@irdashies/types';
-import { defaultFuelCalculatorSettings } from '../../../FuelCalculator/defaults';
 
-const defaultConfig = defaultFuelCalculatorSettings;
+const defaultConfig = getWidgetDefaultConfig('fuel');
 
 export const migrateConfig = (
   savedConfig: unknown

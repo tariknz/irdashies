@@ -12,6 +12,7 @@ import {
   InputWidgetSettings,
   SessionVisibilitySettings,
   SettingsTabType,
+  getWidgetDefaultConfig,
 } from '@irdashies/types';
 import { SettingDivider } from '../components/SettingDivider';
 import { SettingsSection } from '../components/SettingSection';
@@ -57,59 +58,7 @@ const sortableSettings: SortableSetting[] = [
   { id: 'steer', label: 'Steer', configKey: 'steer' },
 ];
 
-const defaultConfig: InputWidgetSettings['config'] = {
-  trace: {
-    enabled: true,
-    includeThrottle: true,
-    includeBrake: true,
-    includeClutch: false,
-    includeAbs: true,
-    includeSteer: true,
-    strokeWidth: 3,
-    maxSamples: 400,
-  },
-  bar: {
-    enabled: true,
-    includeClutch: true,
-    includeBrake: true,
-    includeThrottle: true,
-    includeAbs: true,
-  },
-  gear: {
-    enabled: true,
-    unit: 'auto',
-  },
-  abs: {
-    enabled: false,
-  },
-  steer: {
-    enabled: true,
-    config: {
-      style: 'default',
-      color: 'light',
-    },
-  },
-  tachometer: {
-    enabled: true,
-    showRpmText: false,
-    customShiftPoints: {
-      enabled: false,
-      indicatorType: 'glow',
-      indicatorColor: '#00ff00',
-      carConfigs: {},
-    },
-  },
-  background: { opacity: 0 },
-  displayOrder: sortableSettings.map((s) => s.id),
-  showOnlyWhenOnTrack: true,
-  sessionVisibility: {
-    race: true,
-    loneQualify: true,
-    openQualify: true,
-    practice: true,
-    offlineTesting: true,
-  },
-};
+const defaultConfig = getWidgetDefaultConfig('input');
 
 const migrateConfig = (savedConfig: unknown): InputWidgetSettings['config'] => {
   if (!savedConfig || typeof savedConfig !== 'object') return defaultConfig;

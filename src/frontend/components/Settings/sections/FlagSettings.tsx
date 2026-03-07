@@ -4,6 +4,7 @@ import {
   FlagWidgetSettings,
   SessionVisibilitySettings,
   SettingsTabType,
+  getWidgetDefaultConfig,
 } from '@irdashies/types';
 import { useDashboard } from '@irdashies/context';
 import { TabButton } from '../components/TabButton';
@@ -16,24 +17,7 @@ import { SettingSelectRow } from '../components/SettingSelectRow';
 
 const SETTING_ID = 'flag';
 
-const defaultConfig: FlagWidgetSettings['config'] = {
-  enabled: true,
-  showOnlyWhenOnTrack: true,
-  showLabel: true,
-  animate: true,
-  blinkPeriod: 0.5,
-  matrixMode: '16x16',
-  showNoFlagState: true,
-  enableGlow: true,
-  doubleFlag: false,
-  sessionVisibility: {
-    race: true,
-    loneQualify: true,
-    openQualify: true,
-    practice: true,
-    offlineTesting: true,
-  },
-};
+const defaultConfig = getWidgetDefaultConfig('flag');
 
 const migrateConfig = (savedConfig: unknown): FlagWidgetSettings['config'] => {
   if (!savedConfig || typeof savedConfig !== 'object') return defaultConfig;

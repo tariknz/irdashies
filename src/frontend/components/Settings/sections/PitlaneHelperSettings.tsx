@@ -5,6 +5,7 @@ import type {
   PitlaneHelperWidgetSettings,
   SettingsTabType,
 } from '@irdashies/types';
+import { getWidgetDefaultConfig } from '@irdashies/types';
 import { useDashboard } from '@irdashies/context';
 import { SettingsSection } from '../components/SettingSection';
 import { SettingToggleRow } from '../components/SettingToggleRow';
@@ -15,33 +16,7 @@ import { SessionVisibility } from '../components/SessionVisibility';
 
 const SETTING_ID = 'pitlanehelper';
 
-const defaultConfig: PitlaneHelperWidgetSettings['config'] = {
-  showMode: 'approaching',
-  approachDistance: 200,
-  enablePitLimiterWarning: true,
-  enableEarlyPitboxWarning: true,
-  earlyPitboxThreshold: 75,
-  showPitlaneTraffic: true,
-  background: { opacity: 80 },
-  progressBarOrientation: 'horizontal',
-  speedBarOrientation: 'horizontal',
-  showPastPitBox: false,
-  showProgressBar: true,
-  showSpeedBar: true,
-  showPitExitInputs: false,
-  pitExitInputs: {
-    throttle: true,
-    clutch: true,
-  },
-  showInputsPhase: 'afterPitbox',
-  sessionVisibility: {
-    race: true,
-    loneQualify: false,
-    openQualify: false,
-    practice: true,
-    offlineTesting: true,
-  },
-};
+const defaultConfig = getWidgetDefaultConfig('pitlanehelper');
 
 export const PitlaneHelperSettings = () => {
   const { currentDashboard } = useDashboard();

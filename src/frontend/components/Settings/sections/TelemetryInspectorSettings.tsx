@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { getWidgetDefaultConfig } from '@irdashies/types';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import { useDashboard } from '@irdashies/context';
 import { TrashIcon, PlusIcon } from '@phosphor-icons/react';
@@ -21,13 +22,7 @@ interface TelemetryInspectorWidgetSettings {
   config: TelemetryInspectorConfig;
 }
 
-const defaultConfig: TelemetryInspectorConfig = {
-  background: { opacity: 80 },
-  properties: [
-    { source: 'telemetry', path: 'Speed', label: 'Speed' },
-    { source: 'telemetry', path: 'SessionTime', label: 'Session Time' },
-  ],
-};
+const defaultConfig = getWidgetDefaultConfig('telemetryinspector');
 
 const migrateConfig = (savedConfig: unknown): TelemetryInspectorConfig => {
   if (!savedConfig || typeof savedConfig !== 'object') return defaultConfig;

@@ -1,15 +1,16 @@
 import { useState, useEffect, useRef } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import { useDashboard } from '@irdashies/context';
-import { GarageCoverWidgetSettings } from '@irdashies/types';
+import {
+  GarageCoverWidgetSettings,
+  getWidgetDefaultConfig,
+} from '@irdashies/types';
 import { DashboardBridge } from '@irdashies/types';
 
 const SETTING_ID = 'garagecover';
 const LOCALSTORAGE_KEY = 'garagecover-image';
 
-const defaultConfig: GarageCoverWidgetSettings['config'] = {
-  imageFilename: '',
-};
+const defaultConfig = getWidgetDefaultConfig('garagecover');
 
 export const GarageCoverSettings = () => {
   const { currentDashboard, bridge } = useDashboard();

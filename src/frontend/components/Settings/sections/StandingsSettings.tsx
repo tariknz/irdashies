@@ -4,6 +4,7 @@ import {
   SessionVisibilitySettings,
   StandingsWidgetSettings,
   SettingsTabType,
+  getWidgetDefaultConfig,
 } from '@irdashies/types';
 import { useDashboard } from '@irdashies/context';
 import { ToggleSwitch } from '../components/ToggleSwitch';
@@ -83,97 +84,7 @@ const sortableSettings: SortableSetting[] = [
   },
 ];
 
-const defaultConfig: StandingsWidgetSettings['config'] = {
-  iratingChange: { enabled: true },
-  positionChange: { enabled: false },
-  badge: { enabled: true, badgeFormat: 'license-color-rating-bw' },
-  delta: { enabled: true },
-  gap: { enabled: false, decimalPlaces: 1 },
-  interval: { enabled: false, decimalPlaces: 1 },
-  lastTime: { enabled: true, timeFormat: 'full' },
-  fastestTime: { enabled: true, timeFormat: 'full' },
-  background: { opacity: 0 },
-  countryFlags: { enabled: true },
-  carNumber: { enabled: true },
-  driverStandings: {
-    buffer: 3,
-    numNonClassDrivers: 3,
-    minPlayerClassDrivers: 10,
-    numTopDrivers: 3,
-    topDriverDivider: 'highlight' as const,
-  },
-  compound: { enabled: true },
-  carManufacturer: { enabled: true, hideIfSingleMake: false },
-  titleBar: { enabled: true, progressBar: { enabled: true } },
-  headerBar: {
-    enabled: true,
-    sessionName: { enabled: true },
-    sessionTime: {
-      enabled: true,
-      mode: 'Remaining',
-      totalFormat: 'minimal',
-      labelStyle: 'minimal',
-    },
-    sessionLaps: { enabled: true, mode: 'Elapsed' },
-    incidentCount: { enabled: true },
-    brakeBias: { enabled: false },
-    localTime: { enabled: false },
-    sessionClockTime: { enabled: false },
-    trackWetness: { enabled: false },
-    precipitation: { enabled: false },
-    airTemperature: { enabled: false, unit: 'Metric' },
-    trackTemperature: { enabled: false, unit: 'Metric' },
-    wind: { enabled: false, speedPosition: 'right' },
-    trackName: { enabled: false },
-    displayOrder: DEFAULT_SESSION_BAR_DISPLAY_ORDER,
-  },
-  footerBar: {
-    enabled: true,
-    sessionName: { enabled: false },
-    sessionTime: {
-      enabled: false,
-      mode: 'Remaining',
-      totalFormat: 'minimal',
-      labelStyle: 'minimal',
-    },
-    sessionLaps: { enabled: false, mode: 'Elapsed' },
-    incidentCount: { enabled: false },
-    brakeBias: { enabled: false },
-    localTime: { enabled: true },
-    sessionClockTime: { enabled: false },
-    trackWetness: { enabled: true },
-    precipitation: { enabled: false },
-    airTemperature: { enabled: true, unit: 'Metric' },
-    trackTemperature: { enabled: true, unit: 'Metric' },
-    wind: { enabled: false, speedPosition: 'right' },
-    trackName: { enabled: false },
-    displayOrder: DEFAULT_SESSION_BAR_DISPLAY_ORDER,
-  },
-  showOnlyWhenOnTrack: false,
-  useLivePosition: false,
-  lapTimeDeltas: { enabled: false, numLaps: 3 },
-  position: { enabled: true },
-  driverName: {
-    enabled: true,
-    showStatusBadges: true,
-    removeNumbersFromName: false,
-    nameFormat: 'name-surname',
-  },
-  teamName: { enabled: false },
-  pitStatus: {
-    enabled: true,
-    showPitTime: false,
-    pitLapDisplayMode: 'lapsSinceLastPit',
-  },
-  displayOrder: sortableSettings.map((s) => s.id),
-  sessionVisibility: {
-    race: true,
-    loneQualify: true,
-    openQualify: true,
-    practice: true,
-    offlineTesting: true,
-  },
-};
+const defaultConfig = getWidgetDefaultConfig('standings');
 
 const migrateConfig = (
   savedConfig: unknown
