@@ -3,11 +3,14 @@ import {
   ReferenceLapBridge,
   ReferenceLap,
 } from '@irdashies/types';
-import { precomputePCHIPTangents } from './pchipTangents';
+import { fillReferenceGaps, precomputePCHIPTangents } from './pchipTangents';
 import { create } from 'zustand';
 
+// TODO: Maybe have it be a bit more dynamic for longer tracks like Nordschleife?
 export const REFERENCE_INTERVAL = 0.0025;
 const DECIMAL_PLACES = REFERENCE_INTERVAL.toString().split('.')[1]?.length || 0;
+const TARGET_POINTS_FOR_VALID_LAP = 1 / REFERENCE_INTERVAL;
+const MIN_POINTS_FOR_VALID_LAP = (1 / REFERENCE_INTERVAL) * 0.9;
 
 export function normalizeKey(key: number): number {
   const normalizedKey = parseFloat(
@@ -120,7 +123,6 @@ export const useReferenceLapStore = create<ReferenceRegistryState>(
       if (isLapComplete) {
         refLap.finishTime = sessionTime;
         const currentLapTime = refLap.finishTime - refLap.startTime;
-        const MIN_POINTS_FOR_VALID_LAP = 400;
 
         if (
           refLap.refPoints.size >= MIN_POINTS_FOR_VALID_LAP &&
@@ -132,8 +134,6 @@ export const useReferenceLapStore = create<ReferenceRegistryState>(
             : true;
 
           if (isNewBestLap && refLap.isCleanLap) {
-            precomputePCHIPTangents(refLap);
-
             // Mutate in place
             bestLaps.set(carIdx, refLap);
 
@@ -143,6 +143,12 @@ export const useReferenceLapStore = create<ReferenceRegistryState>(
               : Infinity;
 
             if (currentLapTime < savedLapTime) {
+              if (refLap.refPoints.size < TARGET_POINTS_FOR_VALID_LAP) {
+                fillReferenceGaps(refLap, TARGET_POINTS_FOR_VALID_LAP);
+              }
+
+              precomputePCHIPTangents(refLap);
+
               // Mutate in place
               persistedLaps.set(refLap.classId, refLap);
 

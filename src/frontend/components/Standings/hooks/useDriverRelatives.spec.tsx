@@ -13,6 +13,7 @@ import {
   REFERENCE_INTERVAL,
 } from '../../../context/ReferenceLapStore/ReferenceLapStore';
 import { ReferenceLap, ReferencePoint } from '@irdashies/types';
+import { fillReferenceGaps } from '../../../context/ReferenceLapStore/pchipTangents';
 
 // Mock the context hooks
 vi.mock('@irdashies/context', async (importOriginal) => {
@@ -645,5 +646,121 @@ describe('calculateReferenceDelta', () => {
     // Opponent: 48s (0.6 * 80), Player: 40s (0.5 * 80)
     // Delta: 48 - 40 = +8s
     expect(result).toBeCloseTo(8);
+  });
+});
+
+describe('fillReferenceGaps', () => {
+  const LAP_TIME = 100;
+  // Based on your code: (1 / 0.0025) = 400
+  const TARGET_COUNT = 1 / REFERENCE_INTERVAL;
+
+  const createIncompleteLap = (missingCount: number): ReferenceLap => {
+    const refPoints = new Map<number, ReferencePoint>();
+
+    for (let i = 0; i < TARGET_COUNT; i++) {
+      // Skip the requested number of points at the start of the lap
+      if (i < missingCount) continue;
+
+      const pct = i * REFERENCE_INTERVAL + 0.0001;
+      const key = normalizeKey(pct);
+
+      refPoints.set(key, {
+        trackPct: pct,
+        timeElapsedSinceStart: pct * LAP_TIME,
+        tangent: undefined,
+      });
+    }
+
+    return {
+      startTime: 1000,
+      finishTime: 1000 + LAP_TIME,
+      refPoints,
+      lastTrackedPct: 0.99,
+      classId: 1,
+      isCleanLap: true,
+    } as ReferenceLap;
+  };
+
+  it('should fill gaps when point count is between 90% and 100%', () => {
+    // Missing 20 points (380/400 = 95%)
+    const lap = createIncompleteLap(20);
+    const initialSize = lap.refPoints.size;
+
+    expect(initialSize).toBe(380);
+
+    fillReferenceGaps(lap, TARGET_COUNT);
+
+    expect(lap.refPoints.size).toBe(400);
+
+    // Check if the first point (index 0, which was missing) is now correctly interpolated
+    const startPoint = lap.refPoints.get(0);
+    expect(startPoint).toBeDefined();
+    expect(startPoint?.timeElapsedSinceStart).toBeCloseTo(0);
+    expect(startPoint?.trackPct).toBe(0);
+  });
+
+  it('should handle mid-lap gaps correctly using cubic interpolation', () => {
+    const refPoints = new Map<number, ReferencePoint>();
+    // Create a lap with a hole from 0.4 to 0.41
+    for (let i = 0; i < TARGET_COUNT; i++) {
+      const pct = i * REFERENCE_INTERVAL + 0.0001;
+      const key = normalizeKey(pct);
+
+      // Artificial gap at roughly 40% of the lap
+      if (key >= 0.4 && key <= 0.41) continue;
+
+      refPoints.set(key, {
+        trackPct: pct,
+        timeElapsedSinceStart: pct * LAP_TIME,
+        tangent: undefined,
+      });
+    }
+
+    const lap = {
+      startTime: 0,
+      finishTime: LAP_TIME,
+      refPoints,
+    } as ReferenceLap;
+
+    fillReferenceGaps(lap, TARGET_COUNT);
+
+    expect(lap.refPoints.has(0.4)).toBe(true);
+    // 0.4 * 100s = 40s
+    expect(lap.refPoints.get(0.4)?.timeElapsedSinceStart).toBeCloseTo(40);
+  });
+
+  it('should ignore laps that fall below the 90% threshold', () => {
+    // Missing 50 points (350/400 = 87.5%)
+    const lap = createIncompleteLap(50);
+
+    fillReferenceGaps(lap, TARGET_COUNT);
+
+    // Should not have added any points
+    expect(lap.refPoints.size).toBe(350);
+  });
+
+  it('should ignore laps that are already full', () => {
+    const lap = createIncompleteLap(0);
+
+    fillReferenceGaps(lap, TARGET_COUNT);
+
+    expect(lap.refPoints.size).toBe(400);
+  });
+
+  it('should maintain monotonicity when filling wrap-around gaps', () => {
+    // This tests the logic: const x0 = sorted[i0].trackPct > expectedPct ? sorted[i0].trackPct - 1 : ...
+    // Missing the very last point before the finish line
+    const lastKey = normalizeKey((TARGET_COUNT - 1) * REFERENCE_INTERVAL);
+    const lap = createIncompleteLap(0);
+    lap.refPoints.delete(lastKey);
+
+    fillReferenceGaps(lap, TARGET_COUNT);
+
+    expect(lap.refPoints.has(lastKey)).toBe(true);
+    // The time should be just slightly less than 100s
+    expect(lap.refPoints.get(lastKey)?.timeElapsedSinceStart).toBeLessThan(100);
+    expect(lap.refPoints.get(lastKey)?.timeElapsedSinceStart).toBeGreaterThan(
+      99
+    );
   });
 });
