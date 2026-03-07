@@ -34,8 +34,8 @@ export interface StandingsWidgetSettings extends BaseWidgetSettings {
         | 'fullrating-bw-no-license';
     };
     delta: { enabled: boolean };
-    gap: { enabled: boolean };
-    interval: { enabled: boolean };
+    gap: { enabled: boolean; decimalPlaces: number };
+    interval: { enabled: boolean; decimalPlaces: number };
     lastTime: {
       enabled: boolean;
       timeFormat:

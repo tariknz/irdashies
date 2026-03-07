@@ -375,7 +375,11 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
             key="gap"
             delta={gap}
             showForUndefined={position === 1 ? 'gap' : undefined}
-            decimalPlaces={deltaDecimalPlaces}
+            decimalPlaces={
+              config && 'gap' in config
+                ? (config.gap.decimalPlaces ?? 1)
+                : deltaDecimalPlaces
+            }
           />
         ),
       },
@@ -390,7 +394,11 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
             key="interval"
             delta={interval}
             showForUndefined={position === 1 ? 'int' : undefined}
-            decimalPlaces={deltaDecimalPlaces}
+            decimalPlaces={
+              config && 'interval' in config
+                ? (config.interval.decimalPlaces ?? 1)
+                : deltaDecimalPlaces
+            }
           />
         ),
       },
