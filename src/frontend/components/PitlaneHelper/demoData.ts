@@ -43,6 +43,8 @@ export interface PitlaneHelperSettings {
   speedBarOrientation: 'vertical' | 'horizontal';
   showProgressBar: boolean;
   showPastPitBox: boolean;
+  showSpeedSummary: boolean;
+  speedLimitStyle: 'european' | 'american';
   showSpeedBar: boolean;
   showPitExitInputs: boolean;
   pitExitInputs: {

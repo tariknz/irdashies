@@ -21,6 +21,8 @@ export const usePitlaneHelperSettings = () => {
     showPastPitBox: false,
     showProgressBar: true,
     showSpeedBar: true,
+    showSpeedSummary: true,
+    speedLimitStyle: 'european' as const,
     showPitExitInputs: false,
     pitExitInputs: {
       throttle: true,
@@ -44,6 +46,8 @@ export const usePitlaneHelperSettings = () => {
     speedBarOrientation:
       config.speedBarOrientation ?? ('horizontal' as const),
     showSpeedBar: config.showSpeedBar ?? true,
+    showSpeedSummary: config.showSpeedSummary ?? true,
+    speedLimitStyle: config.speedLimitStyle ?? ('european' as const),
     showPastPitBox: config.showPastPitBox ?? false,
     showPitExitInputs: config.showPitExitInputs ?? false,
     pitExitInputs: config.pitExitInputs ?? { throttle: true, clutch: true },

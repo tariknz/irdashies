@@ -108,8 +108,8 @@ html {
   --text-base: 12px;
   --text-lg: 13px;
   --text-xl: 14px;
-  --text-2xl: 15px;
-  --text-3xl: 16px;
+  --text-2xl: 18px;
+  --text-3xl: 22px;
 }
 
 .overlay-window.overlay-theme-sm {
@@ -118,8 +118,8 @@ html {
   --text-base: 13px;
   --text-lg: 14px;
   --text-xl: 15px;
-  --text-2xl: 16px;
-  --text-3xl: 17px;
+  --text-2xl: 19px;
+  --text-3xl: 23px;
 }
 
 .overlay-window.overlay-theme-md {
@@ -128,8 +128,8 @@ html {
   --text-base: 14px;
   --text-lg: 15px;
   --text-xl: 16px;
-  --text-2xl: 17px;
-  --text-3xl: 18px;
+  --text-2xl: 20px;
+  --text-3xl: 24px;
 }
 
 .overlay-window.overlay-theme-lg {
@@ -138,8 +138,8 @@ html {
   --text-base: 15px;
   --text-lg: 16px;
   --text-xl: 17px;
-  --text-2xl: 18px;
-  --text-3xl: 19px;
+  --text-2xl: 21px;
+  --text-3xl: 25px;
 }
 
 .overlay-window.overlay-theme-xl {
@@ -148,8 +148,8 @@ html {
   --text-base: 16px;
   --text-lg: 17px;
   --text-xl: 18px;
-  --text-2xl: 19px;
-  --text-3xl: 20px;
+  --text-2xl: 22px;
+  --text-3xl: 26px;
 }
 
 .overlay-window.overlay-theme-2xl {
@@ -158,8 +158,8 @@ html {
   --text-base: 17px;
   --text-lg: 18px;
   --text-xl: 19px;
-  --text-2xl: 20px;
-  --text-3xl: 21px;
+  --text-2xl: 23px;
+  --text-3xl: 27px;
 }
 
 .overlay-window.overlay-theme-3xl {
@@ -168,8 +168,8 @@ html {
   --text-base: 18px;
   --text-lg: 19px;
   --text-xl: 20px;
-  --text-2xl: 21px;
-  --text-3xl: 22px;
+  --text-2xl: 24px;
+  --text-3xl: 28px;
 }
 
 .overlay-window.overlay-theme-4xl {
@@ -178,8 +178,8 @@ html {
   --text-base: 19px;
   --text-lg: 20px;
   --text-xl: 21px;
-  --text-2xl: 22px;
-  --text-3xl: 23px;
+  --text-2xl: 25px;
+  --text-3xl: 29px;
 }
 
 .overlay-window.overlay-theme-5xl {
@@ -188,8 +188,8 @@ html {
   --text-base: 20px;
   --text-lg: 21px;
   --text-xl: 22px;
-  --text-2xl: 23px;
-  --text-3xl: 24px;
+  --text-2xl: 26px;
+  --text-3xl: 30px;
 }
 
 .overlay-window.overlay-theme-6xl {
@@ -198,8 +198,8 @@ html {
   --text-base: 21px;
   --text-lg: 22px;
   --text-xl: 23px;
-  --text-2xl: 24px;
-  --text-3xl: 25px;
+  --text-2xl: 27px;
+  --text-3xl: 31px;
 }
 
 .overlay-window.overlay-theme-7xl {
@@ -208,8 +208,8 @@ html {
   --text-base: 22px;
   --text-lg: 23px;
   --text-xl: 24px;
-  --text-2xl: 25px;
-  --text-3xl: 26px;
+  --text-2xl: 30px;
+  --text-3xl: 34px;
 }
 
 .overlay-window.overlay-theme-8xl {
@@ -218,8 +218,8 @@ html {
   --text-base: 23px;
   --text-lg: 24px;
   --text-xl: 25px;
-  --text-2xl: 26px;
-  --text-3xl: 27px;
+  --text-2xl: 31px;
+  --text-3xl: 35px;
 }
 
 .overlay-window.overlay-theme-9xl {
@@ -228,8 +228,8 @@ html {
   --text-base: 24px;
   --text-lg: 25px;
   --text-xl: 26px;
-  --text-2xl: 27px;
-  --text-3xl: 28px;
+  --text-2xl: 32px;
+  --text-3xl: 36px;
 }
 
 .overlay-window.overlay-theme-color-black {
