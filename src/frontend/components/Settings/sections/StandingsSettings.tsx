@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import {
-  SessionVisibilitySettings,
   StandingsWidgetSettings,
   SettingsTabType,
-} from '../types';
+  getWidgetDefaultConfig,
+} from '@irdashies/types';
 import { useDashboard } from '@irdashies/context';
 import { ToggleSwitch } from '../components/ToggleSwitch';
 import { TabButton } from '../components/TabButton';
@@ -13,11 +13,9 @@ import { DotsSixVerticalIcon } from '@phosphor-icons/react';
 import { BadgeFormatPreview } from '../components/BadgeFormatPreview';
 import { DriverNamePreview } from '../components/DriverNamePreview';
 import {
-  VALID_SESSION_BAR_ITEM_KEYS,
   SESSION_BAR_ITEM_LABELS,
   DEFAULT_SESSION_BAR_DISPLAY_ORDER,
 } from '../sessionBarConstants';
-import { mergeDisplayOrder } from '../../../utils/displayOrder';
 import { SessionVisibility } from '../components/SessionVisibility';
 import { SettingDivider } from '../components/SettingDivider';
 import { SettingsSection } from '../components/SettingSection';
@@ -65,8 +63,13 @@ const sortableSettings: SortableSetting[] = [
     label: 'Position Change',
     configKey: 'positionChange',
   },
-  { id: 'gap', label: 'Gap', configKey: 'gap' },
-  { id: 'interval', label: 'Interval', configKey: 'interval' },
+  { id: 'gap', label: 'Gap', configKey: 'gap', hasSubSetting: true },
+  {
+    id: 'interval',
+    label: 'Interval',
+    configKey: 'interval',
+    hasSubSetting: true,
+  },
   { id: 'fastestTime', label: 'Best Time', configKey: 'fastestTime' },
   { id: 'lastTime', label: 'Last Time', configKey: 'lastTime' },
   { id: 'compound', label: 'Tire Compound', configKey: 'compound' },
@@ -78,452 +81,7 @@ const sortableSettings: SortableSetting[] = [
   },
 ];
 
-const defaultConfig: StandingsWidgetSettings['config'] = {
-  iratingChange: { enabled: true },
-  positionChange: { enabled: false },
-  badge: { enabled: true, badgeFormat: 'license-color-rating-bw' },
-  delta: { enabled: true },
-  gap: { enabled: false },
-  interval: { enabled: false },
-  lastTime: { enabled: true, timeFormat: 'full' },
-  fastestTime: { enabled: true, timeFormat: 'full' },
-  background: { opacity: 0 },
-  countryFlags: { enabled: true },
-  carNumber: { enabled: true },
-  driverStandings: {
-    buffer: 3,
-    numNonClassDrivers: 3,
-    minPlayerClassDrivers: 10,
-    numTopDrivers: 3,
-    topDriverDivider: 'highlight' as const,
-  },
-  compound: { enabled: true },
-  carManufacturer: { enabled: true, hideIfSingleMake: false },
-  titleBar: { enabled: true, progressBar: { enabled: true } },
-  headerBar: {
-    enabled: true,
-    sessionName: { enabled: true },
-    sessionTime: {
-      enabled: true,
-      mode: 'Remaining',
-      totalFormat: 'minimal',
-      labelStyle: 'minimal',
-    },
-    sessionLaps: { enabled: true, mode: 'Elapsed' },
-    incidentCount: { enabled: true },
-    brakeBias: { enabled: false },
-    localTime: { enabled: false },
-    sessionClockTime: { enabled: false },
-    trackWetness: { enabled: false },
-    precipitation: { enabled: false },
-    airTemperature: { enabled: false, unit: 'Metric' },
-    trackTemperature: { enabled: false, unit: 'Metric' },
-    wind: { enabled: false, speedPosition: 'right' },
-    displayOrder: DEFAULT_SESSION_BAR_DISPLAY_ORDER,
-  },
-  footerBar: {
-    enabled: true,
-    sessionName: { enabled: false },
-    sessionTime: {
-      enabled: false,
-      mode: 'Remaining',
-      totalFormat: 'minimal',
-      labelStyle: 'minimal',
-    },
-    sessionLaps: { enabled: false, mode: 'Elapsed' },
-    incidentCount: { enabled: false },
-    brakeBias: { enabled: false },
-    localTime: { enabled: true },
-    sessionClockTime: { enabled: false },
-    trackWetness: { enabled: true },
-    precipitation: { enabled: false },
-    airTemperature: { enabled: true, unit: 'Metric' },
-    trackTemperature: { enabled: true, unit: 'Metric' },
-    wind: { enabled: false, speedPosition: 'right' },
-    displayOrder: DEFAULT_SESSION_BAR_DISPLAY_ORDER,
-  },
-  showOnlyWhenOnTrack: false,
-  useLivePosition: false,
-  lapTimeDeltas: { enabled: false, numLaps: 3 },
-  position: { enabled: true },
-  driverName: {
-    enabled: true,
-    showStatusBadges: true,
-    removeNumbersFromName: false,
-    nameFormat: 'name-surname',
-  },
-  teamName: { enabled: false },
-  pitStatus: {
-    enabled: true,
-    showPitTime: false,
-    pitLapDisplayMode: 'lapsSinceLastPit',
-  },
-  displayOrder: sortableSettings.map((s) => s.id),
-  sessionVisibility: {
-    race: true,
-    loneQualify: true,
-    openQualify: true,
-    practice: true,
-    offlineTesting: true,
-  },
-};
-
-const migrateConfig = (
-  savedConfig: unknown
-): StandingsWidgetSettings['config'] => {
-  if (!savedConfig || typeof savedConfig !== 'object') return defaultConfig;
-
-  const config = savedConfig as Record<string, unknown>;
-
-  return {
-    iratingChange: {
-      enabled: (config.iratingChange as { enabled?: boolean })?.enabled ?? true,
-    },
-    positionChange: {
-      enabled:
-        (config.positionChange as { enabled?: boolean })?.enabled ?? false,
-    },
-    badge: {
-      enabled: (config.badge as { enabled?: boolean })?.enabled ?? true,
-      badgeFormat:
-        ((config.badge as { badgeFormat?: string })?.badgeFormat as
-          | 'license-color-fullrating-combo'
-          | 'fullrating-color-no-license'
-          | 'license-color-fullrating-bw'
-          | 'license-color-rating-bw'
-          | 'license-color-rating-bw-no-license'
-          | 'rating-color-no-license'
-          | 'license-bw-rating-bw'
-          | 'rating-only-bw-rating-bw'
-          | 'license-bw-rating-bw-no-license'
-          | 'rating-bw-no-license'
-          | 'fullrating-bw-no-license') ?? 'license-color-rating-bw',
-    },
-    delta: {
-      enabled: (config.delta as { enabled?: boolean })?.enabled ?? true,
-    },
-    gap: { enabled: (config.gap as { enabled?: boolean })?.enabled ?? true },
-    interval: {
-      enabled: (config.interval as { enabled?: boolean })?.enabled ?? false,
-    },
-    lastTime: {
-      enabled:
-        (config.lastTime as { enabled?: boolean; timeFormat?: string })
-          ?.enabled ?? true,
-      timeFormat:
-        ((config.lastTime as { enabled?: boolean; timeFormat?: string })
-          ?.timeFormat as
-          | 'full'
-          | 'mixed'
-          | 'minutes'
-          | 'seconds-full'
-          | 'seconds-mixed'
-          | 'seconds') ?? 'full',
-    },
-    fastestTime: {
-      enabled:
-        (config.fastestTime as { enabled?: boolean; timeFormat?: string })
-          ?.enabled ?? true,
-      timeFormat:
-        ((config.fastestTime as { enabled?: boolean; timeFormat?: string })
-          ?.timeFormat as
-          | 'full'
-          | 'mixed'
-          | 'minutes'
-          | 'seconds-full'
-          | 'seconds-mixed'
-          | 'seconds') ?? 'full',
-    },
-    background: {
-      opacity: (config.background as { opacity?: number })?.opacity ?? 0,
-    },
-    countryFlags: {
-      enabled: (config.countryFlags as { enabled?: boolean })?.enabled ?? true,
-    },
-    carNumber: {
-      enabled: (config.carNumber as { enabled?: boolean })?.enabled ?? true,
-    },
-    driverStandings: {
-      buffer:
-        (config.driverStandings as { buffer?: number })?.buffer ??
-        defaultConfig.driverStandings.buffer,
-      numNonClassDrivers:
-        (config.driverStandings as { numNonClassDrivers?: number })
-          ?.numNonClassDrivers ??
-        defaultConfig.driverStandings.numNonClassDrivers,
-      minPlayerClassDrivers:
-        (config.driverStandings as { minPlayerClassDrivers?: number })
-          ?.minPlayerClassDrivers ??
-        defaultConfig.driverStandings.minPlayerClassDrivers,
-      numTopDrivers:
-        (config.driverStandings as { numTopDrivers?: number })?.numTopDrivers ??
-        defaultConfig.driverStandings.numTopDrivers,
-      topDriverDivider:
-        ((config.driverStandings as { topDriverDivider?: string })
-          ?.topDriverDivider as 'none' | 'theme' | 'highlight') ?? 'highlight',
-    },
-    compound: {
-      enabled: (config.compound as { enabled?: boolean })?.enabled ?? true,
-    },
-    carManufacturer: {
-      enabled:
-        (config.carManufacturer as { enabled?: boolean })?.enabled ?? true,
-      hideIfSingleMake:
-        (config.carManufacturer as { hideIfSingleMake?: boolean })
-          ?.hideIfSingleMake ?? false,
-    },
-    lapTimeDeltas: {
-      enabled:
-        (config.lapTimeDeltas as { enabled?: boolean })?.enabled ?? false,
-      numLaps: (config.lapTimeDeltas as { numLaps?: number })?.numLaps ?? 3,
-    },
-    titleBar: {
-      enabled: (config.titleBar as { enabled?: boolean })?.enabled ?? true,
-      progressBar: {
-        enabled:
-          (config.titleBar as { progressBar?: { enabled?: boolean } })
-            ?.progressBar?.enabled ?? true,
-      },
-    },
-    headerBar: {
-      enabled: (config.headerBar as { enabled?: boolean })?.enabled ?? true,
-      sessionName: {
-        enabled:
-          (config.headerBar as { sessionName?: { enabled?: boolean } })
-            ?.sessionName?.enabled ?? true,
-      },
-      sessionTime: {
-        enabled:
-          (config.headerBar as { sessionTime?: { enabled?: boolean } })
-            ?.sessionTime?.enabled ?? true,
-        mode:
-          ((config.headerBar as { sessionTime?: { mode?: string } })
-            ?.sessionTime?.mode as 'Remaining' | 'Elapsed') ?? 'Remaining',
-        totalFormat:
-          ((config.headerBar as { sessionTime?: { totalFormat?: string } })
-            ?.sessionTime?.totalFormat as 'hh:mm' | 'minimal') ?? 'minimal',
-        labelStyle:
-          ((config.headerBar as { sessionTime?: { labelStyle?: string } })
-            ?.sessionTime?.labelStyle as 'none' | 'short' | 'minimal') ??
-          'minimal',
-      },
-      sessionLaps: {
-        enabled:
-          (config.headerBar as { sessionLaps?: { enabled?: boolean } })
-            ?.sessionLaps?.enabled ?? true,
-        mode:
-          ((config.headerBar as { sessionLaps?: { mode?: string } })
-            ?.sessionLaps?.mode as 'Elapsed' | 'Remaining') ?? 'Elapsed',
-      },
-      incidentCount: {
-        enabled:
-          (config.headerBar as { incidentCount?: { enabled?: boolean } })
-            ?.incidentCount?.enabled ?? true,
-      },
-      brakeBias: {
-        enabled:
-          (config.headerBar as { brakeBias?: { enabled?: boolean } })?.brakeBias
-            ?.enabled ?? false,
-      },
-      localTime: {
-        enabled:
-          (config.headerBar as { localTime?: { enabled?: boolean } })?.localTime
-            ?.enabled ?? false,
-      },
-      sessionClockTime: {
-        enabled:
-          (config.headerBar as { sessionClockTime?: { enabled?: boolean } })
-            ?.sessionClockTime?.enabled ?? false,
-      },
-      trackWetness: {
-        enabled:
-          (config.headerBar as { trackWetness?: { enabled?: boolean } })
-            ?.trackWetness?.enabled ?? false,
-      },
-      precipitation: {
-        enabled:
-          (config.headerBar as { precipitation?: { enabled?: boolean } })
-            ?.precipitation?.enabled ?? false,
-      },
-      airTemperature: {
-        enabled:
-          (
-            config.headerBar as {
-              airTemperature?: { enabled?: boolean; unit?: string };
-            }
-          )?.airTemperature?.enabled ?? false,
-        unit:
-          ((config.headerBar as { airTemperature?: { unit?: string } })
-            ?.airTemperature?.unit as 'Metric' | 'Imperial') ?? 'Metric',
-      },
-      trackTemperature: {
-        enabled:
-          (
-            config.headerBar as {
-              trackTemperature?: { enabled?: boolean; unit?: string };
-            }
-          )?.trackTemperature?.enabled ?? false,
-        unit:
-          ((config.headerBar as { trackTemperature?: { unit?: string } })
-            ?.trackTemperature?.unit as 'Metric' | 'Imperial') ?? 'Metric',
-      },
-      wind: {
-        enabled:
-          (config.headerBar as { wind?: { enabled?: boolean } })?.wind
-            ?.enabled ?? false,
-        speedPosition:
-          ((config.headerBar as { wind?: { speedPosition?: string } })?.wind
-            ?.speedPosition as 'left' | 'right') ?? 'right',
-      },
-      displayOrder: mergeDisplayOrder(
-        [...VALID_SESSION_BAR_ITEM_KEYS],
-        (config.headerBar as { displayOrder?: string[] })?.displayOrder
-      ),
-    },
-    footerBar: {
-      enabled: (config.footerBar as { enabled?: boolean })?.enabled ?? true,
-      sessionName: {
-        enabled:
-          (config.footerBar as { sessionName?: { enabled?: boolean } })
-            ?.sessionName?.enabled ?? false,
-      },
-      sessionTime: {
-        enabled:
-          (config.footerBar as { sessionTime?: { enabled?: boolean } })
-            ?.sessionTime?.enabled ?? false,
-        mode:
-          ((config.footerBar as { sessionTime?: { mode?: string } })
-            ?.sessionTime?.mode as 'Remaining' | 'Elapsed') ?? 'Remaining',
-        totalFormat:
-          ((config.footerBar as { sessionTime?: { totalFormat?: string } })
-            ?.sessionTime?.totalFormat as 'hh:mm' | 'minimal') ?? 'minimal',
-        labelStyle:
-          ((config.footerBar as { sessionTime?: { labelStyle?: string } })
-            ?.sessionTime?.labelStyle as 'none' | 'short' | 'minimal') ??
-          'minimal',
-      },
-      sessionLaps: {
-        enabled:
-          (config.footerBar as { sessionLaps?: { enabled?: boolean } })
-            ?.sessionLaps?.enabled ?? true,
-        mode:
-          ((config.footerBar as { sessionLaps?: { mode?: string } })
-            ?.sessionLaps?.mode as 'Elapsed' | 'Remaining') ?? 'Elapsed',
-      },
-      incidentCount: {
-        enabled:
-          (config.footerBar as { incidentCount?: { enabled?: boolean } })
-            ?.incidentCount?.enabled ?? false,
-      },
-      brakeBias: {
-        enabled:
-          (config.footerBar as { brakeBias?: { enabled?: boolean } })?.brakeBias
-            ?.enabled ?? false,
-      },
-      localTime: {
-        enabled:
-          (config.footerBar as { localTime?: { enabled?: boolean } })?.localTime
-            ?.enabled ?? true,
-      },
-      sessionClockTime: {
-        enabled:
-          (config.footerBar as { sessionClockTime?: { enabled?: boolean } })
-            ?.sessionClockTime?.enabled ?? false,
-      },
-      trackWetness: {
-        enabled:
-          (config.footerBar as { trackWetness?: { enabled?: boolean } })
-            ?.trackWetness?.enabled ?? true,
-      },
-      precipitation: {
-        enabled:
-          (config.footerBar as { precipitation?: { enabled?: boolean } })
-            ?.precipitation?.enabled ?? false,
-      },
-      airTemperature: {
-        enabled:
-          (
-            config.footerBar as {
-              airTemperature?: { enabled?: boolean; unit?: string };
-            }
-          )?.airTemperature?.enabled ?? true,
-        unit:
-          ((config.footerBar as { airTemperature?: { unit?: string } })
-            ?.airTemperature?.unit as 'Metric' | 'Imperial') ?? 'Metric',
-      },
-      trackTemperature: {
-        enabled:
-          (
-            config.footerBar as {
-              trackTemperature?: { enabled?: boolean; unit?: string };
-            }
-          )?.trackTemperature?.enabled ?? true,
-        unit:
-          ((config.footerBar as { trackTemperature?: { unit?: string } })
-            ?.trackTemperature?.unit as 'Metric' | 'Imperial') ?? 'Metric',
-      },
-      wind: {
-        enabled:
-          (config.footerBar as { wind?: { enabled?: boolean } })?.wind
-            ?.enabled ?? false,
-        speedPosition:
-          ((config.footerBar as { wind?: { speedPosition?: string } })?.wind
-            ?.speedPosition as 'left' | 'right') ?? 'right',
-      },
-      displayOrder: mergeDisplayOrder(
-        [...VALID_SESSION_BAR_ITEM_KEYS],
-        (config.footerBar as { displayOrder?: string[] })?.displayOrder
-      ),
-    },
-    showOnlyWhenOnTrack: (config.showOnlyWhenOnTrack as boolean) ?? false,
-    useLivePosition: (config.useLivePosition as boolean) ?? false,
-    sessionVisibility:
-      (config.sessionVisibility as SessionVisibilitySettings) ??
-      defaultConfig.sessionVisibility,
-    position: {
-      enabled: (config.position as { enabled?: boolean })?.enabled ?? true,
-    },
-    driverName: {
-      enabled: (config.driverName as { enabled?: boolean })?.enabled ?? true,
-      showStatusBadges:
-        (config.driverName as { showStatusBadges?: boolean })
-          ?.showStatusBadges ?? true,
-      removeNumbersFromName:
-        (config.driverName as { removeNumbersFromName?: boolean })
-          ?.removeNumbersFromName ?? false,
-      nameFormat:
-        (
-          config.driverName as {
-            nameFormat?:
-              | 'name-middlename-surname'
-              | 'name-m.-surname'
-              | 'name-surname'
-              | 'n.-surname'
-              | 'surname-n.'
-              | 'surname';
-          }
-        )?.nameFormat ?? 'name-middlename-surname',
-    },
-    teamName: {
-      enabled: (config.teamName as { enabled?: boolean })?.enabled ?? false,
-    },
-    pitStatus: {
-      enabled: (config.pitStatus as { enabled?: boolean })?.enabled ?? true,
-      showPitTime:
-        (config.pitStatus as { showPitTime?: boolean })?.showPitTime ?? false,
-      pitLapDisplayMode:
-        (
-          config.pitStatus as {
-            pitLapDisplayMode?: 'lastPitLap' | 'lapsSinceLastPit';
-          }
-        )?.pitLapDisplayMode ?? 'lapsSinceLastPit',
-    },
-    displayOrder: mergeDisplayOrder(
-      sortableSettings.map((s) => s.id),
-      config.displayOrder as string[]
-    ),
-  };
-};
+const defaultConfig = getWidgetDefaultConfig('standings');
 
 interface DisplaySettingsListProps {
   itemsOrder: string[];
@@ -686,6 +244,41 @@ const DisplaySettingsList = ({
                       });
                     }}
                   />
+                </div>
+              )}
+            {setting.hasSubSetting &&
+              (setting.configKey === 'gap' ||
+                setting.configKey === 'interval') &&
+              (configValue as { enabled: boolean }).enabled && (
+                <div className="flex items-center justify-between pl-8 mt-2 indent-8">
+                  <span className="text-sm text-slate-300">Decimal Places</span>
+                  <select
+                    value={
+                      (
+                        settings.config[setting.configKey] as {
+                          decimalPlaces: number;
+                        }
+                      ).decimalPlaces
+                    }
+                    onChange={(e) => {
+                      const cv = settings.config[setting.configKey] as {
+                        enabled: boolean;
+                        decimalPlaces: number;
+                        [key: string]: unknown;
+                      };
+                      handleConfigChange({
+                        [setting.configKey]: {
+                          ...cv,
+                          decimalPlaces: parseInt(e.target.value),
+                        },
+                      });
+                    }}
+                    className="bg-slate-700 text-white rounded-md px-2 py-1"
+                  >
+                    <option value={1}>1</option>
+                    <option value={2}>2</option>
+                    <option value={3}>3</option>
+                  </select>
                 </div>
               )}
             {setting.configKey === 'badge' &&
@@ -1163,7 +756,9 @@ export const StandingsSettings = () => {
   ) as StandingsWidgetSettings | undefined;
   const [settings, setSettings] = useState<StandingsWidgetSettings>({
     enabled: savedSettings?.enabled ?? false,
-    config: migrateConfig(savedSettings?.config),
+    config:
+      (savedSettings?.config as StandingsWidgetSettings['config']) ??
+      defaultConfig,
   });
   const [itemsOrder, setItemsOrder] = useState(settings.config.displayOrder);
 

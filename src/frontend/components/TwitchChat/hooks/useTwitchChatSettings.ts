@@ -1,5 +1,5 @@
 import { useDashboard } from '@irdashies/context';
-import type { TwitchChatWidgetSettings } from '../../Settings/types';
+import type { TwitchChatWidgetSettings } from '@irdashies/types';
 
 const DEFAULT_CONFIG: TwitchChatWidgetSettings = {
   enabled: false,

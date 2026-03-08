@@ -1,5 +1,5 @@
 import { useDashboard } from '@irdashies/context';
-import { FasterCarsFromBehindWidgetSettings } from '../../Settings/types';
+import { FasterCarsFromBehindWidgetSettings } from '@irdashies/types';
 
 const DEFAULT_CONFIG: FasterCarsFromBehindWidgetSettings['config'] = {
   showOnlyWhenOnTrack: true,

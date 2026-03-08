@@ -91,6 +91,12 @@ export const useWeekendInfoNumCarClasses = () =>
 export const useWeekendInfoTeamRacing = () =>
   useStore(useSessionStore, (state) => state.session?.WeekendInfo?.TeamRacing);
 
+export const useTrackDisplayName = () =>
+  useStore(
+    useSessionStore,
+    (state) => state.session?.WeekendInfo?.TrackDisplayName
+  );
+
 export const useDriverCarIdx = () =>
   useStore(useSessionStore, (state) => state.session?.DriverInfo?.DriverCarIdx);
 

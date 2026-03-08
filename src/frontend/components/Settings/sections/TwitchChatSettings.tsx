@@ -1,34 +1,14 @@
 import { useState } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
-import type { TwitchChatWidgetSettings } from '../types';
+import type { TwitchChatWidgetSettings } from '@irdashies/types';
+import { getWidgetDefaultConfig } from '@irdashies/types';
 import { useDashboard } from '@irdashies/context';
 import { SettingSliderRow } from '../components/SettingSliderRow';
 import { SettingsSection } from '../components/SettingSection';
 
 const SETTING_ID = 'twitchchat';
 
-const defaultConfig: TwitchChatWidgetSettings['config'] = {
-  fontSize: 16,
-  background: { opacity: 30 },
-  channel: '',
-};
-
-const migrateConfig = (
-  savedConfig: unknown
-): TwitchChatWidgetSettings['config'] => {
-  if (!savedConfig || typeof savedConfig !== 'object') return defaultConfig;
-  const config = savedConfig as Record<string, unknown>;
-
-  return {
-    fontSize: (config.fontSize as number) ?? defaultConfig.fontSize,
-    background: {
-      opacity:
-        (config.background as { opacity?: number })?.opacity ??
-        defaultConfig.background.opacity,
-    },
-    channel: (config.channel as string) ?? defaultConfig.channel,
-  };
-};
+const defaultConfig = getWidgetDefaultConfig('twitchchat');
 
 export const TwitchChatSettings = () => {
   const { currentDashboard } = useDashboard();
@@ -37,7 +17,9 @@ export const TwitchChatSettings = () => {
   ) as TwitchChatWidgetSettings | undefined;
   const [settings, setSettings] = useState<TwitchChatWidgetSettings>({
     enabled: savedSettings?.enabled ?? false,
-    config: migrateConfig(savedSettings?.config),
+    config:
+      (savedSettings?.config as TwitchChatWidgetSettings['config']) ??
+      defaultConfig,
   });
 
   if (!currentDashboard) {
