@@ -681,12 +681,12 @@ describe('fillReferenceGaps', () => {
     } as ReferenceLap;
   };
 
-  it('should fill gaps when point count is between 90% and 100%', () => {
-    // Missing 20 points (380/400 = 95%)
-    const lap = createIncompleteLap(20);
+  it('should fill gaps when point count is between 75% and 100%', () => {
+    // Missing 100 points (300/400 = 75%)
+    const lap = createIncompleteLap(100);
     const initialSize = lap.refPoints.size;
 
-    expect(initialSize).toBe(380);
+    expect(initialSize).toBe(300);
 
     fillReferenceGaps(lap, TARGET_COUNT);
 
@@ -729,14 +729,14 @@ describe('fillReferenceGaps', () => {
     expect(lap.refPoints.get(0.4)?.timeElapsedSinceStart).toBeCloseTo(40);
   });
 
-  it('should ignore laps that fall below the 90% threshold', () => {
-    // Missing 50 points (350/400 = 87.5%)
-    const lap = createIncompleteLap(50);
+  it('should ignore laps that fall below the 75% threshold', () => {
+    // Missing 150 points (250/400 = 62.5%)
+    const lap = createIncompleteLap(150);
 
     fillReferenceGaps(lap, TARGET_COUNT);
 
     // Should not have added any points
-    expect(lap.refPoints.size).toBe(350);
+    expect(lap.refPoints.size).toBe(250);
   });
 
   it('should ignore laps that are already full', () => {
