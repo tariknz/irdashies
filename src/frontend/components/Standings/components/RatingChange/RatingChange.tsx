@@ -31,7 +31,8 @@ export const RatingChange = ({
     color = 'text-red-400';
     icon = <CaretDownIcon size={10} />;
   } else {
-    text = `${roundedChange}`;
+    justify = 'center';
+    text = '';
     icon = <MinusIcon size={10} />;
   }
 
