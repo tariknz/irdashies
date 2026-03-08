@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import {
   FlagWidgetSettings,
-  SessionVisibilitySettings,
   SettingsTabType,
-} from '../types';
+  getWidgetDefaultConfig,
+} from '@irdashies/types';
 import { useDashboard } from '@irdashies/context';
 import { TabButton } from '../components/TabButton';
 import { SessionVisibility } from '../components/SessionVisibility';
@@ -16,49 +16,7 @@ import { SettingSelectRow } from '../components/SettingSelectRow';
 
 const SETTING_ID = 'flag';
 
-const defaultConfig: FlagWidgetSettings['config'] = {
-  enabled: true,
-  showOnlyWhenOnTrack: true,
-  showLabel: true,
-  animate: true,
-  blinkPeriod: 0.5,
-  matrixMode: '16x16',
-  showNoFlagState: true,
-  enableGlow: true,
-  doubleFlag: false,
-  sessionVisibility: {
-    race: true,
-    loneQualify: true,
-    openQualify: true,
-    practice: true,
-    offlineTesting: true,
-  },
-};
-
-const migrateConfig = (savedConfig: unknown): FlagWidgetSettings['config'] => {
-  if (!savedConfig || typeof savedConfig !== 'object') return defaultConfig;
-  const config = savedConfig as Record<string, unknown>;
-
-  return {
-    enabled: (config.enabled as boolean) ?? defaultConfig.enabled,
-    showOnlyWhenOnTrack:
-      (config.showOnlyWhenOnTrack as boolean) ??
-      defaultConfig.showOnlyWhenOnTrack,
-    showLabel: (config.showLabel as boolean) ?? defaultConfig.showLabel,
-    animate: (config.animate as boolean) ?? defaultConfig.animate,
-    blinkPeriod: (config.blinkPeriod as number) ?? defaultConfig.blinkPeriod,
-    showNoFlagState:
-      (config.showNoFlagState as boolean) ?? defaultConfig.showNoFlagState,
-    matrixMode:
-      (config.matrixMode as '8x8' | '16x16' | 'uniform') ??
-      defaultConfig.matrixMode,
-    enableGlow: (config.enableGlow as boolean) ?? defaultConfig.enableGlow,
-    sessionVisibility:
-      (config.sessionVisibility as SessionVisibilitySettings) ??
-      defaultConfig.sessionVisibility,
-    doubleFlag: (config.doubleFlag as boolean) ?? defaultConfig.doubleFlag,
-  };
-};
+const defaultConfig = getWidgetDefaultConfig('flag');
 
 export const FlagSettings = () => {
   const { currentDashboard } = useDashboard();
@@ -70,7 +28,8 @@ export const FlagSettings = () => {
   const [settings, setSettings] = useState<FlagWidgetSettings>({
     id: SETTING_ID,
     enabled: savedSettings?.enabled ?? true,
-    config: migrateConfig(savedSettings?.config),
+    config:
+      (savedSettings?.config as FlagWidgetSettings['config']) ?? defaultConfig,
   });
 
   // Tab state with persistence

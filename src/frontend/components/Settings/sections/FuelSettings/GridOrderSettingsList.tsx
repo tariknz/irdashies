@@ -1,7 +1,7 @@
 import { DotsSixVerticalIcon } from '@phosphor-icons/react';
 import { ToggleSwitch } from '../../components/ToggleSwitch';
 import { useSortableList } from '../../../SortableList';
-import { FuelWidgetSettings } from '../../types';
+import { FuelWidgetSettings } from '@irdashies/types';
 import { SettingNumberRow } from '../../components/SettingNumberRow';
 
 interface SortableRow {

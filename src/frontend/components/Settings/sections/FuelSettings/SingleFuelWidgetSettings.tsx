@@ -1,17 +1,19 @@
 import { useState, useMemo, useEffect } from 'react';
 import { BaseSettingsSection } from '../../components/BaseSettingsSection';
-import { FuelWidgetSettings, LayoutNode, SettingsTabType } from '../../types';
+import {
+  FuelWidgetSettings,
+  LayoutNode,
+  SettingsTabType,
+} from '@irdashies/types';
 import { useDashboard } from '@irdashies/context';
 import { SessionVisibility } from '../../components/SessionVisibility';
 import { TabButton } from '../../components/TabButton';
 import { LayoutVisualizer, migrateToTree } from '../LayoutVisualizer';
-import {
-  DEFAULT_FUEL_LAYOUT_TREE,
-  defaultFuelCalculatorSettings,
-} from '../../../FuelCalculator/defaults';
+import { DEFAULT_FUEL_LAYOUT_TREE } from '../../../FuelCalculator/defaults';
+import { getWidgetDefaultConfig } from '@irdashies/types';
 import { DualFontSizeInput } from './FontSizeInputs';
 import { GridOrderSettingsList } from './GridOrderSettingsList';
-import { migrateConfig, AVAILABLE_WIDGETS_FUEL } from './utils';
+import { AVAILABLE_WIDGETS_FUEL } from './utils';
 import { WidgetFontSizeSettings } from './WidgetFontSizeSettings';
 import { FuelStatusAlertsSection } from './FuelStatusAlertsSection';
 import { FuelHistorySection } from './FuelHistorySection';
@@ -24,7 +26,7 @@ import { SettingSliderRow } from '../../components/SettingSliderRow';
 import { SettingSelectRow } from '../../components/SettingSelectRow';
 import { SettingNumberRow } from '../../components/SettingNumberRow';
 
-const defaultConfig = defaultFuelCalculatorSettings;
+const defaultConfig = getWidgetDefaultConfig('fuel');
 const DEFAULT_TREE_FUEL = DEFAULT_FUEL_LAYOUT_TREE;
 
 export const SingleFuelWidgetSettings = ({
@@ -38,19 +40,16 @@ export const SingleFuelWidgetSettings = ({
   ) as FuelWidgetSettings | undefined;
 
   const [settings, setSettings] = useState<FuelWidgetSettings>(() => {
-    const initialConfig = migrateConfig(savedSettings?.config);
-
-    // Use DEFAULT_TREE_FUEL if no layout is defined
-    if (
-      (!initialConfig.layoutConfig ||
-        initialConfig.layoutConfig.length === 0) &&
-      !initialConfig.layoutTree
-    ) {
-      initialConfig.layoutTree = DEFAULT_TREE_FUEL;
-    }
+    const savedConfig =
+      (savedSettings?.config as FuelWidgetSettings['config']) ?? defaultConfig;
+    const needsDefaultTree =
+      (!savedConfig.layoutConfig || savedConfig.layoutConfig.length === 0) &&
+      !savedConfig.layoutTree;
     return {
       enabled: savedSettings?.enabled ?? false,
-      config: initialConfig,
+      config: needsDefaultTree
+        ? { ...savedConfig, layoutTree: DEFAULT_TREE_FUEL }
+        : savedConfig,
     };
   });
 

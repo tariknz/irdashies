@@ -1,15 +1,16 @@
 import { useState, useEffect, useRef } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import { useDashboard } from '@irdashies/context';
-import { GarageCoverWidgetSettings } from '../types';
+import {
+  GarageCoverWidgetSettings,
+  getWidgetDefaultConfig,
+} from '@irdashies/types';
 import { DashboardBridge } from '@irdashies/types';
 
 const SETTING_ID = 'garagecover';
 const LOCALSTORAGE_KEY = 'garagecover-image';
 
-const defaultConfig: GarageCoverWidgetSettings['config'] = {
-  imageFilename: '',
-};
+const defaultConfig = getWidgetDefaultConfig('garagecover');
 
 export const GarageCoverSettings = () => {
   const { currentDashboard, bridge } = useDashboard();
@@ -68,7 +69,8 @@ export const GarageCoverSettings = () => {
     const newSettings = {
       enabled: widget.enabled ?? false,
       config:
-        (widget.config as GarageCoverWidgetSettings['config']) || defaultConfig,
+        (widget.config as unknown as GarageCoverWidgetSettings['config']) ||
+        defaultConfig,
     };
     setTimeout(() => setSettings(newSettings), 0);
     // Preview will be loaded by the next effect when settings change
