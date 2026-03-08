@@ -6,7 +6,7 @@ import type { Gap, LastTimeState } from '../../createStandings';
 import type {
   RelativeWidgetSettings,
   StandingsWidgetSettings,
-} from '../../../Settings/types';
+} from '@irdashies/types';
 import { BadgeCell } from './cells/BadgeCell';
 import { CarManufacturerCell } from './cells/CarManufacturerCell';
 import { CarNumberCell } from './cells/CarNumberCell';
@@ -341,7 +341,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
         shouldRender:
           (displayOrder ? displayOrder.includes('positionChange') : true) &&
           (config && 'positionChange' in config
-            ? config.positionChange.enabled
+            ? (config.positionChange?.enabled ?? false)
             : false),
         component: (
           <PositionChangeCell
@@ -375,7 +375,11 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
             key="gap"
             delta={gap}
             showForUndefined={position === 1 ? 'gap' : undefined}
-            decimalPlaces={deltaDecimalPlaces}
+            decimalPlaces={
+              config && 'gap' in config
+                ? (config.gap.decimalPlaces ?? 1)
+                : deltaDecimalPlaces
+            }
           />
         ),
       },
@@ -390,7 +394,11 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
             key="interval"
             delta={interval}
             showForUndefined={position === 1 ? 'int' : undefined}
-            decimalPlaces={deltaDecimalPlaces}
+            decimalPlaces={
+              config && 'interval' in config
+                ? (config.interval.decimalPlaces ?? 1)
+                : deltaDecimalPlaces
+            }
           />
         ),
       },

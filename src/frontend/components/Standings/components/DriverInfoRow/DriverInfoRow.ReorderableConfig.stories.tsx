@@ -1,7 +1,7 @@
 import { StoryObj } from '@storybook/react-vite';
 import { DriverInfoRow } from './DriverInfoRow';
 import { useCurrentSessionType } from '@irdashies/context';
-import type { RelativeWidgetSettings } from '../../../Settings/types';
+import type { RelativeWidgetSettings } from '@irdashies/types';
 import { useState, useMemo } from 'react';
 import { useSortableList } from '../../../SortableList';
 import { DotsSixVerticalIcon } from '@phosphor-icons/react';
@@ -368,8 +368,13 @@ const RelativeWithReorderableConfig = () => {
       headerBar: {
         enabled: true,
         sessionName: { enabled: true },
-        sessionTime: { enabled: true, mode: 'Remaining' },
-        sessionLaps: { enabled: true },
+        sessionTime: {
+          enabled: true,
+          mode: 'Remaining',
+          totalFormat: 'minimal',
+          labelStyle: 'minimal',
+        },
+        sessionLaps: { enabled: true, mode: 'Elapsed' },
         incidentCount: { enabled: true },
         brakeBias: { enabled: false },
         localTime: { enabled: true },
@@ -378,7 +383,8 @@ const RelativeWithReorderableConfig = () => {
         precipitation: { enabled: false },
         airTemperature: { enabled: false, unit: 'Metric' },
         trackTemperature: { enabled: false, unit: 'Metric' },
-        wind: { enabled: false, unit: 'Metric', speedPosition: 'right' },
+        wind: { enabled: false, speedPosition: 'right' },
+        trackName: { enabled: false },
         displayOrder: [
           'sessionName',
           'sessionTime',
@@ -390,8 +396,13 @@ const RelativeWithReorderableConfig = () => {
       footerBar: {
         enabled: true,
         sessionName: { enabled: false },
-        sessionTime: { enabled: false, mode: 'Remaining' },
-        sessionLaps: { enabled: true },
+        sessionTime: {
+          enabled: false,
+          mode: 'Remaining',
+          totalFormat: 'minimal',
+          labelStyle: 'minimal',
+        },
+        sessionLaps: { enabled: true, mode: 'Elapsed' },
         incidentCount: { enabled: false },
         brakeBias: { enabled: true },
         localTime: { enabled: true },
@@ -400,7 +411,8 @@ const RelativeWithReorderableConfig = () => {
         precipitation: { enabled: false },
         airTemperature: { enabled: true, unit: 'Metric' },
         trackTemperature: { enabled: true, unit: 'Metric' },
-        wind: { enabled: false, unit: 'Metric', speedPosition: 'right' },
+        wind: { enabled: false, speedPosition: 'right' },
+        trackName: { enabled: false },
         displayOrder: [
           'localTime',
           'trackWetness',

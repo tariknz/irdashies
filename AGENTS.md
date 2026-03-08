@@ -1,11 +1,11 @@
-# iRDashies - Claude Development Guide
+# iRDashies - Development Guide
 
 ## Project Overview
 
 **iRDashies** is an Electron-based iRacing overlay/dashboard app using React, TypeScript, Zustand, and Tailwind CSS.
 
 - **Repo**: https://github.com/tariknz/irdashies (fork)
-- **Branch**: `main` | **Version**: 0.0.28 | **License**: MIT
+- **Branch**: `main` | **License**: MIT
 
 ---
 
@@ -46,7 +46,7 @@ src/
 │   ├── components/       # Widgets (Standings, Input, Settings, etc.)
 │   ├── context/          # Zustand stores & React providers
 │   └── utils/            # Shared utilities (colors, time)
-└── types/                # Shared TypeScript types
+└── types/                # Shared TypeScript types, widget configs, default dashboard
 ```
 
 ---
@@ -205,10 +205,9 @@ import type { DashboardLayout } from '@irdashies/types';
 
 ### Pattern
 
-1. Define type in `Settings/types.ts` extending `BaseWidgetSettings`
+1. Define type in `src/types/widgetConfigs.ts` extending `BaseWidgetSettings`
 2. Create settings component in `Settings/sections/`
-3. Implement `migrateConfig()` for backwards compatibility
-4. Use `BaseSettingsSection` wrapper
+3. Use `BaseSettingsSection` wrapper
 
 ### Persistence Flow
 
@@ -267,10 +266,10 @@ npm run storybook  # Port 6006
 
 1. Create `src/frontend/components/MyWidget/MyWidget.tsx`
 2. Create `Settings/sections/MyWidgetSettings.tsx`
-3. Add type to `Settings/types.ts`
+3. Add type to `src/types/widgetConfigs.ts`
 4. Create `.stories.tsx`
 5. Register in `WidgetIndex.tsx`
-6. Add default config in `defaultDashboard.ts`
+6. Add default config in `src/types/defaultDashboard.ts`
 
 ### Adding a Hook
 

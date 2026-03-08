@@ -1,7 +1,7 @@
 import { DotsSixVerticalIcon } from '@phosphor-icons/react';
 import { ToggleSwitch } from '../../components/ToggleSwitch';
 import { useSortableList } from '../../../SortableList';
-import { FuelWidgetSettings } from '../../types';
+import { FuelWidgetSettings } from '@irdashies/types';
 import { SettingNumberRow } from '../../components/SettingNumberRow';
 
 interface SortableRow {
@@ -71,7 +71,9 @@ export const GridOrderSettingsList = ({
                   >
                     <DotsSixVerticalIcon size={14} />
                   </div>
-                  <span className="text-sm text-slate-300 font-medium">{row.label}</span>
+                  <span className="text-sm text-slate-300 font-medium">
+                    {row.label}
+                  </span>
                 </div>
                 <ToggleSwitch
                   enabled={isEnabled}
@@ -84,7 +86,7 @@ export const GridOrderSettingsList = ({
               {row.id === 'avg' && isEnabled && (
                 <div className="pl-12 pt-4">
                   <SettingNumberRow
-                    title="Average Laps"                 
+                    title="Average Laps"
                     value={settings.config.avgLapsCount ?? 3}
                     min={1}
                     max={50}

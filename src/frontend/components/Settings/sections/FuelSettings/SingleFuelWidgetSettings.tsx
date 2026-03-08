@@ -1,17 +1,19 @@
 import { useState, useMemo, useEffect } from 'react';
 import { BaseSettingsSection } from '../../components/BaseSettingsSection';
-import { FuelWidgetSettings, LayoutNode, SettingsTabType } from '../../types';
+import {
+  FuelWidgetSettings,
+  LayoutNode,
+  SettingsTabType,
+} from '@irdashies/types';
 import { useDashboard } from '@irdashies/context';
 import { SessionVisibility } from '../../components/SessionVisibility';
 import { TabButton } from '../../components/TabButton';
 import { LayoutVisualizer, migrateToTree } from '../LayoutVisualizer';
-import {
-  DEFAULT_FUEL_LAYOUT_TREE,
-  defaultFuelCalculatorSettings,
-} from '../../../FuelCalculator/defaults';
+import { DEFAULT_FUEL_LAYOUT_TREE } from '../../../FuelCalculator/defaults';
+import { getWidgetDefaultConfig } from '@irdashies/types';
 import { DualFontSizeInput } from './FontSizeInputs';
 import { GridOrderSettingsList } from './GridOrderSettingsList';
-import { migrateConfig, AVAILABLE_WIDGETS_FUEL } from './utils';
+import { AVAILABLE_WIDGETS_FUEL } from './utils';
 import { WidgetFontSizeSettings } from './WidgetFontSizeSettings';
 import { FuelStatusAlertsSection } from './FuelStatusAlertsSection';
 import { FuelHistorySection } from './FuelHistorySection';
@@ -24,7 +26,7 @@ import { SettingSliderRow } from '../../components/SettingSliderRow';
 import { SettingSelectRow } from '../../components/SettingSelectRow';
 import { SettingNumberRow } from '../../components/SettingNumberRow';
 
-const defaultConfig = defaultFuelCalculatorSettings;
+const defaultConfig = getWidgetDefaultConfig('fuel');
 const DEFAULT_TREE_FUEL = DEFAULT_FUEL_LAYOUT_TREE;
 
 export const SingleFuelWidgetSettings = ({
@@ -38,19 +40,16 @@ export const SingleFuelWidgetSettings = ({
   ) as FuelWidgetSettings | undefined;
 
   const [settings, setSettings] = useState<FuelWidgetSettings>(() => {
-    const initialConfig = migrateConfig(savedSettings?.config);
-
-    // Use DEFAULT_TREE_FUEL if no layout is defined
-    if (
-      (!initialConfig.layoutConfig ||
-        initialConfig.layoutConfig.length === 0) &&
-      !initialConfig.layoutTree
-    ) {
-      initialConfig.layoutTree = DEFAULT_TREE_FUEL;
-    }
+    const savedConfig =
+      (savedSettings?.config as FuelWidgetSettings['config']) ?? defaultConfig;
+    const needsDefaultTree =
+      (!savedConfig.layoutConfig || savedConfig.layoutConfig.length === 0) &&
+      !savedConfig.layoutTree;
     return {
       enabled: savedSettings?.enabled ?? false,
-      config: initialConfig,
+      config: needsDefaultTree
+        ? { ...savedConfig, layoutTree: DEFAULT_TREE_FUEL }
+        : savedConfig,
     };
   });
 
@@ -159,151 +158,159 @@ export const SingleFuelWidgetSettings = ({
               )}
 
               {/* DISPLAY TAB */}
-              {activeTab === 'display' && (           
+              {activeTab === 'display' && (
                 <>
-                <SettingsSection title="Display">
+                  <SettingsSection title="Display">
+                    {/* General Control Toggles */}
+                    <SettingToggleRow
+                      title="Use General font Sizes"
+                      description="Syncs with Font Size slider in General tab"
+                      enabled={settings.config.useGeneralFontSize ?? false}
+                      onToggle={(enabled) =>
+                        handleConfigChange({ useGeneralFontSize: enabled })
+                      }
+                    />
 
-                  {/* General Control Toggles */}
-                  <SettingToggleRow
-                    title="Use General font Sizes"
-                    description="Syncs with Font Size slider in General tab"
-                    enabled={settings.config.useGeneralFontSize ?? false}
-                    onToggle={(enabled) =>
-                      handleConfigChange({ useGeneralFontSize: enabled })
-                    }
-                  />
+                    <SettingToggleRow
+                      title="Use General Compact Mode"
+                      description="Syncs with Compact Mode in General tab"
+                      enabled={settings.config.useGeneralCompactMode ?? false}
+                      onToggle={(enabled) =>
+                        handleConfigChange({ useGeneralCompactMode: enabled })
+                      }
+                    />
 
-                  <SettingToggleRow
-                    title="Use General Compact Mode"
-                    description="Syncs with Compact Mode in General tab"
-                    enabled={settings.config.useGeneralCompactMode ?? false}
-                    onToggle={(enabled) =>
-                      handleConfigChange({ useGeneralCompactMode: enabled })
-                    }
-                  />
+                    {/* Background Opacity */}
+                    <SettingSliderRow
+                      title="Background Opacity"
+                      value={settings.config.background.opacity ?? 40}
+                      units="%"
+                      min={0}
+                      max={100}
+                      step={1}
+                      onChange={(v) =>
+                        handleConfigChange({ background: { opacity: v } })
+                      }
+                    />
+                  </SettingsSection>
 
-                  {/* Background Opacity */}
-                  <SettingSliderRow
-                    title="Background Opacity"
-                    value={settings.config.background.opacity ?? 40}
-                    units="%"
-                    min={0}
-                    max={100}
-                    step={1}
-                    onChange={(v) =>
-                      handleConfigChange({ background: { opacity: v } })
-                    }
-                  />
+                  {/* Widget Font Size Settings */}
+                  <SettingsSection title="Widget Settings">
+                    <WidgetFontSizeSettings
+                      settings={settings}
+                      onChange={handleConfigChange}
+                    />
 
-                </SettingsSection> 
+                    {/* Consumption Details Section */}
+                    <DualFontSizeInput
+                      widgetId="fuelGrid"
+                      title="Consumption Details"
+                      description="Configures rows in Consumption Grid."
+                      settings={settings}
+                      onChange={handleConfigChange}
+                    />
 
-                {/* Widget Font Size Settings */}
-                <SettingsSection title="Widget Settings">
-                
-                  <WidgetFontSizeSettings settings={settings} onChange={handleConfigChange} />
+                    {/* Economy Predict */}
+                    <DualFontSizeInput
+                      widgetId="fuelEconomyPredict"
+                      title="Economy Predict"
+                      description="Predicts fuel usage vs target. Adjust Label/Value sizes."
+                      settings={settings}
+                      onChange={handleConfigChange}
+                    />
 
-                  {/* Consumption Details Section */}
-                  <DualFontSizeInput 
-                    widgetId="fuelGrid" 
-                    title="Consumption Details" 
-                    description="Configures rows in Consumption Grid." 
-                    settings={settings} 
-                    onChange={handleConfigChange} 
-                  />
+                    {/* Fuel History */}
+                    <DualFontSizeInput
+                      widgetId="fuelGraph"
+                      title="Fuel History"
+                      description="Used for Fuel History - see options."
+                      settings={settings}
+                      onChange={handleConfigChange}
+                    />
 
+                    {/* Moved Fuel Scenarios here for better organization */}
+                    <DualFontSizeInput
+                      widgetId="Fuel Scenarios"
+                      title="Consumption Details"
+                      description="Pit stop calculations (-1, Ideal, +1 Lap)."
+                      settings={settings}
+                      onChange={handleConfigChange}
+                    />
 
-                  {/* Economy Predict */}
-                  <DualFontSizeInput 
-                    widgetId="fuelEconomyPredict" 
-                    title="Economy Predict" 
-                    description="Predicts fuel usage vs target. Adjust Label/Value sizes." 
-                    settings={settings} 
-                    onChange={handleConfigChange} 
-                  />
-    
-                  {/* Fuel History */}
-                  <DualFontSizeInput 
-                    widgetId="fuelGraph" 
-                    title="Fuel History" 
-                    description="Used for Fuel History - see options." 
-                    settings={settings} 
-                    onChange={handleConfigChange} 
-                  />
-   
-                  {/* Moved Fuel Scenarios here for better organization */}
-                  <DualFontSizeInput 
-                    widgetId="Fuel Scenarios" 
-                    title="Consumption Details" 
-                    description="Pit stop calculations (-1, Ideal, +1 Lap)." 
-                    settings={settings} 
-                    onChange={handleConfigChange} 
-                  />
-   
-                  {/* Target Message Font */}
-                  <DualFontSizeInput 
-                    widgetId="fuelTargetMessage" 
-                    title="Target Message Font" 
-                    description="Used for Pit Strategy - see options." 
-                    settings={settings} 
-                    onChange={handleConfigChange} 
-                  />      
-
-                </SettingsSection>
+                    {/* Target Message Font */}
+                    <DualFontSizeInput
+                      widgetId="fuelTargetMessage"
+                      title="Target Message Font"
+                      description="Used for Pit Strategy - see options."
+                      settings={settings}
+                      onChange={handleConfigChange}
+                    />
+                  </SettingsSection>
                 </>
               )}
 
               {/* OPTIONS TAB */}
               {activeTab === 'options' && (
                 <>
-                <SettingsSection title="Options">
+                  <SettingsSection title="Options">
+                    {/* Fuel Units */}
+                    <SettingSelectRow<'L' | 'gal'>
+                      title="Fuel Units"
+                      description="Show fuel in litres or gallons."
+                      value={settings.config.fuelUnits}
+                      options={[
+                        { label: 'Litres (L)', value: 'L' },
+                        { label: 'Gallons (gal)', value: 'gal' },
+                      ]}
+                      onChange={(v) => handleConfigChange({ fuelUnits: v })}
+                    />
 
-                  {/* Fuel Units */}    
-                  <SettingSelectRow<'L' | 'gal'>
-                    title="Fuel Units"
-                    description="Show fuel in litres or gallons."
-                    value={settings.config.fuelUnits}
-                    options={[
-                      { label: 'Litres (L)', value: 'L' },
-                      { label: 'Gallons (gal)', value: 'gal' },                          
-                    ]}
-                    onChange={(v) =>
-                      handleConfigChange({ fuelUnits: v })
-                    }
-                  />        
+                    {/* Safety Margin */}
+                    <SettingNumberRow
+                      title="Safety Margin"
+                      description='Extra fuel added to "To Finish" calculation.'
+                      value={settings.config.safetyMargin}
+                      min={0}
+                      max={50}
+                      step={0.1}
+                      onChange={(v) => handleConfigChange({ safetyMargin: v })}
+                    />
+                  </SettingsSection>
 
-                  {/* Safety Margin */}
-                  <SettingNumberRow
-                    title="Safety Margin"
-                    description="Extra fuel added to &quot;To Finish&quot; calculation."
-                    value={settings.config.safetyMargin}
-                    min={0}
-                    max={50}
-                    step={0.1}
-                    onChange={(v) => handleConfigChange({ safetyMargin: v })}
-                  />
-                  
-                </SettingsSection>
-
-                {/* Fuel Status Alerts */}
-                <FuelStatusAlertsSection settings={settings} onChange={handleConfigChange} />
-
-                {/* Consumption Details Section */}
-                <SettingsSection title="Fuel Consumption">  
-                  {/* Fuel 2 Grid Reordering */}
-                  <GridOrderSettingsList
-                    itemsOrder={settings.config.consumptionGridOrder || defaultConfig.consumptionGridOrder || []}
-                    onReorder={(newOrder) => handleConfigChange({ consumptionGridOrder: newOrder })}
+                  {/* Fuel Status Alerts */}
+                  <FuelStatusAlertsSection
                     settings={settings}
-                    handleConfigChange={handleConfigChange}
+                    onChange={handleConfigChange}
                   />
-                </SettingsSection>
 
-                {/* Fuel History */}
-                <FuelHistorySection settings={settings} onChange={handleConfigChange} />                  
+                  {/* Consumption Details Section */}
+                  <SettingsSection title="Fuel Consumption">
+                    {/* Fuel 2 Grid Reordering */}
+                    <GridOrderSettingsList
+                      itemsOrder={
+                        settings.config.consumptionGridOrder ||
+                        defaultConfig.consumptionGridOrder ||
+                        []
+                      }
+                      onReorder={(newOrder) =>
+                        handleConfigChange({ consumptionGridOrder: newOrder })
+                      }
+                      settings={settings}
+                      handleConfigChange={handleConfigChange}
+                    />
+                  </SettingsSection>
 
-                {/* Pit Strategy Section */}
-                <PitStrategySection settings={settings} onChange={handleConfigChange} />
+                  {/* Fuel History */}
+                  <FuelHistorySection
+                    settings={settings}
+                    onChange={handleConfigChange}
+                  />
 
+                  {/* Pit Strategy Section */}
+                  <PitStrategySection
+                    settings={settings}
+                    onChange={handleConfigChange}
+                  />
                 </>
               )}
 
@@ -321,14 +328,13 @@ export const SingleFuelWidgetSettings = ({
               {/* VISIBILITY TAB */}
               {activeTab === 'visibility' && (
                 <SettingsSection title="Session Visibility">
-                              
                   <SessionVisibility
-                      sessionVisibility={settings.config.sessionVisibility}
-                      handleConfigChange={handleConfigChange}
-                    />
-  
+                    sessionVisibility={settings.config.sessionVisibility}
+                    handleConfigChange={handleConfigChange}
+                  />
+
                   <SettingDivider />
-  
+
                   <SettingToggleRow
                     title="Show only when on track"
                     description="If enabled, fuel will only be shown when driving"
@@ -337,10 +343,8 @@ export const SingleFuelWidgetSettings = ({
                       handleConfigChange({ showOnlyWhenOnTrack: newValue })
                     }
                   />
-  
                 </SettingsSection>
               )}
-
             </div>
           </div>
         );

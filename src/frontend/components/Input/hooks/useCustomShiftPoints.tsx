@@ -1,6 +1,6 @@
 import { useTelemetryValue } from '../../../context/TelemetryStore/TelemetryStore';
 import { useCarTachometerData } from './useCarTachometerData';
-import type { ShiftPointSettings } from '../../Settings/types';
+import type { ShiftPointSettings } from '@irdashies/types';
 
 /**
  * Hook for custom shift point logic
@@ -12,10 +12,11 @@ export const useCustomShiftPoints = (settings?: ShiftPointSettings) => {
 
   // Get current car's shift config
   const carConfig = carData && settings?.carConfigs[carData.carId];
-  
+
   // Get shift point for current gear
-  const currentShiftPoint = carConfig?.gearShiftPoints[gear.toString()]?.shiftRpm;
-  
+  const currentShiftPoint =
+    carConfig?.gearShiftPoints[gear.toString()]?.shiftRpm;
+
   // Check if we should show shift indicator
   const shouldShowShiftIndicator = !!(
     settings?.enabled &&

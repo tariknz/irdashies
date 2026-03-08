@@ -1,18 +1,20 @@
 import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import { useDashboard } from '@irdashies/context';
-import { RelativeWidgetSettings, SessionVisibilitySettings, SettingsTabType } from '../types';
+import {
+  RelativeWidgetSettings,
+  SettingsTabType,
+  getWidgetDefaultConfig,
+} from '@irdashies/types';
 import { ToggleSwitch } from '../components/ToggleSwitch';
 import { TabButton } from '../components/TabButton';
 import { useSortableList } from '../../SortableList';
 import { DotsSixVerticalIcon } from '@phosphor-icons/react';
 import { BadgeFormatPreview } from '../components/BadgeFormatPreview';
 import {
-  VALID_SESSION_BAR_ITEM_KEYS,
   SESSION_BAR_ITEM_LABELS,
   DEFAULT_SESSION_BAR_DISPLAY_ORDER,
 } from '../sessionBarConstants';
-import { mergeDisplayOrder } from '../../../utils/displayOrder';
 import { SessionVisibility } from '../components/SessionVisibility';
 import { DriverNamePreview } from '../components/DriverNamePreview';
 import { SettingDivider } from '../components/SettingDivider';
@@ -62,381 +64,7 @@ const sortableSettings: SortableSetting[] = [
   { id: 'compound', label: 'Tire Compound', configKey: 'compound' },
 ];
 
-const defaultConfig: RelativeWidgetSettings['config'] = {
-  buffer: 3,
-  background: { opacity: 0 },
-  position: { enabled: true },
-  carNumber: { enabled: true },
-  countryFlags: { enabled: true },
-  driverName: {
-    enabled: true,
-    showStatusBadges: true,
-    removeNumbersFromName: false,
-    nameFormat: 'name-surname',
-  },
-  teamName: { enabled: false },
-  pitStatus: {
-    enabled: true,
-    showPitTime: false,
-    pitLapDisplayMode: 'lapsSinceLastPit',
-  },
-  carManufacturer: { enabled: true, hideIfSingleMake: false },
-  badge: { enabled: true, badgeFormat: 'license-color-rating-bw' },
-  iratingChange: { enabled: false },
-  delta: { enabled: true, precision: 2 },
-  fastestTime: { enabled: false, timeFormat: 'full' },
-  lastTime: { enabled: false, timeFormat: 'full' },
-  compound: { enabled: false },
-  displayOrder: sortableSettings.map((s) => s.id),
-  titleBar: { enabled: true, progressBar: { enabled: true } },
-  headerBar: {
-    enabled: true,
-    sessionName: { enabled: true },
-    sessionTime: { enabled: true, mode: 'Remaining' },
-    sessionLaps: { enabled: true },
-    incidentCount: { enabled: true },
-    brakeBias: { enabled: true },
-    localTime: { enabled: false },
-    sessionClockTime: { enabled: false },
-    trackWetness: { enabled: false },
-    precipitation: { enabled: false },
-    airTemperature: { enabled: false, unit: 'Metric' },
-    trackTemperature: { enabled: false, unit: 'Metric' },
-    wind: { enabled: false, speedPosition: 'right' },
-    displayOrder: DEFAULT_SESSION_BAR_DISPLAY_ORDER,
-  },
-  footerBar: {
-    enabled: true,
-    sessionName: { enabled: false },
-    sessionTime: { enabled: false, mode: 'Remaining' },
-    sessionLaps: { enabled: false },
-    incidentCount: { enabled: false },
-    brakeBias: { enabled: false },
-    localTime: { enabled: true },
-    sessionClockTime: { enabled: false },
-    trackWetness: { enabled: true },
-    precipitation: { enabled: false },
-    airTemperature: { enabled: true, unit: 'Metric' },
-    trackTemperature: { enabled: true, unit: 'Metric' },
-    wind: { enabled: false, speedPosition: 'right' },
-    displayOrder: DEFAULT_SESSION_BAR_DISPLAY_ORDER,
-  },
-  showOnlyWhenOnTrack: false,
-  useLivePosition: false,
-  sessionVisibility: {
-    race: true,
-    loneQualify: true,
-    openQualify: true,
-    practice: true,
-    offlineTesting: true,
-  },
-};
-
-const migrateConfig = (
-  savedConfig: unknown
-): RelativeWidgetSettings['config'] => {
-  if (!savedConfig || typeof savedConfig !== 'object') return defaultConfig;
-  const config = savedConfig as Record<string, unknown>;
-  return {
-    buffer: (config.buffer as number) ?? 3,
-    background: {
-      opacity: (config.background as { opacity?: number })?.opacity ?? 0,
-    },
-    position: {
-      enabled: (config.position as { enabled?: boolean })?.enabled ?? true,
-    },
-    carNumber: {
-      enabled: (config.carNumber as { enabled?: boolean })?.enabled ?? true,
-    },
-    countryFlags: {
-      enabled: (config.countryFlags as { enabled?: boolean })?.enabled ?? true,
-    },
-    driverName: {
-      enabled: (config.driverName as { enabled?: boolean })?.enabled ?? true,
-      showStatusBadges:
-        (config.driverName as { showStatusBadges?: boolean })
-          ?.showStatusBadges ?? true,
-      removeNumbersFromName:
-        (config.driverName as { removeNumbersFromName?: boolean })
-          ?.removeNumbersFromName ?? false,
-      nameFormat:
-        (
-          config.driverName as {
-            nameFormat?:
-              | 'name-middlename-surname'
-              | 'name-m.-surname'
-              | 'name-surname'
-              | 'n.-surname'
-              | 'surname-n.'
-              | 'surname';
-          }
-        )?.nameFormat ?? 'name-middlename-surname',
-    },
-    teamName: {
-      enabled: (config.teamName as { enabled?: boolean })?.enabled ?? false,
-    },
-    pitStatus: {
-      enabled: (config.pitStatus as { enabled?: boolean })?.enabled ?? true,
-      showPitTime:
-        (config.pitStatus as { showPitTime?: boolean })?.showPitTime ?? false,
-      pitLapDisplayMode:
-        (
-          config.pitStatus as {
-            pitLapDisplayMode?: 'lastPitLap' | 'lapsSinceLastPit';
-          }
-        )?.pitLapDisplayMode ?? 'lapsSinceLastPit',
-    },
-    carManufacturer: {
-      enabled:
-        (config.carManufacturer as { enabled?: boolean })?.enabled ?? true,
-      hideIfSingleMake:
-        (config.carManufacturer as { hideIfSingleMake?: boolean })
-          ?.hideIfSingleMake ?? false,
-    },
-    badge: {
-      enabled: (config.badge as { enabled?: boolean })?.enabled ?? true,
-      badgeFormat:
-        ((config.badge as { badgeFormat?: string })?.badgeFormat as
-          | 'license-color-fullrating-combo'
-          | 'fullrating-color-no-license'
-          | 'license-color-fullrating-bw'
-          | 'license-color-rating-bw'
-          | 'license-color-rating-bw-no-license'
-          | 'rating-color-no-license'
-          | 'license-bw-rating-bw'
-          | 'rating-only-bw-rating-bw'
-          | 'license-bw-rating-bw-no-license'
-          | 'rating-bw-no-license'
-          | 'fullrating-bw-no-license') ?? 'license-color-rating-bw',
-    },
-    iratingChange: {
-      enabled:
-        (config.iratingChange as { enabled?: boolean })?.enabled ?? false,
-    },
-    delta: {
-      enabled: (config.delta as { enabled?: boolean })?.enabled ?? true,
-      precision: (config.delta as { precision?: number })?.precision ?? 2,
-    },
-    fastestTime: {
-      enabled:
-        (config.fastestTime as { enabled?: boolean; timeFormat?: string })
-          ?.enabled ?? false,
-      timeFormat:
-        ((config.fastestTime as { enabled?: boolean; timeFormat?: string })
-          ?.timeFormat as
-          | 'full'
-          | 'mixed'
-          | 'minutes'
-          | 'seconds-full'
-          | 'seconds-mixed'
-          | 'seconds') ?? 'full',
-    },
-    lastTime: {
-      enabled:
-        (config.lastTime as { enabled?: boolean; timeFormat?: string })
-          ?.enabled ?? false,
-      timeFormat:
-        ((config.lastTime as { enabled?: boolean; timeFormat?: string })
-          ?.timeFormat as
-          | 'full'
-          | 'mixed'
-          | 'minutes'
-          | 'seconds-full'
-          | 'seconds-mixed'
-          | 'seconds') ?? 'full',
-    },
-    compound: {
-      enabled: (config.compound as { enabled?: boolean })?.enabled ?? false,
-    },
-    displayOrder: mergeDisplayOrder(
-      sortableSettings.map((s) => s.id),
-      config.displayOrder as string[]
-    ),
-    titleBar: {
-      enabled: (config.titleBar as { enabled?: boolean })?.enabled ?? true,
-      progressBar: {
-        enabled:
-          (config.titleBar as { progressBar?: { enabled?: boolean } })
-            ?.progressBar?.enabled ?? true,
-      },
-    },
-    headerBar: {
-      enabled: (config.headerBar as { enabled?: boolean })?.enabled ?? true,
-      sessionName: {
-        enabled:
-          (config.headerBar as { sessionName?: { enabled?: boolean } })
-            ?.sessionName?.enabled ?? true,
-      },
-      sessionTime: {
-        enabled:
-          (config.headerBar as { sessionTime?: { enabled?: boolean } })
-            ?.sessionTime?.enabled ?? true,
-        mode:
-          ((config.headerBar as { sessionTime?: { mode?: string } })
-            ?.sessionTime?.mode as 'Remaining' | 'Elapsed') ?? 'Remaining',
-      },
-      sessionLaps: {
-        enabled:
-          (config.headerBar as { sessionLaps?: { enabled?: boolean } })
-            ?.sessionLaps?.enabled ?? true,
-      },
-      incidentCount: {
-        enabled:
-          (config.headerBar as { incidentCount?: { enabled?: boolean } })
-            ?.incidentCount?.enabled ?? true,
-      },
-      brakeBias: {
-        enabled:
-          (config.headerBar as { brakeBias?: { enabled?: boolean } })?.brakeBias
-            ?.enabled ?? false,
-      },
-      localTime: {
-        enabled:
-          (config.headerBar as { localTime?: { enabled?: boolean } })?.localTime
-            ?.enabled ?? false,
-      },
-      sessionClockTime: {
-        enabled:
-          (config.headerBar as { sessionClockTime?: { enabled?: boolean } })
-            ?.sessionClockTime?.enabled ?? false,
-      },
-      trackWetness: {
-        enabled:
-          (config.headerBar as { trackWetness?: { enabled?: boolean } })
-            ?.trackWetness?.enabled ?? false,
-      },
-      precipitation: {
-        enabled:
-          (config.headerBar as { precipitation?: { enabled?: boolean } })
-            ?.precipitation?.enabled ?? false,
-      },
-      airTemperature: {
-        enabled:
-          (
-            config.headerBar as {
-              airTemperature?: { enabled?: boolean; unit?: string };
-            }
-          )?.airTemperature?.enabled ?? false,
-        unit:
-          ((config.headerBar as { airTemperature?: { unit?: string } })
-            ?.airTemperature?.unit as 'Metric' | 'Imperial') ?? 'Metric',
-      },
-      trackTemperature: {
-        enabled:
-          (
-            config.headerBar as {
-              trackTemperature?: { enabled?: boolean; unit?: string };
-            }
-          )?.trackTemperature?.enabled ?? false,
-        unit:
-          ((config.headerBar as { trackTemperature?: { unit?: string } })
-            ?.trackTemperature?.unit as 'Metric' | 'Imperial') ?? 'Metric',
-      },
-      wind: {
-        enabled:
-          (config.headerBar as { wind?: { enabled?: boolean } })?.wind
-            ?.enabled ?? false,
-        speedPosition:
-          ((config.headerBar as { wind?: { speedPosition?: string } })?.wind
-            ?.speedPosition as 'left' | 'right') ?? 'right',
-      },
-      displayOrder: mergeDisplayOrder(
-        [...VALID_SESSION_BAR_ITEM_KEYS],
-        (config.headerBar as { displayOrder?: string[] })?.displayOrder
-      ),
-    },
-    footerBar: {
-      enabled: (config.footerBar as { enabled?: boolean })?.enabled ?? true,
-      sessionName: {
-        enabled:
-          (config.footerBar as { sessionName?: { enabled?: boolean } })
-            ?.sessionName?.enabled ?? false,
-      },
-      sessionTime: {
-        enabled:
-          (config.footerBar as { sessionTime?: { enabled?: boolean } })
-            ?.sessionTime?.enabled ?? false,
-        mode:
-          ((config.footerBar as { sessionTime?: { mode?: string } })
-            ?.sessionTime?.mode as 'Remaining' | 'Elapsed') ?? 'Remaining',
-      },
-      sessionLaps: {
-        enabled:
-          (config.footerBar as { sessionLaps?: { enabled?: boolean } })
-            ?.sessionLaps?.enabled ?? true,
-      },
-      incidentCount: {
-        enabled:
-          (config.footerBar as { incidentCount?: { enabled?: boolean } })
-            ?.incidentCount?.enabled ?? false,
-      },
-      brakeBias: {
-        enabled:
-          (config.footerBar as { brakeBias?: { enabled?: boolean } })?.brakeBias
-            ?.enabled ?? false,
-      },
-      localTime: {
-        enabled:
-          (config.footerBar as { localTime?: { enabled?: boolean } })?.localTime
-            ?.enabled ?? true,
-      },
-      sessionClockTime: {
-        enabled:
-          (config.footerBar as { sessionClockTime?: { enabled?: boolean } })
-            ?.sessionClockTime?.enabled ?? false,
-      },
-      trackWetness: {
-        enabled:
-          (config.footerBar as { trackWetness?: { enabled?: boolean } })
-            ?.trackWetness?.enabled ?? true,
-      },
-      precipitation: {
-        enabled:
-          (config.footerBar as { precipitation?: { enabled?: boolean } })
-            ?.precipitation?.enabled ?? false,
-      },
-      airTemperature: {
-        enabled:
-          (
-            config.footerBar as {
-              airTemperature?: { enabled?: boolean; unit?: string };
-            }
-          )?.airTemperature?.enabled ?? true,
-        unit:
-          ((config.footerBar as { airTemperature?: { unit?: string } })
-            ?.airTemperature?.unit as 'Metric' | 'Imperial') ?? 'Metric',
-      },
-      trackTemperature: {
-        enabled:
-          (
-            config.footerBar as {
-              trackTemperature?: { enabled?: boolean; unit?: string };
-            }
-          )?.trackTemperature?.enabled ?? true,
-        unit:
-          ((config.footerBar as { trackTemperature?: { unit?: string } })
-            ?.trackTemperature?.unit as 'Metric' | 'Imperial') ?? 'Metric',
-      },
-      wind: {
-        enabled:
-          (config.footerBar as { wind?: { enabled?: boolean } })?.wind
-            ?.enabled ?? false,
-        speedPosition:
-          ((config.footerBar as { wind?: { speedPosition?: string } })?.wind
-            ?.speedPosition as 'left' | 'right') ?? 'right',
-      },
-      displayOrder: mergeDisplayOrder(
-        [...VALID_SESSION_BAR_ITEM_KEYS],
-        (config.footerBar as { displayOrder?: string[] })?.displayOrder
-      ),
-    },
-    showOnlyWhenOnTrack: (config.showOnlyWhenOnTrack as boolean) ?? false,
-    useLivePosition: (config.useLivePosition as boolean) ?? false,
-    sessionVisibility:
-      (config.sessionVisibility as SessionVisibilitySettings) ??
-      defaultConfig.sessionVisibility,
-  };
-};
+const defaultConfig = getWidgetDefaultConfig('relative');
 
 interface DisplaySettingsListProps {
   itemsOrder: string[];
@@ -790,7 +418,12 @@ const BarItemsList = ({
           ] as RelativeWidgetSettings['config']['headerBar']
         )?.[item.id as keyof RelativeWidgetSettings['config']['headerBar']] as
           | { enabled: boolean; unit?: 'Metric' | 'Imperial' }
-          | { enabled: boolean; mode?: 'Remaining' | 'Elapsed' }
+          | {
+              enabled: boolean;
+              mode?: 'Remaining' | 'Elapsed';
+              totalFormat?: 'hh:mm' | 'minimal';
+              labelStyle?: 'none' | 'short' | 'minimal';
+            }
           | undefined;
 
         // Safety check: skip rendering if itemConfig is undefined
@@ -834,7 +467,10 @@ const BarItemsList = ({
                                 enabled,
                                 speedPosition: currentSpeedPosition,
                               }
-                            : { enabled },
+                            : item.id === 'sessionTime' ||
+                                item.id === 'sessionLaps'
+                              ? { ...(itemConfig as object), enabled }
+                              : { enabled },
                     },
                   });
                 }}
@@ -927,27 +563,46 @@ const BarItemsList = ({
                   })}
                 </div>
               )}
-            {item.id === 'sessionTime' &&
+            {item.id === 'sessionLaps' &&
               itemConfig &&
               'enabled' in itemConfig &&
               itemConfig.enabled && (
-                <div className="flex items-center justify-between pl-4 mt-2">
+                <div className="flex items-center justify-end gap-3pl-4 mt-2">
                   <span></span>
                   <select
-                    value={
-                      itemConfig && 'mode' in itemConfig
-                        ? itemConfig.mode
-                        : 'Remaining'
-                    }
+                    value={'mode' in itemConfig ? itemConfig.mode : 'Elapsed'}
                     onChange={(e) => {
                       handleConfigChange({
                         [barType]: {
                           ...settings.config[barType],
                           [item.id]: {
-                            enabled:
-                              itemConfig && 'enabled' in itemConfig
-                                ? itemConfig.enabled
-                                : true,
+                            ...(itemConfig as object),
+                            mode: e.target.value as 'Elapsed' | 'Remaining',
+                          },
+                        },
+                      });
+                    }}
+                    className="bg-slate-700 text-white rounded-md px-2 py-1"
+                  >
+                    <option value="Elapsed">Elapsed</option>
+                    <option value="Remaining">Remaining</option>
+                  </select>
+                </div>
+              )}
+            {item.id === 'sessionTime' &&
+              itemConfig &&
+              'enabled' in itemConfig &&
+              itemConfig.enabled && (
+                <div className="flex items-center justify-end gap-3 pl-4 mt-2">
+                  <span></span>
+                  <select
+                    value={'mode' in itemConfig ? itemConfig.mode : 'Remaining'}
+                    onChange={(e) => {
+                      handleConfigChange({
+                        [barType]: {
+                          ...settings.config[barType],
+                          [item.id]: {
+                            ...(itemConfig as object),
                             mode: e.target.value as 'Remaining' | 'Elapsed',
                           },
                         },
@@ -957,6 +612,54 @@ const BarItemsList = ({
                   >
                     <option value="Remaining">Remaining</option>
                     <option value="Elapsed">Elapsed</option>
+                  </select>
+                  <select
+                    value={
+                      'totalFormat' in itemConfig
+                        ? itemConfig.totalFormat
+                        : 'minimal'
+                    }
+                    onChange={(e) => {
+                      handleConfigChange({
+                        [barType]: {
+                          ...settings.config[barType],
+                          [item.id]: {
+                            ...(itemConfig as object),
+                            totalFormat: e.target.value as 'hh:mm' | 'minimal',
+                          },
+                        },
+                      });
+                    }}
+                    className="bg-slate-700 text-white rounded-md px-2 py-1"
+                  >
+                    <option value="minimal">2:34</option>
+                    <option value="hh:mm">00:12:34</option>
+                  </select>
+                  <select
+                    value={
+                      'labelStyle' in itemConfig
+                        ? itemConfig.labelStyle
+                        : 'minimal'
+                    }
+                    onChange={(e) => {
+                      handleConfigChange({
+                        [barType]: {
+                          ...settings.config[barType],
+                          [item.id]: {
+                            ...(itemConfig as object),
+                            labelStyle: e.target.value as
+                              | 'none'
+                              | 'short'
+                              | 'minimal',
+                          },
+                        },
+                      });
+                    }}
+                    className="bg-slate-700 text-white rounded-md px-2 py-1"
+                  >
+                    <option value="minimal">Minimal Labels</option>
+                    <option value="short">Short Labels</option>
+                    <option value="none">Hide Labels</option>
                   </select>
                 </div>
               )}
@@ -974,7 +677,9 @@ export const RelativeSettings = () => {
   ) as RelativeWidgetSettings | undefined;
   const [settings, setSettings] = useState<RelativeWidgetSettings>({
     enabled: savedSettings?.enabled ?? true,
-    config: migrateConfig(savedSettings?.config),
+    config:
+      (savedSettings?.config as RelativeWidgetSettings['config']) ??
+      defaultConfig,
   });
   const [itemsOrder, setItemsOrder] = useState(settings.config.displayOrder);
 
@@ -985,7 +690,7 @@ export const RelativeSettings = () => {
 
   useEffect(() => {
     localStorage.setItem('relativeTab', activeTab);
-  }, [activeTab]);  
+  }, [activeTab]);
 
   if (!currentDashboard) {
     return <>Loading...</>;
@@ -1047,11 +752,9 @@ export const RelativeSettings = () => {
             </div>
 
             <div className="pt-4 space-y-4">
-
               {/* DISPLAY TAB */}
               {activeTab === 'display' && (
                 <SettingsSection title="Display Order">
-
                   <DisplaySettingsList
                     itemsOrder={itemsOrder}
                     onReorder={handleDisplayOrderChange}
@@ -1067,16 +770,13 @@ export const RelativeSettings = () => {
                       handleConfigChange({ displayOrder: defaultOrder });
                     }}
                   />
-  
                 </SettingsSection>
               )}
-
 
               {/* OPTIONS TAB */}
               {activeTab === 'options' && (
                 <>
-                <SettingsSection title="Driver Standings">        
-
+                  <SettingsSection title="Driver Standings">
                     <SettingSelectRow
                       title="Drivers to show around player"
                       value={settings.config.buffer.toString()}
@@ -1099,44 +799,41 @@ export const RelativeSettings = () => {
                         handleConfigChange({ useLivePosition: newValue })
                       }
                     />
-                    
-                </SettingsSection>
+                  </SettingsSection>
 
-                <SettingsSection title="Title Bar">
+                  <SettingsSection title="Title Bar">
+                    <SettingToggleRow
+                      title="Show Title Bar"
+                      enabled={settings.config.titleBar.enabled}
+                      onToggle={(enabled) =>
+                        handleConfigChange({
+                          titleBar: {
+                            ...settings.config.titleBar,
+                            enabled,
+                          },
+                        })
+                      }
+                    />
 
-                  <SettingToggleRow
-                    title="Show Title Bar"
-                    enabled={settings.config.titleBar.enabled}
-                    onToggle={(enabled) =>
-                       handleConfigChange({
-                        titleBar: {
-                          ...settings.config.titleBar,
-                          enabled,
-                        },
-                      })
-                    }
-                  />    
+                    {settings.config.titleBar.enabled && (
+                      <SettingsSection>
+                        <SettingToggleRow
+                          title="Show Progress Bar"
+                          enabled={settings.config.titleBar.progressBar.enabled}
+                          onToggle={(enabled) =>
+                            handleConfigChange({
+                              titleBar: {
+                                ...settings.config.titleBar,
+                                progressBar: { enabled },
+                              },
+                            })
+                          }
+                        />
+                      </SettingsSection>
+                    )}
+                  </SettingsSection>
 
-                  {settings.config.titleBar.enabled && (
-                    <SettingsSection>
-                      <SettingToggleRow
-                        title="Show Progress Bar"
-                        enabled={settings.config.titleBar.progressBar.enabled}
-                        onToggle={(enabled) =>
-                          handleConfigChange({
-                            titleBar: {
-                              ...settings.config.titleBar,
-                              progressBar: { enabled },
-                            },
-                          })
-                        }
-                      />    
-                    </SettingsSection>
-                  )}    
-
-                </SettingsSection>
-
-                <SettingsSection title="Background">
+                  <SettingsSection title="Background">
                     <SettingSliderRow
                       title="Background Opacity"
                       value={settings.config.background.opacity ?? 40}
@@ -1148,11 +845,10 @@ export const RelativeSettings = () => {
                         handleConfigChange({ background: { opacity: v } })
                       }
                     />
-                </SettingsSection>
+                  </SettingsSection>
 
-                <SettingsSection title="Relative Time">
-
-                  <SettingSelectRow
+                  <SettingsSection title="Relative Time">
+                    <SettingSelectRow
                       title="Decimal places"
                       description="Number of decimal places to display"
                       value={settings.config.delta.precision.toString()}
@@ -1169,19 +865,17 @@ export const RelativeSettings = () => {
                         })
                       }
                     />
-                      
-                </SettingsSection>
-              </>
+                  </SettingsSection>
+                </>
               )}
 
-            {/* HEADER TAB */}
-            {activeTab === 'header' && (
-              <SettingsSection title="Header Bar">
-
-                <SettingToggleRow
-                  title="Show Header Bar"                  
-                  enabled={settings.config.headerBar.enabled}
-                  onToggle={(enabled) =>
+              {/* HEADER TAB */}
+              {activeTab === 'header' && (
+                <SettingsSection title="Header Bar">
+                  <SettingToggleRow
+                    title="Show Header Bar"
+                    enabled={settings.config.headerBar.enabled}
+                    onToggle={(enabled) =>
                       handleConfigChange({
                         headerBar: {
                           ...settings.config.headerBar,
@@ -1189,50 +883,50 @@ export const RelativeSettings = () => {
                         },
                       })
                     }
-                />
-
-                {settings.config.headerBar.enabled && (
-                <SettingsSection>
-                  <BarItemsList
-                    items={settings.config.headerBar.displayOrder}
-                    onReorder={(newOrder) => {
-                      handleConfigChange({
-                        headerBar: {
-                          ...settings.config.headerBar,
-                          displayOrder: newOrder,
-                        },
-                      });
-                    }}
-                    barType="headerBar"
-                    settings={settings}
-                    handleConfigChange={handleConfigChange}
                   />
 
-                  <SettingActionButton
-                    label="Reset to Default Order"
-                    onClick={() => {
-                      handleConfigChange({
-                        headerBar: {
-                          ...settings.config.headerBar,
-                          displayOrder: [...DEFAULT_SESSION_BAR_DISPLAY_ORDER],
-                        },
-                      });
-                    }}
-                  />
+                  {settings.config.headerBar.enabled && (
+                    <SettingsSection>
+                      <BarItemsList
+                        items={settings.config.headerBar.displayOrder}
+                        onReorder={(newOrder) => {
+                          handleConfigChange({
+                            headerBar: {
+                              ...settings.config.headerBar,
+                              displayOrder: newOrder,
+                            },
+                          });
+                        }}
+                        barType="headerBar"
+                        settings={settings}
+                        handleConfigChange={handleConfigChange}
+                      />
+
+                      <SettingActionButton
+                        label="Reset to Default Order"
+                        onClick={() => {
+                          handleConfigChange({
+                            headerBar: {
+                              ...settings.config.headerBar,
+                              displayOrder: [
+                                ...DEFAULT_SESSION_BAR_DISPLAY_ORDER,
+                              ],
+                            },
+                          });
+                        }}
+                      />
+                    </SettingsSection>
+                  )}
                 </SettingsSection>
-                )}
-                  
-              </SettingsSection>
-            )}
+              )}
 
-            {/* FOOTER TAB */}
-            {activeTab === 'footer' && (
-              <SettingsSection title="Footer Bar">
-
-                <SettingToggleRow
-                  title="Show Footer Bar"                  
-                  enabled={settings.config.footerBar.enabled}
-                  onToggle={(enabled) =>
+              {/* FOOTER TAB */}
+              {activeTab === 'footer' && (
+                <SettingsSection title="Footer Bar">
+                  <SettingToggleRow
+                    title="Show Footer Bar"
+                    enabled={settings.config.footerBar.enabled}
+                    onToggle={(enabled) =>
                       handleConfigChange({
                         footerBar: {
                           ...settings.config.footerBar,
@@ -1240,53 +934,53 @@ export const RelativeSettings = () => {
                         },
                       })
                     }
-                />
-
-                {settings.config.footerBar.enabled && (
-                <SettingsSection>
-                  <BarItemsList
-                    items={settings.config.footerBar.displayOrder}
-                    onReorder={(newOrder) => {
-                      handleConfigChange({
-                        footerBar: {
-                          ...settings.config.footerBar,
-                          displayOrder: newOrder,
-                        },
-                      });
-                    }}
-                    barType="footerBar"
-                    settings={settings}
-                    handleConfigChange={handleConfigChange}
                   />
 
-                  <SettingActionButton
-                    label="Reset to Default Order"
-                    onClick={() => {
-                      handleConfigChange({
-                        footerBar: {
-                          ...settings.config.footerBar,
-                          displayOrder: [...DEFAULT_SESSION_BAR_DISPLAY_ORDER],
-                        },
-                      });
-                    }}
-                  />
+                  {settings.config.footerBar.enabled && (
+                    <SettingsSection>
+                      <BarItemsList
+                        items={settings.config.footerBar.displayOrder}
+                        onReorder={(newOrder) => {
+                          handleConfigChange({
+                            footerBar: {
+                              ...settings.config.footerBar,
+                              displayOrder: newOrder,
+                            },
+                          });
+                        }}
+                        barType="footerBar"
+                        settings={settings}
+                        handleConfigChange={handleConfigChange}
+                      />
+
+                      <SettingActionButton
+                        label="Reset to Default Order"
+                        onClick={() => {
+                          handleConfigChange({
+                            footerBar: {
+                              ...settings.config.footerBar,
+                              displayOrder: [
+                                ...DEFAULT_SESSION_BAR_DISPLAY_ORDER,
+                              ],
+                            },
+                          });
+                        }}
+                      />
+                    </SettingsSection>
+                  )}
                 </SettingsSection>
-                )}
-                  
-              </SettingsSection>
-            )}
+              )}
 
               {/* VISIBILITY TAB */}
               {activeTab === 'visibility' && (
                 <SettingsSection title="Session Visibility">
-                              
                   <SessionVisibility
-                      sessionVisibility={settings.config.sessionVisibility}
-                      handleConfigChange={handleConfigChange}
-                    />
-  
+                    sessionVisibility={settings.config.sessionVisibility}
+                    handleConfigChange={handleConfigChange}
+                  />
+
                   <SettingDivider />
-  
+
                   <SettingToggleRow
                     title="Show only when on track"
                     description="If enabled, relatives will only be shown when driving"
@@ -1295,10 +989,8 @@ export const RelativeSettings = () => {
                       handleConfigChange({ showOnlyWhenOnTrack: newValue })
                     }
                   />
-  
                 </SettingsSection>
               )}
-
             </div>
           </div>
         );

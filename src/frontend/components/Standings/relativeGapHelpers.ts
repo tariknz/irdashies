@@ -26,7 +26,7 @@ export function getStats(estTime: number, driver: Standings | undefined) {
  * @param isTargetAhead - TRUE if we want the gap TO the car ahead (Positive), FALSE if TO the car behind (Negative).
  */
 
-export function calculateClassEstimatedGap(
+export function calculateClassEstimatedDelta(
   carAhead: { estTime: number; classEstTime: number },
   carBehind: { estTime: number; classEstTime: number },
   isTargetAhead: boolean
@@ -59,6 +59,44 @@ export function calculateClassEstimatedGap(
       delta -= referenceLapTime;
     }
   }
+
+  return delta;
+}
+
+export function calculateClassEstimatedGap(
+  carAhead: { estTime: number; classEstTime: number },
+  carBehind: { estTime: number; classEstTime: number }
+): number {
+  // 1. Normalize: Scale the 'Ahead' car's time into 'Behind' car's units
+  // Ratio > 1.0 means Behind is Slower (GT3 chasing GTP) -> Gap gets larger
+  // Ratio < 1.0 means Behind is Faster (GTP chasing GT3) -> Gap gets smaller
+  const scalingRatio = carBehind.classEstTime / carAhead.classEstTime;
+  const aheadTimeScaled = carAhead.estTime * scalingRatio;
+
+  const referenceLapTime = carBehind.classEstTime;
+  let delta = aheadTimeScaled - carBehind.estTime;
+
+  if (delta < 0) {
+    delta += referenceLapTime;
+  }
+  // if (isTargetAhead) {
+  //   // Scenario: We want the gap TO the car Ahead (Expected: Positive)
+  //   // Formula: (Ahead) - (Behind)
+  //
+  //   // Wrap Check: If delta is huge negative (e.g. -100s), Ahead actually lapped Behind
+  //   if (delta < -referenceLapTime / 2) {
+  //     delta += referenceLapTime;
+  //   }
+  // } else {
+  //   // Scenario: We want the gap TO the car Behind (Expected: Negative)
+  //   // Formula: (Behind) - (Ahead)
+  //   delta = carBehind.estTime - aheadTimeScaled;
+  //
+  //   // Wrap Check: If delta is huge positive (e.g. +100s), Behind actually lapped Ahead
+  //   if (delta > referenceLapTime / 2) {
+  //     delta -= referenceLapTime;
+  //   }
+  // }
 
   return delta;
 }
@@ -105,6 +143,24 @@ export function calculateReferenceDelta(
     calculatedDelta += lapTime;
   } else if (calculatedDelta >= lapTime / 2) {
     calculatedDelta -= lapTime;
+  }
+
+  return calculatedDelta;
+}
+
+export function calculateReferenceGap(
+  referenceLap: ReferenceLap,
+  opponentTrackPct: number,
+  playerTrackPct: number
+): number {
+  const timePlayer = interpolateAtPoint(referenceLap, playerTrackPct) ?? 0;
+  const timeOpponent = interpolateAtPoint(referenceLap, opponentTrackPct) ?? 0;
+
+  let calculatedDelta = timeOpponent - timePlayer;
+  const lapTime = referenceLap.finishTime - referenceLap.startTime;
+
+  if (opponentTrackPct < playerTrackPct) {
+    calculatedDelta += lapTime;
   }
 
   return calculatedDelta;

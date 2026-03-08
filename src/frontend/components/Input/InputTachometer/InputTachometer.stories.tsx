@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { Tachometer } from './InputTachometer';
 import { useEffect, useState } from 'react';
-import type { ShiftPointSettings } from '../../Settings/types';
+import type { ShiftPointSettings } from '@irdashies/types';
 
 const meta: Meta<typeof Tachometer> = {
   component: Tachometer,
@@ -34,14 +34,14 @@ const RandomRPM = () => {
         setRpm((prev) => {
           const accelerationRate = 120; // Fast acceleration like real life
           const next = prev + accelerationRate;
-          
+
           if (next >= 8500) {
             // Hit rev limiter
             setIsRevLimiter(true);
             setRevLimiterTimer(2000); // 2 seconds
             return 8500;
           }
-          
+
           return next;
         });
       }
@@ -65,8 +65,16 @@ const Ferrari296GT3 = () => {
     carClass: 'GT3',
     ledNumber: 6,
     redlineBlinkInterval: 250,
-    ledColor: ['#FFFF0000', '#FF00FF00', '#FF00FF00', '#FFFFFF00', '#FFFFFF00', '#FFFF0000', '#FFFF0000'],
-    ledRpm: [{}]
+    ledColor: [
+      '#FFFF0000',
+      '#FF00FF00',
+      '#FF00FF00',
+      '#FFFFFF00',
+      '#FFFFFF00',
+      '#FFFF0000',
+      '#FFFF0000',
+    ],
+    ledRpm: [{}],
   };
   const ferrariGear1Rpm = [7360, 6760, 6860, 6960, 7060, 7160, 7260];
 
@@ -85,13 +93,13 @@ const Ferrari296GT3 = () => {
         setRpm((prev) => {
           const accelerationRate = 30;
           const next = prev + accelerationRate;
-          
+
           if (next >= 7360) {
             setIsRevLimiter(true);
             setRevLimiterTimer(2000);
             return 7360;
           }
-          
+
           return next;
         });
       }
@@ -102,11 +110,15 @@ const Ferrari296GT3 = () => {
 
   return (
     <div className="space-y-4">
-      <h3 className="text-white text-lg font-semibold">Ferrari 296 GT3 (Gear 1) - 6 LEDs</h3>
-      <p className="text-gray-400 text-sm">LED thresholds: 6760, 6860, 6960, 7060, 7160, 7260 RPM</p>
-      <Tachometer 
-        rpm={rpm} 
-        maxRpm={7360} 
+      <h3 className="text-white text-lg font-semibold">
+        Ferrari 296 GT3 (Gear 1) - 6 LEDs
+      </h3>
+      <p className="text-gray-400 text-sm">
+        LED thresholds: 6760, 6860, 6960, 7060, 7160, 7260 RPM
+      </p>
+      <Tachometer
+        rpm={rpm}
+        maxRpm={7360}
         showRpmText={true}
         gearRpmThresholds={ferrariGear1Rpm}
         ledColors={ferrariCarData.ledColor}
@@ -127,12 +139,16 @@ export const CustomShiftPointDemo: Story = {
 export const CarComparison: Story = {
   render: () => (
     <div className="space-y-8 p-4">
-      <div className="text-white text-xl font-bold mb-6">Car-Specific Tachometer Patterns</div>
+      <div className="text-white text-xl font-bold mb-6">
+        Car-Specific Tachometer Patterns
+      </div>
       <Ferrari296GT3 />
       <CadillacGTP />
       <SuperFormulaLights />
       <div className="space-y-4">
-        <h3 className="text-white text-lg font-semibold">Generic Tachometer (Fallback)</h3>
+        <h3 className="text-white text-lg font-semibold">
+          Generic Tachometer (Fallback)
+        </h3>
         <RandomRPM />
       </div>
     </div>
@@ -151,11 +167,25 @@ const CadillacGTP = () => {
     carClass: 'GTP',
     ledNumber: 10,
     redlineBlinkInterval: 0,
-    ledColor: ['#FF0000FF', '#FF00FF00', '#FF00FF00', '#FFFFFF00', '#FFFFFF00', '#FFFF0000', '#FFFF0000', '#FFFFFF00', '#FFFFFF00', '#FF00FF00', '#FF00FF00'],
-    ledRpm: [{}]
+    ledColor: [
+      '#FF0000FF',
+      '#FF00FF00',
+      '#FF00FF00',
+      '#FFFFFF00',
+      '#FFFFFF00',
+      '#FFFF0000',
+      '#FFFF0000',
+      '#FFFFFF00',
+      '#FFFFFF00',
+      '#FF00FF00',
+      '#FF00FF00',
+    ],
+    ledRpm: [{}],
   };
   // Gear 1: Center-out pattern like Porsche
-  const cadillacGear1Rpm = [8250, 4450, 5050, 5850, 6650, 7450, 7450, 6650, 5850, 5050, 4450];
+  const cadillacGear1Rpm = [
+    8250, 4450, 5050, 5850, 6650, 7450, 7450, 6650, 5850, 5050, 4450,
+  ];
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -172,13 +202,13 @@ const CadillacGTP = () => {
         setRpm((prev) => {
           const accelerationRate = 40;
           const next = prev + accelerationRate;
-          
+
           if (next >= 8250) {
             setIsRevLimiter(true);
             setRevLimiterTimer(2000);
             return 8250;
           }
-          
+
           return next;
         });
       }
@@ -189,12 +219,16 @@ const CadillacGTP = () => {
 
   return (
     <div className="space-y-4">
-      <h3 className="text-white text-lg font-semibold">Cadillac V-Series GTP (Gear 1) - 10 LEDs</h3>
-      <p className="text-gray-400 text-sm">Center-out pattern: Outer LEDs (4450), then inward</p>
+      <h3 className="text-white text-lg font-semibold">
+        Cadillac V-Series GTP (Gear 1) - 10 LEDs
+      </h3>
+      <p className="text-gray-400 text-sm">
+        Center-out pattern: Outer LEDs (4450), then inward
+      </p>
       <p className="text-gray-300 text-sm">Current RPM: {rpm}</p>
-      <Tachometer 
-        rpm={rpm} 
-        maxRpm={8250} 
+      <Tachometer
+        rpm={rpm}
+        maxRpm={8250}
         showRpmText={true}
         gearRpmThresholds={cadillacGear1Rpm}
         ledColors={cadillacCarData.ledColor}
@@ -216,8 +250,18 @@ const SuperFormulaLights = () => {
     carClass: 'SFL',
     ledNumber: 8,
     redlineBlinkInterval: 0,
-    ledColor: ['#FFFF0000', '#FFFF0000', '#FFFF0000', '#FFFF0000', '#FFFF0000', '#FFFF0000', '#FFFF0000', '#FFFF0000', '#FFFF0000'],
-    ledRpm: [{}]
+    ledColor: [
+      '#FFFF0000',
+      '#FFFF0000',
+      '#FFFF0000',
+      '#FFFF0000',
+      '#FFFF0000',
+      '#FFFF0000',
+      '#FFFF0000',
+      '#FFFF0000',
+      '#FFFF0000',
+    ],
+    ledRpm: [{}],
   };
   // All gears same: Simple left-to-right progression, all red LEDs
   const sflGearRpm = [7000, 6200, 6300, 6400, 6500, 6600, 6700, 6800, 6900];
@@ -237,13 +281,13 @@ const SuperFormulaLights = () => {
         setRpm((prev) => {
           const accelerationRate = 25;
           const next = prev + accelerationRate;
-          
+
           if (next >= 7000) {
             setIsRevLimiter(true);
             setRevLimiterTimer(2000);
             return 7000;
           }
-          
+
           return next;
         });
       }
@@ -254,12 +298,16 @@ const SuperFormulaLights = () => {
 
   return (
     <div className="space-y-4">
-      <h3 className="text-white text-lg font-semibold">Super Formula Lights - 8 LEDs</h3>
-      <p className="text-gray-400 text-sm">Left-to-right progression: All red LEDs, 100 RPM increments</p>
+      <h3 className="text-white text-lg font-semibold">
+        Super Formula Lights - 8 LEDs
+      </h3>
+      <p className="text-gray-400 text-sm">
+        Left-to-right progression: All red LEDs, 100 RPM increments
+      </p>
       <p className="text-gray-300 text-sm">Current RPM: {rpm}</p>
-      <Tachometer 
-        rpm={rpm} 
-        maxRpm={7000} 
+      <Tachometer
+        rpm={rpm}
+        maxRpm={7000}
         showRpmText={true}
         gearRpmThresholds={sflGearRpm}
         ledColors={sflCarData.ledColor}
@@ -281,10 +329,18 @@ const CustomShiftPointDemos = () => {
     carClass: 'GT3',
     ledNumber: 6,
     redlineBlinkInterval: 250,
-    ledColor: ['#FFFF0000', '#FF00FF00', '#FF00FF00', '#FFFFFF00', '#FFFFFF00', '#FFFF0000', '#FFFF0000'],
-    ledRpm: [{}]
+    ledColor: [
+      '#FFFF0000',
+      '#FF00FF00',
+      '#FF00FF00',
+      '#FFFFFF00',
+      '#FFFFFF00',
+      '#FFFF0000',
+      '#FFFF0000',
+    ],
+    ledRpm: [{}],
   };
-  
+
   const ferrariGear1Rpm = [7360, 6760, 6860, 6960, 7060, 7160, 7260];
 
   const glowSettings: ShiftPointSettings = {
@@ -292,13 +348,13 @@ const CustomShiftPointDemos = () => {
     indicatorType: 'glow',
     indicatorColor: '#00ff00',
     carConfigs: {
-      'ferrari296gt3': {
+      ferrari296gt3: {
         carId: 'ferrari296gt3',
         carName: 'Ferrari 296 GT3',
         gearCount: 6,
-        gearShiftPoints: { '1': { shiftRpm: 7000 } }
-      }
-    }
+        gearShiftPoints: { '1': { shiftRpm: 7000 } },
+      },
+    },
   };
 
   const borderSettings: ShiftPointSettings = {
@@ -328,13 +384,13 @@ const CustomShiftPointDemos = () => {
         setRpm((prev) => {
           const accelerationRate = 20;
           const next = prev + accelerationRate;
-          
+
           if (next >= 7360) {
             setIsRevLimiter(true);
             setRevLimiterTimer(2000);
             return 7360;
           }
-          
+
           return next;
         });
       }
@@ -345,15 +401,21 @@ const CustomShiftPointDemos = () => {
 
   return (
     <div className="space-y-8">
-      <div className="text-white text-xl font-bold mb-6">Custom Shift Point Indicators</div>
-      <p className="text-gray-300 text-sm mb-6">Current RPM: {rpm} | Custom shift point: 7000 RPM</p>
-      
+      <div className="text-white text-xl font-bold mb-6">
+        Custom Shift Point Indicators
+      </div>
+      <p className="text-gray-300 text-sm mb-6">
+        Current RPM: {rpm} | Custom shift point: 7000 RPM
+      </p>
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="space-y-2">
-          <h3 className="text-white text-lg font-semibold">Glow Effect (Green) - With RPM Text</h3>
-          <Tachometer 
-            rpm={rpm} 
-            maxRpm={7360} 
+          <h3 className="text-white text-lg font-semibold">
+            Glow Effect (Green) - With RPM Text
+          </h3>
+          <Tachometer
+            rpm={rpm}
+            maxRpm={7360}
             gear={1}
             carPath="ferrari296gt3"
             showRpmText={true}
@@ -363,12 +425,14 @@ const CustomShiftPointDemos = () => {
             shiftPointSettings={glowSettings}
           />
         </div>
-        
+
         <div className="space-y-2">
-          <h3 className="text-white text-lg font-semibold">Glow Effect (Green) - RPM Text OFF</h3>
-          <Tachometer 
-            rpm={rpm} 
-            maxRpm={7360} 
+          <h3 className="text-white text-lg font-semibold">
+            Glow Effect (Green) - RPM Text OFF
+          </h3>
+          <Tachometer
+            rpm={rpm}
+            maxRpm={7360}
             gear={1}
             carPath="ferrari296gt3"
             showRpmText={false}
@@ -378,12 +442,14 @@ const CustomShiftPointDemos = () => {
             shiftPointSettings={glowSettings}
           />
         </div>
-        
+
         <div className="space-y-2">
-          <h3 className="text-white text-lg font-semibold">Border Glow (Orange) - With RPM Text</h3>
-          <Tachometer 
-            rpm={rpm} 
-            maxRpm={7360} 
+          <h3 className="text-white text-lg font-semibold">
+            Border Glow (Orange) - With RPM Text
+          </h3>
+          <Tachometer
+            rpm={rpm}
+            maxRpm={7360}
             gear={1}
             carPath="ferrari296gt3"
             showRpmText={true}
@@ -393,12 +459,14 @@ const CustomShiftPointDemos = () => {
             shiftPointSettings={borderSettings}
           />
         </div>
-        
+
         <div className="space-y-2">
-          <h3 className="text-white text-lg font-semibold">Border Glow (Orange) - RPM Text OFF</h3>
-          <Tachometer 
-            rpm={rpm} 
-            maxRpm={7360} 
+          <h3 className="text-white text-lg font-semibold">
+            Border Glow (Orange) - RPM Text OFF
+          </h3>
+          <Tachometer
+            rpm={rpm}
+            maxRpm={7360}
             gear={1}
             carPath="ferrari296gt3"
             showRpmText={false}
@@ -408,12 +476,14 @@ const CustomShiftPointDemos = () => {
             shiftPointSettings={borderSettings}
           />
         </div>
-        
+
         <div className="space-y-2">
-          <h3 className="text-white text-lg font-semibold">Pulse Effect (Pink) - With RPM Text</h3>
-          <Tachometer 
-            rpm={rpm} 
-            maxRpm={7360} 
+          <h3 className="text-white text-lg font-semibold">
+            Pulse Effect (Pink) - With RPM Text
+          </h3>
+          <Tachometer
+            rpm={rpm}
+            maxRpm={7360}
             gear={1}
             carPath="ferrari296gt3"
             showRpmText={true}
@@ -423,12 +493,14 @@ const CustomShiftPointDemos = () => {
             shiftPointSettings={pulseSettings}
           />
         </div>
-        
+
         <div className="space-y-2">
-          <h3 className="text-white text-lg font-semibold">Pulse Effect (Pink) - RPM Text OFF</h3>
-          <Tachometer 
-            rpm={rpm} 
-            maxRpm={7360} 
+          <h3 className="text-white text-lg font-semibold">
+            Pulse Effect (Pink) - RPM Text OFF
+          </h3>
+          <Tachometer
+            rpm={rpm}
+            maxRpm={7360}
             gear={1}
             carPath="ferrari296gt3"
             showRpmText={false}
@@ -442,4 +514,3 @@ const CustomShiftPointDemos = () => {
     </div>
   );
 };
-

@@ -1,6 +1,10 @@
 import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
-import { TrackMapWidgetSettings, SessionVisibilitySettings, SettingsTabType } from '../types';
+import {
+  TrackMapWidgetSettings,
+  SettingsTabType,
+  getWidgetDefaultConfig,
+} from '@irdashies/types';
 import { useDashboard } from '@irdashies/context';
 import { TabButton } from '../components/TabButton';
 import { SessionVisibility } from '../components/SessionVisibility';
@@ -12,68 +16,7 @@ import { SettingDivider } from '../components/SettingDivider';
 
 const SETTING_ID = 'map';
 
-const defaultConfig: TrackMapWidgetSettings['config'] = {
-  enableTurnNames: false,
-  showCarNumbers: true,
-  displayMode: 'carNumber',
-  invertTrackColors: false,
-  highContrastTurns: false,
-  driverCircleSize: 40,
-  playerCircleSize: 40,
-  trackmapFontSize: 100,
-  trackLineWidth: 20,
-  trackOutlineWidth: 40,
-  useHighlightColor: false,
-  showOnlyWhenOnTrack: false,
-  sessionVisibility: {
-    race: true,
-    loneQualify: true,
-    openQualify: true,
-    practice: true,
-    offlineTesting: true,
-  },
-};
-
-const migrateConfig = (
-  savedConfig: unknown
-): TrackMapWidgetSettings['config'] => {
-  if (!savedConfig || typeof savedConfig !== 'object') return defaultConfig;
-
-  const config = savedConfig as Record<string, unknown>;
-  return {
-    enableTurnNames:
-      (config.enableTurnNames as boolean) ?? defaultConfig.enableTurnNames,
-    showCarNumbers:
-      (config.showCarNumbers as boolean) ?? defaultConfig.showCarNumbers,
-    displayMode:
-      (config.displayMode as
-        | 'carNumber'
-        | 'sessionPosition'
-        | 'livePosition') ?? defaultConfig.displayMode,
-    invertTrackColors:
-      (config.invertTrackColors as boolean) ?? defaultConfig.invertTrackColors,
-    highContrastTurns:
-      (config.highContrastTurns as boolean) ?? defaultConfig.highContrastTurns,
-    driverCircleSize:
-      (config.driverCircleSize as number) ?? defaultConfig.driverCircleSize,
-    playerCircleSize:
-      (config.playerCircleSize as number) ?? defaultConfig.playerCircleSize,
-    trackmapFontSize:
-      (config.trackmapFontSize as number) ?? defaultConfig.trackmapFontSize,
-    trackLineWidth:
-      (config.trackLineWidth as number) ?? defaultConfig.trackLineWidth,
-    trackOutlineWidth:
-      (config.trackOutlineWidth as number) ?? defaultConfig.trackOutlineWidth,
-    useHighlightColor:
-      (config.useHighlightColor as boolean) ?? defaultConfig.useHighlightColor,
-    showOnlyWhenOnTrack:
-      (config.showOnlyWhenOnTrack as boolean) ??
-      defaultConfig.showOnlyWhenOnTrack,
-    sessionVisibility:
-      (config.sessionVisibility as SessionVisibilitySettings) ??
-      defaultConfig.sessionVisibility,
-  };
-};
+const defaultConfig = getWidgetDefaultConfig('map');
 
 export const TrackMapSettings = () => {
   const { currentDashboard } = useDashboard();
@@ -84,7 +27,9 @@ export const TrackMapSettings = () => {
     enabled:
       currentDashboard?.widgets.find((w) => w.id === SETTING_ID)?.enabled ??
       false,
-    config: migrateConfig(savedSettings?.config),
+    config:
+      (savedSettings?.config as TrackMapWidgetSettings['config']) ??
+      defaultConfig,
   });
 
   // Tab state with persistence
@@ -110,26 +55,35 @@ export const TrackMapSettings = () => {
     >
       {(handleConfigChange) => (
         <div className="space-y-4">
-
           {/* Tabs */}
           <div className="flex border-b border-slate-700/50">
-            <TabButton id="track" activeTab={activeTab} setActiveTab={setActiveTab}>
+            <TabButton
+              id="track"
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+            >
               Track
             </TabButton>
-            <TabButton id="drivers" activeTab={activeTab} setActiveTab={setActiveTab}>
+            <TabButton
+              id="drivers"
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+            >
               Drivers
             </TabButton>
-            <TabButton id="visibility" activeTab={activeTab} setActiveTab={setActiveTab}>
+            <TabButton
+              id="visibility"
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+            >
               Visibility
             </TabButton>
           </div>
 
           <div className="pt-4">
-
             {/* TRACK TAB */}
-            {activeTab === 'track' && (   
+            {activeTab === 'track' && (
               <SettingsSection title="Track Settings">
-              
                 <SettingSliderRow
                   title="Track Line Width"
                   description="Thickness of the track line (matches curved track map scale)"
@@ -138,9 +92,7 @@ export const TrackMapSettings = () => {
                   min={5}
                   max={40}
                   step={1}
-                  onChange={(v) =>
-                    handleConfigChange({ trackLineWidth: v })
-                  }
+                  onChange={(v) => handleConfigChange({ trackLineWidth: v })}
                 />
 
                 <SettingSliderRow
@@ -151,9 +103,7 @@ export const TrackMapSettings = () => {
                   min={10}
                   max={80}
                   step={1}
-                  onChange={(v) =>
-                    handleConfigChange({ trackOutlineWidth: v })
-                  }
+                  onChange={(v) => handleConfigChange({ trackOutlineWidth: v })}
                 />
 
                 <SettingToggleRow
@@ -175,24 +125,21 @@ export const TrackMapSettings = () => {
                 />
 
                 {settings.config.enableTurnNames && (
-                <SettingToggleRow
-                  title="High Contrast Turn Names"
-                  description="Use black background for turn numbers and turn names for better legibility"
-                  enabled={settings.config.highContrastTurns ?? false}
-                  onToggle={(newValue) =>
-                    handleConfigChange({ highContrastTurns: newValue })
-                  }
-                />
+                  <SettingToggleRow
+                    title="High Contrast Turn Names"
+                    description="Use black background for turn numbers and turn names for better legibility"
+                    enabled={settings.config.highContrastTurns ?? false}
+                    onToggle={(newValue) =>
+                      handleConfigChange({ highContrastTurns: newValue })
+                    }
+                  />
                 )}
-
               </SettingsSection>
             )}
 
-
             {/* DRIVERS TAB */}
-            {activeTab === 'drivers' && (            
+            {activeTab === 'drivers' && (
               <SettingsSection title="Driver Circles">
-                
                 <SettingToggleRow
                   title="Show Car Numbers"
                   description="Display car numbers on driver circles"
@@ -204,17 +151,19 @@ export const TrackMapSettings = () => {
 
                 {settings.config.showCarNumbers && (
                   <SettingsSection>
-                    <SettingButtonGroupRow<'carNumber' | 'sessionPosition' | 'livePosition'>
+                    <SettingButtonGroupRow<
+                      'carNumber' | 'sessionPosition' | 'livePosition'
+                    >
                       title="Display Mode"
-                      value={settings.config.displayMode}
+                      value={settings.config.displayMode ?? 'carNumber'}
                       options={[
                         { label: 'Car Number', value: 'carNumber' },
                         { label: 'Session Position', value: 'sessionPosition' },
                         { label: 'Live Position', value: 'livePosition' },
                       ]}
                       onChange={(v) => handleConfigChange({ displayMode: v })}
-                    /> 
-                  </SettingsSection>                 
+                    />
+                  </SettingsSection>
                 )}
 
                 <SettingSliderRow
@@ -225,9 +174,7 @@ export const TrackMapSettings = () => {
                   min={10}
                   max={80}
                   step={1}
-                  onChange={(v) =>
-                    handleConfigChange({ driverCircleSize: v })
-                  }
+                  onChange={(v) => handleConfigChange({ driverCircleSize: v })}
                 />
 
                 <SettingSliderRow
@@ -238,9 +185,7 @@ export const TrackMapSettings = () => {
                   min={10}
                   max={100}
                   step={1}
-                  onChange={(v) =>
-                    handleConfigChange({ playerCircleSize: v })
-                  }
+                  onChange={(v) => handleConfigChange({ playerCircleSize: v })}
                 />
 
                 <SettingSliderRow
@@ -251,9 +196,7 @@ export const TrackMapSettings = () => {
                   min={50}
                   max={150}
                   step={1}
-                  onChange={(v) =>
-                    handleConfigChange({ trackmapFontSize: v })
-                  }
+                  onChange={(v) => handleConfigChange({ trackmapFontSize: v })}
                 />
 
                 <SettingToggleRow
@@ -265,18 +208,16 @@ export const TrackMapSettings = () => {
                     handleConfigChange({ useHighlightColor: newValue })
                   }
                 />
-
               </SettingsSection>
             )}
 
             {/* VISIBILITY TAB */}
             {activeTab === 'visibility' && (
               <SettingsSection title="Session Visibility">
-                            
                 <SessionVisibility
-                    sessionVisibility={settings.config.sessionVisibility}
-                    handleConfigChange={handleConfigChange}
-                  />
+                  sessionVisibility={settings.config.sessionVisibility}
+                  handleConfigChange={handleConfigChange}
+                />
 
                 <SettingDivider />
 
@@ -288,12 +229,10 @@ export const TrackMapSettings = () => {
                     handleConfigChange({ showOnlyWhenOnTrack: newValue })
                   }
                 />
-
               </SettingsSection>
             )}
-
+          </div>
         </div>
-      </div>
       )}
     </BaseSettingsSection>
   );

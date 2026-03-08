@@ -1,5 +1,5 @@
 import { useDashboard } from '@irdashies/context';
-import { GarageCoverWidgetSettings } from '../../Settings/types';
+import { GarageCoverWidgetSettings } from '@irdashies/types';
 import { useMemo } from 'react';
 
 const defaultConfig: GarageCoverWidgetSettings['config'] = {
@@ -16,7 +16,7 @@ export const useGarageCoverSettings = () => {
 
     return {
       ...defaultConfig,
-      ...(garageCoverSettings as GarageCoverWidgetSettings['config']),
+      ...(garageCoverSettings as unknown as GarageCoverWidgetSettings['config']),
     };
   }, [currentDashboard]);
 };

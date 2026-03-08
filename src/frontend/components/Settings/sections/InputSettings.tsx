@@ -2,13 +2,16 @@ import { useDashboard } from '@irdashies/context';
 import { DotsSixVerticalIcon } from '@phosphor-icons/react';
 import { useEffect, useState } from 'react';
 import { getAvailableCars } from '../../../utils/carData';
-import { mergeDisplayOrder } from '../../../utils/displayOrder';
 import { useSortableList } from '../../SortableList';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import { SessionVisibility } from '../components/SessionVisibility';
 import { ToggleSwitch } from '../components/ToggleSwitch';
 import { TabButton } from '../components/TabButton';
-import { InputWidgetSettings, SessionVisibilitySettings, SettingsTabType } from '../types';
+import {
+  InputWidgetSettings,
+  SettingsTabType,
+  getWidgetDefaultConfig,
+} from '@irdashies/types';
 import { SettingDivider } from '../components/SettingDivider';
 import { SettingsSection } from '../components/SettingSection';
 import { SettingToggleRow } from '../components/SettingToggleRow';
@@ -53,167 +56,7 @@ const sortableSettings: SortableSetting[] = [
   { id: 'steer', label: 'Steer', configKey: 'steer' },
 ];
 
-const defaultConfig: InputWidgetSettings['config'] = {
-  trace: {
-    enabled: true,
-    includeThrottle: true,
-    includeBrake: true,
-    includeClutch: false,
-    includeAbs: true,
-    includeSteer: true,
-    strokeWidth: 3,
-    maxSamples: 400,
-  },
-  bar: {
-    enabled: true,
-    includeClutch: true,
-    includeBrake: true,
-    includeThrottle: true,
-    includeAbs: true,
-  },
-  gear: {
-    enabled: true,
-    unit: 'auto',
-  },
-  abs: {
-    enabled: false,
-  },
-  steer: {
-    enabled: true,
-    config: {
-      style: 'default',
-      color: 'light',
-    },
-  },
-  tachometer: {
-    enabled: true,
-    showRpmText: false,
-    customShiftPoints: {
-      enabled: false,
-      indicatorType: 'glow',
-      indicatorColor: '#00ff00',
-      carConfigs: {},
-    },
-  },
-  background: { opacity: 0 },
-  displayOrder: sortableSettings.map((s) => s.id),
-  showOnlyWhenOnTrack: true,
-  sessionVisibility: {
-    race: true,
-    loneQualify: true,
-    openQualify: true,
-    practice: true,
-    offlineTesting: true,
-  },
-};
-
-const migrateConfig = (savedConfig: unknown): InputWidgetSettings['config'] => {
-  if (!savedConfig || typeof savedConfig !== 'object') return defaultConfig;
-
-  const config = savedConfig as Record<string, unknown>;
-
-  return {
-    trace: {
-      enabled:
-        (config.trace as { enabled?: boolean })?.enabled ??
-        defaultConfig.trace.enabled,
-      includeThrottle:
-        (config.trace as { includeThrottle?: boolean })?.includeThrottle ??
-        defaultConfig.trace.includeThrottle,
-      includeBrake:
-        (config.trace as { includeBrake?: boolean })?.includeBrake ??
-        defaultConfig.trace.includeBrake,
-      includeClutch:
-        (config.trace as { includeClutch?: boolean })?.includeClutch ??
-        defaultConfig.trace.includeClutch,
-      includeAbs:
-        (config.trace as { includeAbs?: boolean })?.includeAbs ??
-        defaultConfig.trace.includeAbs,
-      includeSteer:
-        (config.trace as { includeSteer?: boolean })?.includeSteer ??
-        defaultConfig.trace.includeSteer,
-      strokeWidth:
-        (config.trace as { strokeWidth?: number })?.strokeWidth ??
-        defaultConfig.trace.strokeWidth,
-      maxSamples:
-        (config.trace as { maxSamples?: number })?.maxSamples ??
-        defaultConfig.trace.maxSamples,
-    },
-    bar: {
-      enabled:
-        (config.bar as { enabled?: boolean })?.enabled ??
-        defaultConfig.bar.enabled,
-      includeClutch:
-        (config.bar as { includeClutch?: boolean })?.includeClutch ??
-        defaultConfig.bar.includeClutch,
-      includeBrake:
-        (config.bar as { includeBrake?: boolean })?.includeBrake ??
-        defaultConfig.bar.includeBrake,
-      includeThrottle:
-        (config.bar as { includeThrottle?: boolean })?.includeThrottle ??
-        defaultConfig.bar.includeThrottle,
-      includeAbs:
-        (config.bar as { includeAbs?: boolean })?.includeAbs ??
-        defaultConfig.bar.includeAbs,
-    },
-    gear: {
-      enabled:
-        (config.gear as { enabled?: boolean })?.enabled ??
-        defaultConfig.gear.enabled,
-      unit:
-        (config.gear as { unit?: 'mph' | 'km/h' | 'auto' })?.unit ??
-        defaultConfig.gear.unit,
-    },
-    abs: {
-      enabled:
-        (config.abs as { enabled?: boolean })?.enabled ??
-        defaultConfig.abs.enabled,
-    },
-    steer: {
-      enabled:
-        (config.steer as { enabled?: boolean })?.enabled ??
-        defaultConfig.steer.enabled,
-      config: {
-        style:
-          (
-            config.steer as {
-              config?: {
-                style?: 'formula' | 'lmp' | 'nascar' | 'ushape' | 'default';
-              };
-            }
-          )?.config?.style ?? defaultConfig.steer.config.style,
-        color:
-          (config.steer as { config?: { color?: 'dark' | 'light' } })?.config
-            ?.color ?? defaultConfig.steer.config.color,
-      },
-    },
-    tachometer: {
-      enabled:
-        (config.tachometer as { enabled?: boolean })?.enabled ??
-        defaultConfig.tachometer.enabled,
-      showRpmText:
-        (config.tachometer as { showRpmText?: boolean })?.showRpmText ??
-        defaultConfig.tachometer.showRpmText,
-      customShiftPoints:
-        (
-          config.tachometer as {
-            customShiftPoints?: InputWidgetSettings['config']['tachometer']['customShiftPoints'];
-          }
-        )?.customShiftPoints ?? defaultConfig.tachometer.customShiftPoints,
-    },
-    background: {
-      opacity: (config.background as { opacity?: number })?.opacity ?? 0,
-    },
-    displayOrder: mergeDisplayOrder(
-      sortableSettings.map((s) => s.id),
-      config.displayOrder as string[]
-    ),
-    showOnlyWhenOnTrack: (config.showOnlyWhenOnTrack as boolean) ?? true,
-    sessionVisibility:
-      (config.sessionVisibility as SessionVisibilitySettings) ??
-      defaultConfig.sessionVisibility,
-  };
-};
+const defaultConfig = getWidgetDefaultConfig('input');
 
 interface DisplaySettingsListProps {
   itemsOrder: string[];
@@ -698,7 +541,8 @@ export const InputSettings = () => {
   ) as InputWidgetSettings | undefined;
   const [settings, setSettings] = useState<InputWidgetSettings>({
     enabled: savedSettings?.enabled ?? false,
-    config: migrateConfig(savedSettings?.config),
+    config:
+      (savedSettings?.config as InputWidgetSettings['config']) ?? defaultConfig,
   });
   const [itemsOrder, setItemsOrder] = useState(settings.config.displayOrder);
 
@@ -733,393 +577,416 @@ export const InputSettings = () => {
 
         return (
           <div className="space-y-4">
+            {/* Tabs */}
+            <div className="flex border-b border-slate-700/50">
+              <TabButton
+                id="display"
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+              >
+                Display
+              </TabButton>
+              <TabButton
+                id="options"
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+              >
+                Options
+              </TabButton>
+              <TabButton
+                id="visibility"
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+              >
+                Visibility
+              </TabButton>
+            </div>
 
-          {/* Tabs */}
-          <div className="flex border-b border-slate-700/50">
-            <TabButton id="display" activeTab={activeTab} setActiveTab={setActiveTab}>
-              Display
-            </TabButton>
-            <TabButton id="options" activeTab={activeTab} setActiveTab={setActiveTab}>
-              Options
-            </TabButton>
-            <TabButton id="visibility" activeTab={activeTab} setActiveTab={setActiveTab}>
-              Visibility
-            </TabButton>
-          </div>
-
-          <div className="pt-4 space-y-4">
-
-            {/* DISPLAY TAB */}
-            {activeTab === 'display' && (
-              <SettingsSection title="Display Order">
-
-                <DisplaySettingsList
-                  itemsOrder={itemsOrder}
-                  onReorder={handleDisplayOrderChange}
-                  settings={settings}
-                  handleConfigChange={handleConfigChange}
-                />
-
-                <SettingActionButton
-                  label="Reset to Default Order"
-                  onClick={() => {
-                    const defaultOrder = sortableSettings.map((s) => s.id);
-                    setItemsOrder(defaultOrder);
-                    handleConfigChange({ displayOrder: defaultOrder });
-                  }}
-                />           
-              
-              </SettingsSection>
-            )}
-
-            {/* OPTIONS TAB */}
-            {activeTab === 'options' && (   
-            <>           
-              <SettingsSection title="Options">
-
-                <SettingSliderRow
-                  title="Background Opacity"
-                  value={settings.config.background.opacity ?? 40}
-                  units="%"
-                  min={0}
-                  max={100}
-                  step={1}
-                  onChange={(v) =>
-                    handleConfigChange({ background: { opacity: v } })
-                  }
-                />
-
-              </SettingsSection>
-
-              {/* Trace Settings */}
-              <SettingsSection title="Trace">
-                
-                <SettingToggleRow
-                  title="Enable Trace Display"
-                  enabled={config.trace.enabled}
-                  onToggle={(enabled) =>
-                    handleConfigChange({ trace: { ...config.trace, enabled } })
-                  }
-                /> 
-      
-                {config.trace.enabled && (
-                <SettingsSection>
-                  <SettingToggleRow
-                    title="Show Clutch Trace"
-                    enabled={config.trace.includeClutch}
-                    onToggle={(enabled) =>
-                      handleConfigChange({
-                        trace: {
-                          ...config.trace,
-                          includeClutch: enabled,
-                        },
-                      })
-                    }
-                  /> 
-
-                  <SettingToggleRow
-                    title="Show Throttle Trace"
-                    enabled={config.trace.includeThrottle}
-                    onToggle={(enabled) =>
-                      handleConfigChange({
-                        trace: {
-                          ...config.trace,
-                          includeThrottle: enabled,
-                        },
-                      })
-                    }
-                  /> 
-
-                  <SettingToggleRow
-                    title="Show Brake Trace"
-                    enabled={config.trace.includeBrake}
-                    onToggle={(enabled) =>
-                      handleConfigChange({
-                        trace: {
-                          ...config.trace,
-                          includeBrake: enabled,
-                        },
-                      })
-                    }
-                  /> 
-
-                  <SettingToggleRow
-                    title="Show ABS"
-                    enabled={config.trace.includeAbs}
-                    onToggle={(enabled) =>
-                      handleConfigChange({
-                        trace: {
-                          ...config.trace,
-                          includeAbs: enabled,
-                        },
-                      })
-                    }
-                  /> 
-
-                  <SettingToggleRow
-                    title="Show Steering Trace"
-                    enabled={config.trace.includeSteer ?? true}
-                    onToggle={(enabled) =>
-                      handleConfigChange({
-                        trace: {
-                          ...config.trace,
-                          includeSteer: enabled,
-                        },
-                      })
-                    }
-                  /> 
-
-                  <SettingSliderRow
-                    title="Stroke Width"
-                    value={config.trace.strokeWidth ?? 3}
-                    units="px"
-                    min={0}
-                    max={10}
-                    step={1}
-                    onChange={(v) =>
-                      handleConfigChange({
-                        trace: {
-                          ...config.trace,
-                          strokeWidth: v,
-                        },
-                      })
-                    }
+            <div className="pt-4 space-y-4">
+              {/* DISPLAY TAB */}
+              {activeTab === 'display' && (
+                <SettingsSection title="Display Order">
+                  <DisplaySettingsList
+                    itemsOrder={itemsOrder}
+                    onReorder={handleDisplayOrderChange}
+                    settings={settings}
+                    handleConfigChange={handleConfigChange}
                   />
 
-                  <SettingSliderRow
-                    title="Max Samples"
-                    value={config.trace.maxSamples ?? 40}
-                    units=" samples"
-                    min={40}
-                    max={1000}
-                    step={1}
-                    onChange={(v) =>
-                      handleConfigChange({
-                        trace: {
-                          ...config.trace,
-                          maxSamples: v,
-                        },
-                      })
-                    }
+                  <SettingActionButton
+                    label="Reset to Default Order"
+                    onClick={() => {
+                      const defaultOrder = sortableSettings.map((s) => s.id);
+                      setItemsOrder(defaultOrder);
+                      handleConfigChange({ displayOrder: defaultOrder });
+                    }}
                   />
-
                 </SettingsSection>
-                )}
+              )}
 
-              </SettingsSection>
-
-
-              {/* Bar Settings */}
-              <SettingsSection title="Bar">
-                
-                <SettingToggleRow
-                  title="Enable Bar Display"
-                  enabled={config.bar.enabled}
-                  onToggle={(enabled) =>
-                    handleConfigChange({ bar: { ...config.bar, enabled } })
-                  }
-                /> 
-      
-                {config.bar.enabled && (
-                <SettingsSection>
-                  <SettingToggleRow
-                    title="Show Clutch Bar"
-                    enabled={config.bar.includeClutch}
-                    onToggle={(enabled) =>
-                      handleConfigChange({
-                        bar: {
-                          ...config.bar,
-                          includeClutch: enabled,
-                        },
-                      })
-                    }
-                  /> 
-
-                  <SettingToggleRow
-                    title="Show Throttle Bar"
-                    enabled={config.bar.includeThrottle}
-                    onToggle={(enabled) =>
-                      handleConfigChange({
-                        bar: {
-                          ...config.bar,
-                          includeThrottle: enabled,
-                        },
-                      })
-                    }
-                  /> 
-
-                  <SettingToggleRow
-                    title="Show Brake Bar"
-                    enabled={config.bar.includeBrake}
-                    onToggle={(enabled) =>
-                      handleConfigChange({
-                        bar: {
-                          ...config.bar,
-                          includeBrake: enabled,
-                        },
-                      })
-                    }
-                  /> 
-
-                  <SettingToggleRow
-                    title="Show ABS Indicator"
-                    enabled={config.bar.includeAbs}
-                    onToggle={(enabled) =>
-                      handleConfigChange({
-                        bar: {
-                          ...config.bar,
-                          includeAbs: enabled,
-                        },
-                      })
-                    }
-                  /> 
-                 
-                </SettingsSection>
-                )}
-
-              </SettingsSection>
-
-              {/* ABS Settings */}
-              <SettingsSection title="ABS Indicator">
-
-                <SettingToggleRow
-                  title="Enable ABS Indicator"
-                  enabled={config.abs.enabled}
-                  onToggle={(newValue) =>
-                    handleConfigChange({ abs: { ...config.abs, enabled: newValue } })
-                  }
-                />                
-
-              </SettingsSection>
-
-              {/* Steer Settings */}
-              <SettingsSection title="Steer">  
-
-                  <SettingToggleRow
-                    title="Enable Steer Display"
-                    enabled={config.steer.enabled}
-                    onToggle={(newValue) =>
-                      handleConfigChange({ steer: { ...config.steer, enabled: newValue } })
-                    }
-                  />   
-
-                  {config.steer.enabled && (
-                    <SettingsSection>
-
-                      <SettingSelectRow<'default' | 'formula' | 'lmp' | 'nascar' | 'ushape'>
-                        title="Wheel Style"
-                        value={config.steer.config.style ?? 'default'}
-                        options={[
-                          { label: 'Default', value: 'default' },
-                          { label: 'Formula', value: 'formula' },
-                          { label: 'LMP', value: 'lmp' },
-                          { label: 'NASCAR', value: 'nascar' },
-                          { label: 'U-Shape', value: 'ushape' },                          
-                        ]}
-                        onChange={(v) => handleConfigChange({ steer: { ...config.steer, config: { ...config.steer.config, style: v } } })}
-                      />
-
-                      <SettingSelectRow<'dark' | 'light'>
-                        title="Wheel Color"
-                        value={config.steer.config.color ?? 'light'}
-                        options={[
-                          { label: 'Light', value: 'light' },
-                          { label: 'Dark', value: 'dark' },                          
-                        ]}
-                        onChange={(v) => handleConfigChange({ steer: { ...config.steer, config: { ...config.steer.config, color: v } } })}
-                      />
-                    
-                    </SettingsSection>
-                  )}
-
-              </SettingsSection>
-
-              {/* Gear Settings */}
-              <SettingsSection title="Gear">  
-
-                  <SettingToggleRow
-                    title="Enable Gear Display"
-                    enabled={config.gear.enabled}
-                    onToggle={(newValue) =>
-                      handleConfigChange({ gear: { ...config.gear, enabled: newValue } })
-                    }
-                  />   
-
-                  {config.gear.enabled && (
-                    <SettingsSection>
-
-                      <SettingButtonGroupRow<'auto' | 'mph' | 'km/h'>
-                        title="Speed Unit"
-                        value={config.gear.unit ?? 'auto'}
-                        options={[
-                          { label: 'Auto', value: 'auto' },
-                          { label: 'MPH', value: 'mph' },
-                          { label: 'KM/H', value: 'km/h' },
-                        ]}
-                        onChange={(v) => handleConfigChange({ gear: { ...config.gear, unit: v } })}
-                      />          
-                    
-                    </SettingsSection>
-                  )}
-
-              </SettingsSection>
-
-              {/* Tachometer Settings */}
-              <SettingsSection title="Tachometer">
-
-                <SettingToggleRow
-                  title="Enable Tachometer Display"
-                  enabled={config.tachometer.enabled}
-                  onToggle={(newValue) =>
-                    handleConfigChange({ tachometer: { ...config.tachometer, enabled: newValue } })
-                  }
-                />   
-
-                {config.tachometer.enabled && (
-                  <SettingsSection>
-
-                    <SettingToggleRow
-                      title="Show RPM Text"
-                      enabled={config.tachometer.showRpmText}
-                      onToggle={(newValue) =>
-                        handleConfigChange({ tachometer: { ...config.tachometer, showRpmText: newValue } })
+              {/* OPTIONS TAB */}
+              {activeTab === 'options' && (
+                <>
+                  <SettingsSection title="Options">
+                    <SettingSliderRow
+                      title="Background Opacity"
+                      value={settings.config.background.opacity ?? 40}
+                      units="%"
+                      min={0}
+                      max={100}
+                      step={1}
+                      onChange={(v) =>
+                        handleConfigChange({ background: { opacity: v } })
                       }
-                    />   
-
-                    <CustomShiftPointsSection config={config} handleConfigChange={handleConfigChange} />
-                  
+                    />
                   </SettingsSection>
-                )}
 
-              </SettingsSection>
-              </>
-            )}
+                  {/* Trace Settings */}
+                  <SettingsSection title="Trace">
+                    <SettingToggleRow
+                      title="Enable Trace Display"
+                      enabled={config.trace.enabled}
+                      onToggle={(enabled) =>
+                        handleConfigChange({
+                          trace: { ...config.trace, enabled },
+                        })
+                      }
+                    />
 
-             {/* VISIBILITY TAB */}
-            {activeTab === 'visibility' && (
-              <SettingsSection title="Session Visibility">
-                            
-                <SessionVisibility
+                    {config.trace.enabled && (
+                      <SettingsSection>
+                        <SettingToggleRow
+                          title="Show Clutch Trace"
+                          enabled={config.trace.includeClutch}
+                          onToggle={(enabled) =>
+                            handleConfigChange({
+                              trace: {
+                                ...config.trace,
+                                includeClutch: enabled,
+                              },
+                            })
+                          }
+                        />
+
+                        <SettingToggleRow
+                          title="Show Throttle Trace"
+                          enabled={config.trace.includeThrottle}
+                          onToggle={(enabled) =>
+                            handleConfigChange({
+                              trace: {
+                                ...config.trace,
+                                includeThrottle: enabled,
+                              },
+                            })
+                          }
+                        />
+
+                        <SettingToggleRow
+                          title="Show Brake Trace"
+                          enabled={config.trace.includeBrake}
+                          onToggle={(enabled) =>
+                            handleConfigChange({
+                              trace: {
+                                ...config.trace,
+                                includeBrake: enabled,
+                              },
+                            })
+                          }
+                        />
+
+                        <SettingToggleRow
+                          title="Show ABS"
+                          enabled={config.trace.includeAbs}
+                          onToggle={(enabled) =>
+                            handleConfigChange({
+                              trace: {
+                                ...config.trace,
+                                includeAbs: enabled,
+                              },
+                            })
+                          }
+                        />
+
+                        <SettingToggleRow
+                          title="Show Steering Trace"
+                          enabled={config.trace.includeSteer ?? true}
+                          onToggle={(enabled) =>
+                            handleConfigChange({
+                              trace: {
+                                ...config.trace,
+                                includeSteer: enabled,
+                              },
+                            })
+                          }
+                        />
+
+                        <SettingSliderRow
+                          title="Stroke Width"
+                          value={config.trace.strokeWidth ?? 3}
+                          units="px"
+                          min={0}
+                          max={10}
+                          step={1}
+                          onChange={(v) =>
+                            handleConfigChange({
+                              trace: {
+                                ...config.trace,
+                                strokeWidth: v,
+                              },
+                            })
+                          }
+                        />
+
+                        <SettingSliderRow
+                          title="Max Samples"
+                          value={config.trace.maxSamples ?? 40}
+                          units=" samples"
+                          min={40}
+                          max={1000}
+                          step={1}
+                          onChange={(v) =>
+                            handleConfigChange({
+                              trace: {
+                                ...config.trace,
+                                maxSamples: v,
+                              },
+                            })
+                          }
+                        />
+                      </SettingsSection>
+                    )}
+                  </SettingsSection>
+
+                  {/* Bar Settings */}
+                  <SettingsSection title="Bar">
+                    <SettingToggleRow
+                      title="Enable Bar Display"
+                      enabled={config.bar.enabled}
+                      onToggle={(enabled) =>
+                        handleConfigChange({ bar: { ...config.bar, enabled } })
+                      }
+                    />
+
+                    {config.bar.enabled && (
+                      <SettingsSection>
+                        <SettingToggleRow
+                          title="Show Clutch Bar"
+                          enabled={config.bar.includeClutch}
+                          onToggle={(enabled) =>
+                            handleConfigChange({
+                              bar: {
+                                ...config.bar,
+                                includeClutch: enabled,
+                              },
+                            })
+                          }
+                        />
+
+                        <SettingToggleRow
+                          title="Show Throttle Bar"
+                          enabled={config.bar.includeThrottle}
+                          onToggle={(enabled) =>
+                            handleConfigChange({
+                              bar: {
+                                ...config.bar,
+                                includeThrottle: enabled,
+                              },
+                            })
+                          }
+                        />
+
+                        <SettingToggleRow
+                          title="Show Brake Bar"
+                          enabled={config.bar.includeBrake}
+                          onToggle={(enabled) =>
+                            handleConfigChange({
+                              bar: {
+                                ...config.bar,
+                                includeBrake: enabled,
+                              },
+                            })
+                          }
+                        />
+
+                        <SettingToggleRow
+                          title="Show ABS Indicator"
+                          enabled={config.bar.includeAbs}
+                          onToggle={(enabled) =>
+                            handleConfigChange({
+                              bar: {
+                                ...config.bar,
+                                includeAbs: enabled,
+                              },
+                            })
+                          }
+                        />
+                      </SettingsSection>
+                    )}
+                  </SettingsSection>
+
+                  {/* ABS Settings */}
+                  <SettingsSection title="ABS Indicator">
+                    <SettingToggleRow
+                      title="Enable ABS Indicator"
+                      enabled={config.abs?.enabled ?? false}
+                      onToggle={(newValue) =>
+                        handleConfigChange({
+                          abs: { ...config.abs, enabled: newValue },
+                        })
+                      }
+                    />
+                  </SettingsSection>
+
+                  {/* Steer Settings */}
+                  <SettingsSection title="Steer">
+                    <SettingToggleRow
+                      title="Enable Steer Display"
+                      enabled={config.steer.enabled}
+                      onToggle={(newValue) =>
+                        handleConfigChange({
+                          steer: { ...config.steer, enabled: newValue },
+                        })
+                      }
+                    />
+
+                    {config.steer.enabled && (
+                      <SettingsSection>
+                        <SettingSelectRow<
+                          'default' | 'formula' | 'lmp' | 'nascar' | 'ushape'
+                        >
+                          title="Wheel Style"
+                          value={config.steer.config.style ?? 'default'}
+                          options={[
+                            { label: 'Default', value: 'default' },
+                            { label: 'Formula', value: 'formula' },
+                            { label: 'LMP', value: 'lmp' },
+                            { label: 'NASCAR', value: 'nascar' },
+                            { label: 'U-Shape', value: 'ushape' },
+                          ]}
+                          onChange={(v) =>
+                            handleConfigChange({
+                              steer: {
+                                ...config.steer,
+                                config: { ...config.steer.config, style: v },
+                              },
+                            })
+                          }
+                        />
+
+                        <SettingSelectRow<'dark' | 'light'>
+                          title="Wheel Color"
+                          value={config.steer.config.color ?? 'light'}
+                          options={[
+                            { label: 'Light', value: 'light' },
+                            { label: 'Dark', value: 'dark' },
+                          ]}
+                          onChange={(v) =>
+                            handleConfigChange({
+                              steer: {
+                                ...config.steer,
+                                config: { ...config.steer.config, color: v },
+                              },
+                            })
+                          }
+                        />
+                      </SettingsSection>
+                    )}
+                  </SettingsSection>
+
+                  {/* Gear Settings */}
+                  <SettingsSection title="Gear">
+                    <SettingToggleRow
+                      title="Enable Gear Display"
+                      enabled={config.gear.enabled}
+                      onToggle={(newValue) =>
+                        handleConfigChange({
+                          gear: { ...config.gear, enabled: newValue },
+                        })
+                      }
+                    />
+
+                    {config.gear.enabled && (
+                      <SettingsSection>
+                        <SettingButtonGroupRow<'auto' | 'mph' | 'km/h'>
+                          title="Speed Unit"
+                          value={config.gear.unit ?? 'auto'}
+                          options={[
+                            { label: 'Auto', value: 'auto' },
+                            { label: 'MPH', value: 'mph' },
+                            { label: 'KM/H', value: 'km/h' },
+                          ]}
+                          onChange={(v) =>
+                            handleConfigChange({
+                              gear: { ...config.gear, unit: v },
+                            })
+                          }
+                        />
+                      </SettingsSection>
+                    )}
+                  </SettingsSection>
+
+                  {/* Tachometer Settings */}
+                  <SettingsSection title="Tachometer">
+                    <SettingToggleRow
+                      title="Enable Tachometer Display"
+                      enabled={config.tachometer.enabled}
+                      onToggle={(newValue) =>
+                        handleConfigChange({
+                          tachometer: {
+                            ...config.tachometer,
+                            enabled: newValue,
+                          },
+                        })
+                      }
+                    />
+
+                    {config.tachometer.enabled && (
+                      <SettingsSection>
+                        <SettingToggleRow
+                          title="Show RPM Text"
+                          enabled={config.tachometer.showRpmText}
+                          onToggle={(newValue) =>
+                            handleConfigChange({
+                              tachometer: {
+                                ...config.tachometer,
+                                showRpmText: newValue,
+                              },
+                            })
+                          }
+                        />
+
+                        <CustomShiftPointsSection
+                          config={config}
+                          handleConfigChange={handleConfigChange}
+                        />
+                      </SettingsSection>
+                    )}
+                  </SettingsSection>
+                </>
+              )}
+
+              {/* VISIBILITY TAB */}
+              {activeTab === 'visibility' && (
+                <SettingsSection title="Session Visibility">
+                  <SessionVisibility
                     sessionVisibility={settings.config.sessionVisibility}
                     handleConfigChange={handleConfigChange}
                   />
 
-                <SettingDivider />
+                  <SettingDivider />
 
-                <SettingToggleRow
-                  title="Show only when on track"
-                  description="If enabled, inputs will only be shown when driving"
-                  enabled={settings.config.showOnlyWhenOnTrack ?? false}
-                  onToggle={(newValue) =>
-                    handleConfigChange({ showOnlyWhenOnTrack: newValue })
-                  }
-                />
-
-              </SettingsSection>
-            )}
-
+                  <SettingToggleRow
+                    title="Show only when on track"
+                    description="If enabled, inputs will only be shown when driving"
+                    enabled={settings.config.showOnlyWhenOnTrack ?? false}
+                    onToggle={(newValue) =>
+                      handleConfigChange({ showOnlyWhenOnTrack: newValue })
+                    }
+                  />
+                </SettingsSection>
+              )}
+            </div>
           </div>
-        </div>            
         );
       }}
     </BaseSettingsSection>

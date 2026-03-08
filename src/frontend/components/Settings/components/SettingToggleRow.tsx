@@ -16,20 +16,13 @@ export function SettingToggleRow({
   return (
     <div className="flex items-center justify-between">
       <div>
-        <h4 className="text-md font-medium text-slate-300">
-          {title}
-        </h4>
+        <h4 className="text-md font-medium text-slate-300">{title}</h4>
         {description && (
-          <p className="text-sm text-slate-500 pr-8">
-            {description}
-          </p>
+          <p className="text-sm text-slate-500 pr-8">{description}</p>
         )}
       </div>
 
-      <ToggleSwitch
-        enabled={enabled}
-        onToggle={onToggle}
-      />
+      <ToggleSwitch enabled={enabled} onToggle={onToggle} />
     </div>
   );
 }

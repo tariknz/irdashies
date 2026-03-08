@@ -1,5 +1,5 @@
 import { useDashboard } from '@irdashies/context';
-import { FlagWidgetSettings } from '../../Settings/types';
+import { FlagWidgetSettings } from '@irdashies/types';
 
 export const useFlagSettings = () => {
   const { currentDashboard } = useDashboard();

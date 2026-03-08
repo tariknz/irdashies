@@ -208,13 +208,17 @@ Displays standings information for the current session.
 - Title bar with session progress bar
 - Header and footer bars with customizable items and display order:
   - Session name, session time (remaining/elapsed), session clock time, incident count
-  - Brake bias, local time, track wetness, precipitation
+  - Brake bias, local time, track wetness, precipitation, wind speed/direction
   - Air and track temperature (Metric/Imperial units)
 - Driver standings configuration:
   - Drivers to show around player
   - Drivers to show in other classes
   - Minimum drivers in player's class
   - Top drivers to always show
+  - Configurable divider line between pinned and remaining drivers
+- Optional position change column (arrows vs qualifying grid baseline)
+- All drivers shown immediately at practice/pre-qualifying start (sorted by car number)
+- Toggle to strip car numbers from driver names
 - Customizable display order for all columns
 - Adjustable background opacity
 - Option to show only when on track
@@ -250,9 +254,10 @@ Displays drive relative delta information for the current session.
 - Title bar with session progress bar
 - Header and footer bars with customizable items and display order:
   - Session name, session time (remaining/elapsed), session clock time, incident count
-  - Brake bias, local time, track wetness, precipitation
+  - Brake bias, local time, track wetness, precipitation, wind speed/direction
   - Air and track temperature (Metric/Imperial units)
 - Configurable number of drivers to show around player (1-10)
+- Toggle to strip car numbers from driver names
 - Customizable display order for all columns
 - Adjustable background opacity
 - Option to show only when on track
@@ -267,9 +272,12 @@ Displays a track map with the current position of the cars on track and the trac
 
 **Features:**
 
-- Real-time car positions on track
+- Real-time car positions on track (live telemetry)
 - Track layout visualization
 - Optional turn numbers and names display
+  - Toggleable high contrast backgrounds for turn name labels
+  - Adjustable turn name font sizes
+- Pit lane highlighting with "P" indicators for cars in the pits
 - Show/hide car numbers on driver circles
 - Configurable driver and player circle sizes (10-100px)
 - Configurable track line width (1-100px) and outline width (1-150px)
@@ -421,10 +429,11 @@ Helps you manage your pit stops with clear visual guidance. It assists with spee
 
 **Features:**
 
-- Speed Limit Assistant: Colour-coded warnings (Green/Amber/Red) show how close you are to the pit speed limit.
+- Speed Limit Assistant: Vertical colour-coded indicator (Green/Amber/Red) showing proximity to the pit speed limit, toggleable speed bar.
 - Pitbox Countdown: A distance tracker and progress bar show exactly how far you are from your pit stall.
 - Countdown Bars: Colour-coded progress bars for pit entry, pitbox, and pit exit distances (Green → Yellow → Blue).
   - Configurable vertical/horizontal orientation with side-by-side layout option
+  - Three semantic rows (32×80px) for compact display
 - Pit Exit Inputs: Throttle/clutch display to optimize pit exits with phase-based visibility options.
 - Traffic Monitor: See how many cars are currently ahead or behind you in the pitlane.
 - Early Warning: Alerts you if your pitbox is located near the pit entry.
@@ -447,6 +456,26 @@ Displays racing flags in an LED-matrix style, automatically showing the most rel
 
 ![Flag Widget](./docs/assets/flags.png)
 
+### Setup Comparison Tool
+
+Side-by-side setup analysis to compare car setup changes between sessions.
+
+**Features:**
+
+- Side-by-side setup diff with changed values highlighted in red
+- Snapshot timestamps for each saved setup
+- Move setups left/right to reorder comparisons
+
+### Twitch Chat Overlay
+
+Displays live Twitch chat directly in your overlay, useful for streamers who want chat visible while racing.
+
+**Features:**
+
+- Live chat display with configurable channel name (no OAuth required)
+- Configurable font size and background opacity
+- Visible even when iRacing is not running
+
 ### Telemetry Inspector
 
 A powerful tool for viewing live data coming from iRacing. While mostly used for debugging, it's great for seeing exactly what data the app is receiving in real-time.
@@ -458,7 +487,7 @@ A powerful tool for viewing live data coming from iRacing. While mostly used for
 - Profile Management
   - Save and switch between different dashboard configurations
   - Multiple profiles for different racing scenarios or streaming setups
-  - Each profile can be accessed as a browser source for OBS streaming
+  - Each profile can be accessed as its own browser source URL for OBS streaming
 - Streamer & OBS Ready
   - Built-in Web Server: All overlays can be used as a browser source in OBS. Use `http://localhost:3000/dashboard` for the default profile, or `http://localhost:3000/dashboard?profile=<profileId>` for specific profiles.
   - Network Access: Enable network access in settings to allow other devices on your local network to access the dashboard (useful for dual-PC streaming setups).

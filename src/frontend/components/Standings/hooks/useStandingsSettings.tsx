@@ -1,12 +1,12 @@
 import { useDashboard } from '@irdashies/context';
-import { StandingsWidgetSettings } from '../../Settings/types';
+import { StandingsWidgetSettings } from '@irdashies/types';
 
 export const useStandingsSettings = () => {
   const { currentDashboard } = useDashboard();
 
   const standingsSettings = currentDashboard?.widgets.find(
-    (widget) => widget.id === 'standings',
+    (widget) => widget.id === 'standings'
   )?.config;
-  
-  return standingsSettings as StandingsWidgetSettings['config'];
-}; 
+
+  return standingsSettings as unknown as StandingsWidgetSettings['config'];
+};

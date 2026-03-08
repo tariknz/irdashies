@@ -2,7 +2,11 @@ import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import { useDashboard } from '@irdashies/context';
 import { TabButton } from '../components/TabButton';
-import { FlatTrackMapWidgetSettings, SessionVisibilitySettings, SettingsTabType } from '../types';
+import {
+  FlatTrackMapWidgetSettings,
+  SettingsTabType,
+  getWidgetDefaultConfig,
+} from '@irdashies/types';
 import { SessionVisibility } from '../components/SessionVisibility';
 import { SettingsSection } from '../components/SettingSection';
 import { SettingSliderRow } from '../components/SettingSliderRow';
@@ -12,60 +16,7 @@ import { SettingDivider } from '../components/SettingDivider';
 
 const SETTING_ID = 'flatmap';
 
-const defaultConfig: FlatTrackMapWidgetSettings['config'] = {
-  showCarNumbers: true,
-  displayMode: 'carNumber',
-  driverCircleSize: 40,
-  playerCircleSize: 40,
-  trackmapFontSize: 100,
-  trackLineWidth: 20,
-  trackOutlineWidth: 40,
-  invertTrackColors: false,
-  useHighlightColor: false,
-  showOnlyWhenOnTrack: false,
-  sessionVisibility: {
-    race: true,
-    loneQualify: true,
-    openQualify: true,
-    practice: true,
-    offlineTesting: true,
-  },
-};
-
-const migrateConfig = (
-  savedConfig: unknown
-): FlatTrackMapWidgetSettings['config'] => {
-  if (!savedConfig || typeof savedConfig !== 'object') return defaultConfig;
-
-  const config = savedConfig as Record<string, unknown>;
-  return {
-    showCarNumbers:
-      (config.showCarNumbers as boolean) ?? defaultConfig.showCarNumbers,
-    displayMode:
-      (config.displayMode as 'carNumber' | 'sessionPosition') ??
-      defaultConfig.displayMode,
-    driverCircleSize:
-      (config.driverCircleSize as number) ?? defaultConfig.driverCircleSize,
-    playerCircleSize:
-      (config.playerCircleSize as number) ?? defaultConfig.playerCircleSize,
-    trackmapFontSize:
-      (config.trackmapFontSize as number) ?? defaultConfig.trackmapFontSize,
-    trackLineWidth:
-      (config.trackLineWidth as number) ?? defaultConfig.trackLineWidth,
-    trackOutlineWidth:
-      (config.trackOutlineWidth as number) ?? defaultConfig.trackOutlineWidth,
-    invertTrackColors:
-      (config.invertTrackColors as boolean) ?? defaultConfig.invertTrackColors,
-    useHighlightColor:
-      (config.useHighlightColor as boolean) ?? defaultConfig.useHighlightColor,
-    showOnlyWhenOnTrack:
-      (config.showOnlyWhenOnTrack as boolean) ??
-      defaultConfig.showOnlyWhenOnTrack,
-    sessionVisibility:
-      (config.sessionVisibility as SessionVisibilitySettings) ??
-      defaultConfig.sessionVisibility,
-  };
-};
+const defaultConfig = getWidgetDefaultConfig('flatmap');
 
 export const FlatTrackMapSettings = () => {
   const { currentDashboard } = useDashboard();
@@ -76,12 +27,15 @@ export const FlatTrackMapSettings = () => {
     enabled:
       currentDashboard?.widgets.find((w) => w.id === SETTING_ID)?.enabled ??
       false,
-    config: migrateConfig(savedSettings?.config),
+    config:
+      (savedSettings?.config as FlatTrackMapWidgetSettings['config']) ??
+      defaultConfig,
   });
 
   // Tab state with persistence
   const [activeTab, setActiveTab] = useState<SettingsTabType>(
-    () => (localStorage.getItem('flatTrackMapTab') as SettingsTabType) || 'track'
+    () =>
+      (localStorage.getItem('flatTrackMapTab') as SettingsTabType) || 'track'
   );
 
   useEffect(() => {
@@ -102,26 +56,35 @@ export const FlatTrackMapSettings = () => {
     >
       {(handleConfigChange) => (
         <div className="space-y-4">
-
           {/* Tabs */}
           <div className="flex border-b border-slate-700/50">
-            <TabButton id="track" activeTab={activeTab} setActiveTab={setActiveTab}>
+            <TabButton
+              id="track"
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+            >
               Track
             </TabButton>
-            <TabButton id="drivers" activeTab={activeTab} setActiveTab={setActiveTab}>
+            <TabButton
+              id="drivers"
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+            >
               Drivers
             </TabButton>
-            <TabButton id="visibility" activeTab={activeTab} setActiveTab={setActiveTab}>
+            <TabButton
+              id="visibility"
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+            >
               Visibility
             </TabButton>
           </div>
 
           <div className="pt-4">
-
             {/* TRACK TAB */}
             {activeTab === 'track' && (
               <SettingsSection title="Track Settings">
-
                 <SettingSliderRow
                   title="Track Line Width"
                   description="Thickness of the track line (matches curved track map scale)"
@@ -130,9 +93,7 @@ export const FlatTrackMapSettings = () => {
                   min={5}
                   max={40}
                   step={1}
-                  onChange={(v) =>
-                    handleConfigChange({ trackLineWidth: v })
-                  }
+                  onChange={(v) => handleConfigChange({ trackLineWidth: v })}
                 />
 
                 <SettingSliderRow
@@ -143,9 +104,7 @@ export const FlatTrackMapSettings = () => {
                   min={10}
                   max={80}
                   step={1}
-                  onChange={(v) =>
-                    handleConfigChange({ trackOutlineWidth: v })
-                  }
+                  onChange={(v) => handleConfigChange({ trackOutlineWidth: v })}
                 />
 
                 <SettingToggleRow
@@ -156,14 +115,12 @@ export const FlatTrackMapSettings = () => {
                     handleConfigChange({ invertTrackColors: newValue })
                   }
                 />
-
               </SettingsSection>
             )}
 
             {/* DRIVERS TAB */}
             {activeTab === 'drivers' && (
               <SettingsSection title="Driver Circles">
-  
                 <SettingToggleRow
                   title="Show Car Numbers"
                   description="Display car numbers on driver circles"
@@ -175,7 +132,9 @@ export const FlatTrackMapSettings = () => {
 
                 {settings.config.showCarNumbers && (
                   <SettingsSection>
-                    <SettingButtonGroupRow<'carNumber' | 'sessionPosition' | 'livePosition'>
+                    <SettingButtonGroupRow<
+                      'carNumber' | 'sessionPosition' | 'livePosition'
+                    >
                       title="Display Mode"
                       value={settings.config.displayMode}
                       options={[
@@ -184,8 +143,8 @@ export const FlatTrackMapSettings = () => {
                         { label: 'Live Position', value: 'livePosition' },
                       ]}
                       onChange={(v) => handleConfigChange({ displayMode: v })}
-                    />      
-                  </SettingsSection>            
+                    />
+                  </SettingsSection>
                 )}
 
                 <SettingSliderRow
@@ -196,9 +155,7 @@ export const FlatTrackMapSettings = () => {
                   min={10}
                   max={80}
                   step={1}
-                  onChange={(v) =>
-                    handleConfigChange({ driverCircleSize: v })
-                  }
+                  onChange={(v) => handleConfigChange({ driverCircleSize: v })}
                 />
 
                 <SettingSliderRow
@@ -209,9 +166,7 @@ export const FlatTrackMapSettings = () => {
                   min={10}
                   max={100}
                   step={1}
-                  onChange={(v) =>
-                    handleConfigChange({ playerCircleSize: v })
-                  }
+                  onChange={(v) => handleConfigChange({ playerCircleSize: v })}
                 />
 
                 <SettingSliderRow
@@ -222,9 +177,7 @@ export const FlatTrackMapSettings = () => {
                   min={50}
                   max={150}
                   step={1}
-                  onChange={(v) =>
-                    handleConfigChange({ trackmapFontSize: v })
-                  }
+                  onChange={(v) => handleConfigChange({ trackmapFontSize: v })}
                 />
 
                 <SettingToggleRow
@@ -236,18 +189,16 @@ export const FlatTrackMapSettings = () => {
                     handleConfigChange({ useHighlightColor: newValue })
                   }
                 />
-
               </SettingsSection>
             )}
 
             {/* VISIBILITY TAB */}
             {activeTab === 'visibility' && (
               <SettingsSection title="Session Visibility">
-                            
                 <SessionVisibility
-                    sessionVisibility={settings.config.sessionVisibility}
-                    handleConfigChange={handleConfigChange}
-                  />
+                  sessionVisibility={settings.config.sessionVisibility}
+                  handleConfigChange={handleConfigChange}
+                />
 
                 <SettingDivider />
 
@@ -259,12 +210,10 @@ export const FlatTrackMapSettings = () => {
                     handleConfigChange({ showOnlyWhenOnTrack: newValue })
                   }
                 />
-
               </SettingsSection>
             )}
-
+          </div>
         </div>
-      </div>
       )}
     </BaseSettingsSection>
   );
