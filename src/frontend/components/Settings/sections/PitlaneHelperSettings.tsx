@@ -16,73 +16,13 @@ import { SessionVisibility } from '../components/SessionVisibility';
 
 const SETTING_ID = 'pitlanehelper';
 
-const defaultConfig: PitlaneHelperWidgetSettings['config'] = {
-  showMode: 'approaching',
-  approachDistance: 200,
-  enablePitLimiterWarning: true,
-  enableEarlyPitboxWarning: true,
-  earlyPitboxThreshold: 75,
-  showPitlaneTraffic: true,
-  background: { opacity: 80 },
-  progressBarOrientation: 'horizontal',
-  speedBarOrientation: 'horizontal',
-  showPastPitBox: false,
-  showProgressBar: true,
-  showSpeedBar: true,
-  showSpeedSummary: true,
-  speedLimitStyle: 'european',
-  showPitExitInputs: false,
-  pitExitInputs: {
-    throttle: true,
-    clutch: true,
-  },
-  showInputsPhase: 'afterPitbox',
-  sessionVisibility: {
-    race: true,
-    loneQualify: false,
-    openQualify: false,
-    practice: true,
-    offlineTesting: true,
-  },
-};
+const defaultConfig = getWidgetDefaultConfig('pitlanehelper');
 
 export const PitlaneHelperSettings = () => {
   const { currentDashboard } = useDashboard();
   const savedSettings = currentDashboard?.widgets.find(
     (w) => w.id === SETTING_ID
   ) as PitlaneHelperWidgetSettings | undefined;
-
-  // Migrate old configs to include new fields
-  const migratedConfig = savedSettings?.config
-    ? {
-        ...defaultConfig,
-        ...savedSettings.config,
-        progressBarOrientation:
-          savedSettings.config.progressBarOrientation ??
-          defaultConfig.progressBarOrientation,
-        speedBarOrientation:
-          savedSettings.config.speedBarOrientation ??
-          defaultConfig.speedBarOrientation,
-        showProgressBar:
-          savedSettings.config.showProgressBar ?? defaultConfig.showProgressBar,
-        showSpeedBar:
-          savedSettings.config.showSpeedBar ?? defaultConfig.showSpeedBar,
-        showSpeedSummary:
-          savedSettings.config.showSpeedSummary ?? defaultConfig.showSpeedSummary,
-        speedLimitStyle:
-          savedSettings.config.speedLimitStyle ?? defaultConfig.speedLimitStyle,
-        showPitExitInputs:
-          savedSettings.config.showPitExitInputs ??
-          defaultConfig.showPitExitInputs,
-        showPastPitBox:
-          savedSettings.config.showPastPitBox ??
-          defaultConfig.showPastPitBox,
-        pitExitInputs:
-          savedSettings.config.pitExitInputs ?? defaultConfig.pitExitInputs,
-        showInputsPhase:
-          savedSettings.config.showInputsPhase ?? defaultConfig.showInputsPhase,
-      }
-    : defaultConfig;
 
   const [settings, setSettings] = useState<PitlaneHelperWidgetSettings>({
     enabled: savedSettings?.enabled ?? false,

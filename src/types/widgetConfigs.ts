@@ -419,6 +419,8 @@ export interface PitlaneHelperConfig {
   showPastPitBox?: boolean;
   showProgressBar?: boolean;
   showSpeedBar?: boolean;
+  showSpeedSummary: boolean;
+  speedLimitStyle?: 'european' | 'american';
   showPitExitInputs?: boolean;
   pitExitInputs?: { throttle: boolean; clutch: boolean };
   showInputsPhase?: 'atPitbox' | 'afterPitbox' | 'always';

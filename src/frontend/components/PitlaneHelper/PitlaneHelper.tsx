@@ -202,15 +202,15 @@ export const PitlaneHelperBody = ({
       {config.showSpeedSummary && (
         <div
           className={[
-            'flex gap-2 w-full h-full"',
+            'flex gap-2 w-full h-full flex-1',
             config.speedBarOrientation == 'vertical'
-              ? 'flex-row flex-2'
-              : 'flex-col flex-1',
+              ? 'flex-row'
+              : 'flex-col',
           ].join(' ')}
         >
           <div
             className={[
-              'flex flex-col flex-2 items-center justify-center p-3 rounded transition-all text-center w-full h-full ',
+              'flex flex-col flex-2 items-center justify-center p-2 rounded transition-all text-center w-full h-full ',
               speed.isSeverelyOver
                 ? 'bg-red-600 animate-pulse'
                 : speed.isSpeeding
@@ -226,17 +226,19 @@ export const PitlaneHelperBody = ({
                   : speed.colorClass,
               ].join(' ')}
             >
-              {speed.deltaKph > 0 ? '+' : ''}
-              {displayKph
-                ? speed.deltaKph.toFixed(1)
-                : speed.deltaMph.toFixed(1)}
+              <div className="text-[1.4em]">
+                {speed.deltaKph > 0 ? '+' : ''}
+                {displayKph
+                  ? speed.deltaKph.toFixed(1)
+                  : speed.deltaMph.toFixed(1)}
+              </div>
             </div>
             <div className="text-xs text-slate-400">
               {displayKph ? 'km/h' : 'mph'}
             </div>
             {config.speedLimitStyle === 'european' && (
-              <div className="text-3xl font-bold text-slate-800 mt-2 w-[2em] h-[2em] bg-white border-3 border-red-500 rounded-full flex items-center justify-center">
-                <div className="-translate-y-[0.05em]">
+              <div className="text-3xl font-bold text-slate-800 mt-2 w-[2.5em] h-[2.5em] bg-white border-3 border-red-500 rounded-full flex items-center justify-center">
+                <div className="-translate-y-[0.05em] text-[1.4em]">
                   {displayKph
                     ? speed.limitKph.toFixed(0)
                     : speed.limitMph.toFixed(0)}
@@ -244,16 +246,18 @@ export const PitlaneHelperBody = ({
               </div>
             )}
             {config.speedLimitStyle === 'american' && (
-              <div className="font-bold text-3xl text-slate-800 mt-2 w-[2em] h-[2em] bg-white border-3 border-black rounded-lg flex flex-col items-center justify-center">
-                <div className="text-xs font-semibold tracking-tight leading-none">LIMIT</div>
-                {displayKph
-                  ? speed.limitKph.toFixed(0)
-                  : speed.limitMph.toFixed(0)}
+              <div className="font-bold text-3xl text-slate-800 mt-2 w-[2.5em] h-[2.5em] bg-white border-3 border-black rounded-lg flex flex-col items-center justify-center">
+                <div className="text-[0.6em] font-semibold tracking-tight leading-none">LIMIT</div>
+                <div className="text-[1.25em]">
+                  {displayKph
+                    ? speed.limitKph.toFixed(0)
+                    : speed.limitMph.toFixed(0)}
+                </div>
               </div>
             )}
           </div>
 
-          {config.speedBarOrientation == 'vertical' && (
+          {config.showSpeedBar && config.speedBarOrientation == 'vertical' && (
             <div className="flex gap-3 w-full h-full flex-1">
               <PitSpeedBar
                 speedKph={speed.speedKph}
