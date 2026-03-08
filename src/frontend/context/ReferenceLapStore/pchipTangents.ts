@@ -13,7 +13,7 @@ export function fillReferenceGaps(
 
   // Only fill if we are missing a small amount (e.g., within 5-10%)
   // If we are missing 50%, the lap is likely too broken to interpolate accurately.
-  if (actualCount >= targetCount || actualCount < targetCount * 0.9) {
+  if (actualCount >= targetCount || actualCount < targetCount * 0.75) {
     return;
   }
 
