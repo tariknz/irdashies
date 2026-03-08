@@ -24,22 +24,6 @@ interface TelemetryInspectorWidgetSettings {
 
 const defaultConfig = getWidgetDefaultConfig('telemetryinspector');
 
-const migrateConfig = (savedConfig: unknown): TelemetryInspectorConfig => {
-  if (!savedConfig || typeof savedConfig !== 'object') return defaultConfig;
-  const config = savedConfig as Record<string, unknown>;
-
-  return {
-    background: {
-      opacity:
-        (config.background as { opacity?: number })?.opacity ??
-        defaultConfig.background?.opacity ??
-        80,
-    },
-    properties:
-      (config.properties as PropertyConfig[]) ?? defaultConfig.properties,
-  };
-};
-
 // Common telemetry properties for quick add
 const commonTelemetryProperties = [
   { path: 'Speed', label: 'Speed' },
@@ -86,7 +70,8 @@ export const TelemetryInspectorSettings = () => {
   ) as TelemetryInspectorWidgetSettings | undefined;
   const [settings, setSettings] = useState<TelemetryInspectorWidgetSettings>({
     enabled: savedSettings?.enabled ?? false,
-    config: migrateConfig(savedSettings?.config),
+    config:
+      (savedSettings?.config as TelemetryInspectorConfig) ?? defaultConfig,
   });
 
   const [newProperty, setNewProperty] = useState<PropertyConfig>({

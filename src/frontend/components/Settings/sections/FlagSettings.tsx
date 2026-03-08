@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import {
   FlagWidgetSettings,
-  SessionVisibilitySettings,
   SettingsTabType,
   getWidgetDefaultConfig,
 } from '@irdashies/types';
@@ -19,31 +18,6 @@ const SETTING_ID = 'flag';
 
 const defaultConfig = getWidgetDefaultConfig('flag');
 
-const migrateConfig = (savedConfig: unknown): FlagWidgetSettings['config'] => {
-  if (!savedConfig || typeof savedConfig !== 'object') return defaultConfig;
-  const config = savedConfig as Record<string, unknown>;
-
-  return {
-    enabled: (config.enabled as boolean) ?? defaultConfig.enabled,
-    showOnlyWhenOnTrack:
-      (config.showOnlyWhenOnTrack as boolean) ??
-      defaultConfig.showOnlyWhenOnTrack,
-    showLabel: (config.showLabel as boolean) ?? defaultConfig.showLabel,
-    animate: (config.animate as boolean) ?? defaultConfig.animate,
-    blinkPeriod: (config.blinkPeriod as number) ?? defaultConfig.blinkPeriod,
-    showNoFlagState:
-      (config.showNoFlagState as boolean) ?? defaultConfig.showNoFlagState,
-    matrixMode:
-      (config.matrixMode as '8x8' | '16x16' | 'uniform') ??
-      defaultConfig.matrixMode,
-    enableGlow: (config.enableGlow as boolean) ?? defaultConfig.enableGlow,
-    sessionVisibility:
-      (config.sessionVisibility as SessionVisibilitySettings) ??
-      defaultConfig.sessionVisibility,
-    doubleFlag: (config.doubleFlag as boolean) ?? defaultConfig.doubleFlag,
-  };
-};
-
 export const FlagSettings = () => {
   const { currentDashboard } = useDashboard();
 
@@ -54,7 +28,8 @@ export const FlagSettings = () => {
   const [settings, setSettings] = useState<FlagWidgetSettings>({
     id: SETTING_ID,
     enabled: savedSettings?.enabled ?? true,
-    config: migrateConfig(savedSettings?.config),
+    config:
+      (savedSettings?.config as FlagWidgetSettings['config']) ?? defaultConfig,
   });
 
   // Tab state with persistence

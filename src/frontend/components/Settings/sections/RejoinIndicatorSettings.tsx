@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import {
   RejoinIndicatorWidgetSettings,
-  SessionVisibilitySettings,
   SettingsTabType,
   getWidgetDefaultConfig,
 } from '@irdashies/types';
@@ -16,21 +15,6 @@ const SETTING_ID = 'rejoin';
 
 const defaultConfig = getWidgetDefaultConfig('rejoin');
 
-const migrateConfig = (
-  savedConfig: unknown
-): RejoinIndicatorWidgetSettings['config'] => {
-  if (!savedConfig || typeof savedConfig !== 'object') return defaultConfig;
-  const config = savedConfig as Record<string, unknown>;
-  return {
-    showAtSpeed: (config.showAtSpeed as number) ?? defaultConfig.showAtSpeed,
-    careGap: (config.careGap as number) ?? defaultConfig.careGap,
-    stopGap: (config.stopGap as number) ?? defaultConfig.stopGap,
-    sessionVisibility:
-      (config.sessionVisibility as SessionVisibilitySettings) ??
-      defaultConfig.sessionVisibility,
-  };
-};
-
 export const RejoinIndicatorSettings = () => {
   const { currentDashboard } = useDashboard();
   const savedSettings = currentDashboard?.widgets.find(
@@ -38,7 +22,9 @@ export const RejoinIndicatorSettings = () => {
   ) as RejoinIndicatorWidgetSettings | undefined;
   const [settings, setSettings] = useState<RejoinIndicatorWidgetSettings>({
     enabled: savedSettings?.enabled ?? false,
-    config: migrateConfig(savedSettings?.config),
+    config:
+      (savedSettings?.config as RejoinIndicatorWidgetSettings['config']) ??
+      defaultConfig,
   });
 
   // Tab state with persistence

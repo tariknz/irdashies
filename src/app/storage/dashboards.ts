@@ -4,7 +4,7 @@ import type {
   DashboardProfile,
 } from '@irdashies/types';
 import { emitDashboardUpdated } from './dashboardEvents';
-import { defaultDashboard } from '@irdashies/types';
+import { defaultDashboard, deepMergeConfig } from '@irdashies/types';
 import { readData, writeData } from './storage';
 import { writeFile, mkdir, readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
@@ -62,14 +62,17 @@ export const getOrCreateDefaultDashboardForProfile = (profileId: string) => {
         ...dashboard.generalSettings,
       },
       widgets: [...dashboard.widgets, ...missingWidgets].map((widget) => {
-        // add missing default widget config
         const defaultWidget = defaultDashboard.widgets.find(
           (w) => w.id === widget.id
         );
-        if (!widget.config && defaultWidget?.config) {
-          return { ...widget, config: defaultWidget.config };
-        }
-        return widget;
+        if (!defaultWidget?.config) return widget;
+        return {
+          ...widget,
+          config: deepMergeConfig(
+            defaultWidget.config as Record<string, unknown>,
+            widget.config
+          ),
+        };
       }),
     };
 

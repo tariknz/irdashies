@@ -24,36 +24,11 @@ export const PitlaneHelperSettings = () => {
     (w) => w.id === SETTING_ID
   ) as PitlaneHelperWidgetSettings | undefined;
 
-  // Migrate old configs to include new fields
-  const migratedConfig = savedSettings?.config
-    ? {
-        ...defaultConfig,
-        ...savedSettings.config,
-        progressBarOrientation:
-          savedSettings.config.progressBarOrientation ??
-          defaultConfig.progressBarOrientation,
-        speedBarOrientation:
-          savedSettings.config.speedBarOrientation ??
-          defaultConfig.speedBarOrientation,
-        showProgressBar:
-          savedSettings.config.showProgressBar ?? defaultConfig.showProgressBar,
-        showSpeedBar:
-          savedSettings.config.showSpeedBar ?? defaultConfig.showSpeedBar,
-        showPitExitInputs:
-          savedSettings.config.showPitExitInputs ??
-          defaultConfig.showPitExitInputs,
-        showPastPitBox:
-          savedSettings.config.showPastPitBox ?? defaultConfig.showPastPitBox,
-        pitExitInputs:
-          savedSettings.config.pitExitInputs ?? defaultConfig.pitExitInputs,
-        showInputsPhase:
-          savedSettings.config.showInputsPhase ?? defaultConfig.showInputsPhase,
-      }
-    : defaultConfig;
-
   const [settings, setSettings] = useState<PitlaneHelperWidgetSettings>({
     enabled: savedSettings?.enabled ?? false,
-    config: migratedConfig,
+    config:
+      (savedSettings?.config as PitlaneHelperWidgetSettings['config']) ??
+      defaultConfig,
   });
 
   // Tab state with persistence

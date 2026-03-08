@@ -13,7 +13,7 @@ import { DEFAULT_FUEL_LAYOUT_TREE } from '../../../FuelCalculator/defaults';
 import { getWidgetDefaultConfig } from '@irdashies/types';
 import { DualFontSizeInput } from './FontSizeInputs';
 import { GridOrderSettingsList } from './GridOrderSettingsList';
-import { migrateConfig, AVAILABLE_WIDGETS_FUEL } from './utils';
+import { AVAILABLE_WIDGETS_FUEL } from './utils';
 import { WidgetFontSizeSettings } from './WidgetFontSizeSettings';
 import { FuelStatusAlertsSection } from './FuelStatusAlertsSection';
 import { FuelHistorySection } from './FuelHistorySection';
@@ -40,19 +40,16 @@ export const SingleFuelWidgetSettings = ({
   ) as FuelWidgetSettings | undefined;
 
   const [settings, setSettings] = useState<FuelWidgetSettings>(() => {
-    const initialConfig = migrateConfig(savedSettings?.config);
-
-    // Use DEFAULT_TREE_FUEL if no layout is defined
-    if (
-      (!initialConfig.layoutConfig ||
-        initialConfig.layoutConfig.length === 0) &&
-      !initialConfig.layoutTree
-    ) {
-      initialConfig.layoutTree = DEFAULT_TREE_FUEL;
-    }
+    const savedConfig =
+      (savedSettings?.config as FuelWidgetSettings['config']) ?? defaultConfig;
+    const needsDefaultTree =
+      (!savedConfig.layoutConfig || savedConfig.layoutConfig.length === 0) &&
+      !savedConfig.layoutTree;
     return {
       enabled: savedSettings?.enabled ?? false,
-      config: initialConfig,
+      config: needsDefaultTree
+        ? { ...savedConfig, layoutTree: DEFAULT_TREE_FUEL }
+        : savedConfig,
     };
   });
 

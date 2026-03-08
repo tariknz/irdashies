@@ -2,9 +2,7 @@ import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import {
   FasterCarsFromBehindWidgetSettings,
-  SessionVisibilitySettings,
   SettingsTabType,
-  getWidgetDefaultConfig,
 } from '@irdashies/types';
 import { SessionVisibility } from '../components/SessionVisibility';
 import { BadgeFormatPreview } from '../components/BadgeFormatPreview';
@@ -19,54 +17,14 @@ import { SettingSelectRow } from '../components/SettingSelectRow';
 
 const SETTING_ID = 'fastercarsfrombehind';
 
-const defaultConfig = getWidgetDefaultConfig('fastercarsfrombehind');
-
-const migrateConfig = (
-  savedConfig: unknown
-): FasterCarsFromBehindWidgetSettings['config'] => {
-  if (typeof savedConfig === 'object' && savedConfig !== null) {
-    const config = savedConfig as Record<string, unknown>;
-    return {
-      showOnlyWhenOnTrack:
-        (config.showOnlyWhenOnTrack as boolean) ??
-        defaultConfig.showOnlyWhenOnTrack,
-      distanceThreshold:
-        (config.distanceThreshold as number) ?? defaultConfig.distanceThreshold,
-      numberDriversBehind:
-        (config.numberDriversBehind as number) ??
-        defaultConfig.numberDriversBehind,
-      alignDriverBoxes:
-        (config.alignDriverBoxes as 'Top' | 'Bottom') ??
-        defaultConfig.alignDriverBoxes,
-      closestDriverBox:
-        (config.closestDriverBox as 'Top' | 'Reverse') ??
-        defaultConfig.closestDriverBox,
-      showName: (config.showName as boolean) ?? defaultConfig.showName,
-      removeNumbersFromName:
-        (config.removeNumbersFromName as boolean) ??
-        defaultConfig.removeNumbersFromName,
-      showDistance:
-        (config.showDistance as boolean) ?? defaultConfig.showDistance,
-      showBadge: (config.showBadge as boolean) ?? defaultConfig.showBadge,
-      badgeFormat: (config.badgeFormat as string) ?? defaultConfig.badgeFormat,
-      onlyShowFasterClasses:
-        (config.onlyShowFasterClasses as boolean) ??
-        defaultConfig.onlyShowFasterClasses,
-      sessionVisibility:
-        (config.sessionVisibility as SessionVisibilitySettings) ??
-        defaultConfig.sessionVisibility,
-    };
-  }
-  return defaultConfig;
-};
-
 export const FasterCarsFromBehindSettings = () => {
   const { currentDashboard } = useDashboard();
+  const fasterCarsSettings = useFasterCarsSettings();
   const [settings, setSettings] = useState<FasterCarsFromBehindWidgetSettings>({
     enabled:
       currentDashboard?.widgets.find((w) => w.id === SETTING_ID)?.enabled ??
       false,
-    config: migrateConfig(useFasterCarsSettings()),
+    config: fasterCarsSettings as FasterCarsFromBehindWidgetSettings['config'],
   });
 
   // Tab state with persistence

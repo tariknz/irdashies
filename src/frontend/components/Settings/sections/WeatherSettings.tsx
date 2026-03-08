@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import {
-  SessionVisibilitySettings,
   WeatherWidgetSettings,
   SettingsTabType,
   getWidgetDefaultConfig,
@@ -9,7 +8,6 @@ import {
 import { useDashboard } from '@irdashies/context';
 import { ToggleSwitch } from '../components/ToggleSwitch';
 import { TabButton } from '../components/TabButton';
-import { mergeDisplayOrder } from '@irdashies/utils/displayOrder';
 import { DotsSixVerticalIcon } from '@phosphor-icons/react';
 import { useSortableList } from '../../SortableList';
 // sortable list is not used right now — keep import commented until needed
@@ -49,60 +47,6 @@ const sortableSettings: SortableSetting[] = [
 ];
 
 const defaultConfig = getWidgetDefaultConfig('weather');
-
-const migrateConfig = (
-  savedConfig: unknown
-): WeatherWidgetSettings['config'] => {
-  if (!savedConfig || typeof savedConfig !== 'object') return defaultConfig;
-  const config = savedConfig as Record<string, unknown>;
-
-  return {
-    background: {
-      opacity:
-        (config.background as { opacity?: number })?.opacity ??
-        defaultConfig.background.opacity,
-    },
-    displayOrder: mergeDisplayOrder(
-      sortableSettings.map((s) => s.id),
-      config.displayOrder as string[]
-    ),
-    airTemp: {
-      enabled:
-        (config.airTemp as { enabled?: boolean })?.enabled ??
-        defaultConfig.airTemp.enabled,
-    },
-    trackTemp: {
-      enabled:
-        (config.trackTemp as { enabled?: boolean })?.enabled ??
-        defaultConfig.trackTemp.enabled,
-    },
-    wetness: {
-      enabled:
-        (config.wetness as { enabled?: boolean })?.enabled ??
-        defaultConfig.wetness.enabled,
-    },
-    trackState: {
-      enabled:
-        (config.trackState as { enabled?: boolean })?.enabled ??
-        defaultConfig.trackState.enabled,
-    },
-    humidity: {
-      enabled:
-        (config.humidity as { enabled?: boolean })?.enabled ??
-        defaultConfig.humidity.enabled,
-    },
-    wind: {
-      enabled:
-        (config.wind as { enabled?: boolean })?.enabled ??
-        defaultConfig.wind.enabled,
-    },
-    units: (config.units as 'auto' | 'Metric' | 'Imperial') ?? 'auto',
-    showOnlyWhenOnTrack: (config.showOnlyWhenOnTrack as boolean) ?? true,
-    sessionVisibility:
-      (config.sessionVisibility as SessionVisibilitySettings) ??
-      defaultConfig.sessionVisibility,
-  };
-};
 
 const DisplaySettingsList = ({
   itemsOrder,
@@ -169,7 +113,9 @@ export const WeatherSettings = () => {
   ) as WeatherWidgetSettings | undefined;
   const [settings, setSettings] = useState<WeatherWidgetSettings>({
     enabled: savedSettings?.enabled ?? false,
-    config: migrateConfig(savedSettings?.config),
+    config:
+      (savedSettings?.config as WeatherWidgetSettings['config']) ??
+      defaultConfig,
   });
 
   const [itemsOrder, setItemsOrder] = useState(settings.config.displayOrder);

@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import {
   TrackMapWidgetSettings,
-  SessionVisibilitySettings,
   SettingsTabType,
   getWidgetDefaultConfig,
 } from '@irdashies/types';
@@ -19,47 +18,6 @@ const SETTING_ID = 'map';
 
 const defaultConfig = getWidgetDefaultConfig('map');
 
-const migrateConfig = (
-  savedConfig: unknown
-): TrackMapWidgetSettings['config'] => {
-  if (!savedConfig || typeof savedConfig !== 'object') return defaultConfig;
-
-  const config = savedConfig as Record<string, unknown>;
-  return {
-    enableTurnNames:
-      (config.enableTurnNames as boolean) ?? defaultConfig.enableTurnNames,
-    showCarNumbers:
-      (config.showCarNumbers as boolean) ?? defaultConfig.showCarNumbers,
-    displayMode:
-      (config.displayMode as
-        | 'carNumber'
-        | 'sessionPosition'
-        | 'livePosition') ?? defaultConfig.displayMode,
-    invertTrackColors:
-      (config.invertTrackColors as boolean) ?? defaultConfig.invertTrackColors,
-    highContrastTurns:
-      (config.highContrastTurns as boolean) ?? defaultConfig.highContrastTurns,
-    driverCircleSize:
-      (config.driverCircleSize as number) ?? defaultConfig.driverCircleSize,
-    playerCircleSize:
-      (config.playerCircleSize as number) ?? defaultConfig.playerCircleSize,
-    trackmapFontSize:
-      (config.trackmapFontSize as number) ?? defaultConfig.trackmapFontSize,
-    trackLineWidth:
-      (config.trackLineWidth as number) ?? defaultConfig.trackLineWidth,
-    trackOutlineWidth:
-      (config.trackOutlineWidth as number) ?? defaultConfig.trackOutlineWidth,
-    useHighlightColor:
-      (config.useHighlightColor as boolean) ?? defaultConfig.useHighlightColor,
-    showOnlyWhenOnTrack:
-      (config.showOnlyWhenOnTrack as boolean) ??
-      defaultConfig.showOnlyWhenOnTrack,
-    sessionVisibility:
-      (config.sessionVisibility as SessionVisibilitySettings) ??
-      defaultConfig.sessionVisibility,
-  };
-};
-
 export const TrackMapSettings = () => {
   const { currentDashboard } = useDashboard();
   const savedSettings = currentDashboard?.widgets.find(
@@ -69,7 +27,9 @@ export const TrackMapSettings = () => {
     enabled:
       currentDashboard?.widgets.find((w) => w.id === SETTING_ID)?.enabled ??
       false,
-    config: migrateConfig(savedSettings?.config),
+    config:
+      (savedSettings?.config as TrackMapWidgetSettings['config']) ??
+      defaultConfig,
   });
 
   // Tab state with persistence

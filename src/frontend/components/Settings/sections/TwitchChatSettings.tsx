@@ -10,23 +10,6 @@ const SETTING_ID = 'twitchchat';
 
 const defaultConfig = getWidgetDefaultConfig('twitchchat');
 
-const migrateConfig = (
-  savedConfig: unknown
-): TwitchChatWidgetSettings['config'] => {
-  if (!savedConfig || typeof savedConfig !== 'object') return defaultConfig;
-  const config = savedConfig as Record<string, unknown>;
-
-  return {
-    fontSize: (config.fontSize as number) ?? defaultConfig.fontSize,
-    background: {
-      opacity:
-        (config.background as { opacity?: number })?.opacity ??
-        defaultConfig.background.opacity,
-    },
-    channel: (config.channel as string) ?? defaultConfig.channel,
-  };
-};
-
 export const TwitchChatSettings = () => {
   const { currentDashboard } = useDashboard();
   const savedSettings = currentDashboard?.widgets.find(
@@ -34,7 +17,9 @@ export const TwitchChatSettings = () => {
   ) as TwitchChatWidgetSettings | undefined;
   const [settings, setSettings] = useState<TwitchChatWidgetSettings>({
     enabled: savedSettings?.enabled ?? false,
-    config: migrateConfig(savedSettings?.config),
+    config:
+      (savedSettings?.config as TwitchChatWidgetSettings['config']) ??
+      defaultConfig,
   });
 
   if (!currentDashboard) {

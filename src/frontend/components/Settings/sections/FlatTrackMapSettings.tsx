@@ -4,7 +4,6 @@ import { useDashboard } from '@irdashies/context';
 import { TabButton } from '../components/TabButton';
 import {
   FlatTrackMapWidgetSettings,
-  SessionVisibilitySettings,
   SettingsTabType,
   getWidgetDefaultConfig,
 } from '@irdashies/types';
@@ -19,41 +18,6 @@ const SETTING_ID = 'flatmap';
 
 const defaultConfig = getWidgetDefaultConfig('flatmap');
 
-const migrateConfig = (
-  savedConfig: unknown
-): FlatTrackMapWidgetSettings['config'] => {
-  if (!savedConfig || typeof savedConfig !== 'object') return defaultConfig;
-
-  const config = savedConfig as Record<string, unknown>;
-  return {
-    showCarNumbers:
-      (config.showCarNumbers as boolean) ?? defaultConfig.showCarNumbers,
-    displayMode:
-      (config.displayMode as 'carNumber' | 'sessionPosition') ??
-      defaultConfig.displayMode,
-    driverCircleSize:
-      (config.driverCircleSize as number) ?? defaultConfig.driverCircleSize,
-    playerCircleSize:
-      (config.playerCircleSize as number) ?? defaultConfig.playerCircleSize,
-    trackmapFontSize:
-      (config.trackmapFontSize as number) ?? defaultConfig.trackmapFontSize,
-    trackLineWidth:
-      (config.trackLineWidth as number) ?? defaultConfig.trackLineWidth,
-    trackOutlineWidth:
-      (config.trackOutlineWidth as number) ?? defaultConfig.trackOutlineWidth,
-    invertTrackColors:
-      (config.invertTrackColors as boolean) ?? defaultConfig.invertTrackColors,
-    useHighlightColor:
-      (config.useHighlightColor as boolean) ?? defaultConfig.useHighlightColor,
-    showOnlyWhenOnTrack:
-      (config.showOnlyWhenOnTrack as boolean) ??
-      defaultConfig.showOnlyWhenOnTrack,
-    sessionVisibility:
-      (config.sessionVisibility as SessionVisibilitySettings) ??
-      defaultConfig.sessionVisibility,
-  };
-};
-
 export const FlatTrackMapSettings = () => {
   const { currentDashboard } = useDashboard();
   const savedSettings = currentDashboard?.widgets.find(
@@ -63,7 +27,9 @@ export const FlatTrackMapSettings = () => {
     enabled:
       currentDashboard?.widgets.find((w) => w.id === SETTING_ID)?.enabled ??
       false,
-    config: migrateConfig(savedSettings?.config),
+    config:
+      (savedSettings?.config as FlatTrackMapWidgetSettings['config']) ??
+      defaultConfig,
   });
 
   // Tab state with persistence
