@@ -1,6 +1,6 @@
 import { ReactNode, useState } from 'react';
 import { ToggleSwitch } from './ToggleSwitch';
-import { BaseWidgetSettings } from '../types';
+import { BaseWidgetSettings } from '@irdashies/types';
 import { useDashboard } from '@irdashies/context';
 
 interface BaseSettingsSectionProps<T> {

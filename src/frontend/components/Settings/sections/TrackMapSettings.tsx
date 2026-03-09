@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import {
   TrackMapWidgetSettings,
-  SessionVisibilitySettings,
   SettingsTabType,
-} from '../types';
+  getWidgetDefaultConfig,
+} from '@irdashies/types';
 import { useDashboard } from '@irdashies/context';
 import { TabButton } from '../components/TabButton';
 import { SessionVisibility } from '../components/SessionVisibility';
@@ -16,80 +16,14 @@ import { SettingDivider } from '../components/SettingDivider';
 
 const SETTING_ID = 'map';
 
-// VIR North (track 218) inside boundary path for preview
+// Simplified SVG path of VIR North circuit for track style preview
 const VIR_NORTH_PATH =
-  'M1253.5,706.2c-105.8,0-225.8-1.1-477.5-3.4c-0.5,0-1,0-1.5,0c-6.4,0.1-19.6,0.2-27-11.9c-1.7-2.8-3.4-7.1-5.5-14.4c-0.1-0.3-0.2-0.5-0.2-0.6c-0.4-0.3-2.9-1.6-12-1.6c-32,0-70.2,0.2-110.6,0.4c-90.3,0.5-192.7,1.1-270.9-0.4c-25.2-0.5-55.8-2.3-99.6-18.1c-16.3-5.9-41.5-14.8-61.8-22c-7.6-2.7-14.5-5.1-19.9-7.1c-1-0.3-1.9-0.7-2.7-1.1c-5.2-2.2-6.8-2.8-11,2.4c-2.2,2.7-5.4,7.3-8.5,11.7c-3.9,5.6-8,11.3-11.2,15.2c-10.9,12.9-23.5,17.4-37.5,13.4c-4.2-1.2-18.7-6.3-25.8-20.5c-3.4-6.8-6.2-18.1-0.3-33.5c10.3-27.2,25.4-54.8,50.4-92.2c13.6-20.5,27.7-36.2,66.8-65.1c18.6-13.8,53.7-39.3,71.4-51.3c12.4-8.5,31.2-8.7,45.7-0.4c2.3,1.3,4.6,2.7,6.9,4.1c3.8,2.3,7.7,4.7,10.1,5.7c6.7,3,7.8,2.6,19.5-3.7c1.6-0.8,3.2-1.7,5-2.7c7.5-4,16.3-8.5,25.6-13.3c20.6-10.6,44-22.6,58.8-31.4c5.5-3.2,12.2-7.2,18.6-15.3c17.6-22.6,41.2-31.6,53.7-35.1c16.1-4.4,36.7-7.8,68.1-0.1l5.2,1.3c35.7,8.8,80.2,19.8,114.6,25.7c5.3,0.9,13,0.6,17-3.2c3.1-2.9,4.3-8.4,3.4-16.1c-1.1-9.8-3.7-32.7,10.5-50.5c10-12.5,26.4-20,48.6-22.4c19.5-2.1,38.2-2,79.9,0.4c49.4,2.8,87,5.9,156,22.7c52.1,12.7,124.5,38.6,184.4,66.1l0.4,0.2l94.9,48.2c16.8,8.9,24.1,24.3,19.1,40.3c-1.9,5.9-5.4,26.7,27.3,44.7c0.1,0,0.3,0.2,0.7,0.4c16,9.3,102,58,221.1,102.5l4.2,1.6c27.7,10.4,54,20.3,114.6,23.6c21,1.1,73.1,3.6,102.8,1.8l0.6,0c9.2-0.6,28.3-1.8,39.3,8.6c5,4.7,7.6,11,7.6,18.3c0,7.8-2.5,14.1-7.3,18.6c-6.4,6-16.1,8.6-29.9,7.8l-0.2,0c-11.6-0.9-23.4-2.4-34.8-4.6l-0.2,0c-10-2-31.1-4.8-59.6-0.4c-35.9,5.6-85.6,15.2-138.2,25.3c-54.5,10.5-110.9,21.4-155.6,28.5l-2.4,0.4c-8.4,1.4-13.9,2.3-38.6,2.4C1320.5,706.1,1287.8,706.2,1253.5,706.2z';
+  'M 200,450 C 250,350 350,280 500,260 C 650,240 900,250 1100,280 ' +
+  'C 1300,310 1500,360 1650,400 C 1750,430 1810,490 1780,560 ' +
+  'C 1750,630 1650,670 1500,680 C 1350,690 1100,700 900,690 ' +
+  'C 700,680 500,660 350,620 C 220,590 150,530 200,450 Z';
 
-const defaultConfig: TrackMapWidgetSettings['config'] = {
-  enableTurnNames: false,
-  showCarNumbers: true,
-  displayMode: 'carNumber',
-  invertTrackColors: false,
-  highContrastTurns: false,
-  driverCircleSize: 40,
-  playerCircleSize: 40,
-  trackmapFontSize: 100,
-  trackLineWidth: 20,
-  trackOutlineWidth: 40,
-  useHighlightColor: false,
-  showOnlyWhenOnTrack: false,
-  styling: { isMinimalTrack: false, isMinimalCar: false },
-  sessionVisibility: {
-    race: true,
-    loneQualify: true,
-    openQualify: true,
-    practice: true,
-    offlineTesting: true,
-  },
-};
-
-const migrateConfig = (
-  savedConfig: unknown
-): TrackMapWidgetSettings['config'] => {
-  if (!savedConfig || typeof savedConfig !== 'object') return defaultConfig;
-
-  const config = savedConfig as Record<string, unknown>;
-  const savedStyling = config.styling as
-    | { isMinimalTrack?: boolean; isMinimalCar?: boolean }
-    | undefined;
-  return {
-    styling: {
-      isMinimalTrack: savedStyling?.isMinimalTrack ?? false,
-      isMinimalCar: savedStyling?.isMinimalCar ?? false,
-    },
-    enableTurnNames:
-      (config.enableTurnNames as boolean) ?? defaultConfig.enableTurnNames,
-    showCarNumbers:
-      (config.showCarNumbers as boolean) ?? defaultConfig.showCarNumbers,
-    displayMode:
-      (config.displayMode as
-        | 'carNumber'
-        | 'sessionPosition'
-        | 'livePosition') ?? defaultConfig.displayMode,
-    invertTrackColors:
-      (config.invertTrackColors as boolean) ?? defaultConfig.invertTrackColors,
-    highContrastTurns:
-      (config.highContrastTurns as boolean) ?? defaultConfig.highContrastTurns,
-    driverCircleSize:
-      (config.driverCircleSize as number) ?? defaultConfig.driverCircleSize,
-    playerCircleSize:
-      (config.playerCircleSize as number) ?? defaultConfig.playerCircleSize,
-    trackmapFontSize:
-      (config.trackmapFontSize as number) ?? defaultConfig.trackmapFontSize,
-    trackLineWidth:
-      (config.trackLineWidth as number) ?? defaultConfig.trackLineWidth,
-    trackOutlineWidth:
-      (config.trackOutlineWidth as number) ?? defaultConfig.trackOutlineWidth,
-    useHighlightColor:
-      (config.useHighlightColor as boolean) ?? defaultConfig.useHighlightColor,
-    showOnlyWhenOnTrack:
-      (config.showOnlyWhenOnTrack as boolean) ??
-      defaultConfig.showOnlyWhenOnTrack,
-    sessionVisibility:
-      (config.sessionVisibility as SessionVisibilitySettings) ??
-      defaultConfig.sessionVisibility,
-  };
-};
+const defaultConfig = getWidgetDefaultConfig('map');
 
 export const TrackMapSettings = () => {
   const { currentDashboard } = useDashboard();
@@ -100,7 +34,9 @@ export const TrackMapSettings = () => {
     enabled:
       currentDashboard?.widgets.find((w) => w.id === SETTING_ID)?.enabled ??
       false,
-    config: migrateConfig(savedSettings?.config),
+    config:
+      (savedSettings?.config as TrackMapWidgetSettings['config']) ??
+      defaultConfig,
   });
 
   // Tab state with persistence
@@ -233,7 +169,7 @@ export const TrackMapSettings = () => {
                       'carNumber' | 'sessionPosition' | 'livePosition'
                     >
                       title="Display Mode"
-                      value={settings.config.displayMode}
+                      value={settings.config.displayMode ?? 'carNumber'}
                       options={[
                         { label: 'Car Number', value: 'carNumber' },
                         { label: 'Session Position', value: 'sessionPosition' },

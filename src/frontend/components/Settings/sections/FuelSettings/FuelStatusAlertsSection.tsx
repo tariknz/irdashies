@@ -1,9 +1,8 @@
-import { FuelWidgetSettings } from '../../types';
-import { defaultFuelCalculatorSettings } from '../../../FuelCalculator/defaults';
+import { FuelWidgetSettings, getWidgetDefaultConfig } from '@irdashies/types';
 import { SettingsSection } from '../../components/SettingSection';
 import { SettingToggleRow } from '../../components/SettingToggleRow';
 
-const defaultConfig = defaultFuelCalculatorSettings;
+const defaultConfig = getWidgetDefaultConfig('fuel');
 
 interface FuelStatusAlertsSectionProps {
   settings: FuelWidgetSettings;

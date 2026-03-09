@@ -1,7 +1,7 @@
 import { StoryObj } from '@storybook/react-vite';
 import { DriverInfoRow } from './DriverInfoRow';
 import { useCurrentSessionType } from '@irdashies/context';
-import type { RelativeWidgetSettings } from '../../../Settings/types';
+import type { RelativeWidgetSettings } from '@irdashies/types';
 import { useState, useMemo } from 'react';
 import { useSortableList } from '../../../SortableList';
 import { DotsSixVerticalIcon } from '@phosphor-icons/react';

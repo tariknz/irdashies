@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { CarData } from '../../../utils/carData';
-import type { ShiftPointSettings } from '../../Settings/types';
+import type { ShiftPointSettings } from '@irdashies/types';
 
 interface TachometerProps {
   rpm: number;
@@ -29,12 +29,12 @@ interface TachometerProps {
   shiftPointSettings?: ShiftPointSettings;
 }
 
-export const Tachometer = ({ 
-  rpm, 
+export const Tachometer = ({
+  rpm,
   maxRpm,
   gear = 0,
-  shiftRpm = 0,      // Optional shift RPM (DriverCarSLShiftRPM)
-  blinkRpm = 0,      // Optional blink RPM (DriverCarSLBlinkRPM)
+  shiftRpm = 0, // Optional shift RPM (DriverCarSLShiftRPM)
+  blinkRpm = 0, // Optional blink RPM (DriverCarSLBlinkRPM)
   numLights = 10,
   ledSize = 20,
   showRpmText = true,
@@ -42,49 +42,62 @@ export const Tachometer = ({
   ledColors = null,
   carData = null,
   carPath = undefined,
-  shiftPointSettings = undefined
+  shiftPointSettings = undefined,
 }: TachometerProps) => {
   const [flash, setFlash] = useState(false);
   const [customShiftFlash, setCustomShiftFlash] = useState(false);
-  
+
   // Ensure RPM is within valid range
   const clampedRpm = Math.max(0, Math.min(rpm || 0, maxRpm));
-  
+
   // Calculate effective thresholds with fallbacks
-  const effectiveShiftRpm = gearRpmThresholds ? gearRpmThresholds[0] : (shiftRpm || (maxRpm * 0.9));  // Use redline from car data
-  const effectiveBlinkRpm = gearRpmThresholds ? gearRpmThresholds[0] : (blinkRpm || (maxRpm * 0.97)); // Use redline from car data
-  
+  const effectiveShiftRpm = gearRpmThresholds
+    ? gearRpmThresholds[0]
+    : shiftRpm || maxRpm * 0.9; // Use redline from car data
+  const effectiveBlinkRpm = gearRpmThresholds
+    ? gearRpmThresholds[0]
+    : blinkRpm || maxRpm * 0.97; // Use redline from car data
+
   // Use car-specific LED count if available
-  const effectiveNumLights = carData?.ledNumber || (ledColors ? ledColors.length - 1 : numLights);
-  
+  const effectiveNumLights =
+    carData?.ledNumber || (ledColors ? ledColors.length - 1 : numLights);
+
   // Custom shift point logic - use CarPath from iRacing (matches lovely-car-data)
   const carConfig = carPath && shiftPointSettings?.carConfigs[carPath];
-  const customShiftPoint = carConfig && typeof carConfig !== 'string' ? carConfig.gearShiftPoints[gear.toString()]?.shiftRpm : undefined;
-  const shouldShowCustomShift = !!(shiftPointSettings?.enabled && customShiftPoint && clampedRpm >= customShiftPoint && gear > 0);
+  const customShiftPoint =
+    carConfig && typeof carConfig !== 'string'
+      ? carConfig.gearShiftPoints[gear.toString()]?.shiftRpm
+      : undefined;
+  const shouldShowCustomShift = !!(
+    shiftPointSettings?.enabled &&
+    customShiftPoint &&
+    clampedRpm >= customShiftPoint &&
+    gear > 0
+  );
   const indicatorType = shiftPointSettings?.indicatorType || 'glow';
   const indicatorColor = shiftPointSettings?.indicatorColor || '#00ff00';
-  
+
   // Calculate activation thresholds for each light with distinct values
   const getActivationThreshold = (ledIndex: number) => {
     // Use car-specific thresholds if available
     if (gearRpmThresholds && gearRpmThresholds[ledIndex + 1]) {
       return gearRpmThresholds[ledIndex + 1]; // Skip first element (redline), LEDs start at index 1
     }
-    
+
     // Fallback to original logic
     const lastLedIndex = effectiveNumLights - 1;
     const secondLastIndex = effectiveNumLights - 2;
     const thirdLastIndex = effectiveNumLights - 3;
-    
+
     // Special thresholds for last three LEDs
     if (ledIndex === lastLedIndex) {
-      return effectiveShiftRpm * 0.90; // Last LED (red) at 90%
+      return effectiveShiftRpm * 0.9; // Last LED (red) at 90%
     } else if (ledIndex === secondLastIndex) {
       return effectiveShiftRpm * 0.85; // Second last LED (yellow) at 85%
     } else if (ledIndex === thirdLastIndex) {
-      return effectiveShiftRpm * 0.80; // Third last LED (yellow) at 80%
+      return effectiveShiftRpm * 0.8; // Third last LED (yellow) at 80%
     }
-    
+
     // For the rest, distribute evenly between 0% and 75%
     const normalizedIndex = ledIndex / (effectiveNumLights - 3);
     return effectiveShiftRpm * 0.75 * normalizedIndex;
@@ -94,22 +107,26 @@ export const Tachometer = ({
   const getActiveLights = () => {
     // Always show no lights when RPM is 0
     if (clampedRpm <= 0) return 0;
-    
+
     // Always show all lights when at or above shift point
     if (clampedRpm >= effectiveShiftRpm) return effectiveNumLights;
-    
+
     // Use car-specific thresholds if available
     if (gearRpmThresholds && gearRpmThresholds.length > 1) {
       // Count how many thresholds are met (skip first element which is redline)
       let activeCount = 0;
-      for (let i = 1; i < gearRpmThresholds.length && i <= effectiveNumLights; i++) {
+      for (
+        let i = 1;
+        i < gearRpmThresholds.length && i <= effectiveNumLights;
+        i++
+      ) {
         if (clampedRpm >= gearRpmThresholds[i]) {
           activeCount++;
         }
       }
       return activeCount;
     }
-    
+
     // Fallback: Count how many LEDs should be active based on current RPM
     let activeCount = 0;
     for (let i = 0; i < effectiveNumLights; i++) {
@@ -117,36 +134,36 @@ export const Tachometer = ({
         activeCount = i + 1;
       }
     }
-    
+
     return activeCount;
   };
-  
+
   // Determine if a specific LED should be active (handles center-out pattern)
   const isLedActive = (ledIndex: number): boolean => {
     if (!gearRpmThresholds || gearRpmThresholds.length <= 1) {
       // Fallback: simple left-to-right
       return ledIndex < activeLights;
     }
-    
+
     // Car-specific: check if this LED's threshold is met
     const thresholdIndex = ledIndex + 1; // Skip redline (index 0)
     if (thresholdIndex < gearRpmThresholds.length) {
       return clampedRpm >= gearRpmThresholds[thresholdIndex];
     }
-    
+
     return false;
   };
-  
+
   const activeLights = getActiveLights();
 
   // Get custom shift indicator style for RPM text box
   const getRpmBoxStyle = () => {
     if (!shouldShowCustomShift) return {};
-    
+
     const baseStyle = {
       transition: 'all 0.2s ease',
     };
-    
+
     switch (indicatorType) {
       case 'glow':
         return {
@@ -167,7 +184,9 @@ export const Tachometer = ({
         return {
           ...baseStyle,
           boxShadow: `0 0 15px ${indicatorColor}`,
-          backgroundColor: customShiftFlash ? indicatorColor : 'rgba(0,0,0,0.8)',
+          backgroundColor: customShiftFlash
+            ? indicatorColor
+            : 'rgba(0,0,0,0.8)',
           color: customShiftFlash ? '#000000' : '#ffffff',
           border: `2px solid ${indicatorColor}`,
         };
@@ -177,7 +196,11 @@ export const Tachometer = ({
   };
 
   // Determine if RPM box should be shown - always show when custom shift points are configured
-  const hasCustomShiftPoints = !!(shiftPointSettings?.enabled && carConfig && typeof carConfig !== 'string');
+  const hasCustomShiftPoints = !!(
+    shiftPointSettings?.enabled &&
+    carConfig &&
+    typeof carConfig !== 'string'
+  );
   const shouldShowRpmBox = showRpmText || hasCustomShiftPoints;
 
   // Flash effect when RPM exceeds blink threshold
@@ -188,7 +211,7 @@ export const Tachometer = ({
     if (shouldBlink) {
       // Set up flashing with a shorter interval for better visibility
       const interval = setInterval(() => {
-        setFlash(prevFlash => !prevFlash);
+        setFlash((prevFlash) => !prevFlash);
       }, 200); // Faster flashing - 200ms instead of 250ms
 
       return () => {
@@ -201,7 +224,7 @@ export const Tachometer = ({
   useEffect(() => {
     if (shouldShowCustomShift && indicatorType === 'pulse') {
       const interval = setInterval(() => {
-        setCustomShiftFlash(prevFlash => !prevFlash);
+        setCustomShiftFlash((prevFlash) => !prevFlash);
       }, 500);
       return () => {
         clearInterval(interval);
@@ -216,17 +239,19 @@ export const Tachometer = ({
     if (!isLedActive(index)) {
       return '#1f2937'; // Dark gray for inactive LEDs
     }
-    
+
     // Phase 1: At or above blinkRpm - flash purple/white with stronger colors
     if (clampedRpm >= effectiveBlinkRpm) {
-      return flash ? '#ffffff' /* Brighter white */ : '#9333ea' /* More vivid purple */;
+      return flash
+        ? '#ffffff' /* Brighter white */
+        : '#9333ea' /* More vivid purple */;
     }
-    
+
     // Phase 2: At or above shiftRpm - solid purple
     if (clampedRpm >= effectiveShiftRpm) {
       return '#a855f7'; // Solid purple
     }
-    
+
     // Use car-specific colors if available (convert from ARGB to RGB)
     if (ledColors && ledColors[index + 1]) {
       const argbColor = ledColors[index + 1];
@@ -236,12 +261,12 @@ export const Tachometer = ({
       }
       return argbColor;
     }
-    
+
     // Phase 3: Below shift point - fixed color pattern based on position
     const lastLedIndex = effectiveNumLights - 1;
     const secondLastIndex = effectiveNumLights - 2;
     const thirdLastIndex = effectiveNumLights - 3;
-    
+
     if (index === lastLedIndex) {
       return '#ef4444'; // Red for last LED
     } else if (index === secondLastIndex || index === thirdLastIndex) {
@@ -264,16 +289,18 @@ export const Tachometer = ({
                 width: ledSize,
                 height: ledSize,
                 backgroundColor: getLedColor(i),
-                boxShadow: isLedActive(i) ? `0 0 4px ${getLedColor(i)}` : 'none',
+                boxShadow: isLedActive(i)
+                  ? `0 0 4px ${getLedColor(i)}`
+                  : 'none',
               }}
               aria-label={`LED ${i + 1}`}
             />
           ))}
         </div>
-        
+
         {/* RPM display - shows when showRpmText is true OR when custom shift points exist */}
         {shouldShowRpmBox && (
-          <div 
+          <div
             className="ml-3 text-sm font-mono font-bold text-white bg-black/50 px-2 rounded transition-all duration-200 whitespace-nowrap flex items-center"
             style={{
               ...getRpmBoxStyle(),
@@ -285,7 +312,9 @@ export const Tachometer = ({
               <>
                 {Math.round(clampedRpm).toLocaleString('en-US')}
                 <span className="text-xs text-gray-300 ml-1">RPM</span>
-                {shouldShowCustomShift && <span className="text-xs ml-2 font-bold">SHIFT</span>}
+                {shouldShowCustomShift && (
+                  <span className="text-xs ml-2 font-bold">SHIFT</span>
+                )}
               </>
             )}
             {!showRpmText && shouldShowCustomShift && (
@@ -294,7 +323,7 @@ export const Tachometer = ({
           </div>
         )}
       </div>
-      
+
       {/* CSS for pulse animation - removed as it's now handled via state */}
     </>
   );
