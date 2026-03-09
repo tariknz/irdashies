@@ -2,7 +2,6 @@ import { useDashboard } from '@irdashies/context';
 import { DotsSixVerticalIcon } from '@phosphor-icons/react';
 import { useEffect, useState } from 'react';
 import { getAvailableCars } from '../../../utils/carData';
-import { mergeDisplayOrder } from '../../../utils/displayOrder';
 import { useSortableList } from '../../SortableList';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import { SessionVisibility } from '../components/SessionVisibility';
@@ -10,9 +9,9 @@ import { ToggleSwitch } from '../components/ToggleSwitch';
 import { TabButton } from '../components/TabButton';
 import {
   InputWidgetSettings,
-  SessionVisibilitySettings,
   SettingsTabType,
-} from '../types';
+  getWidgetDefaultConfig,
+} from '@irdashies/types';
 import { SettingDivider } from '../components/SettingDivider';
 import { SettingsSection } from '../components/SettingSection';
 import { SettingToggleRow } from '../components/SettingToggleRow';
@@ -57,167 +56,7 @@ const sortableSettings: SortableSetting[] = [
   { id: 'steer', label: 'Steer', configKey: 'steer' },
 ];
 
-const defaultConfig: InputWidgetSettings['config'] = {
-  trace: {
-    enabled: true,
-    includeThrottle: true,
-    includeBrake: true,
-    includeClutch: false,
-    includeAbs: true,
-    includeSteer: true,
-    strokeWidth: 3,
-    maxSamples: 400,
-  },
-  bar: {
-    enabled: true,
-    includeClutch: true,
-    includeBrake: true,
-    includeThrottle: true,
-    includeAbs: true,
-  },
-  gear: {
-    enabled: true,
-    unit: 'auto',
-  },
-  abs: {
-    enabled: false,
-  },
-  steer: {
-    enabled: true,
-    config: {
-      style: 'default',
-      color: 'light',
-    },
-  },
-  tachometer: {
-    enabled: true,
-    showRpmText: false,
-    customShiftPoints: {
-      enabled: false,
-      indicatorType: 'glow',
-      indicatorColor: '#00ff00',
-      carConfigs: {},
-    },
-  },
-  background: { opacity: 0 },
-  displayOrder: sortableSettings.map((s) => s.id),
-  showOnlyWhenOnTrack: true,
-  sessionVisibility: {
-    race: true,
-    loneQualify: true,
-    openQualify: true,
-    practice: true,
-    offlineTesting: true,
-  },
-};
-
-const migrateConfig = (savedConfig: unknown): InputWidgetSettings['config'] => {
-  if (!savedConfig || typeof savedConfig !== 'object') return defaultConfig;
-
-  const config = savedConfig as Record<string, unknown>;
-
-  return {
-    trace: {
-      enabled:
-        (config.trace as { enabled?: boolean })?.enabled ??
-        defaultConfig.trace.enabled,
-      includeThrottle:
-        (config.trace as { includeThrottle?: boolean })?.includeThrottle ??
-        defaultConfig.trace.includeThrottle,
-      includeBrake:
-        (config.trace as { includeBrake?: boolean })?.includeBrake ??
-        defaultConfig.trace.includeBrake,
-      includeClutch:
-        (config.trace as { includeClutch?: boolean })?.includeClutch ??
-        defaultConfig.trace.includeClutch,
-      includeAbs:
-        (config.trace as { includeAbs?: boolean })?.includeAbs ??
-        defaultConfig.trace.includeAbs,
-      includeSteer:
-        (config.trace as { includeSteer?: boolean })?.includeSteer ??
-        defaultConfig.trace.includeSteer,
-      strokeWidth:
-        (config.trace as { strokeWidth?: number })?.strokeWidth ??
-        defaultConfig.trace.strokeWidth,
-      maxSamples:
-        (config.trace as { maxSamples?: number })?.maxSamples ??
-        defaultConfig.trace.maxSamples,
-    },
-    bar: {
-      enabled:
-        (config.bar as { enabled?: boolean })?.enabled ??
-        defaultConfig.bar.enabled,
-      includeClutch:
-        (config.bar as { includeClutch?: boolean })?.includeClutch ??
-        defaultConfig.bar.includeClutch,
-      includeBrake:
-        (config.bar as { includeBrake?: boolean })?.includeBrake ??
-        defaultConfig.bar.includeBrake,
-      includeThrottle:
-        (config.bar as { includeThrottle?: boolean })?.includeThrottle ??
-        defaultConfig.bar.includeThrottle,
-      includeAbs:
-        (config.bar as { includeAbs?: boolean })?.includeAbs ??
-        defaultConfig.bar.includeAbs,
-    },
-    gear: {
-      enabled:
-        (config.gear as { enabled?: boolean })?.enabled ??
-        defaultConfig.gear.enabled,
-      unit:
-        (config.gear as { unit?: 'mph' | 'km/h' | 'auto' })?.unit ??
-        defaultConfig.gear.unit,
-    },
-    abs: {
-      enabled:
-        (config.abs as { enabled?: boolean })?.enabled ??
-        defaultConfig.abs.enabled,
-    },
-    steer: {
-      enabled:
-        (config.steer as { enabled?: boolean })?.enabled ??
-        defaultConfig.steer.enabled,
-      config: {
-        style:
-          (
-            config.steer as {
-              config?: {
-                style?: 'formula' | 'lmp' | 'nascar' | 'ushape' | 'default';
-              };
-            }
-          )?.config?.style ?? defaultConfig.steer.config.style,
-        color:
-          (config.steer as { config?: { color?: 'dark' | 'light' } })?.config
-            ?.color ?? defaultConfig.steer.config.color,
-      },
-    },
-    tachometer: {
-      enabled:
-        (config.tachometer as { enabled?: boolean })?.enabled ??
-        defaultConfig.tachometer.enabled,
-      showRpmText:
-        (config.tachometer as { showRpmText?: boolean })?.showRpmText ??
-        defaultConfig.tachometer.showRpmText,
-      customShiftPoints:
-        (
-          config.tachometer as {
-            customShiftPoints?: InputWidgetSettings['config']['tachometer']['customShiftPoints'];
-          }
-        )?.customShiftPoints ?? defaultConfig.tachometer.customShiftPoints,
-    },
-    background: {
-      opacity: (config.background as { opacity?: number })?.opacity ?? 0,
-    },
-    displayOrder: mergeDisplayOrder(
-      sortableSettings.map((s) => s.id),
-      config.displayOrder as string[]
-    ),
-    showOnlyWhenOnTrack: (config.showOnlyWhenOnTrack as boolean) ?? true,
-    sessionVisibility:
-      (config.sessionVisibility as SessionVisibilitySettings) ??
-      defaultConfig.sessionVisibility,
-  };
-};
+const defaultConfig = getWidgetDefaultConfig('input');
 
 interface DisplaySettingsListProps {
   itemsOrder: string[];
@@ -702,7 +541,8 @@ export const InputSettings = () => {
   ) as InputWidgetSettings | undefined;
   const [settings, setSettings] = useState<InputWidgetSettings>({
     enabled: savedSettings?.enabled ?? false,
-    config: migrateConfig(savedSettings?.config),
+    config:
+      (savedSettings?.config as InputWidgetSettings['config']) ?? defaultConfig,
   });
   const [itemsOrder, setItemsOrder] = useState(settings.config.displayOrder);
 
@@ -988,7 +828,7 @@ export const InputSettings = () => {
                   <SettingsSection title="ABS Indicator">
                     <SettingToggleRow
                       title="Enable ABS Indicator"
-                      enabled={config.abs.enabled}
+                      enabled={config.abs?.enabled ?? false}
                       onToggle={(newValue) =>
                         handleConfigChange({
                           abs: { ...config.abs, enabled: newValue },

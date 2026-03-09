@@ -2,6 +2,7 @@ import { defineConfig } from 'vite';
 import { execSync } from 'child_process';
 import path from 'path';
 import fs from 'fs';
+import { tsconfigPathAliases } from './vite.renderer.config';
 
 // Get git hash
 const getGitHash = () => {
@@ -29,6 +30,7 @@ export default defineConfig({
     // Some dependencies have Node.js specific imports
     // This ensures they are properly resolved in Electron
     mainFields: ['module', 'jsnext:main', 'jsnext'],
+    alias: tsconfigPathAliases,
   },
   define: {
     APP_GIT_HASH: JSON.stringify(getGitHash()),
@@ -74,7 +76,9 @@ function irsdkNativeModule(nodeFiles: string[], outDir: string) {
       nodeFileMap.forEach((fileAbs, file) => {
         const out = `${outDir}/${file}`;
         if (!fs.existsSync(fileAbs)) {
-          console.warn(`[irsdkNativeModule] Native module not found at: ${fileAbs}`);
+          console.warn(
+            `[irsdkNativeModule] Native module not found at: ${fileAbs}`
+          );
           return;
         }
         const nodeFile = fs.readFileSync(fileAbs);

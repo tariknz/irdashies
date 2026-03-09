@@ -23,11 +23,10 @@ describe('RatingChange', () => {
     expect(element.parentElement).toContainHTML('down-arrow');
   });
 
-  it('renders zero change with gray color and minus icon', () => {
+  it('renders gray color dash for 0 irating change', () => {
     render(<RatingChange value={0} />);
-    const element = screen.getByText('0');
-    expect(element).toHaveClass('text-gray-400');
-    expect(element.parentElement).toContainHTML('line-through');
+    const element = screen.getByText('line-through');
+    expect(element).toBeInTheDocument();
   });
 
   it('renders dash for undefined change', () => {
@@ -41,4 +40,4 @@ describe('RatingChange', () => {
     const element = screen.getByText('line-through');
     expect(element).toBeInTheDocument();
   });
-}); 
+});

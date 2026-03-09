@@ -1,7 +1,7 @@
 import { Meta, StoryObj } from '@storybook/react-vite';
 import { DriverInfoRow } from './DriverInfoRow';
 import { useCurrentSessionType } from '@irdashies/context';
-import type { StandingsWidgetSettings } from '../../../Settings/types';
+import type { StandingsWidgetSettings } from '@irdashies/types';
 import { CAR_ID_TO_CAR_MANUFACTURER } from '../CarManufacturer/carManufacturerMapping';
 
 export default {

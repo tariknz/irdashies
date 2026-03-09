@@ -1,7 +1,7 @@
 import { SettingNumberRow } from '../../components/SettingNumberRow';
 import { SettingsSection } from '../../components/SettingSection';
 import { SettingSelectRow } from '../../components/SettingSelectRow';
-import { FuelWidgetSettings } from '../../types';
+import { FuelWidgetSettings } from '@irdashies/types';
 import { BarFontSizeInput, HeightInput } from './FontSizeInputs';
 
 interface FuelHistorySectionProps {

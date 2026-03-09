@@ -26,7 +26,7 @@ import {
   augmentStandingsWithInterval,
   augmentStandingsWithPositionChange,
 } from '../createStandings';
-import type { StandingsWidgetSettings } from '../../Settings/types';
+import type { StandingsWidgetSettings } from '@irdashies/types';
 import { useDriverLivePositions } from './useDriverLivePositions';
 import { useStandingsSettings } from './useStandingsSettings';
 import { TrackLocation } from '@irdashies/types';

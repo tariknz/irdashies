@@ -6,7 +6,7 @@ import {
   saveDashboard,
   updateDashboardWidget,
 } from './dashboards';
-import { defaultDashboard } from './defaultDashboard';
+import { defaultDashboard } from '@irdashies/types';
 import { DashboardLayout } from '@irdashies/types';
 
 const mockReadData = vi.hoisted(() => vi.fn());
@@ -39,7 +39,8 @@ describe('dashboards', () => {
       // Mock readData to return null for dashboards, but 'default' for currentProfile
       mockReadData.mockImplementation((key: string) => {
         if (key === 'currentProfile') return 'default';
-        if (key === 'profiles') return { default: { id: 'default', name: 'Default' } };
+        if (key === 'profiles')
+          return { default: { id: 'default', name: 'Default' } };
         return null; // No dashboards exist
       });
 
@@ -54,7 +55,8 @@ describe('dashboards', () => {
       // Mock readData to return existing dashboard for 'dashboards' key
       mockReadData.mockImplementation((key: string) => {
         if (key === 'currentProfile') return 'default';
-        if (key === 'profiles') return { default: { id: 'default', name: 'Default' } };
+        if (key === 'profiles')
+          return { default: { id: 'default', name: 'Default' } };
         if (key === 'dashboards') return { default: defaultDashboard };
         return null;
       });
@@ -78,7 +80,8 @@ describe('dashboards', () => {
       const dashboardsData = { default: defaultDashboard };
       mockReadData.mockImplementation((key: string) => {
         if (key === 'currentProfile') return 'default';
-        if (key === 'profiles') return { default: { id: 'default', name: 'Default' } };
+        if (key === 'profiles')
+          return { default: { id: 'default', name: 'Default' } };
         if (key === 'dashboards') return dashboardsData;
         return null;
       });
@@ -102,7 +105,8 @@ describe('dashboards', () => {
       const dashboardsData = { default: defaultDashboard };
       mockReadData.mockImplementation((key: string) => {
         if (key === 'currentProfile') return 'default';
-        if (key === 'profiles') return { default: { id: 'default', name: 'Default' } };
+        if (key === 'profiles')
+          return { default: { id: 'default', name: 'Default' } };
         if (key === 'dashboards') return dashboardsData;
         return null;
       });
@@ -115,7 +119,10 @@ describe('dashboards', () => {
 
   describe('saveDashboard', () => {
     it('should save a new dashboard', () => {
-      const newDashboard: DashboardLayout = { widgets: [], generalSettings: { fontSize: 'sm' }};
+      const newDashboard: DashboardLayout = {
+        widgets: [],
+        generalSettings: { fontSize: 'sm' },
+      };
       // Use default mockImplementation which returns null for 'dashboards' key
 
       saveDashboard('newDashboard', newDashboard);
@@ -125,34 +132,41 @@ describe('dashboards', () => {
       });
     });
 
-  it('should update an existing dashboard and preserve other dashboards', () => {
-    const customDashboard: DashboardLayout = { widgets: [], generalSettings: { fontSize: 'xl' }};
-    const existingDashboards = { 
-      default: defaultDashboard,
-      custom: customDashboard,
-    };
-    const updatedDashboard: DashboardLayout = { widgets: [], generalSettings: { fontSize: 'lg', colorPalette: 'black' }};
-    mockReadData.mockImplementation((key: string) => {
-      if (key === 'currentProfile') return 'default';
-      if (key === 'profiles') return { default: { id: 'default', name: 'Default' } };
-      if (key === 'dashboards') return existingDashboards;
-      return null;
-    });
+    it('should update an existing dashboard and preserve other dashboards', () => {
+      const customDashboard: DashboardLayout = {
+        widgets: [],
+        generalSettings: { fontSize: 'xl' },
+      };
+      const existingDashboards = {
+        default: defaultDashboard,
+        custom: customDashboard,
+      };
+      const updatedDashboard: DashboardLayout = {
+        widgets: [],
+        generalSettings: { fontSize: 'lg', colorPalette: 'black' },
+      };
+      mockReadData.mockImplementation((key: string) => {
+        if (key === 'currentProfile') return 'default';
+        if (key === 'profiles')
+          return { default: { id: 'default', name: 'Default' } };
+        if (key === 'dashboards') return existingDashboards;
+        return null;
+      });
 
-    saveDashboard('default', updatedDashboard);
+      saveDashboard('default', updatedDashboard);
 
-    expect(mockWriteData).toHaveBeenCalledWith('dashboards', {
-      default: {
-        ...defaultDashboard,
-        ...updatedDashboard,
-        generalSettings: {
-          ...defaultDashboard.generalSettings,
-          ...updatedDashboard.generalSettings,
+      expect(mockWriteData).toHaveBeenCalledWith('dashboards', {
+        default: {
+          ...defaultDashboard,
+          ...updatedDashboard,
+          generalSettings: {
+            ...defaultDashboard.generalSettings,
+            ...updatedDashboard.generalSettings,
+          },
         },
-      },
-      custom: customDashboard,
+        custom: customDashboard,
+      });
     });
-  });
   });
 
   describe('updateDashboardWidget', () => {
@@ -181,10 +195,14 @@ describe('dashboards', () => {
         enabled: false,
         layout: { x: 100, y: 100, width: 600, height: 120 },
       };
-      const existingDashboard: DashboardLayout = { widgets: [existingWidget], generalSettings: { fontSize: 'sm' } };
+      const existingDashboard: DashboardLayout = {
+        widgets: [existingWidget],
+        generalSettings: { fontSize: 'sm' },
+      };
       mockReadData.mockImplementation((key: string) => {
         if (key === 'currentProfile') return 'default';
-        if (key === 'profiles') return { default: { id: 'default', name: 'Default' } };
+        if (key === 'profiles')
+          return { default: { id: 'default', name: 'Default' } };
         if (key === 'dashboards') return { default: existingDashboard };
         return null;
       });
@@ -192,7 +210,10 @@ describe('dashboards', () => {
       updateDashboardWidget(updatedWidget);
 
       expect(mockWriteData).toHaveBeenCalledWith('dashboards', {
-        default: { widgets: [updatedWidget], generalSettings: { fontSize: 'sm' } },
+        default: {
+          widgets: [updatedWidget],
+          generalSettings: { fontSize: 'sm' },
+        },
       });
     });
 
@@ -207,10 +228,14 @@ describe('dashboards', () => {
         enabled: true,
         layout: { x: 100, y: 100, width: 600, height: 120 },
       };
-      const existingDashboard: DashboardLayout = { widgets: [existingWidget], generalSettings: { fontSize: 'sm' } };
+      const existingDashboard: DashboardLayout = {
+        widgets: [existingWidget],
+        generalSettings: { fontSize: 'sm' },
+      };
       mockReadData.mockImplementation((key: string) => {
         if (key === 'currentProfile') return 'default';
-        if (key === 'profiles') return { default: { id: 'default', name: 'Default' } };
+        if (key === 'profiles')
+          return { default: { id: 'default', name: 'Default' } };
         if (key === 'dashboards') return { custom: existingDashboard };
         return null;
       });
@@ -218,7 +243,10 @@ describe('dashboards', () => {
       updateDashboardWidget(updatedWidget, 'custom');
 
       expect(mockWriteData).toHaveBeenCalledWith('dashboards', {
-        custom: { widgets: [updatedWidget], generalSettings: { fontSize: 'sm' } },
+        custom: {
+          widgets: [updatedWidget],
+          generalSettings: { fontSize: 'sm' },
+        },
       });
     });
 
@@ -228,10 +256,14 @@ describe('dashboards', () => {
         enabled: true,
         layout: { x: 100, y: 100, width: 600, height: 120 },
       };
-      const existingDashboard: DashboardLayout = { widgets: [], generalSettings: { fontSize: 'sm' } };
+      const existingDashboard: DashboardLayout = {
+        widgets: [],
+        generalSettings: { fontSize: 'sm' },
+      };
       mockReadData.mockImplementation((key: string) => {
         if (key === 'currentProfile') return 'default';
-        if (key === 'profiles') return { default: { id: 'default', name: 'Default' } };
+        if (key === 'profiles')
+          return { default: { id: 'default', name: 'Default' } };
         if (key === 'dashboards') return { default: existingDashboard };
         return null;
       });
@@ -246,7 +278,8 @@ describe('dashboards', () => {
     it('should return the default dashboard if it exists', () => {
       mockReadData.mockImplementation((key: string) => {
         if (key === 'currentProfile') return 'default';
-        if (key === 'profiles') return { default: { id: 'default', name: 'Default' } };
+        if (key === 'profiles')
+          return { default: { id: 'default', name: 'Default' } };
         if (key === 'dashboards') return { default: defaultDashboard };
         return null;
       });
@@ -274,7 +307,8 @@ describe('dashboards', () => {
       };
       mockReadData.mockImplementation((key: string) => {
         if (key === 'currentProfile') return 'default';
-        if (key === 'profiles') return { default: { id: 'default', name: 'Default' } };
+        if (key === 'profiles')
+          return { default: { id: 'default', name: 'Default' } };
         if (key === 'dashboards') return { default: incompleteDashboard };
         return null;
       });
@@ -291,7 +325,8 @@ describe('dashboards', () => {
       const completeDashboard = { ...defaultDashboard };
       mockReadData.mockImplementation((key: string) => {
         if (key === 'currentProfile') return 'default';
-        if (key === 'profiles') return { default: { id: 'default', name: 'Default' } };
+        if (key === 'profiles')
+          return { default: { id: 'default', name: 'Default' } };
         if (key === 'dashboards') return { default: completeDashboard };
         return null;
       });
@@ -308,28 +343,38 @@ describe('dashboards', () => {
       const dashboard: DashboardLayout = { widgets: [] };
       mockReadData.mockImplementation((key: string) => {
         if (key === 'currentProfile') return 'default';
-        if (key === 'profiles') return { default: { id: 'default', name: 'Default' } };
+        if (key === 'profiles')
+          return { default: { id: 'default', name: 'Default' } };
         if (key === 'dashboards') return { default: dashboard };
         return null;
       });
 
       const updatedDashboard = getOrCreateDefaultDashboard();
 
-      expect(updatedDashboard.generalSettings).toEqual(defaultDashboard.generalSettings);
+      expect(updatedDashboard.generalSettings).toEqual(
+        defaultDashboard.generalSettings
+      );
     });
 
     it('should preserve general settings from the existing dashboard', () => {
-      const dashboard: DashboardLayout = { widgets: [], generalSettings: { fontSize: 'sm' } };
+      const dashboard: DashboardLayout = {
+        widgets: [],
+        generalSettings: { fontSize: 'sm' },
+      };
       mockReadData.mockImplementation((key: string) => {
         if (key === 'currentProfile') return 'default';
-        if (key === 'profiles') return { default: { id: 'default', name: 'Default' } };
+        if (key === 'profiles')
+          return { default: { id: 'default', name: 'Default' } };
         if (key === 'dashboards') return { default: dashboard };
         return null;
       });
-      
+
       const updatedDashboard = getOrCreateDefaultDashboard();
 
-      expect(updatedDashboard.generalSettings).toEqual({ ...defaultDashboard.generalSettings, fontSize: 'sm' });
+      expect(updatedDashboard.generalSettings).toEqual({
+        ...defaultDashboard.generalSettings,
+        fontSize: 'sm',
+      });
     });
   });
 
@@ -338,14 +383,16 @@ describe('dashboards', () => {
       const mapWidget = defaultDashboard.widgets.find((w) => w.id === 'map');
 
       expect(mapWidget).toBeDefined();
-      expect((mapWidget?.config as Record<string, unknown>)?.showOnlyWhenOnTrack).toBe(false);
+      expect(mapWidget?.config?.showOnlyWhenOnTrack).toBe(false);
     });
 
     it('should have showOnlyWhenOnTrack property in Flat Track Map widget', () => {
-      const flatMapWidget = defaultDashboard.widgets.find((w) => w.id === 'flatmap');
+      const flatMapWidget = defaultDashboard.widgets.find(
+        (w) => w.id === 'flatmap'
+      );
 
       expect(flatMapWidget).toBeDefined();
-      expect((flatMapWidget?.config as Record<string, unknown>)?.showOnlyWhenOnTrack).toBe(false);
+      expect(flatMapWidget?.config?.showOnlyWhenOnTrack).toBe(false);
     });
   });
 });

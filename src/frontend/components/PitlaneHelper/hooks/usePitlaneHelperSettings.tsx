@@ -1,5 +1,5 @@
 import { useDashboard } from '@irdashies/context';
-import type { PitlaneHelperWidgetSettings } from '../../Settings/types';
+import type { PitlaneHelperWidgetSettings } from '@irdashies/types';
 
 export const usePitlaneHelperSettings = () => {
   const { currentDashboard } = useDashboard();
@@ -41,8 +41,8 @@ export const usePitlaneHelperSettings = () => {
     ...config,
     progressBarOrientation:
       config.progressBarOrientation ?? ('horizontal' as const),
-    speedBarOrientation:
-      config.speedBarOrientation ?? ('horizontal' as const),
+    speedBarOrientation: config.speedBarOrientation ?? ('horizontal' as const),
+    showProgressBar: config.showProgressBar ?? true,
     showSpeedBar: config.showSpeedBar ?? true,
     showPastPitBox: config.showPastPitBox ?? false,
     showPitExitInputs: config.showPitExitInputs ?? false,

@@ -11,7 +11,7 @@ import type { Gap, LastTimeState } from '../../createStandings';
 import type {
   RelativeWidgetSettings,
   StandingsWidgetSettings,
-} from '../../../Settings/types';
+} from '@irdashies/types';
 import { BadgeCell } from './cells/BadgeCell';
 import { CarManufacturerCell } from './cells/CarManufacturerCell';
 import { CarNumberCell } from './cells/CarNumberCell';
@@ -383,7 +383,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
         shouldRender:
           (displayOrder ? displayOrder.includes('positionChange') : true) &&
           (config && 'positionChange' in config
-            ? config.positionChange.enabled
+            ? (config.positionChange?.enabled ?? false)
             : false),
         component: (
           <PositionChangeCell

@@ -1,4 +1,4 @@
-import { FuelWidgetSettings } from '../../types';
+import { FuelWidgetSettings } from '@irdashies/types';
 
 export const DualFontSizeInput = ({
   widgetId,
