@@ -238,11 +238,25 @@ export class OverlayManager {
       sendBoundsIfReady();
     });
 
-    browserWindow.webContents.once('did-finish-load', () => {
+    browserWindow.webContents.on('did-finish-load', () => {
       if (browserWindow.isDestroyed()) return;
 
-      pageLoaded = true;
-      sendBoundsIfReady();
+      if (!pageLoaded) {
+        // First load: coordinate with ready-to-show before sending bounds
+        pageLoaded = true;
+        sendBoundsIfReady();
+      } else {
+        // Subsequent reload (e.g., Vite HMR after a branch switch in dev mode).
+        // Re-send containerBoundsInfo and re-trigger ready callbacks so the SDK
+        // bridge re-sends runningState/telemetry/sessionData to the reloaded renderer.
+        const boundsInfo = this.displayBoundsInfo.get(display.id);
+        if (boundsInfo) {
+          browserWindow.webContents.send('containerBoundsInfo', boundsInfo);
+        }
+        this.onWindowReadyCallbacks.forEach((cb) =>
+          cb(`display-${display.id}`)
+        );
+      }
     });
 
     return browserWindow;
