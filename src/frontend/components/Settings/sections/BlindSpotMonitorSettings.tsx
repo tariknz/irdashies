@@ -3,9 +3,9 @@ import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import { useDashboard } from '@irdashies/context';
 import {
   BlindSpotMonitorWidgetSettings,
-  SessionVisibilitySettings,
   SettingsTabType,
-} from '../types';
+  getWidgetDefaultConfig,
+} from '@irdashies/types';
 import { SessionVisibility } from '../components/SessionVisibility';
 import { TabButton } from '../components/TabButton';
 import { SettingSliderRow } from '../components/SettingSliderRow';
@@ -15,46 +15,7 @@ import { SettingToggleRow } from '../components/SettingToggleRow';
 
 const SETTING_ID = 'blindspotmonitor';
 
-const defaultConfig: BlindSpotMonitorWidgetSettings['config'] = {
-  showOnlyWhenOnTrack: true,
-  distAhead: 4,
-  distBehind: 4,
-  background: {
-    opacity: 30,
-  },
-  width: 20,
-  sessionVisibility: {
-    race: true,
-    loneQualify: false,
-    openQualify: true,
-    practice: true,
-    offlineTesting: true,
-  },
-};
-
-const migrateConfig = (
-  savedConfig: unknown
-): BlindSpotMonitorWidgetSettings['config'] => {
-  if (!savedConfig || typeof savedConfig !== 'object') return defaultConfig;
-
-  const config = savedConfig as Record<string, unknown>;
-  return {
-    showOnlyWhenOnTrack:
-      (config.showOnlyWhenOnTrack as boolean) ??
-      defaultConfig.showOnlyWhenOnTrack,
-    distAhead: (config.distAhead as number) ?? defaultConfig.distAhead,
-    distBehind: (config.distBehind as number) ?? defaultConfig.distBehind,
-    background: {
-      opacity:
-        (config.background as { opacity?: number })?.opacity ??
-        (defaultConfig.background?.opacity as number),
-    },
-    width: (config.width as number) ?? defaultConfig.width,
-    sessionVisibility:
-      (config.sessionVisibility as SessionVisibilitySettings) ??
-      defaultConfig.sessionVisibility,
-  };
-};
+const defaultConfig = getWidgetDefaultConfig('blindspotmonitor');
 
 export const BlindSpotMonitorSettings = () => {
   const { currentDashboard } = useDashboard();
@@ -63,7 +24,9 @@ export const BlindSpotMonitorSettings = () => {
   ) as BlindSpotMonitorWidgetSettings | undefined;
   const [settings, setSettings] = useState<BlindSpotMonitorWidgetSettings>({
     enabled: savedSettings?.enabled ?? false,
-    config: migrateConfig(savedSettings?.config),
+    config:
+      (savedSettings?.config as BlindSpotMonitorWidgetSettings['config']) ??
+      defaultConfig,
   });
 
   // Tab state with persistence

@@ -1,4 +1,4 @@
-import { SettingsTabType } from '../types';
+import { SettingsTabType } from '@irdashies/types';
 
 interface TabButtonProps {
   id: SettingsTabType;

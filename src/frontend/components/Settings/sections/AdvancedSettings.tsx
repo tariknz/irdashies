@@ -3,7 +3,7 @@ import { useDashboard } from '@irdashies/context';
 import { UploadSimpleIcon, DownloadSimpleIcon } from '@phosphor-icons/react';
 import { TelemetryInspectorSettings } from './TelemetryInspectorSettings';
 import { TabButton } from '../components/TabButton';
-import { SettingsTabType } from '../types';
+import { SettingsTabType } from '@irdashies/types';
 
 export const AdvancedSettings = () => {
   const { currentDashboard, onDashboardUpdated, resetDashboard, bridge } =

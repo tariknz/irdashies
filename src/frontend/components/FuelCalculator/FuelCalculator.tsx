@@ -17,7 +17,7 @@ import {
   FuelCalculatorEconomyPredict,
 } from './widgets/FuelCalculatorWidgets';
 import type { FuelCalculatorSettings, FuelCalculation } from './types';
-import type { LayoutNode } from '../Settings/types';
+import type { LayoutNode } from '@irdashies/types';
 import { DEFAULT_FUEL_LAYOUT_TREE } from './defaults';
 
 type FuelCalculatorProps = Partial<FuelCalculatorSettings>;

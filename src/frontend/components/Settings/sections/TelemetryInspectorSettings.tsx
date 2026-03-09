@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { getWidgetDefaultConfig } from '@irdashies/types';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import { useDashboard } from '@irdashies/context';
 import { TrashIcon, PlusIcon } from '@phosphor-icons/react';
@@ -21,29 +22,7 @@ interface TelemetryInspectorWidgetSettings {
   config: TelemetryInspectorConfig;
 }
 
-const defaultConfig: TelemetryInspectorConfig = {
-  background: { opacity: 80 },
-  properties: [
-    { source: 'telemetry', path: 'Speed', label: 'Speed' },
-    { source: 'telemetry', path: 'SessionTime', label: 'Session Time' },
-  ],
-};
-
-const migrateConfig = (savedConfig: unknown): TelemetryInspectorConfig => {
-  if (!savedConfig || typeof savedConfig !== 'object') return defaultConfig;
-  const config = savedConfig as Record<string, unknown>;
-
-  return {
-    background: {
-      opacity:
-        (config.background as { opacity?: number })?.opacity ??
-        defaultConfig.background?.opacity ??
-        80,
-    },
-    properties:
-      (config.properties as PropertyConfig[]) ?? defaultConfig.properties,
-  };
-};
+const defaultConfig = getWidgetDefaultConfig('telemetryinspector');
 
 // Common telemetry properties for quick add
 const commonTelemetryProperties = [
@@ -91,7 +70,8 @@ export const TelemetryInspectorSettings = () => {
   ) as TelemetryInspectorWidgetSettings | undefined;
   const [settings, setSettings] = useState<TelemetryInspectorWidgetSettings>({
     enabled: savedSettings?.enabled ?? false,
-    config: migrateConfig(savedSettings?.config),
+    config:
+      (savedSettings?.config as TelemetryInspectorConfig) ?? defaultConfig,
   });
 
   const [newProperty, setNewProperty] = useState<PropertyConfig>({

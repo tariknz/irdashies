@@ -1,4 +1,7 @@
-import { BaseWidgetSettings, SessionVisibilitySettings } from '../types';
+import {
+  BaseWidgetSettings,
+  SessionVisibilitySettings,
+} from '@irdashies/types';
 import { SettingToggleRow } from '../components/SettingToggleRow';
 
 interface SessionVisibilityProps {
