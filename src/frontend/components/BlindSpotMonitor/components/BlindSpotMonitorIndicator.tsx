@@ -1,11 +1,11 @@
+import { CarLeftRight } from '@irdashies/types';
 import { useEffect, useRef, useState } from 'react';
-import { BlindSpotState } from '../hooks/useBlindSpotMonitor';
 
 export interface BlindSpotMonitorIndicatorProps {
   side: 'left' | 'right';
   bgOpacity?: number;
   percent: number;
-  state: BlindSpotState;
+  state: CarLeftRight;
   width?: number;
   visible: boolean;
   disableTransition: boolean;
@@ -20,10 +20,11 @@ export const BlindSpotMonitorIndicator = ({
   visible,
   disableTransition,
 }: BlindSpotMonitorIndicatorProps) => {
-  const isTwoCars = state === 'Cars2Left' || state === 'Cars2Right';
+  const isTwoCars =
+    state === CarLeftRight.Cars2Left || state === CarLeftRight.Cars2Right;
   const topPosition = `${25 - percent * 75}%`;
   const widthPx = `${width ?? 20}px`;
-  const twoCarsText = state === 'Cars2Left' ? '2 left' : '2 right';
+  const twoCarsText = state === CarLeftRight.Cars2Left ? '2 left' : '2 right';
   const transitionTimeoutRef = useRef<number | null>(null);
   const [enableTransition, setEnableTransition] = useState(false);
 
