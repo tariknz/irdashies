@@ -1,9 +1,9 @@
 import { useTelemetryValue } from '@irdashies/context';
 
-export const useInputs = () => {
-  const brake = useTelemetryValue('Brake');
-  const throttle = useTelemetryValue('Throttle');
-  const clutchRaw = useTelemetryValue('Clutch');
+export const useInputs = (useRawValues: boolean) => {
+  const brake = useTelemetryValue(useRawValues ? 'BrakeRaw' : 'Brake');
+  const throttle = useTelemetryValue(useRawValues ? 'ThrottleRaw' : 'Throttle');
+  const clutchRaw = useTelemetryValue(useRawValues ? 'ClutchRaw' : 'Clutch');
   const gear = useTelemetryValue('Gear');
   const speed = useTelemetryValue('Speed');
   const unit = useTelemetryValue('DisplayUnits');
