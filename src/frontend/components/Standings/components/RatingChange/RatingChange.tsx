@@ -38,7 +38,7 @@ export const RatingChange = ({
   } else {
     justify = 'center';
     text = '';
-    icon = <MinusIcon size={10} />;
+    icon = <MinusIcon size={10} className="ml-1" />;
   }
 
   const justifyClass = justify === 'start' ? 'justify-start' : 'justify-center';
