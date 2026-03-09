@@ -1,15 +1,13 @@
-import {
-  useBlindSpotMonitor,
-  BlindSpotState,
-} from './hooks/useBlindSpotMonitor';
+import { useBlindSpotMonitor } from './hooks/useBlindSpotMonitor';
 import { useBlindSpotMonitorSettings } from './hooks/useBlindSpotMonitorSettings';
 import { BlindSpotMonitorIndicator } from './components/BlindSpotMonitorIndicator';
 import { useSessionVisibility, useTelemetryValue } from '@irdashies/context';
+import { CarLeftRight } from '@irdashies/types';
 
 export interface BlindSpotMonitorDisplayProps {
   show: boolean;
-  leftState: BlindSpotState;
-  rightState: BlindSpotState;
+  leftState: CarLeftRight;
+  rightState: CarLeftRight;
   leftPercent: number;
   rightPercent: number;
   disableTransition?: boolean;
@@ -28,9 +26,13 @@ export const BlindSpotMonitorDisplay = ({
   width,
 }: BlindSpotMonitorDisplayProps) => {
   const showLeft =
-    show && (leftState === 'CarLeft' || leftState === 'Cars2Left');
+    show &&
+    (leftState === CarLeftRight.CarLeft ||
+      leftState === CarLeftRight.Cars2Left);
   const showRight =
-    show && (rightState === 'CarRight' || rightState === 'Cars2Right');
+    show &&
+    (rightState === CarLeftRight.CarRight ||
+      rightState === CarLeftRight.Cars2Right);
 
   return (
     <div className="w-full h-full relative">
