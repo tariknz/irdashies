@@ -3,11 +3,13 @@ import { CaretUpIcon, CaretDownIcon, MinusIcon } from '@phosphor-icons/react';
 interface RatingChangeProps {
   value?: number;
   justify?: 'start' | 'center';
+  showZero?: boolean;
 }
 
 export const RatingChange = ({
   value,
   justify = 'center',
+  showZero = false,
 }: RatingChangeProps) => {
   if (value === undefined || isNaN(value)) {
     return (
@@ -30,6 +32,9 @@ export const RatingChange = ({
     text = `${Math.abs(roundedChange)}`;
     color = 'text-red-400';
     icon = <CaretDownIcon size={10} />;
+  } else if (showZero) {
+    text = '0';
+    icon = null;
   } else {
     justify = 'center';
     text = '';
