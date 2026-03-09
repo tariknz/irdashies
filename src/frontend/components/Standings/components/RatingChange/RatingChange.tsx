@@ -34,7 +34,7 @@ export const RatingChange = ({
     icon = <CaretDownIcon size={10} />;
   } else if (showZero) {
     text = '0';
-    icon = null;
+    icon = <MinusIcon size={10} />;
   } else {
     justify = 'center';
     text = '';
