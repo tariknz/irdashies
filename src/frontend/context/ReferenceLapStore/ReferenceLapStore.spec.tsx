@@ -1,5 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { useReferenceLapStore, normalizeKey } from './ReferenceLapStore';
+import {
+  useReferenceLapStore,
+  normalizeKey,
+  REFERENCE_INTERVAL,
+} from './ReferenceLapStore';
 import { ReferenceLap, ReferencePoint, TrackLocation } from '@irdashies/types';
 import { precomputePCHIPTangents } from './pchipTangents';
 import { ReferenceLapBridge } from '@irdashies/types';
@@ -61,7 +65,7 @@ describe('ReferenceLapStore', () => {
           mockBridge as ReferenceLapBridge,
           carIdx,
           classId,
-          0.1,
+          0.04,
           1000,
           TrackLocation.OnTrack,
           false
@@ -105,45 +109,79 @@ describe('ReferenceLapStore', () => {
     });
 
     it('should complete a lap and save it if it is the new best clean lap', async () => {
-      // Ensure IDs are set so saveReferenceLap is called
-      useReferenceLapStore.setState({ seriesId: 1, trackId: 1 });
+      // 1. Setup Initial State
+      useReferenceLapStore.setState({
+        seriesId: 1,
+        trackId: 1,
+        activeLaps: new Map(),
+        bestLaps: new Map(),
+        persistedLaps: new Map(),
+      });
 
-      const store = useReferenceLapStore.getState();
+      const carIdx = 1;
+      const classId = 10;
 
-      // 1. Start a lap near the end
-      store.collectLapData(
-        mockBridge as ReferenceLapBridge,
-        carIdx,
-        classId,
-        0.96,
-        1000,
-        TrackLocation.OnTrack,
-        false
-      );
+      // 2. Start a lap (Initial point)
+      useReferenceLapStore
+        .getState()
+        .collectLapData(
+          mockBridge as ReferenceLapBridge,
+          carIdx,
+          classId,
+          0.01,
+          1000,
+          TrackLocation.OnTrack,
+          false
+        );
 
-      const activeLap = store.activeLaps.get(carIdx);
-      // Meet the MIN_POINTS_FOR_VALID_LAP requirement
-      for (let i = 0; i < 400; i++) {
-        activeLap?.refPoints.set(i, {} as ReferencePoint);
+      const activeLap = useReferenceLapStore.getState().activeLaps.get(carIdx);
+
+      // 3. Meet the validation requirements:
+      // - MIN_POINTS_FOR_VALID_LAP (>= 300 based on your constants)
+      // - lastTrackedPct must be > 0.95 to trigger completion logic
+      if (activeLap) {
+        for (let i = 0; i < 400; i++) {
+          activeLap.refPoints.set(
+            normalizeKey(i * REFERENCE_INTERVAL + 0.0001),
+            {
+              trackPct: i * REFERENCE_INTERVAL,
+              timeElapsedSinceStart: i,
+              tangent: undefined,
+            }
+          );
+        }
+        activeLap.lastTrackedPct = 0.96; // CRITICAL: Required for isLapComplete
+        activeLap.isCleanLap = true;
       }
 
-      // 2. Cross the line (0.96 -> 0.01)
-      store.collectLapData(
-        mockBridge as ReferenceLapBridge,
-        carIdx,
-        classId,
-        0.01,
-        1060,
-        TrackLocation.OnTrack,
-        false
-      );
+      // 4. Cross the line (Trigger completion)
+      // Current trackPct (0.01) < 0.05 and lastTrackedPct (0.96) > 0.95
+      useReferenceLapStore
+        .getState()
+        .collectLapData(
+          mockBridge as ReferenceLapBridge,
+          carIdx,
+          classId,
+          0.01,
+          1060,
+          TrackLocation.OnTrack,
+          false
+        );
 
+      // 5. Assertions
       expect(precomputePCHIPTangents).toHaveBeenCalled();
-      // Check the new state after completion
-      expect(
-        useReferenceLapStore.getState().bestLaps.get(carIdx)
-      ).toBeDefined();
-      expect(mockBridge.saveReferenceLap).toHaveBeenCalled();
+
+      const finalState = useReferenceLapStore.getState();
+      expect(finalState.bestLaps.get(carIdx)).toBeDefined();
+      expect(finalState.persistedLaps.get(classId)).toBeDefined();
+
+      // Ensure bridge was called
+      expect(mockBridge.saveReferenceLap).toHaveBeenCalledWith(
+        1,
+        1,
+        classId,
+        expect.any(Object)
+      );
     });
 
     it('should not save lap if it is not clean', () => {

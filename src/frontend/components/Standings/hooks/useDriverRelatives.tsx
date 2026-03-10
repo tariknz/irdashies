@@ -70,7 +70,7 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
 
       const behindDriver = driverMap.get(behindIdx);
       const classId = behindDriver?.carClass.id ?? -1;
-      const isStartingLap = (behindDriver?.lap ?? -1) <= 1;
+      const isStartingLap = (behindDriver?.lap ?? -1) <= 3;
       const refLap = useReferenceLapStore
         .getState()
         .getReferenceLap(behindIdx, classId, isStartingLap);
