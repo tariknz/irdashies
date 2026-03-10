@@ -99,101 +99,101 @@ export const AdvancedSettings = () => {
         </p>
       </div>
 
-      <div className="flex-1 overflow-y-auto min-h-0 mt-4">
-        <div className="space-y-4 p-4">
-          <div className="flex border-b border-slate-700/50">
-            <TabButton
-              id="dashboard"
-              activeTab={activeTab}
-              setActiveTab={setActiveTab}
-            >
-              Dashboard
-            </TabButton>
-            <TabButton
-              id="telemetry"
-              activeTab={activeTab}
-              setActiveTab={setActiveTab}
-            >
-              Telemetry Inspector
-            </TabButton>
-          </div>
+      <div className="flex-none mt-4 px-4">
+        <div className="flex border-b border-slate-700/50">
+          <TabButton
+            id="dashboard"
+            activeTab={activeTab}
+            setActiveTab={setActiveTab}
+          >
+            Dashboard
+          </TabButton>
+          <TabButton
+            id="telemetry"
+            activeTab={activeTab}
+            setActiveTab={setActiveTab}
+          >
+            Telemetry Inspector
+          </TabButton>
+        </div>
+      </div>
 
-          <div className="pt-2 space-y-4">
-            {activeTab === 'dashboard' && (
-              <div className="flex flex-col space-y-4">
-                <p className="text-sm text-slate-400">
-                  Edit raw dashboard JSON and reset settings
-                </p>
-                <div className="flex space-x-2">
-                  <button
-                    type="button"
-                    onClick={handleResetConfigs}
-                    className="flex-1 bg-amber-700 hover:bg-amber-600 rounded px-4 py-2 transition-colors cursor-pointer"
-                  >
-                    Reset Configurations
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleResetCompletely}
-                    className="flex-1 bg-red-700 hover:bg-red-600 rounded px-4 py-2 transition-colors cursor-pointer"
-                  >
-                    Reset Everything
-                  </button>
-                </div>
+      {activeTab === 'dashboard' && (
+        <div className="flex flex-col flex-1 min-h-0 px-4 pt-3 pb-4 gap-3">
+          <p className="flex-none text-sm text-slate-400">
+            Edit raw dashboard JSON and reload settings
+          </p>
 
-                <div className="flex flex-col rounded border border-slate-600 overflow-hidden">
-                  <div className="flex items-center justify-between px-3 py-1.5 bg-slate-700/60 border-b border-slate-600">
-                    <span className="text-xs text-slate-400 font-mono">
-                      dashboard.json
-                    </span>
-                    <div className="flex gap-1">
-                      <button
-                        type="button"
-                        onClick={handleImport}
-                        className="flex items-center gap-1.5 text-xs text-slate-300 hover:text-white hover:bg-slate-600 rounded px-2 py-1 transition-colors cursor-pointer"
-                      >
-                        <UploadSimpleIcon size={13} />
-                        Import
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleExport}
-                        className="flex items-center gap-1.5 text-xs text-slate-300 hover:text-white hover:bg-slate-600 rounded px-2 py-1 transition-colors cursor-pointer"
-                      >
-                        <DownloadSimpleIcon size={13} />
-                        Export
-                      </button>
-                    </div>
-                  </div>
-                  <textarea
-                    className="w-full h-96 bg-slate-800 p-4 font-mono text-sm focus:outline-none resize-none"
-                    value={dashboardInput}
-                    onChange={onInputUpdated}
-                    placeholder="Dashboard configuration JSON..."
-                  />
-                </div>
-
+          <div className="flex flex-col flex-1 min-h-0 rounded border border-slate-600 overflow-hidden">
+            <div className="flex items-center justify-between px-3 py-1.5 bg-slate-700/60 border-b border-slate-600">
+              <span className="text-xs text-slate-400 font-mono">
+                dashboard.json
+              </span>
+              <div className="flex gap-1">
+                <button
+                  type="button"
+                  onClick={handleImport}
+                  className="flex items-center gap-1.5 text-xs text-slate-300 hover:text-white hover:bg-slate-600 rounded px-2 py-1 transition-colors cursor-pointer"
+                >
+                  <UploadSimpleIcon size={13} />
+                  Import
+                </button>
+                <button
+                  type="button"
+                  onClick={handleExport}
+                  className="flex items-center gap-1.5 text-xs text-slate-300 hover:text-white hover:bg-slate-600 rounded px-2 py-1 transition-colors cursor-pointer"
+                >
+                  <DownloadSimpleIcon size={13} />
+                  Export
+                </button>
+                <div className="w-px bg-slate-600 mx-1" />
                 <button
                   type="button"
                   onClick={handleSave}
-                  className="w-full bg-slate-700 hover:bg-slate-600 rounded px-4 py-2 transition-colors cursor-pointer"
+                  className="flex items-center gap-1.5 text-xs text-white bg-slate-600 hover:bg-slate-500 rounded px-3 py-1 transition-colors cursor-pointer font-medium"
                 >
                   Save
                 </button>
               </div>
-            )}
+            </div>
+            <textarea
+              className="flex-1 w-full bg-slate-800 p-4 font-mono text-sm focus:outline-none resize-none"
+              value={dashboardInput}
+              onChange={onInputUpdated}
+              placeholder="Dashboard configuration JSON..."
+            />
+          </div>
 
-            {activeTab === 'telemetry' && (
-              <div>
-                <p className="text-sm text-slate-400 mb-4">
-                  Debug widget to display raw telemetry and session values
-                </p>
-                <TelemetryInspectorSettings />
-              </div>
-            )}
+          <div className="flex-none flex items-center gap-4 border-t border-slate-700/50 pt-3">
+            <span className="text-xs text-slate-500 uppercase tracking-wide">
+              Reset
+            </span>
+            <button
+              type="button"
+              onClick={handleResetConfigs}
+              className="text-xs text-amber-400 hover:text-amber-300 underline underline-offset-2 transition-colors cursor-pointer"
+            >
+              Widget configs only
+            </button>
+            <button
+              type="button"
+              onClick={handleResetCompletely}
+              className="text-xs text-red-400 hover:text-red-300 underline underline-offset-2 transition-colors cursor-pointer"
+            >
+              Everything to factory defaults
+            </button>
           </div>
         </div>
-      </div>
+      )}
+
+      {activeTab === 'telemetry' && (
+        <div className="flex-1 overflow-y-auto min-h-0 px-4 pt-3 pb-4">
+          <p className="text-sm text-slate-400 mb-4">
+            Debug widget to display raw telemetry and session values
+          </p>
+          <TelemetryInspectorSettings />
+        </div>
+      )}
     </div>
   );
 };
