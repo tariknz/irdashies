@@ -121,7 +121,7 @@ export const AdvancedSettings = () => {
       {activeTab === 'dashboard' && (
         <div className="flex flex-col flex-1 min-h-0 px-4 pt-3 pb-4 gap-3">
           <p className="flex-none text-sm text-slate-400">
-            Edit raw dashboard JSON and reload settings
+            Directly edit the dashboard configuration file and apply changes
           </p>
 
           <div className="flex flex-col flex-1 min-h-0 rounded border border-slate-600 overflow-hidden">
