@@ -7,11 +7,13 @@ import {
   InfoIcon,
 } from '@phosphor-icons/react';
 import type { Icon } from '@phosphor-icons/react';
+import { useDashboard } from '@irdashies/context';
 
 interface MenuItem {
   to: string;
   path: string;
   label: string;
+  widgetType?: string;
   icon?: Icon;
 }
 
@@ -28,9 +30,6 @@ const generalItems: MenuItem[] = [
     label: 'Profiles',
     icon: UsersIcon,
   },
-];
-
-const toolItems: MenuItem[] = [
   {
     to: '/settings/car-setup',
     path: '/car-setup',
@@ -44,28 +43,76 @@ const widgetItems: MenuItem[] = [
     to: '/settings/blindspotmonitor',
     path: '/blindspotmonitor',
     label: 'Blind Spot Monitor',
+    widgetType: 'blindspotmonitor',
   },
   {
     to: '/settings/fastercarsfrombehind',
     path: '/fastercarsfrombehind',
     label: 'Faster Cars Behind',
+    widgetType: 'fastercarsfrombehind',
   },
-  { to: '/settings/flag', path: '/flag', label: 'Flag' },
-  { to: '/settings/flatmap', path: '/flatmap', label: 'Flat Track Map' },
-  { to: '/settings/fuel', path: '/fuel', label: 'Fuel Calculator' },
-  { to: '/settings/garagecover', path: '/garagecover', label: 'Garage Cover' },
-  { to: '/settings/input', path: '/input', label: 'Input' },
+  { to: '/settings/flag', path: '/flag', label: 'Flag', widgetType: 'flag' },
+  {
+    to: '/settings/flatmap',
+    path: '/flatmap',
+    label: 'Flat Track Map',
+    widgetType: 'flatmap',
+  },
+  {
+    to: '/settings/fuel',
+    path: '/fuel',
+    label: 'Fuel Calculator',
+    widgetType: 'fuel',
+  },
+  {
+    to: '/settings/garagecover',
+    path: '/garagecover',
+    label: 'Garage Cover',
+    widgetType: 'garagecover',
+  },
+  {
+    to: '/settings/input',
+    path: '/input',
+    label: 'Input',
+    widgetType: 'input',
+  },
   {
     to: '/settings/pitlanehelper',
     path: '/pitlanehelper',
     label: 'Pitlane Helper',
+    widgetType: 'pitlanehelper',
   },
-  { to: '/settings/rejoin', path: '/rejoin', label: 'Rejoin Indicator' },
-  { to: '/settings/relative', path: '/relative', label: 'Relative' },
-  { to: '/settings/standings', path: '/standings', label: 'Standings' },
-  { to: '/settings/map', path: '/map', label: 'Track Map' },
-  { to: '/settings/twitchchat', path: '/twitchchat', label: 'Twitch Chat' },
-  { to: '/settings/weather', path: '/weather', label: 'Weather' },
+  {
+    to: '/settings/rejoin',
+    path: '/rejoin',
+    label: 'Rejoin Indicator',
+    widgetType: 'rejoin',
+  },
+  {
+    to: '/settings/relative',
+    path: '/relative',
+    label: 'Relative',
+    widgetType: 'relative',
+  },
+  {
+    to: '/settings/standings',
+    path: '/standings',
+    label: 'Standings',
+    widgetType: 'standings',
+  },
+  { to: '/settings/map', path: '/map', label: 'Track Map', widgetType: 'map' },
+  {
+    to: '/settings/twitchchat',
+    path: '/twitchchat',
+    label: 'Twitch Chat',
+    widgetType: 'twitchchat',
+  },
+  {
+    to: '/settings/weather',
+    path: '/weather',
+    label: 'Weather',
+    widgetType: 'weather',
+  },
 ];
 
 const bottomItems: MenuItem[] = [
@@ -82,10 +129,12 @@ const MenuLink = ({
   item,
   pathname,
   showIcon = false,
+  isEnabled,
 }: {
   item: MenuItem;
   pathname: string;
   showIcon?: boolean;
+  isEnabled?: boolean;
 }) => {
   const isActive = pathname.startsWith(`/settings${item.path}`);
   return (
@@ -93,7 +142,7 @@ const MenuLink = ({
       <Link
         to={item.to}
         className={[
-          'flex items-center gap-2 w-full px-2 py-1.5 rounded cursor-pointer border-l-2 transition-colors',
+          'flex items-center gap-2 w-full px-2 py-1 rounded cursor-pointer border-l-2 transition-colors',
           isActive
             ? 'border-blue-400 bg-slate-700 text-white'
             : 'border-transparent text-slate-400 hover:bg-slate-700/50 hover:text-white',
@@ -106,7 +155,10 @@ const MenuLink = ({
             className="shrink-0"
           />
         )}
-        <span>{item.label}</span>
+        <span className="flex-1">{item.label}</span>
+        {isEnabled && (
+          <span className="w-1.5 h-1.5 rounded-full shrink-0 bg-emerald-400" />
+        )}
       </Link>
     </li>
   );
@@ -114,10 +166,18 @@ const MenuLink = ({
 
 export const SettingsMenu = () => {
   const { pathname } = useLocation();
+  const { currentDashboard } = useDashboard();
+
+  const isWidgetEnabled = (widgetType: string) => {
+    const widget = currentDashboard?.widgets.find(
+      (w) => (w.type ?? w.id) === widgetType
+    );
+    return widget?.enabled ?? false;
+  };
 
   return (
-    <div className="w-1/4 bg-slate-800 p-3 rounded-md flex flex-col gap-1 overflow-y-auto">
-      <ul className="flex flex-col gap-0.5 pb-2 border-b border-slate-700">
+    <div className="w-1/4 bg-slate-800 p-3 rounded-md flex flex-col gap-0 overflow-y-auto">
+      <ul className="flex flex-col pb-2 border-b border-slate-700">
         {generalItems.map((item) => (
           <MenuLink key={item.path} item={item} pathname={pathname} showIcon />
         ))}
@@ -126,22 +186,20 @@ export const SettingsMenu = () => {
       <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider px-2 pt-2 pb-1">
         Widgets
       </p>
-      <ul className="flex flex-col gap-0.5">
+      <ul className="flex flex-col">
         {widgetItems.map((item) => (
-          <MenuLink key={item.path} item={item} pathname={pathname} />
+          <MenuLink
+            key={item.path}
+            item={item}
+            pathname={pathname}
+            isEnabled={
+              item.widgetType ? isWidgetEnabled(item.widgetType) : undefined
+            }
+          />
         ))}
       </ul>
 
-      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider px-2 pt-2 pb-1">
-        Tools
-      </p>
-      <ul className="flex flex-col gap-0.5">
-        {toolItems.map((item) => (
-          <MenuLink key={item.path} item={item} pathname={pathname} />
-        ))}
-      </ul>
-
-      <ul className="mt-auto pt-2 border-t border-slate-700 flex flex-col gap-0.5">
+      <ul className="mt-auto pt-2 border-t border-slate-700 flex flex-col">
         {bottomItems.map((item) => (
           <MenuLink key={item.path} item={item} pathname={pathname} showIcon />
         ))}
