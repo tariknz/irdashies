@@ -2,7 +2,6 @@ import { memo } from 'react';
 import type { LastTimeState } from '../../../createStandings';
 
 interface LastTimeCellProps {
-  hidden?: boolean;
   lastTimeString: string;
   lastTimeState?: LastTimeState;
 }
@@ -13,9 +12,9 @@ const getLastTimeColorClass = (state?: LastTimeState): string => {
   return '';
 };
 
-export const LastTimeCell = memo(({ hidden, lastTimeString, lastTimeState }: LastTimeCellProps) => (
+export const LastTimeCell = memo(({ lastTimeString, lastTimeState }: LastTimeCellProps) => (
   <td data-column="lastTime" className={`w-auto px-2 whitespace-nowrap ${getLastTimeColorClass(lastTimeState)}`}>
-    {hidden ? '' : lastTimeString}
+    {lastTimeString}
   </td>
 ));
 

@@ -19,6 +19,10 @@ export const WIDGET_NAMES: Record<WidgetId, string> = {
   telemetryinspector: 'Telemetry Inspector',
   pitlanehelper: 'Pitlane Helper',
   tachometer: 'Tachometer',
+  flag: 'Flag',
+  pitlanehelper: 'Pitlane Helper',
+  telemetryinspector: 'Telemetry Inspector',
+  twitchchat: 'Twitch Chat',
 };
 
 /**

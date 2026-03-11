@@ -1,0 +1,43 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+.vite/
+.webpack/
+out/
+build/
+bin/
+.next
+.nuxt
+
+# Coverage
+coverage/
+
+# Logs
+*.log
+
+# Cache
+.cache
+*.tsbuildinfo
+.eslintcache
+
+# Storybook
+storybook-static/
+*storybook.log
+
+# Test artifacts
+test-data/**/*.png
+test-data/unused
+
+# Generated files
+src/**/tracks/*.svg
+asset-data
+
+# Documentation
+docs/features/
+docs/reference/relatives.js
+
+# Package manager
+package-lock.json
+pnpm-lock.yaml
+yarn.lock

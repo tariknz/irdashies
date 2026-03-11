@@ -1,48 +1,24 @@
 import {
   GearIcon,
   LockIcon,
-  LockOpenIcon,
   PresentationChartIcon,
 } from '@phosphor-icons/react';
-import { Link, Route, Routes, useLocation, Navigate } from 'react-router-dom';
-import { StandingsSettings } from './sections/StandingsSettings';
-import { RelativeSettings } from './sections/RelativeSettings';
-import { WeatherSettings } from './sections/WeatherSettings';
-import { TrackMapSettings } from './sections/TrackMapSettings';
-import { FlatTrackMapSettings } from './sections/FlatTrackMapSettings';
-import { AdvancedSettings } from './sections/AdvancedSettings';
-import { InputSettings } from './sections/InputSettings';
-import { AboutSettings } from './sections/AboutSettings';
-import { FasterCarsFromBehindSettings } from './sections/FasterCarsFromBehindSettings';
-import { FuelSettings } from './sections/FuelSettings';
-import { RejoinIndicatorSettings } from './sections/RejoinIndicatorSettings';
-import { PitlaneHelperSettings } from './sections/PitlaneHelperSettings';
-import { TachometerSettings } from './sections/TachometerSettings';
-import { GeneralSettings } from './sections/GeneralSettings';
-import { BlindSpotMonitorSettings } from './sections/BlindSpotMonitorSettings';
-import { GarageCoverSettings } from './sections/GarageCoverSettings';
+import { Route, Routes, Navigate } from 'react-router-dom';
 import { useDashboard } from '@irdashies/context';
-import { useState } from 'react';
-
+import { SettingsLoader } from './SettingsLoader';
+import { SettingsMenu } from './SettingsMenu';
 
 export const SettingsLayout = () => {
-  const location = useLocation();
-  const { bridge, editMode, isDemoMode, toggleDemoMode, currentDashboard } =
-    useDashboard();
-  const [isLocked, setIsLocked] = useState(!editMode);
-
-  const isActive = (path: string) => {
-    return location.pathname === `/settings${path}`;
-  };
-
-  const menuItemClass = (path: string) =>
-    `block w-full p-2 rounded cursor-pointer ${
-      isActive(path) ? 'bg-slate-700' : 'hover:bg-slate-700'
-    }`;
+  const {
+    bridge,
+    isDemoMode,
+    toggleDemoMode,
+    currentDashboard,
+    currentProfile,
+  } = useDashboard();
 
   const handleToggleLock = async () => {
-    const locked = await bridge.toggleLockOverlays();
-    setIsLocked(locked);
+    await bridge.toggleLockOverlays();
   };
 
   if (!currentDashboard) {
@@ -54,12 +30,19 @@ export const SettingsLayout = () => {
       <div className="flex flex-row gap-4 items-center justify-between">
         <div className="flex flex-row gap-4 items-center">
           <GearIcon size={32} weight="bold" />
-          <h1 className="text-2xl font-bold">Overlay Settings</h1>
+          <div>
+            <h1 className="text-2xl font-bold">Overlay Settings</h1>
+            {currentProfile && (
+              <p className="text-sm text-slate-300">
+                {currentProfile.name} Profile
+              </p>
+            )}
+          </div>
         </div>
         <div className="flex flex-row gap-2">
           <button
             onClick={toggleDemoMode}
-            className="flex flex-row gap-2 items-center px-3 py-2 rounded bg-slate-800 hover:bg-slate-600 transition-colors"
+            className="flex flex-row gap-1.5 items-center px-3 py-2 rounded bg-slate-800 hover:bg-slate-600 transition-colors"
           >
             {isDemoMode ? (
               <>
@@ -75,151 +58,17 @@ export const SettingsLayout = () => {
           </button>
           <button
             onClick={handleToggleLock}
-            className="flex flex-row gap-2 items-center px-3 py-2 rounded bg-slate-800 hover:bg-slate-600 transition-colors"
+            className="flex flex-row gap-1.5 items-center px-3 py-2 rounded bg-slate-800 hover:bg-slate-600 transition-colors"
           >
-            {isLocked ? (
-              <>
-                <LockIcon size={20} weight="bold" />
-                <span>Edit Layout (F6)</span>
-              </>
-            ) : (
-              <>
-                <LockOpenIcon size={20} weight="bold" />
-                <span>Editing Layout (F6)</span>
-              </>
-            )}
+            <LockIcon size={20} weight="bold" />
+            <span>Edit Layout</span>
+            <kbd className="ml-1 text-xs bg-black/20 px-1 rounded">F6</kbd>
           </button>
         </div>
       </div>
       <div className="flex flex-row gap-4 flex-1 min-h-0 text-sm">
         {/* Left Column - Widget Menu */}
-        <div className="w-1/4 bg-slate-800 p-4 rounded-md flex flex-col overflow-y-auto">
-          <ul className="flex flex-col gap-2 mb-2 border-b border-slate-700 pb-2">
-            <li>
-              <Link
-                to="/settings/general"
-                className={menuItemClass('/general')}
-              >
-                General
-              </Link>
-            </li>
-          </ul>
-          <ul className="flex flex-col gap-2 flex-1 mb-2">
-            <li>
-              <Link
-                to="/settings/blindspotmonitor"
-                className={menuItemClass('/blindspotmonitor')}
-              >
-                Blind Spot Monitor
-              </Link>
-            </li>
-            <li>
-              <Link
-                to="/settings/faster-cars"
-                className={menuItemClass('/faster-cars')}
-              >
-                Faster Cars
-              </Link>
-            </li>
-            <li>
-              <Link
-                to="/settings/flatmap"
-                className={menuItemClass('/flatmap')}
-              >
-                Flat Track Map
-              </Link>
-            </li>
-            <li>
-              <Link to="/settings/fuel" className={menuItemClass('/fuel')}>
-                Fuel Calculator
-              </Link>
-            </li>
-            <li>
-              <Link
-                to="/settings/garagecover"
-                className={menuItemClass('/garagecover')}
-              >
-                Garage Cover
-              </Link>
-            </li>
-            <li>
-              <Link to="/settings/input" className={menuItemClass('/input')}>
-                Input Traces
-              </Link>
-            </li>
-            <li>
-              <Link
-                to="/settings/pitlanehelper"
-                className={menuItemClass('/pitlanehelper')}
-              >
-                Pitlane Helper
-              </Link>
-            </li>
-            <li>
-              <Link
-                to="/settings/rejoin"
-                className={menuItemClass('/rejoin')}
-              >
-                Rejoin Indicator
-              </Link>
-            </li>
-            <li>
-              <Link
-                to="/settings/relative"
-                className={menuItemClass('/relative')}
-              >
-                Relative
-              </Link>
-            </li>
-            <li>
-              <Link
-                to="/settings/tachometer"
-                className={menuItemClass('/tachometer')}
-              >
-                Tachometer
-              </Link>
-            </li>
-            <li>
-              <Link
-                to="/settings/standings"
-                className={menuItemClass('/standings')}
-              >
-                Standings
-              </Link>
-            </li>
-            <li>
-              <Link to="/settings/map" className={menuItemClass('/map')}>
-                <div className="flex flex-row gap-2 items-center">
-                  Track Map
-                </div>
-              </Link>
-            </li>
-            <li>
-              <Link
-                to="/settings/weather"
-                className={menuItemClass('/weather')}
-              >
-                Weather
-              </Link>
-            </li>
-          </ul>
-          {/* Advanced settings pushed to bottom */}
-          <ul className="mt-auto pt-2 border-t border-slate-700 flex flex-col gap-2">
-            <li>
-              <Link
-                to="/settings/advanced"
-                className={menuItemClass('/advanced')}
-              >
-                Advanced
-              </Link>
-            </li>
-            <li>
-              <Link to="/settings/about" className={menuItemClass('/about')}>
-                About
-              </Link>
-            </li>
-          </ul>
-        </div>
+        <SettingsMenu />
 
         {/* Right Column - Widget Settings */}
         <div className="w-3/4 bg-slate-800 p-4 rounded-md flex flex-col overflow-hidden">
@@ -228,36 +77,7 @@ export const SettingsLayout = () => {
               path="/"
               element={<Navigate to="/settings/general" replace />}
             />
-            <Route path="general" element={<GeneralSettings />} />
-            <Route path="standings" element={<StandingsSettings />} />
-            <Route path="relative" element={<RelativeSettings />} />
-            <Route path="weather" element={<WeatherSettings />} />
-            <Route path="fuel" element={<FuelSettings />} />
-            <Route path="map" element={<TrackMapSettings />} />
-            <Route path="flatmap" element={<FlatTrackMapSettings />} />
-            <Route path="input" element={<InputSettings />} />
-            <Route path="pitlanehelper" element={<PitlaneHelperSettings />} />
-            <Route path="rejoin" element={<RejoinIndicatorSettings />} />
-            <Route path="tachometer" element={<TachometerSettings />} />
-            <Route
-              path="faster-cars"
-              element={<FasterCarsFromBehindSettings />}
-            />
-            <Route
-              path="blindspotmonitor"
-              element={<BlindSpotMonitorSettings />}
-            />
-            <Route path="garagecover" element={<GarageCoverSettings />} />
-            <Route path="advanced" element={<AdvancedSettings />} />
-            <Route path="about" element={<AboutSettings />} />
-            <Route
-              path="*"
-              element={
-                <div className="text-slate-400">
-                  Select a widget from the left to customize its settings
-                </div>
-              }
-            />
+            <Route path="/:widgetId" element={<SettingsLoader />} />
           </Routes>
         </div>
       </div>

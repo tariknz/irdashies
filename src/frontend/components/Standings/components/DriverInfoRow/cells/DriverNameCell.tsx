@@ -8,7 +8,6 @@ import {
 } from '../../DriverName/DriverName';
 
 interface DriverNameCellProps {
-  hidden?: boolean;
   name?: string;
   fullName?: string;
   nameFormat?: DriverNameFormat;
@@ -17,11 +16,11 @@ interface DriverNameCellProps {
   penalty?: boolean;
   slowdown?: boolean;
   showStatusBadges?: boolean;
+  removeNumbersFromName?: boolean;
 }
 
 export const DriverNameCell = memo(
   ({
-    hidden,
     name,
     fullName,
     nameFormat,
@@ -30,15 +29,14 @@ export const DriverNameCell = memo(
     penalty,
     slowdown,
     showStatusBadges = true,
+    removeNumbersFromName = false,
   }: DriverNameCellProps) => {
-    const displayName = hidden
-      ? ''
-      : fullName
+    const displayName = fullName
       ? formatDriverName(
-          extractDriverName(fullName),
+          extractDriverName(fullName, removeNumbersFromName),
           nameFormat ?? 'name-middlename-surname'
         )
-      : name ?? '';
+      : (name ?? '');
 
     return (
       <td data-column="driverName" className="w-full max-w-0 px-1 py-0.5">
@@ -57,7 +55,6 @@ export const DriverNameCell = memo(
 
           {showStatusBadges && (
             <DriverStatusBadges
-              hidden={hidden}
               repair={repair}
               penalty={penalty}
               slowdown={slowdown}

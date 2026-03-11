@@ -6,15 +6,13 @@ interface TailwindStyles {
 }
 
 interface PositionCellProps {
-  hidden?: boolean;
   position?: number;
   isPlayer: boolean;
   tailwindStyles: TailwindStyles;
   offTrack: boolean;
 }
 
-export const PositionCell = memo(({ hidden, position, isPlayer, offTrack, tailwindStyles }: PositionCellProps) => {
-
+export const PositionCell = memo(({ position, isPlayer, offTrack, tailwindStyles }: PositionCellProps) => {
   const positionColor = (offTrack) ? 'bg-yellow-400' : (isPlayer) ? tailwindStyles.classHeader : '';
   const textColor = (offTrack) ? 'text-yellow-900' : 'text-white';
 
@@ -23,7 +21,7 @@ export const PositionCell = memo(({ hidden, position, isPlayer, offTrack, tailwi
       data-column="position"
       className={`w-auto text-center px-2 whitespace-nowrap ${positionColor} ${textColor}`}
     >
-      {hidden ? '' : position}
+      {position}
     </td>
   );
 });

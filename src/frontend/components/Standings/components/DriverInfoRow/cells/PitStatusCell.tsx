@@ -2,7 +2,6 @@ import { memo } from 'react';
 import { DriverStatusBadges } from './DriverStatusBadges';
 
 interface PitStatusCellProps {
-  hidden?: boolean;
   onPitRoad?: boolean;
   carTrackSurface?: number;
   prevCarTrackSurface?: number;
@@ -14,11 +13,16 @@ interface PitStatusCellProps {
   pitStopDuration?: number | null;
   showPitTime?: boolean;
   pitLapDisplayMode?: string;
+  /**
+   * True when the pit lane exit is in the last 15% of the lap, meaning the
+   * start/finish line is reached very shortly after exiting pits. When true,
+   * OUT persists for one extra lap count so it remains visible for a full lap.
+   */
+  pitExitAfterSF?: boolean;
 }
 
 export const PitStatusCell = memo(
   ({
-    hidden,
     onPitRoad,
     carTrackSurface,
     prevCarTrackSurface,
@@ -29,7 +33,8 @@ export const PitStatusCell = memo(
     dnf,
     pitStopDuration,
     showPitTime = false,
-    pitLapDisplayMode
+    pitLapDisplayMode,
+    pitExitAfterSF,
   }: PitStatusCellProps) => {
     const widthClass = showPitTime ? 'w-[7rem]' : 'w-[4.5rem]';
     const tow =
@@ -45,14 +50,12 @@ export const PitStatusCell = memo(
         prevCarTrackSurface == undefined ||
         currentSessionType != 'Race');
     const lastPit =
-      !onPitRoad &&
-      !!lastPitLap &&
-      lastPitLap > 1 &&
-      carTrackSurface != -1;
+      !onPitRoad && !!lastPitLap && lastPitLap > 1 && carTrackSurface != -1;
     const out =
       !onPitRoad &&
       !!lastPitLap &&
-      lastPitLap == lastLap &&
+      (lastPitLap == lastLap ||
+        (!!pitExitAfterSF && lastPitLap + 1 == lastLap)) &&
       carTrackSurface != -1;
 
     return (
@@ -60,23 +63,19 @@ export const PitStatusCell = memo(
         data-column="pitStatus"
         className={`${widthClass} px-1 text-center align-middle whitespace-nowrap`}
       >
-        {hidden ? (
-          ''
-        ) : (
-          <DriverStatusBadges
-            hidden={hidden}
-            dnf={dnf}
-            tow={tow}
-            pit={pit}
-            out={out}
-            lap={lap}
-            lastPit={lastPit}
-            lastPitLap={lastPitLap}
-            pitStopDuration={pitStopDuration}
-            showPitTime={showPitTime}
-            pitLapDisplayMode={pitLapDisplayMode}
-          />
-        )}
+        <DriverStatusBadges
+          dnf={dnf}
+          tow={tow}
+          pit={pit}
+          out={out}
+          lap={lap}
+          lastPit={lastPit}
+          lastPitLap={lastPitLap}
+          pitStopDuration={pitStopDuration}
+          showPitTime={showPitTime}
+          pitLapDisplayMode={pitLapDisplayMode}
+          pitExitAfterSF={pitExitAfterSF}
+        />
       </td>
     );
   }

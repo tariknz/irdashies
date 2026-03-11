@@ -1,8 +1,16 @@
 import { Meta, StoryObj } from '@storybook/react-vite';
 import { Standings } from './Standings';
-import { TelemetryDecorator, DynamicTelemetrySelector, TelemetryDecoratorWithConfig } from '@irdashies/storybook';
-import { DashboardProvider, SessionProvider, TelemetryProvider } from '@irdashies/context';
-import { mockDashboardBridge } from '../../../../.storybook/mockDashboardBridge';
+import {
+  TelemetryDecorator,
+  DynamicTelemetrySelector,
+  TelemetryDecoratorWithConfig,
+  mockDashboardBridge,
+} from '@irdashies/storybook';
+import {
+  DashboardProvider,
+  SessionProvider,
+  TelemetryProvider,
+} from '@irdashies/context';
 import { generateMockDataFromPath } from '../../../app/bridge/iracingSdk/mock-data/generateMockData';
 import type { DashboardBridge } from '@irdashies/types';
 import { useState, Fragment } from 'react';
@@ -19,14 +27,27 @@ import {
 } from './hooks';
 import { useLapTimesStoreUpdater } from '../../context/LapTimesStore/LapTimesStoreUpdater';
 import { usePitLapStoreUpdater } from '../../context/PitLapStore/PitLapStoreUpdater';
-import { useDrivingState, useWeekendInfoNumCarClasses, useTelemetryValue, useSessionName, useSessionLaps } from '@irdashies/context';
+import {
+  useDrivingState,
+  useWeekendInfoNumCarClasses,
+  useTelemetryValue,
+  useSessionName,
+  useSessionLaps,
+} from '@irdashies/context';
 import { useDriverIncidents, useSessionLapCount, useBrakeBias } from './hooks';
 import { useCurrentTime } from './hooks/useCurrentTime';
 import { useTrackWetness } from './hooks/useTrackWetness';
 import { usePrecipitation } from './hooks/usePrecipitation';
 import { useTrackTemperature } from './hooks/useTrackTemperature';
 import { formatTime } from '../../utils/time';
-import { ClockIcon, CloudRainIcon, DropIcon, RoadHorizonIcon, ThermometerIcon, TireIcon } from '@phosphor-icons/react';
+import {
+  ClockIcon,
+  CloudRainIcon,
+  DropIcon,
+  RoadHorizonIcon,
+  ThermometerIcon,
+  TireIcon,
+} from '@phosphor-icons/react';
 
 // Create a mock bridge with custom generalSettings for compact mode
 const createMockBridgeWithCompactMode = (): DashboardBridge => ({
@@ -77,35 +98,45 @@ const StandingsWithoutHeaderFooter = () => {
       {/* No SessionBar here */}
       <table className="w-full table-auto text-sm border-separate border-spacing-y-0.5">
         <tbody>
-          {standings.map(([classId, classStandings]) => (
+          {standings.map(([classId, classStandings]) =>
             classStandings.length > 0 ? (
               <Fragment key={classId}>
                 <DriverClassHeader
                   key={classId}
                   className={classStats?.[classId]?.shortName}
-                  classColor={isMultiClass ? classStats?.[classId]?.color : highlightColor}
+                  classColor={
+                    isMultiClass ? classStats?.[classId]?.color : highlightColor
+                  }
                   totalDrivers={classStats?.[classId]?.total}
                   sof={classStats?.[classId]?.sof}
                   highlightColor={highlightColor}
                   isMultiClass={isMultiClass}
-                  colSpan={12}
+                  colSpan={100}
                 />
                 {classStandings.map((result) => (
                   <DriverInfoRow
                     key={result.carIdx}
                     carIdx={result.carIdx}
                     classColor={result.carClass.color}
-                    carNumber={settings?.carNumber?.enabled ?? true ? result.driver?.carNum || '' : undefined}
+                    carNumber={
+                      (settings?.carNumber?.enabled ?? true)
+                        ? result.driver?.carNum || ''
+                        : undefined
+                    }
                     name={result.driver?.name || ''}
                     isPlayer={result.isPlayer}
                     hasFastestTime={result.hasFastestTime}
                     delta={settings?.delta?.enabled ? result.delta : undefined}
                     gap={settings?.gap?.enabled ? result.gap : undefined}
-                    interval={settings?.interval?.enabled ? result.interval : undefined}
+                    interval={
+                      settings?.interval?.enabled ? result.interval : undefined
+                    }
                     position={result.classPosition}
                     lap={result.lap}
                     iratingChangeValue={
-                      settings?.iratingChange?.enabled ? result.iratingChange : undefined
+                      settings?.iratingChange?.enabled
+                        ? result.iratingChange
+                        : undefined
                     }
                     lastTime={
                       settings?.lastTime?.enabled ? result.lastTime : undefined
@@ -116,23 +147,49 @@ const StandingsWithoutHeaderFooter = () => {
                         : undefined
                     }
                     lastTimeState={
-                      settings?.lastTime?.enabled ? result.lastTimeState : undefined
+                      settings?.lastTime?.enabled
+                        ? result.lastTimeState
+                        : undefined
                     }
                     onPitRoad={result.onPitRoad}
                     onTrack={result.onTrack}
                     radioActive={result.radioActive}
                     isMultiClass={isMultiClass}
-                    flairId={settings?.countryFlags?.enabled ?? true ? result.driver?.flairId : undefined}
-                    tireCompound={settings?.compound?.enabled ?? true ? result.tireCompound : undefined}
+                    flairId={
+                      (settings?.countryFlags?.enabled ?? true)
+                        ? result.driver?.flairId
+                        : undefined
+                    }
+                    tireCompound={
+                      (settings?.compound?.enabled ?? true)
+                        ? result.tireCompound
+                        : undefined
+                    }
                     carId={result.carId}
                     lastPitLap={result.lastPitLap}
                     lastLap={result.lastLap}
                     carTrackSurface={result.carTrackSurface}
                     prevCarTrackSurface={result.prevCarTrackSurface}
-                    license={settings?.badge?.enabled ? result.driver?.license : undefined}
-                    rating={settings?.badge?.enabled ? result.driver?.rating : undefined}
-                    lapTimeDeltas={settings?.lapTimeDeltas?.enabled ? result.lapTimeDeltas : undefined}
-                    numLapDeltasToShow={settings?.lapTimeDeltas?.enabled ? settings.lapTimeDeltas.numLaps : undefined}
+                    license={
+                      settings?.badge?.enabled
+                        ? result.driver?.license
+                        : undefined
+                    }
+                    rating={
+                      settings?.badge?.enabled
+                        ? result.driver?.rating
+                        : undefined
+                    }
+                    lapTimeDeltas={
+                      settings?.lapTimeDeltas?.enabled
+                        ? result.lapTimeDeltas
+                        : undefined
+                    }
+                    numLapDeltasToShow={
+                      settings?.lapTimeDeltas?.enabled
+                        ? settings.lapTimeDeltas.numLaps
+                        : undefined
+                    }
                     displayOrder={settings?.displayOrder}
                     currentSessionType={result.currentSessionType}
                     config={settings}
@@ -145,7 +202,7 @@ const StandingsWithoutHeaderFooter = () => {
                 ))}
               </Fragment>
             ) : null
-          ))}
+          )}
         </tbody>
       </table>
       {/* No SessionFooter here */}
@@ -165,19 +222,23 @@ export const Primary: Story = {
 };
 
 export const DynamicTelemetry: Story = {
-  decorators: [(Story, context) => {
-    const [selectedPath, setSelectedPath] = useState('/test-data/1745291694179');
-    
-    return (
-      <>
-        <DynamicTelemetrySelector
-          onPathChange={setSelectedPath}
-          initialPath={selectedPath}
-        />
-        {TelemetryDecorator(selectedPath)(Story, context)}
-      </>
-    );
-  }],
+  decorators: [
+    (Story, context) => {
+      const [selectedPath, setSelectedPath] = useState(
+        '/test-data/1745291694179'
+      );
+
+      return (
+        <>
+          <DynamicTelemetrySelector
+            onPathChange={setSelectedPath}
+            initialPath={selectedPath}
+          />
+          {TelemetryDecorator(selectedPath)(Story, context)}
+        </>
+      );
+    },
+  ],
 };
 
 export const MultiClassPCC: Story = {
@@ -226,6 +287,10 @@ export const Pitstops: Story = {
 
 export const SuzukaGT3EnduranceRace: Story = {
   decorators: [TelemetryDecorator('/test-data/1763227688917')],
+};
+
+export const HeatRaceFormatRaceStart: Story = {
+  decorators: [TelemetryDecorator('/test-data/1772788167371')],
 };
 
 export const TeamSession: Story = {
@@ -288,35 +353,45 @@ const StandingsWithoutHeader = () => {
       {/* No SessionBar here */}
       <table className="w-full table-auto text-sm border-separate border-spacing-y-0.5">
         <tbody>
-          {standings.map(([classId, classStandings]) => (
+          {standings.map(([classId, classStandings]) =>
             classStandings.length > 0 ? (
               <Fragment key={classId}>
                 <DriverClassHeader
                   key={classId}
                   className={classStats?.[classId]?.shortName}
-                  classColor={isMultiClass ? classStats?.[classId]?.color : highlightColor}
+                  classColor={
+                    isMultiClass ? classStats?.[classId]?.color : highlightColor
+                  }
                   totalDrivers={classStats?.[classId]?.total}
                   sof={classStats?.[classId]?.sof}
                   highlightColor={highlightColor}
                   isMultiClass={isMultiClass}
-                  colSpan={12}
+                  colSpan={100}
                 />
                 {classStandings.map((result) => (
                   <DriverInfoRow
                     key={result.carIdx}
                     carIdx={result.carIdx}
                     classColor={result.carClass.color}
-                    carNumber={settings?.carNumber?.enabled ?? true ? result.driver?.carNum || '' : undefined}
+                    carNumber={
+                      (settings?.carNumber?.enabled ?? true)
+                        ? result.driver?.carNum || ''
+                        : undefined
+                    }
                     name={result.driver?.name || ''}
                     isPlayer={result.isPlayer}
                     hasFastestTime={result.hasFastestTime}
                     delta={settings?.delta?.enabled ? result.delta : undefined}
                     gap={settings?.gap?.enabled ? result.gap : undefined}
-                    interval={settings?.interval?.enabled ? result.interval : undefined}
+                    interval={
+                      settings?.interval?.enabled ? result.interval : undefined
+                    }
                     position={result.classPosition}
                     lap={result.lap}
                     iratingChangeValue={
-                      settings?.iratingChange?.enabled ? result.iratingChange : undefined
+                      settings?.iratingChange?.enabled
+                        ? result.iratingChange
+                        : undefined
                     }
                     lastTime={
                       settings?.lastTime?.enabled ? result.lastTime : undefined
@@ -327,23 +402,49 @@ const StandingsWithoutHeader = () => {
                         : undefined
                     }
                     lastTimeState={
-                      settings?.lastTime?.enabled ? result.lastTimeState : undefined
+                      settings?.lastTime?.enabled
+                        ? result.lastTimeState
+                        : undefined
                     }
                     onPitRoad={result.onPitRoad}
                     onTrack={result.onTrack}
                     radioActive={result.radioActive}
                     isMultiClass={isMultiClass}
-                    flairId={settings?.countryFlags?.enabled ?? true ? result.driver?.flairId : undefined}
-                    tireCompound={settings?.compound?.enabled ?? true ? result.tireCompound : undefined}
+                    flairId={
+                      (settings?.countryFlags?.enabled ?? true)
+                        ? result.driver?.flairId
+                        : undefined
+                    }
+                    tireCompound={
+                      (settings?.compound?.enabled ?? true)
+                        ? result.tireCompound
+                        : undefined
+                    }
                     carId={result.carId}
                     lastPitLap={result.lastPitLap}
                     lastLap={result.lastLap}
                     carTrackSurface={result.carTrackSurface}
                     prevCarTrackSurface={result.prevCarTrackSurface}
-                    license={settings?.badge?.enabled ? result.driver?.license : undefined}
-                    rating={settings?.badge?.enabled ? result.driver?.rating : undefined}
-                    lapTimeDeltas={settings?.lapTimeDeltas?.enabled ? result.lapTimeDeltas : undefined}
-                    numLapDeltasToShow={settings?.lapTimeDeltas?.enabled ? settings.lapTimeDeltas.numLaps : undefined}
+                    license={
+                      settings?.badge?.enabled
+                        ? result.driver?.license
+                        : undefined
+                    }
+                    rating={
+                      settings?.badge?.enabled
+                        ? result.driver?.rating
+                        : undefined
+                    }
+                    lapTimeDeltas={
+                      settings?.lapTimeDeltas?.enabled
+                        ? result.lapTimeDeltas
+                        : undefined
+                    }
+                    numLapDeltasToShow={
+                      settings?.lapTimeDeltas?.enabled
+                        ? settings.lapTimeDeltas.numLaps
+                        : undefined
+                    }
                     displayOrder={settings?.displayOrder}
                     currentSessionType={result.currentSessionType}
                     config={settings}
@@ -356,7 +457,7 @@ const StandingsWithoutHeader = () => {
                 ))}
               </Fragment>
             ) : null
-          ))}
+          )}
         </tbody>
       </table>
       {/* Keep SessionBar here */}
@@ -409,35 +510,45 @@ const StandingsWithoutFooter = () => {
       <SessionBar />
       <table className="w-full table-auto text-sm border-separate border-spacing-y-0.5">
         <tbody>
-          {standings.map(([classId, classStandings]) => (
+          {standings.map(([classId, classStandings]) =>
             classStandings.length > 0 ? (
               <Fragment key={classId}>
                 <DriverClassHeader
                   key={classId}
                   className={classStats?.[classId]?.shortName}
-                  classColor={isMultiClass ? classStats?.[classId]?.color : highlightColor}
+                  classColor={
+                    isMultiClass ? classStats?.[classId]?.color : highlightColor
+                  }
                   totalDrivers={classStats?.[classId]?.total}
                   sof={classStats?.[classId]?.sof}
                   highlightColor={highlightColor}
                   isMultiClass={isMultiClass}
-                  colSpan={12}
+                  colSpan={100}
                 />
                 {classStandings.map((result) => (
                   <DriverInfoRow
                     key={result.carIdx}
                     carIdx={result.carIdx}
                     classColor={result.carClass.color}
-                    carNumber={settings?.carNumber?.enabled ?? true ? result.driver?.carNum || '' : undefined}
+                    carNumber={
+                      (settings?.carNumber?.enabled ?? true)
+                        ? result.driver?.carNum || ''
+                        : undefined
+                    }
                     name={result.driver?.name || ''}
                     isPlayer={result.isPlayer}
                     hasFastestTime={result.hasFastestTime}
                     delta={settings?.delta?.enabled ? result.delta : undefined}
                     gap={settings?.gap?.enabled ? result.gap : undefined}
-                    interval={settings?.interval?.enabled ? result.interval : undefined}
+                    interval={
+                      settings?.interval?.enabled ? result.interval : undefined
+                    }
                     position={result.classPosition}
                     lap={result.lap}
                     iratingChangeValue={
-                      settings?.iratingChange?.enabled ? result.iratingChange : undefined
+                      settings?.iratingChange?.enabled
+                        ? result.iratingChange
+                        : undefined
                     }
                     lastTime={
                       settings?.lastTime?.enabled ? result.lastTime : undefined
@@ -448,23 +559,49 @@ const StandingsWithoutFooter = () => {
                         : undefined
                     }
                     lastTimeState={
-                      settings?.lastTime?.enabled ? result.lastTimeState : undefined
+                      settings?.lastTime?.enabled
+                        ? result.lastTimeState
+                        : undefined
                     }
                     onPitRoad={result.onPitRoad}
                     onTrack={result.onTrack}
                     radioActive={result.radioActive}
                     isMultiClass={isMultiClass}
-                    flairId={settings?.countryFlags?.enabled ?? true ? result.driver?.flairId : undefined}
-                    tireCompound={settings?.compound?.enabled ?? true ? result.tireCompound : undefined}
+                    flairId={
+                      (settings?.countryFlags?.enabled ?? true)
+                        ? result.driver?.flairId
+                        : undefined
+                    }
+                    tireCompound={
+                      (settings?.compound?.enabled ?? true)
+                        ? result.tireCompound
+                        : undefined
+                    }
                     carId={result.carId}
                     lastPitLap={result.lastPitLap}
                     lastLap={result.lastLap}
                     carTrackSurface={result.carTrackSurface}
                     prevCarTrackSurface={result.prevCarTrackSurface}
-                    license={settings?.badge?.enabled ? result.driver?.license : undefined}
-                    rating={settings?.badge?.enabled ? result.driver?.rating : undefined}
-                    lapTimeDeltas={settings?.lapTimeDeltas?.enabled ? result.lapTimeDeltas : undefined}
-                    numLapDeltasToShow={settings?.lapTimeDeltas?.enabled ? settings.lapTimeDeltas.numLaps : undefined}
+                    license={
+                      settings?.badge?.enabled
+                        ? result.driver?.license
+                        : undefined
+                    }
+                    rating={
+                      settings?.badge?.enabled
+                        ? result.driver?.rating
+                        : undefined
+                    }
+                    lapTimeDeltas={
+                      settings?.lapTimeDeltas?.enabled
+                        ? result.lapTimeDeltas
+                        : undefined
+                    }
+                    numLapDeltasToShow={
+                      settings?.lapTimeDeltas?.enabled
+                        ? settings.lapTimeDeltas.numLaps
+                        : undefined
+                    }
                     displayOrder={settings?.displayOrder}
                     currentSessionType={result.currentSessionType}
                     config={settings}
@@ -477,7 +614,7 @@ const StandingsWithoutFooter = () => {
                 ))}
               </Fragment>
             ) : null
-          ))}
+          )}
         </tbody>
       </table>
       {/* No SessionFooter here */}
@@ -496,7 +633,8 @@ const FullHeaderBar = () => {
   const sessionName = useSessionName(sessionNum);
   const sessionLaps = useSessionLaps(sessionNum);
   const { incidentLimit, incidents } = useDriverIncidents();
-  const { currentLap, totalLaps, timeTotal, timeRemaining } = useSessionLapCount();
+  const { currentLap, totalLaps, timeTotal, timeRemaining } =
+    useSessionLapCount();
   const brakeBias = useBrakeBias();
   const localTime = useCurrentTime();
   const { trackWetness } = useTrackWetness();
@@ -510,7 +648,9 @@ const FullHeaderBar = () => {
       </div>
       {currentLap > 0 && (
         <div className="flex items-center gap-1">
-          <span>L {currentLap} {totalLaps ? ` / ${totalLaps}` : ''}</span>
+          <span>
+            L {currentLap} {totalLaps ? ` / ${totalLaps}` : ''}
+          </span>
         </div>
       )}
       {sessionLaps == 'unlimited' && (
@@ -523,18 +663,30 @@ const FullHeaderBar = () => {
               const remainingTime = Math.max(0, timeRemaining);
               const totalTime = timeTotal;
 
-              const elapsedStr = (elapsedTime < totalTime) ? formatTime(elapsedTime, 'duration') : null;
-              const remainingStr = (remainingTime < totalTime) ? formatTime(remainingTime, 'duration') : null;
+              const elapsedStr =
+                elapsedTime < totalTime
+                  ? formatTime(elapsedTime, 'duration')
+                  : null;
+              const remainingStr =
+                remainingTime < totalTime
+                  ? formatTime(remainingTime, 'duration')
+                  : null;
               const totalStr = formatTime(totalTime, 'duration-wlabels');
 
               let timeStr = '';
               if (mode === 'Elapsed') {
-                timeStr = elapsedStr ? `${elapsedStr} / ${totalStr}` : totalStr || '';
+                timeStr = elapsedStr
+                  ? `${elapsedStr} / ${totalStr}`
+                  : totalStr || '';
               } else if (mode === 'Remaining') {
-                timeStr = remainingStr ? `${remainingStr} / ${totalStr}` : totalStr || '';
+                timeStr = remainingStr
+                  ? `${remainingStr} / ${totalStr}`
+                  : totalStr || '';
               }
 
-              return timeStr ? <div className="flex justify-center">{timeStr}</div> : null;
+              return timeStr ? (
+                <div className="flex justify-center">{timeStr}</div>
+              ) : null;
             })()}
           </span>
         </div>
@@ -542,11 +694,18 @@ const FullHeaderBar = () => {
       {brakeBias && (
         <div className="flex items-center gap-1">
           <TireIcon />
-          <span>{brakeBias.isClio ? `${brakeBias.value.toFixed(0)}` : `${brakeBias.value.toFixed(1)}%`}</span>
+          <span>
+            {brakeBias.isClio
+              ? `${brakeBias.value.toFixed(0)}`
+              : `${brakeBias.value.toFixed(1)}%`}
+          </span>
         </div>
       )}
       <div className="flex items-center gap-1">
-        <span>{incidents}{incidentLimit ? ` / ${incidentLimit}` : ''} x</span>
+        <span>
+          {incidents}
+          {incidentLimit ? ` / ${incidentLimit}` : ''} x
+        </span>
       </div>
       <div className="flex items-center gap-1">
         <ClockIcon />
@@ -606,35 +765,45 @@ const StandingsWithFullHeader = () => {
       <FullHeaderBar />
       <table className="w-full table-auto text-sm border-separate border-spacing-y-0.5">
         <tbody>
-          {standings.map(([classId, classStandings]) => (
+          {standings.map(([classId, classStandings]) =>
             classStandings.length > 0 ? (
               <Fragment key={classId}>
                 <DriverClassHeader
                   key={classId}
                   className={classStats?.[classId]?.shortName}
-                  classColor={isMultiClass ? classStats?.[classId]?.color : highlightColor}
+                  classColor={
+                    isMultiClass ? classStats?.[classId]?.color : highlightColor
+                  }
                   totalDrivers={classStats?.[classId]?.total}
                   sof={classStats?.[classId]?.sof}
                   highlightColor={highlightColor}
                   isMultiClass={isMultiClass}
-                  colSpan={12}
+                  colSpan={100}
                 />
                 {classStandings.map((result) => (
                   <DriverInfoRow
                     key={result.carIdx}
                     carIdx={result.carIdx}
                     classColor={result.carClass.color}
-                    carNumber={settings?.carNumber?.enabled ?? true ? result.driver?.carNum || '' : undefined}
+                    carNumber={
+                      (settings?.carNumber?.enabled ?? true)
+                        ? result.driver?.carNum || ''
+                        : undefined
+                    }
                     name={result.driver?.name || ''}
                     isPlayer={result.isPlayer}
                     hasFastestTime={result.hasFastestTime}
                     delta={settings?.delta?.enabled ? result.delta : undefined}
                     gap={settings?.gap?.enabled ? result.gap : undefined}
-                    interval={settings?.interval?.enabled ? result.interval : undefined}
+                    interval={
+                      settings?.interval?.enabled ? result.interval : undefined
+                    }
                     position={result.classPosition}
                     lap={result.lap}
                     iratingChangeValue={
-                      settings?.iratingChange?.enabled ? result.iratingChange : undefined
+                      settings?.iratingChange?.enabled
+                        ? result.iratingChange
+                        : undefined
                     }
                     lastTime={
                       settings?.lastTime?.enabled ? result.lastTime : undefined
@@ -645,23 +814,49 @@ const StandingsWithFullHeader = () => {
                         : undefined
                     }
                     lastTimeState={
-                      settings?.lastTime?.enabled ? result.lastTimeState : undefined
+                      settings?.lastTime?.enabled
+                        ? result.lastTimeState
+                        : undefined
                     }
                     onPitRoad={result.onPitRoad}
                     onTrack={result.onTrack}
                     radioActive={result.radioActive}
                     isMultiClass={isMultiClass}
-                    flairId={settings?.countryFlags?.enabled ?? true ? result.driver?.flairId : undefined}
-                    tireCompound={settings?.compound?.enabled ?? true ? result.tireCompound : undefined}
+                    flairId={
+                      (settings?.countryFlags?.enabled ?? true)
+                        ? result.driver?.flairId
+                        : undefined
+                    }
+                    tireCompound={
+                      (settings?.compound?.enabled ?? true)
+                        ? result.tireCompound
+                        : undefined
+                    }
                     carId={result.carId}
                     lastPitLap={result.lastPitLap}
                     lastLap={result.lastLap}
                     carTrackSurface={result.carTrackSurface}
                     prevCarTrackSurface={result.prevCarTrackSurface}
-                    license={settings?.badge?.enabled ? result.driver?.license : undefined}
-                    rating={settings?.badge?.enabled ? result.driver?.rating : undefined}
-                    lapTimeDeltas={settings?.lapTimeDeltas?.enabled ? result.lapTimeDeltas : undefined}
-                    numLapDeltasToShow={settings?.lapTimeDeltas?.enabled ? settings.lapTimeDeltas.numLaps : undefined}
+                    license={
+                      settings?.badge?.enabled
+                        ? result.driver?.license
+                        : undefined
+                    }
+                    rating={
+                      settings?.badge?.enabled
+                        ? result.driver?.rating
+                        : undefined
+                    }
+                    lapTimeDeltas={
+                      settings?.lapTimeDeltas?.enabled
+                        ? result.lapTimeDeltas
+                        : undefined
+                    }
+                    numLapDeltasToShow={
+                      settings?.lapTimeDeltas?.enabled
+                        ? settings.lapTimeDeltas.numLaps
+                        : undefined
+                    }
                     displayOrder={settings?.displayOrder}
                     currentSessionType={result.currentSessionType}
                     config={settings}
@@ -674,7 +869,7 @@ const StandingsWithFullHeader = () => {
                 ))}
               </Fragment>
             ) : null
-          ))}
+          )}
         </tbody>
       </table>
       {/* No SessionFooter here */}
@@ -688,13 +883,79 @@ export const HeaderOnlyAllVisible: Story = {
 };
 
 export const CompactMode: Story = {
-  decorators: [(Story) => (
-    <>
-      <SessionProvider bridge={generateMockDataFromPath()} />
-      <TelemetryProvider bridge={generateMockDataFromPath()} />
-      <DashboardProvider bridge={createMockBridgeWithCompactMode()}>
-        <Story />
-      </DashboardProvider>
-    </>
-  )],
+  decorators: [
+    (Story) => (
+      <>
+        <SessionProvider bridge={generateMockDataFromPath()} />
+        <TelemetryProvider bridge={generateMockDataFromPath()} />
+        <DashboardProvider bridge={createMockBridgeWithCompactMode()}>
+          <Story />
+        </DashboardProvider>
+      </>
+    ),
+  ],
+};
+
+export const PositionDividerHighlight: Story = {
+  name: 'Position Divider (Highlight)',
+  decorators: [
+    TelemetryDecoratorWithConfig('/test-data/1732355190142', {
+      standings: {
+        driverStandings: {
+          numTopDrivers: 3,
+          topDriverDivider: 'highlight',
+        },
+      },
+    }),
+  ],
+};
+
+export const PositionDividerTheme: Story = {
+  name: 'Position Divider (Theme)',
+  decorators: [
+    TelemetryDecoratorWithConfig('/test-data/1731637331038', {
+      standings: {
+        driverStandings: {
+          numTopDrivers: 3,
+          topDriverDivider: 'theme',
+        },
+      },
+    }),
+  ],
+};
+
+export const PositionDividerNone: Story = {
+  name: 'Position Divider (None)',
+  decorators: [
+    TelemetryDecoratorWithConfig('/test-data/1731637331038', {
+      standings: {
+        driverStandings: {
+          numTopDrivers: 3,
+          topDriverDivider: 'none',
+        },
+      },
+    }),
+  ],
+};
+
+export const PositionDividerNumerousCells: Story = {
+  name: 'Position Divider (Numerous Cells)',
+  decorators: [
+    TelemetryDecoratorWithConfig('/test-data/1731637331038', {
+      standings: {
+        driverStandings: {
+          numTopDrivers: 3,
+          topDriverDivider: 'highlight',
+        },
+        gap: { enabled: true },
+        delta: { enabled: true },
+        interval: { enabled: true },
+        lastTime: { enabled: true },
+        fastestTime: { enabled: true },
+        lapTimeDeltas: { enabled: true, numLaps: 3 },
+        badge: { enabled: true },
+        iratingChange: { enabled: true },
+      },
+    }),
+  ],
 };

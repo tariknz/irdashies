@@ -24,7 +24,7 @@ const mockBridge: (editMode: boolean) => DashboardBridge = (editMode) => ({
     // noop
   },
   dashboardUpdated: () => {
-    // noop
+    return undefined;
   },
   reloadDashboard: () => {
     // noop
@@ -32,6 +32,7 @@ const mockBridge: (editMode: boolean) => DashboardBridge = (editMode) => ({
   resetDashboard: () => Promise.resolve(mockDashboard),
   onEditModeToggled: (callback) => {
     callback(editMode);
+    return undefined;
   },
   toggleLockOverlays: () => Promise.resolve(true),
   getAppVersion: () => Promise.resolve('1.0.0'),
@@ -53,7 +54,38 @@ const mockBridge: (editMode: boolean) => DashboardBridge = (editMode) => ({
   saveGarageCoverImage: () => Promise.resolve(''),
   getGarageCoverImage: () => Promise.resolve(null),
   getGarageCoverImageAsDataUrl: () => Promise.resolve(null),
-  setAutoStart: () => Promise.resolve()
+  // Profile management methods
+  listProfiles: () =>
+    Promise.resolve([
+      {
+        id: 'default',
+        name: 'Default',
+        createdAt: new Date().toISOString(),
+        lastModified: new Date().toISOString(),
+      },
+    ]),
+  createProfile: (name: string) =>
+    Promise.resolve({
+      id: 'mock-id',
+      name,
+      createdAt: new Date().toISOString(),
+      lastModified: new Date().toISOString(),
+    }),
+  deleteProfile: () => Promise.resolve(),
+  renameProfile: () => Promise.resolve(),
+  switchProfile: () => Promise.resolve(),
+  getCurrentProfile: () =>
+    Promise.resolve({
+      id: 'default',
+      name: 'Default',
+      createdAt: new Date().toISOString(),
+      lastModified: new Date().toISOString(),
+    }),
+  updateProfileTheme: async () => undefined,
+  getDashboardForProfile: async () => null,
+  exportDashboardToFile: async () => false,
+  importDashboardFromFile: async () => null,
+  setAutoStart: () => Promise.resolve(),
 });
 
 export const Primary = {
@@ -77,7 +109,7 @@ export const WithInput = {
       <div className="h-[140px] w-[420px]">
         <DashboardProvider bridge={mockBridge(args.editMode)}>
           <EditMode>
-            <Input/>
+            <Input />
           </EditMode>
         </DashboardProvider>
       </div>

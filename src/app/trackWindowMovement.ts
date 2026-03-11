@@ -1,42 +1,26 @@
-import type { DashboardWidget } from '@irdashies/types';
 import { BrowserWindow } from 'electron';
-import { updateDashboardWidget, getDashboard } from './storage/dashboards';
+import { writeData } from './storage/storage';
 
-export const trackWindowMovement = (
-  widget: DashboardWidget,
-  browserWindow: BrowserWindow
-) => {
-  // Tracks dragged events on window and updates the widget layout
-  browserWindow.on('moved', () => updateWidgetLayout(browserWindow, widget.id));
-  browserWindow.on('resized', () => updateWidgetLayout(browserWindow, widget.id));
-};
+const DEBOUNCE_MS = 200;
 
-function updateWidgetLayout(
-  browserWindow: BrowserWindow,
-  widgetId: string
-) {
-  // Get current dashboard to access latest widget state
-  const dashboard = getDashboard('default');
-  if (!dashboard) return;
-
-  // Find the current widget (with latest config)
-  const currentWidget = dashboard.widgets.find((w) => w.id === widgetId);
-  if (!currentWidget) return;
-
-  // Update only the layout properties (position and size)
-  const [x, y] = browserWindow.getPosition();
-  const [width, height] = browserWindow.getSize();
-
-  const updatedWidget: DashboardWidget = {
-    ...currentWidget,
-    layout: {
-      ...currentWidget.layout,
-      x,
-      y,
-      width,
-      height,
-    },
+/**
+ * Track settings window position and size changes
+ */
+export const trackSettingsWindowMovement = (browserWindow: BrowserWindow) => {
+  let debounceTimer: ReturnType<typeof setTimeout> | undefined;
+  const debouncedSave = () => {
+    if (debounceTimer) clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(
+      () => saveSettingsWindowBounds(browserWindow),
+      DEBOUNCE_MS
+    );
   };
 
-  updateDashboardWidget(updatedWidget, 'default');
+  browserWindow.on('moved', debouncedSave);
+  browserWindow.on('resized', debouncedSave);
+};
+
+function saveSettingsWindowBounds(browserWindow: BrowserWindow): void {
+  const bounds = browserWindow.getBounds();
+  writeData('settingsWindowBounds', bounds);
 }

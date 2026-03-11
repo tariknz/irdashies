@@ -1,7 +1,7 @@
 import { Meta, StoryObj } from '@storybook/react-vite';
 import { BlindSpotMonitorDisplay } from './BlindSpotMonitor';
 import { useEffect, useState } from 'react';
-import { BlindSpotState } from './hooks/useBlindSpotMonitor';
+import { CarLeftRight } from '@irdashies/types';
 
 export default {
   component: BlindSpotMonitorDisplay,
@@ -20,24 +20,24 @@ export default {
     leftState: {
       control: { type: 'select' },
       options: [
-        'Off',
-        'Clear',
-        'CarLeft',
-        'CarRight',
-        'Cars2Left',
-        'Cars2Right',
-      ] as BlindSpotState[],
+        CarLeftRight.Off,
+        CarLeftRight.Clear,
+        CarLeftRight.CarLeft,
+        CarLeftRight.CarRight,
+        CarLeftRight.Cars2Left,
+        CarLeftRight.Cars2Right,
+      ] as CarLeftRight[],
     },
     rightState: {
       control: { type: 'select' },
       options: [
-        'Off',
-        'Clear',
-        'CarLeft',
-        'CarRight',
-        'Cars2Left',
-        'Cars2Right',
-      ] as BlindSpotState[],
+        CarLeftRight.Off,
+        CarLeftRight.Clear,
+        CarLeftRight.CarLeft,
+        CarLeftRight.CarRight,
+        CarLeftRight.Cars2Left,
+        CarLeftRight.Cars2Right,
+      ] as CarLeftRight[],
     },
     leftPercent: {
       control: { type: 'range', min: -1, max: 1, step: 0.1 },
@@ -56,8 +56,8 @@ type Story = StoryObj<typeof BlindSpotMonitorDisplay>;
 export const Primary: Story = {
   args: {
     show: true,
-    leftState: 'Off',
-    rightState: 'CarRight',
+    leftState: CarLeftRight.Off,
+    rightState: CarLeftRight.CarRight,
     leftPercent: 0,
     rightPercent: 0,
     bgOpacity: 30,
@@ -67,8 +67,8 @@ export const Primary: Story = {
 export const CarOnRight: Story = {
   args: {
     show: true,
-    leftState: 'Off',
-    rightState: 'CarRight',
+    leftState: CarLeftRight.Off,
+    rightState: CarLeftRight.CarRight,
     leftPercent: 0,
     rightPercent: 0.5,
     bgOpacity: 30,
@@ -78,8 +78,8 @@ export const CarOnRight: Story = {
 export const CarOnLeft: Story = {
   args: {
     show: true,
-    leftState: 'CarLeft',
-    rightState: 'Off',
+    leftState: CarLeftRight.CarLeft,
+    rightState: CarLeftRight.Off,
     leftPercent: -0.5,
     rightPercent: 0,
     bgOpacity: 30,
@@ -89,8 +89,8 @@ export const CarOnLeft: Story = {
 export const CarsOnBothSides: Story = {
   args: {
     show: true,
-    leftState: 'CarLeft',
-    rightState: 'CarRight',
+    leftState: CarLeftRight.CarLeft,
+    rightState: CarLeftRight.CarRight,
     leftPercent: 0.3,
     rightPercent: -0.3,
     bgOpacity: 30,
@@ -100,8 +100,8 @@ export const CarsOnBothSides: Story = {
 export const NoBackground: Story = {
   args: {
     show: true,
-    leftState: 'CarLeft',
-    rightState: 'CarRight',
+    leftState: CarLeftRight.CarLeft,
+    rightState: CarLeftRight.CarRight,
     leftPercent: 0,
     rightPercent: 0,
     bgOpacity: 0,
@@ -111,8 +111,8 @@ export const NoBackground: Story = {
 export const HighBackgroundOpacity: Story = {
   args: {
     show: true,
-    leftState: 'CarLeft',
-    rightState: 'CarRight',
+    leftState: CarLeftRight.CarLeft,
+    rightState: CarLeftRight.CarRight,
     leftPercent: 0,
     rightPercent: 0,
     bgOpacity: 80,
@@ -122,8 +122,8 @@ export const HighBackgroundOpacity: Story = {
 export const LowBackgroundOpacity: Story = {
   args: {
     show: true,
-    leftState: 'CarLeft',
-    rightState: 'CarRight',
+    leftState: CarLeftRight.CarLeft,
+    rightState: CarLeftRight.CarRight,
     leftPercent: 0,
     rightPercent: 0,
     bgOpacity: 10,
@@ -133,8 +133,8 @@ export const LowBackgroundOpacity: Story = {
 export const TwoCarsOnLeft: Story = {
   args: {
     show: true,
-    leftState: 'Cars2Left',
-    rightState: 'Off',
+    leftState: CarLeftRight.Cars2Left,
+    rightState: CarLeftRight.Off,
     leftPercent: 0.2,
     rightPercent: 0,
     bgOpacity: 30,
@@ -144,8 +144,8 @@ export const TwoCarsOnLeft: Story = {
 export const TwoCarsOnRight: Story = {
   args: {
     show: true,
-    leftState: 'Off',
-    rightState: 'Cars2Right',
+    leftState: CarLeftRight.Off,
+    rightState: CarLeftRight.Cars2Right,
     leftPercent: 0,
     rightPercent: -0.2,
     bgOpacity: 30,
@@ -175,8 +175,8 @@ const CarPassingAnimation = () => {
   return (
     <BlindSpotMonitorDisplay
       show={true}
-      leftState="CarLeft"
-      rightState="Off"
+      leftState={CarLeftRight.CarLeft}
+      rightState={CarLeftRight.Off}
       leftPercent={leftPercent}
       rightPercent={0}
       disableTransition={false}
@@ -208,8 +208,8 @@ const CarPassingFromBehindRightAnimation = () => {
   return (
     <BlindSpotMonitorDisplay
       show={true}
-      leftState="Off"
-      rightState="CarRight"
+      leftState={CarLeftRight.Off}
+      rightState={CarLeftRight.CarRight}
       leftPercent={0}
       rightPercent={rightPercent}
       disableTransition={false}
@@ -241,8 +241,8 @@ const YouPassingCarOnLeftAnimation = () => {
   return (
     <BlindSpotMonitorDisplay
       show={true}
-      leftState="CarLeft"
-      rightState="Off"
+      leftState={CarLeftRight.CarLeft}
+      rightState={CarLeftRight.Off}
       leftPercent={leftPercent}
       rightPercent={0}
       disableTransition={false}
@@ -274,8 +274,8 @@ const YouPassingCarOnRightAnimation = () => {
   return (
     <BlindSpotMonitorDisplay
       show={true}
-      leftState="Off"
-      rightState="CarRight"
+      leftState={CarLeftRight.Off}
+      rightState={CarLeftRight.CarRight}
       leftPercent={0}
       rightPercent={rightPercent}
       disableTransition={false}
@@ -318,8 +318,8 @@ const CarsPassingBothSidesAnimation = () => {
   return (
     <BlindSpotMonitorDisplay
       show={true}
-      leftState="CarLeft"
-      rightState="CarRight"
+      leftState={CarLeftRight.CarLeft}
+      rightState={CarLeftRight.CarRight}
       leftPercent={leftPercent}
       rightPercent={rightPercent}
       disableTransition={false}

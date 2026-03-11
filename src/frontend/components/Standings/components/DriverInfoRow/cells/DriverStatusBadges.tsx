@@ -1,4 +1,5 @@
 import { memo, type ReactNode } from 'react';
+import { formatTime } from '@irdashies/utils/time';
 
 interface StatusBadgeProps {
   textColor?: string;
@@ -29,14 +30,13 @@ const StatusBadge = ({
 };
 
 interface DriverStatusBadgesProps {
-  hidden?: boolean;
   repair?: boolean;
   penalty?: boolean;
   slowdown?: boolean;
   dnf?: boolean;
   tow?: boolean;
   out?: boolean;
-  lap?:number;
+  lap?: number;
   pit?: boolean;
   lastPit?: boolean;
   lastPitLap?: number;
@@ -44,11 +44,11 @@ interface DriverStatusBadgesProps {
   showPitTime?: boolean;
   className?: string;
   pitLapDisplayMode?: string;
+  pitExitAfterSF?: boolean;
 }
 
 export const DriverStatusBadges = memo(
   ({
-    hidden,
     repair,
     penalty,
     slowdown,
@@ -62,49 +62,71 @@ export const DriverStatusBadges = memo(
     pitStopDuration,
     showPitTime = false,
     className = '',
-    pitLapDisplayMode
+    pitLapDisplayMode,
+    pitExitAfterSF,
   }: DriverStatusBadgesProps) => {
     const hasStatus =
-      !hidden &&
-      (penalty || slowdown || repair || dnf || tow || out || pit || lastPit);
+      penalty || slowdown || repair || dnf || tow || out || pit || lastPit;
 
     if (!hasStatus) {
       return null;
     }
 
-    const pitDuration = <>{showPitTime && lastPitLap && lastPitLap > 1 && pitStopDuration && <span className="text-yellow-500">{pitStopDuration} s</span>}</>;
+    const pitDuration = (
+      <>
+        {showPitTime && lastPitLap && lastPitLap > 1 && pitStopDuration && (
+          <span className="text-yellow-500">
+            {formatTime(pitStopDuration, 'duration')}
+          </span>
+        )}
+      </>
+    );
     let pitLap = lastPitLap;
 
-    if (pitLapDisplayMode == 'lapsSinceLastPit')
-    {
-      if (lap && lastPitLap)
-      {
-        pitLap = lap - lastPitLap + 1;
+    if (pitLapDisplayMode == 'lapsSinceLastPit') {
+      if (lap && lastPitLap) {
+        // On tracks where pit exit is before the S/F line (pitExitAfterSF), the
+        // driver crosses S/F before completing a full out-lap. The +1 offset that
+        // normally accounts for the current in-progress lap would count that tiny
+        // partial lap as a full one, so we omit it in that case.
+        pitLap = pitExitAfterSF ? lap - lastPitLap : lap - lastPitLap + 1;
       }
     }
 
-
     return (
-      <div className={`flex flex-row-reverse items-center gap-0.5 ${className}`}>
+      <div
+        className={`flex flex-row-reverse items-center gap-0.5 ${className}`}
+      >
         {penalty && (
-          <StatusBadge textColor="text-orange-500" borderColorClass="border-gray-500" additionalClasses="bg-black/80 inline-block min-w-6">
+          <StatusBadge
+            textColor="text-orange-500"
+            borderColorClass="border-gray-500"
+            additionalClasses="bg-black/80 inline-block min-w-6"
+          >
             {'\u00A0'}
           </StatusBadge>
         )}
         {slowdown && (
-          <StatusBadge textColor="text-orange-500" borderColorClass="border-gray-500" animate additionalClasses="bg-black/80 inline-block min-w-6">
+          <StatusBadge
+            textColor="text-orange-500"
+            borderColorClass="border-gray-500"
+            animate
+            additionalClasses="bg-black/80 inline-block min-w-6"
+          >
             {'\u00A0'}
           </StatusBadge>
         )}
         {repair && (
-          <StatusBadge textColor="text-orange-500" borderColorClass="border-gray-500" additionalClasses="bg-black/80 items-center justify-center">
-            <span className="inline-block w-[0.8em] h-[0.8em] bg-orange-500 rounded-full"/>
+          <StatusBadge
+            textColor="text-orange-500"
+            borderColorClass="border-gray-500"
+            additionalClasses="bg-black/80 items-center justify-center"
+          >
+            <span className="inline-block w-[0.8em] h-[0.8em] bg-orange-500 rounded-full" />
           </StatusBadge>
         )}
         {dnf && (
-          <StatusBadge borderColorClass="border-red-500">
-            DNF
-          </StatusBadge>
+          <StatusBadge borderColorClass="border-red-500">DNF</StatusBadge>
         )}
         {tow && (
           <StatusBadge borderColorClass="border-orange-500" animate>
@@ -123,7 +145,7 @@ export const DriverStatusBadges = memo(
         )}
         {lastPit && !out && (
           <StatusBadge borderColorClass="border-yellow-500">
-             L {pitLap} {pitDuration}
+            L {pitLap} {pitDuration}
           </StatusBadge>
         )}
       </div>

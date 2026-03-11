@@ -3,26 +3,28 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { useCustomShiftPoints } from './useCustomShiftPoints';
 import * as TelemetryStore from '../../../context/TelemetryStore/TelemetryStore';
 import * as CarTachometerData from './useCarTachometerData';
-import type { ShiftPointSettings } from '../../Settings/types';
+import type { ShiftPointSettings } from '@irdashies/types';
 
 // Mock the dependencies
 vi.mock('../../../context/TelemetryStore/TelemetryStore');
 vi.mock('./useCarTachometerData');
 
 const mockUseTelemetryValue = vi.mocked(TelemetryStore.useTelemetryValue);
-const mockUseCarTachometerData = vi.mocked(CarTachometerData.useCarTachometerData);
+const mockUseCarTachometerData = vi.mocked(
+  CarTachometerData.useCarTachometerData
+);
 
 describe('useCustomShiftPoints', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    
+
     // Default mocks
     mockUseTelemetryValue.mockImplementation((key) => {
       if (key === 'Gear') return 1;
       if (key === 'RPM') return 6500;
       return 0;
     });
-    
+
     mockUseCarTachometerData.mockReturnValue({
       carData: {
         carName: 'Ferrari 296 GT3',
@@ -31,7 +33,7 @@ describe('useCustomShiftPoints', () => {
         ledNumber: 6,
         redlineBlinkInterval: 250,
         ledColor: [],
-        ledRpm: []
+        ledRpm: [],
       },
 
       gearRpmThresholds: null,
@@ -44,7 +46,7 @@ describe('useCustomShiftPoints', () => {
       enabled: false,
       indicatorType: 'glow',
       indicatorColor: '#00ff00',
-      carConfigs: {}
+      carConfigs: {},
     };
 
     const { result } = renderHook(() => useCustomShiftPoints(settings));
@@ -65,10 +67,10 @@ describe('useCustomShiftPoints', () => {
           gearCount: 6,
           redlineRpm: 8000,
           gearShiftPoints: {
-            '1': { shiftRpm: 6000 }
-          }
-        }
-      }
+            '1': { shiftRpm: 6000 },
+          },
+        },
+      },
     };
 
     const { result } = renderHook(() => useCustomShiftPoints(settings));
@@ -98,10 +100,10 @@ describe('useCustomShiftPoints', () => {
           gearCount: 6,
           redlineRpm: 8000,
           gearShiftPoints: {
-            '1': { shiftRpm: 6000 }
-          }
-        }
-      }
+            '1': { shiftRpm: 6000 },
+          },
+        },
+      },
     };
 
     const { result } = renderHook(() => useCustomShiftPoints(settings));
@@ -128,10 +130,10 @@ describe('useCustomShiftPoints', () => {
           gearCount: 6,
           redlineRpm: 8000,
           gearShiftPoints: {
-            '0': { shiftRpm: 6000 }
-          }
-        }
-      }
+            '0': { shiftRpm: 6000 },
+          },
+        },
+      },
     };
 
     const { result } = renderHook(() => useCustomShiftPoints(settings));

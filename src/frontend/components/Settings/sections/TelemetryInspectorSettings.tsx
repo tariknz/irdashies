@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { getWidgetDefaultConfig } from '@irdashies/types';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import { useDashboard } from '@irdashies/context';
 import { TrashIcon, PlusIcon } from '@phosphor-icons/react';
@@ -21,28 +22,7 @@ interface TelemetryInspectorWidgetSettings {
   config: TelemetryInspectorConfig;
 }
 
-const defaultConfig: TelemetryInspectorConfig = {
-  background: { opacity: 80 },
-  properties: [
-    { source: 'telemetry', path: 'Speed', label: 'Speed' },
-    { source: 'telemetry', path: 'SessionTime', label: 'Session Time' },
-  ],
-};
-
-const migrateConfig = (savedConfig: unknown): TelemetryInspectorConfig => {
-  if (!savedConfig || typeof savedConfig !== 'object') return defaultConfig;
-  const config = savedConfig as Record<string, unknown>;
-
-  return {
-    background: {
-      opacity:
-        (config.background as { opacity?: number })?.opacity ??
-        defaultConfig.background?.opacity ??
-        80,
-    },
-    properties: (config.properties as PropertyConfig[]) ?? defaultConfig.properties,
-  };
-};
+const defaultConfig = getWidgetDefaultConfig('telemetryinspector');
 
 // Common telemetry properties for quick add
 const commonTelemetryProperties = [
@@ -90,7 +70,8 @@ export const TelemetryInspectorSettings = () => {
   ) as TelemetryInspectorWidgetSettings | undefined;
   const [settings, setSettings] = useState<TelemetryInspectorWidgetSettings>({
     enabled: savedSettings?.enabled ?? false,
-    config: migrateConfig(savedSettings?.config),
+    config:
+      (savedSettings?.config as TelemetryInspectorConfig) ?? defaultConfig,
   });
 
   const [newProperty, setNewProperty] = useState<PropertyConfig>({
@@ -176,7 +157,7 @@ export const TelemetryInspectorSettings = () => {
 
             {/* Add Custom Property */}
             <div className="space-y-2 border-t border-slate-600 pt-4">
-              <h3 className="text-md font-medium text-slate-200">
+              <h3 className="text-lg font-medium text-slate-200">
                 Add Custom Property
               </h3>
               <div className="flex gap-2">
@@ -227,7 +208,7 @@ export const TelemetryInspectorSettings = () => {
 
             {/* Quick Add Common Properties */}
             <div className="space-y-2 border-t border-slate-600 pt-4">
-              <h3 className="text-md font-medium text-slate-200">
+              <h3 className="text-lg font-medium text-slate-200">
                 Quick Add - Telemetry
               </h3>
               <div className="flex flex-wrap gap-1">
@@ -250,7 +231,7 @@ export const TelemetryInspectorSettings = () => {
             </div>
 
             <div className="space-y-2">
-              <h3 className="text-md font-medium text-slate-200">
+              <h3 className="text-lg font-medium text-slate-200">
                 Quick Add - Session
               </h3>
               <div className="flex flex-wrap gap-1">

@@ -1,6 +1,6 @@
 import { useTelemetryValue } from '../../../context/TelemetryStore/TelemetryStore';
 import { useCarTachometerData } from './useCarTachometerData';
-import type { ShiftPointSettings } from '../../Settings/types';
+import type { ShiftPointSettings } from '@irdashies/types';
 
 /**
  * Hook for custom shift point logic
