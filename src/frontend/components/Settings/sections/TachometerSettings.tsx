@@ -10,6 +10,7 @@ import { SettingToggleRow } from '../components/SettingToggleRow';
 import { SettingDivider } from '../components/SettingDivider';
 import { TabButton } from '../components/TabButton';
 import { SettingButtonGroupRow } from '../components/SettingButtonGroupRow';
+import { SettingSliderRow } from '../components/SettingSliderRow';
 
 const SETTING_ID = 'tachometer';
 
@@ -449,6 +450,18 @@ export const TachometerSettings = () => {
           {/* OPTIONS TAB */}
           {activeTab === 'options' && (   
           <SettingsSection title="Options">
+
+              <SettingSliderRow
+                title="Background Opacity"
+                value={settings.config.background.opacity ?? 40}
+                units="%"
+                min={0}
+                max={100}
+                step={1}
+                onChange={(v) =>
+                  handleConfigChange({ background: { opacity: v } })
+                }
+              />
             
               <SettingToggleRow
                 title="Show RPM Text"
