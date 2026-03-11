@@ -21,9 +21,9 @@ export const Tachometer = () => {
   }
 
   return (
-    <div className="h-full flex items-center justify-center">
+    <div className="h-full w-full flex items-center justify-center">
       <div
-        className="bg-slate-800/(--bg-opacity) rounded-md"
+        className="bg-slate-800/(--bg-opacity) w-full rounded-lg"
         style={{
           ['--bg-opacity' as string]: `${settings?.background?.opacity ?? 80}%`,
         }}

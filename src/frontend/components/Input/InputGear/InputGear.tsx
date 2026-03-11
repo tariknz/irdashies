@@ -34,9 +34,9 @@ export const InputGear = ({
   }
 
   return (
-    <div className="@container-[size] flex items-center justify-center p-2 font-mono w-full h-full">
+    <div className="@container-[size] flex items-center justify-center p-1 font-mono w-full h-full">
       <div className="flex flex-col items-center">
-        <div className="font-bold leading-none text-[max(2rem,min(70cqh,90cqw))]">
+        <div className="font-bold leading-none text-[max(2rem,min(80cqh,100cqw))]">
           {gearText}
         </div>
         {settings.showspeed && (
