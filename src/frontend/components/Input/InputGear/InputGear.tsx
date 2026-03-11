@@ -34,18 +34,18 @@ export const InputGear = ({
   }
 
   return (
-    <div className="@container flex items-center justify-center font-mono p-2 w-full h-full">
+    <div className="@container-[size] flex items-center justify-center p-2 font-mono w-full h-full">
       <div className="flex flex-col items-center">
-        <div className="font-bold leading-none text-[clamp(1.5rem,min(30cqb,40cqw),4rem)]">
+        <div className="font-bold leading-none text-[max(2rem,min(70cqh,90cqw))]">
           {gearText}
         </div>
         {settings.showspeed && (
-          <div className="text-[clamp(0.875rem,min(12cqb,16cqw),1.5rem)]">
+          <div className="text-[clamp(0.875rem,min(12cqh,16cqw),1.5rem)]">
             {speed.toFixed(0)}
           </div>
         )}
         {settings.showspeed && settings.unit !== 'none' && (
-          <div className="text-gray-500 leading-none text-[clamp(0.625rem,min(6cqb,8cqw),1rem)]">
+          <div className="text-gray-400 leading-none text-[clamp(0.625rem,min(6cqh,8cqw),1rem)]">
             {displayUnit}
           </div>
         )}
