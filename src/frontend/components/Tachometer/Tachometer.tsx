@@ -23,7 +23,7 @@ export const Tachometer = () => {
   return (
     <div className="h-full flex items-center justify-center">
       <div
-        className="bg-slate-800/(--bg-opacity)"
+        className="bg-slate-800/(--bg-opacity) rounded-md"
         style={{
           ['--bg-opacity' as string]: `${settings?.background?.opacity ?? 80}%`,
         }}
@@ -35,6 +35,7 @@ export const Tachometer = () => {
           shiftRpm={tachometerData.shiftRpm}
           blinkRpm={tachometerData.blinkRpm}
           showRpmText={settings?.showRpmText ?? false}
+          rpmOrientation={settings?.rpmOrientation ?? 'vertical'}
           gearRpmThresholds={tachometerData.gearRpmThresholds}
           ledColors={tachometerData.carData?.ledColor}
           carData={tachometerData.carData}

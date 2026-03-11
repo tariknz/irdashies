@@ -50,7 +50,7 @@ const RandomRPM = () => {
     return () => clearInterval(interval);
   }, [isRevLimiter]);
 
-  return <Tachometer rpm={rpm} maxRpm={8500} showRpmText={true} />;
+  return <Tachometer rpm={rpm} maxRpm={8500} showRpmText={true} rpmOrientation='vertical' />;
 };
 
 // Ferrari 296 GT3 car data example
@@ -120,6 +120,7 @@ const Ferrari296GT3 = () => {
         rpm={rpm}
         maxRpm={7360}
         showRpmText={true}
+        rpmOrientation='vertical'
         gearRpmThresholds={ferrariGear1Rpm}
         ledColors={ferrariCarData.ledColor}
         carData={ferrariCarData}
@@ -230,6 +231,7 @@ const CadillacGTP = () => {
         rpm={rpm}
         maxRpm={8250}
         showRpmText={true}
+        rpmOrientation='vertical' 
         gearRpmThresholds={cadillacGear1Rpm}
         ledColors={cadillacCarData.ledColor}
         carData={cadillacCarData}
@@ -309,6 +311,7 @@ const SuperFormulaLights = () => {
         rpm={rpm}
         maxRpm={7000}
         showRpmText={true}
+        rpmOrientation='vertical'
         gearRpmThresholds={sflGearRpm}
         ledColors={sflCarData.ledColor}
         carData={sflCarData}
@@ -421,6 +424,7 @@ const CustomShiftPointDemos = () => {
             gear={1}
             carPath="ferrari296gt3"
             showRpmText={true}
+            rpmOrientation='vertical'
             gearRpmThresholds={ferrariGear1Rpm}
             ledColors={ferrariCarData.ledColor}
             carData={ferrariCarData}
@@ -438,6 +442,7 @@ const CustomShiftPointDemos = () => {
             gear={1}
             carPath="ferrari296gt3"
             showRpmText={false}
+            rpmOrientation='vertical'
             gearRpmThresholds={ferrariGear1Rpm}
             ledColors={ferrariCarData.ledColor}
             carData={ferrariCarData}
@@ -455,6 +460,7 @@ const CustomShiftPointDemos = () => {
             gear={1}
             carPath="ferrari296gt3"
             showRpmText={true}
+            rpmOrientation='vertical'
             gearRpmThresholds={ferrariGear1Rpm}
             ledColors={ferrariCarData.ledColor}
             carData={ferrariCarData}
@@ -472,6 +478,7 @@ const CustomShiftPointDemos = () => {
             gear={1}
             carPath="ferrari296gt3"
             showRpmText={false}
+            rpmOrientation='vertical'
             gearRpmThresholds={ferrariGear1Rpm}
             ledColors={ferrariCarData.ledColor}
             carData={ferrariCarData}
@@ -489,6 +496,7 @@ const CustomShiftPointDemos = () => {
             gear={1}
             carPath="ferrari296gt3"
             showRpmText={true}
+            rpmOrientation='vertical'
             gearRpmThresholds={ferrariGear1Rpm}
             ledColors={ferrariCarData.ledColor}
             carData={ferrariCarData}
@@ -506,6 +514,7 @@ const CustomShiftPointDemos = () => {
             gear={1}
             carPath="ferrari296gt3"
             showRpmText={false}
+            rpmOrientation='vertical'
             gearRpmThresholds={ferrariGear1Rpm}
             ledColors={ferrariCarData.ledColor}
             carData={ferrariCarData}

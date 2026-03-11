@@ -279,6 +279,7 @@ export const defaultDashboard: {
         },
         gear: {
           enabled: true,
+          showspeed: true,
           unit: 'auto',
         },
         steer: {
@@ -287,10 +288,6 @@ export const defaultDashboard: {
             style: 'default',
             color: 'light',
           },
-        },
-        tachometer: {
-          enabled: true,
-          showRpmText: false,
         },
         background: {
           opacity: 80,

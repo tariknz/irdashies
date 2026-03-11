@@ -1,6 +1,5 @@
 import { useDashboard } from '@irdashies/context';
-import type { TachometerWidgetSettings } from '../../Settings/types';
-import type { DashboardWidget } from '@irdashies/types';
+import type { TachometerWidgetSettings, DashboardWidget } from '@irdashies/types';
 
 const SETTING_ID = 'tachometer';
 

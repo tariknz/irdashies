@@ -1,10 +1,15 @@
 import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
-import { TachometerWidgetSettings, SessionVisibilitySettings } from '../types';
+import { TachometerWidgetSettings, SessionVisibilitySettings, SettingsTabType } from '@irdashies/types';
 import { useDashboard } from '@irdashies/context';
 import { ToggleSwitch } from '../components/ToggleSwitch';
 import { SessionVisibility } from '../components/SessionVisibility';
 import { getAvailableCars } from '../../../utils/carData';
+import { SettingsSection } from '../components/SettingSection';
+import { SettingToggleRow } from '../components/SettingToggleRow';
+import { SettingDivider } from '../components/SettingDivider';
+import { TabButton } from '../components/TabButton';
+import { SettingButtonGroupRow } from '../components/SettingButtonGroupRow';
 
 const SETTING_ID = 'tachometer';
 
@@ -31,6 +36,7 @@ interface CarDataResponse {
 const defaultConfig: TachometerWidgetSettings['config'] = {
   enabled: true,
   showRpmText: false,
+  rpmOrientation: 'horizontal',
   shiftPointSettings: {
     enabled: false,
     indicatorType: 'glow',
@@ -52,6 +58,7 @@ const normalizeConfig = (config: Partial<TachometerWidgetSettings['config']>): T
   return {
     enabled: config.enabled ?? defaultConfig.enabled,
     showRpmText: config.showRpmText ?? defaultConfig.showRpmText,
+    rpmOrientation: config.rpmOrientation ?? defaultConfig.rpmOrientation,
     shiftPointSettings: config.shiftPointSettings ?? defaultConfig.shiftPointSettings,
     background: {
       opacity: (config.background as { opacity?: number })?.opacity ?? 80,
@@ -396,6 +403,15 @@ export const TachometerSettings = () => {
     config: normalizeConfig(widget?.config ?? {}),
   });
 
+  // Tab state with persistence
+  const [activeTab, setActiveTab] = useState<SettingsTabType>(
+    () => (localStorage.getItem('tachometerTab') as SettingsTabType) || 'options'
+  );
+
+  useEffect(() => {
+    localStorage.setItem('tachometerTab', activeTab);
+  }, [activeTab]);
+
   if (!currentDashboard) {
     return <>Loading...</>;
   }
@@ -403,63 +419,96 @@ export const TachometerSettings = () => {
   return (
     <BaseSettingsSection
       title="Tachometer"
-      description="Configure the tachometer display."
+      description="Configure the tachometer."
       settings={settings}
       onSettingsChange={setSettings}
-      widgetId={SETTING_ID}
+      widgetId="tachometer"
     >
-      {(handleConfigChange) => (
+      {(handleConfigChange) => {     
+        const config = settings.config;
+        return (
         <div className="space-y-6">
-          {/* Show RPM Text */}
-          <div className="flex items-center justify-between">
-            <label className="text-sm text-slate-300">Show RPM Text</label>
-            <ToggleSwitch
-              enabled={settings.config.showRpmText}
-              onToggle={(showRpmText) => handleConfigChange({ showRpmText })}
-            />
+          {/* Tabs */}
+          <div className="flex border-b border-slate-700/50">
+            <TabButton
+              id="options"
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+            >
+              Options
+            </TabButton>
+            <TabButton
+              id="visibility"
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+            >
+              Visibility
+            </TabButton>
           </div>
 
-          {/* Custom Shift Points */}
-          <CustomShiftPointsSection
-            config={settings.config}
-            handleConfigChange={handleConfigChange}
-          />
+          {/* OPTIONS TAB */}
+          {activeTab === 'options' && (   
+          <SettingsSection title="Options">
+            
+              <SettingToggleRow
+                title="Show RPM Text"
+                enabled={config.showRpmText}
+                onToggle={(newValue) =>
+                  handleConfigChange({
+                    showRpmText: newValue,
+                  })
+                }
+              />
 
-          {/* Background Opacity */}
-          <div className="space-y-2">
-            <label className="text-sm text-slate-300">
-              Background Opacity: {settings.config.background.opacity}%
-            </label>
-            <input
-              type="range"
-              min="0"
-              max="100"
-              value={settings.config.background.opacity}
-              onChange={(e) =>
-                handleConfigChange({
-                  background: { opacity: parseInt(e.target.value) },
-                })
-              }
-              className="w-full"
-            />
-          </div>
+              {config.showRpmText && (
+                <SettingsSection>
+                  <SettingButtonGroupRow<'horizontal' | 'vertical'>
+                    title="RPM Text Orientaion"
+                    value={config.rpmOrientation ?? 'horizontal'}
+                    options={[
+                      { label: 'Horizontal', value: 'horizontal' },
+                      { label: 'Vertical', value: 'vertical' },                     
+                    ]}
+                    onChange={(v) =>
+                      handleConfigChange({
+                        rpmOrientation: v
+                      })
+                    }
+                  />
+                </SettingsSection>
+              )}
 
-          {/* Show Only When On Track */}
-          <div className="flex items-center justify-between">
-            <label className="text-sm text-slate-300">Show Only When On Track</label>
-            <ToggleSwitch
-              enabled={settings.config.showOnlyWhenOnTrack}
-              onToggle={(showOnlyWhenOnTrack) => handleConfigChange({ showOnlyWhenOnTrack })}
-            />
-          </div>
+              <CustomShiftPointsSection
+                config={config}
+                handleConfigChange={handleConfigChange}
+              />
 
-          {/* Session Visibility */}
-          <SessionVisibility
-            sessionVisibility={settings.config.sessionVisibility}
-            handleConfigChange={handleConfigChange}
-          />
+          </SettingsSection>  
+          )}         
+
+          {/* VISIBILITY TAB */}
+          {activeTab === 'visibility' && (
+            <SettingsSection title="Session Visibility">
+              <SessionVisibility
+                sessionVisibility={settings.config.sessionVisibility}
+                handleConfigChange={handleConfigChange}
+              />
+
+              <SettingDivider />
+
+              <SettingToggleRow
+                title="Show only when on track"
+                description="If enabled, tachometer will only be shown when driving"
+                enabled={settings.config.showOnlyWhenOnTrack ?? false}
+                onToggle={(newValue) =>
+                  handleConfigChange({ showOnlyWhenOnTrack: newValue })
+                }
+              />
+            </SettingsSection>
+          )}
         </div>
-      )}
+        );
+      }}
     </BaseSettingsSection>
   );
 };

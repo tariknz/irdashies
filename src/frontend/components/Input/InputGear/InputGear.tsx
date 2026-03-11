@@ -3,7 +3,8 @@ export interface InputGearProps {
   speedMs?: number;
   unit?: number;
   settings?: {
-    unit: 'mph' | 'km/h' | 'auto';
+    unit: 'mph' | 'km/h' | 'auto' | 'none';
+    showspeed: boolean;
   };
 }
 
@@ -11,7 +12,7 @@ export const InputGear = ({
   gear,
   speedMs,
   unit,
-  settings = { unit: 'auto' },
+  settings = { unit: 'auto', showspeed: true },
 }: InputGearProps) => {
   const isMetric =
     (unit === 1 && settings.unit === 'auto') || settings.unit === 'km/h';
@@ -38,12 +39,16 @@ export const InputGear = ({
         <div className="font-bold leading-none text-[clamp(1.5rem,min(30cqb,40cqw),4rem)]">
           {gearText}
         </div>
-        <div className="text-[clamp(0.875rem,min(12cqb,16cqw),1.5rem)]">
-          {speed.toFixed(0)}
-        </div>
-        <div className="text-gray-500 leading-none text-[clamp(0.625rem,min(6cqb,8cqw),1rem)]">
-          {displayUnit}
-        </div>
+        {settings.showspeed && (
+          <div className="text-[clamp(0.875rem,min(12cqb,16cqw),1.5rem)]">
+            {speed.toFixed(0)}
+          </div>
+        )}
+        {settings.showspeed && settings.unit !== 'none' && (
+          <div className="text-gray-500 leading-none text-[clamp(0.625rem,min(6cqb,8cqw),1rem)]">
+            {displayUnit}
+          </div>
+        )}
       </div>
     </div>
   );

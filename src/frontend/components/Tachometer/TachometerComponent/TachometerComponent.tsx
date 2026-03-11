@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import type { CarData } from '../../../utils/carData';
 import type { ShiftPointSettings } from '@irdashies/types';
 
-interface TachometerProps {
+export interface TachometerProps {
   rpm: number;
   maxRpm: number;
   /** Current gear */
@@ -17,6 +17,7 @@ interface TachometerProps {
   ledSize?: number;
   /** Whether to show RPM text display (default: true) */
   showRpmText?: boolean;
+  rpmOrientation?: 'horizontal' | 'vertical'
   /** Car-specific RPM thresholds for each LED */
   gearRpmThresholds?: number[] | null;
   /** Car-specific LED colors */
@@ -38,6 +39,7 @@ export const Tachometer = ({
   numLights = 10,
   ledSize = 20,
   showRpmText = true,
+  rpmOrientation = 'vertical',
   gearRpmThresholds = null,
   ledColors = null,
   carData = null,
@@ -278,7 +280,7 @@ export const Tachometer = ({
 
   return (
     <>
-      <div className="flex items-center gap-1 p-2 rounded">
+      <div className={`flex ${rpmOrientation === 'vertical' ? 'flex-col' : 'flex-row'} items-center gap-1 p-2 rounded`}>
         {/* LED lights */}
         <div className="flex gap-1">
           {Array.from({ length: effectiveNumLights }, (_, i) => (
@@ -301,11 +303,12 @@ export const Tachometer = ({
         {/* RPM display - shows when showRpmText is true OR when custom shift points exist */}
         {shouldShowRpmBox && (
           <div
-            className="ml-3 text-sm font-mono font-bold text-white bg-black/50 px-2 rounded transition-all duration-200 whitespace-nowrap flex items-center"
+            id="rpm-text"
+            className="text-sm font-bold text-white px-2 rounded transition-all duration-200 whitespace-nowrap flex justify-center items-center"
             style={{
               ...getRpmBoxStyle(),
               minWidth: showRpmText ? '120px' : '60px', // Reserve space to prevent layout shift
-              height: '32px', // Fixed height to prevent vertical shift
+              height: '2em'
             }}
           >
             {showRpmText && (

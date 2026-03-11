@@ -236,36 +236,42 @@ export interface InputConfig {
   };
   gear: {
     enabled: boolean;
-    unit: 'mph' | 'km/h' | 'auto';
+    unit: 'mph' | 'km/h' | 'auto' | 'none';
+    showspeed: boolean;
   };
   abs?: { enabled: boolean };
   steer: {
     enabled: boolean;
     config: SteerConfig;
   };
-  tachometer: {
-    enabled: boolean;
-    showRpmText: boolean;
-    shiftPointStyle?: 'glow' | 'pulse' | 'border';
-    customShiftPoints?: {
-      enabled: boolean;
-      indicatorType: 'glow' | 'pulse' | 'border';
-      indicatorColor: string;
-      carConfigs: Record<
-        string,
-        {
-          enabled: boolean;
-          carId: string;
-          carName: string;
-          gearCount: number;
-          redlineRpm: number;
-          gearShiftPoints: Record<string, { shiftRpm: number }>;
-        }
-      >;
-    };
-  };
   background: { opacity: number };
   displayOrder: string[];
+  showOnlyWhenOnTrack: boolean;
+  sessionVisibility: SessionVisibilitySettings;
+}
+
+export interface TachometerConfig {  
+  enabled: boolean;
+  showRpmText: boolean;
+  rpmOrientation?: 'horizontal' | 'vertical'
+  shiftPointStyle?: 'glow' | 'pulse' | 'border';
+  shiftPointSettings: {
+    enabled: boolean,
+    indicatorType: 'glow' | 'pulse' | 'border';
+    indicatorColor: string,
+    carConfigs: Record<
+      string,
+      {
+        enabled: boolean;
+        carId: string;
+        carName: string;
+        gearCount: number;
+        redlineRpm: number;
+        gearShiftPoints: Record<string, { shiftRpm: number }>;
+      }
+    >;
+  },  
+  background: { opacity: number };
   showOnlyWhenOnTrack: boolean;
   sessionVisibility: SessionVisibilitySettings;
 }
@@ -508,9 +514,11 @@ export interface ShiftPointSettings {
   carConfigs: Record<
     string,
     {
+      enabled: boolean;
       carId: string;
       carName: string;
       gearCount: number;
+      redlineRpm: number;
       gearShiftPoints: Record<string, { shiftRpm: number }>;
     }
   >;
@@ -523,6 +531,7 @@ export type TrackMapWidgetSettings = BaseWidgetSettings<TrackMapConfig>;
 export type FlatTrackMapWidgetSettings = BaseWidgetSettings<FlatTrackMapConfig>;
 export type SteerWidgetSettings = BaseWidgetSettings<SteerConfig>;
 export type InputWidgetSettings = BaseWidgetSettings<InputConfig>;
+export type TachometerWidgetSettings = BaseWidgetSettings<TachometerConfig>;
 export type FuelWidgetSettings = BaseWidgetSettings<FuelConfig>;
 export type BlindSpotMonitorWidgetSettings =
   BaseWidgetSettings<BlindSpotMonitorConfig>;
