@@ -302,7 +302,7 @@ export const Tachometer = ({
             className="text-[1.5em] font-bold text-white px-2 rounded transition-all duration-200 whitespace-nowrap flex justify-center items-center"
             style={{
               ...getRpmBoxStyle(),
-              minWidth: showRpmText ? '8em' : '4em', // Reserve space to prevent layout shift
+              minWidth: showRpmText ? '8rem' : '4rem', // Reserve space to prevent layout shift
               height: '2em'
             }}
           >
