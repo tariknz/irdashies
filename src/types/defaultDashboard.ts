@@ -526,7 +526,7 @@ export const defaultDashboard: {
         enableTurnNames: false,
         showCarNumbers: true,
         invertTrackColors: false,
-        highContrastTurns: false,
+        highContrastTurns: true,
         driverCircleSize: 40,
         playerCircleSize: 40,
         trackmapFontSize: 100,
