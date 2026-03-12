@@ -47,6 +47,7 @@ const RandomTraces = () => {
       speed={speed}
       steer={steer}
       settings={{
+        useRawValues: false,
         trace: {
           enabled: true,
           includeThrottle: true,

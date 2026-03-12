@@ -1,6 +1,9 @@
 import { Meta, StoryObj } from '@storybook/react-vite';
 import { Input } from './Input';
-import { TelemetryDecorator, TelemetryDecoratorWithConfig } from '@irdashies/storybook';
+import {
+  TelemetryDecorator,
+  TelemetryDecoratorWithConfig,
+} from '@irdashies/storybook';
 
 const meta: Meta<typeof Input> = {
   component: Input,
@@ -32,9 +35,8 @@ export const Bigger: Story = {
 };
 
 export const WithConfig: Story = {
-  decorators: [TelemetryDecoratorWithConfig(
-    undefined,
-    {
+  decorators: [
+    TelemetryDecoratorWithConfig(undefined, {
       input: {
         trace: { enabled: false },
         tachometer: { enabled: false },

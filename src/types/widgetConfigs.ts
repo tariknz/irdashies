@@ -233,6 +233,7 @@ export interface SteerConfig {
 }
 
 export interface InputConfig {
+  useRawValues: boolean;
   trace: {
     enabled: boolean;
     includeThrottle: boolean;

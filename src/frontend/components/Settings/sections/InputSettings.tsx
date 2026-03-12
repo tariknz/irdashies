@@ -628,6 +628,16 @@ export const InputSettings = () => {
               {activeTab === 'options' && (
                 <>
                   <SettingsSection title="Options">
+                    <SettingToggleRow
+                      title="Use Raw Inputs"
+                      description="Disables iRacing's automated input processing, showing direct pedal telemetry without assists like auto-clutch or anti-stall."
+                      enabled={config.useRawValues}
+                      onToggle={(enabled) =>
+                        handleConfigChange({
+                          useRawValues: enabled,
+                        })
+                      }
+                    />
                     <SettingSliderRow
                       title="Background Opacity"
                       value={settings.config.background.opacity ?? 40}
