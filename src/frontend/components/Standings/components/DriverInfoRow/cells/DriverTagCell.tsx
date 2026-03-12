@@ -18,12 +18,8 @@ export const DriverTagCell = memo(function DriverTagCell({
   iconWeight,
 }: DriverTagCellProps) {
   const name = tag?.name ?? '';
-  const defaultBadgeSize = 28;
-  const minBadgeSize = 22;
   const tagThicknessDefault = 6;
-  const size =
-    widthPx ??
-    (displayStyle === 'tag' ? tagThicknessDefault : defaultBadgeSize);
+  const size = widthPx ?? tagThicknessDefault;
 
   const colorHex = useMemo(() => colorNumToHex(tag?.color), [tag?.color]);
 
@@ -40,33 +36,22 @@ export const DriverTagCell = memo(function DriverTagCell({
     };
   }, [displayStyle, size, colorHex]);
 
-  const badgeSize = Math.max(
-    displayStyle === 'tag'
-      ? tagThicknessDefault
-      : (widthPx ?? defaultBadgeSize),
-    minBadgeSize
-  );
-
   const containerStyle = useMemo<CSSProperties | undefined>(() => {
     if (displayStyle === 'tag') return undefined;
-    return {
-      display: 'block',
-      width: badgeSize - 4,
-      height: badgeSize - 4,
-    };
-  }, [displayStyle, badgeSize]);
+    return { display: 'block', width: '100%', height: '100%' };
+  }, [displayStyle]);
 
   const imgStyle = useMemo<CSSProperties | undefined>(
-    () => ({ display: 'block', height: badgeSize - 4, width: badgeSize - 4 }),
-    [badgeSize]
+    () => ({ display: 'block', width: '100%', height: '100%' }),
+    []
   );
   const emojiStyle = useMemo<CSSProperties | undefined>(
     () => ({
-      fontSize: `${badgeSize - 4}px`,
-      lineHeight: `${badgeSize}px`,
+      fontSize: '24px',
+      lineHeight: '24px',
       display: 'inline-block',
     }),
-    [badgeSize]
+    []
   );
 
   if (!tag) return null;
@@ -93,7 +78,7 @@ export const DriverTagCell = memo(function DriverTagCell({
     >
       {renderDriverIcon(
         icon,
-        badgeSize - 4,
+        24,
         undefined,
         tag?.color,
         imgStyle,

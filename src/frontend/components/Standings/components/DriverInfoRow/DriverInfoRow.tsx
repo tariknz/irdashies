@@ -265,9 +265,13 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
           <td
             key="driverTag"
             data-column="driverTag"
-            className="w-auto px-0 whitespace-nowrap align-middle min-w-[22px]"
+            style={{ minWidth: '1.5em' }}
+            className="whitespace-nowrap align-middle"
           >
-            <div className="flex items-center justify-center">
+            <div
+              style={{ width: '100%', aspectRatio: '24/20' }}
+              className="flex items-center justify-center"
+            >
               {hidden ? null : (
                 <DriverTagCell
                   tag={resolvedTag}
