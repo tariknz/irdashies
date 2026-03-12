@@ -74,16 +74,22 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
       string,
       { label: number; value: number; bar: number }
     > = {
-      xs: { label: 8, value: 12, bar: 6 },
-      sm: { label: 10, value: 14, bar: 8 },
-      md: { label: 12, value: 18, bar: 10 },
-      lg: { label: 14, value: 22, bar: 12 },
-      xl: { label: 16, value: 26, bar: 14 },
-      '2xl': { label: 18, value: 30, bar: 16 },
-      '3xl': { label: 20, value: 34, bar: 18 },
+      xs: { label: 10, value: 11, bar: 9 },
+      sm: { label: 11, value: 12, bar: 10 },
+      md: { label: 12, value: 13, bar: 11 },
+      lg: { label: 13, value: 14, bar: 12 },
+      xl: { label: 14, value: 15, bar: 13 },
+      '2xl': { label: 15, value: 16, bar: 14 },
+      '3xl': { label: 16, value: 17, bar: 15 },
+      '4xl': { label: 17, value: 18, bar: 16 },
+      '5xl': { label: 18, value: 19, bar: 17 },
+      '6xl': { label: 19, value: 20, bar: 18 },
+      '7xl': { label: 20, value: 21, bar: 19 },
+      '8xl': { label: 21, value: 22, bar: 20 },
+      '9xl': { label: 22, value: 23, bar: 21 },
     };
 
-    const preset = sizeMap[generalSettings.fontSize] || sizeMap['sm'];
+    const preset = sizeMap[generalSettings.fontSize] ?? sizeMap['sm'];
 
     // Return a virtual style object that all widgets will use
     // We simulate that every widget requested via widgetId gets these same sizes
@@ -297,9 +303,6 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
     return null;
   };
 
-  // Background opacity configuration
-  const bgAlpha = (settings?.background?.opacity ?? 95) / 100;
-
   const currentFuelStatus = displayData.fuelStatus || 'safe';
   const showFuelStatusBorder = settings.showFuelStatusBorder ?? true;
 
@@ -327,15 +330,15 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
 
   return (
     <div
-      className="relative w-full h-full overflow-hidden"
+      className="relative w-full h-full overflow-hidden rounded-sm"
       style={{
         ...backgroundStyle,
       }}
     >
       <div
-        className={`border-2 w-full h-full flex flex-col box-border px-3 transition-colors duration-500`}
+        className={`border-2 w-full h-full flex flex-col box-border px-3 transition-colors duration-500 rounded-sm bg-slate-800/(--bg-opacity)`}
         style={{
-          backgroundColor: `rgba(30, 30, 50, ${bgAlpha})`,
+          ['--bg-opacity' as string]: `${settings?.background?.opacity ?? 95}%`,
           borderColor: borderColorValue,
           boxShadow: `0 0 15px ${shadowColorValue} inset`,
         }}

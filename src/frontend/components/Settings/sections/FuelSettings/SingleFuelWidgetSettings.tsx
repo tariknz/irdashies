@@ -161,16 +161,6 @@ export const SingleFuelWidgetSettings = ({
               {activeTab === 'display' && (
                 <>
                   <SettingsSection title="Display">
-                    {/* General Control Toggles */}
-                    <SettingToggleRow
-                      title="Use General font Sizes"
-                      description="Syncs with Font Size slider in General tab"
-                      enabled={settings.config.useGeneralFontSize ?? false}
-                      onToggle={(enabled) =>
-                        handleConfigChange({ useGeneralFontSize: enabled })
-                      }
-                    />
-
                     <SettingToggleRow
                       title="Use General Compact Mode"
                       description="Syncs with Compact Mode in General tab"
@@ -195,56 +185,70 @@ export const SingleFuelWidgetSettings = ({
                   </SettingsSection>
 
                   {/* Widget Font Size Settings */}
-                  <SettingsSection title="Widget Settings">
-                    <WidgetFontSizeSettings
-                      settings={settings}
-                      onChange={handleConfigChange}
+                  <SettingsSection title="Font Sizes">
+                    {/* General Control Toggles */}
+                    <SettingToggleRow
+                      title="Use General font Sizes"
+                      description="Syncs with Font Size slider in General tab"
+                      enabled={settings.config.useGeneralFontSize ?? false}
+                      onToggle={(enabled) =>
+                        handleConfigChange({ useGeneralFontSize: enabled })
+                      }
                     />
 
-                    {/* Consumption Details Section */}
-                    <DualFontSizeInput
-                      widgetId="fuelGrid"
-                      title="Consumption Details"
-                      description="Configures rows in Consumption Grid."
-                      settings={settings}
-                      onChange={handleConfigChange}
-                    />
+                    {!settings.config.useGeneralFontSize && (
+                      <>
+                        <WidgetFontSizeSettings
+                          settings={settings}
+                          onChange={handleConfigChange}
+                        />
 
-                    {/* Economy Predict */}
-                    <DualFontSizeInput
-                      widgetId="fuelEconomyPredict"
-                      title="Economy Predict"
-                      description="Predicts fuel usage vs target. Adjust Label/Value sizes."
-                      settings={settings}
-                      onChange={handleConfigChange}
-                    />
+                        {/* Consumption Details Section */}
+                        <DualFontSizeInput
+                          widgetId="fuelGrid"
+                          title="Consumption Details"
+                          description="Configures rows in Consumption Grid."
+                          settings={settings}
+                          onChange={handleConfigChange}
+                        />
 
-                    {/* Fuel History */}
-                    <DualFontSizeInput
-                      widgetId="fuelGraph"
-                      title="Fuel History"
-                      description="Used for Fuel History - see options."
-                      settings={settings}
-                      onChange={handleConfigChange}
-                    />
+                        {/* Economy Predict */}
+                        <DualFontSizeInput
+                          widgetId="fuelEconomyPredict"
+                          title="Economy Predict"
+                          description="Predicts fuel usage vs target. Adjust Label/Value sizes."
+                          settings={settings}
+                          onChange={handleConfigChange}
+                        />
 
-                    {/* Moved Fuel Scenarios here for better organization */}
-                    <DualFontSizeInput
-                      widgetId="Fuel Scenarios"
-                      title="Consumption Details"
-                      description="Pit stop calculations (-1, Ideal, +1 Lap)."
-                      settings={settings}
-                      onChange={handleConfigChange}
-                    />
+                        {/* Fuel History */}
+                        <DualFontSizeInput
+                          widgetId="fuelGraph"
+                          title="Fuel History"
+                          description="Used for Fuel History - see options."
+                          settings={settings}
+                          onChange={handleConfigChange}
+                        />
 
-                    {/* Target Message Font */}
-                    <DualFontSizeInput
-                      widgetId="fuelTargetMessage"
-                      title="Target Message Font"
-                      description="Used for Pit Strategy - see options."
-                      settings={settings}
-                      onChange={handleConfigChange}
-                    />
+                        {/* Fuel Scenarios */}
+                        <DualFontSizeInput
+                          widgetId="fuelScenarios"
+                          title="Fuel Scenarios"
+                          description="Pit stop calculations (-1, Ideal, +1 Lap)."
+                          settings={settings}
+                          onChange={handleConfigChange}
+                        />
+
+                        {/* Target Message Font */}
+                        <DualFontSizeInput
+                          widgetId="fuelTargetMessage"
+                          title="Target Message Font"
+                          description="Used for Pit Strategy - see options."
+                          settings={settings}
+                          onChange={handleConfigChange}
+                        />
+                      </>
+                    )}
                   </SettingsSection>
                 </>
               )}
