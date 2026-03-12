@@ -265,7 +265,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
           <td
             key="driverTag"
             data-column="driverTag"
-            className="w-auto px-0 py-0.5 whitespace-nowrap align-middle min-w-[22px]"
+            className="w-auto px-0 whitespace-nowrap align-middle min-w-[22px]"
           >
             <div className="flex items-center justify-center">
               {hidden ? null : (

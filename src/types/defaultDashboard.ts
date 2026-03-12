@@ -260,6 +260,7 @@ export const defaultDashboard: {
         height: 113,
       },
       config: {
+        useRawValues: false,
         trace: {
           enabled: true,
           includeThrottle: true,
