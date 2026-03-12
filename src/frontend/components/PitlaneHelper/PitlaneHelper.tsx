@@ -237,7 +237,7 @@ export const PitlaneHelperBody = ({
               {displayKph ? 'km/h' : 'mph'}
             </div>
             {config.speedLimitStyle === 'text' && (
-              <div className="text-3xl text-slate-400 mt-2 flex items-center justify-center">              
+              <div className="text-lg text-slate-300 flex items-center justify-center">              
                   lim {displayKph
                     ? speed.limitKph.toFixed(0)
                     : speed.limitMph.toFixed(0)}               
