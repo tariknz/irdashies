@@ -7,14 +7,14 @@ import { Tachometer } from './InputTachometer/InputTachometer';
 import { useDrivingState, useSessionVisibility } from '@irdashies/context';
 
 export const Input = () => {
-  const inputs = useInputs();
   const settings = useInputSettings();
+  const inputs = useInputs(settings?.useRawValues ?? false);
   const { isDriving } = useDrivingState();
   const tachometerData = useTachometerData();
   const tachometerSettings = useTachometerSettings();
 
   if (!useSessionVisibility(settings?.sessionVisibility)) return <></>;
-  
+
   // Show only when on track setting
   if (settings?.showOnlyWhenOnTrack && !isDriving) {
     return <></>;

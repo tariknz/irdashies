@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import {
-  useDriverCarIdx,
+  useFocusCarIdx,
   useSessionDrivers,
   useSessionStore,
   useTelemetryValues,
@@ -8,7 +8,7 @@ import {
 
 // Drivers progress logic
 export const useDriverProgress = () => {
-  const driverIdx = useDriverCarIdx();
+  const driverIdx = useFocusCarIdx();
   const drivers = useSessionDrivers();
   const driversLapDist = useTelemetryValues<number[]>('CarIdxLapDistPct');
   const paceCarIdx =
