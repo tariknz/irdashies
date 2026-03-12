@@ -277,7 +277,7 @@ export const Tachometer = ({
 
   return (
     <>
-      <div className={`flex ${rpmOrientation === 'vertical' ? 'flex-col' : 'flex-row'} items-center w-full gap-2 p-2 rounded`}>
+      <div className={`@container flex ${rpmOrientation === 'vertical' ? 'flex-col' : 'flex-row'} items-center w-full gap-2 p-2 rounded`}>
         {/* LED lights */}
         <div className="flex w-full gap-1">
           {Array.from({ length: effectiveNumLights }, (_, i) => (
@@ -299,19 +299,19 @@ export const Tachometer = ({
         {shouldShowRpmBox && (
           <div
             id="rpm-text"
-            className="text-[1.5em] font-bold text-white px-2 rounded transition-all duration-200 whitespace-nowrap flex justify-center items-center"
+            className="text-[4cqw] font-mono font-bold text-white px-2 mx-8 rounded transition-all duration-200 whitespace-nowrap flex justify-center items-center"
             style={{
               ...getRpmBoxStyle(),
-              minWidth: showRpmText ? '8em' : '4em', // Reserve space to prevent layout shift
-              height: '2em'
+              minWidth: showRpmText && hasCustomShiftPoints ? '8em' : '4em', // Reserve space to prevent layout shift
+              height: '1.5em'
             }}
           >
             {showRpmText && (
               <>
                 {Math.round(clampedRpm).toLocaleString('en-US')}
-                <span className="text-[0.6em] ml-1">RPM</span>
+                <span className="text-[0.6em] ml-2">RPM</span>
                 {shouldShowCustomShift && (
-                  <span className="text-[0.8em] ml-2 font-bold">SHIFT</span>
+                  <span className="text-[0.8em] ml-8 font-bold">SHIFT</span>
                 )}
               </>
             )}
