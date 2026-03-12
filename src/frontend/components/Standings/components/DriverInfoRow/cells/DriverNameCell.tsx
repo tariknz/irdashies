@@ -1,8 +1,5 @@
-import { memo } from 'react';
+import { memo, useRef, useLayoutEffect } from 'react';
 import { SpeakerHighIcon } from '@phosphor-icons/react';
-
-// Module-level base for synchronized animation offset across all rows
-const ANIMATION_SYNC_BASE_S = performance.now() / 1000;
 import { DriverStatusBadges } from './DriverStatusBadges';
 import {
   DriverName as formatDriverName,
@@ -51,7 +48,21 @@ export const DriverNameCell = memo(
     const staticText = nameDisplay === 'label' && label ? label : displayName;
     const freq = alternateFrequency ?? 5;
     const duration = `${freq}s`;
-    const syncDelay = `-${(ANIMATION_SYNC_BASE_S % freq).toFixed(3)}s`;
+    const syncInitialized = useRef(false);
+    const spanPrimaryRef = useRef<HTMLSpanElement>(null);
+    const spanSecondaryRef = useRef<HTMLSpanElement>(null);
+    useLayoutEffect(() => {
+      if (shouldAnimate && !syncInitialized.current) {
+        syncInitialized.current = true;
+        const delay = `-${((performance.now() / 1000) % freq).toFixed(3)}s`;
+        if (spanPrimaryRef.current)
+          spanPrimaryRef.current.style.animationDelay = delay;
+        if (spanSecondaryRef.current)
+          spanSecondaryRef.current.style.animationDelay = delay;
+      } else if (!shouldAnimate) {
+        syncInitialized.current = false;
+      }
+    }, [shouldAnimate, freq]);
 
     return (
       <td data-column="driverName" className="w-full max-w-0 px-1 py-0.5">
@@ -68,20 +79,16 @@ export const DriverNameCell = memo(
             {shouldAnimate ? (
               <div className="relative overflow-hidden h-[1lh]">
                 <span
+                  ref={spanPrimaryRef}
                   className="absolute inset-0 flex items-center whitespace-nowrap animate-name-slide-primary"
-                  style={{
-                    animationDuration: duration,
-                    animationDelay: syncDelay,
-                  }}
+                  style={{ animationDuration: duration }}
                 >
                   {displayName}
                 </span>
                 <span
+                  ref={spanSecondaryRef}
                   className="absolute inset-0 flex items-center whitespace-nowrap animate-name-slide-secondary"
-                  style={{
-                    animationDuration: duration,
-                    animationDelay: syncDelay,
-                  }}
+                  style={{ animationDuration: duration }}
                 >
                   {label}
                 </span>

@@ -4,7 +4,12 @@ import type {
   TagGroup,
   DriverTagEntry,
 } from '@irdashies/types';
-import { CaretUpIcon, CaretDownIcon } from '@phosphor-icons/react';
+import {
+  CaretUpIcon,
+  CaretDownIcon,
+  MagnifyingGlassIcon,
+  XCircleIcon,
+} from '@phosphor-icons/react';
 import { PRESET_DRIVER_TAGS } from '../../../constants/driverTagBadges';
 import { renderDriverIcon } from '@irdashies/utils/driverIcons';
 import { IconPicker } from '../IconPicker';
@@ -46,9 +51,15 @@ export const DriverTagsSettings = () => {
     null
   );
   const [entryDrafts, setEntryDrafts] = useState<EntryDraft[]>([]);
+  const [entryError, setEntryError] = useState<{
+    key: string;
+    field: 'id' | 'name';
+  } | null>(null);
   const [activeGroupFilter, setActiveGroupFilter] = useState<string | null>(
     null
   );
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchText, setSearchText] = useState('');
   const [sortField, setSortField] = useState<
     'id' | 'name' | 'label' | 'groupId' | null
   >(null);
@@ -133,6 +144,7 @@ export const DriverTagsSettings = () => {
 
   const updateEntryDraft = useCallback(
     (key: string, field: 'id' | 'name' | 'label', value: string) => {
+      setEntryError((prev) => (prev?.key === key ? null : prev));
       setEntryDrafts((prev) => {
         const exists = prev.some((d) => d.uiKey === key);
         if (exists) {
@@ -157,12 +169,12 @@ export const DriverTagsSettings = () => {
       // Also persist the group change immediately
       const draft = syncedDrafts.find((d) => d.uiKey === key);
       if (!draft) return;
-      const existing = committedEntries.find((e) => {
+      const existing = committedEntries.find((e, idx) => {
         const eKey = e.id
           ? `id-${e.id}`
           : e.name
             ? `name-${e.name}`
-            : undefined;
+            : `group-${e.groupId}-${idx}`;
         return eKey === key;
       });
       if (existing) {
@@ -180,12 +192,12 @@ export const DriverTagsSettings = () => {
   const removeEntry = useCallback(
     (key: string) => {
       setEntryDrafts((prev) => prev.filter((d) => d.uiKey !== key));
-      const existing = committedEntries.find((e) => {
+      const existing = committedEntries.find((e, idx) => {
         const eKey = e.id
           ? `id-${e.id}`
           : e.name
             ? `name-${e.name}`
-            : undefined;
+            : `group-${e.groupId}-${idx}`;
         return eKey === key;
       });
       if (existing) {
@@ -214,24 +226,14 @@ export const DriverTagsSettings = () => {
             (trimmedName && e.name && e.name === trimmedName)
         );
         if (duplicate) {
-          const dupKey = duplicate.id
-            ? `id-${duplicate.id}`
-            : duplicate.name
-              ? `name-${duplicate.name}`
-              : undefined;
-          if (dupKey) {
-            const focusField =
-              trimmedId && duplicate.id === trimmedId ? 'id' : 'name';
-            setEntryDrafts((prev) => prev.filter((d) => d.uiKey !== key));
-            if (activeGroupFilter && activeGroupFilter !== duplicate.groupId) {
-              setActiveGroupFilter(null);
-            }
-            setTimeout(() => {
-              const input = inputRefs.current[`${dupKey}-${focusField}`];
-              input?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-              input?.focus();
-            }, 50);
-          }
+          const conflictField =
+            trimmedId && duplicate.id === trimmedId ? 'id' : 'name';
+          setEntryDrafts((prev) =>
+            prev.map((d) =>
+              d.uiKey === key ? { ...d, [conflictField]: '' } : d
+            )
+          );
+          setEntryError({ key, field: conflictField });
           return;
         }
 
@@ -249,15 +251,36 @@ export const DriverTagsSettings = () => {
         });
         setEntryDrafts((prev) => prev.filter((d) => d.uiKey !== key));
       } else {
-        const existing = committedEntries.find((e) => {
+        const existing = committedEntries.find((e, idx) => {
           const eKey = e.id
             ? `id-${e.id}`
             : e.name
               ? `name-${e.name}`
-              : undefined;
+              : `group-${e.groupId}-${idx}`;
           return eKey === key;
         });
         if (!existing) return;
+        const trimmedId = draft.id.trim();
+        const trimmedName = draft.name.trim();
+        const duplicate = committedEntries.find(
+          (e) =>
+            e !== existing &&
+            ((trimmedId && e.id && e.id === trimmedId) ||
+              (trimmedName && e.name && e.name === trimmedName))
+        );
+        if (duplicate) {
+          const conflictField =
+            trimmedId && duplicate.id === trimmedId ? 'id' : 'name';
+          const originalValue =
+            (conflictField === 'id' ? existing.id : existing.name) ?? '';
+          setEntryDrafts((prev) =>
+            prev.map((d) =>
+              d.uiKey === key ? { ...d, [conflictField]: originalValue } : d
+            )
+          );
+          setEntryError({ key, field: conflictField });
+          return;
+        }
         updateDashboard({
           ...settings,
           entries: committedEntries.map((e) =>
@@ -274,13 +297,7 @@ export const DriverTagsSettings = () => {
         setEntryDrafts((prev) => prev.filter((d) => d.uiKey !== key));
       }
     },
-    [
-      entryDrafts,
-      settings,
-      committedEntries,
-      updateDashboard,
-      activeGroupFilter,
-    ]
+    [entryDrafts, settings, committedEntries, updateDashboard]
   );
 
   const renderIcon = (
@@ -319,13 +336,22 @@ export const DriverTagsSettings = () => {
     [settings.groups]
   );
 
-  const filteredEntries = useMemo(
-    () =>
-      syncedDrafts.filter((r) =>
-        activeGroupFilter ? r.groupId === activeGroupFilter : true
-      ),
-    [syncedDrafts, activeGroupFilter]
-  );
+  const filteredEntries = useMemo(() => {
+    const groupFiltered = syncedDrafts.filter((r) =>
+      activeGroupFilter ? r.groupId === activeGroupFilter : true
+    );
+    if (!searchText.trim()) return groupFiltered;
+    const lower = searchText.toLowerCase();
+    return groupFiltered.filter((r) => {
+      const groupName = allGroups.find((g) => g.id === r.groupId)?.name ?? '';
+      return (
+        r.id.toLowerCase().includes(lower) ||
+        r.name.toLowerCase().includes(lower) ||
+        r.label.toLowerCase().includes(lower) ||
+        groupName.toLowerCase().includes(lower)
+      );
+    });
+  }, [syncedDrafts, activeGroupFilter, searchText, allGroups]);
 
   const sortedFilteredEntries = useMemo(() => {
     if (!sortField) return filteredEntries;
@@ -862,8 +888,8 @@ export const DriverTagsSettings = () => {
               ))}
             </div>
 
-            {sortedFilteredEntries.length > 0 && (
-              <div className="grid grid-cols-[5rem_9rem_9rem_1fr_auto] gap-2 items-center text-xs text-slate-400 pt-4">
+            {syncedDrafts.length > 0 && (
+              <div className="grid grid-cols-[5rem_9rem_9rem_1fr_5rem] gap-2 items-center text-sm text-slate-400 pt-4">
                 {(
                   [
                     ['id', 'iRacing ID'],
@@ -871,30 +897,57 @@ export const DriverTagsSettings = () => {
                     ['label', 'Driver Label'],
                     ['groupId', 'Group'],
                   ] as const
-                ).map(([field, label]) => (
-                  <button
-                    key={field}
-                    onClick={() => handleSort(field)}
-                    className="flex items-center justify-center gap-0.5 text-left hover:text-slate-200 transition-colors"
-                  >
-                    {label}
-                    {sortField === field ? (
-                      sortDirection === 'asc' ? (
-                        <CaretUpIcon size={10} weight="bold" />
-                      ) : (
-                        <CaretDownIcon size={10} weight="bold" />
-                      )
-                    ) : null}
-                  </button>
-                ))}
-                <span />
+                ).map(([field, label]) => {
+                  if (field === 'groupId' && searchOpen) {
+                    return (
+                      <input
+                        key={field}
+                        autoFocus
+                        value={searchText}
+                        onChange={(e) => setSearchText(e.target.value)}
+                        placeholder="Search for a Driver ..."
+                        className="px-2 py-0.5 bg-slate-700 rounded text-sm text-slate-200 w-full focus:outline-none focus:ring-1 focus:ring-sky-500"
+                      />
+                    );
+                  }
+                  return (
+                    <button
+                      key={field}
+                      onClick={() => handleSort(field)}
+                      className="flex py-0.5 items-center justify-center gap-0.5 text-left hover:text-slate-200 transition-colors"
+                    >
+                      {label}
+                      {sortField === field ? (
+                        sortDirection === 'asc' ? (
+                          <CaretUpIcon size={10} weight="bold" />
+                        ) : (
+                          <CaretDownIcon size={10} weight="bold" />
+                        )
+                      ) : null}
+                    </button>
+                  );
+                })}
+                <button
+                  onClick={() => {
+                    setSearchOpen((v) => !v);
+                    if (searchOpen) setSearchText('');
+                  }}
+                  title={searchOpen ? 'Close search' : 'Search drivers'}
+                  className={`flex w-full py-0.5 items-center justify-center transition-colors ${searchOpen ? 'text-sky-400' : 'text-slate-400 hover:text-slate-200'}`}
+                >
+                  {searchOpen ? (
+                    <XCircleIcon size={14} />
+                  ) : (
+                    <MagnifyingGlassIcon size={14} />
+                  )}
+                </button>
               </div>
             )}
 
             {sortedFilteredEntries.map((row) => (
               <div
                 key={row.uiKey}
-                className="grid grid-cols-[5rem_9rem_9rem_1fr_auto] gap-2 items-center"
+                className="grid grid-cols-[5rem_9rem_9rem_1fr_5rem] gap-2 items-center"
               >
                 <input
                   ref={(el) => {
@@ -917,7 +970,11 @@ export const DriverTagsSettings = () => {
                       (e.currentTarget as HTMLInputElement).blur();
                   }}
                   placeholder="e.g. 123456"
-                  className="px-2 py-1 bg-slate-700 rounded w-full"
+                  className={`px-2 py-1 bg-slate-700 rounded w-full ${
+                    entryError?.key === row.uiKey && entryError.field === 'id'
+                      ? 'border border-red-500'
+                      : ''
+                  }`}
                 />
                 <input
                   ref={(el) => {
@@ -940,7 +997,11 @@ export const DriverTagsSettings = () => {
                       (e.currentTarget as HTMLInputElement).blur();
                   }}
                   placeholder="iRacing Full Name"
-                  className="px-2 py-1 bg-slate-700 rounded w-full"
+                  className={`px-2 py-1 bg-slate-700 rounded w-full ${
+                    entryError?.key === row.uiKey && entryError.field === 'name'
+                      ? 'border border-red-500'
+                      : ''
+                  }`}
                 />
                 <input
                   ref={(el) => {
@@ -983,10 +1044,15 @@ export const DriverTagsSettings = () => {
                 </select>
                 <button
                   onClick={() => removeEntry(row.uiKey)}
-                  className="px-2 py-1 bg-red-600 rounded"
+                  className="w-full px-2 py-1 bg-red-600 rounded"
                 >
                   Remove
                 </button>
+                {entryError?.key === row.uiKey && (
+                  <p className="col-span-full text-xs text-red-400 -mt-1">
+                    Driver already exists
+                  </p>
+                )}
               </div>
             ))}
 
