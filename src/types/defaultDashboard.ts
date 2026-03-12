@@ -862,7 +862,7 @@ export const defaultDashboard: {
         showPitlaneTraffic: true,
         showPastPitBox: false,
         showSpeedSummary: true,
-        speedLimitStyle: 'european',
+        speedLimitStyle: 'text',
         background: { opacity: 80 },
         sessionVisibility: {
           race: true,

@@ -420,7 +420,7 @@ export interface PitlaneHelperConfig {
   showProgressBar?: boolean;
   showSpeedBar?: boolean;
   showSpeedSummary: boolean;
-  speedLimitStyle?: 'european' | 'american';
+  speedLimitStyle?: 'none' | 'text' | 'european' | 'american';
   showPitExitInputs?: boolean;
   pitExitInputs?: { throttle: boolean; clutch: boolean };
   showInputsPhase?: 'atPitbox' | 'afterPitbox' | 'always';

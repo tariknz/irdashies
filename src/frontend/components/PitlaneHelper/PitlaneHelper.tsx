@@ -236,6 +236,13 @@ export const PitlaneHelperBody = ({
             <div className="text-xs text-slate-400">
               {displayKph ? 'km/h' : 'mph'}
             </div>
+            {config.speedLimitStyle === 'text' && (
+              <div className="text-3xl text-slate-400 mt-2 flex items-center justify-center">              
+                  lim {displayKph
+                    ? speed.limitKph.toFixed(0)
+                    : speed.limitMph.toFixed(0)}               
+              </div>
+            )}
             {config.speedLimitStyle === 'european' && (
               <div className="text-3xl font-bold text-slate-800 mt-2 w-[2.5em] h-[2.5em] bg-white border-3 border-red-500 rounded-full flex items-center justify-center">
                 <div className="-translate-y-[0.05em] text-[1.4em]">
