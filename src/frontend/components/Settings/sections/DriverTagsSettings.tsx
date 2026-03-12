@@ -4,6 +4,7 @@ import type {
   TagGroup,
   DriverTagEntry,
 } from '@irdashies/types';
+import { CaretUpIcon, CaretDownIcon } from '@phosphor-icons/react';
 import { PRESET_DRIVER_TAGS } from '../../../constants/driverTagBadges';
 import { renderDriverIcon } from '@irdashies/utils/driverIcons';
 import { IconPicker } from '../IconPicker';
@@ -48,6 +49,10 @@ export const DriverTagsSettings = () => {
   const [activeGroupFilter, setActiveGroupFilter] = useState<string | null>(
     null
   );
+  const [sortField, setSortField] = useState<
+    'id' | 'name' | 'label' | 'groupId' | null
+  >(null);
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const inputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
@@ -200,6 +205,36 @@ export const DriverTagsSettings = () => {
 
       if (key.startsWith('new-')) {
         if (!draft.id.trim() && !draft.name.trim()) return;
+
+        const trimmedId = draft.id.trim();
+        const trimmedName = draft.name.trim();
+        const duplicate = committedEntries.find(
+          (e) =>
+            (trimmedId && e.id && e.id === trimmedId) ||
+            (trimmedName && e.name && e.name === trimmedName)
+        );
+        if (duplicate) {
+          const dupKey = duplicate.id
+            ? `id-${duplicate.id}`
+            : duplicate.name
+              ? `name-${duplicate.name}`
+              : undefined;
+          if (dupKey) {
+            const focusField =
+              trimmedId && duplicate.id === trimmedId ? 'id' : 'name';
+            setEntryDrafts((prev) => prev.filter((d) => d.uiKey !== key));
+            if (activeGroupFilter && activeGroupFilter !== duplicate.groupId) {
+              setActiveGroupFilter(null);
+            }
+            setTimeout(() => {
+              const input = inputRefs.current[`${dupKey}-${focusField}`];
+              input?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+              input?.focus();
+            }, 50);
+          }
+          return;
+        }
+
         updateDashboard({
           ...settings,
           entries: [
@@ -239,7 +274,13 @@ export const DriverTagsSettings = () => {
         setEntryDrafts((prev) => prev.filter((d) => d.uiKey !== key));
       }
     },
-    [entryDrafts, settings, committedEntries, updateDashboard]
+    [
+      entryDrafts,
+      settings,
+      committedEntries,
+      updateDashboard,
+      activeGroupFilter,
+    ]
   );
 
   const renderIcon = (
@@ -261,6 +302,23 @@ export const DriverTagsSettings = () => {
       weight
     );
 
+  const handleSort = useCallback(
+    (field: 'id' | 'name' | 'label' | 'groupId') => {
+      if (sortField === field) {
+        setSortDirection((d) => (d === 'asc' ? 'desc' : 'asc'));
+      } else {
+        setSortField(field);
+        setSortDirection('asc');
+      }
+    },
+    [sortField]
+  );
+
+  const allGroups = useMemo(
+    () => [...PRESET_DRIVER_TAGS, ...(settings.groups ?? [])],
+    [settings.groups]
+  );
+
   const filteredEntries = useMemo(
     () =>
       syncedDrafts.filter((r) =>
@@ -268,6 +326,23 @@ export const DriverTagsSettings = () => {
       ),
     [syncedDrafts, activeGroupFilter]
   );
+
+  const sortedFilteredEntries = useMemo(() => {
+    if (!sortField) return filteredEntries;
+    return [...filteredEntries].sort((a, b) => {
+      let aVal: string;
+      let bVal: string;
+      if (sortField === 'groupId') {
+        aVal = allGroups.find((g) => g.id === a.groupId)?.name ?? '';
+        bVal = allGroups.find((g) => g.id === b.groupId)?.name ?? '';
+      } else {
+        aVal = a[sortField] ?? '';
+        bVal = b[sortField] ?? '';
+      }
+      const cmp = aVal.localeCompare(bVal);
+      return sortDirection === 'asc' ? cmp : -cmp;
+    });
+  }, [filteredEntries, sortField, sortDirection, allGroups]);
 
   if (loading) {
     return <div className="p-4 text-slate-400">Loading...</div>;
@@ -787,17 +862,36 @@ export const DriverTagsSettings = () => {
               ))}
             </div>
 
-            {filteredEntries.length > 0 && (
-              <div className="grid grid-cols-[5rem_9rem_9rem_1fr_auto] gap-2 items-center text-xs text-slate-400 pb-1">
-                <span>iRacing ID</span>
-                <span>iRacing Name</span>
-                <span>Driver Label</span>
-                <span>Group</span>
+            {sortedFilteredEntries.length > 0 && (
+              <div className="grid grid-cols-[5rem_9rem_9rem_1fr_auto] gap-2 items-center text-xs text-slate-400 pt-4">
+                {(
+                  [
+                    ['id', 'iRacing ID'],
+                    ['name', 'iRacing Name'],
+                    ['label', 'Driver Label'],
+                    ['groupId', 'Group'],
+                  ] as const
+                ).map(([field, label]) => (
+                  <button
+                    key={field}
+                    onClick={() => handleSort(field)}
+                    className="flex items-center justify-center gap-0.5 text-left hover:text-slate-200 transition-colors"
+                  >
+                    {label}
+                    {sortField === field ? (
+                      sortDirection === 'asc' ? (
+                        <CaretUpIcon size={10} weight="bold" />
+                      ) : (
+                        <CaretDownIcon size={10} weight="bold" />
+                      )
+                    ) : null}
+                  </button>
+                ))}
                 <span />
               </div>
             )}
 
-            {filteredEntries.map((row) => (
+            {sortedFilteredEntries.map((row) => (
               <div
                 key={row.uiKey}
                 className="grid grid-cols-[5rem_9rem_9rem_1fr_auto] gap-2 items-center"
@@ -905,7 +999,7 @@ export const DriverTagsSettings = () => {
               </button>
             </div>
 
-            {filteredEntries.length > 0 && (
+            {sortedFilteredEntries.length > 0 && (
               <p className="mt-1 text-sm italic text-white/40">
                 * iRacing ID is matched first when provided. Display name is
                 used as a fallback if no ID is set or no match is found.
