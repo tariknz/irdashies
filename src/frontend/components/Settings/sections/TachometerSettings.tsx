@@ -450,7 +450,7 @@ export const TachometerSettings = () => {
 
           {/* DISPLAY TAB */}
           {activeTab === 'display' && (   
-          <SettingsSection title="Options">
+          <SettingsSection title="Display">
 
               <SettingSliderRow
                 title="Background Opacity"
