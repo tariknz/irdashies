@@ -22,83 +22,98 @@ describe('LapTimesStore', () => {
     expect(useLapTimesStore.getState().lapTimes).toEqual([]);
   });
 
-  it('should use first lap time directly', () => {
-    // First call: should use the lap time directly
+  it('should not add first lap time to history (baseline only)', () => {
+    // First call just records baseline, no history yet
     useLapTimesStore.getState().updateLapTimes([90.5], 1);
-    expect(useLapTimesStore.getState().lapTimes[0]).toBeCloseTo(90.5, 3);
+    expect(
+      useLapTimesStore.getState().lapTimeBuffer?.lapTimeHistory[0]
+    ).toEqual([]);
+    // No history means no average calculated, lapTimes stays empty
+    expect(useLapTimesStore.getState().lapTimes).toEqual([]);
+  });
 
-    // Second call: same lap time, should still show the same value
+  it('should add to history when lap time changes', () => {
+    // First call: baseline
     useLapTimesStore.getState().updateLapTimes([90.5], 1);
-    expect(useLapTimesStore.getState().lapTimes[0]).toBeCloseTo(90.5, 3);
 
-    // Third call: new lap time, should start calculating pace
+    // Second call: new lap time, now it gets recorded in history
     useLapTimesStore.getState().updateLapTimes([89.8], 1);
-    expect(useLapTimesStore.getState().lapTimes[0]).toBeCloseTo(90.15, 3);
+    expect(useLapTimesStore.getState().lapTimes[0]).toBeCloseTo(89.8, 3);
+
+    // Third call: another new lap time
+    useLapTimesStore.getState().updateLapTimes([90.2], 1);
+    // Median of [89.8, 90.2] = 90.0
+    expect(useLapTimesStore.getState().lapTimes[0]).toBeCloseTo(90.0, 3);
   });
 
   it('should ignore invalid lap times', () => {
     useLapTimesStore.getState().updateLapTimes([90.5], 1);
+    useLapTimesStore.getState().updateLapTimes([89.8], 1); // recorded
     useLapTimesStore.getState().updateLapTimes([0], 1); // Invalid lap time
-    expect(useLapTimesStore.getState().lapTimes[0]).toBeCloseTo(90.5, 3);
+    expect(useLapTimesStore.getState().lapTimes[0]).toBeCloseTo(89.8, 3);
   });
 
   it('should ignore unchanged lap times', () => {
     useLapTimesStore.getState().updateLapTimes([90.5], 1);
     useLapTimesStore.getState().updateLapTimes([90.5], 1); // Same lap time
-    expect(useLapTimesStore.getState().lapTimes[0]).toBeCloseTo(90.5, 3);
+    // No history recorded yet since value never changed
+    expect(
+      useLapTimesStore.getState().lapTimeBuffer?.lapTimeHistory[0]
+    ).toEqual([]);
   });
 
   it('should filter outliers and use median for pace', () => {
-    // Fill up the window with lap times including an outlier
-    const lapTimes = [90.5, 89.8, 120.0, 90.2, 89.9]; // 120.0 is an outlier
+    // First call: baseline
+    useLapTimesStore.getState().updateLapTimes([90.5], 1);
+
+    // Subsequent calls: history grows on each change
+    const lapTimes = [89.8, 120.0, 90.2, 89.9]; // 120.0 is an outlier
     lapTimes.forEach((time) => {
       useLapTimesStore.getState().updateLapTimes([time], 1);
     });
 
-    // The pace should be the median of the non-outlier times
-    // After filtering outliers, we have [89.8, 89.9, 90.2, 90.5]
-    // The median of these values is (89.9 + 90.2) / 2 = 90.05
-    expect(useLapTimesStore.getState().lapTimes[0]).toBeCloseTo(90.05, 3);
+    // History: [89.8, 120.0, 90.2, 89.9]
+    // After filtering outliers: [89.8, 89.9, 90.2]
+    // Median: 89.9
+    expect(useLapTimesStore.getState().lapTimes[0]).toBeCloseTo(89.9, 3);
   });
 
   it('should handle multiple cars with outliers', () => {
-    // First call: should use lap times directly
+    // First call: baseline (not added to history)
     useLapTimesStore.getState().updateLapTimes([90.5, 91.2], 1);
-    expect(useLapTimesStore.getState().lapTimes[0]).toBeCloseTo(90.5, 3);
-    expect(useLapTimesStore.getState().lapTimes[1]).toBeCloseTo(91.2, 3);
 
     // Add some lap times including outliers
-    useLapTimesStore.getState().updateLapTimes([89.8, 120.0], 1); // 120.0 is an outlier
+    useLapTimesStore.getState().updateLapTimes([89.8, 120.0], 1);
     useLapTimesStore.getState().updateLapTimes([90.2, 91.0], 1);
     useLapTimesStore.getState().updateLapTimes([89.9, 91.1], 1);
     useLapTimesStore.getState().updateLapTimes([90.1, 91.3], 1);
 
-    // Car 1: After filtering, we have [89.8, 89.9, 90.1, 90.2, 90.5]
-    // With 5 values, median is the middle value: 90.1
-    // Car 2: After filtering, we have [91.0, 91.1, 91.2, 91.3]
-    // Median is (91.1 + 91.2) / 2 = 91.15
-    expect(useLapTimesStore.getState().lapTimes[0]).toBeCloseTo(90.1, 3);
-    expect(useLapTimesStore.getState().lapTimes[1]).toBeCloseTo(91.15, 3);
+    // Car 1 history: [89.8, 90.2, 89.9, 90.1]
+    // After filtering: [89.8, 89.9, 90.1, 90.2] → median (89.9 + 90.1)/2 = 90.0
+    // Car 2 history: [120.0, 91.0, 91.1, 91.3]
+    // After filtering: [91.0, 91.1, 91.3] → median 91.1
+    expect(useLapTimesStore.getState().lapTimes[0]).toBeCloseTo(90.0, 3);
+    expect(useLapTimesStore.getState().lapTimes[1]).toBeCloseTo(91.1, 3);
   });
 
   it('should handle multiple outliers in sequence', () => {
-    // First call: should use lap time directly
+    // First call: baseline
     useLapTimesStore.getState().updateLapTimes([90.5], 1);
 
     // Add a series of laps with multiple outliers
-    const lapTimes = [120.0, 90.2, 150.0, 89.9, 90.1]; // Two outliers: 120.0 and 150.0
+    const lapTimes = [120.0, 90.2, 150.0, 89.9, 90.1]; // Two outliers
     lapTimes.forEach((time) => {
       useLapTimesStore.getState().updateLapTimes([time], 1);
     });
 
-    // The pace should be the median of the non-outlier times
-    // After filtering outliers, we have [89.9, 90.1, 90.2, 90.5]
-    // The median of these values is (90.1 + 90.2) / 2 = 90.15
+    // History: [120.0, 90.2, 150.0, 89.9, 90.1]
+    // After filtering outliers (150.0 removed): [120.0, 90.2, 89.9, 90.1]
+    // Sorted: [89.9, 90.1, 90.2, 120.0], median = (90.1 + 90.2) / 2 = 90.15
     expect(useLapTimesStore.getState().lapTimes[0]).toBeCloseTo(90.15, 3);
   });
 
   it('should handle rapid lap time changes', () => {
-    // First call: should use lap time directly
+    // First call: baseline
     useLapTimesStore.getState().updateLapTimes([90.5], 1);
 
     // Add a series of laps with rapid changes
@@ -107,7 +122,9 @@ describe('LapTimesStore', () => {
       useLapTimesStore.getState().updateLapTimes([time], 1);
     });
 
-    // With OUTLIER_THRESHOLD = 1.0, the filtered values are [89.0, 89.5], so the median is 89.25
+    // History: [89.0, 92.0, 88.5, 91.5, 89.5]
+    // With OUTLIER_THRESHOLD = 1.0, the filtered values are [89.0, 89.5]
+    // Median: (89.0 + 89.5) / 2 = 89.25
     expect(useLapTimesStore.getState().lapTimes[0]).toBeCloseTo(89.25, 3);
   });
 
@@ -117,8 +134,8 @@ describe('LapTimesStore', () => {
     useLapTimesStore.getState().updateLapTimes([89.8], 1);
     useLapTimesStore.getState().updateLapTimes([90.2], 1);
 
-    // Median of [89.8, 90.2, 90.5] is 90.2 (middle value)
-    expect(useLapTimesStore.getState().lapTimes[0]).toBeCloseTo(90.2, 3);
+    // History: [89.8, 90.2], median = 90.0
+    expect(useLapTimesStore.getState().lapTimes[0]).toBeCloseTo(90.0, 3);
     expect(useLapTimesStore.getState().sessionNum).toBe(1);
 
     // Session changes to 2 - should auto-reset
@@ -129,23 +146,42 @@ describe('LapTimesStore', () => {
     expect(useLapTimesStore.getState().lapTimeBuffer).toBeNull();
   });
 
+  it('should not record stale data after session change', () => {
+    // Session 1: build up some history
+    useLapTimesStore.getState().updateLapTimes([90.5], 1);
+    useLapTimesStore.getState().updateLapTimes([89.8], 1);
+
+    // Session changes to 2 - resets
+    useLapTimesStore.getState().updateLapTimes([89.8], 2);
+
+    // Next call still has stale 89.8 from session 1 - should be baseline only
+    useLapTimesStore.getState().updateLapTimes([89.8], 2);
+    expect(
+      useLapTimesStore.getState().lapTimeBuffer?.lapTimeHistory[0]
+    ).toEqual([]);
+
+    // Only when a genuinely new lap time appears should it be recorded
+    useLapTimesStore.getState().updateLapTimes([91.0], 2);
+    expect(useLapTimesStore.getState().lapTimes[0]).toBeCloseTo(91.0, 3);
+  });
+
   it('should not reset on first session', () => {
-    // First update with sessionNum
+    // First update with sessionNum - baseline only
     useLapTimesStore.getState().updateLapTimes([90.5], 1);
 
-    expect(useLapTimesStore.getState().lapTimes[0]).toBeCloseTo(90.5, 3);
+    // Buffer should exist with baseline
+    expect(useLapTimesStore.getState().lapTimeBuffer).not.toBeNull();
     expect(useLapTimesStore.getState().sessionNum).toBe(1);
   });
 
   it('should handle null sessionNum gracefully', () => {
     useLapTimesStore.getState().updateLapTimes([90.5], null);
-    expect(useLapTimesStore.getState().lapTimes[0]).toBeCloseTo(90.5, 3);
     expect(useLapTimesStore.getState().sessionNum).toBeNull();
 
     // Switching from null to a number should not trigger reset
     useLapTimesStore.getState().updateLapTimes([89.8], 1);
-    // Median of [89.8, 90.5] is (89.8 + 90.5) / 2 = 90.15
-    expect(useLapTimesStore.getState().lapTimes[0]).toBeCloseTo(90.15, 3);
+    // 89.8 is different from baseline 90.5, so it gets recorded
+    expect(useLapTimesStore.getState().lapTimes[0]).toBeCloseTo(89.8, 3);
     expect(useLapTimesStore.getState().sessionNum).toBe(1);
   });
 });
