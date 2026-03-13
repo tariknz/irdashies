@@ -51,6 +51,8 @@ describe('PitlaneHelper', () => {
     speedBarOrientation: 'vertical' as const,
     showProgressBar: true,
     showSpeedBar: true,
+    showSpeedSummary: true,
+    speedLimitStyle: 'european' as const,
     showPastPitBox: false,
     background: { opacity: 80 },
     showPitExitInputs: false,
@@ -379,7 +381,7 @@ describe('PitlaneHelper', () => {
       // Delta and unit are in separate elements
       expect(getByText('-5.0')).toBeInTheDocument();
       expect(getByText('km/h')).toBeInTheDocument();
-      expect(getByText('lim 72')).toBeInTheDocument();
+      expect(getByText('72')).toBeInTheDocument();
     });
 
     it('displays speed delta in mph when limitMph > limitKph', () => {
@@ -401,7 +403,7 @@ describe('PitlaneHelper', () => {
       // Delta and unit are in separate elements
       expect(getByText('-5.0')).toBeInTheDocument();
       expect(getByText('mph')).toBeInTheDocument();
-      expect(getByText('lim 72')).toBeInTheDocument();
+      expect(getByText('72')).toBeInTheDocument();
     });
 
     it('shows green color when under speed limit', () => {

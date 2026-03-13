@@ -861,6 +861,9 @@ export const defaultDashboard: {
         enableEarlyPitboxWarning: true,
         earlyPitboxThreshold: 75,
         showPitlaneTraffic: true,
+        showPastPitBox: false,
+        showSpeedSummary: true,
+        speedLimitStyle: 'text',
         background: { opacity: 80 },
         sessionVisibility: {
           race: true,
