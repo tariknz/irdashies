@@ -73,7 +73,6 @@ const normalizeConfig = (config: Partial<TachometerWidgetSettings['config']>): T
  * Custom shift points configuration section
  */
 const CustomShiftPointsSection = ({ config, handleConfigChange }: { config: TachometerWidgetSettings['config'], handleConfigChange: (changes: Partial<TachometerWidgetSettings['config']>) => void }) => {
-  const [expanded, setExpanded] = useState(false);
   const [expandedCarId, setExpandedCarId] = useState<string | null>(null);
   const [availableCars, setAvailableCars] = useState<CarListItem[]>([]);
   const [selectedCarId, setSelectedCarId] = useState('');
@@ -99,7 +98,7 @@ const CustomShiftPointsSection = ({ config, handleConfigChange }: { config: Tach
 
   useEffect(() => {
     const loadAvailableCars = () => {
-      if (!expanded || availableCars.length > 0) return;
+      if (!customShiftPoints.enabled || availableCars.length > 0) return;
       
       setLoading(true);
       try {
@@ -123,7 +122,7 @@ const CustomShiftPointsSection = ({ config, handleConfigChange }: { config: Tach
     };
 
     loadAvailableCars();
-  }, [expanded, availableCars.length]);
+  }, [customShiftPoints.enabled, availableCars.length]);
 
   const addCar = async () => {
     const selectedCar = availableCars.find(c => c.carId === selectedCarId);
@@ -236,25 +235,20 @@ const CustomShiftPointsSection = ({ config, handleConfigChange }: { config: Tach
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <button
-          onClick={() => setExpanded(!expanded)}
-          className="text-sm text-slate-300 hover:text-white transition-colors flex items-center gap-2"
-        >
-          <span>{expanded ? '▼' : '▶'}</span>
-          <span>Custom Shift Points</span>
-          {configuredCars.length > 0 && (
-            <span className="text-xs text-slate-500">({configuredCars.length} cars)</span>
-          )}
-        </button>
-        <ToggleSwitch
-          enabled={customShiftPoints.enabled}
-          onToggle={(enabled) => updateCustomShiftPoints({ enabled })}
-        />
-      </div>
 
-      {expanded && (
-        <div className="ml-4 space-y-4 border-l-2 border-slate-700 pl-4">
+      <SettingToggleRow
+        title="Enable Custom Shift Points"
+        description="If enabled, custom shift points will be displayed on the tachometer"
+        enabled={customShiftPoints.enabled ?? false}
+        onToggle={(enabled) => updateCustomShiftPoints({ enabled })}
+      />
+      
+      {configuredCars.length > 0 && (
+        <div className="text-md text-slate-300">({configuredCars.length} cars)</div>
+      )}
+
+      {customShiftPoints.enabled && (
+        <div className="space-y-4 border-slate-700 pl-4">
           {/* Demo Mode Info */}
           <div className="bg-blue-900/30 border border-blue-700/50 rounded p-3 text-xs">
             <div className="flex items-start gap-2">
@@ -406,7 +400,7 @@ export const TachometerSettings = () => {
 
   // Tab state with persistence
   const [activeTab, setActiveTab] = useState<SettingsTabType>(
-    () => (localStorage.getItem('tachometerTab') as SettingsTabType) || 'options'
+    () => (localStorage.getItem('tachometerTab') as SettingsTabType) || 'display'
   );
 
   useEffect(() => {
@@ -432,11 +426,18 @@ export const TachometerSettings = () => {
           {/* Tabs */}
           <div className="flex border-b border-slate-700/50">
             <TabButton
+              id="display"
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+            >
+              Display
+            </TabButton>
+            <TabButton
               id="options"
               activeTab={activeTab}
               setActiveTab={setActiveTab}
             >
-              Options
+              Custom Shift Points
             </TabButton>
             <TabButton
               id="visibility"
@@ -447,8 +448,8 @@ export const TachometerSettings = () => {
             </TabButton>
           </div>
 
-          {/* OPTIONS TAB */}
-          {activeTab === 'options' && (   
+          {/* DISPLAY TAB */}
+          {activeTab === 'display' && (   
           <SettingsSection title="Options">
 
               <SettingSliderRow
@@ -491,13 +492,18 @@ export const TachometerSettings = () => {
                 </SettingsSection>
               )}
 
-              <CustomShiftPointsSection
+          </SettingsSection>  
+          )}    
+
+          {/* OPTIONS TAB */}
+          {activeTab === 'options' && (   
+            <SettingsSection title="Custom Shift Points">
+                <CustomShiftPointsSection
                 config={config}
                 handleConfigChange={handleConfigChange}
               />
-
-          </SettingsSection>  
-          )}         
+            </SettingsSection>  
+            )}     
 
           {/* VISIBILITY TAB */}
           {activeTab === 'visibility' && (
