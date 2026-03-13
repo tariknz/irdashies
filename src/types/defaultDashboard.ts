@@ -780,6 +780,8 @@ export const defaultDashboard: {
           opacity: 30,
         },
         width: 20,
+        borderSize: 1,
+        indicatorColor: 16096779,
         sessionVisibility: {
           race: true,
           loneQualify: true,

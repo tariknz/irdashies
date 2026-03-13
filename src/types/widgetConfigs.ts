@@ -354,6 +354,8 @@ export interface BlindSpotMonitorConfig {
   distAhead: number;
   distBehind: number;
   width?: number;
+  borderSize?: number;
+  indicatorColor?: number;
   sessionVisibility: SessionVisibilitySettings;
 }
 
