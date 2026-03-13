@@ -183,4 +183,6 @@ export const CAR_ID_TO_CAR_MANUFACTURER: Record<number, { name: string; manufact
   206: { name: 'Aston Martin Vantage GT3 EVO', manufacturer: 'astonmartin' },
   207: { name: 'FIA Cross Car', manufacturer: 'fia' },
   208: { name: 'Porsche 911 Cup (992.2)', manufacturer: 'porsche' },
+  210: { name: 'Audi RS3 LMS Gen2 TCR', manufacturer: 'audi' },
+  211: { name: 'NASCAR Truck RAM 1500 TRX', manufacturer: 'unknown' },
 };
