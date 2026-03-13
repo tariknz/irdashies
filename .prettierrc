@@ -1,5 +1,13 @@
 {
   "printWidth": 80,
   "singleQuote": true,
-  "trailingComma": "es5"
+  "trailingComma": "es5",
+  "overrides": [
+    {
+      "files": "src/frontend/components/Standings/components/CarManufacturer/carManufacturerMapping.ts",
+      "options": {
+        "printWidth": 160
+      }
+    }
+  ]
 }
