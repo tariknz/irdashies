@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import {
   useSessionVisibility,
   useTelemetryValue,
@@ -270,7 +270,7 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
       const isHorizontalBox = node.direction === 'row';
       return (
         <div
-          className="flex-1 flex flex-col min-h-[50px] justify-center w-full"
+          className="flex-1 flex flex-col w-full"
           style={{ flexGrow: node.weight || 1 }}
         >
           <div
@@ -280,7 +280,7 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
               <div
                 key={widgetId}
                 data-widget-id={widgetId}
-                className="flex-1 min-w-0 flex flex-col justify-center w-full"
+                className="flex-1 min-w-0 flex flex-col w-full"
               >
                 {renderWidget(widgetId)}
               </div>
@@ -315,40 +315,34 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
         : '#22c55e'
     : 'rgba(71, 85, 105, 0.4)'; // Neutral inactive border
 
-  const shadowColorValue = showFuelStatusBorder
-    ? currentFuelStatus === 'caution'
+  const shadowColorValue =
+    currentFuelStatus === 'caution'
       ? 'rgba(249, 115, 22, 0.3)'
       : currentFuelStatus === 'danger'
         ? 'rgba(239, 68, 68, 0.3)'
-        : 'rgba(34, 197, 94, 0.3)'
-    : 'none';
+        : 'rgba(34, 197, 94, 0.3)';
 
-  const backgroundStyle: React.CSSProperties = {
-    fontFamily:
-      "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-  };
+  const borderWidth = derivedCompactMode ? '' : 'border-2';
+  const paddingClass = derivedCompactMode ? '' : 'p-2';
 
   return (
     <div
-      className="relative w-full h-full overflow-hidden rounded-sm"
+      className={`relative w-full flex flex-col ${borderWidth} box-border transition-colors duration-500 rounded-sm bg-slate-800/(--bg-opacity) overflow-hidden ${paddingClass}`}
       style={{
-        ...backgroundStyle,
+        fontFamily:
+          "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+        ['--bg-opacity' as string]: `${settings?.background?.opacity ?? 0}%`,
+        borderColor: borderColorValue,
+        boxShadow: showFuelStatusBorder
+          ? `0 0 15px ${shadowColorValue} inset`
+          : 'none',
       }}
     >
-      <div
-        className={`border-2 w-full h-full flex flex-col box-border px-3 transition-colors duration-500 rounded-sm bg-slate-800/(--bg-opacity)`}
-        style={{
-          ['--bg-opacity' as string]: `${settings?.background?.opacity ?? 95}%`,
-          borderColor: borderColorValue,
-          boxShadow: `0 0 15px ${shadowColorValue} inset`,
-        }}
-      >
-        {layoutTree ? (
-          <RecursiveWidgetRenderer node={layoutTree} />
-        ) : (
-          <div className="text-red-500">Layout Error</div>
-        )}
-      </div>
+      {layoutTree ? (
+        <RecursiveWidgetRenderer node={layoutTree} />
+      ) : (
+        <div className="text-red-500">Layout Error</div>
+      )}
     </div>
   );
 };
