@@ -1,10 +1,30 @@
 import { Meta, StoryObj } from '@storybook/react-vite';
-import { BlindSpotMonitorDisplay } from './BlindSpotMonitor';
+import {
+  BlindSpotMonitorDisplay,
+  BlindSpotMonitorDisplayProps,
+} from './BlindSpotMonitor';
 import { useEffect, useState } from 'react';
 import { CarLeftRight } from '@irdashies/types';
 
+type BlindSpotMonitorStoryProps = Omit<
+  BlindSpotMonitorDisplayProps,
+  'indicatorColor'
+> & { indicatorColor?: string };
+
+const BlindSpotMonitorDisplayStory = ({
+  indicatorColor,
+  ...props
+}: BlindSpotMonitorStoryProps) => (
+  <BlindSpotMonitorDisplay
+    {...props}
+    indicatorColor={
+      indicatorColor ? parseInt(indicatorColor.replace('#', ''), 16) : undefined
+    }
+  />
+);
+
 export default {
-  component: BlindSpotMonitorDisplay,
+  component: BlindSpotMonitorDisplayStory,
   title: 'widgets/BlindSpotMonitor',
   decorators: [
     (Story) => (
@@ -48,10 +68,19 @@ export default {
     bgOpacity: {
       control: { type: 'range', min: 0, max: 100, step: 5 },
     },
+    width: {
+      control: { type: 'range', min: 5, max: 100, step: 1 },
+    },
+    borderSize: {
+      control: { type: 'range', min: 0, max: 10, step: 1 },
+    },
+    indicatorColor: {
+      control: { type: 'color' },
+    },
   },
-} as Meta<typeof BlindSpotMonitorDisplay>;
+} as Meta<typeof BlindSpotMonitorDisplayStory>;
 
-type Story = StoryObj<typeof BlindSpotMonitorDisplay>;
+type Story = StoryObj<typeof BlindSpotMonitorDisplayStory>;
 
 export const Primary: Story = {
   args: {
@@ -61,6 +90,9 @@ export const Primary: Story = {
     leftPercent: 0,
     rightPercent: 0,
     bgOpacity: 30,
+    width: 20,
+    borderSize: 1,
+    indicatorColor: '#f5a623',
   },
 };
 
@@ -152,7 +184,12 @@ export const TwoCarsOnRight: Story = {
   },
 };
 
-const CarPassingAnimation = () => {
+type AnimationProps = Pick<
+  BlindSpotMonitorDisplayProps,
+  'width' | 'borderSize' | 'bgOpacity' | 'indicatorColor'
+>;
+
+const CarPassingAnimation = (props: AnimationProps) => {
   const [leftPercent, setLeftPercent] = useState(-1.0);
 
   useEffect(() => {
@@ -180,12 +217,12 @@ const CarPassingAnimation = () => {
       leftPercent={leftPercent}
       rightPercent={0}
       disableTransition={false}
-      bgOpacity={30}
+      {...props}
     />
   );
 };
 
-const CarPassingFromBehindRightAnimation = () => {
+const CarPassingFromBehindRightAnimation = (props: AnimationProps) => {
   const [rightPercent, setRightPercent] = useState(-1.0);
 
   useEffect(() => {
@@ -213,12 +250,12 @@ const CarPassingFromBehindRightAnimation = () => {
       leftPercent={0}
       rightPercent={rightPercent}
       disableTransition={false}
-      bgOpacity={30}
+      {...props}
     />
   );
 };
 
-const YouPassingCarOnLeftAnimation = () => {
+const YouPassingCarOnLeftAnimation = (props: AnimationProps) => {
   const [leftPercent, setLeftPercent] = useState(1.0);
 
   useEffect(() => {
@@ -246,12 +283,12 @@ const YouPassingCarOnLeftAnimation = () => {
       leftPercent={leftPercent}
       rightPercent={0}
       disableTransition={false}
-      bgOpacity={30}
+      {...props}
     />
   );
 };
 
-const YouPassingCarOnRightAnimation = () => {
+const YouPassingCarOnRightAnimation = (props: AnimationProps) => {
   const [rightPercent, setRightPercent] = useState(1.0);
 
   useEffect(() => {
@@ -279,12 +316,12 @@ const YouPassingCarOnRightAnimation = () => {
       leftPercent={0}
       rightPercent={rightPercent}
       disableTransition={false}
-      bgOpacity={30}
+      {...props}
     />
   );
 };
 
-const CarsPassingBothSidesAnimation = () => {
+const CarsPassingBothSidesAnimation = (props: AnimationProps) => {
   const [leftPercent, setLeftPercent] = useState(-1.0);
   const [rightPercent, setRightPercent] = useState(-1.0);
 
@@ -323,27 +360,52 @@ const CarsPassingBothSidesAnimation = () => {
       leftPercent={leftPercent}
       rightPercent={rightPercent}
       disableTransition={false}
-      bgOpacity={30}
+      {...props}
     />
   );
 };
 
+const toAnimationProps = (
+  args: BlindSpotMonitorStoryProps
+): AnimationProps => ({
+  width: args.width,
+  borderSize: args.borderSize,
+  bgOpacity: args.bgOpacity,
+  indicatorColor: args.indicatorColor
+    ? parseInt(args.indicatorColor.replace('#', ''), 16)
+    : undefined,
+});
+
 export const CarPassingFromBehindLeft: Story = {
-  render: () => <CarPassingAnimation />,
+  render: (args) => <CarPassingAnimation {...toAnimationProps(args)} />,
 };
 
 export const CarPassingFromBehindRight: Story = {
-  render: () => <CarPassingFromBehindRightAnimation />,
+  render: (args) => (
+    <CarPassingFromBehindRightAnimation {...toAnimationProps(args)} />
+  ),
 };
 
 export const YouPassingCarOnLeft: Story = {
-  render: () => <YouPassingCarOnLeftAnimation />,
+  render: (args) => (
+    <YouPassingCarOnLeftAnimation {...toAnimationProps(args)} />
+  ),
 };
 
 export const YouPassingCarOnRight: Story = {
-  render: () => <YouPassingCarOnRightAnimation />,
+  render: (args) => (
+    <YouPassingCarOnRightAnimation {...toAnimationProps(args)} />
+  ),
 };
 
 export const CarsPassingBothSides: Story = {
-  render: () => <CarsPassingBothSidesAnimation />,
+  args: {
+    width: 61,
+    borderSize: 3,
+    indicatorColor: '#d700ff',
+  },
+
+  render: (args) => (
+    <CarsPassingBothSidesAnimation {...toAnimationProps(args)} />
+  ),
 };
