@@ -479,302 +479,300 @@ export const DriverTagsSettings = () => {
           </div>
         </div>
 
-        {((settings.groups ?? []).length > 0 || pendingNewGroup) && (
-          <div className="space-y-4 pt-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg">Custom Groups</h3>
-              <button
-                onClick={addGroup}
-                className="px-3 py-1 bg-blue-600 rounded"
-              >
-                Add Group
-              </button>
-            </div>
-            <div className="pt-3 ps-4">
-              <div className="flex flex-col gap-2">
-                {[
-                  ...(settings.groups ?? []),
-                  ...(pendingNewGroup
-                    ? [{ id: pendingNewGroup.id, name: '', color: 0xff0000 }]
-                    : []),
-                ].map((g) => (
-                  <div
-                    key={g.id}
-                    className="inline-flex items-center gap-3 px-2 py-2 min-h-12 rounded bg-slate-700 text-sm text-slate-100"
-                  >
-                    {editingGroupId === g.id ? (
-                      <div className="flex items-center justify-between w-full">
-                        <input
-                          value={editingGroupName}
-                          onChange={(e) => setEditingGroupName(e.target.value)}
-                          placeholder="Group Name"
-                          className="px-2 py-1 bg-slate-600 rounded text-sm"
-                        />
-                        {settings.display?.displayStyle === 'tag' ? (
-                          <>
-                            <input
-                              type="color"
-                              value={
-                                editingGroupColor != null
-                                  ? `#${(editingGroupColor & 0xffffff).toString(16).padStart(6, '0')}`
-                                  : '#ff0000'
-                              }
-                              onChange={(e) =>
-                                setEditingGroupColor(
-                                  parseInt(e.target.value.replace('#', ''), 16)
-                                )
-                              }
-                              className="w-10 h-6 p-0 border-0 rounded cursor-pointer"
-                            />
-                            <span
-                              style={{
-                                display: 'inline-block',
-                                width: 20,
-                                height: 20,
-                                borderRadius: 6,
-                                background:
-                                  editingGroupColor != null
-                                    ? `#${(editingGroupColor & 0xffffff).toString(16).padStart(6, '0')}`
-                                    : '#ff0000',
-                              }}
-                            />
-                          </>
-                        ) : (
-                          <>
-                            <div className="flex gap-1">
-                              <button
-                                onClick={() => {
-                                  setEditingGroupIconMode('name');
-                                  if (
-                                    typeof editingGroupIcon === 'string' &&
-                                    editingGroupIcon.startsWith('data:')
-                                  )
-                                    setEditingGroupIcon(undefined);
-                                }}
-                                className={`px-2 py-0.5 rounded text-xs ${editingGroupIconMode === 'name' ? 'bg-sky-600 text-white' : 'bg-slate-600 text-slate-300'}`}
-                              >
-                                Icon
-                              </button>
-                              <button
-                                onClick={() => {
-                                  setEditingGroupIconMode('image');
-                                  if (
-                                    typeof editingGroupIcon === 'string' &&
-                                    !editingGroupIcon.startsWith('data:')
-                                  )
-                                    setEditingGroupIcon(undefined);
-                                }}
-                                className={`px-2 py-0.5 rounded text-xs ${editingGroupIconMode === 'image' ? 'bg-sky-600 text-white' : 'bg-slate-600 text-slate-300'}`}
-                              >
-                                Custom Image
-                              </button>
-                            </div>
-                            {editingGroupIconMode === 'name' ? (
-                              <>
-                                <IconPicker
-                                  value={
-                                    typeof editingGroupIcon === 'string' &&
-                                    !editingGroupIcon.startsWith('data:')
-                                      ? editingGroupIcon || undefined
-                                      : undefined
-                                  }
-                                  onChange={(iconName) =>
-                                    setEditingGroupIcon(iconName)
-                                  }
-                                  color={editingGroupColor}
-                                  weight={settings.display?.iconWeight}
-                                />
-                                <input
-                                  type="color"
-                                  value={`#${((editingGroupColor ?? 0xffffff) & 0xffffff).toString(16).padStart(6, '0')}`}
-                                  onChange={(e) =>
-                                    setEditingGroupColor(
-                                      parseInt(
-                                        e.target.value.replace('#', ''),
-                                        16
-                                      )
-                                    )
-                                  }
-                                  className="w-10 h-6 p-0 border-0 rounded cursor-pointer"
-                                />
-                              </>
-                            ) : (
-                              <>
-                                <input
-                                  ref={(el) => {
-                                    fileInputRef.current = el;
-                                  }}
-                                  type="file"
-                                  accept="image/*"
-                                  onChange={(e) => {
-                                    const f = e.target.files?.[0];
-                                    if (!f) return;
-                                    const reader = new FileReader();
-                                    reader.onload = () =>
-                                      setEditingGroupIcon(
-                                        reader.result as string
-                                      );
-                                    reader.readAsDataURL(f);
-                                  }}
-                                  className="hidden"
-                                />
-                                <button
-                                  onClick={() => fileInputRef.current?.click()}
-                                  className="flex items-center justify-center px-2 h-[28px] bg-slate-600 hover:bg-slate-500 rounded text-xs min-w-[150px]"
-                                >
-                                  Select an Image
-                                </button>
-                                {typeof editingGroupIcon === 'string' &&
-                                  editingGroupIcon.startsWith('data:') && (
-                                    <div style={{ width: 24, height: 24 }}>
-                                      <img
-                                        src={editingGroupIcon}
-                                        alt="preview"
-                                        className="object-contain"
-                                      />
-                                    </div>
-                                  )}
-                              </>
-                            )}
-                          </>
-                        )}
-                        <div className="flex gap-2">
-                          <button
-                            disabled={!editingGroupName.trim()}
-                            onClick={() => {
-                              const iconToSave =
-                                editingGroupIconMode === 'image'
-                                  ? typeof editingGroupIcon === 'string' &&
-                                    editingGroupIcon.startsWith('data:')
-                                    ? editingGroupIcon
-                                    : undefined
-                                  : typeof editingGroupIcon === 'string' &&
-                                      editingGroupIcon.trim()
-                                    ? editingGroupIcon.trim()
-                                    : undefined;
-                              if (pendingNewGroup?.id === g.id) {
-                                updateDashboard({
-                                  ...settings,
-                                  groups: [
-                                    ...(settings.groups ?? []),
-                                    {
-                                      id: g.id,
-                                      name: editingGroupName,
-                                      color: editingGroupColor ?? 0xff0000,
-                                      icon: iconToSave,
-                                    },
-                                  ],
-                                });
-                                setPendingNewGroup(null);
-                              } else {
-                                updateGroup(g.id, {
-                                  name: editingGroupName,
-                                  icon: iconToSave,
-                                  color: editingGroupColor,
-                                });
-                              }
-                              setEditingGroupId(null);
-                              setEditingGroupIcon(undefined);
-                              setEditingGroupColor(undefined);
-                            }}
-                            className="px-2 py-1 bg-sky-600 rounded text-xs disabled:opacity-40 disabled:cursor-not-allowed"
-                          >
-                            Save
-                          </button>
-                          <button
-                            onClick={() => {
-                              if (pendingNewGroup?.id === g.id) {
-                                setPendingNewGroup(null);
-                              }
-                              setEditingGroupId(null);
-                              setEditingGroupIcon(undefined);
-                              setEditingGroupColor(undefined);
-                            }}
-                            className="px-2 py-1 bg-slate-600 rounded text-xs"
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <>
-                        {settings.display?.displayStyle === 'tag' ? (
+        <div className="space-y-4 pt-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg">Custom Groups</h3>
+            <button
+              onClick={addGroup}
+              className="px-3 py-1 bg-blue-600 rounded"
+            >
+              Add Group
+            </button>
+          </div>
+          <div className="pt-3 ps-4">
+            <div className="flex flex-col gap-2">
+              {[
+                ...(settings.groups ?? []),
+                ...(pendingNewGroup
+                  ? [{ id: pendingNewGroup.id, name: '', color: 0xff0000 }]
+                  : []),
+              ].map((g) => (
+                <div
+                  key={g.id}
+                  className="inline-flex items-center gap-3 px-2 py-2 min-h-12 rounded bg-slate-700 text-sm text-slate-100"
+                >
+                  {editingGroupId === g.id ? (
+                    <div className="flex items-center justify-between w-full">
+                      <input
+                        value={editingGroupName}
+                        onChange={(e) => setEditingGroupName(e.target.value)}
+                        placeholder="Group Name"
+                        className="px-2 py-1 bg-slate-600 rounded text-sm"
+                      />
+                      {settings.display?.displayStyle === 'tag' ? (
+                        <>
+                          <input
+                            type="color"
+                            value={
+                              editingGroupColor != null
+                                ? `#${(editingGroupColor & 0xffffff).toString(16).padStart(6, '0')}`
+                                : '#ff0000'
+                            }
+                            onChange={(e) =>
+                              setEditingGroupColor(
+                                parseInt(e.target.value.replace('#', ''), 16)
+                              )
+                            }
+                            className="w-10 h-6 p-0 border-0 rounded cursor-pointer"
+                          />
                           <span
                             style={{
                               display: 'inline-block',
-                              width: 16,
-                              height: 16,
+                              width: 20,
+                              height: 20,
                               borderRadius: 6,
-                              background: g.color
-                                ? `#${(g.color & 0xffffff).toString(16).padStart(6, '0')}`
-                                : '#888',
+                              background:
+                                editingGroupColor != null
+                                  ? `#${(editingGroupColor & 0xffffff).toString(16).padStart(6, '0')}`
+                                  : '#ff0000',
                             }}
                           />
-                        ) : g.icon &&
-                          typeof g.icon === 'string' &&
-                          g.icon.startsWith('data:') ? (
-                          <span
-                            className="inline-flex items-center justify-center w-8 h-8 text-xl leading-none"
-                            aria-hidden="true"
-                          >
-                            <div style={{ width: 24, height: 24 }}>
-                              <img
-                                src={g.icon}
-                                alt={g.name}
-                                className="object-contain"
+                        </>
+                      ) : (
+                        <>
+                          <div className="flex gap-1">
+                            <button
+                              onClick={() => {
+                                setEditingGroupIconMode('name');
+                                if (
+                                  typeof editingGroupIcon === 'string' &&
+                                  editingGroupIcon.startsWith('data:')
+                                )
+                                  setEditingGroupIcon(undefined);
+                              }}
+                              className={`px-2 py-0.5 rounded text-xs ${editingGroupIconMode === 'name' ? 'bg-sky-600 text-white' : 'bg-slate-600 text-slate-300'}`}
+                            >
+                              Icon
+                            </button>
+                            <button
+                              onClick={() => {
+                                setEditingGroupIconMode('image');
+                                if (
+                                  typeof editingGroupIcon === 'string' &&
+                                  !editingGroupIcon.startsWith('data:')
+                                )
+                                  setEditingGroupIcon(undefined);
+                              }}
+                              className={`px-2 py-0.5 rounded text-xs ${editingGroupIconMode === 'image' ? 'bg-sky-600 text-white' : 'bg-slate-600 text-slate-300'}`}
+                            >
+                              Custom Image
+                            </button>
+                          </div>
+                          {editingGroupIconMode === 'name' ? (
+                            <>
+                              <IconPicker
+                                value={
+                                  typeof editingGroupIcon === 'string' &&
+                                  !editingGroupIcon.startsWith('data:')
+                                    ? editingGroupIcon || undefined
+                                    : undefined
+                                }
+                                onChange={(iconName) =>
+                                  setEditingGroupIcon(iconName)
+                                }
+                                color={editingGroupColor}
+                                weight={settings.display?.iconWeight}
                               />
-                            </div>
-                          </span>
-                        ) : (
-                          <span
-                            className="inline-flex items-center justify-center w-8 h-8 text-xl leading-none"
-                            aria-hidden="true"
-                          >
-                            {renderIcon(
-                              g.icon,
-                              24,
-                              undefined,
-                              g.color,
-                              undefined,
-                              undefined,
-                              settings.display?.iconWeight
-                            )}
-                          </span>
-                        )}
-                        <span className="whitespace-nowrap">{g.name}</span>
-                        <div className="ml-auto flex-none inline-flex items-center gap-2">
-                          <button
-                            onClick={() => {
-                              setEditingGroupId(g.id);
-                              setEditingGroupName(g.name);
-                              setEditingGroupIcon(g.icon);
-                              setEditingGroupColor(g.color);
-                              setEditingGroupIconMode(
-                                typeof g.icon === 'string' &&
-                                  g.icon.startsWith('data:')
-                                  ? 'image'
-                                  : 'name'
-                              );
-                            }}
-                            className="flex-none w-auto px-2 py-0.5 text-xs text-slate-300"
-                          >
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => removeGroup(g.id)}
-                            className="flex-none w-auto px-2 py-0.5 text-xs text-red-400"
-                          >
-                            Delete
-                          </button>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                ))}
-              </div>
+                              <input
+                                type="color"
+                                value={`#${((editingGroupColor ?? 0xffffff) & 0xffffff).toString(16).padStart(6, '0')}`}
+                                onChange={(e) =>
+                                  setEditingGroupColor(
+                                    parseInt(
+                                      e.target.value.replace('#', ''),
+                                      16
+                                    )
+                                  )
+                                }
+                                className="w-10 h-6 p-0 border-0 rounded cursor-pointer"
+                              />
+                            </>
+                          ) : (
+                            <>
+                              <input
+                                ref={(el) => {
+                                  fileInputRef.current = el;
+                                }}
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => {
+                                  const f = e.target.files?.[0];
+                                  if (!f) return;
+                                  const reader = new FileReader();
+                                  reader.onload = () =>
+                                    setEditingGroupIcon(
+                                      reader.result as string
+                                    );
+                                  reader.readAsDataURL(f);
+                                }}
+                                className="hidden"
+                              />
+                              <button
+                                onClick={() => fileInputRef.current?.click()}
+                                className="flex items-center justify-center px-2 h-[28px] bg-slate-600 hover:bg-slate-500 rounded text-xs min-w-[150px]"
+                              >
+                                Select an Image
+                              </button>
+                              {typeof editingGroupIcon === 'string' &&
+                                editingGroupIcon.startsWith('data:') && (
+                                  <div style={{ width: 24, height: 24 }}>
+                                    <img
+                                      src={editingGroupIcon}
+                                      alt="preview"
+                                      className="object-contain"
+                                    />
+                                  </div>
+                                )}
+                            </>
+                          )}
+                        </>
+                      )}
+                      <div className="flex gap-2">
+                        <button
+                          disabled={!editingGroupName.trim()}
+                          onClick={() => {
+                            const iconToSave =
+                              editingGroupIconMode === 'image'
+                                ? typeof editingGroupIcon === 'string' &&
+                                  editingGroupIcon.startsWith('data:')
+                                  ? editingGroupIcon
+                                  : undefined
+                                : typeof editingGroupIcon === 'string' &&
+                                    editingGroupIcon.trim()
+                                  ? editingGroupIcon.trim()
+                                  : undefined;
+                            if (pendingNewGroup?.id === g.id) {
+                              updateDashboard({
+                                ...settings,
+                                groups: [
+                                  ...(settings.groups ?? []),
+                                  {
+                                    id: g.id,
+                                    name: editingGroupName,
+                                    color: editingGroupColor ?? 0xff0000,
+                                    icon: iconToSave,
+                                  },
+                                ],
+                              });
+                              setPendingNewGroup(null);
+                            } else {
+                              updateGroup(g.id, {
+                                name: editingGroupName,
+                                icon: iconToSave,
+                                color: editingGroupColor,
+                              });
+                            }
+                            setEditingGroupId(null);
+                            setEditingGroupIcon(undefined);
+                            setEditingGroupColor(undefined);
+                          }}
+                          className="px-2 py-1 bg-sky-600 rounded text-xs disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                          Save
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (pendingNewGroup?.id === g.id) {
+                              setPendingNewGroup(null);
+                            }
+                            setEditingGroupId(null);
+                            setEditingGroupIcon(undefined);
+                            setEditingGroupColor(undefined);
+                          }}
+                          className="px-2 py-1 bg-slate-600 rounded text-xs"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      {settings.display?.displayStyle === 'tag' ? (
+                        <span
+                          style={{
+                            display: 'inline-block',
+                            width: 16,
+                            height: 16,
+                            borderRadius: 6,
+                            background: g.color
+                              ? `#${(g.color & 0xffffff).toString(16).padStart(6, '0')}`
+                              : '#888',
+                          }}
+                        />
+                      ) : g.icon &&
+                        typeof g.icon === 'string' &&
+                        g.icon.startsWith('data:') ? (
+                        <span
+                          className="inline-flex items-center justify-center w-8 h-8 text-xl leading-none"
+                          aria-hidden="true"
+                        >
+                          <div style={{ width: 24, height: 24 }}>
+                            <img
+                              src={g.icon}
+                              alt={g.name}
+                              className="object-contain"
+                            />
+                          </div>
+                        </span>
+                      ) : (
+                        <span
+                          className="inline-flex items-center justify-center w-8 h-8 text-xl leading-none"
+                          aria-hidden="true"
+                        >
+                          {renderIcon(
+                            g.icon,
+                            24,
+                            undefined,
+                            g.color,
+                            undefined,
+                            undefined,
+                            settings.display?.iconWeight
+                          )}
+                        </span>
+                      )}
+                      <span className="whitespace-nowrap">{g.name}</span>
+                      <div className="ml-auto flex-none inline-flex items-center gap-2">
+                        <button
+                          onClick={() => {
+                            setEditingGroupId(g.id);
+                            setEditingGroupName(g.name);
+                            setEditingGroupIcon(g.icon);
+                            setEditingGroupColor(g.color);
+                            setEditingGroupIconMode(
+                              typeof g.icon === 'string' &&
+                                g.icon.startsWith('data:')
+                                ? 'image'
+                                : 'name'
+                            );
+                          }}
+                          className="flex-none w-auto px-2 py-0.5 text-xs text-slate-300"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => removeGroup(g.id)}
+                          className="flex-none w-auto px-2 py-0.5 text-xs text-red-400"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              ))}
             </div>
           </div>
-        )}
+        </div>
 
         {/* Driver assignments */}
         <div className="pt-4">

@@ -2,6 +2,7 @@ import { Link, useLocation } from 'react-router-dom';
 import {
   SlidersHorizontalIcon,
   UsersIcon,
+  TagIcon,
   ScalesIcon,
   WrenchIcon,
   InfoIcon,
@@ -34,7 +35,7 @@ const generalItems: MenuItem[] = [
     to: '/settings/driver-tags',
     path: '/driver-tags',
     label: 'Driver Tags',
-    icon: UsersIcon,
+    icon: TagIcon,
   },
   {
     to: '/settings/car-setup',

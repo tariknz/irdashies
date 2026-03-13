@@ -20,6 +20,5 @@
       "@irdashies/types": ["./src/types"]
     },
     "types": ["vite/client"]
-  },
-  "exclude": ["driver-tags-implementation"]
+  }
 }
