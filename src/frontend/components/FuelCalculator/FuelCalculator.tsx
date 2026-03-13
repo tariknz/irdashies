@@ -313,7 +313,7 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
       : currentFuelStatus === 'danger'
         ? '#ef4444'
         : '#22c55e'
-    : 'rgba(71, 85, 105, 0.4)'; // Neutral inactive border
+    : 'transparent'; // Neutral inactive border
 
   const shadowColorValue =
     currentFuelStatus === 'caution'
