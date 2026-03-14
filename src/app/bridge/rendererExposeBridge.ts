@@ -139,6 +139,12 @@ export function exposeBridge() {
     setAutoStart: (enabled: boolean) => {
       return ipcRenderer.invoke('autostart:set', enabled);
     },
+    getDriverTagSettings: () => {
+      return ipcRenderer.invoke('getDriverTagSettings');
+    },
+    saveDriverTagSettings: (settings: unknown) => {
+      return ipcRenderer.invoke('saveDriverTagSettings', settings);
+    },
     exportDashboardToFile: (dashboard: DashboardLayout) => {
       return ipcRenderer.invoke('exportDashboardToFile', dashboard);
     },

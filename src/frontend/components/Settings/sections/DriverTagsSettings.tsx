@@ -1,0 +1,1143 @@
+import { useState, useRef, useCallback, useMemo } from 'react';
+import type {
+  DriverTagSettings,
+  TagGroup,
+  DriverTagEntry,
+} from '@irdashies/types';
+import {
+  CaretUpIcon,
+  CaretDownIcon,
+  MagnifyingGlassIcon,
+  XCircleIcon,
+} from '@phosphor-icons/react';
+import { PRESET_DRIVER_TAGS } from '../../../constants/driverTagBadges';
+import { renderDriverIcon } from '@irdashies/utils/driverIcons';
+import { IconPicker } from '../IconPicker';
+import { useDriverTagGlobalSettings } from './useDriverTagGlobalSettings';
+
+type IconMode = 'name' | 'image';
+
+interface EntryDraft {
+  uiKey: string;
+  id: string;
+  name: string;
+  label: string;
+  groupId: string;
+}
+
+const toEntryDraft = (e: DriverTagEntry, key: string): EntryDraft => ({
+  uiKey: key,
+  id: e.id ?? '',
+  name: e.name ?? '',
+  label: e.label ?? '',
+  groupId: e.groupId,
+});
+
+export const DriverTagsSettings = () => {
+  const { tagSettings, loading, saveTagSettings } =
+    useDriverTagGlobalSettings();
+
+  const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
+  const [editingGroupName, setEditingGroupName] = useState('');
+  const [editingGroupColor, setEditingGroupColor] = useState<
+    number | undefined
+  >(undefined);
+  const [editingGroupIcon, setEditingGroupIcon] = useState<string | undefined>(
+    undefined
+  );
+  const [editingGroupIconMode, setEditingGroupIconMode] =
+    useState<IconMode>('name');
+  const [pendingNewGroup, setPendingNewGroup] = useState<{ id: string } | null>(
+    null
+  );
+  const [entryDrafts, setEntryDrafts] = useState<EntryDraft[]>([]);
+  const [entryError, setEntryError] = useState<{
+    key: string;
+    field: 'id' | 'name';
+  } | null>(null);
+  const [activeGroupFilter, setActiveGroupFilter] = useState<string | null>(
+    null
+  );
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchText, setSearchText] = useState('');
+  const [sortField, setSortField] = useState<
+    'id' | 'name' | 'label' | 'groupId' | null
+  >(null);
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const inputRefs = useRef<Record<string, HTMLInputElement | null>>({});
+
+  const settings: DriverTagSettings = tagSettings;
+
+  const updateDashboard = useCallback(
+    (next: DriverTagSettings) => {
+      saveTagSettings(next);
+    },
+    [saveTagSettings]
+  );
+
+  const updateGroup = useCallback(
+    (id: string, patch: Partial<TagGroup>) => {
+      updateDashboard({
+        ...settings,
+        groups: settings.groups.map((g) =>
+          g.id === id ? { ...g, ...patch } : g
+        ),
+      });
+    },
+    [settings, updateDashboard]
+  );
+
+  const removeGroup = useCallback(
+    (id: string) => {
+      updateDashboard({
+        ...settings,
+        groups: settings.groups.filter((g) => g.id !== id),
+        entries: (settings.entries ?? []).filter((e) => e.groupId !== id),
+      });
+    },
+    [settings, updateDashboard]
+  );
+
+  const addGroup = useCallback(() => {
+    const id = `custom-${Date.now()}`;
+    setPendingNewGroup({ id });
+    setEditingGroupId(id);
+    setEditingGroupName('');
+    setEditingGroupColor(0xff0000);
+    setEditingGroupIcon(undefined);
+    setEditingGroupIconMode('name');
+  }, []);
+
+  // Entry management
+  const committedEntries = useMemo(
+    () => settings.entries ?? [],
+    [settings.entries]
+  );
+
+  const syncedDrafts = useMemo(() => {
+    // Committed entries first in their saved order; use draft value if being edited
+    const committed = committedEntries.map((entry, idx) => {
+      const key = entry.id
+        ? `id-${entry.id}`
+        : entry.name
+          ? `name-${entry.name}`
+          : `group-${entry.groupId}-${idx}`;
+      return (
+        entryDrafts.find((d) => d.uiKey === key) ?? toEntryDraft(entry, key)
+      );
+    });
+    // New (uncommitted) drafts appear at the bottom, in insertion order
+    const newDrafts = entryDrafts.filter((d) => d.uiKey.startsWith('new-'));
+    return [...committed, ...newDrafts];
+  }, [committedEntries, entryDrafts]);
+
+  const addEntry = useCallback(() => {
+    const key = `new-${Date.now()}`;
+    const firstGroup =
+      PRESET_DRIVER_TAGS[0]?.id ?? settings.groups[0]?.id ?? '';
+    setEntryDrafts((prev) => [
+      ...prev,
+      { uiKey: key, id: '', name: '', label: '', groupId: firstGroup },
+    ]);
+  }, [settings.groups]);
+
+  const updateEntryDraft = useCallback(
+    (key: string, field: 'id' | 'name' | 'label', value: string) => {
+      setEntryError((prev) => (prev?.key === key ? null : prev));
+      setEntryDrafts((prev) => {
+        const exists = prev.some((d) => d.uiKey === key);
+        if (exists) {
+          return prev.map((d) =>
+            d.uiKey === key ? { ...d, [field]: value } : d
+          );
+        }
+        // Promote committed entry to an editable draft on first edit
+        const source = syncedDrafts.find((d) => d.uiKey === key);
+        if (!source) return prev;
+        return [...prev, { ...source, [field]: value }];
+      });
+    },
+    [syncedDrafts]
+  );
+
+  const updateEntryGroup = useCallback(
+    (key: string, groupId: string) => {
+      setEntryDrafts((prev) =>
+        prev.map((d) => (d.uiKey === key ? { ...d, groupId } : d))
+      );
+      // Also persist the group change immediately
+      const draft = syncedDrafts.find((d) => d.uiKey === key);
+      if (!draft) return;
+      const existing = committedEntries.find((e, idx) => {
+        const eKey = e.id
+          ? `id-${e.id}`
+          : e.name
+            ? `name-${e.name}`
+            : `group-${e.groupId}-${idx}`;
+        return eKey === key;
+      });
+      if (existing) {
+        updateDashboard({
+          ...settings,
+          entries: committedEntries.map((e) =>
+            e === existing ? { ...e, groupId } : e
+          ),
+        });
+      }
+    },
+    [syncedDrafts, committedEntries, settings, updateDashboard]
+  );
+
+  const removeEntry = useCallback(
+    (key: string) => {
+      setEntryDrafts((prev) => prev.filter((d) => d.uiKey !== key));
+      const existing = committedEntries.find((e, idx) => {
+        const eKey = e.id
+          ? `id-${e.id}`
+          : e.name
+            ? `name-${e.name}`
+            : `group-${e.groupId}-${idx}`;
+        return eKey === key;
+      });
+      if (existing) {
+        updateDashboard({
+          ...settings,
+          entries: committedEntries.filter((e) => e !== existing),
+        });
+      }
+    },
+    [committedEntries, settings, updateDashboard]
+  );
+
+  const commitEntryDraft = useCallback(
+    (key: string) => {
+      const draft = entryDrafts.find((d) => d.uiKey === key);
+      if (!draft) return;
+
+      if (key.startsWith('new-')) {
+        if (!draft.id.trim() && !draft.name.trim()) return;
+
+        const trimmedId = draft.id.trim();
+        const trimmedName = draft.name.trim();
+        const duplicate = committedEntries.find(
+          (e) =>
+            (trimmedId && e.id && e.id === trimmedId) ||
+            (trimmedName && e.name && e.name === trimmedName)
+        );
+        if (duplicate) {
+          const conflictField =
+            trimmedId && duplicate.id === trimmedId ? 'id' : 'name';
+          setEntryDrafts((prev) =>
+            prev.map((d) =>
+              d.uiKey === key ? { ...d, [conflictField]: '' } : d
+            )
+          );
+          setEntryError({ key, field: conflictField });
+          return;
+        }
+
+        updateDashboard({
+          ...settings,
+          entries: [
+            ...(settings.entries ?? []),
+            {
+              ...(draft.id.trim() ? { id: draft.id.trim() } : {}),
+              ...(draft.name.trim() ? { name: draft.name.trim() } : {}),
+              ...(draft.label.trim() ? { label: draft.label.trim() } : {}),
+              groupId: draft.groupId,
+            },
+          ],
+        });
+        setEntryDrafts((prev) => prev.filter((d) => d.uiKey !== key));
+      } else {
+        const existing = committedEntries.find((e, idx) => {
+          const eKey = e.id
+            ? `id-${e.id}`
+            : e.name
+              ? `name-${e.name}`
+              : `group-${e.groupId}-${idx}`;
+          return eKey === key;
+        });
+        if (!existing) return;
+        const trimmedId = draft.id.trim();
+        const trimmedName = draft.name.trim();
+        const duplicate = committedEntries.find(
+          (e) =>
+            e !== existing &&
+            ((trimmedId && e.id && e.id === trimmedId) ||
+              (trimmedName && e.name && e.name === trimmedName))
+        );
+        if (duplicate) {
+          const conflictField =
+            trimmedId && duplicate.id === trimmedId ? 'id' : 'name';
+          const originalValue =
+            (conflictField === 'id' ? existing.id : existing.name) ?? '';
+          setEntryDrafts((prev) =>
+            prev.map((d) =>
+              d.uiKey === key ? { ...d, [conflictField]: originalValue } : d
+            )
+          );
+          setEntryError({ key, field: conflictField });
+          return;
+        }
+        updateDashboard({
+          ...settings,
+          entries: committedEntries.map((e) =>
+            e === existing
+              ? {
+                  ...e,
+                  id: draft.id.trim() || undefined,
+                  name: draft.name.trim() || undefined,
+                  label: draft.label.trim() || undefined,
+                }
+              : e
+          ),
+        });
+        setEntryDrafts((prev) => prev.filter((d) => d.uiKey !== key));
+      }
+    },
+    [entryDrafts, settings, committedEntries, updateDashboard]
+  );
+
+  const renderIcon = (
+    icon: unknown,
+    size: number,
+    className?: string,
+    colorNum?: number,
+    style?: React.CSSProperties,
+    fallbackStyle?: React.CSSProperties,
+    weight?: string
+  ) =>
+    renderDriverIcon(
+      icon,
+      size,
+      className,
+      colorNum,
+      style,
+      fallbackStyle,
+      weight
+    );
+
+  const handleSort = useCallback(
+    (field: 'id' | 'name' | 'label' | 'groupId') => {
+      if (sortField === field) {
+        setSortDirection((d) => (d === 'asc' ? 'desc' : 'asc'));
+      } else {
+        setSortField(field);
+        setSortDirection('asc');
+      }
+    },
+    [sortField]
+  );
+
+  const allGroups = useMemo(
+    () => [...PRESET_DRIVER_TAGS, ...(settings.groups ?? [])],
+    [settings.groups]
+  );
+
+  const filteredEntries = useMemo(() => {
+    const groupFiltered = syncedDrafts.filter((r) =>
+      activeGroupFilter ? r.groupId === activeGroupFilter : true
+    );
+    if (!searchText.trim()) return groupFiltered;
+    const lower = searchText.toLowerCase();
+    return groupFiltered.filter((r) => {
+      const groupName = allGroups.find((g) => g.id === r.groupId)?.name ?? '';
+      return (
+        r.id.toLowerCase().includes(lower) ||
+        r.name.toLowerCase().includes(lower) ||
+        r.label.toLowerCase().includes(lower) ||
+        groupName.toLowerCase().includes(lower)
+      );
+    });
+  }, [syncedDrafts, activeGroupFilter, searchText, allGroups]);
+
+  const sortedFilteredEntries = useMemo(() => {
+    if (!sortField) return filteredEntries;
+    return [...filteredEntries].sort((a, b) => {
+      let aVal: string;
+      let bVal: string;
+      if (sortField === 'groupId') {
+        aVal = allGroups.find((g) => g.id === a.groupId)?.name ?? '';
+        bVal = allGroups.find((g) => g.id === b.groupId)?.name ?? '';
+      } else {
+        aVal = a[sortField] ?? '';
+        bVal = b[sortField] ?? '';
+      }
+      const cmp = aVal.localeCompare(bVal);
+      return sortDirection === 'asc' ? cmp : -cmp;
+    });
+  }, [filteredEntries, sortField, sortDirection, allGroups]);
+
+  if (loading) {
+    return <div className="p-4 text-slate-400">Loading...</div>;
+  }
+
+  return (
+    <div className="flex flex-col h-full">
+      <div className="p-4 bg-slate-700 rounded">
+        <h2 className="text-xl mb-2">Driver Tags</h2>
+        <p className="text-slate-400">
+          Create color-coded or icon driver tag groups and assign drivers by
+          iRacing ID (preferred) or iRacing Name.
+        </p>
+      </div>
+
+      <div className="flex-1 overflow-y-auto min-h-0 p-4 space-y-4 mt-4">
+        {/* Display style */}
+
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-medium text-slate-200">
+              Display Style
+            </h3>
+          </div>
+
+          {/* Display Style Dropdown */}
+          <div className="mt-4">
+            <select
+              value={
+                settings.display?.displayStyle === 'tag'
+                  ? 'tag'
+                  : settings.display?.iconWeight === 'fill'
+                    ? 'badge-fill'
+                    : 'badge-regular'
+              }
+              onChange={(e) => {
+                const val = e.target.value;
+                if (val === 'tag') {
+                  updateDashboard({
+                    ...settings,
+                    display: {
+                      ...(settings.display ?? { enabled: false, widthPx: 6 }),
+                      displayStyle: 'tag',
+                    },
+                  });
+                } else {
+                  updateDashboard({
+                    ...settings,
+                    display: {
+                      ...(settings.display ?? { enabled: false, widthPx: 6 }),
+                      displayStyle: 'badge',
+                      iconWeight: val === 'badge-fill' ? 'fill' : 'regular',
+                    },
+                  });
+                }
+              }}
+              className="w-full px-3 py-2 bg-slate-700 text-slate-300 rounded border border-slate-600 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            >
+              <option value="badge-fill">Badges (icons, filled)</option>
+              <option value="badge-regular">Badges (icons, outlined)</option>
+              <option value="tag">Tags (colored pills)</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Groups section */}
+        <div className="space-y-4 pt-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg">Default Groups</h3>
+          </div>
+
+          {/* Preset tag preview */}
+          <div className="flex items-center justify-between gap-3 ps-4">
+            {PRESET_DRIVER_TAGS.map((preset) => (
+              <div
+                key={preset.id}
+                className="inline-flex items-center gap-2 px-2 py-1 rounded bg-slate-800 text-sm text-slate-100"
+              >
+                {settings.display?.displayStyle === 'tag' ? (
+                  <span
+                    style={{
+                      display: 'inline-block',
+                      width: 16,
+                      height: 16,
+                      borderRadius: 6,
+                      background: `#${(preset.color & 0xffffff).toString(16).padStart(6, '0')}`,
+                    }}
+                  />
+                ) : (
+                  <span
+                    className="inline-flex items-center justify-center w-8 h-8 text-xl leading-none"
+                    aria-hidden="true"
+                  >
+                    {renderIcon(
+                      preset.icon,
+                      24,
+                      undefined,
+                      preset.color,
+                      undefined,
+                      undefined,
+                      settings.display?.iconWeight
+                    )}
+                  </span>
+                )}
+                <span className="whitespace-nowrap">{preset.name}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="space-y-4 pt-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg">Custom Groups</h3>
+            <button
+              onClick={addGroup}
+              className="px-3 py-1 bg-blue-600 rounded"
+            >
+              Add Group
+            </button>
+          </div>
+          <div className="pt-3 ps-4">
+            <div className="flex flex-col gap-2">
+              {[
+                ...(settings.groups ?? []),
+                ...(pendingNewGroup
+                  ? [{ id: pendingNewGroup.id, name: '', color: 0xff0000 }]
+                  : []),
+              ].map((g) => (
+                <div
+                  key={g.id}
+                  className="inline-flex items-center gap-3 px-2 py-2 min-h-12 rounded bg-slate-700 text-sm text-slate-100"
+                >
+                  {editingGroupId === g.id ? (
+                    <div className="flex items-center justify-between w-full">
+                      <input
+                        value={editingGroupName}
+                        onChange={(e) => setEditingGroupName(e.target.value)}
+                        placeholder="Group Name"
+                        className="px-2 py-1 bg-slate-600 rounded text-sm"
+                      />
+                      {settings.display?.displayStyle === 'tag' ? (
+                        <>
+                          <input
+                            type="color"
+                            value={
+                              editingGroupColor != null
+                                ? `#${(editingGroupColor & 0xffffff).toString(16).padStart(6, '0')}`
+                                : '#ff0000'
+                            }
+                            onChange={(e) =>
+                              setEditingGroupColor(
+                                parseInt(e.target.value.replace('#', ''), 16)
+                              )
+                            }
+                            className="w-10 h-6 p-0 border-0 rounded cursor-pointer"
+                          />
+                          <span
+                            style={{
+                              display: 'inline-block',
+                              width: 20,
+                              height: 20,
+                              borderRadius: 6,
+                              background:
+                                editingGroupColor != null
+                                  ? `#${(editingGroupColor & 0xffffff).toString(16).padStart(6, '0')}`
+                                  : '#ff0000',
+                            }}
+                          />
+                        </>
+                      ) : (
+                        <>
+                          <div className="flex gap-1">
+                            <button
+                              onClick={() => {
+                                setEditingGroupIconMode('name');
+                                if (
+                                  typeof editingGroupIcon === 'string' &&
+                                  editingGroupIcon.startsWith('data:')
+                                )
+                                  setEditingGroupIcon(undefined);
+                              }}
+                              className={`px-2 py-0.5 rounded text-xs ${editingGroupIconMode === 'name' ? 'bg-sky-600 text-white' : 'bg-slate-600 text-slate-300'}`}
+                            >
+                              Icon
+                            </button>
+                            <button
+                              onClick={() => {
+                                setEditingGroupIconMode('image');
+                                if (
+                                  typeof editingGroupIcon === 'string' &&
+                                  !editingGroupIcon.startsWith('data:')
+                                )
+                                  setEditingGroupIcon(undefined);
+                              }}
+                              className={`px-2 py-0.5 rounded text-xs ${editingGroupIconMode === 'image' ? 'bg-sky-600 text-white' : 'bg-slate-600 text-slate-300'}`}
+                            >
+                              Custom Image
+                            </button>
+                          </div>
+                          {editingGroupIconMode === 'name' ? (
+                            <>
+                              <IconPicker
+                                value={
+                                  typeof editingGroupIcon === 'string' &&
+                                  !editingGroupIcon.startsWith('data:')
+                                    ? editingGroupIcon || undefined
+                                    : undefined
+                                }
+                                onChange={(iconName) =>
+                                  setEditingGroupIcon(iconName)
+                                }
+                                color={editingGroupColor}
+                                weight={settings.display?.iconWeight}
+                              />
+                              <input
+                                type="color"
+                                value={`#${((editingGroupColor ?? 0xffffff) & 0xffffff).toString(16).padStart(6, '0')}`}
+                                onChange={(e) =>
+                                  setEditingGroupColor(
+                                    parseInt(
+                                      e.target.value.replace('#', ''),
+                                      16
+                                    )
+                                  )
+                                }
+                                className="w-10 h-6 p-0 border-0 rounded cursor-pointer"
+                              />
+                            </>
+                          ) : (
+                            <>
+                              <input
+                                ref={(el) => {
+                                  fileInputRef.current = el;
+                                }}
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => {
+                                  const f = e.target.files?.[0];
+                                  if (!f) return;
+                                  const reader = new FileReader();
+                                  reader.onload = () =>
+                                    setEditingGroupIcon(
+                                      reader.result as string
+                                    );
+                                  reader.readAsDataURL(f);
+                                }}
+                                className="hidden"
+                              />
+                              <button
+                                onClick={() => fileInputRef.current?.click()}
+                                className="flex items-center justify-center px-2 h-[28px] bg-slate-600 hover:bg-slate-500 rounded text-xs min-w-[150px]"
+                              >
+                                Select an Image
+                              </button>
+                              {typeof editingGroupIcon === 'string' &&
+                                editingGroupIcon.startsWith('data:') && (
+                                  <div style={{ width: 24, height: 24 }}>
+                                    <img
+                                      src={editingGroupIcon}
+                                      alt="preview"
+                                      className="object-contain"
+                                    />
+                                  </div>
+                                )}
+                            </>
+                          )}
+                        </>
+                      )}
+                      <div className="flex gap-2">
+                        <button
+                          disabled={!editingGroupName.trim()}
+                          onClick={() => {
+                            const iconToSave =
+                              editingGroupIconMode === 'image'
+                                ? typeof editingGroupIcon === 'string' &&
+                                  editingGroupIcon.startsWith('data:')
+                                  ? editingGroupIcon
+                                  : undefined
+                                : typeof editingGroupIcon === 'string' &&
+                                    editingGroupIcon.trim()
+                                  ? editingGroupIcon.trim()
+                                  : undefined;
+                            if (pendingNewGroup?.id === g.id) {
+                              updateDashboard({
+                                ...settings,
+                                groups: [
+                                  ...(settings.groups ?? []),
+                                  {
+                                    id: g.id,
+                                    name: editingGroupName,
+                                    color: editingGroupColor ?? 0xff0000,
+                                    icon: iconToSave,
+                                  },
+                                ],
+                              });
+                              setPendingNewGroup(null);
+                            } else {
+                              updateGroup(g.id, {
+                                name: editingGroupName,
+                                icon: iconToSave,
+                                color: editingGroupColor,
+                              });
+                            }
+                            setEditingGroupId(null);
+                            setEditingGroupIcon(undefined);
+                            setEditingGroupColor(undefined);
+                          }}
+                          className="px-2 py-1 bg-sky-600 rounded text-xs disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                          Save
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (pendingNewGroup?.id === g.id) {
+                              setPendingNewGroup(null);
+                            }
+                            setEditingGroupId(null);
+                            setEditingGroupIcon(undefined);
+                            setEditingGroupColor(undefined);
+                          }}
+                          className="px-2 py-1 bg-slate-600 rounded text-xs"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      {settings.display?.displayStyle === 'tag' ? (
+                        <span
+                          style={{
+                            display: 'inline-block',
+                            width: 16,
+                            height: 16,
+                            borderRadius: 6,
+                            background: g.color
+                              ? `#${(g.color & 0xffffff).toString(16).padStart(6, '0')}`
+                              : '#888',
+                          }}
+                        />
+                      ) : g.icon &&
+                        typeof g.icon === 'string' &&
+                        g.icon.startsWith('data:') ? (
+                        <span
+                          className="inline-flex items-center justify-center w-8 h-8 text-xl leading-none"
+                          aria-hidden="true"
+                        >
+                          <div style={{ width: 24, height: 24 }}>
+                            <img
+                              src={g.icon}
+                              alt={g.name}
+                              className="object-contain"
+                            />
+                          </div>
+                        </span>
+                      ) : (
+                        <span
+                          className="inline-flex items-center justify-center w-8 h-8 text-xl leading-none"
+                          aria-hidden="true"
+                        >
+                          {renderIcon(
+                            g.icon,
+                            24,
+                            undefined,
+                            g.color,
+                            undefined,
+                            undefined,
+                            settings.display?.iconWeight
+                          )}
+                        </span>
+                      )}
+                      <span className="whitespace-nowrap">{g.name}</span>
+                      <div className="ml-auto flex-none inline-flex items-center gap-2">
+                        <button
+                          onClick={() => {
+                            setEditingGroupId(g.id);
+                            setEditingGroupName(g.name);
+                            setEditingGroupIcon(g.icon);
+                            setEditingGroupColor(g.color);
+                            setEditingGroupIconMode(
+                              typeof g.icon === 'string' &&
+                                g.icon.startsWith('data:')
+                                ? 'image'
+                                : 'name'
+                            );
+                          }}
+                          className="flex-none w-auto px-2 py-0.5 text-xs text-slate-300"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => removeGroup(g.id)}
+                          className="flex-none w-auto px-2 py-0.5 text-xs text-red-400"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Driver assignments */}
+        <div className="pt-4">
+          <h3 className="text-lg">Driver Assignments</h3>
+          <p className="text-sm text-slate-400">
+            Assign drivers by iRacing ID (preferred) and/or display name. Each
+            driver may belong to one group.
+          </p>
+
+          <div className="space-y-4 pt-4">
+            {/* Group filter buttons */}
+            <div className="flex items-center justify-center gap-2 mb-3 flex-wrap">
+              <button
+                onClick={() => setActiveGroupFilter(null)}
+                aria-pressed={activeGroupFilter === null}
+                className={`px-3 py-1 rounded font-medium transition-colors shadow-sm ${activeGroupFilter === null ? 'bg-sky-500 text-white ring-2 ring-sky-300' : 'bg-slate-700 text-slate-200 hover:bg-slate-600'}`}
+              >
+                All
+              </button>
+              {PRESET_DRIVER_TAGS.map((g) => {
+                const override = settings.presetOverrides?.[g.id];
+                const colorNum = override?.color ?? g.color;
+                const icon = override?.icon ?? g.icon;
+                const name = override?.name ?? g.name;
+                return (
+                  <button
+                    key={g.id}
+                    onClick={() =>
+                      setActiveGroupFilter(
+                        activeGroupFilter === g.id ? null : g.id
+                      )
+                    }
+                    aria-pressed={activeGroupFilter === g.id}
+                    title={name}
+                    aria-label={name}
+                    className={`px-3 py-1 rounded inline-flex items-center gap-1.5 transition-colors shadow-sm text-sm ${activeGroupFilter === g.id ? 'bg-sky-500 text-white ring-2 ring-sky-300' : 'bg-slate-700 text-slate-200 border border-slate-600 hover:bg-slate-600'}`}
+                  >
+                    {settings.display?.displayStyle === 'tag' ? (
+                      <span
+                        style={{
+                          display: 'inline-block',
+                          width: 10,
+                          height: 10,
+                          borderRadius: 3,
+                          background: `#${(colorNum & 0xffffff).toString(16).padStart(6, '0')}`,
+                        }}
+                      />
+                    ) : (
+                      <span
+                        className="inline-flex items-center leading-none"
+                        aria-hidden="true"
+                      >
+                        {renderIcon(
+                          icon,
+                          14,
+                          undefined,
+                          colorNum,
+                          undefined,
+                          undefined,
+                          settings.display?.iconWeight
+                        )}
+                      </span>
+                    )}
+                    {name}
+                  </button>
+                );
+              })}
+              {(settings.groups ?? []).map((g) => (
+                <button
+                  key={g.id}
+                  onClick={() =>
+                    setActiveGroupFilter(
+                      activeGroupFilter === g.id ? null : g.id
+                    )
+                  }
+                  aria-pressed={activeGroupFilter === g.id}
+                  title={g.name}
+                  aria-label={g.name}
+                  className={`px-3 py-1 rounded inline-flex items-center gap-1.5 transition-colors shadow-sm text-sm ${activeGroupFilter === g.id ? 'bg-sky-500 text-white ring-2 ring-sky-300' : 'bg-slate-700 text-slate-200 border border-slate-600 hover:bg-slate-600'}`}
+                >
+                  {settings.display?.displayStyle === 'tag' ? (
+                    <span
+                      style={{
+                        display: 'inline-block',
+                        width: 10,
+                        height: 10,
+                        borderRadius: 3,
+                        background: g.color
+                          ? `#${(g.color & 0xffffff).toString(16).padStart(6, '0')}`
+                          : '#888',
+                      }}
+                    />
+                  ) : (
+                    <span
+                      className="inline-flex items-center leading-none"
+                      aria-hidden="true"
+                    >
+                      {renderIcon(
+                        g.icon,
+                        14,
+                        undefined,
+                        g.color,
+                        undefined,
+                        undefined,
+                        settings.display?.iconWeight
+                      )}
+                    </span>
+                  )}
+                  {g.name}
+                </button>
+              ))}
+            </div>
+
+            {syncedDrafts.length > 0 && (
+              <div className="grid grid-cols-[5rem_9rem_9rem_1fr_5rem] gap-2 items-center text-sm text-slate-400 pt-4">
+                {(
+                  [
+                    ['id', 'iRacing ID'],
+                    ['name', 'iRacing Name'],
+                    ['label', 'Driver Label'],
+                    ['groupId', 'Group'],
+                  ] as const
+                ).map(([field, label]) => {
+                  if (field === 'groupId' && searchOpen) {
+                    return (
+                      <input
+                        key={field}
+                        autoFocus
+                        value={searchText}
+                        onChange={(e) => setSearchText(e.target.value)}
+                        placeholder="Search for a Driver ..."
+                        className="px-2 py-0.5 bg-slate-700 rounded text-sm text-slate-200 w-full focus:outline-none focus:ring-1 focus:ring-sky-500"
+                      />
+                    );
+                  }
+                  return (
+                    <button
+                      key={field}
+                      onClick={() => handleSort(field)}
+                      className="flex py-0.5 items-center justify-center gap-0.5 text-left hover:text-slate-200 transition-colors"
+                    >
+                      {label}
+                      {sortField === field ? (
+                        sortDirection === 'asc' ? (
+                          <CaretUpIcon size={10} weight="bold" />
+                        ) : (
+                          <CaretDownIcon size={10} weight="bold" />
+                        )
+                      ) : null}
+                    </button>
+                  );
+                })}
+                <button
+                  onClick={() => {
+                    setSearchOpen((v) => !v);
+                    if (searchOpen) setSearchText('');
+                  }}
+                  title={searchOpen ? 'Close search' : 'Search drivers'}
+                  className={`flex w-full py-0.5 items-center justify-center transition-colors ${searchOpen ? 'text-sky-400' : 'text-slate-400 hover:text-slate-200'}`}
+                >
+                  {searchOpen ? (
+                    <XCircleIcon size={14} />
+                  ) : (
+                    <MagnifyingGlassIcon size={14} />
+                  )}
+                </button>
+              </div>
+            )}
+
+            {sortedFilteredEntries.map((row) => (
+              <div
+                key={row.uiKey}
+                className="grid grid-cols-[5rem_9rem_9rem_1fr_5rem] gap-2 items-center"
+              >
+                <input
+                  ref={(el) => {
+                    inputRefs.current[`${row.uiKey}-id`] = el;
+                  }}
+                  value={row.id}
+                  onChange={(e) =>
+                    updateEntryDraft(row.uiKey, 'id', e.target.value)
+                  }
+                  onBlur={(e) => {
+                    const stayingInRow =
+                      e.relatedTarget ===
+                        inputRefs.current[`${row.uiKey}-name`] ||
+                      e.relatedTarget ===
+                        inputRefs.current[`${row.uiKey}-label`];
+                    if (!stayingInRow) commitEntryDraft(row.uiKey);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter')
+                      (e.currentTarget as HTMLInputElement).blur();
+                  }}
+                  placeholder="e.g. 123456"
+                  className={`px-2 py-1 bg-slate-700 rounded w-full ${
+                    entryError?.key === row.uiKey && entryError.field === 'id'
+                      ? 'border border-red-500'
+                      : ''
+                  }`}
+                />
+                <input
+                  ref={(el) => {
+                    inputRefs.current[`${row.uiKey}-name`] = el;
+                  }}
+                  value={row.name}
+                  onChange={(e) =>
+                    updateEntryDraft(row.uiKey, 'name', e.target.value)
+                  }
+                  onBlur={(e) => {
+                    const stayingInRow =
+                      e.relatedTarget ===
+                        inputRefs.current[`${row.uiKey}-id`] ||
+                      e.relatedTarget ===
+                        inputRefs.current[`${row.uiKey}-label`];
+                    if (!stayingInRow) commitEntryDraft(row.uiKey);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter')
+                      (e.currentTarget as HTMLInputElement).blur();
+                  }}
+                  placeholder="iRacing Full Name"
+                  className={`px-2 py-1 bg-slate-700 rounded w-full ${
+                    entryError?.key === row.uiKey && entryError.field === 'name'
+                      ? 'border border-red-500'
+                      : ''
+                  }`}
+                />
+                <input
+                  ref={(el) => {
+                    inputRefs.current[`${row.uiKey}-label`] = el;
+                  }}
+                  value={row.label}
+                  onChange={(e) =>
+                    updateEntryDraft(row.uiKey, 'label', e.target.value)
+                  }
+                  onBlur={(e) => {
+                    const stayingInRow =
+                      e.relatedTarget ===
+                        inputRefs.current[`${row.uiKey}-id`] ||
+                      e.relatedTarget ===
+                        inputRefs.current[`${row.uiKey}-name`];
+                    if (!stayingInRow) commitEntryDraft(row.uiKey);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter')
+                      (e.currentTarget as HTMLInputElement).blur();
+                  }}
+                  placeholder="Badge label"
+                  className="px-2 py-1 bg-slate-700 rounded w-full"
+                />
+                <select
+                  value={row.groupId}
+                  onChange={(e) => updateEntryGroup(row.uiKey, e.target.value)}
+                  className="px-2 py-1 bg-slate-700 rounded w-full"
+                >
+                  {PRESET_DRIVER_TAGS.map((g) => (
+                    <option key={g.id} value={g.id}>
+                      {g.name}
+                    </option>
+                  ))}
+                  {(settings.groups ?? []).map((g) => (
+                    <option key={g.id} value={g.id}>
+                      {g.name}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  onClick={() => removeEntry(row.uiKey)}
+                  className="w-full px-2 py-1 bg-red-600 rounded"
+                >
+                  Remove
+                </button>
+                {entryError?.key === row.uiKey && (
+                  <p className="col-span-full text-xs text-red-400 -mt-1">
+                    Driver already exists
+                  </p>
+                )}
+              </div>
+            ))}
+
+            <div className="flex mb-3 justify-center pb-2">
+              <button
+                onClick={addEntry}
+                className="px-3 py-1 bg-green-600 rounded"
+              >
+                Add Driver
+              </button>
+            </div>
+
+            {sortedFilteredEntries.length > 0 && (
+              <p className="mt-1 text-sm italic text-white/40">
+                * iRacing ID is matched first when provided. Display name is
+                used as a fallback if no ID is set or no match is found.
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Name display settings */}
+        <div className="pt-4">
+          <h3 className="text-lg">Name Display</h3>
+          <p className="text-sm text-slate-400">
+            When a Driver Label is provided, choose what is displayed for the
+            Driver Name in the Standings and Relative overlays.
+          </p>
+
+          <div className="space-y-3 mt-3">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-slate-300">Display mode</span>
+              <select
+                value={settings.display?.nameDisplay ?? 'both'}
+                onChange={(e) =>
+                  updateDashboard({
+                    ...settings,
+                    display: {
+                      ...(settings.display ?? { enabled: false, widthPx: 6 }),
+                      nameDisplay: e.target.value as 'both' | 'label' | 'name',
+                    },
+                  })
+                }
+                className="px-2 py-1 bg-slate-700 rounded text-sm"
+              >
+                <option value="both">Both (Alternate)</option>
+                <option value="label">Label only</option>
+                <option value="name">Name only</option>
+              </select>
+            </div>
+
+            {(settings.display?.nameDisplay ?? 'both') === 'both' && (
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-slate-300">
+                  Alternate Frequency
+                </span>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="range"
+                    min="2"
+                    max="60"
+                    value={settings.display?.alternateFrequency ?? 5}
+                    onChange={(e) =>
+                      updateDashboard({
+                        ...settings,
+                        display: {
+                          ...(settings.display ?? {
+                            enabled: false,
+                            widthPx: 6,
+                          }),
+                          alternateFrequency: parseInt(e.target.value),
+                        },
+                      })
+                    }
+                    className="h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer"
+                  />
+                  <span className="text-xs text-slate-400 w-8">
+                    {settings.display?.alternateFrequency ?? 5}s
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default DriverTagsSettings;
