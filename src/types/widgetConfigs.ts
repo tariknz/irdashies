@@ -251,7 +251,6 @@ export interface InputConfig {
 }
 
 export interface TachometerConfig {  
-  enabled: boolean;
   showRpmText: boolean;
   rpmOrientation?: 'horizontal' | 'vertical'
   shiftPointStyle?: 'glow' | 'pulse' | 'border';

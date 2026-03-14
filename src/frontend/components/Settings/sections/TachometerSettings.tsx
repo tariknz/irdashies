@@ -35,7 +35,6 @@ interface CarDataResponse {
 }
 
 const defaultConfig: TachometerWidgetSettings['config'] = {
-  enabled: true,
   showRpmText: false,
   rpmOrientation: 'horizontal',
   shiftPointSettings: {
@@ -57,7 +56,6 @@ const defaultConfig: TachometerWidgetSettings['config'] = {
 
 const normalizeConfig = (config: Partial<TachometerWidgetSettings['config']>): TachometerWidgetSettings['config'] => {
   return {
-    enabled: config.enabled ?? defaultConfig.enabled,
     showRpmText: config.showRpmText ?? defaultConfig.showRpmText,
     rpmOrientation: config.rpmOrientation ?? defaultConfig.rpmOrientation,
     shiftPointSettings: config.shiftPointSettings ?? defaultConfig.shiftPointSettings,

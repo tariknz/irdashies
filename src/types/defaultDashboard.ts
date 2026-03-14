@@ -313,7 +313,6 @@ export const defaultDashboard: {
         height: 113,
       },
       config: {
-        enabled: false,
         showRpmText: false,
         rpmOrientation: 'horizontal',
         shiftPointSettings: {
