@@ -1,15 +1,21 @@
 import { renderHook } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { useCustomShiftPoints } from './useCustomShiftPoints';
-import * as TelemetryStore from '../../../context/TelemetryStore/TelemetryStore';
+import * as Context from '@irdashies/context';
 import * as CarTachometerData from './useCarTachometerData';
 import type { ShiftPointSettings } from '@irdashies/types';
 
 // Mock the dependencies
-vi.mock('../../../context/TelemetryStore/TelemetryStore');
+vi.mock('@irdashies/context', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@irdashies/context')>();
+  return {
+    ...actual,
+    useTelemetryValue: vi.fn(),
+  };
+});
 vi.mock('./useCarTachometerData');
 
-const mockUseTelemetryValue = vi.mocked(TelemetryStore.useTelemetryValue);
+const mockUseTelemetryValue = vi.mocked(Context.useTelemetryValue);
 const mockUseCarTachometerData = vi.mocked(
   CarTachometerData.useCarTachometerData
 );

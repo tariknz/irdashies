@@ -1,33 +1,37 @@
 import { renderHook } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { useCarTachometerData } from './useCarTachometerData';
-import * as SessionStore from '../../../context/SessionStore/SessionStore';
-import * as TelemetryStore from '../../../context/TelemetryStore/TelemetryStore';
+import * as Context from '@irdashies/context';
 
 // Mock the dependencies
-vi.mock('../../../context/SessionStore/SessionStore');
-vi.mock('../../../context/TelemetryStore/TelemetryStore');
+vi.mock('@irdashies/context', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@irdashies/context')>();
+  return {
+    ...actual,
+    useSessionStore: vi.fn(),
+    useDriverCarIdx: vi.fn(),
+    useTelemetryValue: vi.fn(),
+  };
+});
 vi.mock('../../../utils/carData');
 
-const mockUseSessionStore = vi.mocked(SessionStore.useSessionStore);
-const mockUseDriverCarIdx = vi.mocked(SessionStore.useDriverCarIdx);
-const mockUseTelemetryValue = vi.mocked(TelemetryStore.useTelemetryValue);
+const mockUseSessionStore = vi.mocked(Context.useSessionStore);
+const mockUseDriverCarIdx = vi.mocked(Context.useDriverCarIdx);
+const mockUseTelemetryValue = vi.mocked(Context.useTelemetryValue);
 
 describe('useCarTachometerData', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    
+
     // Default mocks
     mockUseDriverCarIdx.mockReturnValue(0);
     mockUseTelemetryValue.mockReturnValue(1); // Gear 1
     mockUseSessionStore.mockReturnValue({
       session: {
         DriverInfo: {
-          Drivers: [
-            { CarIdx: 0, CarPath: 'porsche992rgt3' }
-          ]
-        }
-      }
+          Drivers: [{ CarIdx: 0, CarPath: 'porsche992rgt3' }],
+        },
+      },
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any);
   });
@@ -44,9 +48,9 @@ describe('useCarTachometerData', () => {
     mockUseSessionStore.mockReturnValue({
       session: {
         DriverInfo: {
-          Drivers: []
-        }
-      }
+          Drivers: [],
+        },
+      },
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any);
 
@@ -59,7 +63,7 @@ describe('useCarTachometerData', () => {
 
   it('returns null when session is null', () => {
     mockUseSessionStore.mockReturnValue({
-      session: null
+      session: null,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any);
 
