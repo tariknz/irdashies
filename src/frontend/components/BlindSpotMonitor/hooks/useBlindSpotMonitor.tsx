@@ -75,7 +75,7 @@ export const useBlindSpotMonitor = (): BlindSpotMonitorState => {
       if (diff > 0.5) diff -= 1;
       else if (diff < -0.5) diff += 1;
       const percent = diff / (diff > 0 ? maxDistAPct : maxDistBPct);
-      return Math.max(-1, Math.min(1, percent));
+      return Math.round(Math.max(-1, Math.min(1, percent)) * 1000) / 1000;
     };
 
     let leftState = CarLeftRight.Off;
@@ -151,7 +151,7 @@ export const useBlindSpotMonitor = (): BlindSpotMonitorState => {
   ]);
 
   useEffect(() => {
-    if (!result.show || carLeftRight <= CarLeftRight.Clear) {
+    if (carLeftRight <= CarLeftRight.Clear) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setLeftCarIdx(null);
       setRightCarIdx(null);
