@@ -210,7 +210,6 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
       fuelUnits: fuelUnits,
       settings: settings,
       customStyles: widgetStyles,
-      isCompact: derivedCompactMode !== 'off',
       compactMode: derivedCompactMode,
     };
 

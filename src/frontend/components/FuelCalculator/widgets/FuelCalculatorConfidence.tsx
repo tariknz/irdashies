@@ -15,7 +15,6 @@ export interface FuelCalculatorWidgetProps {
     valueFontSize?: number;
     barFontSize?: number;
   };
-  isCompact?: boolean;
   compactMode?: 'off' | 'compact' | 'ultra';
 }
 
@@ -24,7 +23,6 @@ export const FuelCalculatorConfidence: React.FC<FuelCalculatorWidgetProps> = ({
   settings,
   widgetId,
   customStyles,
-  isCompact,
   compactMode,
 }) => {
   if (!fuelData) return null;
@@ -49,7 +47,7 @@ export const FuelCalculatorConfidence: React.FC<FuelCalculatorWidgetProps> = ({
 
   const paddingPart =
     compactMode === 'ultra' ? '' : compactMode === 'compact' ? 'p-1' : 'p-2';
-  const containerPadding = `${paddingPart} ${isCompact ? 'mb-0.5' : 'mb-2'}`;
+  const containerPadding = `${paddingPart} ${compactMode !== 'off' ? 'mb-0.5' : 'mb-2'}`;
 
   if (confidence === 'low' || confidence === 'very-low') {
     return (

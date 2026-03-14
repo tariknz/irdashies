@@ -14,7 +14,6 @@ interface FuelCalculatorWidgetProps {
     valueFontSize?: number;
     barFontSize?: number;
   };
-  isCompact?: boolean;
   compactMode?: 'off' | 'compact' | 'ultra';
 }
 

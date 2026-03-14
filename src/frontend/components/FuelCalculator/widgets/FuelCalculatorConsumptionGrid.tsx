@@ -21,7 +21,6 @@ interface FuelCalculatorWidgetProps {
     barFontSize?: number;
     height?: number;
   };
-  isCompact?: boolean;
   compactMode?: 'off' | 'compact' | 'ultra';
 }
 
@@ -33,7 +32,6 @@ export const FuelCalculatorConsumptionGrid: React.FC<
   settings,
   widgetId,
   customStyles,
-  isCompact,
   compactMode,
   predictiveUsage,
   liveFuelData,
@@ -267,10 +265,11 @@ export const FuelCalculatorConsumptionGrid: React.FC<
 
   const rowPadding =
     compactMode === 'ultra' ? '' : compactMode === 'compact' ? 'p-2' : 'p-3';
-  const rowGap = isCompact ? '' : 'gap-y-0.5';
-  const divideCls = isCompact
-    ? 'divide-x divide-slate-500/40'
-    : 'divide-x-2 divide-slate-500/40';
+  const rowGap = compactMode !== 'off' ? '' : 'gap-y-0.5';
+  const divideCls =
+    compactMode !== 'off'
+      ? 'divide-x divide-slate-500/40'
+      : 'divide-x-2 divide-slate-500/40';
   const rowCls = `grid grid-cols-5 ${divideCls} odd:bg-slate-800/70 even:bg-slate-900/70`;
 
   return (

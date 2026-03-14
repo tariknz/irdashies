@@ -13,7 +13,6 @@ interface FuelCalculatorWidgetProps {
     valueFontSize?: number;
     barFontSize?: number;
   };
-  isCompact?: boolean;
   compactMode?: 'off' | 'compact' | 'ultra';
 }
 
@@ -54,7 +53,6 @@ export const FuelCalculatorHeader: React.FC<FuelCalculatorWidgetProps> = ({
   settings,
   widgetId,
   customStyles,
-  isCompact,
   compactMode = 'off',
 }) => {
   // Custom style handling for separate label/value sizes
@@ -97,9 +95,11 @@ export const FuelCalculatorHeader: React.FC<FuelCalculatorWidgetProps> = ({
 
   return (
     <div
-      className={`flex items-center justify-between ${paddingClass} ${isCompact ? 'mb-0' : 'mb-1 border-b border-slate-600/50'}`}
+      className={`flex items-center justify-between ${paddingClass} ${compactMode !== 'off' ? 'mb-0' : 'mb-1 border-b border-slate-600/50'}`}
     >
-      <div className={`flex items-center ${isCompact ? 'gap-3' : 'gap-6'}`}>
+      <div
+        className={`flex items-center ${compactMode !== 'off' ? 'gap-3' : 'gap-6'}`}
+      >
         <div className="flex items-center gap-2">
           <span
             className="text-slate-500 font-semibold tracking-wider"

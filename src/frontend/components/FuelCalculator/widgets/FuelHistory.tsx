@@ -19,7 +19,6 @@ interface FuelCalculatorWidgetProps {
     valueFontSize?: number;
     barFontSize?: number;
   };
-  isCompact?: boolean;
   compactMode?: 'off' | 'compact' | 'ultra';
 }
 
@@ -28,7 +27,6 @@ export const FuelHistory: React.FC<FuelCalculatorWidgetProps> = ({
   fuelUnits,
   widgetId,
   customStyles,
-  isCompact,
   compactMode = 'off',
 }) => {
   // Custom style handling
@@ -93,7 +91,7 @@ export const FuelHistory: React.FC<FuelCalculatorWidgetProps> = ({
   return (
     <div
       style={styles}
-      className={`${paddingClass} ${isCompact ? 'mt-1 mb-0.5' : 'mt-2 mb-1'} w-full flex-1 min-h-[60px] flex flex-col`}
+      className={`${paddingClass} ${compactMode !== 'off' ? 'mt-1 mb-0.5' : 'mt-2 mb-1'} w-full flex-1 min-h-[60px] flex flex-col`}
     >
       <ConsumptionGraphWidget
         graphData={isDemoMode ? null : graphData}

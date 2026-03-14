@@ -14,7 +14,6 @@ interface FuelCalculatorWidgetProps {
     valueFontSize?: number;
     barFontSize?: number;
   };
-  isCompact?: boolean;
   compactMode?: 'off' | 'compact' | 'ultra';
 }
 
@@ -122,7 +121,6 @@ export const FuelCalculatorPitScenarios: React.FC<
   settings,
   widgetId,
   customStyles,
-  isCompact,
   compactMode,
 }) => {
   // Custom style handling for separate label/value sizes
@@ -168,11 +166,11 @@ export const FuelCalculatorPitScenarios: React.FC<
   return (
     <div>
       <div
-        className={`border-t border-slate-600/30 ${isCompact ? 'mb-0.5' : 'mb-2'}`}
+        className={`border-t border-slate-600/30 ${compactMode !== 'off' ? 'mb-0.5' : 'mb-2'}`}
       ></div>
 
       <div
-        className={`grid grid-cols-4 ${isCompact ? 'gap-0 md:gap-x-1 mb-0.5' : 'gap-1 mb-3'}`}
+        className={`grid grid-cols-4 ${compactMode !== 'off' ? 'gap-0 md:gap-x-1 mb-0.5' : 'gap-1 mb-3'}`}
       >
         <div
           className="text-slate-500 text-center"
