@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
-import { TachometerWidgetSettings, SessionVisibilitySettings, SettingsTabType } from '@irdashies/types';
+import { TachometerWidgetSettings, getWidgetDefaultConfig, SettingsTabType } from '@irdashies/types';
 import { useDashboard } from '@irdashies/context';
 import { ToggleSwitch } from '../components/ToggleSwitch';
 import { SessionVisibility } from '../components/SessionVisibility';
@@ -34,39 +34,6 @@ interface CarDataResponse {
   redlineRpm?: number;
 }
 
-const defaultConfig: TachometerWidgetSettings['config'] = {
-  showRpmText: false,
-  rpmOrientation: 'horizontal',
-  shiftPointSettings: {
-    enabled: false,
-    indicatorType: 'glow',
-    indicatorColor: '#00ff00',
-    carConfigs: {},
-  },
-  background: { opacity: 80 },
-  showOnlyWhenOnTrack: true,
-  sessionVisibility: {
-    race: true,
-    loneQualify: true,
-    openQualify: true,
-    practice: true,
-    offlineTesting: true,
-  },
-};
-
-const normalizeConfig = (config: Partial<TachometerWidgetSettings['config']>): TachometerWidgetSettings['config'] => {
-  return {
-    showRpmText: config.showRpmText ?? defaultConfig.showRpmText,
-    rpmOrientation: config.rpmOrientation ?? defaultConfig.rpmOrientation,
-    shiftPointSettings: config.shiftPointSettings ?? defaultConfig.shiftPointSettings,
-    background: {
-      opacity: (config.background as { opacity?: number })?.opacity ?? 80,
-    },
-    showOnlyWhenOnTrack: config.showOnlyWhenOnTrack ?? true,
-    sessionVisibility: (config.sessionVisibility as SessionVisibilitySettings) ?? defaultConfig.sessionVisibility,
-  };
-};
-
 /**
  * Custom shift points configuration section
  */
@@ -78,12 +45,7 @@ const CustomShiftPointsSection = ({ config, handleConfigChange }: { config: Tach
   const [error, setError] = useState<string | null>(null);
   const [editingValues, setEditingValues] = useState<Record<string, string>>({});
 
-  const customShiftPoints = config.shiftPointSettings ?? defaultConfig.shiftPointSettings ?? {
-    enabled: false,
-    indicatorType: 'glow' as const,
-    indicatorColor: '#00ff00',
-    carConfigs: {},
-  };
+  const customShiftPoints = config.shiftPointSettings;
 
   const updateCustomShiftPoints = (updates: Partial<typeof customShiftPoints>) => {
     handleConfigChange({
@@ -251,7 +213,7 @@ const CustomShiftPointsSection = ({ config, handleConfigChange }: { config: Tach
           <div className="bg-blue-900/30 border border-blue-700/50 rounded p-3 text-xs">
             <div className="flex items-start gap-2">
               <div className="flex-1">
-                <p className="text-blue-200 font-medium mb-1">Demo Mode Car</p>
+                <p className="text-blue-200 mb-1">Demo Mode Car</p>
                 <p className="text-blue-300">
                   Demo mode uses the <strong>BMW M4 GT4</strong> (bmwm4gt4).
                   Configure custom shift points for this car to test in demo mode.
@@ -387,12 +349,18 @@ const CustomShiftPointsSection = ({ config, handleConfigChange }: { config: Tach
   );
 };
 
+const defaultConfig = getWidgetDefaultConfig('tachometer');
+
 export const TachometerSettings = () => {
   const { currentDashboard } = useDashboard();
-  const widget = currentDashboard?.widgets?.find((w) => w.id === SETTING_ID);
+  const savedSettings = currentDashboard?.widgets.find(
+    (w) => w.id === SETTING_ID
+  ) as TachometerWidgetSettings | undefined;
   const [settings, setSettings] = useState<TachometerWidgetSettings>({
-    enabled: widget?.enabled ?? false,
-    config: normalizeConfig(widget?.config ?? {}),
+    enabled: savedSettings?.enabled ?? false,
+    config:
+      (savedSettings?.config as TachometerWidgetSettings['config']) ??
+      defaultConfig,
   });
 
   // Tab state with persistence
