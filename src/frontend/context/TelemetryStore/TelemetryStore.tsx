@@ -2,7 +2,11 @@ import type { Telemetry, TelemetryVar } from '@irdashies/types';
 import { create, useStore } from 'zustand';
 import { useStoreWithEqualityFn } from 'zustand/traditional';
 import { useMemo } from 'react';
-import { arrayCompare, telemetryCompare } from './telemetryCompare';
+import {
+  arrayCompare,
+  arrayCompareRounded,
+  telemetryCompare,
+} from './telemetryCompare';
 
 interface TelemetryState {
   telemetry: Telemetry | null;
@@ -67,3 +71,19 @@ export const useTelemetryValuesMapped = <
   const rawValues = useTelemetryValues<T>(key);
   return useMemo(() => rawValues.map(mapFn) as T, [rawValues, mapFn]);
 };
+
+/**
+ * Returns telemetry values for a given key, only triggering re-renders when
+ * values change beyond the given decimal precision. Use for high-frequency
+ * array telemetry (e.g. CarIdxLapDistPct) where sub-threshold changes don't
+ * produce meaningful UI updates.
+ */
+export const useTelemetryValuesRounded = (
+  key: keyof Telemetry,
+  precision: number
+): number[] =>
+  useStoreWithEqualityFn(
+    useTelemetryStore,
+    (state) => (state.telemetry?.[key]?.value ?? []) as number[],
+    (a, b) => arrayCompareRounded(precision, a, b)
+  );
