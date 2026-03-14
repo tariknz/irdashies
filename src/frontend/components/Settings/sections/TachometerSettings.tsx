@@ -258,7 +258,6 @@ const CustomShiftPointsSection = ({ config, handleConfigChange }: { config: Tach
           {/* Demo Mode Info */}
           <div className="bg-blue-900/30 border border-blue-700/50 rounded p-3 text-xs">
             <div className="flex items-start gap-2">
-              <span className="text-blue-400">ℹ️</span>
               <div className="flex-1">
                 <p className="text-blue-200 font-medium mb-1">Demo Mode Car</p>
                 <p className="text-blue-300">

@@ -304,6 +304,36 @@ export const defaultDashboard: {
       },
     },
     {
+      id: 'tachometer',
+      enabled: false,
+      layout: {
+        x: 622,
+        y: 864,
+        width: 396,
+        height: 113,
+      },
+      config: {
+        enabled: false,
+        showRpmText: false,
+        rpmOrientation: 'horizontal',
+        shiftPointSettings: {
+          enabled: false,
+          indicatorType: 'glow',
+          indicatorColor: '#00ff00',
+          carConfigs: {},
+        },
+        background: { opacity: 80 },
+        showOnlyWhenOnTrack: true,
+        sessionVisibility: {
+          race: true,
+          loneQualify: true,
+          openQualify: true,
+          practice: true,
+          offlineTesting: true,
+        },
+      }
+    },
+    {
       id: 'relative',
       enabled: true,
       layout: {

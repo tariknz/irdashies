@@ -48,19 +48,10 @@ export const getOrCreateDefaultDashboardForProfile = (profileId: string) => {
   const dashboard = getDashboard(profileId);
 
   if (dashboard) {
-    // Migrate old widget IDs
-    // Note: This migration can be removed in the future, but will break users upgrading from versions prior to 0.0.38
-    const migratedWidgets = dashboard.widgets.map((widget) => {
-      if (widget.id === 'rpmled') {
-        return { ...widget, id: 'tachometer' };
-      }
-      return widget;
-    });
-
     // check missing widgets
     const missingWidgets = defaultDashboard.widgets.filter(
       (defaultWidget) =>
-        !migratedWidgets.find((widget) => widget.id === defaultWidget.id)
+        !dashboard.widgets.find((widget) => widget.id === defaultWidget.id)
     );
 
     // add missing widgets and save

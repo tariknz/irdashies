@@ -449,6 +449,7 @@ export interface WidgetConfigMap {
   map: TrackMapConfig;
   flatmap: FlatTrackMapConfig;
   input: InputConfig;
+  tachometer: TachometerConfig;
   fuel: FuelConfig;
   blindspotmonitor: BlindSpotMonitorConfig;
   garagecover: GarageCoverConfig;
