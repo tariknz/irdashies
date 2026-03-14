@@ -14,6 +14,7 @@ interface FuelCalculatorWidgetProps {
     barFontSize?: number;
   };
   isCompact?: boolean;
+  compactMode?: 'off' | 'compact' | 'ultra';
 }
 
 export const FuelCalculatorEconomyPredict: React.FC<
@@ -24,7 +25,7 @@ export const FuelCalculatorEconomyPredict: React.FC<
   settings,
   widgetId,
   customStyles,
-  isCompact,
+  compactMode,
 }) => {
   // Custom style handling for separate label/value sizes
   const widgetStyle =
@@ -60,7 +61,7 @@ export const FuelCalculatorEconomyPredict: React.FC<
 
   return (
     <div
-      className={`flex flex-row items-center justify-around w-full ${isCompact ? 'gap-0.5' : 'gap-2'}`}
+      className={`flex flex-row items-center justify-around w-full ${compactMode === 'ultra' ? 'gap-0' : compactMode === 'compact' ? 'gap-0.5' : 'gap-2'}`}
     >
       {scenariosToShow.map((scenario) => {
         const isCurrent = scenario.isCurrentTarget;
@@ -78,7 +79,7 @@ export const FuelCalculatorEconomyPredict: React.FC<
         return (
           <div
             key={lapsRemaining}
-            className={`flex flex-col items-center justify-center rounded px-2 ${bgColor} ${isCompact ? 'py-0.5' : 'py-1'}`}
+            className={`flex flex-col items-center justify-center rounded ${bgColor} ${compactMode === 'ultra' ? '' : compactMode === 'compact' ? 'p-1' : 'p-2'}`}
           >
             <span
               className={`${textColor} uppercase leading-none`}

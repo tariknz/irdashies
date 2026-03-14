@@ -60,10 +60,11 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
   const generalSettings = currentDashboard?.generalSettings;
 
   // Derived Settings based on General linkage
-  const derivedCompactMode = settings.useGeneralCompactMode
-    ? generalSettings?.compactMode === 'compact' ||
-      generalSettings?.compactMode === 'ultra'
-    : false;
+  // Use the full string so compact vs ultra can be distinguished downstream
+  const derivedCompactMode: 'off' | 'compact' | 'ultra' =
+    settings.useGeneralCompactMode
+      ? (generalSettings?.compactMode ?? 'off')
+      : 'off';
 
   const derivedFontStyles = useMemo(() => {
     if (!settings.useGeneralFontSize || !generalSettings?.fontSize) {
@@ -209,7 +210,8 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
       fuelUnits: fuelUnits,
       settings: settings,
       customStyles: widgetStyles,
-      isCompact: derivedCompactMode,
+      isCompact: derivedCompactMode !== 'off',
+      compactMode: derivedCompactMode,
     };
 
     switch (widgetId) {
@@ -323,8 +325,9 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
         ? 'rgba(239, 68, 68, 0.3)'
         : 'rgba(34, 197, 94, 0.3)';
 
-  const borderWidth = derivedCompactMode ? '' : 'border-2';
-  const paddingClass = derivedCompactMode ? '' : 'p-2';
+  const borderWidth =
+    derivedCompactMode !== 'off' ? 'border border-transparent' : 'border-2';
+  const paddingClass = derivedCompactMode !== 'off' ? '' : 'p-2';
 
   return (
     <div

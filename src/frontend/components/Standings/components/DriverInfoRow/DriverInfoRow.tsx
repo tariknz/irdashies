@@ -70,11 +70,7 @@ interface DriverRowInfoProps {
   slowdown: boolean;
   deltaDecimalPlaces?: number;
   hideCarManufacturer?: boolean;
-  badgeStyling?: boolean;
-  statusBadgesStyling?: boolean;
-  driverPositionBackground?: boolean;
-  driverNumberBackground?: boolean;
-  driverNumberBorder?: boolean;
+  compactMode?: string;
 }
 
 // Helper function to provide dummy data for hidden rows
@@ -187,12 +183,17 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
     deltaDecimalPlaces,
     pitStopDuration: pitStopDurationProp,
     hideCarManufacturer,
-    badgeStyling,
-    statusBadgesStyling,
-    driverPositionBackground,
-    driverNumberBackground,
-    driverNumberBorder,
+    compactMode,
   } = displayProps;
+
+  const badgeStyling = config?.stylingOptions?.badge ?? false;
+  const statusBadgesStyling = config?.stylingOptions?.statusBadges ?? false;
+  const driverPositionBackground =
+    config?.stylingOptions?.driverPosition?.background ?? true;
+  const driverNumberBackground =
+    config?.stylingOptions?.driverNumber?.background ?? true;
+  const driverNumberBorder =
+    config?.stylingOptions?.driverNumber?.border ?? true;
   const pitStopDurations = usePitStopDuration();
   const pitStopDuration =
     pitStopDurationProp ?? pitStopDurations[carIdx] ?? null;
@@ -337,6 +338,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
             rating={rating}
             badgeFormat={config?.badge?.badgeFormat}
             isMinimal={badgeStyling}
+            compactMode={compactMode}
           />
         ),
       },
@@ -533,6 +535,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
     emptyLapDeltaPlaceholders,
     hideCarManufacturer,
     pitExitAfterSF,
+    compactMode,
     badgeStyling,
     statusBadgesStyling,
     driverPositionBackground,

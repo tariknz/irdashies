@@ -61,14 +61,6 @@ export const Standings = () => {
     : 'border-spacing-y-0.5';
 
   const classHeaderStyle = settings?.classHeaderStyle;
-  const badgeStyling = settings?.stylingOptions?.badge ?? false;
-  const statusBadgesStyling = settings?.stylingOptions?.statusBadges ?? false;
-  const driverPositionBackground =
-    settings?.stylingOptions?.driverPosition?.background ?? true;
-  const driverNumberBackground =
-    settings?.stylingOptions?.driverNumber?.background ?? true;
-  const driverNumberBorder =
-    settings?.stylingOptions?.driverNumber?.border ?? true;
 
   if (!isSessionVisible) return <></>;
 
@@ -132,6 +124,7 @@ export const Standings = () => {
                   classDividerBottomBorder={
                     classHeaderStyle?.classDivider?.bottomBorder ?? false
                   }
+                  compactMode={generalSettings?.compactMode}
                 />
                 {classStandings.map((result, driverIndex) => {
                   const prev = classStandings[driverIndex - 1];
@@ -245,11 +238,7 @@ export const Standings = () => {
                         penalty={result.penalty}
                         slowdown={result.slowdown}
                         hideCarManufacturer={hideCarManufacturer}
-                        badgeStyling={badgeStyling}
-                        statusBadgesStyling={statusBadgesStyling}
-                        driverPositionBackground={driverPositionBackground}
-                        driverNumberBackground={driverNumberBackground}
-                        driverNumberBorder={driverNumberBorder}
+                        compactMode={generalSettings?.compactMode}
                       />
                     </Fragment>
                   );

@@ -23,8 +23,8 @@ import { SettingToggleRow } from '../components/SettingToggleRow';
 import { SettingActionButton } from '../components/SettingActionButton';
 import { SettingSelectRow } from '../components/SettingSelectRow';
 import { SettingSliderRow } from '../components/SettingSliderRow';
-import { DriverRatingBadge } from '../../Standings/components/DriverRatingBadge/DriverRatingBadge';
-import { DriverStatusBadges } from '../../Standings/components/DriverInfoRow/cells/DriverStatusBadges';
+import { DriverRatingBadge } from '../../DriverRatingBadge/DriverRatingBadge';
+import { DriverStatusBadges } from '../../DriverStatusBadges/DriverStatusBadges';
 
 const SETTING_ID = 'relative';
 

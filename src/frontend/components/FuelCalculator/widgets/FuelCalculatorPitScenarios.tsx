@@ -15,6 +15,7 @@ interface FuelCalculatorWidgetProps {
     barFontSize?: number;
   };
   isCompact?: boolean;
+  compactMode?: 'off' | 'compact' | 'ultra';
 }
 
 // Helper component for the Target row to avoid duplication
@@ -25,6 +26,7 @@ const TargetScenarioRow: React.FC<{
   settings: FuelCalculatorSettings;
   valueFontSize: string;
   isTesting: boolean;
+  compactMode?: 'off' | 'compact' | 'ultra';
 }> = ({
   targetLap,
   fuelData,
@@ -32,6 +34,7 @@ const TargetScenarioRow: React.FC<{
   settings,
   valueFontSize,
   isTesting,
+  compactMode,
 }) => {
   const lapsLeftAfterPit = Math.max(0, fuelData.totalLaps - targetLap);
   const safetyMargin = settings?.safetyMargin ?? 0.05;
@@ -78,29 +81,31 @@ const TargetScenarioRow: React.FC<{
   const finishDisplay =
     isTesting || consumption === 0 ? '--' : estimatedFinishFuel.toFixed(1);
   const rowColor = 'text-purple-400 font-bold bg-purple-500/20 rounded';
+  const cellPadding =
+    compactMode === 'ultra' ? '' : compactMode === 'compact' ? 'p-1' : 'p-2';
 
   return (
     <React.Fragment>
       <div
-        className={`${rowColor} py-0.5 text-center`}
+        className={`${rowColor} text-center ${cellPadding}`}
         style={{ fontSize: valueFontSize }}
       >
         L{targetLap}
       </div>
       <div
-        className={`${rowColor} text-center py-0.5`}
+        className={`${rowColor} text-center ${cellPadding}`}
         style={{ fontSize: valueFontSize }}
       >
         {addDisplay}
       </div>
       <div
-        className={`${rowColor} text-center py-0.5`}
+        className={`${rowColor} text-center ${cellPadding}`}
         style={{ fontSize: valueFontSize }}
       >
         {finishDisplay}
       </div>
       <div
-        className={`${rowColor} text-center py-0.5`}
+        className={`${rowColor} text-center ${cellPadding}`}
         style={{ fontSize: valueFontSize }}
       >
         TARGET
@@ -118,6 +123,7 @@ export const FuelCalculatorPitScenarios: React.FC<
   widgetId,
   customStyles,
   isCompact,
+  compactMode,
 }) => {
   // Custom style handling for separate label/value sizes
   const widgetStyle =
@@ -250,28 +256,35 @@ export const FuelCalculatorPitScenarios: React.FC<
             rowColor = 'text-cyan-400 font-bold';
           else rowColor = 'text-yellow-400';
 
+          const cellPadding =
+            compactMode === 'ultra'
+              ? ''
+              : compactMode === 'compact'
+                ? 'p-1'
+                : 'p-2';
+
           return (
             <React.Fragment key={scenario.laps}>
               <div
-                className={`${rowColor} py-0.5 text-center`}
+                className={`${rowColor} text-center ${cellPadding}`}
                 style={{ fontSize: valueFontSize }}
               >
                 L{pitLap}
               </div>
               <div
-                className={`${rowColor} text-center py-0.5`}
+                className={`${rowColor} text-center ${cellPadding}`}
                 style={{ fontSize: valueFontSize }}
               >
                 {addDisplay}
               </div>
               <div
-                className={`${rowColor} text-center py-0.5`}
+                className={`${rowColor} text-center ${cellPadding}`}
                 style={{ fontSize: valueFontSize }}
               >
                 {finishDisplay}
               </div>
               <div
-                className={`${rowColor} text-center py-0.5`}
+                className={`${rowColor} text-center ${cellPadding}`}
                 style={{ fontSize: valueFontSize }}
               >
                 {windowDisplay}
@@ -289,6 +302,7 @@ export const FuelCalculatorPitScenarios: React.FC<
             settings={settings}
             valueFontSize={valueFontSize}
             isTesting={isTesting}
+            compactMode={compactMode}
           />
         )}
       </div>

@@ -1,5 +1,4 @@
 import { BarbellIcon, UsersIcon } from '@phosphor-icons/react';
-import { useGeneralSettings } from '@irdashies/context';
 import { getTailwindStyle } from '@irdashies/utils/colors';
 
 interface DriverClassHeaderProps {
@@ -13,6 +12,7 @@ interface DriverClassHeaderProps {
   classInfoColorBackground?: boolean;
   classDividerBottomBorder?: boolean;
   colSpan?: number;
+  compactMode?: string;
 }
 
 export const DriverClassHeader = ({
@@ -26,8 +26,8 @@ export const DriverClassHeader = ({
   classInfoColorBackground = true,
   classDividerBottomBorder = false,
   colSpan,
+  compactMode,
 }: DriverClassHeaderProps) => {
-  const generalSettings = useGeneralSettings();
   const styles = getTailwindStyle(classColor, highlightColor, isMultiClass);
   const classNameStyle = classNameColorBackground
     ? styles.classHeader
@@ -55,12 +55,12 @@ export const DriverClassHeader = ({
       >
         <div className={`[text-shadow:_1px_1px_1px_rgba(0_0_0/0.2)] flex`}>
           <span
-            className={`${classNameStyle} px-2${generalSettings?.compactMode !== 'ultra' ? ' py-1' : ''} font-bold${classNameColorBackground ? ' border-l-4' : ''}`}
+            className={`${classNameStyle} px-2${compactMode !== 'ultra' ? ' py-1' : ''} font-bold${classNameColorBackground ? ' border-l-4' : ''}`}
           >
             {className}
           </span>
           <span
-            className={`${classInfoStyle} px-2${generalSettings?.compactMode !== 'ultra' ? ' py-1' : ''} flex items-center gap-1`}
+            className={`${classInfoStyle} px-2${compactMode !== 'ultra' ? ' py-1' : ''} flex items-center gap-1`}
           >
             {sof ? (
               <>

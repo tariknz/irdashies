@@ -60,13 +60,6 @@ export const getOrCreateDefaultDashboardForProfile = (profileId: string) => {
       ...dashboard.generalSettings,
     };
 
-    // Migrate compactMode from boolean (legacy) to string union
-    if ((mergedGeneralSettings.compactMode as unknown) === true) {
-      mergedGeneralSettings.compactMode = 'compact';
-    } else if ((mergedGeneralSettings.compactMode as unknown) === false) {
-      mergedGeneralSettings.compactMode = 'off';
-    }
-
     const updatedDashboard = {
       ...dashboard,
       generalSettings: mergedGeneralSettings,

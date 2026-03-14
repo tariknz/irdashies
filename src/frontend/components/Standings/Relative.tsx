@@ -47,15 +47,6 @@ export const Relative = () => {
     ? 'border-spacing-y-0'
     : 'border-spacing-y-0.5';
 
-  const badgeStyling = settings?.stylingOptions?.badge ?? false;
-  const statusBadgesStyling = settings?.stylingOptions?.statusBadges ?? false;
-  const driverPositionBackground =
-    settings?.stylingOptions?.driverPosition?.background ?? true;
-  const driverNumberBackground =
-    settings?.stylingOptions?.driverNumber?.background ?? true;
-  const driverNumberBorder =
-    settings?.stylingOptions?.driverNumber?.border ?? true;
-
   // Always render 2 * buffer + 1 rows (buffer above + player + buffer below)
   const totalRows = 2 * buffer + 1;
 
@@ -106,11 +97,7 @@ export const Relative = () => {
           penalty={false}
           slowdown={false}
           hideCarManufacturer={hideCarManufacturer}
-          badgeStyling={badgeStyling}
-          statusBadgesStyling={statusBadgesStyling}
-          driverPositionBackground={driverPositionBackground}
-          driverNumberBackground={driverNumberBackground}
-          driverNumberBorder={driverNumberBorder}
+          compactMode={generalSettings?.compactMode}
         />
       ));
     }
@@ -164,11 +151,7 @@ export const Relative = () => {
             slowdown={false}
             deltaDecimalPlaces={settings?.delta?.precision}
             hideCarManufacturer={hideCarManufacturer}
-            badgeStyling={badgeStyling}
-            statusBadgesStyling={statusBadgesStyling}
-            driverPositionBackground={driverPositionBackground}
-            driverNumberBackground={driverNumberBackground}
-            driverNumberBorder={driverNumberBorder}
+            compactMode={generalSettings?.compactMode}
           />
         );
       }
@@ -233,11 +216,7 @@ export const Relative = () => {
           slowdown={result.slowdown}
           deltaDecimalPlaces={settings?.delta?.precision}
           hideCarManufacturer={hideCarManufacturer}
-          badgeStyling={badgeStyling}
-          statusBadgesStyling={statusBadgesStyling}
-          driverPositionBackground={driverPositionBackground}
-          driverNumberBackground={driverNumberBackground}
-          driverNumberBorder={driverNumberBorder}
+          compactMode={generalSettings?.compactMode}
         />
       );
     });
@@ -250,11 +229,7 @@ export const Relative = () => {
     highlightColor,
     hideCarManufacturer,
     isTeamRacing,
-    badgeStyling,
-    statusBadgesStyling,
-    driverPositionBackground,
-    driverNumberBackground,
-    driverNumberBorder,
+    generalSettings?.compactMode,
   ]);
 
   if (!isSessionVisible) return <></>;
