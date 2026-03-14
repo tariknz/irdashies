@@ -115,6 +115,35 @@ export const PitlaneHelperSettings = () => {
                   />
 
                   <SettingToggleRow
+                    title="Show Speed Summary"
+                    description="Show summary of speed delta, speed unit and speed limit"
+                    enabled={settings.config.showSpeedSummary}
+                    onToggle={(newValue) =>
+                      handleConfigChange({ showSpeedSummary: newValue })
+                    }
+                  />
+
+                  {settings.config.showSpeedSummary && (
+                    <SettingsSection>
+                      <SettingButtonGroupRow<
+                        'none' | 'text' | 'european' | 'american'
+                      >
+                        title="Speed Limit Style"
+                        value={settings.config.speedLimitStyle ?? 'text'}
+                        options={[
+                          { label: 'None', value: 'none' },
+                          { label: 'Text', value: 'text' },
+                          { label: 'European', value: 'european' },
+                          { label: 'American', value: 'american' },
+                        ]}
+                        onChange={(v) =>
+                          handleConfigChange({ speedLimitStyle: v })
+                        }
+                      />
+                    </SettingsSection>
+                  )}
+
+                  <SettingToggleRow
                     title="Speed Bar"
                     description="Show bar indicating speed relative to pit limit"
                     enabled={settings.config.showSpeedBar ?? true}

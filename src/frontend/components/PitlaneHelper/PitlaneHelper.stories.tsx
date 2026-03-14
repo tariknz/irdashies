@@ -47,6 +47,8 @@ const mockConfig = (overrides = {}) =>
   ({
     background: { opacity: 80 },
     showSpeedBar: true,
+    showSpeedSummary: true,
+    speedLimitStyle: 'european' as const,
     speedBarOrientation: 'vertical' as const,
     showProgressBar: true,
     progressBarOrientation: 'horizontal' as const,
@@ -313,9 +315,9 @@ export const OnPitRoad: Story = {
 };
 
 // At the pitbox
-export const AtPitbox: Story = {
+export const AtPitboxAmerican: Story = {
   render: (args) => (
-    <div style={{ height: '150px', width: '250px' }}>
+    <div style={{ height: '200px', width: '250px' }}>
       <PitlaneHelperBody {...args} />
     </div>
   ),
@@ -327,7 +329,7 @@ export const AtPitbox: Story = {
       deltaMph: -28,
     }),
     position: mockPosition({ distanceToPit: 0 }),
-    config: mockConfig(),
+    config: mockConfig({ speedLimitStyle: 'american' }),
     displayKph: true,
     onPitRoad: true,
     inBlendZone: false,
@@ -347,10 +349,10 @@ export const SpeedingInactiveInputs: Story = {
   ),
   args: {
     speed: mockSpeed({
-      speedKph: 95,
-      speedMph: 59,
-      deltaKph: 15,
-      deltaMph: 9,
+      speedKph: 95.9,
+      speedMph: 59.9,
+      deltaKph: 15.9,
+      deltaMph: 9.9,
       isSpeeding: true,
       colorClass: 'text-red-600',
     }),
@@ -451,7 +453,7 @@ export const WithTraffic: Story = {
 // Horizontal Speed
 export const HorizontalSpeed: Story = {
   render: (args) => (
-    <div style={{ height: '250px', width: '200px' }}>
+    <div style={{ height: '300px', width: '200px' }}>
       <PitlaneHelperBody {...args} />
     </div>
   ),

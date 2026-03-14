@@ -7,6 +7,8 @@ export interface BlindSpotMonitorIndicatorProps {
   percent: number;
   state: CarLeftRight;
   width?: number;
+  borderSize?: number;
+  indicatorColor?: number;
   visible: boolean;
   disableTransition: boolean;
 }
@@ -17,6 +19,8 @@ export const BlindSpotMonitorIndicator = ({
   percent,
   state,
   width,
+  borderSize,
+  indicatorColor,
   visible,
   disableTransition,
 }: BlindSpotMonitorIndicatorProps) => {
@@ -24,6 +28,7 @@ export const BlindSpotMonitorIndicator = ({
     state === CarLeftRight.Cars2Left || state === CarLeftRight.Cars2Right;
   const topPosition = `${25 - percent * 75}%`;
   const widthPx = `${width ?? 20}px`;
+  const indicatorColorHex = `#${(indicatorColor ?? 16096779).toString(16).padStart(6, '0')}`;
   const twoCarsText = state === CarLeftRight.Cars2Left ? '2 left' : '2 right';
   const transitionTimeoutRef = useRef<number | null>(null);
   const [enableTransition, setEnableTransition] = useState(false);
@@ -57,12 +62,14 @@ export const BlindSpotMonitorIndicator = ({
       style={{ display: visible ? 'block' : 'none' }}
     >
       <div
-        className={`absolute inset-y-0 rounded-full ${side === 'left' ? 'left-0' : 'right-0'} overflow-hidden border`}
+        className={`absolute inset-y-0 rounded-full ${side === 'left' ? 'left-0' : 'right-0'} overflow-hidden`}
         style={{
           backgroundColor:
             bgOpacity !== undefined && bgOpacity > 0
               ? `rgba(0, 0, 0, ${bgOpacity / 100})`
               : 'transparent',
+          borderStyle: 'solid',
+          borderWidth: `${borderSize ?? 1}px`,
           borderColor:
             bgOpacity !== undefined && bgOpacity > 0
               ? `rgba(0, 0, 0, ${bgOpacity / 100})`
@@ -71,10 +78,11 @@ export const BlindSpotMonitorIndicator = ({
         }}
       >
         <div
-          className={`absolute rounded-full h-[50%] left-1/2 -translate-x-1/2 bg-amber-500 flex items-center justify-center`}
+          className={`absolute rounded-full h-[50%] left-1/2 -translate-x-1/2 flex items-center justify-center`}
           style={{
             top: topPosition,
             width: widthPx,
+            backgroundColor: indicatorColorHex,
             transition: enableTransition ? 'top 0.04s linear' : 'none',
           }}
         ></div>

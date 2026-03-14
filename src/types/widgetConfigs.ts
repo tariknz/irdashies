@@ -371,6 +371,8 @@ export interface BlindSpotMonitorConfig {
   distAhead: number;
   distBehind: number;
   width?: number;
+  borderSize?: number;
+  indicatorColor?: number;
   sessionVisibility: SessionVisibilitySettings;
 }
 
@@ -437,6 +439,8 @@ export interface PitlaneHelperConfig {
   showPastPitBox?: boolean;
   showProgressBar?: boolean;
   showSpeedBar?: boolean;
+  showSpeedSummary: boolean;
+  speedLimitStyle?: 'none' | 'text' | 'european' | 'american';
   showPitExitInputs?: boolean;
   pitExitInputs?: { throttle: boolean; clutch: boolean };
   showInputsPhase?: 'atPitbox' | 'afterPitbox' | 'always';

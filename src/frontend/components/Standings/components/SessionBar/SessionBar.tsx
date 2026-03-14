@@ -241,8 +241,17 @@ export const SessionBar = ({
         const effectiveTotal = overrun ? lapDisplay : lapsTotal;
         const lapValue =
           lapsMode === 'Remaining'
-            ? Math.max(Math.ceil(effectiveTotal) - lapDisplay + 1, 0)
+            ? Math.min(
+                Math.max(Math.ceil(effectiveTotal) - lapDisplay + 1, 0),
+                Math.ceil(effectiveTotal)
+              )
             : lapDisplay;
+        if (state >= SessionState.Checkered)
+          return (
+            <div className="flex justify-center">
+              L{Math.ceil(effectiveTotal).toFixed(0)}
+            </div>
+          );
         if (lapsTotal > 0)
           if (isFixedLapRace)
             return (

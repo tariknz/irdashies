@@ -329,6 +329,8 @@ export const TrackCanvas = ({
       trackLineWidth,
       trackOutlineWidth,
       trackmapFontSize,
+      driverCircleSize,
+      playerCircleSize,
       sfPointX: startFinishLine?.point?.x,
       sfPointY: startFinishLine?.point?.y,
       isMinimalTrack,
@@ -340,8 +342,11 @@ export const TrackCanvas = ({
         cacheCanvas.width = canvas.width;
         cacheCanvas.height = canvas.height;
 
-        const scaleX = canvasSize.width / TRACK_DRAWING_WIDTH;
-        const scaleY = canvasSize.height / TRACK_DRAWING_HEIGHT;
+        const maxCircleSize = Math.max(driverCircleSize, playerCircleSize);
+        const scaleX =
+          canvasSize.width / (TRACK_DRAWING_WIDTH + 2 * maxCircleSize);
+        const scaleY =
+          canvasSize.height / (TRACK_DRAWING_HEIGHT + 2 * maxCircleSize);
         const scale = Math.min(scaleX, scaleY);
         const offsetX = (canvasSize.width - TRACK_DRAWING_WIDTH * scale) / 2;
         const offsetY = (canvasSize.height - TRACK_DRAWING_HEIGHT * scale) / 2;
@@ -380,8 +385,10 @@ export const TrackCanvas = ({
     ctx.restore();
 
     // 3. Draw dynamic elements (drivers)
-    const scaleX = canvasSize.width / TRACK_DRAWING_WIDTH;
-    const scaleY = canvasSize.height / TRACK_DRAWING_HEIGHT;
+    const maxCircleSize = Math.max(driverCircleSize, playerCircleSize);
+    const scaleX = canvasSize.width / (TRACK_DRAWING_WIDTH + 2 * maxCircleSize);
+    const scaleY =
+      canvasSize.height / (TRACK_DRAWING_HEIGHT + 2 * maxCircleSize);
     const scale = Math.min(scaleX, scaleY);
     const offsetX = (canvasSize.width - TRACK_DRAWING_WIDTH * scale) / 2;
     const offsetY = (canvasSize.height - TRACK_DRAWING_HEIGHT * scale) / 2;
