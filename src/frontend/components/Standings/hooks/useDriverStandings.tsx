@@ -10,12 +10,11 @@ import {
   useTelemetryValue,
   useFocusCarIdx,
   useTelemetryValues,
-} from '@irdashies/context';
-import { useLapTimeHistory } from '../../../context/LapTimesStore/LapTimesStore';
-import {
+  useTelemetryValuesRounded,
   useCarLap,
   usePitLap,
   usePrevCarTrackSurface,
+  useLapTimeHistory,
 } from '@irdashies/context';
 import {
   createDriverStandings,
@@ -87,11 +86,11 @@ export const useDriverStandings = (
     enabled: useLivePositionStandings,
   });
   const fastestLaps = useSessionFastestLaps(sessionNum);
-  const carIdxF2Time = useTelemetryValues<number[]>('CarIdxF2Time');
-  const carIdxEstTime = useTelemetryValues<number[]>('CarIdxEstTime');
+  const carIdxF2Time = useTelemetryValuesRounded('CarIdxF2Time', 2);
+  const carIdxEstTime = useTelemetryValuesRounded('CarIdxEstTime', 2);
   const carIdxOnPitRoad = useTelemetryValues<boolean[]>('CarIdxOnPitRoad');
   const carIdxLap = useTelemetryValues<number[]>('CarIdxLap');
-  const carIdxLapDistPct = useTelemetryValues<number[]>('CarIdxLapDistPct');
+  const carIdxLapDistPct = useTelemetryValuesRounded('CarIdxLapDistPct', 3);
   const carIdxTrackSurface =
     useTelemetryValues<TrackLocation[]>('CarIdxTrackSurface');
   const radioTransmitCarIdx = useTelemetryValues<number[]>(

@@ -1,4 +1,4 @@
-import { useTelemetryValue } from '../../../context/TelemetryStore/TelemetryStore';
+import { useTelemetryValue } from '@irdashies/context';
 import { useCarTachometerData } from './useCarTachometerData';
 import type { ShiftPointSettings } from '@irdashies/types';
 
