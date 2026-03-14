@@ -16,6 +16,13 @@ import { SettingDivider } from '../components/SettingDivider';
 
 const SETTING_ID = 'map';
 
+// Simplified SVG path of VIR North circuit for track style preview
+const VIR_NORTH_PATH =
+  'M 200,450 C 250,350 350,280 500,260 C 650,240 900,250 1100,280 ' +
+  'C 1300,310 1500,360 1650,400 C 1750,430 1810,490 1780,560 ' +
+  'C 1750,630 1650,670 1500,680 C 1350,690 1100,700 900,690 ' +
+  'C 700,680 500,660 350,620 C 220,590 150,530 200,450 Z';
+
 const defaultConfig = getWidgetDefaultConfig('map');
 
 export const TrackMapSettings = () => {
@@ -77,6 +84,13 @@ export const TrackMapSettings = () => {
               setActiveTab={setActiveTab}
             >
               Visibility
+            </TabButton>
+            <TabButton
+              id="styling"
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+            >
+              Styling
             </TabButton>
           </div>
 
@@ -165,7 +179,6 @@ export const TrackMapSettings = () => {
                     />
                   </SettingsSection>
                 )}
-
                 <SettingSliderRow
                   title="Driver Circle Size"
                   description="Size of the circle for other drivers (matches curved track map scale)"
@@ -230,6 +243,174 @@ export const TrackMapSettings = () => {
                   }
                 />
               </SettingsSection>
+            )}
+
+            {/* STYLING TAB */}
+            {activeTab === 'styling' && (
+              <div>
+                <div className="mb-6">
+                  <SettingsSection title="Driver Circles">
+                    <div className="flex gap-3">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handleConfigChange({
+                            styling: {
+                              ...settings.config.styling,
+                              isMinimalCar: false,
+                            },
+                          })
+                        }
+                        className={`flex flex-col items-center gap-1 px-3 py-2 rounded border cursor-pointer transition-colors ${
+                          !settings.config.styling?.isMinimalCar
+                            ? 'border-blue-500 bg-blue-500/10'
+                            : 'border-transparent hover:bg-slate-800'
+                        }`}
+                      >
+                        <div className="flex items-center gap-1.5 py-1">
+                          <div
+                            className="w-6 h-6 rounded-full bg-amber-500 flex items-center justify-center text-white"
+                            style={{
+                              fontSize: '12px',
+                              filter: 'drop-shadow(1px 1px 2px black)',
+                            }}
+                          >
+                            1
+                          </div>
+                          <div
+                            className="w-6 h-6 rounded-full bg-yellow-500 flex items-center justify-center text-white"
+                            style={{
+                              fontSize: '12px',
+                              filter: 'drop-shadow(1px 1px 2px black)',
+                            }}
+                          >
+                            4
+                          </div>
+                          <div
+                            className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center text-white"
+                            style={{
+                              fontSize: '12px',
+                              filter: 'drop-shadow(1px 1px 2px black)',
+                            }}
+                          >
+                            7
+                          </div>
+                        </div>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handleConfigChange({
+                            styling: {
+                              ...settings.config.styling,
+                              isMinimalCar: true,
+                            },
+                          })
+                        }
+                        className={`flex flex-col items-center gap-1 px-3 py-2 rounded border cursor-pointer transition-colors ${
+                          settings.config.styling?.isMinimalCar
+                            ? 'border-blue-500 bg-blue-500/10'
+                            : 'border-transparent hover:bg-slate-800'
+                        }`}
+                      >
+                        <div className="flex items-center gap-1.5 py-1">
+                          <div
+                            className="w-6 h-6 rounded-full bg-amber-500 flex items-center justify-center text-white"
+                            style={{ fontSize: '12px' }}
+                          >
+                            1
+                          </div>
+                          <div
+                            className="w-6 h-6 rounded-full bg-yellow-500 flex items-center justify-center text-white"
+                            style={{ fontSize: '12px' }}
+                          >
+                            4
+                          </div>
+                          <div
+                            className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center text-white"
+                            style={{ fontSize: '12px' }}
+                          >
+                            7
+                          </div>
+                        </div>
+                      </button>
+                    </div>
+                  </SettingsSection>
+                </div>
+                <div className="mb-6">
+                  <SettingsSection title="Track">
+                    <div className="flex gap-3">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handleConfigChange({
+                            styling: {
+                              ...settings.config.styling,
+                              isMinimalTrack: false,
+                            },
+                          })
+                        }
+                        className={`flex flex-col items-center gap-1 px-3 py-2 rounded border cursor-pointer transition-colors ${
+                          !settings.config.styling?.isMinimalTrack
+                            ? 'border-blue-500 bg-blue-500/10'
+                            : 'border-transparent hover:bg-slate-800'
+                        }`}
+                      >
+                        <svg
+                          viewBox="60 240 1770 475"
+                          width="200"
+                          height="54"
+                          style={{ filter: 'drop-shadow(1px 1px 2px black)' }}
+                        >
+                          <path
+                            d={VIR_NORTH_PATH}
+                            fill="none"
+                            stroke="black"
+                            strokeWidth="32"
+                          />
+                          <path
+                            d={VIR_NORTH_PATH}
+                            fill="none"
+                            stroke="white"
+                            strokeWidth="18"
+                          />
+                        </svg>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handleConfigChange({
+                            styling: {
+                              ...settings.config.styling,
+                              isMinimalTrack: true,
+                            },
+                          })
+                        }
+                        className={`flex flex-col items-center gap-1 px-3 py-2 rounded border cursor-pointer transition-colors ${
+                          settings.config.styling?.isMinimalTrack
+                            ? 'border-blue-500 bg-blue-500/10'
+                            : 'border-transparent hover:bg-slate-800'
+                        }`}
+                      >
+                        <svg viewBox="60 240 1770 475" width="200" height="54">
+                          <path
+                            d={VIR_NORTH_PATH}
+                            fill="none"
+                            stroke="black"
+                            strokeWidth="32"
+                          />
+                          <path
+                            d={VIR_NORTH_PATH}
+                            fill="none"
+                            stroke="white"
+                            strokeWidth="18"
+                          />
+                        </svg>
+                      </button>
+                    </div>
+                  </SettingsSection>
+                </div>
+              </div>
             )}
           </div>
         </div>

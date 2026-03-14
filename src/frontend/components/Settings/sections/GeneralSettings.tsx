@@ -86,7 +86,7 @@ export const GeneralSettings = () => {
     enableAutoStart:
       currentDashboard?.generalSettings?.enableAutoStart ?? false,
     startMinimized: currentDashboard?.generalSettings?.startMinimized ?? false,
-    compactMode: currentDashboard?.generalSettings?.compactMode ?? false,
+    compactMode: currentDashboard?.generalSettings?.compactMode ?? 'off',
     overlayAlwaysOnTop:
       currentDashboard?.generalSettings?.overlayAlwaysOnTop ?? true,
     enableNetworkAccess:
@@ -234,8 +234,10 @@ export const GeneralSettings = () => {
     updateDashboard(newSettings);
   };
 
-  const handleCompactModeChange = (enabled: boolean) => {
-    const newSettings = { ...settings, compactMode: enabled };
+  const handleCompactModeChange = (
+    value: NonNullable<GeneralSettingsType['compactMode']>
+  ) => {
+    const newSettings = { ...settings, compactMode: value };
     setSettings(newSettings);
     updateDashboard(newSettings);
   };
@@ -341,26 +343,25 @@ export const GeneralSettings = () => {
 
         {/* Compact Mode Setting */}
         <div className="space-y-4">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <h3 className="text-lg font-medium text-slate-200">
-                Compact Mode
-              </h3>
-              <p className="text-sm text-slate-400">
-                When enabled, visual spacing is minimized, reducing the vertical
-                space between drivers and class headers in the standings and
-                relatives.
-              </p>
-            </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                checked={settings.compactMode ?? false}
-                onChange={(e) => handleCompactModeChange(e.target.checked)}
-                className="sr-only peer"
-              />
-              <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-            </label>
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-medium text-slate-200">Compact Mode</h3>
+          </div>
+          <div className="mt-4">
+            <select
+              value={settings.compactMode ?? 'off'}
+              onChange={(e) =>
+                handleCompactModeChange(
+                  e.target.value as NonNullable<
+                    GeneralSettingsType['compactMode']
+                  >
+                )
+              }
+              className="w-full px-3 py-2 bg-slate-700 text-slate-300 rounded border border-slate-600 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            >
+              <option value="off">Off</option>
+              <option value="compact">Compact</option>
+              <option value="ultra">Ultra</option>
+            </select>
           </div>
         </div>
 

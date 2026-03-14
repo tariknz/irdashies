@@ -9,7 +9,11 @@ import { useDashboard } from '@irdashies/context';
 import { ToggleSwitch } from '../components/ToggleSwitch';
 import { TabButton } from '../components/TabButton';
 import { useSortableList } from '../../SortableList';
-import { DotsSixVerticalIcon } from '@phosphor-icons/react';
+import {
+  DotsSixVerticalIcon,
+  BarbellIcon,
+  UsersIcon,
+} from '@phosphor-icons/react';
 import { BadgeFormatPreview } from '../components/BadgeFormatPreview';
 import { DriverNamePreview } from '../components/DriverNamePreview';
 import {
@@ -23,6 +27,12 @@ import { SettingToggleRow } from '../components/SettingToggleRow';
 import { SettingActionButton } from '../components/SettingActionButton';
 import { SettingSliderRow } from '../components/SettingSliderRow';
 import { SettingSelectRow } from '../components/SettingSelectRow';
+import { DriverRatingBadge } from '../../DriverRatingBadge/DriverRatingBadge';
+import { DriverStatusBadges } from '../../DriverStatusBadges/DriverStatusBadges';
+import { RatingChange } from '../../Standings/components/RatingChange/RatingChange';
+import { Compound } from '../../Standings/components/Compound/Compound';
+import { PitStatusCell } from '../../Standings/components/DriverInfoRow/cells/PitStatusCell';
+import { CarManufacturer } from '../../Standings/components/CarManufacturer/CarManufacturer';
 
 const SETTING_ID = 'standings';
 
@@ -828,9 +838,16 @@ export const StandingsSettings = () => {
               >
                 Visibility
               </TabButton>
+              <TabButton
+                id="styling"
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+              >
+                Styling
+              </TabButton>
             </div>
 
-            <div className="pt-4 space-y-4">
+            <div className="space-y-4">
               {/* DISPLAY TAB */}
               {activeTab === 'display' && (
                 <SettingsSection title="Display Order">
@@ -1128,6 +1145,682 @@ export const StandingsSettings = () => {
                     }
                   />
                 </SettingsSection>
+              )}
+
+              {/* STYLING TAB */}
+              {activeTab === 'styling' && (
+                <div>
+                  {/* Live Preview */}
+                  {(() => {
+                    const posBg =
+                      settings.config.stylingOptions?.driverPosition
+                        ?.background !== false;
+                    const numBg =
+                      settings.config.stylingOptions?.driverNumber
+                        ?.background !== false;
+                    const numBorder =
+                      settings.config.stylingOptions?.driverNumber?.border !==
+                      false;
+                    const classNameBg =
+                      settings.config.classHeaderStyle?.className
+                        ?.colorBackground !== false;
+                    const classInfoBg =
+                      settings.config.classHeaderStyle?.classInfo
+                        ?.colorBackground !== false;
+                    const classDivider =
+                      settings.config.classHeaderStyle?.classDivider
+                        ?.bottomBorder;
+
+                    const numColorClass = numBg
+                      ? 'bg-yellow-800 border-yellow-500'
+                      : numBorder
+                        ? 'border-yellow-500'
+                        : '';
+                    const numBorderClass = numBorder ? 'border-l-4' : '';
+
+                    const mockTires = [
+                      { TireIndex: 0, TireCompoundType: 'Hard' },
+                      { TireIndex: 1, TireCompoundType: 'Wet' },
+                    ];
+                    const badgeStyling =
+                      settings.config.stylingOptions?.badge ?? false;
+                    const previewDrivers = [
+                      {
+                        pos: 1,
+                        num: '12',
+                        name: 'Harrison Zgorliski',
+                        isPlayer: false,
+                        gap: '+0.52',
+                        iratingChange: 42,
+                        lastTime: '1:23.890',
+                        lastTimeClass: '',
+                        fastestTime: '1:23.456',
+                        hasFastestTime: false,
+                      },
+                      {
+                        pos: 2,
+                        num: '33',
+                        name: 'Tarik Alani',
+                        isPlayer: true,
+                        gap: '—',
+                        iratingChange: 0,
+                        lastTime: '1:23.456',
+                        lastTimeClass: 'text-green-400',
+                        fastestTime: '1:23.456',
+                        hasFastestTime: true,
+                      },
+                      {
+                        pos: 3,
+                        num: '7',
+                        name: 'Michael Wiese',
+                        isPlayer: false,
+                        gap: '+1.45',
+                        iratingChange: -28,
+                        lastTime: '1:23.712',
+                        lastTimeClass: '',
+                        fastestTime: '1:23.890',
+                        hasFastestTime: false,
+                      },
+                    ];
+
+                    return (
+                      <div className="mb-2 p-2 bg-slate-900/50 rounded overflow-x-auto">
+                        <table className="text-xs text-white border-collapse w-full">
+                          <tbody>
+                            <tr>
+                              <td
+                                className={
+                                  classDivider
+                                    ? 'border-b-4 border-yellow-500'
+                                    : ''
+                                }
+                              />
+                              <td
+                                colSpan={10}
+                                className={`p-0 ${classDivider ? 'border-b-4 border-yellow-500' : ''}`}
+                              >
+                                <div className="flex [text-shadow:_1px_1px_1px_rgba(0_0_0/0.2)]">
+                                  <span
+                                    className={`${classNameBg ? 'bg-yellow-500 border-yellow-500 border-l-4' : 'border-yellow-500'} px-2 py-0.5 font-bold`}
+                                  >
+                                    BMW M4 GT4
+                                  </span>
+                                  <span
+                                    className={`${classInfoBg ? 'bg-yellow-800 border-yellow-500' : 'border-yellow-500'} px-2 py-0.5 flex items-center gap-1`}
+                                  >
+                                    <BarbellIcon size={10} />
+                                    <span>1253</span>
+                                    <UsersIcon size={10} className="ml-2" />
+                                    <span>11</span>
+                                  </span>
+                                </div>
+                              </td>
+                            </tr>
+                            {previewDrivers.map((d) => (
+                              <tr
+                                key={d.pos}
+                                className={
+                                  d.isPlayer
+                                    ? 'bg-yellow-500/20'
+                                    : 'odd:bg-slate-800/70 even:bg-slate-900/70'
+                                }
+                              >
+                                {/* Position */}
+                                <td
+                                  className={`px-2 py-0.5 text-center whitespace-nowrap w-6 ${d.isPlayer && posBg ? 'bg-yellow-500 text-yellow-900' : ''}`}
+                                >
+                                  {d.pos}
+                                </td>
+                                {/* Car number */}
+                                <td
+                                  className={`px-1 py-0.5 text-right whitespace-nowrap w-8 ${numColorClass} ${numBorderClass}`}
+                                >
+                                  #{d.num}
+                                </td>
+                                {/* Driver name */}
+                                <td className="px-2 py-0.5 whitespace-nowrap w-auto">
+                                  {d.name}
+                                </td>
+                                {/* Pit Status */}
+                                <td className="px-2 py-0.5 text-center whitespace-nowrap w-6">
+                                  <PitStatusCell
+                                    onPitRoad
+                                    isMinimal={
+                                      settings.config.stylingOptions
+                                        ?.statusBadges === true
+                                    }
+                                  />
+                                </td>
+                                {/* Car manufacturer */}
+                                <td className="px-2 py-0.5 text-center whitespace-nowrap w-6">
+                                  <CarManufacturer carId={195} />
+                                </td>
+                                {/* Badge */}
+                                <td className="py-0.5 text-center whitespace-nowrap w-8">
+                                  <DriverRatingBadge
+                                    license="B 3.8"
+                                    rating={1412}
+                                    format={
+                                      settings.config.badge?.badgeFormat ??
+                                      'license-color-rating-bw'
+                                    }
+                                    isMinimal={badgeStyling}
+                                  />
+                                </td>
+                                {/* iRating change */}
+                                <td className="px-2 py-0.5 text-center whitespace-nowrap w-8">
+                                  <RatingChange value={d.iratingChange} />
+                                </td>
+                                {/* Gap */}
+                                <td className="px-2 py-0.5 text-center whitespace-nowrap tabular-nums w-8">
+                                  {d.gap}
+                                </td>
+                                {/* Fastest time */}
+                                <td
+                                  className={`px-2 py-0.5 whitespace-nowrap tabular-nums w-10 ${d.hasFastestTime ? 'text-purple-400' : ''}`}
+                                >
+                                  {d.fastestTime}
+                                </td>
+                                {/* Last time */}
+                                <td
+                                  className={`px-2 py-0.5 whitespace-nowrap tabular-nums w-10 ${d.lastTimeClass}`}
+                                >
+                                  {d.lastTime}
+                                </td>
+                                {/* Tire compound */}
+                                <td className="px-2 py-0.5 text-center whitespace-nowrap w-8">
+                                  <div className="flex items-center justify-center">
+                                    <Compound
+                                      tireCompound={0}
+                                      mockTires={mockTires}
+                                    />
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    );
+                  })()}
+                  <div className="mb-6">
+                    <SettingsSection title="Class Header">
+                      <div className="space-y-4 pl-2">
+                        <div>
+                          <p className="text-sm font-medium text-slate-300 mb-2">
+                            Name
+                          </p>
+                          <div className="flex gap-3">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handleConfigChange({
+                                  classHeaderStyle: {
+                                    ...settings.config.classHeaderStyle,
+                                    className: { colorBackground: true },
+                                  },
+                                })
+                              }
+                              className={`flex flex-col items-center gap-1 px-3 py-2 rounded border cursor-pointer transition-colors ${
+                                settings.config.classHeaderStyle?.className
+                                  ?.colorBackground !== false
+                                  ? 'border-blue-500 bg-blue-500/10'
+                                  : 'border-transparent hover:bg-slate-800'
+                              }`}
+                            >
+                              <div className="flex items-center text-white text-xs [text-shadow:_1px_1px_1px_rgba(0_0_0/0.2)]">
+                                <span className="bg-yellow-500 border-yellow-500 px-2 py-1 font-bold border-l-4">
+                                  BMW M4 GT4
+                                </span>
+                              </div>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handleConfigChange({
+                                  classHeaderStyle: {
+                                    ...settings.config.classHeaderStyle,
+                                    className: { colorBackground: false },
+                                  },
+                                })
+                              }
+                              className={`flex flex-col items-center gap-1 px-3 py-2 rounded border cursor-pointer transition-colors ${
+                                settings.config.classHeaderStyle?.className
+                                  ?.colorBackground === false
+                                  ? 'border-blue-500 bg-blue-500/10'
+                                  : 'border-transparent hover:bg-slate-800'
+                              }`}
+                            >
+                              <div className="flex items-center text-white text-xs [text-shadow:_1px_1px_1px_rgba(0_0_0/0.2)]">
+                                <span className="px-2 py-1 font-bold">
+                                  BMW M4 GT4
+                                </span>
+                              </div>
+                            </button>
+                          </div>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-slate-300 mb-2">
+                            Info
+                          </p>
+                          <div className="flex gap-3">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handleConfigChange({
+                                  classHeaderStyle: {
+                                    ...settings.config.classHeaderStyle,
+                                    classInfo: { colorBackground: true },
+                                  },
+                                })
+                              }
+                              className={`flex flex-col items-center gap-1 px-3 py-2 rounded border cursor-pointer transition-colors ${
+                                settings.config.classHeaderStyle?.classInfo
+                                  ?.colorBackground !== false
+                                  ? 'border-blue-500 bg-blue-500/10'
+                                  : 'border-transparent hover:bg-slate-800'
+                              }`}
+                            >
+                              <div className="flex items-center text-white text-xs [text-shadow:_1px_1px_1px_rgba(0_0_0/0.2)]">
+                                <span className="bg-yellow-800 border-yellow-500 px-2 py-1 flex items-center gap-1">
+                                  <BarbellIcon /> <span>1253</span>
+                                  <UsersIcon className="ml-3" />
+                                  <span>11</span>
+                                </span>
+                              </div>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handleConfigChange({
+                                  classHeaderStyle: {
+                                    ...settings.config.classHeaderStyle,
+                                    classInfo: { colorBackground: false },
+                                  },
+                                })
+                              }
+                              className={`flex flex-col items-center gap-1 px-3 py-2 rounded border cursor-pointer transition-colors ${
+                                settings.config.classHeaderStyle?.classInfo
+                                  ?.colorBackground === false
+                                  ? 'border-blue-500 bg-blue-500/10'
+                                  : 'border-transparent hover:bg-slate-800'
+                              }`}
+                            >
+                              <div className="flex items-center text-white text-xs [text-shadow:_1px_1px_1px_rgba(0_0_0/0.2)]">
+                                <span className="border-yellow-500 px-2 py-1 flex items-center gap-1">
+                                  <BarbellIcon /> <span>1253</span>
+                                  <UsersIcon className="ml-3" />
+                                  <span>11</span>
+                                </span>
+                              </div>
+                            </button>
+                          </div>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-slate-300 mb-2">
+                            Divider
+                          </p>
+                          <div className="flex gap-3">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handleConfigChange({
+                                  classHeaderStyle: {
+                                    ...settings.config.classHeaderStyle,
+                                    classDivider: { bottomBorder: false },
+                                  },
+                                })
+                              }
+                              className={`flex flex-col items-center gap-1 px-3 py-2 rounded border cursor-pointer transition-colors ${
+                                !settings.config.classHeaderStyle?.classDivider
+                                  ?.bottomBorder
+                                  ? 'border-blue-500 bg-blue-500/10'
+                                  : 'border-transparent hover:bg-slate-800'
+                              }`}
+                            >
+                              <div className="flex items-center text-white text-xs [text-shadow:_1px_1px_1px_rgba(0_0_0/0.2)]">
+                                <span
+                                  className={`${settings.config.classHeaderStyle?.className?.colorBackground !== false ? 'bg-yellow-500 border-yellow-500 border-l-4' : ''} px-2 py-1 font-bold`}
+                                >
+                                  BMW M4 GT4
+                                </span>
+                                <span
+                                  className={`${settings.config.classHeaderStyle?.classInfo?.colorBackground !== false ? 'bg-yellow-800 border-yellow-500' : 'border-yellow-500'} px-2 py-1 flex items-center gap-1`}
+                                >
+                                  <BarbellIcon /> <span>1253</span>
+                                  <UsersIcon className="ml-3" />
+                                  <span>11</span>
+                                </span>
+                              </div>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handleConfigChange({
+                                  classHeaderStyle: {
+                                    ...settings.config.classHeaderStyle,
+                                    classDivider: { bottomBorder: true },
+                                  },
+                                })
+                              }
+                              className={`flex flex-col items-center gap-1 px-3 py-2 rounded border cursor-pointer transition-colors ${
+                                settings.config.classHeaderStyle?.classDivider
+                                  ?.bottomBorder
+                                  ? 'border-blue-500 bg-blue-500/10'
+                                  : 'border-transparent hover:bg-slate-800'
+                              }`}
+                            >
+                              <div className="text-white text-xs [text-shadow:_1px_1px_1px_rgba(0_0_0/0.2)] border-b-4 border-yellow-500">
+                                <div className="flex items-center">
+                                  <span
+                                    className={`${settings.config.classHeaderStyle?.className?.colorBackground !== false ? 'bg-yellow-500 border-yellow-500 border-l-4' : ''} px-2 py-1 font-bold`}
+                                  >
+                                    BMW M4 GT4
+                                  </span>
+                                  <span
+                                    className={`${settings.config.classHeaderStyle?.classInfo?.colorBackground !== false ? 'bg-yellow-800 border-yellow-500' : 'border-yellow-500'} px-2 py-1 flex items-center gap-1`}
+                                  >
+                                    <BarbellIcon /> <span>1253</span>
+                                    <UsersIcon className="ml-3" />
+                                    <span>11</span>
+                                  </span>
+                                </div>
+                              </div>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </SettingsSection>
+                  </div>
+                  <SettingDivider />
+                  <div className="mb-6">
+                    <SettingsSection title="Driver Position">
+                      <div className="flex gap-3">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleConfigChange({
+                              stylingOptions: {
+                                ...settings.config.stylingOptions,
+                                driverPosition: { background: true },
+                              },
+                            })
+                          }
+                          className={`flex flex-col items-center gap-1 px-3 py-2 rounded border cursor-pointer transition-colors ${
+                            settings.config.stylingOptions?.driverPosition
+                              ?.background !== false
+                              ? 'border-blue-500 bg-blue-500/10'
+                              : 'border-transparent hover:bg-slate-800'
+                          }`}
+                        >
+                          <div className="bg-yellow-500 text-yellow-900 px-2 py-0.5 text-center text-xs">
+                            4
+                          </div>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleConfigChange({
+                              stylingOptions: {
+                                ...settings.config.stylingOptions,
+                                driverPosition: { background: false },
+                              },
+                            })
+                          }
+                          className={`flex flex-col items-center gap-1 px-3 py-2 rounded border cursor-pointer transition-colors ${
+                            settings.config.stylingOptions?.driverPosition
+                              ?.background === false
+                              ? 'border-blue-500 bg-blue-500/10'
+                              : 'border-transparent hover:bg-slate-800'
+                          }`}
+                        >
+                          <div className="px-2 py-0.5 text-center text-xs text-white">
+                            4
+                          </div>
+                        </button>
+                      </div>
+                    </SettingsSection>
+                  </div>
+                  <SettingDivider />
+                  <div className="mb-6">
+                    <SettingsSection title="Driver Number">
+                      <div className="space-y-3 pl-2">
+                        <div>
+                          <p className="text-sm font-medium text-slate-300 mb-2">
+                            Background
+                          </p>
+                          <div className="flex gap-3">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handleConfigChange({
+                                  stylingOptions: {
+                                    ...settings.config.stylingOptions,
+                                    driverNumber: {
+                                      ...settings.config.stylingOptions
+                                        ?.driverNumber,
+                                      background: true,
+                                    },
+                                  },
+                                })
+                              }
+                              className={`flex flex-col items-center gap-1 px-3 py-2 rounded border cursor-pointer transition-colors ${
+                                settings.config.stylingOptions?.driverNumber
+                                  ?.background !== false
+                                  ? 'border-blue-500 bg-blue-500/10'
+                                  : 'border-transparent hover:bg-slate-800'
+                              }`}
+                            >
+                              <div className="bg-yellow-800 px-1 py-0.5 text-white text-xs">
+                                #33
+                              </div>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handleConfigChange({
+                                  stylingOptions: {
+                                    ...settings.config.stylingOptions,
+                                    driverNumber: {
+                                      ...settings.config.stylingOptions
+                                        ?.driverNumber,
+                                      background: false,
+                                    },
+                                  },
+                                })
+                              }
+                              className={`flex flex-col items-center gap-1 px-3 py-2 rounded border cursor-pointer transition-colors ${
+                                settings.config.stylingOptions?.driverNumber
+                                  ?.background === false
+                                  ? 'border-blue-500 bg-blue-500/10'
+                                  : 'border-transparent hover:bg-slate-800'
+                              }`}
+                            >
+                              <div className="px-1 py-0.5 text-white text-xs">
+                                #33
+                              </div>
+                            </button>
+                          </div>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-slate-300 mb-2">
+                            Left Border
+                          </p>
+                          <div className="flex gap-3">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handleConfigChange({
+                                  stylingOptions: {
+                                    ...settings.config.stylingOptions,
+                                    driverNumber: {
+                                      ...settings.config.stylingOptions
+                                        ?.driverNumber,
+                                      border: true,
+                                    },
+                                  },
+                                })
+                              }
+                              className={`flex flex-col items-center gap-1 px-3 py-2 rounded border cursor-pointer transition-colors ${
+                                settings.config.stylingOptions?.driverNumber
+                                  ?.border !== false
+                                  ? 'border-blue-500 bg-blue-500/10'
+                                  : 'border-transparent hover:bg-slate-800'
+                              }`}
+                            >
+                              <div
+                                className={`border-l-4 border-yellow-500 px-1 py-0.5 text-white text-xs 
+                                ${
+                                  settings.config.stylingOptions?.driverNumber
+                                    ?.background !== false
+                                    ? 'bg-yellow-800'
+                                    : ''
+                                }`}
+                              >
+                                #33
+                              </div>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handleConfigChange({
+                                  stylingOptions: {
+                                    ...settings.config.stylingOptions,
+                                    driverNumber: {
+                                      ...settings.config.stylingOptions
+                                        ?.driverNumber,
+                                      border: false,
+                                    },
+                                  },
+                                })
+                              }
+                              className={`flex flex-col items-center gap-1 px-3 py-2 rounded border cursor-pointer transition-colors ${
+                                settings.config.stylingOptions?.driverNumber
+                                  ?.border === false
+                                  ? 'border-blue-500 bg-blue-500/10'
+                                  : 'border-transparent hover:bg-slate-800'
+                              }`}
+                            >
+                              <div
+                                className={`px-1 py-0.5 text-white text-xs 
+                                ${
+                                  settings.config.stylingOptions?.driverNumber
+                                    ?.background !== false
+                                    ? 'bg-yellow-800'
+                                    : ''
+                                }`}
+                              >
+                                #33
+                              </div>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </SettingsSection>
+                  </div>
+                  <SettingDivider />
+                  <div className="mb-6">
+                    <SettingsSection title="Driver Badge">
+                      <div className="flex gap-3">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleConfigChange({
+                              stylingOptions: {
+                                ...settings.config.stylingOptions,
+                                badge: false,
+                              },
+                            })
+                          }
+                          className={`flex flex-col items-center gap-1 px-3 py-2 rounded border cursor-pointer transition-colors ${
+                            !settings.config.stylingOptions?.badge
+                              ? 'border-blue-500 bg-blue-500/10'
+                              : 'border-transparent hover:bg-slate-800'
+                          }`}
+                        >
+                          <DriverRatingBadge
+                            license="B 3.8"
+                            rating={1412}
+                            format={
+                              settings.config.badge?.badgeFormat ??
+                              'license-color-rating-bw'
+                            }
+                            isMinimal={false}
+                          />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleConfigChange({
+                              stylingOptions: {
+                                ...settings.config.stylingOptions,
+                                badge: true,
+                              },
+                            })
+                          }
+                          className={`flex flex-col items-center gap-1 px-3 py-2 rounded border cursor-pointer transition-colors ${
+                            settings.config.stylingOptions?.badge
+                              ? 'border-blue-500 bg-blue-500/10'
+                              : 'border-transparent hover:bg-slate-800'
+                          }`}
+                        >
+                          <DriverRatingBadge
+                            license="B 3.8"
+                            rating={1412}
+                            format={
+                              settings.config.badge?.badgeFormat ??
+                              'license-color-rating-bw'
+                            }
+                            isMinimal={true}
+                          />
+                        </button>
+                      </div>
+                    </SettingsSection>
+                  </div>
+                  <SettingDivider />
+                  <div className="mb-6">
+                    <SettingsSection title="Status Badges">
+                      <div className="flex gap-3">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleConfigChange({
+                              stylingOptions: {
+                                ...settings.config.stylingOptions,
+                                statusBadges: false,
+                              },
+                            })
+                          }
+                          className={`flex flex-col items-center gap-1 px-3 py-2 rounded border cursor-pointer transition-colors ${
+                            !settings.config.stylingOptions?.statusBadges
+                              ? 'border-blue-500 bg-blue-500/10'
+                              : 'border-transparent hover:bg-slate-800'
+                          }`}
+                        >
+                          <DriverStatusBadges pit tow out isMinimal={false} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleConfigChange({
+                              stylingOptions: {
+                                ...settings.config.stylingOptions,
+                                statusBadges: true,
+                              },
+                            })
+                          }
+                          className={`flex flex-col items-center gap-1 px-3 py-2 rounded border cursor-pointer transition-colors ${
+                            settings.config.stylingOptions?.statusBadges
+                              ? 'border-blue-500 bg-blue-500/10'
+                              : 'border-transparent hover:bg-slate-800'
+                          }`}
+                        >
+                          <DriverStatusBadges pit tow out isMinimal={true} />
+                        </button>
+                      </div>
+                    </SettingsSection>
+                  </div>
+                </div>
               )}
             </div>
           </div>

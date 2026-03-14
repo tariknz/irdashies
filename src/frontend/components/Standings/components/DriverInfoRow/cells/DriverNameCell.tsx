@@ -1,5 +1,6 @@
 import { memo } from 'react';
 import { SpeakerHighIcon } from '@phosphor-icons/react';
+import { useGeneralSettings } from '@irdashies/context';
 import { DriverStatusBadges } from './DriverStatusBadges';
 import {
   DriverName as formatDriverName,
@@ -17,6 +18,7 @@ interface DriverNameCellProps {
   slowdown?: boolean;
   showStatusBadges?: boolean;
   removeNumbersFromName?: boolean;
+  isMinimal?: boolean;
 }
 
 export const DriverNameCell = memo(
@@ -30,7 +32,9 @@ export const DriverNameCell = memo(
     slowdown,
     showStatusBadges = true,
     removeNumbersFromName = false,
+    isMinimal,
   }: DriverNameCellProps) => {
+    const generalSettings = useGeneralSettings();
     const displayName = fullName
       ? formatDriverName(
           extractDriverName(fullName, removeNumbersFromName),
@@ -39,7 +43,10 @@ export const DriverNameCell = memo(
       : (name ?? '');
 
     return (
-      <td data-column="driverName" className="w-full max-w-0 px-1 py-0.5">
+      <td
+        data-column="driverName"
+        className={`w-full max-w-0 overflow-hidden${generalSettings?.compactMode === 'off' ? ' px-1 py-0.5' : generalSettings?.compactMode === 'compact' ? ' px-1' : ''}`}
+      >
         <div className="flex items-center overflow-hidden">
           <span
             className={`animate-pulse transition-[width] duration-300 ${
@@ -59,6 +66,7 @@ export const DriverNameCell = memo(
               penalty={penalty}
               slowdown={slowdown}
               className="shrink-0"
+              isMinimal={isMinimal}
             />
           )}
         </div>

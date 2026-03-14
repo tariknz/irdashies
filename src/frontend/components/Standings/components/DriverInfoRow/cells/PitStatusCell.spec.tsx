@@ -1,7 +1,12 @@
 import React from 'react';
 import { render } from '@testing-library/react';
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { PitStatusCell } from './PitStatusCell';
+
+vi.mock('@irdashies/context', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@irdashies/context')>();
+  return { ...actual, useGeneralSettings: vi.fn(() => undefined) };
+});
 
 const renderInTable = (component: React.ReactElement) => {
   return render(

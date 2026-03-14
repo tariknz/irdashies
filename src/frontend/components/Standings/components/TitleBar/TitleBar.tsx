@@ -3,6 +3,7 @@ import {
   useTotalRaceLaps,
   useTelemetryValue,
   useWeekendInfoSeriesID,
+  useGeneralSettings,
 } from '@irdashies/context';
 import { SessionState } from '@irdashies/types';
 import { useMemo } from 'react';
@@ -17,6 +18,7 @@ interface TitleBarProps {
 export const TitleBar = ({ titleBarSettings }: TitleBarProps) => {
   const seriesId = useWeekendInfoSeriesID();
   const sessionType = useCurrentSessionType();
+  const generalSettings = useGeneralSettings();
 
   // Use series name if available, otherwise fall back to session type
   const displayText = seriesId
@@ -64,12 +66,22 @@ export const TitleBar = ({ titleBarSettings }: TitleBarProps) => {
   }
 
   return (
-    <div className="relative bg-slate-900/70 text-sm px-3 py-2 flex justify-center items-center">
+    <div
+      className={`relative bg-slate-900/70 text-sm px-3 ${generalSettings?.compactMode !== 'ultra' ? 'py-2' : ''} flex justify-center items-center`}
+    >
       {/* Background progress bar - only show for racing sessions and if enabled in settings */}
       {sessionType === 'Race' &&
         progressPercentage > 0 &&
         titleBarSettings?.progressBar?.enabled && (
-          <div className="absolute inset-x-3 inset-y-2">
+          <div
+            className={
+              generalSettings?.compactMode === 'ultra'
+                ? 'absolute inset-0'
+                : generalSettings?.compactMode === 'compact'
+                  ? 'absolute inset-x-1 inset-y-1'
+                  : 'absolute inset-x-2 inset-y-2'
+            }
+          >
             <div
               className="h-full rounded-sm"
               style={{

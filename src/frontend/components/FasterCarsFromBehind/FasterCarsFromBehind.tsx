@@ -2,7 +2,7 @@ import { useSessionVisibility, useDashboard } from '@irdashies/context';
 import { useCarBehind } from './hooks/useCarBehind';
 import { useFasterCarsSettings } from './hooks/useFasterCarsSettings';
 import { getTailwindStyle } from '@irdashies/utils/colors';
-import { DriverRatingBadge } from '../Standings/components/DriverRatingBadge/DriverRatingBadge';
+import { DriverRatingBadge } from '../DriverRatingBadge/DriverRatingBadge';
 import { getDemoCarsBehind } from './demoData';
 
 export interface FasterCarsFromBehindProps {

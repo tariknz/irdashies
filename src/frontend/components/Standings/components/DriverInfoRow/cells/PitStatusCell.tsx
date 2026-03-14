@@ -1,4 +1,5 @@
 import { memo } from 'react';
+import { useGeneralSettings } from '@irdashies/context';
 import { DriverStatusBadges } from './DriverStatusBadges';
 
 interface PitStatusCellProps {
@@ -19,6 +20,7 @@ interface PitStatusCellProps {
    * OUT persists for one extra lap count so it remains visible for a full lap.
    */
   pitExitAfterSF?: boolean;
+  isMinimal?: boolean;
 }
 
 export const PitStatusCell = memo(
@@ -35,7 +37,10 @@ export const PitStatusCell = memo(
     showPitTime = false,
     pitLapDisplayMode,
     pitExitAfterSF,
+    isMinimal,
   }: PitStatusCellProps) => {
+    const compactMode = useGeneralSettings()?.compactMode;
+    const pxClass = compactMode === 'ultra' ? '' : 'px-1';
     const widthClass = showPitTime ? 'w-[7rem]' : 'w-[4.5rem]';
     const tow =
       carTrackSurface == 1 &&
@@ -61,7 +66,7 @@ export const PitStatusCell = memo(
     return (
       <td
         data-column="pitStatus"
-        className={`${widthClass} px-1 text-center align-middle whitespace-nowrap`}
+        className={`${widthClass} ${pxClass} text-center align-middle whitespace-nowrap`}
       >
         <DriverStatusBadges
           dnf={dnf}
@@ -75,6 +80,7 @@ export const PitStatusCell = memo(
           showPitTime={showPitTime}
           pitLapDisplayMode={pitLapDisplayMode}
           pitExitAfterSF={pitExitAfterSF}
+          isMinimal={isMinimal}
         />
       </td>
     );

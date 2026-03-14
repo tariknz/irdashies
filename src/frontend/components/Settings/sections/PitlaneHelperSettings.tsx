@@ -125,11 +125,11 @@ export const PitlaneHelperSettings = () => {
 
                   {settings.config.showSpeedSummary && (
                     <SettingsSection>
-                      <SettingButtonGroupRow<'none' | 'text' | 'european' | 'american'>
+                      <SettingButtonGroupRow<
+                        'none' | 'text' | 'european' | 'american'
+                      >
                         title="Speed Limit Style"
-                        value={
-                          settings.config.speedLimitStyle ?? 'text'
-                        }
+                        value={settings.config.speedLimitStyle ?? 'text'}
                         options={[
                           { label: 'None', value: 'none' },
                           { label: 'Text', value: 'text' },

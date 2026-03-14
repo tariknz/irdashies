@@ -105,6 +105,19 @@ export type RelativeBadgeFormat =
 // Widget config types
 // ===========================
 
+export interface StylingOptions {
+  badge?: boolean;
+  statusBadges?: boolean;
+  driverPosition?: { background?: boolean };
+  driverNumber?: { background?: boolean; border?: boolean };
+}
+
+export interface ClassHeaderStyle {
+  className?: { colorBackground?: boolean };
+  classInfo?: { colorBackground?: boolean };
+  classDivider?: { bottomBorder?: boolean };
+}
+
 export interface StandingsConfig {
   iratingChange: { enabled: boolean };
   positionChange: { enabled: boolean };
@@ -138,6 +151,8 @@ export interface StandingsConfig {
   pitStatus: PitStatusConfig;
   displayOrder: string[];
   sessionVisibility: SessionVisibilitySettings;
+  stylingOptions?: StylingOptions;
+  classHeaderStyle?: ClassHeaderStyle;
 }
 
 export interface RelativeConfig {
@@ -164,6 +179,7 @@ export interface RelativeConfig {
   displayOrder: string[];
   useLivePosition?: boolean;
   sessionVisibility: SessionVisibilitySettings;
+  stylingOptions?: StylingOptions;
 }
 
 export interface WeatherConfig {
@@ -194,6 +210,7 @@ export interface TrackMapConfig {
   useHighlightColor: boolean;
   showOnlyWhenOnTrack: boolean;
   sessionVisibility: SessionVisibilitySettings;
+  styling?: { isMinimalTrack?: boolean; isMinimalCar?: boolean };
 }
 
 export interface FlatTrackMapConfig {
@@ -490,7 +507,8 @@ export type SettingsTabType =
   | 'footer'
   | 'history'
   | 'telemetry'
-  | 'dashboard';
+  | 'dashboard'
+  | 'styling';
 
 /** Available widgets for the Fuel Calculator */
 export type FuelWidgetType =

@@ -30,6 +30,8 @@ export interface TrackProps {
   trackLineWidth?: number;
   trackOutlineWidth?: number;
   highlightColor?: number;
+  isMinimalTrack?: boolean;
+  isMinimalCar?: boolean;
   debug?: boolean;
 }
 
@@ -77,6 +79,8 @@ export const TrackCanvas = ({
   trackLineWidth = 20,
   trackOutlineWidth = 40,
   highlightColor,
+  isMinimalTrack = true,
+  isMinimalCar = true,
   debug,
 }: TrackProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -329,6 +333,7 @@ export const TrackCanvas = ({
       playerCircleSize,
       sfPointX: startFinishLine?.point?.x,
       sfPointY: startFinishLine?.point?.y,
+      isMinimalTrack,
     });
 
     if (cacheParamsRef.current !== currentParams) {
@@ -350,7 +355,7 @@ export const TrackCanvas = ({
         cacheCtx.setTransform(1, 0, 0, 1, 0, 0);
         cacheCtx.scale(dpr, dpr);
 
-        setupCanvasContext(cacheCtx, scale, offsetX, offsetY);
+        setupCanvasContext(cacheCtx, scale, offsetX, offsetY, !isMinimalTrack);
         drawTrack(
           cacheCtx,
           path2DObjects,
@@ -388,7 +393,7 @@ export const TrackCanvas = ({
     const offsetX = (canvasSize.width - TRACK_DRAWING_WIDTH * scale) / 2;
     const offsetY = (canvasSize.height - TRACK_DRAWING_HEIGHT * scale) / 2;
 
-    setupCanvasContext(ctx, scale, offsetX, offsetY);
+    setupCanvasContext(ctx, scale, offsetX, offsetY, !isMinimalCar);
     drawDrivers(
       ctx,
       calculatePositions,
@@ -424,6 +429,8 @@ export const TrackCanvas = ({
     playerCircleSize,
     trackmapFontSize,
     trackId,
+    isMinimalTrack,
+    isMinimalCar,
   ]);
 
   // Development/Storybook mode - show debug info and canvas

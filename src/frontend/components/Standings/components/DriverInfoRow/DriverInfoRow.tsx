@@ -70,6 +70,7 @@ interface DriverRowInfoProps {
   slowdown: boolean;
   deltaDecimalPlaces?: number;
   hideCarManufacturer?: boolean;
+  compactMode?: string;
 }
 
 // Helper function to provide dummy data for hidden rows
@@ -182,7 +183,17 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
     deltaDecimalPlaces,
     pitStopDuration: pitStopDurationProp,
     hideCarManufacturer,
+    compactMode,
   } = displayProps;
+
+  const badgeStyling = config?.stylingOptions?.badge ?? false;
+  const statusBadgesStyling = config?.stylingOptions?.statusBadges ?? false;
+  const driverPositionBackground =
+    config?.stylingOptions?.driverPosition?.background ?? true;
+  const driverNumberBackground =
+    config?.stylingOptions?.driverNumber?.background ?? true;
+  const driverNumberBorder =
+    config?.stylingOptions?.driverNumber?.border ?? true;
   const pitStopDurations = usePitStopDuration();
   const pitStopDuration =
     pitStopDurationProp ?? pitStopDurations[carIdx] ?? null;
@@ -227,6 +238,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
             isPlayer={isPlayer}
             offTrack={offTrack}
             tailwindStyles={tailwindStyles}
+            showBackground={driverPositionBackground}
           />
         ),
       },
@@ -240,6 +252,8 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
             key="carNumber"
             carNumber={carNumber}
             tailwindStyles={tailwindStyles}
+            showBackground={driverNumberBackground}
+            showBorder={driverNumberBorder}
           />
         ),
       },
@@ -268,6 +282,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
             }
             fullName={name}
             nameFormat={config?.driverName?.nameFormat}
+            isMinimal={statusBadgesStyling}
           />
         ),
       },
@@ -299,6 +314,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
             showPitTime={config?.pitStatus?.showPitTime ?? false}
             pitLapDisplayMode={config?.pitStatus?.pitLapDisplayMode}
             pitExitAfterSF={pitExitAfterSF}
+            isMinimal={statusBadgesStyling}
           />
         ),
       },
@@ -321,6 +337,8 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
             license={license}
             rating={rating}
             badgeFormat={config?.badge?.badgeFormat}
+            isMinimal={badgeStyling}
+            compactMode={compactMode}
           />
         ),
       },
@@ -517,6 +535,12 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
     emptyLapDeltaPlaceholders,
     hideCarManufacturer,
     pitExitAfterSF,
+    compactMode,
+    badgeStyling,
+    statusBadgesStyling,
+    driverPositionBackground,
+    driverNumberBackground,
+    driverNumberBorder,
   ]);
 
   return (

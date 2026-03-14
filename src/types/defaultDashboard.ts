@@ -903,6 +903,7 @@ export const defaultDashboard: {
     disableHardwareAcceleration: false,
     overlayAlwaysOnTop: true,
     enableNetworkAccess: false,
+    compactMode: 'off' as const,
   },
 };
 
