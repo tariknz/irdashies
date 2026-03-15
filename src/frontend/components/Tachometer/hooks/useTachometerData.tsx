@@ -1,6 +1,5 @@
-import { useTelemetryValue } from '@irdashies/context';
+import { useTelemetryValue, useSessionStore } from '@irdashies/context';
 import type { Telemetry } from '@irdashies/types';
-import { useSessionStore } from '../../../context/SessionStore/SessionStore';
 import { useCarTachometerData } from './useCarTachometerData';
 
 /**
@@ -14,12 +13,16 @@ export const useTachometerData = () => {
   const { carData, gearRpmThresholds, hasCarData } = useCarTachometerData();
 
   // Get car-specific redline from session data
-  const driverCarRedLine = useSessionStore(state => state.session?.DriverInfo?.DriverCarRedLine);
-  const driverCarIdx = useSessionStore(state => state.session?.DriverInfo?.DriverCarIdx);
-  const carPath = useSessionStore(state => {
+  const driverCarRedLine = useSessionStore(
+    (state) => state.session?.DriverInfo?.DriverCarRedLine
+  );
+  const driverCarIdx = useSessionStore(
+    (state) => state.session?.DriverInfo?.DriverCarIdx
+  );
+  const carPath = useSessionStore((state) => {
     const drivers = state.session?.DriverInfo?.Drivers;
     if (!drivers || driverCarIdx === undefined) return undefined;
-    const driver = drivers.find(d => d.CarIdx === driverCarIdx);
+    const driver = drivers.find((d) => d.CarIdx === driverCarIdx);
     return driver?.CarPath;
   });
 
@@ -30,8 +33,10 @@ export const useTachometerData = () => {
     7500; // Conservative fallback for safety
 
   // iRacing shift lights telemetry values
-  const shiftRpm = useTelemetryValue('DriverCarSLShiftRPM' as keyof Telemetry) ?? 0;  // Purple LEDs
-  const blinkRpm = useTelemetryValue('DriverCarSLBlinkRPM' as keyof Telemetry) ?? 0;  // Blinking LEDs
+  const shiftRpm =
+    useTelemetryValue('DriverCarSLShiftRPM' as keyof Telemetry) ?? 0; // Purple LEDs
+  const blinkRpm =
+    useTelemetryValue('DriverCarSLBlinkRPM' as keyof Telemetry) ?? 0; // Blinking LEDs
 
   return {
     rpm,

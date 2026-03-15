@@ -71,6 +71,38 @@ const drivers = useSessionDrivers();
 const playerCarIdx = useDriverCarIdx();
 ```
 
+### Telemetry Precision — `useTelemetryValuesRounded`
+
+`useTelemetryValues` uses exact equality (`===`). Continuous float arrays like `CarIdxLapDistPct` change on every 60fps tick, causing subscriptions to fire every frame even when the UI doesn't need to update.
+
+Use `useTelemetryValuesRounded(key, precision)` for float arrays where sub-threshold changes produce no visible or meaningful difference:
+
+```typescript
+// Position on track — 3dp = ~0.5m resolution on a 5km track
+const lapDistPcts = useTelemetryValuesRounded('CarIdxLapDistPct', 3);
+
+// Time-based gaps displayed to 0.1s — 2dp = 10ms resolution
+const estTimes = useTelemetryValuesRounded('CarIdxEstTime', 2);
+```
+
+**Precision guidelines by use case:**
+
+| Use Case                                         | Hook                        | Precision | Rationale                                                                                |
+| ------------------------------------------------ | --------------------------- | --------- | ---------------------------------------------------------------------------------------- |
+| Track map position                               | `useTelemetryValuesRounded` | 3dp       | 0.1% of track length (~22m on Nords, ~5m on a 5km track) — sub-pixel on any rendered map |
+| Position sorting (standings)                     | `useTelemetryValuesRounded` | 3dp       | Same physical resolution; sufficient to distinguish order                                |
+| Time delta display (0.1s)                        | `useTelemetryValuesRounded` | 2dp       | 10ms resolution, display is 100ms                                                        |
+| Time interpolation (reference lap)               | `useTelemetryValuesRounded` | 4dp       | REFERENCE_INTERVAL = 0.0025; 4dp keeps error <10ms                                       |
+| Smooth animation (throttle, steering)            | `useTelemetryValues`        | —         | Full precision needed for 60fps feel                                                     |
+| Speed calculations (delta between frames)        | `useTelemetryValues`        | —         | Tiny frame deltas require full precision                                                 |
+| Fuel calculations (divisor, threshold detection) | `useTelemetryValues`        | —         | Errors compound across lap                                                               |
+
+**Do not round:**
+
+- Input bar values (Throttle, Brake, Clutch, SteeringWheelAngle) — smooth animation is the feature
+- `CarSpeedsStore` inputs — speed is derived from frame-to-frame deltas; rounding destroys the signal
+- `FuelLevel` / `SessionTime` — used in threshold comparisons and projection calculations where errors accumulate
+
 ### Specialized Stores
 
 Create **only when** feature needs: historical data, complex calculations, shared state across feature components, or persistence across remounts.

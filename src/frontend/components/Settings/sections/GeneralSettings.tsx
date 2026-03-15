@@ -39,7 +39,7 @@ const FONT_WEIGHT_RESTRICTIONS: Record<string, string[]> = {
   lato: ['medium', 'semibold'],
 };
 
-const HIGHLIGHT_COLOR_PRESETS = new Map([
+export const HIGHLIGHT_COLOR_PRESETS = new Map([
   [15680580, 'Red'],
   [16347926, 'Orange'],
   [16096779, 'Amber'],

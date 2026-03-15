@@ -10,12 +10,11 @@ import {
   useTelemetryValue,
   useFocusCarIdx,
   useTelemetryValues,
-} from '@irdashies/context';
-import { useLapTimeHistory } from '../../../context/LapTimesStore/LapTimesStore';
-import {
+  useTelemetryValuesRounded,
   useCarLap,
   usePitLap,
   usePrevCarTrackSurface,
+  useLapTimeHistory,
 } from '@irdashies/context';
 import {
   createDriverStandings,
@@ -87,11 +86,11 @@ export const useDriverStandings = (
     enabled: useLivePositionStandings,
   });
   const fastestLaps = useSessionFastestLaps(sessionNum);
-  const carIdxF2Time = useTelemetryValues<number[]>('CarIdxF2Time');
-  const carIdxEstTime = useTelemetryValues<number[]>('CarIdxEstTime');
+  const carIdxF2Time = useTelemetryValuesRounded('CarIdxF2Time', 2);
+  const carIdxEstTime = useTelemetryValuesRounded('CarIdxEstTime', 2);
   const carIdxOnPitRoad = useTelemetryValues<boolean[]>('CarIdxOnPitRoad');
   const carIdxLap = useTelemetryValues<number[]>('CarIdxLap');
-  const carIdxLapDistPct = useTelemetryValues<number[]>('CarIdxLapDistPct');
+  const carIdxLapDistPct = useTelemetryValuesRounded('CarIdxLapDistPct', 3);
   const carIdxTrackSurface =
     useTelemetryValues<TrackLocation[]>('CarIdxTrackSurface');
   const radioTransmitCarIdx = useTelemetryValues<number[]>(
@@ -109,26 +108,11 @@ export const useDriverStandings = (
   }, [sessionDrivers, driverCarIdx]);
   const lapTimeHistory = useLapTimeHistory();
 
-  // Compute deltas at read time against the current focus car (driverCarIdx).
-  // This means switching spectated car instantly updates deltas without any
-  // history reset, since we just change the reference car.
-  const lapDeltasForCalc = useMemo(() => {
-    if (!lapTimeDeltasEnabled || driverCarIdx === undefined) return undefined;
-    const focusHistory = lapTimeHistory[driverCarIdx];
-    if (!focusHistory || focusHistory.length === 0) return undefined;
-
-    // Use the most recent focus car lap as the reference for all comparisons.
-    // This is the fairest available comparison regardless of when each car
-    // completed their laps.
-    const focusLapTime = focusHistory[focusHistory.length - 1];
-    if (!focusLapTime || focusLapTime <= 0) return undefined;
-
-    return lapTimeHistory.map((carHistory, carIdx) => {
-      if (carIdx === driverCarIdx || !carHistory || carHistory.length === 0)
-        return [];
-      return carHistory.map((lapTime) => lapTime - focusLapTime);
-    });
-  }, [lapTimeDeltasEnabled, lapTimeHistory, driverCarIdx]);
+  const lapDeltasForCalc = useMemo(
+    () =>
+      calculateLapDeltas(lapTimeHistory, driverCarIdx, lapTimeDeltasEnabled),
+    [lapTimeDeltasEnabled, lapTimeHistory, driverCarIdx]
+  );
 
   const standingsWithGain = useMemo(() => {
     const initialStandings = createDriverStandings(
@@ -247,4 +231,37 @@ export const useDriverStandings = (
   ]);
 
   return standingsWithGain;
+};
+
+/**
+ * Compute lap time deltas by aligning each car's Nth-most-recent lap against
+ * the focus car's Nth-most-recent lap. This ensures:
+ *   - Deltas don't jump when either car crosses start/finish
+ *   - Pit laps only affect the one column where the pit occurred
+ *   - Works when cars are on different laps (e.g. player lapped)
+ */
+export const calculateLapDeltas = (
+  lapTimeHistory: number[][],
+  focusCarIdx: number | undefined,
+  enabled: boolean
+): number[][] | undefined => {
+  if (!enabled || focusCarIdx === undefined) return undefined;
+  const focusHistory = lapTimeHistory[focusCarIdx];
+  if (!focusHistory || focusHistory.length === 0) return undefined;
+
+  return lapTimeHistory.map((carHistory, carIdx) => {
+    if (carIdx === focusCarIdx || !carHistory || carHistory.length === 0)
+      return [];
+
+    const maxLaps = Math.min(carHistory.length, focusHistory.length);
+    const deltas: number[] = [];
+    for (let i = maxLaps; i >= 1; i--) {
+      const carLap = carHistory[carHistory.length - i];
+      const focusLap = focusHistory[focusHistory.length - i];
+      if (focusLap && focusLap > 0) {
+        deltas.push(carLap - focusLap);
+      }
+    }
+    return deltas;
+  });
 };

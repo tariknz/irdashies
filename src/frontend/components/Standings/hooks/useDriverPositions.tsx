@@ -11,6 +11,7 @@ import {
   useFocusCarIdx,
   useSessionPositions,
   useTelemetryValues,
+  useTelemetryValuesRounded,
 } from '@irdashies/context';
 
 import { Standings, type LastTimeState } from '../createStandings';
@@ -38,7 +39,7 @@ export const useDriverPositions = () => {
   const carIdxClassPosition = useTelemetry('CarIdxClassPosition');
   const carIdxBestLap = useTelemetry('CarIdxBestLapTime');
   const carIdxLastLapTime = useTelemetry('CarIdxLastLapTime');
-  const carIdxF2Time = useTelemetry('CarIdxF2Time');
+  const carIdxF2Time = useTelemetryValuesRounded('CarIdxF2Time', 2);
   const carIdxLapNum = useTelemetry('CarIdxLap');
   const carIdxTrackSurface = useTelemetry('CarIdxTrackSurface');
   const prevCarTrackSurface = usePrevCarTrackSurface();
@@ -52,7 +53,7 @@ export const useDriverPositions = () => {
         carIdx,
         position,
         classPosition: carIdxClassPosition?.value?.[carIdx],
-        delta: carIdxF2Time?.value?.[carIdx], // only to leader currently, need to handle non-race sessions
+        delta: carIdxF2Time[carIdx], // only to leader currently, need to handle non-race sessions
         bestLap: carIdxBestLap?.value?.[carIdx],
         lastLap: lastLap[carIdx] ?? -1,
         lastLapTime: carIdxLastLapTime?.value?.[carIdx] ?? -1,
@@ -69,7 +70,7 @@ export const useDriverPositions = () => {
     carIdxBestLap?.value,
     carIdxLastLapTime?.value,
     lastLap,
-    carIdxF2Time?.value,
+    carIdxF2Time,
     carIdxLapNum?.value,
     carIdxLapDstPct,
     lastPitLap,

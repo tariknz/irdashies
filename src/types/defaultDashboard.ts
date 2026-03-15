@@ -806,6 +806,8 @@ export const defaultDashboard: {
           opacity: 30,
         },
         width: 20,
+        borderSize: 1,
+        indicatorColor: 16096779,
         sessionVisibility: {
           race: true,
           loneQualify: true,
@@ -887,6 +889,9 @@ export const defaultDashboard: {
         enableEarlyPitboxWarning: true,
         earlyPitboxThreshold: 75,
         showPitlaneTraffic: true,
+        showPastPitBox: false,
+        showSpeedSummary: true,
+        speedLimitStyle: 'text',
         background: { opacity: 80 },
         sessionVisibility: {
           race: true,

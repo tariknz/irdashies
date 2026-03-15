@@ -6,7 +6,7 @@ import { useDriverProgress } from './useDriverProgress';
 vi.mock('@irdashies/context', () => ({
   useFocusCarIdx: vi.fn(),
   useSessionDrivers: vi.fn(),
-  useTelemetryValuesMapped: vi.fn(),
+  useTelemetryValuesRounded: vi.fn(),
   useSessionStore: vi.fn(),
   useTelemetryValues: vi.fn(),
 }));
@@ -14,7 +14,7 @@ vi.mock('@irdashies/context', () => ({
 import {
   useFocusCarIdx,
   useSessionDrivers,
-  useTelemetryValuesMapped,
+  useTelemetryValuesRounded,
   useSessionStore,
   useTelemetryValues,
 } from '@irdashies/context';
@@ -27,7 +27,7 @@ describe('useDriverProgress', () => {
   it('should return empty array when drivers or lapDist are missing', () => {
     vi.mocked(useFocusCarIdx).mockReturnValue(0);
     vi.mocked(useSessionDrivers).mockReturnValue(undefined);
-    vi.mocked(useTelemetryValuesMapped).mockReturnValue([]);
+    vi.mocked(useTelemetryValuesRounded).mockReturnValue([]);
     vi.mocked(useSessionStore).mockReturnValue(-1);
     vi.mocked(useTelemetryValues).mockReturnValue([]);
 
@@ -44,7 +44,7 @@ describe('useDriverProgress', () => {
 
     vi.mocked(useFocusCarIdx).mockReturnValue(0);
     vi.mocked(useSessionDrivers).mockReturnValue(mockDrivers as any);
-    vi.mocked(useTelemetryValuesMapped).mockReturnValue([0.5, 0.6]);
+    vi.mocked(useTelemetryValuesRounded).mockReturnValue([0.5, 0.6]);
     vi.mocked(useSessionStore).mockReturnValue(-1);
     vi.mocked(useTelemetryValues).mockReturnValue([0, 1]);
 
@@ -67,7 +67,7 @@ describe('useDriverProgress', () => {
 
     vi.mocked(useFocusCarIdx).mockReturnValue(0);
     vi.mocked(useSessionDrivers).mockReturnValue(mockDrivers as any);
-    vi.mocked(useTelemetryValuesMapped).mockReturnValue([0.5, -1]);
+    vi.mocked(useTelemetryValuesRounded).mockReturnValue([0.5, -1]);
     vi.mocked(useSessionStore).mockReturnValue(-1);
     vi.mocked(useTelemetryValues).mockReturnValue([0, 1]);
 
@@ -88,7 +88,7 @@ describe('useDriverProgress', () => {
 
     vi.mocked(useFocusCarIdx).mockReturnValue(0);
     vi.mocked(useSessionDrivers).mockReturnValue(mockDrivers as any);
-    vi.mocked(useTelemetryValuesMapped).mockReturnValue([0.5, 0.6]);
+    vi.mocked(useTelemetryValuesRounded).mockReturnValue([0.5, 0.6]);
     vi.mocked(useSessionStore).mockReturnValue(1);
     vi.mocked(useTelemetryValues).mockReturnValue([0, 0]);
 
