@@ -26,14 +26,6 @@ interface CarListItem {
   ledRpm: object[];
 }
 
-interface CarDataResponse {
-  carName: string;
-  carId: string;
-  ledNumber: number;
-  ledRpm?: Record<string, number[]>[];
-  redlineRpm?: number;
-}
-
 /**
  * Custom shift points configuration section
  */
@@ -67,8 +59,8 @@ const CustomShiftPointsSection = ({ config, handleConfigChange }: { config: Tach
           .map((car) => ({
             carId: car.carId,
             carName: car.carName,
-            ledNumber: 0,
-            ledRpm: [{}]
+            ledNumber: car.ledNumber,
+            ledRpm: car.ledRpm
           }))
           .sort((a, b) => a.carName.localeCompare(b.carName));
         
@@ -84,71 +76,52 @@ const CustomShiftPointsSection = ({ config, handleConfigChange }: { config: Tach
     loadAvailableCars();
   }, [customShiftPoints.enabled, availableCars.length]);
 
-  const addCar = async () => {
-    const selectedCar = availableCars.find(c => c.carId === selectedCarId);
+  const addCar = () => {
+    const selectedCar = availableCars.find((c) => c.carId === selectedCarId);
     if (!selectedCar) return;
     
-    try {
-      const response = await fetch(`https://raw.githubusercontent.com/Lovely-Sim-Racing/lovely-car-data/main/data/IRacing/${selectedCarId}.json`);
-      if (!response.ok) throw new Error('Car data not found');
-      
-      const carData: CarDataResponse = await response.json();
-      
-      let redlineRpm = 8000;
-      if (carData.ledRpm?.[0]) {
-        const allRpms = Object.values(carData.ledRpm[0]).flat() as number[];
-        redlineRpm = Math.max(...allRpms);
-      } else if (carData.redlineRpm) {
-        redlineRpm = carData.redlineRpm;
-      }
-      
-      const gearKeys = Object.keys(carData.ledRpm?.[0] || {}).filter(key => 
-        key !== 'N' && key !== 'R' && !isNaN(Number(key)) && Number(key) > 0
-      );
-      const gearCount = gearKeys.length > 0 ? Math.max(...gearKeys.map(Number)) : 6;
-      
-      const gearShiftPoints: Record<string, {shiftRpm: number}> = {};
-      const defaultShiftRpm = Math.round(redlineRpm * DEFAULT_SHIFT_RPM_RATIO);
-      for (let i = 1; i <= gearCount; i++) {
-        gearShiftPoints[i.toString()] = { 
-          shiftRpm: Math.max(MIN_SHIFT_RPM, defaultShiftRpm)
-        };
-      }
-      
-      updateCustomShiftPoints({
-        carConfigs: {
-          ...customShiftPoints.carConfigs,
-          [selectedCarId]: {
-            enabled: true,
-            carId: selectedCarId,
-            carName: carData.carName || selectedCar.carName,
-            gearCount,
-            redlineRpm,
-            gearShiftPoints
-          }
-        }
-      });
-    } catch {
-      const gearShiftPoints: Record<string, {shiftRpm: number}> = {};
-      for (let i = 1; i <= 6; i++) {
-        gearShiftPoints[i.toString()] = { shiftRpm: 8000 };
-      }
-      
-      updateCustomShiftPoints({
-        carConfigs: {
-          ...customShiftPoints.carConfigs,
-          [selectedCarId]: {
-            enabled: true,
-            carId: selectedCarId,
-            carName: selectedCar.carName,
-            gearCount: 6,
-            redlineRpm: 8000,
-            gearShiftPoints
-          }
-        }
-      });
+    const ledRpmData = (selectedCar.ledRpm?.[0] || {}) as Record<string, number[]>;
+
+    console.log(JSON.stringify(selectedCar));
+
+    let redlineRpm = 8000;
+    if (selectedCar.ledRpm?.[0]) {
+      const allRpms = Object.values(ledRpmData).flat();
+      redlineRpm = Math.max(...allRpms);
     }
     
+    const gearKeys = Object.keys(ledRpmData).filter(key => 
+      key !== 'N' && key !== 'R' && !isNaN(Number(key)) && Number(key) > 0
+    );
+
+    const gearCount = gearKeys.length > 0 ? Math.max(...gearKeys.map(Number)) : 6;
+    const gearShiftPoints: Record<string, {shiftRpm: number}> = {};
+    const defaultShiftRpm = Math.round(redlineRpm * DEFAULT_SHIFT_RPM_RATIO);
+
+
+    for (let i = 1; i <= gearCount; i++) {
+      const gearKey = i.toString();
+      const gearData = ledRpmData[gearKey];
+
+      gearShiftPoints[gearKey] = { 
+        shiftRpm: gearData ? Math.max(...gearData) : Math.max(MIN_SHIFT_RPM, defaultShiftRpm)
+      };
+    }
+    
+    updateCustomShiftPoints({
+      carConfigs: {
+        ...customShiftPoints.carConfigs,
+        [selectedCarId]: {
+          enabled: true,
+          carId: selectedCarId,
+          carName: selectedCar.carName,
+          gearCount,
+          redlineRpm,
+          gearShiftPoints
+        }
+      }
+    });
+   
     setSelectedCarId('');
   };
 
