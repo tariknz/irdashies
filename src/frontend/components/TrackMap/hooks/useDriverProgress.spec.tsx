@@ -6,28 +6,34 @@ import { useDriverProgress } from './useDriverProgress';
 vi.mock('@irdashies/context', () => ({
   useFocusCarIdx: vi.fn(),
   useSessionDrivers: vi.fn(),
-  useTelemetryValuesMapped: vi.fn(),
   useSessionStore: vi.fn(),
   useTelemetryValues: vi.fn(),
+  useSessionQualifyingResults: vi.fn(),
+  useSessionQualifyPositions: vi.fn(),
+  useTelemetryValue: vi.fn(),
 }));
 
 import {
   useFocusCarIdx,
   useSessionDrivers,
-  useTelemetryValuesMapped,
   useSessionStore,
   useTelemetryValues,
+  useSessionQualifyingResults,
+  useSessionQualifyPositions,
+  useTelemetryValue,
 } from '@irdashies/context';
 
 describe('useDriverProgress', () => {
   beforeEach(() => {
     vi.resetAllMocks();
+    vi.mocked(useSessionQualifyingResults).mockReturnValue([]);
+    vi.mocked(useSessionQualifyPositions).mockReturnValue([]);
+    vi.mocked(useTelemetryValue).mockReturnValue(0);
   });
 
   it('should return empty array when drivers or lapDist are missing', () => {
     vi.mocked(useFocusCarIdx).mockReturnValue(0);
     vi.mocked(useSessionDrivers).mockReturnValue(undefined);
-    vi.mocked(useTelemetryValuesMapped).mockReturnValue([]);
     vi.mocked(useSessionStore).mockReturnValue(-1);
     vi.mocked(useTelemetryValues).mockReturnValue([]);
 
@@ -44,9 +50,8 @@ describe('useDriverProgress', () => {
 
     vi.mocked(useFocusCarIdx).mockReturnValue(0);
     vi.mocked(useSessionDrivers).mockReturnValue(mockDrivers as any);
-    vi.mocked(useTelemetryValuesMapped).mockReturnValue([0.5, 0.6]);
     vi.mocked(useSessionStore).mockReturnValue(-1);
-    vi.mocked(useTelemetryValues).mockReturnValue([0, 1]);
+    vi.mocked(useTelemetryValues).mockReturnValue([0.5, 0.6]);
 
     const { result } = renderHook(() => useDriverProgress());
 
@@ -67,9 +72,8 @@ describe('useDriverProgress', () => {
 
     vi.mocked(useFocusCarIdx).mockReturnValue(0);
     vi.mocked(useSessionDrivers).mockReturnValue(mockDrivers as any);
-    vi.mocked(useTelemetryValuesMapped).mockReturnValue([0.5, -1]);
     vi.mocked(useSessionStore).mockReturnValue(-1);
-    vi.mocked(useTelemetryValues).mockReturnValue([0, 1]);
+    vi.mocked(useTelemetryValues).mockReturnValue([0.5, -1]);
 
     const { result } = renderHook(() => useDriverProgress());
 
@@ -88,9 +92,8 @@ describe('useDriverProgress', () => {
 
     vi.mocked(useFocusCarIdx).mockReturnValue(0);
     vi.mocked(useSessionDrivers).mockReturnValue(mockDrivers as any);
-    vi.mocked(useTelemetryValuesMapped).mockReturnValue([0.5, 0.6]);
     vi.mocked(useSessionStore).mockReturnValue(1);
-    vi.mocked(useTelemetryValues).mockReturnValue([0, 0]);
+    vi.mocked(useTelemetryValues).mockReturnValue([0.5, 0.6]);
 
     const { result } = renderHook(() => useDriverProgress());
 
