@@ -9,6 +9,9 @@ import {
   DashboardProvider,
   SessionProvider,
   TelemetryProvider,
+  useDrivingState,
+  usePitLapStoreUpdater,
+  useWeekendInfoNumCarClasses,
 } from '@irdashies/context';
 import { mockDashboardBridge } from '@irdashies/storybook';
 import { generateMockDataFromPath } from '../../../app/bridge/iracingSdk/mock-data/generateMockData';
@@ -17,14 +20,11 @@ import { useState, useMemo } from 'react';
 import { DriverInfoRow } from './components/DriverInfoRow/DriverInfoRow';
 import { SessionBar } from './components/SessionBar/SessionBar';
 import { TitleBar } from './components/TitleBar/TitleBar';
-import { useDrivingState } from '@irdashies/context';
 import {
   useRelativeSettings,
   useDriverRelatives,
   useHighlightColor,
 } from './hooks';
-import { usePitLapStoreUpdater } from '../../context/PitLapStore/PitLapStoreUpdater';
-import { useWeekendInfoNumCarClasses } from '@irdashies/context';
 
 // Create a custom decorator that combines TelemetryDecoratorWithConfig with generalSettings override
 function TelemetryDecoratorWithConfigAndGeneralSettings(

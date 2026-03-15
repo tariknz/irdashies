@@ -31,6 +31,19 @@ export default defineConfig([
       }]
     }
   },
+  // Enforce context namespace: imports from context subdirectories must go via @irdashies/context
+  {
+    files: ['src/frontend/**/*.{ts,tsx}'],
+    ignores: ['src/frontend/context/**'],
+    rules: {
+      'no-restricted-imports': ['error', {
+        patterns: [{
+          group: ['**/context/**'],
+          message: "Import from '@irdashies/context' instead of importing context internals directly."
+        }]
+      }]
+    }
+  },
   {
     files: ['src/app/**/*.{ts,tsx}'],
     ignores: ['src/app/webserver/**/*.{ts,tsx}'],
