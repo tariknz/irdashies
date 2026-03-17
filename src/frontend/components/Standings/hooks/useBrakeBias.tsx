@@ -1,5 +1,8 @@
-import { useTelemetryValue } from '@irdashies/context';
-import { useSessionDrivers, useDriverCarIdx } from '@irdashies/context';
+import {
+  useTelemetryValue,
+  useSessionDrivers,
+  useDriverCarIdx,
+} from '@irdashies/context';
 
 /**
  * Hook to get the player's dynamic brake bias value.
@@ -8,7 +11,9 @@ import { useSessionDrivers, useDriverCarIdx } from '@irdashies/context';
  *
  * @returns Object with brake bias value and whether it's a Clio (affects display format)
  */
-export const useBrakeBias = (): { value: number; isClio: boolean } | undefined => {
+export const useBrakeBias = ():
+  | { value: number; isClio: boolean }
+  | undefined => {
   const drivers = useSessionDrivers();
   const playerCarIdx = useDriverCarIdx();
   const dcBrakeBias = useTelemetryValue('dcBrakeBias');

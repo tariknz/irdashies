@@ -9,10 +9,10 @@ import {
   useSetCheckeredLap,
   useCurrentSessionType,
   useCarIdxClassEstLapTime,
+  useCarIdxAverageLapTime,
 } from '@irdashies/context';
 import { SessionState } from '@irdashies/types';
 import { useEffect, useMemo, useRef } from 'react';
-import { useCarIdxAverageLapTime } from '../../../context/shared/useCarIdxAverageLapTime';
 
 export const useSessionLapCount = () => {
   const sessionNum = useTelemetryValue('SessionNum');

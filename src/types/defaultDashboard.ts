@@ -276,6 +276,7 @@ export const defaultDashboard: {
         },
         gear: {
           enabled: true,
+          showspeed: true,
           unit: 'auto',
         },
         steer: {
@@ -284,10 +285,6 @@ export const defaultDashboard: {
             style: 'default',
             color: 'light',
           },
-        },
-        tachometer: {
-          enabled: true,
-          showRpmText: false,
         },
         background: {
           opacity: 80,
@@ -302,6 +299,35 @@ export const defaultDashboard: {
           offlineTesting: true,
         },
       },
+    },
+    {
+      id: 'tachometer',
+      enabled: false,
+      layout: {
+        x: 622,
+        y: 864,
+        width: 396,
+        height: 113,
+      },
+      config: {
+        showRpmText: false,
+        rpmOrientation: 'horizontal',
+        shiftPointSettings: {
+          enabled: false,
+          indicatorType: 'glow',
+          indicatorColor: '#00ff00',
+          carConfigs: {},
+        },
+        background: { opacity: 80 },
+        showOnlyWhenOnTrack: true,
+        sessionVisibility: {
+          race: true,
+          loneQualify: true,
+          openQualify: true,
+          practice: true,
+          offlineTesting: true,
+        },
+      }
     },
     {
       id: 'relative',
@@ -523,7 +549,7 @@ export const defaultDashboard: {
         enableTurnNames: false,
         showCarNumbers: true,
         invertTrackColors: false,
-        highContrastTurns: false,
+        highContrastTurns: true,
         driverCircleSize: 40,
         playerCircleSize: 40,
         trackmapFontSize: 100,
@@ -777,6 +803,8 @@ export const defaultDashboard: {
           opacity: 30,
         },
         width: 20,
+        borderSize: 1,
+        indicatorColor: 16096779,
         sessionVisibility: {
           race: true,
           loneQualify: true,
@@ -858,6 +886,9 @@ export const defaultDashboard: {
         enableEarlyPitboxWarning: true,
         earlyPitboxThreshold: 75,
         showPitlaneTraffic: true,
+        showPastPitBox: false,
+        showSpeedSummary: true,
+        speedLimitStyle: 'text',
         background: { opacity: 80 },
         sessionVisibility: {
           race: true,

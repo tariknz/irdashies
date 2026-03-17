@@ -11,6 +11,7 @@ import { GarageCover } from './components/GarageCover/GarageCover';
 import { RejoinIndicator } from './components/RejoinIndicator/RejoinIndicator';
 import { TelemetryInspector } from './components/TelemetryInspector/TelemetryInspector';
 import { PitlaneHelper } from './components/PitlaneHelper/PitlaneHelper';
+import { Tachometer } from './components/Tachometer/Tachometer';
 import { Flag } from './components/Flag';
 import { TwitchChat } from './components/TwitchChat/TwitchChat';
 
@@ -34,6 +35,7 @@ export const WIDGET_MAP: Record<
   rejoin: RejoinIndicator,
   telemetryinspector: TelemetryInspector,
   pitlanehelper: PitlaneHelper,
+  tachometer: Tachometer,
   flag: Flag,
   twitchchat: TwitchChat,
 };

@@ -106,13 +106,9 @@ export const useLapTimesStore = create<LapTimesState>((set, get) => ({
         }
       });
     } else if (!lapTimeBuffer) {
-      // First run: initialize history with current lap times
-      carIdxLastLapTime.forEach((lapTime, idx) => {
-        if (lapTime > 0) {
-          newHistory[idx] = [lapTime];
-          historyChanged = true;
-        }
-      });
+      // First run: just record the current values as a baseline.
+      // Don't add them to history — they may be stale from a previous
+      // session. History only grows when we see a value *change*.
     }
 
     // Only recalculate averages when history actually changed

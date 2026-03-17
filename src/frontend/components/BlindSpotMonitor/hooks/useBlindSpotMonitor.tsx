@@ -3,8 +3,8 @@ import {
   useTelemetryValues,
   useTelemetryValue,
   useDriverCarIdx,
+  useTrackLength,
 } from '@irdashies/context';
-import { useTrackLength } from '@irdashies/context';
 import { useBlindSpotMonitorSettings } from './useBlindSpotMonitorSettings';
 import { CarLeftRight } from '@irdashies/types';
 
@@ -75,7 +75,7 @@ export const useBlindSpotMonitor = (): BlindSpotMonitorState => {
       if (diff > 0.5) diff -= 1;
       else if (diff < -0.5) diff += 1;
       const percent = diff / (diff > 0 ? maxDistAPct : maxDistBPct);
-      return Math.max(-1, Math.min(1, percent));
+      return Math.round(Math.max(-1, Math.min(1, percent)) * 1000) / 1000;
     };
 
     let leftState = CarLeftRight.Off;
@@ -151,7 +151,7 @@ export const useBlindSpotMonitor = (): BlindSpotMonitorState => {
   ]);
 
   useEffect(() => {
-    if (!result.show || carLeftRight <= CarLeftRight.Clear) {
+    if (carLeftRight <= CarLeftRight.Clear) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setLeftCarIdx(null);
       setRightCarIdx(null);
@@ -185,20 +185,22 @@ export const useBlindSpotMonitor = (): BlindSpotMonitorState => {
       carLeftRight === CarLeftRight.Cars2Right;
 
     if (isLeftOnly) {
-      if (leftCarIdx === null) setLeftCarIdx(findClosestExcluding(null));
-      if (rightCarIdx !== null) setRightCarIdx(null);
+      // ALWAYS find the closest car for the active side to ensure it's not stale
+      const closest = findClosestExcluding(null);
+      setLeftCarIdx(closest);
+      setRightCarIdx(null); // Clear opposite
     } else if (isRightOnly) {
-      if (rightCarIdx === null) setRightCarIdx(findClosestExcluding(null));
-      if (leftCarIdx !== null) setLeftCarIdx(null);
+      const closest = findClosestExcluding(null);
+      setRightCarIdx(closest);
+      setLeftCarIdx(null); // Clear opposite
     } else if (is3Wide) {
-      // Identity Persistence
+      // If we have one, find the other.
       if (leftCarIdx !== null && rightCarIdx === null) {
         setRightCarIdx(findClosestExcluding(leftCarIdx));
       } else if (rightCarIdx !== null && leftCarIdx === null) {
         setLeftCarIdx(findClosestExcluding(rightCarIdx));
       }
-      // If somehow 3 wide occurs at the same time, we don't set them here to maintain the "0%" centered look.
-      // They will only be populated once we have some data who's where.
+      // If BOTH are null (fresh 3-wide), we stay at 0%
     }
 
     setPrevPercents({
