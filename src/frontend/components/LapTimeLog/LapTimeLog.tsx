@@ -106,8 +106,8 @@ export const LapTimeLog = () => {
     if (now - lastPredictionUpdate.current >= 100) {      
       setPredictedLap((prev) => {
         const currentPrediction = referenceAtStartOfLap.current > 0 ? (referenceAtStartOfLap.current + liveDelta) : 0;
-        if (currentPrediction > currentLapTime) {
-          lastPredictionUpdate.current = now;
+        if (currentPrediction > currentLapTime && lapCompleted === lastLoggedLap.current) {
+          lastPredictionUpdate.current = now
           return currentPrediction;
         }
         return prev;
@@ -122,7 +122,7 @@ export const LapTimeLog = () => {
       }
       return prev;
     });
-  }, [currentLapTime, liveDelta, incidentCount, playerTrackSurface]);
+  }, [currentLapTime, liveDelta, incidentCount, playerTrackSurface, lapCompleted]);
 
   // 3. lap completion Logic
   useEffect(() => {    
@@ -253,7 +253,7 @@ export const LapTimeLogDisplay = ({
       bestlap !== undefined &&
       bestlap > 0 &&
       Math.abs(lastlap - bestlap) < 0.001;
-    bgColor = 'bg-slate-800';
+    bgColor = 'bg-slate-900';
     if (isPersonalBest) bgColor = 'bg-green-700';
     if (isSessionBest) bgColor = 'bg-purple-800';
   }
@@ -282,7 +282,7 @@ export const LapTimeLogDisplay = ({
           {settings.config.showCurrentLap && (
             <div
               id="current-lap"
-              className={`text-[1.8em] w-full p-1 ${bgColor} flex relative items-center justify-center rounded-sm transition-colors duration-500`}
+              className={`text-[1.8em] min-h-[2em] w-full p-1 ${bgColor} flex relative items-center justify-center rounded-sm transition-colors duration-500`}
               style={
                 {
                   '--fg-alpha': `${settings?.config.foreground.opacity}%`,
@@ -304,7 +304,7 @@ export const LapTimeLogDisplay = ({
           {settings.config.showPredictedLap && (
             <div
               id="predicted-lap"
-              className={`text-[1.3em] w-full p-1 ${dirty ? 'text-zinc-400' : 'text-white'} bg-slate-900/[var(--fg-alpha)] flex relative items-center justify-center rounded-sm`}
+              className={`text-[1.3em] min-h-[2em] w-full p-1 ${dirty ? 'text-zinc-400' : 'text-white'} bg-slate-900/[var(--fg-alpha)] flex relative items-center justify-center rounded-sm`}
               style={
                 {
                   '--fg-alpha': `${settings?.config.foreground.opacity / 2}%`,
@@ -320,7 +320,7 @@ export const LapTimeLogDisplay = ({
               </div>
               <div className="w-full text-center tabular-nums">
                 {formatTime(
-                  current !== undefined && current > FREEZE_TIME ? predicted : lastlap
+                  current !== undefined && current > FREEZE_TIME ? predicted : undefined
                 )}
               </div>
               {settings.config.delta?.enabled && (
