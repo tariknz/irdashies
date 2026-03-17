@@ -109,7 +109,6 @@ export interface StandingsConfig {
   iratingChange: { enabled: boolean };
   positionChange: { enabled: boolean };
   badge: { enabled: boolean; badgeFormat: StandingsBadgeFormat };
-  delta: { enabled: boolean };
   gap: { enabled: boolean; decimalPlaces?: number };
   interval: { enabled: boolean; decimalPlaces?: number };
   lastTime: { enabled: boolean; timeFormat: TimeFormat };

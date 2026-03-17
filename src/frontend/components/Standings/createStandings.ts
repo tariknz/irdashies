@@ -24,6 +24,7 @@ export interface Standings {
   position?: number;
   classPosition?: number;
   lap?: number;
+  lapsComplete?: number;
   lappedState?: 'ahead' | 'behind' | 'same';
   delta?: number;
   gap?: Gap;
@@ -251,6 +252,7 @@ export const createDriverStandings = (
         },
         fastestTime: result.FastestTime,
         hasFastestTime: result.CarIdx === fastestDriverIdx,
+        lapsComplete: result.LapsComplete,
         lastTime: result.LastTime,
         lastTimeState: getLastTimeState(
           result.LastTime,
@@ -453,11 +455,7 @@ export const augmentStandingsWithGap = (
 
     // Calculate gap for each driver: gap = driver_delta - class_leader_delta
     const augmentedClassStandings = classStandings.map((driverStanding) => {
-      if (
-        driverStanding.carIdx === classLeader.carIdx ||
-        !classLeader.onTrack ||
-        !driverStanding.onTrack
-      ) {
+      if (driverStanding.carIdx === classLeader.carIdx) {
         // Class leader shows as dash (undefined gap)
         return { ...driverStanding, gap: { value: undefined, laps: 0 } };
       }
@@ -471,6 +469,8 @@ export const augmentStandingsWithGap = (
 
       if (
         useLivePositionStandings &&
+        classLeader.onTrack &&
+        driverStanding.onTrack &&
         classLeaderTrackPct > -1 &&
         driverTrackPct > -1
       ) {
@@ -510,19 +510,36 @@ export const augmentStandingsWithGap = (
       }
 
       const gap = {
-        value: gapValue ? Math.abs(gapValue) : undefined,
+        value: gapValue !== undefined ? Math.abs(gapValue) : undefined,
         laps: 0,
       };
 
       const driverLapNumber = carIdxLap[driverStanding.carIdx];
       const classLeaderLapNumber = carIdxLap[classLeader.carIdx];
 
-      // NOTE: iRacing shows laps behind as a negative number
-      gap.laps = -Math.floor(
-        classLeaderLapNumber +
-          classLeaderTrackPct -
-          (driverLapNumber + driverTrackPct)
-      );
+      // Only calculate laps behind when both values are valid (>= 0).
+      // carIdxLap returns -1 for cars not yet in world — using -1 in the
+      // formula produces wildly incorrect lap deltas (e.g. "17L").
+      if (
+        classLeaderLapNumber >= 0 &&
+        driverLapNumber >= 0 &&
+        classLeaderTrackPct >= 0 &&
+        driverTrackPct >= 0
+      ) {
+        // NOTE: iRacing shows laps behind as a negative number
+        gap.laps = -Math.floor(
+          classLeaderLapNumber +
+            classLeaderTrackPct -
+            (driverLapNumber + driverTrackPct)
+        );
+      } else if (
+        classLeader.lapsComplete !== undefined &&
+        driverStanding.lapsComplete !== undefined
+      ) {
+        // Fallback: use LapsComplete from session results when live telemetry
+        // lap data is unavailable (e.g. cars not in world after finishing).
+        gap.laps = classLeader.lapsComplete - driverStanding.lapsComplete;
+      }
 
       return {
         ...driverStanding,

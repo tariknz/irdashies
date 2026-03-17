@@ -124,7 +124,6 @@ const StandingsWithoutHeaderFooter = () => {
                     name={result.driver?.name || ''}
                     isPlayer={result.isPlayer}
                     hasFastestTime={result.hasFastestTime}
-                    delta={settings?.delta?.enabled ? result.delta : undefined}
                     gap={settings?.gap?.enabled ? result.gap : undefined}
                     interval={
                       settings?.interval?.enabled ? result.interval : undefined
@@ -379,7 +378,6 @@ const StandingsWithoutHeader = () => {
                     name={result.driver?.name || ''}
                     isPlayer={result.isPlayer}
                     hasFastestTime={result.hasFastestTime}
-                    delta={settings?.delta?.enabled ? result.delta : undefined}
                     gap={settings?.gap?.enabled ? result.gap : undefined}
                     interval={
                       settings?.interval?.enabled ? result.interval : undefined
@@ -536,7 +534,6 @@ const StandingsWithoutFooter = () => {
                     name={result.driver?.name || ''}
                     isPlayer={result.isPlayer}
                     hasFastestTime={result.hasFastestTime}
-                    delta={settings?.delta?.enabled ? result.delta : undefined}
                     gap={settings?.gap?.enabled ? result.gap : undefined}
                     interval={
                       settings?.interval?.enabled ? result.interval : undefined
@@ -791,7 +788,6 @@ const StandingsWithFullHeader = () => {
                     name={result.driver?.name || ''}
                     isPlayer={result.isPlayer}
                     hasFastestTime={result.hasFastestTime}
-                    delta={settings?.delta?.enabled ? result.delta : undefined}
                     gap={settings?.gap?.enabled ? result.gap : undefined}
                     interval={
                       settings?.interval?.enabled ? result.interval : undefined
