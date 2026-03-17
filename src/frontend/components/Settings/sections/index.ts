@@ -10,3 +10,4 @@ export * from './AdvancedSettings';
 export * from './ProfileSettings';
 export * from './PitlaneHelperSettings';
 export * from './TwitchChatSettings';
+export * from './LapTimeLogSettings';

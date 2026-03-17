@@ -20,6 +20,7 @@ export const WIDGET_NAMES: Record<WidgetId, string> = {
   pitlanehelper: 'Pitlane Helper',
   telemetryinspector: 'Telemetry Inspector',
   twitchchat: 'Twitch Chat',
+  laptimelog: 'Lap Timer',
 };
 
 /**
