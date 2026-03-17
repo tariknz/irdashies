@@ -279,6 +279,7 @@ export const defaultDashboard: {
         },
         gear: {
           enabled: true,
+          showspeed: true,
           unit: 'auto',
         },
         steer: {
@@ -287,10 +288,6 @@ export const defaultDashboard: {
             style: 'default',
             color: 'light',
           },
-        },
-        tachometer: {
-          enabled: true,
-          showRpmText: false,
         },
         background: {
           opacity: 80,
@@ -305,6 +302,35 @@ export const defaultDashboard: {
           offlineTesting: true,
         },
       },
+    },
+    {
+      id: 'tachometer',
+      enabled: false,
+      layout: {
+        x: 622,
+        y: 864,
+        width: 396,
+        height: 113,
+      },
+      config: {
+        showRpmText: false,
+        rpmOrientation: 'horizontal',
+        shiftPointSettings: {
+          enabled: false,
+          indicatorType: 'glow',
+          indicatorColor: '#00ff00',
+          carConfigs: {},
+        },
+        background: { opacity: 80 },
+        showOnlyWhenOnTrack: true,
+        sessionVisibility: {
+          race: true,
+          loneQualify: true,
+          openQualify: true,
+          practice: true,
+          offlineTesting: true,
+        },
+      }
     },
     {
       id: 'relative',
