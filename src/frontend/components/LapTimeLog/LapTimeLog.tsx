@@ -119,7 +119,7 @@ export const LapTimeLog = () => {
     if (now - lastPredictionUpdate.current >= 100) {
       setPredictedLap((prev) => {
         const currentPrediction = referenceTime > 0 ? referenceTime + liveDelta : 0;
-        //console.log('LAP' + lapCompleted + '/LOG' + lastLoggedLap.current + ' D' + liveDelta + (deltaCheck ? '(OK)' : '(INVALID)') + ' C' + currentLapTime + ' R1' + referenceTime + ' R2' + referenceAtStartOfLap.current + ' P' + currentPrediction);   
+        //console.log('LAP' + lapCompleted + '/LOG' + lastLoggedLap.current + ' D' + liveDelta + (deltaCheck ? '(OK)' : '(INVALID)') + ' C' + currentLapTime + ' R' + referenceTime + ' RS' + referenceAtStartOfLap.current + ' P' + currentPrediction);   
         if (
           deltaCheck &&
           currentTime &&
