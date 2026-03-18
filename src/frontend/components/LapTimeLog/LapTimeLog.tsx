@@ -34,6 +34,7 @@ export const LapTimeLog = () => {
   const [history, setHistory] = useState<LapEntry[]>([]);
   const [isDirty, setIsDirty] = useState<boolean>(false);
   const [predictedLap, setPredictedLap] = useState<number>(0);
+  const deltaMethod = settings.config.delta?.method ?? 'bestlap';
 
   // get telemetry
   const lapCompleted = useTelemetryValue<number>('LapCompleted') ?? 0;
@@ -46,7 +47,7 @@ export const LapTimeLog = () => {
   const playerTrackSurface = useTelemetryValue<number>('PlayerTrackSurface') ?? 0;
   const incidentCount = useTelemetryValue<number>('PlayerCarMyIncidentCount') ?? 0;
 
-  // Refs for tracking state changes
+  // refs for tracking state changes
   const lastLoggedLap = useRef<number>(-1);
   const lastLoggedTime = useRef<number>(-1);
   const prevSessionNum = useRef<number>(sessionNum);
@@ -64,31 +65,32 @@ export const LapTimeLog = () => {
   }, [carIdxBestLapTime]);
 
   // calculate predicted
-  const referenceTime = useMemo(() => {
-    const method = settings.config.delta?.method;
-    if (method === 'lastlap') return lastLapTime;
-    if (method === 'overall') return sessionBestOverall;
-    return bestLapTime;
-  }, [
-    settings.config.delta?.method,
-    lastLapTime,
-    sessionBestOverall,
-    bestLapTime,
-  ]);
+  const referenceTime = {
+    lastlap: lastLapTime,
+    bestlap: bestLapTime,
+    overall: sessionBestOverall,
+  }[deltaMethod] ?? bestLapTime;
 
   // get current delta against chosen target
-  const deltas = {
-    lastlap: useTelemetryValue<number>('LapDeltaToSessionLastlLap') ?? 0,
-    bestlap: useTelemetryValue<number>('LapDeltaToBestLap') ?? 0,
-    overall: useTelemetryValue<number>('LapDeltaToSessionBestLap') ?? 0,
-  };
-  const liveDelta = deltas[settings.config.delta?.method] ?? deltas.bestlap;
+  const deltaMethodMap = {
+    lastlap: 'LapDeltaToSessionLastlLap',
+    bestlap: 'LapDeltaToBestLap',
+    overall: 'LapDeltaToSessionBestLap',
+  } as const;
+  const liveDelta = useTelemetryValue<number>(deltaMethodMap[deltaMethod]) ?? 0;
+
+  const deltaCheckMap = {
+    lastlap: 'LapDeltaToSessionLastlLap_OK',
+    bestlap: 'LapDeltaToBestLap_OK',
+    overall: 'LapDeltaToSessionBestLap_OK',
+  } as const;
+  const deltaCheck = useTelemetryValue<number>(deltaCheckMap[deltaMethod]) ?? 0;
 
   // 1. handles resets/restarts
   useEffect(() => {
     const sessionChanged = sessionNum !== prevSessionNum.current;
     const sessionRestarted = sessionTime < prevSessionTime.current - 5;
-    if (sessionChanged || sessionRestarted) {  
+    if (sessionChanged || sessionRestarted) {
       lastLoggedLap.current = -1;
       lastLoggedTime.current = -1;
       setTimeout(() => setIsDirty(false), 0);
@@ -101,17 +103,21 @@ export const LapTimeLog = () => {
 
   /// 2. live tracking during the lap
   useEffect(() => {
-    const now = Date.now();    
+    const now = Date.now();
     // 2a. prediction Logic (throttle to 100ms)
-    if (now - lastPredictionUpdate.current >= 100) {      
+    if (now - lastPredictionUpdate.current >= 100) {
       setPredictedLap((prev) => {
-        const currentPrediction = referenceAtStartOfLap.current > 0 ? (referenceAtStartOfLap.current + liveDelta) : 0;
-        if (currentPrediction > currentLapTime && lapCompleted === lastLoggedLap.current) {
-          lastPredictionUpdate.current = now
+        const currentPrediction = referenceTime > 0 ? referenceTime + liveDelta : 0;
+        if (
+          deltaCheck &&
+          currentPrediction > currentLapTime &&
+          lapCompleted === lastLoggedLap.current
+        ) {
+          lastPredictionUpdate.current = now;
           return currentPrediction;
         }
         return prev;
-      });       
+      });
     }
     // 2b. incident/dirty lap logic
     setIsDirty((prev) => {
@@ -122,17 +128,25 @@ export const LapTimeLog = () => {
       }
       return prev;
     });
-  }, [currentLapTime, liveDelta, incidentCount, playerTrackSurface, lapCompleted]);
+  }, [
+    currentLapTime,
+    lapCompleted,
+    liveDelta,
+    deltaCheck,
+    referenceTime,
+    incidentCount,
+    playerTrackSurface,
+  ]);
 
   // 3. lap completion Logic
-  useEffect(() => {    
+  useEffect(() => {
     setHistory((prev) => {
-      // check for new lap      
-      const isNewLap = lapCompleted > 0 && lapCompleted > lastLoggedLap.current; 
-      const isValidTime = lastLapTime > 0 && lastLapTime !== lastLoggedTime.current;      
-      if (!isNewLap || !isValidTime) return prev;     
+      // check for new lap
+      const isNewLap = lapCompleted > 0 && lapCompleted > lastLoggedLap.current;
+      const isValidTime = lastLapTime > 0 && lastLapTime !== lastLoggedTime.current;
+      if (!isNewLap || !isValidTime) return prev;
       if (prev.some((entry) => entry.lap === lapCompleted)) return prev;
-      // add history 
+      // add history
       const newEntry: LapEntry = {
         lap: lapCompleted,
         time: lastLapTime,
@@ -294,7 +308,9 @@ export const LapTimeLogDisplay = ({
               </div>
               <div className="w-full text-center tabular-nums">
                 {formatTime(
-                  current !== undefined && current > FREEZE_TIME ? current : lastlap
+                  current !== undefined && current > FREEZE_TIME
+                    ? current
+                    : lastlap
                 )}
               </div>
             </div>
@@ -320,7 +336,9 @@ export const LapTimeLogDisplay = ({
               </div>
               <div className="w-full text-center tabular-nums">
                 {formatTime(
-                  current !== undefined && current > FREEZE_TIME ? predicted : undefined
+                  current !== undefined && current > FREEZE_TIME
+                    ? predicted
+                    : lastlap
                 )}
               </div>
               {settings.config.delta?.enabled && (
@@ -333,7 +351,9 @@ export const LapTimeLogDisplay = ({
                         : 'text-zinc-400'
                   }`}
                 >
-                  {formatDelta(current !== undefined && current > FREEZE_TIME ? delta : 0)}
+                  {formatDelta(
+                    current !== undefined && current > FREEZE_TIME ? delta : 0
+                  )}
                 </div>
               )}
             </div>
