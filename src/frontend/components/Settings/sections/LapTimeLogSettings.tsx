@@ -137,7 +137,7 @@ export const LapTimeLogSettings = () => {
 
                 {settings.config.delta?.enabled && (
                 <SettingsSection>
-                  <SettingButtonGroupRow<'lastlap' | 'bestlap' | 'overall'>
+                  <SettingButtonGroupRow<'lastlap' | 'bestlap'>
                       title="Delta Calculation Base Lap"                      
                       value={
                         settings.config.delta?.method ?? 'bestlap'
@@ -145,7 +145,6 @@ export const LapTimeLogSettings = () => {
                       options={[
                         { label: 'Last Lap', value: 'lastlap' },
                         { label: 'Best Lap', value: 'bestlap' },
-                        { label: 'Overall Best', value: 'overall' },
                       ]}
                       onChange={(v) =>
                         handleConfigChange({                     
