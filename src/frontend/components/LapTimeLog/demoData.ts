@@ -10,7 +10,8 @@ export interface LapTimeLogDemoData {
   current: number;
   lastlap: number;
   bestlap: number;
-  predicted: number;
+  reference: number;
+  delta: number;
   overall: number;
   dirty: boolean;
   history: LapEntry[];
@@ -22,7 +23,8 @@ export const getDemoLapTimeLogData = (): LapTimeLogDemoData => {
     "current": 84.010,
     "lastlap": 85.249,
     "bestlap": 82.401,
-    "predicted": 84.600,
+    "reference": 82.401,
+    "delta": 2.60,
     "overall": 82.301,
     "dirty": false,
     "history": [

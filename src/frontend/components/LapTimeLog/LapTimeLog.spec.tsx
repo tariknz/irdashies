@@ -127,7 +127,8 @@ describe('LapTimeLogDisplay', () => {
     current: 10.5,
     lastlap: 92.1,
     bestlap: 91.5,
-    predicted: 91.3,
+    reference: 91.5,
+    delta: -0.20,
     overall: 91.0,
     history: [
       { lap: 10, time: 92.1, delta: 0.6 },

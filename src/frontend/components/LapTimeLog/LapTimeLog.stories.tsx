@@ -87,7 +87,8 @@ const baseArgs = {
   current: 88.123,
   lastlap: 92.1,
   bestlap: 91.5,
-  predicted: 91.3,
+  reference: 91.5,
+  delta: 0.2,
   overall: 91.0,
   history: baseHistory,
 };

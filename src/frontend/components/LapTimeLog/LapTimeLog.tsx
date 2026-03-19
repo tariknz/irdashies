@@ -34,7 +34,7 @@ export const LapTimeLog = () => {
   const [history, setHistory] = useState<LapEntry[]>([]);
   const [isDirty, setIsDirty] = useState<boolean>(false);
   const [displayTime, setDisplayTime] = useState<number | undefined>(0);
-  const [predictedLap, setPredictedLap] = useState<number>(0);
+  const [savedDelta, setSavedDelta] = useState<number>(0);
   const deltaMethod = settings.config.delta?.method ?? 'bestlap';
 
   // get telemetry
@@ -47,7 +47,6 @@ export const LapTimeLog = () => {
   const sessionTime = useTelemetryValue<number>('SessionTime') ?? 0;
   const playerTrackSurface = useTelemetryValue<number>('PlayerTrackSurface') ?? 0;
   const incidentCount = useTelemetryValue<number>('PlayerCarMyIncidentCount') ?? 0;
-  const trackPos = useTelemetryValue<number>('LapDistPct') ?? 0;
 
   // refs for tracking state changes
   const lastLoggedLap = useRef<number>(-1);
@@ -56,7 +55,7 @@ export const LapTimeLog = () => {
   const prevSessionTime = useRef<number>(sessionTime);
   const referenceAtStartOfLap = useRef<number>(0);
   const incidentsAtLapStart = useRef<number>(incidentCount);
-  const lastPredictionUpdate = useRef<number>(0);
+  const lastDeltaUpdate = useRef<number>(0);
   const lapTransition = useRef<boolean>(false);
 
   // calculate overall best
@@ -98,7 +97,7 @@ export const LapTimeLog = () => {
       lastLoggedLap.current = -1;
       lastLoggedTime.current = -1;
       setTimeout(() => setIsDirty(false), 0);
-      setTimeout(() => setPredictedLap(0), 0);
+      setTimeout(() => setSavedDelta(0), 0);
       setTimeout(() => setHistory([]), 0);
     }
     prevSessionNum.current = sessionNum;
@@ -122,18 +121,17 @@ export const LapTimeLog = () => {
     });
     // 3b. prediction Logic (throttle to 100ms)
     const now = Date.now();
-    if (now - lastPredictionUpdate.current >= 100) {
-      setPredictedLap((prev) => {
-        const currentPrediction = referenceTime > 0 ? referenceTime + liveDelta : 0;
+    if (now - lastDeltaUpdate.current >= 100) {
+      setSavedDelta((prev) => {
+        const currentDelta = liveDelta ?? 0;
         if (
           deltaCheck &&
           displayTime &&
-          currentPrediction > displayTime &&
-          trackPos < 0.99 &&
-          trackPos > 0.05
+          currentLapTime > 5 &&
+          !lapTransition.current
         ) {
-          lastPredictionUpdate.current = now;
-          return currentPrediction;
+          lastDeltaUpdate.current = now;
+          return currentDelta;
         }
         return prev;
       });
@@ -156,7 +154,6 @@ export const LapTimeLog = () => {
     referenceTime,
     incidentCount,
     playerTrackSurface,
-    trackPos,
   ]);
 
   // 4. log lap history and reset
@@ -195,11 +192,11 @@ export const LapTimeLog = () => {
         current={demoData.current}
         lastlap={demoData.lastlap}
         bestlap={demoData.bestlap}
-        predicted={demoData.predicted}
+        reference={demoData.delta}
+        delta={demoData.delta}
         overall={demoData.overall}
         dirty={demoData.dirty}
         history={demoData.history}
-        debug={"demo mode"}
       />
     );
   }
@@ -220,7 +217,8 @@ export const LapTimeLog = () => {
       current={displayTime}
       lastlap={lastLapTime}
       bestlap={bestLapTime}
-      predicted={predictedLap}
+      reference={referenceTime}
+      delta={savedDelta}
       overall={sessionBestOverall}
       dirty={isDirty}
       history={history}
@@ -233,21 +231,21 @@ export const LapTimeLogDisplay = ({
   current,
   lastlap,
   bestlap,
-  predicted,
+  reference,
+  delta,
   overall,
   dirty,
   history,
-  debug,
 }: {
   settings: LapTimeLogWidgetSettings;
   current?: number;
   lastlap?: number;
   bestlap?: number;
-  predicted?: number;
+  reference?: number;
+  delta?: number;
   overall?: number;
   dirty?: boolean;
   history?: LapEntry[];
-  debug?: string;
 }) => {
   // sort laps
   const sortedHistory = useMemo(() => {
@@ -258,13 +256,6 @@ export const LapTimeLogDisplay = ({
   }, [history, settings]);
 
   // predicted delta
-  const deltalap =
-    settings.config.delta.method === 'lastlap'
-      ? lastlap
-      : settings.config.delta.method === 'overall'
-        ? overall
-        : bestlap;
-  const delta = (predicted ?? 0) - (deltalap ?? 0);
   const deltaIsGreen = 
     current !== undefined && 
     current > 5 &&
@@ -365,22 +356,22 @@ export const LapTimeLogDisplay = ({
                   current === undefined
                     ? undefined
                     : current > FREEZE_TIME
-                      ? (predicted ?? undefined)
+                      ? (reference ?? 0) + (delta  ?? 0)
                       : lastlap
                 )}
               </div>
               {settings.config.delta?.enabled && (
                 <div
                   className={`absolute right-2 text-center tabular-nums ${
-                    !dirty && predicted && deltaIsGreen
+                    !dirty && delta && deltaIsGreen
                       ? 'text-green-400'
-                      : !dirty && predicted && deltaIsRed
+                      : !dirty && delta && deltaIsRed
                         ? 'text-red-400'
                         : 'text-zinc-400'
                   }`}
                 >
                   {formatDelta(
-                    predicted && current !== undefined && current > FREEZE_TIME
+                    delta && current !== undefined && current > FREEZE_TIME
                       ? delta
                       : 0
                   )}
@@ -394,7 +385,7 @@ export const LapTimeLogDisplay = ({
             <LapTimeRow
               label="LAST"
               time={lastlap}
-              delta={(lastlap ?? 0) - (deltalap ?? 0)}
+              delta={(reference ?? 0) - (lastlap ?? 0)}
               best={bestlap}
               overall={overall}
               settings={settings}
@@ -404,7 +395,7 @@ export const LapTimeLogDisplay = ({
             <LapTimeRow
               label="BEST"
               time={bestlap}
-              delta={(bestlap ?? 0) - (deltalap ?? 0)}
+              delta={(reference ?? 0) - (bestlap ?? 0)}
               best={bestlap}
               overall={overall}
               settings={settings}
@@ -429,9 +420,6 @@ export const LapTimeLogDisplay = ({
             </>
           )}
 
-          {debug && (
-            <div className="text-xs text-zinc-400 p-1 text-center">{debug}</div>
-          )}
         </div>
       </div>
     </div>
