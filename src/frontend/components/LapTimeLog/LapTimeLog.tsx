@@ -33,7 +33,7 @@ export const LapTimeLog = () => {
   const { isDriving } = useDrivingState();
   const [history, setHistory] = useState<LapEntry[]>([]);
   const [isDirty, setIsDirty] = useState<boolean>(false);
-  const [currentTime, setCurrentTime] = useState<number | undefined>(0);
+  const [displayTime, setDisplayTime] = useState<number | undefined>(0);
   const [predictedLap, setPredictedLap] = useState<number>(0);
   const deltaMethod = settings.config.delta?.method ?? 'bestlap';
 
@@ -47,7 +47,7 @@ export const LapTimeLog = () => {
   const sessionTime = useTelemetryValue<number>('SessionTime') ?? 0;
   const playerTrackSurface = useTelemetryValue<number>('PlayerTrackSurface') ?? 0;
   const incidentCount = useTelemetryValue<number>('PlayerCarMyIncidentCount') ?? 0;
-  const trackPos =  useTelemetryValue<number>('LapDistPct') ?? 0;
+  const trackPos = useTelemetryValue<number>('LapDistPct') ?? 0;
 
   // refs for tracking state changes
   const lastLoggedLap = useRef<number>(-1);
@@ -68,11 +68,12 @@ export const LapTimeLog = () => {
   }, [carIdxBestLapTime]);
 
   // calculate predicted
-  const referenceTime = {
-    lastlap: lastLapTime,
-    bestlap: bestLapTime,
-    overall: sessionBestOverall,
-  }[deltaMethod] ?? bestLapTime;
+  const referenceTime =
+    {
+      lastlap: lastLapTime,
+      bestlap: bestLapTime,
+      overall: sessionBestOverall,
+    }[deltaMethod] ?? bestLapTime;
 
   // get current delta against chosen target
   const deltaMethodMap = {
@@ -104,26 +105,30 @@ export const LapTimeLog = () => {
     prevSessionTime.current = sessionTime;
   }, [sessionNum, sessionTime]);
 
-  /// 2. live tracking during the lap
+  /// 2. check for new lap
   useEffect(() => {
-    const now = Date.now();
-    // lap time
-    setCurrentTime(() => {
+    lapTransition.current = lapCompleted > 0 && lapCompleted > lastLoggedLap.current;
+  }, [lapCompleted]);
+
+  /// 3. live tracking during the lap
+  useEffect(() => {
+    // 3a. get valid time for current lap
+    setDisplayTime(() => {
       if (lapTransition.current) {
-        return undefined;
+        return undefined; // hide for milliseconds during transition
       } else {
         return currentLapTime;
       }
     });
-    // 2a. prediction Logic (throttle to 100ms)
+    // 3b. prediction Logic (throttle to 100ms)
+    const now = Date.now();
     if (now - lastPredictionUpdate.current >= 100) {
       setPredictedLap((prev) => {
         const currentPrediction = referenceTime > 0 ? referenceTime + liveDelta : 0;
-        //console.log('LAP' + lapCompleted + '/LOG' + lastLoggedLap.current + ' D' + liveDelta + (deltaCheck ? '(OK)' : '(INVALID)') + ' C' + currentLapTime + ' R' + referenceTime + ' RS' + referenceAtStartOfLap.current + ' P' + currentPrediction);   
         if (
           deltaCheck &&
-          currentTime &&
-          currentPrediction > currentTime &&
+          displayTime &&
+          currentPrediction > displayTime &&
           trackPos < 0.99 &&
           trackPos > 0.05
         ) {
@@ -133,7 +138,7 @@ export const LapTimeLog = () => {
         return prev;
       });
     }
-    // 2b. incident/dirty lap logic
+    // 3c. incident/dirty lap logic
     setIsDirty((prev) => {
       if (!prev) {
         const offTrack = playerTrackSurface === TRACK_SURFACE_OFF_TRACK;
@@ -144,24 +149,22 @@ export const LapTimeLog = () => {
     });
   }, [
     currentLapTime,
-    currentTime,
+    displayTime,
     lapCompleted,
     liveDelta,
     deltaCheck,
     referenceTime,
     incidentCount,
     playerTrackSurface,
-    trackPos
+    trackPos,
   ]);
 
-  // 3. lap completion Logic
+  // 4. log lap history and reset
   useEffect(() => {
     setHistory((prev) => {
-      // check for new lap
-      const isNewLap = lapCompleted > 0 && lapCompleted > lastLoggedLap.current;
-      lapTransition.current = isNewLap;
+      // wait for new last lap time
       const isValidTime = lastLapTime > 0 && lastLapTime !== lastLoggedTime.current;
-      if (!isNewLap || !isValidTime) return prev;
+      if (!lapTransition.current || !isValidTime) return prev;
       if (prev.some((entry) => entry.lap === lapCompleted)) return prev;
       // add history
       const newEntry: LapEntry = {
@@ -196,6 +199,7 @@ export const LapTimeLog = () => {
         overall={demoData.overall}
         dirty={demoData.dirty}
         history={demoData.history}
+        debug={"demo mode"}
       />
     );
   }
@@ -213,7 +217,7 @@ export const LapTimeLog = () => {
   return (
     <LapTimeLogDisplay
       settings={settings}
-      current={currentTime}
+      current={displayTime}
       lastlap={lastLapTime}
       bestlap={bestLapTime}
       predicted={predictedLap}
@@ -222,7 +226,7 @@ export const LapTimeLog = () => {
       history={history}
     />
   );
-};
+};;
 
 export const LapTimeLogDisplay = ({
   settings,
@@ -233,6 +237,7 @@ export const LapTimeLogDisplay = ({
   overall,
   dirty,
   history,
+  debug,
 }: {
   settings: LapTimeLogWidgetSettings;
   current?: number;
@@ -242,6 +247,7 @@ export const LapTimeLogDisplay = ({
   overall?: number;
   dirty?: boolean;
   history?: LapEntry[];
+  debug?: string;
 }) => {
   // sort laps
   const sortedHistory = useMemo(() => {
@@ -297,7 +303,7 @@ export const LapTimeLogDisplay = ({
   return (
     <div className={`h-full flex ${alignment}`}>
       <div
-        className="w-full text-sm bg-slate-800/[var(--bg-opacity)] rounded-md p-1 text-white"
+        className="w-full text-sm bg-slate-800/[var(--bg-opacity)] p-0.5 rounded-md text-white"
         style={
           {
             '--bg-opacity': `${settings.config.background.opacity}%`,
@@ -307,7 +313,7 @@ export const LapTimeLogDisplay = ({
         <div
           className={`w-full flex gap-0.5 ${reverse}`}
           style={
-            { 'fontSize': `${settings.config.scale}%` } as React.CSSProperties
+            { fontSize: `${settings.config.scale}%` } as React.CSSProperties
           }
         >
           {/* Current Lap Timer (The Big One) */}
@@ -326,9 +332,11 @@ export const LapTimeLogDisplay = ({
               </div>
               <div className="w-full text-center tabular-nums">
                 {formatTime(
-                  current == undefined || current > FREEZE_TIME
-                    ? current
-                    : lastlap
+                  current === undefined
+                    ? undefined
+                    : current > FREEZE_TIME
+                      ? current
+                      : lastlap
                 )}
               </div>
             </div>
@@ -354,9 +362,11 @@ export const LapTimeLogDisplay = ({
               </div>
               <div className="w-full text-center tabular-nums">
                 {formatTime(
-                   current == undefined || current > FREEZE_TIME
-                    ? (predicted ? predicted : undefined)
-                    : lastlap
+                  current === undefined
+                    ? undefined
+                    : current > FREEZE_TIME
+                      ? (predicted ?? undefined)
+                      : lastlap
                 )}
               </div>
               {settings.config.delta?.enabled && (
@@ -370,7 +380,9 @@ export const LapTimeLogDisplay = ({
                   }`}
                 >
                   {formatDelta(
-                    predicted && current !== undefined && current > FREEZE_TIME ? delta : 0
+                    predicted && current !== undefined && current > FREEZE_TIME
+                      ? delta
+                      : 0
                   )}
                 </div>
               )}
@@ -415,6 +427,10 @@ export const LapTimeLogDisplay = ({
                 />
               ))}
             </>
+          )}
+
+          {debug && (
+            <div className="text-xs text-zinc-400 p-1 text-center">{debug}</div>
           )}
         </div>
       </div>
