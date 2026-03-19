@@ -443,7 +443,7 @@ export interface LapTimeLogConfig {
   showBestLap: boolean,
   delta: {
     enabled: boolean,
-    method: 'lastlap' | 'bestlap' | 'overall',
+    method: 'lastlap' | 'bestlap',
   },
   history: {
     enabled: boolean,
