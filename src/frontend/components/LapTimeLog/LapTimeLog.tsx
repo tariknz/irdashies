@@ -71,21 +71,18 @@ export const LapTimeLog = () => {
     {
       lastlap: lastLapTime,
       bestlap: bestLapTime,
-      overall: sessionBestOverall,
     }[deltaMethod] ?? bestLapTime;
 
   // get current delta against chosen target
   const deltaMethodMap = {
     lastlap: 'LapDeltaToSessionLastlLap',
-    bestlap: 'LapDeltaToBestLap',
-    overall: 'LapDeltaToSessionBestLap',
+    bestlap: 'LapDeltaToSessionBestLap',
   } as const;
   const liveDelta = useTelemetryValue<number>(deltaMethodMap[deltaMethod]) ?? 0;
 
   const deltaCheckMap = {
     lastlap: 'LapDeltaToSessionLastlLap_OK',
-    bestlap: 'LapDeltaToBestLap_OK',
-    overall: 'LapDeltaToSessionBestLap_OK',
+    bestlap: 'LapDeltaToSessionBestLap_OK',
   } as const;
   const deltaCheck = useTelemetryValue<number>(deltaCheckMap[deltaMethod]) ?? 0;
 
