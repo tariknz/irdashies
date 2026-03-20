@@ -54,7 +54,7 @@ export const PitSpeedBar = memo(
             />
           </div>
 
-          <div className="flex justify-between items-center text-xs w-full">
+          <div className="flex justify-center items-center text-[11px] w-full">
             <span className="text-slate-400">Speed</span>
           </div>
         </div>
@@ -65,7 +65,7 @@ export const PitSpeedBar = memo(
     return (
       <div className="flex flex-col flex-1 gap-1">
         {/* Horizontal bar */}
-        <div className="relative min-h-5 h-full bg-slate-700/50 rounded overflow-hidden flex-1">
+        <div className="relative min-h-5 h-full bg-slate-70  0/50 rounded overflow-hidden flex-1">
           <div
             className="absolute left-0 top-0 h-full transition-all duration-150 ease-out"
             style={{ width: `${fillPercent}%`, backgroundColor: fillColor }}
