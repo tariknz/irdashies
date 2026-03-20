@@ -35,7 +35,7 @@ export const LapTimeLog = () => {
   const [isDirty, setIsDirty] = useState<boolean>(false);
   const [displayTime, setDisplayTime] = useState<number | undefined>(0);
   const [savedDelta, setSavedDelta] = useState<number>(0);
-  const deltaMethod = settings.config.delta?.method ?? 'bestlap';
+  const deltaMethod = settings?.config?.delta?.method ?? 'bestlap';
 
   // get telemetry
   const lapCompleted = useTelemetryValue<number>('LapCompleted') ?? 0;
@@ -164,7 +164,7 @@ export const LapTimeLog = () => {
       const newEntry: LapEntry = {
         lap: lapCompleted,
         time: lastLapTime,
-        delta: referenceAtStartOfLap.current
+        delta: referenceAtStartOfLap.current > 0
           ? lastLapTime - referenceAtStartOfLap.current
           : 0,
         dirty: isDirty,
@@ -176,12 +176,13 @@ export const LapTimeLog = () => {
       incidentsAtLapStart.current = incidentCount;
       lapTransition.current = false;
       setTimeout(() => setIsDirty(false), 0);
+      setTimeout(() => setSavedDelta(0), 0);
       return [newEntry, ...prev].slice(0, MAX_HISTORY_ENTRIES);
     });
   }, [lapCompleted, lastLapTime, isDirty, incidentCount, referenceTime]);
 
   // demo mode
-  if (isDemoMode) {
+  if (isDemoMode && settings) {
     const demoData = getDemoLapTimeLogData();
     return (
       <LapTimeLogDisplay
@@ -189,7 +190,7 @@ export const LapTimeLog = () => {
         current={demoData.current}
         lastlap={demoData.lastlap}
         bestlap={demoData.bestlap}
-        reference={demoData.delta}
+        reference={demoData.reference}
         delta={demoData.delta}
         overall={demoData.overall}
         dirty={demoData.dirty}
@@ -221,7 +222,7 @@ export const LapTimeLog = () => {
       history={history}
     />
   );
-};;
+};
 
 export const LapTimeLogDisplay = ({
   settings,
@@ -382,7 +383,7 @@ export const LapTimeLogDisplay = ({
             <LapTimeRow
               label="LAST"
               time={lastlap}
-              delta={(reference ?? 0) - (lastlap ?? 0)}
+              delta={(lastlap ?? 0) - (reference ?? 0)}
               best={bestlap}
               overall={overall}
               settings={settings}
@@ -392,7 +393,7 @@ export const LapTimeLogDisplay = ({
             <LapTimeRow
               label="BEST"
               time={bestlap}
-              delta={(reference ?? 0) - (bestlap ?? 0)}
+              delta={(bestlap ?? 0) - (reference ?? 0)}
               best={bestlap}
               overall={overall}
               settings={settings}

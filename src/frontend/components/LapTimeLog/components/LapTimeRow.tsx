@@ -63,7 +63,7 @@ export const LapTimeRow = ({ label, time, delta, dirty, best, overall, settings 
         className="flex w-full text-[1em] py-0.5 px-2 odd:bg-slate-800/[var(--fg-alpha)] even:bg-slate-900/[var(--fg-alpha)]"
         style={{ '--fg-alpha': `${opacity / 3}%` } as React.CSSProperties}       
       >
-      <span className="flex-1 ${textColor} tabular-nums uppercase">
+      <span className="flex-1 tabular-nums uppercase">
         {label}
       </span>
       {settings?.config.delta?.enabled && (
