@@ -44,26 +44,27 @@ A dropdown in the tab bar selects a driver to follow. The standings table scroll
 
 Uses the existing `useDriverStandings()` hook and `createStandings()` logic — no duplication of gap/interval/delta calculations.
 
+**Important:** `useDriverStandings()` accepts a settings config that controls whether gap, interval, and lap deltas are computed. The Gantry must pass a fixed config with gap, interval, and all lap delta columns explicitly enabled — do not rely on user settings for these always-on columns.
+
 ### Columns
 
 In display order:
-| Column | Description |
-|--------|-------------|
-| P | Class position |
-| # | Car number |
-| Driver | Driver name (with status badges: DNF, repair, penalty, slowdown) |
-| Tire | Tire compound (S/M/H/W) |
-| iR | iRating |
-| Pit | Pit status indicator |
-| Gap | Gap to class leader |
-| Int | Interval to car ahead |
-| Best | Best lap time |
-| Last | Last lap time |
-| L-1 | Last lap delta |
-| L-2 | 2 laps ago delta |
-| L-3 | 3 laps ago delta |
 
-Reuses existing cell components (`CarNumberCell`, `DriverNameCell`, `CompoundCell`, `PitStatusCell`, `DeltaCell`, `LapTimeDeltasCell`, etc.) where possible.
+| Column | Description                    | Cell Component                                                                                                 |
+| ------ | ------------------------------ | -------------------------------------------------------------------------------------------------------------- |
+| P      | Class position                 | `PositionCell` (existing)                                                                                      |
+| #      | Car number                     | `CarNumberCell` (existing)                                                                                     |
+| Driver | Driver name with status badges | `DriverNameCell` (existing)                                                                                    |
+| Tire   | Tire compound (S/M/H/W)        | `CompoundCell` (existing)                                                                                      |
+| iR     | Raw iRating value              | **New `IratingCell`** — reads `driver.rating`; `IratingChangeCell` shows change only and cannot be reused here |
+| Pit    | Pit status indicator           | `PitStatusCell` (existing)                                                                                     |
+| Gap    | Gap to class leader            | `DeltaCell` (existing)                                                                                         |
+| Int    | Interval to car ahead          | `DeltaCell` (existing)                                                                                         |
+| Best   | Best lap time                  | `FastestTimeCell` (existing)                                                                                   |
+| Last   | Last lap time                  | `LastTimeCell` (existing)                                                                                      |
+| L-1    | Last lap delta                 | `LapTimeDeltasCell` (existing)                                                                                 |
+| L-2    | 2 laps ago delta               | `LapTimeDeltasCell` (existing)                                                                                 |
+| L-3    | 3 laps ago delta               | `LapTimeDeltasCell` (existing)                                                                                 |
 
 ### Class Grouping
 
@@ -114,8 +115,8 @@ Replay buttons are **active only when iRacing is in replay mode** (`IsReplayPlay
 
 Clicking a replay button calculates `targetFrame = incident.replayFrameNum - (60 * seconds)` and calls:
 
-1. `sdk.changeCameraNumber()` — focus camera on the incident car
-2. `sdk.changeReplayPosition()` — seek to the calculated frame
+1. `sdk.changeCameraNumber(incident.carIdx, 0, 0)` — focus camera on the incident car using current camera group and camera (pass `0, 0` to use defaults)
+2. `sdk.changeReplayPosition(ReplayPositionCommand.Begin, targetFrame)` — seek to the calculated frame
 
 ### Filters
 
@@ -138,39 +139,74 @@ Maximum 500 incidents stored in memory. Oldest trimmed when exceeded.
 
 Runs in the Electron main process at 25Hz. Processes telemetry alongside the existing pipeline so incidents are captured even when The Gantry overlay is not open.
 
+### Integration Point
+
+The `IncidentDetector` is instantiated inside `setupRaceControlBridge()` which is called from `main.ts` after existing bridge setups. It subscribes to both callbacks from `getCurrentBridge()`:
+
+- `onTelemetry(telemetry)` → calls `detector.processTelemetry(telemetry, cachedTrackLength)`
+- `onSession(session)` → calls `detector.updateSession(session)` AND updates `cachedTrackLength`
+
+`cachedTrackLength` is a local variable in `setupRaceControlBridge()` updated on each session event. This mirrors how `CarSpeedsStore` handles track length in the frontend.
+
+**Track length parsing:** `session.WeekendInfo.TrackLength` is a string like `"5.12 km"`. The bridge must parse this to meters: `parseFloat(trackLengthStr) * 1000`. This parsing logic is duplicated from the frontend — create a shared utility or inline it in the bridge.
+
 ### Per-Car State
 
 ```typescript
-{
-  prevTrackSurface: number,
-  prevSessionFlags: number,
-  prevOnPitRoad: boolean,
-  prevLapDistPct: number,
-  prevSessionTime: number,
-  speedHistory: number[],       // 5-sample rolling window (km/h)
-  currentSpeed: number,         // moving average
-  slowFrameCount: number,       // consecutive frames below slow threshold
-  offTrackFrameCount: number,   // consecutive frames off track
-  lastIncidentTime: Record<IncidentType, number>  // cooldown tracking
+interface CarIncidentState {
+  prevTrackSurface: number;
+  prevSessionFlags: number;
+  prevOnPitRoad: boolean;
+  prevLapDistPct: number;
+  prevSessionTime: number;
+  speedHistory: number[]; // 5-sample rolling average window (km/h)
+  currentAvgSpeed: number; // moving average of speedHistory
+  recentRawSpeeds: number[]; // 5-sample raw speed window for sudden-stop detection
+  slowFrameCount: number; // consecutive frames below slowSpeedThreshold
+  offTrackFrameCount: number; // consecutive frames off track
+  lastIncidentTime: Record<IncidentType, number>; // unix ms, for cooldown
 }
 ```
+
+`recentRawSpeeds` is a separate rolling window of raw (not averaged) per-frame speeds used to detect the sudden-stop condition across a `suddenStopFrames` window.
 
 ### Speed Calculation
 
 Identical to `CarSpeedsStore`:
 
 ```
-distancePct = currentLapDistPct - prevLapDistPct (wrap-around handled)
-distance = trackLength * distancePct
-speed = (distance / deltaTime) * 3.6  // km/h
+distancePct = currentLapDistPct - prevLapDistPct  // handle wrap-around: if < -0.5, add 1.0
+distance = trackLength * distancePct              // meters
+speed = (distance / deltaTime) * 3.6             // km/h
 ```
 
 ### Crash / Slow on Track Detection
 
-Two triggers (both require car to be `OnTrack`, NOT on pit road):
+Two triggers (both require car to be `OnTrack` surface === 3, NOT on pit road):
 
-1. **Sustained slow:** `avgSpeed < slowSpeedThreshold` for `slowFrameCount >= slowFrameThreshold` consecutive frames
-2. **Sudden stop:** Car was `> suddenStopFromSpeed` km/h and drops below `suddenStopToSpeed` km/h within `suddenStopFrames` frames
+1. **Sustained slow:** 5-sample moving average `currentAvgSpeed < slowSpeedThreshold` for `slowFrameCount >= slowFrameThreshold` consecutive frames
+2. **Sudden stop:** Check `recentRawSpeeds` — if the oldest sample in the window was `> suddenStopFromSpeed` AND the current raw speed is `< suddenStopToSpeed`, trigger. The window size is `suddenStopFrames`.
+
+### `Incident` Type
+
+```typescript
+interface Incident {
+  id: string; // uuid or `${carIdx}-${sessionTime}`
+  carIdx: number;
+  driverName: string;
+  carNumber: string;
+  teamName: string;
+  sessionNum: number;
+  sessionTime: number; // seconds into session
+  lapNum: number; // CarIdxLap[carIdx] at time of incident
+  replayFrameNum: number; // ReplayFrameNum.value[0] sampled at incident detection time
+  type: IncidentType;
+  lapDistPct: number;
+  timestamp: number; // Date.now() — wall clock ms
+}
+```
+
+`replayFrameNum` is read from `ReplayFrameNum` telemetry array at `value[0]` at the moment the incident is detected. This value is the current replay frame counter — it is valid in both live and replay sessions.
 
 ### Exclusions
 
@@ -190,7 +226,7 @@ All exposed in the dashboard settings panel under The Gantry widget settings:
 | Slow frame count          | 10 frames | Consecutive slow frames before crash event fires      |
 | Sudden stop: from speed   | 80 km/h   | Speed car must be above before the drop               |
 | Sudden stop: to speed     | 20 km/h   | Speed car must drop below to trigger                  |
-| Sudden stop: frame window | 3 frames  | Window in which the drop must occur                   |
+| Sudden stop: frame window | 3 frames  | `recentRawSpeeds` window size for sudden-stop check   |
 | Off-track debounce        | 3 frames  | Consecutive off-track frames before event fires       |
 | Per-type cooldown         | 5 seconds | Minimum time between same event type for same car     |
 
@@ -201,11 +237,13 @@ All exposed in the dashboard settings panel under The Gantry widget settings:
 Incidents are stored to disk via `src/app/storage/incidentStorage.ts`:
 
 - Keyed by `SubSessionId` (unique per iRacing session)
-- JSON file per session
+- JSON file per session in the existing storage directory
 - Appended incrementally on each new incident (not full rewrite)
-- Last 10 sessions retained; older files pruned automatically
+- Last 10 sessions retained; older files pruned automatically on startup
 - Loaded by `RaceControlBridge` on startup if a file matches the current session ID
 - Frontend receives full restored list transparently via `getIncidents()` on mount — no frontend changes needed
+
+**`clearIncidents()` behavior:** Clears the in-memory incident array AND deletes the current session's JSON file from disk. Subsequent `getIncidents()` calls return `[]` until new incidents arrive.
 
 ---
 
@@ -217,7 +255,9 @@ A line chart showing each driver's gap to their class leader over race laps. Use
 
 ### Data Source
 
-`LapGapStore` — a new Zustand store that snapshots each car's gap-to-class-leader at lap completion. Stores `Map<carIdx, number[]>` where index = lap number. Resets on session change.
+`LapGapStore` — a new frontend Zustand store. Lap completion is detected per car by watching for `CarIdxLap[carIdx]` incrementing (same pattern as `ReferenceLapStore` which uses `lastTrackedPct > 0.95 && trackPct < 0.05` — either approach is valid; prefer `CarIdxLap` increment as it is more direct). At lap completion, the store reads the current gap-to-class-leader from the live standings data and snapshots it.
+
+Data structure: `Record<carIdx, number[]>` where the array index is lap number and the value is gap in seconds. The class leader's gap is always 0. Resets on session change.
 
 ### Chart Design
 
@@ -231,22 +271,21 @@ Custom SVG line chart (no external library):
 
 ### Class Filter
 
-Dropdown to select which class to display. Defaults to the class with the most cars (or the player's class if applicable).
+Dropdown to select which class to display. Defaults to the player's class if the player is in the session, otherwise the class with the most cars.
 
 ---
 
 ## Mouse Interaction
 
-All overlays are click-through by default (`setIgnoreMouseEvents(true)`). The Gantry requires full mouse interaction:
+`WidgetContainer` hard-codes `pointer-events-none` on all widget children, and all overlay windows use `setIgnoreMouseEvents(true)` by default. The Gantry requires full mouse interaction for tabs, dropdowns, filter chips, replay buttons, and scrollable lists.
 
-- Tab switching
-- Follow driver dropdown
-- Incident type filter chips
-- Driver filter dropdown
-- Replay buttons
-- Scroll in standings and incident list
+**Two-layer fix required in Phase 7:**
 
-**Implementation:** Follow the pattern used by existing interactive overlays (fuel calculator, settings panel) — to be confirmed during Phase 7 implementation by reviewing how `setIgnoreMouseEvents` is toggled in the main process window management code.
+1. **Electron window layer:** Add an `interactive: true` flag to `GantryConfig`. The window manager checks this flag when creating/configuring the overlay window and calls `setIgnoreMouseEvents(false)` for interactive widgets. Investigate `overlayManager` and `WidgetContainer` during Phase 7 to confirm the exact hook point.
+
+2. **CSS layer:** `WidgetContainer` must support an `interactive` prop that removes `pointer-events-none` from the wrapper div when `true`. Gantry passes `interactive={true}`.
+
+This two-layer change must be confirmed against the actual `WidgetContainer` and overlay manager code during Phase 7 before proceeding with interactive elements.
 
 ---
 
@@ -263,14 +302,29 @@ interface RaceControlBridge {
 }
 ```
 
+### IPC Channels
+
+| Channel                      | Direction                | Handler                     |
+| ---------------------------- | ------------------------ | --------------------------- |
+| `raceControl:getIncidents`   | renderer → main (invoke) | Returns full incident array |
+| `raceControl:incident`       | main → renderer (push)   | New incident payload        |
+| `raceControl:replayIncident` | renderer → main (invoke) | Executes camera + seek      |
+| `raceControl:clearIncidents` | renderer → main (invoke) | Clears memory + disk        |
+
+**Push broadcast:** New incidents are broadcast to all renderer windows using `BrowserWindow.getAllWindows().forEach(win => win.webContents.send('raceControl:incident', incident))`. This is consistent with how other bridges push updates.
+
 Exposed via `contextBridge.exposeInMainWorld('raceControlBridge', ...)` in `rendererExposeBridge.ts`.
+
+### Storybook
+
+Phase 5 must include mock data fixtures for `RaceControlStore` (a `RaceControlDecorator` analogous to `TelemetryDecorator`) so Phase 10's Storybook story for the incidents panel has a realistic data source.
 
 ---
 
 ## Widget Registration
 
 - Widget key: `gantry`
-- Config type: `GantryConfig extends BaseWidgetSettings`
+- Config type: `GantryConfig extends BaseWidgetSettings` — includes all incident threshold settings and `interactive: true` flag
 - Registered in `WidgetIndex.tsx`
 - Default config in `defaultDashboard.ts`
 - Settings component: `Settings/sections/GantrySettings.tsx` using `BaseSettingsSection`
@@ -279,36 +333,37 @@ Exposed via `contextBridge.exposeInMainWorld('raceControlBridge', ...)` in `rend
 
 ## Implementation Phases
 
-| Phase | Scope                     | Key Files                                                                                     |
-| ----- | ------------------------- | --------------------------------------------------------------------------------------------- |
-| 1     | Types & interfaces        | `src/types/raceControl.ts`, `src/interface.d.ts`                                              |
-| 2     | Incident detection engine | `src/app/services/incidentDetector.ts` + unit tests                                           |
-| 3     | Incident persistence      | `src/app/storage/incidentStorage.ts` + unit tests                                             |
-| 4     | Race control bridge       | `raceControlBridge.ts`, `rendererExposeBridge.ts`, `main.ts`                                  |
-| 5     | Frontend incident store   | `RaceControlStore.ts`, `useRaceControlBridge.ts`                                              |
-| 6     | Lap gap store             | `LapGapStore.ts`                                                                              |
-| 7     | Gantry widget shell       | `Gantry.tsx`, `WidgetIndex.tsx`, `widgetConfigs.ts`, `defaultDashboard.ts`, mouse interaction |
-| 8     | Gantry settings panel     | `GantrySettings.tsx`                                                                          |
-| 9     | Standings panel           | `GantryStandings.tsx` + follow-driver feature + Storybook                                     |
-| 10    | Incidents panel           | `GantryIncidents.tsx` + filters + replay controls + Storybook                                 |
-| 11    | Lap graph view            | `LapGapChart.tsx` (custom SVG) + `LapGraphView.tsx` + Storybook                               |
+| Phase | Scope                                   | Key Files                                                                                                                                              |
+| ----- | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 1     | Types & interfaces                      | `src/types/raceControl.ts`, `src/interface.d.ts`                                                                                                       |
+| 2     | Incident detection engine               | `src/app/services/incidentDetector.ts` + unit tests                                                                                                    |
+| 3     | Incident persistence                    | `src/app/storage/incidentStorage.ts` + unit tests                                                                                                      |
+| 4     | Race control bridge                     | `raceControlBridge.ts`, `rendererExposeBridge.ts`, `main.ts`                                                                                           |
+| 5     | Frontend incident store + mock fixtures | `RaceControlStore.ts`, `useRaceControlBridge.ts`, `RaceControlDecorator`                                                                               |
+| 6     | Lap gap store                           | `LapGapStore.ts`                                                                                                                                       |
+| 7     | Gantry widget shell + mouse interaction | `Gantry.tsx`, `WidgetIndex.tsx`, `widgetConfigs.ts`, `defaultDashboard.ts`, `WidgetContainer` interactive prop, overlay manager `setIgnoreMouseEvents` |
+| 8     | Gantry settings panel                   | `GantrySettings.tsx`                                                                                                                                   |
+| 9     | Standings panel                         | `GantryStandings.tsx`, new `IratingCell.tsx`, follow-driver feature, Storybook                                                                         |
+| 10    | Incidents panel                         | `GantryIncidents.tsx` + filters + replay controls + Storybook                                                                                          |
+| 11    | Lap graph view                          | `LapGapChart.tsx` (custom SVG) + `LapGraphView.tsx` + Storybook                                                                                        |
 
 ---
 
 ## Key Existing Code to Reuse
 
-| Resource                                                      | Location                                    | Used For               |
-| ------------------------------------------------------------- | ------------------------------------------- | ---------------------- |
-| `useDriverStandings()`                                        | `Standings/hooks/`                          | Standings data         |
-| `createStandings()`                                           | `Standings/createStandings.ts`              | Gap/delta calculations |
-| Cell components                                               | `Standings/components/DriverInfoRow/cells/` | Standings rendering    |
-| Speed calc pattern                                            | `CarSpeedStore/CarSpeedsStore.tsx`          | Crash detection        |
-| `getCurrentBridge()` / `onBridgeChanged()`                    | `app/bridge/iracingSdk/setup.ts`            | Backend wiring         |
-| `IRacingSDK.changeCameraNumber()` / `.changeReplayPosition()` | `app/irsdk/node/irsdk-node.ts`              | Replay commands        |
-| `TrackLocation`, `GlobalFlags`, `ReplayPositionCommand` enums | `app/irsdk/types/enums.ts`                  | Detection logic        |
-| `BaseSettingsSection`                                         | `Settings/`                                 | Settings panel         |
-| Bridge exposure pattern                                       | `app/bridge/rendererExposeBridge.ts`        | IPC exposure           |
-| Storage pattern                                               | `app/storage/`                              | Persistence            |
+| Resource                                                      | Location                                    | Used For                        |
+| ------------------------------------------------------------- | ------------------------------------------- | ------------------------------- |
+| `useDriverStandings()`                                        | `Standings/hooks/`                          | Standings data                  |
+| `createStandings()`                                           | `Standings/createStandings.ts`              | Gap/delta calculations          |
+| Cell components                                               | `Standings/components/DriverInfoRow/cells/` | Standings rendering             |
+| Speed calc pattern                                            | `CarSpeedStore/CarSpeedsStore.tsx`          | Crash detection in main process |
+| `getCurrentBridge()` / `onBridgeChanged()`                    | `app/bridge/iracingSdk/setup.ts`            | Backend wiring                  |
+| `IRacingSDK.changeCameraNumber()` / `.changeReplayPosition()` | `app/irsdk/node/irsdk-node.ts`              | Replay commands                 |
+| `TrackLocation`, `GlobalFlags`, `ReplayPositionCommand` enums | `app/irsdk/types/enums.ts`                  | Detection logic                 |
+| `BaseSettingsSection`                                         | `Settings/`                                 | Settings panel                  |
+| Bridge exposure pattern                                       | `app/bridge/rendererExposeBridge.ts`        | IPC exposure                    |
+| Storage pattern                                               | `app/storage/`                              | Persistence                     |
+| `TelemetryDecorator` pattern                                  | Storybook decorators                        | `RaceControlDecorator` model    |
 
 ---
 
@@ -318,4 +373,6 @@ Exposed via `contextBridge.exposeInMainWorld('raceControlBridge', ...)` in `rend
 2. **Crash false positives in hairpins:** Mitigated by requiring sustained slow speed (frame count threshold) rather than instantaneous detection. Tunable via settings.
 3. **Multi-class lap graph:** All classes on one graph risks visual clutter. Class filter mitigates this.
 4. **No existing chart library:** Custom SVG chart keeps zero new dependencies.
-5. **Mouse interaction pattern:** Must follow existing app convention — verify during Phase 7.
+5. **Mouse interaction is a two-layer problem:** Both the Electron window `setIgnoreMouseEvents` flag and the CSS `pointer-events-none` on `WidgetContainer` must be addressed. Verify exact hook points during Phase 7 before building interactive elements.
+6. **Track length string parsing:** `WeekendInfo.TrackLength` is a string (e.g. `"5.12 km"`). Parse with `parseFloat(s) * 1000` for meters. This logic must exist in the main process for the incident detector — it currently only lives in the frontend.
+7. **`IratingChangeCell` cannot be reused for raw iRating:** A new `IratingCell` component is required in Phase 9.
