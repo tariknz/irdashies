@@ -441,6 +441,19 @@ Helps you manage your pit stops with clear visual guidance. It assists with spee
 
 ![Pitlane Helper](./docs/assets/pitlanehelper.png)
 
+### Lap Timer
+
+**Features:**
+
+- Current lap: Show current lap time, highlights green for personal best and purple for session best.
+- Predicted lap: Shows an estimate of the lap time based on the current delta.
+- Best and last lap: Display the best and last lap times.
+- Lap history: Show a history of your most recent lap times along with optional deltas.
+- Fully configurable: Decide which laps your interested in and toggle them on and off individually.
+- Fully customisable: Resize, scale and align to position the widget to your taste.
+
+![Lap Timer](./docs/assets/laptimer.png)
+
 ### Flag Widget
 
 Displays racing flags in an LED-matrix style, automatically showing the most relevant flag when multiple are active. Perfect for keeping track of track conditions and race control messages.
