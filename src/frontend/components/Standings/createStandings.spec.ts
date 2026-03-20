@@ -4,6 +4,8 @@ import {
   groupStandingsByClass,
   sliceRelevantDrivers,
   augmentStandingsWithPositionChange,
+  augmentStandingsWithGap,
+  augmentStandingsWithInterval,
 } from './createStandings';
 import type { Standings } from './createStandings';
 import type {
@@ -472,6 +474,225 @@ describe('createStandings', () => {
 
     expect(standings).toHaveLength(1);
     expect(standings[0].driver.name).toBe('Driver 1');
+  });
+
+  describe('augmentStandingsWithGap', () => {
+    const makeStanding = (
+      carIdx: number,
+      delta: number | undefined,
+      onTrack: boolean,
+      sessionType = 'Practice'
+    ): Standings =>
+      ({
+        carIdx,
+        classPosition: carIdx + 1,
+        delta,
+        onTrack,
+        currentSessionType: sessionType,
+        isPlayer: false,
+        driver: {
+          name: `Driver ${carIdx}`,
+          carNum: `${carIdx}`,
+          license: 'A',
+          rating: 1000,
+        },
+        carClass: {
+          id: 1,
+          color: 0,
+          name: 'GT3',
+          relativeSpeed: 1,
+          estLapTime: 0,
+        },
+        dnf: false,
+        repair: false,
+        penalty: false,
+        slowdown: false,
+        relativePct: 0,
+        fastestTime: 0,
+        hasFastestTime: false,
+        lastTime: 0,
+        onPitRoad: !onTrack,
+        tireCompound: 0,
+      }) as Standings;
+
+    it('practice: shows gap for drivers in pits using fastest-lap delta', () => {
+      // P1 delta=0, P2 delta=1.5s (both in pits)
+      const grouped: [string, Standings[]][] = [
+        [
+          '1',
+          [
+            makeStanding(0, 0, false), // leader, in pits
+            makeStanding(1, 1.5, false), // 1.5s behind, also in pits
+          ],
+        ],
+      ];
+      const result = augmentStandingsWithGap(
+        grouped,
+        [],
+        [],
+        [],
+        [],
+        false,
+        'Practice'
+      );
+      expect(result[0][1][0].gap?.value).toBeUndefined(); // leader = dash
+      expect(result[0][1][1].gap?.value).toBeCloseTo(1.5); // 1.5s gap
+      expect(result[0][1][1].gap?.laps).toBe(0); // no laps behind in practice
+    });
+
+    it('practice: driver with no fastest lap shows undefined gap', () => {
+      const grouped: [string, Standings[]][] = [
+        [
+          '1',
+          [
+            makeStanding(0, 0, false),
+            makeStanding(1, undefined, false), // no lap yet
+          ],
+        ],
+      ];
+      const result = augmentStandingsWithGap(
+        grouped,
+        [],
+        [],
+        [],
+        [],
+        false,
+        'Practice'
+      );
+      expect(result[0][1][1].gap?.value).toBeUndefined();
+    });
+
+    it('practice: shows gap when driver is on track too', () => {
+      const grouped: [string, Standings[]][] = [
+        ['1', [makeStanding(0, 0, true), makeStanding(1, 2.3, true)]],
+      ];
+      const result = augmentStandingsWithGap(
+        grouped,
+        [],
+        [],
+        [],
+        [],
+        false,
+        'Practice'
+      );
+      expect(result[0][1][1].gap?.value).toBeCloseTo(2.3);
+    });
+
+    it('race: hides gap when class leader is not on track', () => {
+      const grouped: [string, Standings[]][] = [
+        [
+          '1',
+          [
+            makeStanding(0, 0, false, 'Race'), // leader off track
+            makeStanding(1, 5, true, 'Race'),
+          ],
+        ],
+      ];
+      const result = augmentStandingsWithGap(
+        grouped,
+        [0, 0],
+        [0, 0],
+        [false, false],
+        [0, 0],
+        false,
+        'Race'
+      );
+      expect(result[0][1][1].gap?.value).toBeUndefined();
+    });
+
+    it('race: hides gap when driver is not on track', () => {
+      const grouped: [string, Standings[]][] = [
+        [
+          '1',
+          [
+            makeStanding(0, 0, true, 'Race'),
+            makeStanding(1, 5, false, 'Race'), // driver off track
+          ],
+        ],
+      ];
+      const result = augmentStandingsWithGap(
+        grouped,
+        [0, 0],
+        [0, 0],
+        [false, false],
+        [0, 0],
+        false,
+        'Race'
+      );
+      expect(result[0][1][1].gap?.value).toBeUndefined();
+    });
+  });
+
+  describe('augmentStandingsWithInterval', () => {
+    const makeStanding = (
+      carIdx: number,
+      gapValue: number | undefined,
+      onTrack: boolean,
+      sessionType = 'Practice'
+    ): Standings =>
+      ({
+        carIdx,
+        classPosition: carIdx + 1,
+        gap: { value: gapValue, laps: 0 },
+        onTrack,
+        currentSessionType: sessionType,
+        isPlayer: false,
+        driver: {
+          name: `Driver ${carIdx}`,
+          carNum: `${carIdx}`,
+          license: 'A',
+          rating: 1000,
+        },
+        carClass: {
+          id: 1,
+          color: 0,
+          name: 'GT3',
+          relativeSpeed: 1,
+          estLapTime: 0,
+        },
+        dnf: false,
+        repair: false,
+        penalty: false,
+        slowdown: false,
+        relativePct: 0,
+        fastestTime: 0,
+        hasFastestTime: false,
+        lastTime: 0,
+        onPitRoad: !onTrack,
+        tireCompound: 0,
+      }) as Standings;
+
+    it('practice: shows interval for drivers in pits', () => {
+      // P1 gap=undefined, P2 gap=1.5s, P3 gap=3.0s — all in pits
+      const grouped: [string, Standings[]][] = [
+        [
+          '1',
+          [
+            makeStanding(0, undefined, false), // leader
+            makeStanding(1, 1.5, false),
+            makeStanding(2, 3.0, false),
+          ],
+        ],
+      ];
+      const result = augmentStandingsWithInterval(grouped);
+      expect(result[0][1][0].interval).toBeUndefined(); // leader
+      expect(result[0][1][1].interval).toBeCloseTo(1.5); // P2 = gap to leader
+      expect(result[0][1][2].interval).toBeCloseTo(1.5); // P3 = 3.0 - 1.5
+    });
+
+    it('race: hides interval when driver is not on track', () => {
+      const grouped: [string, Standings[]][] = [
+        [
+          '1',
+          [
+            makeStanding(0, undefined, true, 'Race'),
+            makeStanding(1, 2.0, false, 'Race'), // off track
+          ],
+        ],
+      ];
+      const result = augmentStandingsWithInterval(grouped);
+      expect(result[0][1][1].interval).toBeUndefined();
+    });
   });
 
   describe('augmentStandingsWithPositionChange', () => {

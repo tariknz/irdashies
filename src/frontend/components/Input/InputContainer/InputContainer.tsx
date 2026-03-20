@@ -139,7 +139,7 @@ export const InputContainer = ({
 
   return (
     <div
-      className="w-full h-full inline-flex gap-1 p-2 flex-row bg-slate-800/(--bg-opacity)"
+      className="w-full h-full inline-flex gap-1 p-2 rounded-md flex-row bg-slate-800/(--bg-opacity)"
       style={{
         ['--bg-opacity' as string]: `${settings?.background?.opacity ?? 80}%`,
       }}

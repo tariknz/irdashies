@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import type { CarData } from '../../../utils/carData';
 import type { ShiftPointSettings } from '@irdashies/types';
 
-interface TachometerProps {
+export interface TachometerProps {
   rpm: number;
   maxRpm: number;
   /** Current gear */
@@ -13,10 +13,9 @@ interface TachometerProps {
   blinkRpm?: number;
   /** Number of LED lights to display (default: 10) */
   numLights?: number;
-  /** Size of each LED light in pixels (default: 20) */
-  ledSize?: number;
   /** Whether to show RPM text display (default: true) */
   showRpmText?: boolean;
+  rpmOrientation?: 'horizontal' | 'vertical'
   /** Car-specific RPM thresholds for each LED */
   gearRpmThresholds?: number[] | null;
   /** Car-specific LED colors */
@@ -36,8 +35,8 @@ export const Tachometer = ({
   shiftRpm = 0, // Optional shift RPM (DriverCarSLShiftRPM)
   blinkRpm = 0, // Optional blink RPM (DriverCarSLBlinkRPM)
   numLights = 10,
-  ledSize = 20,
   showRpmText = true,
+  rpmOrientation = 'vertical',
   gearRpmThresholds = null,
   ledColors = null,
   carData = null,
@@ -278,16 +277,14 @@ export const Tachometer = ({
 
   return (
     <>
-      <div className="flex items-center gap-1 p-2 rounded">
+      <div className={`@container flex ${rpmOrientation === 'vertical' ? 'flex-col' : 'flex-row'} items-center w-full gap-2 p-2 rounded`}>
         {/* LED lights */}
-        <div className="flex gap-1">
+        <div className="flex w-full gap-1">
           {Array.from({ length: effectiveNumLights }, (_, i) => (
             <div
               key={i}
-              className="rounded-full border border-gray-600 transition-all duration-300"
-              style={{
-                width: ledSize,
-                height: ledSize,
+              className="rounded-full flex-1 aspect-square border border-gray-600 transition-all duration-300"
+              style={{                
                 backgroundColor: getLedColor(i),
                 boxShadow: isLedActive(i)
                   ? `0 0 4px ${getLedColor(i)}`
@@ -301,24 +298,25 @@ export const Tachometer = ({
         {/* RPM display - shows when showRpmText is true OR when custom shift points exist */}
         {shouldShowRpmBox && (
           <div
-            className="ml-3 text-sm font-mono font-bold text-white bg-black/50 px-2 rounded transition-all duration-200 whitespace-nowrap flex items-center"
+            id="rpm-text"
+            className="text-[4cqw] font-mono font-bold text-white px-4 mx-2 rounded transition-all duration-200 whitespace-nowrap flex justify-center items-center"
             style={{
               ...getRpmBoxStyle(),
-              minWidth: showRpmText ? '120px' : '60px', // Reserve space to prevent layout shift
-              height: '32px', // Fixed height to prevent vertical shift
+              minWidth: showRpmText && hasCustomShiftPoints ? '8em' : '5em', // Reserve space to prevent layout shift
+              height: '1.5em'
             }}
           >
             {showRpmText && (
               <>
                 {Math.round(clampedRpm).toLocaleString('en-US')}
-                <span className="text-xs text-gray-300 ml-1">RPM</span>
+                <span className="text-[0.6em] ml-2">RPM</span>
                 {shouldShowCustomShift && (
-                  <span className="text-xs ml-2 font-bold">SHIFT</span>
+                  <span className="text-[0.8em] ml-4 font-bold">SHIFT</span>
                 )}
               </>
             )}
             {!showRpmText && shouldShowCustomShift && (
-              <span className="text-xs font-bold">SHIFT</span>
+              <span className="text-[0.8em] font-bold">SHIFT</span>
             )}
           </div>
         )}

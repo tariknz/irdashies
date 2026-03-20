@@ -67,6 +67,7 @@ const RandomTraces = () => {
         },
         gear: {
           enabled: true,
+          showspeed: true,
           unit: 'auto',
         },
         abs: {
@@ -78,10 +79,6 @@ const RandomTraces = () => {
             style: 'formula',
             color: 'light',
           },
-        },
-        tachometer: {
-          enabled: true,
-          showRpmText: true,
         },
         displayOrder: ['trace', 'bar', 'gear', 'steer'],
         showOnlyWhenOnTrack: true,
