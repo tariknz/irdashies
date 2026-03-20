@@ -308,41 +308,49 @@ export const PitlaneHelperBody = ({
               )}
 
             {/* Countdown bars (entry/box/exit) */}
-            <div
-              className={`flex flex-col gap-3 w-full h-full ${
-                config.progressBarOrientation === 'vertical'
-                  ? 'flex-2'
-                  : 'flex-1'
-              }`}
-            >
-              {!onPitRoad &&
-                position.distanceToPitEntry > 0 &&
-                position.distanceToPitEntry <= config.approachDistance && (
-                  <PitCountdownBar
-                    distance={position.distanceToPitEntry}
-                    maxDistance={config.approachDistance}
-                    orientation={config.progressBarOrientation}
-                    color={getCountdownColor(
-                      position.distanceToPitEntry,
-                      config.approachDistance
-                    )}
-                    targetName="Pit Entry"
-                  />
-                )}
-
-              {onPitRoad &&
+            {((!onPitRoad &&
+              position.distanceToPitEntry > 0 &&
+              position.distanceToPitEntry <= config.approachDistance) ||
+              (onPitRoad &&
                 position.distanceToPit < -5 &&
                 position.distanceToPitExit > 0 &&
-                position.distanceToPitExit <= 150 && (
-                  <PitCountdownBar
-                    distance={position.distanceToPitExit}
-                    maxDistance={150}
-                    orientation={config.progressBarOrientation}
-                    color={getCountdownColor(position.distanceToPitExit, 150)}
-                    targetName="Pit Exit"
-                  />
-                )}
-            </div>
+                position.distanceToPitExit <= 150)) && (
+              <div
+                className={`flex flex-col gap-3 w-full h-full ${
+                  config.progressBarOrientation === 'vertical'
+                    ? 'flex-2'
+                    : 'flex-1'
+                }`}
+              >
+                {!onPitRoad &&
+                  position.distanceToPitEntry > 0 &&
+                  position.distanceToPitEntry <= config.approachDistance && (
+                    <PitCountdownBar
+                      distance={position.distanceToPitEntry}
+                      maxDistance={config.approachDistance}
+                      orientation={config.progressBarOrientation}
+                      color={getCountdownColor(
+                        position.distanceToPitEntry,
+                        config.approachDistance
+                      )}
+                      targetName="Pit Entry"
+                    />
+                  )}
+
+                {onPitRoad &&
+                  position.distanceToPit < -5 &&
+                  position.distanceToPitExit > 0 &&
+                  position.distanceToPitExit <= 150 && (
+                    <PitCountdownBar
+                      distance={position.distanceToPitExit}
+                      maxDistance={150}
+                      orientation={config.progressBarOrientation}
+                      color={getCountdownColor(position.distanceToPitExit, 150)}
+                      targetName="Pit Exit"
+                    />
+                  )}
+              </div>
+            )}
 
             {/* Speed bar */}
             <div
