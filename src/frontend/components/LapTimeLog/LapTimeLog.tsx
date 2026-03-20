@@ -93,8 +93,13 @@ export const LapTimeLog = () => {
     if (sessionChanged || sessionRestarted) {
       lastLoggedLap.current = -1;
       lastLoggedTime.current = -1;
+      referenceAtStartOfLap.current = 0;
+      incidentsAtLapStart.current = 0;
+      lastDeltaUpdate.current = 0;
+      lapTransition.current = false;
       setTimeout(() => setIsDirty(false), 0);
       setTimeout(() => setSavedDelta(0), 0);
+      setTimeout(() => setDisplayTime(undefined), 0);
       setTimeout(() => setHistory([]), 0);
     }
     prevSessionNum.current = sessionNum;
