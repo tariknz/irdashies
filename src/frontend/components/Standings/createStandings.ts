@@ -442,8 +442,11 @@ export const augmentStandingsWithGap = (
   carIdxLapDistPct: number[],
   carIdxOnPitRoad: boolean[],
   carIdxEstTime: number[],
-  useLivePositionStandings: boolean
+  useLivePositionStandings: boolean,
+  sessionType?: string
 ): [string, Standings[]][] => {
+  const isRace = sessionType === 'Race';
+
   return groupedStandings.map(([classId, classStandings]) => {
     // Find class leader (lowest class position)
     const classLeader = classStandings[0];
@@ -453,81 +456,94 @@ export const augmentStandingsWithGap = (
 
     // Calculate gap for each driver: gap = driver_delta - class_leader_delta
     const augmentedClassStandings = classStandings.map((driverStanding) => {
-      if (
-        driverStanding.carIdx === classLeader.carIdx ||
-        !classLeader.onTrack ||
-        !driverStanding.onTrack
-      ) {
-        // Class leader shows as dash (undefined gap)
+      // Class leader always shows as dash (undefined gap)
+      if (driverStanding.carIdx === classLeader.carIdx) {
         return { ...driverStanding, gap: { value: undefined, laps: 0 } };
       }
 
-      // Gap is simply the difference between this driver's delta and the class leader's delta
-      let gapValue;
-      const classLeaderTrackPct = carIdxLapDistPct[classLeader.carIdx];
-
-      const driverIdx = driverStanding.carIdx;
-      const driverTrackPct = carIdxLapDistPct[driverIdx];
-
-      if (
-        useLivePositionStandings &&
-        classLeaderTrackPct > -1 &&
-        driverTrackPct > -1
-      ) {
-        const driverClassId = driverStanding.carClass.id;
-        const isStartingLap = (driverStanding?.lap ?? -1) <= 1;
-
-        const refLap = useReferenceLapStore
-          .getState()
-          .getReferenceLap(driverIdx, driverClassId, isStartingLap);
-
-        const isOnPitRoadAhead = carIdxOnPitRoad[classLeader.carIdx];
-        const isOnPitRoadBehind = carIdxOnPitRoad[driverIdx];
-        const isOnPitOrHasNoData =
-          isOnPitRoadAhead || isOnPitRoadBehind || refLap.finishTime < 0;
-
-        if (isOnPitOrHasNoData) {
-          const classLeaderEstTime = carIdxEstTime[classLeader.carIdx];
-          const behindEstTime = carIdxEstTime[driverIdx];
-          const driverStats = getStats(behindEstTime, driverStanding);
-
-          gapValue = calculateClassEstimatedGap(
-            getStats(classLeaderEstTime, classLeader),
-            driverStats
-          );
-        } else {
-          gapValue = calculateReferenceGap(
-            refLap,
-            classLeaderTrackPct,
-            driverTrackPct
-          );
-        }
-      } else {
-        gapValue =
-          driverStanding.delta !== undefined && classLeader.delta !== undefined
-            ? driverStanding.delta - classLeader.delta
-            : undefined;
+      // For race sessions, require both drivers to be on track for live gap
+      if (isRace && (!classLeader.onTrack || !driverStanding.onTrack)) {
+        return { ...driverStanding, gap: { value: undefined, laps: 0 } };
       }
 
-      const gap = {
-        value: gapValue ? Math.abs(gapValue) : undefined,
-        laps: 0,
-      };
+      let gapValue: number | undefined;
 
-      const driverLapNumber = carIdxLap[driverStanding.carIdx];
-      const classLeaderLapNumber = carIdxLap[classLeader.carIdx];
+      if (isRace) {
+        // Race gap: use live position or delta-based calculation
+        const classLeaderTrackPct = carIdxLapDistPct[classLeader.carIdx];
+        const driverIdx = driverStanding.carIdx;
+        const driverTrackPct = carIdxLapDistPct[driverIdx];
 
-      // NOTE: iRacing shows laps behind as a negative number
-      gap.laps = -Math.floor(
-        classLeaderLapNumber +
-          classLeaderTrackPct -
-          (driverLapNumber + driverTrackPct)
-      );
+        if (
+          useLivePositionStandings &&
+          classLeaderTrackPct > -1 &&
+          driverTrackPct > -1
+        ) {
+          const driverClassId = driverStanding.carClass.id;
+          const isStartingLap = (driverStanding?.lap ?? -1) <= 1;
 
-      return {
-        ...driverStanding,
-        gap,
-      };
+          const refLap = useReferenceLapStore
+            .getState()
+            .getReferenceLap(driverIdx, driverClassId, isStartingLap);
+
+          const isOnPitRoadAhead = carIdxOnPitRoad[classLeader.carIdx];
+          const isOnPitRoadBehind = carIdxOnPitRoad[driverIdx];
+          const isOnPitOrHasNoData =
+            isOnPitRoadAhead || isOnPitRoadBehind || refLap.finishTime < 0;
+
+          if (isOnPitOrHasNoData) {
+            const classLeaderEstTime = carIdxEstTime[classLeader.carIdx];
+            const behindEstTime = carIdxEstTime[driverIdx];
+            const driverStats = getStats(behindEstTime, driverStanding);
+
+            gapValue = calculateClassEstimatedGap(
+              getStats(classLeaderEstTime, classLeader),
+              driverStats
+            );
+          } else {
+            gapValue = calculateReferenceGap(
+              refLap,
+              classLeaderTrackPct,
+              driverTrackPct
+            );
+          }
+        } else {
+          gapValue =
+            driverStanding.delta !== undefined &&
+            classLeader.delta !== undefined
+              ? driverStanding.delta - classLeader.delta
+              : undefined;
+        }
+
+        const classLeaderTrackPctForLaps = carIdxLapDistPct[classLeader.carIdx];
+        const driverLapNumber = carIdxLap[driverStanding.carIdx];
+        const classLeaderLapNumber = carIdxLap[classLeader.carIdx];
+
+        const gap = {
+          value: gapValue ? Math.abs(gapValue) : undefined,
+          // NOTE: iRacing shows laps behind as a negative number
+          laps: -Math.floor(
+            classLeaderLapNumber +
+              classLeaderTrackPctForLaps -
+              (driverLapNumber + carIdxLapDistPct[driverStanding.carIdx])
+          ),
+        };
+
+        return { ...driverStanding, gap };
+      } else {
+        // Practice/Qualifying: gap is purely based on fastest-lap-time delta.
+        // driver.delta = driverFastest - leaderFastest (classLeader.delta = 0)
+        // onTrack is not required — drivers are often in pits after their hot lap.
+        gapValue =
+          driverStanding.delta !== undefined ? driverStanding.delta : undefined;
+
+        const gap = {
+          value: gapValue !== undefined ? Math.abs(gapValue) : undefined,
+          laps: 0,
+        };
+
+        return { ...driverStanding, gap };
+      }
     });
 
     return [classId, augmentedClassStandings];
@@ -558,13 +574,20 @@ export const augmentStandingsWithInterval = (
         }
         // If the car ahead is the leader (who has no gap value),
         // the interval for P2 is simply their own gap to the leader.
+        // For race sessions, onTrack is still required.
         else if (driverAhead.gap?.value === undefined) {
-          interval = driverStanding.gap?.value;
+          const isRace = driverStanding.currentSessionType === 'Race';
+          if (!isRace || driverStanding.onTrack) {
+            interval = driverStanding.gap?.value;
+          }
         }
         // Standard case: Interval = Current Driver's Gap - Driver Ahead's Gap
+        // onTrack is only required for race sessions — in practice/qualifying
+        // gaps are based on static fastest-lap times so onTrack doesn't matter.
         else if (
           driverStanding.gap?.value !== undefined &&
-          driverStanding.onTrack
+          (driverStanding.currentSessionType !== 'Race' ||
+            driverStanding.onTrack)
         ) {
           // We use Math.abs to handle edge cases where deltas and positions
           // are slightly out of sync in a telemetry frame.

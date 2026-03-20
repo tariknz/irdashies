@@ -181,7 +181,8 @@ export const useDriverStandings = (
             carIdxLapDistPct,
             carIdxOnPitRoad,
             carIdxEstTime,
-            useLivePositionStandings
+            useLivePositionStandings,
+            sessionType
           )
         : iratingAugmentedGroupedByClass;
 
