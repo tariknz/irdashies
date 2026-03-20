@@ -173,16 +173,28 @@ Displays the throttle, clutch, and brake input traces, as well as the current ge
   - Toggle individual inputs (clutch, brake, throttle, ABS)
 - Current gear display with speed (auto/mph/km/h units)
 - Steering wheel visualization with multiple styles (default, formula, LMP, NASCAR, U-shape) and color themes (light/dark)
-- Tachometer with optional RPM text display
-  - Car-specific LED color and RPM thresholds (powered by [lovely-car-data](https://github.com/Lovely-Sim-Racing/lovely-car-data))
-  - Custom shift points configuration per car and gear
-  - Multiple indicator styles (glow, pulse, border) with customizable colors
 - Customizable display order for all components
 - Adjustable background opacity
 - Option to show only when on track
 - Session visibility settings (Race, Lone Qualify, Open Qualify, Practice, Offline Testing)
 
 ![Input Trace](./docs/assets/input.png)
+
+### Tachometer
+
+Displays a real-time tachometer with optional RPM text display.
+
+**Features:**
+
+- Tachometer with optional RPM text display
+  - Car-specific LED color and RPM thresholds (powered by [lovely-car-data](https://github.com/Lovely-Sim-Racing/lovely-car-data))
+  - Custom shift points configuration per car and gear
+  - Multiple indicator styles (glow, pulse, border) with customizable colors
+- Resizable and adjustable background opacity
+- Option to show only when on track
+- Session visibility settings (Race, Lone Qualify, Open Qualify, Practice, Offline Testing)
+
+![Input Trace](./docs/assets/tachometer.png)
 
 ### Standings
 
