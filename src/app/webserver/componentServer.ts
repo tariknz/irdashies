@@ -321,6 +321,7 @@ export async function startComponentServer(
       const componentNames: WidgetId[] = [
         'standings',
         'input',
+        'tachometer',
         'relative',
         'map',
         'weather',

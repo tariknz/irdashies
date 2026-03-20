@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
-import { Tachometer } from './InputTachometer';
+import { Tachometer } from '../TachometerComponent/TachometerComponent';
 import type { ShiftPointSettings } from '@irdashies/types';
 
 // Mock telemetry store
@@ -32,10 +32,12 @@ describe('Tachometer', () => {
     indicatorType: 'glow',
     indicatorColor: '#00ff00',
     carConfigs: {
-      ferrari296gt3: {
+      'ferrari296gt3': {
+        enabled: true,
         carId: 'ferrari296gt3',
         carName: 'Ferrari 296 GT3',
         gearCount: 6,
+        redlineRpm: 8000,
         gearShiftPoints: {
           '1': { shiftRpm: 7000 },
         },
@@ -166,11 +168,11 @@ describe('Tachometer', () => {
 
   it('renders RPM text display', () => {
     const { container } = render(
-      <Tachometer rpm={3000} maxRpm={8500} showRpmText={true} />
+      <Tachometer rpm={3000} maxRpm={8500} showRpmText={true} rpmOrientation='vertical'/>
     );
 
     // Should have RPM display text
-    const rpmDisplay = container.querySelector('.font-mono');
+    const rpmDisplay = container.querySelector('#rpm-text');
     expect(rpmDisplay).toBeInTheDocument();
     // toLocaleString in tests uses dot instead of comma
     expect(rpmDisplay?.textContent).toMatch(/3[,.]000/);
@@ -182,6 +184,7 @@ describe('Tachometer', () => {
         rpm={5000}
         maxRpm={8000}
         showRpmText={true}
+        rpmOrientation='vertical'
         carData={mockCarData}
       />
     );
@@ -197,6 +200,7 @@ describe('Tachometer', () => {
         rpm={5000}
         maxRpm={8000}
         showRpmText={true}
+        rpmOrientation='vertical'
         carData={mockCarData}
       />
     );
@@ -211,6 +215,7 @@ describe('Tachometer', () => {
         rpm={7100} // Above 7000 RPM shift point
         maxRpm={8000}
         showRpmText={true}
+        rpmOrientation='vertical'
         gear={1}
         carData={mockCarData}
         carPath="ferrari296gt3"
@@ -228,6 +233,7 @@ describe('Tachometer', () => {
         rpm={6500} // Below 7000 RPM shift point
         maxRpm={8000}
         showRpmText={true}
+        rpmOrientation='vertical'
         gear={1}
         carData={mockCarData}
         carPath="ferrari296gt3"
@@ -247,6 +253,7 @@ describe('Tachometer', () => {
         rpm={7100} // Above 7000 RPM shift point
         maxRpm={8000}
         showRpmText={true}
+        rpmOrientation='vertical'
         gear={1}
         carData={mockCarData}
         carPath="ferrari296gt3"

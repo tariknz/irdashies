@@ -6,6 +6,7 @@ import { TrackMapSettings } from './sections/TrackMapSettings';
 import { FlatTrackMapSettings } from './sections/FlatTrackMapSettings';
 import { AdvancedSettings } from './sections/AdvancedSettings';
 import { InputSettings } from './sections/InputSettings';
+import { TachometerSettings } from './sections/TachometerSettings';
 import { AboutSettings } from './sections/AboutSettings';
 import { FasterCarsFromBehindSettings } from './sections/FasterCarsFromBehindSettings';
 import { FuelSettings } from './sections/FuelSettings';
@@ -51,6 +52,8 @@ export const SettingsLoader = () => {
       return <FlatTrackMapSettings />;
     case 'input':
       return <InputSettings />;
+    case 'tachometer':
+      return <TachometerSettings />;
     case 'pitlanehelper':
       return <PitlaneHelperSettings />;
     case 'rejoin':
