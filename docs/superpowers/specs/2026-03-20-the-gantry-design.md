@@ -50,21 +50,21 @@ Uses the existing `useDriverStandings()` hook and `createStandings()` logic — 
 
 In display order:
 
-| Column | Description                    | Cell Component                                                                                                 |
-| ------ | ------------------------------ | -------------------------------------------------------------------------------------------------------------- |
-| P      | Class position                 | `PositionCell` (existing)                                                                                      |
-| #      | Car number                     | `CarNumberCell` (existing)                                                                                     |
-| Driver | Driver name with status badges | `DriverNameCell` (existing)                                                                                    |
-| Tire   | Tire compound (S/M/H/W)        | `CompoundCell` (existing)                                                                                      |
-| iR     | Raw iRating value              | **New `IratingCell`** — reads `driver.rating`; `IratingChangeCell` shows change only and cannot be reused here |
-| Pit    | Pit status indicator           | `PitStatusCell` (existing)                                                                                     |
-| Gap    | Gap to class leader            | `DeltaCell` (existing)                                                                                         |
-| Int    | Interval to car ahead          | `DeltaCell` (existing)                                                                                         |
-| Best   | Best lap time                  | `FastestTimeCell` (existing)                                                                                   |
-| Last   | Last lap time                  | `LastTimeCell` (existing)                                                                                      |
-| L-1    | Last lap delta                 | `LapTimeDeltasCell` (existing)                                                                                 |
-| L-2    | 2 laps ago delta               | `LapTimeDeltasCell` (existing)                                                                                 |
-| L-3    | 3 laps ago delta               | `LapTimeDeltasCell` (existing)                                                                                 |
+| Column | Description                               | Cell Component                                                             |
+| ------ | ----------------------------------------- | -------------------------------------------------------------------------- |
+| P      | Class position                            | `PositionCell` (existing)                                                  |
+| #      | Car number                                | `CarNumberCell` (existing)                                                 |
+| Driver | Driver name with status badges            | `DriverNameCell` (existing)                                                |
+| Tire   | Tire compound (S/M/H/W)                   | `CompoundCell` (existing)                                                  |
+| iR     | Driver iRating and/or safety rating badge | `BadgeCell` (existing) — configure to show iRating/safety rating as needed |
+| Pit    | Pit status indicator                      | `PitStatusCell` (existing)                                                 |
+| Gap    | Gap to class leader                       | `DeltaCell` (existing)                                                     |
+| Int    | Interval to car ahead                     | `DeltaCell` (existing)                                                     |
+| Best   | Best lap time                             | `FastestTimeCell` (existing)                                               |
+| Last   | Last lap time                             | `LastTimeCell` (existing)                                                  |
+| L-3    | 3 laps ago delta                          | `LapTimeDeltasCell` (existing)                                             |
+| L-2    | 2 laps ago delta                          | `LapTimeDeltasCell` (existing)                                             |
+| L-1    | Last lap delta (most recent, rightmost)   | `LapTimeDeltasCell` (existing)                                             |
 
 ### Class Grouping
 
@@ -124,10 +124,6 @@ Clicking a replay button calculates `targetFrame = incident.replayFrameNum - (60
 - **Driver dropdown:** Filter to a specific driver. "All" by default.
 
 Both filters are combined (AND logic): a row must match both the active type filter and the driver filter to appear.
-
-### Incident Cap
-
-Maximum 500 incidents stored in memory. Oldest trimmed when exceeded.
 
 ### Per-Type Cooldown
 
@@ -367,9 +363,11 @@ Incidents are stored to disk via `src/app/storage/incidentStorage.ts`:
 - Keyed by `SubSessionId` (unique per iRacing session)
 - JSON file per session in the existing storage directory
 - Appended incrementally on each new incident (not full rewrite)
-- Last 10 sessions retained; older files pruned automatically on startup
+- Session retention is user-configurable in The Gantry settings (see below); older files pruned on startup according to the selected limit
 - Loaded by `RaceControlBridge` on startup if a file matches the current session ID
 - Frontend receives full restored list transparently via `getIncidents()` on mount — no frontend changes needed
+
+**Session retention setting:** Exposed in `GantrySettings` as a dropdown. Options: **All** (default), Last 5, Last 10, Last 20. When a limit is set, files beyond that count (sorted by creation date, oldest first) are deleted on app startup.
 
 **`clearIncidents()` behavior:** Clears the in-memory incident array AND deletes the current session's JSON file from disk. Subsequent `getIncidents()` calls return `[]` until new incidents arrive.
 
@@ -394,12 +392,13 @@ Custom SVG line chart (no external library):
 - **X-axis:** Lap number
 - **Y-axis:** Gap to class leader in seconds (leader always at 0)
 - **Lines:** One per car, colored by car class
+- **Hover interaction:** When a line is hovered, all other lines dim to 60% opacity so the hovered line is visually prominent. Hover state is cleared when the cursor leaves the chart area.
 - **Tooltip on hover:** Shows driver name, car number, gap value
 - Clean grid lines, axis labels matching overlay typography
 
 ### Class Filter
 
-Dropdown to select which class to display. Defaults to the player's class if the player is in the session, otherwise the class with the most cars.
+Dropdown to select which class to display. Classes are ordered quickest to slowest — the same order iRacing displays them (by `CarClassEstLapTime` or the equivalent session data field, ascending). Defaults to the player's class if the player is in an active session; otherwise defaults to the first (fastest) class.
 
 ---
 
@@ -471,7 +470,7 @@ Phase 5 must include mock data fixtures for `RaceControlStore` (a `RaceControlDe
 | 6     | Lap gap store                           | `LapGapStore.ts`                                                                                                                                       |
 | 7     | Gantry widget shell + mouse interaction | `Gantry.tsx`, `WidgetIndex.tsx`, `widgetConfigs.ts`, `defaultDashboard.ts`, `WidgetContainer` interactive prop, overlay manager `setIgnoreMouseEvents` |
 | 8     | Gantry settings panel                   | `GantrySettings.tsx`                                                                                                                                   |
-| 9     | Standings panel                         | `GantryStandings.tsx`, new `IratingCell.tsx`, follow-driver feature, Storybook                                                                         |
+| 9     | Standings panel                         | `GantryStandings.tsx`, follow-driver feature, Storybook                                                                                                |
 | 10    | Incidents panel                         | `GantryIncidents.tsx` + filters + replay controls + dev-mode Log button (clipboard copy of `IncidentDebugSnapshot`) + Storybook                        |
 | 11    | Lap graph view                          | `LapGapChart.tsx` (custom SVG) + `LapGraphView.tsx` + Storybook                                                                                        |
 
@@ -503,4 +502,4 @@ Phase 5 must include mock data fixtures for `RaceControlStore` (a `RaceControlDe
 4. **No existing chart library:** Custom SVG chart keeps zero new dependencies.
 5. **Mouse interaction is a two-layer problem:** Both the Electron window `setIgnoreMouseEvents` flag and the CSS `pointer-events-none` on `WidgetContainer` must be addressed. Verify exact hook points during Phase 7 before building interactive elements.
 6. **Track length string parsing:** `WeekendInfo.TrackLength` is a string (e.g. `"5.12 km"`). Parse with `parseFloat(s) * 1000` for meters. This logic must exist in the main process for the incident detector — it currently only lives in the frontend.
-7. **`IratingChangeCell` cannot be reused for raw iRating:** A new `IratingCell` component is required in Phase 9.
+7. **iRating column uses `BadgeCell`:** The existing `BadgeCell` component displays driver iRating and/or safety rating. No new cell component is needed for the iR column.
