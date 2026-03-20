@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { Tachometer } from './InputTachometer';
+import { Tachometer } from './TachometerComponent';
 import { useEffect, useState } from 'react';
 import type { ShiftPointSettings } from '@irdashies/types';
 
@@ -10,7 +10,7 @@ const TachometerForStorybook = (props: Parameters<typeof Tachometer>[0]) => {
 
 const meta: Meta<typeof Tachometer> = {
   component: Tachometer,
-  title: 'widgets/Input/components/CustomShiftPoints',
+  title: 'widgets/Tachometer/components/CustomShiftPoints',
   argTypes: {
     shiftPointSettings: { table: { disable: true } },
     gearRpmThresholds: { table: { disable: true } },
@@ -50,12 +50,14 @@ const AnimatedRPM = ({
   title,
   color = '#00ff00',
   showRpmText = true,
+  rpmOrientation = 'horizontal',
 }: {
   indicatorType: 'glow' | 'pulse' | 'border';
   shiftRpm?: number;
   title: string;
   color?: string;
   showRpmText?: boolean;
+  rpmOrientation?: 'horizontal' | 'vertical';
 }) => {
   const [rpm, setRpm] = useState(6500);
   const [isRevLimiter, setIsRevLimiter] = useState(false);
@@ -67,10 +69,12 @@ const AnimatedRPM = ({
     indicatorType,
     indicatorColor: color,
     carConfigs: {
-      ferrari296gt3: {
+      'ferrari296gt3': {
+        enabled: true,
         carId: 'ferrari296gt3',
         carName: 'Ferrari 296 GT3',
         gearCount: 6,
+        redlineRpm: 8000,
         gearShiftPoints: {
           '1': { shiftRpm },
         },
@@ -130,6 +134,7 @@ const AnimatedRPM = ({
           gear={1}
           carPath="ferrari296gt3"
           showRpmText={showRpmText}
+          rpmOrientation={rpmOrientation}
           gearRpmThresholds={testGearRpm}
           ledColors={testCarData.ledColor}
           carData={testCarData}
@@ -185,6 +190,7 @@ export const WithoutRpmText: Story = {
         title="Glow Effect - No RPM Text"
         color="#00ff00"
         showRpmText={false}
+        rpmOrientation="vertical"
       />
     </div>
   ),
@@ -204,6 +210,7 @@ export const WithRpmText: Story = {
         title="Glow Effect - With RPM Text"
         color="#00ff00"
         showRpmText={true}
+        rpmOrientation="vertical"
       />
     </div>
   ),
@@ -245,6 +252,7 @@ export const DifferentShiftPoints: Story = {
           title="Early Shift Point (6800 RPM) - Glow - With RPM Text"
           color="#00ff00"
           showRpmText={true}
+          rpmOrientation="vertical"
         />
         <AnimatedRPM
           indicatorType="border"
@@ -252,6 +260,7 @@ export const DifferentShiftPoints: Story = {
           title="Medium Shift Point (7000 RPM) - Border - RPM Text OFF"
           color="#ff6600"
           showRpmText={false}
+          rpmOrientation="vertical"
         />
         <AnimatedRPM
           indicatorType="pulse"
@@ -259,6 +268,7 @@ export const DifferentShiftPoints: Story = {
           title="Late Shift Point (7200 RPM) - Pulse - With RPM Text"
           color="#ff0066"
           showRpmText={true}
+          rpmOrientation="vertical"
         />
       </div>
     </div>

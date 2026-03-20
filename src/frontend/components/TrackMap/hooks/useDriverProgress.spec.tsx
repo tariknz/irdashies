@@ -6,6 +6,7 @@ import { useDriverProgress } from './useDriverProgress';
 vi.mock('@irdashies/context', () => ({
   useFocusCarIdx: vi.fn(),
   useSessionDrivers: vi.fn(),
+  useTelemetryValuesRounded: vi.fn(),
   useSessionStore: vi.fn(),
   useTelemetryValues: vi.fn(),
   useSessionQualifyingResults: vi.fn(),
@@ -16,6 +17,7 @@ vi.mock('@irdashies/context', () => ({
 import {
   useFocusCarIdx,
   useSessionDrivers,
+  useTelemetryValuesRounded,
   useSessionStore,
   useTelemetryValues,
   useSessionQualifyingResults,
@@ -34,6 +36,7 @@ describe('useDriverProgress', () => {
   it('should return empty array when drivers or lapDist are missing', () => {
     vi.mocked(useFocusCarIdx).mockReturnValue(0);
     vi.mocked(useSessionDrivers).mockReturnValue(undefined);
+    vi.mocked(useTelemetryValuesRounded).mockReturnValue([]);
     vi.mocked(useSessionStore).mockReturnValue(-1);
     vi.mocked(useTelemetryValues).mockReturnValue([]);
 
@@ -50,6 +53,7 @@ describe('useDriverProgress', () => {
 
     vi.mocked(useFocusCarIdx).mockReturnValue(0);
     vi.mocked(useSessionDrivers).mockReturnValue(mockDrivers as any);
+    vi.mocked(useTelemetryValuesRounded).mockReturnValue([0.5, 0.6]);
     vi.mocked(useSessionStore).mockReturnValue(-1);
     vi.mocked(useTelemetryValues).mockReturnValue([0.5, 0.6]);
 
@@ -72,6 +76,7 @@ describe('useDriverProgress', () => {
 
     vi.mocked(useFocusCarIdx).mockReturnValue(0);
     vi.mocked(useSessionDrivers).mockReturnValue(mockDrivers as any);
+    vi.mocked(useTelemetryValuesRounded).mockReturnValue([0.5, -1]);
     vi.mocked(useSessionStore).mockReturnValue(-1);
     vi.mocked(useTelemetryValues).mockReturnValue([0.5, -1]);
 
@@ -92,6 +97,7 @@ describe('useDriverProgress', () => {
 
     vi.mocked(useFocusCarIdx).mockReturnValue(0);
     vi.mocked(useSessionDrivers).mockReturnValue(mockDrivers as any);
+    vi.mocked(useTelemetryValuesRounded).mockReturnValue([0.5, 0.6]);
     vi.mocked(useSessionStore).mockReturnValue(1);
     vi.mocked(useTelemetryValues).mockReturnValue([0.5, 0.6]);
 

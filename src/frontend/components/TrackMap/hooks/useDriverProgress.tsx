@@ -7,13 +7,14 @@ import {
   useSessionStore,
   useTelemetryValue,
   useTelemetryValues,
+  useTelemetryValuesRounded,
 } from '@irdashies/context';
 
 // Drivers progress logic
 export const useDriverProgress = () => {
   const driverIdx = useFocusCarIdx();
   const drivers = useSessionDrivers();
-  const driversLapDist = useTelemetryValues<number[]>('CarIdxLapDistPct');
+  const driversLapDist = useTelemetryValuesRounded('CarIdxLapDistPct', 3);
   const paceCarIdx =
     useSessionStore((s) => s.session?.DriverInfo?.PaceCarIdx) ?? -1;
 

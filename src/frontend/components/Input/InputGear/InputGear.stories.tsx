@@ -33,6 +33,7 @@ export const Primary: Story = {
     unit: 1,
     settings: {
       unit: 'auto',
+      showspeed:  true,
     },
   },
 };
@@ -44,6 +45,7 @@ export const Imperial: Story = {
     unit: 0,
     settings: {
       unit: 'auto',
+      showspeed:  true,
     },
   },
 };
@@ -55,6 +57,7 @@ export const ForceImperial: Story = {
     unit: 1,
     settings: {
       unit: 'mph',
+      showspeed:  true,
     },
   },
 };

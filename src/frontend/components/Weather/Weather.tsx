@@ -1,4 +1,8 @@
-import { useTelemetryValue, useSessionVisibility } from '@irdashies/context';
+import {
+  useTelemetryValue,
+  useSessionVisibility,
+  useThrottledWeather,
+} from '@irdashies/context';
 import { useTrackTemperature } from '../Standings/hooks/useTrackTemperature';
 import { WeatherTemp } from './WeatherTemp/WeatherTemp';
 import { WeatherTrackWetness } from './WeatherTrackWetness/WeatherTrackWetness';
@@ -7,7 +11,6 @@ import { WindDirection } from './WindDirection/WindDirection';
 import { useTrackRubberedState } from './hooks/useTrackRubberedState';
 import { useWeatherSettings } from './hooks/useWeatherSettings';
 import { WeatherHumidity } from './WeatherHumidity/WeatherHumidity';
-import { useThrottledWeather } from '@irdashies/context';
 import { useMemo } from 'react';
 
 type WeatherColumnId =
