@@ -203,10 +203,138 @@ interface Incident {
   type: IncidentType;
   lapDistPct: number;
   timestamp: number; // Date.now() — wall clock ms
+  debug?: IncidentDebugSnapshot; // only populated when !app.isPackaged (dev mode)
 }
 ```
 
 `replayFrameNum` is read from `ReplayFrameNum` telemetry array at `value[0]` at the moment the incident is detected. This value is the current replay frame counter — it is valid in both live and replay sessions.
+
+---
+
+## Dev Mode Incident Diagnostics
+
+When running in development mode (`!app.isPackaged` in the main process, equivalently `process.env.NODE_ENV === 'development'` in the renderer), each incident carries a `debug` snapshot and the Gantry incidents panel shows a **Log** button per row.
+
+### `IncidentDebugSnapshot` Type
+
+```typescript
+interface IncidentDebugSnapshot {
+  trigger:
+    | 'sustained-slow'
+    | 'sudden-stop'
+    | 'off-track'
+    | 'pit-entry'
+    | 'black-flag'
+    | 'slowdown-flag';
+  evidence: string; // human-readable explanation, e.g. "avgSpeed 8.2 km/h < threshold 15 km/h for 12 frames (threshold: 10)"
+  thresholds: {
+    // snapshot of the threshold config at detection time
+    slowSpeedThreshold: number;
+    slowFrameThreshold: number;
+    suddenStopFromSpeed: number;
+    suddenStopToSpeed: number;
+    suddenStopFrames: number;
+    offTrackDebounce: number;
+    cooldownSeconds: number;
+  };
+  carStateAtDetection: {
+    // full per-car state at the moment of detection
+    speedHistory: number[];
+    currentAvgSpeed: number;
+    recentRawSpeeds: number[];
+    slowFrameCount: number;
+    offTrackFrameCount: number;
+    prevTrackSurface: number;
+    prevSessionFlags: number;
+    prevOnPitRoad: boolean;
+    prevLapDistPct: number;
+  };
+  frameHistory: Array<{
+    // last 10 raw speed samples leading up to detection
+    speed: number;
+    lapDistPct: number;
+    trackSurface: number;
+    sessionTime: number;
+  }>;
+}
+```
+
+### Log Button Behaviour
+
+- Visible only when `process.env.NODE_ENV === 'development'`
+- Clicking calls `navigator.clipboard.writeText(JSON.stringify(incident.debug, null, 2))`
+- The button label is **"Log"** with a copy icon (Phosphor `Copy` icon)
+- A brief visual confirmation ("Copied!") replaces the label for 1.5s after click
+- If `incident.debug` is absent (production build), the button is not rendered
+
+### `frameHistory` Collection
+
+The `IncidentDetector` maintains a per-car circular buffer of the last 10 raw telemetry frames (speed, lapDistPct, trackSurface, sessionTime). In dev mode only (`isDev` flag passed to the detector on construction), this buffer is attached to the `debug` snapshot at detection time. In production the buffer is not allocated, keeping the main process memory footprint identical to today.
+
+### Output Format
+
+Pretty-printed JSON (`JSON.stringify(debug, null, 2)`). Example output for a sustained-slow crash:
+
+```json
+{
+  "trigger": "sustained-slow",
+  "evidence": "avgSpeed 8.2 km/h < threshold 15 km/h for 12 consecutive frames (threshold: 10)",
+  "thresholds": {
+    "slowSpeedThreshold": 15,
+    "slowFrameThreshold": 10,
+    "suddenStopFromSpeed": 80,
+    "suddenStopToSpeed": 20,
+    "suddenStopFrames": 3,
+    "offTrackDebounce": 3,
+    "cooldownSeconds": 5
+  },
+  "carStateAtDetection": {
+    "speedHistory": [9.1, 8.8, 8.5, 8.3, 8.2],
+    "currentAvgSpeed": 8.58,
+    "recentRawSpeeds": [9.1, 8.8, 8.5],
+    "slowFrameCount": 12,
+    "offTrackFrameCount": 0,
+    "prevTrackSurface": 3,
+    "prevSessionFlags": 0,
+    "prevOnPitRoad": false,
+    "prevLapDistPct": 0.4821
+  },
+  "frameHistory": [
+    {
+      "speed": 45.2,
+      "lapDistPct": 0.478,
+      "trackSurface": 3,
+      "sessionTime": 1823.4
+    },
+    {
+      "speed": 28.1,
+      "lapDistPct": 0.4795,
+      "trackSurface": 3,
+      "sessionTime": 1823.44
+    },
+    {
+      "speed": 15.3,
+      "lapDistPct": 0.4803,
+      "trackSurface": 3,
+      "sessionTime": 1823.48
+    },
+    {
+      "speed": 9.1,
+      "lapDistPct": 0.481,
+      "trackSurface": 3,
+      "sessionTime": 1823.52
+    },
+    {
+      "speed": 8.8,
+      "lapDistPct": 0.4815,
+      "trackSurface": 3,
+      "sessionTime": 1823.56
+    }
+  ]
+}
+```
+
+This gives a clear picture of the speed history leading up to detection, which thresholds were active, and what evidence caused the trigger — enough to tune thresholds without needing to instrument the detector manually.
 
 ### Exclusions
 
@@ -336,7 +464,7 @@ Phase 5 must include mock data fixtures for `RaceControlStore` (a `RaceControlDe
 | Phase | Scope                                   | Key Files                                                                                                                                              |
 | ----- | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | 1     | Types & interfaces                      | `src/types/raceControl.ts`, `src/interface.d.ts`                                                                                                       |
-| 2     | Incident detection engine               | `src/app/services/incidentDetector.ts` + unit tests                                                                                                    |
+| 2     | Incident detection engine               | `src/app/services/incidentDetector.ts` + unit tests; includes `frameHistory` circular buffer (dev mode only) and `IncidentDebugSnapshot` population    |
 | 3     | Incident persistence                    | `src/app/storage/incidentStorage.ts` + unit tests                                                                                                      |
 | 4     | Race control bridge                     | `raceControlBridge.ts`, `rendererExposeBridge.ts`, `main.ts`                                                                                           |
 | 5     | Frontend incident store + mock fixtures | `RaceControlStore.ts`, `useRaceControlBridge.ts`, `RaceControlDecorator`                                                                               |
@@ -344,7 +472,7 @@ Phase 5 must include mock data fixtures for `RaceControlStore` (a `RaceControlDe
 | 7     | Gantry widget shell + mouse interaction | `Gantry.tsx`, `WidgetIndex.tsx`, `widgetConfigs.ts`, `defaultDashboard.ts`, `WidgetContainer` interactive prop, overlay manager `setIgnoreMouseEvents` |
 | 8     | Gantry settings panel                   | `GantrySettings.tsx`                                                                                                                                   |
 | 9     | Standings panel                         | `GantryStandings.tsx`, new `IratingCell.tsx`, follow-driver feature, Storybook                                                                         |
-| 10    | Incidents panel                         | `GantryIncidents.tsx` + filters + replay controls + Storybook                                                                                          |
+| 10    | Incidents panel                         | `GantryIncidents.tsx` + filters + replay controls + dev-mode Log button (clipboard copy of `IncidentDebugSnapshot`) + Storybook                        |
 | 11    | Lap graph view                          | `LapGapChart.tsx` (custom SVG) + `LapGraphView.tsx` + Storybook                                                                                        |
 
 ---
