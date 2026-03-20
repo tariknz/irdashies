@@ -1,6 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { IncidentDetector } from './incidentDetector';
 import type { IncidentThresholds } from '../../types/raceControl';
+import { IncidentType } from '../../types/raceControl';
+import type { Incident } from '../../types/raceControl';
+import { TrackLocation, GlobalFlags } from '../irsdk/types/enums';
 
 const defaultThresholds: IncidentThresholds = {
   slowSpeedThreshold: 15,
@@ -11,6 +14,29 @@ const defaultThresholds: IncidentThresholds = {
   offTrackDebounce: 3,
   cooldownSeconds: 5,
 };
+
+const makeTelemetry = (
+  overrides: Partial<{
+    sessionTime: number;
+    sessionNum: number;
+    replayFrameNum: number;
+    carIdxLapDistPct: number[];
+    carIdxLap: number[];
+    carIdxTrackSurface: number[];
+    carIdxSessionFlags: number[];
+    carIdxOnPitRoad: boolean[];
+  }> = {}
+) => ({
+  sessionTime: 100,
+  sessionNum: 0,
+  replayFrameNum: 6000,
+  carIdxLapDistPct: [0.5],
+  carIdxLap: [3],
+  carIdxTrackSurface: [TrackLocation.OnTrack],
+  carIdxSessionFlags: [0],
+  carIdxOnPitRoad: [false],
+  ...overrides,
+});
 
 describe('IncidentDetector - speed calculation', () => {
   it('calculates speed from lapDistPct delta and track length', () => {
@@ -43,5 +69,244 @@ describe('session transitions', () => {
     detector.updateSession({ DriverInfo: { Drivers: [] } });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     expect((detector as any).carStates.size).toBe(0);
+  });
+});
+
+describe('pit entry detection', () => {
+  it('fires PitEntry when CarIdxOnPitRoad transitions false → true', () => {
+    const detector = new IncidentDetector(defaultThresholds, false);
+    const incidents: Incident[] = [];
+    detector.onIncident((i) => incidents.push(i));
+    detector.updateSession({
+      DriverInfo: {
+        Drivers: [
+          {
+            CarIdx: 0,
+            UserName: 'Test',
+            CarNumber: '99',
+            TeamName: '',
+            CarIsPaceCar: 0,
+          },
+        ],
+      },
+    });
+
+    const baseTelemetry = makeTelemetry({ carIdxOnPitRoad: [false] });
+    detector.processTelemetry(baseTelemetry, 5000);
+    expect(incidents).toHaveLength(0);
+
+    const pitTelemetry = makeTelemetry({
+      carIdxOnPitRoad: [true],
+      sessionTime: 100.04,
+    });
+    detector.processTelemetry(pitTelemetry, 5000);
+    expect(incidents).toHaveLength(1);
+    expect(incidents[0].type).toBe(IncidentType.PitEntry);
+  });
+});
+
+describe('off-track detection', () => {
+  it('does not fire on first off-track frame', () => {
+    const detector = new IncidentDetector(defaultThresholds, false);
+    const incidents: Incident[] = [];
+    detector.onIncident((i) => incidents.push(i));
+    detector.updateSession({
+      DriverInfo: {
+        Drivers: [
+          {
+            CarIdx: 0,
+            UserName: 'Test',
+            CarNumber: '99',
+            TeamName: '',
+            CarIsPaceCar: 0,
+          },
+        ],
+      },
+    });
+
+    // 1 off-track frame, debounce is 3 → no incident
+    detector.processTelemetry(
+      makeTelemetry({ carIdxTrackSurface: [TrackLocation.OffTrack] }),
+      5000
+    );
+    expect(incidents).toHaveLength(0);
+  });
+
+  it('fires OffTrack after 3 consecutive off-track frames', () => {
+    const detector = new IncidentDetector(
+      { ...defaultThresholds, offTrackDebounce: 3 },
+      false
+    );
+    const incidents: Incident[] = [];
+    detector.onIncident((i) => incidents.push(i));
+    detector.updateSession({
+      DriverInfo: {
+        Drivers: [
+          {
+            CarIdx: 0,
+            UserName: 'Test',
+            CarNumber: '99',
+            TeamName: '',
+            CarIsPaceCar: 0,
+          },
+        ],
+      },
+    });
+
+    for (let i = 0; i < 3; i++) {
+      detector.processTelemetry(
+        makeTelemetry({
+          carIdxTrackSurface: [TrackLocation.OffTrack],
+          sessionTime: 100 + i * 0.04,
+        }),
+        5000
+      );
+    }
+    expect(incidents.some((i) => i.type === IncidentType.OffTrack)).toBe(true);
+  });
+});
+
+describe('crash detection - sustained slow', () => {
+  it('fires Crash after avgSpeed < threshold for slowFrameThreshold consecutive frames', () => {
+    const detector = new IncidentDetector(
+      { ...defaultThresholds, slowFrameThreshold: 3 },
+      false
+    );
+    const incidents: Incident[] = [];
+    detector.onIncident((i) => incidents.push(i));
+    detector.updateSession({
+      DriverInfo: {
+        Drivers: [
+          {
+            CarIdx: 0,
+            UserName: 'Test',
+            CarNumber: '99',
+            TeamName: '',
+            CarIsPaceCar: 0,
+          },
+        ],
+      },
+    });
+
+    // 3 frames barely moving (< 15 km/h threshold)
+    for (let i = 0; i < 3; i++) {
+      detector.processTelemetry(
+        makeTelemetry({
+          carIdxTrackSurface: [TrackLocation.OnTrack],
+          carIdxOnPitRoad: [false],
+          carIdxLapDistPct: [0.5 + i * 0.00001], // barely moving
+          sessionTime: 100 + i * 0.04,
+        }),
+        5000
+      );
+    }
+    expect(incidents.some((i) => i.type === IncidentType.Crash)).toBe(true);
+  });
+
+  it('does not fire while car is on pit road', () => {
+    const detector = new IncidentDetector(
+      { ...defaultThresholds, slowFrameThreshold: 3 },
+      false
+    );
+    const incidents: Incident[] = [];
+    detector.onIncident((i) => incidents.push(i));
+    detector.updateSession({
+      DriverInfo: {
+        Drivers: [
+          {
+            CarIdx: 0,
+            UserName: 'Test',
+            CarNumber: '99',
+            TeamName: '',
+            CarIsPaceCar: 0,
+          },
+        ],
+      },
+    });
+
+    for (let i = 0; i < 3; i++) {
+      detector.processTelemetry(
+        makeTelemetry({
+          carIdxTrackSurface: [TrackLocation.OnTrack],
+          carIdxOnPitRoad: [true], // on pit road
+          carIdxLapDistPct: [0.5 + i * 0.00001],
+          sessionTime: 100 + i * 0.04,
+        }),
+        5000
+      );
+    }
+    expect(incidents.filter((i) => i.type === IncidentType.Crash)).toHaveLength(
+      0
+    );
+  });
+});
+
+describe('flag detection', () => {
+  it('fires BlackFlag when Black flag bit newly set', () => {
+    const detector = new IncidentDetector(defaultThresholds, false);
+    const incidents: Incident[] = [];
+    detector.onIncident((i) => incidents.push(i));
+    detector.updateSession({
+      DriverInfo: {
+        Drivers: [
+          {
+            CarIdx: 0,
+            UserName: 'Test',
+            CarNumber: '99',
+            TeamName: '',
+            CarIsPaceCar: 0,
+          },
+        ],
+      },
+    });
+
+    // No flag initially
+    detector.processTelemetry(makeTelemetry({ carIdxSessionFlags: [0] }), 5000);
+    expect(incidents).toHaveLength(0);
+
+    // Black flag newly set
+    detector.processTelemetry(
+      makeTelemetry({
+        carIdxSessionFlags: [GlobalFlags.Black],
+        sessionTime: 100.04,
+      }),
+      5000
+    );
+    expect(incidents).toHaveLength(1);
+    expect(incidents[0].type).toBe(IncidentType.BlackFlag);
+  });
+
+  it('fires Slowdown when Furled flag bit newly set', () => {
+    const detector = new IncidentDetector(defaultThresholds, false);
+    const incidents: Incident[] = [];
+    detector.onIncident((i) => incidents.push(i));
+    detector.updateSession({
+      DriverInfo: {
+        Drivers: [
+          {
+            CarIdx: 0,
+            UserName: 'Test',
+            CarNumber: '99',
+            TeamName: '',
+            CarIsPaceCar: 0,
+          },
+        ],
+      },
+    });
+
+    // No flag initially
+    detector.processTelemetry(makeTelemetry({ carIdxSessionFlags: [0] }), 5000);
+    expect(incidents).toHaveLength(0);
+
+    // Furled flag newly set
+    detector.processTelemetry(
+      makeTelemetry({
+        carIdxSessionFlags: [GlobalFlags.Furled],
+        sessionTime: 100.04,
+      }),
+      5000
+    );
+    expect(incidents).toHaveLength(1);
+    expect(incidents[0].type).toBe(IncidentType.Slowdown);
   });
 });
