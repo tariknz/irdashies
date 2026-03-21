@@ -1,4 +1,4 @@
-import type { Decorator } from '@storybook/react';
+import type { Decorator } from '@storybook/react-vite';
 import { useEffect } from 'react';
 import { useRaceControlStore } from '../src/frontend/context/RaceControlStore/RaceControlStore';
 import { IncidentType } from '../src/types/raceControl';
