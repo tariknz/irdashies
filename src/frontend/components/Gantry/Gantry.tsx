@@ -1,4 +1,4 @@
-import { memo, useState } from 'react';
+import React, { memo, useState } from 'react';
 import { GantryTabBar } from './components/GantryTabBar/GantryTabBar';
 import { GantryStandings } from './components/GantryStandings/GantryStandings';
 import { GantryIncidents } from './components/GantryIncidents/GantryIncidents';
@@ -8,7 +8,7 @@ import { useDriverStandings } from '../Standings/hooks/useDriverStandings';
 
 type GantryView = 'standings-incidents' | 'lap-graph';
 
-export const Gantry = memo(() => {
+const GantryInner = memo(() => {
   const [activeView, setActiveView] = useState<GantryView>(
     'standings-incidents'
   );
@@ -53,4 +53,9 @@ export const Gantry = memo(() => {
     </div>
   );
 });
-Gantry.displayName = 'Gantry';
+GantryInner.displayName = 'Gantry';
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function Gantry(_config?: unknown): React.JSX.Element {
+  return <GantryInner />;
+}
