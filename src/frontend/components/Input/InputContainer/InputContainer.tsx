@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { InputWidgetSettings } from '@irdashies/types';
 import { InputAbsIndicator } from '../InputAbsIndicator/InputAbsIndicator';
 import { InputBar } from '../InputBar/InputBar';
@@ -31,7 +31,7 @@ export const InputContainer = ({
   brakeAbsActive,
   settings,
 }: InputProps) => {
-  const displayOrder = settings?.displayOrder as InputSection[] | undefined;
+  const displayOrder = settings.displayOrder as InputSection[] | undefined;
 
   // Only recompute section order when settings change (not every telemetry frame)
   const orderedSections = useMemo(() => {
@@ -59,70 +59,83 @@ export const InputContainer = ({
     return [...ordered, ...remaining];
   }, [settings, displayOrder]);
 
-  const renderSection = (id: InputSection) => {
-    switch (id) {
-      case 'trace':
-        return (
-          <div key="trace" className="flex flex-4">
-            <InputTrace
-              input={{ brake, throttle, clutch, brakeAbsActive, steer }}
-              settings={settings?.trace}
-            />
-          </div>
-        );
-      case 'bar':
-        return (
-          <div key="bar" className="flex flex-1 min-w-0">
-            <InputBar
-              brake={brake}
-              brakeAbsActive={brakeAbsActive}
-              throttle={throttle}
-              clutch={clutch}
-              settings={settings.bar}
-            />
-          </div>
-        );
-      case 'gear':
-        return (
-          <div key="gear" className="flex flex-1 min-w-0">
-            <InputGear
-              gear={gear}
-              speedMs={speed}
-              unit={unit}
-              settings={settings.gear}
-            />
-          </div>
-        );
-      case 'abs':
-        return (
-          <div
-            key="abs"
-            className="flex flex-1 min-w-0 items-center justify-center p-2"
-          >
-            <InputAbsIndicator
-              absActive={brakeAbsActive ?? false}
-              className="w-full h-full aspect-[512/357.25]"
-            />
-          </div>
-        );
-      case 'steer':
-        return (
-          <div key="steer" className="flex flex-1 min-w-0">
-            <InputSteer
-              angleRad={steer}
-              wheelStyle={settings?.steer?.config?.style}
-              wheelColor={settings?.steer?.config?.color}
-            />
-          </div>
-        );
-    }
-  };
+  const renderSection = useCallback(
+    (id: InputSection) => {
+      switch (id) {
+        case 'trace':
+          return (
+            <div key="trace" className="flex flex-4">
+              <InputTrace
+                input={{ brake, throttle, clutch, brakeAbsActive, steer }}
+                settings={settings.trace}
+              />
+            </div>
+          );
+        case 'bar':
+          return (
+            <div key="bar" className="flex flex-1 min-w-0">
+              <InputBar
+                brake={brake}
+                brakeAbsActive={brakeAbsActive}
+                throttle={throttle}
+                clutch={clutch}
+                settings={settings.bar}
+              />
+            </div>
+          );
+        case 'gear':
+          return (
+            <div key="gear" className="flex flex-1 min-w-0">
+              <InputGear
+                gear={gear}
+                speedMs={speed}
+                unit={unit}
+                settings={settings.gear}
+              />
+            </div>
+          );
+        case 'abs':
+          return (
+            <div
+              key="abs"
+              className="flex flex-1 min-w-0 items-center justify-center p-2"
+            >
+              <InputAbsIndicator
+                absActive={brakeAbsActive ?? false}
+                className="w-full h-full aspect-[512/357.25]"
+              />
+            </div>
+          );
+        case 'steer':
+          return (
+            <div key="steer" className="flex flex-1 min-w-0">
+              <InputSteer
+                angleRad={steer}
+                wheelStyle={settings.steer.config?.style}
+                wheelColor={settings.steer.config?.color}
+              />
+            </div>
+          );
+      }
+    },
+    [
+      brake,
+      throttle,
+      clutch,
+      gear,
+      speed,
+      steer,
+      unit,
+      brakeAbsActive,
+      settings,
+    ]
+  );
 
   return (
     <div
       className="w-full h-full inline-flex gap-1 p-2 rounded-md flex-row bg-slate-800/(--bg-opacity)"
       style={{
-        ['--bg-opacity' as string]: `${settings?.background?.opacity ?? 80}%`,
+        ['--bg-opacity' as string]: `${settings.background?.opacity ?? 80}%`,
       }}
     >
       {orderedSections.map(renderSection)}
