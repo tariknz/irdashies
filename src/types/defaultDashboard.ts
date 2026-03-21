@@ -16,6 +16,7 @@ export const defaultDashboard: {
         height: 774,
       },
       config: {
+        useLivePosition: false,
         iratingChange: {
           enabled: true,
         },
@@ -31,9 +32,11 @@ export const defaultDashboard: {
         },
         gap: {
           enabled: false,
+          decimalPlaces: 1,
         },
         interval: {
           enabled: false,
+          decimalPlaces: 1,
         },
         lastTime: {
           enabled: true,
@@ -72,6 +75,7 @@ export const defaultDashboard: {
         },
         carManufacturer: {
           enabled: true,
+          hideIfSingleMake: false,
         },
         lapTimeDeltas: {
           enabled: false,
@@ -82,6 +86,7 @@ export const defaultDashboard: {
           numNonClassDrivers: 3,
           minPlayerClassDrivers: 10,
           numTopDrivers: 3,
+          topDriverDivider: 'theme',
         },
         titleBar: {
           enabled: false,
@@ -116,6 +121,9 @@ export const defaultDashboard: {
           trackWetness: {
             enabled: false,
           },
+          precipitation: {
+            enabled: false,
+          },
           airTemperature: {
             enabled: false,
             unit: 'Metric',
@@ -123,6 +131,9 @@ export const defaultDashboard: {
           trackTemperature: {
             enabled: false,
             unit: 'Metric',
+          },
+          wind: {
+            enabled: false,
           },
           trackName: {
             enabled: false,
@@ -136,8 +147,10 @@ export const defaultDashboard: {
             'localTime',
             'sessionClockTime',
             'trackWetness',
+            'precipitation',
             'airTemperature',
             'trackTemperature',
+            'wind',
             'trackName',
           ],
         },
@@ -168,6 +181,9 @@ export const defaultDashboard: {
           trackWetness: {
             enabled: true,
           },
+          precipitation: {
+            enabled: false,
+          },
           airTemperature: {
             enabled: true,
             unit: 'Metric',
@@ -175,6 +191,9 @@ export const defaultDashboard: {
           trackTemperature: {
             enabled: true,
             unit: 'Metric',
+          },
+          wind: {
+            enabled: false,
           },
           trackName: {
             enabled: false,
@@ -188,8 +207,10 @@ export const defaultDashboard: {
             'localTime',
             'sessionClockTime',
             'trackWetness',
+            'precipitation',
             'airTemperature',
             'trackTemperature',
+            'wind',
             'trackName',
           ],
         },
@@ -346,6 +367,7 @@ export const defaultDashboard: {
       },
       config: {
         buffer: 3,
+        useLivePosition: false,
         background: {
           opacity: 80,
         },
@@ -372,6 +394,7 @@ export const defaultDashboard: {
         },
         carManufacturer: {
           enabled: true,
+          hideIfSingleMake: false,
         },
         badge: {
           enabled: true,
@@ -458,6 +481,9 @@ export const defaultDashboard: {
             enabled: false,
             unit: 'Metric',
           },
+          wind: {
+            enabled: false,
+          },
           trackName: {
             enabled: false,
           },
@@ -473,6 +499,7 @@ export const defaultDashboard: {
             'precipitation',
             'airTemperature',
             'trackTemperature',
+            'wind',
             'trackName',
           ],
         },
@@ -514,6 +541,9 @@ export const defaultDashboard: {
             enabled: true,
             unit: 'Metric',
           },
+          wind: {
+            enabled: false,
+          },
           trackName: {
             enabled: false,
           },
@@ -529,6 +559,7 @@ export const defaultDashboard: {
             'precipitation',
             'airTemperature',
             'trackTemperature',
+            'wind',
             'trackName',
           ],
         },
@@ -641,6 +672,7 @@ export const defaultDashboard: {
         wind: {
           enabled: true,
         },
+        showOnlyWhenOnTrack: false,
         sessionVisibility: {
           race: true,
           loneQualify: true,
@@ -662,6 +694,14 @@ export const defaultDashboard: {
       config: {
         distanceThreshold: -1.5,
         onlyShowFasterClasses: true,
+        showOnlyWhenOnTrack: false,
+        numberDriversBehind: 3,
+        alignDriverBoxes: 'Top',
+        closestDriverBox: 'Top',
+        showName: true,
+        removeNumbersFromName: false,
+        showDistance: true,
+        showBadge: false,
         sessionVisibility: {
           race: true,
           loneQualify: false,
@@ -711,6 +751,9 @@ export const defaultDashboard: {
         enableStorage: true,
         enableLogging: false,
         showFuelStatusBorder: true,
+        economyPredictMode: 'live',
+        useGeneralFontSize: false,
+        useGeneralCompactMode: false,
         sessionVisibility: {
           race: true,
           loneQualify: true,
@@ -803,6 +846,7 @@ export const defaultDashboard: {
         height: 500,
       },
       config: {
+        showOnlyWhenOnTrack: false,
         distAhead: 4.5,
         distBehind: 4.5,
         background: {
@@ -895,6 +939,13 @@ export const defaultDashboard: {
         showPastPitBox: false,
         showSpeedSummary: true,
         speedLimitStyle: 'text',
+        progressBarOrientation: 'horizontal',
+        speedBarOrientation: 'horizontal',
+        showProgressBar: true,
+        showSpeedBar: true,
+        showPitExitInputs: false,
+        pitExitInputs: { throttle: true, clutch: false },
+        showInputsPhase: 'atPitbox',
         background: { opacity: 80 },
         sessionVisibility: {
           race: true,
