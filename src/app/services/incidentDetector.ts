@@ -57,6 +57,7 @@ export class IncidentDetector {
   }) {
     this.carStates.clear();
     this.sessionDrivers.clear();
+    this.frameBuffers.clear();
     session.DriverInfo?.Drivers?.forEach((d) => {
       this.sessionDrivers.set(d.CarIdx, {
         name: d.UserName,

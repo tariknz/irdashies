@@ -310,7 +310,7 @@ describe('dev mode debug snapshots', () => {
       makeTelemetry({ carIdxOnPitRoad: [true], sessionTime: 100.64 }),
       5000
     );
-    expect(incidents[0].debug?.frameHistory.length).toBeLessThanOrEqual(10);
+    expect(incidents[0].debug?.frameHistory.length).toBe(10);
   });
 });
 
