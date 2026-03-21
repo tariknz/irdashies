@@ -805,4 +805,14 @@ export class WebSocketBridge implements IrSdkBridge {
       }
     });
   }
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  changeCameraNumber(_driver: number, _group: number, _camera: number): void {
+    // Not supported in browser component mode
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  changeReplayPosition(_position: number, _frame: number): void {
+    // Not supported in browser component mode
+  }
 }

@@ -20,6 +20,7 @@ import started from 'electron-squirrel-startup';
 import { Analytics } from './app/analytics';
 import { registerHideUiShortcut } from './app/globalShortcuts';
 import { setupReferenceLapsBridge } from './app/bridge/referenceLapsBridge';
+import { setupRaceControlBridge } from './app/bridge/raceControlBridge';
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) app.quit();
@@ -50,6 +51,7 @@ app.on('ready', async () => {
   setupFuelCalculatorBridge();
   setupPitLaneBridge();
   setupReferenceLapsBridge();
+  setupRaceControlBridge();
 
   // Start component server for browser components
   await startComponentServer(bridge, dashboardBridge);

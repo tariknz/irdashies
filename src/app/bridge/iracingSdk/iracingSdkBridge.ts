@@ -147,5 +147,9 @@ export async function publishIRacingSDKEvents(
       runningStateCallbacks.clear();
       perfMetrics.stopReporting();
     },
+    changeCameraNumber: (driver, group, camera) =>
+      sdk.changeCameraNumber(driver, group, camera),
+    changeReplayPosition: (position, frame) =>
+      sdk.changeReplayPosition(position, frame),
   };
 }
