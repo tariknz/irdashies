@@ -147,7 +147,11 @@ export const WidgetContainer = memo(
     return (
       <div style={containerStyle} data-widget-id={id}>
         {/* Widget content */}
-        <div className={`w-full h-full pointer-events-none`}>{children}</div>
+        <div
+          className={`w-full h-full ${widget.config?.interactive ? 'pointer-events-auto' : 'pointer-events-none'}`}
+        >
+          {children}
+        </div>
 
         {/* Edit mode overlay */}
         {editMode && (

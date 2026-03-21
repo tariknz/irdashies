@@ -96,6 +96,10 @@ export class OverlayManager {
     // Always create a window for the primary display (fallback for unmatched widgets)
     displaysWithWidgets.add(primaryDisplay.id);
 
+    const hasInteractiveWidgets = dashboardLayout.widgets.some(
+      (w) => w.enabled && w.config?.interactive === true
+    );
+
     for (const display of allDisplays) {
       if (!displaysWithWidgets.has(display.id)) {
         console.log(
@@ -104,7 +108,7 @@ export class OverlayManager {
         continue;
       }
       const isPrimary = display.id === primaryDisplay.id;
-      this.createWindowForDisplay(display, isPrimary);
+      this.createWindowForDisplay(display, isPrimary, hasInteractiveWidgets);
     }
 
     this.createSettingsWindow();
@@ -115,7 +119,8 @@ export class OverlayManager {
    */
   private createWindowForDisplay(
     display: Electron.Display,
-    isPrimary: boolean
+    isPrimary: boolean,
+    hasInteractiveWidgets = false
   ): BrowserWindow {
     const existing = this.displayWindows.get(display.id);
     if (existing && !existing.isDestroyed()) {
@@ -163,7 +168,11 @@ export class OverlayManager {
       evt.preventDefault();
     });
 
-    browserWindow.setIgnoreMouseEvents(this.isLocked);
+    if (hasInteractiveWidgets) {
+      browserWindow.setIgnoreMouseEvents(false);
+    } else {
+      browserWindow.setIgnoreMouseEvents(true, { forward: true });
+    }
     browserWindow.setVisibleOnAllWorkspaces(true, {
       visibleOnFullScreen: true,
     });
