@@ -1,4 +1,4 @@
-import { memo, useState, useEffect } from 'react';
+import { memo, useState } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import {
   GantryWidgetSettings,
@@ -11,8 +11,17 @@ const SETTING_ID = 'gantry';
 
 const defaultConfig = getWidgetDefaultConfig('gantry');
 
+type ThresholdKey =
+  | 'slowSpeedThreshold'
+  | 'slowFrameThreshold'
+  | 'suddenStopFromSpeed'
+  | 'suddenStopToSpeed'
+  | 'suddenStopFrames'
+  | 'offTrackDebounce'
+  | 'cooldownSeconds';
+
 const thresholdFields: {
-  key: keyof GantryConfig;
+  key: ThresholdKey;
   label: string;
   min: number;
   max: number;
@@ -73,90 +82,91 @@ export const GantrySettings = memo(() => {
       defaultConfig,
   });
 
-  useEffect(() => {
-    const config = settings.config;
-    const thresholds = {
-      slowSpeedThreshold: config.slowSpeedThreshold,
-      slowFrameThreshold: config.slowFrameThreshold,
-      suddenStopFromSpeed: config.suddenStopFromSpeed,
-      suddenStopToSpeed: config.suddenStopToSpeed,
-      suddenStopFrames: config.suddenStopFrames,
-      offTrackDebounce: config.offTrackDebounce,
-      cooldownSeconds: config.cooldownSeconds,
-    };
-    window.raceControlBridge?.updateThresholds(thresholds);
-    window.raceControlBridge?.updateRetention(config.sessionRetention);
-  }, [settings.config]);
+  if (!currentDashboard) return null;
 
-  if (!currentDashboard) {
-    return <>Loading...</>;
-  }
+  const config = settings.config;
 
   return (
-    <BaseSettingsSection
-      title="Gantry"
-      description="Configure incident detection thresholds and session retention for the Gantry race control overlay."
-      settings={settings}
-      onSettingsChange={setSettings}
-      widgetId={SETTING_ID}
-    >
-      {(handleConfigChange) => {
-        const config = settings.config;
-        return (
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <h3 className="text-sm font-medium text-slate-200">
-                Incident Detection
-              </h3>
-              <div className="flex flex-col gap-2">
-                {thresholdFields.map(({ key, label, min, max }) => (
-                  <label
-                    key={key}
-                    className="flex items-center justify-between text-xs text-slate-300"
-                  >
-                    <span>{label}</span>
-                    <input
-                      type="number"
-                      min={min}
-                      max={max}
-                      value={config[key] as number}
-                      onChange={(e) =>
-                        handleConfigChange({ [key]: Number(e.target.value) })
-                      }
-                      className="w-16 bg-slate-700 rounded px-1 py-0.5 text-right"
-                    />
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <h3 className="text-sm font-medium text-slate-200">
-                Session Retention
-              </h3>
-              <label className="flex items-center justify-between text-xs text-slate-300">
-                <span>Keep sessions</span>
-                <select
-                  value={config.sessionRetention}
+    <div className="flex flex-col gap-4">
+      <BaseSettingsSection
+        title="Incident Detection"
+        description="Configure thresholds used to detect incidents on track."
+        settings={settings}
+        onSettingsChange={setSettings}
+        widgetId={SETTING_ID}
+        disableInternalScroll
+        onConfigChange={(newConfig) => {
+          const merged = { ...config, ...newConfig };
+          const thresholds = {
+            slowSpeedThreshold: merged.slowSpeedThreshold,
+            slowFrameThreshold: merged.slowFrameThreshold,
+            suddenStopFromSpeed: merged.suddenStopFromSpeed,
+            suddenStopToSpeed: merged.suddenStopToSpeed,
+            suddenStopFrames: merged.suddenStopFrames,
+            offTrackDebounce: merged.offTrackDebounce,
+            cooldownSeconds: merged.cooldownSeconds,
+          };
+          window.raceControlBridge?.updateThresholds(thresholds);
+        }}
+      >
+        {(handleConfigChange) => (
+          <div className="flex flex-col gap-2">
+            {thresholdFields.map(({ key, label, min, max }) => (
+              <label
+                key={key}
+                className="flex items-center justify-between text-xs text-slate-300"
+              >
+                <span>{label}</span>
+                <input
+                  type="number"
+                  min={min}
+                  max={max}
+                  value={config[key]}
                   onChange={(e) =>
-                    handleConfigChange({
-                      sessionRetention: e.target
-                        .value as GantryConfig['sessionRetention'],
-                    })
+                    handleConfigChange({ [key]: Number(e.target.value) })
                   }
-                  className="bg-slate-700 rounded px-2 py-0.5 text-xs"
-                >
-                  <option value="all">All</option>
-                  <option value={5}>Last 5</option>
-                  <option value={10}>Last 10</option>
-                  <option value={20}>Last 20</option>
-                </select>
+                  className="w-16 bg-slate-700 rounded px-1 py-0.5 text-right"
+                />
               </label>
-            </div>
+            ))}
           </div>
-        );
-      }}
-    </BaseSettingsSection>
+        )}
+      </BaseSettingsSection>
+
+      <BaseSettingsSection
+        title="Session Retention"
+        description="Configure how many past sessions to keep in the Gantry overlay."
+        settings={settings}
+        onSettingsChange={setSettings}
+        widgetId={SETTING_ID}
+        disableInternalScroll
+        onConfigChange={(newConfig) => {
+          const merged = { ...config, ...newConfig };
+          window.raceControlBridge?.updateRetention(merged.sessionRetention);
+        }}
+      >
+        {(handleConfigChange) => (
+          <label className="flex items-center justify-between text-xs text-slate-300">
+            <span>Keep sessions</span>
+            <select
+              value={config.sessionRetention}
+              onChange={(e) =>
+                handleConfigChange({
+                  sessionRetention: e.target
+                    .value as GantryConfig['sessionRetention'],
+                })
+              }
+              className="bg-slate-700 rounded px-2 py-0.5 text-xs"
+            >
+              <option value="all">All</option>
+              <option value={5}>Last 5</option>
+              <option value={10}>Last 10</option>
+              <option value={20}>Last 20</option>
+            </select>
+          </label>
+        )}
+      </BaseSettingsSection>
+    </div>
   );
 });
 GantrySettings.displayName = 'GantrySettings';
