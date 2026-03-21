@@ -256,7 +256,7 @@ export const defaultDashboard: {
         x: 622,
         y: 864,
         width: 396,
-        height: 113,
+        height: 92,
       },
       config: {
         useRawValues: false,
@@ -283,7 +283,7 @@ export const defaultDashboard: {
           unit: 'auto',
         },
         abs: {
-          enabled: true,
+          enabled: false,
         },
         steer: {
           enabled: true,
