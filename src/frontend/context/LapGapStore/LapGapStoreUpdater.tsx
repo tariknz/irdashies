@@ -1,4 +1,4 @@
-import { memo, useEffect, useRef } from 'react';
+import { memo, useEffect, useMemo, useRef } from 'react';
 import { useTelemetryValuesRounded } from '../TelemetryStore/TelemetryStore';
 import { useLapGapStore } from './LapGapStore';
 import { useDriverStandings } from '../../components/Standings/hooks/useDriverStandings';
@@ -14,9 +14,13 @@ export const LapGapStoreUpdater = memo(() => {
     gap: { enabled: true },
   } as Parameters<typeof useDriverStandings>[0]);
   // Flatten all drivers from all classes into a single lookup
-  const allDrivers = standingsByClass.flatMap(
-    ([, classDrivers]) => classDrivers
+  const allDrivers = useMemo(
+    () => standingsByClass.flatMap(([, classDrivers]) => classDrivers),
+    [standingsByClass]
   );
+  // Mirror latest standings in a ref to avoid stale closure in useEffect
+  const allDriversRef = useRef(allDrivers);
+  allDriversRef.current = allDrivers;
 
   useEffect(() => {
     if (!carIdxLap) return;
@@ -25,10 +29,14 @@ export const LapGapStoreUpdater = memo(() => {
         prevLapsRef.current[carIdx] !== undefined &&
         lap > prevLapsRef.current[carIdx]
       ) {
-        // Lap just completed — record gap to class leader
-        const driver = allDrivers.find((d) => d.carIdx === carIdx);
+        // Lap just completed — record gap to class leader at the completed lap number
+        const driver = allDriversRef.current.find((d) => d.carIdx === carIdx);
         if (driver) {
-          recordLapGap(carIdx, lap, driver.gap?.value ?? 0);
+          recordLapGap(
+            carIdx,
+            prevLapsRef.current[carIdx],
+            driver.gap?.value ?? 0
+          );
         }
       }
     });
