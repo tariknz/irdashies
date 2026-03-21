@@ -1,4 +1,4 @@
-import React, { memo, useState } from 'react';
+import React, { memo, useMemo, useState } from 'react';
 import { GantryTabBar } from './components/GantryTabBar/GantryTabBar';
 import { GantryStandings } from './components/GantryStandings/GantryStandings';
 import { GantryIncidents } from './components/GantryIncidents/GantryIncidents';
@@ -18,13 +18,17 @@ const GantryInner = memo(() => {
 
   // useDriverStandings returns [classId, Standings[]][] — flatten to get all drivers for tab bar
   const standingsByClass = useDriverStandings();
-  const drivers = standingsByClass
-    .flatMap(([, classDrivers]) => classDrivers)
-    .map((s) => ({
-      carIdx: s.carIdx,
-      name: s.driver.name,
-      carNumber: s.driver.carNum,
-    }));
+  const drivers = useMemo(
+    () =>
+      standingsByClass
+        .flatMap(([, classDrivers]) => classDrivers)
+        .map((s) => ({
+          carIdx: s.carIdx,
+          name: s.driver.name,
+          carNumber: s.driver.carNum,
+        })),
+    [standingsByClass]
+  );
 
   return (
     <div className="w-full h-full flex flex-col bg-slate-900/(--bg-opacity) text-white overflow-hidden">
