@@ -241,6 +241,79 @@ describe('crash detection - sustained slow', () => {
   });
 });
 
+describe('dev mode debug snapshots', () => {
+  const setupDetector = (isDev: boolean) => {
+    const detector = new IncidentDetector(defaultThresholds, isDev);
+    const incidents: Incident[] = [];
+    detector.onIncident((i) => incidents.push(i));
+    detector.updateSession({
+      DriverInfo: {
+        Drivers: [
+          {
+            CarIdx: 0,
+            UserName: 'Test',
+            CarNumber: '99',
+            TeamName: '',
+            CarIsPaceCar: 0,
+          },
+        ],
+      },
+    });
+    return { detector, incidents };
+  };
+
+  it('attaches debug snapshot when isDev=true', () => {
+    const { detector, incidents } = setupDetector(true);
+    detector.processTelemetry(
+      makeTelemetry({ carIdxOnPitRoad: [false] }),
+      5000
+    );
+    detector.processTelemetry(
+      makeTelemetry({ carIdxOnPitRoad: [true], sessionTime: 100.04 }),
+      5000
+    );
+    const debug = incidents[0].debug;
+    expect(debug).toBeDefined();
+    expect(debug?.trigger).toBe('pit-entry');
+    expect(debug?.evidence).toContain('Pit entry');
+    expect(debug?.thresholds.slowSpeedThreshold).toBe(15);
+    expect(debug?.frameHistory).toBeInstanceOf(Array);
+  });
+
+  it('does not attach debug snapshot when isDev=false', () => {
+    const { detector, incidents } = setupDetector(false);
+    detector.processTelemetry(
+      makeTelemetry({ carIdxOnPitRoad: [false] }),
+      5000
+    );
+    detector.processTelemetry(
+      makeTelemetry({ carIdxOnPitRoad: [true], sessionTime: 100.04 }),
+      5000
+    );
+    expect(incidents[0].debug).toBeUndefined();
+  });
+
+  it('frameHistory contains up to 10 most recent frames', () => {
+    const { detector, incidents } = setupDetector(true);
+    // Run 15 frames before triggering pit entry
+    for (let i = 0; i < 15; i++) {
+      detector.processTelemetry(
+        makeTelemetry({
+          carIdxOnPitRoad: [false],
+          sessionTime: 100 + i * 0.04,
+          carIdxLapDistPct: [0.5 + i * 0.001],
+        }),
+        5000
+      );
+    }
+    detector.processTelemetry(
+      makeTelemetry({ carIdxOnPitRoad: [true], sessionTime: 100.64 }),
+      5000
+    );
+    expect(incidents[0].debug?.frameHistory.length).toBeLessThanOrEqual(10);
+  });
+});
+
 describe('flag detection', () => {
   it('fires BlackFlag when Black flag bit newly set', () => {
     const detector = new IncidentDetector(defaultThresholds, false);

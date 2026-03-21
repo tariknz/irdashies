@@ -2,6 +2,7 @@ import type {
   Incident,
   IncidentThresholds,
   CarIncidentState,
+  IncidentDebugSnapshot,
 } from '../../types/raceControl';
 import { IncidentType } from '../../types/raceControl';
 import { TrackLocation, GlobalFlags } from '../irsdk/types/enums';
@@ -27,6 +28,10 @@ export class IncidentDetector {
     { name: string; carNumber: string; teamName: string; isPaceCar: boolean }
   >();
   private isDev: boolean;
+  private frameBuffers = new Map<
+    number,
+    IncidentDebugSnapshot['frameHistory']
+  >();
 
   constructor(
     private thresholds: IncidentThresholds,
@@ -113,6 +118,43 @@ export class IncidentDetector {
     return nowMs - last < this.thresholds.cooldownSeconds * 1000;
   }
 
+  private pushFrameHistory(
+    carIdx: number,
+    entry: IncidentDebugSnapshot['frameHistory'][number]
+  ) {
+    if (!this.isDev) return;
+    const buf = this.frameBuffers.get(carIdx) ?? [];
+    buf.push(entry);
+    if (buf.length > 10) buf.shift();
+    this.frameBuffers.set(carIdx, buf);
+  }
+
+  private buildDebugSnapshot(
+    carIdx: number,
+    state: CarIncidentState,
+    trigger: IncidentDebugSnapshot['trigger'],
+    evidence: string
+  ): IncidentDebugSnapshot | undefined {
+    if (!this.isDev) return undefined;
+    return {
+      trigger,
+      evidence,
+      thresholds: { ...this.thresholds },
+      carStateAtDetection: {
+        speedHistory: [...state.speedHistory],
+        currentAvgSpeed: state.currentAvgSpeed,
+        recentRawSpeeds: [...state.recentRawSpeeds],
+        slowFrameCount: state.slowFrameCount,
+        offTrackFrameCount: state.offTrackFrameCount,
+        prevTrackSurface: state.prevTrackSurface,
+        prevSessionFlags: state.prevSessionFlags,
+        prevOnPitRoad: state.prevOnPitRoad,
+        prevLapDistPct: state.prevLapDistPct,
+      },
+      frameHistory: [...(this.frameBuffers.get(carIdx) ?? [])],
+    };
+  }
+
   private createIncidentBase(
     carIdx: number,
     telemetry: TelemetrySnapshot,
@@ -156,8 +198,15 @@ export class IncidentDetector {
         !this.isCoolingDown(state, IncidentType.PitEntry, nowMs)
       ) {
         state.lastIncidentTime[IncidentType.PitEntry] = nowMs;
+        const debug = this.buildDebugSnapshot(
+          carIdx,
+          state,
+          'pit-entry',
+          `Pit entry detected for car ${carIdx}`
+        );
         this.emit({
           ...this.createIncidentBase(carIdx, snap, IncidentType.PitEntry),
+          debug,
         });
       }
 
@@ -179,6 +228,13 @@ export class IncidentDetector {
         state.speedHistory.reduce((a, b) => a + b, 0) /
         state.speedHistory.length;
 
+      this.pushFrameHistory(carIdx, {
+        speed: rawSpeed,
+        lapDistPct: snap.carIdxLapDistPct[carIdx] ?? 0,
+        trackSurface: surface,
+        sessionTime: snap.sessionTime,
+      });
+
       // --- Off-track ---
       if (surface === TrackLocation.OffTrack) {
         state.offTrackFrameCount++;
@@ -187,8 +243,15 @@ export class IncidentDetector {
           !this.isCoolingDown(state, IncidentType.OffTrack, nowMs)
         ) {
           state.lastIncidentTime[IncidentType.OffTrack] = nowMs;
+          const debug = this.buildDebugSnapshot(
+            carIdx,
+            state,
+            'off-track',
+            `Off-track for ${state.offTrackFrameCount} frames`
+          );
           this.emit({
             ...this.createIncidentBase(carIdx, snap, IncidentType.OffTrack),
+            debug,
           });
         }
       } else {
@@ -205,8 +268,15 @@ export class IncidentDetector {
         !this.isCoolingDown(state, IncidentType.BlackFlag, nowMs)
       ) {
         state.lastIncidentTime[IncidentType.BlackFlag] = nowMs;
+        const debug = this.buildDebugSnapshot(
+          carIdx,
+          state,
+          'black-flag',
+          `Black flag for car ${carIdx}`
+        );
         this.emit({
           ...this.createIncidentBase(carIdx, snap, IncidentType.BlackFlag),
+          debug,
         });
       }
       if (
@@ -214,8 +284,15 @@ export class IncidentDetector {
         !this.isCoolingDown(state, IncidentType.Slowdown, nowMs)
       ) {
         state.lastIncidentTime[IncidentType.Slowdown] = nowMs;
+        const debug = this.buildDebugSnapshot(
+          carIdx,
+          state,
+          'slowdown-flag',
+          `Slowdown flag for car ${carIdx}`
+        );
         this.emit({
           ...this.createIncidentBase(carIdx, snap, IncidentType.Slowdown),
+          debug,
         });
       }
 
@@ -230,8 +307,15 @@ export class IncidentDetector {
             !this.isCoolingDown(state, IncidentType.Crash, nowMs)
           ) {
             state.lastIncidentTime[IncidentType.Crash] = nowMs;
+            const debug = this.buildDebugSnapshot(
+              carIdx,
+              state,
+              'sustained-slow',
+              `avgSpeed ${state.currentAvgSpeed.toFixed(1)} km/h < threshold ${this.thresholds.slowSpeedThreshold} km/h for ${state.slowFrameCount} frames`
+            );
             this.emit({
               ...this.createIncidentBase(carIdx, snap, IncidentType.Crash),
+              debug,
             });
           }
         } else {
@@ -253,8 +337,15 @@ export class IncidentDetector {
           !this.isCoolingDown(state, IncidentType.Crash, nowMs)
         ) {
           state.lastIncidentTime[IncidentType.Crash] = nowMs;
+          const debug = this.buildDebugSnapshot(
+            carIdx,
+            state,
+            'sudden-stop',
+            `Speed dropped from ${state.recentRawSpeeds[0]?.toFixed(1)} to ${rawSpeed.toFixed(1)} km/h`
+          );
           this.emit({
             ...this.createIncidentBase(carIdx, snap, IncidentType.Crash),
+            debug,
           });
         }
       }
