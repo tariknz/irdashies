@@ -39,7 +39,8 @@ export const WIDGET_MAP: Record<
   tachometer: Tachometer,
   flag: Flag,
   twitchchat: TwitchChat,
-  gantry: Gantry,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  gantry: Gantry as any,
 };
 
 export type WidgetId = keyof typeof WIDGET_MAP;
