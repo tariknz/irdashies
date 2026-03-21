@@ -239,7 +239,7 @@ export interface InputConfig {
     unit: 'mph' | 'km/h' | 'auto' | 'none';
     showspeed: boolean;
   };
-  abs?: { enabled: boolean };
+  abs: { enabled: boolean };
   steer: {
     enabled: boolean;
     config: SteerConfig;
@@ -250,14 +250,14 @@ export interface InputConfig {
   sessionVisibility: SessionVisibilitySettings;
 }
 
-export interface TachometerConfig {  
+export interface TachometerConfig {
   showRpmText: boolean;
-  rpmOrientation?: 'horizontal' | 'vertical'
+  rpmOrientation?: 'horizontal' | 'vertical';
   shiftPointStyle?: 'glow' | 'pulse' | 'border';
   shiftPointSettings: {
-    enabled: boolean,
+    enabled: boolean;
     indicatorType: 'glow' | 'pulse' | 'border';
-    indicatorColor: string,
+    indicatorColor: string;
     carConfigs: Record<
       string,
       {
@@ -269,7 +269,7 @@ export interface TachometerConfig {
         gearShiftPoints: Record<string, { shiftRpm: number }>;
       }
     >;
-  },  
+  };
   background: { opacity: number };
   showOnlyWhenOnTrack: boolean;
   sessionVisibility: SessionVisibilitySettings;
