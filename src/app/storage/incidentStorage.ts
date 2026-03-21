@@ -41,7 +41,11 @@ export function appendIncident(
   const filePath = getFilePath(sessionId, storageDir);
   const existing = loadIncidents(sessionId, storageDir);
   existing.push(incident);
-  fs.writeFileSync(filePath, JSON.stringify(existing));
+  try {
+    fs.writeFileSync(filePath, JSON.stringify(existing));
+  } catch (err) {
+    console.error('Failed to write incident file:', err);
+  }
 }
 
 export function clearIncidents(
@@ -49,7 +53,13 @@ export function clearIncidents(
   storageDir = getStorageDir()
 ) {
   const filePath = getFilePath(sessionId, storageDir);
-  if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+  if (fs.existsSync(filePath)) {
+    try {
+      fs.unlinkSync(filePath);
+    } catch (err) {
+      console.error('Failed to delete incident file:', err);
+    }
+  }
 }
 
 export function listSessionFiles(storageDir = getStorageDir()): string[] {
@@ -58,7 +68,9 @@ export function listSessionFiles(storageDir = getStorageDir()): string[] {
     .readdirSync(storageDir)
     .filter((f) => f.startsWith('incidents-') && f.endsWith('.json'))
     .map((f) => path.join(storageDir, f))
-    .sort((a, b) => fs.statSync(a).mtimeMs - fs.statSync(b).mtimeMs); // oldest first
+    .map((fullPath) => ({ fullPath, mtime: fs.statSync(fullPath).mtimeMs }))
+    .sort((a, b) => a.mtime - b.mtime)
+    .map(({ fullPath }) => fullPath);
 }
 
 export function pruneOldSessions(

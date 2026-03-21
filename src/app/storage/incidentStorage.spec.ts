@@ -79,7 +79,9 @@ describe('incidentStorage', () => {
     appendIncident('s5', makeIncident('5'), tmpDir);
     appendIncident('s6', makeIncident('6'), tmpDir);
     pruneOldSessions(5, tmpDir);
-    expect(listSessionFiles(tmpDir)).toHaveLength(5);
+    const remaining = listSessionFiles(tmpDir);
+    expect(remaining).toHaveLength(5);
     // s1 (oldest) should be gone
+    expect(remaining.some((f) => f.includes('incidents-s1.json'))).toBe(false);
   });
 });
