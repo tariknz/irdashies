@@ -250,14 +250,14 @@ export interface InputConfig {
   sessionVisibility: SessionVisibilitySettings;
 }
 
-export interface TachometerConfig {  
+export interface TachometerConfig {
   showRpmText: boolean;
-  rpmOrientation?: 'horizontal' | 'vertical'
+  rpmOrientation?: 'horizontal' | 'vertical';
   shiftPointStyle?: 'glow' | 'pulse' | 'border';
   shiftPointSettings: {
-    enabled: boolean,
+    enabled: boolean;
     indicatorType: 'glow' | 'pulse' | 'border';
-    indicatorColor: string,
+    indicatorColor: string;
     carConfigs: Record<
       string,
       {
@@ -269,7 +269,7 @@ export interface TachometerConfig {
         gearShiftPoints: Record<string, { shiftRpm: number }>;
       }
     >;
-  },  
+  };
   background: { opacity: number };
   showOnlyWhenOnTrack: boolean;
   sessionVisibility: SessionVisibilitySettings;
@@ -441,6 +441,25 @@ export interface TwitchChatConfig {
   background: { opacity: number };
 }
 
+export type SessionRetention = 'all' | 5 | 10 | 20;
+
+export interface GantryConfig {
+  // Incident detection thresholds
+  slowSpeedThreshold: number;
+  slowFrameThreshold: number;
+  suddenStopFromSpeed: number;
+  suddenStopToSpeed: number;
+  suddenStopFrames: number;
+  offTrackDebounce: number;
+  cooldownSeconds: number;
+  // Persistence
+  sessionRetention: SessionRetention;
+  // Required for mouse interaction
+  interactive: true;
+}
+
+export type GantryWidgetSettings = BaseWidgetSettings<GantryConfig>;
+
 // ===========================
 // Widget config map + typed widget
 // ===========================
@@ -462,6 +481,7 @@ export interface WidgetConfigMap {
   fastercarsfrombehind: FasterCarsFromBehindConfig;
   pitlanehelper: PitlaneHelperConfig;
   twitchchat: TwitchChatConfig;
+  gantry: GantryConfig;
 }
 
 export type TypedDashboardWidget<

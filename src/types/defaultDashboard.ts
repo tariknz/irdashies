@@ -330,7 +330,7 @@ export const defaultDashboard: {
           practice: true,
           offlineTesting: true,
         },
-      }
+      },
     },
     {
       id: 'relative',
@@ -900,6 +900,27 @@ export const defaultDashboard: {
           practice: true,
           offlineTesting: true,
         },
+      },
+    },
+    {
+      id: 'gantry',
+      enabled: true,
+      layout: {
+        x: 0,
+        y: 0,
+        width: 1920,
+        height: 1080,
+      },
+      config: {
+        slowSpeedThreshold: 15,
+        slowFrameThreshold: 10,
+        suddenStopFromSpeed: 80,
+        suddenStopToSpeed: 20,
+        suddenStopFrames: 3,
+        offTrackDebounce: 3,
+        cooldownSeconds: 5,
+        sessionRetention: 'all',
+        interactive: true,
       },
     },
     {
