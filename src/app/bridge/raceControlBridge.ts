@@ -15,6 +15,8 @@ function parseTrackLengthM(str: string): number {
   return parseFloat(str) * 1000;
 }
 
+const REPLAY_FPS = 60;
+
 const defaultThresholds: IncidentThresholds = {
   slowSpeedThreshold: 15,
   slowFrameThreshold: 10,
@@ -43,35 +45,54 @@ export const setupRaceControlBridge = () => {
     broadcast(incident);
   });
 
+  let unsubscribeSession: (() => void) | undefined;
+  let unsubscribeTelemetry: (() => void) | undefined;
+
   const wireToTelemetryBridge = () => {
+    // Clean up previous subscriptions before re-wiring
+    unsubscribeSession?.();
+    unsubscribeTelemetry?.();
+
     const bridge = getCurrentBridge();
     if (!bridge) return;
 
-    bridge.onSessionData((session) => {
-      detector.updateSession(session);
-      const trackLen = session?.WeekendInfo?.TrackLength;
-      if (trackLen) cachedTrackLengthM = parseTrackLengthM(trackLen);
-      const sessionId = session?.WeekendInfo?.SubSessionID?.toString() ?? '';
-      if (sessionId && sessionId !== currentSessionId) {
-        currentSessionId = sessionId;
-        pruneOldSessions(retention);
-      }
-    });
+    unsubscribeSession =
+      bridge.onSessionData((session) => {
+        detector.updateSession(session);
+        const trackLen = session?.WeekendInfo?.TrackLength;
+        if (trackLen) {
+          const parsed = parseTrackLengthM(trackLen);
+          if (Number.isFinite(parsed) && parsed > 0) {
+            cachedTrackLengthM = parsed;
+          } else {
+            console.warn(
+              '[RaceControl] Could not parse track length:',
+              trackLen
+            );
+          }
+        }
+        const sessionId = session?.WeekendInfo?.SubSessionID?.toString() ?? '';
+        if (sessionId && sessionId !== currentSessionId) {
+          currentSessionId = sessionId;
+          pruneOldSessions(retention);
+        }
+      }) ?? undefined;
 
-    bridge.onTelemetry((telemetry) => {
-      if (!cachedTrackLengthM) return;
-      const snap = {
-        sessionTime: telemetry.SessionTime?.value?.[0] ?? 0,
-        sessionNum: telemetry.SessionNum?.value?.[0] ?? 0,
-        replayFrameNum: telemetry.ReplayFrameNum?.value?.[0] ?? 0,
-        carIdxLapDistPct: telemetry.CarIdxLapDistPct?.value ?? [],
-        carIdxLap: telemetry.CarIdxLap?.value ?? [],
-        carIdxTrackSurface: telemetry.CarIdxTrackSurface?.value ?? [],
-        carIdxSessionFlags: telemetry.CarIdxSessionFlags?.value ?? [],
-        carIdxOnPitRoad: telemetry.CarIdxOnPitRoad?.value ?? [],
-      };
-      detector.processTelemetry(snap, cachedTrackLengthM);
-    });
+    unsubscribeTelemetry =
+      bridge.onTelemetry((telemetry) => {
+        if (!cachedTrackLengthM) return;
+        const snap = {
+          sessionTime: telemetry.SessionTime?.value?.[0] ?? 0,
+          sessionNum: telemetry.SessionNum?.value?.[0] ?? 0,
+          replayFrameNum: telemetry.ReplayFrameNum?.value?.[0] ?? 0,
+          carIdxLapDistPct: telemetry.CarIdxLapDistPct?.value ?? [],
+          carIdxLap: telemetry.CarIdxLap?.value ?? [],
+          carIdxTrackSurface: telemetry.CarIdxTrackSurface?.value ?? [],
+          carIdxSessionFlags: telemetry.CarIdxSessionFlags?.value ?? [],
+          carIdxOnPitRoad: telemetry.CarIdxOnPitRoad?.value ?? [],
+        };
+        detector.processTelemetry(snap, cachedTrackLengthM);
+      }) ?? undefined;
   };
 
   wireToTelemetryBridge();
@@ -101,12 +122,13 @@ export const setupRaceControlBridge = () => {
 
   ipcMain.handle(
     'raceControl:replayIncident',
-    async (_event, incident: Incident, seconds: number) => {
+    (_event, incident: Incident, seconds: number) => {
       const bridge = getCurrentBridge();
       if (!bridge) return;
-      const targetFrame = incident.replayFrameNum - Math.round(60 * seconds);
-      await bridge.changeCameraNumber(incident.carIdx, 0, 0);
-      await bridge.changeReplayPosition(
+      const targetFrame =
+        incident.replayFrameNum - Math.round(REPLAY_FPS * seconds);
+      bridge.changeCameraNumber(incident.carIdx, 0, 0);
+      bridge.changeReplayPosition(
         ReplayPositionCommand.Begin,
         Math.max(0, targetFrame)
       );
