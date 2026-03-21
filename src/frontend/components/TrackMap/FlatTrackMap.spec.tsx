@@ -30,7 +30,10 @@ describe('FlatTrackMap', () => {
   beforeEach(() => {
     vi.resetAllMocks();
     vi.mocked(useTrackId).mockReturnValue(1);
-    vi.mocked(useDriverProgress).mockReturnValue([]);
+    vi.mocked(useDriverProgress).mockReturnValue({
+      drivers: [],
+      identities: [],
+    });
     vi.mocked(useHighlightColor).mockReturnValue(undefined);
     vi.mocked(useDriverLivePositions).mockReturnValue([0, 0]);
     vi.mocked(useSessionVisibility).mockReturnValue(true);
@@ -196,26 +199,29 @@ describe('FlatTrackMap', () => {
       },
     });
     vi.mocked(useTrackId).mockReturnValue(1);
-    vi.mocked(useDriverProgress).mockReturnValue([
-      {
-        driver: { CarIdx: 0, CarNumber: '1', CarClassID: 1 } as any,
-        progress: 0.5,
-        isPlayer: true,
-        position: 1,
-      },
-      {
-        driver: { CarIdx: 1, CarNumber: '2', CarClassID: 2 } as any,
-        progress: 0.4,
-        isPlayer: false,
-        position: 2,
-      },
-      {
-        driver: { CarIdx: 2, CarNumber: '3', CarClassID: 1 } as any,
-        progress: 0.6,
-        isPlayer: false,
-        position: 3,
-      },
-    ] as any);
+    vi.mocked(useDriverProgress).mockReturnValue({
+      drivers: [
+        {
+          driver: { CarIdx: 0, CarNumber: '1', CarClassID: 1 } as any,
+          progress: 0.5,
+          isPlayer: true,
+          position: 1,
+        },
+        {
+          driver: { CarIdx: 1, CarNumber: '2', CarClassID: 2 } as any,
+          progress: 0.4,
+          isPlayer: false,
+          position: 2,
+        },
+        {
+          driver: { CarIdx: 2, CarNumber: '3', CarClassID: 1 } as any,
+          progress: 0.6,
+          isPlayer: false,
+          position: 3,
+        },
+      ],
+      identities: [],
+    } as any);
     vi.mocked(useTelemetryValue).mockReturnValue(true);
 
     const { container } = render(<FlatTrackMap />);
@@ -246,18 +252,21 @@ describe('FlatTrackMap', () => {
       },
     });
     vi.mocked(useTrackId).mockReturnValue(1);
-    vi.mocked(useDriverProgress).mockReturnValue([
-      {
-        driver: { CarIdx: 0, CarNumber: '1', CarClassID: 1 } as any,
-        progress: 0.5,
-        isPlayer: true,
-      },
-      {
-        driver: { CarIdx: 1, CarNumber: '2', CarClassID: 1 } as any,
-        progress: 0.4,
-        isPlayer: false,
-      },
-    ] as any);
+    vi.mocked(useDriverProgress).mockReturnValue({
+      drivers: [
+        {
+          driver: { CarIdx: 0, CarNumber: '1', CarClassID: 1 } as any,
+          progress: 0.5,
+          isPlayer: true,
+        },
+        {
+          driver: { CarIdx: 1, CarNumber: '2', CarClassID: 1 } as any,
+          progress: 0.4,
+          isPlayer: false,
+        },
+      ],
+      identities: [],
+    } as any);
     vi.mocked(useTelemetryValue).mockReturnValue(true);
 
     const { container } = render(<FlatTrackMap />);

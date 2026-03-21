@@ -35,8 +35,10 @@ export const useDriverProgress = () => {
     'CarIdxClassPosition'
   );
 
-  const driversTrackData = useMemo(() => {
-    if (!drivers || !driversLapDist.length) return [];
+  // Stable identity data — only recomputes when driver roster, player focus,
+  // or class positions change. Does NOT depend on driversLapDist.
+  const driverIdentities = useMemo(() => {
+    if (!drivers) return [];
 
     // Build carIdx -> qualifying class position map for fallback ordering
     const qualifyingPositionByCarIdx = new Map<number, number>();
@@ -81,25 +83,28 @@ export const useDriverProgress = () => {
     }
 
     return drivers
+      .filter((d) => d.CarIdx !== paceCarIdx)
       .map((driver) => ({
-        driver: driver,
-        progress: driversLapDist[driver.CarIdx] ?? -1,
+        driver,
         isPlayer: driver.CarIdx === driverIdx,
         classPosition:
           (carIdxClassPosition?.[driver.CarIdx] ?? 0) > 0
             ? carIdxClassPosition?.[driver.CarIdx]
             : effectivePosition[driver.CarIdx],
-      }))
-      .filter((d) => d.progress > -1) // ignore drivers not on track
-      .filter((d) => d.driver.CarIdx !== paceCarIdx); // ignore pace car
-  }, [
-    drivers,
-    driversLapDist,
-    driverIdx,
-    paceCarIdx,
-    carIdxClassPosition,
-    qualifyingResults,
-  ]);
+      }));
+  }, [drivers, driverIdx, paceCarIdx, carIdxClassPosition, qualifyingResults]);
 
-  return driversTrackData;
+  // Volatile progress data — recomputes on every position tick
+  const driversTrackData = useMemo(() => {
+    if (!driversLapDist.length) return [];
+
+    return driverIdentities
+      .map((identity) => ({
+        ...identity,
+        progress: driversLapDist[identity.driver.CarIdx] ?? -1,
+      }))
+      .filter((d) => d.progress > -1); // ignore drivers not on track
+  }, [driverIdentities, driversLapDist]);
+
+  return { drivers: driversTrackData, identities: driverIdentities };
 };
