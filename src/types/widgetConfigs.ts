@@ -441,6 +441,27 @@ export interface TwitchChatConfig {
   background: { opacity: number };
 }
 
+export interface LapTimeLogConfig {
+  showCurrentLap: boolean,
+  showPredictedLap: boolean,
+  showLastLap: boolean,
+  showBestLap: boolean,
+  delta: {
+    enabled: boolean,
+    method: 'lastlap' | 'bestlap',
+  },
+  history: {
+    enabled: boolean,
+    count: number,
+  },
+  scale: number;
+  alignment: 'top' | 'bottom';
+  reverse: boolean,
+  background: { opacity: number };
+  foreground: { opacity: number };
+  sessionVisibility: SessionVisibilitySettings;
+}
+
 // ===========================
 // Widget config map + typed widget
 // ===========================
@@ -462,6 +483,7 @@ export interface WidgetConfigMap {
   fastercarsfrombehind: FasterCarsFromBehindConfig;
   pitlanehelper: PitlaneHelperConfig;
   twitchchat: TwitchChatConfig;
+  laptimelog: LapTimeLogConfig;
 }
 
 export type TypedDashboardWidget<
@@ -552,3 +574,4 @@ export type FasterCarsFromBehindWidgetSettings =
 export type PitlaneHelperWidgetSettings =
   BaseWidgetSettings<PitlaneHelperConfig>;
 export type TwitchChatWidgetSettings = BaseWidgetSettings<TwitchChatConfig>;
+export type LapTimeLogWidgetSettings = BaseWidgetSettings<LapTimeLogConfig>;

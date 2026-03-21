@@ -9,7 +9,7 @@ export const formatTime = (seconds?: number, format: TimeFormat = 'full'): strin
   const hours = Math.floor(totalSeconds / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
   const remainingSeconds = totalSeconds % 60;
-
+  
   // Format based on specified format
   let formattedTime = '';
 
