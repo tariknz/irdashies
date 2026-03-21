@@ -12,7 +12,7 @@ const debug = import.meta.env.DEV || import.meta.env.MODE === 'storybook';
 
 export const FlatTrackMap = () => {
   const trackId = useTrackId();
-  const driversTrackData = useDriverProgress();
+  const { drivers: driversTrackData } = useDriverProgress();
   const settings = useFlatTrackMapSettings();
   const highlightColor = useHighlightColor();
   const isOnTrack = useTelemetryValue('IsOnTrack');
