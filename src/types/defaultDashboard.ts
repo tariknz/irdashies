@@ -282,6 +282,9 @@ export const defaultDashboard: {
           showspeed: true,
           unit: 'auto',
         },
+        abs: {
+          enabled: true,
+        },
         steer: {
           enabled: true,
           config: {
@@ -330,7 +333,7 @@ export const defaultDashboard: {
           practice: true,
           offlineTesting: true,
         },
-      }
+      },
     },
     {
       id: 'relative',
