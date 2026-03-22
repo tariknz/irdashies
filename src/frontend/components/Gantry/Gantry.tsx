@@ -3,7 +3,7 @@ import { GantryTabBar } from './components/GantryTabBar/GantryTabBar';
 import { GantryStandings } from './components/GantryStandings/GantryStandings';
 import { GantryIncidents } from './components/GantryIncidents/GantryIncidents';
 import { LapGraphView } from './components/LapGraph/LapGraphView';
-import { useRaceControlBridge } from '@irdashies/context';
+import { useRaceControlBridge, LapGapStoreUpdater } from '@irdashies/context';
 import { useDriverStandings } from '../Standings/hooks/useDriverStandings';
 
 type GantryView = 'standings-incidents' | 'lap-graph';
@@ -15,6 +15,7 @@ const GantryInner = memo(() => {
   const [followedCarIdx, setFollowedCarIdx] = useState<number | null>(null);
 
   useRaceControlBridge(); // subscribe to incidents on mount
+  // LapGapStoreUpdater watches CarIdxLap and snapshots gap-to-class-leader on each lap completion
 
   // useDriverStandings returns [classId, Standings[]][] — flatten to get all drivers for tab bar
   const standingsByClass = useDriverStandings();
@@ -32,6 +33,7 @@ const GantryInner = memo(() => {
 
   return (
     <div className="w-full h-full flex flex-col bg-slate-900/(--bg-opacity) text-white overflow-hidden">
+      <LapGapStoreUpdater />
       <GantryTabBar
         activeView={activeView}
         onViewChange={setActiveView}
