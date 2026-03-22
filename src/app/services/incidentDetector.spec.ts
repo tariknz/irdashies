@@ -349,6 +349,40 @@ describe('flag detection', () => {
     expect(incidents[0].type).toBe(IncidentType.BlackFlag);
   });
 
+  it('fires BlackFlag when Disqualify flag bit newly set', () => {
+    const detector = new IncidentDetector(defaultThresholds, false);
+    const incidents: Incident[] = [];
+    detector.onIncident((i) => incidents.push(i));
+    detector.updateSession({
+      DriverInfo: {
+        Drivers: [
+          {
+            CarIdx: 0,
+            UserName: 'Test',
+            CarNumber: '99',
+            TeamName: '',
+            CarIsPaceCar: 0,
+          },
+        ],
+      },
+    });
+
+    // No flag initially
+    detector.processTelemetry(makeTelemetry({ carIdxSessionFlags: [0] }), 5000);
+    expect(incidents).toHaveLength(0);
+
+    // Disqualify flag newly set
+    detector.processTelemetry(
+      makeTelemetry({
+        carIdxSessionFlags: [GlobalFlags.Disqualify],
+        sessionTime: 100.04,
+      }),
+      5000
+    );
+    expect(incidents).toHaveLength(1);
+    expect(incidents[0].type).toBe(IncidentType.BlackFlag);
+  });
+
   it('fires Slowdown when Furled flag bit newly set', () => {
     const detector = new IncidentDetector(defaultThresholds, false);
     const incidents: Incident[] = [];

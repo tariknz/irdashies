@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { memo, useMemo } from 'react';
 import { IncidentType } from '@irdashies/types';
 import { useRaceControlStore, useFilteredIncidents } from '@irdashies/context';
 import { IncidentRow } from './IncidentRow';
@@ -45,7 +45,22 @@ const CHIP_ORDER: IncidentType[] = [
 export const GantryIncidents = memo(() => {
   const activeTypeFilters = useRaceControlStore((s) => s.activeTypeFilters);
   const toggleTypeFilter = useRaceControlStore((s) => s.toggleTypeFilter);
+  const driverFilter = useRaceControlStore((s) => s.driverFilter);
+  const setDriverFilter = useRaceControlStore((s) => s.setDriverFilter);
+  const allIncidents = useRaceControlStore((s) => s.incidents);
   const incidents = useFilteredIncidents();
+
+  const uniqueDrivers = useMemo(() => {
+    const seen = new Map<number, string>();
+    for (const i of allIncidents) {
+      if (!seen.has(i.carIdx)) {
+        seen.set(i.carIdx, i.driverName);
+      }
+    }
+    return [...seen.entries()]
+      .sort(([, a], [, b]) => a.localeCompare(b))
+      .map(([carIdx, driverName]) => ({ carIdx, driverName }));
+  }, [allIncidents]);
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -67,6 +82,26 @@ export const GantryIncidents = memo(() => {
             </button>
           );
         })}
+      </div>
+
+      {/* Driver filter dropdown */}
+      <div className="px-2 py-1.5 border-b border-slate-700/50 flex-shrink-0">
+        <select
+          value={driverFilter ?? ''}
+          onChange={(e) =>
+            setDriverFilter(
+              e.target.value === '' ? null : Number(e.target.value)
+            )
+          }
+          className="w-full bg-slate-800/50 border border-slate-700 text-slate-300 text-xs rounded px-2 py-1"
+        >
+          <option value="">All Drivers</option>
+          {uniqueDrivers.map(({ carIdx, driverName }) => (
+            <option key={carIdx} value={carIdx}>
+              {driverName}
+            </option>
+          ))}
+        </select>
       </div>
 
       {/* Incident feed */}

@@ -223,7 +223,10 @@ export class IncidentDetector {
             )
           : 0;
 
-      state.recentRawSpeeds = [...state.recentRawSpeeds.slice(-4), rawSpeed];
+      state.recentRawSpeeds = [
+        ...state.recentRawSpeeds.slice(-(this.thresholds.suddenStopFrames - 1)),
+        rawSpeed,
+      ];
       state.speedHistory = [...state.speedHistory.slice(-4), rawSpeed];
       state.currentAvgSpeed =
         state.speedHistory.reduce((a, b) => a + b, 0) /
@@ -265,7 +268,7 @@ export class IncidentDetector {
       const newFlags = flags & ~prevFlags;
 
       if (
-        newFlags & GlobalFlags.Black &&
+        (newFlags & GlobalFlags.Black || newFlags & GlobalFlags.Disqualify) &&
         !this.isCoolingDown(state, IncidentType.BlackFlag, nowMs)
       ) {
         state.lastIncidentTime[IncidentType.BlackFlag] = nowMs;
