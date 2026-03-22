@@ -15,6 +15,9 @@
       "Bash(xargs cat:*)"
     ],
     "deny": [],
-    "ask": []
+    "ask": [],
+    "additionalDirectories": [
+      "/Users/tarik/Desktop/irdashies-demos"
+    ]
   }
 }
