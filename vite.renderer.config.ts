@@ -43,18 +43,12 @@ export default defineConfig({
     },
   },
   build: {
-    rollupOptions: {
+    rolldownOptions: {
       input: {
         main: path.resolve(__dirname, 'index.html'),
         'dashboard-view': path.resolve(__dirname, 'index-dashboard-view.html'),
       },
       output: {
-        manualChunks: {
-          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
-          'vendor-d3': ['d3'],
-          'vendor-icons': ['@phosphor-icons/react'],
-          'vendor-utils': ['zustand', 'use-sync-external-store'],
-        },
         chunkFileNames: 'assets/[name]-[hash].js',
         entryFileNames: 'assets/[name]-[hash].js',
         assetFileNames: 'assets/[name]-[hash].[ext]',
