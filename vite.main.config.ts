@@ -60,8 +60,8 @@ function irsdkNativeModule(nodeFiles: string[], outDir: string) {
         return {
           code: `
             import { createRequire } from 'module';
-            const customRequire = createRequire(import.meta.url);
-            export const iRacingSdkNode = customRequire('./${file}').iRacingSdkNode;
+            const customRequire = createRequire(__filename);
+            export const iRacingSdkNode = customRequire('./Release/${path.basename(file)}').iRacingSdkNode;
           `,
           moduleType: 'js',
         };
