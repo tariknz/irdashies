@@ -11,12 +11,18 @@ const TRACK_SURFACE_OFF_TRACK = 4;
 const MAX_HISTORY_ENTRIES = 10;
 
 export const useLapTimeLog = () => {
+
+  // reset functions
   const resetSessionState = () => {
-    console.log("[LTL] Reset");
     setHistory([]);
     setSavedDelta(0);
     setIsDirty(false);
     setDisplayTime(undefined);
+  };
+
+  const resetLapState = () => {
+    setIsDirty(false);
+    setSavedDelta(0);
   };
 
   // Get settings
@@ -144,33 +150,32 @@ export const useLapTimeLog = () => {
 
   // 4. log lap history and reset
   useEffect(() => {
-    setHistory((prev) => {
-      // wait for new last lap time
-      const isValidTime =
-        lastLapTime > 0 && lastLapTime !== lastLoggedTime.current;
-      if (!lapTransition.current || !isValidTime) return prev;
-      if (prev.some((entry) => entry.lap === lapCompleted)) return prev;
-      // add history
-      const newEntry: LapEntry = {
-        lap: lapCompleted,
-        time: lastLapTime,
-        delta:
-          referenceAtStartOfLap.current > 0
-            ? lastLapTime - referenceAtStartOfLap.current
-            : 0,
-        dirty: isDirty,
-      };
-      // reset for new lap
-      lastLoggedLap.current = lapCompleted;
-      lastLoggedTime.current = lastLapTime;
-      referenceAtStartOfLap.current = referenceTime ?? 0;
-      incidentsAtLapStart.current = incidentCount;
-      lapTransition.current = false;
-      setTimeout(() => setIsDirty(false), 0);
-      setTimeout(() => setSavedDelta(0), 0);
-      return [newEntry, ...prev].slice(0, MAX_HISTORY_ENTRIES);
-    });
-  }, [lapCompleted, lastLapTime, isDirty, incidentCount, referenceTime]);
+    // wait for new last lap time
+    const isValidTime = lastLapTime > 0 && lastLapTime !== lastLoggedTime.current;
+    if (!lapTransition.current || !isValidTime) return;
+    // prevent duplicates
+    if (history.some((entry) => entry.lap === lapCompleted)) return;
+    // add new entry
+    const newEntry: LapEntry = {
+      lap: lapCompleted,
+      time: lastLapTime,
+      delta:
+        referenceAtStartOfLap.current > 0
+          ? lastLapTime - referenceAtStartOfLap.current
+          : 0,
+      dirty: isDirty,
+    };
+    setHistory((prev) =>
+      [newEntry, ...prev].slice(0, MAX_HISTORY_ENTRIES)
+    );
+    // reset for new lap
+    lastLoggedLap.current = lapCompleted;
+    lastLoggedTime.current = lastLapTime;
+    referenceAtStartOfLap.current = referenceTime ?? 0;
+    incidentsAtLapStart.current = incidentCount;
+    lapTransition.current = false;
+    resetLapState();
+  }, [lapCompleted, lastLapTime, isDirty, incidentCount, referenceTime, history]);
 
   return {
     current: displayTime,
