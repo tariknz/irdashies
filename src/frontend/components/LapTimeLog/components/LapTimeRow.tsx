@@ -1,4 +1,4 @@
-import type { LapTimeLogWidgetSettings } from '@irdashies/types';
+import type { LapTimeLogConfig } from '@irdashies/types';
 import { formatTime } from '@irdashies/utils/time';
 
 interface LapTimeRowProps {
@@ -8,7 +8,7 @@ interface LapTimeRowProps {
   dirty?: boolean;
   best?: number | undefined;
   overall?: number | undefined; 
-  settings?: LapTimeLogWidgetSettings
+  settings?: LapTimeLogConfig
 }
 
 export const formatDelta = (delta: number | undefined) => {
@@ -49,7 +49,7 @@ export const LapTimeRow = ({ label, time, delta, dirty, best, overall, settings 
     delta !== undefined &&    
     delta > 0;  
 
-  const opacity = settings?.config?.foreground?.opacity ?? 0;
+  const opacity = settings?.foreground?.opacity ?? 0;
 
   const getLapColor = () => {
     if (isDirty) return 'text-zinc-400';
@@ -66,7 +66,7 @@ export const LapTimeRow = ({ label, time, delta, dirty, best, overall, settings 
       <span className="flex-1 tabular-nums uppercase">
         {label}
       </span>
-      {settings?.config.delta?.enabled && (
+      {settings?.delta?.enabled && (
       <span className={`flex-1 text-center tabular-nums ${
           deltaIsGreen 
             ? 'text-green-400' 

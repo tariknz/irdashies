@@ -2,14 +2,14 @@ import { render, screen } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
 import { LapTimeLogDisplay } from './LapTimeLog';
 import { LapTimeRow, formatDelta } from './components/LapTimeRow';
-import type { LapTimeLogWidgetSettings } from '@irdashies/types';
+import type { LapTimeLogConfig } from '@irdashies/types';
 import { formatTime } from '@irdashies/utils/time';
 
 // Mock settings for tests
 const mockSettings = (
-  overrides: Partial<LapTimeLogWidgetSettings['config']> = {}
-): LapTimeLogWidgetSettings => {
-  const baseConfig: LapTimeLogWidgetSettings['config'] = {
+  overrides: Partial<LapTimeLogConfig> = {}
+): LapTimeLogConfig => {
+  const baseConfig: LapTimeLogConfig = {
     background: { opacity: 80 },
     foreground: { opacity: 70 },
     scale: 100,
@@ -37,15 +37,11 @@ const mockSettings = (
   };
 
   return {
-    id: 'laptimelog',
-    enabled: true,
-    config: {
-      ...baseConfig,
-      ...overrides,
-      // Deep merge for nested objects
-      delta: { ...baseConfig.delta, ...overrides.delta },
-      history: { ...baseConfig.history, ...overrides.history },
-    },
+    ...baseConfig,
+    ...overrides,
+    // Deep merge for nested objects
+    delta: { ...baseConfig.delta, ...overrides.delta },
+    history: { ...baseConfig.history, ...overrides.history },
   };
 };
 
