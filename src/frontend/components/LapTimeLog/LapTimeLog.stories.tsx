@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { LapTimeLogDisplay } from './LapTimeLog';
-import type { LapTimeLogWidgetSettings, LapTimeLogConfig } from '@irdashies/types';
+import type { LapTimeLogConfig } from '@irdashies/types';
 
 interface LapEntry {
   lap: number;
@@ -67,14 +67,6 @@ const mockConfig = (
   };
 };
 
-const mockSettings = (
-  overrides: Partial<LapTimeLogConfig> = {}
-): LapTimeLogWidgetSettings => ({
-  id: 'laptimelog',
-  enabled: true,
-  config: mockConfig(overrides),
-});
-
 const baseHistory: LapEntry[] = [
   { lap: 10, time: 92.1, delta: 0.6 },
   { lap: 9, time: 91.5, delta: 0.0 },
@@ -99,7 +91,7 @@ export const Default: Story = {
   name: 'Default View',
   args: {
     ...baseArgs,
-    settings: mockSettings(),
+    settings: mockConfig(),
   },
 };
 
@@ -110,7 +102,7 @@ export const NewPersonalBest: Story = {
     current: 4.5, // within 5 seconds
     lastlap: 91.4, // new best
     bestlap: 91.4,
-    settings: mockSettings(),
+    settings: mockConfig(),
   },
 };
 
@@ -122,7 +114,7 @@ export const NewSessionBest: Story = {
     lastlap: 90.9, // new overall best
     bestlap: 91.2,
     overall: 90.9,
-    settings: mockSettings(),
+    settings: mockConfig(),
   },
 };
 
@@ -130,7 +122,7 @@ export const CurrentLapOnly: Story = {
   name: 'Minimal',
   args: {
     ...baseArgs,
-    settings: mockSettings({
+    settings: mockConfig({
       showPredictedLap: false,
       showLastLap: false,
       showBestLap: false,
@@ -143,7 +135,7 @@ export const CompactAndPredicted: Story = {
   name: 'Current and Predicted',
   args: {
     ...baseArgs,
-    settings: mockSettings({
+    settings: mockConfig({
       delta: { enabled: true, method: 'lastlap' },
       showLastLap: false,
       showBestLap: false,
@@ -157,7 +149,7 @@ export const DirtyLap: Story = {
   args: {
     ...baseArgs,
     dirty: true,
-    settings: mockSettings({
+    settings: mockConfig({
       delta: { enabled: true, method: 'lastlap' },      
       showLastLap: false,
       showBestLap: false,
@@ -178,7 +170,7 @@ export const HistoryView: Story = {
       { lap: 2, time: 92.0, delta: 0.5 },
       { lap: 1, time: 91.7, delta: 0.2 },
     ],
-    settings: mockSettings({
+    settings: mockConfig({
       showCurrentLap: false,
       showPredictedLap: false,
       showLastLap: false,
@@ -192,7 +184,7 @@ export const NoDelta: Story = {
   name: 'Delta Disabled',
   args: {
     ...baseArgs,
-    settings: mockSettings({
+    settings: mockConfig({
       delta: { enabled: false, method: 'bestlap' },
     }),
   },
