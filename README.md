@@ -171,18 +171,32 @@ Displays the throttle, clutch, and brake input traces, as well as the current ge
   - Toggle individual inputs (throttle, brake, ABS, steering)
 - Input bar display (clutch, brake, throttle, ABS indicator)
   - Toggle individual inputs (clutch, brake, throttle, ABS)
+  - Optional raw input values showing actual pedal/wheel inputs without sim processing (e.g. ABS, traction control)
 - Current gear display with speed (auto/mph/km/h units)
 - Steering wheel visualization with multiple styles (default, formula, LMP, NASCAR, U-shape) and color themes (light/dark)
-- Tachometer with optional RPM text display
-  - Car-specific LED color and RPM thresholds (powered by [lovely-car-data](https://github.com/Lovely-Sim-Racing/lovely-car-data))
-  - Custom shift points configuration per car and gear
-  - Multiple indicator styles (glow, pulse, border) with customizable colors
 - Customizable display order for all components
 - Adjustable background opacity
 - Option to show only when on track
 - Session visibility settings (Race, Lone Qualify, Open Qualify, Practice, Offline Testing)
 
 ![Input Trace](./docs/assets/input.png)
+
+### Tachometer
+
+Displays a real-time tachometer with optional RPM text display.
+
+**Features:**
+
+- Tachometer with optional RPM text display
+  - Car-specific LED color and RPM thresholds (powered by [lovely-car-data](https://github.com/Lovely-Sim-Racing/lovely-car-data))
+  - Custom shift points configuration per car and gear
+  - Multiple indicator styles (glow, pulse, border) with customizable colors
+  - Horizontal or vertical orientation
+- Resizable and adjustable background opacity
+- Option to show only when on track
+- Session visibility settings (Race, Lone Qualify, Open Qualify, Practice, Offline Testing)
+
+![Input Trace](./docs/assets/tachometer.png)
 
 ### Standings
 
@@ -203,6 +217,8 @@ Displays standings information for the current session.
 - Driver badges with multiple format options (license/rating combinations)
   - Full iRating: Option to display the full iRating value instead of just the badge
 - Timing information: gap, interval, best lap time, last lap time (multiple time format options)
+  - Configurable decimal precision (1, 2, or 3) for gap and interval
+  - Gap and interval display in practice and qualifying sessions
 - iRating change display
 - Lap time deltas (configurable number of laps: 1-5)
 - Title bar with session progress bar
@@ -210,6 +226,9 @@ Displays standings information for the current session.
   - Session name, session time (remaining/elapsed), session clock time, incident count
   - Brake bias, local time, track wetness, precipitation, wind speed/direction
   - Air and track temperature (Metric/Imperial units)
+  - Track name
+  - Session time: configurable mode (Remaining/Elapsed), format, and label style
+  - Accurate race clock for fixed-lap races (calculated from P1 average lap time)
 - Driver standings configuration:
   - Drivers to show around player
   - Drivers to show in other classes
@@ -256,6 +275,8 @@ Displays drive relative delta information for the current session.
   - Session name, session time (remaining/elapsed), session clock time, incident count
   - Brake bias, local time, track wetness, precipitation, wind speed/direction
   - Air and track temperature (Metric/Imperial units)
+  - Track name
+  - Session time: configurable mode (Remaining/Elapsed), format, and label style
 - Configurable number of drivers to show around player (1-10)
 - Toggle to strip car numbers from driver names
 - Customizable display order for all columns
@@ -375,9 +396,10 @@ Displays visual indicators on the left and right sides of the screen when cars a
 
 **Features:**
 
-- Left and right side detection
+- Left and right side detection with three-wide scenario support
 - Visual amber indicator bars that move vertically based on car distance
-- Detection of single car or multiple cars (2 cars) on each side
+- Detection of single car or multiple cars on each side
+- Configurable border size (0-20px) and indicator color
 - Configurable detection distances:
   - Distance ahead (3-6 meters)
   - Distance behind (3-6 meters)
@@ -429,13 +451,14 @@ Helps you manage your pit stops with clear visual guidance. It assists with spee
 
 **Features:**
 
-- Speed Limit Assistant: Vertical colour-coded indicator (Green/Amber/Red) showing proximity to the pit speed limit, toggleable speed bar.
+- Speed Limit Assistant: Vertical colour-coded indicator (Green/Amber/Red) showing proximity to the pit speed limit, toggleable speed bar with decimal precision.
 - Pitbox Countdown: A distance tracker and progress bar show exactly how far you are from your pit stall.
-- Countdown Bars: Colour-coded progress bars for pit entry, pitbox, and pit exit distances (Green → Yellow → Blue).
+- Countdown Bars: Colour-coded progress bars for pit entry, pitbox, and pit exit distances (Green -> Yellow -> Blue).
   - Configurable vertical/horizontal orientation with side-by-side layout option
-  - Three semantic rows (32×80px) for compact display
+  - Three semantic rows (32x80px) for compact display
 - Pit Exit Inputs: Throttle/clutch display to optimize pit exits with phase-based visibility options.
 - Traffic Monitor: See how many cars are currently ahead or behind you in the pitlane.
+- Fully resizable with theme-matching background
 - Early Warning: Alerts you if your pitbox is located near the pit entry.
 - Pit limiter alerts: Flashing warnings if you enter the pits without your limiter active (auto-disabled for series with automatic limiters).
 
@@ -501,6 +524,7 @@ A powerful tool for viewing live data coming from iRacing. While mostly used for
   - Save and switch between different dashboard configurations
   - Multiple profiles for different racing scenarios or streaming setups
   - Each profile can be accessed as its own browser source URL for OBS streaming
+  - Dashboard import/export to share layouts between users or back up your setup
 - Streamer & OBS Ready
   - Built-in Web Server: All overlays can be used as a browser source in OBS. Use `http://localhost:3000/dashboard` for the default profile, or `http://localhost:3000/dashboard?profile=<profileId>` for specific profiles.
   - Network Access: Enable network access in settings to allow other devices on your local network to access the dashboard (useful for dual-PC streaming setups).
