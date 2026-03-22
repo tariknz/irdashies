@@ -24,7 +24,10 @@ describe('TrackMap', () => {
   beforeEach(() => {
     vi.resetAllMocks();
     vi.mocked(useTrackId).mockReturnValue(1);
-    vi.mocked(useDriverProgress).mockReturnValue([]);
+    vi.mocked(useDriverProgress).mockReturnValue({
+      drivers: [],
+      identities: [],
+    });
     vi.mocked(useHighlightColor).mockReturnValue(undefined);
     vi.mocked(useSessionVisibility).mockReturnValue(true);
   });

@@ -10,8 +10,10 @@ export const Input = () => {
 
   if (!useSessionVisibility(settings?.sessionVisibility)) return <></>;
 
+  if (!settings) return <></>;
+
   // Show only when on track setting
-  if (settings?.showOnlyWhenOnTrack && !isDriving) {
+  if (settings.showOnlyWhenOnTrack && !isDriving) {
     return <></>;
   }
 
