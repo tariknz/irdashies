@@ -11,12 +11,18 @@ const TRACK_SURFACE_OFF_TRACK = 4;
 const MAX_HISTORY_ENTRIES = 10;
 
 export const useLapTimeLog = () => {
+
+  // reset functions
   const resetSessionState = () => {
-    console.log("[LTL] Reset");
     setHistory([]);
     setSavedDelta(0);
     setIsDirty(false);
     setDisplayTime(undefined);
+  };
+
+  const resetLapState = () => {
+    setIsDirty(false);
+    setSavedDelta(0);
   };
 
   // Get settings
@@ -77,7 +83,7 @@ export const useLapTimeLog = () => {
     const sessionChanged = sessionNum !== prevSessionNum.current;
     const sessionRestarted = sessionTime < prevSessionTime.current - 5;
     if (sessionChanged || sessionRestarted) {
-      lastLoggedLap.current = -1;
+      lastLoggedLap.current = lapCompleted;
       lastLoggedTime.current = -1;
       referenceAtStartOfLap.current = 0;
       incidentsAtLapStart.current = 0;
@@ -87,7 +93,7 @@ export const useLapTimeLog = () => {
     }
     prevSessionNum.current = sessionNum;
     prevSessionTime.current = sessionTime;
-  }, [sessionNum, sessionTime]);
+  }, [sessionNum, sessionTime, lapCompleted]);
 
   // 2. check for new lap
   useEffect(() => {
@@ -166,8 +172,7 @@ export const useLapTimeLog = () => {
       referenceAtStartOfLap.current = referenceTime ?? 0;
       incidentsAtLapStart.current = incidentCount;
       lapTransition.current = false;
-      setTimeout(() => setIsDirty(false), 0);
-      setTimeout(() => setSavedDelta(0), 0);
+      resetLapState();
       return [newEntry, ...prev].slice(0, MAX_HISTORY_ENTRIES);
     });
   }, [lapCompleted, lastLapTime, isDirty, incidentCount, referenceTime]);
