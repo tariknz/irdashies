@@ -30,6 +30,7 @@ export class OverlayManager {
   private displayBoundsInfo = new Map<number, ContainerBoundsInfo>();
   private currentSettingsWindow: BrowserWindow | undefined;
   private isLocked = true;
+  private isQuitting = false;
   private skipTaskbar = true;
   private overlayAlwaysOnTop = true;
   private hasSingleInstanceLock = false;
@@ -357,6 +358,27 @@ export class OverlayManager {
     this.displayBoundsInfo.clear();
   }
 
+  public markQuitting(): void {
+    this.isQuitting = true;
+  }
+
+  public quitApp(): void {
+    if (this.isQuitting) return;
+
+    this.isQuitting = true;
+    this.closeAllOverlays();
+
+    if (
+      this.currentSettingsWindow &&
+      !this.currentSettingsWindow.isDestroyed()
+    ) {
+      this.currentSettingsWindow.destroy();
+      this.currentSettingsWindow = undefined;
+    }
+
+    app.quit();
+  }
+
   /**
    * Create windows for any displays that need them but don't have one yet.
    * Uses widget center-point assignment (same logic as createOverlays) to
@@ -433,16 +455,15 @@ export class OverlayManager {
   }
 
   public focusSettingsWindow(): void {
-    if (
-      this.currentSettingsWindow &&
-      !this.currentSettingsWindow.isDestroyed()
-    ) {
-      if (this.currentSettingsWindow.isMinimized()) {
-        this.currentSettingsWindow.restore();
-      }
-      this.currentSettingsWindow.show();
-      this.currentSettingsWindow.focus();
+    if (!this.currentSettingsWindow || this.currentSettingsWindow.isDestroyed()) {
+      this.currentSettingsWindow = this.createSettingsWindow();
     }
+    const win = this.currentSettingsWindow;
+    if (win.isMinimized()) {
+      win.restore();    
+    }
+    win.show();
+    win.focus();
   }
 
   /**
@@ -461,6 +482,22 @@ export class OverlayManager {
     app.setLoginItemSettings({
       openAtLogin: dashboard?.generalSettings?.enableAutoStart ?? false,
     });
+  }
+
+  private shouldCloseToTray(): boolean {
+    const dashboard = getDashboard('default');
+    return dashboard?.generalSettings?.closeToTray ?? false;
+  }
+
+  private notifyTrayAccessOnce(): void {
+    const trayNotificationShown = readData<boolean>('trayNotificationShown');
+    if (trayNotificationShown) return;
+
+    new Notification({
+      title: 'irDashies',
+      body: 'Settings window is still accessible via the system tray icon',
+    }).show();
+    writeData('trayNotificationShown', true);
   }
 
   /**
@@ -502,7 +539,11 @@ export class OverlayManager {
 
   public createSettingsWindow(): BrowserWindow {
     if (this.currentSettingsWindow) {
+      if (this.currentSettingsWindow.isMinimized()) {
+        this.currentSettingsWindow.restore();
+      }
       this.currentSettingsWindow.show();
+      this.currentSettingsWindow.focus();
       return this.currentSettingsWindow;
     }
 
@@ -542,16 +583,21 @@ export class OverlayManager {
       );
     }
 
-    browserWindow.on('closed', () => {
-      // Show notification about tray access only once ever
-      const trayNotificationShown = readData<boolean>('trayNotificationShown');
-      if (!trayNotificationShown) {
-        new Notification({
-          title: 'irDashies',
-          body: 'Settings window is still accessible via the system tray icon',
-        }).show();
-        writeData('trayNotificationShown', true);
+    browserWindow.on('close', (event) => {
+      if (this.isQuitting) return;
+
+      if (this.shouldCloseToTray()) {
+        event.preventDefault();
+        browserWindow.hide();
+        this.notifyTrayAccessOnce();
+        return;
       }
+
+      event.preventDefault();
+      this.quitApp();
+    });
+
+    browserWindow.on('closed', () => {
       this.currentSettingsWindow = undefined;
     });
 
