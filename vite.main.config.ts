@@ -22,7 +22,7 @@ export default defineConfig({
     ),
   ],
   build: {
-    rollupOptions: {
+    rolldownOptions: {
       external: ['bufferutil', 'utf-8-validate'],
     },
   },
@@ -57,11 +57,14 @@ function irsdkNativeModule(nodeFiles: string[], outDir: string) {
       }
       const file = nodeFileMap.get(path.basename(id));
       if (file) {
-        return `
-          import { createRequire } from 'module';
-          const customRequire = createRequire(import.meta.url);
-          export const iRacingSdkNode = customRequire('./${file}').iRacingSdkNode;
-        `;
+        return {
+          code: `
+            import { createRequire } from 'module';
+            const customRequire = createRequire(__filename);
+            export const iRacingSdkNode = customRequire('./Release/${path.basename(file)}').iRacingSdkNode;
+          `,
+          moduleType: 'js',
+        };
       }
       return code;
     },
