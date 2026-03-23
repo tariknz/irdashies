@@ -485,8 +485,24 @@ export const InputSettings = () => {
 
                     {config.gear.enabled && (
                       <SettingsSection>
+                        <SettingSliderRow
+                          title="Gear Display Scale"
+                          description="Relative size of the gear number display"
+                          value={settings.config.gear.size ?? 100}
+                          units="%"
+                          min={50}
+                          max={150}
+                          step={1}
+                          onChange={(v) =>
+                            handleConfigChange({
+                              gear: { ...config.gear, size: v },
+                            })
+                          }
+                        />
+
                         <SettingToggleRow
                           title="Show Speed"
+                          description="Show the current speed beneath the gear number"
                           enabled={config.gear.showspeed}
                           onToggle={(newValue) =>
                             handleConfigChange({
@@ -497,14 +513,13 @@ export const InputSettings = () => {
 
                         {config.gear.showspeed && (
                         <SettingsSection>
-                          <SettingButtonGroupRow<'auto' | 'mph' | 'km/h' | 'none'>
+                          <SettingButtonGroupRow<'auto' | 'mph' | 'km/h'>
                             title="Speed Unit"
                             value={config.gear.unit ?? 'auto'}
                             options={[
                               { label: 'Auto', value: 'auto' },
                               { label: 'MPH', value: 'mph' },
                               { label: 'KM/H', value: 'km/h' },
-                              { label: 'None', value: 'none' },
                             ]}
                             onChange={(v) =>
                               handleConfigChange({
@@ -512,6 +527,16 @@ export const InputSettings = () => {
                               })
                             }
                           />
+
+                          <SettingToggleRow
+                          title="Show Speed Unit Label"
+                          enabled={config.gear.showspeedunit}
+                          onToggle={(newValue) =>
+                            handleConfigChange({
+                              gear: { ...config.gear, showspeedunit: newValue },
+                            })
+                          }
+                        />     
                         </SettingsSection>
                         )}
                         
