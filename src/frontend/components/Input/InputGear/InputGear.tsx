@@ -1,3 +1,5 @@
+import { memo } from 'react';
+
 export interface InputGearProps {
   gear?: number;
   speedMs?: number;
@@ -73,8 +75,20 @@ export const InputGear = ({
           >
             {displayUnit}
           </div>
-        )}
+          {settings.showspeed && (
+            <div className="text-[clamp(0.875rem,min(12cqb,16cqw),1.5rem)]">
+              {speed.toFixed(0)}
+            </div>
+          )}
+          {settings.showspeed && settings.unit !== 'none' && (
+            <div className="text-gray-500 leading-none text-[clamp(0.625rem,min(6cqb,8cqw),1rem)]">
+              {displayUnit}
+            </div>
+          )}
+        </div>
       </div>
-    </div>
-  );
-};
+    );
+  }
+);
+
+InputGear.displayName = 'InputGear';
