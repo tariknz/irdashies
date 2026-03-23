@@ -12,30 +12,26 @@ export interface InputGearProps {
   };
 }
 
-export const InputGear = ({
-  gear,
-  speedMs,
-  unit,
-  settings = { unit: 'auto', showspeed: true, showspeedunit: true, size: 100 },
-}: InputGearProps) => {
-  const isMetric =
-    (unit === 1 && settings.unit === 'auto') || settings.unit === 'km/h';
-  const speed = (speedMs ?? 0) * (isMetric ? 3.6 : 2.23694);
-  const displayUnit = isMetric ? 'km/h' : 'mph';
-  let gearText = '';
-  switch (gear) {
-    case -1:
-      gearText = 'R';
-      break;
-    case 0:
-    case null:
-    case undefined:
-      gearText = 'N';
-      break;
-    default:
-      gearText = `${gear}`;
-      break;
-  }
+export const InputGear = memo(
+  ({ gear, speedMs, unit, settings }: InputGearProps) => {
+    const isMetric =
+      (unit === 1 && settings.unit === 'auto') || settings.unit === 'km/h';
+    const speed = (speedMs ?? 0) * (isMetric ? 3.6 : 2.23694);
+    const displayUnit = isMetric ? 'km/h' : 'mph';
+    let gearText = '';
+    switch (gear) {
+      case -1:
+        gearText = 'R';
+        break;
+      case 0:
+      case null:
+      case undefined:
+        gearText = 'N';
+        break;
+      default:
+        gearText = `${gear}`;
+        break;
+    }
 
   const displaySize = (settings.size / 100);
   const displayMultiplier =
