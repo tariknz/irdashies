@@ -40,8 +40,8 @@ export const useLapTimeLog = () => {
   const incidentCount = useTelemetryValue<number>('PlayerCarMyIncidentCount') ?? 0;
 
   // Refs
-  const lastLoggedLap = useRef<number>(-1);
-  const lastLoggedTime = useRef<number>(-1);
+  const lastLoggedLap = useRef<number>(0);
+  const lastLoggedTime = useRef<number>(0);
   const prevSessionNum = useRef<number>(sessionNum);
   const prevSessionTime = useRef<number>(sessionTime);
   const referenceAtStartOfLap = useRef<number>(0);
@@ -77,8 +77,8 @@ export const useLapTimeLog = () => {
     const sessionChanged = sessionNum !== prevSessionNum.current;
     const sessionRestarted = sessionTime < prevSessionTime.current - 5;
     if (sessionChanged || sessionRestarted) {
-      lastLoggedLap.current = -1;
-      lastLoggedTime.current = -1;
+      lastLoggedLap.current = 0;
+      lastLoggedTime.current = 0;
       referenceAtStartOfLap.current = 0;
       incidentsAtLapStart.current = 0;
       lastDeltaUpdate.current = 0;
