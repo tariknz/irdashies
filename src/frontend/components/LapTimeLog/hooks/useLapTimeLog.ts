@@ -46,8 +46,8 @@ export const useLapTimeLog = () => {
   const incidentCount = useTelemetryValue<number>('PlayerCarMyIncidentCount') ?? 0;
 
   // Refs
-  const lastLoggedLap = useRef<number>(-1);
-  const lastLoggedTime = useRef<number>(-1);
+  const lastLoggedLap = useRef<number>(0);
+  const lastLoggedTime = useRef<number>(0);
   const prevSessionNum = useRef<number>(sessionNum);
   const prevSessionTime = useRef<number>(sessionTime);
   const referenceAtStartOfLap = useRef<number>(0);
@@ -83,8 +83,8 @@ export const useLapTimeLog = () => {
     const sessionChanged = sessionNum !== prevSessionNum.current;
     const sessionRestarted = sessionTime < prevSessionTime.current - 5;
     if (sessionChanged || sessionRestarted) {
-      lastLoggedLap.current = lapCompleted;
-      lastLoggedTime.current = -1;
+      lastLoggedLap.current = 0;
+      lastLoggedTime.current = 0;
       referenceAtStartOfLap.current = 0;
       incidentsAtLapStart.current = 0;
       lastDeltaUpdate.current = 0;
@@ -93,7 +93,7 @@ export const useLapTimeLog = () => {
     }
     prevSessionNum.current = sessionNum;
     prevSessionTime.current = sessionTime;
-  }, [sessionNum, sessionTime, lapCompleted]);
+  }, [sessionNum, sessionTime]);
 
   // 2. check for new lap
   useEffect(() => {
@@ -150,32 +150,32 @@ export const useLapTimeLog = () => {
 
   // 4. log lap history and reset
   useEffect(() => {
-    setHistory((prev) => {
-      // wait for new last lap time
-      const isValidTime =
-        lastLapTime > 0 && lastLapTime !== lastLoggedTime.current;
-      if (!lapTransition.current || !isValidTime) return prev;
-      if (prev.some((entry) => entry.lap === lapCompleted)) return prev;
-      // add history
-      const newEntry: LapEntry = {
-        lap: lapCompleted,
-        time: lastLapTime,
-        delta:
-          referenceAtStartOfLap.current > 0
-            ? lastLapTime - referenceAtStartOfLap.current
-            : 0,
-        dirty: isDirty,
-      };
-      // reset for new lap
-      lastLoggedLap.current = lapCompleted;
-      lastLoggedTime.current = lastLapTime;
-      referenceAtStartOfLap.current = referenceTime ?? 0;
-      incidentsAtLapStart.current = incidentCount;
-      lapTransition.current = false;
-      resetLapState();
-      return [newEntry, ...prev].slice(0, MAX_HISTORY_ENTRIES);
-    });
-  }, [lapCompleted, lastLapTime, isDirty, incidentCount, referenceTime]);
+    // wait for new last lap time
+    const isValidTime = lastLapTime > 0 && lastLapTime !== lastLoggedTime.current;
+    if (!lapTransition.current || !isValidTime) return;
+    // prevent duplicates
+    if (history.some((entry) => entry.lap === lapCompleted)) return;
+    // add new entry
+    const newEntry: LapEntry = {
+      lap: lapCompleted,
+      time: lastLapTime,
+      delta:
+        referenceAtStartOfLap.current > 0
+          ? lastLapTime - referenceAtStartOfLap.current
+          : 0,
+      dirty: isDirty,
+    };
+    setHistory((prev) =>
+      [newEntry, ...prev].slice(0, MAX_HISTORY_ENTRIES)
+    );
+    // reset for new lap
+    lastLoggedLap.current = lapCompleted;
+    lastLoggedTime.current = lastLapTime;
+    referenceAtStartOfLap.current = referenceTime ?? 0;
+    incidentsAtLapStart.current = incidentCount;
+    lapTransition.current = false;
+    resetLapState();
+  }, [lapCompleted, lastLapTime, isDirty, incidentCount, referenceTime, history]);
 
   return {
     current: displayTime,
