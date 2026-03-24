@@ -168,7 +168,7 @@ describe('Tachometer', () => {
 
   it('renders RPM text display', () => {
     const { container } = render(
-      <Tachometer rpm={3000} maxRpm={8500} showRpmText={true} rpmOrientation='vertical'/>
+      <Tachometer rpm={3000} maxRpm={8500} showRpmText={true} rpmOrientation='bottom'/>
     );
 
     // Should have RPM display text
@@ -184,7 +184,7 @@ describe('Tachometer', () => {
         rpm={5000}
         maxRpm={8000}
         showRpmText={true}
-        rpmOrientation='vertical'
+        rpmOrientation='bottom'
         carData={mockCarData}
       />
     );
@@ -200,7 +200,7 @@ describe('Tachometer', () => {
         rpm={5000}
         maxRpm={8000}
         showRpmText={true}
-        rpmOrientation='vertical'
+        rpmOrientation='bottom'
         carData={mockCarData}
       />
     );
@@ -215,7 +215,7 @@ describe('Tachometer', () => {
         rpm={7100} // Above 7000 RPM shift point
         maxRpm={8000}
         showRpmText={true}
-        rpmOrientation='vertical'
+        rpmOrientation='bottom'
         gear={1}
         carData={mockCarData}
         carPath="ferrari296gt3"
@@ -233,7 +233,7 @@ describe('Tachometer', () => {
         rpm={6500} // Below 7000 RPM shift point
         maxRpm={8000}
         showRpmText={true}
-        rpmOrientation='vertical'
+        rpmOrientation='bottom'
         gear={1}
         carData={mockCarData}
         carPath="ferrari296gt3"
@@ -253,7 +253,7 @@ describe('Tachometer', () => {
         rpm={7100} // Above 7000 RPM shift point
         maxRpm={8000}
         showRpmText={true}
-        rpmOrientation='vertical'
+        rpmOrientation='bottom'
         gear={1}
         carData={mockCarData}
         carPath="ferrari296gt3"

@@ -24,7 +24,7 @@ export const Tachometer = () => {
         shiftRpm={tachometerData.shiftRpm}
         blinkRpm={tachometerData.blinkRpm}
         showRpmText={settings?.showRpmText ?? false}
-        rpmOrientation={settings?.rpmOrientation ?? 'vertical'}
+        rpmOrientation={settings?.rpmOrientation ?? 'bottom'}
         gearRpmThresholds={tachometerData.gearRpmThresholds}
         ledColors={tachometerData.carData?.ledColor}
         carData={tachometerData.carData}

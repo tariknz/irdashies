@@ -13,7 +13,7 @@ type Story = StoryObj<typeof Tachometer>;
 
 export const Primary: Story = {
   render: () => (
-    <div className="h-[100px] w-[420px]">
+    <div className="h-[100px] w-full">
       <Tachometer />
     </div>
   ),
