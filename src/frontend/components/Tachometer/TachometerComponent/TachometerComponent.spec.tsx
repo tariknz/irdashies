@@ -58,7 +58,7 @@ describe('Tachometer', () => {
 
   it('renders the correct number of LED lights (10)', () => {
     const { container } = render(<Tachometer rpm={3000} maxRpm={8500} />);
-    const ledElements = container.querySelectorAll('.rounded-full');
+    const ledElements = container.querySelectorAll('.rounded-full.border');
     expect(ledElements.length).toBe(10);
   });
 
@@ -77,7 +77,7 @@ describe('Tachometer', () => {
         ]}
       />
     );
-    const ledElements = container.querySelectorAll('.rounded-full');
+    const ledElements = container.querySelectorAll('.rounded-full.border');
     expect(ledElements.length).toBe(5); // ledColors.length - 1 (subtract redline color)
   });
 
@@ -85,7 +85,7 @@ describe('Tachometer', () => {
     const { container } = render(
       <Tachometer rpm={4250} maxRpm={8500} shiftRpm={7650} />
     );
-    const ledElements = container.querySelectorAll('.rounded-full');
+    const ledElements = container.querySelectorAll('.rounded-full.border');
 
     // Check first 6 LEDs are lit - 4250 RPM is ~55% of 7650 shift RPM
     for (let i = 0; i < 6; i++) {
@@ -104,7 +104,7 @@ describe('Tachometer', () => {
     const { container } = render(
       <Tachometer rpm={6375} maxRpm={8500} shiftRpm={7650} />
     );
-    const ledElements = container.querySelectorAll('.rounded-full');
+    const ledElements = container.querySelectorAll('.rounded-full.border');
 
     // Check 8th LED is yellow (index 7)
     const led8Color = (ledElements[7] as HTMLElement).style.backgroundColor;
@@ -115,7 +115,7 @@ describe('Tachometer', () => {
     const { container } = render(
       <Tachometer rpm={7650} maxRpm={8500} shiftRpm={7650} />
     );
-    const ledElements = container.querySelectorAll('.rounded-full');
+    const ledElements = container.querySelectorAll('.rounded-full.border');
 
     // At shift RPM, last LED should be purple
     const lastLedColor = (ledElements[9] as HTMLElement).style.backgroundColor;
@@ -124,7 +124,7 @@ describe('Tachometer', () => {
 
   it('handles zero RPM correctly', () => {
     const { container } = render(<Tachometer rpm={0} maxRpm={8500} />);
-    const ledElements = container.querySelectorAll('.rounded-full');
+    const ledElements = container.querySelectorAll('.rounded-full.border');
 
     // All LEDs should be dark
     ledElements.forEach((led) => {
@@ -138,7 +138,7 @@ describe('Tachometer', () => {
     const { container } = render(
       <Tachometer rpm={8500} maxRpm={8500} shiftRpm={7650} blinkRpm={8245} />
     );
-    const ledElements = container.querySelectorAll('.rounded-full');
+    const ledElements = container.querySelectorAll('.rounded-full.border');
 
     // All 10 LEDs should be lit
     expect(ledElements.length).toBe(10);
@@ -155,7 +155,7 @@ describe('Tachometer', () => {
         gearRpmThresholds={gearRpmThresholds}
       />
     );
-    const ledElements = container.querySelectorAll('.rounded-full');
+    const ledElements = container.querySelectorAll('.rounded-full.border');
 
     // At 5250 RPM, should light up LEDs with thresholds <= 5250
     // That would be: 4500, 5000 (indices 1, 2 in the array, so LEDs 0, 1)
