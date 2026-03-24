@@ -163,7 +163,7 @@ const DashboardWidgetItem = memo(
               }
             `}</style>
             <div className="widget-content w-full h-full">
-              <WidgetComponent />
+              <WidgetComponent {...widget.config} />
             </div>
           </div>
         </div>
