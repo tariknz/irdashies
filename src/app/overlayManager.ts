@@ -486,7 +486,7 @@ export class OverlayManager {
 
   private shouldCloseToTray(): boolean {
     const dashboard = getDashboard('default');
-    return dashboard?.generalSettings?.closeToTray ?? false;
+    return dashboard?.generalSettings?.closeToTray ?? true;
   }
 
   private notifyTrayAccessOnce(): void {

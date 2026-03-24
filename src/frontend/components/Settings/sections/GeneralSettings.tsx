@@ -86,7 +86,7 @@ export const GeneralSettings = () => {
     enableAutoStart:
       currentDashboard?.generalSettings?.enableAutoStart ?? false,
     startMinimized: currentDashboard?.generalSettings?.startMinimized ?? false,
-    closeToTray: currentDashboard?.generalSettings?.closeToTray ?? false,
+    closeToTray: currentDashboard?.generalSettings?.closeToTray ?? true,
     compactMode: currentDashboard?.generalSettings?.compactMode ?? false,
     overlayAlwaysOnTop:
       currentDashboard?.generalSettings?.overlayAlwaysOnTop ?? true,
@@ -613,7 +613,7 @@ export const GeneralSettings = () => {
             <label className="relative inline-flex items-center cursor-pointer">
               <input
                 type="checkbox"
-                checked={settings.closeToTray ?? false}
+                checked={settings.closeToTray ?? true}
                 onChange={(e) => handleCloseToTrayChange(e.target.checked)}
                 className="sr-only peer"
               />
