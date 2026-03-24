@@ -5,8 +5,10 @@ export interface InputGearProps {
   speedMs?: number;
   unit?: number;
   settings: {
+    size: number;
     unit: 'mph' | 'km/h' | 'auto' | 'none';
     showspeed: boolean;
+    showspeedunit: boolean;
   };
 }
 
@@ -31,19 +33,42 @@ export const InputGear = memo(
         break;
     }
 
+    const displaySize = (settings.size / 100);
+    const displayMultiplier =
+    settings.showspeed && settings.showspeedunit
+      ? 50
+      : settings.showspeed
+      ? 55
+      : 90;  
+
     return (
       <div className="@container-[size] flex items-center justify-center p-1 font-mono w-full h-full">
         <div className="flex flex-col items-center">
-          <div className="font-bold leading-none text-[max(1.8rem,min(40cqh,40cqw))]">
+          <div
+            className="font-bold leading-none"
+            style={{
+              fontSize: `min(${displaySize * displayMultiplier}cqh, ${displaySize * 100}cqw)`,
+            }}
+          >
             {gearText}
           </div>
           {settings.showspeed && (
-            <div className="text-[clamp(0.875rem,min(12cqb,16cqw),1.5rem)]">
+            <div 
+              className="text-gray-200 leading-none"
+              style={{
+                  fontSize: `min(${displaySize * (displayMultiplier / 3)}cqh, ${displaySize * 30}cqw)`,
+                }}
+              >
               {speed.toFixed(0)}
             </div>
           )}
-          {settings.showspeed && settings.unit !== 'none' && (
-            <div className="text-gray-500 leading-none text-[clamp(0.625rem,min(6cqb,8cqw),1rem)]">
+          {settings.showspeed && settings.showspeedunit && (
+            <div 
+              className="text-gray-400 leading-none"
+              style={{
+                  fontSize: `min(${displaySize * (displayMultiplier / 5)}cqh, ${displaySize * 20}cqw)`,
+                }}
+              >
               {displayUnit}
             </div>
           )}

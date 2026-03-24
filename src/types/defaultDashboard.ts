@@ -300,7 +300,9 @@ export const defaultDashboard: {
         },
         gear: {
           enabled: true,
+          size: 100,
           showspeed: true,
+          showspeedunit: true,
           unit: 'auto',
         },
         abs: {
