@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { useStoreWithEqualityFn } from 'zustand/traditional';
+import { shallow } from 'zustand/shallow';
 import { IncidentType } from '../../../types/raceControl';
 import type { Incident } from '../../../types/raceControl';
 
@@ -20,7 +22,10 @@ export const useRaceControlStore = create<RaceControlState>((set) => ({
   driverFilter: null,
 
   addIncident: (incident) =>
-    set((s) => ({ incidents: [incident, ...s.incidents] })),
+    set((s) => {
+      if (s.incidents.some((i) => i.id === incident.id)) return s;
+      return { incidents: [incident, ...s.incidents] };
+    }),
 
   clearIncidents: () => set({ incidents: [] }),
 
@@ -37,14 +42,23 @@ export const useRaceControlStore = create<RaceControlState>((set) => ({
 
   setDriverFilter: (carIdx) => set({ driverFilter: carIdx }),
 
-  setIncidents: (incidents) => set({ incidents: [...incidents].reverse() }), // newest first
+  setIncidents: (incidents) => {
+    const seen = new Set<string>();
+    const deduped = [...incidents]
+      .reverse()
+      .filter((i) => (seen.has(i.id) ? false : seen.add(i.id) && true));
+    set({ incidents: deduped });
+  },
 }));
 
 export const useFilteredIncidents = () =>
-  useRaceControlStore((s) => {
-    return s.incidents.filter(
-      (i) =>
-        s.activeTypeFilters.has(i.type) &&
-        (s.driverFilter === null || i.carIdx === s.driverFilter)
-    );
-  });
+  useStoreWithEqualityFn(
+    useRaceControlStore,
+    (s) =>
+      s.incidents.filter(
+        (i) =>
+          s.activeTypeFilters.has(i.type) &&
+          (s.driverFilter === null || i.carIdx === s.driverFilter)
+      ),
+    shallow
+  );

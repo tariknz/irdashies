@@ -29,6 +29,7 @@ export class OverlayManager {
   private displayWindows = new Map<number, BrowserWindow>();
   private displayBoundsInfo = new Map<number, ContainerBoundsInfo>();
   private currentSettingsWindow: BrowserWindow | undefined;
+  private gantryWindow: BrowserWindow | undefined;
   private isLocked = true;
   private hasInteractiveWidgets = false;
   private skipTaskbar = true;
@@ -98,7 +99,7 @@ export class OverlayManager {
     displaysWithWidgets.add(primaryDisplay.id);
 
     this.hasInteractiveWidgets = dashboardLayout.widgets.some(
-      (w) => w.enabled && w.config?.interactive === true
+      (w) => w.id !== 'gantry' && w.enabled && w.config?.interactive === true
     );
 
     for (const display of allDisplays) {
@@ -117,6 +118,7 @@ export class OverlayManager {
     }
 
     this.createSettingsWindow();
+    this.createGantryWindow(dashboardLayout);
   }
 
   /**
@@ -331,6 +333,15 @@ export class OverlayManager {
       }
     }
 
+    // Send to gantry window (needs telemetry/session, so send before the guard)
+    if (this.gantryWindow && !this.gantryWindow.isDestroyed()) {
+      try {
+        this.gantryWindow.webContents.send(key, value);
+      } catch (e) {
+        console.error(`Failed to send message ${key} to gantry window`, e);
+      }
+    }
+
     // Skip high-frequency telemetry messages for the settings window
     if (OverlayManager.OVERLAY_ONLY_MESSAGES.has(key)) {
       return;
@@ -532,6 +543,46 @@ export class OverlayManager {
    */
   public hasLock(): boolean {
     return this.hasSingleInstanceLock;
+  }
+
+  public createGantryWindow(dashboardLayout?: DashboardLayout): void {
+    const gantryWidget = dashboardLayout?.widgets.find(
+      (w) => w.id === 'gantry'
+    );
+    if (!gantryWidget?.enabled) return;
+
+    if (this.gantryWindow && !this.gantryWindow.isDestroyed()) {
+      this.gantryWindow.show();
+      return;
+    }
+
+    const browserWindow = new BrowserWindow({
+      title: 'irDashies - Gantry',
+      frame: true,
+      width: 1400,
+      height: 800,
+      autoHideMenuBar: true,
+      icon: getIconPath(),
+      webPreferences: {
+        preload: path.join(__dirname, 'preload.js'),
+        backgroundThrottling: false,
+      },
+    });
+
+    this.gantryWindow = browserWindow;
+
+    if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
+      browserWindow.loadURL(`${MAIN_WINDOW_VITE_DEV_SERVER_URL}#/gantry`);
+    } else {
+      browserWindow.loadFile(
+        path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`),
+        { hash: '/gantry' }
+      );
+    }
+
+    browserWindow.on('closed', () => {
+      this.gantryWindow = undefined;
+    });
   }
 
   public createSettingsWindow(): BrowserWindow {

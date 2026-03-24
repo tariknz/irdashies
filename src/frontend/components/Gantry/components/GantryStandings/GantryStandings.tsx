@@ -1,5 +1,4 @@
 import { memo, useEffect, useRef, useMemo } from 'react';
-import { useDriverStandings } from '../../../Standings/hooks/useDriverStandings';
 import { getTailwindStyle } from '@irdashies/utils/colors';
 import { formatTime } from '@irdashies/utils/time';
 import { Compound } from '../../../Standings/components/Compound/Compound';
@@ -9,9 +8,10 @@ import {
   extractDriverName,
 } from '../../../Standings/components/DriverName/DriverName';
 import type { Gap } from '../../../Standings/createStandings';
-import type { StandingsWidgetSettings } from '@irdashies/types';
+import { useDriverStandings } from '../../../Standings/hooks/useDriverStandings';
 
 interface Props {
+  standingsByClass: ReturnType<typeof useDriverStandings>;
   followedCarIdx: number | null;
 }
 
@@ -35,86 +35,82 @@ const formatInterval = (
   return interval.toFixed(1);
 };
 
-export const GantryStandings = memo(({ followedCarIdx }: Props) => {
-  const standingsByClass = useDriverStandings({
-    gap: { enabled: true },
-    interval: { enabled: true },
-    lapTimeDeltas: { enabled: true, numLaps: 3 },
-  } as StandingsWidgetSettings['config']);
+export const GantryStandings = memo(
+  ({ standingsByClass, followedCarIdx }: Props) => {
+    const followedRef = useRef<HTMLDivElement | null>(null);
 
-  const followedRef = useRef<HTMLDivElement | null>(null);
+    useEffect(() => {
+      followedRef.current?.scrollIntoView({
+        block: 'nearest',
+        behavior: 'smooth',
+      });
+    }, [followedCarIdx]);
 
-  useEffect(() => {
-    followedRef.current?.scrollIntoView({
-      block: 'nearest',
-      behavior: 'smooth',
-    });
-  }, [followedCarIdx]);
+    const isMultiClass = standingsByClass.length > 1;
 
-  const isMultiClass = standingsByClass.length > 1;
+    return (
+      <div className="flex flex-col h-full overflow-hidden">
+        {/* Column header row */}
+        <div className="flex items-center bg-slate-900 border-b border-slate-700/50 px-1 py-0.5 text-xs font-bold uppercase tracking-wider text-slate-500 flex-shrink-0">
+          <span className="w-6 text-center">P</span>
+          <span className="w-8 text-center">#</span>
+          <span className="flex-1">Driver</span>
+          <span className="w-5 text-center">Tyre</span>
+          <span className="w-16 text-right">iR</span>
+          <span className="w-5 text-center">Pit</span>
+          <span className="w-12 text-right">Gap</span>
+          <span className="w-12 text-right">Int</span>
+          <span className="w-14 text-right">Best</span>
+          <span className="w-14 text-right">Last</span>
+          <span className="w-9 text-right">L-3</span>
+          <span className="w-9 text-right">L-2</span>
+          <span className="w-9 text-right">L-1</span>
+        </div>
 
-  return (
-    <div className="flex flex-col h-full overflow-hidden">
-      {/* Column header row */}
-      <div className="flex items-center bg-slate-900 border-b border-slate-700/50 px-1 py-0.5 text-xs font-bold uppercase tracking-wider text-slate-500 flex-shrink-0">
-        <span className="w-6 text-center">P</span>
-        <span className="w-8 text-center">#</span>
-        <span className="flex-1">Driver</span>
-        <span className="w-5 text-center">Tyre</span>
-        <span className="w-16 text-right">iR</span>
-        <span className="w-5 text-center">Pit</span>
-        <span className="w-12 text-right">Gap</span>
-        <span className="w-12 text-right">Int</span>
-        <span className="w-14 text-right">Best</span>
-        <span className="w-14 text-right">Last</span>
-        <span className="w-9 text-right">L-3</span>
-        <span className="w-9 text-right">L-2</span>
-        <span className="w-9 text-right">L-1</span>
-      </div>
-
-      <div className="flex-1 overflow-y-auto min-h-0">
-        {standingsByClass.map(([classId, classDrivers]) => {
-          const firstDriver = classDrivers[0];
-          const carClass = firstDriver?.carClass;
-          const classColorHex =
-            carClass?.color !== undefined
-              ? `#${carClass.color.toString(16).padStart(6, '0')}`
-              : '#94a3b8';
-          return (
-            <div key={classId}>
-              {/* Class header */}
-              <div
-                className="flex items-center gap-2 bg-slate-900 px-2 py-0.5 border-y border-slate-700/30"
-                style={{
-                  borderLeftColor: classColorHex,
-                  borderLeftWidth: 2,
-                }}
-              >
-                <span
-                  className="text-xs font-extrabold uppercase tracking-widest"
-                  style={{ color: classColorHex }}
+        <div className="flex-1 overflow-y-auto min-h-0">
+          {standingsByClass.map(([classId, classDrivers]) => {
+            const firstDriver = classDrivers[0];
+            const carClass = firstDriver?.carClass;
+            const classColorHex =
+              carClass?.color !== undefined
+                ? `#${carClass.color.toString(16).padStart(6, '0')}`
+                : '#94a3b8';
+            return (
+              <div key={classId}>
+                {/* Class header */}
+                <div
+                  className="flex items-center gap-2 bg-slate-900 px-2 py-0.5 border-y border-slate-700/30"
+                  style={{
+                    borderLeftColor: classColorHex,
+                    borderLeftWidth: 2,
+                  }}
                 >
-                  {carClass?.name}
-                </span>
+                  <span
+                    className="text-xs font-extrabold uppercase tracking-widest"
+                    style={{ color: classColorHex }}
+                  >
+                    {carClass?.name}
+                  </span>
+                </div>
+                {/* Driver rows */}
+                {classDrivers.map((driver, idx) => (
+                  <GantryDriverRow
+                    key={driver.carIdx}
+                    driver={driver}
+                    idx={idx}
+                    followedCarIdx={followedCarIdx}
+                    followedRef={followedRef}
+                    isMultiClass={isMultiClass}
+                  />
+                ))}
               </div>
-              {/* Driver rows */}
-              {classDrivers.map((driver, idx) => (
-                <GantryDriverRow
-                  key={driver.carIdx}
-                  driver={driver}
-                  idx={idx}
-                  followedCarIdx={followedCarIdx}
-                  followedRef={followedRef}
-                  isMultiClass={isMultiClass}
-                />
-              ))}
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
-    </div>
-  );
-});
+    );
+  }
+);
 GantryStandings.displayName = 'GantryStandings';
 
 interface GantryDriverRowProps {

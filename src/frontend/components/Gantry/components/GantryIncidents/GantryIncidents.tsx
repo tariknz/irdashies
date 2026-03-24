@@ -1,6 +1,10 @@
 import { memo, useMemo } from 'react';
 import { IncidentType } from '@irdashies/types';
-import { useRaceControlStore, useFilteredIncidents } from '@irdashies/context';
+import {
+  useRaceControlStore,
+  useFilteredIncidents,
+  useTelemetryValue,
+} from '@irdashies/context';
 import { IncidentRow } from './IncidentRow';
 
 const CHIP_STYLES: Record<
@@ -49,6 +53,9 @@ export const GantryIncidents = memo(() => {
   const setDriverFilter = useRaceControlStore((s) => s.setDriverFilter);
   const allIncidents = useRaceControlStore((s) => s.incidents);
   const incidents = useFilteredIncidents();
+  const isReplayPlaying = Boolean(
+    useTelemetryValue<boolean>('IsReplayPlaying')
+  );
 
   const uniqueDrivers = useMemo(() => {
     const seen = new Map<number, string>();
@@ -111,13 +118,16 @@ export const GantryIncidents = memo(() => {
             No incidents
           </div>
         ) : (
-          incidents.map((incident, idx) => (
-            <IncidentRow
-              key={incident.id}
-              incident={incident}
-              isOdd={idx % 2 !== 0}
-            />
-          ))
+          incidents
+            .slice(-50)
+            .map((incident, idx) => (
+              <IncidentRow
+                key={incident.id}
+                incident={incident}
+                isOdd={idx % 2 !== 0}
+                isReplayPlaying={isReplayPlaying}
+              />
+            ))
         )}
       </div>
     </div>

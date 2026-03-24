@@ -12,7 +12,10 @@
       "Bash(npx eslint:*)",
       "WebFetch(domain:github.com)",
       "WebSearch",
-      "Bash(xargs cat:*)"
+      "Bash(xargs cat:*)",
+      "Bash(find /Users/lanceselgo/Documents/GitHub/irdashies -name *gantry* -o -name *Gantry*)",
+      "Bash(find /Users/lanceselgo/Documents/GitHub/irdashies/.worktrees/gantry/src -name *raceControl* -o -name *Incident*)",
+      "Bash(find /Users/lanceselgo/Documents/GitHub/irdashies/.worktrees/gantry/src -path *storybook* -o -path *decorator*)"
     ],
     "deny": [],
     "ask": []
