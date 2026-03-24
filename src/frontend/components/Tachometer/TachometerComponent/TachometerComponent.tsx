@@ -283,7 +283,7 @@ export const Tachometer = ({
       <div className={`@container-[size] flex ${rpmOrientation === 'vertical' ? 'flex-col' : 'flex-row'} items-center w-full h-full gap-1`}>
 
         {/* LED lights */}
-        <div id="ledcontainer" className={`h-full ${shouldShowRpmBox && rpmOrientation === 'vertical' ? 'w-full' : 'w-auto'} flex items-center justify-center`}>
+        <div id="ledcontainer" className={`h-full w-full flex items-center justify-center`}>
           {Array.from({ length: effectiveNumLights }, (_, i) => (
             <>
             <div 
