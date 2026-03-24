@@ -1,4 +1,5 @@
 import * as fs from 'node:fs';
+import * as fsp from 'node:fs/promises';
 import * as path from 'node:path';
 import type { Incident } from '../../types/raceControl';
 
@@ -10,10 +11,6 @@ function getStorageDir(): string {
 
 function getFilePath(sessionId: string, storageDir: string): string {
   return path.join(storageDir, `incidents-${sessionId}.json`);
-}
-
-function ensureDir(dir: string) {
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 }
 
 export function loadIncidents(
@@ -29,20 +26,17 @@ export function loadIncidents(
   }
 }
 
-// NOTE: This does a full-array rewrite rather than true append-only NDJSON for simplicity.
-// For race sessions (hundreds of incidents), this is acceptable. If performance becomes
-// an issue on very long endurance sessions, switch to NDJSON (one JSON object per line).
-export function appendIncident(
+export async function appendIncident(
   sessionId: string,
   incident: Incident,
   storageDir = getStorageDir()
-) {
-  ensureDir(storageDir);
+): Promise<void> {
+  await fsp.mkdir(storageDir, { recursive: true });
   const filePath = getFilePath(sessionId, storageDir);
   const existing = loadIncidents(sessionId, storageDir);
   existing.push(incident);
   try {
-    fs.writeFileSync(filePath, JSON.stringify(existing));
+    await fsp.writeFile(filePath, JSON.stringify(existing));
   } catch (err) {
     console.error('Failed to write incident file:', err);
   }

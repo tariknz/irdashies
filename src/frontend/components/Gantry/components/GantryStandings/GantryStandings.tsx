@@ -9,6 +9,7 @@ import {
 } from '../../../Standings/components/DriverName/DriverName';
 import type { Gap } from '../../../Standings/createStandings';
 import { useDriverStandings } from '../../../Standings/hooks/useDriverStandings';
+import { useHighlightColor } from '../../../Standings/hooks/useHighlightColor';
 
 interface Props {
   standingsByClass: ReturnType<typeof useDriverStandings>;
@@ -19,7 +20,7 @@ const formatGap = (
   gap: Gap | undefined,
   position: number | undefined
 ): string => {
-  if (position === 1) return 'Leader';
+  if (position === 1) return 'gap';
   if (gap === undefined) return '-';
   if (gap.laps !== 0) return `${gap.laps}L`;
   if (gap.value !== undefined) return gap.value.toFixed(1);
@@ -30,7 +31,7 @@ const formatInterval = (
   interval: number | undefined,
   position: number | undefined
 ): string => {
-  if (position === 1) return '-';
+  if (position === 1) return 'int';
   if (interval === undefined) return '-';
   return interval.toFixed(1);
 };
@@ -38,6 +39,8 @@ const formatInterval = (
 export const GantryStandings = memo(
   ({ standingsByClass, followedCarIdx }: Props) => {
     const followedRef = useRef<HTMLDivElement | null>(null);
+    const highlightColor = useHighlightColor();
+    const highlightColorHex = `#${highlightColor.toString(16).padStart(6, '0')}`;
 
     useEffect(() => {
       followedRef.current?.scrollIntoView({
@@ -50,23 +53,6 @@ export const GantryStandings = memo(
 
     return (
       <div className="flex flex-col h-full overflow-hidden">
-        {/* Column header row */}
-        <div className="flex items-center bg-slate-900 border-b border-slate-700/50 px-1 py-0.5 text-xs font-bold uppercase tracking-wider text-slate-500 flex-shrink-0">
-          <span className="w-6 text-center">P</span>
-          <span className="w-8 text-center">#</span>
-          <span className="flex-1">Driver</span>
-          <span className="w-5 text-center">Tyre</span>
-          <span className="w-16 text-right">iR</span>
-          <span className="w-5 text-center">Pit</span>
-          <span className="w-12 text-right">Gap</span>
-          <span className="w-12 text-right">Int</span>
-          <span className="w-14 text-right">Best</span>
-          <span className="w-14 text-right">Last</span>
-          <span className="w-9 text-right">L-3</span>
-          <span className="w-9 text-right">L-2</span>
-          <span className="w-9 text-right">L-1</span>
-        </div>
-
         <div className="flex-1 overflow-y-auto min-h-0">
           {standingsByClass.map(([classId, classDrivers]) => {
             const firstDriver = classDrivers[0];
@@ -101,6 +87,7 @@ export const GantryStandings = memo(
                     followedCarIdx={followedCarIdx}
                     followedRef={followedRef}
                     isMultiClass={isMultiClass}
+                    highlightColorHex={highlightColorHex}
                   />
                 ))}
               </div>
@@ -119,6 +106,7 @@ interface GantryDriverRowProps {
   followedCarIdx: number | null;
   followedRef: React.RefObject<HTMLDivElement | null>;
   isMultiClass: boolean;
+  highlightColorHex: string;
 }
 
 const GantryDriverRow = memo(
@@ -128,6 +116,7 @@ const GantryDriverRow = memo(
     followedCarIdx,
     followedRef,
     isMultiClass,
+    highlightColorHex,
   }: GantryDriverRowProps) => {
     const isPlayer = driver.isPlayer;
     const isFollowed = driver.carIdx === followedCarIdx;
@@ -159,12 +148,18 @@ const GantryDriverRow = memo(
     return (
       <div
         ref={isFollowed ? followedRef : undefined}
+        style={
+          isFollowed
+            ? ({ '--tw-ring-color': highlightColorHex } as React.CSSProperties)
+            : undefined
+        }
         className={[
-          'flex items-center px-1 py-px text-xs border-b border-white/5',
+          'flex items-center px-1 py-px text-xs border-b border-white/5 transition-opacity duration-150',
           idx % 2 === 0 ? 'bg-slate-800/70' : 'bg-slate-900/70',
           isPlayer ? 'bg-yellow-500/20 text-amber-300' : '',
-          isFollowed ? 'ring-1 ring-indigo-500/50' : '',
-          !driver.onTrack ? 'opacity-60' : '',
+          isFollowed ? 'ring-1 relative z-10' : '',
+          followedCarIdx !== null && !isFollowed ? 'opacity-40' : '',
+          followedCarIdx === null && !driver.onTrack ? 'opacity-60' : '',
         ]
           .filter(Boolean)
           .join(' ')}
@@ -212,11 +207,11 @@ const GantryDriverRow = memo(
           )}
         </span>
         {/* Gap */}
-        <span className="w-12 text-right tabular-nums">
+        <span className="w-12 text-right tabular-nums px-1">
           {formatGap(driver.gap, driver.classPosition ?? driver.position)}
         </span>
         {/* Interval */}
-        <span className="w-12 text-right tabular-nums">
+        <span className="w-12 text-right tabular-nums px-1">
           {formatInterval(
             driver.interval,
             driver.classPosition ?? driver.position
@@ -224,13 +219,13 @@ const GantryDriverRow = memo(
         </span>
         {/* Best */}
         <span
-          className={`w-14 text-right tabular-nums ${driver.hasFastestTime ? 'text-purple-400' : ''}`}
+          className={`w-14 text-right tabular-nums gap-px-1 ${driver.hasFastestTime ? 'text-purple-400' : ''}`}
         >
           {bestTimeStr}
         </span>
         {/* Last */}
         <span
-          className={`w-14 text-right tabular-nums ${
+          className={`w-14 text-right tabular-nums px-2 ${
             driver.lastTimeState === 'session-fastest'
               ? 'text-purple-400'
               : driver.lastTimeState === 'personal-best'
@@ -244,7 +239,7 @@ const GantryDriverRow = memo(
         {deltaSlots.map((delta, i) => (
           <span
             key={i}
-            className={`w-9 text-right tabular-nums ${
+            className={`w-9 text-right tabular-nums px-0.5 ${
               delta !== undefined
                 ? delta > 0
                   ? 'text-green-400'

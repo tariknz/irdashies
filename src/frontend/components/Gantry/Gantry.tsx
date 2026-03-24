@@ -16,7 +16,7 @@ type Standings = ReturnType<typeof useDriverStandings>;
  */
 const StandingsFetcher = memo(
   ({ onSnapshot }: { onSnapshot: (s: Standings) => void }) => {
-    const standings = useDriverStandings();
+    const standings = useDriverStandings(undefined, { showAll: true });
     const onSnapshotRef = useRef(onSnapshot);
     useEffect(() => {
       if (standings.length > 0) onSnapshotRef.current(standings);

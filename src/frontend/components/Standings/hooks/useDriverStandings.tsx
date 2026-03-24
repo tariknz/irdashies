@@ -32,7 +32,8 @@ import { TrackLocation } from '@irdashies/types';
 import type { SessionResults } from '@irdashies/types';
 
 export const useDriverStandings = (
-  settings?: StandingsWidgetSettings['config']
+  settings?: StandingsWidgetSettings['config'],
+  options?: { showAll?: boolean }
 ) => {
   const {
     driverStandings: {
@@ -191,6 +192,7 @@ export const useDriverStandings = (
       ? augmentStandingsWithInterval(gapAugmentedGroupedByClass)
       : gapAugmentedGroupedByClass;
 
+    if (options?.showAll) return intervalAugmentedGroupedByClass;
     return sliceRelevantDrivers(intervalAugmentedGroupedByClass, driverClass, {
       buffer,
       numNonClassDrivers,
@@ -229,6 +231,7 @@ export const useDriverStandings = (
     minPlayerClassDrivers,
     numTopDrivers,
     driverLivePositions,
+    options?.showAll,
   ]);
 
   return standingsWithGain;

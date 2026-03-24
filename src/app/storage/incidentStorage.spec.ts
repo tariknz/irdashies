@@ -45,7 +45,7 @@ describe('incidentStorage', () => {
 
   it('appendIncident creates file and persists incident', async () => {
     const { appendIncident, loadIncidents } = await import('./incidentStorage');
-    appendIncident('session123', makeIncident('1'), tmpDir);
+    await appendIncident('session123', makeIncident('1'), tmpDir);
     const loaded = loadIncidents('session123', tmpDir);
     expect(loaded).toHaveLength(1);
     expect(loaded[0].id).toBe('1');
@@ -54,7 +54,7 @@ describe('incidentStorage', () => {
   it('clearIncidents removes the session file', async () => {
     const { appendIncident, clearIncidents, loadIncidents } =
       await import('./incidentStorage');
-    appendIncident('session123', makeIncident('1'), tmpDir);
+    await appendIncident('session123', makeIncident('1'), tmpDir);
     clearIncidents('session123', tmpDir);
     expect(loadIncidents('session123', tmpDir)).toEqual([]);
   });
@@ -62,9 +62,9 @@ describe('incidentStorage', () => {
   it('pruneOldSessions keeps all when retention is "all"', async () => {
     const { appendIncident, pruneOldSessions, listSessionFiles } =
       await import('./incidentStorage');
-    appendIncident('s1', makeIncident('1'), tmpDir);
-    appendIncident('s2', makeIncident('2'), tmpDir);
-    appendIncident('s3', makeIncident('3'), tmpDir);
+    await appendIncident('s1', makeIncident('1'), tmpDir);
+    await appendIncident('s2', makeIncident('2'), tmpDir);
+    await appendIncident('s3', makeIncident('3'), tmpDir);
     pruneOldSessions('all', tmpDir);
     expect(listSessionFiles(tmpDir)).toHaveLength(3);
   });
@@ -72,12 +72,12 @@ describe('incidentStorage', () => {
   it('pruneOldSessions deletes oldest files when limit exceeded', async () => {
     const { appendIncident, pruneOldSessions, listSessionFiles } =
       await import('./incidentStorage');
-    appendIncident('s1', makeIncident('1'), tmpDir);
-    appendIncident('s2', makeIncident('2'), tmpDir);
-    appendIncident('s3', makeIncident('3'), tmpDir);
-    appendIncident('s4', makeIncident('4'), tmpDir);
-    appendIncident('s5', makeIncident('5'), tmpDir);
-    appendIncident('s6', makeIncident('6'), tmpDir);
+    await appendIncident('s1', makeIncident('1'), tmpDir);
+    await appendIncident('s2', makeIncident('2'), tmpDir);
+    await appendIncident('s3', makeIncident('3'), tmpDir);
+    await appendIncident('s4', makeIncident('4'), tmpDir);
+    await appendIncident('s5', makeIncident('5'), tmpDir);
+    await appendIncident('s6', makeIncident('6'), tmpDir);
     pruneOldSessions(5, tmpDir);
     const remaining = listSessionFiles(tmpDir);
     expect(remaining).toHaveLength(5);

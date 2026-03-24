@@ -41,8 +41,10 @@ export const setupRaceControlBridge = () => {
   };
 
   detector.onIncident((incident) => {
-    appendIncident(currentSessionId, incident);
     broadcast(incident);
+    appendIncident(currentSessionId, incident).catch((err) =>
+      console.error('Failed to persist incident:', err)
+    );
   });
 
   let unsubscribeSession: (() => void) | undefined;

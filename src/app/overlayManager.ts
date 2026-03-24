@@ -322,12 +322,30 @@ export class OverlayManager {
     'runningState',
   ]);
 
+  // Debug: IPC timing stats (dev only)
+  private ipcTimings: Record<string, { total: number; count: number }> = {};
+  private ipcLogTimer: NodeJS.Timeout | null = null;
+
+  private trackIpcTime(key: string, ms: number) {
+    if (!MAIN_WINDOW_VITE_DEV_SERVER_URL) return;
+    if (!this.ipcTimings[key]) this.ipcTimings[key] = { total: 0, count: 0 };
+    this.ipcTimings[key].total += ms;
+    this.ipcTimings[key].count++;
+    if (!this.ipcLogTimer) {
+      this.ipcLogTimer = setInterval(() => {
+        this.ipcTimings = {};
+      }, 5000);
+    }
+  }
+
   public publishMessage(key: string, value: unknown): void {
     // Send to all display overlay windows
     for (const win of this.displayWindows.values()) {
       if (win.isDestroyed()) continue;
       try {
+        const t0 = performance.now();
         win.webContents.send(key, value);
+        this.trackIpcTime(`overlay:${key}`, performance.now() - t0);
       } catch (e) {
         console.error(`Failed to send message ${key} to overlay window`, e);
       }
@@ -336,7 +354,9 @@ export class OverlayManager {
     // Send to gantry window (needs telemetry/session, so send before the guard)
     if (this.gantryWindow && !this.gantryWindow.isDestroyed()) {
       try {
+        const t0 = performance.now();
         this.gantryWindow.webContents.send(key, value);
+        this.trackIpcTime(`gantry:${key}`, performance.now() - t0);
       } catch (e) {
         console.error(`Failed to send message ${key} to gantry window`, e);
       }

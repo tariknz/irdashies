@@ -137,6 +137,7 @@ export function generateMockData(sessionData?: {
             const prevAbs =
               prevTelemetry.BrakeABSactive ?? ({ value: [false] } as const);
 
+            const spreadStart = performance.now();
             t = {
               ...prevTelemetry,
               Brake: {
@@ -202,13 +203,20 @@ export function generateMockData(sessionData?: {
               },
             } as unknown as Telemetry;
             prevTelemetry = t;
+            const spreadMs = performance.now() - spreadStart;
+            if (spreadMs > 1)
+              console.log(`[MockData] spread took ${spreadMs.toFixed(2)}ms`);
           }
 
           telemetryIdx = telemetryIdx + 1;
           const data = t;
 
           // Call all registered callbacks
+          const cbStart = performance.now();
           telemetryCallbacks.forEach((cb) => cb(data));
+          const cbMs = performance.now() - cbStart;
+          if (cbMs > 5)
+            console.log(`[MockData] callbacks took ${cbMs.toFixed(2)}ms`);
         }, 1000 / 60); // Update at 60Hz for smooth telemetry simulation
       }
 

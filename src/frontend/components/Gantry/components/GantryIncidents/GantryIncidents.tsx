@@ -118,16 +118,14 @@ export const GantryIncidents = memo(() => {
             No incidents
           </div>
         ) : (
-          incidents
-            .slice(-50)
-            .map((incident, idx) => (
-              <IncidentRow
-                key={incident.id}
-                incident={incident}
-                isOdd={idx % 2 !== 0}
-                isReplayPlaying={isReplayPlaying}
-              />
-            ))
+          incidents.map((incident, idx) => (
+            <IncidentRow
+              key={incident.id}
+              incident={incident}
+              isOdd={idx % 2 !== 0}
+              isReplayPlaying={isReplayPlaying}
+            />
+          ))
         )}
       </div>
     </div>
