@@ -289,7 +289,7 @@ export const Tachometer = ({
           style={{          
             ['--bg-opacity' as string]: `${opacity ?? 80}%`,
           }}>
-          {Array.from({ length: 5 }, (_, i) => (
+          {Array.from({ length: effectiveNumLights }, (_, i) => (
             <>
             <div className="h-[80%] aspect-square p-0.5">
               <div
