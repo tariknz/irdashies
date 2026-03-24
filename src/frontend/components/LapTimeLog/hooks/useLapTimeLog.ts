@@ -46,7 +46,7 @@ export const useLapTimeLog = () => {
   const incidentCount = useTelemetryValue<number>('PlayerCarMyIncidentCount') ?? 0;
 
   // Refs
-  const lastLoggedLap = useRef<number>(0);
+  const lastLoggedLap = useRef<number>(lapCompleted);
   const lastLoggedTime = useRef<number>(0);
   const prevSessionNum = useRef<number>(sessionNum);
   const prevSessionTime = useRef<number>(sessionTime);
