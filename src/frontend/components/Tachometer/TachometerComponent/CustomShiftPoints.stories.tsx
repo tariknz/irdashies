@@ -127,7 +127,7 @@ const AnimatedRPM = ({
         {rpm >= shiftRpm ? 'TRUE' : 'FALSE'}, Style={indicatorType}, Color=
         {color}
       </div>
-      <div className="p-4 bg-black rounded">
+      <div className="p-4 bg-black rounded h-30 w-150">
         <TachometerForStorybook
           rpm={rpm}
           maxRpm={7360}
@@ -204,7 +204,7 @@ export const WithRpmText: Story = {
       </div>
       <p className="text-gray-400 mb-4">
         RPM box always visible, shows both RPM and &quot;SHIFT&quot; when active
-      </p>
+      </p>      
       <AnimatedRPM
         indicatorType="glow"
         title="Glow Effect - With RPM Text"

@@ -16,29 +16,21 @@ export const Tachometer = () => {
     return <></>;
   }
 
-  return (
-    <div className="h-full w-full flex items-center justify-center">
-      <div
-        className="bg-slate-800/(--bg-opacity) w-full rounded-lg"
-        style={{
-          ['--bg-opacity' as string]: `${settings?.background?.opacity ?? 80}%`,
-        }}
-      >
-        <TachometerComponent
-          rpm={tachometerData.rpm}
-          gear={tachometerData.gear}
-          maxRpm={tachometerData.maxRpm}
-          shiftRpm={tachometerData.shiftRpm}
-          blinkRpm={tachometerData.blinkRpm}
-          showRpmText={settings?.showRpmText ?? false}
-          rpmOrientation={settings?.rpmOrientation ?? 'vertical'}
-          gearRpmThresholds={tachometerData.gearRpmThresholds}
-          ledColors={tachometerData.carData?.ledColor}
-          carData={tachometerData.carData}
-          carPath={tachometerData.carPath}
-          shiftPointSettings={settings?.shiftPointSettings}
-        />
-      </div>
-    </div>
+  return (    
+      <TachometerComponent
+        rpm={tachometerData.rpm}
+        gear={tachometerData.gear}
+        maxRpm={tachometerData.maxRpm}
+        shiftRpm={tachometerData.shiftRpm}
+        blinkRpm={tachometerData.blinkRpm}
+        showRpmText={settings?.showRpmText ?? false}
+        rpmOrientation={settings?.rpmOrientation ?? 'vertical'}
+        gearRpmThresholds={tachometerData.gearRpmThresholds}
+        ledColors={tachometerData.carData?.ledColor}
+        carData={tachometerData.carData}
+        carPath={tachometerData.carPath}
+        shiftPointSettings={settings?.shiftPointSettings}
+        opacity={settings?.background.opacity}
+      />
   );
 };

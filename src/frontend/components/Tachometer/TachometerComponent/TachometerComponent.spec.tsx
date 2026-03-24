@@ -52,7 +52,7 @@ describe('Tachometer', () => {
 
   it('renders LED container', () => {
     const { container } = render(<Tachometer rpm={3000} maxRpm={8500} />);
-    const ledContainer = container.querySelector('.flex.gap-1');
+    const ledContainer = container.querySelector('.aspect-square');
     expect(ledContainer).toBeInTheDocument();
   });
 
