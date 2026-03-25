@@ -1,5 +1,11 @@
 import { useMemo } from 'react';
-import { useTelemetryValues, useSessionStore, useFocusCarIdx, useTrackLength, usePitLaneStore } from '@irdashies/context';
+import {
+  useTelemetryValues,
+  useSessionStore,
+  useFocusCarIdx,
+  useTrackLength,
+  usePitLaneStore,
+} from '@irdashies/context';
 
 export interface PitboxPositionResult {
   distanceToPit: number;
@@ -9,10 +15,13 @@ export interface PitboxPositionResult {
   playerPct: number;
   isEarlyPitbox: boolean; // Pitbox is near pit entry (last 10% of track before start/finish)
   distanceToPitEntry: number; // Distance to pit entry line (meters)
-  distanceToPitExit: number;  // Distance to pit exit line (meters)
+  distanceToPitExit: number; // Distance to pit exit line (meters)
 }
 
-export const usePitboxPosition = (approachDistance: number, earlyPitboxThreshold: number): PitboxPositionResult => {
+export const usePitboxPosition = (
+  approachDistance: number,
+  earlyPitboxThreshold: number
+): PitboxPositionResult => {
   const session = useSessionStore((state) => state.session);
   const focusCarIdx = useFocusCarIdx();
   const carIdxLapDistPct = useTelemetryValues('CarIdxLapDistPct');
@@ -21,7 +30,8 @@ export const usePitboxPosition = (approachDistance: number, earlyPitboxThreshold
 
   return useMemo(() => {
     // Get player's current position on track (as percentage)
-    const playerPct = focusCarIdx !== undefined ? (carIdxLapDistPct?.[focusCarIdx] ?? 0) : 0;
+    const playerPct =
+      focusCarIdx !== undefined ? (carIdxLapDistPct?.[focusCarIdx] ?? 0) : 0;
 
     // Get pitbox position (percentage of entire track)
     // DriverPitTrkPct is on the DriverInfo object, not on individual Driver objects
@@ -49,12 +59,16 @@ export const usePitboxPosition = (approachDistance: number, earlyPitboxThreshold
 
     // Determine if approaching (within approach distance and ahead)
     // Only show when pitbox is ahead of us and within the approach distance
-    const isApproaching = distanceToPit > 0 && distanceToPit <= approachDistance;
+    const isApproaching =
+      distanceToPit > 0 && distanceToPit <= approachDistance;
 
     // Progress bar: 0-100% as approaching from approachDistance to 0m
     const progressPercent = Math.max(
       0,
-      Math.min(100, ((approachDistance - distanceToPit) / approachDistance) * 100)
+      Math.min(
+        100,
+        ((approachDistance - distanceToPit) / approachDistance) * 100
+      )
     );
 
     // Early pitbox detection:
@@ -79,12 +93,13 @@ export const usePitboxPosition = (approachDistance: number, earlyPitboxThreshold
 
       // Pitbox is "early" if it's ahead in pit lane (>= 0) and within the configured threshold
       // Example: If threshold is 50m and pitbox is 40m past pit entry, isEarlyPitbox = true
-      isEarlyPitbox = entryToPitboxDist >= 0 && entryToPitboxDist <= earlyPitboxThreshold;
+      isEarlyPitbox =
+        entryToPitboxDist >= 0 && entryToPitboxDist <= earlyPitboxThreshold;
     } else {
       // Fallback heuristic: if pitbox is in the last 10% of track (before start/finish),
       // it's likely near pit entry. On most tracks, pit lane runs parallel to start/finish,
       // so a pitbox at ~95% track position would be near the beginning of pit lane.
-      isEarlyPitbox = pitboxPct > 0.90;
+      isEarlyPitbox = pitboxPct > 0.9;
     }
 
     // Calculate distance to pit entry
@@ -93,9 +108,10 @@ export const usePitboxPosition = (approachDistance: number, earlyPitboxThreshold
       distanceToPitEntry = (pitEntryPct - playerPct) * trackLength;
       // Handle wrap-around
       if (Math.abs(distanceToPitEntry) > wrapThreshold) {
-        distanceToPitEntry = distanceToPitEntry > 0
-          ? distanceToPitEntry - trackLength
-          : distanceToPitEntry + trackLength;
+        distanceToPitEntry =
+          distanceToPitEntry > 0
+            ? distanceToPitEntry - trackLength
+            : distanceToPitEntry + trackLength;
       }
     }
 
@@ -105,9 +121,10 @@ export const usePitboxPosition = (approachDistance: number, earlyPitboxThreshold
       distanceToPitExit = (pitExitPct - playerPct) * trackLength;
       // Handle wrap-around
       if (Math.abs(distanceToPitExit) > wrapThreshold) {
-        distanceToPitExit = distanceToPitExit > 0
-          ? distanceToPitExit - trackLength
-          : distanceToPitExit + trackLength;
+        distanceToPitExit =
+          distanceToPitExit > 0
+            ? distanceToPitExit - trackLength
+            : distanceToPitExit + trackLength;
       }
     }
 
@@ -121,5 +138,14 @@ export const usePitboxPosition = (approachDistance: number, earlyPitboxThreshold
       distanceToPitEntry,
       distanceToPitExit,
     };
-  }, [focusCarIdx, carIdxLapDistPct, session, trackLength, approachDistance, pitEntryPct, pitExitPct, earlyPitboxThreshold]);
+  }, [
+    focusCarIdx,
+    carIdxLapDistPct,
+    session,
+    trackLength,
+    approachDistance,
+    pitEntryPct,
+    pitExitPct,
+    earlyPitboxThreshold,
+  ]);
 };

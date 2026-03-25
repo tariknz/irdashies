@@ -11,10 +11,10 @@ import {
   useHighlightColor,
   useDriverTagMap,
 } from './hooks';
-import { useGeneralSettings } from '@irdashies/context';
-import { useLapTimesStoreUpdater } from '../../context/LapTimesStore/LapTimesStoreUpdater';
-import { usePitLapStoreUpdater } from '../../context/PitLapStore/PitLapStoreUpdater';
 import {
+  useGeneralSettings,
+  useLapTimesStoreUpdater,
+  usePitLapStoreUpdater,
   useDrivingState,
   useWeekendInfoNumCarClasses,
   useWeekendInfoTeamRacing,

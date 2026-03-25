@@ -6,6 +6,7 @@ import {
   useWeekendInfoTeamRacing,
   useSessionVisibility,
   useGeneralSettings,
+  usePitLapStoreUpdater,
 } from '@irdashies/context';
 import {
   useRelativeSettings,
@@ -16,7 +17,6 @@ import {
 import { SessionBar } from './components/SessionBar/SessionBar';
 
 import { TitleBar } from './components/TitleBar/TitleBar';
-import { usePitLapStoreUpdater } from '../../context/PitLapStore/PitLapStoreUpdater';
 import { useIsSingleMake } from './hooks/useIsSingleMake';
 
 export const Relative = () => {

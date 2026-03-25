@@ -1,11 +1,11 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { Tachometer } from './InputTachometer';
+import { Tachometer } from './TachometerComponent';
 import { useEffect, useState } from 'react';
 import type { ShiftPointSettings } from '@irdashies/types';
 
 const meta: Meta<typeof Tachometer> = {
   component: Tachometer,
-  title: 'widgets/Input/components/InputTachometer',
+  title: 'widgets/Tachometer',
 };
 export default meta;
 
@@ -50,7 +50,16 @@ const RandomRPM = () => {
     return () => clearInterval(interval);
   }, [isRevLimiter]);
 
-  return <Tachometer rpm={rpm} maxRpm={8500} showRpmText={true} />;
+  return (
+    <div className="h-30 w-150">
+      <Tachometer
+        rpm={rpm}
+        maxRpm={8500}
+        showRpmText={true}
+        rpmOrientation="bottom"
+      />
+    </div>
+  );
 };
 
 // Ferrari 296 GT3 car data example
@@ -116,14 +125,17 @@ const Ferrari296GT3 = () => {
       <p className="text-gray-400 text-sm">
         LED thresholds: 6760, 6860, 6960, 7060, 7160, 7260 RPM
       </p>
-      <Tachometer
-        rpm={rpm}
-        maxRpm={7360}
-        showRpmText={true}
-        gearRpmThresholds={ferrariGear1Rpm}
-        ledColors={ferrariCarData.ledColor}
-        carData={ferrariCarData}
-      />
+      <div className="h-30 w-150">
+        <Tachometer
+          rpm={rpm}
+          maxRpm={7360}
+          showRpmText={true}
+          rpmOrientation="bottom"
+          gearRpmThresholds={ferrariGear1Rpm}
+          ledColors={ferrariCarData.ledColor}
+          carData={ferrariCarData}
+        />
+      </div>
     </div>
   );
 };
@@ -149,7 +161,9 @@ export const CarComparison: Story = {
         <h3 className="text-white text-lg font-semibold">
           Generic Tachometer (Fallback)
         </h3>
-        <RandomRPM />
+        <div className="h-30 w-150">
+          <RandomRPM />
+        </div>
       </div>
     </div>
   ),
@@ -226,14 +240,17 @@ const CadillacGTP = () => {
         Center-out pattern: Outer LEDs (4450), then inward
       </p>
       <p className="text-gray-300 text-sm">Current RPM: {rpm}</p>
-      <Tachometer
-        rpm={rpm}
-        maxRpm={8250}
-        showRpmText={true}
-        gearRpmThresholds={cadillacGear1Rpm}
-        ledColors={cadillacCarData.ledColor}
-        carData={cadillacCarData}
-      />
+      <div className="h-30 w-150">
+        <Tachometer
+          rpm={rpm}
+          maxRpm={8250}
+          showRpmText={true}
+          rpmOrientation="bottom"
+          gearRpmThresholds={cadillacGear1Rpm}
+          ledColors={cadillacCarData.ledColor}
+          carData={cadillacCarData}
+        />
+      </div>
     </div>
   );
 };
@@ -305,14 +322,17 @@ const SuperFormulaLights = () => {
         Left-to-right progression: All red LEDs, 100 RPM increments
       </p>
       <p className="text-gray-300 text-sm">Current RPM: {rpm}</p>
-      <Tachometer
-        rpm={rpm}
-        maxRpm={7000}
-        showRpmText={true}
-        gearRpmThresholds={sflGearRpm}
-        ledColors={sflCarData.ledColor}
-        carData={sflCarData}
-      />
+      <div className="h-30 w-150">
+        <Tachometer
+          rpm={rpm}
+          maxRpm={7000}
+          showRpmText={true}
+          rpmOrientation="bottom"
+          gearRpmThresholds={sflGearRpm}
+          ledColors={sflCarData.ledColor}
+          carData={sflCarData}
+        />
+      </div>
     </div>
   );
 };
@@ -349,9 +369,11 @@ const CustomShiftPointDemos = () => {
     indicatorColor: '#00ff00',
     carConfigs: {
       ferrari296gt3: {
+        enabled: true,
         carId: 'ferrari296gt3',
         carName: 'Ferrari 296 GT3',
         gearCount: 6,
+        redlineRpm: 8000,
         gearShiftPoints: { '1': { shiftRpm: 7000 } },
       },
     },
@@ -413,102 +435,120 @@ const CustomShiftPointDemos = () => {
           <h3 className="text-white text-lg font-semibold">
             Glow Effect (Green) - With RPM Text
           </h3>
-          <Tachometer
-            rpm={rpm}
-            maxRpm={7360}
-            gear={1}
-            carPath="ferrari296gt3"
-            showRpmText={true}
-            gearRpmThresholds={ferrariGear1Rpm}
-            ledColors={ferrariCarData.ledColor}
-            carData={ferrariCarData}
-            shiftPointSettings={glowSettings}
-          />
+          <div className="h-30 w-150">
+            <Tachometer
+              rpm={rpm}
+              maxRpm={7360}
+              gear={1}
+              carPath="ferrari296gt3"
+              showRpmText={true}
+              rpmOrientation="bottom"
+              gearRpmThresholds={ferrariGear1Rpm}
+              ledColors={ferrariCarData.ledColor}
+              carData={ferrariCarData}
+              shiftPointSettings={glowSettings}
+            />
+          </div>
         </div>
 
         <div className="space-y-2">
           <h3 className="text-white text-lg font-semibold">
             Glow Effect (Green) - RPM Text OFF
           </h3>
-          <Tachometer
-            rpm={rpm}
-            maxRpm={7360}
-            gear={1}
-            carPath="ferrari296gt3"
-            showRpmText={false}
-            gearRpmThresholds={ferrariGear1Rpm}
-            ledColors={ferrariCarData.ledColor}
-            carData={ferrariCarData}
-            shiftPointSettings={glowSettings}
-          />
+          <div className="h-30 w-150">
+            <Tachometer
+              rpm={rpm}
+              maxRpm={7360}
+              gear={1}
+              carPath="ferrari296gt3"
+              showRpmText={false}
+              rpmOrientation="bottom"
+              gearRpmThresholds={ferrariGear1Rpm}
+              ledColors={ferrariCarData.ledColor}
+              carData={ferrariCarData}
+              shiftPointSettings={glowSettings}
+            />
+          </div>
         </div>
 
         <div className="space-y-2">
           <h3 className="text-white text-lg font-semibold">
             Border Glow (Orange) - With RPM Text
           </h3>
-          <Tachometer
-            rpm={rpm}
-            maxRpm={7360}
-            gear={1}
-            carPath="ferrari296gt3"
-            showRpmText={true}
-            gearRpmThresholds={ferrariGear1Rpm}
-            ledColors={ferrariCarData.ledColor}
-            carData={ferrariCarData}
-            shiftPointSettings={borderSettings}
-          />
+          <div className="h-30 w-150">
+            <Tachometer
+              rpm={rpm}
+              maxRpm={7360}
+              gear={1}
+              carPath="ferrari296gt3"
+              showRpmText={true}
+              rpmOrientation="bottom"
+              gearRpmThresholds={ferrariGear1Rpm}
+              ledColors={ferrariCarData.ledColor}
+              carData={ferrariCarData}
+              shiftPointSettings={borderSettings}
+            />
+          </div>
         </div>
 
         <div className="space-y-2">
           <h3 className="text-white text-lg font-semibold">
             Border Glow (Orange) - RPM Text OFF
           </h3>
-          <Tachometer
-            rpm={rpm}
-            maxRpm={7360}
-            gear={1}
-            carPath="ferrari296gt3"
-            showRpmText={false}
-            gearRpmThresholds={ferrariGear1Rpm}
-            ledColors={ferrariCarData.ledColor}
-            carData={ferrariCarData}
-            shiftPointSettings={borderSettings}
-          />
+          <div className="h-30 w-150">
+            <Tachometer
+              rpm={rpm}
+              maxRpm={7360}
+              gear={1}
+              carPath="ferrari296gt3"
+              showRpmText={false}
+              rpmOrientation="bottom"
+              gearRpmThresholds={ferrariGear1Rpm}
+              ledColors={ferrariCarData.ledColor}
+              carData={ferrariCarData}
+              shiftPointSettings={borderSettings}
+            />
+          </div>
         </div>
 
         <div className="space-y-2">
           <h3 className="text-white text-lg font-semibold">
             Pulse Effect (Pink) - With RPM Text
           </h3>
-          <Tachometer
-            rpm={rpm}
-            maxRpm={7360}
-            gear={1}
-            carPath="ferrari296gt3"
-            showRpmText={true}
-            gearRpmThresholds={ferrariGear1Rpm}
-            ledColors={ferrariCarData.ledColor}
-            carData={ferrariCarData}
-            shiftPointSettings={pulseSettings}
-          />
+          <div className="h-30 w-150">
+            <Tachometer
+              rpm={rpm}
+              maxRpm={7360}
+              gear={1}
+              carPath="ferrari296gt3"
+              showRpmText={true}
+              rpmOrientation="bottom"
+              gearRpmThresholds={ferrariGear1Rpm}
+              ledColors={ferrariCarData.ledColor}
+              carData={ferrariCarData}
+              shiftPointSettings={pulseSettings}
+            />
+          </div>
         </div>
 
         <div className="space-y-2">
           <h3 className="text-white text-lg font-semibold">
             Pulse Effect (Pink) - RPM Text OFF
           </h3>
-          <Tachometer
-            rpm={rpm}
-            maxRpm={7360}
-            gear={1}
-            carPath="ferrari296gt3"
-            showRpmText={false}
-            gearRpmThresholds={ferrariGear1Rpm}
-            ledColors={ferrariCarData.ledColor}
-            carData={ferrariCarData}
-            shiftPointSettings={pulseSettings}
-          />
+          <div className="h-30 w-150">
+            <Tachometer
+              rpm={rpm}
+              maxRpm={7360}
+              gear={1}
+              carPath="ferrari296gt3"
+              showRpmText={false}
+              rpmOrientation="bottom"
+              gearRpmThresholds={ferrariGear1Rpm}
+              ledColors={ferrariCarData.ledColor}
+              carData={ferrariCarData}
+              shiftPointSettings={pulseSettings}
+            />
+          </div>
         </div>
       </div>
     </div>

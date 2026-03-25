@@ -1,5 +1,5 @@
 import * as PhosphorIcons from '@phosphor-icons/react';
-import { icons as coreIcons } from '@phosphor-icons/core';
+import { icons as coreIcons, type IconEntry } from '@phosphor-icons/core';
 import type { ElementType } from 'react';
 
 export interface PhosphorIconEntry {
@@ -10,7 +10,7 @@ export interface PhosphorIconEntry {
 
 // Build a lookup from pascal_name → tags using the core metadata package.
 const coreTagMap = new Map<string, readonly string[]>(
-  coreIcons.map((entry) => [entry.pascal_name, entry.tags])
+  coreIcons.map((entry: IconEntry) => [entry.pascal_name, entry.tags])
 );
 
 // Enumerate all Phosphor icon components at module load time.

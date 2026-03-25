@@ -6,34 +6,43 @@ import { useDriverProgress } from './useDriverProgress';
 vi.mock('@irdashies/context', () => ({
   useFocusCarIdx: vi.fn(),
   useSessionDrivers: vi.fn(),
-  useTelemetryValuesMapped: vi.fn(),
+  useTelemetryValuesRounded: vi.fn(),
   useSessionStore: vi.fn(),
   useTelemetryValues: vi.fn(),
+  useSessionQualifyingResults: vi.fn(),
+  useSessionQualifyPositions: vi.fn(),
+  useTelemetryValue: vi.fn(),
 }));
 
 import {
   useFocusCarIdx,
   useSessionDrivers,
-  useTelemetryValuesMapped,
+  useTelemetryValuesRounded,
   useSessionStore,
   useTelemetryValues,
+  useSessionQualifyingResults,
+  useSessionQualifyPositions,
+  useTelemetryValue,
 } from '@irdashies/context';
 
 describe('useDriverProgress', () => {
   beforeEach(() => {
     vi.resetAllMocks();
+    vi.mocked(useSessionQualifyingResults).mockReturnValue([]);
+    vi.mocked(useSessionQualifyPositions).mockReturnValue([]);
+    vi.mocked(useTelemetryValue).mockReturnValue(0);
   });
 
   it('should return empty array when drivers or lapDist are missing', () => {
     vi.mocked(useFocusCarIdx).mockReturnValue(0);
     vi.mocked(useSessionDrivers).mockReturnValue(undefined);
-    vi.mocked(useTelemetryValuesMapped).mockReturnValue([]);
+    vi.mocked(useTelemetryValuesRounded).mockReturnValue([]);
     vi.mocked(useSessionStore).mockReturnValue(-1);
     vi.mocked(useTelemetryValues).mockReturnValue([]);
 
     const { result } = renderHook(() => useDriverProgress());
 
-    expect(result.current).toEqual([]);
+    expect(result.current.drivers).toEqual([]);
   });
 
   it('should return drivers with progress and position', () => {
@@ -44,18 +53,18 @@ describe('useDriverProgress', () => {
 
     vi.mocked(useFocusCarIdx).mockReturnValue(0);
     vi.mocked(useSessionDrivers).mockReturnValue(mockDrivers as any);
-    vi.mocked(useTelemetryValuesMapped).mockReturnValue([0.5, 0.6]);
+    vi.mocked(useTelemetryValuesRounded).mockReturnValue([0.5, 0.6]);
     vi.mocked(useSessionStore).mockReturnValue(-1);
-    vi.mocked(useTelemetryValues).mockReturnValue([0, 1]);
+    vi.mocked(useTelemetryValues).mockReturnValue([0.5, 0.6]);
 
     const { result } = renderHook(() => useDriverProgress());
 
     // Eventually should have data after throttle - just verify it returns an array with valid structure
-    expect(Array.isArray(result.current)).toBe(true);
-    if (result.current.length > 0) {
-      expect(result.current[0]).toHaveProperty('driver');
-      expect(result.current[0]).toHaveProperty('progress');
-      expect(result.current[0]).toHaveProperty('classPosition');
+    expect(Array.isArray(result.current.drivers)).toBe(true);
+    if (result.current.drivers.length > 0) {
+      expect(result.current.drivers[0]).toHaveProperty('driver');
+      expect(result.current.drivers[0]).toHaveProperty('progress');
+      expect(result.current.drivers[0]).toHaveProperty('classPosition');
     }
   });
 
@@ -67,16 +76,16 @@ describe('useDriverProgress', () => {
 
     vi.mocked(useFocusCarIdx).mockReturnValue(0);
     vi.mocked(useSessionDrivers).mockReturnValue(mockDrivers as any);
-    vi.mocked(useTelemetryValuesMapped).mockReturnValue([0.5, -1]);
+    vi.mocked(useTelemetryValuesRounded).mockReturnValue([0.5, -1]);
     vi.mocked(useSessionStore).mockReturnValue(-1);
-    vi.mocked(useTelemetryValues).mockReturnValue([0, 1]);
+    vi.mocked(useTelemetryValues).mockReturnValue([0.5, -1]);
 
     const { result } = renderHook(() => useDriverProgress());
 
     // Should filter out progress -1
-    expect(Array.isArray(result.current)).toBe(true);
+    expect(Array.isArray(result.current.drivers)).toBe(true);
     // All drivers with progress -1 should be filtered out
-    const allValid = result.current.every((d) => d.progress > -1);
+    const allValid = result.current.drivers.every((d) => d.progress > -1);
     expect(allValid).toBe(true);
   });
 
@@ -88,16 +97,18 @@ describe('useDriverProgress', () => {
 
     vi.mocked(useFocusCarIdx).mockReturnValue(0);
     vi.mocked(useSessionDrivers).mockReturnValue(mockDrivers as any);
-    vi.mocked(useTelemetryValuesMapped).mockReturnValue([0.5, 0.6]);
+    vi.mocked(useTelemetryValuesRounded).mockReturnValue([0.5, 0.6]);
     vi.mocked(useSessionStore).mockReturnValue(1);
-    vi.mocked(useTelemetryValues).mockReturnValue([0, 0]);
+    vi.mocked(useTelemetryValues).mockReturnValue([0.5, 0.6]);
 
     const { result } = renderHook(() => useDriverProgress());
 
     // Should filter out pace car
-    expect(Array.isArray(result.current)).toBe(true);
+    expect(Array.isArray(result.current.drivers)).toBe(true);
     // Pace car (CarIdx 1, paceCarIdx is 1) should be filtered out
-    const noPaceCar = result.current.every((d) => d.driver.CarIdx !== 1);
+    const noPaceCar = result.current.drivers.every(
+      (d) => d.driver.CarIdx !== 1
+    );
     expect(noPaceCar).toBe(true);
   });
 });

@@ -422,8 +422,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
         id: 'gap',
         shouldRender:
           (displayOrder ? displayOrder.includes('gap') : true) &&
-          (config && 'gap' in config ? config.gap.enabled : false) &&
-          currentSessionType?.toLowerCase() === 'race',
+          (config && 'gap' in config ? config.gap.enabled : false),
         component: (
           <DeltaCell
             key="gap"
@@ -441,8 +440,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
         id: 'interval',
         shouldRender:
           (displayOrder ? displayOrder.includes('interval') : true) &&
-          (config && 'interval' in config ? config.interval.enabled : false) &&
-          currentSessionType?.toLowerCase() === 'race',
+          (config && 'interval' in config ? config.interval.enabled : false),
         component: (
           <DeltaCell
             key="interval"

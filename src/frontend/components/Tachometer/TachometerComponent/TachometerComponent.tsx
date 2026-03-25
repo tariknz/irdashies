@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import type { CarData } from '../../../utils/carData';
 import type { ShiftPointSettings } from '@irdashies/types';
 
-interface TachometerProps {
+export interface TachometerProps {
   rpm: number;
   maxRpm: number;
   /** Current gear */
@@ -13,10 +13,9 @@ interface TachometerProps {
   blinkRpm?: number;
   /** Number of LED lights to display (default: 10) */
   numLights?: number;
-  /** Size of each LED light in pixels (default: 20) */
-  ledSize?: number;
   /** Whether to show RPM text display (default: true) */
   showRpmText?: boolean;
+  rpmOrientation?: 'horizontal' | 'bottom' | 'top';
   /** Car-specific RPM thresholds for each LED */
   gearRpmThresholds?: number[] | null;
   /** Car-specific LED colors */
@@ -27,6 +26,8 @@ interface TachometerProps {
   carPath?: string;
   /** Custom shift point settings */
   shiftPointSettings?: ShiftPointSettings;
+  /** Background opacity */
+  opacity?: number;
 }
 
 export const Tachometer = ({
@@ -36,13 +37,14 @@ export const Tachometer = ({
   shiftRpm = 0, // Optional shift RPM (DriverCarSLShiftRPM)
   blinkRpm = 0, // Optional blink RPM (DriverCarSLBlinkRPM)
   numLights = 10,
-  ledSize = 20,
   showRpmText = true,
+  rpmOrientation = 'bottom',
   gearRpmThresholds = null,
   ledColors = null,
   carData = null,
   carPath = undefined,
   shiftPointSettings = undefined,
+  opacity = 100,
 }: TachometerProps) => {
   const [flash, setFlash] = useState(false);
   const [customShiftFlash, setCustomShiftFlash] = useState(false);
@@ -171,13 +173,13 @@ export const Tachometer = ({
           boxShadow: `0 0 20px ${indicatorColor}, 0 0 40px ${indicatorColor}`,
           backgroundColor: indicatorColor,
           color: '#000000',
-          border: `2px solid ${indicatorColor}`,
+          border: `inset 2px solid ${indicatorColor}`,
         };
       case 'border':
         return {
           ...baseStyle,
           boxShadow: `0 0 15px ${indicatorColor}`,
-          border: `3px solid ${indicatorColor}`,
+          border: `inset 3px solid ${indicatorColor}`,
           backgroundColor: 'rgba(0,0,0,0.8)',
         };
       case 'pulse':
@@ -188,7 +190,7 @@ export const Tachometer = ({
             ? indicatorColor
             : 'rgba(0,0,0,0.8)',
           color: customShiftFlash ? '#000000' : '#ffffff',
-          border: `2px solid ${indicatorColor}`,
+          border: `inset 2px solid ${indicatorColor}`,
         };
       default:
         return baseStyle;
@@ -278,47 +280,90 @@ export const Tachometer = ({
 
   return (
     <>
-      <div className="flex items-center gap-1 p-2 rounded">
+      <div
+        className={`@container-[size] flex ${rpmOrientation === 'horizontal' ? 'flex-row' : rpmOrientation === 'top' ? 'flex-col-reverse' : 'flex-col'} justify-center items-center w-full h-full gap-2`}
+      >
         {/* LED lights */}
-        <div className="flex gap-1">
+        <div
+          id="ledcontainer"
+          className={`bg-slate-800/(--bg-opacity) h-full flex ${rpmOrientation === 'horizontal' ? 'relative' : 'flex-2'} items-center justify-center rounded-full px-4`}
+          style={{
+            ['--bg-opacity' as string]: `${opacity ?? 80}%`,
+          }}
+        >
           {Array.from({ length: effectiveNumLights }, (_, i) => (
-            <div
-              key={i}
-              className="rounded-full border border-gray-600 transition-all duration-300"
-              style={{
-                width: ledSize,
-                height: ledSize,
-                backgroundColor: getLedColor(i),
-                boxShadow: isLedActive(i)
-                  ? `0 0 4px ${getLedColor(i)}`
-                  : 'none',
-              }}
-              aria-label={`LED ${i + 1}`}
-            />
+            <>
+              <div className="h-[80%] aspect-square p-0.5">
+                <div
+                  key={i}
+                  className="rounded-full w-full h-full border border-gray-600 transition-all duration-300"
+                  style={{
+                    backgroundColor: getLedColor(i),
+                    boxShadow: isLedActive(i)
+                      ? `0 0 4px ${getLedColor(i)}`
+                      : 'none',
+                  }}
+                  aria-label={`LED ${i + 1}`}
+                />
+              </div>
+            </>
           ))}
+
+          {/* RPM display - Horinztonal - shows when showRpmText is true OR when custom shift points exist */}
+          {shouldShowRpmBox && rpmOrientation === 'horizontal' && (
+            <div
+              id="rpm-text"
+              className={`bg-slate-800/(--bg-opacity) text-[30cqh] absolute right-[-8em] flex min-w-[6em] font-mono font-bold text-white px-4 mx-2 rounded-lg transition-colors duration-200 whitespace-nowrap justify-center items-center`}
+              style={{
+                ...getRpmBoxStyle(),
+                height: '2em',
+                ['--bg-opacity' as string]: `${opacity ?? 80}%`,
+              }}
+            >
+              {showRpmText && (
+                <>
+                  {shouldShowCustomShift ? (
+                    <span className="font-bold">SHIFT</span>
+                  ) : (
+                    <>
+                      {Math.round(clampedRpm).toLocaleString('en-US')}
+                      <span className="text-[0.6em] ml-2">RPM</span>
+                    </>
+                  )}
+                </>
+              )}
+              {!showRpmText && shouldShowCustomShift && (
+                <span className="font-bold">SHIFT</span>
+              )}
+            </div>
+          )}
         </div>
 
-        {/* RPM display - shows when showRpmText is true OR when custom shift points exist */}
-        {shouldShowRpmBox && (
+        {/* RPM display - Vertical - shows when showRpmText is true OR when custom shift points exist */}
+        {shouldShowRpmBox && rpmOrientation !== 'horizontal' && (
           <div
-            className="ml-3 text-sm font-mono font-bold text-white bg-black/50 px-2 rounded transition-all duration-200 whitespace-nowrap flex items-center"
+            id="rpm-text"
+            className={`bg-slate-800/(--bg-opacity) text-[20cqh] flex min-w-[6em] font-mono font-bold text-white px-4 mx-2 rounded-lg transition-colors duration-200 whitespace-nowrap justify-center items-center`}
             style={{
               ...getRpmBoxStyle(),
-              minWidth: showRpmText ? '120px' : '60px', // Reserve space to prevent layout shift
-              height: '32px', // Fixed height to prevent vertical shift
+              height: '1.5em',
+              ['--bg-opacity' as string]: `${opacity ?? 80}%`,
             }}
           >
             {showRpmText && (
               <>
-                {Math.round(clampedRpm).toLocaleString('en-US')}
-                <span className="text-xs text-gray-300 ml-1">RPM</span>
-                {shouldShowCustomShift && (
-                  <span className="text-xs ml-2 font-bold">SHIFT</span>
+                {shouldShowCustomShift ? (
+                  <span className="font-bold">SHIFT</span>
+                ) : (
+                  <>
+                    {Math.round(clampedRpm).toLocaleString('en-US')}
+                    <span className="text-[0.6em] ml-2">RPM</span>
+                  </>
                 )}
               </>
             )}
             {!showRpmText && shouldShowCustomShift && (
-              <span className="text-xs font-bold">SHIFT</span>
+              <span className="font-bold">SHIFT</span>
             )}
           </div>
         )}

@@ -4,6 +4,7 @@ import { app } from 'electron';
 import type { Session, Telemetry } from '@irdashies/types';
 import { createReadStream, createWriteStream } from 'node:fs';
 import { createBrotliCompress, createBrotliDecompress } from 'zlib';
+import { chain } from 'stream-chain';
 import { parser } from 'stream-json';
 import { streamArray } from 'stream-json/streamers/StreamArray';
 
@@ -92,13 +93,15 @@ export const readBrotliStream = (filePath: string) => {
 
   return new Promise<(Telemetry | Session)[]>((resolve, reject) => {
     const items: (Telemetry | Session)[] = [];
-    const pipeline = readStream
-      .pipe(decompressStream)
-      .pipe(parser())
-      .pipe(streamArray());
+    const pipeline = chain([
+      readStream,
+      decompressStream,
+      parser(),
+      streamArray(),
+    ]);
 
-    pipeline.on('data', (data) => {
-      items.push(data.value); // `data.value` contains each parsed JSON object
+    pipeline.on('data', (data: { key: number; value: Telemetry | Session }) => {
+      items.push(data.value);
     });
 
     pipeline.on('end', () => resolve(items));
