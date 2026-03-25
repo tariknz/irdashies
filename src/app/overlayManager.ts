@@ -457,13 +457,14 @@ export class OverlayManager {
   public focusSettingsWindow(): void {
     if (!this.currentSettingsWindow || this.currentSettingsWindow.isDestroyed()) {
       this.currentSettingsWindow = this.createSettingsWindow();
-    }
-    const win = this.currentSettingsWindow;
-    if (win.isMinimized()) {
-      win.restore();    
-    }
-    win.show();
-    win.focus();
+    } else {
+      const win = this.currentSettingsWindow;
+      if (win.isMinimized()) {
+        win.restore();    
+      }
+      win.show();
+      win.focus();
+    }    
   }
 
   /**
@@ -593,7 +594,6 @@ export class OverlayManager {
         return;
       }
 
-      event.preventDefault();
       this.quitApp();
     });
 
