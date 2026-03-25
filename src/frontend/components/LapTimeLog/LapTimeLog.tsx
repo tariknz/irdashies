@@ -95,7 +95,7 @@ export const LapTimeLogDisplay = ({
     return [...history]
       .sort((a, b) => b.lap - a.lap)
       .slice(0, settings.history.count);
-  }, [history, settings]);
+  }, [history, settings.history.count]);
 
   // predicted delta
   const deltaIsGreen = 
