@@ -67,7 +67,9 @@ const RandomTraces = () => {
         },
         gear: {
           enabled: true,
+          size: 100,
           showspeed: true,
+          showspeedunit: true,
           unit: 'auto',
         },
         abs: {

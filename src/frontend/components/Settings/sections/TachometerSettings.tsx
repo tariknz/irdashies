@@ -414,12 +414,13 @@ export const TachometerSettings = () => {
 
               {config.showRpmText && (
                 <SettingsSection>
-                  <SettingButtonGroupRow<'horizontal' | 'vertical'>
+                  <SettingButtonGroupRow<'horizontal' | 'bottom' | 'top'>
                     title="RPM Text Orientaion"
                     value={config.rpmOrientation ?? 'horizontal'}
                     options={[
                       { label: 'Horizontal', value: 'horizontal' },
-                      { label: 'Vertical', value: 'vertical' },                     
+                      { label: 'Bottom', value: 'bottom' },
+                      { label: 'Top', value: 'top' },
                     ]}
                     onChange={(v) =>
                       handleConfigChange({

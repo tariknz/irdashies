@@ -29,6 +29,9 @@ export interface DashboardWidget {
 
 export type FontType = 'lato' | 'notosans' | 'figtree' | 'inter' | 'roboto';
 export type FontSize =
+  | '4xs'
+  | '3xs'
+  | '2xs'
   | 'xs'
   | 'sm'
   | 'md'

@@ -236,8 +236,10 @@ export interface InputConfig {
   };
   gear: {
     enabled: boolean;
-    unit: 'mph' | 'km/h' | 'auto' | 'none';
+    size: number;
+    unit: 'mph' | 'km/h' | 'auto';
     showspeed: boolean;
+    showspeedunit: boolean;
   };
   abs: { enabled: boolean };
   steer: {
@@ -252,7 +254,7 @@ export interface InputConfig {
 
 export interface TachometerConfig {
   showRpmText: boolean;
-  rpmOrientation?: 'horizontal' | 'vertical';
+  rpmOrientation?: 'horizontal' | 'bottom' | 'top';
   shiftPointStyle?: 'glow' | 'pulse' | 'border';
   shiftPointSettings: {
     enabled: boolean;

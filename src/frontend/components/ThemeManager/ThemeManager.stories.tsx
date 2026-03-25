@@ -128,6 +128,9 @@ const FONT_TYPES: FontType[] = [
   'roboto',
 ];
 const FONT_SIZES: FontSize[] = [
+  '4xs',
+  '3xs',
+  '2xs',
   'xs',
   'sm',
   'md',
@@ -143,11 +146,14 @@ const FONT_SIZES: FontSize[] = [
   '9xl',
 ];
 const FONT_SIZE_LABELS: Record<FontSize, string> = {
-  xs: 'Extra Small',
-  sm: 'Small',
-  md: 'Medium',
-  lg: 'Large',
-  xl: 'Extra Large',
+  '4xs': 'Tiny',
+  '3xs': '3x Small',
+  '2xs': '2x Small',
+  'xs': 'Extra Small',
+  'sm': 'Small',
+  'md': 'Medium',
+  'lg': 'Large',
+  'xl': 'Extra Large',
   '2xl': '2X Large',
   '3xl': '3X Large',
   '4xl': '4X Large',
