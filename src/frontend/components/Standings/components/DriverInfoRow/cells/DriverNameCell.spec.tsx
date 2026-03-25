@@ -21,7 +21,8 @@ describe('DriverNameCell', () => {
   });
 
   it('sets animationDelay on both spans when shouldAnimate is true', () => {
-    vi.spyOn(Date, 'now').mockReturnValue(1000);
+    // 1500ms / 1000 = 1.5s; 1.5 % 5 = 1.5 → delay = -1.5s
+    vi.spyOn(Date, 'now').mockReturnValue(1500);
 
     const { container } = renderInTable(
       <DriverNameCell
@@ -37,14 +38,15 @@ describe('DriverNameCell', () => {
     );
     expect(spans).toHaveLength(2);
     spans.forEach((span) => {
-      expect((span as HTMLElement).style.animationDelay).toBe('-1.000s');
+      expect((span as HTMLElement).style.animationDelay).toBe('-1.5s');
     });
 
     vi.restoreAllMocks();
   });
 
   it('re-syncs animationDelay when alternateFrequency changes', () => {
-    vi.spyOn(Date, 'now').mockReturnValue(1000);
+    // 1500ms / 1000 = 1.5s; 1.5 % 5 = 1.5 → delay = -1.5s
+    vi.spyOn(Date, 'now').mockReturnValue(1500);
 
     const { container, rerender } = renderInTable(
       <DriverNameCell
@@ -59,10 +61,11 @@ describe('DriverNameCell', () => {
       'span[class*="animate-name-slide"]'
     );
     spans.forEach((span) => {
-      expect((span as HTMLElement).style.animationDelay).toBe('-1.000s');
+      expect((span as HTMLElement).style.animationDelay).toBe('-1.5s');
     });
 
-    vi.spyOn(Date, 'now').mockReturnValue(3000);
+    // 3500ms / 1000 = 3.5s; 3.5 % 10 = 3.5 → delay = -3.5s
+    vi.spyOn(Date, 'now').mockReturnValue(3500);
 
     rerender(
       <table>
@@ -79,9 +82,8 @@ describe('DriverNameCell', () => {
       </table>
     );
 
-    // (3000/1000) % 10 = 3 → -3.000s
     spans.forEach((span) => {
-      expect((span as HTMLElement).style.animationDelay).toBe('-3.000s');
+      expect((span as HTMLElement).style.animationDelay).toBe('-3.5s');
     });
 
     vi.restoreAllMocks();

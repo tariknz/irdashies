@@ -48,20 +48,15 @@ export const DriverNameCell = memo(
     const staticText = nameDisplay === 'label' && label ? label : displayName;
     const freq = alternateFrequency ?? 5;
     const duration = `${freq}s`;
-    const syncInitialized = useRef(false);
     const spanPrimaryRef = useRef<HTMLSpanElement>(null);
     const spanSecondaryRef = useRef<HTMLSpanElement>(null);
     useLayoutEffect(() => {
-      if (shouldAnimate && !syncInitialized.current) {
-        syncInitialized.current = true;
-        const delay = `-${((performance.now() / 1000) % freq).toFixed(3)}s`;
-        if (spanPrimaryRef.current)
-          spanPrimaryRef.current.style.animationDelay = delay;
-        if (spanSecondaryRef.current)
-          spanSecondaryRef.current.style.animationDelay = delay;
-      } else if (!shouldAnimate) {
-        syncInitialized.current = false;
-      }
+      if (!shouldAnimate) return;
+      const delay = `-${((Date.now() / 1000) % freq).toFixed(3)}s`;
+      if (spanPrimaryRef.current)
+        spanPrimaryRef.current.style.animationDelay = delay;
+      if (spanSecondaryRef.current)
+        spanSecondaryRef.current.style.animationDelay = delay;
     }, [shouldAnimate, freq]);
 
     return (
