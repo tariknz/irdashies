@@ -147,8 +147,7 @@ export const LapTimeLogSettings = () => {
                         { label: 'Best Lap', value: 'bestlap' },
                       ]}
                       onChange={(v) =>
-                        handleConfigChange({                     
-                          ...settings.config,                      
+                        handleConfigChange({ 
                           delta: {                         
                             ...settings.config.delta, 
                             method: v 
