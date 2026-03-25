@@ -6,7 +6,7 @@ import {
   usePitLaneStore,
   useDashboard,
 } from '@irdashies/context';
-import type { ResolvedDriverTag } from './useDriverTag';
+import type { ResolvedDriverTag } from '../../hooks/useDriverTagMap';
 import type { Gap, LastTimeState } from '../../createStandings';
 import type {
   RelativeWidgetSettings,

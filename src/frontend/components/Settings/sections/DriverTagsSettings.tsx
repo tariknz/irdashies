@@ -354,8 +354,12 @@ export const DriverTagsSettings = () => {
   }, [syncedDrafts, activeGroupFilter, searchText, allGroups]);
 
   const sortedFilteredEntries = useMemo(() => {
+    const newDrafts = filteredEntries.filter((e) => e.uiKey.startsWith('new-'));
+    const committed = filteredEntries.filter(
+      (e) => !e.uiKey.startsWith('new-')
+    );
     if (!sortField) return filteredEntries;
-    return [...filteredEntries].sort((a, b) => {
+    const sorted = [...committed].sort((a, b) => {
       let aVal: string;
       let bVal: string;
       if (sortField === 'groupId') {
@@ -368,6 +372,7 @@ export const DriverTagsSettings = () => {
       const cmp = aVal.localeCompare(bVal);
       return sortDirection === 'asc' ? cmp : -cmp;
     });
+    return [...sorted, ...newDrafts];
   }, [filteredEntries, sortField, sortDirection, allGroups]);
 
   if (loading) {

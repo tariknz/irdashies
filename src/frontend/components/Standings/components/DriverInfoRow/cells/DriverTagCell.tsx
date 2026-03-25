@@ -1,6 +1,6 @@
 import { memo, useMemo } from 'react';
 import type { CSSProperties } from 'react';
-import type { ResolvedDriverTag } from '../useDriverTag';
+import type { ResolvedDriverTag } from '../../../hooks/useDriverTagMap';
 import { colorNumToHex } from '@irdashies/utils/colors';
 import { renderDriverIcon } from '@irdashies/utils/driverIcons';
 

@@ -1,9 +1,17 @@
-import { useMemo } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import { useDashboard, useSessionStore } from '@irdashies/context';
 import { useStoreWithEqualityFn } from 'zustand/traditional';
 import { getPresetTag } from '../../../constants/driverTagBadges';
-import type { DriverTagSettings } from '@irdashies/types';
-import type { ResolvedDriverTag } from '../components/DriverInfoRow/useDriverTag';
+import type { DriverTagSettings, TagGroup } from '@irdashies/types';
+
+export interface ResolvedDriverTag {
+  id: string;
+  name?: string;
+  icon?: ReactNode | string | unknown;
+  color?: number;
+  /** Per-driver display label from the tag entry */
+  label?: string;
+}
 
 interface DriverIdentity {
   CarIdx: number;
@@ -28,18 +36,12 @@ const driversIdentityEqual = (
 const resolveTag = (
   userId: string | undefined,
   name: string,
-  tagSettings: DriverTagSettings
+  tagSettings: DriverTagSettings,
+  lcMapping: Map<string, string>,
+  groupsById: Map<string, TagGroup>
 ): ResolvedDriverTag | undefined => {
   const entries = tagSettings.entries ?? [];
-  const mapping = tagSettings.mapping ?? {};
   const presetOverrides = tagSettings.presetOverrides ?? {};
-  const groups = tagSettings.groups ?? [];
-
-  const lcMapping = new Map<string, string>();
-  for (const [k, v] of Object.entries(mapping)) {
-    lcMapping.set(k.toLowerCase(), v);
-  }
-  const groupsById = new Map(groups.map((g) => [g.id, g]));
 
   let groupId: string | undefined;
   let entryLabel: string | undefined;
@@ -123,11 +125,19 @@ export const useDriverTagMap = (
 
     if (!widgetTagEnabled) return empty;
 
+    const lcMapping = new Map<string, string>();
+    for (const [k, v] of Object.entries(tagSettings.mapping ?? {})) {
+      lcMapping.set(k.toLowerCase(), v);
+    }
+    const groupsById = new Map(
+      (tagSettings.groups ?? []).map((g) => [g.id, g])
+    );
+
     const tagMap = new Map<number, ResolvedDriverTag>();
     for (const driver of drivers) {
       const userId = driver.UserID != null ? String(driver.UserID) : undefined;
       const name = (driver.UserName ?? '').trim();
-      const tag = resolveTag(userId, name, tagSettings);
+      const tag = resolveTag(userId, name, tagSettings, lcMapping, groupsById);
       if (tag) tagMap.set(driver.CarIdx, tag);
     }
 
