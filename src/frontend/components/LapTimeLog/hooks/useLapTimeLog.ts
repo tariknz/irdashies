@@ -12,6 +12,15 @@ const MAX_HISTORY_ENTRIES = 10;
 
 export const useLapTimeLog = () => {
 
+  // Get settings
+  const settings = useLapTimeLogSettings();
+
+  // States
+  const [history, setHistory] = useState<LapEntry[]>([]);
+  const [isDirty, setIsDirty] = useState<boolean>(false);
+  const [displayTime, setDisplayTime] = useState<number | undefined>(0);
+  const [savedDelta, setSavedDelta] = useState<number>(0);
+
   // reset functions
   const resetSessionState = () => {
     setHistory([]);
@@ -24,15 +33,6 @@ export const useLapTimeLog = () => {
     setIsDirty(false);
     setSavedDelta(0);
   };
-
-  // Get settings
-  const settings = useLapTimeLogSettings();
-
-  // States
-  const [history, setHistory] = useState<LapEntry[]>([]);
-  const [isDirty, setIsDirty] = useState<boolean>(false);
-  const [displayTime, setDisplayTime] = useState<number | undefined>(0);
-  const [savedDelta, setSavedDelta] = useState<number>(0);
 
   // Telemetry
   const lapCompleted = useTelemetryValue<number>('LapCompleted') ?? 0;
