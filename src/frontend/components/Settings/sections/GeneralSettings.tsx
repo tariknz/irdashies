@@ -11,11 +11,14 @@ const FONT_PRESETS = {
 };
 
 const FONT_SIZE_PRESETS = {
-  xs: 'Extra Small',
-  sm: 'Small',
-  md: 'Medium',
-  lg: 'Large',
-  xl: 'Extra Large',
+  '4xs': 'Tiny',
+  '3xs': '3x Small',
+  '2xs': '2x Small',
+  'xs': 'Extra Small',
+  'sm': 'Small',
+  'md': 'Medium',
+  'lg': 'Large',
+  'xl': 'Extra Large',
   '2xl': '2X Large',
   '3xl': '3X Large',
   '4xl': '4X Large',
@@ -107,6 +110,9 @@ export const GeneralSettings = () => {
   };
 
   const FONT_SIZE_VALUES: (keyof typeof FONT_SIZE_PRESETS)[] = [
+    '4xs',
+    '3xs',
+    '2xs',
     'xs',
     'sm',
     'md',
@@ -145,6 +151,9 @@ export const GeneralSettings = () => {
 
   const handleFontSizeChange = (
     newSize:
+      | '4xs'
+      | '3xs'
+      | '2xs'
       | 'xs'
       | 'sm'
       | 'md'
@@ -337,7 +346,7 @@ export const GeneralSettings = () => {
             <input
               type="range"
               min="0"
-              max="12"
+              max="15"
               step="1"
               value={getSliderValue(settings.fontSize)}
               onChange={handleSliderChange}
