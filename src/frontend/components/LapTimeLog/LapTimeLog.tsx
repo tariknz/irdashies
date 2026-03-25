@@ -226,7 +226,7 @@ export const LapTimeLogDisplay = ({
             <LapTimeRow
               label="BEST"
               time={bestlap}
-              delta={(bestlap ?? 0) - (reference ?? 0)}
+              delta={reference !== undefined && reference > 0 ? (bestlap ?? 0) - reference : 0}
               best={bestlap}
               overall={overall}
               settings={settings}
@@ -236,7 +236,7 @@ export const LapTimeLogDisplay = ({
             <LapTimeRow
               label="LAST"
               time={lastlap}
-              delta={(lastlap ?? 0) - (reference ?? 0)}
+              delta={reference !== undefined && reference > 0 ? (lastlap ?? 0) - reference : 0}
               best={bestlap}
               overall={overall}
               settings={settings}
