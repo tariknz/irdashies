@@ -74,11 +74,6 @@ const secondaryKeyframes: Keyframe[] = [
   { transform: 'translateY(110%)', opacity: 0, offset: 1.0 },
 ];
 
-// Debug: set window.__DEBUG_ANIM_SYNC = true in DevTools console
-const debugAnimSync = () =>
-  typeof window !== 'undefined' &&
-  (window as unknown as Record<string, unknown>).__DEBUG_ANIM_SYNC === true;
-
 interface DriverNameCellProps {
   name?: string;
   fullName?: string;
@@ -145,12 +140,6 @@ export const DriverNameCell = memo(
       const phase = syncedNow() % freqMs;
       anim1.currentTime = phase;
       anim2.currentTime = phase;
-
-      if (debugAnimSync()) {
-        console.log(
-          `[AnimSync] "${displayName}" phase=${phase}ms freq=${freq}s syncedNow=${syncedNow()} Date.now=${Date.now()}`
-        );
-      }
 
       return () => {
         anim1.cancel();
