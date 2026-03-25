@@ -89,3 +89,14 @@ export const formatTime = (seconds?: number, format: TimeFormat = 'full'): strin
 
   return formattedTime;
 };
+
+// Format delta with forced sign
+export const formatDelta = (delta: number | undefined) => {
+  if (delta === undefined || delta === 0) return "---";
+  const formatter = new Intl.NumberFormat('en-US', {
+    signDisplay: 'always',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });    
+  return formatter.format(delta);
+};

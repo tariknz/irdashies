@@ -14,8 +14,7 @@ import { getDemoLapTimeLogData, LapEntry } from './demoData';
 import { TimerIcon, TargetIcon, XIcon } from '@phosphor-icons/react';
 import { LapTimeRow } from './components/LapTimeRow';
 import type { LapTimeLogConfig } from '@irdashies/types';
-import { formatDelta } from './components/LapTimeRow';
-import { formatTime } from '@irdashies/utils/time';
+import { formatTime, formatDelta } from '@irdashies/utils/time';
 
 const FREEZE_TIME = 5;
 
@@ -167,7 +166,7 @@ export const LapTimeLogDisplay = ({
                 {formatTime(
                   current === undefined
                     ? undefined
-                    : current > FREEZE_TIME
+                    : (current > FREEZE_TIME || (current > 0 && !lastlap))
                       ? current
                       : lastlap
                 )}

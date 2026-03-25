@@ -83,22 +83,27 @@ export const useLapTimeLog = () => {
     const sessionChanged = sessionNum !== prevSessionNum.current;
     const sessionRestarted = sessionTime < prevSessionTime.current - 5;
     if (sessionChanged || sessionRestarted) {
-      lastLoggedLap.current = 0;
-      lastLoggedTime.current = 0;
+      lastLoggedLap.current = lapCompleted;
+      lastLoggedTime.current = lastLapTime;      
+      incidentsAtLapStart.current = incidentCount;
       referenceAtStartOfLap.current = 0;
-      incidentsAtLapStart.current = 0;
       lastDeltaUpdate.current = 0;
       lapTransition.current = false;
       resetSessionState();
     }
     prevSessionNum.current = sessionNum;
     prevSessionTime.current = sessionTime;
-  }, [sessionNum, sessionTime]);
+  }, [sessionNum, sessionTime, lapCompleted, incidentCount, lastLapTime]);
 
   // 2. check for new lap
   useEffect(() => {
-    lapTransition.current =
-      lapCompleted > 0 && lapCompleted > lastLoggedLap.current;
+    lapTransition.current = lapCompleted > 0 && lapCompleted != lastLoggedLap.current;
+    // auto reset to prevent stuck timer
+    const timeout = setTimeout(() => {
+      lapTransition.current = false;
+    }, 5000);
+    // cleanup
+    return () => clearTimeout(timeout);
   }, [lapCompleted]);
 
   // 3. live tracking during the lap

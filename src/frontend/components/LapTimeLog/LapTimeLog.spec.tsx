@@ -1,9 +1,9 @@
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
 import { LapTimeLogDisplay } from './LapTimeLog';
-import { LapTimeRow, formatDelta } from './components/LapTimeRow';
+import { LapTimeRow } from './components/LapTimeRow';
 import type { LapTimeLogConfig } from '@irdashies/types';
-import { formatTime } from '@irdashies/utils/time';
+import { formatTime, formatDelta } from '@irdashies/utils/time';
 
 // Mock settings for tests
 const mockSettings = (

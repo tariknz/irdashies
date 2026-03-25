@@ -1,5 +1,5 @@
 import type { LapTimeLogConfig } from '@irdashies/types';
-import { formatTime } from '@irdashies/utils/time';
+import { formatTime, formatDelta } from '@irdashies/utils/time';
 
 interface LapTimeRowProps {
   label: string;
@@ -10,16 +10,6 @@ interface LapTimeRowProps {
   overall?: number | undefined; 
   settings?: LapTimeLogConfig
 }
-
-export const formatDelta = (delta: number | undefined) => {
-  if (delta === undefined || delta === 0) return "---";
-  const formatter = new Intl.NumberFormat('en-US', {
-    signDisplay: 'always',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });    
-  return formatter.format(delta);
-};
 
 export const LapTimeRow = ({ label, time, delta, dirty, best, overall, settings }: LapTimeRowProps) => {
   
