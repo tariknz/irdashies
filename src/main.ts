@@ -83,3 +83,7 @@ app.on('quit', () => {
   console.log('App quit');
   analytics.shutdown();
 });
+
+app.on('before-quit', () => {
+  overlayManager.markQuitting();
+});

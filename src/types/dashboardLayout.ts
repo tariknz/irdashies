@@ -84,6 +84,7 @@ export interface GeneralSettingsType {
   disableHardwareAcceleration?: boolean;
   enableAutoStart?: boolean;
   startMinimized?: boolean;
+  closeToTray?: boolean;
   compactMode?: boolean;
   overlayAlwaysOnTop?: boolean;
   enableNetworkAccess?: boolean;
