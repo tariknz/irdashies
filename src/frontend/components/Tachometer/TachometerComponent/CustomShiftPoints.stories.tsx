@@ -236,12 +236,6 @@ export const Comparison: Story = {
           rpmOrientation="bottom"
         />
         <AnimatedRPM
-          indicatorType="glow"
-          title="Glow Effect"
-          color="#00ff00"
-          rpmOrientation="bottom"
-        />
-        <AnimatedRPM
           indicatorType="pulse"
           title="Pulse Effect"
           color="#ff0066"

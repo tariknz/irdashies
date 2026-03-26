@@ -66,6 +66,7 @@ const sortableSettings: SortableSetting[] = [
     configKey: 'carManufacturer',
     hasSubSetting: true,
   },
+  { id: 'driverTag', label: 'Driver Tag', configKey: 'driverTag' },
   { id: 'badge', label: 'Driver Badge', configKey: 'badge' },
   { id: 'iratingChange', label: 'iRating Change', configKey: 'iratingChange' },
   {

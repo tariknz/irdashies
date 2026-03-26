@@ -363,6 +363,7 @@ const RelativeWithReorderableConfig = () => {
       lastTime: { enabled: true, timeFormat: 'full' },
       compound: { enabled: true },
       brakeBias: { enabled: false },
+      driverTag: { enabled: false },
       displayOrder: displayOrder,
       titleBar: { enabled: true, progressBar: { enabled: true } },
       headerBar: {

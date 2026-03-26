@@ -12,6 +12,7 @@ import {
   useRelativeSettings,
   useDriverRelatives,
   useHighlightColor,
+  useDriverTagMap,
 } from './hooks';
 import { SessionBar } from './components/SessionBar/SessionBar';
 
@@ -25,6 +26,7 @@ export const Relative = () => {
   const { isDriving } = useDrivingState();
   const standings = useDriverRelatives({ buffer });
   const highlightColor = useHighlightColor();
+  const { tagMap, hasAnyTag } = useDriverTagMap(settings?.driverTag?.enabled);
   const numCarClasses = useWeekendInfoNumCarClasses();
   const isMultiClass = (numCarClasses ?? 0) > 1;
   const isSessionVisible = useSessionVisibility(settings?.sessionVisibility);
@@ -97,7 +99,6 @@ export const Relative = () => {
           penalty={false}
           slowdown={false}
           hideCarManufacturer={hideCarManufacturer}
-          compactMode={generalSettings?.compactMode}
         />
       ));
     }
@@ -151,7 +152,6 @@ export const Relative = () => {
             slowdown={false}
             deltaDecimalPlaces={settings?.delta?.precision}
             hideCarManufacturer={hideCarManufacturer}
-            compactMode={generalSettings?.compactMode}
           />
         );
       }
@@ -160,6 +160,8 @@ export const Relative = () => {
         <DriverInfoRow
           key={result.carIdx}
           carIdx={result.carIdx}
+          resolvedTag={tagMap.get(result.carIdx)}
+          hasAnyDriverTag={hasAnyTag}
           classColor={result.carClass.color}
           carNumber={
             (settings?.carNumber?.enabled ?? true)
@@ -216,7 +218,6 @@ export const Relative = () => {
           slowdown={result.slowdown}
           deltaDecimalPlaces={settings?.delta?.precision}
           hideCarManufacturer={hideCarManufacturer}
-          compactMode={generalSettings?.compactMode}
         />
       );
     });
@@ -229,7 +230,8 @@ export const Relative = () => {
     highlightColor,
     hideCarManufacturer,
     isTeamRacing,
-    generalSettings?.compactMode,
+    tagMap,
+    hasAnyTag,
   ]);
 
   if (!isSessionVisible) return <></>;

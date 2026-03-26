@@ -1,7 +1,12 @@
 import { memo, useMemo } from 'react';
 import { getTailwindStyle } from '@irdashies/utils/colors';
 import { formatTime, type TimeFormat } from '@irdashies/utils/time';
-import { usePitStopDuration, usePitLaneStore } from '@irdashies/context';
+import {
+  usePitStopDuration,
+  usePitLaneStore,
+  useDashboard,
+} from '@irdashies/context';
+import type { ResolvedDriverTag } from '../../hooks/useDriverTagMap';
 import type { Gap, LastTimeState } from '../../createStandings';
 import type {
   RelativeWidgetSettings,
@@ -14,6 +19,7 @@ import { CompoundCell } from './cells/CompoundCell';
 import { CountryFlagsCell } from './cells/CountryFlagsCell';
 import { DeltaCell } from './cells/DeltaCell';
 import { DriverNameCell } from './cells/DriverNameCell';
+import { DriverTagCell } from './cells/DriverTagCell';
 import { FastestTimeCell } from './cells/FastestTimeCell';
 import { IratingChangeCell } from './cells/IratingChangeCell';
 import { LapTimeDeltasCell } from './cells/LapTimeDeltasCell';
@@ -70,7 +76,8 @@ interface DriverRowInfoProps {
   slowdown: boolean;
   deltaDecimalPlaces?: number;
   hideCarManufacturer?: boolean;
-  compactMode?: string;
+  resolvedTag?: ResolvedDriverTag;
+  hasAnyDriverTag?: boolean;
 }
 
 // Helper function to provide dummy data for hidden rows
@@ -183,7 +190,8 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
     deltaDecimalPlaces,
     pitStopDuration: pitStopDurationProp,
     hideCarManufacturer,
-    compactMode,
+    resolvedTag,
+    hasAnyDriverTag,
   } = displayProps;
 
   const badgeStyling = config?.stylingOptions?.badge ?? false;
@@ -199,6 +207,9 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
     pitStopDurationProp ?? pitStopDurations[carIdx] ?? null;
 
   const pitExitPct = usePitLaneStore((s) => s.pitExitPct);
+
+  const { currentDashboard } = useDashboard();
+  const tagSettings = currentDashboard?.generalSettings?.driverTagSettings;
   // When pit exit is in the last 15% of the lap, the S/F line is reached
   // very shortly after exiting pits. OUT must persist for one extra lap count.
   const pitExitAfterSF = pitExitPct !== null && pitExitPct > 0.85;
@@ -258,6 +269,44 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
         ),
       },
       {
+        id: 'driverTag',
+        shouldRender:
+          (displayOrder ? displayOrder.includes('driverTag') : true) &&
+          (hasAnyDriverTag ?? false),
+        component: (
+          <td
+            key="driverTag"
+            data-column="driverTag"
+            style={
+              tagSettings?.display?.displayStyle === 'tag'
+                ? undefined
+                : { minWidth: '1.5em' }
+            }
+            className="whitespace-nowrap align-middle"
+          >
+            <div
+              style={
+                tagSettings?.display?.displayStyle === 'tag'
+                  ? { padding: '0 0.1em' }
+                  : { width: '100%', aspectRatio: '24/20' }
+              }
+              className="flex items-center justify-center"
+            >
+              {hidden ? null : (
+                <DriverTagCell
+                  tag={resolvedTag}
+                  widthPx={
+                    tagSettings?.display?.widthPx ?? config?.driverTag?.widthPx
+                  }
+                  displayStyle={tagSettings?.display?.displayStyle ?? 'badge'}
+                  iconWeight={tagSettings?.display?.iconWeight}
+                />
+              )}
+            </div>
+          </td>
+        ),
+      },
+      {
         id: 'countryFlags',
         shouldRender:
           (displayOrder ? displayOrder.includes('countryFlags') : true) &&
@@ -283,6 +332,9 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
             fullName={name}
             nameFormat={config?.driverName?.nameFormat}
             isMinimal={statusBadgesStyling}
+            label={resolvedTag?.label}
+            nameDisplay={tagSettings?.display?.nameDisplay}
+            alternateFrequency={tagSettings?.display?.alternateFrequency}
           />
         ),
       },
@@ -338,7 +390,6 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
             rating={rating}
             badgeFormat={config?.badge?.badgeFormat}
             isMinimal={badgeStyling}
-            compactMode={compactMode}
           />
         ),
       },
@@ -533,12 +584,15 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
     emptyLapDeltaPlaceholders,
     hideCarManufacturer,
     pitExitAfterSF,
-    compactMode,
     badgeStyling,
     statusBadgesStyling,
     driverPositionBackground,
     driverNumberBackground,
     driverNumberBorder,
+    tagSettings,
+    resolvedTag,
+    hasAnyDriverTag,
+    hidden,
   ]);
 
   return (

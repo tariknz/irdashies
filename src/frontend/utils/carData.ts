@@ -93,7 +93,8 @@ function normalizeCarId(carPath: string): string | null {
  */
 export const loadCarData = (
   carPath: string,
-  _gameId?: string // eslint-disable-line @typescript-eslint/no-unused-vars
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _gameId?: string
 ): CarData | null => {
   try {
     const bundle = carDataBundle as CarDataBundleType;

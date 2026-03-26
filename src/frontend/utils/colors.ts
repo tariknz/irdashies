@@ -1,8 +1,7 @@
 export const getTailwindStyle = (
   color?: number,
   highlightColor?: number,
-  isMultiClass = false,
-  isMinimal = false
+  isMultiClass = false
 ): {
   driverIcon: string;
   classHeader: string;
@@ -200,14 +199,12 @@ export const getTailwindStyle = (
       borderColor: 'border-sky-500',
     };
 
-  if (isMinimal) {
-    return {
-      ...result,
-      driverIcon: borderColorMap[hex as string] ?? 'border-sky-500',
-    };
-  }
-
   return result;
+};
+
+export const colorNumToHex = (color?: number): string | undefined => {
+  if (color == null) return undefined;
+  return `#${(color & 0xffffff).toString(16).padStart(6, '0')}`;
 };
 
 export const getColor = (color?: string, value = 500) => {

@@ -9,6 +9,7 @@ import {
   useDriverStandings,
   useStandingsSettings,
   useHighlightColor,
+  useDriverTagMap,
 } from './hooks';
 import {
   useGeneralSettings,
@@ -35,6 +36,7 @@ export const Standings = () => {
 
   const standings = useDriverStandings(settings);
   const classStats = useCarClassStats();
+  const { tagMap, hasAnyTag } = useDriverTagMap(settings?.driverTag?.enabled);
   const numCarClasses = useWeekendInfoNumCarClasses();
   const isMultiClass = (numCarClasses ?? 0) > 1;
   const highlightColor = useHighlightColor();
@@ -156,6 +158,8 @@ export const Standings = () => {
                       <DriverInfoRow
                         key={result.carIdx}
                         carIdx={result.carIdx}
+                        resolvedTag={tagMap.get(result.carIdx)}
+                        hasAnyDriverTag={hasAnyTag}
                         classColor={result.carClass.color}
                         carNumber={
                           (settings?.carNumber?.enabled ?? true)
@@ -238,7 +242,6 @@ export const Standings = () => {
                         penalty={result.penalty}
                         slowdown={result.slowdown}
                         hideCarManufacturer={hideCarManufacturer}
-                        compactMode={generalSettings?.compactMode}
                       />
                     </Fragment>
                   );

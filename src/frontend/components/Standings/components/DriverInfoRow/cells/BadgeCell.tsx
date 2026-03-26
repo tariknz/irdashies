@@ -1,4 +1,5 @@
 import { memo } from 'react';
+import { useGeneralSettings } from '@irdashies/context';
 import {
   DriverRatingBadge,
   type DriverRatingBadgeProps,
@@ -9,17 +10,11 @@ interface BadgeCellProps {
   rating?: number;
   badgeFormat?: DriverRatingBadgeProps['format'];
   isMinimal?: boolean;
-  compactMode?: string;
 }
 
 export const BadgeCell = memo(
-  ({
-    license,
-    rating,
-    badgeFormat,
-    isMinimal,
-    compactMode,
-  }: BadgeCellProps) => {
+  ({ license, rating, badgeFormat, isMinimal }: BadgeCellProps) => {
+    const compactMode = useGeneralSettings()?.compactMode;
     const pxClass =
       compactMode === 'ultra'
         ? ''
