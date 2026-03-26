@@ -3,11 +3,13 @@ import { DriverInfoRow } from './DriverInfoRow';
 import { useCurrentSessionType } from '@irdashies/context';
 import type { StandingsWidgetSettings } from '@irdashies/types';
 import { CAR_ID_TO_CAR_MANUFACTURER } from '../CarManufacturer/carManufacturerMapping';
+import { TelemetryDecorator } from '@irdashies/storybook';
 
 export default {
   component: DriverInfoRow,
   title: 'widgets/Standings/components/DriverInfoRow',
   decorators: [
+    TelemetryDecorator(),
     (Story) => (
       <table className="w-full">
         <tbody>

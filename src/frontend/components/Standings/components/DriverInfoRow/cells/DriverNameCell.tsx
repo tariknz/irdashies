@@ -83,6 +83,7 @@ interface DriverNameCellProps {
   penalty?: boolean;
   slowdown?: boolean;
   showStatusBadges?: boolean;
+  isMinimalStatusBadges?: boolean;
   removeNumbersFromName?: boolean;
   label?: string;
   nameDisplay?: 'both' | 'label' | 'name';
@@ -99,6 +100,7 @@ export const DriverNameCell = memo(
     penalty,
     slowdown,
     showStatusBadges = true,
+    isMinimalStatusBadges = false,
     removeNumbersFromName = false,
     label,
     nameDisplay,
@@ -184,6 +186,7 @@ export const DriverNameCell = memo(
               repair={repair}
               penalty={penalty}
               slowdown={slowdown}
+              isMinimal={isMinimalStatusBadges}
               className="shrink-0"
             />
           )}

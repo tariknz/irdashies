@@ -72,6 +72,13 @@ export const TrackMapSettings = () => {
               Drivers
             </TabButton>
             <TabButton
+              id="styling"
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+            >
+              Styling
+            </TabButton>
+            <TabButton
               id="visibility"
               activeTab={activeTab}
               setActiveTab={setActiveTab}
@@ -206,6 +213,38 @@ export const TrackMapSettings = () => {
                   enabled={settings.config.useHighlightColor ?? false}
                   onToggle={(newValue) =>
                     handleConfigChange({ useHighlightColor: newValue })
+                  }
+                />
+              </SettingsSection>
+            )}
+
+            {/* STYLING TAB */}
+            {activeTab === 'styling' && (
+              <SettingsSection title="Minimal Styling">
+                <SettingToggleRow
+                  title="Minimal Track"
+                  description="Simplify the track rendering by removing the outline and start/finish line marker"
+                  enabled={settings.config.styling?.isMinimalTrack ?? true}
+                  onToggle={(newValue) =>
+                    handleConfigChange({
+                      styling: {
+                        ...settings.config.styling,
+                        isMinimalTrack: newValue,
+                      },
+                    })
+                  }
+                />
+                <SettingToggleRow
+                  title="Minimal Car Markers"
+                  description="Show other drivers as plain semi-transparent dots instead of colored class circles"
+                  enabled={settings.config.styling?.isMinimalCar ?? true}
+                  onToggle={(newValue) =>
+                    handleConfigChange({
+                      styling: {
+                        ...settings.config.styling,
+                        isMinimalCar: newValue,
+                      },
+                    })
                   }
                 />
               </SettingsSection>

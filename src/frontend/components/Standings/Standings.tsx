@@ -112,6 +112,8 @@ export const Standings = () => {
                   highlightColor={highlightColor}
                   isMultiClass={isMultiClass}
                   colSpan={100}
+                  classHeaderStyle={settings?.classHeaderStyle}
+                  compactMode={generalSettings?.compactMode}
                 />
                 {classStandings.map((result, driverIndex) => {
                   const prev = classStandings[driverIndex - 1];

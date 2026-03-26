@@ -387,6 +387,25 @@ export const InvertedTrackColors: Story = {
   },
 };
 
+export const MinimalStyling: Story = {
+  args: {
+    trackId: 1,
+    drivers: sampleData,
+    enableTurnNames: false,
+    showCarNumbers: true,
+    invertTrackColors: false,
+    highContrastTurns: false,
+    driverCircleSize: 40,
+    playerCircleSize: 40,
+    trackmapFontSize: 100,
+    trackLineWidth: 20,
+    trackOutlineWidth: 40,
+    highlightColor: undefined,
+    isMinimalTrack: true,
+    isMinimalCar: true,
+  },
+};
+
 export const SingleClass: Story = {
   args: {
     trackId: 1,
