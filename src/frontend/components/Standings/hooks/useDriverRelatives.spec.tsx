@@ -8,11 +8,9 @@ import {
   getStats,
   getTimeAtPosition,
 } from '../relativeGapHelpers';
-import {
-  normalizeKey,
-  REFERENCE_INTERVAL,
-} from '../../../context/ReferenceLapStore/ReferenceLapStore';
+import { normalizeKey, REFERENCE_INTERVAL } from '@irdashies/context';
 import { ReferenceLap, ReferencePoint } from '@irdashies/types';
+import { TelemetryVarList } from 'src/app/irsdk/types';
 
 // Mock the context hooks
 vi.mock('@irdashies/context', async (importOriginal) => {
@@ -21,6 +19,7 @@ vi.mock('@irdashies/context', async (importOriginal) => {
     ...actual,
     useFocusCarIdx: vi.fn(),
     useTelemetryValues: vi.fn(),
+    useTelemetryValuesRounded: vi.fn(),
     useSessionStore: vi.fn(),
   };
 });
@@ -65,8 +64,12 @@ const generateReferenceLap = (lapTime: number): ReferenceLap => {
 };
 
 // Import mocked functions after vi.mock
-const { useFocusCarIdx, useTelemetryValues, useSessionStore } =
-  await import('@irdashies/context');
+const {
+  useFocusCarIdx,
+  useTelemetryValues,
+  useTelemetryValuesRounded,
+  useSessionStore,
+} = await import('@irdashies/context');
 const { useDriverStandings } = await import('./useDriverPositions');
 
 const mockDrivers: Standings[] = [
@@ -171,6 +174,11 @@ describe('useDriverRelatives', () => {
     vi.clearAllMocks();
 
     vi.mocked(useFocusCarIdx).mockReturnValue(0);
+    // Delegate rounded calls to the same mock — precision is irrelevant for static test data
+    vi.mocked(useTelemetryValuesRounded).mockImplementation(
+      (key: keyof TelemetryVarList) =>
+        vi.mocked(useTelemetryValues)(key) as number[]
+    );
     vi.mocked(useTelemetryValues).mockImplementation((key: string) => {
       if (key === 'CarIdxLapDistPct') return mockCarIdxLapDistPct;
       if (key === 'CarIdxEstTime') return mockCarIdxEstTime;

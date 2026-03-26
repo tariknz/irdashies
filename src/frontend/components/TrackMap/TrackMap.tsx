@@ -9,7 +9,7 @@ const debug = import.meta.env.DEV || import.meta.env.MODE === 'storybook';
 
 export const TrackMap = () => {
   const trackId = useTrackId();
-  const driversTrackData = useDriverProgress();
+  const { drivers: driversTrackData, identities } = useDriverProgress();
   const settings = useTrackMapSettings();
   const highlightColor = useHighlightColor();
   const isMinimalTrack = settings?.styling?.isMinimalTrack ?? true;
@@ -30,6 +30,7 @@ export const TrackMap = () => {
       <TrackCanvas
         trackId={trackId}
         drivers={driversTrackData}
+        driverIdentities={identities}
         enableTurnNames={settings?.enableTurnNames ?? false}
         showCarNumbers={settings?.showCarNumbers ?? true}
         displayMode={settings?.displayMode ?? 'carNumber'}

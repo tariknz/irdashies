@@ -1,8 +1,10 @@
 import React from 'react';
-import { useTelemetryValue } from '@irdashies/context';
+import {
+  useTelemetryValue,
+  useSessionStore,
+  useTotalRaceLaps,
+} from '@irdashies/context';
 import { useStore } from 'zustand';
-import { useSessionStore } from '../../../context/SessionStore/SessionStore';
-import { useTotalRaceLaps } from '../../../context/shared/useTotalRaceLaps';
 import type { FuelCalculation, FuelCalculatorSettings } from '../types';
 
 interface FuelCalculatorWidgetProps {

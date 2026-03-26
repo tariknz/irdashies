@@ -16,9 +16,16 @@ import { useDriverOffTrack } from './hooks/useDriverOffTrack';
 import { useDriverLivePositions } from '../Standings/hooks/useDriverLivePositions';
 import { useTelemetryValues } from '@irdashies/context';
 
+export interface DriverIdentity {
+  driver: Driver;
+  isPlayer: boolean;
+  classPosition?: number;
+}
+
 export interface TrackProps {
   trackId: number;
   drivers: TrackDriver[];
+  driverIdentities?: DriverIdentity[];
   enableTurnNames?: boolean;
   showCarNumbers?: boolean;
   displayMode?: 'carNumber' | 'sessionPosition' | 'livePosition';
@@ -68,6 +75,7 @@ const TRACK_DRAWING_HEIGHT = 1080;
 export const TrackCanvas = ({
   trackId,
   drivers,
+  driverIdentities,
   enableTurnNames,
   showCarNumbers = true,
   displayMode = 'carNumber',
@@ -101,7 +109,6 @@ export const TrackCanvas = ({
   const carIdxIsOnPitRoad = useTelemetryValues('CarIdxOnPitRoad');
 
   // Memoize Path2D objects to avoid re-creating them on every render
-  // this is used to draw the track and start/finish line
   const insidePath = trackDrawing?.active?.inside;
   const startFinishLinePath = trackDrawing?.startFinish?.line;
   const path2DObjects = useMemo(() => {
@@ -113,27 +120,29 @@ export const TrackCanvas = ({
     };
   }, [insidePath, startFinishLinePath]);
 
-  // Calculate if this is a multi-class race by counting unique CarClassID values
+  // Fall back to deriving identities from drivers when not provided (e.g. stories)
+  const resolvedIdentities = driverIdentities ?? drivers;
+
+  // Calculate if this is a multi-class race — depends on stable identities
   const isMultiClass = useMemo(() => {
-    if (!drivers || drivers.length === 0) return false;
+    if (!resolvedIdentities || resolvedIdentities.length === 0) return false;
     const uniqueClassIds = new Set(
-      drivers.map(({ driver }) => driver.CarClassID)
+      resolvedIdentities.map(({ driver }) => driver.CarClassID)
     );
     return uniqueClassIds.size > 1;
-  }, [drivers]);
+  }, [resolvedIdentities]);
 
-  // Memoize color calculations
+  // Memoize color calculations — depends on stable identities, so this
+  // only recomputes when the driver roster actually changes.
   const driverColors = useMemo(() => {
     const colors: Record<number, { fill: string; text: string }> = {};
 
-    drivers?.forEach(({ driver, isPlayer }) => {
+    resolvedIdentities?.forEach(({ driver, isPlayer }) => {
       if (isPlayer) {
         if (highlightColor) {
-          // Convert highlight color number to hex string for canvas
           const highlightColorHex = `#${highlightColor.toString(16).padStart(6, '0')}`;
           colors[driver.CarIdx] = { fill: highlightColorHex, text: 'white' };
         } else {
-          // Default to amber when highlightColor is undefined
           colors[driver.CarIdx] = { fill: getColor('amber'), text: 'white' };
         }
       } else {
@@ -147,7 +156,7 @@ export const TrackCanvas = ({
     });
 
     return colors;
-  }, [drivers, isMultiClass, highlightColor]);
+  }, [resolvedIdentities, isMultiClass, highlightColor]);
 
   // Get start/finish line calculations
   const startFinishLine = useStartFinishLine({
@@ -171,63 +180,49 @@ export const TrackCanvas = ({
     const intersectionLength = trackDrawing.startFinish.point.length;
     const totalLength = trackDrawing.active.totalLength;
 
-    return drivers.reduce<
-      Record<
-        number,
-        TrackDriver & {
-          position: { x: number; y: number };
-          sessionPosition?: number;
-        }
-      >
-    >(
-      (acc, { driver, progress, isPlayer, classPosition: sessionPosition }) => {
-        // Calculate position based on progress
-        const adjustedLength = (totalLength * progress) % totalLength;
-        const length =
-          direction === 'anticlockwise'
-            ? (intersectionLength + adjustedLength) % totalLength
-            : (intersectionLength - adjustedLength + totalLength) % totalLength;
+    const result: Record<
+      number,
+      TrackDriver & {
+        position: { x: number; y: number };
+        sessionPosition?: number;
+      }
+    > = {};
 
-        // --- Linear Interpolation between points ---
-        const floatIndex =
-          (length / totalLength) * (trackPathPoints.length - 1);
-        const index1 = Math.floor(floatIndex);
-        const index2 = Math.min(index1 + 1, trackPathPoints.length - 1);
-        const t = floatIndex - index1;
+    for (const {
+      driver,
+      progress,
+      isPlayer,
+      classPosition: sessionPosition,
+    } of drivers) {
+      // Calculate position based on progress
+      const adjustedLength = (totalLength * progress) % totalLength;
+      const length =
+        direction === 'anticlockwise'
+          ? (intersectionLength + adjustedLength) % totalLength
+          : (intersectionLength - adjustedLength + totalLength) % totalLength;
 
-        const p1 = trackPathPoints[index1];
-        const p2 = trackPathPoints[index2];
+      // --- Linear Interpolation between points ---
+      const floatIndex = (length / totalLength) * (trackPathPoints.length - 1);
+      const index1 = Math.floor(floatIndex);
+      const index2 = Math.min(index1 + 1, trackPathPoints.length - 1);
+      const t = floatIndex - index1;
 
-        const canvasPosition = {
+      const p1 = trackPathPoints[index1];
+      const p2 = trackPathPoints[index2];
+
+      result[driver.CarIdx] = {
+        position: {
           x: p1.x + (p2.x - p1.x) * t,
           y: p1.y + (p2.y - p1.y) * t,
-        };
+        },
+        driver,
+        isPlayer,
+        progress,
+        sessionPosition,
+      };
+    }
 
-        return {
-          ...acc,
-          [driver.CarIdx]: {
-            position: canvasPosition,
-            driver,
-            isPlayer,
-            progress,
-            sessionPosition,
-          },
-        } as Record<
-          number,
-          TrackDriver & {
-            position: { x: number; y: number };
-            sessionPosition?: number;
-          }
-        >;
-      },
-      {} as Record<
-        number,
-        TrackDriver & {
-          position: { x: number; y: number };
-          sessionPosition?: number;
-        }
-      >
-    );
+    return result;
   }, [
     drivers,
     trackDrawing?.active?.trackPathPoints,

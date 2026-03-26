@@ -253,36 +253,43 @@ export interface InputConfig {
   };
   gear: {
     enabled: boolean;
+    size: number;
     unit: 'mph' | 'km/h' | 'auto';
+    showspeed: boolean;
+    showspeedunit: boolean;
   };
-  abs?: { enabled: boolean };
+  abs: { enabled: boolean };
   steer: {
     enabled: boolean;
     config: SteerConfig;
   };
-  tachometer: {
-    enabled: boolean;
-    showRpmText: boolean;
-    shiftPointStyle?: 'glow' | 'pulse' | 'border';
-    customShiftPoints?: {
-      enabled: boolean;
-      indicatorType: 'glow' | 'pulse' | 'border';
-      indicatorColor: string;
-      carConfigs: Record<
-        string,
-        {
-          enabled: boolean;
-          carId: string;
-          carName: string;
-          gearCount: number;
-          redlineRpm: number;
-          gearShiftPoints: Record<string, { shiftRpm: number }>;
-        }
-      >;
-    };
-  };
   background: { opacity: number };
   displayOrder: string[];
+  showOnlyWhenOnTrack: boolean;
+  sessionVisibility: SessionVisibilitySettings;
+}
+
+export interface TachometerConfig {
+  showRpmText: boolean;
+  rpmOrientation?: 'horizontal' | 'bottom' | 'top';
+  shiftPointStyle?: 'glow' | 'pulse' | 'border';
+  shiftPointSettings: {
+    enabled: boolean;
+    indicatorType: 'glow' | 'pulse' | 'border';
+    indicatorColor: string;
+    carConfigs: Record<
+      string,
+      {
+        enabled: boolean;
+        carId: string;
+        carName: string;
+        gearCount: number;
+        redlineRpm: number;
+        gearShiftPoints: Record<string, { shiftRpm: number }>;
+      }
+    >;
+  };
+  background: { opacity: number };
   showOnlyWhenOnTrack: boolean;
   sessionVisibility: SessionVisibilitySettings;
 }
@@ -464,6 +471,7 @@ export interface WidgetConfigMap {
   map: TrackMapConfig;
   flatmap: FlatTrackMapConfig;
   input: InputConfig;
+  tachometer: TachometerConfig;
   fuel: FuelConfig;
   blindspotmonitor: BlindSpotMonitorConfig;
   garagecover: GarageCoverConfig;
@@ -530,9 +538,11 @@ export interface ShiftPointSettings {
   carConfigs: Record<
     string,
     {
+      enabled: boolean;
       carId: string;
       carName: string;
       gearCount: number;
+      redlineRpm: number;
       gearShiftPoints: Record<string, { shiftRpm: number }>;
     }
   >;
@@ -545,6 +555,7 @@ export type TrackMapWidgetSettings = BaseWidgetSettings<TrackMapConfig>;
 export type FlatTrackMapWidgetSettings = BaseWidgetSettings<FlatTrackMapConfig>;
 export type SteerWidgetSettings = BaseWidgetSettings<SteerConfig>;
 export type InputWidgetSettings = BaseWidgetSettings<InputConfig>;
+export type TachometerWidgetSettings = BaseWidgetSettings<TachometerConfig>;
 export type FuelWidgetSettings = BaseWidgetSettings<FuelConfig>;
 export type BlindSpotMonitorWidgetSettings =
   BaseWidgetSettings<BlindSpotMonitorConfig>;

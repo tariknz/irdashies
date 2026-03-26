@@ -5,6 +5,7 @@ import {
   useSessionStore,
   useTelemetryValue,
   useTelemetryValues,
+  useTelemetryValuesRounded,
 } from '@irdashies/context';
 import { SessionState, TrackLocation } from '@irdashies/types';
 
@@ -55,7 +56,7 @@ export const useDriverLivePositions = ({
   const sessionPositions = useSessionPositions(sessionNum);
   const sessionState = useTelemetryValue('SessionState') ?? 0;
   const carIdxLapCompleted = useTelemetryValues<number[]>('CarIdxLapCompleted');
-  const carIdxLapDistPct = useTelemetryValues<number[]>('CarIdxLapDistPct');
+  const carIdxLapDistPct = useTelemetryValuesRounded('CarIdxLapDistPct', 3);
   const carIdxClass = useTelemetryValues<number[]>('CarIdxClass');
   const carIdxTrackSurface = useTelemetryValues<number[]>('CarIdxTrackSurface');
   const paceCarIdx =

@@ -1,4 +1,12 @@
-import { useGeneralSettings, useTelemetryValue } from '@irdashies/context';
+import {
+  useGeneralSettings,
+  useTelemetryValue,
+  useCurrentSessionType,
+  useThrottledWeather,
+  useTotalRaceLaps,
+  useTotalRaceTime,
+  useTrackDisplayName,
+} from '@irdashies/context';
 import {
   useDriverIncidents,
   useSessionLapCount,
@@ -19,13 +27,6 @@ import {
 } from '@phosphor-icons/react';
 import { useSessionCurrentTime } from '../../hooks/useSessionCurrentTime';
 import { usePrecipitation } from '../../hooks/usePrecipitation';
-import {
-  useCurrentSessionType,
-  useThrottledWeather,
-  useTotalRaceLaps,
-  useTotalRaceTime,
-} from '../../../../context/shared';
-import { useTrackDisplayName } from '@irdashies/context';
 import { SessionState } from '@irdashies/types';
 import { WindArrow } from '../../../shared/WindArrow';
 

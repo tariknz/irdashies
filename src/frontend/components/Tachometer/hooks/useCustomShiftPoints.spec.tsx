@@ -1,15 +1,21 @@
 import { renderHook } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { useCustomShiftPoints } from './useCustomShiftPoints';
-import * as TelemetryStore from '../../../context/TelemetryStore/TelemetryStore';
+import * as Context from '@irdashies/context';
 import * as CarTachometerData from './useCarTachometerData';
 import type { ShiftPointSettings } from '@irdashies/types';
 
 // Mock the dependencies
-vi.mock('../../../context/TelemetryStore/TelemetryStore');
+vi.mock('@irdashies/context', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@irdashies/context')>();
+  return {
+    ...actual,
+    useTelemetryValue: vi.fn(),
+  };
+});
 vi.mock('./useCarTachometerData');
 
-const mockUseTelemetryValue = vi.mocked(TelemetryStore.useTelemetryValue);
+const mockUseTelemetryValue = vi.mocked(Context.useTelemetryValue);
 const mockUseCarTachometerData = vi.mocked(
   CarTachometerData.useCarTachometerData
 );
@@ -61,9 +67,11 @@ describe('useCustomShiftPoints', () => {
       indicatorColor: '#00ff00',
       carConfigs: {
         ferrari296gt3: {
+          enabled: true,
           carId: 'ferrari296gt3',
           carName: 'Ferrari 296 GT3',
           gearCount: 6,
+          redlineRpm: 8000,
           gearShiftPoints: {
             '1': { shiftRpm: 6000 },
           },
@@ -92,9 +100,11 @@ describe('useCustomShiftPoints', () => {
       indicatorColor: '#00ff00',
       carConfigs: {
         ferrari296gt3: {
+          enabled: true,
           carId: 'ferrari296gt3',
           carName: 'Ferrari 296 GT3',
           gearCount: 6,
+          redlineRpm: 8000,
           gearShiftPoints: {
             '1': { shiftRpm: 6000 },
           },
@@ -120,9 +130,11 @@ describe('useCustomShiftPoints', () => {
       indicatorColor: '#00ff00',
       carConfigs: {
         ferrari296gt3: {
+          enabled: true,
           carId: 'ferrari296gt3',
           carName: 'Ferrari 296 GT3',
           gearCount: 6,
+          redlineRpm: 8000,
           gearShiftPoints: {
             '0': { shiftRpm: 6000 },
           },

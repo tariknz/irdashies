@@ -100,6 +100,12 @@ const widgetItems: MenuItem[] = [
     label: 'Standings',
     widgetType: 'standings',
   },
+  {
+    to: '/settings/tachometer',
+    path: '/tachometer',
+    label: 'Tachometer',
+    widgetType: 'tachometer',
+  },
   { to: '/settings/map', path: '/map', label: 'Track Map', widgetType: 'map' },
   {
     to: '/settings/twitchchat',

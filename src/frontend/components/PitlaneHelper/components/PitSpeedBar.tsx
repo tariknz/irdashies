@@ -38,7 +38,7 @@ export const PitSpeedBar = memo(
       return (
         <div className="flex flex-col flex-1 relative items-center gap-1">
           <span className="absolute top-2 z-10 text-sm text-white font-medium tabular-nums leading-none">
-            {Math.round(speedKph)}
+            {speedKph.toFixed(1)}
           </span>
 
           {/* Bar */}
@@ -54,9 +54,9 @@ export const PitSpeedBar = memo(
             />
           </div>
 
-          <span className="absolute bottom-2 z-10 text-xs text-slate-200 leading-none">
-            Speed
-          </span>
+          <div className="flex justify-center items-center text-[11px] w-full">
+            <span className="text-slate-400">Speed</span>
+          </div>
         </div>
       );
     }
@@ -64,20 +64,21 @@ export const PitSpeedBar = memo(
     // Horizontal orientation
     return (
       <div className="flex flex-col flex-1 gap-1">
-        <div className="flex justify-between items-center text-xs">
-          <span className="text-slate-400">Speed</span>
-          <span className="text-white font-medium tabular-nums">
-            {Math.round(speedKph)}
-          </span>
-        </div>
         {/* Horizontal bar */}
-        <div className="relative min-h-5 h-full bg-slate-700/50 rounded overflow-hidden flex-1">
+        <div className="relative min-h-5 h-full bg-slate-70  0/50 rounded overflow-hidden flex-1">
           <div
             className="absolute left-0 top-0 h-full transition-all duration-150 ease-out"
             style={{ width: `${fillPercent}%`, backgroundColor: fillColor }}
           />
           {/* Midpoint marker */}
           <div className="absolute left-1/2 top-0 h-full border-l-2 border-white/70" />
+        </div>
+
+        <div className="flex justify-between items-center text-xs">
+          <span className="text-slate-400">Speed</span>
+          <span className="text-white font-medium tabular-nums">
+            {speedKph.toFixed(1)}
+          </span>
         </div>
       </div>
     );

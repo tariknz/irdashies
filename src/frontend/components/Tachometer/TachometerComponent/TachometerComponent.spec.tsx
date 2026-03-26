@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
-import { Tachometer } from './InputTachometer';
+import { Tachometer } from '../TachometerComponent/TachometerComponent';
 import type { ShiftPointSettings } from '@irdashies/types';
 
 // Mock telemetry store
@@ -33,9 +33,11 @@ describe('Tachometer', () => {
     indicatorColor: '#00ff00',
     carConfigs: {
       ferrari296gt3: {
+        enabled: true,
         carId: 'ferrari296gt3',
         carName: 'Ferrari 296 GT3',
         gearCount: 6,
+        redlineRpm: 8000,
         gearShiftPoints: {
           '1': { shiftRpm: 7000 },
         },
@@ -50,13 +52,13 @@ describe('Tachometer', () => {
 
   it('renders LED container', () => {
     const { container } = render(<Tachometer rpm={3000} maxRpm={8500} />);
-    const ledContainer = container.querySelector('.flex.gap-1');
+    const ledContainer = container.querySelector('.aspect-square');
     expect(ledContainer).toBeInTheDocument();
   });
 
   it('renders the correct number of LED lights (10)', () => {
     const { container } = render(<Tachometer rpm={3000} maxRpm={8500} />);
-    const ledElements = container.querySelectorAll('.rounded-full');
+    const ledElements = container.querySelectorAll('.rounded-full.border');
     expect(ledElements.length).toBe(10);
   });
 
@@ -75,7 +77,7 @@ describe('Tachometer', () => {
         ]}
       />
     );
-    const ledElements = container.querySelectorAll('.rounded-full');
+    const ledElements = container.querySelectorAll('.rounded-full.border');
     expect(ledElements.length).toBe(5); // ledColors.length - 1 (subtract redline color)
   });
 
@@ -83,7 +85,7 @@ describe('Tachometer', () => {
     const { container } = render(
       <Tachometer rpm={4250} maxRpm={8500} shiftRpm={7650} />
     );
-    const ledElements = container.querySelectorAll('.rounded-full');
+    const ledElements = container.querySelectorAll('.rounded-full.border');
 
     // Check first 6 LEDs are lit - 4250 RPM is ~55% of 7650 shift RPM
     for (let i = 0; i < 6; i++) {
@@ -102,7 +104,7 @@ describe('Tachometer', () => {
     const { container } = render(
       <Tachometer rpm={6375} maxRpm={8500} shiftRpm={7650} />
     );
-    const ledElements = container.querySelectorAll('.rounded-full');
+    const ledElements = container.querySelectorAll('.rounded-full.border');
 
     // Check 8th LED is yellow (index 7)
     const led8Color = (ledElements[7] as HTMLElement).style.backgroundColor;
@@ -113,7 +115,7 @@ describe('Tachometer', () => {
     const { container } = render(
       <Tachometer rpm={7650} maxRpm={8500} shiftRpm={7650} />
     );
-    const ledElements = container.querySelectorAll('.rounded-full');
+    const ledElements = container.querySelectorAll('.rounded-full.border');
 
     // At shift RPM, last LED should be purple
     const lastLedColor = (ledElements[9] as HTMLElement).style.backgroundColor;
@@ -122,7 +124,7 @@ describe('Tachometer', () => {
 
   it('handles zero RPM correctly', () => {
     const { container } = render(<Tachometer rpm={0} maxRpm={8500} />);
-    const ledElements = container.querySelectorAll('.rounded-full');
+    const ledElements = container.querySelectorAll('.rounded-full.border');
 
     // All LEDs should be dark
     ledElements.forEach((led) => {
@@ -136,7 +138,7 @@ describe('Tachometer', () => {
     const { container } = render(
       <Tachometer rpm={8500} maxRpm={8500} shiftRpm={7650} blinkRpm={8245} />
     );
-    const ledElements = container.querySelectorAll('.rounded-full');
+    const ledElements = container.querySelectorAll('.rounded-full.border');
 
     // All 10 LEDs should be lit
     expect(ledElements.length).toBe(10);
@@ -153,7 +155,7 @@ describe('Tachometer', () => {
         gearRpmThresholds={gearRpmThresholds}
       />
     );
-    const ledElements = container.querySelectorAll('.rounded-full');
+    const ledElements = container.querySelectorAll('.rounded-full.border');
 
     // At 5250 RPM, should light up LEDs with thresholds <= 5250
     // That would be: 4500, 5000 (indices 1, 2 in the array, so LEDs 0, 1)
@@ -166,11 +168,16 @@ describe('Tachometer', () => {
 
   it('renders RPM text display', () => {
     const { container } = render(
-      <Tachometer rpm={3000} maxRpm={8500} showRpmText={true} />
+      <Tachometer
+        rpm={3000}
+        maxRpm={8500}
+        showRpmText={true}
+        rpmOrientation="bottom"
+      />
     );
 
     // Should have RPM display text
-    const rpmDisplay = container.querySelector('.font-mono');
+    const rpmDisplay = container.querySelector('#rpm-text');
     expect(rpmDisplay).toBeInTheDocument();
     // toLocaleString in tests uses dot instead of comma
     expect(rpmDisplay?.textContent).toMatch(/3[,.]000/);
@@ -182,6 +189,7 @@ describe('Tachometer', () => {
         rpm={5000}
         maxRpm={8000}
         showRpmText={true}
+        rpmOrientation="bottom"
         carData={mockCarData}
       />
     );
@@ -197,6 +205,7 @@ describe('Tachometer', () => {
         rpm={5000}
         maxRpm={8000}
         showRpmText={true}
+        rpmOrientation="bottom"
         carData={mockCarData}
       />
     );
@@ -211,6 +220,7 @@ describe('Tachometer', () => {
         rpm={7100} // Above 7000 RPM shift point
         maxRpm={8000}
         showRpmText={true}
+        rpmOrientation="bottom"
         gear={1}
         carData={mockCarData}
         carPath="ferrari296gt3"
@@ -228,6 +238,7 @@ describe('Tachometer', () => {
         rpm={6500} // Below 7000 RPM shift point
         maxRpm={8000}
         showRpmText={true}
+        rpmOrientation="bottom"
         gear={1}
         carData={mockCarData}
         carPath="ferrari296gt3"
@@ -247,6 +258,7 @@ describe('Tachometer', () => {
         rpm={7100} // Above 7000 RPM shift point
         maxRpm={8000}
         showRpmText={true}
+        rpmOrientation="bottom"
         gear={1}
         carData={mockCarData}
         carPath="ferrari296gt3"
