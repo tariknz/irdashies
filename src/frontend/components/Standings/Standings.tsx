@@ -242,6 +242,7 @@ export const Standings = () => {
                         penalty={result.penalty}
                         slowdown={result.slowdown}
                         hideCarManufacturer={hideCarManufacturer}
+                        compactMode={generalSettings?.compactMode}
                       />
                     </Fragment>
                   );

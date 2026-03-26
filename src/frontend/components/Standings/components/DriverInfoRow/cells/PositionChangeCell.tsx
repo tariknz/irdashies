@@ -1,14 +1,13 @@
 import { memo } from 'react';
-import { useGeneralSettings } from '@irdashies/context';
 import { RatingChange } from '../../RatingChange/RatingChange';
 
 interface PositionChangeCellProps {
   positionChange?: number;
+  compactMode?: string;
 }
 
 export const PositionChangeCell = memo(
-  ({ positionChange }: PositionChangeCellProps) => {
-    const compactMode = useGeneralSettings()?.compactMode;
+  ({ positionChange, compactMode }: PositionChangeCellProps) => {
     const pxClass =
       compactMode === 'ultra'
         ? ''

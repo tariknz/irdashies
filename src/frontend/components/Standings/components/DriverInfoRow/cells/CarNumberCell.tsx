@@ -1,5 +1,4 @@
 import { memo } from 'react';
-import { useGeneralSettings } from '@irdashies/context';
 
 interface TailwindStyles {
   classHeader: string;
@@ -12,6 +11,7 @@ interface CarNumberCellProps {
   tailwindStyles: TailwindStyles;
   showBackground?: boolean;
   showBorder?: boolean;
+  compactMode?: string;
 }
 
 export const CarNumberCell = memo(
@@ -20,8 +20,8 @@ export const CarNumberCell = memo(
     tailwindStyles,
     showBackground = true,
     showBorder = true,
+    compactMode,
   }: CarNumberCellProps) => {
-    const compactMode = useGeneralSettings()?.compactMode;
     const pxClass = compactMode === 'ultra' ? '' : 'px-1';
     const colorClass = showBackground
       ? tailwindStyles.driverIcon

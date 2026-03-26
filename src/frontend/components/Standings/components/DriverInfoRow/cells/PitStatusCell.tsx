@@ -1,5 +1,4 @@
 import { memo } from 'react';
-import { useGeneralSettings } from '@irdashies/context';
 import { DriverStatusBadges } from './DriverStatusBadges';
 
 interface PitStatusCellProps {
@@ -21,6 +20,7 @@ interface PitStatusCellProps {
    */
   pitExitAfterSF?: boolean;
   isMinimal?: boolean;
+  compactMode?: string;
 }
 
 export const PitStatusCell = memo(
@@ -38,8 +38,8 @@ export const PitStatusCell = memo(
     pitLapDisplayMode,
     pitExitAfterSF,
     isMinimal,
+    compactMode,
   }: PitStatusCellProps) => {
-    const compactMode = useGeneralSettings()?.compactMode;
     const pxClass = compactMode === 'ultra' ? '' : 'px-1';
     const widthClass = showPitTime ? 'w-[7rem]' : 'w-[4.5rem]';
     const tow =

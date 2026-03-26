@@ -1,5 +1,4 @@
 import { memo } from 'react';
-import { useGeneralSettings } from '@irdashies/context';
 
 interface TailwindStyles {
   classHeader: string;
@@ -12,6 +11,7 @@ interface PositionCellProps {
   tailwindStyles: TailwindStyles;
   offTrack: boolean;
   showBackground?: boolean;
+  compactMode?: string;
 }
 
 export const PositionCell = memo(
@@ -21,8 +21,8 @@ export const PositionCell = memo(
     offTrack,
     tailwindStyles,
     showBackground = true,
+    compactMode,
   }: PositionCellProps) => {
-    const compactMode = useGeneralSettings()?.compactMode;
     const pxClass =
       compactMode === 'ultra'
         ? ''

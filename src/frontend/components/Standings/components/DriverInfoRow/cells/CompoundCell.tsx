@@ -1,15 +1,14 @@
 import { memo } from 'react';
-import { useGeneralSettings } from '@irdashies/context';
 import { Compound } from '../../Compound/Compound';
 
 interface CompoundCellProps {
   tireCompound?: number;
   carId?: number;
+  compactMode?: string;
 }
 
 export const CompoundCell = memo(
-  ({ tireCompound, carId }: CompoundCellProps) => {
-    const compactMode = useGeneralSettings()?.compactMode;
+  ({ tireCompound, carId, compactMode }: CompoundCellProps) => {
     const pxClass =
       compactMode === 'ultra'
         ? ''

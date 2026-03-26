@@ -1,14 +1,13 @@
 import { memo } from 'react';
-import { useGeneralSettings } from '@irdashies/context';
 import { CarManufacturer } from '../../CarManufacturer/CarManufacturer';
 
 interface CarManufacturerCellProps {
   carId?: number;
+  compactMode?: string;
 }
 
 export const CarManufacturerCell = memo(
-  ({ carId }: CarManufacturerCellProps) => {
-    const compactMode = useGeneralSettings()?.compactMode;
+  ({ carId, compactMode }: CarManufacturerCellProps) => {
     const pxClass =
       compactMode === 'ultra'
         ? ''

@@ -1,6 +1,5 @@
 import { memo, useRef, useLayoutEffect } from 'react';
 import { SpeakerHighIcon } from '@phosphor-icons/react';
-import { useGeneralSettings } from '@irdashies/context';
 import { DriverStatusBadges } from './DriverStatusBadges';
 import {
   DriverName as formatDriverName,
@@ -89,6 +88,7 @@ interface DriverNameCellProps {
   label?: string;
   nameDisplay?: 'both' | 'label' | 'name';
   alternateFrequency?: number;
+  compactMode?: string;
 }
 
 export const DriverNameCell = memo(
@@ -106,8 +106,8 @@ export const DriverNameCell = memo(
     label,
     nameDisplay,
     alternateFrequency,
+    compactMode,
   }: DriverNameCellProps) => {
-    const generalSettings = useGeneralSettings();
     const displayName = fullName
       ? formatDriverName(
           extractDriverName(fullName, removeNumbersFromName),
@@ -154,7 +154,7 @@ export const DriverNameCell = memo(
     return (
       <td
         data-column="driverName"
-        className={`w-full max-w-0 overflow-hidden${generalSettings?.compactMode !== 'ultra' ? ' px-1 py-0.5' : ''}`}
+        className={`w-full max-w-0 overflow-hidden${compactMode !== 'ultra' ? ' px-1 py-0.5' : ''}`}
       >
         <div className="flex items-center overflow-hidden">
           <span

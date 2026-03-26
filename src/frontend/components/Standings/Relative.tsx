@@ -99,6 +99,7 @@ export const Relative = () => {
           penalty={false}
           slowdown={false}
           hideCarManufacturer={hideCarManufacturer}
+          compactMode={generalSettings?.compactMode}
         />
       ));
     }
@@ -152,6 +153,7 @@ export const Relative = () => {
             slowdown={false}
             deltaDecimalPlaces={settings?.delta?.precision}
             hideCarManufacturer={hideCarManufacturer}
+            compactMode={generalSettings?.compactMode}
           />
         );
       }
@@ -218,6 +220,7 @@ export const Relative = () => {
           slowdown={result.slowdown}
           deltaDecimalPlaces={settings?.delta?.precision}
           hideCarManufacturer={hideCarManufacturer}
+          compactMode={generalSettings?.compactMode}
         />
       );
     });
@@ -232,6 +235,7 @@ export const Relative = () => {
     isTeamRacing,
     tagMap,
     hasAnyTag,
+    generalSettings?.compactMode,
   ]);
 
   if (!isSessionVisible) return <></>;

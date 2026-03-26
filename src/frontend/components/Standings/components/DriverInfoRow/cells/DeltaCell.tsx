@@ -1,16 +1,20 @@
 import { memo } from 'react';
-import { useGeneralSettings } from '@irdashies/context';
 import { Gap } from '../../../createStandings';
 
 interface DeltaCellProps {
   delta?: number | Gap;
   showForUndefined?: string;
   decimalPlaces?: number;
+  compactMode?: string;
 }
 
 export const DeltaCell = memo(
-  ({ delta, showForUndefined = '-', decimalPlaces = 2 }: DeltaCellProps) => {
-    const compactMode = useGeneralSettings()?.compactMode;
+  ({
+    delta,
+    showForUndefined = '-',
+    decimalPlaces = 2,
+    compactMode,
+  }: DeltaCellProps) => {
     const pxClass =
       compactMode === 'ultra'
         ? ''

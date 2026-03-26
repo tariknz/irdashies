@@ -1,14 +1,17 @@
 import { memo } from 'react';
-import { useGeneralSettings } from '@irdashies/context';
 
 interface FastestTimeCellProps {
   fastestTimeString: string;
   hasFastestTime: boolean;
+  compactMode?: string;
 }
 
 export const FastestTimeCell = memo(
-  ({ fastestTimeString, hasFastestTime }: FastestTimeCellProps) => {
-    const compactMode = useGeneralSettings()?.compactMode;
+  ({
+    fastestTimeString,
+    hasFastestTime,
+    compactMode,
+  }: FastestTimeCellProps) => {
     const pxClass =
       compactMode === 'ultra'
         ? ''

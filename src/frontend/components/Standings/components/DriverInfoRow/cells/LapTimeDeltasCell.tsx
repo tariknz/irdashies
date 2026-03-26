@@ -1,10 +1,10 @@
 import { memo, Fragment } from 'react';
-import { useGeneralSettings } from '@irdashies/context';
 
 interface LapTimeDeltasCellProps {
   lapTimeDeltas?: number[];
   emptyLapDeltaPlaceholders: number[] | null;
   isPlayer: boolean;
+  compactMode?: string;
 }
 
 export const LapTimeDeltasCell = memo(
@@ -12,8 +12,8 @@ export const LapTimeDeltasCell = memo(
     lapTimeDeltas,
     emptyLapDeltaPlaceholders,
     isPlayer,
+    compactMode,
   }: LapTimeDeltasCellProps) => {
-    const compactMode = useGeneralSettings()?.compactMode;
     const pxClass = compactMode === 'ultra' ? '' : 'px-1';
 
     if (!emptyLapDeltaPlaceholders) {

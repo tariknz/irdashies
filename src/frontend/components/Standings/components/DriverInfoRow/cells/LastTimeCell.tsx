@@ -1,10 +1,10 @@
 import { memo } from 'react';
-import { useGeneralSettings } from '@irdashies/context';
 import type { LastTimeState } from '../../../createStandings';
 
 interface LastTimeCellProps {
   lastTimeString: string;
   lastTimeState?: LastTimeState;
+  compactMode?: string;
 }
 
 const getLastTimeColorClass = (state?: LastTimeState): string => {
@@ -14,8 +14,7 @@ const getLastTimeColorClass = (state?: LastTimeState): string => {
 };
 
 export const LastTimeCell = memo(
-  ({ lastTimeString, lastTimeState }: LastTimeCellProps) => {
-    const compactMode = useGeneralSettings()?.compactMode;
+  ({ lastTimeString, lastTimeState, compactMode }: LastTimeCellProps) => {
     const pxClass =
       compactMode === 'ultra'
         ? ''
