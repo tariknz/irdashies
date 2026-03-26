@@ -75,6 +75,43 @@ layer(base);
       opacity: 0;
     }
   }
+
+  --animate-name-slide-primary: name-slide-primary 5s ease-in-out infinite;
+  --animate-name-slide-secondary: name-slide-secondary 5s ease-in-out infinite;
+
+  @keyframes name-slide-primary {
+    0%,
+    40% {
+      transform: translateY(0);
+      opacity: 1;
+    }
+    50%,
+    90% {
+      transform: translateY(-110%);
+      opacity: 0;
+    }
+    100% {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  @keyframes name-slide-secondary {
+    0%,
+    40% {
+      transform: translateY(110%);
+      opacity: 0;
+    }
+    50%,
+    90% {
+      transform: translateY(0);
+      opacity: 1;
+    }
+    100% {
+      transform: translateY(110%);
+      opacity: 0;
+    }
+  }
 }
 
 html {
@@ -114,22 +151,54 @@ html {
 }
 
 /* 2. Assign the starting value (the 'xs' value) for each theme */
-.overlay-theme-4xs { --theme-offset: 7px; }
-.overlay-theme-3xs { --theme-offset: 8px; }
-.overlay-theme-2xs { --theme-offset: 9px; }
-.overlay-theme-xs  { --theme-offset: 10px; }
-.overlay-theme-sm  { --theme-offset: 11px; }
-.overlay-theme-md  { --theme-offset: 12px; }
-.overlay-theme-lg  { --theme-offset: 13px; }
-.overlay-theme-xl  { --theme-offset: 14px; }
-.overlay-theme-2xl { --theme-offset: 15px; }
-.overlay-theme-3xl { --theme-offset: 16px; }
-.overlay-theme-4xl { --theme-offset: 17px; }
-.overlay-theme-5xl { --theme-offset: 18px; }
-.overlay-theme-6xl { --theme-offset: 19px; }
-.overlay-theme-7xl { --theme-offset: 20px; }
-.overlay-theme-8xl { --theme-offset: 21px; }
-.overlay-theme-9xl { --theme-offset: 22px; }
+.overlay-theme-4xs {
+  --theme-offset: 7px;
+}
+.overlay-theme-3xs {
+  --theme-offset: 8px;
+}
+.overlay-theme-2xs {
+  --theme-offset: 9px;
+}
+.overlay-theme-xs {
+  --theme-offset: 10px;
+}
+.overlay-theme-sm {
+  --theme-offset: 11px;
+}
+.overlay-theme-md {
+  --theme-offset: 12px;
+}
+.overlay-theme-lg {
+  --theme-offset: 13px;
+}
+.overlay-theme-xl {
+  --theme-offset: 14px;
+}
+.overlay-theme-2xl {
+  --theme-offset: 15px;
+}
+.overlay-theme-3xl {
+  --theme-offset: 16px;
+}
+.overlay-theme-4xl {
+  --theme-offset: 17px;
+}
+.overlay-theme-5xl {
+  --theme-offset: 18px;
+}
+.overlay-theme-6xl {
+  --theme-offset: 19px;
+}
+.overlay-theme-7xl {
+  --theme-offset: 20px;
+}
+.overlay-theme-8xl {
+  --theme-offset: 21px;
+}
+.overlay-theme-9xl {
+  --theme-offset: 22px;
+}
 
 .overlay-window.overlay-theme-color-black {
   --color-slate-50: oklch(0.98 0 0);

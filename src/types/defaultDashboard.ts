@@ -233,6 +233,7 @@ export const defaultDashboard: {
           'compound',
           'lapTimeDeltas',
         ],
+        driverTag: { enabled: false },
         sessionVisibility: {
           race: true,
           loneQualify: true,
@@ -439,6 +440,7 @@ export const defaultDashboard: {
           'lastTime',
           'compound',
         ],
+        driverTag: { enabled: false },
         titleBar: {
           enabled: false,
           progressBar: {

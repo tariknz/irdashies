@@ -69,7 +69,7 @@ const AnimatedRPM = ({
     indicatorType,
     indicatorColor: color,
     carConfigs: {
-      'ferrari296gt3': {
+      ferrari296gt3: {
         enabled: true,
         carId: 'ferrari296gt3',
         carName: 'Ferrari 296 GT3',
@@ -204,7 +204,7 @@ export const WithRpmText: Story = {
       </div>
       <p className="text-gray-400 mb-4">
         RPM box always visible, shows both RPM and &quot;SHIFT&quot; when active
-      </p>      
+      </p>
       <AnimatedRPM
         indicatorType="glow"
         title="Glow Effect - With RPM Text"
@@ -229,11 +229,12 @@ export const Comparison: Story = {
           color="#ffff00"
           rpmOrientation="bottom"
         />
-        <AnimatedRPM 
-          indicatorType="glow" 
-          title="Glow Effect" 
-          color="#00ff00" 
-          rpmOrientation="bottom"/>
+        <AnimatedRPM
+          indicatorType="glow"
+          title="Glow Effect"
+          color="#00ff00"
+          rpmOrientation="bottom"
+        />
         <AnimatedRPM
           indicatorType="pulse"
           title="Pulse Effect"

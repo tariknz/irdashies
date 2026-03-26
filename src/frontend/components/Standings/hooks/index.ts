@@ -8,3 +8,4 @@ export * from './useStandingsSettings';
 export * from './useRelativeSettings';
 export * from './useHighlightColor';
 export * from './useTrackMapSettings';
+export * from './useDriverTagMap';

@@ -6,7 +6,7 @@ import { createReadStream, createWriteStream } from 'node:fs';
 import { createBrotliCompress, createBrotliDecompress } from 'zlib';
 import { chain } from 'stream-chain';
 import { parser } from 'stream-json';
-import { streamArray } from 'stream-json/streamers/stream-array.js';
+import { streamArray } from 'stream-json/streamers/StreamArray';
 
 export class TelemetrySink {
   private isRecording = false;

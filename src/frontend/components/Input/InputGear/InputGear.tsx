@@ -33,13 +33,13 @@ export const InputGear = memo(
         break;
     }
 
-    const displaySize = (settings.size / 100);
+    const displaySize = settings.size / 100;
     const displayMultiplier =
-    settings.showspeed && settings.showspeedunit
-      ? 50
-      : settings.showspeed
-      ? 55
-      : 90;  
+      settings.showspeed && settings.showspeedunit
+        ? 50
+        : settings.showspeed
+          ? 55
+          : 90;
 
     return (
       <div className="@container-[size] flex items-center justify-center p-1 font-mono w-full h-full">
@@ -53,22 +53,22 @@ export const InputGear = memo(
             {gearText}
           </div>
           {settings.showspeed && (
-            <div 
+            <div
               className="text-gray-200 leading-none"
               style={{
-                  fontSize: `min(${displaySize * (displayMultiplier / 3)}cqh, ${displaySize * 30}cqw)`,
-                }}
-              >
+                fontSize: `min(${displaySize * (displayMultiplier / 3)}cqh, ${displaySize * 30}cqw)`,
+              }}
+            >
               {speed.toFixed(0)}
             </div>
           )}
           {settings.showspeed && settings.showspeedunit && (
-            <div 
+            <div
               className="text-gray-400 leading-none"
               style={{
-                  fontSize: `min(${displaySize * (displayMultiplier / 5)}cqh, ${displaySize * 20}cqw)`,
-                }}
-              >
+                fontSize: `min(${displaySize * (displayMultiplier / 5)}cqh, ${displaySize * 20}cqw)`,
+              }}
+            >
               {displayUnit}
             </div>
           )}
