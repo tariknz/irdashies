@@ -19,6 +19,7 @@ interface PitStatusCellProps {
    * OUT persists for one extra lap count so it remains visible for a full lap.
    */
   pitExitAfterSF?: boolean;
+  compactMode?: string;
 }
 
 export const PitStatusCell = memo(
@@ -35,8 +36,10 @@ export const PitStatusCell = memo(
     showPitTime = false,
     pitLapDisplayMode,
     pitExitAfterSF,
+    compactMode,
   }: PitStatusCellProps) => {
     const widthClass = showPitTime ? 'w-[7rem]' : 'w-[4.5rem]';
+    const pxClass = compactMode === 'ultra' ? '' : 'px-1';
     const tow =
       carTrackSurface == 1 &&
       prevCarTrackSurface != undefined &&
@@ -61,7 +64,7 @@ export const PitStatusCell = memo(
     return (
       <td
         data-column="pitStatus"
-        className={`${widthClass} px-1 text-center align-middle whitespace-nowrap`}
+        className={`${widthClass} ${pxClass} text-center align-middle whitespace-nowrap`}
       >
         <DriverStatusBadges
           dnf={dnf}

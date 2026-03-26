@@ -1031,7 +1031,7 @@ export const defaultDashboard: {
     enableAutoStart: false,
     startMinimized: false,
     closeToTray: true,
-    compactMode: false,
+    compactMode: 'off' as const,
     overlayAlwaysOnTop: true,
     enableNetworkAccess: false,
   },

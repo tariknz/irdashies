@@ -14,7 +14,7 @@ interface FuelCalculatorWidgetProps {
     valueFontSize?: number;
     barFontSize?: number;
   };
-  isCompact?: boolean;
+  compactMode?: 'off' | 'compact' | 'ultra';
 }
 
 export const FuelCalculatorTimeEmpty: React.FC<FuelCalculatorWidgetProps> = ({
@@ -23,7 +23,7 @@ export const FuelCalculatorTimeEmpty: React.FC<FuelCalculatorWidgetProps> = ({
   settings,
   widgetId,
   customStyles,
-  isCompact,
+  compactMode,
 }) => {
   // Custom style handling for separate label/value sizes
   const widgetStyle =
@@ -61,7 +61,7 @@ export const FuelCalculatorTimeEmpty: React.FC<FuelCalculatorWidgetProps> = ({
 
   return (
     <div
-      className={`rounded border ${borderColor} ${isCompact ? 'px-2 py-0.5' : 'px-3 py-2'}`}
+      className={`rounded border ${borderColor} ${compactMode === 'ultra' ? '' : compactMode === 'compact' ? 'p-1' : 'p-2'}`}
     >
       <div className="flex items-center justify-between">
         <span
