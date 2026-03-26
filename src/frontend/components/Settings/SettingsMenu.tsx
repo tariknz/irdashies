@@ -77,6 +77,12 @@ const widgetItems: MenuItem[] = [
     widgetType: 'input',
   },
   {
+    to: '/settings/laptimelog',
+    path: '/laptimelog',
+    label: 'Lap Timer',
+    widgetType: 'laptimelog',
+  },
+  {
     to: '/settings/pitlanehelper',
     path: '/pitlanehelper',
     label: 'Pitlane Helper',

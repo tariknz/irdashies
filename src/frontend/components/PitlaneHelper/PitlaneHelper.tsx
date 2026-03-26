@@ -387,37 +387,6 @@ export const PitlaneHelperBody = ({
                   targetName="Pit Entry"
                 />
               )}
-
-            {onPitRoad &&
-              (position.distanceToPit >= 5 ||
-                (config.showPastPitBox && position.distanceToPit <= -5)) && (
-                <PitCountdownBar
-                  distance={Math.abs(position.distanceToPit)}
-                  maxDistance={100}
-                  orientation={config.progressBarOrientation}
-                  color={
-                    position.distanceToPit > 0
-                      ? getCountdownColor(position.distanceToPit, 100)
-                      : 'rgb(34, 197, 94)'
-                  }
-                  targetName={
-                    position.distanceToPit > 0 ? 'Pitbox' : 'Past Box'
-                  }
-                />
-              )}
-
-            {onPitRoad &&
-              position.distanceToPit < -5 &&
-              position.distanceToPitExit > 0 &&
-              position.distanceToPitExit <= 150 && (
-                <PitCountdownBar
-                  distance={position.distanceToPitExit}
-                  maxDistance={150}
-                  orientation={config.progressBarOrientation}
-                  color={getCountdownColor(position.distanceToPitExit, 150)}
-                  targetName="Pit Exit"
-                />
-              )}
           </div>
         )}
 

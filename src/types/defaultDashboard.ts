@@ -904,6 +904,46 @@ export const defaultDashboard: {
       },
     },
     {
+      id: 'laptimelog',
+      enabled: false,
+      layout: {
+        x: 300,
+        y: 100,
+        width: 250,
+        height: 250,
+      },
+      config: {
+        scale: 100,
+        alignment: 'top',
+        reverse: false,
+        showCurrentLap: true,
+        showPredictedLap: true,
+        showLastLap: true,
+        showBestLap: true,
+        delta: {
+          enabled: true,
+          method: 'bestlap',
+        },
+        history: {
+          enabled: true,
+          count: 10,
+        },
+        background: {
+          opacity: 80,
+        },
+        foreground: {
+          opacity: 70,
+        },
+        sessionVisibility: {
+          race: true,
+          loneQualify: false,
+          openQualify: true,
+          practice: true,
+          offlineTesting: true,
+        },
+      },
+    },
+    {
       id: 'telemetryinspector',
       enabled: false,
       layout: {
@@ -978,14 +1018,20 @@ export const defaultDashboard: {
     },
   ],
   generalSettings: {
+    fontType: 'lato',
     fontSize: 'sm',
+    fontWeight: 'normal',
     colorPalette: 'black',
+    showOnlyWhenOnTrack: true,
     highlightColor: 960745,
     skipTaskbar: true,
     disableHardwareAcceleration: false,
+    enableAutoStart: false,
+    startMinimized: false,
+    closeToTray: true,
+    compactMode: 'off' as const,
     overlayAlwaysOnTop: true,
     enableNetworkAccess: false,
-    compactMode: 'off' as const,
   },
 };
 

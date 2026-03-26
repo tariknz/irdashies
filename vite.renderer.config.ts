@@ -43,7 +43,7 @@ export default defineConfig({
     },
   },
   build: {
-    rollupOptions: {
+    rolldownOptions: {
       input: {
         main: path.resolve(__dirname, 'index.html'),
         'dashboard-view': path.resolve(__dirname, 'index-dashboard-view.html'),

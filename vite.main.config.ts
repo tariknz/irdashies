@@ -22,7 +22,7 @@ export default defineConfig({
     ),
   ],
   build: {
-    rollupOptions: {
+    rolldownOptions: {
       external: ['bufferutil', 'utf-8-validate'],
     },
   },
