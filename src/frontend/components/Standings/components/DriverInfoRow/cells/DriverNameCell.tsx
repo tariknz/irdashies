@@ -45,7 +45,7 @@ export const DriverNameCell = memo(
     return (
       <td
         data-column="driverName"
-        className={`w-full max-w-0 overflow-hidden${generalSettings?.compactMode === 'off' ? ' px-1 py-0.5' : generalSettings?.compactMode === 'compact' ? ' px-1' : ''}`}
+        className={`w-full max-w-0 overflow-hidden${generalSettings?.compactMode !== 'ultra' ? ' px-1 py-0.5' : ''}`}
       >
         <div className="flex items-center overflow-hidden">
           <span
