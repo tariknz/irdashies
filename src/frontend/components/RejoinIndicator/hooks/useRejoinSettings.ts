@@ -1,5 +1,5 @@
 import { useDashboard } from '@irdashies/context';
-import type { RejoinIndicatorWidgetSettings } from '../../Settings/types';
+import type { RejoinIndicatorWidgetSettings } from '@irdashies/types';
 
 const DEFAULT_CONFIG: RejoinIndicatorWidgetSettings = {
   enabled: false,

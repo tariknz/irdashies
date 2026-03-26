@@ -11,11 +11,18 @@ import { GarageCover } from './components/GarageCover/GarageCover';
 import { RejoinIndicator } from './components/RejoinIndicator/RejoinIndicator';
 import { TelemetryInspector } from './components/TelemetryInspector/TelemetryInspector';
 import { PitlaneHelper } from './components/PitlaneHelper/PitlaneHelper';
-import { Flag } from './components/Flag';  
+import { Tachometer } from './components/Tachometer/Tachometer';
+import { Flag } from './components/Flag';
+import { TwitchChat } from './components/TwitchChat/TwitchChat';
+import { LapTimeLog } from './components/LapTimeLog/LapTimeLog';
 
 // TODO: type this better, right now the config comes from settings
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const WIDGET_MAP: Record<string, (config?: any) => React.JSX.Element | null> = {
+/* eslint-disable @typescript-eslint/no-explicit-any */
+export const WIDGET_MAP: Record<
+  string,
+  (config?: any) => React.JSX.Element | null
+> = {
+  /* eslint-enable @typescript-eslint/no-explicit-any */
   standings: Standings,
   input: Input,
   relative: Relative,
@@ -29,7 +36,10 @@ export const WIDGET_MAP: Record<string, (config?: any) => React.JSX.Element | nu
   rejoin: RejoinIndicator,
   telemetryinspector: TelemetryInspector,
   pitlanehelper: PitlaneHelper,
+  tachometer: Tachometer,
   flag: Flag,
+  twitchchat: TwitchChat,
+  laptimelog: LapTimeLog,
 };
 
 export type WidgetId = keyof typeof WIDGET_MAP;

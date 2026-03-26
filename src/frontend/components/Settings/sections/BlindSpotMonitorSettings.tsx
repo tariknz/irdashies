@@ -1,55 +1,22 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import { useDashboard } from '@irdashies/context';
 import {
   BlindSpotMonitorWidgetSettings,
-  SessionVisibilitySettings,
-} from '../types';
+  SettingsTabType,
+  getWidgetDefaultConfig,
+} from '@irdashies/types';
 import { SessionVisibility } from '../components/SessionVisibility';
-import { ToggleSwitch } from '../components/ToggleSwitch';
+import { TabButton } from '../components/TabButton';
+import { SettingSliderRow } from '../components/SettingSliderRow';
+import { SettingsSection } from '../components/SettingSection';
+import { SettingDivider } from '../components/SettingDivider';
+import { SettingToggleRow } from '../components/SettingToggleRow';
+import { HIGHLIGHT_COLOR_PRESETS } from './GeneralSettings';
 
 const SETTING_ID = 'blindspotmonitor';
 
-const defaultConfig: BlindSpotMonitorWidgetSettings['config'] = {
-  showOnlyWhenOnTrack: true,
-  distAhead: 4,
-  distBehind: 4,
-  background: {
-    opacity: 30,
-  },
-  width: 20,
-  sessionVisibility: {
-    race: true,
-    loneQualify: false,
-    openQualify: true,
-    practice: true,
-    offlineTesting: true,
-  },
-};
-
-const migrateConfig = (
-  savedConfig: unknown
-): BlindSpotMonitorWidgetSettings['config'] => {
-  if (!savedConfig || typeof savedConfig !== 'object') return defaultConfig;
-
-  const config = savedConfig as Record<string, unknown>;
-  return {
-    showOnlyWhenOnTrack:
-      (config.showOnlyWhenOnTrack as boolean) ??
-      defaultConfig.showOnlyWhenOnTrack,
-    distAhead: (config.distAhead as number) ?? defaultConfig.distAhead,
-    distBehind: (config.distBehind as number) ?? defaultConfig.distBehind,
-    background: {
-      opacity:
-        (config.background as { opacity?: number })?.opacity ??
-        (defaultConfig.background?.opacity as number),
-    },
-    width: (config.width as number) ?? defaultConfig.width,
-    sessionVisibility:
-      (config.sessionVisibility as SessionVisibilitySettings) ??
-      defaultConfig.sessionVisibility,
-  };
-};
+const defaultConfig = getWidgetDefaultConfig('blindspotmonitor');
 
 export const BlindSpotMonitorSettings = () => {
   const { currentDashboard } = useDashboard();
@@ -58,8 +25,19 @@ export const BlindSpotMonitorSettings = () => {
   ) as BlindSpotMonitorWidgetSettings | undefined;
   const [settings, setSettings] = useState<BlindSpotMonitorWidgetSettings>({
     enabled: savedSettings?.enabled ?? false,
-    config: migrateConfig(savedSettings?.config),
+    config:
+      (savedSettings?.config as BlindSpotMonitorWidgetSettings['config']) ??
+      defaultConfig,
   });
+
+  // Tab state with persistence
+  const [activeTab, setActiveTab] = useState<SettingsTabType>(
+    () => (localStorage.getItem('bsmTab') as SettingsTabType) || 'display'
+  );
+
+  useEffect(() => {
+    localStorage.setItem('bsmTab', activeTab);
+  }, [activeTab]);
 
   if (!currentDashboard) {
     return <>Loading...</>;
@@ -75,125 +53,160 @@ export const BlindSpotMonitorSettings = () => {
     >
       {(handleConfigChange) => (
         <div className="space-y-4">
-          {/* Background Opacity */}
-          <div className="space-y-2">
-            <label className="text-slate-300">
-              Background Opacity: {settings.config.background?.opacity ?? 30}%
-            </label>
-            <input
-              type="range"
-              min="0"
-              max="100"
-              step="5"
-              value={settings.config.background?.opacity ?? 30}
-              onChange={(e) =>
-                handleConfigChange({
-                  background: { opacity: parseInt(e.target.value) },
-                })
-              }
-              className="w-full"
-            />
+          {/* Tabs */}
+          <div className="flex border-b border-slate-700/50">
+            <TabButton
+              id="display"
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+            >
+              Display
+            </TabButton>
+            <TabButton
+              id="options"
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+            >
+              Options
+            </TabButton>
+            <TabButton
+              id="visibility"
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+            >
+              Visibility
+            </TabButton>
           </div>
 
-          {/* Distance Ahead */}
-          <div className="space-y-2">
-            <label className="text-slate-300">
-              Distance Ahead: {settings.config.distAhead}m
-            </label>
-            <input
-              type="range"
-              min="3"
-              max="6"
-              step="0.1"
-              value={settings.config.distAhead}
-              onChange={(e) =>
-                handleConfigChange({ distAhead: parseFloat(e.target.value) })
-              }
-              className="w-full"
-            />
-            <p className="text-slate-400 text-sm">
-              Distance to car ahead in meters. Distance at which point line
-              starts to appear at the top.
-            </p>
-          </div>
+          <div className="pt-4">
+            {/* DISPLAY TAB */}
+            {activeTab === 'display' && (
+              <SettingsSection title="Display">
+                {/* Background Opacity */}
+                <SettingSliderRow
+                  title="Background Opacity"
+                  value={settings.config.background?.opacity ?? 30}
+                  units="%"
+                  min={0}
+                  max={100}
+                  step={5}
+                  onChange={(v) =>
+                    handleConfigChange({ background: { opacity: v } })
+                  }
+                />
 
-          {/* Distance Behind */}
-          <div className="space-y-2">
-            <label className="text-slate-300">
-              Distance Behind: {settings.config.distBehind}m
-            </label>
-            <input
-              type="range"
-              min="3"
-              max="6"
-              step="0.1"
-              value={settings.config.distBehind}
-              onChange={(e) =>
-                handleConfigChange({ distBehind: parseFloat(e.target.value) })
-              }
-              className="w-full"
-            />
-            <p className="text-slate-400 text-sm">
-              Distance to car behind in meters. Distance at which point line
-              starts to appear at the bottom.
-            </p>
-          </div>
+                {/* Width */}
+                <SettingSliderRow
+                  title="Width"
+                  description="Width of the blind spot indicator in pixels."
+                  value={settings.config.width ?? 20}
+                  units="px"
+                  min={5}
+                  max={100}
+                  step={1}
+                  onChange={(v) => handleConfigChange({ width: v })}
+                />
 
-          {/* Width */}
-          <div className="space-y-2">
-            <label className="text-slate-300">
-              Width: {settings.config.width ?? 20}px
-            </label>
-            <input
-              type="range"
-              min="5"
-              max="100"
-              step="1"
-              value={settings.config.width ?? 20}
-              onChange={(e) =>
-                handleConfigChange({ width: parseInt(e.target.value) })
-              }
-              className="w-full"
-            />
-            <p className="text-slate-400 text-sm">
-              Width of the blind spot indicator in pixels.
-            </p>
-          </div>
+                {/* Border Size */}
+                <SettingSliderRow
+                  title="Border Size"
+                  description="Border thickness of the blind spot indicator in pixels."
+                  value={settings.config.borderSize ?? 1}
+                  units="px"
+                  min={0}
+                  max={20}
+                  step={1}
+                  onChange={(v) => handleConfigChange({ borderSize: v })}
+                />
 
-          {/* IsOnTrack Section */}
-          <div className="flex items-center justify-between">
-            <div>
-              <h4 className="text-md font-medium text-slate-300">
-                Show only when on track
-              </h4>
-              <span className="block text-xs text-slate-500">
-                If enabled, blind spotter will only be shown when you are
-                driving.
-              </span>
-            </div>
-            <ToggleSwitch
-              enabled={settings.config.showOnlyWhenOnTrack}
-              onToggle={(newValue) =>
-                handleConfigChange({
-                  showOnlyWhenOnTrack: newValue,
-                })
-              }
-            />
-          </div>
+                {/* Indicator Color */}
+                <div className="flex items-center justify-between gap-4 py-2">
+                  <div>
+                    <p className="text-sm font-medium text-slate-200">
+                      Indicator Color
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span
+                      className="rounded border-2"
+                      style={{
+                        width: '20px',
+                        height: '20px',
+                        backgroundColor: `#${(settings.config.indicatorColor ?? 16096779).toString(16).padStart(6, '0')}`,
+                        borderColor: `#${(settings.config.indicatorColor ?? 16096779).toString(16).padStart(6, '0')}`,
+                      }}
+                    />
+                    <select
+                      value={settings.config.indicatorColor ?? 16096779}
+                      onChange={(e) =>
+                        handleConfigChange({
+                          indicatorColor: parseInt(e.target.value),
+                        })
+                      }
+                      className="px-3 py-1.5 bg-slate-700 text-slate-300 rounded border border-slate-600 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
+                    >
+                      {Array.from(HIGHLIGHT_COLOR_PRESETS.entries()).map(
+                        ([key, value]) => (
+                          <option key={key} value={key}>
+                            {value}
+                          </option>
+                        )
+                      )}
+                    </select>
+                  </div>
+                </div>
+              </SettingsSection>
+            )}
 
-          {/* Session Visibility Settings */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-medium text-slate-200">
-                Session Visibility
-              </h3>
-            </div>
-            <div className="space-y-3 pl-4">
-              <SessionVisibility
-                sessionVisibility={settings.config.sessionVisibility}
-                handleConfigChange={handleConfigChange}
-              />
-            </div>
+            {/* OPTIONS TAB */}
+            {activeTab === 'options' && (
+              <SettingsSection title="Options">
+                {/* Distance Ahead */}
+                <SettingSliderRow
+                  title="Distance Ahead"
+                  description="Distance to car ahead in meters."
+                  value={settings.config.distAhead ?? 20}
+                  units="m"
+                  min={3}
+                  max={6}
+                  step={0.1}
+                  onChange={(v) => handleConfigChange({ distAhead: v })}
+                />
+
+                {/* Distance Behind */}
+                <SettingSliderRow
+                  title="Distance Behind"
+                  description="Distance to car behind in meters."
+                  value={settings.config.distBehind ?? 20}
+                  units="m"
+                  min={3}
+                  max={6}
+                  step={0.1}
+                  onChange={(v) => handleConfigChange({ distBehind: v })}
+                />
+              </SettingsSection>
+            )}
+
+            {/* VISIBILITY TAB */}
+            {activeTab === 'visibility' && (
+              <SettingsSection title="Session Visibility">
+                <SessionVisibility
+                  sessionVisibility={settings.config.sessionVisibility}
+                  handleConfigChange={handleConfigChange}
+                />
+
+                <SettingDivider />
+
+                <SettingToggleRow
+                  title="Show only when on track"
+                  description="If enabled, blind spotter will only be shown when driving"
+                  enabled={settings.config.showOnlyWhenOnTrack ?? false}
+                  onToggle={(newValue) =>
+                    handleConfigChange({ showOnlyWhenOnTrack: newValue })
+                  }
+                />
+              </SettingsSection>
+            )}
           </div>
         </div>
       )}

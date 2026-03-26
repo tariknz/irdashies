@@ -49,7 +49,7 @@ export const Flag = () => {
   // Double flag
   return (
     <div className="flex h-full w-full justify-between items-stretch">
-      <div className="h-full">
+      <div className="h-full aspect-square">
         <FlagDisplay
           label={visibleLabel}
           showLabel={settings.showLabel ?? true}
@@ -64,7 +64,7 @@ export const Flag = () => {
         />
       </div>
 
-      <div className="h-full">
+      <div className="h-full aspect-square">
         <FlagDisplay
           label={visibleLabel}
           showLabel={settings.showLabel ?? true}
@@ -143,7 +143,7 @@ export const FlagDisplay = ({
 
   const outerClass = fullBleed
     ? 'flex flex-col items-stretch gap-0 bg-slate-900 border-4 border-slate-800 shadow-2xl w-full h-full box-border m-0 p-0'
-    : 'flex flex-col items-center gap-2 p-4 bg-slate-900 rounded-2xl border-4 border-slate-800 shadow-2xl w-full h-full';
+    : 'flex flex-col items-center gap-[3%] p-[4%] bg-slate-900 rounded-2xl border-4 border-slate-800 shadow-2xl w-full h-full';
 
   return (
     <div className={outerClass}>
@@ -200,15 +200,15 @@ export const FlagDisplay = ({
           })}
         </div>
       </div>
-      <div className="w-full h-6 flex items-center justify-center shrink-0">
-        {showLabel && (
+      {showLabel && (
+        <div className="w-full h-6 flex items-center justify-center shrink-0">
           <span
             className={`text-sm font-black px-3 py-1 uppercase rounded-md bg-black ${textColorClass} ${shortLabel === 'NO' ? 'opacity-0' : ''}`}
           >
             {shortLabel === 'NO' ? 'NO' : shortLabel}
           </span>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 };

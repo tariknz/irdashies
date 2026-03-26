@@ -133,12 +133,13 @@ export const WidgetContainer = memo(
     // positions remain in screen space for logical consistency.
     const containerStyle: CSSProperties = {
       position: 'absolute',
-      left: displayedLayout.x + containerOffset.x,
-      top: displayedLayout.y + containerOffset.y,
+      left: 0,
+      top: 0,
+      transform: `translate(${displayedLayout.x + containerOffset.x}px, ${displayedLayout.y + containerOffset.y}px)`,
       width: displayedLayout.width,
       height: displayedLayout.height,
       zIndex,
-      pointerEvents: 'auto',
+      pointerEvents: editMode ? 'auto' : 'none',
     };
 
     const widgetName = getWidgetName(id);
@@ -146,9 +147,7 @@ export const WidgetContainer = memo(
     return (
       <div style={containerStyle} data-widget-id={id}>
         {/* Widget content */}
-        <div className="w-full h-full" style={{ pointerEvents: 'auto' }}>
-          {children}
-        </div>
+        <div className={`w-full h-full pointer-events-none`}>{children}</div>
 
         {/* Edit mode overlay */}
         {editMode && (
@@ -164,10 +163,7 @@ export const WidgetContainer = memo(
               ].join(' ')}
             >
               {/* Label */}
-              <div
-                className="absolute top-0 right-0 py-1 px-2 bg-sky-500 text-white text-sm flex items-center gap-1"
-                style={{ cursor: 'move' }}
-              >
+              <div className="absolute top-0 right-0 py-1 px-2 bg-sky-500 text-white text-sm flex items-center gap-1 cursor-move">
                 <ResizeIcon size={14} />
                 <span>{widgetName}</span>
               </div>

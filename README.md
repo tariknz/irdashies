@@ -171,18 +171,32 @@ Displays the throttle, clutch, and brake input traces, as well as the current ge
   - Toggle individual inputs (throttle, brake, ABS, steering)
 - Input bar display (clutch, brake, throttle, ABS indicator)
   - Toggle individual inputs (clutch, brake, throttle, ABS)
+  - Optional raw input values showing actual pedal/wheel inputs without sim processing (e.g. ABS, traction control)
 - Current gear display with speed (auto/mph/km/h units)
 - Steering wheel visualization with multiple styles (default, formula, LMP, NASCAR, U-shape) and color themes (light/dark)
-- Tachometer with optional RPM text display
-  - Car-specific LED color and RPM thresholds (powered by [lovely-car-data](https://github.com/Lovely-Sim-Racing/lovely-car-data))
-  - Custom shift points configuration per car and gear
-  - Multiple indicator styles (glow, pulse, border) with customizable colors
 - Customizable display order for all components
 - Adjustable background opacity
 - Option to show only when on track
 - Session visibility settings (Race, Lone Qualify, Open Qualify, Practice, Offline Testing)
 
 ![Input Trace](./docs/assets/input.png)
+
+### Tachometer
+
+Displays a real-time tachometer with optional RPM text display.
+
+**Features:**
+
+- Tachometer with optional RPM text display
+  - Car-specific LED color and RPM thresholds (powered by [lovely-car-data](https://github.com/Lovely-Sim-Racing/lovely-car-data))
+  - Custom shift points configuration per car and gear
+  - Multiple indicator styles (glow, pulse, border) with customizable colors
+  - Horizontal or vertical orientation
+- Resizable and adjustable background opacity
+- Option to show only when on track
+- Session visibility settings (Race, Lone Qualify, Open Qualify, Practice, Offline Testing)
+
+![Input Trace](./docs/assets/tachometer.png)
 
 ### Standings
 
@@ -203,18 +217,27 @@ Displays standings information for the current session.
 - Driver badges with multiple format options (license/rating combinations)
   - Full iRating: Option to display the full iRating value instead of just the badge
 - Timing information: gap, interval, best lap time, last lap time (multiple time format options)
+  - Configurable decimal precision (1, 2, or 3) for gap and interval
+  - Gap and interval display in practice and qualifying sessions
 - iRating change display
 - Lap time deltas (configurable number of laps: 1-5)
 - Title bar with session progress bar
 - Header and footer bars with customizable items and display order:
   - Session name, session time (remaining/elapsed), session clock time, incident count
-  - Brake bias, local time, track wetness, precipitation
+  - Brake bias, local time, track wetness, precipitation, wind speed/direction
   - Air and track temperature (Metric/Imperial units)
+  - Track name
+  - Session time: configurable mode (Remaining/Elapsed), format, and label style
+  - Accurate race clock for fixed-lap races (calculated from P1 average lap time)
 - Driver standings configuration:
   - Drivers to show around player
   - Drivers to show in other classes
   - Minimum drivers in player's class
   - Top drivers to always show
+  - Configurable divider line between pinned and remaining drivers
+- Optional position change column (arrows vs qualifying grid baseline)
+- All drivers shown immediately at practice/pre-qualifying start (sorted by car number)
+- Toggle to strip car numbers from driver names
 - Customizable display order for all columns
 - Adjustable background opacity
 - Option to show only when on track
@@ -250,9 +273,12 @@ Displays drive relative delta information for the current session.
 - Title bar with session progress bar
 - Header and footer bars with customizable items and display order:
   - Session name, session time (remaining/elapsed), session clock time, incident count
-  - Brake bias, local time, track wetness, precipitation
+  - Brake bias, local time, track wetness, precipitation, wind speed/direction
   - Air and track temperature (Metric/Imperial units)
+  - Track name
+  - Session time: configurable mode (Remaining/Elapsed), format, and label style
 - Configurable number of drivers to show around player (1-10)
+- Toggle to strip car numbers from driver names
 - Customizable display order for all columns
 - Adjustable background opacity
 - Option to show only when on track
@@ -267,9 +293,12 @@ Displays a track map with the current position of the cars on track and the trac
 
 **Features:**
 
-- Real-time car positions on track
+- Real-time car positions on track (live telemetry)
 - Track layout visualization
 - Optional turn numbers and names display
+  - Toggleable high contrast backgrounds for turn name labels
+  - Adjustable turn name font sizes
+- Pit lane highlighting with "P" indicators for cars in the pits
 - Show/hide car numbers on driver circles
 - Configurable driver and player circle sizes (10-100px)
 - Configurable track line width (1-100px) and outline width (1-150px)
@@ -325,17 +354,22 @@ Displays information about faster cars approaching from behind, including driver
 - Visual pulsing indicator when cars are close
 - Configurable distance threshold for alerts
 - Real-time detection of faster approaching cars
+- Pit status filtering: Option to exclude cars in the pits
+- Multiple driver display settings for more control over what's shown
 
 ![Faster Cars From Behind](./docs/assets/fastercarsfrombehind.png)
 
 ### Fuel Calculator
 
-Displays comprehensive fuel management information including current fuel level, fuel consumption per lap (min, max, averages), pit window timing, fuel required to finish, and consumption history graphs. Supports both vertical and horizontal layouts.
+Displays comprehensive fuel management information including current fuel level, fuel consumption per lap (min, max, averages), pit window timing, fuel required to finish, and consumption history graphs. Features a complete redesign with visual layout editing and real-time consumption calculations.
 
 **Features:**
 
 - Fuel units: Liters (L) or Gallons (gal)
+- Visual layout editing: Drag and drop widgets to customize your fuel display
 - Layout options: Vertical or horizontal
+- Real-time consumption calculations with pit strategy recommendations
+- Multiple display widgets for flexible information presentation
 - Consumption statistics:
   - Minimum consumption
   - Last lap consumption
@@ -354,7 +388,7 @@ Displays comprehensive fuel management information including current fuel level,
 - Fuel-to-add mode: Toggle between showing total fuel needed or just what's needed at the next stop
 - Target consumption: Shows what fuel saving is required to reach specific lap targets (±1 from current estimate)
 
-<img src="./docs/assets/fuelcalculator.png" alt="Fuel Calculator" width="250px">
+<img src="./docs/assets/fuel2.png" alt="Fuel Calculator" width="250px">
 
 ### Blind Spot Monitor
 
@@ -362,9 +396,10 @@ Displays visual indicators on the left and right sides of the screen when cars a
 
 **Features:**
 
-- Left and right side detection
+- Left and right side detection with three-wide scenario support
 - Visual amber indicator bars that move vertically based on car distance
-- Detection of single car or multiple cars (2 cars) on each side
+- Detection of single car or multiple cars on each side
+- Configurable border size (0-20px) and indicator color
 - Configurable detection distances:
   - Distance ahead (3-6 meters)
   - Distance behind (3-6 meters)
@@ -384,7 +419,7 @@ Displays a custom image overlay when you are in the garage. Perfect for streamin
 - Custom image upload (drag and drop or file selection)
 - Only displays when in garage
 - Browser source compatible for OBS and other streaming software
-- Accessible via browser at `http://localhost:3000/component/garagecover`
+- Accessible via browser at `http://localhost:3000/dashboard` (displays as part of your dashboard)
 - Image preview in settings
 
 ### Rejoin Indicator
@@ -416,16 +451,66 @@ Helps you manage your pit stops with clear visual guidance. It assists with spee
 
 **Features:**
 
-- Speed Limit Assistant: Colour-coded warnings (Green/Amber/Red) show how close you are to the pit speed limit.
+- Speed Limit Assistant: Vertical colour-coded indicator (Green/Amber/Red) showing proximity to the pit speed limit, toggleable speed bar with decimal precision.
 - Pitbox Countdown: A distance tracker and progress bar show exactly how far you are from your pit stall.
-- Countdown Bars: Colour-coded progress bars for pit entry, pitbox, and pit exit distances (Green → Yellow → Blue).
+- Countdown Bars: Colour-coded progress bars for pit entry, pitbox, and pit exit distances (Green -> Yellow -> Blue).
   - Configurable vertical/horizontal orientation with side-by-side layout option
+  - Three semantic rows (32x80px) for compact display
 - Pit Exit Inputs: Throttle/clutch display to optimize pit exits with phase-based visibility options.
 - Traffic Monitor: See how many cars are currently ahead or behind you in the pitlane.
+- Fully resizable with theme-matching background
 - Early Warning: Alerts you if your pitbox is located near the pit entry.
 - Pit limiter alerts: Flashing warnings if you enter the pits without your limiter active (auto-disabled for series with automatic limiters).
 
 ![Pitlane Helper](./docs/assets/pitlanehelper.png)
+
+### Lap Timer
+
+**Features:**
+
+- Current lap: Show current lap time, highlights green for personal best and purple for session best.
+- Predicted lap: Shows an estimate of the lap time based on the current delta.
+- Best and last lap: Display the best and last lap times.
+- Lap history: Show a history of your most recent lap times along with optional deltas.
+- Fully configurable: Decide which laps your interested in and toggle them on and off individually.
+- Fully customisable: Resize, scale and align to position the widget to your taste.
+
+![Lap Timer](./docs/assets/laptimer.png)
+
+### Flag Widget
+
+Displays racing flags in an LED-matrix style, automatically showing the most relevant flag when multiple are active. Perfect for keeping track of track conditions and race control messages.
+
+**Features:**
+
+- LED-matrix style flag display
+- Automatic flag priority: Shows the most important flag when multiple are active
+- Support for all iRacing racing flags (green, yellow, white, checkered, blue, black, etc.)
+- Option to display two identical flags within a single widget
+- Customizable size and positioning
+- Session visibility settings (Race, Lone Qualify, Open Qualify, Practice, Offline Testing)
+
+![Flag Widget](./docs/assets/flags.png)
+
+### Setup Comparison Tool
+
+Side-by-side setup analysis to compare car setup changes between sessions.
+
+**Features:**
+
+- Side-by-side setup diff with changed values highlighted in red
+- Snapshot timestamps for each saved setup
+- Move setups left/right to reorder comparisons
+
+### Twitch Chat Overlay
+
+Displays live Twitch chat directly in your overlay, useful for streamers who want chat visible while racing.
+
+**Features:**
+
+- Live chat display with configurable channel name (no OAuth required)
+- Configurable font size and background opacity
+- Visible even when iRacing is not running
 
 ### Telemetry Inspector
 
@@ -435,8 +520,14 @@ A powerful tool for viewing live data coming from iRacing. While mostly used for
 
 **Features:**
 
+- Profile Management
+  - Save and switch between different dashboard configurations
+  - Multiple profiles for different racing scenarios or streaming setups
+  - Each profile can be accessed as its own browser source URL for OBS streaming
+  - Dashboard import/export to share layouts between users or back up your setup
 - Streamer & OBS Ready
-  - Built-in Web Server: Every overlay can be used as a browser source in OBS. Just use `http://localhost:3000/component/<name>`.
+  - Built-in Web Server: All overlays can be used as a browser source in OBS. Use `http://localhost:3000/dashboard` for the default profile, or `http://localhost:3000/dashboard?profile=<profileId>` for specific profiles.
+  - Network Access: Enable network access in settings to allow other devices on your local network to access the dashboard (useful for dual-PC streaming setups).
   - Garage Cover: Automatically hide your screen with a custom image when you enter the garage to keep your car setup private.
   - Transparent backgrounds: All overlays are designed to look great on top of your game or stream.
 - Customization & Themes
@@ -448,6 +539,7 @@ A powerful tool for viewing live data coming from iRacing. While mostly used for
   - Global toggle (Alt+H): Quickly hide or show all your overlays with a single keyboard shortcut.
   - Always on top: Keep your overlays visible even when clicking on other windows.
   - System autostart: Optionally have the app start automatically when your computer boots up.
+  - Start minimized: Launch the settings window in minimized state for a cleaner desktop
   - Automatic updates: The app keeps itself up to date with the latest features and bug fixes.
 
 ## Acknowledgments

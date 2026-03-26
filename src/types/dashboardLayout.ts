@@ -19,17 +19,43 @@ export interface DashboardWidget {
   type?: string;
   /** Show/hide widget */
   enabled: boolean;
+  /** When true, widget remains visible even when iRacing is not running. */
+  alwaysEnabled?: boolean;
   /** The layout of the window for the widget on the dashboard. */
   layout: WidgetLayout;
   /** Configuration for the widget. */
   config?: Record<string, unknown>;
 }
 
-export type FontSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl';
+export type FontType = 'lato' | 'notosans' | 'figtree' | 'inter' | 'roboto';
+export type FontSize =
+  | '4xs'
+  | '3xs'
+  | '2xs'
+  | 'xs'
+  | 'sm'
+  | 'md'
+  | 'lg'
+  | 'xl'
+  | '2xl'
+  | '3xl'
+  | '4xl'
+  | '5xl'
+  | '6xl'
+  | '7xl'
+  | '8xl'
+  | '9xl';
 
 export interface GeneralSettingsType {
+  fontType?: FontType;
   fontSize?: FontSize;
-  fontWeight?: 'normal' | 'bold' | 'extrabold';
+  fontWeight?:
+    | 'light'
+    | 'normal'
+    | 'medium'
+    | 'semibold'
+    | 'bold'
+    | 'extrabold';
   colorPalette?:
     | 'default'
     | 'black'
@@ -58,6 +84,7 @@ export interface GeneralSettingsType {
   disableHardwareAcceleration?: boolean;
   enableAutoStart?: boolean;
   startMinimized?: boolean;
+  closeToTray?: boolean;
   compactMode?: boolean;
   overlayAlwaysOnTop?: boolean;
   enableNetworkAccess?: boolean;
@@ -77,6 +104,7 @@ export interface DashboardProfile {
   lastModified?: string;
   /** Optional theme settings that override dashboard general settings */
   themeSettings?: {
+    fontType?: FontType;
     fontSize?: FontSize;
     colorPalette?: GeneralSettingsType['colorPalette'];
   };

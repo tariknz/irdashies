@@ -4,7 +4,12 @@ import { OverlayManager } from '../../overlayManager';
 import { TelemetryPerfMetrics } from '../../perfMetrics';
 import type { IrSdkBridge, Session, Telemetry } from '@irdashies/types';
 
-const TIMEOUT = 1000;
+// Short timeout for waitForData to avoid blocking the main thread.
+// The native SDK's WaitForSingleObject blocks synchronously, so keep this
+// small to keep the event loop responsive.
+const WAIT_TIMEOUT = 16;
+// How long to sleep between connection retry attempts when iRacing isn't running.
+const RETRY_INTERVAL = 1000;
 
 export async function publishIRacingSDKEvents(
   telemetrySink: TelemetrySink,
@@ -66,7 +71,7 @@ export async function publishIRacingSDKEvents(
       let lastSessionPublishTime = 0;
       let wasRunning = false;
 
-      while (!shouldStop && sdk.waitForData(TIMEOUT)) {
+      while (!shouldStop && sdk.waitForData(WAIT_TIMEOUT)) {
         if (!wasRunning) {
           console.log('[iracingSdkBridge] iRacing is running');
           wasRunning = true;
@@ -111,7 +116,7 @@ export async function publishIRacingSDKEvents(
         );
       }
 
-      await new Promise((resolve) => setTimeout(resolve, TIMEOUT));
+      await new Promise((resolve) => setTimeout(resolve, RETRY_INTERVAL));
     }
   })();
 

@@ -10,6 +10,13 @@ import {
   DashboardProvider,
   SessionProvider,
   TelemetryProvider,
+  useLapTimesStoreUpdater,
+  usePitLapStoreUpdater,
+  useDrivingState,
+  useWeekendInfoNumCarClasses,
+  useTelemetryValue,
+  useSessionName,
+  useSessionLaps,
 } from '@irdashies/context';
 import { generateMockDataFromPath } from '../../../app/bridge/iracingSdk/mock-data/generateMockData';
 import type { DashboardBridge } from '@irdashies/types';
@@ -25,15 +32,6 @@ import {
   useStandingsSettings,
   useHighlightColor,
 } from './hooks';
-import { useLapTimesStoreUpdater } from '../../context/LapTimesStore/LapTimesStoreUpdater';
-import { usePitLapStoreUpdater } from '../../context/PitLapStore/PitLapStoreUpdater';
-import {
-  useDrivingState,
-  useWeekendInfoNumCarClasses,
-  useTelemetryValue,
-  useSessionName,
-  useSessionLaps,
-} from '@irdashies/context';
 import { useDriverIncidents, useSessionLapCount, useBrakeBias } from './hooks';
 import { useCurrentTime } from './hooks/useCurrentTime';
 import { useTrackWetness } from './hooks/useTrackWetness';
@@ -111,7 +109,7 @@ const StandingsWithoutHeaderFooter = () => {
                   sof={classStats?.[classId]?.sof}
                   highlightColor={highlightColor}
                   isMultiClass={isMultiClass}
-                  colSpan={12}
+                  colSpan={100}
                 />
                 {classStandings.map((result) => (
                   <DriverInfoRow
@@ -289,6 +287,10 @@ export const SuzukaGT3EnduranceRace: Story = {
   decorators: [TelemetryDecorator('/test-data/1763227688917')],
 };
 
+export const HeatRaceFormatRaceStart: Story = {
+  decorators: [TelemetryDecorator('/test-data/1772788167371')],
+};
+
 export const TeamSession: Story = {
   decorators: [
     TelemetryDecoratorWithConfig('/test-data/1763227688917', {
@@ -362,7 +364,7 @@ const StandingsWithoutHeader = () => {
                   sof={classStats?.[classId]?.sof}
                   highlightColor={highlightColor}
                   isMultiClass={isMultiClass}
-                  colSpan={12}
+                  colSpan={100}
                 />
                 {classStandings.map((result) => (
                   <DriverInfoRow
@@ -519,7 +521,7 @@ const StandingsWithoutFooter = () => {
                   sof={classStats?.[classId]?.sof}
                   highlightColor={highlightColor}
                   isMultiClass={isMultiClass}
-                  colSpan={12}
+                  colSpan={100}
                 />
                 {classStandings.map((result) => (
                   <DriverInfoRow
@@ -774,7 +776,7 @@ const StandingsWithFullHeader = () => {
                   sof={classStats?.[classId]?.sof}
                   highlightColor={highlightColor}
                   isMultiClass={isMultiClass}
-                  colSpan={12}
+                  colSpan={100}
                 />
                 {classStandings.map((result) => (
                   <DriverInfoRow
@@ -889,5 +891,69 @@ export const CompactMode: Story = {
         </DashboardProvider>
       </>
     ),
+  ],
+};
+
+export const PositionDividerHighlight: Story = {
+  name: 'Position Divider (Highlight)',
+  decorators: [
+    TelemetryDecoratorWithConfig('/test-data/1732355190142', {
+      standings: {
+        driverStandings: {
+          numTopDrivers: 3,
+          topDriverDivider: 'highlight',
+        },
+      },
+    }),
+  ],
+};
+
+export const PositionDividerTheme: Story = {
+  name: 'Position Divider (Theme)',
+  decorators: [
+    TelemetryDecoratorWithConfig('/test-data/1731637331038', {
+      standings: {
+        driverStandings: {
+          numTopDrivers: 3,
+          topDriverDivider: 'theme',
+        },
+      },
+    }),
+  ],
+};
+
+export const PositionDividerNone: Story = {
+  name: 'Position Divider (None)',
+  decorators: [
+    TelemetryDecoratorWithConfig('/test-data/1731637331038', {
+      standings: {
+        driverStandings: {
+          numTopDrivers: 3,
+          topDriverDivider: 'none',
+        },
+      },
+    }),
+  ],
+};
+
+export const PositionDividerNumerousCells: Story = {
+  name: 'Position Divider (Numerous Cells)',
+  decorators: [
+    TelemetryDecoratorWithConfig('/test-data/1731637331038', {
+      standings: {
+        driverStandings: {
+          numTopDrivers: 3,
+          topDriverDivider: 'highlight',
+        },
+        gap: { enabled: true },
+        delta: { enabled: true },
+        interval: { enabled: true },
+        lastTime: { enabled: true },
+        fastestTime: { enabled: true },
+        lapTimeDeltas: { enabled: true, numLaps: 3 },
+        badge: { enabled: true },
+        iratingChange: { enabled: true },
+      },
+    }),
   ],
 };

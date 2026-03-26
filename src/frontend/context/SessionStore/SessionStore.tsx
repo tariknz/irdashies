@@ -1,4 +1,8 @@
-import type { Session } from '@irdashies/types';
+import type {
+  Session,
+  SessionQualifyPosition,
+  SessionResults,
+} from '@irdashies/types';
 import { create, useStore } from 'zustand';
 import { useStoreWithEqualityFn } from 'zustand/traditional';
 import { arrayShallowCompare } from './arrayShallowCompare';
@@ -8,12 +12,21 @@ interface SessionState {
   session: Session | null;
   setSession: (session: Session) => void;
   resetSession: () => void;
+  greenFlagTimestamp: number | null;
+  setGreenFlagTimestamp: (time: number | null) => void;
+  checkeredLap: number | null;
+  setCheckeredLap: (lap: number | null) => void;
 }
 
 export const useSessionStore = create<SessionState>((set) => ({
   session: null as Session | null,
   setSession: (session: Session) => set({ session }),
   resetSession: () => set({ session: null }),
+  greenFlagTimestamp: null as number | null,
+  setGreenFlagTimestamp: (time: number | null) =>
+    set({ greenFlagTimestamp: time }),
+  checkeredLap: null as number | null,
+  setCheckeredLap: (lap: number | null) => set({ checkeredLap: lap }),
 }));
 
 export const useSessionDrivers = () =>
@@ -78,16 +91,22 @@ export const useWeekendInfoNumCarClasses = () =>
 export const useWeekendInfoTeamRacing = () =>
   useStore(useSessionStore, (state) => state.session?.WeekendInfo?.TeamRacing);
 
+export const useTrackDisplayName = () =>
+  useStore(
+    useSessionStore,
+    (state) => state.session?.WeekendInfo?.TrackDisplayName
+  );
+
 export const useDriverCarIdx = () =>
   useStore(useSessionStore, (state) => state.session?.DriverInfo?.DriverCarIdx);
 
 export const useSessionPositions = (sessionNum: number | undefined) =>
   useStoreWithEqualityFn(
     useSessionStore,
-    (state) =>
+    (state): SessionResults[] | undefined =>
       state.session?.SessionInfo?.Sessions?.find(
-        (state) => state.SessionNum === sessionNum
-      )?.ResultsPositions,
+        (s) => s.SessionNum === sessionNum
+      )?.ResultsPositions ?? undefined,
     arrayShallowCompare
   );
 
@@ -104,7 +123,18 @@ export const useSessionFastestLaps = (sessionNum: number | undefined) =>
 export const useSessionQualifyingResults = () =>
   useStoreWithEqualityFn(
     useSessionStore,
-    (state) => state.session?.QualifyResultsInfo?.Results,
+    (state): SessionResults[] | undefined =>
+      state.session?.QualifyResultsInfo?.Results ?? undefined,
+    arrayShallowCompare
+  );
+
+export const useSessionQualifyPositions = (sessionNum: number | undefined) =>
+  useStoreWithEqualityFn(
+    useSessionStore,
+    (state): SessionQualifyPosition[] | undefined =>
+      state.session?.SessionInfo?.Sessions?.find(
+        (s) => s.SessionNum === sessionNum
+      )?.QualifyPositions,
     arrayShallowCompare
   );
 
@@ -144,3 +174,18 @@ export const useCarIdxClassEstLapTime = () =>
     },
     shallow
   );
+
+export const useGreenFlagTimestamp = () =>
+  useStore(useSessionStore, (state) => state.greenFlagTimestamp);
+
+export const useSetGreenFlagTimestamp = () =>
+  useStore(useSessionStore, (state) => state.setGreenFlagTimestamp);
+
+export const useCheckeredLap = () =>
+  useStore(useSessionStore, (state) => state.checkeredLap);
+
+export const useSetCheckeredLap = () =>
+  useStore(useSessionStore, (state) => state.setCheckeredLap);
+
+export const useCarSetup = () =>
+  useStore(useSessionStore, (state) => state.session?.CarSetup);

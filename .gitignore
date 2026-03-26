@@ -96,6 +96,7 @@ test-data/**/*.png
 test-data/unused
 src/**/tracks/*.svg
 asset-data
+tmp-data/
 
 # native build
 build/
@@ -107,3 +108,10 @@ LAP_TIME_DELTA_BUG_ANALYSIS.md
 .vs/
 docs/pitlane-helper-design.md
 PITLANE_DETECTION_FIXES.md
+
+# claude
+.claude/settings.local.json
+.claude/worktrees
+
+# storybook
+storybook-static/

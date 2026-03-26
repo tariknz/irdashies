@@ -7,3 +7,6 @@ export * from './telemetry';
 export * from './pitLane';
 export * from './fuelCalculatorBridge';
 export * from './widgetId';
+export * from './referenceLaps';
+export * from './widgetConfigs';
+export * from './defaultDashboard';

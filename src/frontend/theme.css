@@ -1,9 +1,26 @@
 @import url('https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&display=swap')
 layer(base);
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans:ital,wght@0,100..900;1,100..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,100..900;1,100..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,100..900;1,100..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100..900;1,100..900&display=swap');
+
 @import 'tailwindcss';
+
+.overlay-window.overlay-theme-font-weight-light {
+  font-weight: var(--font-weight-light);
+}
 
 .overlay-window.overlay-theme-font-weight-normal {
   font-weight: var(--font-weight-normal);
+}
+
+.overlay-window.overlay-theme-font-weight-medium {
+  font-weight: var(--font-weight-medium);
+}
+
+.overlay-window.overlay-theme-font-weight-semibold {
+  font-weight: var(--font-weight-semibold);
 }
 
 .overlay-window.overlay-theme-font-weight-bold {
@@ -20,7 +37,9 @@ layer(base);
   --animate-blink: blink 1s infinite;
   --text-xs: 10px;
   --text-sm: 12px;
+  --text-md: 13px;
   --text-base: 14px;
+  --text-lg: 18px;
 
   @keyframes pulse-border {
     0% {
@@ -38,7 +57,8 @@ layer(base);
   }
 
   @keyframes pulse {
-    0%, 100% {
+    0%,
+    100% {
       opacity: 1;
     }
     50% {
@@ -47,7 +67,8 @@ layer(base);
   }
 
   @keyframes blink {
-    0%, 100% {
+    0%,
+    100% {
       opacity: 1;
     }
     50% {
@@ -60,68 +81,55 @@ html {
   color-scheme: dark;
 }
 
+.overlay-window.overlay-theme-font-face-lato {
+  font-family: 'Lato', sans-serif;
+}
+
+.overlay-window.overlay-theme-font-face-notosans {
+  font-family: 'Noto Sans', sans-serif;
+}
+
+.overlay-window.overlay-theme-font-face-figtree {
+  font-family: 'Figtree', sans-serif;
+}
+
+.overlay-window.overlay-theme-font-face-inter {
+  font-family: 'Inter', sans-serif;
+}
+
+.overlay-window.overlay-theme-font-face-roboto {
+  font-family: 'Roboto', sans-serif;
+}
+
 /* Theme classes for different font sizes */
-.overlay-window.overlay-theme-xs {
-  --text-xs: 8px;
-  --text-sm: 10px;
-  --text-base: 12px;
-  --text-lg: 14px;
-  --text-xl: 16px;
+/* 1. Define the base scale logic once */
+.overlay-window {
+  --text-xs: calc(var(--theme-offset) + 0px);
+  --text-sm: calc(var(--theme-offset) + 1px);
+  --text-base: calc(var(--theme-offset) + 2px);
+  --text-lg: calc(var(--theme-offset) + 3px);
+  --text-xl: calc(var(--theme-offset) + 4px);
+  --text-2xl: calc(var(--theme-offset) + 5px);
+  --text-3xl: calc(var(--theme-offset) + 6px);
 }
 
-.overlay-window.overlay-theme-sm {
-  --text-xs: 10px;
-  --text-sm: 12px;
-  --text-base: 14px;
-  --text-lg: 16px;
-  --text-xl: 18px;
-}
-
-.overlay-window.overlay-theme-md {
-  --text-xs: 12px;
-  --text-sm: 14px;
-  --text-base: 16px;
-  --text-lg: 18px;
-  --text-xl: 20px;
-}
-
-.overlay-window.overlay-theme-lg {
-  --text-xs: 14px;
-  --text-sm: 16px;
-  --text-base: 18px;
-  --text-lg: 20px;
-  --text-xl: 22px;
-}
-
-.overlay-window.overlay-theme-xl {
-  --text-xs: 16px;
-  --text-sm: 18px;
-  --text-base: 20px;
-  --text-lg: 22px;
-  --text-xl: 24px;
-  --text-2xl: 28px;
-  --text-3xl: 32px;
-}
-
-.overlay-window.overlay-theme-2xl {
-  --text-xs: 18px;
-  --text-sm: 20px;
-  --text-base: 22px;
-  --text-lg: 24px;
-  --text-xl: 26px;
-  --text-2xl: 32px;
-  --text-3xl: 36px;
-}
-
-.overlay-window.overlay-theme-3xl {
-  --text-xs: 20px;
-  --text-sm: 22px;
-  --text-base: 24px;
-  --text-lg: 26px;
-  --text-xl: 28px;
-  --text-2xl: 36px;
-  --text-3xl: 40px;
-}
+/* 2. Assign the starting value (the 'xs' value) for each theme */
+.overlay-theme-4xs { --theme-offset: 7px; }
+.overlay-theme-3xs { --theme-offset: 8px; }
+.overlay-theme-2xs { --theme-offset: 9px; }
+.overlay-theme-xs  { --theme-offset: 10px; }
+.overlay-theme-sm  { --theme-offset: 11px; }
+.overlay-theme-md  { --theme-offset: 12px; }
+.overlay-theme-lg  { --theme-offset: 13px; }
+.overlay-theme-xl  { --theme-offset: 14px; }
+.overlay-theme-2xl { --theme-offset: 15px; }
+.overlay-theme-3xl { --theme-offset: 16px; }
+.overlay-theme-4xl { --theme-offset: 17px; }
+.overlay-theme-5xl { --theme-offset: 18px; }
+.overlay-theme-6xl { --theme-offset: 19px; }
+.overlay-theme-7xl { --theme-offset: 20px; }
+.overlay-theme-8xl { --theme-offset: 21px; }
+.overlay-theme-9xl { --theme-offset: 22px; }
 
 .overlay-window.overlay-theme-color-black {
   --color-slate-50: oklch(0.98 0 0);

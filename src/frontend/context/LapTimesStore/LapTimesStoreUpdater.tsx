@@ -1,8 +1,10 @@
 import { useEffect } from 'react';
-import { useTelemetryValue, useTelemetryValues } from '../TelemetryStore/TelemetryStore';
+import {
+  useTelemetryValue,
+  useTelemetryValues,
+} from '../TelemetryStore/TelemetryStore';
 import { useLapTimesStore } from './LapTimesStore';
 import { useStandingsSettings } from '../../components/Standings/hooks/useStandingsSettings';
-import { useFocusCarIdx } from '../shared/useFocusCarIdx';
 
 /**
  * Hook that automatically updates the LapTimesStore with telemetry data.
@@ -13,13 +15,24 @@ import { useFocusCarIdx } from '../shared/useFocusCarIdx';
 export const useLapTimesStoreUpdater = () => {
   const sessionNum = useTelemetryValue('SessionNum');
   const carIdxLastLapTime = useTelemetryValues('CarIdxLastLapTime');
-  const playerCarIdx = useFocusCarIdx();
-  const updateLapTimes = useLapTimesStore(state => state.updateLapTimes);
+  const updateLapTimes = useLapTimesStore((state) => state.updateLapTimes);
+  const reset = useLapTimesStore((state) => state.reset);
   const standingsSettings = useStandingsSettings();
+
+  // Reset immediately when session changes so stale data is cleared
+  // before any new telemetry arrives
+  useEffect(() => {
+    reset();
+  }, [sessionNum, reset]);
 
   useEffect(() => {
     if (carIdxLastLapTime && standingsSettings?.lapTimeDeltas?.enabled) {
-      updateLapTimes(carIdxLastLapTime, sessionNum ?? null, playerCarIdx ?? null);
+      updateLapTimes(carIdxLastLapTime, sessionNum ?? null);
     }
-  }, [carIdxLastLapTime, sessionNum, playerCarIdx, updateLapTimes, standingsSettings?.lapTimeDeltas?.enabled]);
+  }, [
+    carIdxLastLapTime,
+    sessionNum,
+    updateLapTimes,
+    standingsSettings?.lapTimeDeltas?.enabled,
+  ]);
 };

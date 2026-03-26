@@ -3,17 +3,14 @@ import { renderHook } from '@testing-library/react';
 import { useDriverRelatives } from './useDriverRelatives';
 import type { Standings } from '../createStandings';
 import {
-  normalizeKey,
-  REFERENCE_INTERVAL,
-  ReferenceLap,
-  ReferencePoint,
-} from './useReferenceRegistry';
-import {
-  calculateClassEstimatedGap,
+  calculateClassEstimatedDelta,
   calculateReferenceDelta,
   getStats,
   getTimeAtPosition,
 } from '../relativeGapHelpers';
+import { normalizeKey, REFERENCE_INTERVAL } from '@irdashies/context';
+import { ReferenceLap, ReferencePoint } from '@irdashies/types';
+import { TelemetryVarList } from 'src/app/irsdk/types';
 
 // Mock the context hooks
 vi.mock('@irdashies/context', async (importOriginal) => {
@@ -22,6 +19,7 @@ vi.mock('@irdashies/context', async (importOriginal) => {
     ...actual,
     useFocusCarIdx: vi.fn(),
     useTelemetryValues: vi.fn(),
+    useTelemetryValuesRounded: vi.fn(),
     useSessionStore: vi.fn(),
   };
 });
@@ -66,8 +64,12 @@ const generateReferenceLap = (lapTime: number): ReferenceLap => {
 };
 
 // Import mocked functions after vi.mock
-const { useFocusCarIdx, useTelemetryValues, useSessionStore } =
-  await import('@irdashies/context');
+const {
+  useFocusCarIdx,
+  useTelemetryValues,
+  useTelemetryValuesRounded,
+  useSessionStore,
+} = await import('@irdashies/context');
 const { useDriverStandings } = await import('./useDriverPositions');
 
 const mockDrivers: Standings[] = [
@@ -172,6 +174,11 @@ describe('useDriverRelatives', () => {
     vi.clearAllMocks();
 
     vi.mocked(useFocusCarIdx).mockReturnValue(0);
+    // Delegate rounded calls to the same mock — precision is irrelevant for static test data
+    vi.mocked(useTelemetryValuesRounded).mockImplementation(
+      (key: keyof TelemetryVarList) =>
+        vi.mocked(useTelemetryValues)(key) as number[]
+    );
     vi.mocked(useTelemetryValues).mockImplementation((key: string) => {
       if (key === 'CarIdxLapDistPct') return mockCarIdxLapDistPct;
       if (key === 'CarIdxEstTime') return mockCarIdxEstTime;
@@ -232,6 +239,10 @@ describe('useDriverRelatives', () => {
         },
         setSession: vi.fn(),
         resetSession: vi.fn(),
+        setGreenFlagTimestamp: vi.fn(),
+        greenFlagTimestamp: null,
+        checkeredLap: null,
+        setCheckeredLap: vi.fn(),
       })
     );
   });
@@ -445,7 +456,7 @@ describe('calculateClassEstimatedGap', () => {
       const carAhead = { estTime: 60, classEstTime: 100 };
       const carBehind = { estTime: 50, classEstTime: 100 };
 
-      const result = calculateClassEstimatedGap(carAhead, carBehind, true);
+      const result = calculateClassEstimatedDelta(carAhead, carBehind, true);
 
       // Delta = 60 - 50 = +10s
       expect(result).toBeCloseTo(10);
@@ -455,7 +466,7 @@ describe('calculateClassEstimatedGap', () => {
       const carAhead = { estTime: 50, classEstTime: 100 };
       const carBehind = { estTime: 40, classEstTime: 100 };
 
-      const result = calculateClassEstimatedGap(carAhead, carBehind, false);
+      const result = calculateClassEstimatedDelta(carAhead, carBehind, false);
 
       // Delta = 40 - 50 = -10s
       expect(result).toBeCloseTo(-10);
@@ -466,7 +477,7 @@ describe('calculateClassEstimatedGap', () => {
       const carAhead = { estTime: 1, classEstTime: 100 };
       const carBehind = { estTime: 99, classEstTime: 100 };
 
-      const result = calculateClassEstimatedGap(carAhead, carBehind, true);
+      const result = calculateClassEstimatedDelta(carAhead, carBehind, true);
 
       // Raw: 1 - 99 = -98s
       // Wrapped: -98 + 100 = +2s (ahead just crossed)
@@ -478,7 +489,7 @@ describe('calculateClassEstimatedGap', () => {
       const carAhead = { estTime: 99, classEstTime: 100 };
       const carBehind = { estTime: 1, classEstTime: 100 };
 
-      const result = calculateClassEstimatedGap(carAhead, carBehind, false);
+      const result = calculateClassEstimatedDelta(carAhead, carBehind, false);
 
       // Raw: 1 - 99 = -98s
       // This is already negative, no wrap needed
@@ -493,7 +504,7 @@ describe('calculateClassEstimatedGap', () => {
       const carAhead = { estTime: 48, classEstTime: 80 }; // GTP
       const carBehind = { estTime: 50, classEstTime: 100 }; // GT3
 
-      const result = calculateClassEstimatedGap(carAhead, carBehind, true);
+      const result = calculateClassEstimatedDelta(carAhead, carBehind, true);
 
       // Scaling: 100/80 = 1.25
       // Scaled ahead: 48 * 1.25 = 60s
@@ -509,7 +520,7 @@ describe('calculateClassEstimatedGap', () => {
       const carAhead = { estTime: 50, classEstTime: 100 }; // GT3
       const carBehind = { estTime: 32, classEstTime: 80 }; // GTP
 
-      const result = calculateClassEstimatedGap(carAhead, carBehind, false);
+      const result = calculateClassEstimatedDelta(carAhead, carBehind, false);
 
       // Scaling: 80/100 = 0.8
       // Scaled ahead: 50 * 0.8 = 40s
@@ -525,7 +536,7 @@ describe('calculateClassEstimatedGap', () => {
       const carAhead = { estTime: 50, classEstTime: 100 }; // GT3
       const carBehind = { estTime: 32, classEstTime: 80 }; // GTP
 
-      const result = calculateClassEstimatedGap(carAhead, carBehind, true);
+      const result = calculateClassEstimatedDelta(carAhead, carBehind, true);
 
       // Scaling: 80/100 = 0.8
       // Scaled ahead: 50 * 0.8 = 40s
@@ -541,7 +552,7 @@ describe('calculateClassEstimatedGap', () => {
       const carAhead = { estTime: 48, classEstTime: 80 }; // GTP
       const carBehind = { estTime: 50, classEstTime: 100 }; // GT3
 
-      const result = calculateClassEstimatedGap(carAhead, carBehind, false);
+      const result = calculateClassEstimatedDelta(carAhead, carBehind, false);
 
       // Scaling: 100/80 = 1.25
       // Scaled ahead: 48 * 1.25 = 60s

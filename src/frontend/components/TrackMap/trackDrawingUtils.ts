@@ -10,8 +10,8 @@ export const setupCanvasContext = (
   ctx.save();
   ctx.translate(offsetX, offsetY);
   ctx.scale(scale, scale);
-  
-  // Apply shadow
+
+  // Apply shadow (now efficient thanks to canvas caching)
   ctx.shadowColor = 'black';
   ctx.shadowBlur = 2;
   ctx.shadowOffsetX = 1;
@@ -43,7 +43,10 @@ export const drawTrack = (
 
 export const drawStartFinishLine = (
   ctx: CanvasRenderingContext2D,
-  startFinishLine: { point: { x: number; y: number }; perpendicular: { x: number; y: number } } | null
+  startFinishLine: {
+    point: { x: number; y: number };
+    perpendicular: { x: number; y: number };
+  } | null
 ) => {
   if (!startFinishLine) return;
 
@@ -70,38 +73,81 @@ export const drawStartFinishLine = (
 export const drawTurnNames = (
   ctx: CanvasRenderingContext2D,
   turns: TrackDrawing['turns'],
-  enableTurnNames: boolean | undefined
+  enableTurnNames: boolean | undefined,
+  highContrastTurns: boolean,
+  trackmapFontSize: number
 ) => {
   if (!enableTurnNames || !turns) return;
 
   turns.forEach((turn) => {
     if (!turn.content || !turn.x || !turn.y) return;
+    const fontSize = 2 * (trackmapFontSize / 100);
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
+    ctx.font = `${fontSize}rem sans-serif`;
+    // measure text
+    const m = ctx.measureText(turn.content);
+    if (highContrastTurns) {
+      const padding = 20;
+      const textWidth = m.width;
+      const textHeight = m.actualBoundingBoxAscent + m.actualBoundingBoxDescent;
+      const rectX = turn.x - textWidth / 2 - padding / 2;
+      const rectY = turn.y - textHeight / 2 - padding / 2;
+      const rectW = textWidth + padding;
+      const rectH = textHeight + padding;
+      const radius = Math.min(20, rectW / 2, rectH / 2);
+      // rounded rect
+      ctx.beginPath();
+      ctx.moveTo(rectX + radius, rectY);
+      ctx.arcTo(rectX + rectW, rectY, rectX + rectW, rectY + rectH, radius);
+      ctx.arcTo(rectX + rectW, rectY + rectH, rectX, rectY + rectH, radius);
+      ctx.arcTo(rectX, rectY + rectH, rectX, rectY, radius);
+      ctx.arcTo(rectX, rectY, rectX + rectW, rectY, radius);
+      ctx.closePath();
+      // fill rect
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+      ctx.fill();
+    }
     ctx.fillStyle = 'white';
-    ctx.font = '2rem sans-serif';
-    ctx.fillText(turn.content, turn.x, turn.y);
+    // visual offset
+    const visualOffset =
+      (m.actualBoundingBoxAscent - m.actualBoundingBoxDescent) / 2;
+    ctx.fillText(turn.content, turn.x, turn.y + visualOffset);
   });
 };
 
 export const drawDrivers = (
   ctx: CanvasRenderingContext2D,
-  calculatePositions: Record<number, TrackDriver & { position: { x: number; y: number }; sessionPosition?: number }>,
+  calculatePositions: Record<
+    number,
+    TrackDriver & {
+      position: { x: number; y: number };
+      sessionPosition?: number;
+    }
+  >,
   driverColors: Record<number, { fill: string; text: string }>,
   driversOffTrack: boolean[],
   driverCircleSize: number,
   playerCircleSize: number,
+  trackmapFontSize: number,
   showCarNumbers: boolean,
-  displayMode: 'carNumber' | 'sessionPosition' = 'carNumber'
+  displayMode: 'carNumber' | 'sessionPosition' | 'livePosition' = 'carNumber',
+  driverLivePositions: Record<number, number>,
+  carIdxIsOnPitRoad?: number[]
 ) => {
   Object.values(calculatePositions)
     .sort((a, b) => Number(a.isPlayer) - Number(b.isPlayer)) // draws player last to be on top
     .forEach(({ driver, position, isPlayer, sessionPosition }) => {
-      const color = driverColors[driver.CarIdx];
+      let color = driverColors[driver.CarIdx];
       if (!color) return;
 
       const circleRadius = isPlayer ? playerCircleSize : driverCircleSize;
-      const fontSize = circleRadius * 0.75;
+      const fontSize = circleRadius * (trackmapFontSize / 100);
+
+      const onPitRoad = !!carIdxIsOnPitRoad?.[driver.CarIdx];
+      if (onPitRoad) {
+        color = { fill: '#999999', text: 'white' };
+      }
 
       ctx.fillStyle = color.fill;
       ctx.beginPath();
@@ -120,14 +166,27 @@ export const drawDrivers = (
         ctx.fillStyle = color.text;
         ctx.font = `${fontSize}px sans-serif`;
         let displayText = '';
-        if (displayMode === 'sessionPosition') {
-          displayText = sessionPosition !== undefined && sessionPosition > 0 ? sessionPosition.toString() : '';
+        if (onPitRoad) {
+          displayText = 'P';
+        } else if (displayMode === 'livePosition') {
+          const livePosition =
+            driverLivePositions[driver.CarIdx] ?? sessionPosition;
+          displayText =
+            livePosition && livePosition > 0 ? livePosition.toString() : '';
+        } else if (displayMode === 'sessionPosition') {
+          displayText =
+            sessionPosition && sessionPosition > 0
+              ? sessionPosition.toString()
+              : '';
         } else {
           displayText = driver.CarNumber;
         }
         if (displayText) {
-          ctx.fillText(displayText, position.x, position.y);
+          const m = ctx.measureText(displayText);
+          const visualOffset =
+            (m.actualBoundingBoxAscent - m.actualBoundingBoxDescent) / 2;
+          ctx.fillText(displayText, position.x, position.y + visualOffset);
         }
       }
     });
-}; 
+};

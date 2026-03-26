@@ -123,10 +123,12 @@ export const getGearKey = (gear: number): string => {
  * Gets the list of all available cars from the bundled data
  * @returns Array of car IDs and names
  */
-export const getAvailableCars = (): { carId: string; carName: string }[] => {
+export const getAvailableCars = (): { carId: string; carName: string; ledNumber: number; ledRpm: object[] }[] => {
   const bundle = carDataBundle as CarDataBundleType;
   return Object.values(bundle.cars).map((car) => ({
     carId: car.carId,
-    carName: car.carName
+    carName: car.carName,
+    ledNumber: car.ledNumber,
+    ledRpm: car.ledRpm
   }));
 };

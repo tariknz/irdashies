@@ -45,7 +45,9 @@ export const dashboardBridge: DashboardBridge = {
     // Not used by component server, but required by interface
     return undefined;
   },
-  dashboardUpdated: (callback: (dashboard: DashboardLayout, profileId?: string) => void) => {
+  dashboardUpdated: (
+    callback: (dashboard: DashboardLayout, profileId?: string) => void
+  ) => {
     dashboardUpdateCallbacks.add(callback);
     return () => dashboardUpdateCallbacks.delete(callback);
   },
@@ -133,7 +135,10 @@ export const dashboardBridge: DashboardBridge = {
     const currentProfileId = getCurrentProfileId();
     return getProfile(currentProfileId);
   },
-  updateProfileTheme: async (profileId: string, themeSettings: DashboardProfile['themeSettings']) => {
+  updateProfileTheme: async (
+    profileId: string,
+    themeSettings: DashboardProfile['themeSettings']
+  ) => {
     updateProfileTheme(profileId, themeSettings);
   },
   stop: () => {
@@ -145,6 +150,8 @@ export const dashboardBridge: DashboardBridge = {
   getGarageCoverImageAsDataUrl: (imagePath: string) => {
     return getGarageCoverImageAsDataUrl(imagePath);
   },
+  exportDashboardToFile: async () => false,
+  importDashboardFromFile: async () => null,
   setAutoStart: async (enabled: boolean) => {
     app.setLoginItemSettings({
       openAtLogin: enabled,
@@ -177,6 +184,8 @@ export async function publishDashboardUpdates(
       const existingDashboards = listDashboards();
       existingDashboards[currentProfileId] = dashboard;
       writeData('dashboards', existingDashboards);
+      // Create windows for any new displays the widget may have been dragged to
+      overlayManager.ensureDisplayWindows(dashboard);
       // Still notify renderer of the update
       overlayManager.publishMessage('dashboardUpdated', dashboard);
       return;
@@ -283,17 +292,53 @@ export async function publishDashboardUpdates(
     return dashboardBridge.getDashboardForProfile(profileId);
   });
 
-  ipcMain.handle('updateProfileTheme', (_, profileId: string, themeSettings: DashboardProfile['themeSettings']) => {
-    updateProfileTheme(profileId, themeSettings);
+  ipcMain.handle(
+    'updateProfileTheme',
+    (
+      _,
+      profileId: string,
+      themeSettings: DashboardProfile['themeSettings']
+    ) => {
+      updateProfileTheme(profileId, themeSettings);
 
-    // If updating the current profile, force refresh overlays
-    const currentProfileId = getCurrentProfileId();
-    if (profileId === currentProfileId) {
-      const dashboard = getDashboard(profileId);
-      if (dashboard) {
-        overlayManager.forceRefreshOverlays(dashboard);
+      // If updating the current profile, force refresh overlays
+      const currentProfileId = getCurrentProfileId();
+      if (profileId === currentProfileId) {
+        const dashboard = getDashboard(profileId);
+        if (dashboard) {
+          overlayManager.forceRefreshOverlays(dashboard);
+        }
       }
     }
+  );
+
+  ipcMain.handle(
+    'exportDashboardToFile',
+    async (_, dashboard: DashboardLayout) => {
+      const { dialog } = await import('electron');
+      const { canceled, filePath } = await dialog.showSaveDialog({
+        title: 'Export Dashboard',
+        defaultPath: 'dashboard.json',
+        filters: [{ name: 'JSON', extensions: ['json'] }],
+      });
+      if (canceled || !filePath) return false;
+      const { writeFile } = await import('node:fs/promises');
+      await writeFile(filePath, JSON.stringify(dashboard, null, 2), 'utf-8');
+      return true;
+    }
+  );
+
+  ipcMain.handle('importDashboardFromFile', async () => {
+    const { dialog } = await import('electron');
+    const { canceled, filePaths } = await dialog.showOpenDialog({
+      title: 'Import Dashboard',
+      filters: [{ name: 'JSON', extensions: ['json'] }],
+      properties: ['openFile'],
+    });
+    if (canceled || !filePaths[0]) return null;
+    const { readFile } = await import('node:fs/promises');
+    const content = await readFile(filePaths[0], 'utf-8');
+    return JSON.parse(content) as DashboardLayout;
   });
 
   ipcMain.handle('autostart:set', (_event, enabled: boolean) => {
@@ -307,7 +352,7 @@ export async function publishDashboardUpdates(
   ipcMain.handle('autostart:get', () => {
     return app.getLoginItemSettings().openAtLogin;
   });
-};
+}
 
 /**
  * Notify all registered callbacks that demo mode has changed
@@ -326,4 +371,3 @@ export function notifyDemoModeChanged(isDemoMode: boolean) {
     }
   });
 }
-

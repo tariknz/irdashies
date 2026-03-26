@@ -2,23 +2,47 @@ import { useState } from 'react';
 import { useDashboard } from '@irdashies/context';
 import { GeneralSettingsType } from '@irdashies/types';
 
+const FONT_PRESETS = {
+  lato: 'Lato',
+  notosans: 'Noto Sans',
+  figtree: 'Figtree',
+  inter: 'Inter',
+  roboto: 'Roboto',
+};
+
 const FONT_SIZE_PRESETS = {
-  xs: 'Extra Small',
-  sm: 'Small',
-  md: 'Medium',
-  lg: 'Large',
-  xl: 'Extra Large',
+  '4xs': 'Tiny',
+  '3xs': '3x Small',
+  '2xs': '2x Small',
+  'xs': 'Extra Small',
+  'sm': 'Small',
+  'md': 'Medium',
+  'lg': 'Large',
+  'xl': 'Extra Large',
   '2xl': '2X Large',
   '3xl': '3X Large',
+  '4xl': '4X Large',
+  '5xl': '5X Large',
+  '6xl': '6X Large',
+  '7xl': '7X Large',
+  '8xl': '8X Large',
+  '9xl': '9X Large',
 };
 
 const FONT_WEIGHT_PRESETS = {
+  light: 'Light',
   normal: 'Normal',
+  medium: 'Medium',
+  semibold: 'Semibold',
   bold: 'Bold',
   extrabold: 'Extrabold',
 };
 
-const HIGHLIGHT_COLOR_PRESETS = new Map([
+const FONT_WEIGHT_RESTRICTIONS: Record<string, string[]> = {
+  lato: ['medium', 'semibold'],
+};
+
+export const HIGHLIGHT_COLOR_PRESETS = new Map([
   [15680580, 'Red'],
   [16347926, 'Orange'],
   [16096779, 'Amber'],
@@ -54,6 +78,7 @@ const COLOR_THEME_PRESETS: Record<string, string> = {
 export const GeneralSettings = () => {
   const { bridge, currentDashboard, onDashboardUpdated } = useDashboard();
   const [settings, setSettings] = useState<GeneralSettingsType>({
+    fontType: currentDashboard?.generalSettings?.fontType ?? 'lato',
     fontSize: currentDashboard?.generalSettings?.fontSize ?? 'sm',
     fontWeight: currentDashboard?.generalSettings?.fontWeight ?? 'normal',
     colorPalette: currentDashboard?.generalSettings?.colorPalette ?? 'default',
@@ -64,6 +89,7 @@ export const GeneralSettings = () => {
     enableAutoStart:
       currentDashboard?.generalSettings?.enableAutoStart ?? false,
     startMinimized: currentDashboard?.generalSettings?.startMinimized ?? false,
+    closeToTray: currentDashboard?.generalSettings?.closeToTray ?? true,
     compactMode: currentDashboard?.generalSettings?.compactMode ?? false,
     overlayAlwaysOnTop:
       currentDashboard?.generalSettings?.overlayAlwaysOnTop ?? true,
@@ -84,6 +110,9 @@ export const GeneralSettings = () => {
   };
 
   const FONT_SIZE_VALUES: (keyof typeof FONT_SIZE_PRESETS)[] = [
+    '4xs',
+    '3xs',
+    '2xs',
     'xs',
     'sm',
     'md',
@@ -91,6 +120,12 @@ export const GeneralSettings = () => {
     'xl',
     '2xl',
     '3xl',
+    '4xl',
+    '5xl',
+    '6xl',
+    '7xl',
+    '8xl',
+    '9xl',
   ];
 
   const getSliderValue = (size: string | undefined): number => {
@@ -106,8 +141,32 @@ export const GeneralSettings = () => {
     return FONT_SIZE_VALUES[value] || 'sm';
   };
 
+  const handleFontChange = (
+    newFont: 'lato' | 'notosans' | 'figtree' | 'inter' | 'roboto'
+  ) => {
+    const newSettings = { ...settings, fontType: newFont };
+    setSettings(newSettings);
+    updateDashboard(newSettings);
+  };
+
   const handleFontSizeChange = (
-    newSize: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl'
+    newSize:
+      | '4xs'
+      | '3xs'
+      | '2xs'
+      | 'xs'
+      | 'sm'
+      | 'md'
+      | 'lg'
+      | 'xl'
+      | '2xl'
+      | '3xl'
+      | '4xl'
+      | '5xl'
+      | '6xl'
+      | '7xl'
+      | '8xl'
+      | '9xl'
   ) => {
     const newSettings = { ...settings, fontSize: newSize };
     setSettings(newSettings);
@@ -115,12 +174,30 @@ export const GeneralSettings = () => {
   };
 
   const handleFontWeightChange = (
-    newWeight: 'normal' | 'bold' | 'extrabold'
+    newWeight: 'light' | 'normal' | 'medium' | 'semibold' | 'bold' | 'extrabold'
   ) => {
     const newSettings = { ...settings, fontWeight: newWeight };
     setSettings(newSettings);
     updateDashboard(newSettings);
   };
+
+  const restrictedWeights =
+    FONT_WEIGHT_RESTRICTIONS[settings.fontType ?? ''] ?? [];
+
+  const filteredWeights = Object.fromEntries(
+    Object.entries(FONT_WEIGHT_PRESETS).filter(
+      ([key]) => !restrictedWeights.includes(key)
+    )
+  );
+
+  const resolvedFontWeight =
+    settings.fontWeight && filteredWeights[settings.fontWeight]
+      ? settings.fontWeight
+      : 'normal';
+
+  if (settings.fontWeight != resolvedFontWeight) {
+    handleFontWeightChange(resolvedFontWeight);
+  }
 
   const handleSliderChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const sliderValue = parseInt(event.target.value);
@@ -167,6 +244,12 @@ export const GeneralSettings = () => {
     updateDashboard(newSettings);
   };
 
+  const handleCloseToTrayChange = (enabled: boolean) => {
+    const newSettings = { ...settings, closeToTray: enabled };
+    setSettings(newSettings);
+    updateDashboard(newSettings);
+  };
+
   const handleCompactModeChange = (enabled: boolean) => {
     const newSettings = { ...settings, compactMode: enabled };
     setSettings(newSettings);
@@ -188,13 +271,65 @@ export const GeneralSettings = () => {
   return (
     <div className="flex flex-col h-full">
       <div className="flex-none p-4 bg-slate-700 rounded">
-        <h2 className="text-xl mb-4">General</h2>
-        <p className="text-slate-400 mb-4">
+        <h2 className="text-xl mb-1">General</h2>
+        <p className="text-slate-400">
           Configure general application settings and preferences.
         </p>
       </div>
 
       <div className="flex-1 overflow-y-auto min-h-0 space-y-6 p-4 mt-4">
+        {/* Font Settings */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-medium text-slate-200">Font</h3>
+          </div>
+          {/* Font Weight Dropdown */}
+          <div className="mt-4">
+            <select
+              value={settings.fontType ?? 'lato'}
+              onChange={(e) =>
+                handleFontChange(
+                  e.target.value as NonNullable<GeneralSettingsType['fontType']>
+                )
+              }
+              className="w-full px-3 py-2 bg-slate-700 text-slate-300 rounded border border-slate-600 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            >
+              {Object.entries(FONT_PRESETS).map(([key, value]) => (
+                <option key={key} value={key}>
+                  {value}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* Font Weight Settings */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-medium text-slate-200">Font Weight</h3>
+          </div>
+          {/* Font Weight Dropdown */}
+          <div className="mt-4">
+            <select
+              value={resolvedFontWeight}
+              onChange={(e) =>
+                handleFontWeightChange(
+                  e.target.value as NonNullable<
+                    GeneralSettingsType['fontWeight']
+                  >
+                )
+              }
+              className="w-full px-3 py-2 bg-slate-700 text-slate-300 rounded border border-slate-600 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            >
+              {Object.entries(filteredWeights).map(([key, value]) => (
+                <option key={key} value={key}>
+                  {value}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
         {/* Font Size Settings */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
@@ -211,39 +346,12 @@ export const GeneralSettings = () => {
             <input
               type="range"
               min="0"
-              max="6"
+              max="15"
               step="1"
               value={getSliderValue(settings.fontSize)}
               onChange={handleSliderChange}
               className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer slider accent-blue-500"
             />
-          </div>
-        </div>
-
-        {/* Font Weight Settings */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-medium text-slate-200">Font Weight</h3>
-          </div>
-          {/* Font Weight Dropdown */}
-          <div className="mt-4">
-            <select
-              value={settings.fontWeight ?? 'normal'}
-              onChange={(e) =>
-                handleFontWeightChange(
-                  e.target.value as NonNullable<
-                    GeneralSettingsType['fontWeight']
-                  >
-                )
-              }
-              className="w-full px-3 py-2 bg-slate-700 text-slate-300 rounded border border-slate-600 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-            >
-              {Object.entries(FONT_WEIGHT_PRESETS).map(([key, value]) => (
-                <option key={key} value={key}>
-                  {value}
-                </option>
-              ))}
-            </select>
           </div>
         </div>
 
@@ -425,25 +533,25 @@ export const GeneralSettings = () => {
           </div>
         </div>
 
-        {/* Disable Hardware Acceleration Setting */}
+        {/* Hardware Acceleration Setting */}
         <div className="space-y-4">
           <div className="flex items-center justify-between gap-4">
             <div>
               <h3 className="text-lg font-medium text-slate-200">
-                Disable Hardware Acceleration
+                Hardware Acceleration
               </h3>
               <p className="text-sm text-slate-400">
-                When enabled, disables GPU hardware acceleration and uses
-                software rendering instead. This may help with compatibility
-                issues on some systems. (requires restart)
+                Uses GPU hardware acceleration for rendering. Only disable this
+                if you are experiencing compatibility issues, as it will
+                significantly impact performance. (requires restart)
               </p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
               <input
                 type="checkbox"
-                checked={settings.disableHardwareAcceleration ?? false}
+                checked={!(settings.disableHardwareAcceleration ?? false)}
                 onChange={(e) =>
-                  handleDisableHardwareAccelerationChange(e.target.checked)
+                  handleDisableHardwareAccelerationChange(!e.target.checked)
                 }
                 className="sr-only peer"
               />
@@ -499,6 +607,30 @@ export const GeneralSettings = () => {
             </label>
           </div>
         </div>
+
+        {/* Close To Tray Setting */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <h3 className="text-lg font-medium text-slate-200">
+                Close to tray
+              </h3>
+              <p className="text-sm text-slate-400">
+                If enabled, closing the app will minimise to the system tray rather than quitting.
+              </p>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={settings.closeToTray ?? true}
+                onChange={(e) => handleCloseToTrayChange(e.target.checked)}
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+            </label>
+          </div>
+        </div>
+
       </div>
     </div>
   );

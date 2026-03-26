@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterAll, vi } from 'vitest';
 import { FuelDatabase } from './fuelDatabase';
 import fs from 'node:fs';
 import { FuelLapData } from '../../types';
@@ -6,13 +6,13 @@ import { FuelLapData } from '../../types';
 // Mock electron
 vi.mock('electron', () => ({
   app: {
-    getPath: vi.fn().mockReturnValue('./test-data'),
+    getPath: vi.fn().mockReturnValue('./tmp-data'),
   },
 }));
 
 describe('FuelDatabase', () => {
   let db: FuelDatabase;
-  const testDir = './test-data';
+  const testDir = './tmp-data';
 
   beforeEach(() => {
     // Ensure test directory exists
@@ -20,6 +20,13 @@ describe('FuelDatabase', () => {
       fs.mkdirSync(testDir);
     }
     db = new FuelDatabase();
+  });
+
+  afterAll(() => {
+    // Clean up test directory
+    if (fs.existsSync(testDir)) {
+      fs.rmSync(testDir, { recursive: true, force: true });
+    }
   });
 
   it('should save and retrieve laps for a specific context', () => {

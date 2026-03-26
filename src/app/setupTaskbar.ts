@@ -1,4 +1,4 @@
-import { nativeImage, Tray, Menu, app, globalShortcut, desktopCapturer } from 'electron';
+import { nativeImage, Tray, Menu, globalShortcut, desktopCapturer } from 'electron';
 import { TelemetrySink } from './bridge/iracingSdk/telemetrySink';
 import { OverlayManager } from './overlayManager';
 import { writeFile } from 'node:fs/promises';
@@ -40,6 +40,11 @@ class Taskbar {
     
     const tray = new Tray(icon);
     tray.setToolTip('irDashies');
+
+    tray.on('click', () => {
+      this.overlayManager.focusSettingsWindow();
+    });
+
     return tray;
   }
 
@@ -48,7 +53,7 @@ class Taskbar {
       {
         label: 'Settings',
         click: () => {
-          this.overlayManager.createSettingsWindow();
+          this.overlayManager.focusSettingsWindow();
         },
       },
       {
@@ -110,7 +115,7 @@ class Taskbar {
       {
         label: 'Quit',
         click: () => {
-          app.quit();
+          this.overlayManager.quitApp();
         },
       },
     ]);

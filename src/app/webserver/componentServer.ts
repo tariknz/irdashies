@@ -321,6 +321,7 @@ export async function startComponentServer(
       const componentNames: WidgetId[] = [
         'standings',
         'input',
+        'tachometer',
         'relative',
         'map',
         'weather',
@@ -329,6 +330,7 @@ export async function startComponentServer(
         'blindspotmonitor',
         'garagecover',
         'rejoin',
+        'laptimelog'
       ];
 
       sendJSON(res, 200, {

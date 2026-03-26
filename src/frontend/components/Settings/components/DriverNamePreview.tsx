@@ -1,7 +1,7 @@
 export const DriverNamePreview = ({
   format,
   selected,
-  onClick
+  onClick,
 }: {
   format: string;
   selected: boolean;
@@ -30,10 +30,10 @@ export const DriverNamePreview = ({
     <button
       type="button"
       onClick={onClick}
-      className={`px-3 py-1 rounded cursor-pointer transition-colors inline-flex items-center justify-center ${
+      className={`px-3 py-1 rounded border cursor-pointer transition-colors inline-flex items-center justify-center ${
         selected
-          ? 'border border-blue-500 bg-blue-500/10'
-          : 'hover:bg-slate-800'
+          ? 'border-blue-500 bg-blue-500/10'
+          : 'border-transparent hover:bg-slate-800'
       }`}
     >
       {renderPreview()}

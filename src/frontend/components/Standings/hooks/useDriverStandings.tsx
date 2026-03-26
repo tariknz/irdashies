@@ -5,16 +5,16 @@ import {
   useSessionIsOfficial,
   useSessionPositions,
   useSessionQualifyingResults,
+  useSessionQualifyPositions,
   useSessionType,
-  useTelemetry,
   useTelemetryValue,
   useFocusCarIdx,
-} from '@irdashies/context';
-import { useLapDeltasVsPlayer } from '../../../context/LapTimesStore/LapTimesStore';
-import {
+  useTelemetryValues,
+  useTelemetryValuesRounded,
   useCarLap,
   usePitLap,
   usePrevCarTrackSurface,
+  useLapTimeHistory,
 } from '@irdashies/context';
 import {
   createDriverStandings,
@@ -23,12 +23,17 @@ import {
   augmentStandingsWithIRating,
   augmentStandingsWithGap,
   augmentStandingsWithInterval,
+  augmentStandingsWithPositionChange,
 } from '../createStandings';
-import type { StandingsWidgetSettings } from '../../Settings/types';
+import type { StandingsWidgetSettings } from '@irdashies/types';
 import { useDriverLivePositions } from './useDriverLivePositions';
 import { useStandingsSettings } from './useStandingsSettings';
+import { TrackLocation } from '@irdashies/types';
+import type { SessionResults } from '@irdashies/types';
 
-export const useDriverStandings = (settings?: StandingsWidgetSettings['config']) => {
+export const useDriverStandings = (
+  settings?: StandingsWidgetSettings['config']
+) => {
   const {
     driverStandings: {
       buffer,
@@ -38,41 +43,76 @@ export const useDriverStandings = (settings?: StandingsWidgetSettings['config'])
     } = {},
     gap: { enabled: gapEnabled } = { enabled: false },
     interval: { enabled: intervalEnabled } = { enabled: false },
-    lapTimeDeltas: { enabled: lapTimeDeltasEnabled, numLaps: numLapDeltas } = { enabled: false, numLaps: 3 },
+    lapTimeDeltas: { enabled: lapTimeDeltasEnabled, numLaps: numLapDeltas } = {
+      enabled: false,
+      numLaps: 3,
+    },
   } = settings ?? {};
 
   const sessionDrivers = useSessionDrivers();
   // Use focus car index which handles spectator mode (uses CamCarIdx when spectating)
   const driverCarIdx = useFocusCarIdx();
-  const qualifyingResults = useSessionQualifyingResults();
+  const qualifyingResultsRaw = useSessionQualifyingResults();
   const sessionNum = useTelemetryValue('SessionNum');
   const sessionType = useSessionType(sessionNum);
   const positions = useSessionPositions(sessionNum);
-  const driverLivePositions = useDriverLivePositions();
+  const sessionQualifyPositions = useSessionQualifyPositions(sessionNum);
+
+  // In heat race format QualifyResultsInfo.Results is null; fall back to the
+  // race session's QualifyPositions which holds the actual starting grid order.
+  const qualifyingResults: SessionResults[] | undefined =
+    qualifyingResultsRaw?.length
+      ? qualifyingResultsRaw
+      : sessionQualifyPositions?.map((q) => ({
+          Position: q.Position + 1,
+          ClassPosition: q.ClassPosition,
+          CarIdx: q.CarIdx,
+          Lap: q.FastestLap,
+          Time: q.FastestTime,
+          FastestLap: q.FastestLap,
+          FastestTime: q.FastestTime,
+          LastTime: -1,
+          LapsLed: 0,
+          LapsComplete: 0,
+          JokerLapsComplete: 0,
+          LapsDriven: 0,
+          Incidents: 0,
+          ReasonOutId: 0,
+          ReasonOutStr: 'Running',
+        }));
   const standingsSettings = useStandingsSettings();
   const useLivePositionStandings = standingsSettings?.useLivePosition ?? false;
+  const driverLivePositions = useDriverLivePositions({
+    enabled: useLivePositionStandings,
+  });
   const fastestLaps = useSessionFastestLaps(sessionNum);
-  const carIdxF2Time = useTelemetry('CarIdxF2Time');
-  const carIdxOnPitRoad = useTelemetry<boolean[]>('CarIdxOnPitRoad');
-  const carIdxTrackSurface = useTelemetry('CarIdxTrackSurface');
-  const radioTransmitCarIdx = useTelemetry('RadioTransmitCarIdx');
-  const carIdxTireCompound = useTelemetry<number[]>('CarIdxTireCompound');
-  const carIdxSessionFlags = useTelemetry<number[]>('CarIdxSessionFlags');
+  const carIdxF2Time = useTelemetryValuesRounded('CarIdxF2Time', 2);
+  const carIdxEstTime = useTelemetryValuesRounded('CarIdxEstTime', 2);
+  const carIdxOnPitRoad = useTelemetryValues<boolean[]>('CarIdxOnPitRoad');
+  const carIdxLap = useTelemetryValues<number[]>('CarIdxLap');
+  const carIdxLapDistPct = useTelemetryValuesRounded('CarIdxLapDistPct', 3);
+  const carIdxTrackSurface =
+    useTelemetryValues<TrackLocation[]>('CarIdxTrackSurface');
+  const radioTransmitCarIdx = useTelemetryValues<number[]>(
+    'RadioTransmitCarIdx'
+  );
+  const carIdxTireCompound = useTelemetryValues<number[]>('CarIdxTireCompound');
+  const carIdxSessionFlags = useTelemetryValues<number[]>('CarIdxSessionFlags');
   const isOfficial = useSessionIsOfficial();
   const lastPitLap = usePitLap();
   const lastLap = useCarLap();
   const prevCarTrackSurface = usePrevCarTrackSurface();
   const driverClass = useMemo(() => {
-    return sessionDrivers?.find(
-      (driver) => driver.CarIdx === driverCarIdx
-    )?.CarClassID;
+    return sessionDrivers?.find((driver) => driver.CarIdx === driverCarIdx)
+      ?.CarClassID;
   }, [sessionDrivers, driverCarIdx]);
-  const lapDeltasVsPlayer = useLapDeltasVsPlayer();
+  const lapTimeHistory = useLapTimeHistory();
 
-  // Note: gap and interval calculations are now purely delta-based, no telemetry needed
-
-  // Only pass deltas when feature is enabled to avoid unnecessary calculations
-  const lapDeltasForCalc = lapTimeDeltasEnabled ? lapDeltasVsPlayer : undefined;
+  const lapDeltasForCalc = useMemo(
+    () =>
+      calculateLapDeltas(lapTimeHistory, driverCarIdx, lapTimeDeltasEnabled),
+    [lapTimeDeltasEnabled, lapTimeHistory, driverCarIdx]
+  );
 
   const standingsWithGain = useMemo(() => {
     const initialStandings = createDriverStandings(
@@ -82,12 +122,12 @@ export const useDriverStandings = (settings?: StandingsWidgetSettings['config'])
         qualifyingResults: qualifyingResults,
       },
       {
-        carIdxF2TimeValue: carIdxF2Time?.value,
-        carIdxOnPitRoadValue: carIdxOnPitRoad?.value,
-        carIdxTrackSurfaceValue: carIdxTrackSurface?.value,
-        radioTransmitCarIdx: radioTransmitCarIdx?.value,
-        carIdxTireCompoundValue: carIdxTireCompound?.value,
-        carIdxSessionFlags: carIdxSessionFlags?.value
+        carIdxF2TimeValue: carIdxF2Time,
+        carIdxOnPitRoadValue: carIdxOnPitRoad,
+        carIdxTrackSurfaceValue: carIdxTrackSurface,
+        radioTransmitCarIdx: radioTransmitCarIdx,
+        carIdxTireCompoundValue: carIdxTireCompound,
+        carIdxSessionFlags: carIdxSessionFlags,
       },
       {
         resultsPositions: positions,
@@ -98,7 +138,7 @@ export const useDriverStandings = (settings?: StandingsWidgetSettings['config'])
       lastLap,
       prevCarTrackSurface,
       lapTimeDeltasEnabled ? numLapDeltas : undefined,
-      lapDeltasForCalc,
+      lapDeltasForCalc
     );
 
     if (useLivePositionStandings) {
@@ -114,20 +154,37 @@ export const useDriverStandings = (settings?: StandingsWidgetSettings['config'])
     if (useLivePositionStandings) {
       groupedByClass = groupedByClass.map(([classId, classStandings]) => [
         classId,
-        classStandings.slice().sort((a, b) => (a.classPosition ?? 999) - (b.classPosition ?? 999)),
+        classStandings
+          .slice()
+          .sort((a, b) => (a.classPosition ?? 999) - (b.classPosition ?? 999)),
       ]) as [string, typeof initialStandings][];
     }
+
+    // Calculate position changes vs qualifying grid for race sessions
+    const positionChangeAugmentedGroupedByClass =
+      sessionType === 'Race'
+        ? augmentStandingsWithPositionChange(groupedByClass, qualifyingResults)
+        : groupedByClass;
 
     // Calculate iRating changes for race sessions
     const iratingAugmentedGroupedByClass =
       sessionType === 'Race' && isOfficial
-        ? augmentStandingsWithIRating(groupedByClass)
-        : groupedByClass;
+        ? augmentStandingsWithIRating(positionChangeAugmentedGroupedByClass)
+        : positionChangeAugmentedGroupedByClass;
 
     // Calculate gap to class leader when enabled OR when interval is enabled (interval needs gap data)
-    const gapAugmentedGroupedByClass = gapEnabled || intervalEnabled
-      ? augmentStandingsWithGap(iratingAugmentedGroupedByClass)
-      : iratingAugmentedGroupedByClass;
+    const gapAugmentedGroupedByClass =
+      gapEnabled || intervalEnabled
+        ? augmentStandingsWithGap(
+            iratingAugmentedGroupedByClass,
+            carIdxLap,
+            carIdxLapDistPct,
+            carIdxOnPitRoad,
+            carIdxEstTime,
+            useLivePositionStandings,
+            sessionType
+          )
+        : iratingAugmentedGroupedByClass;
 
     // Calculate interval to player when enabled
     const intervalAugmentedGroupedByClass = intervalEnabled
@@ -144,32 +201,68 @@ export const useDriverStandings = (settings?: StandingsWidgetSettings['config'])
     driverCarIdx,
     sessionDrivers,
     qualifyingResults,
-    carIdxF2Time?.value,
-    carIdxOnPitRoad?.value,
-    carIdxTrackSurface?.value,
-    radioTransmitCarIdx?.value,
+    carIdxF2Time,
+    carIdxOnPitRoad,
+    carIdxTrackSurface,
+    radioTransmitCarIdx,
+    carIdxTireCompound,
+    carIdxSessionFlags,
     positions,
     fastestLaps,
     sessionType,
+    lastPitLap,
+    lastLap,
+    prevCarTrackSurface,
+    lapTimeDeltasEnabled,
+    numLapDeltas,
+    lapDeltasForCalc,
+    useLivePositionStandings,
     isOfficial,
+    gapEnabled,
+    intervalEnabled,
+    carIdxLap,
+    carIdxLapDistPct,
+    carIdxEstTime,
+    driverClass,
     buffer,
     numNonClassDrivers,
     minPlayerClassDrivers,
     numTopDrivers,
-    carIdxTireCompound?.value,
-    driverClass,
-    lapTimeDeltasEnabled,
-    numLapDeltas,
-    lapDeltasForCalc,
-    lastLap,
-    lastPitLap,
-    prevCarTrackSurface,
-    gapEnabled,
-    intervalEnabled,
-    carIdxSessionFlags?.value,
-    useLivePositionStandings,
     driverLivePositions,
   ]);
 
   return standingsWithGain;
+};
+
+/**
+ * Compute lap time deltas by aligning each car's Nth-most-recent lap against
+ * the focus car's Nth-most-recent lap. This ensures:
+ *   - Deltas don't jump when either car crosses start/finish
+ *   - Pit laps only affect the one column where the pit occurred
+ *   - Works when cars are on different laps (e.g. player lapped)
+ */
+export const calculateLapDeltas = (
+  lapTimeHistory: number[][],
+  focusCarIdx: number | undefined,
+  enabled: boolean
+): number[][] | undefined => {
+  if (!enabled || focusCarIdx === undefined) return undefined;
+  const focusHistory = lapTimeHistory[focusCarIdx];
+  if (!focusHistory || focusHistory.length === 0) return undefined;
+
+  return lapTimeHistory.map((carHistory, carIdx) => {
+    if (carIdx === focusCarIdx || !carHistory || carHistory.length === 0)
+      return [];
+
+    const maxLaps = Math.min(carHistory.length, focusHistory.length);
+    const deltas: number[] = [];
+    for (let i = maxLaps; i >= 1; i--) {
+      const carLap = carHistory[carHistory.length - i];
+      const focusLap = focusHistory[focusHistory.length - i];
+      if (focusLap && focusLap > 0) {
+        deltas.push(carLap - focusLap);
+      }
+    }
+    return deltas;
+  });
 };

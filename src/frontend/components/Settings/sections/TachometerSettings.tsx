@@ -1,0 +1,472 @@
+import { useState, useEffect } from 'react';
+import { BaseSettingsSection } from '../components/BaseSettingsSection';
+import { TachometerWidgetSettings, getWidgetDefaultConfig, SettingsTabType } from '@irdashies/types';
+import { useDashboard } from '@irdashies/context';
+import { ToggleSwitch } from '../components/ToggleSwitch';
+import { SessionVisibility } from '../components/SessionVisibility';
+import { getAvailableCars } from '../../../utils/carData';
+import { SettingsSection } from '../components/SettingSection';
+import { SettingToggleRow } from '../components/SettingToggleRow';
+import { SettingDivider } from '../components/SettingDivider';
+import { TabButton } from '../components/TabButton';
+import { SettingButtonGroupRow } from '../components/SettingButtonGroupRow';
+import { SettingSliderRow } from '../components/SettingSliderRow';
+
+const SETTING_ID = 'tachometer';
+
+// Constants for shift points
+const DEFAULT_SHIFT_RPM_RATIO = 0.9;
+const MIN_SHIFT_RPM = 1000;
+
+// TypeScript interfaces for GitHub API responses
+interface CarListItem {
+  carId: string;
+  carName: string;
+  ledNumber: number;
+  ledRpm: object[];
+}
+
+/**
+ * Custom shift points configuration section
+ */
+const CustomShiftPointsSection = ({ config, handleConfigChange }: { config: TachometerWidgetSettings['config'], handleConfigChange: (changes: Partial<TachometerWidgetSettings['config']>) => void }) => {
+  const [expandedCarId, setExpandedCarId] = useState<string | null>(null);
+  const [availableCars, setAvailableCars] = useState<CarListItem[]>([]);
+  const [selectedCarId, setSelectedCarId] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [editingValues, setEditingValues] = useState<Record<string, string>>({});
+
+  const customShiftPoints = config.shiftPointSettings;
+
+  const updateCustomShiftPoints = (updates: Partial<typeof customShiftPoints>) => {
+    handleConfigChange({
+      shiftPointSettings: {
+        ...customShiftPoints,
+        ...updates,
+      },
+    });
+  };
+
+  useEffect(() => {
+    const loadAvailableCars = () => {
+      if (!customShiftPoints.enabled || availableCars.length > 0) return;
+      
+      setLoading(true);
+      try {
+        const allCars = getAvailableCars();
+        const cars: CarListItem[] = allCars
+          .map((car) => ({
+            carId: car.carId,
+            carName: car.carName,
+            ledNumber: car.ledNumber,
+            ledRpm: car.ledRpm
+          }))
+          .sort((a, b) => a.carName.localeCompare(b.carName));
+        
+        setAvailableCars(cars);
+      } catch (err) {
+        console.error('Failed to load cars:', err);
+        setError(err instanceof Error ? err.message : 'Failed to load car data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadAvailableCars();
+  }, [customShiftPoints.enabled, availableCars.length]);
+
+  const addCar = () => {
+    const selectedCar = availableCars.find((c) => c.carId === selectedCarId);
+    if (!selectedCar) return;
+    
+    const ledRpmData = (selectedCar.ledRpm?.[0] || {}) as Record<string, number[]>;
+
+    console.log(JSON.stringify(selectedCar));
+
+    let redlineRpm = 8000;
+    if (selectedCar.ledRpm?.[0]) {
+      const allRpms = Object.values(ledRpmData).flat();
+      redlineRpm = Math.max(...allRpms);
+    }
+    
+    const gearKeys = Object.keys(ledRpmData).filter(key => 
+      key !== 'N' && key !== 'R' && !isNaN(Number(key)) && Number(key) > 0
+    );
+
+    const gearCount = gearKeys.length > 0 ? Math.max(...gearKeys.map(Number)) : 6;
+    const gearShiftPoints: Record<string, {shiftRpm: number}> = {};
+    const defaultShiftRpm = Math.round(redlineRpm * DEFAULT_SHIFT_RPM_RATIO);
+
+
+    for (let i = 1; i <= gearCount; i++) {
+      const gearKey = i.toString();
+      const gearData = ledRpmData[gearKey];
+
+      gearShiftPoints[gearKey] = { 
+        shiftRpm: gearData ? Math.max(...gearData) : Math.max(MIN_SHIFT_RPM, defaultShiftRpm)
+      };
+    }
+    
+    updateCustomShiftPoints({
+      carConfigs: {
+        ...customShiftPoints.carConfigs,
+        [selectedCarId]: {
+          enabled: true,
+          carId: selectedCarId,
+          carName: selectedCar.carName,
+          gearCount,
+          redlineRpm,
+          gearShiftPoints
+        }
+      }
+    });
+   
+    setSelectedCarId('');
+  };
+
+  const toggleCar = (carId: string, enabled: boolean) => {
+    updateCustomShiftPoints({
+      carConfigs: {
+        ...customShiftPoints.carConfigs,
+        [carId]: {
+          ...customShiftPoints.carConfigs[carId],
+          enabled
+        }
+      }
+    });
+  };
+
+  const updateShiftPoint = (carId: string, gear: string, shiftRpm: number) => {
+    const car = customShiftPoints.carConfigs[carId];
+    if (!car) return;
+
+    updateCustomShiftPoints({
+      carConfigs: {
+        ...customShiftPoints.carConfigs,
+        [carId]: {
+          ...car,
+          gearShiftPoints: {
+            ...car.gearShiftPoints,
+            [gear]: { shiftRpm }
+          }
+        }
+      }
+    });
+  };
+
+  const deleteCar = (carId: string) => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { [carId]: _removed, ...rest } = customShiftPoints.carConfigs;
+    updateCustomShiftPoints({
+      carConfigs: rest
+    });
+  };
+
+  const configuredCars = Object.values(customShiftPoints.carConfigs);
+  const availableToAdd = availableCars.filter(c => !customShiftPoints.carConfigs[c.carId]);
+
+  return (
+    <div className="space-y-3">
+
+      <SettingToggleRow
+        title="Enable Custom Shift Points"
+        description="If enabled, custom shift points will be displayed on the tachometer"
+        enabled={customShiftPoints.enabled ?? false}
+        onToggle={(enabled) => updateCustomShiftPoints({ enabled })}
+      />
+      
+      {configuredCars.length > 0 && (
+        <div className="text-md text-slate-300">({configuredCars.length} cars)</div>
+      )}
+
+      {customShiftPoints.enabled && (
+        <div className="space-y-4 border-slate-700 pl-4">
+          {/* Demo Mode Info */}
+          <div className="bg-blue-900/30 border border-blue-700/50 rounded p-3 text-xs">
+            <div className="flex items-start gap-2">
+              <div className="flex-1">
+                <p className="text-blue-200 mb-1">Demo Mode Car</p>
+                <p className="text-blue-300">
+                  Demo mode uses the <strong>BMW M4 GT4</strong> (bmwm4gt4).
+                  Configure custom shift points for this car to test in demo mode.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Indicator Settings */}
+          <div className="space-y-2">
+            <label className="text-xs text-slate-400">Indicator Type</label>
+            <select
+              value={customShiftPoints.indicatorType}
+              onChange={(e) => updateCustomShiftPoints({ indicatorType: e.target.value as 'glow' | 'pulse' | 'border' })}
+              className="w-full bg-slate-700 text-white px-3 py-2 rounded text-sm"
+            >
+              <option value="glow">Glow</option>
+              <option value="pulse">Pulse</option>
+              <option value="border">Border</option>
+            </select>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-xs text-slate-400">Indicator Color</label>
+            <input
+              type="color"
+              value={customShiftPoints.indicatorColor}
+              onChange={(e) => updateCustomShiftPoints({ indicatorColor: e.target.value })}
+              className="w-full h-10 bg-slate-700 rounded cursor-pointer"
+            />
+          </div>
+
+          {/* Add Car */}
+          <div className="space-y-2">
+            <label className="text-xs text-slate-400">Add Car</label>
+            <div className="flex gap-2">
+              <select
+                value={selectedCarId}
+                onChange={(e) => setSelectedCarId(e.target.value)}
+                className="flex-1 bg-slate-700 text-white px-3 py-2 rounded text-sm"
+                disabled={loading}
+              >
+                <option value="">Select a car...</option>
+                {availableToAdd.map(car => (
+                  <option key={car.carId} value={car.carId}>{car.carName}</option>
+                ))}
+              </select>
+              <button
+                onClick={addCar}
+                disabled={!selectedCarId || loading}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 disabled:cursor-not-allowed text-white rounded text-sm transition-colors"
+              >
+                Add
+              </button>
+            </div>
+            {error && <p className="text-xs text-red-400">{error}</p>}
+          </div>
+
+          {/* Configured Cars */}
+          {configuredCars.length > 0 && (
+            <div className="space-y-2">
+              <label className="text-xs text-slate-400">Configured Cars</label>
+              <div className="space-y-2">
+                {configuredCars.map(car => (
+                  <div key={car.carId} className="bg-slate-700 rounded p-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => setExpandedCarId(expandedCarId === car.carId ? null : car.carId)}
+                          className="text-slate-400 hover:text-white"
+                        >
+                          <span>{expandedCarId === car.carId ? '▼' : '▶'}</span>
+                        </button>
+                        <span className="text-sm text-white">{car.carName}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <ToggleSwitch
+                          enabled={car.enabled}
+                          onToggle={(enabled) => toggleCar(car.carId, enabled)}
+                        />
+                        <button
+                          onClick={() => deleteCar(car.carId)}
+                          className="text-red-400 hover:text-red-300 text-xs px-2 py-1"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+
+                    {expandedCarId === car.carId && (
+                      <div className="ml-6 space-y-2 pt-2 border-t border-slate-600">
+                        <p className="text-xs text-slate-400">Redline: {car.redlineRpm} RPM</p>
+                        <div className="grid grid-cols-2 gap-2">
+                          {Object.entries(car.gearShiftPoints).map(([gear, { shiftRpm }]) => (
+                            <div key={gear} className="flex items-center gap-2">
+                              <label className="text-xs text-slate-400 w-12">Gear {gear}:</label>
+                              <input
+                                type="number"
+                                value={editingValues[`${car.carId}-${gear}`] ?? shiftRpm}
+                                onChange={(e) => {
+                                  const key = `${car.carId}-${gear}`;
+                                  setEditingValues({ ...editingValues, [key]: e.target.value });
+                                }}
+                                onBlur={(e) => {
+                                  const value = parseInt(e.target.value);
+                                  if (!isNaN(value) && value >= MIN_SHIFT_RPM) {
+                                    updateShiftPoint(car.carId, gear, value);
+                                  }
+                                  const key = `${car.carId}-${gear}`;
+                                  setEditingValues(
+                                    Object.fromEntries(
+                                      Object.entries(editingValues).filter(([k]) => k !== key)
+                                    )
+                                  );
+                                }}
+                                className="flex-1 bg-slate-600 text-white px-2 py-1 rounded text-xs"
+                                min={MIN_SHIFT_RPM}
+                                max={car.redlineRpm}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const defaultConfig = getWidgetDefaultConfig('tachometer');
+
+export const TachometerSettings = () => {
+  const { currentDashboard } = useDashboard();
+  const savedSettings = currentDashboard?.widgets.find(
+    (w) => w.id === SETTING_ID
+  ) as TachometerWidgetSettings | undefined;
+  const [settings, setSettings] = useState<TachometerWidgetSettings>({
+    enabled: savedSettings?.enabled ?? false,
+    config:
+      (savedSettings?.config as TachometerWidgetSettings['config']) ??
+      defaultConfig,
+  });
+
+  // Tab state with persistence
+  const [activeTab, setActiveTab] = useState<SettingsTabType>(
+    () => (localStorage.getItem('tachometerTab') as SettingsTabType) || 'display'
+  );
+
+  useEffect(() => {
+    localStorage.setItem('tachometerTab', activeTab);
+  }, [activeTab]);
+
+  if (!currentDashboard) {
+    return <>Loading...</>;
+  }
+
+  return (
+    <BaseSettingsSection
+      title="Tachometer"
+      description="Configure the tachometer."
+      settings={settings}
+      onSettingsChange={setSettings}
+      widgetId="tachometer"
+    >
+      {(handleConfigChange) => {     
+        const config = settings.config;
+        return (
+        <div className="space-y-6">
+          {/* Tabs */}
+          <div className="flex border-b border-slate-700/50">
+            <TabButton
+              id="display"
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+            >
+              Display
+            </TabButton>
+            <TabButton
+              id="options"
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+            >
+              Custom Shift Points
+            </TabButton>
+            <TabButton
+              id="visibility"
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+            >
+              Visibility
+            </TabButton>
+          </div>
+
+          {/* DISPLAY TAB */}
+          {activeTab === 'display' && (   
+          <SettingsSection title="Display">
+
+              <SettingSliderRow
+                title="Background Opacity"
+                value={settings.config.background.opacity ?? 40}
+                units="%"
+                min={0}
+                max={100}
+                step={1}
+                onChange={(v) =>
+                  handleConfigChange({ background: { opacity: v } })
+                }
+              />
+            
+              <SettingToggleRow
+                title="Show RPM Text"
+                enabled={config.showRpmText}
+                onToggle={(newValue) =>
+                  handleConfigChange({
+                    showRpmText: newValue,
+                  })
+                }
+              />
+
+              {config.showRpmText && (
+                <SettingsSection>
+                  <SettingButtonGroupRow<'horizontal' | 'bottom' | 'top'>
+                    title="RPM Text Orientaion"
+                    value={config.rpmOrientation ?? 'horizontal'}
+                    options={[
+                      { label: 'Horizontal', value: 'horizontal' },
+                      { label: 'Bottom', value: 'bottom' },
+                      { label: 'Top', value: 'top' },
+                    ]}
+                    onChange={(v) =>
+                      handleConfigChange({
+                        rpmOrientation: v
+                      })
+                    }
+                  />
+                </SettingsSection>
+              )}
+
+          </SettingsSection>  
+          )}    
+
+          {/* OPTIONS TAB */}
+          {activeTab === 'options' && (   
+            <SettingsSection title="Custom Shift Points">
+                <CustomShiftPointsSection
+                config={config}
+                handleConfigChange={handleConfigChange}
+              />
+            </SettingsSection>  
+            )}     
+
+          {/* VISIBILITY TAB */}
+          {activeTab === 'visibility' && (
+            <SettingsSection title="Session Visibility">
+              <SessionVisibility
+                sessionVisibility={settings.config.sessionVisibility}
+                handleConfigChange={handleConfigChange}
+              />
+
+              <SettingDivider />
+
+              <SettingToggleRow
+                title="Show only when on track"
+                description="If enabled, tachometer will only be shown when driving"
+                enabled={settings.config.showOnlyWhenOnTrack ?? false}
+                onToggle={(newValue) =>
+                  handleConfigChange({ showOnlyWhenOnTrack: newValue })
+                }
+              />
+            </SettingsSection>
+          )}
+        </div>
+        );
+      }}
+    </BaseSettingsSection>
+  );
+};

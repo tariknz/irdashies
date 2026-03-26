@@ -7,7 +7,7 @@ import reactHooks from "eslint-plugin-react-hooks";
 import storybook from "eslint-plugin-storybook";
 
 export default defineConfig([
-  { ignores: ['**/.vite/**', '**/out/**', '**/coverage/**'] },
+  { ignores: ['**/.vite/**', '**/out/**', '**/coverage/**', 'storybook-static/**'] },
   { files: ["**/*.{js,mjs,cjs,ts,jsx,tsx}"] },
   { files: ["**/*.{js,mjs,cjs,ts,jsx,tsx}"], languageOptions: { globals: { ...globals.browser, ...globals.node } } },
   js.configs.recommended,
@@ -27,6 +27,19 @@ export default defineConfig([
         patterns: [{
           group: ['**/app/**', '../app/**', '../../app/**'],
           message: 'Frontend code cannot import from app/. Use IPC bridges and import types from @irdashies/types instead.'
+        }]
+      }]
+    }
+  },
+  // Enforce context namespace: imports from context subdirectories must go via @irdashies/context
+  {
+    files: ['src/frontend/**/*.{ts,tsx}'],
+    ignores: ['src/frontend/context/**'],
+    rules: {
+      'no-restricted-imports': ['error', {
+        patterns: [{
+          group: ['**/context/**'],
+          message: "Import from '@irdashies/context' instead of importing context internals directly."
         }]
       }]
     }

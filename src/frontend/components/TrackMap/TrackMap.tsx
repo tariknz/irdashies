@@ -9,7 +9,7 @@ const debug = import.meta.env.DEV || import.meta.env.MODE === 'storybook';
 
 export const TrackMap = () => {
   const trackId = useTrackId();
-  const driversTrackData = useDriverProgress();
+  const { drivers: driversTrackData, identities } = useDriverProgress();
   const settings = useTrackMapSettings();
   const highlightColor = useHighlightColor();
   const isOnTrack = useTelemetryValue('IsOnTrack');
@@ -28,15 +28,20 @@ export const TrackMap = () => {
       <TrackCanvas
         trackId={trackId}
         drivers={driversTrackData}
+        driverIdentities={identities}
         enableTurnNames={settings?.enableTurnNames ?? false}
         showCarNumbers={settings?.showCarNumbers ?? true}
         displayMode={settings?.displayMode ?? 'carNumber'}
         invertTrackColors={settings?.invertTrackColors ?? false}
+        highContrastTurns={settings?.highContrastTurns ?? false}
         driverCircleSize={settings?.driverCircleSize ?? 40}
         playerCircleSize={settings?.playerCircleSize ?? 40}
+        trackmapFontSize={settings?.trackmapFontSize ?? 100}
         trackLineWidth={settings?.trackLineWidth ?? 20}
         trackOutlineWidth={settings?.trackOutlineWidth ?? 40}
-        highlightColor={settings?.useHighlightColor ? highlightColor : undefined}
+        highlightColor={
+          settings?.useHighlightColor ? highlightColor : undefined
+        }
         debug={debug}
       />
     </div>
