@@ -55,14 +55,12 @@ export const getOrCreateDefaultDashboardForProfile = (profileId: string) => {
     );
 
     // add missing widgets and save
-    const mergedGeneralSettings = {
-      ...defaultDashboard.generalSettings,
-      ...dashboard.generalSettings,
-    };
-
     const updatedDashboard = {
       ...dashboard,
-      generalSettings: mergedGeneralSettings,
+      generalSettings: {
+        ...defaultDashboard.generalSettings,
+        ...dashboard.generalSettings,
+      },
       widgets: [...dashboard.widgets, ...missingWidgets].map((widget) => {
         const defaultWidget = defaultDashboard.widgets.find(
           (w) => w.id === widget.id
