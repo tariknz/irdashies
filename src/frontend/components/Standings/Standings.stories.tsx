@@ -20,6 +20,7 @@ import {
 } from '@irdashies/context';
 import { generateMockDataFromPath } from '../../../app/bridge/iracingSdk/mock-data/generateMockData';
 import type { DashboardBridge } from '@irdashies/types';
+import { defaultDashboard } from '@irdashies/types';
 import { useState, Fragment } from 'react';
 import { DriverClassHeader } from './components/DriverClassHeader/DriverClassHeader';
 import { DriverInfoRow } from './components/DriverInfoRow/DriverInfoRow';
@@ -52,8 +53,9 @@ const createMockBridgeWithCompactMode = (): DashboardBridge => ({
   ...mockDashboardBridge,
   dashboardUpdated: (callback) => {
     callback({
-      widgets: [],
+      ...defaultDashboard,
       generalSettings: {
+        ...defaultDashboard.generalSettings,
         compactMode: 'compact',
       },
     });
@@ -67,8 +69,9 @@ const createMockBridgeWithCompactUltraMode = (): DashboardBridge => ({
   ...mockDashboardBridge,
   dashboardUpdated: (callback) => {
     callback({
-      widgets: [],
+      ...defaultDashboard,
       generalSettings: {
+        ...defaultDashboard.generalSettings,
         compactMode: 'ultra',
       },
     });

@@ -995,7 +995,31 @@ export const CompactMode: Story = {
         },
       },
       {
-        compactMode: true,
+        compactMode: 'compact',
+      }
+    ),
+  ],
+};
+
+export const CompactUltraMode: Story = {
+  decorators: [
+    TelemetryDecoratorWithConfigAndGeneralSettings(
+      undefined,
+      {
+        relative: {
+          headerBar: { enabled: true },
+          footerBar: { enabled: true },
+          sessionVisibility: {
+            race: true,
+            loneQualify: true,
+            openQualify: true,
+            practice: true,
+            offlineTesting: true,
+          },
+        },
+      },
+      {
+        compactMode: 'ultra',
       }
     ),
   ],
