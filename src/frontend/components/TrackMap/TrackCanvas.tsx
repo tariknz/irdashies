@@ -90,7 +90,7 @@ export const TrackCanvas = ({
   turnLabels = {
     enabled: false,
     labelType: 'both',
-    highContrast: false,
+    highContrast: true,
     labelFontSize: 100,
   },
   showCarNumbers = true,

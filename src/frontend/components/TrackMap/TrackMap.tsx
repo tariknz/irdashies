@@ -32,7 +32,7 @@ export const TrackMap = () => {
         turnLabels={{
           enabled: settings?.turnLabels?.enabled ?? false,
           labelType: settings?.turnLabels?.labelType ?? 'both',
-          highContrast: settings?.turnLabels?.highContrast ?? false,
+          highContrast: settings?.turnLabels?.highContrast ?? true,
           labelFontSize: settings?.turnLabels?.labelFontSize ?? 100,
         }}
         showCarNumbers={settings?.showCarNumbers ?? true}

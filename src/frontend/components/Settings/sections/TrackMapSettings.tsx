@@ -158,7 +158,7 @@ export const TrackMapSettings = () => {
                     <SettingToggleRow
                       title="High Contrast Labels"
                       description="Use black background for turn numbers and turn names for better legibility"
-                      enabled={settings.config.turnLabels.highContrast ?? false}
+                      enabled={settings.config.turnLabels.highContrast ?? true}
                       onToggle={(newValue) =>
                         handleConfigChange({
                           turnLabels: {

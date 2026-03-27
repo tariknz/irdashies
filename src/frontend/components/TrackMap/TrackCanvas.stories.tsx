@@ -11,7 +11,7 @@ export default {
     turnLabels: {
       enabled: false,
       labelType: 'both',
-      highContrast: false,
+      highContrast: true,
       labelFontSize: 100,
     },
     showCarNumbers: true,
@@ -358,7 +358,7 @@ export const Primary: Story = {
     turnLabels: {
       enabled: true,
       labelType: 'both',
-      highContrast: false,
+      highContrast: true,
       labelFontSize: 100,
     },
     showCarNumbers: true,
@@ -423,7 +423,7 @@ export const SingleClass: Story = {
     turnLabels: {
       enabled: true,
       labelType: 'both',
-      highContrast: false,
+      highContrast: true,
       labelFontSize: 100,
     },
     showCarNumbers: true,

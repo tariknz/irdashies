@@ -45,7 +45,7 @@ describe('TrackMap', () => {
       turnLabels: {
         enabled: false,
         labelType: 'both',
-        highContrast: false,
+        highContrast: true,
         labelFontSize: 100,
       },
       showCarNumbers: true,
@@ -78,7 +78,7 @@ describe('TrackMap', () => {
       turnLabels: {
         enabled: false,
         labelType: 'both',
-        highContrast: false,
+        highContrast: true,
         labelFontSize: 100,
       },
       showCarNumbers: true,
@@ -111,7 +111,7 @@ describe('TrackMap', () => {
       turnLabels: {
         enabled: false,
         labelType: 'both',
-        highContrast: false,
+        highContrast: true,
         labelFontSize: 100,
       },
       showCarNumbers: true,
@@ -144,7 +144,7 @@ describe('TrackMap', () => {
       turnLabels: {
         enabled: false,
         labelType: 'both',
-        highContrast: false,
+        highContrast: true,
         labelFontSize: 100,
       },
       showCarNumbers: true,
@@ -178,7 +178,7 @@ describe('TrackMap', () => {
       turnLabels: {
         enabled: false,
         labelType: 'both',
-        highContrast: false,
+        highContrast: true,
         labelFontSize: 100,
       },
       showCarNumbers: true,
@@ -212,7 +212,7 @@ describe('TrackMap', () => {
       turnLabels: {
         enabled: false,
         labelType: 'both',
-        highContrast: false,
+        highContrast: true,
         labelFontSize: 100,
       },
       showCarNumbers: true,
