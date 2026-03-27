@@ -989,6 +989,7 @@ export const defaultDashboard: {
         showPitlaneTraffic: true,
         showPastPitBox: false,
         showSpeedSummary: true,
+        showSpeedDelta: true,
         speedLimitStyle: 'text',
         progressBarOrientation: 'horizontal',
         speedBarOrientation: 'horizontal',
