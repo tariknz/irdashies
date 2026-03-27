@@ -38,6 +38,8 @@ export interface TrackProps {
   trackOutlineWidth?: number;
   highlightColor?: number;
   debug?: boolean;
+  isMinimalTrack?: boolean;
+  isMinimalCar?: boolean;
 }
 
 export interface TrackDriver {
@@ -86,6 +88,8 @@ export const TrackCanvas = ({
   trackOutlineWidth = 40,
   highlightColor,
   debug,
+  isMinimalTrack = false,
+  isMinimalCar = false,
 }: TrackProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const cacheCanvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -321,13 +325,14 @@ export const TrackCanvas = ({
     cacheCtx.setTransform(1, 0, 0, 1, 0, 0);
     cacheCtx.scale(dpr, dpr);
 
-    setupCanvasContext(cacheCtx, scale, offsetX, offsetY);
+    setupCanvasContext(cacheCtx, scale, offsetX, offsetY, isMinimalTrack);
     drawTrack(
       cacheCtx,
       path2DObjects,
       invertTrackColors,
       trackLineWidth,
-      trackOutlineWidth
+      trackOutlineWidth,
+      isMinimalTrack
     );
     drawStartFinishLine(cacheCtx, startFinishLine);
     drawTurnNames(
@@ -361,6 +366,7 @@ export const TrackCanvas = ({
     startFinishLine,
     driverCircleSize,
     playerCircleSize,
+    isMinimalTrack,
   ]);
 
   // Dynamic layer — runs on every position tick, blits static cache then draws drivers
@@ -386,7 +392,7 @@ export const TrackCanvas = ({
     const offsetX = (canvasSize.width - TRACK_DRAWING_WIDTH * scale) / 2;
     const offsetY = (canvasSize.height - TRACK_DRAWING_HEIGHT * scale) / 2;
 
-    setupCanvasContext(ctx, scale, offsetX, offsetY);
+    setupCanvasContext(ctx, scale, offsetX, offsetY, isMinimalCar);
     drawDrivers(
       ctx,
       calculatePositions,
@@ -413,6 +419,8 @@ export const TrackCanvas = ({
     playerCircleSize,
     trackmapFontSize,
     driverColors,
+    isMinimalCar,
+    isMinimalTrack,
   ]);
 
   // Development/Storybook mode - show debug info and canvas

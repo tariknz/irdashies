@@ -8,11 +8,18 @@ interface BadgeCellProps {
   license?: string;
   rating?: number;
   badgeFormat?: DriverRatingBadgeProps['format'];
+  isMinimal?: boolean;
   compactMode?: string;
 }
 
 export const BadgeCell = memo(
-  ({ license, rating, badgeFormat, compactMode }: BadgeCellProps) => {
+  ({
+    license,
+    rating,
+    badgeFormat,
+    isMinimal,
+    compactMode,
+  }: BadgeCellProps) => {
     const pxClass =
       compactMode === 'ultra'
         ? ''
@@ -28,6 +35,7 @@ export const BadgeCell = memo(
           license={license}
           rating={rating}
           format={badgeFormat}
+          isMinimal={isMinimal}
         />
       </td>
     );

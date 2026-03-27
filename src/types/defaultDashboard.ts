@@ -65,7 +65,8 @@ export const defaultDashboard: {
         },
         pitStatus: {
           enabled: true,
-          pitLapDisplayMode: 'lapsSinceLastPit',
+          showPitTime: true,
+          pitLapDisplayMode: 'lastPitLap',
         },
         position: {
           enabled: true,
@@ -393,7 +394,8 @@ export const defaultDashboard: {
         },
         pitStatus: {
           enabled: true,
-          pitLapDisplayMode: 'lapsSinceLastPit',
+          showPitTime: true,
+          pitLapDisplayMode: 'lastPitLap',
         },
         carManufacturer: {
           enabled: true,
@@ -605,6 +607,7 @@ export const defaultDashboard: {
           practice: true,
           offlineTesting: true,
         },
+        styling: { isMinimalTrack: false, isMinimalCar: false },
       },
     },
     {

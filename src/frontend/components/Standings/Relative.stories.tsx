@@ -1024,3 +1024,19 @@ export const CompactUltraMode: Story = {
     ),
   ],
 };
+
+export const MinimalStyling: Story = {
+  decorators: [
+    TelemetryDecoratorWithConfig(undefined, {
+      relative: {
+        badge: { enabled: true, badgeFormat: 'license-color-rating-bw' },
+        stylingOptions: {
+          badge: true,
+          statusBadges: true,
+          driverPosition: { background: false },
+          driverNumber: { background: false, border: true },
+        },
+      },
+    }),
+  ],
+};

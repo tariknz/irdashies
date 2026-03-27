@@ -1,15 +1,12 @@
 import { memo } from 'react';
-
-interface TailwindStyles {
-  classHeader: string;
-  driverIcon: string;
-}
+import type { TailwindStyles } from '@irdashies/utils/colors';
 
 interface PositionCellProps {
   position?: number;
   isPlayer: boolean;
   tailwindStyles: TailwindStyles;
   offTrack: boolean;
+  showBackground?: boolean;
   compactMode?: string;
 }
 
@@ -19,11 +16,12 @@ export const PositionCell = memo(
     isPlayer,
     offTrack,
     tailwindStyles,
+    showBackground = true,
     compactMode,
   }: PositionCellProps) => {
     const positionColor = offTrack
       ? 'bg-yellow-400'
-      : isPlayer
+      : isPlayer && showBackground
         ? tailwindStyles.classHeader
         : '';
     const textColor = offTrack ? 'text-yellow-900' : 'text-white';

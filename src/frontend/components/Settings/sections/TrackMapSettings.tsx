@@ -72,6 +72,13 @@ export const TrackMapSettings = () => {
               Drivers
             </TabButton>
             <TabButton
+              id="styling"
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+            >
+              Styling
+            </TabButton>
+            <TabButton
               id="visibility"
               activeTab={activeTab}
               setActiveTab={setActiveTab}
@@ -206,6 +213,38 @@ export const TrackMapSettings = () => {
                   enabled={settings.config.useHighlightColor ?? false}
                   onToggle={(newValue) =>
                     handleConfigChange({ useHighlightColor: newValue })
+                  }
+                />
+              </SettingsSection>
+            )}
+
+            {/* STYLING TAB */}
+            {activeTab === 'styling' && (
+              <SettingsSection title="Minimal Styling">
+                <SettingToggleRow
+                  title="Minimal Track"
+                  description="Remove the drop shadow from the track"
+                  enabled={settings.config.styling?.isMinimalTrack ?? true}
+                  onToggle={(newValue) =>
+                    handleConfigChange({
+                      styling: {
+                        ...settings.config.styling,
+                        isMinimalTrack: newValue,
+                      },
+                    })
+                  }
+                />
+                <SettingToggleRow
+                  title="Minimal Car Markers"
+                  description="Remove the drop shadow from the car markers"
+                  enabled={settings.config.styling?.isMinimalCar ?? true}
+                  onToggle={(newValue) =>
+                    handleConfigChange({
+                      styling: {
+                        ...settings.config.styling,
+                        isMinimalCar: newValue,
+                      },
+                    })
                   }
                 />
               </SettingsSection>

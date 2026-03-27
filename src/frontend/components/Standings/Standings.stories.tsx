@@ -989,3 +989,24 @@ export const PositionDividerNumerousCells: Story = {
     }),
   ],
 };
+
+export const MinimalStyling: Story = {
+  decorators: [
+    TelemetryDecoratorWithConfig('/test-data/1731637331038', {
+      standings: {
+        badge: { enabled: true, badgeFormat: 'license-color-rating-bw' },
+        stylingOptions: {
+          badge: true,
+          statusBadges: true,
+          driverPosition: { background: false },
+          driverNumber: { background: false, border: true },
+        },
+        classHeaderStyle: {
+          className: { colorBackground: false },
+          classInfo: { colorBackground: false },
+          classDivider: { bottomBorder: true },
+        },
+      },
+    }),
+  ],
+};

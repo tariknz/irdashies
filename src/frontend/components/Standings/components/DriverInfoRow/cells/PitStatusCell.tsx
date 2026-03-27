@@ -19,6 +19,7 @@ interface PitStatusCellProps {
    * OUT persists for one extra lap count so it remains visible for a full lap.
    */
   pitExitAfterSF?: boolean;
+  isMinimal?: boolean;
   compactMode?: string;
 }
 
@@ -36,6 +37,7 @@ export const PitStatusCell = memo(
     showPitTime = false,
     pitLapDisplayMode,
     pitExitAfterSF,
+    isMinimal,
     compactMode,
   }: PitStatusCellProps) => {
     const widthClass = showPitTime ? 'w-[7rem]' : 'w-[4.5rem]';
@@ -78,6 +80,7 @@ export const PitStatusCell = memo(
           showPitTime={showPitTime}
           pitLapDisplayMode={pitLapDisplayMode}
           pitExitAfterSF={pitExitAfterSF}
+          isMinimal={isMinimal}
         />
       </td>
     );

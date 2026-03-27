@@ -5,17 +5,19 @@ export const setupCanvasContext = (
   ctx: CanvasRenderingContext2D,
   scale: number,
   offsetX: number,
-  offsetY: number
+  offsetY: number,
+  isMinimal = false
 ) => {
   ctx.save();
   ctx.translate(offsetX, offsetY);
   ctx.scale(scale, scale);
 
-  // Apply shadow (now efficient thanks to canvas caching)
-  ctx.shadowColor = 'black';
-  ctx.shadowBlur = 2;
-  ctx.shadowOffsetX = 1;
-  ctx.shadowOffsetY = 1;
+  if (!isMinimal) {
+    ctx.shadowColor = 'black';
+    ctx.shadowBlur = 2;
+    ctx.shadowOffsetX = 1;
+    ctx.shadowOffsetY = 1;
+  }
 };
 
 export const drawTrack = (
@@ -23,17 +25,20 @@ export const drawTrack = (
   path2DObjects: { inside: Path2D | null },
   invertTrackColors: boolean,
   trackLineWidth: number,
-  trackOutlineWidth: number
+  trackOutlineWidth: number,
+  isMinimal = false
 ) => {
   if (!path2DObjects.inside) return;
 
   const outlineColor = invertTrackColors ? 'white' : 'black';
   const trackColor = invertTrackColors ? 'black' : 'white';
 
-  // Draw outline first
-  ctx.strokeStyle = outlineColor;
-  ctx.lineWidth = trackOutlineWidth;
-  ctx.stroke(path2DObjects.inside);
+  if (!isMinimal) {
+    // Draw outline first
+    ctx.strokeStyle = outlineColor;
+    ctx.lineWidth = trackOutlineWidth;
+    ctx.stroke(path2DObjects.inside);
+  }
 
   // Draw track on top
   ctx.strokeStyle = trackColor;

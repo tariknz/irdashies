@@ -42,6 +42,8 @@ export const TrackMap = () => {
         highlightColor={
           settings?.useHighlightColor ? highlightColor : undefined
         }
+        isMinimalTrack={settings?.styling?.isMinimalTrack ?? true}
+        isMinimalCar={settings?.styling?.isMinimalCar ?? true}
         debug={debug}
       />
     </div>

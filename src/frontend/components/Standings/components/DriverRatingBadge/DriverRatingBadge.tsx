@@ -1,6 +1,7 @@
 export interface DriverRatingBadgeProps {
   license?: string;
   rating?: number;
+  isMinimal?: boolean;
   format?:
     | 'license-color-fullrating-combo'
     | 'fullrating-color-no-license'
@@ -19,6 +20,7 @@ export interface DriverRatingBadgeProps {
 export const DriverRatingBadge = ({
   license = 'R 0.0',
   rating = 0,
+  isMinimal = false,
   format = 'license-color-rating-bw',
 }: DriverRatingBadgeProps) => {
   const licenseLevel = license?.charAt(0) || 'R';
@@ -31,7 +33,16 @@ export const DriverRatingBadge = ({
     D: 'border-orange-500 bg-orange-700',
     R: 'border-red-500 bg-red-800',
   };
-  const color = colorMap[licenseLevel] ?? '';
+  const minimalColorMap: Record<string, string> = {
+    W: 'border-zinc-700 bg-zinc-700',
+    P: 'border-purple-900 bg-purple-900',
+    A: 'border-blue-900 bg-blue-900',
+    B: 'border-green-900 bg-green-900',
+    C: 'border-yellow-900 bg-yellow-900',
+    D: 'border-orange-900 bg-orange-900',
+    R: 'border-red-900 bg-red-900',
+  };
+  const color = (isMinimal ? minimalColorMap : colorMap)[licenseLevel] ?? '';
 
   const decimal = String(rating / 1000);
   const dotIndex = decimal.indexOf('.') > -1 ? decimal.indexOf('.') : 0;

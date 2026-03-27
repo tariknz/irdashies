@@ -45,6 +45,7 @@ interface DriverStatusBadgesProps {
   className?: string;
   pitLapDisplayMode?: string;
   pitExitAfterSF?: boolean;
+  isMinimal?: boolean;
 }
 
 export const DriverStatusBadges = memo(
@@ -64,7 +65,9 @@ export const DriverStatusBadges = memo(
     className = '',
     pitLapDisplayMode,
     pitExitAfterSF,
+    isMinimal = false,
   }: DriverStatusBadgesProps) => {
+    const muted = 'border-transparent';
     const hasStatus =
       penalty || slowdown || repair || dnf || tow || out || pit || lastPit;
 
@@ -126,25 +129,37 @@ export const DriverStatusBadges = memo(
           </StatusBadge>
         )}
         {dnf && (
-          <StatusBadge borderColorClass="border-red-500">DNF</StatusBadge>
+          <StatusBadge borderColorClass={isMinimal ? muted : 'border-red-500'}>
+            DNF
+          </StatusBadge>
         )}
         {tow && (
-          <StatusBadge borderColorClass="border-orange-500" animate>
+          <StatusBadge
+            borderColorClass={isMinimal ? muted : 'border-orange-500'}
+            animate
+          >
             TOW
           </StatusBadge>
         )}
         {out && (
-          <StatusBadge borderColorClass="border-green-700">
+          <StatusBadge
+            borderColorClass={isMinimal ? muted : 'border-green-700'}
+          >
             OUT {pitDuration}
           </StatusBadge>
         )}
         {pit && (
-          <StatusBadge borderColorClass="border-yellow-500" animate>
+          <StatusBadge
+            borderColorClass={isMinimal ? muted : 'border-yellow-500'}
+            animate
+          >
             PIT
           </StatusBadge>
         )}
         {lastPit && !out && (
-          <StatusBadge borderColorClass="border-yellow-500">
+          <StatusBadge
+            borderColorClass={isMinimal ? muted : 'border-yellow-500'}
+          >
             L {pitLap} {pitDuration}
           </StatusBadge>
         )}

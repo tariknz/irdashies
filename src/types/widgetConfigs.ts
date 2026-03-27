@@ -71,6 +71,23 @@ export interface SessionBarConfig {
 }
 
 // ===========================
+// Styling option types
+// ===========================
+
+export interface StylingOptions {
+  badge?: boolean;
+  statusBadges?: boolean;
+  driverPosition?: { background?: boolean };
+  driverNumber?: { background?: boolean; border?: boolean };
+}
+
+export interface ClassHeaderStyle {
+  className?: { colorBackground?: boolean };
+  classInfo?: { colorBackground?: boolean };
+  classDivider?: { bottomBorder?: boolean };
+}
+
+// ===========================
 // Badge format types
 // ===========================
 
@@ -139,6 +156,8 @@ export interface StandingsConfig {
   driverTag: { enabled: boolean; widthPx?: number };
   displayOrder: string[];
   sessionVisibility: SessionVisibilitySettings;
+  stylingOptions?: StylingOptions;
+  classHeaderStyle?: ClassHeaderStyle;
 }
 
 export interface RelativeConfig {
@@ -166,6 +185,7 @@ export interface RelativeConfig {
   displayOrder: string[];
   useLivePosition?: boolean;
   sessionVisibility: SessionVisibilitySettings;
+  stylingOptions?: StylingOptions;
 }
 
 export interface WeatherConfig {
@@ -196,6 +216,7 @@ export interface TrackMapConfig {
   useHighlightColor: boolean;
   showOnlyWhenOnTrack: boolean;
   sessionVisibility: SessionVisibilitySettings;
+  styling?: { isMinimalTrack?: boolean; isMinimalCar?: boolean };
 }
 
 export interface FlatTrackMapConfig {
@@ -446,21 +467,21 @@ export interface TwitchChatConfig {
 }
 
 export interface LapTimeLogConfig {
-  showCurrentLap: boolean,
-  showPredictedLap: boolean,
-  showLastLap: boolean,
-  showBestLap: boolean,
+  showCurrentLap: boolean;
+  showPredictedLap: boolean;
+  showLastLap: boolean;
+  showBestLap: boolean;
   delta: {
-    enabled: boolean,
-    method: 'lastlap' | 'bestlap',
-  },
+    enabled: boolean;
+    method: 'lastlap' | 'bestlap';
+  };
   history: {
-    enabled: boolean,
-    count: number,
-  },
+    enabled: boolean;
+    count: number;
+  };
   scale: number;
   alignment: 'top' | 'bottom';
-  reverse: boolean,
+  reverse: boolean;
   background: { opacity: number };
   foreground: { opacity: number };
   sessionVisibility: SessionVisibilitySettings;
@@ -515,6 +536,7 @@ export type SettingsTabType =
   | 'display'
   | 'options'
   | 'visibility'
+  | 'styling'
   | 'track'
   | 'drivers'
   | 'layout'
