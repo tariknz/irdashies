@@ -66,7 +66,7 @@ describe('useCustomShiftPoints', () => {
       indicatorType: 'glow',
       indicatorColor: '#00ff00',
       carConfigs: {
-        'ferrari296gt3': {
+        ferrari296gt3: {
           enabled: true,
           carId: 'ferrari296gt3',
           carName: 'Ferrari 296 GT3',
@@ -99,7 +99,7 @@ describe('useCustomShiftPoints', () => {
       indicatorType: 'glow',
       indicatorColor: '#00ff00',
       carConfigs: {
-        'ferrari296gt3': {
+        ferrari296gt3: {
           enabled: true,
           carId: 'ferrari296gt3',
           carName: 'Ferrari 296 GT3',
@@ -129,7 +129,7 @@ describe('useCustomShiftPoints', () => {
       indicatorType: 'glow',
       indicatorColor: '#00ff00',
       carConfigs: {
-        'ferrari296gt3': {
+        ferrari296gt3: {
           enabled: true,
           carId: 'ferrari296gt3',
           carName: 'Ferrari 296 GT3',

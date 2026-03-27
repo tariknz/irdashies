@@ -56,6 +56,7 @@ const sortableSettings: SortableSetting[] = [
     configKey: 'carManufacturer',
     hasSubSetting: true,
   },
+  { id: 'driverTag', label: 'Driver Tag', configKey: 'driverTag' },
   { id: 'badge', label: 'Driver Badge', configKey: 'badge' },
   { id: 'iratingChange', label: 'iRating Change', configKey: 'iratingChange' },
   { id: 'delta', label: 'Relative', configKey: 'delta' },
@@ -743,6 +744,13 @@ export const RelativeSettings = () => {
                 Footer
               </TabButton>
               <TabButton
+                id="styling"
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+              >
+                Styling
+              </TabButton>
+              <TabButton
                 id="visibility"
                 activeTab={activeTab}
                 setActiveTab={setActiveTab}
@@ -969,6 +977,106 @@ export const RelativeSettings = () => {
                     </SettingsSection>
                   )}
                 </SettingsSection>
+              )}
+
+              {/* STYLING TAB */}
+              {activeTab === 'styling' && (
+                <>
+                  <SettingsSection title="Driver Position">
+                    <SettingToggleRow
+                      title="Position Background"
+                      description="Highlight the player's position cell with a colored background"
+                      enabled={
+                        settings.config.stylingOptions?.driverPosition
+                          ?.background ?? true
+                      }
+                      onToggle={(newValue) =>
+                        handleConfigChange({
+                          stylingOptions: {
+                            ...settings.config.stylingOptions,
+                            driverPosition: { background: newValue },
+                          },
+                        })
+                      }
+                    />
+                  </SettingsSection>
+
+                  <SettingDivider />
+
+                  <SettingsSection title="Car Number">
+                    <SettingToggleRow
+                      title="Number Background"
+                      description="Show a colored background on the car number cell"
+                      enabled={
+                        settings.config.stylingOptions?.driverNumber
+                          ?.background ?? true
+                      }
+                      onToggle={(newValue) =>
+                        handleConfigChange({
+                          stylingOptions: {
+                            ...settings.config.stylingOptions,
+                            driverNumber: {
+                              ...settings.config.stylingOptions?.driverNumber,
+                              background: newValue,
+                            },
+                          },
+                        })
+                      }
+                    />
+                    <SettingToggleRow
+                      title="Number Left Border"
+                      description="Show a colored left border on the car number cell"
+                      enabled={
+                        settings.config.stylingOptions?.driverNumber?.border ??
+                        true
+                      }
+                      onToggle={(newValue) =>
+                        handleConfigChange({
+                          stylingOptions: {
+                            ...settings.config.stylingOptions,
+                            driverNumber: {
+                              ...settings.config.stylingOptions?.driverNumber,
+                              border: newValue,
+                            },
+                          },
+                        })
+                      }
+                    />
+                  </SettingsSection>
+
+                  <SettingDivider />
+
+                  <SettingsSection title="Badges">
+                    <SettingToggleRow
+                      title="Minimal License Badge"
+                      description="Use desaturated colors for the iRating/license badge"
+                      enabled={settings.config.stylingOptions?.badge ?? false}
+                      onToggle={(newValue) =>
+                        handleConfigChange({
+                          stylingOptions: {
+                            ...settings.config.stylingOptions,
+                            badge: newValue,
+                          },
+                        })
+                      }
+                    />
+                    <SettingToggleRow
+                      title="Minimal Status Badges"
+                      description="Use muted borders for PIT, OUT, DNF and other status badges"
+                      enabled={
+                        settings.config.stylingOptions?.statusBadges ?? false
+                      }
+                      onToggle={(newValue) =>
+                        handleConfigChange({
+                          stylingOptions: {
+                            ...settings.config.stylingOptions,
+                            statusBadges: newValue,
+                          },
+                        })
+                      }
+                    />
+                  </SettingsSection>
+                </>
               )}
 
               {/* VISIBILITY TAB */}

@@ -65,7 +65,8 @@ export const defaultDashboard: {
         },
         pitStatus: {
           enabled: true,
-          pitLapDisplayMode: 'lapsSinceLastPit',
+          showPitTime: true,
+          pitLapDisplayMode: 'lastPitLap',
         },
         position: {
           enabled: true,
@@ -233,6 +234,7 @@ export const defaultDashboard: {
           'compound',
           'lapTimeDeltas',
         ],
+        driverTag: { enabled: false },
         sessionVisibility: {
           race: true,
           loneQualify: true,
@@ -392,7 +394,8 @@ export const defaultDashboard: {
         },
         pitStatus: {
           enabled: true,
-          pitLapDisplayMode: 'lapsSinceLastPit',
+          showPitTime: true,
+          pitLapDisplayMode: 'lastPitLap',
         },
         carManufacturer: {
           enabled: true,
@@ -439,6 +442,7 @@ export const defaultDashboard: {
           'lastTime',
           'compound',
         ],
+        driverTag: { enabled: false },
         titleBar: {
           enabled: false,
           progressBar: {
@@ -585,10 +589,14 @@ export const defaultDashboard: {
         height: 227,
       },
       config: {
-        enableTurnNames: false,
+        turnLabels: {
+          enabled: false,
+          labelType: 'both',
+          highContrast: true,
+          labelFontSize: 100,
+        },
         showCarNumbers: true,
-        invertTrackColors: false,
-        highContrastTurns: true,
+        invertTrackColors: false,        
         driverCircleSize: 40,
         playerCircleSize: 40,
         trackmapFontSize: 100,
@@ -603,6 +611,7 @@ export const defaultDashboard: {
           practice: true,
           offlineTesting: true,
         },
+        styling: { isMinimalTrack: false, isMinimalCar: false },
       },
     },
     {
@@ -1029,7 +1038,7 @@ export const defaultDashboard: {
     enableAutoStart: false,
     startMinimized: false,
     closeToTray: true,
-    compactMode: false,
+    compactMode: 'off' as const,
     overlayAlwaysOnTop: true,
     enableNetworkAccess: false,
   },

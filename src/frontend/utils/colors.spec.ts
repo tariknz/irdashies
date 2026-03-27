@@ -21,6 +21,7 @@ describe('colors', () => {
         classHeader: 'bg-sky-500 border-sky-500',
         fill: 'fill-sky-500',
         canvasFill: '#123456',
+        borderColor: 'border-sky-500',
       });
 
       vi.unstubAllGlobals();

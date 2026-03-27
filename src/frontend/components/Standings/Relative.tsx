@@ -12,6 +12,7 @@ import {
   useRelativeSettings,
   useDriverRelatives,
   useHighlightColor,
+  useDriverTagMap,
 } from './hooks';
 import { SessionBar } from './components/SessionBar/SessionBar';
 
@@ -25,6 +26,7 @@ export const Relative = () => {
   const { isDriving } = useDrivingState();
   const standings = useDriverRelatives({ buffer });
   const highlightColor = useHighlightColor();
+  const { tagMap, hasAnyTag } = useDriverTagMap(settings?.driverTag?.enabled);
   const numCarClasses = useWeekendInfoNumCarClasses();
   const isMultiClass = (numCarClasses ?? 0) > 1;
   const isSessionVisible = useSessionVisibility(settings?.sessionVisibility);
@@ -40,7 +42,10 @@ export const Relative = () => {
   const isTeamRacing = useWeekendInfoTeamRacing();
 
   // Determine table border spacing based on compact mode
-  const tableBorderSpacing = generalSettings?.compactMode
+  const isCompact =
+    generalSettings?.compactMode === 'compact' ||
+    generalSettings?.compactMode === 'ultra';
+  const tableBorderSpacing = isCompact
     ? 'border-spacing-y-0'
     : 'border-spacing-y-0.5';
 
@@ -94,6 +99,7 @@ export const Relative = () => {
           penalty={false}
           slowdown={false}
           hideCarManufacturer={hideCarManufacturer}
+          compactMode={generalSettings?.compactMode}
         />
       ));
     }
@@ -147,6 +153,7 @@ export const Relative = () => {
             slowdown={false}
             deltaDecimalPlaces={settings?.delta?.precision}
             hideCarManufacturer={hideCarManufacturer}
+            compactMode={generalSettings?.compactMode}
           />
         );
       }
@@ -155,6 +162,8 @@ export const Relative = () => {
         <DriverInfoRow
           key={result.carIdx}
           carIdx={result.carIdx}
+          resolvedTag={tagMap.get(result.carIdx)}
+          hasAnyDriverTag={hasAnyTag}
           classColor={result.carClass.color}
           carNumber={
             (settings?.carNumber?.enabled ?? true)
@@ -211,6 +220,7 @@ export const Relative = () => {
           slowdown={result.slowdown}
           deltaDecimalPlaces={settings?.delta?.precision}
           hideCarManufacturer={hideCarManufacturer}
+          compactMode={generalSettings?.compactMode}
         />
       );
     });
@@ -223,6 +233,9 @@ export const Relative = () => {
     highlightColor,
     hideCarManufacturer,
     isTeamRacing,
+    tagMap,
+    hasAnyTag,
+    generalSettings?.compactMode,
   ]);
 
   if (!isSessionVisible) return <></>;
@@ -254,7 +267,7 @@ export const Relative = () => {
 
   return (
     <div
-      className={`w-full bg-slate-800/(--bg-opacity) rounded-sm ${!generalSettings?.compactMode ? 'p-2' : ''} overflow-hidden`}
+      className={`w-full bg-slate-800/(--bg-opacity) rounded-sm ${!isCompact ? 'p-2' : ''} overflow-hidden`}
       style={{
         ['--bg-opacity' as string]: `${settings?.background?.opacity ?? 0}%`,
       }}

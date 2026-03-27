@@ -9,6 +9,7 @@ import {
   useDriverStandings,
   useStandingsSettings,
   useHighlightColor,
+  useDriverTagMap,
 } from './hooks';
 import {
   useGeneralSettings,
@@ -35,6 +36,7 @@ export const Standings = () => {
 
   const standings = useDriverStandings(settings);
   const classStats = useCarClassStats();
+  const { tagMap, hasAnyTag } = useDriverTagMap(settings?.driverTag?.enabled);
   const numCarClasses = useWeekendInfoNumCarClasses();
   const isMultiClass = (numCarClasses ?? 0) > 1;
   const highlightColor = useHighlightColor();
@@ -53,7 +55,10 @@ export const Standings = () => {
   const isTeamRacing = useWeekendInfoTeamRacing();
 
   // Determine table border spacing based on compact mode
-  const tableBorderSpacing = generalSettings?.compactMode
+  const isCompact =
+    generalSettings?.compactMode === 'compact' ||
+    generalSettings?.compactMode === 'ultra';
+  const tableBorderSpacing = isCompact
     ? 'border-spacing-y-0'
     : 'border-spacing-y-0.5';
 
@@ -66,7 +71,7 @@ export const Standings = () => {
 
   return (
     <div
-      className={`w-full bg-slate-800/(--bg-opacity) rounded-sm ${!generalSettings?.compactMode ? 'p-2' : ''} text-white overflow-hidden`}
+      className={`w-full bg-slate-800/(--bg-opacity) rounded-sm ${!isCompact ? 'p-2' : ''} text-white overflow-hidden`}
       style={{
         ['--bg-opacity' as string]: `${settings?.background?.opacity ?? 0}%`,
       }}
@@ -110,6 +115,8 @@ export const Standings = () => {
                   highlightColor={highlightColor}
                   isMultiClass={isMultiClass}
                   colSpan={100}
+                  classHeaderStyle={settings?.classHeaderStyle}
+                  compactMode={generalSettings?.compactMode}
                 />
                 {classStandings.map((result, driverIndex) => {
                   const prev = classStandings[driverIndex - 1];
@@ -141,6 +148,8 @@ export const Standings = () => {
                       <DriverInfoRow
                         key={result.carIdx}
                         carIdx={result.carIdx}
+                        resolvedTag={tagMap.get(result.carIdx)}
+                        hasAnyDriverTag={hasAnyTag}
                         classColor={result.carClass.color}
                         carNumber={
                           (settings?.carNumber?.enabled ?? true)
@@ -223,16 +232,16 @@ export const Standings = () => {
                         penalty={result.penalty}
                         slowdown={result.slowdown}
                         hideCarManufacturer={hideCarManufacturer}
+                        compactMode={generalSettings?.compactMode}
                       />
                     </Fragment>
                   );
                 })}
-                {index < standings.length - 1 &&
-                  !generalSettings?.compactMode && (
-                    <tr>
-                      <td colSpan={100} className="h-2"></td>
-                    </tr>
-                  )}
+                {index < standings.length - 1 && !isCompact && (
+                  <tr>
+                    <td colSpan={100} className="h-2"></td>
+                  </tr>
+                )}
               </Fragment>
             ) : null;
           })}

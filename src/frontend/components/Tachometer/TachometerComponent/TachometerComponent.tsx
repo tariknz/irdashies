@@ -15,7 +15,7 @@ export interface TachometerProps {
   numLights?: number;
   /** Whether to show RPM text display (default: true) */
   showRpmText?: boolean;
-  rpmOrientation?: 'horizontal' | 'bottom' | 'top'
+  rpmOrientation?: 'horizontal' | 'bottom' | 'top';
   /** Car-specific RPM thresholds for each LED */
   gearRpmThresholds?: number[] | null;
   /** Car-specific LED colors */
@@ -280,46 +280,48 @@ export const Tachometer = ({
 
   return (
     <>
-      <div className={`@container-[size] flex ${rpmOrientation === 'horizontal' ? 'flex-row' : (rpmOrientation === 'top' ? 'flex-col-reverse' : 'flex-col')} justify-center items-center w-full h-full gap-2`}>
-
+      <div
+        className={`@container-[size] flex ${rpmOrientation === 'horizontal' ? 'flex-row' : rpmOrientation === 'top' ? 'flex-col-reverse' : 'flex-col'} justify-center items-center w-full h-full gap-2`}
+      >
         {/* LED lights */}
-        <div 
-          id="ledcontainer" 
+        <div
+          id="ledcontainer"
           className={`bg-slate-800/(--bg-opacity) h-full flex ${rpmOrientation === 'horizontal' ? 'relative' : 'flex-2'} items-center justify-center rounded-full px-4`}
-          style={{          
+          style={{
             ['--bg-opacity' as string]: `${opacity ?? 80}%`,
-          }}>
+          }}
+        >
           {Array.from({ length: effectiveNumLights }, (_, i) => (
             <>
-            <div className="h-[80%] aspect-square p-0.5">
-              <div
-                key={i}
-                className="rounded-full w-full h-full border border-gray-600 transition-all duration-300"
-                style={{    
-                  backgroundColor: getLedColor(i),
-                  boxShadow: isLedActive(i)
-                    ? `0 0 4px ${getLedColor(i)}`
-                    : 'none'                
-                }}
-                aria-label={`LED ${i + 1}`}
-              />
-            </div>
+              <div className="h-[80%] aspect-square p-0.5">
+                <div
+                  key={i}
+                  className="rounded-full w-full h-full border border-gray-600 transition-all duration-300"
+                  style={{
+                    backgroundColor: getLedColor(i),
+                    boxShadow: isLedActive(i)
+                      ? `0 0 4px ${getLedColor(i)}`
+                      : 'none',
+                  }}
+                  aria-label={`LED ${i + 1}`}
+                />
+              </div>
             </>
           ))}
 
           {/* RPM display - Horinztonal - shows when showRpmText is true OR when custom shift points exist */}
-          {shouldShowRpmBox && rpmOrientation === 'horizontal' && (               
+          {shouldShowRpmBox && rpmOrientation === 'horizontal' && (
             <div
               id="rpm-text"
               className={`bg-slate-800/(--bg-opacity) text-[30cqh] absolute right-[-8em] flex min-w-[6em] font-mono font-bold text-white px-4 mx-2 rounded-lg transition-colors duration-200 whitespace-nowrap justify-center items-center`}
               style={{
-                ...getRpmBoxStyle(),    
-                height: '2em', 
+                ...getRpmBoxStyle(),
+                height: '2em',
                 ['--bg-opacity' as string]: `${opacity ?? 80}%`,
               }}
             >
               {showRpmText && (
-                <>               
+                <>
                   {shouldShowCustomShift ? (
                     <span className="font-bold">SHIFT</span>
                   ) : (
@@ -333,40 +335,38 @@ export const Tachometer = ({
               {!showRpmText && shouldShowCustomShift && (
                 <span className="font-bold">SHIFT</span>
               )}
-            </div>         
+            </div>
           )}
+        </div>
 
+        {/* RPM display - Vertical - shows when showRpmText is true OR when custom shift points exist */}
+        {shouldShowRpmBox && rpmOrientation !== 'horizontal' && (
+          <div
+            id="rpm-text"
+            className={`bg-slate-800/(--bg-opacity) text-[20cqh] flex min-w-[6em] font-mono font-bold text-white px-4 mx-2 rounded-lg transition-colors duration-200 whitespace-nowrap justify-center items-center`}
+            style={{
+              ...getRpmBoxStyle(),
+              height: '1.5em',
+              ['--bg-opacity' as string]: `${opacity ?? 80}%`,
+            }}
+          >
+            {showRpmText && (
+              <>
+                {shouldShowCustomShift ? (
+                  <span className="font-bold">SHIFT</span>
+                ) : (
+                  <>
+                    {Math.round(clampedRpm).toLocaleString('en-US')}
+                    <span className="text-[0.6em] ml-2">RPM</span>
+                  </>
+                )}
+              </>
+            )}
+            {!showRpmText && shouldShowCustomShift && (
+              <span className="font-bold">SHIFT</span>
+            )}
           </div>
-
-          {/* RPM display - Vertical - shows when showRpmText is true OR when custom shift points exist */}
-          {shouldShowRpmBox && rpmOrientation !== 'horizontal' && (               
-            <div
-              id="rpm-text"
-              className={`bg-slate-800/(--bg-opacity) text-[20cqh] flex min-w-[6em] font-mono font-bold text-white px-4 mx-2 rounded-lg transition-colors duration-200 whitespace-nowrap justify-center items-center`}
-              style={{
-                ...getRpmBoxStyle(),    
-                height: '1.5em', 
-                ['--bg-opacity' as string]: `${opacity ?? 80}%`,
-              }}
-            >
-              {showRpmText && (
-                <>               
-                  {shouldShowCustomShift ? (
-                    <span className="font-bold">SHIFT</span>
-                  ) : (
-                    <>
-                      {Math.round(clampedRpm).toLocaleString('en-US')}
-                      <span className="text-[0.6em] ml-2">RPM</span>
-                    </>
-                  )}
-                </>
-              )}
-              {!showRpmText && shouldShowCustomShift && (
-                <span className="font-bold">SHIFT</span>
-              )}
-            </div>         
-          )}
-
+        )}
       </div>
 
       {/* CSS for pulse animation - removed as it's now handled via state */}

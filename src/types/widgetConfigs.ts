@@ -71,6 +71,23 @@ export interface SessionBarConfig {
 }
 
 // ===========================
+// Styling option types
+// ===========================
+
+export interface StylingOptions {
+  badge?: boolean;
+  statusBadges?: boolean;
+  driverPosition?: { background?: boolean };
+  driverNumber?: { background?: boolean; border?: boolean };
+}
+
+export interface ClassHeaderStyle {
+  className?: { colorBackground?: boolean };
+  classInfo?: { colorBackground?: boolean };
+  classDivider?: { bottomBorder?: boolean };
+}
+
+// ===========================
 // Badge format types
 // ===========================
 
@@ -136,8 +153,11 @@ export interface StandingsConfig {
   driverName: DriverNameConfig;
   teamName: { enabled: boolean };
   pitStatus: PitStatusConfig;
+  driverTag: { enabled: boolean; widthPx?: number };
   displayOrder: string[];
   sessionVisibility: SessionVisibilitySettings;
+  stylingOptions?: StylingOptions;
+  classHeaderStyle?: ClassHeaderStyle;
 }
 
 export interface RelativeConfig {
@@ -161,9 +181,11 @@ export interface RelativeConfig {
   driverName: DriverNameConfig;
   teamName: { enabled: boolean };
   pitStatus: PitStatusConfig;
+  driverTag: { enabled: boolean; widthPx?: number };
   displayOrder: string[];
   useLivePosition?: boolean;
   sessionVisibility: SessionVisibilitySettings;
+  stylingOptions?: StylingOptions;
 }
 
 export interface WeatherConfig {
@@ -181,11 +203,15 @@ export interface WeatherConfig {
 }
 
 export interface TrackMapConfig {
-  enableTurnNames: boolean;
+  turnLabels: { 
+    enabled: boolean, 
+    labelType: 'names' | 'numbers' | 'both', 
+    highContrast: boolean,
+    labelFontSize: number,
+  };
   showCarNumbers: boolean;
   displayMode?: 'carNumber' | 'sessionPosition' | 'livePosition';
   invertTrackColors: boolean;
-  highContrastTurns: boolean;
   driverCircleSize: number;
   playerCircleSize: number;
   trackmapFontSize: number;
@@ -194,6 +220,7 @@ export interface TrackMapConfig {
   useHighlightColor: boolean;
   showOnlyWhenOnTrack: boolean;
   sessionVisibility: SessionVisibilitySettings;
+  styling?: { isMinimalTrack?: boolean; isMinimalCar?: boolean };
 }
 
 export interface FlatTrackMapConfig {
@@ -444,21 +471,21 @@ export interface TwitchChatConfig {
 }
 
 export interface LapTimeLogConfig {
-  showCurrentLap: boolean,
-  showPredictedLap: boolean,
-  showLastLap: boolean,
-  showBestLap: boolean,
+  showCurrentLap: boolean;
+  showPredictedLap: boolean;
+  showLastLap: boolean;
+  showBestLap: boolean;
   delta: {
-    enabled: boolean,
-    method: 'lastlap' | 'bestlap',
-  },
+    enabled: boolean;
+    method: 'lastlap' | 'bestlap';
+  };
   history: {
-    enabled: boolean,
-    count: number,
-  },
+    enabled: boolean;
+    count: number;
+  };
   scale: number;
   alignment: 'top' | 'bottom';
-  reverse: boolean,
+  reverse: boolean;
   background: { opacity: number };
   foreground: { opacity: number };
   sessionVisibility: SessionVisibilitySettings;
@@ -513,6 +540,7 @@ export type SettingsTabType =
   | 'display'
   | 'options'
   | 'visibility'
+  | 'styling'
   | 'track'
   | 'drivers'
   | 'layout'

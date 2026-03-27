@@ -995,8 +995,48 @@ export const CompactMode: Story = {
         },
       },
       {
-        compactMode: true,
+        compactMode: 'compact',
       }
     ),
+  ],
+};
+
+export const CompactUltraMode: Story = {
+  decorators: [
+    TelemetryDecoratorWithConfigAndGeneralSettings(
+      undefined,
+      {
+        relative: {
+          headerBar: { enabled: true },
+          footerBar: { enabled: true },
+          sessionVisibility: {
+            race: true,
+            loneQualify: true,
+            openQualify: true,
+            practice: true,
+            offlineTesting: true,
+          },
+        },
+      },
+      {
+        compactMode: 'ultra',
+      }
+    ),
+  ],
+};
+
+export const MinimalStyling: Story = {
+  decorators: [
+    TelemetryDecoratorWithConfig(undefined, {
+      relative: {
+        badge: { enabled: true, badgeFormat: 'license-color-rating-bw' },
+        stylingOptions: {
+          badge: true,
+          statusBadges: true,
+          driverPosition: { background: false },
+          driverNumber: { background: false, border: true },
+        },
+      },
+    }),
   ],
 };
