@@ -397,10 +397,14 @@ export const MinimalStyling: Story = {
   args: {
     trackId: 1,
     drivers: sampleData,
-    enableTurnNames: false,
+    turnLabels: {
+      enabled: false,
+      labelType: 'both',
+      highContrast: true,
+      labelFontSize: 100,
+    },
     showCarNumbers: true,
     invertTrackColors: false,
-    highContrastTurns: false,
     driverCircleSize: 40,
     playerCircleSize: 40,
     trackmapFontSize: 100,
@@ -430,6 +434,32 @@ export const SingleClass: Story = {
     trackLineWidth: 20,
     trackOutlineWidth: 40,
     highlightColor: undefined,
+  },
+};
+
+export const TurnNamesOnly: Story = {
+  args: {
+    trackId: 1,
+    drivers: sampleData.filter(({ driver }) => driver.CarClassID === 2),
+    turnLabels: {
+      enabled: true,
+      labelType: 'names',
+      highContrast: true,
+      labelFontSize: 100,
+    },
+  },
+};
+
+export const TurnNumbersOnly: Story = {
+  args: {
+    trackId: 1,
+    drivers: sampleData.filter(({ driver }) => driver.CarClassID === 2),
+    turnLabels: {
+      enabled: true,
+      labelType: 'numbers',
+      highContrast: true,
+      labelFontSize: 100,
+    },   
   },
 };
 
