@@ -203,11 +203,15 @@ export interface WeatherConfig {
 }
 
 export interface TrackMapConfig {
-  enableTurnNames: boolean;
+  turnLabels: { 
+    enabled: boolean, 
+    labelType: 'names' | 'numbers' | 'both', 
+    highContrast: boolean,
+    labelFontSize: number,
+  };
   showCarNumbers: boolean;
   displayMode?: 'carNumber' | 'sessionPosition' | 'livePosition';
   invertTrackColors: boolean;
-  highContrastTurns: boolean;
   driverCircleSize: number;
   playerCircleSize: number;
   trackmapFontSize: number;

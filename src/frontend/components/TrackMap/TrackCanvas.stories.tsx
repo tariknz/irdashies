@@ -8,10 +8,14 @@ export default {
   component: TrackCanvas,
   title: 'widgets/TrackMap/components/TrackCanvas',
   args: {
-    enableTurnNames: false,
+    turnLabels: {
+      enabled: false,
+      labelType: 'both',
+      highContrast: false,
+      labelFontSize: 100,
+    },
     showCarNumbers: true,
     invertTrackColors: false,
-    highContrastTurns: false,
     driverCircleSize: 40,
     playerCircleSize: 40,
     trackmapFontSize: 100,
@@ -24,16 +28,10 @@ export default {
     trackId: {
       control: { type: 'number' },
     },
-    enableTurnNames: {
-      control: { type: 'boolean' },
-    },
     showCarNumbers: {
       control: { type: 'boolean' },
     },
     invertTrackColors: {
-      control: { type: 'boolean' },
-    },
-    highContrastTurns: {
       control: { type: 'boolean' },
     },
     driverCircleSize: {
@@ -357,10 +355,14 @@ export const Primary: Story = {
   args: {
     trackId: 1,
     drivers: sampleData,
-    enableTurnNames: true,
+    turnLabels: {
+      enabled: true,
+      labelType: 'both',
+      highContrast: false,
+      labelFontSize: 100,
+    },
     showCarNumbers: true,
     invertTrackColors: false,
-    highContrastTurns: false,
     driverCircleSize: 40,
     playerCircleSize: 40,
     trackmapFontSize: 100,
@@ -374,10 +376,14 @@ export const InvertedTrackColors: Story = {
   args: {
     trackId: 1,
     drivers: sampleData,
-    enableTurnNames: true,
+    turnLabels: {
+      enabled: true,
+      labelType: 'both',
+      highContrast: true,
+      labelFontSize: 100,
+    },
     showCarNumbers: true,
     invertTrackColors: true,
-    highContrastTurns: true,
     driverCircleSize: 40,
     playerCircleSize: 40,
     trackmapFontSize: 100,
@@ -410,10 +416,14 @@ export const SingleClass: Story = {
   args: {
     trackId: 1,
     drivers: sampleData.filter(({ driver }) => driver.CarClassID === 2),
-    enableTurnNames: true,
+    turnLabels: {
+      enabled: true,
+      labelType: 'both',
+      highContrast: false,
+      labelFontSize: 100,
+    },
     showCarNumbers: true,
     invertTrackColors: false,
-    highContrastTurns: false,
     driverCircleSize: 40,
     playerCircleSize: 40,
     trackmapFontSize: 100,
@@ -461,10 +471,9 @@ export const SingleDriver: Story = {
       <TrackCanvas
         trackId={args.trackId}
         drivers={drivers}
-        enableTurnNames={args.enableTurnNames}
+        turnLabels={args.turnLabels}
         showCarNumbers={args.showCarNumbers ?? true}
         invertTrackColors={args.invertTrackColors ?? false}
-        highContrastTurns={args.highContrastTurns ?? false}
         driverCircleSize={args.driverCircleSize ?? 40}
         playerCircleSize={args.playerCircleSize ?? 40}
         trackmapFontSize={args.trackmapFontSize ?? 100}
@@ -503,10 +512,9 @@ export const CirclingAround: Story = {
       <TrackCanvas
         trackId={args.trackId}
         drivers={drivers}
-        enableTurnNames={args.enableTurnNames}
+        turnLabels={args.turnLabels}
         showCarNumbers={args.showCarNumbers ?? true}
         invertTrackColors={args.invertTrackColors ?? false}
-        highContrastTurns={args.highContrastTurns ?? false}
         driverCircleSize={args.driverCircleSize ?? 40}
         playerCircleSize={args.playerCircleSize ?? 40}
         trackmapFontSize={args.trackmapFontSize ?? 100}
@@ -556,10 +564,9 @@ export const CirclingAroundSingleDriver: Story = {
       <TrackCanvas
         trackId={args.trackId}
         drivers={drivers}
-        enableTurnNames={args.enableTurnNames}
+        turnLabels={args.turnLabels}
         showCarNumbers={args.showCarNumbers ?? true}
         invertTrackColors={args.invertTrackColors ?? false}
-        highContrastTurns={args.highContrastTurns ?? false}
         driverCircleSize={args.driverCircleSize ?? 40}
         playerCircleSize={args.playerCircleSize ?? 40}
         trackmapFontSize={args.trackmapFontSize ?? 100}
@@ -613,10 +620,9 @@ export const AllTracksGrid: Story = {
                 <TrackCanvas
                   trackId={trackId}
                   drivers={sampleData}
-                  enableTurnNames={args.enableTurnNames}
+                  turnLabels={args.turnLabels}
                   showCarNumbers={args.showCarNumbers ?? true}
                   invertTrackColors={args.invertTrackColors ?? false}
-                  highContrastTurns={args.highContrastTurns ?? false}
                   driverCircleSize={args.driverCircleSize ?? 40}
                   playerCircleSize={args.playerCircleSize ?? 40}
                   trackmapFontSize={args.trackmapFontSize ?? 100}
@@ -665,10 +671,9 @@ export const BrokenTracksGrid: Story = {
                 <TrackCanvas
                   trackId={brokenTrack.id}
                   drivers={sampleData}
-                  enableTurnNames={args.enableTurnNames}
+                  turnLabels={args.turnLabels}
                   showCarNumbers={args.showCarNumbers ?? true}
                   invertTrackColors={args.invertTrackColors ?? false}
-                  highContrastTurns={args.highContrastTurns ?? false}
                   driverCircleSize={args.driverCircleSize ?? 40}
                   playerCircleSize={args.playerCircleSize ?? 40}
                   trackmapFontSize={args.trackmapFontSize ?? 100}
