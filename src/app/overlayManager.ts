@@ -28,13 +28,18 @@ function getIconPath(): string {
 export class OverlayManager {
   private displayWindows = new Map<number, BrowserWindow>();
   private displayBoundsInfo = new Map<number, ContainerBoundsInfo>();
+  private displayFullBounds = new Map<number, Electron.Rectangle>();
   private currentSettingsWindow: BrowserWindow | undefined;
+  private currentDashboard: DashboardLayout | undefined;
   private isLocked = true;
   private isQuitting = false;
   private skipTaskbar = true;
   private overlayAlwaysOnTop = true;
   private hasSingleInstanceLock = false;
   private onWindowReadyCallbacks = new Set<(windowId: string) => void>();
+
+  /** Padding around the widget bounding box when shrink-wrapping */
+  private static readonly SHRINK_WRAP_PADDING = 20;
 
   public getVersion(): string {
     const version = app.getVersion();
@@ -59,6 +64,7 @@ export class OverlayManager {
    * Create one overlay window per display
    */
   public createOverlays(dashboardLayout: DashboardLayout): void {
+    this.currentDashboard = dashboardLayout;
     const { generalSettings } = dashboardLayout;
     this.skipTaskbar = generalSettings?.skipTaskbar ?? true;
     this.overlayAlwaysOnTop = generalSettings?.overlayAlwaysOnTop ?? true;
@@ -130,6 +136,9 @@ export class OverlayManager {
       height: display.bounds.height,
     };
 
+    // Store full display bounds for shrink-wrap / expand toggling
+    this.displayFullBounds.set(display.id, { ...expectedBounds });
+
     console.log(
       `[OverlayManager] Creating window for display ${display.id}${isPrimary ? ' (PRIMARY)' : ''}: x=${expectedBounds.x}, y=${expectedBounds.y}, ${expectedBounds.width}x${expectedBounds.height}`
     );
@@ -200,6 +209,11 @@ export class OverlayManager {
       const boundsInfo = this.displayBoundsInfo.get(display.id);
       browserWindow.webContents.send('containerBoundsInfo', boundsInfo);
       this.onWindowReadyCallbacks.forEach((cb) => cb(`display-${display.id}`));
+
+      // Apply shrink-wrap after initial setup when not in edit mode
+      if (this.isLocked) {
+        this.updateOverlayBounds();
+      }
     };
 
     browserWindow.once('ready-to-show', () => {
@@ -221,6 +235,7 @@ export class OverlayManager {
         offset,
         displayId: display.id,
         isPrimary,
+        displayBounds: { ...expectedBounds },
       };
 
       this.displayBoundsInfo.set(display.id, boundsInfo);
@@ -272,10 +287,126 @@ export class OverlayManager {
   }
 
   /**
+   * Compute the bounding box of all enabled widgets assigned to a given display.
+   * Returns null if there are no widgets for the display.
+   */
+  private computeWidgetBounds(
+    displayId: number,
+    dashboard: DashboardLayout,
+    displayBounds: Electron.Rectangle
+  ): Electron.Rectangle | null {
+    const primaryDisplay = screen.getPrimaryDisplay();
+    const isPrimary = displayId === primaryDisplay.id;
+
+    const enabledWidgets = dashboard.widgets.filter((w) => w.enabled);
+    const widgetsForDisplay = enabledWidgets.filter((widget) => {
+      const centerX = widget.layout.x + widget.layout.width / 2;
+      const centerY = widget.layout.y + widget.layout.height / 2;
+      const inThisDisplay =
+        centerX >= displayBounds.x &&
+        centerX < displayBounds.x + displayBounds.width &&
+        centerY >= displayBounds.y &&
+        centerY < displayBounds.y + displayBounds.height;
+      return inThisDisplay || (!inThisDisplay && isPrimary);
+    });
+
+    if (widgetsForDisplay.length === 0) return null;
+
+    const pad = OverlayManager.SHRINK_WRAP_PADDING;
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+
+    for (const widget of widgetsForDisplay) {
+      minX = Math.min(minX, widget.layout.x);
+      minY = Math.min(minY, widget.layout.y);
+      maxX = Math.max(maxX, widget.layout.x + widget.layout.width);
+      maxY = Math.max(maxY, widget.layout.y + widget.layout.height);
+    }
+
+    // Clamp to display bounds
+    const x = Math.max(displayBounds.x, Math.floor(minX - pad));
+    const y = Math.max(displayBounds.y, Math.floor(minY - pad));
+    const right = Math.min(
+      displayBounds.x + displayBounds.width,
+      Math.ceil(maxX + pad)
+    );
+    const bottom = Math.min(
+      displayBounds.y + displayBounds.height,
+      Math.ceil(maxY + pad)
+    );
+
+    return { x, y, width: right - x, height: bottom - y };
+  }
+
+  /**
+   * Shrink-wrap or expand overlay windows based on edit mode.
+   * When locked (not editing), windows shrink to the bounding box of their widgets.
+   * When unlocked (editing), windows expand to full display bounds.
+   */
+  public updateOverlayBounds(dashboard?: DashboardLayout): void {
+    if (dashboard) {
+      this.currentDashboard = dashboard;
+    }
+    if (!this.currentDashboard) return;
+
+    for (const [displayId, win] of this.displayWindows.entries()) {
+      if (win.isDestroyed()) continue;
+
+      const fullBounds = this.displayFullBounds.get(displayId);
+      if (!fullBounds) continue;
+
+      let targetBounds: Electron.Rectangle;
+
+      if (!this.isLocked) {
+        // Edit mode: expand to full display
+        targetBounds = fullBounds;
+      } else {
+        // Locked: shrink-wrap to widget bounding box
+        const widgetBounds = this.computeWidgetBounds(
+          displayId,
+          this.currentDashboard,
+          fullBounds
+        );
+        targetBounds = widgetBounds ?? fullBounds;
+      }
+
+      const currentBounds = win.getBounds();
+      if (
+        currentBounds.x === targetBounds.x &&
+        currentBounds.y === targetBounds.y &&
+        currentBounds.width === targetBounds.width &&
+        currentBounds.height === targetBounds.height
+      ) {
+        continue;
+      }
+
+      win.setBounds(targetBounds);
+
+      const actualBounds = win.getBounds();
+      const boundsInfo = this.displayBoundsInfo.get(displayId);
+      if (boundsInfo) {
+        boundsInfo.expected = targetBounds;
+        boundsInfo.actual = actualBounds;
+        boundsInfo.offset = {
+          x: actualBounds.x - targetBounds.x,
+          y: actualBounds.y - targetBounds.y,
+        };
+        win.webContents.send('containerBoundsInfo', boundsInfo);
+      }
+    }
+  }
+
+  /**
    * Toggle edit mode - enables/disables mouse interaction with overlays
    */
   public toggleLockOverlays(): boolean {
     this.isLocked = !this.isLocked;
+
+    if (!this.isLocked) {
+      this.updateOverlayBounds();
+    }
 
     for (const win of this.displayWindows.values()) {
       if (win.isDestroyed()) continue;
@@ -284,6 +415,10 @@ export class OverlayManager {
       if (!this.isLocked) {
         win.focus();
       }
+    }
+
+    if (this.isLocked) {
+      this.updateOverlayBounds();
     }
 
     return this.isLocked;
@@ -356,6 +491,7 @@ export class OverlayManager {
     }
     this.displayWindows.clear();
     this.displayBoundsInfo.clear();
+    this.displayFullBounds.clear();
   }
 
   public markQuitting(): void {
@@ -386,6 +522,7 @@ export class OverlayManager {
    * since it never destroys existing windows.
    */
   public ensureDisplayWindows(dashboardLayout: DashboardLayout): void {
+    this.currentDashboard = dashboardLayout;
     const allDisplays = screen.getAllDisplays();
     const primaryDisplay = screen.getPrimaryDisplay();
 
@@ -415,6 +552,11 @@ export class OverlayManager {
       if (existing && !existing.isDestroyed()) continue;
       const isPrimary = display.id === primaryDisplay.id;
       this.createWindowForDisplay(display, isPrimary);
+    }
+
+    // Shrink-wrap windows when not in edit mode
+    if (this.isLocked) {
+      this.updateOverlayBounds();
     }
   }
 
