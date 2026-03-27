@@ -457,6 +457,7 @@ export interface PitlaneHelperConfig {
   showProgressBar?: boolean;
   showSpeedBar?: boolean;
   showSpeedSummary: boolean;
+  showSpeedDelta: boolean;
   speedLimitStyle?: 'none' | 'text' | 'european' | 'american';
   showPitExitInputs?: boolean;
   pitExitInputs?: { throttle: boolean; clutch: boolean };
