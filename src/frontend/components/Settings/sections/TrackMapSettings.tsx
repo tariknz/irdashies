@@ -123,23 +123,69 @@ export const TrackMapSettings = () => {
                 />
 
                 <SettingToggleRow
-                  title="Enable Turn Names"
+                  title="Enable Turn Labels"
                   description="Show turn numbers and names on the track map"
-                  enabled={settings.config.enableTurnNames ?? false}
+                  enabled={settings.config.turnLabels?.enabled ?? false}
                   onToggle={(newValue) =>
-                    handleConfigChange({ enableTurnNames: newValue })
+                    handleConfigChange({
+                      turnLabels: {
+                        ...(settings.config.turnLabels ?? {}),
+                        enabled: newValue,
+                      },
+                    })
                   }
                 />
 
-                {settings.config.enableTurnNames && (
-                  <SettingToggleRow
-                    title="High Contrast Turn Names"
-                    description="Use black background for turn numbers and turn names for better legibility"
-                    enabled={settings.config.highContrastTurns ?? false}
-                    onToggle={(newValue) =>
-                      handleConfigChange({ highContrastTurns: newValue })
-                    }
-                  />
+                {settings.config.turnLabels?.enabled && (
+                  <SettingsSection>
+                    <SettingButtonGroupRow<
+                      'numbers' | 'names' | 'both'
+                    >
+                      title="Display Mode"
+                      value={settings.config.turnLabels.labelType ?? 'both'}
+                      options={[
+                        { label: 'Numbers', value: 'numbers' },
+                        { label: 'Names', value: 'names' },
+                        { label: 'Both', value: 'both' },
+                      ]}
+                      onChange={(v) =>
+                        handleConfigChange({
+                          turnLabels: { ...settings.config.turnLabels, labelType: v },
+                        })
+                      }
+                    />
+
+                    <SettingToggleRow
+                      title="High Contrast Labels"
+                      description="Use black background for turn numbers and turn names for better legibility"
+                      enabled={settings.config.turnLabels.highContrast ?? true}
+                      onToggle={(newValue) =>
+                        handleConfigChange({
+                          turnLabels: {
+                            ...settings.config.turnLabels,
+                            highContrast: newValue,
+                          },
+                        })
+                      }
+                    />
+
+                    <SettingSliderRow
+                      title="Relative Label Size"
+                      description="Relative font size of the turn labels"
+                      value={settings.config.turnLabels.labelFontSize ?? 100}
+                      units="%"
+                      min={50}
+                      max={150}
+                      step={1}
+                      onChange={(v) => handleConfigChange({
+                          turnLabels: {
+                            ...settings.config.turnLabels,
+                            labelFontSize: v,
+                          },
+                        })
+                      }
+                    />
+                  </SettingsSection>
                 )}
               </SettingsSection>
             )}

@@ -1,5 +1,5 @@
 import { getColor } from '@irdashies/utils/colors';
-import { TrackDrawing, TrackDriver } from './TrackCanvas';
+import { TrackDrawing, TrackDriver, TurnLabels } from './TrackCanvas';
 
 export const setupCanvasContext = (
   ctx: CanvasRenderingContext2D,
@@ -78,46 +78,65 @@ export const drawStartFinishLine = (
 export const drawTurnNames = (
   ctx: CanvasRenderingContext2D,
   turns: TrackDrawing['turns'],
-  enableTurnNames: boolean | undefined,
-  highContrastTurns: boolean,
-  trackmapFontSize: number
+  turnLabels: TurnLabels,
 ) => {
-  if (!enableTurnNames || !turns) return;
+  if (!turnLabels.enabled || !turns) return;
+
+  const drawnPositions: { x: number; y: number }[] = [];
 
   turns.forEach((turn) => {
-    if (!turn.content || !turn.x || !turn.y) return;
-    const fontSize = 2 * (trackmapFontSize / 100);
+    const { x, y, content } = turn;
+    if (!content || x === undefined || y === undefined) return;
+
+    // type of display
+    const isNumeric = /^\d+/.test(content.trim());
+    if (turnLabels.labelType === 'numbers' && !isNumeric) return;
+    if (turnLabels.labelType === 'names' && isNumeric) return;
+
+    // proximity check to prevent overlap
+    let yOffset = 0;
+    if (!isNumeric) {   
+      const neighbour = drawnPositions.find(pos => {
+        const dx = pos.x - x;
+        const dy = pos.y - y;
+        return Math.sqrt(dx * dx + dy * dy) < 30;
+      });
+      if (neighbour) {       
+        yOffset = (neighbour.y <= y ? 15 : -15) * (turnLabels.labelFontSize / 100);
+      }
+    }
+    
+    // update current coordinates with the offset
+    const renderX = x;
+    const renderY = y + yOffset;       
+    drawnPositions.push({ x: renderX, y: renderY });
+
+    // add the label
+    const fontSize = 2 * (turnLabels.labelFontSize / 100);
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.font = `${fontSize}rem sans-serif`;
-    // measure text
-    const m = ctx.measureText(turn.content);
-    if (highContrastTurns) {
+    const m = ctx.measureText(content);
+
+    if (turnLabels.highContrast) {
       const padding = 20;
       const textWidth = m.width;
-      const textHeight = m.actualBoundingBoxAscent + m.actualBoundingBoxDescent;
-      const rectX = turn.x - textWidth / 2 - padding / 2;
-      const rectY = turn.y - textHeight / 2 - padding / 2;
+      const textHeight = m.actualBoundingBoxAscent + m.actualBoundingBoxDescent;      
       const rectW = textWidth + padding;
       const rectH = textHeight + padding;
+      const rectX = renderX - rectW / 2;
+      const rectY = renderY - rectH / 2;
       const radius = Math.min(20, rectW / 2, rectH / 2);
-      // rounded rect
       ctx.beginPath();
-      ctx.moveTo(rectX + radius, rectY);
-      ctx.arcTo(rectX + rectW, rectY, rectX + rectW, rectY + rectH, radius);
-      ctx.arcTo(rectX + rectW, rectY + rectH, rectX, rectY + rectH, radius);
-      ctx.arcTo(rectX, rectY + rectH, rectX, rectY, radius);
-      ctx.arcTo(rectX, rectY, rectX + rectW, rectY, radius);
-      ctx.closePath();
-      // fill rect
+      ctx.roundRect(rectX, rectY, rectW, rectH, radius);
       ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
       ctx.fill();
     }
+
     ctx.fillStyle = 'white';
     // visual offset
-    const visualOffset =
-      (m.actualBoundingBoxAscent - m.actualBoundingBoxDescent) / 2;
-    ctx.fillText(turn.content, turn.x, turn.y + visualOffset);
+    const visualOffset = (m.actualBoundingBoxAscent - m.actualBoundingBoxDescent) / 2;
+    ctx.fillText(content, renderX, renderY + visualOffset);
   });
 };
 

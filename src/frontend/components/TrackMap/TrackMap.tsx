@@ -29,11 +29,15 @@ export const TrackMap = () => {
         trackId={trackId}
         drivers={driversTrackData}
         driverIdentities={identities}
-        enableTurnNames={settings?.enableTurnNames ?? false}
+        turnLabels={{
+          enabled: settings?.turnLabels?.enabled ?? false,
+          labelType: settings?.turnLabels?.labelType ?? 'both',
+          highContrast: settings?.turnLabels?.highContrast ?? true,
+          labelFontSize: settings?.turnLabels?.labelFontSize ?? 100,
+        }}
         showCarNumbers={settings?.showCarNumbers ?? true}
         displayMode={settings?.displayMode ?? 'carNumber'}
         invertTrackColors={settings?.invertTrackColors ?? false}
-        highContrastTurns={settings?.highContrastTurns ?? false}
         driverCircleSize={settings?.driverCircleSize ?? 40}
         playerCircleSize={settings?.playerCircleSize ?? 40}
         trackmapFontSize={settings?.trackmapFontSize ?? 100}

@@ -26,11 +26,15 @@ export interface TrackProps {
   trackId: number;
   drivers: TrackDriver[];
   driverIdentities?: DriverIdentity[];
-  enableTurnNames?: boolean;
+  turnLabels?: {
+    enabled: boolean;
+    labelType: 'names' | 'numbers' | 'both';
+    highContrast: boolean;
+    labelFontSize: number;
+  };
   showCarNumbers?: boolean;
   displayMode?: 'carNumber' | 'sessionPosition' | 'livePosition';
   invertTrackColors?: boolean;
-  highContrastTurns?: boolean;
   driverCircleSize?: number;
   playerCircleSize?: number;
   trackmapFontSize?: number;
@@ -69,6 +73,13 @@ export interface TrackDrawing {
   }[];
 }
 
+export interface TurnLabels {
+  enabled: boolean;
+  labelType: 'names' | 'numbers' | 'both',
+  highContrast: boolean,
+  labelFontSize: number;   
+}
+
 const TRACK_DRAWING_WIDTH = 1920;
 const TRACK_DRAWING_HEIGHT = 1080;
 
@@ -76,11 +87,15 @@ export const TrackCanvas = ({
   trackId,
   drivers,
   driverIdentities,
-  enableTurnNames,
+  turnLabels = {
+    enabled: false,
+    labelType: 'both',
+    highContrast: true,
+    labelFontSize: 100,
+  },
   showCarNumbers = true,
   displayMode = 'carNumber',
   invertTrackColors = false,
-  highContrastTurns = false,
   driverCircleSize = 40,
   playerCircleSize = 40,
   trackmapFontSize = 100,
@@ -338,9 +353,7 @@ export const TrackCanvas = ({
     drawTurnNames(
       cacheCtx,
       trackDrawing.turns,
-      enableTurnNames,
-      highContrastTurns,
-      trackmapFontSize
+      turnLabels,
     );
     cacheCtx.restore();
 
@@ -356,10 +369,9 @@ export const TrackCanvas = ({
   }, [
     path2DObjects,
     trackDrawing?.turns,
+    turnLabels,
     canvasSize,
-    enableTurnNames,
     invertTrackColors,
-    highContrastTurns,
     trackLineWidth,
     trackOutlineWidth,
     trackmapFontSize,
@@ -418,6 +430,7 @@ export const TrackCanvas = ({
     driverCircleSize,
     playerCircleSize,
     trackmapFontSize,
+    turnLabels,
     driverColors,
     isMinimalCar,
     isMinimalTrack,
