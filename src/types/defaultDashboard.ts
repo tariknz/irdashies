@@ -589,10 +589,14 @@ export const defaultDashboard: {
         height: 227,
       },
       config: {
-        enableTurnNames: false,
+        turnLabels: {
+          enabled: false,
+          labelType: 'both',
+          highContrast: true,
+          labelFontSize: 100,
+        },
         showCarNumbers: true,
-        invertTrackColors: false,
-        highContrastTurns: true,
+        invertTrackColors: false,        
         driverCircleSize: 40,
         playerCircleSize: 40,
         trackmapFontSize: 100,

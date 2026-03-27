@@ -7,6 +7,7 @@ vi.mock('./hooks/useDriverProgress');
 vi.mock('./hooks/useTrackMapSettings');
 vi.mock('./hooks/useHighlightColor');
 vi.mock('@irdashies/context', () => ({
+  useDashboard: vi.fn(),
   useSessionVisibility: vi.fn(),
   useTelemetryValue: vi.fn(),
 }));
@@ -18,11 +19,18 @@ import { useTrackId } from './hooks/useTrackId';
 import { useDriverProgress } from './hooks/useDriverProgress';
 import { useTrackMapSettings } from './hooks/useTrackMapSettings';
 import { useHighlightColor } from './hooks/useHighlightColor';
-import { useSessionVisibility, useTelemetryValue } from '@irdashies/context';
+import {
+  useDashboard,
+  useSessionVisibility,
+  useTelemetryValue,
+} from '@irdashies/context';
 
 describe('TrackMap', () => {
   beforeEach(() => {
     vi.resetAllMocks();
+    vi.mocked(useDashboard).mockReturnValue({
+      isDemoMode: false,
+    } as ReturnType<typeof useDashboard>);
     vi.mocked(useTrackId).mockReturnValue(1);
     vi.mocked(useDriverProgress).mockReturnValue({
       drivers: [],
@@ -34,11 +42,15 @@ describe('TrackMap', () => {
 
   it('should render when all conditions are met', () => {
     vi.mocked(useTrackMapSettings).mockReturnValue({
-      enableTurnNames: false,
+      turnLabels: {
+        enabled: false,
+        labelType: 'both',
+        highContrast: true,
+        labelFontSize: 100,
+      },
       showCarNumbers: true,
       displayMode: 'carNumber',
       invertTrackColors: false,
-      highContrastTurns: false,
       driverCircleSize: 40,
       playerCircleSize: 40,
       trackmapFontSize: 100,
@@ -63,11 +75,15 @@ describe('TrackMap', () => {
 
   it('should hide when showOnlyWhenOnTrack is true and player is not on track', () => {
     vi.mocked(useTrackMapSettings).mockReturnValue({
-      enableTurnNames: false,
+      turnLabels: {
+        enabled: false,
+        labelType: 'both',
+        highContrast: true,
+        labelFontSize: 100,
+      },
       showCarNumbers: true,
       displayMode: 'carNumber',
       invertTrackColors: false,
-      highContrastTurns: false,
       driverCircleSize: 40,
       playerCircleSize: 40,
       trackmapFontSize: 100,
@@ -92,11 +108,15 @@ describe('TrackMap', () => {
 
   it('should show when showOnlyWhenOnTrack is true and player is on track', () => {
     vi.mocked(useTrackMapSettings).mockReturnValue({
-      enableTurnNames: false,
+      turnLabels: {
+        enabled: false,
+        labelType: 'both',
+        highContrast: true,
+        labelFontSize: 100,
+      },
       showCarNumbers: true,
       displayMode: 'carNumber',
       invertTrackColors: false,
-      highContrastTurns: false,
       driverCircleSize: 40,
       playerCircleSize: 40,
       trackmapFontSize: 100,
@@ -121,11 +141,15 @@ describe('TrackMap', () => {
 
   it('should hide when session visibility is false', () => {
     vi.mocked(useTrackMapSettings).mockReturnValue({
-      enableTurnNames: false,
+      turnLabels: {
+        enabled: false,
+        labelType: 'both',
+        highContrast: true,
+        labelFontSize: 100,
+      },
       showCarNumbers: true,
       displayMode: 'carNumber',
       invertTrackColors: false,
-      highContrastTurns: false,
       driverCircleSize: 40,
       playerCircleSize: 40,
       trackmapFontSize: 100,
@@ -151,11 +175,15 @@ describe('TrackMap', () => {
 
   it('should hide when trackId is not available', () => {
     vi.mocked(useTrackMapSettings).mockReturnValue({
-      enableTurnNames: false,
+      turnLabels: {
+        enabled: false,
+        labelType: 'both',
+        highContrast: true,
+        labelFontSize: 100,
+      },
       showCarNumbers: true,
       displayMode: 'carNumber',
       invertTrackColors: false,
-      highContrastTurns: false,
       driverCircleSize: 40,
       playerCircleSize: 40,
       trackmapFontSize: 100,
@@ -181,11 +209,15 @@ describe('TrackMap', () => {
 
   it('should pass displayMode setting to TrackCanvas', () => {
     vi.mocked(useTrackMapSettings).mockReturnValue({
-      enableTurnNames: false,
+      turnLabels: {
+        enabled: false,
+        labelType: 'both',
+        highContrast: true,
+        labelFontSize: 100,
+      },
       showCarNumbers: true,
       displayMode: 'sessionPosition',
       invertTrackColors: false,
-      highContrastTurns: false,
       driverCircleSize: 40,
       playerCircleSize: 40,
       trackmapFontSize: 100,
