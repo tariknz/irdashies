@@ -607,7 +607,7 @@ export const defaultDashboard: {
           practice: true,
           offlineTesting: true,
         },
-        styling: { isMinimalTrack: true, isMinimalCar: true },
+        styling: { isMinimalTrack: false, isMinimalCar: false },
       },
     },
     {

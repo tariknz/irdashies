@@ -223,7 +223,7 @@ export const TrackMapSettings = () => {
               <SettingsSection title="Minimal Styling">
                 <SettingToggleRow
                   title="Minimal Track"
-                  description="Simplify the track rendering by removing the outline and start/finish line marker"
+                  description="Remove the drop shadow from the track"
                   enabled={settings.config.styling?.isMinimalTrack ?? true}
                   onToggle={(newValue) =>
                     handleConfigChange({
@@ -236,7 +236,7 @@ export const TrackMapSettings = () => {
                 />
                 <SettingToggleRow
                   title="Minimal Car Markers"
-                  description="Show other drivers as plain semi-transparent dots instead of colored class circles"
+                  description="Remove the drop shadow from the car markers"
                   enabled={settings.config.styling?.isMinimalCar ?? true}
                   onToggle={(newValue) =>
                     handleConfigChange({
