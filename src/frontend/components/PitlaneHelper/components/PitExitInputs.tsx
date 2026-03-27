@@ -2,8 +2,8 @@ import { memo } from 'react';
 import { useTelemetryValue } from '@irdashies/context';
 
 export interface PitExitInputsProps {
-  showThrottle: boolean;
-  showClutch: boolean;
+  showThrottle: boolean | undefined;
+  showClutch: boolean | undefined;
 }
 
 interface InputBarColumnProps {
