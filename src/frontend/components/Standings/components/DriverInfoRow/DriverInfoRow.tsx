@@ -78,6 +78,7 @@ interface DriverRowInfoProps {
   hideCarManufacturer?: boolean;
   resolvedTag?: ResolvedDriverTag;
   hasAnyDriverTag?: boolean;
+  compactMode?: string;
 }
 
 // Helper function to provide dummy data for hidden rows
@@ -192,6 +193,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
     hideCarManufacturer,
     resolvedTag,
     hasAnyDriverTag,
+    compactMode,
   } = displayProps;
   const pitStopDurations = usePitStopDuration();
   const pitStopDuration =
@@ -240,6 +242,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
             isPlayer={isPlayer}
             offTrack={offTrack}
             tailwindStyles={tailwindStyles}
+            compactMode={compactMode}
           />
         ),
       },
@@ -253,6 +256,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
             key="carNumber"
             carNumber={carNumber}
             tailwindStyles={tailwindStyles}
+            compactMode={compactMode}
           />
         ),
       },
@@ -299,7 +303,13 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
         shouldRender:
           (displayOrder ? displayOrder.includes('countryFlags') : true) &&
           (config?.countryFlags?.enabled ?? true),
-        component: <CountryFlagsCell key="countryFlags" flairId={flairId} />,
+        component: (
+          <CountryFlagsCell
+            key="countryFlags"
+            flairId={flairId}
+            compactMode={compactMode}
+          />
+        ),
       },
       {
         id: 'driverName',
@@ -322,6 +332,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
             label={resolvedTag?.label}
             nameDisplay={tagSettings?.display?.nameDisplay}
             alternateFrequency={tagSettings?.display?.alternateFrequency}
+            compactMode={compactMode}
           />
         ),
       },
@@ -331,7 +342,13 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
           teamName !== undefined &&
           (displayOrder ? displayOrder.includes('teamName') : false) &&
           (config?.teamName?.enabled ?? false),
-        component: <TeamNameCell key="teamName" teamName={teamName} />,
+        component: (
+          <TeamNameCell
+            key="teamName"
+            teamName={teamName}
+            compactMode={compactMode}
+          />
+        ),
       },
       {
         id: 'pitStatus',
@@ -353,6 +370,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
             showPitTime={config?.pitStatus?.showPitTime ?? false}
             pitLapDisplayMode={config?.pitStatus?.pitLapDisplayMode}
             pitExitAfterSF={pitExitAfterSF}
+            compactMode={compactMode}
           />
         ),
       },
@@ -362,7 +380,13 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
           (displayOrder ? displayOrder.includes('carManufacturer') : true) &&
           (config?.carManufacturer?.enabled ?? true) &&
           !hideCarManufacturer,
-        component: <CarManufacturerCell key="carManufacturer" carId={carId} />,
+        component: (
+          <CarManufacturerCell
+            key="carManufacturer"
+            carId={carId}
+            compactMode={compactMode}
+          />
+        ),
       },
       {
         id: 'badge',
@@ -375,6 +399,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
             license={license}
             rating={rating}
             badgeFormat={config?.badge?.badgeFormat}
+            compactMode={compactMode}
           />
         ),
       },
@@ -401,6 +426,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
           <PositionChangeCell
             key="positionChange"
             positionChange={positionChange}
+            compactMode={compactMode}
           />
         ),
       },
@@ -415,6 +441,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
             key="delta"
             delta={delta}
             decimalPlaces={deltaDecimalPlaces}
+            compactMode={compactMode}
           />
         ),
       },
@@ -433,6 +460,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
                 ? (config.gap.decimalPlaces ?? 1)
                 : deltaDecimalPlaces
             }
+            compactMode={compactMode}
           />
         ),
       },
@@ -451,6 +479,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
                 ? (config.interval.decimalPlaces ?? 1)
                 : deltaDecimalPlaces
             }
+            compactMode={compactMode}
           />
         ),
       },
@@ -464,6 +493,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
             key="fastestTime"
             fastestTimeString={fastestTimeString}
             hasFastestTime={hasFastestTime}
+            compactMode={compactMode}
           />
         ),
       },
@@ -477,6 +507,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
             key="lastTime"
             lastTimeString={lastTimeString}
             lastTimeState={lastTimeState}
+            compactMode={compactMode}
           />
         ),
       },
@@ -490,6 +521,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
             key="compound"
             tireCompound={tireCompound}
             carId={carId}
+            compactMode={compactMode}
           />
         ),
       },
@@ -506,6 +538,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
             lapTimeDeltas={lapTimeDeltas}
             emptyLapDeltaPlaceholders={emptyLapDeltaPlaceholders}
             isPlayer={isPlayer}
+            compactMode={compactMode}
           />
         ),
       },
@@ -573,6 +606,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
     resolvedTag,
     hasAnyDriverTag,
     hidden,
+    compactMode,
   ]);
 
   return (

@@ -9,6 +9,7 @@ interface DriverClassHeaderProps {
   highlightColor?: number;
   isMultiClass: boolean;
   colSpan?: number;
+  compactMode?: string;
 }
 
 export const DriverClassHeader = ({
@@ -19,7 +20,10 @@ export const DriverClassHeader = ({
   highlightColor,
   isMultiClass,
   colSpan,
+  compactMode,
 }: DriverClassHeaderProps) => {
+  const styles = getTailwindStyle(classColor, highlightColor, isMultiClass);
+
   if (!className) {
     return (
       <tr>
@@ -34,12 +38,12 @@ export const DriverClassHeader = ({
       <td colSpan={colSpan ?? 4} className="p-0">
         <div className={`[text-shadow:_1px_1px_1px_rgba(0_0_0/0.2)] flex`}>
           <span
-            className={`${getTailwindStyle(classColor, highlightColor, isMultiClass).classHeader} px-2 py-1 font-bold border-l-4`}
+            className={`${styles.classHeader} px-2${compactMode !== 'ultra' ? ' py-1' : ''} font-bold border-l-4`}
           >
             {className}
           </span>
           <span
-            className={`${getTailwindStyle(classColor, highlightColor, isMultiClass).driverIcon} px-2 py-1 flex items-center gap-1`}
+            className={`${styles.driverIcon} px-2${compactMode !== 'ultra' ? ' py-1' : ''} flex items-center gap-1`}
           >
             {sof ? (
               <>

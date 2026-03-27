@@ -23,7 +23,13 @@ export default defineConfig({
   ],
   build: {
     rollupOptions: {
-      external: ['bufferutil', 'utf-8-validate'],
+      external: [
+        'bufferutil',
+        'utf-8-validate',
+        'stream-json',
+        'stream-json/streamers/StreamArray',
+        'stream-chain',
+      ],
     },
   },
   resolve: {

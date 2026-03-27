@@ -42,7 +42,10 @@ export const Relative = () => {
   const isTeamRacing = useWeekendInfoTeamRacing();
 
   // Determine table border spacing based on compact mode
-  const tableBorderSpacing = generalSettings?.compactMode
+  const isCompact =
+    generalSettings?.compactMode === 'compact' ||
+    generalSettings?.compactMode === 'ultra';
+  const tableBorderSpacing = isCompact
     ? 'border-spacing-y-0'
     : 'border-spacing-y-0.5';
 
@@ -96,6 +99,7 @@ export const Relative = () => {
           penalty={false}
           slowdown={false}
           hideCarManufacturer={hideCarManufacturer}
+          compactMode={generalSettings?.compactMode}
         />
       ));
     }
@@ -149,6 +153,7 @@ export const Relative = () => {
             slowdown={false}
             deltaDecimalPlaces={settings?.delta?.precision}
             hideCarManufacturer={hideCarManufacturer}
+            compactMode={generalSettings?.compactMode}
           />
         );
       }
@@ -215,6 +220,7 @@ export const Relative = () => {
           slowdown={result.slowdown}
           deltaDecimalPlaces={settings?.delta?.precision}
           hideCarManufacturer={hideCarManufacturer}
+          compactMode={generalSettings?.compactMode}
         />
       );
     });
@@ -229,6 +235,7 @@ export const Relative = () => {
     isTeamRacing,
     tagMap,
     hasAnyTag,
+    generalSettings?.compactMode,
   ]);
 
   if (!isSessionVisible) return <></>;
@@ -260,7 +267,7 @@ export const Relative = () => {
 
   return (
     <div
-      className={`w-full bg-slate-800/(--bg-opacity) rounded-sm ${!generalSettings?.compactMode ? 'p-2' : ''} overflow-hidden`}
+      className={`w-full bg-slate-800/(--bg-opacity) rounded-sm ${!isCompact ? 'p-2' : ''} overflow-hidden`}
       style={{
         ['--bg-opacity' as string]: `${settings?.background?.opacity ?? 0}%`,
       }}
