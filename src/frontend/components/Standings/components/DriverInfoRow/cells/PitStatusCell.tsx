@@ -20,6 +20,7 @@ interface PitStatusCellProps {
    */
   pitExitAfterSF?: boolean;
   isMinimal?: boolean;
+  compactMode?: string;
 }
 
 export const PitStatusCell = memo(
@@ -37,8 +38,10 @@ export const PitStatusCell = memo(
     pitLapDisplayMode,
     pitExitAfterSF,
     isMinimal,
+    compactMode,
   }: PitStatusCellProps) => {
     const widthClass = showPitTime ? 'w-[7rem]' : 'w-[4.5rem]';
+    const pxClass = compactMode === 'ultra' ? '' : 'px-1';
     const tow =
       carTrackSurface == 1 &&
       prevCarTrackSurface != undefined &&
@@ -63,7 +66,7 @@ export const PitStatusCell = memo(
     return (
       <td
         data-column="pitStatus"
-        className={`${widthClass} px-1 text-center align-middle whitespace-nowrap`}
+        className={`${widthClass} ${pxClass} text-center align-middle whitespace-nowrap`}
       >
         <DriverStatusBadges
           dnf={dnf}

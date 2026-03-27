@@ -55,7 +55,10 @@ export const Standings = () => {
   const isTeamRacing = useWeekendInfoTeamRacing();
 
   // Determine table border spacing based on compact mode
-  const tableBorderSpacing = generalSettings?.compactMode
+  const isCompact =
+    generalSettings?.compactMode === 'compact' ||
+    generalSettings?.compactMode === 'ultra';
+  const tableBorderSpacing = isCompact
     ? 'border-spacing-y-0'
     : 'border-spacing-y-0.5';
 
@@ -68,7 +71,7 @@ export const Standings = () => {
 
   return (
     <div
-      className={`w-full bg-slate-800/(--bg-opacity) rounded-sm ${!generalSettings?.compactMode ? 'p-2' : ''} text-white overflow-hidden`}
+      className={`w-full bg-slate-800/(--bg-opacity) rounded-sm ${!isCompact ? 'p-2' : ''} text-white overflow-hidden`}
       style={{
         ['--bg-opacity' as string]: `${settings?.background?.opacity ?? 0}%`,
       }}
@@ -229,16 +232,16 @@ export const Standings = () => {
                         penalty={result.penalty}
                         slowdown={result.slowdown}
                         hideCarManufacturer={hideCarManufacturer}
+                        compactMode={generalSettings?.compactMode}
                       />
                     </Fragment>
                   );
                 })}
-                {index < standings.length - 1 &&
-                  !generalSettings?.compactMode && (
-                    <tr>
-                      <td colSpan={100} className="h-2"></td>
-                    </tr>
-                  )}
+                {index < standings.length - 1 && !isCompact && (
+                  <tr>
+                    <td colSpan={100} className="h-2"></td>
+                  </tr>
+                )}
               </Fragment>
             ) : null;
           })}

@@ -88,6 +88,7 @@ interface DriverNameCellProps {
   label?: string;
   nameDisplay?: 'both' | 'label' | 'name';
   alternateFrequency?: number;
+  compactMode?: string;
 }
 
 export const DriverNameCell = memo(
@@ -105,6 +106,7 @@ export const DriverNameCell = memo(
     label,
     nameDisplay,
     alternateFrequency,
+    compactMode,
   }: DriverNameCellProps) => {
     const displayName = fullName
       ? formatDriverName(
@@ -150,7 +152,10 @@ export const DriverNameCell = memo(
     }, [shouldAnimate, freq, displayName]);
 
     return (
-      <td data-column="driverName" className="w-full max-w-0 px-1 py-0.5">
+      <td
+        data-column="driverName"
+        className={`w-full max-w-0${compactMode !== 'ultra' ? ' px-1 py-0.5' : ''}`}
+      >
         <div className="flex items-center overflow-hidden">
           <span
             className={`animate-pulse transition-[width] duration-300 ${

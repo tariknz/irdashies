@@ -7,6 +7,7 @@ interface PositionCellProps {
   tailwindStyles: TailwindStyles;
   offTrack: boolean;
   showBackground?: boolean;
+  compactMode?: string;
 }
 
 export const PositionCell = memo(
@@ -16,6 +17,7 @@ export const PositionCell = memo(
     offTrack,
     tailwindStyles,
     showBackground = true,
+    compactMode,
   }: PositionCellProps) => {
     const positionColor = offTrack
       ? 'bg-yellow-400'
@@ -23,11 +25,17 @@ export const PositionCell = memo(
         ? tailwindStyles.classHeader
         : '';
     const textColor = offTrack ? 'text-yellow-900' : 'text-white';
+    const pxClass =
+      compactMode === 'ultra'
+        ? ''
+        : compactMode === 'compact'
+          ? 'px-1'
+          : 'px-2';
 
     return (
       <td
         data-column="position"
-        className={`w-auto text-center px-2 whitespace-nowrap ${positionColor} ${textColor}`}
+        className={`w-auto text-center ${pxClass} whitespace-nowrap ${positionColor} ${textColor}`}
       >
         {position}
       </td>

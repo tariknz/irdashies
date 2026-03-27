@@ -11,7 +11,7 @@ interface DriverClassHeaderProps {
   isMultiClass: boolean;
   colSpan?: number;
   classHeaderStyle?: ClassHeaderStyle;
-  compactMode?: boolean | string;
+  compactMode?: string;
 }
 
 export const DriverClassHeader = ({

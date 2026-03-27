@@ -6,6 +6,7 @@ interface CarNumberCellProps {
   tailwindStyles: TailwindStyles;
   showBackground?: boolean;
   showBorder?: boolean;
+  compactMode?: string;
 }
 
 export const CarNumberCell = memo(
@@ -14,6 +15,7 @@ export const CarNumberCell = memo(
     tailwindStyles,
     showBackground = true,
     showBorder = true,
+    compactMode,
   }: CarNumberCellProps) => {
     const colorClass = showBackground
       ? tailwindStyles.driverIcon
@@ -21,11 +23,12 @@ export const CarNumberCell = memo(
         ? tailwindStyles.borderColor
         : '';
     const borderClass = showBorder ? 'border-l-4' : '';
+    const pxClass = compactMode === 'ultra' ? '' : 'px-1';
 
     return (
       <td
         data-column="carNumber"
-        className={`w-auto ${colorClass} ${borderClass} text-white text-right px-1 whitespace-nowrap`}
+        className={`w-auto ${colorClass} ${borderClass} text-white text-right ${pxClass} whitespace-nowrap`}
       >
         {`#${carNumber}`}
       </td>

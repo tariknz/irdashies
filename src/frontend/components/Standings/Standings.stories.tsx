@@ -20,6 +20,7 @@ import {
 } from '@irdashies/context';
 import { generateMockDataFromPath } from '../../../app/bridge/iracingSdk/mock-data/generateMockData';
 import type { DashboardBridge } from '@irdashies/types';
+import { defaultDashboard } from '@irdashies/types';
 import { useState, Fragment } from 'react';
 import { DriverClassHeader } from './components/DriverClassHeader/DriverClassHeader';
 import { DriverInfoRow } from './components/DriverInfoRow/DriverInfoRow';
@@ -52,9 +53,26 @@ const createMockBridgeWithCompactMode = (): DashboardBridge => ({
   ...mockDashboardBridge,
   dashboardUpdated: (callback) => {
     callback({
-      widgets: [],
+      ...defaultDashboard,
       generalSettings: {
-        compactMode: true,
+        ...defaultDashboard.generalSettings,
+        compactMode: 'compact',
+      },
+    });
+    return () => {
+      // No-op cleanup function
+    };
+  },
+});
+
+const createMockBridgeWithCompactUltraMode = (): DashboardBridge => ({
+  ...mockDashboardBridge,
+  dashboardUpdated: (callback) => {
+    callback({
+      ...defaultDashboard,
+      generalSettings: {
+        ...defaultDashboard.generalSettings,
+        compactMode: 'ultra',
       },
     });
     return () => {
@@ -887,6 +905,20 @@ export const CompactMode: Story = {
         <SessionProvider bridge={generateMockDataFromPath()} />
         <TelemetryProvider bridge={generateMockDataFromPath()} />
         <DashboardProvider bridge={createMockBridgeWithCompactMode()}>
+          <Story />
+        </DashboardProvider>
+      </>
+    ),
+  ],
+};
+
+export const CompactUltraMode: Story = {
+  decorators: [
+    (Story) => (
+      <>
+        <SessionProvider bridge={generateMockDataFromPath()} />
+        <TelemetryProvider bridge={generateMockDataFromPath()} />
+        <DashboardProvider bridge={createMockBridgeWithCompactUltraMode()}>
           <Story />
         </DashboardProvider>
       </>

@@ -132,7 +132,7 @@ export interface GeneralSettingsType {
   enableAutoStart?: boolean;
   startMinimized?: boolean;
   closeToTray?: boolean;
-  compactMode?: boolean;
+  compactMode?: 'off' | 'compact' | 'ultra';
   overlayAlwaysOnTop?: boolean;
   enableNetworkAccess?: boolean;
   /** Driver tag groups and mappings for overlays */
