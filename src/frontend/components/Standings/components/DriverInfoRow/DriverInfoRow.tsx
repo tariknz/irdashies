@@ -283,7 +283,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
             style={
               tagSettings?.display?.displayStyle === 'tag'
                 ? undefined
-                : { minWidth: '1.5em' }
+                : { minWidth: '1.5em', width: '1px' }
             }
             className="whitespace-nowrap align-middle"
           >

@@ -25,6 +25,7 @@ import {
   useDriverRelatives,
   useHighlightColor,
 } from './hooks';
+import type { ResolvedDriverTag } from './hooks/useDriverTagMap';
 
 // Create a custom decorator that combines TelemetryDecoratorWithConfig with generalSettings override
 function TelemetryDecoratorWithConfigAndGeneralSettings(
@@ -1039,4 +1040,82 @@ export const MinimalStyling: Story = {
       },
     }),
   ],
+};
+
+const singleDriverTagRelative: ResolvedDriverTag = {
+  id: 'friend',
+  name: 'Friend',
+  icon: 'Star',
+  color: 0xffff00,
+};
+
+const relativeConfig = {
+  badge: { enabled: true, badgeFormat: 'license-color-rating-bw' },
+  delta: { enabled: true },
+} as import('@irdashies/types').RelativeWidgetSettings['config'];
+
+const hiddenRowBaseProps = {
+  classColor: 0xffffff,
+  name: '',
+  isPlayer: false,
+  hasFastestTime: false,
+  isMultiClass: false,
+  dnf: false,
+  repair: false,
+  penalty: false,
+  slowdown: false,
+  hidden: true,
+  hasAnyDriverTag: true,
+  config: relativeConfig,
+};
+
+const SingleRelativeDriverWithTagComponent = () => (
+  <div className="w-full bg-slate-800/70 rounded-sm p-2 text-white">
+    <table className="w-full table-auto text-sm border-separate border-spacing-y-0.5">
+      <tbody>
+        <DriverInfoRow carIdx={10} {...hiddenRowBaseProps} />
+        <DriverInfoRow carIdx={11} {...hiddenRowBaseProps} />
+        <DriverInfoRow carIdx={12} {...hiddenRowBaseProps} />
+        <DriverInfoRow
+          carIdx={1}
+          carNumber="99"
+          classColor={0xff5888}
+          name="Jane Smith"
+          isPlayer={true}
+          hasFastestTime={false}
+          delta={0}
+          position={3}
+          lap={5}
+          license="A 4.99"
+          rating={4999}
+          onPitRoad={false}
+          onTrack={true}
+          radioActive={false}
+          isMultiClass={false}
+          flairId={223}
+          tireCompound={1}
+          carId={122}
+          currentSessionType="Race"
+          dnf={false}
+          repair={false}
+          penalty={false}
+          slowdown={false}
+          resolvedTag={singleDriverTagRelative}
+          hasAnyDriverTag={true}
+          config={relativeConfig}
+        />
+        <DriverInfoRow carIdx={13} {...hiddenRowBaseProps} />
+        <DriverInfoRow carIdx={14} {...hiddenRowBaseProps} />
+        <DriverInfoRow carIdx={15} {...hiddenRowBaseProps} />
+      </tbody>
+    </table>
+  </div>
+);
+
+export const SingleDriverWithTag: Story = {
+  decorators: [TelemetryDecorator()],
+  render: () => <SingleRelativeDriverWithTagComponent />,
+  parameters: {
+    layout: 'padded',
+  },
 };
