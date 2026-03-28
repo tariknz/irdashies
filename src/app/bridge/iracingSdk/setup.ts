@@ -1,5 +1,4 @@
 import { OverlayManager } from 'src/app/overlayManager';
-import { TelemetrySink } from './telemetrySink';
 import { ipcMain } from 'electron';
 import type { IrSdkBridge } from '@irdashies/types';
 
@@ -20,31 +19,26 @@ export function onBridgeChanged(callback: (bridge: IrSdkBridge) => void) {
   return () => onBridgeChangedCallbacks.delete(callback);
 }
 
-export async function iRacingSDKSetup(
-  telemetrySink: TelemetrySink,
-  overlayManager: OverlayManager
-) {
+export async function iRacingSDKSetup(overlayManager: OverlayManager) {
   ipcMain.on('toggleDemoMode', async (_, value: boolean) => {
     isDemoMode = value;
     if (currentBridge) {
       currentBridge.stop();
       currentBridge = undefined;
     }
-    await setupBridge(telemetrySink, overlayManager);
-    
+    await setupBridge(overlayManager);
+
     overlayManager.publishMessage('demoModeChanged', value);
-    
-    const { notifyDemoModeChanged } = await import('../dashboard/dashboardBridge');
+
+    const { notifyDemoModeChanged } =
+      await import('../dashboard/dashboardBridge');
     notifyDemoModeChanged(value);
   });
 
-  await setupBridge(telemetrySink, overlayManager);
+  await setupBridge(overlayManager);
 }
 
-async function setupBridge(
-  telemetrySink: TelemetrySink,
-  overlayManager: OverlayManager
-) {
+async function setupBridge(overlayManager: OverlayManager) {
   try {
     if (currentBridge) {
       currentBridge.stop();
@@ -57,11 +51,11 @@ async function setupBridge(
         : await import('./iracingSdkBridge');
 
     const { publishIRacingSDKEvents } = module;
-    currentBridge = await publishIRacingSDKEvents(telemetrySink, overlayManager);
-    
+    currentBridge = await publishIRacingSDKEvents(overlayManager);
+
     if (onBridgeChangedCallbacks.size > 0 && currentBridge) {
       const bridge = currentBridge;
-      onBridgeChangedCallbacks.forEach(cb => cb(bridge));
+      onBridgeChangedCallbacks.forEach((cb) => cb(bridge));
     }
   } catch (err) {
     console.error('Failed to load bridge');
