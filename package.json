@@ -87,7 +87,7 @@
     "electron-squirrel-startup": "^1.0.1",
     "flag-icons": "^7.5.0",
     "js-yaml": "^4.1.1",
-    "posthog-node": "^5.24.11",
+    "posthog-node": "^5.28.8",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-router-dom": "^7.13.0",
