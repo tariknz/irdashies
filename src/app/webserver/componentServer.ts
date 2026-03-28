@@ -71,6 +71,7 @@ function escapeHtml(str: string): string {
 
 function sendHTML(res: http.ServerResponse, html: string) {
   res.setHeader('Content-Type', 'text/html');
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
   res.statusCode = 200;
   res.end(html);
 }
@@ -106,8 +107,13 @@ async function serveStaticFile(filePath: string, res: http.ServerResponse) {
     }
 
     const content = await fs.promises.readFile(filePath);
-    res.setHeader('Content-Type', getMimeType(filePath));
+    const mimeType = getMimeType(filePath);
+    res.setHeader('Content-Type', mimeType);
     res.setHeader('Content-Length', content.length);
+    // HTML files must not be cached — JS/CSS have content-hashed filenames and can be cached
+    if (mimeType === 'text/html') {
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    }
     res.statusCode = 200;
     res.end(content);
   } catch {
@@ -278,11 +284,12 @@ export async function startComponentServer(
 
       let dashboardViewUrl: string;
 
+      const cacheBust = Date.now();
       if (isDev) {
         const vitePort = process.env.VITE_PORT || '5173';
-        dashboardViewUrl = `http://${SERVER_IP}:${vitePort}/index-dashboard-view.html?wsUrl=${encodeURIComponent(wsUrl)}&profile=${encodeURIComponent(profileId)}&debug=${debug}`;
+        dashboardViewUrl = `http://${SERVER_IP}:${vitePort}/index-dashboard-view.html?wsUrl=${encodeURIComponent(wsUrl)}&profile=${encodeURIComponent(profileId)}&debug=${debug}&v=${cacheBust}`;
       } else {
-        dashboardViewUrl = `http://${SERVER_IP}:${COMPONENT_PORT}/index-dashboard-view.html?wsUrl=${encodeURIComponent(wsUrl)}&profile=${encodeURIComponent(profileId)}&debug=${debug}`;
+        dashboardViewUrl = `http://${SERVER_IP}:${COMPONENT_PORT}/index-dashboard-view.html?wsUrl=${encodeURIComponent(wsUrl)}&profile=${encodeURIComponent(profileId)}&debug=${debug}&v=${cacheBust}`;
       }
 
       // Serve HTML with iframe to dashboard view
@@ -330,7 +337,7 @@ export async function startComponentServer(
         'blindspotmonitor',
         'garagecover',
         'rejoin',
-        'laptimelog'
+        'laptimelog',
       ];
 
       sendJSON(res, 200, {

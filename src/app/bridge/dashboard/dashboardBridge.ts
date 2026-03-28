@@ -111,7 +111,8 @@ export const dashboardBridge: DashboardBridge = {
   getCurrentDashboard: () => {
     const currentProfileId = getCurrentProfileId();
     const dashboard = getDashboard(currentProfileId);
-    return dashboard;
+    if (!dashboard) return dashboard;
+    return mergeDriverTagsIntoLayout(dashboard, getDriverTagSettings());
   },
   getDashboardForProfile: async (profileId: string) => {
     // Check if profile exists first
@@ -128,7 +129,7 @@ export const dashboardBridge: DashboardBridge = {
       dashboard = getOrCreateDefaultDashboardForProfile(profileId);
     }
 
-    return dashboard;
+    return mergeDriverTagsIntoLayout(dashboard, getDriverTagSettings());
   },
   toggleDemoMode: () => {
     return;

@@ -415,16 +415,18 @@ export const DriverTagsSettings = () => {
                   updateDashboard({
                     ...settings,
                     display: {
-                      ...(settings.display ?? { enabled: false, widthPx: 6 }),
+                      ...(settings.display ?? { enabled: false }),
                       displayStyle: 'tag',
+                      widthPx: settings.display?.widthPx ?? 6,
                     },
                   });
                 } else {
                   updateDashboard({
                     ...settings,
                     display: {
-                      ...(settings.display ?? { enabled: false, widthPx: 6 }),
+                      ...(settings.display ?? { enabled: false }),
                       displayStyle: 'badge',
+                      widthPx: undefined,
                       iconWeight: val === 'badge-fill' ? 'fill' : 'regular',
                     },
                   });
@@ -1094,7 +1096,7 @@ export const DriverTagsSettings = () => {
                   updateDashboard({
                     ...settings,
                     display: {
-                      ...(settings.display ?? { enabled: false, widthPx: 6 }),
+                      ...(settings.display ?? { enabled: false }),
                       nameDisplay: e.target.value as 'both' | 'label' | 'name',
                     },
                   })
@@ -1122,10 +1124,7 @@ export const DriverTagsSettings = () => {
                       updateDashboard({
                         ...settings,
                         display: {
-                          ...(settings.display ?? {
-                            enabled: false,
-                            widthPx: 6,
-                          }),
+                          ...(settings.display ?? { enabled: false }),
                           alternateFrequency: parseInt(e.target.value),
                         },
                       })

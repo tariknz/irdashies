@@ -36,13 +36,32 @@ export const DriverTagCell = memo(function DriverTagCell({
     };
   }, [displayStyle, size, colorHex]);
 
+  // In badge mode, widthPx ≤ 8 is a legacy tag-bar default — ignore it and
+  // use em-based sizing so the icon fills the cell regardless of stale config.
+  const badgeWidthPx =
+    displayStyle !== 'badge' || (widthPx && widthPx > 8) ? widthPx : undefined;
+
   const containerStyle = useMemo<CSSProperties | undefined>(() => {
     if (displayStyle === 'tag') return undefined;
-    return { display: 'block', width: '100%', height: '100%' };
-  }, [displayStyle]);
+    const w = badgeWidthPx ? `${badgeWidthPx}px` : '1.5em';
+    return {
+      display: 'inline-flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      flexShrink: 0,
+      width: w,
+      height: w,
+      overflow: 'hidden',
+    };
+  }, [displayStyle, badgeWidthPx]);
 
   const imgStyle = useMemo<CSSProperties | undefined>(
-    () => ({ display: 'block', width: '100%', height: '100%' }),
+    () => ({
+      display: 'block',
+      width: '100%',
+      height: '100%',
+      objectFit: 'contain',
+    }),
     []
   );
   const emojiStyle = useMemo<CSSProperties | undefined>(
@@ -78,7 +97,7 @@ export const DriverTagCell = memo(function DriverTagCell({
     >
       {renderDriverIcon(
         icon,
-        24,
+        badgeWidthPx ?? 24,
         undefined,
         tag?.color,
         imgStyle,
