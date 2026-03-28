@@ -7,8 +7,10 @@ import { currentDashboard } from './bridgeProxy';
 import { getGarageCoverImageAsDataUrl } from '../storage/dashboards';
 import type { WidgetId } from '../../frontend/WidgetIndex';
 
-const PORT = 3000;
-const COMPONENT_PORT = process.env.COMPONENT_PORT || PORT;
+const DEFAULT_PORT = 3000;
+const FALLBACK_PORTS = [3001, 3002, 3003, 3004, 3005];
+
+let actualPort: number = DEFAULT_PORT;
 
 const isDev =
   process.env.NODE_ENV === 'development' || process.env.VITE_DEV_SERVER_URL;
@@ -46,6 +48,59 @@ function getLocalIPAddress(): string {
 }
 
 let SERVER_IP = 'localhost';
+
+export function getComponentServerPort(): number {
+  return actualPort;
+}
+
+function tryListen(
+  server: http.Server,
+  port: number,
+  host: string
+): Promise<number> {
+  return new Promise((resolve, reject) => {
+    const onError = (err: NodeJS.ErrnoException) => {
+      server.removeListener('listening', onListening);
+      reject(err);
+    };
+    const onListening = () => {
+      server.removeListener('error', onError);
+      resolve(port);
+    };
+    server.once('error', onError);
+    server.once('listening', onListening);
+    server.listen(port, host);
+  });
+}
+
+async function listenOnAvailablePort(
+  server: http.Server,
+  host: string
+): Promise<number> {
+  const envPort = process.env.COMPONENT_PORT;
+  if (envPort) {
+    // If explicitly set, only try that port
+    return tryListen(server, Number(envPort), host);
+  }
+
+  const portsToTry = [DEFAULT_PORT, ...FALLBACK_PORTS];
+  for (const port of portsToTry) {
+    try {
+      return await tryListen(server, port, host);
+    } catch (err) {
+      const nodeErr = err as NodeJS.ErrnoException;
+      if (nodeErr.code === 'EADDRINUSE') {
+        console.warn(`Port ${port} is in use, trying next...`);
+        continue;
+      }
+      throw err;
+    }
+  }
+
+  throw new Error(
+    `All ports exhausted (${[DEFAULT_PORT, ...FALLBACK_PORTS].join(', ')}). Cannot start component server.`
+  );
+}
 
 function setCORSHeaders(res: http.ServerResponse) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -126,7 +181,7 @@ async function serveStaticFile(filePath: string, res: http.ServerResponse) {
  * Creates an HTTP server that serves components to external browsers
  * Bridge data is exposed via WebSocket so browsers can access real-time telemetry
  *
- * Access components via: http://[dynamic-ip]:3000/component/<componentName>
+ * Access components via: http://[dynamic-ip]:<port>/component/<componentName>
  */
 export async function startComponentServer(
   irsdkBridge?: IrSdkBridge,
@@ -257,7 +312,7 @@ export async function startComponentServer(
         <div class="message">
           <h1>Individual Component Rendering Deprecated</h1>
           <p>Please use the full dashboard view instead:</p>
-          <p><code>http://${SERVER_IP}:3000/dashboard</code></p>
+          <p><code>http://${SERVER_IP}:${actualPort}/dashboard</code></p>
         </div>
       </body>
       </html>
@@ -269,7 +324,7 @@ export async function startComponentServer(
 
     // Dashboard view - shows all overlays in one page
     if (pathname === '/dashboard' && req.method === 'GET') {
-      const wsUrl = `http://${SERVER_IP}:${COMPONENT_PORT}`;
+      const wsUrl = `http://${SERVER_IP}:${actualPort}`;
       const debug = url.searchParams.get('debug') || 'false';
 
       // Get profile ID from URL param (check both 'profile' and 'profileId')
@@ -289,7 +344,7 @@ export async function startComponentServer(
         const vitePort = process.env.VITE_PORT || '5173';
         dashboardViewUrl = `http://${SERVER_IP}:${vitePort}/index-dashboard-view.html?wsUrl=${encodeURIComponent(wsUrl)}&profile=${encodeURIComponent(profileId)}&debug=${debug}&v=${cacheBust}`;
       } else {
-        dashboardViewUrl = `http://${SERVER_IP}:${COMPONENT_PORT}/index-dashboard-view.html?wsUrl=${encodeURIComponent(wsUrl)}&profile=${encodeURIComponent(profileId)}&debug=${debug}&v=${cacheBust}`;
+        dashboardViewUrl = `http://${SERVER_IP}:${actualPort}/index-dashboard-view.html?wsUrl=${encodeURIComponent(wsUrl)}&profile=${encodeURIComponent(profileId)}&debug=${debug}&v=${cacheBust}`;
       }
 
       // Serve HTML with iframe to dashboard view
@@ -342,10 +397,10 @@ export async function startComponentServer(
 
       sendJSON(res, 200, {
         components: componentNames,
-        baseUrl: `http://${SERVER_IP}:${COMPONENT_PORT}`,
-        websocketUrl: `ws://${SERVER_IP}:${COMPONENT_PORT}`,
+        baseUrl: `http://${SERVER_IP}:${actualPort}`,
+        websocketUrl: `ws://${SERVER_IP}:${actualPort}`,
         examples: componentNames.map(
-          (name) => `http://${SERVER_IP}:${COMPONENT_PORT}/component/${name}`
+          (name) => `http://${SERVER_IP}:${actualPort}/component/${name}`
         ),
       });
       return;
@@ -414,25 +469,21 @@ export async function startComponentServer(
     }
   }
   httpServer.on('error', (error: NodeJS.ErrnoException) => {
-    console.error('❌ Server error:', error);
-    if (error.code === 'EADDRINUSE') {
-      console.error(
-        `   Port ${COMPONENT_PORT} is already in use by another application`
-      );
-      console.error(
-        `   Try changing COMPONENT_PORT environment variable or close other apps using this port`
-      );
-    } else if (error.code === 'EACCES') {
-      console.error(`   Permission denied to bind to port ${COMPONENT_PORT}`);
+    console.error('Server error:', error);
+    if (error.code === 'EACCES') {
+      console.error(`   Permission denied to bind to port ${actualPort}`);
       console.error(
         `   Try running as administrator or use a port number above 1024`
       );
     }
   });
 
-  httpServer.listen(Number(COMPONENT_PORT), bindHost, () => {
+  try {
+    actualPort = await listenOnAvailablePort(httpServer, bindHost);
     console.log(
-      `Component server running on http://${SERVER_IP}:${COMPONENT_PORT}`
+      `Component server running on http://${SERVER_IP}:${actualPort}`
     );
-  });
+  } catch (err) {
+    console.error('Failed to start component server:', err);
+  }
 }
