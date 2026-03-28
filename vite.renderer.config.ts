@@ -2,7 +2,6 @@ import { defineConfig } from 'vite';
 import tailwindcss from '@tailwindcss/postcss';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { tsconfigPathAliases } from './vite.paths';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.join(path.dirname(__filename));
@@ -13,7 +12,7 @@ export default defineConfig({
     host: '0.0.0.0',
   },
   resolve: {
-    alias: tsconfigPathAliases,
+    tsconfigPaths: true,
   },
   css: {
     postcss: {

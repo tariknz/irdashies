@@ -2,7 +2,6 @@ import { defineConfig } from 'vite';
 import { execSync } from 'child_process';
 import path from 'path';
 import fs from 'fs';
-import { tsconfigPathAliases } from './vite.paths';
 
 // Get git hash
 const getGitHash = () => {
@@ -30,7 +29,7 @@ export default defineConfig({
     // Some dependencies have Node.js specific imports
     // This ensures they are properly resolved in Electron
     mainFields: ['module', 'jsnext:main', 'jsnext'],
-    alias: tsconfigPathAliases,
+    tsconfigPaths: true,
   },
   define: {
     APP_GIT_HASH: JSON.stringify(getGitHash()),

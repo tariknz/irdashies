@@ -1,9 +1,8 @@
-import { tsconfigPathAliases } from './vite.paths';
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   resolve: {
-    alias: tsconfigPathAliases,
+    tsconfigPaths: true,
   },
   test: {
     environment: 'jsdom',
