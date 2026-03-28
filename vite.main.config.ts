@@ -2,7 +2,7 @@ import { defineConfig } from 'vite';
 import { execSync } from 'child_process';
 import path from 'path';
 import fs from 'fs';
-import { tsconfigPathAliases } from './vite.renderer.config';
+import { tsconfigPathAliases } from './vite.paths';
 
 // Get git hash
 const getGitHash = () => {

@@ -1,4 +1,4 @@
-import { tsconfigPathAliases } from './vite.renderer.config';
+import { tsconfigPathAliases } from './vite.paths';
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
