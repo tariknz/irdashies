@@ -16,7 +16,7 @@ export interface SaveDashboardOptions {
  * Used to compensate for OS constraints on window positioning
  */
 export interface ContainerBoundsInfo {
-  /** The bounds we requested */
+  /** The bounds we requested for the window (may be shrink-wrapped to widgets) */
   expected: { x: number; y: number; width: number; height: number };
   /** The bounds the OS actually gave us (may differ due to constraints) */
   actual: { x: number; y: number; width: number; height: number };
@@ -26,6 +26,8 @@ export interface ContainerBoundsInfo {
   displayId?: number;
   /** True for the primary display window */
   isPrimary?: boolean;
+  /** Full display bounds — used for widget-to-display assignment filtering */
+  displayBounds?: { x: number; y: number; width: number; height: number };
 }
 
 export interface DashboardBridge {
