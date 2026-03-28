@@ -11,7 +11,6 @@ import {
 } from './app/bridge/dashboard/dashboardBridge';
 import { setupPitLaneBridge } from './app/bridge/pitLaneBridge';
 import { setupFuelCalculatorBridge } from './app/bridge/fuelCalculatorBridge';
-import { TelemetrySink } from './app/bridge/iracingSdk/telemetrySink';
 import { OverlayManager } from './app/overlayManager';
 import { startComponentServer } from './app/webserver/componentServer';
 import { updateElectronApp } from 'update-electron-app';
@@ -27,7 +26,6 @@ if (started) app.quit();
 updateElectronApp();
 
 const overlayManager = new OverlayManager();
-const telemetrySink = new TelemetrySink();
 const analytics = new Analytics();
 
 overlayManager.setupHardwareAcceleration();
@@ -41,7 +39,7 @@ app.on('ready', async () => {
     return;
   }
 
-  await iRacingSDKSetup(telemetrySink, overlayManager);
+  await iRacingSDKSetup(overlayManager);
 
   const dashboard = getOrCreateDefaultDashboard();
   const bridge = getCurrentBridge();
@@ -55,7 +53,7 @@ app.on('ready', async () => {
   await startComponentServer(bridge, dashboardBridge);
 
   overlayManager.createOverlays(dashboard);
-  setupTaskbar(telemetrySink, overlayManager);
+  setupTaskbar(overlayManager);
   publishDashboardUpdates(overlayManager, analytics);
 
   await analytics.init(overlayManager.getVersion(), dashboard);
