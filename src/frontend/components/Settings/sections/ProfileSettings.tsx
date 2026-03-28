@@ -20,6 +20,7 @@ export const ProfileSettings = () => {
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [serverIP, setServerIP] = useState<string>('localhost');
+  const [serverPort, setServerPort] = useState<number>(3000);
   const [confirmDelete, setConfirmDelete] = useState<{
     isOpen: boolean;
     profileId: string;
@@ -28,15 +29,22 @@ export const ProfileSettings = () => {
 
   useEffect(() => {
     refreshProfiles();
-    // Fetch server IP
-    fetch('http://localhost:3000/api/server-ip')
-      .then((res) => res.json())
-      .catch(() => ({ ip: 'localhost' }))
-      .then((data) => {
-        if (data.ip) {
-          setServerIP(data.ip);
-        }
+    // Fetch server port and IP via IPC
+    const bridge = window.dashboardBridge;
+    if (bridge?.getComponentServerPort) {
+      bridge.getComponentServerPort().then((port) => {
+        setServerPort(port);
+        // Fetch server IP using the actual port
+        fetch(`http://localhost:${port}/api/server-ip`)
+          .then((res) => res.json())
+          .catch(() => ({ ip: 'localhost' }))
+          .then((data) => {
+            if (data.ip) {
+              setServerIP(data.ip);
+            }
+          });
       });
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -272,7 +280,7 @@ export const ProfileSettings = () => {
                           )}
                           <button
                             onClick={() => {
-                              const url = `http://${serverIP}:3000/dashboard?profile=${profile.id}`;
+                              const url = `http://${serverIP}:${serverPort}/dashboard?profile=${profile.id}`;
                               navigator.clipboard.writeText(url);
                             }}
                             className="bg-cyan-600 hover:bg-cyan-700 text-white px-3 py-1 rounded text-sm font-medium transition-colors"
@@ -311,13 +319,13 @@ export const ProfileSettings = () => {
                 <input
                   type="text"
                   readOnly
-                  value={`http://localhost:3000/dashboard?profile=${currentProfile.id}`}
+                  value={`http://localhost:${serverPort}/dashboard?profile=${currentProfile.id}`}
                   className="flex-1 bg-slate-900 border border-slate-600 text-white px-3 py-2 rounded text-sm font-mono"
                 />
                 <button
                   onClick={() => {
                     navigator.clipboard.writeText(
-                      `http://localhost:3000/dashboard?profile=${currentProfile.id}`
+                      `http://localhost:${serverPort}/dashboard?profile=${currentProfile.id}`
                     );
                   }}
                   className="bg-slate-600 hover:bg-slate-700 text-white px-3 py-2 rounded text-sm font-medium transition-colors whitespace-nowrap"

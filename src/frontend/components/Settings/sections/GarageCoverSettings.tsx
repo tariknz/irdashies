@@ -23,11 +23,18 @@ export const GarageCoverSettings = () => {
         | GarageCoverWidgetSettings['config']
         | undefined) ?? defaultConfig,
   });
+  const [serverPort, setServerPort] = useState<number>(3000);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const configChangeHandlerRef = useRef<
     ((newConfig: Partial<GarageCoverWidgetSettings['config']>) => void) | null
   >(null);
   const hasInitializedRef = useRef(false);
+
+  useEffect(() => {
+    if (bridge?.getComponentServerPort) {
+      bridge.getComponentServerPort().then(setServerPort);
+    }
+  }, [bridge]);
 
   const loadPreview = (imageFilename: string) => {
     if (!imageFilename) {
@@ -178,7 +185,7 @@ export const GarageCoverSettings = () => {
               <p className="text-sm text-slate-300">
                 <strong>Browser Source URL:</strong>{' '}
                 <code className="bg-slate-800 px-2 py-1 rounded">
-                  http://localhost:3000/dashboard
+                  {`http://localhost:${serverPort}/dashboard`}
                 </code>
               </p>
             </div>

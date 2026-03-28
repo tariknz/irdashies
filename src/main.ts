@@ -1,4 +1,4 @@
-import { app } from 'electron';
+import { app, ipcMain } from 'electron';
 import {
   iRacingSDKSetup,
   getCurrentBridge,
@@ -12,7 +12,10 @@ import {
 import { setupPitLaneBridge } from './app/bridge/pitLaneBridge';
 import { setupFuelCalculatorBridge } from './app/bridge/fuelCalculatorBridge';
 import { OverlayManager } from './app/overlayManager';
-import { startComponentServer } from './app/webserver/componentServer';
+import {
+  startComponentServer,
+  getComponentServerPort,
+} from './app/webserver/componentServer';
 import { updateElectronApp } from 'update-electron-app';
 // @ts-expect-error no types for squirrel
 import started from 'electron-squirrel-startup';
@@ -51,6 +54,8 @@ app.on('ready', async () => {
 
   // Start component server for browser components
   await startComponentServer(bridge, dashboardBridge);
+
+  ipcMain.handle('getComponentServerPort', () => getComponentServerPort());
 
   overlayManager.createOverlays(dashboard);
   setupTaskbar(overlayManager);

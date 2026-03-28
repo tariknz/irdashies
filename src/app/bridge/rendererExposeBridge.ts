@@ -145,6 +145,9 @@ export function exposeBridge() {
     saveDriverTagSettings: (settings: unknown) => {
       return ipcRenderer.invoke('saveDriverTagSettings', settings);
     },
+    getComponentServerPort: () => {
+      return ipcRenderer.invoke('getComponentServerPort');
+    },
     exportDashboardToFile: (dashboard: DashboardLayout) => {
       return ipcRenderer.invoke('exportDashboardToFile', dashboard);
     },
