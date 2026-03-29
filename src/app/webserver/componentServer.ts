@@ -3,6 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import os from 'os';
 import type { IrSdkBridge, DashboardBridge } from '@irdashies/types';
+import logger from '../logger';
 import { currentDashboard } from './bridgeProxy';
 import { getGarageCoverImageAsDataUrl } from '../storage/dashboards';
 import type { WidgetId } from '../../frontend/WidgetIndex';
@@ -90,7 +91,7 @@ async function listenOnAvailablePort(
     } catch (err) {
       const nodeErr = err as NodeJS.ErrnoException;
       if (nodeErr.code === 'EADDRINUSE') {
-        console.warn(`Port ${port} is in use, trying next...`);
+        logger.warn(`Port ${port} is in use, trying next...`);
         continue;
       }
       throw err;
@@ -271,7 +272,7 @@ export async function startComponentServer(
         }
         sendJSON(res, 200, { dataUrl });
       } catch (err) {
-        console.error(
+        logger.error(
           '[ComponentServer] Error loading garage cover image:',
           err
         );
@@ -465,14 +466,14 @@ export async function startComponentServer(
         resubscribeToBridge(newBridge);
       });
     } catch (err) {
-      console.warn('Failed to initialize WebSocket bridge:', err);
+      logger.warn('Failed to initialize WebSocket bridge:', err);
     }
   }
   httpServer.on('error', (error: NodeJS.ErrnoException) => {
-    console.error('Server error:', error);
+    logger.error('Server error:', error);
     if (error.code === 'EACCES') {
-      console.error(`   Permission denied to bind to port ${actualPort}`);
-      console.error(
+      logger.error(`   Permission denied to bind to port ${actualPort}`);
+      logger.error(
         `   Try running as administrator or use a port number above 1024`
       );
     }
@@ -480,10 +481,10 @@ export async function startComponentServer(
 
   try {
     actualPort = await listenOnAvailablePort(httpServer, bindHost);
-    console.log(
+    logger.info(
       `Component server running on http://${SERVER_IP}:${actualPort}`
     );
   } catch (err) {
-    console.error('Failed to start component server:', err);
+    logger.error('Failed to start component server:', err);
   }
 }

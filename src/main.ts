@@ -1,4 +1,5 @@
 import { app, ipcMain } from 'electron';
+import log from './app/logger';
 import {
   iRacingSDKSetup,
   getCurrentBridge,
@@ -22,6 +23,7 @@ import started from 'electron-squirrel-startup';
 import { Analytics } from './app/analytics';
 import { registerHideUiShortcut } from './app/globalShortcuts';
 import { setupReferenceLapsBridge } from './app/bridge/referenceLapsBridge';
+import { setupLogBridge } from './app/bridge/logBridge';
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) app.quit();
@@ -30,6 +32,7 @@ updateElectronApp();
 
 const overlayManager = new OverlayManager();
 const analytics = new Analytics();
+analytics.setupLogTransport();
 
 overlayManager.setupHardwareAcceleration();
 overlayManager.setupSingleInstanceLock();
@@ -48,6 +51,7 @@ app.on('ready', async () => {
   const bridge = getCurrentBridge();
 
   // Setup IPC bridges
+  setupLogBridge();
   setupFuelCalculatorBridge();
   setupPitLaneBridge();
   setupReferenceLapsBridge();
@@ -83,7 +87,7 @@ app.on('window-all-closed', () => {
   }
 });
 app.on('quit', () => {
-  console.log('App quit');
+  log.info('App quit');
   analytics.shutdown();
 });
 

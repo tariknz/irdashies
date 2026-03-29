@@ -13,6 +13,7 @@ import type {
   SaveDashboardOptions,
   ContainerBoundsInfo,
 } from '@irdashies/types';
+import logger from '@irdashies/utils/logger';
 
 interface DashboardContextProps {
   editMode: boolean;
@@ -70,7 +71,8 @@ export const DashboardProvider: React.FC<{
       // If a specific profile ID is provided, use that; otherwise get current profile
       let profileToLoad: DashboardProfile | null;
       if (profileIdToUse) {
-        profileToLoad = allProfiles.find((p) => p.id === profileIdToUse) || null;
+        profileToLoad =
+          allProfiles.find((p) => p.id === profileIdToUse) || null;
         if (!profileToLoad) {
           // For browser views with a specific profileId, create a minimal profile object
           // The profile exists, but might not be in the active list
@@ -116,10 +118,7 @@ export const DashboardProvider: React.FC<{
 
         // Refresh profiles to pick up on theme changes etc.
         loadProfiles().catch((err) =>
-          console.error(
-            'Failed to refresh profiles on dashboard update:',
-            err
-          )
+          logger.error('Failed to refresh profiles on dashboard update:', err)
         );
       }
     );
@@ -137,7 +136,11 @@ export const DashboardProvider: React.FC<{
           }
         })
         .catch((error) => {
-          console.error('Error loading dashboard for profile:', profileId, error);
+          logger.error(
+            'Error loading dashboard for profile:',
+            profileId,
+            error
+          );
           bridge.reloadDashboard();
         });
     } else {
@@ -183,13 +186,13 @@ export const DashboardProvider: React.FC<{
   ) => {
     // Immediately update local state for responsive UI
     setDashboard(dashboard);
-    
+
     // Ensure we save to the current profile by adding profileId to options
     const saveOptions = {
       ...options,
-      profileId: options?.profileId || currentProfile?.id
+      profileId: options?.profileId || currentProfile?.id,
     };
-    
+
     // Then save to bridge
     bridge.saveDashboard(dashboard, saveOptions);
   };
@@ -219,7 +222,7 @@ export const DashboardProvider: React.FC<{
   const switchProfile = async (profileId: string) => {
     await bridge.switchProfile(profileId);
     await loadProfiles();
-    
+
     // Force reload dashboard for the new profile
     if (bridge.getDashboardForProfile) {
       try {
@@ -228,10 +231,10 @@ export const DashboardProvider: React.FC<{
           setDashboard(newDashboard);
         }
       } catch (error) {
-        console.error('Failed to load dashboard for profile:', profileId, error);
+        logger.error('Failed to load dashboard for profile:', profileId, error);
       }
     }
-    
+
     bridge.reloadDashboard();
   };
 
