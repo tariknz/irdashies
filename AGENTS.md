@@ -353,6 +353,35 @@ npm run package        # Create installer
 
 ---
 
+## Logging
+
+**Never use `console.log` / `console.warn` / `console.error` directly** — ESLint enforces `no-console`.
+
+Use the project's logger utilities instead:
+
+| Context                       | Import                                         |
+| ----------------------------- | ---------------------------------------------- |
+| **Main process** (`src/app`)  | `import log from './logger'` (electron-log)    |
+| **Frontend** (`src/frontend`) | `import logger from '@irdashies/utils/logger'` |
+
+The frontend logger forwards messages to the main process via IPC for file persistence and also logs to the browser console for DevTools visibility.
+
+```typescript
+// Main process
+import log from './logger';
+log.info('SDK connected');
+log.error('Bridge failed', err);
+
+// Frontend
+import logger from '@irdashies/utils/logger';
+logger.info('Dashboard loaded');
+logger.warn('Missing widget config', widgetId);
+```
+
+Available levels: `debug`, `info`, `warn`, `error`
+
+---
+
 ## Debugging
 
 | Issue                   | Check                                                         |
