@@ -1,5 +1,6 @@
 import { normalizeKey, REFERENCE_INTERVAL } from '@irdashies/context';
 import { ReferenceLap } from '@irdashies/types';
+import logger from '@irdashies/utils/logger';
 
 /**
  * O(1) Interpolation using direct Map lookups.
@@ -24,12 +25,12 @@ export function interpolateAtPoint(
   // We cannot interpolate PCHIP across the finish line without extra logic for the X-axis wrap.
   // For now, if p1 is missing or wrapped inappropriately, we fall back to p0 (clamping).
   if (!p0) {
-    console.log('P1 is missing!');
+    logger.info('P1 is missing!');
     return null; // Off-track or sparse map gap
   }
 
   if (!p1) {
-    console.log('P2 is missing!');
+    logger.info('P2 is missing!');
     return p0.timeElapsedSinceStart; // End of data, return last known time
   }
 
@@ -37,7 +38,7 @@ export function interpolateAtPoint(
   if (p0.tangent === undefined || p1.tangent === undefined) {
     // Fallback if PCHIP wasn't run: simple linear interpolation could go here,
     // but better to warn.
-    console.warn('Missing tangents for PCHIP interpolation');
+    logger.warn('Missing tangents for PCHIP interpolation');
     return null;
   }
 

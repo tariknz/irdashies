@@ -4,6 +4,7 @@ import { useCurrentSessionType } from '@irdashies/context';
 import type { StandingsWidgetSettings } from '@irdashies/types';
 import { CAR_ID_TO_CAR_MANUFACTURER } from '../CarManufacturer/carManufacturerMapping';
 import { TelemetryDecorator } from '@irdashies/storybook';
+import type { ResolvedDriverTag } from '../../hooks/useDriverTagMap';
 
 export default {
   component: DriverInfoRow,
@@ -164,6 +165,21 @@ export const OffTrack: Story = {
     ...Primary.args,
     carTrackSurface: 0,
   },
+};
+
+const driverTagFriend: ResolvedDriverTag = {
+  id: 'friend',
+  name: 'Friend',
+  icon: 'Star',
+  color: 0xffff00,
+};
+
+export const WithDriverTag: Story = {
+  args: {
+    ...Primary.args,
+    hasAnyDriverTag: true,
+  },
+  render: (args) => <DriverInfoRow {...args} resolvedTag={driverTagFriend} />,
 };
 
 // Pre-generated mock data for Relative story (generated at module load, not during render)

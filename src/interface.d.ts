@@ -4,6 +4,7 @@ import type {
   PitLaneBridge,
   FuelCalculatorBridge,
   ReferenceLapBridge,
+  LogBridge,
 } from '@irdashies/types';
 
 declare global {
@@ -13,5 +14,6 @@ declare global {
     pitLaneBridge: PitLaneBridge;
     fuelCalculatorBridge: FuelCalculatorBridge;
     referenceLapsBridge: ReferenceLapBridge;
+    logBridge: LogBridge;
   }
 }

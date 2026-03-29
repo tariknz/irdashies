@@ -59,8 +59,8 @@ export interface DriverTagSettings {
   /** Display config for the tag */
   display: {
     enabled: boolean;
-    /** Width in pixels for the tag/badge */
-    widthPx: number;
+    /** Width in pixels for the tag bar, or explicit icon size override for badge mode */
+    widthPx?: number;
     /** 'badge' shows an icon, 'tag' shows a colored pill */
     displayStyle?: 'badge' | 'tag';
     /** Phosphor icon weight: 'regular' (outline) or 'fill' */

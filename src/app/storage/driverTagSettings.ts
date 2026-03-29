@@ -22,10 +22,30 @@ const migrateFromConfig = (): DriverTagSettings | undefined => {
   }
 };
 
+/**
+ * If a config was saved with widthPx set to the old tag-bar default (≤8px)
+ * while displayStyle is 'badge', clear widthPx so the em-based default applies.
+ */
+const migrateWidthPx = (settings: DriverTagSettings): DriverTagSettings => {
+  const display = settings.display;
+  if (!display) return settings;
+  const isBadge = !display.displayStyle || display.displayStyle === 'badge';
+  if (isBadge && display.widthPx !== undefined && display.widthPx <= 8) {
+    const migrated = {
+      ...settings,
+      display: { ...display, widthPx: undefined },
+    };
+    saveDriverTagSettings(migrated);
+    return migrated;
+  }
+  return settings;
+};
+
 export const getDriverTagSettings = (): DriverTagSettings | undefined => {
   try {
     const data = fs.readFileSync(getFilePath(), 'utf8');
-    return JSON.parse(data) as DriverTagSettings;
+    const settings = JSON.parse(data) as DriverTagSettings;
+    return migrateWidthPx(settings);
   } catch {
     return migrateFromConfig();
   }

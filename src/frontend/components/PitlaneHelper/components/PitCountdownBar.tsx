@@ -3,7 +3,7 @@ import { memo } from 'react';
 export interface PitCountdownBarProps {
   distance: number; // Distance in meters
   maxDistance: number; // Maximum distance for progress calculation
-  orientation: 'horizontal' | 'vertical';
+  orientation: 'horizontal' | 'vertical' | undefined;
   color: string; // RGB color string
   targetName: string; // "Pit Entry" | "Pitbox" | "Pit Exit"
 }
@@ -27,7 +27,7 @@ export const PitCountdownBar = memo(
     if (orientation === 'vertical') {
       return (
         <div className="flex flex-col flex-1 items-center gap-1">
-          <span className="text-xs text-white font-medium tabular-nums leading-none">
+          <span className="text-sm text-white font-medium tabular-nums leading-none">
             {valueLabel}
           </span>
           <div className="relative w-full h-full min-w-5 min-h-10 bg-slate-700/50 rounded overflow-hidden">

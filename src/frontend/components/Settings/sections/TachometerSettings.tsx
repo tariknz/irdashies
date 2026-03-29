@@ -15,6 +15,7 @@ import { SettingDivider } from '../components/SettingDivider';
 import { TabButton } from '../components/TabButton';
 import { SettingButtonGroupRow } from '../components/SettingButtonGroupRow';
 import { SettingSliderRow } from '../components/SettingSliderRow';
+import logger from '@irdashies/utils/logger';
 
 const SETTING_ID = 'tachometer';
 
@@ -82,7 +83,7 @@ const CustomShiftPointsSection = ({
 
         setAvailableCars(cars);
       } catch (err) {
-        console.error('Failed to load cars:', err);
+        logger.error('Failed to load cars:', err);
         setError(
           err instanceof Error ? err.message : 'Failed to load car data'
         );
@@ -103,7 +104,7 @@ const CustomShiftPointsSection = ({
       number[]
     >;
 
-    console.log(JSON.stringify(selectedCar));
+    logger.info(JSON.stringify(selectedCar));
 
     let redlineRpm = 8000;
     if (selectedCar.ledRpm?.[0]) {

@@ -1,4 +1,5 @@
 import { create, useStore } from 'zustand';
+import logger from '@irdashies/utils/logger';
 
 export interface LapTimeBuffer {
   lastLapTimes: number[];
@@ -71,7 +72,7 @@ export const useLapTimesStore = create<LapTimesState>((set, get) => ({
       sessionNum !== null &&
       sessionNum !== prevSessionNum
     ) {
-      console.log(`[LapTimesStore] Session changed, resetting`);
+      logger.info(`[LapTimesStore] Session changed, resetting`);
       set({
         lapTimeBuffer: null,
         lapTimes: [],
@@ -134,7 +135,7 @@ export const useLapTimesStore = create<LapTimesState>((set, get) => ({
     });
   },
   reset: () => {
-    console.log('[LapTimesStore] Resetting lap time history');
+    logger.info('[LapTimesStore] Resetting lap time history');
     set({
       lapTimeBuffer: null,
       lapTimes: [],

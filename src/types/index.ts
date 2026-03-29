@@ -10,3 +10,4 @@ export * from './widgetId';
 export * from './referenceLaps';
 export * from './widgetConfigs';
 export * from './defaultDashboard';
+export * from './logBridge';

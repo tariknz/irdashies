@@ -106,15 +106,6 @@ export const PitlaneHelperSettings = () => {
                   )}
 
                   <SettingToggleRow
-                    title="Show Pitlane Traffic"
-                    description="Display count of cars ahead/behind in pitlane"
-                    enabled={settings.config.showPitlaneTraffic}
-                    onToggle={(newValue) =>
-                      handleConfigChange({ showPitlaneTraffic: newValue })
-                    }
-                  />
-
-                  <SettingToggleRow
                     title="Show Speed Summary"
                     description="Show summary of speed delta, speed unit and speed limit"
                     enabled={settings.config.showSpeedSummary}
@@ -125,6 +116,15 @@ export const PitlaneHelperSettings = () => {
 
                   {settings.config.showSpeedSummary && (
                     <SettingsSection>
+                      <SettingToggleRow
+                        title="Show Speed Delta"
+                        description="Show speed delta plus/minus the speed limit"
+                        enabled={settings.config.showSpeedDelta}
+                        onToggle={(newValue) =>
+                          handleConfigChange({ showSpeedDelta: newValue })
+                        }
+                      />
+
                       <SettingButtonGroupRow<'none' | 'text' | 'european' | 'american'>
                         title="Speed Limit Style"
                         value={
@@ -227,6 +227,15 @@ export const PitlaneHelperSettings = () => {
                     enabled={settings.config.enablePitLimiterWarning}
                     onToggle={(enabled) =>
                       handleConfigChange({ enablePitLimiterWarning: enabled })
+                    }
+                  />
+
+                  <SettingToggleRow
+                    title="Show Pitlane Traffic"
+                    description="Display count of cars ahead/behind in pitlane"
+                    enabled={settings.config.showPitlaneTraffic}
+                    onToggle={(newValue) =>
+                      handleConfigChange({ showPitlaneTraffic: newValue })
                     }
                   />
 

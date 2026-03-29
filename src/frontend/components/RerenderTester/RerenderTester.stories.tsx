@@ -1,5 +1,6 @@
 import { Meta } from '@storybook/react-vite';
 import { useTelemetry } from '@irdashies/context';
+import logger from '@irdashies/utils/logger';
 
 export default {
   title: 'components/RerenderTester',
@@ -7,7 +8,7 @@ export default {
 
 const RerenderTester = () => {
   const throttle = useTelemetry('AirTemp');
-  console.log('RerenderTester', throttle);
+  logger.info('RerenderTester', throttle);
   return <div>{JSON.stringify(throttle)}</div>;
 };
 

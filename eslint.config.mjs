@@ -44,6 +44,14 @@ export default defineConfig([
       }]
     }
   },
+  // Disallow console.* — use logger utilities instead
+  {
+    files: ['src/**/*.{ts,tsx}'],
+    ignores: ['src/frontend/utils/logger.ts'],
+    rules: {
+      'no-console': 'error',
+    },
+  },
   {
     files: ['src/app/**/*.{ts,tsx}'],
     ignores: ['src/app/webserver/**/*.{ts,tsx}'],

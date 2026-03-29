@@ -24,6 +24,7 @@ import { defaultDashboard } from '@irdashies/types';
 import { useState, Fragment } from 'react';
 import { DriverClassHeader } from './components/DriverClassHeader/DriverClassHeader';
 import { DriverInfoRow } from './components/DriverInfoRow/DriverInfoRow';
+import type { ResolvedDriverTag } from './hooks/useDriverTagMap';
 import { SessionBar } from './components/SessionBar/SessionBar';
 
 import { TitleBar } from './components/TitleBar/TitleBar';
@@ -1009,4 +1010,60 @@ export const MinimalStyling: Story = {
       },
     }),
   ],
+};
+
+const singleDriverTag: ResolvedDriverTag = {
+  id: 'friend',
+  name: 'Friend',
+  icon: 'Star',
+  color: 0xffff00,
+};
+
+const SingleDriverWithTagComponent = () => (
+  <div className="w-full bg-slate-800/70 rounded-sm p-2 text-white">
+    <table className="w-full table-auto text-sm border-separate border-spacing-y-0.5">
+      <tbody>
+        <DriverInfoRow
+          carIdx={1}
+          carNumber="99"
+          classColor={0xff5888}
+          name="Jane Smith"
+          isPlayer={false}
+          hasFastestTime={false}
+          delta={0.5}
+          position={1}
+          lap={5}
+          license="A 4.99"
+          rating={4999}
+          onPitRoad={false}
+          onTrack={true}
+          radioActive={false}
+          isMultiClass={false}
+          flairId={223}
+          tireCompound={1}
+          carId={122}
+          currentSessionType="Race"
+          dnf={false}
+          repair={false}
+          penalty={false}
+          slowdown={false}
+          resolvedTag={singleDriverTag}
+          hasAnyDriverTag={true}
+          config={
+            {
+              badge: { enabled: true, badgeFormat: 'license-color-rating-bw' },
+            } as import('@irdashies/types').StandingsWidgetSettings['config']
+          }
+        />
+      </tbody>
+    </table>
+  </div>
+);
+
+export const SingleDriverWithTag: Story = {
+  decorators: [TelemetryDecorator()],
+  render: () => <SingleDriverWithTagComponent />,
+  parameters: {
+    layout: 'padded',
+  },
 };

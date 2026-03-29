@@ -35,6 +35,7 @@ import {
   setAnalyticsOptOut as setAnalyticsOptOutStorage,
 } from '../../storage/analytics';
 import { Analytics } from '../../analytics';
+import logger from '../../logger';
 
 /**
  * Injects global driver tag settings into a dashboard layout before broadcasting.
@@ -89,7 +90,7 @@ export const dashboardBridge: DashboardBridge = {
         try {
           callback(dashboard, targetProfileId);
         } catch (err) {
-          console.error('Error in dashboard update callback:', err);
+          logger.error('Error in dashboard update callback:', err);
         }
       });
     }
@@ -111,13 +112,14 @@ export const dashboardBridge: DashboardBridge = {
   getCurrentDashboard: () => {
     const currentProfileId = getCurrentProfileId();
     const dashboard = getDashboard(currentProfileId);
-    return dashboard;
+    if (!dashboard) return dashboard;
+    return mergeDriverTagsIntoLayout(dashboard, getDriverTagSettings());
   },
   getDashboardForProfile: async (profileId: string) => {
     // Check if profile exists first
     const profile = getProfile(profileId);
     if (!profile) {
-      console.log('[dashboardBridge] Profile not found:', profileId);
+      logger.info('[dashboardBridge] Profile not found:', profileId);
       return null;
     }
 
@@ -128,7 +130,7 @@ export const dashboardBridge: DashboardBridge = {
       dashboard = getOrCreateDefaultDashboardForProfile(profileId);
     }
 
-    return dashboard;
+    return mergeDriverTagsIntoLayout(dashboard, getDriverTagSettings());
   },
   toggleDemoMode: () => {
     return;
@@ -203,7 +205,7 @@ export async function publishDashboardUpdates(
         // We don't know the profileId here, so we pass undefined
         callback(merged, undefined);
       } catch (err) {
-        console.error('Error in dashboard update callback:', err);
+        logger.error('Error in dashboard update callback:', err);
       }
     });
   });
@@ -258,7 +260,7 @@ export async function publishDashboardUpdates(
       const imagePath = await saveGarageCoverImage(uint8Array);
       return imagePath;
     } catch (err) {
-      console.error('[Bridge] Error saving garage cover image:', err);
+      logger.error('[Bridge] Error saving garage cover image:', err);
       throw err;
     }
   });
@@ -270,7 +272,7 @@ export async function publishDashboardUpdates(
         const dataUrl = await getGarageCoverImageAsDataUrl(imagePath);
         return dataUrl;
       } catch (err) {
-        console.error('Error loading garage cover image as data URL:', err);
+        logger.error('Error loading garage cover image as data URL:', err);
         throw err;
       }
     }
@@ -424,15 +426,15 @@ export async function publishDashboardUpdates(
  * Called from iracingSdk setup when demo mode is toggled
  */
 export function notifyDemoModeChanged(isDemoMode: boolean) {
-  console.log(
-    '🎭 Notifying dashboard bridge callbacks of demo mode change:',
+  logger.info(
+    'Notifying dashboard bridge callbacks of demo mode change:',
     isDemoMode
   );
   demoModeCallbacks.forEach((callback) => {
     try {
       callback(isDemoMode);
     } catch (err) {
-      console.error('Error in demo mode callback:', err);
+      logger.error('Error in demo mode callback:', err);
     }
   });
 }
