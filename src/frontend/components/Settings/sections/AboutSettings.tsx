@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { GithubLogoIcon, DiscordLogoIcon } from '@phosphor-icons/react';
 import { useDashboard } from '@irdashies/context';
+import logger from '@irdashies/utils/logger';
 
 export const AboutSettings = () => {
   const { version, bridge } = useDashboard();
@@ -13,7 +14,7 @@ export const AboutSettings = () => {
         const optOut = await bridge.getAnalyticsOptOut();
         setAnalyticsEnabled(optOut === false);
       } catch (error) {
-        console.error('Failed to load analytics opt-out setting:', error);
+        logger.error('Failed to load analytics opt-out setting:', error);
       } finally {
         setIsLoading(false);
       }
@@ -27,7 +28,7 @@ export const AboutSettings = () => {
       await bridge.setAnalyticsOptOut(!checked);
       setAnalyticsEnabled(checked);
     } catch (error) {
-      console.error('Failed to update analytics opt-out setting:', error);
+      logger.error('Failed to update analytics opt-out setting:', error);
     }
   };
 

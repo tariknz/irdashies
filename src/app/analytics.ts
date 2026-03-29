@@ -6,6 +6,9 @@ import crypto from 'node:crypto';
 import type { DashboardLayout } from '@irdashies/types';
 import { readData, writeData } from './storage/storage';
 import { getAnalyticsOptOut } from './storage/analytics';
+import log from './logger';
+import type ElectronLog from 'electron-log';
+import type { LogMessage } from 'electron-log';
 
 declare const POSTHOG_KEY: string;
 
@@ -45,7 +48,7 @@ export class Analytics {
   private initialize(): void {
     const optOut = getAnalyticsOptOut();
     if (optOut === true) {
-      console.warn(
+      log.warn(
         '[Analytics] Analytics opt-out is enabled, skipping initialization'
       );
       return;
@@ -91,6 +94,29 @@ export class Analytics {
       writeData('userId', userId);
     }
     return userId;
+  }
+
+  setupLogTransport(): void {
+    if (!this.provider) return;
+
+    const transport = ((message: LogMessage) => {
+      const text = message.data
+        .map((d: unknown) => (typeof d === 'string' ? d : JSON.stringify(d)))
+        .join(' ');
+
+      // Not the nicest way to do this, but avoids having to implement OTEL to get logging in posthog
+      this.capture({
+        event: 'log_message',
+        properties: {
+          level: message.level,
+          message: text,
+        },
+      });
+    }) as ElectronLog.Transport;
+    transport.level = 'warn';
+    transport.transforms = [];
+
+    log.transports.posthog = transport;
   }
 
   async init(version: string, dashboard: DashboardLayout): Promise<void> {

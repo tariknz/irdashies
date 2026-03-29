@@ -35,6 +35,7 @@ import {
   setAnalyticsOptOut as setAnalyticsOptOutStorage,
 } from '../../storage/analytics';
 import { Analytics } from '../../analytics';
+import log from '../../logger';
 
 /**
  * Injects global driver tag settings into a dashboard layout before broadcasting.
@@ -89,7 +90,7 @@ export const dashboardBridge: DashboardBridge = {
         try {
           callback(dashboard, targetProfileId);
         } catch (err) {
-          console.error('Error in dashboard update callback:', err);
+          log.error('Error in dashboard update callback:', err);
         }
       });
     }
@@ -118,7 +119,7 @@ export const dashboardBridge: DashboardBridge = {
     // Check if profile exists first
     const profile = getProfile(profileId);
     if (!profile) {
-      console.log('[dashboardBridge] Profile not found:', profileId);
+      log.info('[dashboardBridge] Profile not found:', profileId);
       return null;
     }
 
@@ -204,7 +205,7 @@ export async function publishDashboardUpdates(
         // We don't know the profileId here, so we pass undefined
         callback(merged, undefined);
       } catch (err) {
-        console.error('Error in dashboard update callback:', err);
+        log.error('Error in dashboard update callback:', err);
       }
     });
   });
@@ -259,7 +260,7 @@ export async function publishDashboardUpdates(
       const imagePath = await saveGarageCoverImage(uint8Array);
       return imagePath;
     } catch (err) {
-      console.error('[Bridge] Error saving garage cover image:', err);
+      log.error('[Bridge] Error saving garage cover image:', err);
       throw err;
     }
   });
@@ -271,7 +272,7 @@ export async function publishDashboardUpdates(
         const dataUrl = await getGarageCoverImageAsDataUrl(imagePath);
         return dataUrl;
       } catch (err) {
-        console.error('Error loading garage cover image as data URL:', err);
+        log.error('Error loading garage cover image as data URL:', err);
         throw err;
       }
     }
@@ -425,15 +426,15 @@ export async function publishDashboardUpdates(
  * Called from iracingSdk setup when demo mode is toggled
  */
 export function notifyDemoModeChanged(isDemoMode: boolean) {
-  console.log(
-    '🎭 Notifying dashboard bridge callbacks of demo mode change:',
+  log.info(
+    'Notifying dashboard bridge callbacks of demo mode change:',
     isDemoMode
   );
   demoModeCallbacks.forEach((callback) => {
     try {
       callback(isDemoMode);
     } catch (err) {
-      console.error('Error in demo mode callback:', err);
+      log.error('Error in demo mode callback:', err);
     }
   });
 }

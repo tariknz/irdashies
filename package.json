@@ -83,6 +83,7 @@
     "@phosphor-icons/react": "^2.1.10",
     "@tmi.js/chat": "^0.7.4",
     "d3": "^7.9.0",
+    "electron-log": "^5.4.3",
     "electron-squirrel-startup": "^1.0.1",
     "flag-icons": "^7.5.0",
     "js-yaml": "^4.1.1",

@@ -1,12 +1,13 @@
 import { ipcMain } from 'electron';
 import { getReferenceLap, saveReferenceLap } from '../storage/referenceLaps';
 import type { ReferenceLap } from 'src/types/referenceLaps';
+import log from '../logger';
 
 export const setupReferenceLapsBridge = () => {
   ipcMain.handle(
     'reference:get',
     (_, seriesId: number, trackId: number, classId: number) => {
-      console.log(
+      log.info(
         `[Main] Fetching reference lap for Series: ${seriesId}, Track: ${trackId}, Class: ${classId}`
       );
       return getReferenceLap(seriesId, trackId, classId);
@@ -22,14 +23,14 @@ export const setupReferenceLapsBridge = () => {
       classId: number,
       lapData: ReferenceLap
     ) => {
-      console.log(
+      log.info(
         `[Main] Saving reference lap for Series: ${seriesId}, Track: ${trackId}, Class: ${classId}`
       );
       try {
         saveReferenceLap(seriesId, trackId, classId, lapData);
         return true;
       } catch (e) {
-        console.error('[Main] Failed to save reference lap:', e);
+        log.error('[Main] Failed to save reference lap:', e);
         throw e;
       }
     }

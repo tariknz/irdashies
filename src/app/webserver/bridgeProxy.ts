@@ -3,6 +3,7 @@ import { WebSocketServer, WebSocket } from 'ws';
 import type { Telemetry, Session, DashboardLayout } from '@irdashies/types';
 import type { IrSdkBridge, DashboardBridge } from '@irdashies/types';
 import { getIsDemoMode } from '../bridge/iracingSdk/setup';
+import log from '../logger';
 
 // Export current state so it can be accessed by other parts of the app
 export let currentDashboard: DashboardLayout | null = null;
@@ -64,16 +65,18 @@ export function createBridgeProxy(
       }
     });
 
-    unsubscribeFunctions = [unsubTelemetry, unsubSession, unsubRunning].filter(fn => typeof fn === 'function');
+    unsubscribeFunctions = [unsubTelemetry, unsubSession, unsubRunning].filter(
+      (fn) => typeof fn === 'function'
+    );
   };
 
   const unsubscribeFromBridge = () => {
-    unsubscribeFunctions.forEach(unsub => unsub());
+    unsubscribeFunctions.forEach((unsub) => unsub());
     unsubscribeFunctions = [];
   };
 
   const resubscribeToBridge = (newBridge: IrSdkBridge) => {
-    console.log('🔄 Bridge proxy: Re-subscribing to new bridge...');
+    log.info('Bridge proxy: Re-subscribing to new bridge...');
     // Unsubscribe from old bridge first
     unsubscribeFromBridge();
     currentTelemetry = null;
@@ -83,10 +86,12 @@ export function createBridgeProxy(
   };
 
   if (dashboardBridge) {
-    dashboardBridge.dashboardUpdated((dashboard: DashboardLayout, profileId?: string) => {
-      currentDashboard = dashboard;
-      broadcast('dashboardUpdated', { dashboard, profileId });
-    });
+    dashboardBridge.dashboardUpdated(
+      (dashboard: DashboardLayout, profileId?: string) => {
+        currentDashboard = dashboard;
+        broadcast('dashboardUpdated', { dashboard, profileId });
+      }
+    );
 
     if (dashboardBridge.onDemoModeChanged) {
       dashboardBridge.onDemoModeChanged((demoMode: boolean) => {
@@ -100,20 +105,22 @@ export function createBridgeProxy(
     clients.add(ws);
 
     if (unsubscribeFunctions.length === 0) {
-      console.log('🔌 No active subscriptions, subscribing to bridge...');
+      log.info('No active subscriptions, subscribing to bridge...');
       subscribeToBridge(currentBridge || irsdkBridge);
     }
 
-    ws.send(JSON.stringify({
-      type: 'initialState',
-      data: {
-        telemetry: currentTelemetry,
-        sessionData: currentSession,
-        isRunning,
-        dashboard: currentDashboard,
-        isDemoMode,
-      },
-    }));
+    ws.send(
+      JSON.stringify({
+        type: 'initialState',
+        data: {
+          telemetry: currentTelemetry,
+          sessionData: currentSession,
+          isRunning,
+          dashboard: currentDashboard,
+          isDemoMode,
+        },
+      })
+    );
 
     ws.on('message', async (message: Buffer) => {
       try {
@@ -121,19 +128,26 @@ export function createBridgeProxy(
 
         switch (parsed.type) {
           case 'getDashboard':
-            ws.send(JSON.stringify({
-              type: 'dashboard',
-              data: currentDashboard,
-            }));
+            ws.send(
+              JSON.stringify({
+                type: 'dashboard',
+                data: currentDashboard,
+              })
+            );
             break;
           case 'getDashboardForProfile': {
             const { requestId, data } = parsed;
-            const result = await dashboardBridge?.getDashboardForProfile?.(data.profileId) || currentDashboard;
-            ws.send(JSON.stringify({
-              type: 'getDashboardForProfile',
-              requestId,
-              data: result,
-            }));
+            const result =
+              (await dashboardBridge?.getDashboardForProfile?.(
+                data.profileId
+              )) || currentDashboard;
+            ws.send(
+              JSON.stringify({
+                type: 'getDashboardForProfile',
+                requestId,
+                data: result,
+              })
+            );
             break;
           }
           case 'reloadDashboard':
@@ -149,59 +163,74 @@ export function createBridgeProxy(
           case 'getAppVersion': {
             const { requestId } = parsed;
             const result = await dashboardBridge?.getAppVersion();
-            ws.send(JSON.stringify({
-              type: 'getAppVersion',
-              requestId,
-              data: result,
-            }));
+            ws.send(
+              JSON.stringify({
+                type: 'getAppVersion',
+                requestId,
+                data: result,
+              })
+            );
             break;
           }
           case 'getGarageCoverImageAsDataUrl': {
             const { requestId, data } = parsed;
-            const result = await dashboardBridge?.getGarageCoverImageAsDataUrl(data.imagePath);
-            ws.send(JSON.stringify({
-              type: 'getGarageCoverImageAsDataUrl',
-              requestId,
-              data: result,
-            }));
+            const result = await dashboardBridge?.getGarageCoverImageAsDataUrl(
+              data.imagePath
+            );
+            ws.send(
+              JSON.stringify({
+                type: 'getGarageCoverImageAsDataUrl',
+                requestId,
+                data: result,
+              })
+            );
             break;
           }
           case 'getCurrentProfile': {
             const { requestId } = parsed;
             const result = await dashboardBridge?.getCurrentProfile();
-            ws.send(JSON.stringify({
-              type: 'getCurrentProfile',
-              requestId,
-              data: result,
-            }));
+            ws.send(
+              JSON.stringify({
+                type: 'getCurrentProfile',
+                requestId,
+                data: result,
+              })
+            );
             break;
           }
           case 'listProfiles': {
             const { requestId } = parsed;
             const result = await dashboardBridge?.listProfiles();
-            ws.send(JSON.stringify({
-              type: 'listProfiles',
-              requestId,
-              data: result,
-            }));
+            ws.send(
+              JSON.stringify({
+                type: 'listProfiles',
+                requestId,
+                data: result,
+              })
+            );
             break;
           }
           case 'updateProfileTheme': {
             const { requestId, data } = parsed;
-            await dashboardBridge?.updateProfileTheme(data.profileId, data.themeSettings);
-            ws.send(JSON.stringify({
-              type: 'updateProfileTheme',
-              requestId,
-              data: null,
-            }));
+            await dashboardBridge?.updateProfileTheme(
+              data.profileId,
+              data.themeSettings
+            );
+            ws.send(
+              JSON.stringify({
+                type: 'updateProfileTheme',
+                requestId,
+                data: null,
+              })
+            );
             break;
           }
           default:
-            console.log('🔄 Bridge proxy: Unknown message type:', parsed.type);
+            log.info('Bridge proxy: Unknown message type:', parsed.type);
             break;
         }
       } catch (error) {
-        console.error('Error parsing client message:', error);
+        log.error('Error parsing client message:', error);
       }
     });
 
@@ -209,16 +238,15 @@ export function createBridgeProxy(
       clients.delete(ws);
 
       if (clients.size === 0) {
-        console.log('🔌 No clients connected, unsubscribing from bridge...');
+        log.info('No clients connected, unsubscribing from bridge...');
         unsubscribeFromBridge();
       }
     });
 
     ws.on('error', (error: Error) => {
-      console.error('WebSocket error:', error);
+      log.error('WebSocket error:', error);
     });
   });
 
   return { wss, resubscribeToBridge };
 }
-

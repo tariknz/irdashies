@@ -2,6 +2,7 @@ import { IRacingSDK } from '../../irsdk';
 import { OverlayManager } from '../../overlayManager';
 import { TelemetryPerfMetrics } from '../../perfMetrics';
 import type { IrSdkBridge, Session, Telemetry } from '@irdashies/types';
+import log from '../../logger';
 
 // Short timeout for waitForData to avoid blocking the main thread.
 // The native SDK's WaitForSingleObject blocks synchronously, so keep this
@@ -13,7 +14,7 @@ const RETRY_INTERVAL = 1000;
 export async function publishIRacingSDKEvents(
   overlayManager: OverlayManager
 ): Promise<IrSdkBridge> {
-  console.log('[iracingSdkBridge] Loading iRacing SDK bridge...');
+  log.info('[iracingSdkBridge] Loading iRacing SDK bridge...');
 
   const perfMetrics = new TelemetryPerfMetrics();
   perfMetrics.startReporting();
@@ -28,10 +29,7 @@ export async function publishIRacingSDKEvents(
   const runningStateCallbacks = new Set<(value: boolean) => void>();
 
   overlayManager.onOverlayReady((id) => {
-    console.log(
-      '[iracingSdkBridge] New window ready, sending initial data: ',
-      id
-    );
+    log.info('[iracingSdkBridge] New window ready, sending initial data: ', id);
     if (lastRunningState !== undefined)
       overlayManager.publishMessageToOverlay(
         id,
@@ -54,7 +52,7 @@ export async function publishIRacingSDKEvents(
       return;
     }
     lastRunningState = isSimRunning;
-    console.log(
+    log.info(
       '[iracingSdkBridge] Sending running state to window',
       isSimRunning
     );
@@ -71,7 +69,7 @@ export async function publishIRacingSDKEvents(
 
       while (!shouldStop && sdk.waitForData(WAIT_TIMEOUT)) {
         if (!wasRunning) {
-          console.log('[iracingSdkBridge] iRacing is running');
+          log.info('[iracingSdkBridge] iRacing is running');
           wasRunning = true;
         }
         perfMetrics.markStart('processTelemetry');
@@ -107,7 +105,7 @@ export async function publishIRacingSDKEvents(
       }
 
       if (wasRunning) {
-        console.log(
+        log.info(
           '[iracingSdkBridge] iRacing is no longer publishing telemetry'
         );
       }

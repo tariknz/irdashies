@@ -10,6 +10,7 @@ import { writeFile, mkdir, readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { app } from 'electron';
 import { randomUUID } from 'node:crypto';
+import log from '../logger';
 
 const DASHBOARDS_KEY = 'dashboards';
 const PROFILES_KEY = 'profiles';
@@ -94,21 +95,9 @@ export const listDashboards = () => {
 
 export const getDashboard = (id: string) => {
   const dashboards = readData<Record<string, DashboardLayout>>(DASHBOARDS_KEY);
-  console.log('[getDashboard] Looking for profile:', id);
-  console.log(
-    '[getDashboard] Available dashboard keys:',
-    dashboards ? Object.keys(dashboards) : 'null'
-  );
   if (!dashboards) return null;
 
-  const dashboard = dashboards[id];
-  console.log(
-    '[getDashboard] Found dashboard for',
-    id,
-    ':',
-    dashboard ? 'yes' : 'no'
-  );
-  return dashboard;
+  return dashboards[id] ?? null;
 };
 
 export const updateDashboardWidget = (
@@ -150,9 +139,9 @@ export const saveDashboard = (
   // Only save and emit if there are actual changes
   if (isDashboardChanged(existingDashboard, mergedDashboard)) {
     dashboards[id] = mergedDashboard;
-    console.log('[saveDashboard] Writing to storage for profile:', id);
+    log.info('[saveDashboard] Writing to storage for profile:', id);
     writeData(DASHBOARDS_KEY, dashboards);
-    console.log('[saveDashboard] Saved successfully to storage');
+    log.info('[saveDashboard] Saved successfully to storage');
 
     // Only emit dashboard updated event if this is the currently active profile
     // This prevents overlay refreshes when creating/modifying non-active profiles
@@ -160,7 +149,7 @@ export const saveDashboard = (
     if (id === currentProfileId) {
       emitDashboardUpdated(mergedDashboard);
     } else {
-      console.log(
+      log.info(
         '[saveDashboard] Not emitting update - not current profile (saved:',
         id,
         ', current:',
@@ -169,7 +158,7 @@ export const saveDashboard = (
       );
     }
   } else {
-    console.log('[saveDashboard] Dashboard unchanged, not saving');
+    log.info('[saveDashboard] Dashboard unchanged, not saving');
   }
 };
 
@@ -256,19 +245,19 @@ export const saveGarageCoverImage = async (
     }
 
     const imagePath = resolve(assetsPath, `custom-cover.${extension}`);
-    console.log(
+    log.info(
       '[GarageCover] Writing to:',
       imagePath,
       'Extension detected:',
       extension
     );
     await writeFile(imagePath, buffer);
-    console.log('[GarageCover] File written successfully');
+    log.info('[GarageCover] File written successfully');
 
     // Return the file path so it can be persisted in the dashboard
     return imagePath;
   } catch (err) {
-    console.error('[GarageCover] Error saving image:', err);
+    log.error('[GarageCover] Error saving image:', err);
     throw err;
   }
 };
@@ -309,7 +298,7 @@ export const getGarageCoverImageAsDataUrl = async (
 
     return `data:${mimeType};base64,${base64}`;
   } catch (err) {
-    console.error('Error reading garage cover image:', err);
+    log.error('Error reading garage cover image:', err);
     return null;
   }
 };
@@ -432,7 +421,7 @@ export const updateProfileTheme = (
   profileId: string,
   themeSettings?: DashboardProfile['themeSettings']
 ): void => {
-  console.log(
+  log.info(
     '[updateProfileTheme] Updating profile:',
     profileId,
     'with themeSettings:',
@@ -450,11 +439,11 @@ export const updateProfileTheme = (
   };
 
   writeData(PROFILES_KEY, profiles);
-  console.log('[updateProfileTheme] Saved profile, checking if current...');
+  log.info('[updateProfileTheme] Saved profile, checking if current...');
 
   // Get the current profile ID and emit dashboard update if this is the active profile
   const currentProfileId = getCurrentProfileId();
-  console.log(
+  log.info(
     '[updateProfileTheme] Current profile ID:',
     currentProfileId,
     'Updated profile ID:',
@@ -462,17 +451,17 @@ export const updateProfileTheme = (
   );
   if (profileId === currentProfileId) {
     const dashboard = getDashboard(profileId);
-    console.log(
+    log.info(
       '[updateProfileTheme] This is the current profile, emitting dashboard update'
     );
     if (dashboard) {
       emitDashboardUpdated(dashboard);
-      console.log('[updateProfileTheme] Dashboard update emitted');
+      log.info('[updateProfileTheme] Dashboard update emitted');
     } else {
-      console.log('[updateProfileTheme] No dashboard found for profile');
+      log.info('[updateProfileTheme] No dashboard found for profile');
     }
   } else {
-    console.log('[updateProfileTheme] Not the current profile, skipping emit');
+    log.info('[updateProfileTheme] Not the current profile, skipping emit');
   }
 };
 export const renameProfile = (profileId: string, newName: string): void => {

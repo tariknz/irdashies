@@ -2,6 +2,7 @@ import { app } from 'electron';
 import path from 'node:path';
 import fs from 'node:fs';
 import type { FuelLapData } from '../../types';
+import log from '../logger';
 
 interface FuelStorageFormat {
   laps: Record<string, FuelLapData[]>;
@@ -25,16 +26,20 @@ export class FuelDatabase {
         return JSON.parse(content);
       }
     } catch (e) {
-      console.error('[FuelDatabase] Failed to load data:', e);
+      log.error('[FuelDatabase] Failed to load data:', e);
     }
     return { laps: {}, settings: {} };
   }
 
   private save() {
     try {
-      fs.writeFileSync(this.filePath, JSON.stringify(this.data, null, 2), 'utf-8');
+      fs.writeFileSync(
+        this.filePath,
+        JSON.stringify(this.data, null, 2),
+        'utf-8'
+      );
     } catch (e) {
-      console.error('[FuelDatabase] Failed to save data:', e);
+      log.error('[FuelDatabase] Failed to save data:', e);
     }
   }
 
@@ -64,13 +69,20 @@ export class FuelDatabase {
     return this.data.laps[key] || [];
   }
 
-  public saveQualifyMax(trackId: string | number, carName: string, val: number | null) {
+  public saveQualifyMax(
+    trackId: string | number,
+    carName: string,
+    val: number | null
+  ) {
     const key = this.getContextKey(trackId, carName);
     this.data.settings[key] = { qualifyMax: val };
     this.save();
   }
 
-  public getQualifyMax(trackId: string | number, carName: string): number | null {
+  public getQualifyMax(
+    trackId: string | number,
+    carName: string
+  ): number | null {
     const key = this.getContextKey(trackId, carName);
     return this.data.settings[key]?.qualifyMax ?? null;
   }

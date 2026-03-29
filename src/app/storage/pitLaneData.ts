@@ -1,6 +1,7 @@
 import { app } from 'electron';
 import fs from 'node:fs';
 import path from 'node:path';
+import log from '../logger';
 
 export interface PitLaneTrackData {
   pitEntryPct: number | null;
@@ -32,7 +33,7 @@ export const writePitLaneData = (data: Record<string, PitLaneTrackData>) => {
   try {
     fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
   } catch (error) {
-    console.error('Failed to write pit lane data:', error);
+    log.error('Failed to write pit lane data:', error);
   }
 };
 
@@ -41,7 +42,9 @@ export const writePitLaneData = (data: Record<string, PitLaneTrackData>) => {
  * @param trackId Track ID from session
  * @returns Pit lane data or null if not found
  */
-export const getPitLaneDataForTrack = (trackId: string): PitLaneTrackData | null => {
+export const getPitLaneDataForTrack = (
+  trackId: string
+): PitLaneTrackData | null => {
   const allData = readPitLaneData();
   return allData[trackId] || null;
 };
@@ -51,7 +54,10 @@ export const getPitLaneDataForTrack = (trackId: string): PitLaneTrackData | null
  * @param trackId Track ID from session
  * @param data Pit lane data to save
  */
-export const updatePitLaneDataForTrack = (trackId: string, data: Partial<PitLaneTrackData>) => {
+export const updatePitLaneDataForTrack = (
+  trackId: string,
+  data: Partial<PitLaneTrackData>
+) => {
   const allData = readPitLaneData();
   const existing = allData[trackId] || { pitEntryPct: null, pitExitPct: null };
 

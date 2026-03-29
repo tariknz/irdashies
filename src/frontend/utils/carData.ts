@@ -12,6 +12,7 @@
  */
 
 import carDataBundle from '../assets/data/cars-bundle.json';
+import logger from '@irdashies/utils/logger';
 
 export interface CarData {
   carName: string;
@@ -106,7 +107,7 @@ export const loadCarData = (
 
     return null;
   } catch (error) {
-    console.warn('Failed to load car data:', error);
+    logger.warn('Failed to load car data:', error);
     return null;
   }
 };

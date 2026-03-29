@@ -1,5 +1,6 @@
 import { app, globalShortcut } from 'electron';
 import { OverlayManager } from './overlayManager';
+import log from './logger';
 
 export function registerHideUiShortcut(overlayManager: OverlayManager) {
   let hideState = false;
@@ -15,7 +16,7 @@ export function registerHideUiShortcut(overlayManager: OverlayManager) {
     });
 
     if (!registered) {
-      console.error(`Failed to register global shortcut: ${accel}`);
+      log.error(`Failed to register global shortcut: ${accel}`);
     }
   });
 
