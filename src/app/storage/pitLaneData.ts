@@ -1,7 +1,7 @@
 import { app } from 'electron';
 import fs from 'node:fs';
 import path from 'node:path';
-import log from '../logger';
+import logger from '../logger';
 
 export interface PitLaneTrackData {
   pitEntryPct: number | null;
@@ -33,7 +33,7 @@ export const writePitLaneData = (data: Record<string, PitLaneTrackData>) => {
   try {
     fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
   } catch (error) {
-    log.error('Failed to write pit lane data:', error);
+    logger.error('Failed to write pit lane data:', error);
   }
 };
 

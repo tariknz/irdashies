@@ -2,10 +2,10 @@ import path from 'node:path';
 import { writeFile, mkdir } from 'node:fs/promises';
 import { app } from 'electron';
 import { IRacingSDK } from '../../irsdk';
-import log from '../../logger';
+import logger from '../../logger';
 
 export async function dumpCurrentTelemetry() {
-  log.info('Starting...');
+  logger.info('Starting...');
   const sdk = new IRacingSDK();
   const dataPath = app.getPath('userData');
   const dirPath = path.join(dataPath, Date.now().toString());
@@ -24,10 +24,10 @@ export async function dumpCurrentTelemetry() {
         await writeFile(`${dirPath}/telemetry.json`, telemetry, 'utf-8'),
         await writeFile(`${dirPath}/session.json`, session, 'utf-8'),
       ]);
-      log.info(`Saved to: ${dirPath}`);
+      logger.info(`Saved to: ${dirPath}`);
       return { dirPath };
     } else {
-      log.warn('No telemetry data received');
+      logger.warn('No telemetry data received');
     }
   }
 

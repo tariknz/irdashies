@@ -3,7 +3,7 @@ import path from 'node:path';
 import fs from 'node:fs';
 import { FuelDatabase } from '../storage/fuelDatabase';
 import type { FuelLapData } from '@irdashies/types';
-import log from '../logger';
+import logger from '../logger';
 
 export const setupFuelCalculatorBridge = () => {
   // Initialize Fuel Database
@@ -12,7 +12,7 @@ export const setupFuelCalculatorBridge = () => {
   ipcMain.handle(
     'fuel:getHistoricalLaps',
     (_, trackId: string | number, carName: string) => {
-      log.info(
+      logger.info(
         `[Main] Fetching historical laps for ${carName} at track ${trackId}`
       );
       return fuelDb.getLaps(trackId, carName);
@@ -22,7 +22,7 @@ export const setupFuelCalculatorBridge = () => {
   ipcMain.handle(
     'fuel:saveLap',
     (_, trackId: string | number, carName: string, lap: FuelLapData) => {
-      log.info(
+      logger.info(
         `[Main] Saving lap ${lap.lapNumber} for ${carName} at track ${trackId}`
       );
       return fuelDb.saveLap(trackId, carName, lap);
@@ -32,19 +32,19 @@ export const setupFuelCalculatorBridge = () => {
   ipcMain.handle(
     'fuel:clearHistory',
     (_, trackId: string | number, carName: string) => {
-      log.info(`[Main] Clearing history for ${carName} at track ${trackId}`);
+      logger.info(`[Main] Clearing history for ${carName} at track ${trackId}`);
       return fuelDb.clearLaps(trackId, carName);
     }
   );
 
   ipcMain.handle('fuel:clearAllHistory', () => {
-    log.info('[Main] Received fuel:clearAllHistory request');
+    logger.info('[Main] Received fuel:clearAllHistory request');
     try {
       fuelDb.clearAllLaps();
-      log.info('[Main] fuel:clearAllHistory successful');
+      logger.info('[Main] fuel:clearAllHistory successful');
       return true;
     } catch (e) {
-      log.error('[Main] fuel:clearAllHistory failed:', e);
+      logger.error('[Main] fuel:clearAllHistory failed:', e);
       throw e;
     }
   });
@@ -52,7 +52,9 @@ export const setupFuelCalculatorBridge = () => {
   ipcMain.handle(
     'fuel:getQualifyMax',
     (_, trackId: string | number, carName: string) => {
-      log.info(`[Main] Fetching QualifyMax for ${carName} at track ${trackId}`);
+      logger.info(
+        `[Main] Fetching QualifyMax for ${carName} at track ${trackId}`
+      );
       return fuelDb.getQualifyMax(trackId, carName);
     }
   );
@@ -60,7 +62,7 @@ export const setupFuelCalculatorBridge = () => {
   ipcMain.handle(
     'fuel:saveQualifyMax',
     (_, trackId: string | number, carName: string, val: number | null) => {
-      log.info(
+      logger.info(
         `[Main] Saving QualifyMax (${val}) for ${carName} at track ${trackId}`
       );
       return fuelDb.saveQualifyMax(trackId, carName, val);
@@ -71,7 +73,9 @@ export const setupFuelCalculatorBridge = () => {
 
   ipcMain.handle('fuel:startNewLog', () => {
     currentLogPath = null;
-    log.info('[Main] Log rotation requested. Next log will be in a new file.');
+    logger.info(
+      '[Main] Log rotation requested. Next log will be in a new file.'
+    );
     return Promise.resolve();
   });
 
@@ -82,7 +86,7 @@ export const setupFuelCalculatorBridge = () => {
         try {
           fs.mkdirSync(logsDir, { recursive: true });
         } catch (e) {
-          log.error('[Main] Failed to create logs dir:', e);
+          logger.error('[Main] Failed to create logs dir:', e);
           return;
         }
       }
@@ -114,7 +118,7 @@ export const setupFuelCalculatorBridge = () => {
       }
 
       currentLogPath = potentialPath;
-      log.info(`[Main] Starting new fuel log: ${currentLogPath}`);
+      logger.info(`[Main] Starting new fuel log: ${currentLogPath}`);
     }
 
     const timestamp = new Date().toISOString();
@@ -123,7 +127,7 @@ export const setupFuelCalculatorBridge = () => {
     try {
       fs.appendFileSync(currentLogPath, logEntry);
     } catch (err) {
-      log.error('Failed to write to fuel log:', err);
+      logger.error('Failed to write to fuel log:', err);
     }
   });
 };

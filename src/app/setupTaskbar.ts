@@ -8,7 +8,7 @@ import {
 import { OverlayManager } from './overlayManager';
 import { writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import log from './logger';
+import logger from './logger';
 
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string;
 
@@ -109,13 +109,15 @@ class Taskbar {
               );
               const pngData = source.thumbnail.toPNG();
               await writeFile(screenshotPath, pngData);
-              log.info(`Screenshot ${index + 1} saved to: ${screenshotPath}`);
+              logger.info(
+                `Screenshot ${index + 1} saved to: ${screenshotPath}`
+              );
             }
           })
         );
       }
     } catch (error) {
-      log.error('Error capturing screenshots:', error);
+      logger.error('Error capturing screenshots:', error);
     }
   }
 

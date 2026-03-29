@@ -10,7 +10,7 @@ import { Notification } from 'electron';
 import { readData, writeData } from './storage/storage';
 import { getDashboard } from './storage/dashboards';
 import { trackSettingsWindowMovement } from './trackWindowMovement';
-import log from './logger';
+import logger from './logger';
 
 // used for Hot Module Replacement
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string;
@@ -73,10 +73,10 @@ export class OverlayManager {
     const allDisplays = screen.getAllDisplays();
     const primaryDisplay = screen.getPrimaryDisplay();
 
-    log.info(`[OverlayManager] Found ${allDisplays.length} display(s):`);
+    logger.info(`[OverlayManager] Found ${allDisplays.length} display(s):`);
     for (const display of allDisplays) {
       const isPrimary = display.id === primaryDisplay.id;
-      log.info(
+      logger.info(
         `  Display ${display.id}${isPrimary ? ' (PRIMARY)' : ''}: bounds=${JSON.stringify(display.bounds)}`
       );
     }
@@ -106,7 +106,7 @@ export class OverlayManager {
 
     for (const display of allDisplays) {
       if (!displaysWithWidgets.has(display.id)) {
-        log.info(
+        logger.info(
           `[OverlayManager] Skipping display ${display.id} — no widgets assigned`
         );
         continue;
@@ -140,7 +140,7 @@ export class OverlayManager {
     // Store full display bounds for shrink-wrap / expand toggling
     this.displayFullBounds.set(display.id, { ...expectedBounds });
 
-    log.info(
+    logger.info(
       `[OverlayManager] Creating window for display ${display.id}${isPrimary ? ' (PRIMARY)' : ''}: x=${expectedBounds.x}, y=${expectedBounds.y}, ${expectedBounds.width}x${expectedBounds.height}`
     );
 
@@ -194,7 +194,7 @@ export class OverlayManager {
     this.displayWindows.set(display.id, browserWindow);
 
     browserWindow.on('closed', () => {
-      log.info(`Display ${display.id} overlay window closed`);
+      logger.info(`Display ${display.id} overlay window closed`);
       this.displayWindows.delete(display.id);
       this.displayBoundsInfo.delete(display.id);
     });
@@ -241,12 +241,12 @@ export class OverlayManager {
 
       this.displayBoundsInfo.set(display.id, boundsInfo);
 
-      log.info(
+      logger.info(
         `[OverlayManager] Display ${display.id} final bounds: x=${actualBounds.x}, y=${actualBounds.y}, ${actualBounds.width}x${actualBounds.height}`
       );
 
       if (offset.x !== 0 || offset.y !== 0) {
-        log.warn(
+        logger.warn(
           `[OverlayManager] Display ${display.id} OS constrained position! Offset: (${offset.x}, ${offset.y})`
         );
       }
@@ -442,7 +442,7 @@ export class OverlayManager {
       try {
         win.webContents.send(key, value);
       } catch (e) {
-        log.error(`Failed to send message ${key} to overlay window`, e);
+        logger.error(`Failed to send message ${key} to overlay window`, e);
       }
     }
 
@@ -459,7 +459,7 @@ export class OverlayManager {
       try {
         this.currentSettingsWindow.webContents.send(key, value);
       } catch (e) {
-        log.error(`Failed to send message ${key} to settings window`, e);
+        logger.error(`Failed to send message ${key} to settings window`, e);
       }
     }
   }
@@ -655,7 +655,7 @@ export class OverlayManager {
     const gotTheLock = app.requestSingleInstanceLock();
 
     if (!gotTheLock) {
-      log.warn('[OverlayManager] Failed to get single instance lock.');
+      logger.warn('[OverlayManager] Failed to get single instance lock.');
       const isDev = !!MAIN_WINDOW_VITE_DEV_SERVER_URL;
       if (!isDev) {
         app.quit();
@@ -664,7 +664,7 @@ export class OverlayManager {
       }
       // In dev mode, we allow it to continue because Forge might not have
       // fully killed the previous process's lock yet.
-      log.warn('[OverlayManager] Dev mode detected, continuing anyway...');
+      logger.warn('[OverlayManager] Dev mode detected, continuing anyway...');
       this.hasSingleInstanceLock = true;
       return true;
     }

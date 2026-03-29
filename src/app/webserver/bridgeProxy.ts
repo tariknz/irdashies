@@ -3,7 +3,7 @@ import { WebSocketServer, WebSocket } from 'ws';
 import type { Telemetry, Session, DashboardLayout } from '@irdashies/types';
 import type { IrSdkBridge, DashboardBridge } from '@irdashies/types';
 import { getIsDemoMode } from '../bridge/iracingSdk/setup';
-import log from '../logger';
+import logger from '../logger';
 
 // Export current state so it can be accessed by other parts of the app
 export let currentDashboard: DashboardLayout | null = null;
@@ -76,7 +76,7 @@ export function createBridgeProxy(
   };
 
   const resubscribeToBridge = (newBridge: IrSdkBridge) => {
-    log.info('Bridge proxy: Re-subscribing to new bridge...');
+    logger.info('Bridge proxy: Re-subscribing to new bridge...');
     // Unsubscribe from old bridge first
     unsubscribeFromBridge();
     currentTelemetry = null;
@@ -105,7 +105,7 @@ export function createBridgeProxy(
     clients.add(ws);
 
     if (unsubscribeFunctions.length === 0) {
-      log.info('No active subscriptions, subscribing to bridge...');
+      logger.info('No active subscriptions, subscribing to bridge...');
       subscribeToBridge(currentBridge || irsdkBridge);
     }
 
@@ -226,11 +226,11 @@ export function createBridgeProxy(
             break;
           }
           default:
-            log.info('Bridge proxy: Unknown message type:', parsed.type);
+            logger.info('Bridge proxy: Unknown message type:', parsed.type);
             break;
         }
       } catch (error) {
-        log.error('Error parsing client message:', error);
+        logger.error('Error parsing client message:', error);
       }
     });
 
@@ -238,13 +238,13 @@ export function createBridgeProxy(
       clients.delete(ws);
 
       if (clients.size === 0) {
-        log.info('No clients connected, unsubscribing from bridge...');
+        logger.info('No clients connected, unsubscribing from bridge...');
         unsubscribeFromBridge();
       }
     });
 
     ws.on('error', (error: Error) => {
-      log.error('WebSocket error:', error);
+      logger.error('WebSocket error:', error);
     });
   });
 

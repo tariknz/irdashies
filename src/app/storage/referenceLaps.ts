@@ -2,7 +2,7 @@ import { ReferenceLap, ReferencePoint } from '@irdashies/types';
 import { app } from 'electron';
 import fs from 'node:fs';
 import path from 'node:path';
-import log from '../logger';
+import logger from '../logger';
 
 const dataPath = app.getPath('userData');
 const filePath = path.join(dataPath, 'referenceLaps.json');
@@ -59,7 +59,7 @@ export const writeReferenceLaps = (data: Record<string, ReferenceLap>) => {
     const jsonString = JSON.stringify(data, replacer, 2);
     fs.writeFileSync(filePath, jsonString);
   } catch (error) {
-    log.error('Failed to write reference lap data:', error);
+    logger.error('Failed to write reference lap data:', error);
   }
 };
 

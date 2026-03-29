@@ -10,7 +10,7 @@ import { writeFile, mkdir, readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { app } from 'electron';
 import { randomUUID } from 'node:crypto';
-import log from '../logger';
+import logger from '../logger';
 
 const DASHBOARDS_KEY = 'dashboards';
 const PROFILES_KEY = 'profiles';
@@ -139,9 +139,9 @@ export const saveDashboard = (
   // Only save and emit if there are actual changes
   if (isDashboardChanged(existingDashboard, mergedDashboard)) {
     dashboards[id] = mergedDashboard;
-    log.info('[saveDashboard] Writing to storage for profile:', id);
+    logger.info('[saveDashboard] Writing to storage for profile:', id);
     writeData(DASHBOARDS_KEY, dashboards);
-    log.info('[saveDashboard] Saved successfully to storage');
+    logger.info('[saveDashboard] Saved successfully to storage');
 
     // Only emit dashboard updated event if this is the currently active profile
     // This prevents overlay refreshes when creating/modifying non-active profiles
@@ -149,7 +149,7 @@ export const saveDashboard = (
     if (id === currentProfileId) {
       emitDashboardUpdated(mergedDashboard);
     } else {
-      log.info(
+      logger.info(
         '[saveDashboard] Not emitting update - not current profile (saved:',
         id,
         ', current:',
@@ -158,7 +158,7 @@ export const saveDashboard = (
       );
     }
   } else {
-    log.info('[saveDashboard] Dashboard unchanged, not saving');
+    logger.info('[saveDashboard] Dashboard unchanged, not saving');
   }
 };
 
@@ -245,19 +245,19 @@ export const saveGarageCoverImage = async (
     }
 
     const imagePath = resolve(assetsPath, `custom-cover.${extension}`);
-    log.info(
+    logger.info(
       '[GarageCover] Writing to:',
       imagePath,
       'Extension detected:',
       extension
     );
     await writeFile(imagePath, buffer);
-    log.info('[GarageCover] File written successfully');
+    logger.info('[GarageCover] File written successfully');
 
     // Return the file path so it can be persisted in the dashboard
     return imagePath;
   } catch (err) {
-    log.error('[GarageCover] Error saving image:', err);
+    logger.error('[GarageCover] Error saving image:', err);
     throw err;
   }
 };
@@ -298,7 +298,7 @@ export const getGarageCoverImageAsDataUrl = async (
 
     return `data:${mimeType};base64,${base64}`;
   } catch (err) {
-    log.error('Error reading garage cover image:', err);
+    logger.error('Error reading garage cover image:', err);
     return null;
   }
 };
@@ -421,7 +421,7 @@ export const updateProfileTheme = (
   profileId: string,
   themeSettings?: DashboardProfile['themeSettings']
 ): void => {
-  log.info(
+  logger.info(
     '[updateProfileTheme] Updating profile:',
     profileId,
     'with themeSettings:',
@@ -439,11 +439,11 @@ export const updateProfileTheme = (
   };
 
   writeData(PROFILES_KEY, profiles);
-  log.info('[updateProfileTheme] Saved profile, checking if current...');
+  logger.info('[updateProfileTheme] Saved profile, checking if current...');
 
   // Get the current profile ID and emit dashboard update if this is the active profile
   const currentProfileId = getCurrentProfileId();
-  log.info(
+  logger.info(
     '[updateProfileTheme] Current profile ID:',
     currentProfileId,
     'Updated profile ID:',
@@ -451,17 +451,17 @@ export const updateProfileTheme = (
   );
   if (profileId === currentProfileId) {
     const dashboard = getDashboard(profileId);
-    log.info(
+    logger.info(
       '[updateProfileTheme] This is the current profile, emitting dashboard update'
     );
     if (dashboard) {
       emitDashboardUpdated(dashboard);
-      log.info('[updateProfileTheme] Dashboard update emitted');
+      logger.info('[updateProfileTheme] Dashboard update emitted');
     } else {
-      log.info('[updateProfileTheme] No dashboard found for profile');
+      logger.info('[updateProfileTheme] No dashboard found for profile');
     }
   } else {
-    log.info('[updateProfileTheme] Not the current profile, skipping emit');
+    logger.info('[updateProfileTheme] Not the current profile, skipping emit');
   }
 };
 export const renameProfile = (profileId: string, newName: string): void => {

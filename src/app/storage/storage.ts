@@ -1,7 +1,7 @@
 import { app } from 'electron';
 import fs from 'node:fs';
 import path from 'node:path';
-import log from '../logger';
+import logger from '../logger';
 
 const dataPath = app.getPath('userData');
 const filePath = path.join(dataPath, 'config.json');
@@ -23,8 +23,8 @@ const parseData = () => {
     const data = fs.readFileSync(filePath, 'utf8');
     return JSON.parse(data);
   } catch (error) {
-    log.warn('Failed to read config file', error);
-    log.warn('Creating new config file');
+    logger.warn('Failed to read config file', error);
+    logger.warn('Creating new config file');
     return defaultData;
   }
 };

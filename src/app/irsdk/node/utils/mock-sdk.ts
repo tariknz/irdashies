@@ -16,7 +16,7 @@ import type {
 } from '../../types';
 
 import { loadMockSessionData, loadMockTelemetry } from './mock-data/loader';
-import log from '../../../logger';
+import logger from '../../../logger';
 
 let mockTelemetry: TelemetryVarList | null = null;
 let MOCK_SESSION: string | null = null;
@@ -33,7 +33,7 @@ export class MockSDK implements INativeSDK {
     this.enableLogging = false;
     this._isRunning = false;
     void this._loadMockData();
-    log.warn(
+    logger.warn(
       'Attempting to access iRacing SDK on unsupported platform!',
       '\nReturning mock SDK for testing purposes. (Only win32 supported)'
     );
@@ -160,6 +160,6 @@ export class MockSDK implements INativeSDK {
   ): void;
 
   public broadcast(...args: number[]): void {
-    log.info('Pretending to trigger SDK call:', ...args);
+    logger.info('Pretending to trigger SDK call:', ...args);
   }
 }

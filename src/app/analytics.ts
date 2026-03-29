@@ -6,7 +6,7 @@ import crypto from 'node:crypto';
 import type { DashboardLayout } from '@irdashies/types';
 import { readData, writeData } from './storage/storage';
 import { getAnalyticsOptOut } from './storage/analytics';
-import log from './logger';
+import logger from './logger';
 import type ElectronLog from 'electron-log';
 import type { LogMessage } from 'electron-log';
 
@@ -48,7 +48,7 @@ export class Analytics {
   private initialize(): void {
     const optOut = getAnalyticsOptOut();
     if (optOut === true) {
-      log.warn(
+      logger.warn(
         '[Analytics] Analytics opt-out is enabled, skipping initialization'
       );
       return;
@@ -116,7 +116,7 @@ export class Analytics {
     transport.level = 'warn';
     transport.transforms = [];
 
-    log.transports.posthog = transport;
+    logger.transports.posthog = transport;
   }
 
   async init(version: string, dashboard: DashboardLayout): Promise<void> {

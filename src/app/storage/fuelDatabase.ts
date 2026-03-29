@@ -2,7 +2,7 @@ import { app } from 'electron';
 import path from 'node:path';
 import fs from 'node:fs';
 import type { FuelLapData } from '../../types';
-import log from '../logger';
+import logger from '../logger';
 
 interface FuelStorageFormat {
   laps: Record<string, FuelLapData[]>;
@@ -26,7 +26,7 @@ export class FuelDatabase {
         return JSON.parse(content);
       }
     } catch (e) {
-      log.error('[FuelDatabase] Failed to load data:', e);
+      logger.error('[FuelDatabase] Failed to load data:', e);
     }
     return { laps: {}, settings: {} };
   }
@@ -39,7 +39,7 @@ export class FuelDatabase {
         'utf-8'
       );
     } catch (e) {
-      log.error('[FuelDatabase] Failed to save data:', e);
+      logger.error('[FuelDatabase] Failed to save data:', e);
     }
   }
 

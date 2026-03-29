@@ -26,7 +26,7 @@ import type { INativeSDK } from '../native';
 
 import { getSimStatus } from './utils';
 import { getSdkOrMock } from './get-sdk';
-import log from '../../logger';
+import logger from '../../logger';
 
 function copyTelemData<
   K extends keyof TelemetryVarList = keyof TelemetryVarList,
@@ -162,7 +162,7 @@ export class IRacingSDK {
       const result = await getSimStatus();
       return result;
     } catch (e) {
-      log.error('Could not successfully determine sim status:', e);
+      logger.error('Could not successfully determine sim status:', e);
     }
     return false;
   }
@@ -230,7 +230,7 @@ export class IRacingSDK {
       this._dataVer = this.currDataVersion;
       return this._sessionData;
     } catch (err) {
-      log.error('There was an error getting session data:', err);
+      logger.error('There was an error getting session data:', err);
     }
 
     return null;

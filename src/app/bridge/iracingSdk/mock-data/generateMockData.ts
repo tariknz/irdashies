@@ -1,7 +1,7 @@
 import type { IrSdkBridge, Session, Telemetry } from '@irdashies/types';
 import mockSessionInfo from '../../../irsdk/node/utils/mock-data/session.json';
 import mockTelemetry from '../../../irsdk/node/utils/mock-data/telemetry.json';
-import log from '../../../logger';
+import logger from '../../../logger';
 
 export async function generateMockDataFromPath(
   path?: string
@@ -280,7 +280,7 @@ export function generateMockData(sessionData?: {
       };
     },
     stop: () => {
-      log.info('Mock bridge: Stopping all intervals');
+      logger.info('Mock bridge: Stopping all intervals');
       if (telemetryInterval) clearInterval(telemetryInterval);
       if (sessionInfoInterval) clearInterval(sessionInfoInterval);
       if (runningStateInterval) clearInterval(runningStateInterval);

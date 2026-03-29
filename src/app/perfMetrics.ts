@@ -10,7 +10,7 @@
 
 import { performance } from 'perf_hooks';
 import { app, BrowserWindow } from 'electron';
-import log from './logger';
+import logger from './logger';
 
 export interface SectionStats {
   count: number;
@@ -284,6 +284,6 @@ export class TelemetryPerfMetrics {
       }
     }
 
-    log.info(lines.join('\n'));
+    logger.info(lines.join('\n'));
   }
 }

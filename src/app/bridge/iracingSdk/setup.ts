@@ -1,7 +1,7 @@
 import { OverlayManager } from 'src/app/overlayManager';
 import { ipcMain } from 'electron';
 import type { IrSdkBridge } from '@irdashies/types';
-import log from '../../logger';
+import logger from '../../logger';
 
 let isDemoMode = false;
 let currentBridge: IrSdkBridge | undefined;
@@ -59,7 +59,7 @@ async function setupBridge(overlayManager: OverlayManager) {
       onBridgeChangedCallbacks.forEach((cb) => cb(bridge));
     }
   } catch (err) {
-    log.error('Failed to load bridge');
+    logger.error('Failed to load bridge');
     throw err;
   }
 }
