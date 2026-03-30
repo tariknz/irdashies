@@ -357,9 +357,7 @@ export const DashboardView = () => {
     >
       {enabledWidgets.map((widget) => {
         const position =
-          Object.keys(widgetPositions).length > 0
-            ? widgetPositions[widget.id]
-            : initialPositions[widget.id];
+          widgetPositions[widget.id] ?? initialPositions[widget.id];
         if (!position) return null;
 
         return (
