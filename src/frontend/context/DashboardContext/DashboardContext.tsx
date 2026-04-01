@@ -26,6 +26,7 @@ interface DashboardContextProps {
   ) => void;
   resetDashboard: (resetEverything: boolean) => Promise<DashboardLayout>;
   createProfile: (name: string) => Promise<DashboardProfile>;
+  cloneProfile: (profileId: string) => Promise<DashboardProfile>;
   deleteProfile: (profileId: string) => Promise<void>;
   renameProfile: (profileId: string, newName: string) => Promise<void>;
   switchProfile: (profileId: string) => Promise<void>;
@@ -209,6 +210,12 @@ export const DashboardProvider: React.FC<{
     return profile;
   };
 
+  const cloneProfile = async (profileId: string) => {
+    const profile = await bridge.cloneProfile(profileId);
+    await loadProfiles();
+    return profile;
+  };
+
   const deleteProfile = async (profileId: string) => {
     await bridge.deleteProfile(profileId);
     await loadProfiles();
@@ -259,6 +266,7 @@ export const DashboardProvider: React.FC<{
         onDashboardUpdated: saveDashboard,
         resetDashboard,
         createProfile,
+        cloneProfile,
         deleteProfile,
         renameProfile,
         switchProfile,

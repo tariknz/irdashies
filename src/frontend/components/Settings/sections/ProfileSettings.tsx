@@ -8,6 +8,7 @@ export const ProfileSettings = () => {
     currentProfile,
     profiles,
     createProfile,
+    cloneProfile,
     deleteProfile,
     renameProfile,
     switchProfile,
@@ -96,6 +97,17 @@ export const ProfileSettings = () => {
 
   const handleCancelDelete = () => {
     setConfirmDelete({ isOpen: false, profileId: '', profileName: '' });
+  };
+
+  const handleCloneProfile = async (profile: DashboardProfile) => {
+    setError(null);
+    try {
+      const cloned = await cloneProfile(profile.id);
+      setEditingProfileId(cloned.id);
+      setEditingProfileName(cloned.name);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to clone profile');
+    }
   };
 
   const handleStartEdit = (profile: DashboardProfile) => {
@@ -264,6 +276,12 @@ export const ProfileSettings = () => {
                             </button>
                           )}
 
+                          <button
+                            onClick={() => handleCloneProfile(profile)}
+                            className="bg-slate-600 hover:bg-slate-700 text-white px-3 py-1 rounded text-sm font-medium transition-colors"
+                          >
+                            Clone
+                          </button>
                           <button
                             onClick={() => handleStartEdit(profile)}
                             className="bg-slate-600 hover:bg-slate-700 text-white px-3 py-1 rounded text-sm font-medium transition-colors"

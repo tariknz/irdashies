@@ -22,6 +22,7 @@ const mockBridge: DashboardBridge = {
   setAnalyticsOptOut: vi.fn(),
   listProfiles: vi.fn().mockResolvedValue([]),
   createProfile: vi.fn(),
+  cloneProfile: vi.fn(),
   deleteProfile: vi.fn(),
   renameProfile: vi.fn(),
   switchProfile: vi.fn(),

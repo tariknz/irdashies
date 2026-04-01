@@ -573,6 +573,10 @@ export class WebSocketBridge implements IrSdkBridge {
     return { id: 'new', name: 'New Profile' };
   }
 
+  async cloneProfile(): Promise<any> {
+    return { id: 'new-clone', name: 'New Profile - cloned' };
+  }
+
   async deleteProfile(): Promise<void> {
     return;
   }

@@ -109,6 +109,9 @@ export function exposeBridge() {
     createProfile: (name: string) => {
       return ipcRenderer.invoke('createProfile', name);
     },
+    cloneProfile: (profileId: string) => {
+      return ipcRenderer.invoke('cloneProfile', profileId);
+    },
     deleteProfile: (profileId: string) => {
       return ipcRenderer.invoke('deleteProfile', profileId);
     },
