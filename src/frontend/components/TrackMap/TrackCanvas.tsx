@@ -348,7 +348,13 @@ export const TrackCanvas = ({
     cacheCtx.scale(dpr, dpr);
 
     setupCanvasContext(cacheCtx, scale, offsetX, offsetY, isMinimalTrack);
-    if (showSectionColors && sectionBoundaries && sectionColors) {
+    if (
+      showSectionColors &&
+      sectionBoundaries &&
+      sectionColors &&
+      trackDrawing.active.trackPathPoints &&
+      trackDrawing.active.totalLength
+    ) {
       drawTrack(
         cacheCtx,
         path2DObjects,
