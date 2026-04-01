@@ -348,6 +348,14 @@ export const TrackCanvas = ({
     cacheCtx.scale(dpr, dpr);
 
     setupCanvasContext(cacheCtx, scale, offsetX, offsetY, isMinimalTrack);
+    drawTrack(
+      cacheCtx,
+      path2DObjects,
+      invertTrackColors,
+      trackLineWidth,
+      trackOutlineWidth,
+      isMinimalTrack
+    );
     if (
       showSectionColors &&
       sectionBoundaries &&
@@ -355,14 +363,6 @@ export const TrackCanvas = ({
       trackDrawing.active.trackPathPoints &&
       trackDrawing.active.totalLength
     ) {
-      drawTrack(
-        cacheCtx,
-        path2DObjects,
-        invertTrackColors,
-        trackLineWidth,
-        trackOutlineWidth,
-        isMinimalTrack
-      );
       drawTrackSections(
         cacheCtx,
         trackDrawing.active.trackPathPoints,
@@ -371,15 +371,6 @@ export const TrackCanvas = ({
         sectionColors,
         trackLineWidth,
         trackOutlineWidth
-      );
-    } else {
-      drawTrack(
-        cacheCtx,
-        path2DObjects,
-        invertTrackColors,
-        trackLineWidth,
-        trackOutlineWidth,
-        isMinimalTrack
       );
     }
     drawStartFinishLine(cacheCtx, startFinishLine, trackLineWidth);
