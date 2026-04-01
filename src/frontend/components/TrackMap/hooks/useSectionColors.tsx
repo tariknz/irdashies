@@ -17,6 +17,25 @@ const SECTION_COLORS = [
   '#6366f1', // indigo
 ];
 
+const assignSectionColors = (numSections: number): string[] => {
+  if (numSections <= 0) return [];
+  if (numSections === 1) return [SECTION_COLORS[0]];
+
+  const colors: string[] = [];
+  for (let i = 0; i < numSections; i++) {
+    const prev = colors[colors.length - 1];
+    // For the last section, also avoid matching the first color (wrap-around)
+    const first = i === numSections - 1 ? colors[0] : undefined;
+
+    let idx = i % SECTION_COLORS.length;
+    while (SECTION_COLORS[idx] === prev || SECTION_COLORS[idx] === first) {
+      idx = (idx + 1) % SECTION_COLORS.length;
+    }
+    colors.push(SECTION_COLORS[idx]);
+  }
+  return colors;
+};
+
 export const useSectionColors = (enabled: boolean) => {
   // Get sector boundaries from session data (SplitTimeInfo contains Sectors array with SectorStartPct)
   const session = useSessionStore((state) => state.session);
@@ -48,50 +67,15 @@ export const useSectionColors = (enabled: boolean) => {
         (val, idx, arr) => idx === 0 || val !== arr[idx - 1]
       );
 
-      // Assign colors ensuring adjacent sections (including wrap-around) differ
       const numSections = boundaries.length - 1;
       if (numSections <= 0) {
         return { sectionBoundaries: null, colors: null };
       }
 
-      const assignedColors: string[] = [];
-
-      for (let i = 0; i < numSections; i++) {
-        let colorIndex = i;
-
-        // Skip colors that would match the previous section
-        while (
-          assignedColors.length > 0 &&
-          assignedColors[assignedColors.length - 1] ===
-            SECTION_COLORS[colorIndex % SECTION_COLORS.length]
-        ) {
-          colorIndex++;
-        }
-
-        assignedColors.push(SECTION_COLORS[colorIndex % SECTION_COLORS.length]);
-      }
-
-      // Ensure first and last sections have different colors
-      if (
-        assignedColors.length > 1 &&
-        assignedColors[0] === assignedColors[assignedColors.length - 1]
-      ) {
-        const currentLast = assignedColors[assignedColors.length - 1];
-        if (currentLast !== undefined) {
-          assignedColors.pop();
-          let newIndex = SECTION_COLORS.indexOf(currentLast);
-          do {
-            newIndex = (newIndex + 1) % SECTION_COLORS.length;
-          } while (
-            assignedColors.length > 0 &&
-            SECTION_COLORS[newIndex] ===
-              assignedColors[assignedColors.length - 1]
-          );
-          assignedColors.push(SECTION_COLORS[newIndex]);
-        }
-      }
-
-      return { sectionBoundaries: boundaries, colors: assignedColors };
+      return {
+        sectionBoundaries: boundaries,
+        colors: assignSectionColors(numSections),
+      };
     } catch {
       return { sectionBoundaries: null, colors: null };
     }
