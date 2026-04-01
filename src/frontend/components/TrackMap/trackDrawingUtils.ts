@@ -139,11 +139,12 @@ export const drawStartFinishLine = (
   startFinishLine: {
     point: { x: number; y: number };
     perpendicular: { x: number; y: number };
-  } | null
+  } | null,
+  trackLineWidth: number
 ) => {
   if (!startFinishLine) return;
 
-  const lineLength = 60; // Length of the start/finish line
+  const lineLength = trackLineWidth * 3;
   const { point: sfPoint, perpendicular } = startFinishLine;
 
   // Calculate the start and end points of the line
@@ -152,7 +153,7 @@ export const drawStartFinishLine = (
   const endX = sfPoint.x + (perpendicular.x * lineLength) / 2;
   const endY = sfPoint.y + (perpendicular.y * lineLength) / 2;
 
-  ctx.lineWidth = 20;
+  ctx.lineWidth = trackLineWidth;
   ctx.strokeStyle = getColor('red');
   ctx.lineCap = 'square';
 

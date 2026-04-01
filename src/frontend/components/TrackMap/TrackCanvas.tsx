@@ -382,7 +382,7 @@ export const TrackCanvas = ({
         isMinimalTrack
       );
     }
-    drawStartFinishLine(cacheCtx, startFinishLine);
+    drawStartFinishLine(cacheCtx, startFinishLine, trackLineWidth);
     drawTurnNames(cacheCtx, trackDrawing.turns, turnLabels);
     cacheCtx.restore();
 
