@@ -46,6 +46,94 @@ export const drawTrack = (
   ctx.stroke(path2DObjects.inside);
 };
 
+export const drawTrackSections = (
+  ctx: CanvasRenderingContext2D,
+  trackPathPoints: { x: number; y: number }[] | undefined,
+  totalLength: number | undefined,
+  sectionBoundaries: number[] | null,
+  colors: string[] | null,
+  trackLineWidth: number,
+  trackOutlineWidth: number
+) => {
+  if (!trackPathPoints || !totalLength || !sectionBoundaries || !colors) return;
+
+  const cumulativeLengths = [0];
+  for (let i = 0; i < trackPathPoints.length - 1; i++) {
+    const p1 = trackPathPoints[i];
+    const p2 = trackPathPoints[i + 1];
+    const segLength = Math.sqrt(
+      Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2)
+    );
+    cumulativeLengths.push(cumulativeLengths[i] + segLength);
+  }
+
+  const pathTotalLength = cumulativeLengths[cumulativeLengths.length - 1];
+  if (!pathTotalLength) return;
+
+  for (let i = 0; i < sectionBoundaries.length - 1; i++) {
+    const startPct = sectionBoundaries[i];
+    const endPct = sectionBoundaries[i + 1];
+    const startLength = startPct * pathTotalLength;
+    const endLength = endPct * pathTotalLength;
+
+    ctx.save();
+    ctx.lineCap = 'butt';
+    ctx.lineJoin = 'round';
+
+    const buildSectionPath = () => {
+      ctx.beginPath();
+      let started = false;
+
+      for (let j = 0; j < trackPathPoints.length - 1; j++) {
+        const segStart = cumulativeLengths[j];
+        const segEnd = cumulativeLengths[j + 1];
+
+        if (segEnd > startLength && segStart < endLength) {
+          const p1 = trackPathPoints[j];
+          const p2 = trackPathPoints[j + 1];
+          const segLength = segEnd - segStart;
+          if (!segLength) continue;
+
+          const clipStartRatio = Math.max(
+            0,
+            (startLength - segStart) / segLength
+          );
+          const clipEndRatio = Math.min(1, (endLength - segStart) / segLength);
+
+          const x1 = p1.x + (p2.x - p1.x) * clipStartRatio;
+          const y1 = p1.y + (p2.y - p1.y) * clipStartRatio;
+          const x2 = p1.x + (p2.x - p1.x) * clipEndRatio;
+          const y2 = p1.y + (p2.y - p1.y) * clipEndRatio;
+
+          if (!started) {
+            ctx.moveTo(x1, y1);
+            started = true;
+          }
+          ctx.lineTo(x2, y2);
+        }
+      }
+
+      return started;
+    };
+
+    if (!buildSectionPath()) {
+      ctx.restore();
+      continue;
+    }
+
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.5)';
+    ctx.lineWidth = trackOutlineWidth;
+    ctx.stroke();
+
+    buildSectionPath();
+    ctx.strokeStyle = colors[i];
+    ctx.lineWidth = trackLineWidth;
+    ctx.stroke();
+
+    ctx.restore();
+  }
+};
+
 export const drawStartFinishLine = (
   ctx: CanvasRenderingContext2D,
   startFinishLine: {
@@ -78,7 +166,7 @@ export const drawStartFinishLine = (
 export const drawTurnNames = (
   ctx: CanvasRenderingContext2D,
   turns: TrackDrawing['turns'],
-  turnLabels: TurnLabels,
+  turnLabels: TurnLabels
 ) => {
   if (!turnLabels.enabled || !turns) return;
 
@@ -95,20 +183,21 @@ export const drawTurnNames = (
 
     // proximity check to prevent overlap
     let yOffset = 0;
-    if (!isNumeric) {   
-      const neighbour = drawnPositions.find(pos => {
+    if (!isNumeric) {
+      const neighbour = drawnPositions.find((pos) => {
         const dx = pos.x - x;
         const dy = pos.y - y;
         return Math.sqrt(dx * dx + dy * dy) < 30;
       });
-      if (neighbour) {       
-        yOffset = (neighbour.y <= y ? 15 : -15) * (turnLabels.labelFontSize / 100);
+      if (neighbour) {
+        yOffset =
+          (neighbour.y <= y ? 15 : -15) * (turnLabels.labelFontSize / 100);
       }
     }
-    
+
     // update current coordinates with the offset
     const renderX = x;
-    const renderY = y + yOffset;       
+    const renderY = y + yOffset;
     drawnPositions.push({ x: renderX, y: renderY });
 
     // add the label
@@ -121,7 +210,7 @@ export const drawTurnNames = (
     if (turnLabels.highContrast) {
       const padding = 20;
       const textWidth = m.width;
-      const textHeight = m.actualBoundingBoxAscent + m.actualBoundingBoxDescent;      
+      const textHeight = m.actualBoundingBoxAscent + m.actualBoundingBoxDescent;
       const rectW = textWidth + padding;
       const rectH = textHeight + padding;
       const rectX = renderX - rectW / 2;
@@ -135,7 +224,8 @@ export const drawTurnNames = (
 
     ctx.fillStyle = 'white';
     // visual offset
-    const visualOffset = (m.actualBoundingBoxAscent - m.actualBoundingBoxDescent) / 2;
+    const visualOffset =
+      (m.actualBoundingBoxAscent - m.actualBoundingBoxDescent) / 2;
     ctx.fillText(content, renderX, renderY + visualOffset);
   });
 };

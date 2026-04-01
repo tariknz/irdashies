@@ -2,6 +2,7 @@ import { useTrackId } from './hooks/useTrackId';
 import { useDriverProgress } from './hooks/useDriverProgress';
 import { useTrackMapSettings } from './hooks/useTrackMapSettings';
 import { useHighlightColor } from './hooks/useHighlightColor';
+import { useSectionColors } from './hooks/useSectionColors';
 import { TrackCanvas } from './TrackCanvas';
 import { useSessionVisibility, useTelemetryValue } from '@irdashies/context';
 
@@ -13,6 +14,9 @@ export const TrackMap = () => {
   const settings = useTrackMapSettings();
   const highlightColor = useHighlightColor();
   const isOnTrack = useTelemetryValue('IsOnTrack');
+  const { sectionBoundaries, colors } = useSectionColors(
+    settings?.showSectionColors ?? false
+  );
 
   if (!useSessionVisibility(settings?.sessionVisibility)) return <></>;
 
@@ -48,6 +52,9 @@ export const TrackMap = () => {
         }
         isMinimalTrack={settings?.styling?.isMinimalTrack ?? true}
         isMinimalCar={settings?.styling?.isMinimalCar ?? true}
+        showSectionColors={settings?.showSectionColors ?? false}
+        sectionBoundaries={sectionBoundaries}
+        sectionColors={colors}
         debug={debug}
       />
     </div>

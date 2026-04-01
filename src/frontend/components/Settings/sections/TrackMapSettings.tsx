@@ -123,6 +123,15 @@ export const TrackMapSettings = () => {
                 />
 
                 <SettingToggleRow
+                  title="Highlight Sections"
+                  description="Color different track sections with contrasting colors"
+                  enabled={settings.config.showSectionColors ?? false}
+                  onToggle={(newValue) =>
+                    handleConfigChange({ showSectionColors: newValue })
+                  }
+                />
+
+                <SettingToggleRow
                   title="Enable Turn Labels"
                   description="Show turn numbers and names on the track map"
                   enabled={settings.config.turnLabels?.enabled ?? false}
@@ -138,9 +147,7 @@ export const TrackMapSettings = () => {
 
                 {settings.config.turnLabels?.enabled && (
                   <SettingsSection>
-                    <SettingButtonGroupRow<
-                      'numbers' | 'names' | 'both'
-                    >
+                    <SettingButtonGroupRow<'numbers' | 'names' | 'both'>
                       title="Display Mode"
                       value={settings.config.turnLabels.labelType ?? 'both'}
                       options={[
@@ -150,7 +157,10 @@ export const TrackMapSettings = () => {
                       ]}
                       onChange={(v) =>
                         handleConfigChange({
-                          turnLabels: { ...settings.config.turnLabels, labelType: v },
+                          turnLabels: {
+                            ...settings.config.turnLabels,
+                            labelType: v,
+                          },
                         })
                       }
                     />
@@ -177,7 +187,8 @@ export const TrackMapSettings = () => {
                       min={50}
                       max={150}
                       step={1}
-                      onChange={(v) => handleConfigChange({
+                      onChange={(v) =>
+                        handleConfigChange({
                           turnLabels: {
                             ...settings.config.turnLabels,
                             labelFontSize: v,

@@ -203,11 +203,11 @@ export interface WeatherConfig {
 }
 
 export interface TrackMapConfig {
-  turnLabels: { 
-    enabled: boolean, 
-    labelType: 'names' | 'numbers' | 'both', 
-    highContrast: boolean,
-    labelFontSize: number,
+  turnLabels: {
+    enabled: boolean;
+    labelType: 'names' | 'numbers' | 'both';
+    highContrast: boolean;
+    labelFontSize: number;
   };
   showCarNumbers: boolean;
   displayMode?: 'carNumber' | 'sessionPosition' | 'livePosition';
@@ -219,6 +219,7 @@ export interface TrackMapConfig {
   trackOutlineWidth: number;
   useHighlightColor: boolean;
   showOnlyWhenOnTrack: boolean;
+  showSectionColors?: boolean;
   sessionVisibility: SessionVisibilitySettings;
   styling?: { isMinimalTrack?: boolean; isMinimalCar?: boolean };
 }

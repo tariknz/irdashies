@@ -11,6 +11,7 @@ import {
   drawStartFinishLine,
   drawTurnNames,
   drawDrivers,
+  drawTrackSections,
 } from './trackDrawingUtils';
 import { useDriverOffTrack } from './hooks/useDriverOffTrack';
 import { useDriverLivePositions } from '../Standings/hooks/useDriverLivePositions';
@@ -44,6 +45,9 @@ export interface TrackProps {
   debug?: boolean;
   isMinimalTrack?: boolean;
   isMinimalCar?: boolean;
+  showSectionColors?: boolean;
+  sectionBoundaries?: number[] | null;
+  sectionColors?: string[] | null;
 }
 
 export interface TrackDriver {
@@ -75,9 +79,9 @@ export interface TrackDrawing {
 
 export interface TurnLabels {
   enabled: boolean;
-  labelType: 'names' | 'numbers' | 'both',
-  highContrast: boolean,
-  labelFontSize: number;   
+  labelType: 'names' | 'numbers' | 'both';
+  highContrast: boolean;
+  labelFontSize: number;
 }
 
 const TRACK_DRAWING_WIDTH = 1920;
@@ -105,6 +109,9 @@ export const TrackCanvas = ({
   debug,
   isMinimalTrack = false,
   isMinimalCar = false,
+  showSectionColors = false,
+  sectionBoundaries = null,
+  sectionColors = null,
 }: TrackProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const cacheCanvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -341,20 +348,36 @@ export const TrackCanvas = ({
     cacheCtx.scale(dpr, dpr);
 
     setupCanvasContext(cacheCtx, scale, offsetX, offsetY, isMinimalTrack);
-    drawTrack(
-      cacheCtx,
-      path2DObjects,
-      invertTrackColors,
-      trackLineWidth,
-      trackOutlineWidth,
-      isMinimalTrack
-    );
+    if (showSectionColors && sectionBoundaries && sectionColors) {
+      drawTrack(
+        cacheCtx,
+        path2DObjects,
+        invertTrackColors,
+        trackLineWidth,
+        trackOutlineWidth,
+        isMinimalTrack
+      );
+      drawTrackSections(
+        cacheCtx,
+        trackDrawing.active.trackPathPoints,
+        trackDrawing.active.totalLength,
+        sectionBoundaries,
+        sectionColors,
+        trackLineWidth,
+        trackOutlineWidth
+      );
+    } else {
+      drawTrack(
+        cacheCtx,
+        path2DObjects,
+        invertTrackColors,
+        trackLineWidth,
+        trackOutlineWidth,
+        isMinimalTrack
+      );
+    }
     drawStartFinishLine(cacheCtx, startFinishLine);
-    drawTurnNames(
-      cacheCtx,
-      trackDrawing.turns,
-      turnLabels,
-    );
+    drawTurnNames(cacheCtx, trackDrawing.turns, turnLabels);
     cacheCtx.restore();
 
     // Blit to main canvas so static-only changes are visible immediately
@@ -369,6 +392,8 @@ export const TrackCanvas = ({
   }, [
     path2DObjects,
     trackDrawing?.turns,
+    trackDrawing?.active?.totalLength,
+    trackDrawing?.active?.trackPathPoints,
     turnLabels,
     canvasSize,
     invertTrackColors,
@@ -379,6 +404,9 @@ export const TrackCanvas = ({
     driverCircleSize,
     playerCircleSize,
     isMinimalTrack,
+    showSectionColors,
+    sectionBoundaries,
+    sectionColors,
   ]);
 
   // Dynamic layer — runs on every position tick, blits static cache then draws drivers

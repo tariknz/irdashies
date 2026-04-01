@@ -606,6 +606,7 @@ export const defaultDashboard: {
         trackOutlineWidth: 40,
         useHighlightColor: false,
         showOnlyWhenOnTrack: false,
+        showSectionColors: false,
         sessionVisibility: {
           race: true,
           loneQualify: true,
