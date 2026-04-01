@@ -33,12 +33,20 @@ export const useSectionColors = (enabled: boolean) => {
       }
 
       const sectors = splitTimeInfo.Sectors;
+
       // Build boundaries: [0, start1, start2, ..., 1]
       // Sort by SectorStartPct to ensure correct order
       const sortedSectors = [...sectors].sort(
         (a, b) => a.SectorStartPct - b.SectorStartPct
       );
-      const boundaries = [0, ...sortedSectors.map((s) => s.SectorStartPct), 1];
+      const rawBoundaries = [
+        0,
+        ...sortedSectors.map((s) => s.SectorStartPct),
+        1,
+      ];
+      const boundaries = rawBoundaries.filter(
+        (val, idx, arr) => idx === 0 || val !== arr[idx - 1]
+      );
 
       // Assign colors ensuring adjacent sections (including wrap-around) differ
       const numSections = boundaries.length - 1;
