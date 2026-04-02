@@ -2,23 +2,35 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {
   buildSectorPath,
+  didAdvanceSector,
+  drawSectorStatuses,
   drawDrivers,
+  getCrossedSectorIndices,
   getSectorGapDimensions,
   getSectorPathRange,
+  getTrimmedSectorPathRange,
+  getReferenceLapSectorTimes,
   getTrackProgressLength,
+  isPurpleEligible,
+  resolveSectorStatusColor,
 } from './trackDrawingUtils';
+import type { ReferenceLap } from '@irdashies/types';
 
 describe('trackDrawingUtils', () => {
   let ctx: CanvasRenderingContext2D;
+  let strokeWidths: number[];
 
   beforeEach(() => {
+    strokeWidths = [];
     ctx = {
       beginPath: vi.fn(),
       moveTo: vi.fn(),
       lineTo: vi.fn(),
       arc: vi.fn(),
       fill: vi.fn(),
-      stroke: vi.fn(),
+      stroke: vi.fn(function (this: CanvasRenderingContext2D) {
+        strokeWidths.push(this.lineWidth);
+      }),
       fillText: vi.fn(),
       measureText: vi.fn(() => ({
         actualBoundingBoxAscent: 10,
@@ -30,6 +42,7 @@ describe('trackDrawingUtils', () => {
       textBaseline: 'middle',
       fillStyle: 'white',
       strokeStyle: 'white',
+      globalCompositeOperation: 'source-over',
       font: '16px sans-serif',
       lineWidth: 1,
       shadowColor: 'transparent',
@@ -38,6 +51,24 @@ describe('trackDrawingUtils', () => {
       shadowOffsetY: 0,
     } as any;
   });
+
+  const createReferenceLap = (
+    entries: [number, number][],
+    lapTime = 100
+  ): ReferenceLap =>
+    ({
+      classId: 1,
+      startTime: 0,
+      finishTime: lapTime,
+      lastTrackedPct: 0.99,
+      isCleanLap: true,
+      refPoints: new Map(
+        entries.map(([trackPct, timeElapsedSinceStart]) => [
+          trackPct,
+          { trackPct, timeElapsedSinceStart, tangent: 0 },
+        ])
+      ),
+    }) as ReferenceLap;
 
   describe('drawDrivers', () => {
     const driverColors = {
@@ -384,6 +415,27 @@ describe('trackDrawingUtils', () => {
     });
   });
 
+  describe('getCrossedSectorIndices', () => {
+    it('returns crossed sectors for a generic multi-sector track', () => {
+      expect(
+        getCrossedSectorIndices(0.15, 0.76, [0, 0.2, 0.4, 0.6, 0.8, 1])
+      ).toEqual([0, 1, 2]);
+    });
+
+    it('wraps from the last sector to the first sector', () => {
+      expect(getCrossedSectorIndices(0.91, 0.14, [0, 0.3, 0.6, 1])).toEqual([
+        2,
+      ]);
+    });
+
+    it('ignores small backward jitter near a boundary', () => {
+      expect(
+        getCrossedSectorIndices(0.334, 0.332, [0, 0.333, 0.666, 1])
+      ).toEqual([]);
+      expect(didAdvanceSector(0.334, 0.332, [0, 0.333, 0.666, 1])).toBe(false);
+    });
+  });
+
   describe('getSectorPathRange', () => {
     it('uses the direct forward range for anticlockwise sectors', () => {
       expect(getSectorPathRange(0.1, 0.3, 1000, 400, 'anticlockwise')).toEqual({
@@ -406,6 +458,44 @@ describe('trackDrawingUtils', () => {
         startLength: 900,
         endLength: 150,
         needsWrap: true,
+      });
+    });
+  });
+
+  describe('getTrimmedSectorPathRange', () => {
+    it('trims interior sector boundaries so colored sectors do not repaint the gaps', () => {
+      expect(
+        getTrimmedSectorPathRange({
+          startProgress: 0.2,
+          endProgress: 0.4,
+          pathTotalLength: 1000,
+          trackLineWidth: 20,
+          trackOutlineWidth: 40,
+          startFinishLength: 0,
+          direction: 'anticlockwise',
+        })
+      ).toEqual({
+        startLength: 204,
+        endLength: 396,
+        needsWrap: false,
+      });
+    });
+
+    it('does not trim the start finish boundary where no sector gap is erased', () => {
+      expect(
+        getTrimmedSectorPathRange({
+          startProgress: 0,
+          endProgress: 0.2,
+          pathTotalLength: 1000,
+          trackLineWidth: 20,
+          trackOutlineWidth: 40,
+          startFinishLength: 0,
+          direction: 'anticlockwise',
+        })
+      ).toEqual({
+        startLength: 0,
+        endLength: 196,
+        needsWrap: false,
       });
     });
   });
@@ -434,6 +524,159 @@ describe('trackDrawingUtils', () => {
         gapLength: 44,
         gapThickness: 8,
       });
+    });
+  });
+
+  describe('resolveSectorStatusColor', () => {
+    it('returns white when there is no finalized player time', () => {
+      expect(
+        resolveSectorStatusColor({
+          sectorTime: null,
+          previousPersonalBest: null,
+          benchmarkTime: null,
+          purpleEligible: false,
+        })
+      ).toBe('white');
+    });
+
+    it('suppresses purple when there is no valid external benchmark', () => {
+      expect(
+        resolveSectorStatusColor({
+          sectorTime: 20,
+          previousPersonalBest: 21,
+          benchmarkTime: 19.5,
+          purpleEligible: false,
+        })
+      ).toBe('green');
+      expect(isPurpleEligible([null, null, null])).toBe(false);
+    });
+
+    it('returns purple when the player beats a valid benchmark', () => {
+      expect(
+        resolveSectorStatusColor({
+          sectorTime: 19,
+          previousPersonalBest: 20,
+          benchmarkTime: 19.5,
+          purpleEligible: true,
+        })
+      ).toBe('purple');
+      expect(isPurpleEligible([null, 19.5, null])).toBe(true);
+    });
+
+    it('returns yellow when the player does not improve', () => {
+      expect(
+        resolveSectorStatusColor({
+          sectorTime: 21,
+          previousPersonalBest: 20,
+          benchmarkTime: 19.5,
+          purpleEligible: true,
+        })
+      ).toBe('yellow');
+    });
+  });
+
+  describe('getReferenceLapSectorTimes', () => {
+    it('derives sector times from interpolated reference lap points', () => {
+      const lap = createReferenceLap([
+        [0, 0],
+        [0.25, 25],
+        [0.5, 50],
+        [0.75, 75],
+      ]);
+
+      expect(getReferenceLapSectorTimes(lap, [0, 0.2, 0.6, 1])).toEqual([
+        20, 40, 40,
+      ]);
+    });
+
+    it('returns null for sectors that cannot be resolved', () => {
+      const lap = createReferenceLap([
+        [0.1, 10],
+        [0.2, 20],
+      ]);
+
+      expect(getReferenceLapSectorTimes(lap, [0, 0.3, 0.7, 1])).toEqual([
+        null,
+        null,
+        null,
+      ]);
+    });
+  });
+
+  describe('drawSectorStatuses', () => {
+    it('uses explicit sector colors including white', () => {
+      drawSectorStatuses(
+        ctx,
+        [
+          { x: 0, y: 0 },
+          { x: 50, y: 0 },
+          { x: 100, y: 0 },
+          { x: 150, y: 0 },
+        ],
+        [0, 0.33, 0.66, 1],
+        ['white', 'green', 'purple'],
+        1,
+        20,
+        40,
+        false,
+        0,
+        'anticlockwise'
+      );
+
+      const strokeCalls = (ctx.stroke as any).mock.calls.length;
+      expect(strokeCalls).toBeGreaterThan(0);
+      expect(ctx.strokeStyle).not.toBe('black');
+    });
+
+    it('only enlarges the active sector and leaves inactive sectors at base width', () => {
+      drawSectorStatuses(
+        ctx,
+        [
+          { x: 0, y: 0 },
+          { x: 50, y: 0 },
+          { x: 100, y: 0 },
+          { x: 150, y: 0 },
+        ],
+        [0, 0.33, 0.66, 1],
+        ['green', 'yellow', 'purple'],
+        1,
+        20,
+        40,
+        false,
+        0,
+        'anticlockwise'
+      );
+
+      expect(strokeWidths).toContain(20);
+      expect(strokeWidths).toContain(26);
+      expect(strokeWidths.filter((width: number) => width === 26)).toHaveLength(
+        1
+      );
+    });
+
+    it('cuts overlay boundaries with straight perpendicular erases', () => {
+      drawSectorStatuses(
+        ctx,
+        [
+          { x: 0, y: 0 },
+          { x: 50, y: 0 },
+          { x: 100, y: 0 },
+          { x: 150, y: 0 },
+        ],
+        [0, 0.33, 0.66, 1],
+        ['green', 'yellow', 'purple'],
+        1,
+        20,
+        40,
+        false,
+        0,
+        'anticlockwise'
+      );
+
+      expect(ctx.save).toHaveBeenCalled();
+      expect(ctx.restore).toHaveBeenCalled();
+      expect(ctx.lineCap).toBe('square');
+      expect(strokeWidths.some((width) => width > 26)).toBe(true);
     });
   });
 });

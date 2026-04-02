@@ -18,6 +18,7 @@ vi.mock('./hooks/useTrackId');
 vi.mock('./hooks/useDriverProgress');
 vi.mock('./hooks/useTrackMapSettings');
 vi.mock('./hooks/useHighlightColor');
+vi.mock('./hooks/useSectorStatus');
 vi.mock('@irdashies/context', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@irdashies/context')>();
 
@@ -40,6 +41,7 @@ import { useTrackId } from './hooks/useTrackId';
 import { useDriverProgress } from './hooks/useDriverProgress';
 import { useTrackMapSettings } from './hooks/useTrackMapSettings';
 import { useHighlightColor } from './hooks/useHighlightColor';
+import { useSectorStatus } from './hooks/useSectorStatus';
 import {
   useDashboard,
   useSessionStore,
@@ -73,6 +75,10 @@ describe('TrackMap', () => {
       selector(mockSessionState)
     );
     vi.mocked(useHighlightColor).mockReturnValue(undefined);
+    vi.mocked(useSectorStatus).mockReturnValue({
+      sectorStatuses: null,
+      activeSectorIndex: null,
+    });
     vi.mocked(useSessionVisibility).mockReturnValue(true);
   });
 
@@ -324,6 +330,49 @@ describe('TrackMap', () => {
       expect.objectContaining({
         showSectorGaps: true,
         sectorBoundaries: [0, 0.33, 0.66, 1],
+      })
+    );
+  });
+
+  it('passes sector timing status props to TrackCanvas', () => {
+    vi.mocked(useTrackMapSettings).mockReturnValue({
+      turnLabels: {
+        enabled: false,
+        labelType: 'both',
+        highContrast: true,
+        labelFontSize: 100,
+      },
+      showCarNumbers: true,
+      displayMode: 'carNumber',
+      invertTrackColors: false,
+      driverCircleSize: 40,
+      playerCircleSize: 40,
+      trackmapFontSize: 100,
+      trackLineWidth: 20,
+      trackOutlineWidth: 40,
+      useHighlightColor: false,
+      showOnlyWhenOnTrack: false,
+      showSectorGaps: true,
+      sessionVisibility: {
+        race: true,
+        loneQualify: true,
+        openQualify: true,
+        practice: true,
+        offlineTesting: true,
+      },
+    });
+    vi.mocked(useTelemetryValue).mockReturnValue(true);
+    vi.mocked(useSectorStatus).mockReturnValue({
+      sectorStatuses: ['white', 'green', 'purple'],
+      activeSectorIndex: 2,
+    });
+
+    render(<TrackMap />);
+
+    expect(trackCanvasSpy.mock.calls[0]?.[0]).toEqual(
+      expect.objectContaining({
+        sectorStatuses: ['white', 'green', 'purple'],
+        activeSectorIndex: 2,
       })
     );
   });

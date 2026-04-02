@@ -12,8 +12,8 @@ import {
   drawTurnNames,
   drawDrivers,
   drawSectorGaps,
-  drawActiveSector,
-  getActiveSectorIndex,
+  drawSectorStatuses,
+  type SectorStatusColor,
 } from './trackDrawingUtils';
 import { useDriverOffTrack } from './hooks/useDriverOffTrack';
 import { useDriverLivePositions } from '../Standings/hooks/useDriverLivePositions';
@@ -49,6 +49,8 @@ export interface TrackProps {
   isMinimalCar?: boolean;
   showSectorGaps?: boolean;
   sectorBoundaries?: number[] | null;
+  sectorStatuses?: SectorStatusColor[] | null;
+  activeSectorIndex?: number | null;
   playerProgress?: number;
 }
 
@@ -113,7 +115,8 @@ export const TrackCanvas = ({
   isMinimalCar = false,
   showSectorGaps = false,
   sectorBoundaries = null,
-  playerProgress,
+  sectorStatuses = null,
+  activeSectorIndex = null,
 }: TrackProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const cacheCanvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -432,19 +435,16 @@ export const TrackCanvas = ({
     if (
       showSectorGaps &&
       sectorBoundaries &&
-      playerProgress !== undefined &&
+      sectorStatuses &&
       trackDrawing.active.trackPathPoints
     ) {
-      const activeSectorIndex = getActiveSectorIndex(
-        playerProgress,
-        sectorBoundaries
-      );
-      if (activeSectorIndex >= 0) {
+      if (activeSectorIndex !== null && activeSectorIndex >= 0) {
         setupCanvasContext(ctx, scale, offsetX, offsetY, isMinimalCar);
-        drawActiveSector(
+        drawSectorStatuses(
           ctx,
           trackDrawing.active.trackPathPoints,
           sectorBoundaries,
+          sectorStatuses,
           activeSectorIndex,
           trackLineWidth,
           trackOutlineWidth,
@@ -494,7 +494,8 @@ export const TrackCanvas = ({
     isMinimalTrack,
     showSectorGaps,
     sectorBoundaries,
-    playerProgress,
+    sectorStatuses,
+    activeSectorIndex,
     trackDrawing.active.trackPathPoints,
     trackDrawing.startFinish?.point?.length,
     trackDrawing.startFinish?.direction,

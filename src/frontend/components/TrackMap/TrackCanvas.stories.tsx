@@ -657,6 +657,58 @@ export const WithSectorGaps: Story = {
   },
 };
 
+export const WithSectorTimingColors: Story = {
+  render: (args) => {
+    const drivers = [
+      {
+        driver: {
+          CarIdx: 24,
+          CarNumber: '24',
+          CarClassID: 2,
+          CarClassColor: 16734344,
+          CarClassEstLapTime: 126.9374,
+        },
+        progress: 0.58,
+        isPlayer: true,
+      },
+    ] as TrackDriver[];
+
+    return (
+      <TrackCanvas
+        trackId={args.trackId}
+        drivers={drivers}
+        turnLabels={args.turnLabels}
+        showCarNumbers={args.showCarNumbers ?? true}
+        invertTrackColors={args.invertTrackColors ?? false}
+        driverCircleSize={args.driverCircleSize ?? 40}
+        playerCircleSize={args.playerCircleSize ?? 40}
+        trackmapFontSize={args.trackmapFontSize ?? 100}
+        trackLineWidth={args.trackLineWidth ?? 20}
+        trackOutlineWidth={args.trackOutlineWidth ?? 40}
+        highlightColor={args.highlightColor}
+        showSectorGaps
+        sectorBoundaries={[
+          0, 0.130902, 0.3069, 0.44224, 0.53158, 0.658844, 0.876665, 1,
+        ]}
+        sectorStatuses={[
+          'white',
+          'green',
+          'yellow',
+          'purple',
+          'green',
+          'white',
+          'white',
+        ]}
+        activeSectorIndex={4}
+        playerProgress={0.58}
+      />
+    );
+  },
+  args: {
+    trackId: 95,
+  },
+};
+
 // All available track IDs from tracks.json
 const allTrackIds = Object.keys(tracks)
   .map(Number)
