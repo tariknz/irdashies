@@ -12,10 +12,12 @@ import {
   useDrivingState,
   usePitLapStoreUpdater,
   useWeekendInfoNumCarClasses,
+  type P2PDisplayState,
 } from '@irdashies/context';
 import { mockDashboardBridge } from '@irdashies/storybook';
 import { generateMockDataFromPath } from '../../../app/bridge/iracingSdk/mock-data/generateMockData';
-import type { DashboardBridge } from '@irdashies/types';
+import type { DashboardBridge, RelativeWidgetSettings } from '@irdashies/types';
+import { getWidgetDefaultConfig } from '@irdashies/types';
 import { useState, useMemo } from 'react';
 import { DriverInfoRow } from './components/DriverInfoRow/DriverInfoRow';
 import { SessionBar } from './components/SessionBar/SessionBar';
@@ -1276,6 +1278,130 @@ const SingleRelativeDriverWithTagReorderedComponent = () => (
 export const SingleDriverWithTagReordered: Story = {
   decorators: [TelemetryDecorator()],
   render: () => <SingleRelativeDriverWithTagReorderedComponent />,
+  parameters: {
+    layout: 'padded',
+  },
+};
+
+// ─── Push to Pass story ───────────────────────────────────────────────────────
+
+const P2P_RELATIVE_DISPLAY_ORDER = [
+  'position',
+  'carNumber',
+  'driverName',
+  'delta',
+  'pushToPass',
+];
+
+const p2pRelativeConfig: RelativeWidgetSettings['config'] = {
+  ...getWidgetDefaultConfig('relative'),
+  pushToPass: { enabled: true },
+  displayOrder: P2P_RELATIVE_DISPLAY_ORDER,
+};
+
+interface P2PRelativeDriver {
+  carNum: string;
+  name: string;
+  position: number;
+  isPlayer: boolean;
+  delta: number;
+  state: P2PDisplayState | undefined;
+}
+
+const p2pRelativeDrivers: P2PRelativeDriver[] = [
+  {
+    carNum: '2',
+    name: 'Josef Newgarden',
+    position: 1,
+    isPlayer: false,
+    delta: -4.2,
+    state: { status: 'inactive', count: 180 },
+  },
+  {
+    carNum: '5',
+    name: "Pato O'Ward",
+    position: 2,
+    isPlayer: false,
+    delta: -1.8,
+    state: { status: 'active', count: 130 },
+  },
+  {
+    carNum: '9',
+    name: 'Scott Dixon',
+    position: 3,
+    isPlayer: true,
+    delta: 0,
+    state: { status: 'inactive', count: 80 },
+  },
+  {
+    carNum: '10',
+    name: 'Alex Palou',
+    position: 4,
+    isPlayer: false,
+    delta: 1.4,
+    state: { status: 'cooldown', count: 60 },
+  },
+  {
+    carNum: '8',
+    name: 'Marcus Ericsson',
+    position: 5,
+    isPlayer: false,
+    delta: 3.1,
+    state: { status: 'inactive', count: 15 },
+  },
+  {
+    carNum: '22',
+    name: 'Simon Pagenaud',
+    position: 6,
+    isPlayer: false,
+    delta: 5.7,
+    state: { status: 'exhausted', count: 0 },
+  },
+  {
+    carNum: '77',
+    name: 'Callum Ilott',
+    position: 7,
+    isPlayer: false,
+    delta: 8.3,
+    // undefined = car does not support Push to Pass
+    state: undefined,
+  },
+];
+
+const RelativePushToPassComponent = () => (
+  <div className="w-full bg-slate-800/80 rounded-sm p-2 text-white">
+    <table className="w-full table-auto text-sm border-separate border-spacing-y-0.5">
+      <tbody>
+        {p2pRelativeDrivers.map((driver, i) => (
+          <DriverInfoRow
+            key={i}
+            carIdx={i}
+            classColor={0xffc906}
+            carNumber={driver.carNum}
+            name={driver.name}
+            position={driver.position}
+            isPlayer={driver.isPlayer}
+            hasFastestTime={false}
+            isMultiClass={false}
+            delta={driver.delta}
+            displayOrder={P2P_RELATIVE_DISPLAY_ORDER}
+            config={p2pRelativeConfig}
+            p2pDisplayState={driver.state}
+            onTrack={true}
+            dnf={false}
+            repair={false}
+            penalty={false}
+            slowdown={false}
+          />
+        ))}
+      </tbody>
+    </table>
+  </div>
+);
+
+export const PushToPass: Story = {
+  decorators: [TelemetryDecorator()],
+  render: () => <RelativePushToPassComponent />,
   parameters: {
     layout: 'padded',
   },
