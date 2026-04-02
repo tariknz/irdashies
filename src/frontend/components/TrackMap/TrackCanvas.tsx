@@ -51,7 +51,6 @@ export interface TrackProps {
   sectorBoundaries?: number[] | null;
   sectorStatuses?: SectorStatusColor[] | null;
   activeSectorIndex?: number | null;
-  playerProgress?: number;
 }
 
 export interface TrackDriver {
@@ -496,7 +495,7 @@ export const TrackCanvas = ({
     sectorBoundaries,
     sectorStatuses,
     activeSectorIndex,
-    trackDrawing.active.trackPathPoints,
+    trackDrawing.active?.trackPathPoints,
     trackDrawing.startFinish?.point?.length,
     trackDrawing.startFinish?.direction,
     trackLineWidth,

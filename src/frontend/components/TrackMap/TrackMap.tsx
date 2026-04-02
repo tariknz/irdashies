@@ -69,7 +69,6 @@ export const TrackMap = () => {
         sectorBoundaries={sectorBoundaries}
         sectorStatuses={sectorStatusState.sectorStatuses}
         activeSectorIndex={sectorStatusState.activeSectorIndex}
-        playerProgress={playerProgress}
         debug={debug}
       />
     </div>

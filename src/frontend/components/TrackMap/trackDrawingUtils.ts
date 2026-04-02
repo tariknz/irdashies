@@ -15,6 +15,8 @@ export const getActiveSectorIndex = (
   playerProgress: number,
   sectorBoundaries: number[]
 ): number => {
+  if (sectorBoundaries.length < 2) return 0;
+
   for (let i = 0; i < sectorBoundaries.length - 1; i++) {
     if (
       playerProgress >= sectorBoundaries[i] &&

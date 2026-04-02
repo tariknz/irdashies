@@ -614,7 +614,18 @@ export const CirclingAroundSingleDriver: Story = {
 export const WithSectorGaps: Story = {
   render: (args) => {
     const [drivers, setDrivers] = useState(singleDriverData);
-    const [playerProgress, setPlayerProgress] = useState(0);
+    const sectorBoundaries = args.sectorBoundaries ?? [];
+    const playerProgress = drivers[0]?.progress ?? 0;
+    const activeSectorIndex =
+      sectorBoundaries.length >= 2
+        ? sectorBoundaries.findIndex(
+            (_, i) =>
+              i < sectorBoundaries.length - 1 &&
+              playerProgress >= sectorBoundaries[i] &&
+              playerProgress < sectorBoundaries[i + 1]
+          )
+        : null;
+
     useEffect(() => {
       const interval = setInterval(() => {
         setDrivers((prev) =>
@@ -623,7 +634,6 @@ export const WithSectorGaps: Story = {
             progress: (d.progress + 0.003) % 1,
           }))
         );
-        setPlayerProgress((p) => (p + 0.003) % 1);
       }, 50);
 
       return () => clearInterval(interval);
@@ -644,7 +654,16 @@ export const WithSectorGaps: Story = {
         highlightColor={args.highlightColor}
         showSectorGaps={args.showSectorGaps ?? false}
         sectorBoundaries={args.sectorBoundaries ?? null}
-        playerProgress={playerProgress}
+        sectorStatuses={[
+          'white',
+          'white',
+          'white',
+          'white',
+          'white',
+          'white',
+          'white',
+        ]}
+        activeSectorIndex={activeSectorIndex}
       />
     );
   },
@@ -700,7 +719,6 @@ export const WithSectorTimingColors: Story = {
           'white',
         ]}
         activeSectorIndex={4}
-        playerProgress={0.58}
       />
     );
   },

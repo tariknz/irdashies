@@ -147,7 +147,6 @@ export const useSectorStatus = ({
               ? lapCurrentLapTime
               : null
             : sessionTime - sectorStartTime;
-        const wrappedToNewLap = crossedSectorIndex === sectorCount - 1;
 
         if (
           sectorTime !== null &&
@@ -189,10 +188,6 @@ export const useSectorStatus = ({
 
         tracker.currentSectorIndex = (crossedSectorIndex + 1) % sectorCount;
         tracker.currentSectorStartTime = sessionTime;
-
-        if (wrappedToNewLap && driver.CarIdx === playerCarIdx) {
-          sectorStatusesRef.current = createWhiteStatuses(sectorBoundaries);
-        }
       });
 
       tracker.lastProgress = progress;
