@@ -87,6 +87,7 @@ const sortableSettings: SortableSetting[] = [
     configKey: 'avgLapTime',
     hasSubSetting: true,
   },
+  { id: 'pushToPass', label: 'Push to Pass', configKey: 'pushToPass' },
 ];
 
 const defaultConfig = getWidgetDefaultConfig('standings');

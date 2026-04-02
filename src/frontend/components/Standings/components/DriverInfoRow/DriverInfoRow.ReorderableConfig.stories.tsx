@@ -358,6 +358,7 @@ const RelativeWithReorderableConfig = () => {
       },
       teamName: { enabled: true },
       pitStatus: { enabled: true, pitLapDisplayMode: 'lapsSinceLastPit' },
+      pushToPass: { enabled: false },
       carManufacturer: { enabled: true },
       badge: { enabled: true, badgeFormat: 'license-color-rating-bw' },
       iratingChange: { enabled: true },

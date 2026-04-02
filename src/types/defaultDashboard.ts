@@ -225,6 +225,7 @@ export const defaultDashboard: {
           ],
         },
         showOnlyWhenOnTrack: false,
+        pushToPass: { enabled: false },
         displayOrder: [
           'position',
           'carNumber',
@@ -244,6 +245,7 @@ export const defaultDashboard: {
           'compound',
           'lapTimeDeltas',
           'avgLapTime',
+          'pushToPass',
         ],
         driverTag: { enabled: false },
         sessionVisibility: {
@@ -449,6 +451,7 @@ export const defaultDashboard: {
           numLaps: 3,
           decimalPlaces: 1,
         },
+        pushToPass: { enabled: false },
         displayOrder: [
           'position',
           'carNumber',
@@ -466,6 +469,7 @@ export const defaultDashboard: {
           'lastTime',
           'compound',
           'lapTimeDeltas',
+          'pushToPass',
         ],
         driverTag: { enabled: false },
         titleBar: {

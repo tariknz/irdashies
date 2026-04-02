@@ -70,6 +70,7 @@ const sortableSettings: SortableSetting[] = [
     configKey: 'lapTimeDeltas',
     hasSubSetting: true,
   },
+  { id: 'pushToPass', label: 'Push to Pass', configKey: 'pushToPass' },
 ];
 
 const defaultConfig = getWidgetDefaultConfig('relative');
