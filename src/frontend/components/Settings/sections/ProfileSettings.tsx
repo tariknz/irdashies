@@ -4,10 +4,10 @@ import { useDashboard } from '@irdashies/context';
 import type { DashboardProfile } from '@irdashies/types';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import {
-  CopySimple,
-  PencilSimple,
-  CaretDown,
-  Trash,
+  CopySimpleIcon,
+  PencilSimpleIcon,
+  CaretDownIcon,
+  TrashIcon,
 } from '@phosphor-icons/react';
 
 export const ProfileSettings = () => {
@@ -339,7 +339,7 @@ export const ProfileSettings = () => {
                               className="bg-slate-600 hover:bg-slate-500 text-white px-3 py-1 rounded text-sm font-medium transition-colors flex items-center gap-1"
                             >
                               Actions
-                              <CaretDown size={12} />
+                              <CaretDownIcon size={12} />
                             </button>
                           </div>
                           {openDropdownId === profile.id &&
@@ -361,7 +361,7 @@ export const ProfileSettings = () => {
                                   }}
                                   className="w-full flex items-center gap-2 px-3 py-2 text-sm text-white hover:bg-slate-600 transition-colors text-left"
                                 >
-                                  <CopySimple size={14} />
+                                  <CopySimpleIcon size={14} />
                                   Clone
                                 </button>
                                 <button
@@ -371,7 +371,7 @@ export const ProfileSettings = () => {
                                   }}
                                   className="w-full flex items-center gap-2 px-3 py-2 text-sm text-white hover:bg-slate-600 transition-colors text-left"
                                 >
-                                  <PencilSimple size={14} />
+                                  <PencilSimpleIcon size={14} />
                                   Rename
                                 </button>
                                 {profile.id !== 'default' && (
@@ -382,7 +382,7 @@ export const ProfileSettings = () => {
                                     }}
                                     className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-slate-600 transition-colors text-left"
                                   >
-                                    <Trash size={14} />
+                                    <TrashIcon size={14} />
                                     Delete
                                   </button>
                                 )}
