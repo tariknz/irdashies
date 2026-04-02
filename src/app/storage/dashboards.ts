@@ -494,7 +494,7 @@ export const cloneProfile = (sourceProfileId: string): DashboardProfile => {
 
   // Copy the source dashboard to the new profile
   const sourceDashboard = getDashboard(sourceProfileId) || defaultDashboard;
-  saveDashboard(profileId, { ...sourceDashboard });
+  saveDashboard(profileId, structuredClone(sourceDashboard));
 
   return newProfile;
 };
