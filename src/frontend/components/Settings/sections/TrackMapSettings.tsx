@@ -123,11 +123,11 @@ export const TrackMapSettings = () => {
                 />
 
                 <SettingToggleRow
-                  title="Highlight Sections"
-                  description="Color different track sections with contrasting colors"
-                  enabled={settings.config.showSectionColors ?? false}
+                  title="Show Sector Gaps"
+                  description="Display gaps between sectors with active sector highlighting"
+                  enabled={settings.config.showSectorGaps ?? false}
                   onToggle={(newValue) =>
-                    handleConfigChange({ showSectionColors: newValue })
+                    handleConfigChange({ showSectorGaps: newValue })
                   }
                 />
 

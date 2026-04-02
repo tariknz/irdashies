@@ -1,6 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { drawDrivers } from './trackDrawingUtils';
+import {
+  buildSectorPath,
+  drawDrivers,
+  getSectorGapDimensions,
+  getSectorPathRange,
+  getTrackProgressLength,
+} from './trackDrawingUtils';
 
 describe('trackDrawingUtils', () => {
   let ctx: CanvasRenderingContext2D;
@@ -8,6 +14,8 @@ describe('trackDrawingUtils', () => {
   beforeEach(() => {
     ctx = {
       beginPath: vi.fn(),
+      moveTo: vi.fn(),
+      lineTo: vi.fn(),
       arc: vi.fn(),
       fill: vi.fn(),
       stroke: vi.fn(),
@@ -357,6 +365,75 @@ describe('trackDrawingUtils', () => {
       const fillTextCalls = (ctx.fillText as any).mock.calls;
       // Should not display empty text when sessionPosition is undefined or 0
       expect(fillTextCalls.length).toBeLessThanOrEqual(0);
+    });
+  });
+
+  describe('getTrackProgressLength', () => {
+    it('maps progress forward from start finish for anticlockwise tracks', () => {
+      expect(getTrackProgressLength(0.25, 1000, 400, 'anticlockwise')).toBe(
+        650
+      );
+    });
+
+    it('maps progress backward from start finish for clockwise tracks', () => {
+      expect(getTrackProgressLength(0.25, 1000, 400, 'clockwise')).toBe(150);
+    });
+
+    it('wraps clockwise progress when subtracting would go below zero', () => {
+      expect(getTrackProgressLength(0.75, 1000, 400, 'clockwise')).toBe(650);
+    });
+  });
+
+  describe('getSectorPathRange', () => {
+    it('uses the direct forward range for anticlockwise sectors', () => {
+      expect(getSectorPathRange(0.1, 0.3, 1000, 400, 'anticlockwise')).toEqual({
+        startLength: 500,
+        endLength: 700,
+        needsWrap: false,
+      });
+    });
+
+    it('uses the complementary forward range for clockwise sectors', () => {
+      expect(getSectorPathRange(0.1, 0.3, 1000, 400, 'clockwise')).toEqual({
+        startLength: 100,
+        endLength: 300,
+        needsWrap: false,
+      });
+    });
+
+    it('wraps clockwise sectors when the complementary range crosses zero', () => {
+      expect(getSectorPathRange(0.25, 0.5, 1000, 400, 'clockwise')).toEqual({
+        startLength: 900,
+        endLength: 150,
+        needsWrap: true,
+      });
+    });
+  });
+
+  describe('buildSectorPath', () => {
+    it('starts a new subpath when a wrapped sector jumps from head to tail', () => {
+      const points = [
+        { x: 0, y: 0 },
+        { x: 10, y: 0 },
+        { x: 20, y: 0 },
+        { x: 30, y: 0 },
+        { x: 40, y: 0 },
+      ];
+      const lengths = [0, 10, 20, 30, 40];
+
+      buildSectorPath(ctx, points, lengths, 28, 8, true);
+
+      expect(ctx.moveTo).toHaveBeenNthCalledWith(1, 28, 0);
+      expect(ctx.moveTo).toHaveBeenNthCalledWith(2, 0, 0);
+    });
+  });
+
+  describe('getSectorGapDimensions', () => {
+    it('uses a small erase thickness while still spanning the track width', () => {
+      expect(getSectorGapDimensions(20, 40)).toEqual({
+        gapLength: 44,
+        gapThickness: 8,
+      });
     });
   });
 });

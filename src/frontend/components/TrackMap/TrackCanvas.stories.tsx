@@ -459,7 +459,7 @@ export const TurnNumbersOnly: Story = {
       labelType: 'numbers',
       highContrast: true,
       labelFontSize: 100,
-    },   
+    },
   },
 };
 
@@ -608,6 +608,52 @@ export const CirclingAroundSingleDriver: Story = {
   },
   args: {
     trackId: 1,
+  },
+};
+
+export const WithSectorGaps: Story = {
+  render: (args) => {
+    const [drivers, setDrivers] = useState(singleDriverData);
+    const [playerProgress, setPlayerProgress] = useState(0);
+    useEffect(() => {
+      const interval = setInterval(() => {
+        setDrivers((prev) =>
+          prev.map((d) => ({
+            ...d,
+            progress: (d.progress + 0.003) % 1,
+          }))
+        );
+        setPlayerProgress((p) => (p + 0.003) % 1);
+      }, 50);
+
+      return () => clearInterval(interval);
+    });
+
+    return (
+      <TrackCanvas
+        trackId={args.trackId}
+        drivers={drivers}
+        turnLabels={args.turnLabels}
+        showCarNumbers={args.showCarNumbers ?? true}
+        invertTrackColors={args.invertTrackColors ?? false}
+        driverCircleSize={args.driverCircleSize ?? 40}
+        playerCircleSize={args.playerCircleSize ?? 40}
+        trackmapFontSize={args.trackmapFontSize ?? 100}
+        trackLineWidth={args.trackLineWidth ?? 20}
+        trackOutlineWidth={args.trackOutlineWidth ?? 40}
+        highlightColor={args.highlightColor}
+        showSectorGaps={args.showSectorGaps ?? false}
+        sectorBoundaries={args.sectorBoundaries ?? null}
+        playerProgress={playerProgress}
+      />
+    );
+  },
+  args: {
+    trackId: 95,
+    showSectorGaps: true,
+    sectorBoundaries: [
+      0, 0.130902, 0.3069, 0.44224, 0.53158, 0.658844, 0.876665, 1,
+    ],
   },
 };
 

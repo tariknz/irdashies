@@ -219,7 +219,7 @@ export interface TrackMapConfig {
   trackOutlineWidth: number;
   useHighlightColor: boolean;
   showOnlyWhenOnTrack: boolean;
-  showSectionColors?: boolean;
+  showSectorGaps?: boolean;
   sessionVisibility: SessionVisibilitySettings;
   styling?: { isMinimalTrack?: boolean; isMinimalCar?: boolean };
 }

@@ -67,6 +67,7 @@ describe('TrackMap', () => {
     vi.mocked(useDriverProgress).mockReturnValue({
       drivers: [],
       identities: [],
+      playerProgress: undefined,
     });
     vi.mocked(useSessionStore).mockImplementation((selector) =>
       selector(mockSessionState)
@@ -277,10 +278,14 @@ describe('TrackMap', () => {
     expect(true).toBe(true);
   });
 
-  it('should enable section colors when the sectors highlight toggle is on', () => {
+  it('should enable sector gaps when the toggle is on', () => {
     mockSessionState.session = {
       SplitTimeInfo: {
-        Sectors: [{ SectorStartPct: 0.33 }, { SectorStartPct: 0.66 }],
+        Sectors: [
+          { SectorStartPct: 0 },
+          { SectorStartPct: 0.33 },
+          { SectorStartPct: 0.66 },
+        ],
       },
     } as Session;
 
@@ -301,7 +306,7 @@ describe('TrackMap', () => {
       trackOutlineWidth: 40,
       useHighlightColor: false,
       showOnlyWhenOnTrack: false,
-      showSectionColors: true,
+      showSectorGaps: true,
       sessionVisibility: {
         race: true,
         loneQualify: true,
@@ -317,9 +322,8 @@ describe('TrackMap', () => {
     expect(trackCanvasSpy).toHaveBeenCalled();
     expect(trackCanvasSpy.mock.calls[0]?.[0]).toEqual(
       expect.objectContaining({
-        showSectionColors: true,
-        sectionBoundaries: [0, 0.33, 0.66, 1],
-        sectionColors: ['#ef4444', '#3b82f6', '#22c55e'],
+        showSectorGaps: true,
+        sectorBoundaries: [0, 0.33, 0.66, 1],
       })
     );
   });

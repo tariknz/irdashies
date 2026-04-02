@@ -2,7 +2,7 @@ import { useTrackId } from './hooks/useTrackId';
 import { useDriverProgress } from './hooks/useDriverProgress';
 import { useTrackMapSettings } from './hooks/useTrackMapSettings';
 import { useHighlightColor } from './hooks/useHighlightColor';
-import { useSectionColors } from './hooks/useSectionColors';
+import { useSectorBoundaries } from './hooks/useSectorBoundaries';
 import { TrackCanvas } from './TrackCanvas';
 import { useSessionVisibility, useTelemetryValue } from '@irdashies/context';
 
@@ -10,12 +10,16 @@ const debug = import.meta.env.DEV || import.meta.env.MODE === 'storybook';
 
 export const TrackMap = () => {
   const trackId = useTrackId();
-  const { drivers: driversTrackData, identities } = useDriverProgress();
+  const {
+    drivers: driversTrackData,
+    identities,
+    playerProgress,
+  } = useDriverProgress();
   const settings = useTrackMapSettings();
   const highlightColor = useHighlightColor();
   const isOnTrack = useTelemetryValue('IsOnTrack');
-  const { sectionBoundaries, colors } = useSectionColors(
-    settings?.showSectionColors ?? false
+  const sectorBoundaries = useSectorBoundaries(
+    settings?.showSectorGaps ?? false
   );
 
   if (!useSessionVisibility(settings?.sessionVisibility)) return <></>;
@@ -52,9 +56,9 @@ export const TrackMap = () => {
         }
         isMinimalTrack={settings?.styling?.isMinimalTrack ?? true}
         isMinimalCar={settings?.styling?.isMinimalCar ?? true}
-        showSectionColors={settings?.showSectionColors ?? false}
-        sectionBoundaries={sectionBoundaries}
-        sectionColors={colors}
+        showSectorGaps={settings?.showSectorGaps ?? false}
+        sectorBoundaries={sectorBoundaries}
+        playerProgress={playerProgress}
         debug={debug}
       />
     </div>

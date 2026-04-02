@@ -1,6 +1,21 @@
 import { getColor } from '@irdashies/utils/colors';
 import { TrackDrawing, TrackDriver, TurnLabels } from './TrackCanvas';
 
+export const getActiveSectorIndex = (
+  playerProgress: number,
+  sectorBoundaries: number[]
+): number => {
+  for (let i = 0; i < sectorBoundaries.length - 1; i++) {
+    if (
+      playerProgress >= sectorBoundaries[i] &&
+      playerProgress < sectorBoundaries[i + 1]
+    ) {
+      return i;
+    }
+  }
+  return sectorBoundaries.length - 2;
+};
+
 export const setupCanvasContext = (
   ctx: CanvasRenderingContext2D,
   scale: number,
@@ -34,28 +49,182 @@ export const drawTrack = (
   const trackColor = invertTrackColors ? 'black' : 'white';
 
   if (!isMinimal) {
-    // Draw outline first
     ctx.strokeStyle = outlineColor;
     ctx.lineWidth = trackOutlineWidth;
     ctx.stroke(path2DObjects.inside);
   }
 
-  // Draw track on top
   ctx.strokeStyle = trackColor;
   ctx.lineWidth = trackLineWidth;
   ctx.stroke(path2DObjects.inside);
 };
 
-export const drawTrackSections = (
-  ctx: CanvasRenderingContext2D,
-  trackPathPoints: { x: number; y: number }[] | undefined,
-  totalLength: number | undefined,
-  sectionBoundaries: number[] | null,
-  colors: string[] | null,
+export const getTrackProgressLength = (
+  progress: number,
+  pathTotalLength: number,
+  startFinishLength = 0,
+  direction: 'clockwise' | 'anticlockwise' | null = 'anticlockwise'
+) => {
+  const adjustedLength = (pathTotalLength * progress) % pathTotalLength;
+
+  if (direction === 'clockwise') {
+    return (
+      (startFinishLength - adjustedLength + pathTotalLength) % pathTotalLength
+    );
+  }
+
+  return (startFinishLength + adjustedLength) % pathTotalLength;
+};
+
+export const getSectorPathRange = (
+  startProgress: number,
+  endProgress: number,
+  pathTotalLength: number,
+  startFinishLength = 0,
+  direction: 'clockwise' | 'anticlockwise' | null = 'anticlockwise'
+) => {
+  const startLength = getTrackProgressLength(
+    startProgress,
+    pathTotalLength,
+    startFinishLength,
+    direction
+  );
+  const endLength = getTrackProgressLength(
+    endProgress,
+    pathTotalLength,
+    startFinishLength,
+    direction
+  );
+
+  if (direction === 'clockwise') {
+    return {
+      startLength: endLength,
+      endLength: startLength,
+      needsWrap: endLength > startLength,
+    };
+  }
+
+  return {
+    startLength,
+    endLength,
+    needsWrap: startLength > endLength,
+  };
+};
+
+export const getSectorGapDimensions = (
   trackLineWidth: number,
   trackOutlineWidth: number
+) => ({
+  gapLength: trackOutlineWidth + 4,
+  gapThickness: Math.max(4, trackLineWidth * 0.4),
+});
+
+export const buildSectorPath = (
+  ctx: CanvasRenderingContext2D,
+  trackPathPoints: { x: number; y: number }[],
+  cumulativeLengths: number[],
+  sLen: number,
+  eLen: number,
+  wrap: boolean
+): boolean => {
+  ctx.beginPath();
+  let started = false;
+
+  const appendRange = (rangeStart: number, rangeEnd: number) => {
+    let startedRange = false;
+
+    for (let j = 0; j < trackPathPoints.length - 1; j++) {
+      const segStart = cumulativeLengths[j];
+      const segEnd = cumulativeLengths[j + 1];
+      const segLength = segEnd - segStart;
+      if (!segLength) continue;
+      if (!(segEnd > rangeStart && segStart < rangeEnd)) continue;
+
+      const p1 = trackPathPoints[j];
+      const p2 = trackPathPoints[j + 1];
+      const clipStartRatio = Math.max(0, (rangeStart - segStart) / segLength);
+      const clipEndRatio = Math.min(1, (rangeEnd - segStart) / segLength);
+      const x1 = p1.x + (p2.x - p1.x) * clipStartRatio;
+      const y1 = p1.y + (p2.y - p1.y) * clipStartRatio;
+      const x2 = p1.x + (p2.x - p1.x) * clipEndRatio;
+      const y2 = p1.y + (p2.y - p1.y) * clipEndRatio;
+
+      if (!startedRange) {
+        ctx.moveTo(x1, y1);
+        startedRange = true;
+        started = true;
+      }
+
+      ctx.lineTo(x2, y2);
+    }
+  };
+
+  if (wrap) {
+    const totalLength = cumulativeLengths[cumulativeLengths.length - 1];
+    appendRange(sLen, totalLength);
+    appendRange(0, eLen);
+  } else {
+    appendRange(sLen, eLen);
+  }
+
+  return started;
+};
+
+const getPointAndPerpendicular = (
+  trackPathPoints: { x: number; y: number }[],
+  cumulativeLengths: number[],
+  pathTotalLength: number,
+  pct: number,
+  startFinishLength: number,
+  direction: 'clockwise' | 'anticlockwise' | null
 ) => {
-  if (!trackPathPoints || !totalLength || !sectionBoundaries || !colors) return;
+  const targetLength = getTrackProgressLength(
+    pct,
+    pathTotalLength,
+    startFinishLength,
+    direction
+  );
+  const adjustedPct = targetLength / pathTotalLength;
+
+  for (let i = 0; i < trackPathPoints.length - 1; i++) {
+    const segStart = cumulativeLengths[i];
+    const segEnd = cumulativeLengths[i + 1];
+    if (targetLength >= segStart && targetLength < segEnd) {
+      const segLength = segEnd - segStart;
+      const ratio = segLength > 0 ? (targetLength - segStart) / segLength : 0;
+      const p1 = trackPathPoints[i];
+      const p2 = trackPathPoints[i + 1];
+      const x = p1.x + (p2.x - p1.x) * ratio;
+      const y = p1.y + (p2.y - p1.y) * ratio;
+
+      const prevIdx = Math.max(0, i - 1);
+      const nextIdx = Math.min(trackPathPoints.length - 1, i + 2);
+      const prev = trackPathPoints[prevIdx];
+      const next = trackPathPoints[nextIdx];
+      const tangentX = next.x - prev.x;
+      const tangentY = next.y - prev.y;
+      const tangentLen = Math.sqrt(tangentX * tangentX + tangentY * tangentY);
+      if (tangentLen === 0) return null;
+      const perpX = -tangentY / tangentLen;
+      const perpY = tangentX / tangentLen;
+
+      return { x, y, perpX, perpY, adjustedPct };
+    }
+  }
+  return null;
+};
+
+export const drawSectorGaps = (
+  ctx: CanvasRenderingContext2D,
+  trackPathPoints: { x: number; y: number }[] | undefined,
+  sectorBoundaries: number[] | null,
+  trackLineWidth: number,
+  trackOutlineWidth: number,
+  startFinishLength?: number,
+  direction?: 'clockwise' | 'anticlockwise' | null
+) => {
+  if (!trackPathPoints || !sectorBoundaries || sectorBoundaries.length < 2)
+    return;
 
   const cumulativeLengths = [0];
   for (let i = 0; i < trackPathPoints.length - 1; i++) {
@@ -70,68 +239,127 @@ export const drawTrackSections = (
   const pathTotalLength = cumulativeLengths[cumulativeLengths.length - 1];
   if (!pathTotalLength) return;
 
-  for (let i = 0; i < sectionBoundaries.length - 1; i++) {
-    const startPct = sectionBoundaries[i];
-    const endPct = sectionBoundaries[i + 1];
-    const startLength = startPct * pathTotalLength;
-    const endLength = endPct * pathTotalLength;
+  const { gapLength, gapThickness } = getSectorGapDimensions(
+    trackLineWidth,
+    trackOutlineWidth
+  );
 
-    ctx.save();
-    ctx.lineCap = 'butt';
-    ctx.lineJoin = 'round';
+  for (const pct of sectorBoundaries) {
+    const point = getPointAndPerpendicular(
+      trackPathPoints,
+      cumulativeLengths,
+      pathTotalLength,
+      pct,
+      startFinishLength ?? 0,
+      direction ?? 'anticlockwise'
+    );
+    if (!point) continue;
 
-    const buildSectionPath = () => {
-      ctx.beginPath();
-      let started = false;
-
-      for (let j = 0; j < trackPathPoints.length - 1; j++) {
-        const segStart = cumulativeLengths[j];
-        const segEnd = cumulativeLengths[j + 1];
-
-        if (segEnd > startLength && segStart < endLength) {
-          const p1 = trackPathPoints[j];
-          const p2 = trackPathPoints[j + 1];
-          const segLength = segEnd - segStart;
-          if (!segLength) continue;
-
-          const clipStartRatio = Math.max(
-            0,
-            (startLength - segStart) / segLength
-          );
-          const clipEndRatio = Math.min(1, (endLength - segStart) / segLength);
-
-          const x1 = p1.x + (p2.x - p1.x) * clipStartRatio;
-          const y1 = p1.y + (p2.y - p1.y) * clipStartRatio;
-          const x2 = p1.x + (p2.x - p1.x) * clipEndRatio;
-          const y2 = p1.y + (p2.y - p1.y) * clipEndRatio;
-
-          if (!started) {
-            ctx.moveTo(x1, y1);
-            started = true;
-          }
-          ctx.lineTo(x2, y2);
-        }
-      }
-
-      return started;
-    };
-
-    if (!buildSectionPath()) {
-      ctx.restore();
+    if (
+      Math.abs(point.adjustedPct) < 0.001 ||
+      Math.abs(point.adjustedPct - 1) < 0.001
+    ) {
       continue;
     }
 
-    ctx.strokeStyle = 'rgba(0, 0, 0, 0.5)';
-    ctx.lineWidth = trackOutlineWidth;
-    ctx.stroke();
+    const startX = point.x - point.perpX * (gapLength / 2);
+    const startY = point.y - point.perpY * (gapLength / 2);
+    const endX = point.x + point.perpX * (gapLength / 2);
+    const endY = point.y + point.perpY * (gapLength / 2);
 
-    buildSectionPath();
-    ctx.strokeStyle = colors[i];
-    ctx.lineWidth = trackLineWidth;
+    ctx.save();
+    ctx.globalCompositeOperation = 'destination-out';
+    ctx.lineWidth = gapThickness;
+    ctx.strokeStyle = 'rgba(0, 0, 0, 1)';
+    ctx.lineCap = 'square';
+    ctx.beginPath();
+    ctx.moveTo(startX, startY);
+    ctx.lineTo(endX, endY);
     ctx.stroke();
-
     ctx.restore();
   }
+};
+
+export const drawActiveSector = (
+  ctx: CanvasRenderingContext2D,
+  trackPathPoints: { x: number; y: number }[] | undefined,
+  sectorBoundaries: number[] | null,
+  activeSectorIndex: number,
+  trackLineWidth: number,
+  trackOutlineWidth: number,
+  invertTrackColors: boolean,
+  startFinishLength?: number,
+  direction?: 'clockwise' | 'anticlockwise' | null
+) => {
+  if (!trackPathPoints || !sectorBoundaries) return;
+  if (activeSectorIndex < 0 || activeSectorIndex >= sectorBoundaries.length - 1)
+    return;
+
+  const cumulativeLengths = [0];
+  for (let i = 0; i < trackPathPoints.length - 1; i++) {
+    const p1 = trackPathPoints[i];
+    const p2 = trackPathPoints[i + 1];
+    const segLength = Math.sqrt(
+      Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2)
+    );
+    cumulativeLengths.push(cumulativeLengths[i] + segLength);
+  }
+
+  const pathTotalLength = cumulativeLengths[cumulativeLengths.length - 1];
+  if (!pathTotalLength) return;
+
+  const startPct = sectorBoundaries[activeSectorIndex];
+  const endPct = sectorBoundaries[activeSectorIndex + 1];
+  if (endPct === undefined) return;
+  const { startLength, endLength, needsWrap } = getSectorPathRange(
+    startPct,
+    endPct,
+    pathTotalLength,
+    startFinishLength ?? 0,
+    direction ?? 'anticlockwise'
+  );
+
+  const activeLineWidth = trackLineWidth + 6;
+  const activeOutlineWidth = trackOutlineWidth + 12;
+
+  const outlineColor = invertTrackColors ? 'white' : 'black';
+  const trackColor = invertTrackColors ? 'black' : 'white';
+
+  ctx.save();
+  ctx.lineCap = 'butt';
+  ctx.lineJoin = 'round';
+
+  if (
+    !buildSectorPath(
+      ctx,
+      trackPathPoints,
+      cumulativeLengths,
+      startLength,
+      endLength,
+      needsWrap
+    )
+  ) {
+    ctx.restore();
+    return;
+  }
+
+  ctx.strokeStyle = outlineColor;
+  ctx.lineWidth = activeOutlineWidth;
+  ctx.stroke();
+
+  buildSectorPath(
+    ctx,
+    trackPathPoints,
+    cumulativeLengths,
+    startLength,
+    endLength,
+    needsWrap
+  );
+  ctx.strokeStyle = trackColor;
+  ctx.lineWidth = activeLineWidth;
+  ctx.stroke();
+
+  ctx.restore();
 };
 
 export const drawStartFinishLine = (
@@ -147,7 +375,6 @@ export const drawStartFinishLine = (
   const lineLength = trackLineWidth * 3;
   const { point: sfPoint, perpendicular } = startFinishLine;
 
-  // Calculate the start and end points of the line
   const startX = sfPoint.x - (perpendicular.x * lineLength) / 2;
   const startY = sfPoint.y - (perpendicular.y * lineLength) / 2;
   const endX = sfPoint.x + (perpendicular.x * lineLength) / 2;
@@ -157,7 +384,6 @@ export const drawStartFinishLine = (
   ctx.strokeStyle = getColor('red');
   ctx.lineCap = 'square';
 
-  // Draw the perpendicular line
   ctx.beginPath();
   ctx.moveTo(startX, startY);
   ctx.lineTo(endX, endY);
@@ -177,12 +403,10 @@ export const drawTurnNames = (
     const { x, y, content } = turn;
     if (!content || x === undefined || y === undefined) return;
 
-    // type of display
     const isNumeric = /^\d+/.test(content.trim());
     if (turnLabels.labelType === 'numbers' && !isNumeric) return;
     if (turnLabels.labelType === 'names' && isNumeric) return;
 
-    // proximity check to prevent overlap
     let yOffset = 0;
     if (!isNumeric) {
       const neighbour = drawnPositions.find((pos) => {
@@ -196,12 +420,10 @@ export const drawTurnNames = (
       }
     }
 
-    // update current coordinates with the offset
     const renderX = x;
     const renderY = y + yOffset;
     drawnPositions.push({ x: renderX, y: renderY });
 
-    // add the label
     const fontSize = 2 * (turnLabels.labelFontSize / 100);
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
@@ -224,7 +446,6 @@ export const drawTurnNames = (
     }
 
     ctx.fillStyle = 'white';
-    // visual offset
     const visualOffset =
       (m.actualBoundingBoxAscent - m.actualBoundingBoxDescent) / 2;
     ctx.fillText(content, renderX, renderY + visualOffset);
@@ -251,7 +472,7 @@ export const drawDrivers = (
   carIdxIsOnPitRoad?: number[]
 ) => {
   Object.values(calculatePositions)
-    .sort((a, b) => Number(a.isPlayer) - Number(b.isPlayer)) // draws player last to be on top
+    .sort((a, b) => Number(a.isPlayer) - Number(b.isPlayer))
     .forEach(({ driver, position, isPlayer, sessionPosition }) => {
       let color = driverColors[driver.CarIdx];
       if (!color) return;

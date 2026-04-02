@@ -48,11 +48,11 @@ export const PCCPacing: Story = {
   decorators: [TelemetryDecorator('/test-data/1735296198162')],
 };
 
-export const WithSectionHighlighting: Story = {
+export const WithSectorGaps: Story = {
   decorators: [
     TelemetryDecoratorWithConfig('/test-data/GT3 Sprint Arrays', {
       map: {
-        showSectionColors: true,
+        showSectorGaps: true,
       },
     }),
   ],
