@@ -201,13 +201,13 @@ export async function publishDashboardUpdates(
 ) {
   onDashboardUpdated((dashboard) => {
     const merged = mergeDriverTagsIntoLayout(dashboard, getDriverTagSettings());
+    const profileId = getCurrentProfileId();
     overlayManager.closeOrCreateWindows(merged);
     overlayManager.publishMessage('dashboardUpdated', merged);
     // Notify component server bridge subscribers
     dashboardUpdateCallbacks.forEach((callback) => {
       try {
-        // We don't know the profileId here, so we pass undefined
-        callback(merged, undefined);
+        callback(merged, profileId);
       } catch (err) {
         logger.error('Error in dashboard update callback:', err);
       }
