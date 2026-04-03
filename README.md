@@ -290,6 +290,23 @@ Displays visual indicators on the left and right sides of the screen when cars a
 
 ![Blind Spot Monitor](./docs/assets/blindspot-monitor.png)
 
+### Slow Car Ahead Warning
+
+Displays a warning indicator when a slower car is detected ahead on the track. The distance in meters to the car is displayed, as well as bars that grow as the car gets closer. The color of the bars change based on the track position and speed of the slow car:
+
+- Green: Car is off-track
+- Amber: Car is on-track and moving (depends on configured threshold)
+- Red: Car is on-track and stopped, or moving very slowly (depends on configured threshold)
+
+**Features:**
+
+- Adjustable distance threshold
+- Adjustable slow speed threshold
+- Adjustable stopped speed threshold
+- Adjustable bar thickness
+
+![Slow Car Ahead](docs/assets/slow-car-ahead.png)
+
 ### Garage Cover
 
 Displays a custom image overlay when you are in the garage. Perfect for streaming to show a branded or custom image while in the garage instead of the default iRacing garage view.

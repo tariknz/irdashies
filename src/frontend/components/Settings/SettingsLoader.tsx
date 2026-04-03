@@ -22,6 +22,7 @@ import { TwitchChatSettings } from './sections/TwitchChatSettings';
 import { DriverTagsSettings } from './sections/DriverTagsSettings';
 import { LapTimeLogSettings } from './sections/LapTimeLogSettings';
 import { useDashboard } from '@irdashies/context';
+import { SlowCarAheadSettings } from './sections/SlowCarAheadSettings';
 
 export const SettingsLoader = () => {
   const { widgetId } = useParams<{ widgetId: string }>();
@@ -72,6 +73,8 @@ export const SettingsLoader = () => {
       return <TwitchChatSettings />;
     case 'laptimelog':
       return <LapTimeLogSettings />;
+    case 'slowcarahead':
+      return <SlowCarAheadSettings />;
     default:
       return widget ? (
         <div className="text-red-400">No settings available for {type}</div>
