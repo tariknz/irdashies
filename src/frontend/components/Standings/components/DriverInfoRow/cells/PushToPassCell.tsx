@@ -1,8 +1,5 @@
 import { memo } from 'react';
-import {
-  BatteryChargingVerticalIcon,
-  BatteryWarningVerticalIcon,
-} from '@phosphor-icons/react';
+import { LightningIcon, LightningSlashIcon } from '@phosphor-icons/react';
 import type { P2PDisplayState } from '@irdashies/context';
 
 interface PushToPassCellProps {
@@ -33,12 +30,16 @@ export const PushToPassCell = memo(({ state }: PushToPassCellProps) => {
 
   const pulseClass = isActive || isCooldown ? 'animate-pulse' : '';
 
-  const iconClass = isActive ? 'text-yellow-400' : 'text-white';
+  const iconClass = isActive
+    ? 'text-amber-500'
+    : isExhausted
+      ? 'text-white'
+      : 'text-black';
 
   const icon = isExhausted ? (
-    <BatteryWarningVerticalIcon size={12} weight="fill" />
+    <LightningSlashIcon size={12} weight="fill" />
   ) : (
-    <BatteryChargingVerticalIcon size={12} weight="fill" />
+    <LightningIcon size={12} weight="fill" />
   );
 
   return (
