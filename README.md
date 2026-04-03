@@ -21,9 +21,10 @@ Install the .exe and run it. The application will automatically update when a ne
 ## Table of Contents
 
 - [Introduction](#introduction)
-- [Prerequisites](#prerequisites)
-- [Installation](#installation)
-- [Usage](#usage)
+- [Available overlays](#available-overlays)
+- [Prerequisites](#prerequisites-for-development)
+- [Installation](#installation-for-development)
+- [Usage](#usage-for-development)
 - [Folder Structure](#folder-structure)
 - [Storybook](#storybook)
 - [Package (create .exe)](#package-create-exe)
@@ -35,127 +36,6 @@ Install the .exe and run it. The application will automatically update when a ne
 ## Introduction
 
 This project is built with React and Electron and uses the iRacing SDK to retrieve data from the iRacing live telemetry memory-map.
-
-## Prerequisites
-
-- Node.js (v20 or higher)
-- npm (comes with Node.js)
-- Windows build tools if you are on Windows
-  - Modern Node.js installations include the necessary build tools. If you encounter issues building native modules, ensure you selected the option to install build tools during Node.js installation, or reinstall Node.js with build tools enabled.
-- iRacing installed on your machine (Windows only)
-
-> Note: Developing on MacOS is fully supported and does not require iRacing or any additional tools to be installed as it uses a mocked SDK.
-
-## Installation (for development)
-
-To install IRDashies, follow these steps:
-
-1. Clone the repository
-2. Navigate to the project directory
-3. Install the required dependencies:
-
-```bash
-npm install
-```
-
-4. Run the application:
-
-```bash
-npm start
-```
-
-5. Optionally, you can run the storybook to view the components in isolation:
-
-```bash
-npm run storybook
-```
-
-## Usage (for development)
-
-To start using IRDashies, run the following command:
-
-```bash
-npm start
-```
-
-This will start the application.
-
-Look for the application in your app tray.
-
-> You will need to have Node.js installed on your machine to run the application. You can download it from [here](https://nodejs.org/).
-
-> On macOS you will see mocked data from a sample session. To connect to iRacing, you will need to run the application on Windows.
-
-While developing its recommended you run storybook as it gives you a quick way to iterate your changes:
-
-```bash
-npm run storybook
-```
-
-## Folder Structure
-
-The project is structured as follows:
-
-```
-irdashies/
-  ├── src/
-  │   ├── app/
-  │   ├── frontend/
-  │   ├── types/
-```
-
-- `src/app/` contains the main Electron application code.
-- `src/app/irsdk/` contains the iRacing SDK code including the native C++ bindings.
-- `src/frontend/` contains the React components for the overlays.
-- `src/types/` contains TypeScript type definitions shared between the frontend and backend (e.g. telemetry types).
-
-> Note: Frontend components should NOT import anything from ./app as these are Electron-specific modules. Any communication should be done via IPC and types exposed via the types folder.
-
-## Storybook
-
-To view the components in Storybook, run the following command:
-
-```bash
-npm run storybook
-```
-
-This allows you to easily develop, test, and visualise the widgets/overlays in isolation.
-
-## Package (create .exe)
-
-To package the application and create the .exe, run the following command:
-
-```bash
-npm run package
-```
-
-To create the .exe and the installer run the following:
-
-```bash
-npm run make
-```
-
-## Testing
-
-To run the tests, run the following command:
-
-```bash
-npm run test
-```
-
-## Linting
-
-To run the linting, run the following command:
-
-```bash
-npm run lint
-```
-
-> Ensure you have ESLint extension installed if using VS Code. This project uses ESLint flat config format (eslint.config.mjs).
-
-## Developing on Mac
-
-As you may know, the iRacing SDK is only available on Windows. To develop on Mac OS, there is a mock SDK that is loaded which generates some dummy data for you to work with. This is useful for developing the UI components and widgets.
 
 ## Available overlays
 
@@ -541,6 +421,127 @@ A powerful tool for viewing live data coming from iRacing. While mostly used for
   - System autostart: Optionally have the app start automatically when your computer boots up.
   - Start minimized: Launch the settings window in minimized state for a cleaner desktop
   - Automatic updates: The app keeps itself up to date with the latest features and bug fixes.
+
+## Prerequisites (for development)
+
+- Node.js (v20 or higher)
+- npm (comes with Node.js)
+- Windows build tools if you are on Windows
+  - Modern Node.js installations include the necessary build tools. If you encounter issues building native modules, ensure you selected the option to install build tools during Node.js installation, or reinstall Node.js with build tools enabled.
+- iRacing installed on your machine (Windows only)
+
+> Note: Developing on MacOS is fully supported and does not require iRacing or any additional tools to be installed as it uses a mocked SDK.
+
+## Installation (for development)
+
+To install IRDashies, follow these steps:
+
+1. Clone the repository
+2. Navigate to the project directory
+3. Install the required dependencies:
+
+```bash
+npm install
+```
+
+4. Run the application:
+
+```bash
+npm start
+```
+
+5. Optionally, you can run the storybook to view the components in isolation:
+
+```bash
+npm run storybook
+```
+
+## Usage (for development)
+
+To start using IRDashies, run the following command:
+
+```bash
+npm start
+```
+
+This will start the application.
+
+Look for the application in your app tray.
+
+> You will need to have Node.js installed on your machine to run the application. You can download it from [here](https://nodejs.org/).
+
+> On macOS you will see mocked data from a sample session. To connect to iRacing, you will need to run the application on Windows.
+
+While developing its recommended you run storybook as it gives you a quick way to iterate your changes:
+
+```bash
+npm run storybook
+```
+
+## Folder Structure
+
+The project is structured as follows:
+
+```
+irdashies/
+  ├── src/
+  │   ├── app/
+  │   ├── frontend/
+  │   ├── types/
+```
+
+- `src/app/` contains the main Electron application code.
+- `src/app/irsdk/` contains the iRacing SDK code including the native C++ bindings.
+- `src/frontend/` contains the React components for the overlays.
+- `src/types/` contains TypeScript type definitions shared between the frontend and backend (e.g. telemetry types).
+
+> Note: Frontend components should NOT import anything from ./app as these are Electron-specific modules. Any communication should be done via IPC and types exposed via the types folder.
+
+## Storybook
+
+To view the components in Storybook, run the following command:
+
+```bash
+npm run storybook
+```
+
+This allows you to easily develop, test, and visualise the widgets/overlays in isolation.
+
+## Package (create .exe)
+
+To package the application and create the .exe, run the following command:
+
+```bash
+npm run package
+```
+
+To create the .exe and the installer run the following:
+
+```bash
+npm run make
+```
+
+## Testing
+
+To run the tests, run the following command:
+
+```bash
+npm run test
+```
+
+## Linting
+
+To run the linting, run the following command:
+
+```bash
+npm run lint
+```
+
+> Ensure you have ESLint extension installed if using VS Code. This project uses ESLint flat config format (eslint.config.mjs).
+
+## Developing on Mac
+
+As you may know, the iRacing SDK is only available on Windows. To develop on Mac OS, there is a mock SDK that is loaded which generates some dummy data for you to work with. This is useful for developing the UI components and widgets.
 
 ## Acknowledgments
 
