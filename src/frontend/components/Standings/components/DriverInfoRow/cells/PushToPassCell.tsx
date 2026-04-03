@@ -25,8 +25,10 @@ export const PushToPassCell = memo(({ state }: PushToPassCellProps) => {
   const bgClass = isExhausted
     ? 'bg-red-500/80 text-white'
     : isCooldown
-      ? 'bg-blue-300/80 text-slate-800'
-      : 'bg-green-200/80 text-slate-800';
+      ? 'bg-sky-500 text-slate-800'
+      : isActive
+        ? 'bg-lime-500 text-slate-800'
+        : 'bg-lime-200 text-slate-800';
 
   const pulseClass = isActive || isCooldown ? 'animate-pulse' : '';
 
@@ -48,10 +50,10 @@ export const PushToPassCell = memo(({ state }: PushToPassCellProps) => {
       className="w-[4.5rem] px-1 text-center align-middle"
     >
       <span
-        className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-xs font-medium ${bgClass} ${pulseClass}`}
+        className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-xs w-[4rem] ${bgClass} ${pulseClass}`}
       >
         <span className={iconClass}>{icon}</span>
-        {isExhausted ? 0 : count}
+        <span className="flex-1 text-right">{isExhausted ? 0 : count} s</span>
       </span>
     </td>
   );
