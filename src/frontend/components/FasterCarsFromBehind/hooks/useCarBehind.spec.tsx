@@ -372,6 +372,34 @@ describe('useCarBehind', () => {
       expect(result.current).toHaveLength(1);
       expect(result.current[0].name).toBe('On Track');
     });
+
+    it.each([true, false])(
+      'should not be displayed if player is on pit road',
+      (showFasterClasses) => {
+        const mockDrivers = [
+          createMockDriver(10, -1.5, 37, 'Same Class On Track', false),
+          createMockDriver(10, -1.5, 42, 'Different Class On Track', false),
+          createMockDriver(30, 0, 37, 'Player', true),
+        ];
+
+        vi.mocked(driverRelativesModule.useDriverRelatives).mockReturnValue(
+          mockDrivers
+        );
+
+        vi.mocked(
+          fasterCarsSettingsModule.useFasterCarsSettings
+        ).mockReturnValue({
+          ...defaultSettings,
+          onlyShowFasterClasses: showFasterClasses,
+        });
+
+        const { result } = renderHook(() =>
+          useCarBehind({ distanceThreshold: -2.5 })
+        );
+
+        expect(result.current).toHaveLength(0);
+      }
+    );
   });
 
   describe('Return Value Format', () => {
