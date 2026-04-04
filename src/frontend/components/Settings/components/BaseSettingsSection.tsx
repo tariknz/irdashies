@@ -10,7 +10,10 @@ interface BaseSettingsSectionProps<T> {
   onSettingsChange: (settings: BaseWidgetSettings<T>) => void;
   widgetId: string;
   children?:
-    | ((handleConfigChange: (config: Partial<T>) => void) => ReactNode)
+    | ((
+        handleConfigChange: (config: Partial<T>) => void,
+        handleResetPosition: () => void
+      ) => ReactNode)
     | ReactNode;
   onConfigChange?: (config: Partial<T>) => void;
   disableInternalScroll?: boolean;
@@ -67,6 +70,29 @@ export const BaseSettingsSection = <T,>({
     onSettingsChange(updatedSettings);
     updateDashboard(updatedSettings);
     onConfigChange?.(newConfig);
+  };
+
+  const handleResetPosition = () => {
+    if (currentDashboard && onDashboardUpdated) {
+      const updatedWidgets = currentDashboard.widgets.map((widget) => {
+        if (widget.id !== widgetId) return widget;
+
+        return {
+          ...widget,
+          layout: {
+            ...widget.layout,
+            x: 0,
+            y: 0,
+          },
+        };
+      });
+
+      const updatedDashboard = {
+        ...currentDashboard,
+        widgets: updatedWidgets,
+      };
+      onDashboardUpdated(updatedDashboard);
+    }
   };
 
   const updateDashboard = (newSettings: BaseWidgetSettings<T>) => {
@@ -128,7 +154,7 @@ export const BaseSettingsSection = <T,>({
         {children && (
           <div className="space-y-4 p-4">
             {typeof children === 'function'
-              ? children(handleConfigChange)
+              ? children(handleConfigChange, handleResetPosition)
               : children}
           </div>
         )}

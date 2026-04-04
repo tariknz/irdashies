@@ -15,6 +15,7 @@ import { SettingDivider } from '../components/SettingDivider';
 import { TabButton } from '../components/TabButton';
 import { SettingButtonGroupRow } from '../components/SettingButtonGroupRow';
 import { SettingSliderRow } from '../components/SettingSliderRow';
+import { SettingActionButton } from '../components/SettingActionButton';
 import logger from '@irdashies/utils/logger';
 
 const SETTING_ID = 'tachometer';
@@ -424,7 +425,7 @@ export const TachometerSettings = () => {
       onSettingsChange={setSettings}
       widgetId="tachometer"
     >
-      {(handleConfigChange) => {
+      {(handleConfigChange, handleResetPosition) => {
         const config = settings.config;
         return (
           <div className="space-y-6">
@@ -455,48 +456,57 @@ export const TachometerSettings = () => {
 
             {/* DISPLAY TAB */}
             {activeTab === 'display' && (
-              <SettingsSection title="Display">
-                <SettingSliderRow
-                  title="Background Opacity"
-                  value={settings.config.background.opacity ?? 40}
-                  units="%"
-                  min={0}
-                  max={100}
-                  step={1}
-                  onChange={(v) =>
-                    handleConfigChange({ background: { opacity: v } })
-                  }
-                />
+              <>
+                <SettingsSection title="Display">
+                  <SettingSliderRow
+                    title="Background Opacity"
+                    value={settings.config.background.opacity ?? 40}
+                    units="%"
+                    min={0}
+                    max={100}
+                    step={1}
+                    onChange={(v) =>
+                      handleConfigChange({ background: { opacity: v } })
+                    }
+                  />
 
-                <SettingToggleRow
-                  title="Show RPM Text"
-                  enabled={config.showRpmText}
-                  onToggle={(newValue) =>
-                    handleConfigChange({
-                      showRpmText: newValue,
-                    })
-                  }
-                />
+                  <SettingToggleRow
+                    title="Show RPM Text"
+                    enabled={config.showRpmText}
+                    onToggle={(newValue) =>
+                      handleConfigChange({
+                        showRpmText: newValue,
+                      })
+                    }
+                  />
 
-                {config.showRpmText && (
-                  <SettingsSection>
-                    <SettingButtonGroupRow<'horizontal' | 'bottom' | 'top'>
-                      title="RPM Text Orientaion"
-                      value={config.rpmOrientation ?? 'horizontal'}
-                      options={[
-                        { label: 'Horizontal', value: 'horizontal' },
-                        { label: 'Bottom', value: 'bottom' },
-                        { label: 'Top', value: 'top' },
-                      ]}
-                      onChange={(v) =>
-                        handleConfigChange({
-                          rpmOrientation: v,
-                        })
-                      }
-                    />
-                  </SettingsSection>
-                )}
-              </SettingsSection>
+                  {config.showRpmText && (
+                    <SettingsSection>
+                      <SettingButtonGroupRow<'horizontal' | 'bottom' | 'top'>
+                        title="RPM Text Orientaion"
+                        value={config.rpmOrientation ?? 'horizontal'}
+                        options={[
+                          { label: 'Horizontal', value: 'horizontal' },
+                          { label: 'Bottom', value: 'bottom' },
+                          { label: 'Top', value: 'top' },
+                        ]}
+                        onChange={(v) =>
+                          handleConfigChange({
+                            rpmOrientation: v,
+                          })
+                        }
+                      />
+                    </SettingsSection>
+                  )}
+                </SettingsSection>
+
+                <SettingActionButton
+                  label="Reset Position"
+                  onClick={handleResetPosition}
+                  align="center"
+                  className="pt-8"
+                />
+              </>
             )}
 
             {/* OPTIONS TAB */}

@@ -13,6 +13,7 @@ import { SettingToggleRow } from '../components/SettingToggleRow';
 import { SettingSliderRow } from '../components/SettingSliderRow';
 import { SettingButtonGroupRow } from '../components/SettingButtonGroupRow';
 import { SettingDivider } from '../components/SettingDivider';
+import { SettingActionButton } from '../components/SettingActionButton';
 
 const SETTING_ID = 'map';
 
@@ -53,7 +54,7 @@ export const TrackMapSettings = () => {
       onSettingsChange={setSettings}
       widgetId="map"
     >
-      {(handleConfigChange) => (
+      {(handleConfigChange, handleResetPosition) => (
         <div className="space-y-4">
           {/* Tabs */}
           <div className="flex border-b border-slate-700/50">
@@ -90,104 +91,119 @@ export const TrackMapSettings = () => {
           <div className="pt-4">
             {/* TRACK TAB */}
             {activeTab === 'track' && (
-              <SettingsSection title="Track Settings">
-                <SettingSliderRow
-                  title="Track Line Width"
-                  description="Thickness of the track line (matches curved track map scale)"
-                  value={settings.config.trackLineWidth ?? 20}
-                  units="px"
-                  min={5}
-                  max={40}
-                  step={1}
-                  onChange={(v) => handleConfigChange({ trackLineWidth: v })}
+              <>
+                <SettingsSection title="Track Settings">
+                  <SettingSliderRow
+                    title="Track Line Width"
+                    description="Thickness of the track line (matches curved track map scale)"
+                    value={settings.config.trackLineWidth ?? 20}
+                    units="px"
+                    min={5}
+                    max={40}
+                    step={1}
+                    onChange={(v) => handleConfigChange({ trackLineWidth: v })}
+                  />
+
+                  <SettingSliderRow
+                    title="Track Outline Width"
+                    description="Thickness of the outline around the track"
+                    value={settings.config.trackOutlineWidth ?? 40}
+                    units="px"
+                    min={10}
+                    max={80}
+                    step={1}
+                    onChange={(v) =>
+                      handleConfigChange({ trackOutlineWidth: v })
+                    }
+                  />
+
+                  <SettingToggleRow
+                    title="Invert Track Colors"
+                    description="Swap black and white colors for the track"
+                    enabled={settings.config.invertTrackColors ?? false}
+                    onToggle={(newValue) =>
+                      handleConfigChange({ invertTrackColors: newValue })
+                    }
+                  />
+
+                  <SettingToggleRow
+                    title="Enable Turn Labels"
+                    description="Show turn numbers and names on the track map"
+                    enabled={settings.config.turnLabels?.enabled ?? false}
+                    onToggle={(newValue) =>
+                      handleConfigChange({
+                        turnLabels: {
+                          ...(settings.config.turnLabels ?? {}),
+                          enabled: newValue,
+                        },
+                      })
+                    }
+                  />
+
+                  {settings.config.turnLabels?.enabled && (
+                    <SettingsSection>
+                      <SettingButtonGroupRow<'numbers' | 'names' | 'both'>
+                        title="Display Mode"
+                        value={settings.config.turnLabels.labelType ?? 'both'}
+                        options={[
+                          { label: 'Numbers', value: 'numbers' },
+                          { label: 'Names', value: 'names' },
+                          { label: 'Both', value: 'both' },
+                        ]}
+                        onChange={(v) =>
+                          handleConfigChange({
+                            turnLabels: {
+                              ...settings.config.turnLabels,
+                              labelType: v,
+                            },
+                          })
+                        }
+                      />
+
+                      <SettingToggleRow
+                        title="High Contrast Labels"
+                        description="Use black background for turn numbers and turn names for better legibility"
+                        enabled={
+                          settings.config.turnLabels.highContrast ?? true
+                        }
+                        onToggle={(newValue) =>
+                          handleConfigChange({
+                            turnLabels: {
+                              ...settings.config.turnLabels,
+                              highContrast: newValue,
+                            },
+                          })
+                        }
+                      />
+
+                      <SettingSliderRow
+                        title="Relative Label Size"
+                        description="Relative font size of the turn labels"
+                        value={settings.config.turnLabels.labelFontSize ?? 100}
+                        units="%"
+                        min={50}
+                        max={150}
+                        step={1}
+                        onChange={(v) =>
+                          handleConfigChange({
+                            turnLabels: {
+                              ...settings.config.turnLabels,
+                              labelFontSize: v,
+                            },
+                          })
+                        }
+                      />
+                    </SettingsSection>
+                  )}
+                </SettingsSection>
+
+                <SettingActionButton
+                  label="Reset Position"
+                  onClick={handleResetPosition}
+                  align="center"
+                  className="pt-8"
                 />
-
-                <SettingSliderRow
-                  title="Track Outline Width"
-                  description="Thickness of the outline around the track"
-                  value={settings.config.trackOutlineWidth ?? 40}
-                  units="px"
-                  min={10}
-                  max={80}
-                  step={1}
-                  onChange={(v) => handleConfigChange({ trackOutlineWidth: v })}
-                />
-
-                <SettingToggleRow
-                  title="Invert Track Colors"
-                  description="Swap black and white colors for the track"
-                  enabled={settings.config.invertTrackColors ?? false}
-                  onToggle={(newValue) =>
-                    handleConfigChange({ invertTrackColors: newValue })
-                  }
-                />
-
-                <SettingToggleRow
-                  title="Enable Turn Labels"
-                  description="Show turn numbers and names on the track map"
-                  enabled={settings.config.turnLabels?.enabled ?? false}
-                  onToggle={(newValue) =>
-                    handleConfigChange({
-                      turnLabels: {
-                        ...(settings.config.turnLabels ?? {}),
-                        enabled: newValue,
-                      },
-                    })
-                  }
-                />
-
-                {settings.config.turnLabels?.enabled && (
-                  <SettingsSection>
-                    <SettingButtonGroupRow<
-                      'numbers' | 'names' | 'both'
-                    >
-                      title="Display Mode"
-                      value={settings.config.turnLabels.labelType ?? 'both'}
-                      options={[
-                        { label: 'Numbers', value: 'numbers' },
-                        { label: 'Names', value: 'names' },
-                        { label: 'Both', value: 'both' },
-                      ]}
-                      onChange={(v) =>
-                        handleConfigChange({
-                          turnLabels: { ...settings.config.turnLabels, labelType: v },
-                        })
-                      }
-                    />
-
-                    <SettingToggleRow
-                      title="High Contrast Labels"
-                      description="Use black background for turn numbers and turn names for better legibility"
-                      enabled={settings.config.turnLabels.highContrast ?? true}
-                      onToggle={(newValue) =>
-                        handleConfigChange({
-                          turnLabels: {
-                            ...settings.config.turnLabels,
-                            highContrast: newValue,
-                          },
-                        })
-                      }
-                    />
-
-                    <SettingSliderRow
-                      title="Relative Label Size"
-                      description="Relative font size of the turn labels"
-                      value={settings.config.turnLabels.labelFontSize ?? 100}
-                      units="%"
-                      min={50}
-                      max={150}
-                      step={1}
-                      onChange={(v) => handleConfigChange({
-                          turnLabels: {
-                            ...settings.config.turnLabels,
-                            labelFontSize: v,
-                          },
-                        })
-                      }
-                    />
-                  </SettingsSection>
-                )}
-              </SettingsSection>
+              </>
             )}
 
             {/* DRIVERS TAB */}

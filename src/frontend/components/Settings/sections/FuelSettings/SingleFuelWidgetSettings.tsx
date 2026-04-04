@@ -27,6 +27,7 @@ import { SettingToggleRow } from '../../components/SettingToggleRow';
 import { SettingSliderRow } from '../../components/SettingSliderRow';
 import { SettingSelectRow } from '../../components/SettingSelectRow';
 import { SettingNumberRow } from '../../components/SettingNumberRow';
+import { SettingActionButton } from '../../components/SettingActionButton';
 
 const defaultConfig = getWidgetDefaultConfig('fuel');
 const DEFAULT_TREE_FUEL = DEFAULT_FUEL_LAYOUT_TREE;
@@ -138,7 +139,7 @@ export const SingleFuelWidgetSettings = ({
       widgetId={widgetId}
       disableInternalScroll={true}
     >
-      {(handleConfigChange) => {
+      {(handleConfigChange, handleResetPosition) => {
         const handleTreeUpdate = (newTree: LayoutNode) => {
           handleConfigChange({ layoutTree: newTree });
         };
@@ -253,6 +254,13 @@ export const SingleFuelWidgetSettings = ({
                       />
                     )}
                   </div>
+
+                  <SettingActionButton
+                    label="Reset Position"
+                    onClick={handleResetPosition}
+                    align="center"
+                    className="pt-8"
+                  />
                 </>
               )}
 

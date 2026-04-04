@@ -10,6 +10,7 @@ import { SessionVisibility } from '../components/SessionVisibility';
 import { TabButton } from '../components/TabButton';
 import { SettingsSection } from '../components/SettingSection';
 import { SettingNumberRow } from '../components/SettingNumberRow';
+import { SettingActionButton } from '../components/SettingActionButton';
 
 const SETTING_ID = 'rejoin';
 
@@ -48,7 +49,7 @@ export const RejoinIndicatorSettings = () => {
       onSettingsChange={setSettings}
       widgetId={SETTING_ID}
     >
-      {(handleConfigChange) => (
+      {(handleConfigChange, handleResetPosition) => (
         <div className="space-y-4">
           {/* Tabs */}
           <div className="flex border-b border-slate-700/50">
@@ -71,37 +72,46 @@ export const RejoinIndicatorSettings = () => {
           <div className="pt-4">
             {/* DISPLAY TAB */}
             {activeTab === 'options' && (
-              <SettingsSection title="Options">
-                <SettingNumberRow
-                  title="Show At Speed"
-                  description="Display the rejoin indicator widget when you are at or below this
-                    speed"
-                  value={settings.config.showAtSpeed}
-                  min={0}
-                  step={0.1}
-                  onChange={(v) => handleConfigChange({ showAtSpeed: v })}
-                />
+              <>
+                <SettingsSection title="Options">
+                  <SettingNumberRow
+                    title="Show At Speed"
+                    description="Display the rejoin indicator widget when you are at or below this
+                      speed"
+                    value={settings.config.showAtSpeed}
+                    min={0}
+                    step={0.1}
+                    onChange={(v) => handleConfigChange({ showAtSpeed: v })}
+                  />
 
-                <SettingNumberRow
-                  title="Care Gap"
-                  description="Distance to the car behind where you need to be cautious when
-                    rejoining. Note: the clear status will show when next car is above
-                    this gap"
-                  value={settings.config.careGap}
-                  min={0}
-                  step={0.1}
-                  onChange={(v) => handleConfigChange({ careGap: v })}
-                />
+                  <SettingNumberRow
+                    title="Care Gap"
+                    description="Distance to the car behind where you need to be cautious when
+                      rejoining. Note: the clear status will show when next car is above
+                      this gap"
+                    value={settings.config.careGap}
+                    min={0}
+                    step={0.1}
+                    onChange={(v) => handleConfigChange({ careGap: v })}
+                  />
 
-                <SettingNumberRow
-                  title="Stop Gap"
-                  description="Distance to the car behind where it is not safe to rejoin"
-                  value={settings.config.stopGap}
-                  min={0}
-                  step={0.1}
-                  onChange={(v) => handleConfigChange({ stopGap: v })}
+                  <SettingNumberRow
+                    title="Stop Gap"
+                    description="Distance to the car behind where it is not safe to rejoin"
+                    value={settings.config.stopGap}
+                    min={0}
+                    step={0.1}
+                    onChange={(v) => handleConfigChange({ stopGap: v })}
+                  />
+                </SettingsSection>
+
+                <SettingActionButton
+                  label="Reset Position"
+                  onClick={handleResetPosition}
+                  align="center"
+                  className="pt-8"
                 />
-              </SettingsSection>
+              </>
             )}
 
             {/* VISIBILITY TAB */}

@@ -13,6 +13,7 @@ import { SettingSliderRow } from '../components/SettingSliderRow';
 import { SettingToggleRow } from '../components/SettingToggleRow';
 import { SettingSelectRow } from '../components/SettingSelectRow';
 import { SettingButtonGroupRow } from '../components/SettingButtonGroupRow';
+import { SettingActionButton } from '../components/SettingActionButton';
 
 const SETTING_ID = 'laptimelog';
 
@@ -51,10 +52,10 @@ export const LapTimeLogSettings = () => {
       onSettingsChange={setSettings}
       widgetId={SETTING_ID}
     >
-      {(handleConfigChange) => (
+      {(handleConfigChange, handleResetPosition) => (
         <div className="space-y-4">
           {/* Tabs */}
-          <div className="flex border-b border-slate-700/50">            
+          <div className="flex border-b border-slate-700/50">
             <TabButton
               id="display"
               activeTab={activeTab}
@@ -82,127 +83,134 @@ export const LapTimeLogSettings = () => {
             {/* DISPLAY TAB */}
             {activeTab === 'display' && (
               <>
-              <SettingsSection title="Display">
-             
-                <SettingToggleRow
-                  title="Show Current Lap"
-                  description="Display the live lap time for the current lap."
-                  enabled={settings.config.showCurrentLap ?? true}
-                  onToggle={(newValue) =>
-                    handleConfigChange({ showCurrentLap: newValue })
-                  }
-                />     
+                <SettingsSection title="Display">
+                  <SettingToggleRow
+                    title="Show Current Lap"
+                    description="Display the live lap time for the current lap."
+                    enabled={settings.config.showCurrentLap ?? true}
+                    onToggle={(newValue) =>
+                      handleConfigChange({ showCurrentLap: newValue })
+                    }
+                  />
 
-                <SettingToggleRow
-                  title="Show Predicted Lap"
-                  description="Show the current predicted lap based on the current delta time."
-                  enabled={settings.config.showPredictedLap ?? true}
-                  onToggle={(newValue) =>
-                    handleConfigChange({ showPredictedLap: newValue })
-                  }
-                /> 
+                  <SettingToggleRow
+                    title="Show Predicted Lap"
+                    description="Show the current predicted lap based on the current delta time."
+                    enabled={settings.config.showPredictedLap ?? true}
+                    onToggle={(newValue) =>
+                      handleConfigChange({ showPredictedLap: newValue })
+                    }
+                  />
 
-                <SettingToggleRow
-                  title="Show Last Lap"
-                  description="Show the driver's last lap time."
-                  enabled={settings.config.showLastLap ?? true}
-                  onToggle={(newValue) =>
-                    handleConfigChange({ showLastLap: newValue })
-                  }
-                />     
+                  <SettingToggleRow
+                    title="Show Last Lap"
+                    description="Show the driver's last lap time."
+                    enabled={settings.config.showLastLap ?? true}
+                    onToggle={(newValue) =>
+                      handleConfigChange({ showLastLap: newValue })
+                    }
+                  />
 
-                <SettingToggleRow
-                  title="Show Best Lap"
-                  description="Show the driver's best lap time."
-                  enabled={settings.config.showBestLap ?? true}
-                  onToggle={(newValue) =>
-                    handleConfigChange({ showBestLap: newValue })
-                  }
-                />   
+                  <SettingToggleRow
+                    title="Show Best Lap"
+                    description="Show the driver's best lap time."
+                    enabled={settings.config.showBestLap ?? true}
+                    onToggle={(newValue) =>
+                      handleConfigChange({ showBestLap: newValue })
+                    }
+                  />
 
-                <SettingToggleRow
-                  title="Display Lap Delta"
-                  description="Choose which lap to base the delta calculation on. This can be the driver's last lap, best lap, or the overall session best lap."
-                  enabled={settings.config.delta?.enabled ?? true}
-                  onToggle={(v) =>
-                    handleConfigChange({                     
-                      ...settings.config,                      
-                      delta: {                         
-                        ...settings.config.delta, 
-                        enabled: v 
-                      },
-                    })
-                  }
-                />   
-
-                {settings.config.delta?.enabled && (
-                <SettingsSection>
-                  <SettingButtonGroupRow<'lastlap' | 'bestlap'>
-                      title="Delta Calculation Base Lap"                      
-                      value={
-                        settings.config.delta?.method ?? 'bestlap'
-                      }
-                      options={[
-                        { label: 'Last Lap', value: 'lastlap' },
-                        { label: 'Best Lap', value: 'bestlap' },
-                      ]}
-                      onChange={(v) =>
-                        handleConfigChange({ 
-                          delta: {                         
-                            ...settings.config.delta, 
-                            method: v 
-                          },
-                        })
-                      }
-                    />
-                </SettingsSection>
-                )}  
-
-                <SettingToggleRow
-                  title="Show Lap History"
-                  description="Show the driver's lap history. You can configure how many to show below."
-                  enabled={settings.config.history?.enabled ?? true}
-                  onToggle={(v) =>
-                    handleConfigChange({                     
-                      ...settings.config,                      
-                      history: {                         
-                        ...settings.config.history, 
-                        enabled: v 
-                      },
-                    })
-                  }
-                />     
-
-                {settings.config.history?.enabled && (
-                  <SettingsSection>
-                    <SettingSelectRow
-                      title="Number Of Laps To Show"
-                      value={(settings.config.history?.count ?? 10).toString()}
-                      options={Array.from({ length: 10 }, (_, i) => {
-                        const num = i + 1;
-                        return { label: num.toString(), value: num.toString() };
-                      })}
-                      onChange={(v) =>
-                        handleConfigChange({                     
-                        ...settings.config,                      
-                        history: {                         
-                          ...settings.config.history, 
-                          count: parseInt(v) 
+                  <SettingToggleRow
+                    title="Display Lap Delta"
+                    description="Choose which lap to base the delta calculation on. This can be the driver's last lap, best lap, or the overall session best lap."
+                    enabled={settings.config.delta?.enabled ?? true}
+                    onToggle={(v) =>
+                      handleConfigChange({
+                        ...settings.config,
+                        delta: {
+                          ...settings.config.delta,
+                          enabled: v,
                         },
                       })
-                      }
-                    />   
-                  </SettingsSection>
-                )}    
-                           
-              </SettingsSection>
+                    }
+                  />
+
+                  {settings.config.delta?.enabled && (
+                    <SettingsSection>
+                      <SettingButtonGroupRow<'lastlap' | 'bestlap'>
+                        title="Delta Calculation Base Lap"
+                        value={settings.config.delta?.method ?? 'bestlap'}
+                        options={[
+                          { label: 'Last Lap', value: 'lastlap' },
+                          { label: 'Best Lap', value: 'bestlap' },
+                        ]}
+                        onChange={(v) =>
+                          handleConfigChange({
+                            delta: {
+                              ...settings.config.delta,
+                              method: v,
+                            },
+                          })
+                        }
+                      />
+                    </SettingsSection>
+                  )}
+
+                  <SettingToggleRow
+                    title="Show Lap History"
+                    description="Show the driver's lap history. You can configure how many to show below."
+                    enabled={settings.config.history?.enabled ?? true}
+                    onToggle={(v) =>
+                      handleConfigChange({
+                        ...settings.config,
+                        history: {
+                          ...settings.config.history,
+                          enabled: v,
+                        },
+                      })
+                    }
+                  />
+
+                  {settings.config.history?.enabled && (
+                    <SettingsSection>
+                      <SettingSelectRow
+                        title="Number Of Laps To Show"
+                        value={(
+                          settings.config.history?.count ?? 10
+                        ).toString()}
+                        options={Array.from({ length: 10 }, (_, i) => {
+                          const num = i + 1;
+                          return {
+                            label: num.toString(),
+                            value: num.toString(),
+                          };
+                        })}
+                        onChange={(v) =>
+                          handleConfigChange({
+                            ...settings.config,
+                            history: {
+                              ...settings.config.history,
+                              count: parseInt(v),
+                            },
+                          })
+                        }
+                      />
+                    </SettingsSection>
+                  )}
+
+                  <SettingActionButton
+                    label="Reset Position"
+                    onClick={handleResetPosition}
+                    align="center"
+                    className="pt-8"
+                  />
+                </SettingsSection>
               </>
             )}
 
             {/* OPTIONS TAB */}
             {activeTab === 'options' && (
               <SettingsSection title="Options">
-             
                 {/* Background Opacity */}
                 <SettingSliderRow
                   title="Background Opacity"
@@ -216,7 +224,7 @@ export const LapTimeLogSettings = () => {
                       background: { opacity: v },
                     })
                   }
-                /> 
+                />
 
                 {/* Foreground Opacity */}
                 <SettingSliderRow
@@ -231,7 +239,7 @@ export const LapTimeLogSettings = () => {
                       foreground: { opacity: v },
                     })
                   }
-                /> 
+                />
 
                 {/* Scale */}
                 <SettingSliderRow
@@ -247,7 +255,7 @@ export const LapTimeLogSettings = () => {
                       scale: v,
                     })
                   }
-                />  
+                />
 
                 <SettingToggleRow
                   title="Reverse Order"
@@ -258,16 +266,14 @@ export const LapTimeLogSettings = () => {
                       reverse: v,
                     })
                   }
-                />     
+                />
 
                 <SettingButtonGroupRow<'top' | 'bottom'>
-                  title="Widget Alignment"  
-                  value={
-                    settings.config.alignment ?? 'top'
-                  }
+                  title="Widget Alignment"
+                  value={settings.config.alignment ?? 'top'}
                   options={[
                     { label: 'Top', value: 'top' },
-                    { label: 'Bottom', value: 'bottom' },                    
+                    { label: 'Bottom', value: 'bottom' },
                   ]}
                   onChange={(v) =>
                     handleConfigChange({
@@ -275,7 +281,6 @@ export const LapTimeLogSettings = () => {
                     })
                   }
                 />
-
               </SettingsSection>
             )}
 

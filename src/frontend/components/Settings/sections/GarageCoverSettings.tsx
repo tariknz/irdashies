@@ -6,6 +6,7 @@ import {
   getWidgetDefaultConfig,
 } from '@irdashies/types';
 import { DashboardBridge } from '@irdashies/types';
+import { SettingActionButton } from '../components/SettingActionButton';
 
 const SETTING_ID = 'garagecover';
 const LOCALSTORAGE_KEY = 'garagecover-image';
@@ -169,7 +170,7 @@ export const GarageCoverSettings = () => {
       onSettingsChange={setSettings}
       widgetId={SETTING_ID}
     >
-      {(handleConfigChange) => {
+      {(handleConfigChange, handleResetPosition) => {
         // Store the handleConfigChange from BaseSettingsSection for use in async callbacks
         configChangeHandlerRef.current = handleConfigChange;
 
@@ -241,6 +242,13 @@ export const GarageCoverSettings = () => {
                 </button>
               )}
             </div>
+
+            <SettingActionButton
+              label="Reset Position"
+              onClick={handleResetPosition}
+              align="center"
+              className="pt-8"
+            />
           </div>
         );
       }}

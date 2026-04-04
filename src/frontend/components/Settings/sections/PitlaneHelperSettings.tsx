@@ -13,6 +13,7 @@ import { SettingSliderRow } from '../components/SettingSliderRow';
 import { SettingButtonGroupRow } from '../components/SettingButtonGroupRow';
 import { SettingSelectRow } from '../components/SettingSelectRow';
 import { SessionVisibility } from '../components/SessionVisibility';
+import { SettingActionButton } from '../components/SettingActionButton';
 
 const SETTING_ID = 'pitlanehelper';
 
@@ -52,7 +53,7 @@ export const PitlaneHelperSettings = () => {
       onSettingsChange={setSettings}
       widgetId={SETTING_ID}
     >
-      {(handleConfigChange) => (
+      {(handleConfigChange, handleResetPosition) => (
         <div className="space-y-4">
           {/* Tabs */}
           <div className="flex border-b border-slate-700/50">
@@ -125,11 +126,11 @@ export const PitlaneHelperSettings = () => {
                         }
                       />
 
-                      <SettingButtonGroupRow<'none' | 'text' | 'european' | 'american'>
+                      <SettingButtonGroupRow<
+                        'none' | 'text' | 'european' | 'american'
+                      >
                         title="Speed Limit Style"
-                        value={
-                          settings.config.speedLimitStyle ?? 'text'
-                        }
+                        value={settings.config.speedLimitStyle ?? 'text'}
                         options={[
                           { label: 'None', value: 'none' },
                           { label: 'Text', value: 'text' },
@@ -322,6 +323,13 @@ export const PitlaneHelperSettings = () => {
                     </SettingsSection>
                   )}
                 </SettingsSection>
+
+                <SettingActionButton
+                  label="Reset Position"
+                  onClick={handleResetPosition}
+                  align="center"
+                  className="pt-8"
+                />
               </>
             )}
 
