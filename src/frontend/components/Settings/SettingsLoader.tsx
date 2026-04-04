@@ -21,6 +21,7 @@ import { CarSetupSettings } from './sections/CarSetupSettings';
 import { TwitchChatSettings } from './sections/TwitchChatSettings';
 import { DriverTagsSettings } from './sections/DriverTagsSettings';
 import { LapTimeLogSettings } from './sections/LapTimeLogSettings';
+import { InformationBarSettings } from './sections/InformationBarSettings';
 import { useDashboard } from '@irdashies/context';
 
 export const SettingsLoader = () => {
@@ -72,6 +73,8 @@ export const SettingsLoader = () => {
       return <TwitchChatSettings />;
     case 'laptimelog':
       return <LapTimeLogSettings />;
+    case 'infobar':
+      return <InformationBarSettings />;
     default:
       return widget ? (
         <div className="text-red-400">No settings available for {type}</div>

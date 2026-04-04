@@ -78,6 +78,12 @@ const widgetItems: MenuItem[] = [
     widgetType: 'garagecover',
   },
   {
+    to: '/settings/infobar',
+    path: '/infobar',
+    label: 'Information Bar',
+    widgetType: 'infobar',
+  },
+  {
     to: '/settings/input',
     path: '/input',
     label: 'Input',

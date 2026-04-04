@@ -12,10 +12,7 @@ import { useSortableList } from '../../SortableList';
 import { DotsSixVerticalIcon } from '@phosphor-icons/react';
 import { BadgeFormatPreview } from '../components/BadgeFormatPreview';
 import { DriverNamePreview } from '../components/DriverNamePreview';
-import {
-  SESSION_BAR_ITEM_LABELS,
-  DEFAULT_SESSION_BAR_DISPLAY_ORDER,
-} from '../sessionBarConstants';
+import { DEFAULT_SESSION_BAR_DISPLAY_ORDER } from '../sessionBarConstants';
 import { SessionVisibility } from '../components/SessionVisibility';
 import { SettingDivider } from '../components/SettingDivider';
 import { SettingsSection } from '../components/SettingSection';
@@ -23,6 +20,10 @@ import { SettingToggleRow } from '../components/SettingToggleRow';
 import { SettingActionButton } from '../components/SettingActionButton';
 import { SettingSliderRow } from '../components/SettingSliderRow';
 import { SettingSelectRow } from '../components/SettingSelectRow';
+import {
+  SessionBarItemsList,
+  SessionBarItemConfig,
+} from '../components/SessionBarItemsList';
 
 const SETTING_ID = 'standings';
 
@@ -463,293 +464,6 @@ const DisplaySettingsList = ({
   );
 };
 
-interface BarItemsListProps {
-  items: string[];
-  onReorder: (newOrder: string[]) => void;
-  barType: 'headerBar' | 'footerBar';
-  settings: StandingsWidgetSettings;
-  handleConfigChange: (
-    changes: Partial<StandingsWidgetSettings['config']>
-  ) => void;
-}
-
-const BarItemsList = ({
-  items,
-  onReorder,
-  barType,
-  settings,
-  handleConfigChange,
-}: BarItemsListProps) => {
-  const wrappedItems = items.map((id) => ({ id }));
-
-  const { getItemProps, displayItems } = useSortableList({
-    items: wrappedItems,
-    onReorder: (newItems) => onReorder(newItems.map((i) => i.id)),
-    getItemId: (item) => item.id,
-  });
-
-  return (
-    <div className="space-y-3 pl-4">
-      {displayItems.map((item) => {
-        const { dragHandleProps, itemProps } = getItemProps(item);
-        const itemConfig = (
-          settings.config[
-            barType
-          ] as StandingsWidgetSettings['config']['headerBar']
-        )?.[item.id as keyof StandingsWidgetSettings['config']['headerBar']] as
-          | { enabled: boolean; unit?: 'Metric' | 'Imperial' }
-          | {
-              enabled: boolean;
-              mode?: 'Remaining' | 'Elapsed';
-              totalFormat?: 'hh:mm' | 'minimal';
-              labelStyle?: 'none' | 'short' | 'minimal';
-            }
-          | undefined;
-
-        // Safety check: skip rendering if itemConfig is undefined
-        if (!itemConfig) {
-          return null;
-        }
-
-        return (
-          <div key={item.id} {...itemProps}>
-            <div className="flex items-center justify-between group">
-              <div className="flex items-center gap-2 flex-1">
-                <div
-                  {...dragHandleProps}
-                  className="cursor-grab opacity-60 hover:opacity-100 transition-opacity p-1 hover:bg-slate-600 rounded"
-                >
-                  <DotsSixVerticalIcon size={16} className="text-slate-400" />
-                </div>
-                <span className="text-sm text-slate-300">
-                  {SESSION_BAR_ITEM_LABELS[item.id]}
-                </span>
-              </div>
-              <ToggleSwitch
-                enabled={itemConfig?.enabled ?? true}
-                onToggle={(enabled) => {
-                  const currentUnit =
-                    itemConfig && 'unit' in itemConfig
-                      ? itemConfig.unit
-                      : 'Metric';
-                  const currentSpeedPosition =
-                    (itemConfig as { speedPosition?: 'left' | 'right' })
-                      ?.speedPosition ?? 'right';
-                  handleConfigChange({
-                    [barType]: {
-                      ...settings.config[barType],
-                      [item.id]:
-                        item.id === 'airTemperature' ||
-                        item.id === 'trackTemperature'
-                          ? { enabled, unit: currentUnit }
-                          : item.id === 'wind'
-                            ? {
-                                enabled,
-                                speedPosition: currentSpeedPosition,
-                              }
-                            : item.id === 'sessionTime' ||
-                                item.id === 'sessionLaps'
-                              ? { ...(itemConfig as object), enabled }
-                              : { enabled },
-                    },
-                  });
-                }}
-              />
-            </div>
-            {(item.id === 'airTemperature' || item.id === 'trackTemperature') &&
-              itemConfig &&
-              'enabled' in itemConfig &&
-              itemConfig.enabled && (
-                <div className="flex items-center justify-between pl-4 mt-2">
-                  <span></span>
-                  <select
-                    value={
-                      itemConfig && 'unit' in itemConfig
-                        ? itemConfig.unit
-                        : 'Metric'
-                    }
-                    onChange={(e) => {
-                      handleConfigChange({
-                        [barType]: {
-                          ...settings.config[barType],
-                          [item.id]: {
-                            enabled:
-                              itemConfig && 'enabled' in itemConfig
-                                ? itemConfig.enabled
-                                : true,
-                            unit: e.target.value as 'Metric' | 'Imperial',
-                          },
-                        },
-                      });
-                    }}
-                    className="bg-slate-700 text-white rounded-md px-2 py-1"
-                  >
-                    <option value="Metric">°C</option>
-                    <option value="Imperial">°F</option>
-                  </select>
-                </div>
-              )}
-            {item.id === 'wind' &&
-              itemConfig &&
-              'enabled' in itemConfig &&
-              itemConfig.enabled && (
-                <div className="flex items-center justify-end gap-2 pl-4 mt-2">
-                  {(['left', 'right'] as const).map((pos) => {
-                    const currentPos =
-                      (itemConfig as { speedPosition?: 'left' | 'right' })
-                        .speedPosition ?? 'right';
-                    const arrow = (
-                      <svg
-                        viewBox="50 80 650 720"
-                        className="w-3 h-3.5 fill-current shrink-0"
-                        style={{ rotate: '-14deg' }}
-                      >
-                        <path
-                          fillRule="nonzero"
-                          d="m373.75 91.496c-0.95-1.132-74.87 153.23-164.19 343.02-160.8 341.68-162.27 345.16-156.49 350.27 3.203 2.83 6.954 4.79 8.319 4.34 1.365-0.46 71.171-73.88 155.14-163.1 83.97-89.22 153.66-162.83 154.87-163.56 1.2-0.72 71.42 72.34 156.04 162.29s155.21 163.82 156.95 164.19 5.57-1.19 8.5-3.44c5.04-3.86-3.75-23.46-156.04-348-88.77-189.18-162.15-344.88-163.1-346.01z"
-                        />
-                      </svg>
-                    );
-                    return (
-                      <button
-                        key={pos}
-                        type="button"
-                        onClick={() =>
-                          handleConfigChange({
-                            [barType]: {
-                              ...settings.config[barType],
-                              wind: {
-                                enabled: itemConfig.enabled,
-                                speedPosition: pos,
-                              },
-                            },
-                          })
-                        }
-                        className={`flex items-center gap-1 px-2 py-1 rounded-md text-white ${currentPos === pos ? 'bg-blue-500' : 'bg-slate-700 hover:bg-slate-600'}`}
-                      >
-                        {pos === 'left' ? (
-                          <>
-                            <span>7</span>
-                            {arrow}
-                          </>
-                        ) : (
-                          <>
-                            {arrow}
-                            <span>7</span>
-                          </>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            {item.id === 'sessionLaps' &&
-              itemConfig &&
-              'enabled' in itemConfig &&
-              itemConfig.enabled && (
-                <div className="flex items-center justify-end gap-3 pl-4 mt-2">
-                  <span></span>
-                  <select
-                    value={'mode' in itemConfig ? itemConfig.mode : 'Elapsed'}
-                    onChange={(e) => {
-                      handleConfigChange({
-                        [barType]: {
-                          ...settings.config[barType],
-                          [item.id]: {
-                            ...(itemConfig as object),
-                            mode: e.target.value as 'Elapsed' | 'Remaining',
-                          },
-                        },
-                      });
-                    }}
-                    className="bg-slate-700 text-white rounded-md px-2 py-1"
-                  >
-                    <option value="Elapsed">Elapsed</option>
-                    <option value="Remaining">Remaining</option>
-                  </select>
-                </div>
-              )}
-            {item.id === 'sessionTime' &&
-              itemConfig &&
-              'enabled' in itemConfig &&
-              itemConfig.enabled && (
-                <div className="flex items-center justify-end gap-3 pl-4 mt-2">
-                  <span></span>
-                  <select
-                    value={'mode' in itemConfig ? itemConfig.mode : 'Remaining'}
-                    onChange={(e) => {
-                      handleConfigChange({
-                        [barType]: {
-                          ...settings.config[barType],
-                          [item.id]: {
-                            ...(itemConfig as object),
-                            mode: e.target.value as 'Remaining' | 'Elapsed',
-                          },
-                        },
-                      });
-                    }}
-                    className="bg-slate-700 text-white rounded-md px-2 py-1"
-                  >
-                    <option value="Remaining">Remaining</option>
-                    <option value="Elapsed">Elapsed</option>
-                  </select>
-                  <select
-                    value={
-                      'totalFormat' in itemConfig
-                        ? itemConfig.totalFormat
-                        : 'minimal'
-                    }
-                    onChange={(e) => {
-                      handleConfigChange({
-                        [barType]: {
-                          ...settings.config[barType],
-                          [item.id]: {
-                            ...(itemConfig as object),
-                            totalFormat: e.target.value as 'hh:mm' | 'minimal',
-                          },
-                        },
-                      });
-                    }}
-                    className="bg-slate-700 text-white rounded-md px-2 py-1"
-                  >
-                    <option value="minimal">2:34</option>
-                    <option value="hh:mm">00:12:34</option>
-                  </select>
-                  <select
-                    value={
-                      'labelStyle' in itemConfig
-                        ? itemConfig.labelStyle
-                        : 'minimal'
-                    }
-                    onChange={(e) => {
-                      handleConfigChange({
-                        [barType]: {
-                          ...settings.config[barType],
-                          [item.id]: {
-                            ...(itemConfig as object),
-                            labelStyle: e.target.value as
-                              | 'none'
-                              | 'short'
-                              | 'minimal',
-                          },
-                        },
-                      });
-                    }}
-                    className="bg-slate-700 text-white rounded-md px-2 py-1"
-                  >
-                    <option value="minimal">Minimal Labels</option>
-                    <option value="short">Short Labels</option>
-                    <option value="none">Hide Labels</option>
-                  </select>
-                </div>
-              )}
-          </div>
-        );
-      })}
-    </div>
-  );
-};
-
 export const StandingsSettings = () => {
   const { currentDashboard } = useDashboard();
   const savedSettings = currentDashboard?.widgets.find(
@@ -1033,7 +747,7 @@ export const StandingsSettings = () => {
 
                   {settings.config.headerBar.enabled && (
                     <SettingsSection>
-                      <BarItemsList
+                      <SessionBarItemsList
                         items={settings.config.headerBar.displayOrder}
                         onReorder={(newOrder) => {
                           handleConfigChange({
@@ -1043,9 +757,41 @@ export const StandingsSettings = () => {
                             },
                           });
                         }}
-                        barType="headerBar"
-                        settings={settings}
-                        handleConfigChange={handleConfigChange}
+                        getItemConfig={(id) => {
+                          const item =
+                            settings.config.headerBar[
+                              id as keyof typeof settings.config.headerBar
+                            ];
+                          if (
+                            typeof item === 'object' &&
+                            item !== null &&
+                            'enabled' in item
+                          ) {
+                            return item as SessionBarItemConfig;
+                          }
+                          return undefined;
+                        }}
+                        updateItemConfig={(id, config) => {
+                          const item =
+                            settings.config.headerBar[
+                              id as keyof typeof settings.config.headerBar
+                            ];
+                          if (
+                            typeof item === 'object' &&
+                            item !== null &&
+                            'enabled' in item
+                          ) {
+                            handleConfigChange({
+                              headerBar: {
+                                ...settings.config.headerBar,
+                                [id]: {
+                                  ...(item as SessionBarItemConfig),
+                                  ...config,
+                                },
+                              },
+                            });
+                          }
+                        }}
                       />
 
                       <SettingActionButton
@@ -1084,7 +830,7 @@ export const StandingsSettings = () => {
 
                   {settings.config.footerBar.enabled && (
                     <SettingsSection>
-                      <BarItemsList
+                      <SessionBarItemsList
                         items={settings.config.footerBar.displayOrder}
                         onReorder={(newOrder) => {
                           handleConfigChange({
@@ -1094,9 +840,41 @@ export const StandingsSettings = () => {
                             },
                           });
                         }}
-                        barType="footerBar"
-                        settings={settings}
-                        handleConfigChange={handleConfigChange}
+                        getItemConfig={(id) => {
+                          const item =
+                            settings.config.footerBar[
+                              id as keyof typeof settings.config.footerBar
+                            ];
+                          if (
+                            typeof item === 'object' &&
+                            item !== null &&
+                            'enabled' in item
+                          ) {
+                            return item as SessionBarItemConfig;
+                          }
+                          return undefined;
+                        }}
+                        updateItemConfig={(id, config) => {
+                          const item =
+                            settings.config.footerBar[
+                              id as keyof typeof settings.config.footerBar
+                            ];
+                          if (
+                            typeof item === 'object' &&
+                            item !== null &&
+                            'enabled' in item
+                          ) {
+                            handleConfigChange({
+                              footerBar: {
+                                ...settings.config.footerBar,
+                                [id]: {
+                                  ...(item as SessionBarItemConfig),
+                                  ...config,
+                                },
+                              },
+                            });
+                          }
+                        }}
                       />
 
                       <SettingActionButton

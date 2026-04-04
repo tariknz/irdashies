@@ -15,7 +15,12 @@ import {
 import { useTrackWetness } from '../../hooks/useTrackWetness';
 import { useTrackTemperature } from '../../hooks/useTrackTemperature';
 import { useCurrentTime } from '../../hooks/useCurrentTime';
-import { useStandingsSettings, useRelativeSettings } from '../../hooks';
+import {
+  useStandingsSettings,
+  useRelativeSettings,
+  useInformationBarSettings,
+} from '../../hooks';
+
 import {
   ClockIcon,
   ClockUserIcon,
@@ -25,6 +30,7 @@ import {
   ThermometerIcon,
   TireIcon,
 } from '@phosphor-icons/react';
+import { SessionBarConfig } from '@irdashies/types';
 import { useSessionCurrentTime } from '../../hooks/useSessionCurrentTime';
 import { usePrecipitation } from '../../hooks/usePrecipitation';
 import { SessionState } from '@irdashies/types';
@@ -89,22 +95,54 @@ const formatTotalTime = (
 };
 
 interface SessionBarProps {
-  position?: 'header' | 'footer';
-  variant?: 'standings' | 'relative';
+  position?: 'header' | 'footer' | 'infobar';
+  variant?: 'standings' | 'relative' | 'infobar';
 }
 
 export const SessionBar = ({
   position = 'header',
   variant = 'standings',
 }: SessionBarProps) => {
+  const isInfoBar = variant === 'infobar';
   // Use settings hook directly for reactivity
   const standingsSettings = useStandingsSettings();
   const relativeSettings = useRelativeSettings();
+  const infobarSettings = useInformationBarSettings();
   const generalSettings = useGeneralSettings();
-  const settings =
-    variant === 'relative' ? relativeSettings : standingsSettings;
-  const effectiveBarSettings =
-    position === 'footer' ? settings?.footerBar : settings?.headerBar;
+  const settings = isInfoBar
+    ? infobarSettings
+    : variant === 'relative'
+      ? relativeSettings
+      : standingsSettings;
+
+  const config = settings as unknown as {
+    headerBar?: SessionBarConfig;
+    footerBar?: SessionBarConfig;
+  } & Partial<SessionBarConfig>;
+
+  const effectiveBarSettings = isInfoBar
+    ? (config as SessionBarConfig)
+    : position === 'footer'
+      ? config.footerBar
+      : config.headerBar;
+
+  const isUltra = generalSettings?.compactMode === 'ultra';
+  const isCompact = generalSettings?.compactMode === 'compact';
+
+  const pyClass = isUltra ? 'py-0' : isCompact ? 'py-1' : 'py-2';
+  const gapClass = isUltra ? 'gap-x-2' : isCompact ? 'gap-x-4' : 'gap-x-6';
+  const pxClass = isInfoBar
+    ? isUltra
+      ? 'px-2'
+      : isCompact
+        ? 'px-3'
+        : 'px-4'
+    : isUltra
+      ? 'px-1'
+      : isCompact
+        ? 'px-2'
+        : 'px-3';
+
   const session = useCurrentSessionType();
   const displayUnits = useTelemetryValue('DisplayUnits'); // 0 = imperial, 1 = metric
   const { incidentLimit, incidents } = useDriverIncidents();
@@ -419,22 +457,55 @@ export const SessionBar = ({
         ]);
 
   // Filter and order items based on settings
+  // Filter and order items based on settings
   const itemsToRender = displayOrder
-    .map((key) => ({
+    .map((key: string) => ({
       key,
-      definition: itemDefinitions[key as keyof typeof itemDefinitions],
+      definition: (
+        itemDefinitions as Record<
+          string,
+          { enabled: boolean; render: () => React.ReactNode }
+        >
+      )[key],
     }))
     .filter(({ definition }) => definition?.enabled)
-    .map(({ key, definition }) => {
-      const element = definition.render();
-      if (!element) return null;
-      return <div key={key}>{element}</div>;
-    })
+    .map(
+      (
+        { key, definition },
+        index: number,
+        array: {
+          key: string;
+          definition: { enabled: boolean; render: () => React.ReactNode };
+        }[]
+      ) => {
+        const element = definition.render();
+        if (!element) return null;
+
+        if (variant === 'infobar') {
+          const isFirst = index === 0;
+          const isLast = index === array.length - 1;
+          return (
+            <div
+              key={key}
+              className={`whitespace-nowrap shrink-0 ${isFirst ? 'text-left' : isLast ? 'text-right' : 'text-center'}`}
+            >
+              {element}
+            </div>
+          );
+        }
+
+        return (
+          <div key={key} className="whitespace-nowrap">
+            {element}
+          </div>
+        );
+      }
+    )
     .filter(Boolean);
 
   return (
     <div
-      className={`bg-slate-900/70 text-sm px-3 py-1 flex justify-between ${!generalSettings?.compactMode ? (position === 'header' ? 'mb-3' : 'mt-3') : ''}`}
+      className={`bg-slate-900/70 ${pxClass} ${pyClass} flex items-center text-sm ${isInfoBar ? `w-full justify-between ${gapClass}` : 'justify-between'} ${!isCompact && !isUltra && !isInfoBar ? (position === 'header' ? 'mb-3' : 'mt-3') : ''}`}
     >
       {itemsToRender}
     </div>
