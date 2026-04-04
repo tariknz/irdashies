@@ -78,7 +78,6 @@ export async function publishIRacingSDKEvents(
         perfMetrics.markStart('processTelemetry');
         const telemetry = sdk.getTelemetry();
         const session = sdk.getSessionData();
-        await new Promise((resolve) => setTimeout(resolve, 1000 / 25)); // 25Hz update rate
 
         if (telemetry) {
           latestTelemetry = telemetry;
@@ -105,6 +104,10 @@ export async function publishIRacingSDKEvents(
         }
         perfMetrics.markEnd('processTelemetry');
         perfMetrics.tick();
+
+        // Throttling to ~25Hz to save system resources as requested.
+        // We sleep AFTER publishing to ensure each frame is sent with minimal latency.
+        await new Promise((resolve) => setTimeout(resolve, 1000 / 25));
       }
 
       if (wasRunning) {
