@@ -106,5 +106,12 @@ export const useDriverProgress = () => {
       .filter((d) => d.progress > -1); // ignore drivers not on track
   }, [driverIdentities, driversLapDist]);
 
-  return { drivers: driversTrackData, identities: driverIdentities };
+  return {
+    drivers: driversTrackData,
+    identities: driverIdentities,
+    playerProgress:
+      driverIdx !== undefined
+        ? (driversLapDist[driverIdx] ?? undefined)
+        : undefined,
+  };
 };

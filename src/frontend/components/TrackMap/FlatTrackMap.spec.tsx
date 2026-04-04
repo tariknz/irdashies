@@ -33,6 +33,7 @@ describe('FlatTrackMap', () => {
     vi.mocked(useDriverProgress).mockReturnValue({
       drivers: [],
       identities: [],
+      playerProgress: undefined,
     });
     vi.mocked(useHighlightColor).mockReturnValue(undefined);
     vi.mocked(useDriverLivePositions).mockReturnValue([0, 0]);

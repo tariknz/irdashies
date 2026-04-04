@@ -459,7 +459,7 @@ export const TurnNumbersOnly: Story = {
       labelType: 'numbers',
       highContrast: true,
       labelFontSize: 100,
-    },   
+    },
   },
 };
 
@@ -608,6 +608,122 @@ export const CirclingAroundSingleDriver: Story = {
   },
   args: {
     trackId: 1,
+  },
+};
+
+export const WithSectorGaps: Story = {
+  render: (args) => {
+    const [drivers, setDrivers] = useState(singleDriverData);
+    const sectorBoundaries = args.sectorBoundaries ?? [];
+    const playerProgress = drivers[0]?.progress ?? 0;
+    const activeSectorIndex =
+      sectorBoundaries.length >= 2
+        ? sectorBoundaries.findIndex(
+            (_, i) =>
+              i < sectorBoundaries.length - 1 &&
+              playerProgress >= sectorBoundaries[i] &&
+              playerProgress < sectorBoundaries[i + 1]
+          )
+        : null;
+
+    useEffect(() => {
+      const interval = setInterval(() => {
+        setDrivers((prev) =>
+          prev.map((d) => ({
+            ...d,
+            progress: (d.progress + 0.003) % 1,
+          }))
+        );
+      }, 50);
+
+      return () => clearInterval(interval);
+    });
+
+    return (
+      <TrackCanvas
+        trackId={args.trackId}
+        drivers={drivers}
+        turnLabels={args.turnLabels}
+        showCarNumbers={args.showCarNumbers ?? true}
+        invertTrackColors={args.invertTrackColors ?? false}
+        driverCircleSize={args.driverCircleSize ?? 40}
+        playerCircleSize={args.playerCircleSize ?? 40}
+        trackmapFontSize={args.trackmapFontSize ?? 100}
+        trackLineWidth={args.trackLineWidth ?? 20}
+        trackOutlineWidth={args.trackOutlineWidth ?? 40}
+        highlightColor={args.highlightColor}
+        showSectorGaps={args.showSectorGaps ?? false}
+        sectorBoundaries={args.sectorBoundaries ?? null}
+        sectorStatuses={[
+          'white',
+          'white',
+          'white',
+          'white',
+          'white',
+          'white',
+          'white',
+        ]}
+        activeSectorIndex={activeSectorIndex}
+      />
+    );
+  },
+  args: {
+    trackId: 95,
+    showSectorGaps: true,
+    sectorBoundaries: [
+      0, 0.130902, 0.3069, 0.44224, 0.53158, 0.658844, 0.876665, 1,
+    ],
+  },
+};
+
+export const WithSectorTimingColors: Story = {
+  render: (args) => {
+    const drivers = [
+      {
+        driver: {
+          CarIdx: 24,
+          CarNumber: '24',
+          CarClassID: 2,
+          CarClassColor: 16734344,
+          CarClassEstLapTime: 126.9374,
+        },
+        progress: 0.58,
+        isPlayer: true,
+      },
+    ] as TrackDriver[];
+
+    return (
+      <TrackCanvas
+        trackId={args.trackId}
+        drivers={drivers}
+        turnLabels={args.turnLabels}
+        showCarNumbers={args.showCarNumbers ?? true}
+        invertTrackColors={args.invertTrackColors ?? false}
+        driverCircleSize={args.driverCircleSize ?? 40}
+        playerCircleSize={args.playerCircleSize ?? 40}
+        trackmapFontSize={args.trackmapFontSize ?? 100}
+        trackLineWidth={args.trackLineWidth ?? 20}
+        trackOutlineWidth={args.trackOutlineWidth ?? 40}
+        highlightColor={args.highlightColor}
+        showSectorGaps
+        sectorBoundaries={[
+          0, 0.130902, 0.3069, 0.44224, 0.53158, 0.658844, 0.876665, 1,
+        ]}
+        sectorStatuses={[
+          'white',
+          'green',
+          'yellow',
+          'purple',
+          'green',
+          'white',
+          'white',
+        ]}
+        activeSectorIndex={4}
+      />
+    );
+  },
+  args: {
+    trackId: 95,
   },
 };
 

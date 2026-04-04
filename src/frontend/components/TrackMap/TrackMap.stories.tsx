@@ -1,6 +1,9 @@
 import { Meta, StoryObj } from '@storybook/react-vite';
 import { TrackMap } from './TrackMap';
-import { TelemetryDecorator } from '@irdashies/storybook';
+import {
+  TelemetryDecorator,
+  TelemetryDecoratorWithConfig,
+} from '@irdashies/storybook';
 
 export default {
   component: TrackMap,
@@ -43,4 +46,14 @@ export const PCCRaceWithMicUse: Story = {
 
 export const PCCPacing: Story = {
   decorators: [TelemetryDecorator('/test-data/1735296198162')],
+};
+
+export const WithSectorGaps: Story = {
+  decorators: [
+    TelemetryDecoratorWithConfig('/test-data/GT3 Sprint Arrays', {
+      map: {
+        showSectorGaps: true,
+      },
+    }),
+  ],
 };

@@ -11,6 +11,9 @@ import {
   drawStartFinishLine,
   drawTurnNames,
   drawDrivers,
+  drawSectorGaps,
+  drawSectorStatuses,
+  type SectorStatusColor,
 } from './trackDrawingUtils';
 import { useDriverOffTrack } from './hooks/useDriverOffTrack';
 import { useDriverLivePositions } from '../Standings/hooks/useDriverLivePositions';
@@ -44,6 +47,10 @@ export interface TrackProps {
   debug?: boolean;
   isMinimalTrack?: boolean;
   isMinimalCar?: boolean;
+  showSectorGaps?: boolean;
+  sectorBoundaries?: number[] | null;
+  sectorStatuses?: SectorStatusColor[] | null;
+  activeSectorIndex?: number | null;
 }
 
 export interface TrackDriver {
@@ -75,9 +82,9 @@ export interface TrackDrawing {
 
 export interface TurnLabels {
   enabled: boolean;
-  labelType: 'names' | 'numbers' | 'both',
-  highContrast: boolean,
-  labelFontSize: number;   
+  labelType: 'names' | 'numbers' | 'both';
+  highContrast: boolean;
+  labelFontSize: number;
 }
 
 const TRACK_DRAWING_WIDTH = 1920;
@@ -105,6 +112,10 @@ export const TrackCanvas = ({
   debug,
   isMinimalTrack = false,
   isMinimalCar = false,
+  showSectorGaps = false,
+  sectorBoundaries = null,
+  sectorStatuses = null,
+  activeSectorIndex = null,
 }: TrackProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const cacheCanvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -349,12 +360,22 @@ export const TrackCanvas = ({
       trackOutlineWidth,
       isMinimalTrack
     );
-    drawStartFinishLine(cacheCtx, startFinishLine);
-    drawTurnNames(
-      cacheCtx,
-      trackDrawing.turns,
-      turnLabels,
-    );
+    if (
+      showSectorGaps &&
+      sectorBoundaries &&
+      trackDrawing.active.trackPathPoints
+    ) {
+      drawSectorGaps(
+        cacheCtx,
+        trackDrawing.active.trackPathPoints,
+        sectorBoundaries,
+        trackLineWidth,
+        trackOutlineWidth,
+        trackDrawing.startFinish?.point?.length,
+        trackDrawing.startFinish?.direction
+      );
+    }
+    drawTurnNames(cacheCtx, trackDrawing.turns, turnLabels);
     cacheCtx.restore();
 
     // Blit to main canvas so static-only changes are visible immediately
@@ -369,6 +390,10 @@ export const TrackCanvas = ({
   }, [
     path2DObjects,
     trackDrawing?.turns,
+    trackDrawing?.active?.totalLength,
+    trackDrawing?.active?.trackPathPoints,
+    trackDrawing?.startFinish?.point?.length,
+    trackDrawing?.startFinish?.direction,
     turnLabels,
     canvasSize,
     invertTrackColors,
@@ -379,6 +404,8 @@ export const TrackCanvas = ({
     driverCircleSize,
     playerCircleSize,
     isMinimalTrack,
+    showSectorGaps,
+    sectorBoundaries,
   ]);
 
   // Dynamic layer — runs on every position tick, blits static cache then draws drivers
@@ -395,7 +422,6 @@ export const TrackCanvas = ({
     ctx.drawImage(cacheCanvasRef.current, 0, 0);
     ctx.restore();
 
-    // Draw drivers
     const maxCircleSize = Math.max(driverCircleSize, playerCircleSize);
     const scaleX = canvasSize.width / (TRACK_DRAWING_WIDTH + 2 * maxCircleSize);
     const scaleY =
@@ -403,6 +429,37 @@ export const TrackCanvas = ({
     const scale = Math.min(scaleX, scaleY);
     const offsetX = (canvasSize.width - TRACK_DRAWING_WIDTH * scale) / 2;
     const offsetY = (canvasSize.height - TRACK_DRAWING_HEIGHT * scale) / 2;
+
+    // Draw active sector highlight
+    if (
+      showSectorGaps &&
+      sectorBoundaries &&
+      sectorStatuses &&
+      trackDrawing.active.trackPathPoints
+    ) {
+      if (activeSectorIndex !== null && activeSectorIndex >= 0) {
+        setupCanvasContext(ctx, scale, offsetX, offsetY, isMinimalCar);
+        drawSectorStatuses(
+          ctx,
+          trackDrawing.active.trackPathPoints,
+          sectorBoundaries,
+          sectorStatuses,
+          activeSectorIndex,
+          trackLineWidth,
+          trackOutlineWidth,
+          invertTrackColors,
+          trackDrawing.startFinish?.point?.length,
+          trackDrawing.startFinish?.direction
+        );
+        ctx.restore();
+      }
+    }
+
+    setupCanvasContext(ctx, scale, offsetX, offsetY, isMinimalCar);
+    drawStartFinishLine(ctx, startFinishLine, trackLineWidth);
+    ctx.restore();
+
+    // Draw drivers
 
     setupCanvasContext(ctx, scale, offsetX, offsetY, isMinimalCar);
     drawDrivers(
@@ -434,6 +491,17 @@ export const TrackCanvas = ({
     driverColors,
     isMinimalCar,
     isMinimalTrack,
+    showSectorGaps,
+    sectorBoundaries,
+    sectorStatuses,
+    activeSectorIndex,
+    trackDrawing.active?.trackPathPoints,
+    trackDrawing.startFinish?.point?.length,
+    trackDrawing.startFinish?.direction,
+    trackLineWidth,
+    trackOutlineWidth,
+    invertTrackColors,
+    startFinishLine,
   ]);
 
   // Development/Storybook mode - show debug info and canvas
