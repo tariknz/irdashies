@@ -43,13 +43,12 @@ export const GarageCover = () => {
   const settings = useGarageCoverSettings();
   const imageUrl = useGarageCoverImage(settings.imageFilename);
 
+  if (!actuallyShow) {
+    return <></>;
+  }
+
   return (
-    <div
-      className={[
-        'w-full h-full flex items-center justify-center rounded-sm bg-slate-800 transition-opacity duration-200',
-        actuallyShow ? 'opacity-100' : 'opacity-0 pointer-events-none',
-      ].join(' ')}
-    >
+    <div className="w-full h-full flex items-center justify-center rounded-sm bg-slate-800">
       <img
         src={imageUrl || logoSvg}
         alt="Garage Cover"
