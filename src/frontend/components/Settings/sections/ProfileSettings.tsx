@@ -1,13 +1,21 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useDashboard } from '@irdashies/context';
 import type { DashboardProfile } from '@irdashies/types';
 import { ConfirmDialog } from '../components/ConfirmDialog';
+import {
+  CopySimpleIcon,
+  PencilSimpleIcon,
+  CaretDownIcon,
+  TrashIcon,
+} from '@phosphor-icons/react';
 
 export const ProfileSettings = () => {
   const {
     currentProfile,
     profiles,
     createProfile,
+    cloneProfile,
     deleteProfile,
     renameProfile,
     switchProfile,
@@ -26,6 +34,18 @@ export const ProfileSettings = () => {
     profileId: string;
     profileName: string;
   }>({ isOpen: false, profileId: '', profileName: '' });
+  const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
+  const [dropdownPos, setDropdownPos] = useState<{
+    top: number;
+    right: number;
+  } | null>(null);
+  const dropdownButtonRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
+
+  useEffect(() => {
+    const close = () => setOpenDropdownId(null);
+    document.addEventListener('click', close);
+    return () => document.removeEventListener('click', close);
+  }, []);
 
   useEffect(() => {
     refreshProfiles();
@@ -96,6 +116,17 @@ export const ProfileSettings = () => {
 
   const handleCancelDelete = () => {
     setConfirmDelete({ isOpen: false, profileId: '', profileName: '' });
+  };
+
+  const handleCloneProfile = async (profile: DashboardProfile) => {
+    setError(null);
+    try {
+      const cloned = await cloneProfile(profile.id);
+      setEditingProfileId(cloned.id);
+      setEditingProfileName(cloned.name);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to clone profile');
+    }
   };
 
   const handleStartEdit = (profile: DashboardProfile) => {
@@ -265,20 +296,6 @@ export const ProfileSettings = () => {
                           )}
 
                           <button
-                            onClick={() => handleStartEdit(profile)}
-                            className="bg-slate-600 hover:bg-slate-700 text-white px-3 py-1 rounded text-sm font-medium transition-colors"
-                          >
-                            Rename
-                          </button>
-                          {profile.id !== 'default' && (
-                            <button
-                              onClick={() => handleDeleteProfile(profile.id)}
-                              className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm font-medium transition-colors"
-                            >
-                              Delete
-                            </button>
-                          )}
-                          <button
                             onClick={() => {
                               const url = `http://${serverIP}:${serverPort}/dashboard?profile=${profile.id}`;
                               navigator.clipboard.writeText(url);
@@ -288,6 +305,90 @@ export const ProfileSettings = () => {
                           >
                             Copy URL
                           </button>
+
+                          {/* Actions dropdown */}
+                          <div className="relative">
+                            <button
+                              ref={(el) => {
+                                if (el)
+                                  dropdownButtonRefs.current.set(
+                                    profile.id,
+                                    el
+                                  );
+                                else
+                                  dropdownButtonRefs.current.delete(profile.id);
+                              }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (openDropdownId === profile.id) {
+                                  setOpenDropdownId(null);
+                                  setDropdownPos(null);
+                                } else {
+                                  const rect = dropdownButtonRefs.current
+                                    .get(profile.id)
+                                    ?.getBoundingClientRect();
+                                  if (rect) {
+                                    setDropdownPos({
+                                      top: rect.bottom + 4,
+                                      right: window.innerWidth - rect.right,
+                                    });
+                                  }
+                                  setOpenDropdownId(profile.id);
+                                }
+                              }}
+                              className="bg-slate-600 hover:bg-slate-500 text-white px-3 py-1 rounded text-sm font-medium transition-colors flex items-center gap-1"
+                            >
+                              Actions
+                              <CaretDownIcon size={12} />
+                            </button>
+                          </div>
+                          {openDropdownId === profile.id &&
+                            dropdownPos &&
+                            createPortal(
+                              <div
+                                style={{
+                                  position: 'fixed',
+                                  top: dropdownPos.top,
+                                  right: dropdownPos.right,
+                                  zIndex: 9999,
+                                }}
+                                className="bg-slate-700 border border-slate-600 rounded shadow-lg min-w-[130px]"
+                              >
+                                <button
+                                  onClick={() => {
+                                    setOpenDropdownId(null);
+                                    handleCloneProfile(profile);
+                                  }}
+                                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-white hover:bg-slate-600 transition-colors text-left"
+                                >
+                                  <CopySimpleIcon size={14} />
+                                  Clone
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setOpenDropdownId(null);
+                                    handleStartEdit(profile);
+                                  }}
+                                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-white hover:bg-slate-600 transition-colors text-left"
+                                >
+                                  <PencilSimpleIcon size={14} />
+                                  Rename
+                                </button>
+                                {profile.id !== 'default' && (
+                                  <button
+                                    onClick={() => {
+                                      setOpenDropdownId(null);
+                                      handleDeleteProfile(profile.id);
+                                    }}
+                                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-slate-600 transition-colors text-left"
+                                  >
+                                    <TrashIcon size={14} />
+                                    Delete
+                                  </button>
+                                )}
+                              </div>,
+                              document.body
+                            )}
                         </>
                       )}
                     </div>

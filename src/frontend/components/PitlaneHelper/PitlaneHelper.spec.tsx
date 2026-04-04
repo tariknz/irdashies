@@ -124,6 +124,7 @@ describe('PitlaneHelper', () => {
       currentProfile: null,
       profiles: [],
       createProfile: vi.fn(),
+      cloneProfile: vi.fn(),
       deleteProfile: vi.fn(),
       renameProfile: vi.fn(),
       switchProfile: vi.fn(),

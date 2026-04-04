@@ -56,6 +56,7 @@ export interface DashboardBridge {
   setAnalyticsOptOut: (optOut: boolean) => Promise<void>;
   listProfiles: () => Promise<DashboardProfile[]>;
   createProfile: (name: string) => Promise<DashboardProfile>;
+  cloneProfile: (profileId: string) => Promise<DashboardProfile>;
   deleteProfile: (profileId: string) => Promise<void>;
   renameProfile: (profileId: string, newName: string) => Promise<void>;
   switchProfile: (profileId: string) => Promise<void>;

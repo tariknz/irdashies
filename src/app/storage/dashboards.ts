@@ -464,6 +464,41 @@ export const updateProfileTheme = (
     logger.info('[updateProfileTheme] Not the current profile, skipping emit');
   }
 };
+/**
+ * Clone an existing profile and its dashboard configuration
+ */
+export const cloneProfile = (sourceProfileId: string): DashboardProfile => {
+  const sourceProfile = getProfile(sourceProfileId);
+  if (!sourceProfile) {
+    throw new Error(`Profile ${sourceProfileId} not found`);
+  }
+
+  const profileId = randomUUID();
+  const clonedName = `${sourceProfile.name} - cloned`;
+
+  const profiles =
+    readData<Record<string, DashboardProfile>>(PROFILES_KEY) || {};
+
+  const newProfile: DashboardProfile = {
+    id: profileId,
+    name: clonedName,
+    createdAt: new Date().toISOString(),
+    lastModified: new Date().toISOString(),
+    themeSettings: sourceProfile.themeSettings
+      ? { ...sourceProfile.themeSettings }
+      : undefined,
+  };
+
+  profiles[profileId] = newProfile;
+  writeData(PROFILES_KEY, profiles);
+
+  // Copy the source dashboard to the new profile
+  const sourceDashboard = getDashboard(sourceProfileId) || defaultDashboard;
+  saveDashboard(profileId, structuredClone(sourceDashboard));
+
+  return newProfile;
+};
+
 export const renameProfile = (profileId: string, newName: string): void => {
   const profiles = readData<Record<string, DashboardProfile>>(PROFILES_KEY);
   if (!profiles || !profiles[profileId]) {

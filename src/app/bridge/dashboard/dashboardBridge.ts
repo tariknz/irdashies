@@ -20,6 +20,7 @@ import {
   listDashboards,
   listProfiles,
   createProfile,
+  cloneProfile,
   deleteProfile,
   renameProfile,
   getCurrentProfileId,
@@ -147,6 +148,9 @@ export const dashboardBridge: DashboardBridge = {
   },
   createProfile: async (name: string) => {
     return createProfile(name);
+  },
+  cloneProfile: async (profileId: string) => {
+    return cloneProfile(profileId);
   },
   deleteProfile: async (profileId: string) => {
     deleteProfile(profileId);
@@ -298,6 +302,10 @@ export async function publishDashboardUpdates(
 
   ipcMain.handle('createProfile', (_, name: string) => {
     return createProfile(name);
+  });
+
+  ipcMain.handle('cloneProfile', (_, profileId: string) => {
+    return cloneProfile(profileId);
   });
 
   ipcMain.handle('deleteProfile', (_, profileId: string) => {
