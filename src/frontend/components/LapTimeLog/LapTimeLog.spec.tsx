@@ -1,5 +1,9 @@
 import { render, screen } from '@testing-library/react';
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
+
+vi.mock('@irdashies/context', () => ({
+  useGeneralSettings: vi.fn(),
+}));
 import { LapTimeLogDisplay } from './LapTimeLog';
 import { LapTimeRow } from './components/LapTimeRow';
 import type { LapTimeLogConfig } from '@irdashies/types';
@@ -89,13 +93,20 @@ describe('LapTimeRow', () => {
 
   it('renders delta when provided', () => {
     render(
-      <LapTimeRow label="LAST" time={90.123} delta={-0.5} settings={mockSettings()} />
+      <LapTimeRow
+        label="LAST"
+        time={90.123}
+        delta={-0.5}
+        settings={mockSettings()}
+      />
     );
     expect(screen.getByText('-0.50')).toBeInTheDocument();
   });
 
   it('hides delta when disabled in settings', () => {
-    const settings = mockSettings({ delta: { enabled: false, method: 'bestlap'} });
+    const settings = mockSettings({
+      delta: { enabled: false, method: 'bestlap' },
+    });
     render(
       <LapTimeRow label="LAST" time={90.123} delta={-0.5} settings={settings} />
     );
@@ -103,14 +114,22 @@ describe('LapTimeRow', () => {
   });
 
   it('applies green color for personal best lap', () => {
-    render(<LapTimeRow label="LAST" time={90} best={90} settings={mockSettings()} />);
+    render(
+      <LapTimeRow label="LAST" time={90} best={90} settings={mockSettings()} />
+    );
     const timeElement = screen.getByText('1:30.000');
     expect(timeElement).toHaveClass('text-green-400');
   });
 
   it('applies purple color for overall best lap', () => {
     render(
-      <LapTimeRow label="LAST" time={90} best={91} overall={90} settings={mockSettings()} />
+      <LapTimeRow
+        label="LAST"
+        time={90}
+        best={91}
+        overall={90}
+        settings={mockSettings()}
+      />
     );
     const timeElement = screen.getByText('1:30.000');
     expect(timeElement).toHaveClass('text-purple-400');
@@ -124,7 +143,7 @@ describe('LapTimeLogDisplay', () => {
     lastlap: 92.1,
     bestlap: 91.5,
     reference: 91.5,
-    delta: -0.20,
+    delta: -0.2,
     overall: 91.0,
     history: [
       { lap: 10, time: 92.1, delta: 0.6 },
@@ -161,14 +180,21 @@ describe('LapTimeLogDisplay', () => {
   });
 
   it('shows last lap time in main timer for first 5 seconds of a new lap', () => {
-    const { container } = render(<LapTimeLogDisplay {...defaultProps} current={4.9} />);
-    const mainTimer = container.querySelector('#current-lap'); 
+    const { container } = render(
+      <LapTimeLogDisplay {...defaultProps} current={4.9} />
+    );
+    const mainTimer = container.querySelector('#current-lap');
     expect(mainTimer).toHaveTextContent('1:32.100');
   });
 
   it('flashes green for a new personal best lap', () => {
     const { container } = render(
-      <LapTimeLogDisplay {...defaultProps} current={4.9} lastlap={91.5} bestlap={91.5} />
+      <LapTimeLogDisplay
+        {...defaultProps}
+        current={4.9}
+        lastlap={91.5}
+        bestlap={91.5}
+      />
     );
     const mainTimerWrapper = container.querySelector('#current-lap');
     expect(mainTimerWrapper).toHaveClass('bg-green-700');
@@ -176,7 +202,13 @@ describe('LapTimeLogDisplay', () => {
 
   it('flashes purple for a new session best lap', () => {
     const { container } = render(
-      <LapTimeLogDisplay {...defaultProps} current={4.9} lastlap={91.0} bestlap={91.0} overall={91.0} />
+      <LapTimeLogDisplay
+        {...defaultProps}
+        current={4.9}
+        lastlap={91.0}
+        bestlap={91.0}
+        overall={91.0}
+      />
     );
     const mainTimerWrapper = container.querySelector('#current-lap');
     expect(mainTimerWrapper).toHaveClass('bg-purple-800');
