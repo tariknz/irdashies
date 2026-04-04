@@ -78,7 +78,6 @@ export async function publishIRacingSDKEvents(
         perfMetrics.markStart('processTelemetry');
         const telemetry = sdk.getTelemetry();
         const session = sdk.getSessionData();
-        await new Promise((resolve) => setTimeout(resolve, 1000 / 25)); // 25Hz update rate
 
         if (telemetry) {
           latestTelemetry = telemetry;
@@ -105,6 +104,12 @@ export async function publishIRacingSDKEvents(
         }
         perfMetrics.markEnd('processTelemetry');
         perfMetrics.tick();
+
+        // The sdk.waitForData(WAIT_TIMEOUT) call above already paces the loop to iRacing's 60Hz.
+        // We add a tiny 1ms sleep here to ensure we don't hog the event loop if telemetry
+        // is being pumped faster than we can process it, but we've removed the 40ms cap
+        // that was adding significant latency.
+        await new Promise((resolve) => setImmediate(resolve));
       }
 
       if (wasRunning) {
