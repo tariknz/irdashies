@@ -14,7 +14,6 @@ import { SettingDivider } from '../components/SettingDivider';
 import { SettingToggleRow } from '../components/SettingToggleRow';
 import { SettingSliderRow } from '../components/SettingSliderRow';
 import { SettingSelectRow } from '../components/SettingSelectRow';
-import { SettingActionButton } from '../components/SettingActionButton';
 
 const SETTING_ID = 'fastercarsfrombehind';
 
@@ -51,7 +50,7 @@ export const FasterCarsFromBehindSettings = () => {
       onSettingsChange={setSettings}
       widgetId="fastercarsfrombehind"
     >
-      {(handleConfigChange, handleResetPosition) => (
+      {(handleConfigChange) => (
         <div className="space-y-4">
           {/* Tabs */}
           <div className="flex border-b border-slate-700/50">
@@ -207,12 +206,6 @@ export const FasterCarsFromBehindSettings = () => {
                   onToggle={(newValue) =>
                     handleConfigChange({ onlyShowFasterClasses: newValue })
                   }
-                />
-                <SettingActionButton
-                  label="Reset Position"
-                  onClick={handleResetPosition}
-                  align="center"
-                  className="pt-8"
                 />
               </SettingsSection>
             )}

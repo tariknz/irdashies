@@ -13,7 +13,6 @@ import { SettingSliderRow } from '../components/SettingSliderRow';
 import { SettingToggleRow } from '../components/SettingToggleRow';
 import { SettingButtonGroupRow } from '../components/SettingButtonGroupRow';
 import { SettingDivider } from '../components/SettingDivider';
-import { SettingActionButton } from '../components/SettingActionButton';
 
 const SETTING_ID = 'flatmap';
 
@@ -55,7 +54,7 @@ export const FlatTrackMapSettings = () => {
       onSettingsChange={setSettings}
       widgetId="flatmap"
     >
-      {(handleConfigChange, handleResetPosition) => (
+      {(handleConfigChange) => (
         <div className="space-y-4">
           {/* Tabs */}
           <div className="flex border-b border-slate-700/50">
@@ -85,49 +84,38 @@ export const FlatTrackMapSettings = () => {
           <div className="pt-4">
             {/* TRACK TAB */}
             {activeTab === 'track' && (
-              <>
-                <SettingsSection title="Track Settings">
-                  <SettingSliderRow
-                    title="Track Line Width"
-                    description="Thickness of the track line (matches curved track map scale)"
-                    value={settings.config.trackLineWidth ?? 20}
-                    units="px"
-                    min={5}
-                    max={40}
-                    step={1}
-                    onChange={(v) => handleConfigChange({ trackLineWidth: v })}
-                  />
-
-                  <SettingSliderRow
-                    title="Track Outline Width"
-                    description="Thickness of the outline around the track"
-                    value={settings.config.trackOutlineWidth ?? 40}
-                    units="px"
-                    min={10}
-                    max={80}
-                    step={1}
-                    onChange={(v) =>
-                      handleConfigChange({ trackOutlineWidth: v })
-                    }
-                  />
-
-                  <SettingToggleRow
-                    title="Invert Track Colors"
-                    description="Swap black and white colors for the track"
-                    enabled={settings.config.invertTrackColors ?? false}
-                    onToggle={(newValue) =>
-                      handleConfigChange({ invertTrackColors: newValue })
-                    }
-                  />
-                </SettingsSection>
-
-                <SettingActionButton
-                  label="Reset Position"
-                  onClick={handleResetPosition}
-                  align="center"
-                  className="pt-8"
+              <SettingsSection title="Track Settings">
+                <SettingSliderRow
+                  title="Track Line Width"
+                  description="Thickness of the track line (matches curved track map scale)"
+                  value={settings.config.trackLineWidth ?? 20}
+                  units="px"
+                  min={5}
+                  max={40}
+                  step={1}
+                  onChange={(v) => handleConfigChange({ trackLineWidth: v })}
                 />
-              </>
+
+                <SettingSliderRow
+                  title="Track Outline Width"
+                  description="Thickness of the outline around the track"
+                  value={settings.config.trackOutlineWidth ?? 40}
+                  units="px"
+                  min={10}
+                  max={80}
+                  step={1}
+                  onChange={(v) => handleConfigChange({ trackOutlineWidth: v })}
+                />
+
+                <SettingToggleRow
+                  title="Invert Track Colors"
+                  description="Swap black and white colors for the track"
+                  enabled={settings.config.invertTrackColors ?? false}
+                  onToggle={(newValue) =>
+                    handleConfigChange({ invertTrackColors: newValue })
+                  }
+                />
+              </SettingsSection>
             )}
 
             {/* DRIVERS TAB */}

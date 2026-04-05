@@ -5,7 +5,6 @@ import { getWidgetDefaultConfig } from '@irdashies/types';
 import { useDashboard } from '@irdashies/context';
 import { SettingSliderRow } from '../components/SettingSliderRow';
 import { SettingsSection } from '../components/SettingSection';
-import { SettingActionButton } from '../components/SettingActionButton';
 
 const SETTING_ID = 'twitchchat';
 
@@ -35,7 +34,7 @@ export const TwitchChatSettings = () => {
       onSettingsChange={setSettings}
       widgetId={SETTING_ID}
     >
-      {(handleConfigChange, handleResetPosition) => (
+      {(handleConfigChange) => (
         <>
           <SettingsSection title="Display">
             {/* Background Opacity */}
@@ -86,13 +85,6 @@ export const TwitchChatSettings = () => {
               </p>
             </div>
           </SettingsSection>
-
-          <SettingActionButton
-            label="Reset Position"
-            onClick={handleResetPosition}
-            align="center"
-            className="pt-8"
-          />
         </>
       )}
     </BaseSettingsSection>

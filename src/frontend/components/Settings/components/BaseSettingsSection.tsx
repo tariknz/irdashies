@@ -1,5 +1,6 @@
 import { ReactNode, useState } from 'react';
 import { ToggleSwitch } from './ToggleSwitch';
+import { SettingActionButton } from './SettingActionButton';
 import { BaseWidgetSettings } from '@irdashies/types';
 import { useDashboard } from '@irdashies/context';
 
@@ -10,10 +11,7 @@ interface BaseSettingsSectionProps<T> {
   onSettingsChange: (settings: BaseWidgetSettings<T>) => void;
   widgetId: string;
   children?:
-    | ((
-        handleConfigChange: (config: Partial<T>) => void,
-        handleResetPosition: () => void
-      ) => ReactNode)
+    | ((handleConfigChange: (config: Partial<T>) => void) => ReactNode)
     | ReactNode;
   onConfigChange?: (config: Partial<T>) => void;
   disableInternalScroll?: boolean;
@@ -154,10 +152,18 @@ export const BaseSettingsSection = <T,>({
         {children && (
           <div className="space-y-4 p-4">
             {typeof children === 'function'
-              ? children(handleConfigChange, handleResetPosition)
+              ? children(handleConfigChange)
               : children}
           </div>
         )}
+
+        <div className="p-4 pt-2">
+          <SettingActionButton
+            label="Reset Position"
+            onClick={handleResetPosition}
+            align="center"
+          />
+        </div>
       </div>
     </div>
   );

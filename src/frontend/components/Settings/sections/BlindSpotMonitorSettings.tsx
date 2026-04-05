@@ -9,7 +9,6 @@ import {
 import { SessionVisibility } from '../components/SessionVisibility';
 import { TabButton } from '../components/TabButton';
 import { SettingSliderRow } from '../components/SettingSliderRow';
-import { SettingActionButton } from '../components/SettingActionButton';
 import { SettingsSection } from '../components/SettingSection';
 import { SettingDivider } from '../components/SettingDivider';
 import { SettingToggleRow } from '../components/SettingToggleRow';
@@ -52,7 +51,7 @@ export const BlindSpotMonitorSettings = () => {
       onSettingsChange={setSettings}
       widgetId={SETTING_ID}
     >
-      {(handleConfigChange, handleResetPosition) => (
+      {(handleConfigChange) => (
         <div className="space-y-4">
           {/* Tabs */}
           <div className="flex border-b border-slate-700/50">
@@ -156,12 +155,6 @@ export const BlindSpotMonitorSettings = () => {
                     </select>
                   </div>
                 </div>
-                <SettingActionButton
-                  label="Reset Position"
-                  onClick={handleResetPosition}
-                  align="center"
-                  className="pt-8"
-                />
               </SettingsSection>
             )}
 

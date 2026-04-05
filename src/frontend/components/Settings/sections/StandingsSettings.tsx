@@ -784,7 +784,7 @@ export const StandingsSettings = () => {
       onSettingsChange={setSettings}
       widgetId={SETTING_ID}
     >
-      {(handleConfigChange, handleResetPosition) => {
+      {(handleConfigChange) => {
         const handleDisplayOrderChange = (newOrder: string[]) => {
           setItemsOrder(newOrder);
           handleConfigChange({ displayOrder: newOrder });
@@ -841,32 +841,23 @@ export const StandingsSettings = () => {
             <div className="pt-4 space-y-4">
               {/* DISPLAY TAB */}
               {activeTab === 'display' && (
-                <>
-                  <SettingsSection title="Display Order">
-                    <DisplaySettingsList
-                      itemsOrder={itemsOrder}
-                      onReorder={handleDisplayOrderChange}
-                      settings={settings}
-                      handleConfigChange={handleConfigChange}
-                    />
-
-                    <SettingActionButton
-                      label="Reset to Default Order"
-                      onClick={() => {
-                        const defaultOrder = sortableSettings.map((s) => s.id);
-                        setItemsOrder(defaultOrder);
-                        handleConfigChange({ displayOrder: defaultOrder });
-                      }}
-                    />
-                  </SettingsSection>
+                <SettingsSection title="Display Order">
+                  <DisplaySettingsList
+                    itemsOrder={itemsOrder}
+                    onReorder={handleDisplayOrderChange}
+                    settings={settings}
+                    handleConfigChange={handleConfigChange}
+                  />
 
                   <SettingActionButton
-                    label="Reset Position"
-                    onClick={handleResetPosition}
-                    align="center"
-                    className="pt-8"
+                    label="Reset to Default Order"
+                    onClick={() => {
+                      const defaultOrder = sortableSettings.map((s) => s.id);
+                      setItemsOrder(defaultOrder);
+                      handleConfigChange({ displayOrder: defaultOrder });
+                    }}
                   />
-                </>
+                </SettingsSection>
               )}
 
               {/* OPTIONS TAB */}

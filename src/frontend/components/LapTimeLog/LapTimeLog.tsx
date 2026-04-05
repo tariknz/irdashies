@@ -8,6 +8,7 @@ import {
   useDrivingState,
   useSessionVisibility,
   useDashboard,
+  useGeneralSettings,
 } from '@irdashies/context';
 import { useLapTimeLog } from './hooks/useLapTimeLog';
 import { getDemoLapTimeLogData, LapEntry } from './demoData';
@@ -23,7 +24,9 @@ export const LapTimeLog = () => {
   const { isDriving } = useDrivingState();
   const playerIndex = useFocusCarIdx();
   const data = useLapTimeLog();
-  const isSessionVisible = useSessionVisibility(data.settings?.sessionVisibility);
+  const isSessionVisible = useSessionVisibility(
+    data.settings?.sessionVisibility
+  );
 
   if (
     !data.settings ||
@@ -97,16 +100,10 @@ export const LapTimeLogDisplay = ({
   }, [history, settings.history.count]);
 
   // predicted delta
-  const deltaIsGreen = 
-    current !== undefined && 
-    current > 5 &&
-    delta !== undefined &&    
-    delta < 0;
-  const deltaIsRed = 
-    current !== undefined && 
-    current > 5 &&
-    delta !== undefined &&    
-    delta > 0;
+  const deltaIsGreen =
+    current !== undefined && current > 5 && delta !== undefined && delta < 0;
+  const deltaIsRed =
+    current !== undefined && current > 5 && delta !== undefined && delta > 0;
 
   // for the flash
   let bgColor = 'bg-slate-900/[var(--fg-alpha)]';
@@ -128,14 +125,20 @@ export const LapTimeLogDisplay = ({
     if (isSessionBest) bgColor = 'bg-purple-800';
   }
 
+  const generalSettings = useGeneralSettings();
+  const isCompact =
+    generalSettings?.compactMode === 'compact' ||
+    generalSettings?.compactMode === 'ultra';
+
   // wdiget alignment
-  const alignment = settings.alignment === 'bottom' ? 'items-end' : 'items-start';
+  const alignment =
+    settings.alignment === 'bottom' ? 'items-end' : 'items-start';
   const reverse = settings.reverse ? 'flex-col-reverse' : 'flex-col';
 
   return (
     <div className={`h-full flex ${alignment}`}>
       <div
-        className="w-full text-sm bg-slate-800/[var(--bg-opacity)] p-0.5 rounded-md text-white"
+        className={`w-full text-sm bg-slate-800/[var(--bg-opacity)] rounded-md text-white ${!isCompact ? 'p-2' : 'p-0.5'}`}
         style={
           {
             '--bg-opacity': `${settings.background.opacity}%`,
@@ -144,9 +147,7 @@ export const LapTimeLogDisplay = ({
       >
         <div
           className={`w-full flex gap-0.5 ${reverse}`}
-          style={
-            { fontSize: `${settings.scale}%` } as React.CSSProperties
-          }
+          style={{ fontSize: `${settings.scale}%` } as React.CSSProperties}
         >
           {/* Current Lap Timer (The Big One) */}
           {settings.showCurrentLap && (
@@ -166,7 +167,7 @@ export const LapTimeLogDisplay = ({
                 {formatTime(
                   current === undefined
                     ? undefined
-                    : (current > FREEZE_TIME || (current > 0 && !lastlap))
+                    : current > FREEZE_TIME || (current > 0 && !lastlap)
                       ? current
                       : lastlap
                 )}
@@ -197,7 +198,7 @@ export const LapTimeLogDisplay = ({
                   current === undefined
                     ? undefined
                     : current > FREEZE_TIME
-                      ? (reference ?? 0) + (delta  ?? 0)
+                      ? (reference ?? 0) + (delta ?? 0)
                       : lastlap
                 )}
               </div>
@@ -226,7 +227,11 @@ export const LapTimeLogDisplay = ({
             <LapTimeRow
               label="BEST"
               time={bestlap}
-              delta={reference !== undefined && reference > 0 ? (bestlap ?? 0) - reference : 0}
+              delta={
+                reference !== undefined && reference > 0
+                  ? (bestlap ?? 0) - reference
+                  : 0
+              }
               best={bestlap}
               overall={overall}
               settings={settings}
@@ -236,7 +241,11 @@ export const LapTimeLogDisplay = ({
             <LapTimeRow
               label="LAST"
               time={lastlap}
-              delta={reference !== undefined && reference > 0 ? (lastlap ?? 0) - reference : 0}
+              delta={
+                reference !== undefined && reference > 0
+                  ? (lastlap ?? 0) - reference
+                  : 0
+              }
               best={bestlap}
               overall={overall}
               settings={settings}
@@ -260,7 +269,6 @@ export const LapTimeLogDisplay = ({
               ))}
             </>
           )}
-
         </div>
       </div>
     </div>
