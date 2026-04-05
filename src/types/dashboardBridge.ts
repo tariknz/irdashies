@@ -70,6 +70,8 @@ export interface DashboardBridge {
   ) => Promise<DashboardLayout | null>;
   exportDashboardToFile: (dashboard: DashboardLayout) => Promise<boolean>;
   importDashboardFromFile: () => Promise<DashboardLayout | null>;
+  openLogFolder: () => Promise<void>;
+  exportLogFile: () => Promise<boolean>;
   stop: () => void;
   setAutoStart: (autoStart: boolean) => Promise<void>;
   onContainerBoundsInfo?: (

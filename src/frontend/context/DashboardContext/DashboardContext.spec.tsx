@@ -32,6 +32,8 @@ const mockBridge: DashboardBridge = {
   exportDashboardToFile: vi.fn().mockResolvedValue(false),
   importDashboardFromFile: vi.fn().mockResolvedValue(null),
   setAutoStart: vi.fn(),
+  openLogFolder: vi.fn(),
+  exportLogFile: vi.fn().mockResolvedValue(false),
 };
 
 const TestComponent: React.FC = () => {

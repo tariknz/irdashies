@@ -377,6 +377,16 @@ export class WebSocketBridge implements IrSdkBridge {
     return new Promise<void>((resolve) => resolve());
   }
 
+  openLogFolder(): Promise<void> {
+    // Not supported by component browser
+    return Promise.resolve();
+  }
+
+  exportLogFile(): Promise<boolean> {
+    // Not supported by component browser
+    return Promise.resolve(false);
+  }
+
   async resetDashboard(resetEverything: boolean): Promise<any> {
     return new Promise((resolve) => {
       if (this.socket && this.socket.readyState === WebSocket.OPEN) {

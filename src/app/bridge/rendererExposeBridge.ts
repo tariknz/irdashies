@@ -157,6 +157,12 @@ export function exposeBridge() {
     importDashboardFromFile: () => {
       return ipcRenderer.invoke('importDashboardFromFile');
     },
+    openLogFolder: () => {
+      return ipcRenderer.invoke('openLogFolder');
+    },
+    exportLogFile: () => {
+      return ipcRenderer.invoke('exportLogFile');
+    },
     getCurrentDashboard: () => {
       // This is a synchronous getter used in overlay container mode
       // The actual dashboard state is managed by the OverlayContainer component

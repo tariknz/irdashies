@@ -83,4 +83,6 @@ export const mockDashboardBridge: DashboardBridge = {
   importDashboardFromFile: async () => null,
   stop: () => undefined,
   setAutoStart: () => Promise.resolve(),
+  openLogFolder: async () => undefined,
+  exportLogFile: async () => false,
 };
