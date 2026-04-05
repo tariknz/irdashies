@@ -81,6 +81,10 @@ export const BaseSettingsSection = <T,>({
             x: 0,
             y: 0,
           },
+          config: {
+            ...widget.config,
+            browserPosition: undefined,
+          },
         };
       });
 
