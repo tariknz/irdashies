@@ -5,6 +5,7 @@ import type {
   FuelCalculatorBridge,
   ReferenceLapBridge,
   LogBridge,
+  KeybindingsBridge,
 } from '@irdashies/types';
 
 declare global {
@@ -15,5 +16,6 @@ declare global {
     fuelCalculatorBridge: FuelCalculatorBridge;
     referenceLapsBridge: ReferenceLapBridge;
     logBridge: LogBridge;
+    keybindingsBridge: KeybindingsBridge;
   }
 }

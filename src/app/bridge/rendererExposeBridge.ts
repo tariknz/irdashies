@@ -12,6 +12,8 @@ import type {
   FuelLapData,
   ReferenceLap,
   ReferenceLapBridge,
+  KeybindingsBridge,
+  KeybindingActionId,
 } from '@irdashies/types';
 
 export function exposeBridge() {
@@ -225,4 +227,15 @@ export function exposeBridge() {
       );
     },
   } as ReferenceLapBridge);
+
+  contextBridge.exposeInMainWorld('keybindingsBridge', {
+    getKeybindings: () => ipcRenderer.invoke('keybindings:get'),
+    updateKeybinding: (actionId: KeybindingActionId, accelerator: string) =>
+      ipcRenderer.invoke('keybindings:update', actionId, accelerator),
+    resetKeybinding: (actionId: KeybindingActionId) =>
+      ipcRenderer.invoke('keybindings:reset', actionId),
+    resetAllKeybindings: () => ipcRenderer.invoke('keybindings:resetAll'),
+    startRecording: () => ipcRenderer.invoke('keybindings:startRecording'),
+    stopRecording: () => ipcRenderer.invoke('keybindings:stopRecording'),
+  } as KeybindingsBridge);
 }

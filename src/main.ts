@@ -5,7 +5,7 @@ import {
   getCurrentBridge,
 } from './app/bridge/iracingSdk/setup';
 import { getOrCreateDefaultDashboard } from './app/storage/dashboards';
-import { setupTaskbar } from './app';
+import { setupTaskbar, KeybindingManager } from './app';
 import {
   publishDashboardUpdates,
   dashboardBridge,
@@ -21,8 +21,8 @@ import { updateElectronApp } from 'update-electron-app';
 // @ts-expect-error no types for squirrel
 import started from 'electron-squirrel-startup';
 import { Analytics } from './app/analytics';
-import { registerHideUiShortcut } from './app/globalShortcuts';
 import { setupReferenceLapsBridge } from './app/bridge/referenceLapsBridge';
+import { setupKeybindingsBridge } from './app/bridge/keybindingsBridge';
 import { setupLogBridge } from './app/bridge/logBridge';
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
@@ -62,13 +62,15 @@ app.on('ready', async () => {
   ipcMain.handle('getComponentServerPort', () => getComponentServerPort());
 
   overlayManager.createOverlays(dashboard);
-  setupTaskbar(overlayManager);
+
+  const keybindingManager = new KeybindingManager(overlayManager);
+  keybindingManager.registerAll();
+
+  setupTaskbar(overlayManager, keybindingManager);
   publishDashboardUpdates(overlayManager, analytics);
+  setupKeybindingsBridge(keybindingManager);
 
   await analytics.init(overlayManager.getVersion(), dashboard);
-
-  // 🔽 Register the global hide UI shortcut once everything is set up
-  registerHideUiShortcut(overlayManager);
 
   // Check if settings window should start minimized
   const shouldStartMinimized =
