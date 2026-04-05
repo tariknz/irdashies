@@ -69,7 +69,14 @@ export const BaseSettingsSection = <T,>({
     onConfigChange?.(newConfig);
   };
 
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
+
   const handleResetPosition = () => {
+    setShowResetConfirm(true);
+  };
+
+  const confirmResetPosition = () => {
+    setShowResetConfirm(false);
     if (currentDashboard && onDashboardUpdated) {
       const updatedWidgets = currentDashboard.widgets.map((widget) => {
         if (widget.id !== widgetId) return widget;
@@ -169,6 +176,31 @@ export const BaseSettingsSection = <T,>({
             Reset Position
           </button>
         </div>
+
+        {showResetConfirm && (
+          <div className="mx-4 mb-4 p-3 bg-slate-900 rounded-md border border-slate-600">
+            <p className="text-sm text-slate-300 mb-1">
+              This will reset the position for both the on-screen overlay and
+              the browser/URL source version.
+            </p>
+            <div className="flex gap-2 mt-3">
+              <button
+                type="button"
+                onClick={confirmResetPosition}
+                className="flex-1 px-3 py-1 text-sm bg-red-700 hover:bg-red-600 text-white rounded-md transition-colors"
+              >
+                Yes, Reset Position
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowResetConfirm(false)}
+                className="flex-1 px-3 py-1 text-sm bg-slate-600 hover:bg-slate-500 text-slate-300 rounded-md transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
