@@ -36,7 +36,7 @@ export const InformationBar = () => {
         ['--bg-opacity' as string]: `${settings?.background?.opacity ?? 60}%`,
       }}
     >
-      <SessionBar variant="infobar" position="infobar" />
+      <SessionBar settings={settings} standalone />
     </div>
   );
 };

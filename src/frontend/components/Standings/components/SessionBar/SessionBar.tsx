@@ -16,12 +16,6 @@ import { useTrackWetness } from '../../hooks/useTrackWetness';
 import { useTrackTemperature } from '../../hooks/useTrackTemperature';
 import { useCurrentTime } from '../../hooks/useCurrentTime';
 import {
-  useStandingsSettings,
-  useRelativeSettings,
-  useInformationBarSettings,
-} from '../../hooks';
-
-import {
   ClockIcon,
   ClockUserIcon,
   CloudRainIcon,
@@ -95,43 +89,24 @@ const formatTotalTime = (
 };
 
 interface SessionBarProps {
-  position?: 'header' | 'footer' | 'infobar';
-  variant?: 'standings' | 'relative' | 'infobar';
+  settings: SessionBarConfig;
+  position?: 'header' | 'footer';
+  standalone?: boolean;
 }
 
 export const SessionBar = ({
+  settings: effectiveBarSettings,
   position = 'header',
-  variant = 'standings',
+  standalone = false,
 }: SessionBarProps) => {
-  const isInfoBar = variant === 'infobar';
-  // Use settings hook directly for reactivity
-  const standingsSettings = useStandingsSettings();
-  const relativeSettings = useRelativeSettings();
-  const infobarSettings = useInformationBarSettings();
   const generalSettings = useGeneralSettings();
-  const settings = isInfoBar
-    ? infobarSettings
-    : variant === 'relative'
-      ? relativeSettings
-      : standingsSettings;
-
-  const config = settings as unknown as {
-    headerBar?: SessionBarConfig;
-    footerBar?: SessionBarConfig;
-  } & Partial<SessionBarConfig>;
-
-  const effectiveBarSettings = isInfoBar
-    ? (config as SessionBarConfig)
-    : position === 'footer'
-      ? config.footerBar
-      : config.headerBar;
 
   const isUltra = generalSettings?.compactMode === 'ultra';
   const isCompact = generalSettings?.compactMode === 'compact';
 
   const pyClass = isUltra ? 'py-0' : isCompact ? 'py-1' : 'py-2';
   const gapClass = isUltra ? 'gap-x-2' : isCompact ? 'gap-x-4' : 'gap-x-6';
-  const pxClass = isInfoBar
+  const pxClass = standalone
     ? isUltra
       ? 'px-2'
       : isCompact
@@ -457,7 +432,6 @@ export const SessionBar = ({
         ]);
 
   // Filter and order items based on settings
-  // Filter and order items based on settings
   const itemsToRender = displayOrder
     .map((key: string) => ({
       key,
@@ -481,7 +455,7 @@ export const SessionBar = ({
         const element = definition.render();
         if (!element) return null;
 
-        if (variant === 'infobar') {
+        if (standalone) {
           const isFirst = index === 0;
           const isLast = index === array.length - 1;
           return (
@@ -505,7 +479,7 @@ export const SessionBar = ({
 
   return (
     <div
-      className={`bg-slate-900/70 ${pxClass} ${pyClass} flex items-center text-sm ${isInfoBar ? `w-full justify-between ${gapClass}` : 'justify-between'} ${!isCompact && !isUltra && !isInfoBar ? (position === 'header' ? 'mb-3' : 'mt-3') : ''}`}
+      className={`bg-slate-900/70 ${pxClass} ${pyClass} flex items-center text-sm ${standalone ? `w-full justify-between ${gapClass}` : 'justify-between'} ${!isCompact && !isUltra && !standalone ? (position === 'header' ? 'mb-3' : 'mt-3') : ''}`}
     >
       {itemsToRender}
     </div>
