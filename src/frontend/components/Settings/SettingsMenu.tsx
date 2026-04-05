@@ -4,6 +4,7 @@ import {
   UsersIcon,
   TagIcon,
   ScalesIcon,
+  KeyboardIcon,
   WrenchIcon,
   InfoIcon,
 } from '@phosphor-icons/react';
@@ -42,6 +43,12 @@ const generalItems: MenuItem[] = [
     path: '/car-setup',
     label: 'Setup Comparison',
     icon: ScalesIcon,
+  },
+  {
+    to: '/settings/keybindings',
+    path: '/keybindings',
+    label: 'Key Bindings',
+    icon: KeyboardIcon,
   },
 ];
 

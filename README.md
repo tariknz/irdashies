@@ -416,7 +416,8 @@ A powerful tool for viewing live data coming from iRacing. While mostly used for
   - Font sizes: Multiple font size options to ensure readability on any screen.
   - Font weight: Choose between Normal, Bold, or Extra Bold text for improved readability.
 - Ease of Use
-  - Global toggle (Alt+H): Quickly hide or show all your overlays with a single keyboard shortcut.
+  - Configurable key bindings: Rebind all keyboard shortcuts (hide/show UI, edit layout, save telemetry) from the Key Bindings settings page. Supports any keyboard chord combination.
+  - Global toggle (Alt+H by default): Quickly hide or show all your overlays with a single keyboard shortcut.
   - Always on top: Keep your overlays visible even when clicking on other windows.
   - System autostart: Optionally have the app start automatically when your computer boots up.
   - Start minimized: Launch the settings window in minimized state for a cleaner desktop
