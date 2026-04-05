@@ -42,6 +42,12 @@ describe('time', () => {
     it('should return empty string for -1 time', () => {
       expect(formatTime(-1)).toBe('');
     });
+
+    it('should not overflow milliseconds to 1000 when rounding up', () => {
+      expect(formatTime(75.9999)).toBe('1:16.000');
+      expect(formatTime(0.9995)).toBe('0:01.000');
+      expect(formatTime(59.9999)).toBe('1:00.000');
+    });
   });
 
   describe('formatTime with different formats', () => {
@@ -198,7 +204,9 @@ describe('time', () => {
       });
 
       it('should format with labels for hours, minutes and seconds', () => {
-        expect(formatTime(3661.789, 'duration-wlabels')).toBe('1 hr 1 min 1 sec');
+        expect(formatTime(3661.789, 'duration-wlabels')).toBe(
+          '1 hr 1 min 1 sec'
+        );
       });
 
       it('should return empty string for zero seconds', () => {
