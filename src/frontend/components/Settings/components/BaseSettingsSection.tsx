@@ -178,26 +178,31 @@ export const BaseSettingsSection = <T,>({
         </div>
 
         {showResetConfirm && (
-          <div className="mx-4 mb-4 p-3 bg-slate-900 rounded-md border border-slate-600">
-            <p className="text-sm text-slate-300 mb-1">
-              This will reset the position for both the on-screen overlay and
-              the browser/URL source version.
-            </p>
-            <div className="flex gap-2 mt-3">
-              <button
-                type="button"
-                onClick={confirmResetPosition}
-                className="flex-1 px-3 py-1 text-sm bg-red-700 hover:bg-red-600 text-white rounded-md transition-colors"
-              >
-                Yes, Reset Position
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowResetConfirm(false)}
-                className="flex-1 px-3 py-1 text-sm bg-slate-600 hover:bg-slate-500 text-slate-300 rounded-md transition-colors"
-              >
-                Cancel
-              </button>
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+            <div className="bg-slate-800 rounded-lg border border-slate-600 p-5 w-72 shadow-xl">
+              <h3 className="text-base font-semibold text-white mb-2">
+                Reset Position
+              </h3>
+              <p className="text-sm text-slate-300 mb-4">
+                This will reset the position for both the on-screen overlay and
+                the browser/URL source version.
+              </p>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={confirmResetPosition}
+                  className="flex-1 px-3 py-1.5 text-sm bg-red-700 hover:bg-red-600 text-white rounded-md transition-colors"
+                >
+                  Yes, Reset Position
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowResetConfirm(false)}
+                  className="flex-1 px-3 py-1.5 text-sm bg-slate-600 hover:bg-slate-500 text-slate-300 rounded-md transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
           </div>
         )}
