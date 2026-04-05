@@ -179,7 +179,7 @@ export const BaseSettingsSection = <T,>({
 
         {showResetConfirm && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-            <div className="bg-slate-800 rounded-lg border border-slate-600 p-5 w-72 shadow-xl">
+            <div className="bg-slate-800 rounded-lg border border-slate-600 p-5 w-80 shadow-xl">
               <h3 className="text-base font-semibold text-white mb-2">
                 Reset Position
               </h3>
@@ -193,7 +193,7 @@ export const BaseSettingsSection = <T,>({
                   onClick={confirmResetPosition}
                   className="flex-1 px-3 py-1.5 text-sm bg-red-700 hover:bg-red-600 text-white rounded-md transition-colors"
                 >
-                  Yes, Reset Position
+                  Reset Position
                 </button>
                 <button
                   type="button"
