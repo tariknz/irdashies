@@ -1,6 +1,5 @@
 import { ReactNode, useState } from 'react';
 import { ToggleSwitch } from './ToggleSwitch';
-import { SettingActionButton } from './SettingActionButton';
 import { BaseWidgetSettings } from '@irdashies/types';
 import { useDashboard } from '@irdashies/context';
 
@@ -157,12 +156,14 @@ export const BaseSettingsSection = <T,>({
           </div>
         )}
 
-        <div className="p-4 pt-2">
-          <SettingActionButton
-            label="Reset Position"
+        <div className="flex justify-center p-4 pt-2">
+          <button
+            type="button"
             onClick={handleResetPosition}
-            align="center"
-          />
+            className="px-3 py-1 text-sm bg-slate-600 hover:bg-slate-500 text-slate-300 rounded-md transition-colors"
+          >
+            Reset Position
+          </button>
         </div>
       </div>
     </div>
