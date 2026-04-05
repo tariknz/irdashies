@@ -182,6 +182,8 @@ export const dashboardBridge: DashboardBridge = {
   },
   exportDashboardToFile: async () => false,
   importDashboardFromFile: async () => null,
+  openLogFolder: async () => undefined,
+  exportLogFile: async () => false,
   setAutoStart: async (enabled: boolean) => {
     app.setLoginItemSettings({
       openAtLogin: enabled,
@@ -371,6 +373,37 @@ export async function publishDashboardUpdates(
       return true;
     }
   );
+
+  ipcMain.handle('openLogFolder', async () => {
+    const { shell } = await import('electron');
+    const logsDir = app.getPath('logs');
+    await shell.openPath(logsDir);
+  });
+
+  ipcMain.handle('exportLogFile', async () => {
+    const { dialog } = await import('electron');
+    const path = await import('node:path');
+    const fs = await import('node:fs/promises');
+
+    const mainLog = path.join(app.getPath('logs'), 'main.log');
+
+    try {
+      await fs.access(mainLog);
+    } catch {
+      logger.warn('No log file found at', mainLog);
+      return false;
+    }
+
+    const { canceled, filePath } = await dialog.showSaveDialog({
+      title: 'Export Log File',
+      defaultPath: 'irdashies.log',
+      filters: [{ name: 'Log Files', extensions: ['log', 'txt'] }],
+    });
+    if (canceled || !filePath) return false;
+
+    await fs.copyFile(mainLog, filePath);
+    return true;
+  });
 
   ipcMain.handle('importDashboardFromFile', async () => {
     const { dialog } = await import('electron');

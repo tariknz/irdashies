@@ -93,6 +93,8 @@ const mockBridge: (editMode: boolean) => DashboardBridge = (editMode) => ({
   exportDashboardToFile: async () => false,
   importDashboardFromFile: async () => null,
   setAutoStart: () => Promise.resolve(),
+  openLogFolder: async () => undefined,
+  exportLogFile: async () => false,
 });
 
 export const Primary = {
