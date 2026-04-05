@@ -203,11 +203,11 @@ export interface WeatherConfig {
 }
 
 export interface TrackMapConfig {
-  turnLabels: { 
-    enabled: boolean, 
-    labelType: 'names' | 'numbers' | 'both', 
-    highContrast: boolean,
-    labelFontSize: number,
+  turnLabels: {
+    enabled: boolean;
+    labelType: 'names' | 'numbers' | 'both';
+    highContrast: boolean;
+    labelFontSize: number;
   };
   showCarNumbers: boolean;
   displayMode?: 'carNumber' | 'sessionPosition' | 'livePosition';
@@ -492,6 +492,15 @@ export interface LapTimeLogConfig {
   sessionVisibility: SessionVisibilitySettings;
 }
 
+export interface SlowCarAheadConfig {
+  maxDistance: number;
+  slowSpeedThreshold: number;
+  stoppedSpeedThreshold: number;
+  barThickness: number;
+  showOnlyWhenOnTrack?: boolean;
+  sessionVisibility: SessionVisibilitySettings;
+}
+
 // ===========================
 // Widget config map + typed widget
 // ===========================
@@ -514,6 +523,7 @@ export interface WidgetConfigMap {
   pitlanehelper: PitlaneHelperConfig;
   twitchchat: TwitchChatConfig;
   laptimelog: LapTimeLogConfig;
+  slowcarahead: SlowCarAheadConfig;
 }
 
 export type TypedDashboardWidget<
@@ -606,3 +616,4 @@ export type PitlaneHelperWidgetSettings =
   BaseWidgetSettings<PitlaneHelperConfig>;
 export type TwitchChatWidgetSettings = BaseWidgetSettings<TwitchChatConfig>;
 export type LapTimeLogWidgetSettings = BaseWidgetSettings<LapTimeLogConfig>;
+export type SlowCarAheadWidgetSettings = BaseWidgetSettings<SlowCarAheadConfig>;

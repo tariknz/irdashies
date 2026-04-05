@@ -115,6 +115,12 @@ const widgetItems: MenuItem[] = [
     widgetType: 'relative',
   },
   {
+    to: '/settings/slowcarahead',
+    path: '/slowcarahead',
+    label: 'Slow Car Ahead',
+    widgetType: 'slowcarahead',
+  },
+  {
     to: '/settings/standings',
     path: '/standings',
     label: 'Standings',

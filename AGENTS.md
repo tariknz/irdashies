@@ -298,10 +298,12 @@ npm run storybook  # Port 6006
 
 1. Create `src/frontend/components/MyWidget/MyWidget.tsx`
 2. Create `Settings/sections/MyWidgetSettings.tsx`
-3. Add type to `src/types/widgetConfigs.ts`
-4. Create `.stories.tsx`
-5. Register in `WidgetIndex.tsx`
-6. Add default config in `src/types/defaultDashboard.ts`
+3. Add settings to `src/frontend/components/Settings/SettingsLoader.tsx`
+4. Add settings menu item to `src/frontend/components/Settings/SettingsMenu.tsx`
+5. Add type to `src/types/widgetConfigs.ts`
+6. Create `.stories.tsx`
+7. Register in `WidgetIndex.tsx`
+8. Add default config in `src/types/defaultDashboard.ts`
 
 ### Adding a Hook
 
