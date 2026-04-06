@@ -73,7 +73,7 @@ export const SlowCarAheadSettings = () => {
             </TabButton>
           </div>
 
-          <div className="pt-4">
+          <div>
             {/* OPTIONS TAB */}
             {activeTab === 'options' && (
               <SettingsSection title="Display">

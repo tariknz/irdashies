@@ -51,7 +51,6 @@ export const GridOrderSettingsList = ({
     <SortableList
       items={items}
       onReorder={(newItems) => onReorder(newItems.map((i) => i.id))}
-      className="space-y-2 mt-2"
       renderItem={(row, sortableProps) => {
         const isEnabled = settings.config[row.configKey] as boolean;
 

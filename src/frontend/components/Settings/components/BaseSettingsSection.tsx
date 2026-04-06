@@ -149,7 +149,6 @@ export const BaseSettingsSection = <T,>({
               onToggle={(enabled) =>
                 handleSettingsChange({ ...settings, enabled })
               }
-              label="Enable Widget"
             />
           </div>
           <p className="text-slate-400 text-sm">{description}</p>
@@ -167,7 +166,7 @@ export const BaseSettingsSection = <T,>({
           </div>
         )}
 
-        <div className="flex justify-center p-4 pt-2">
+        <div className="flex justify-center p-4 pt-2 mt-2">
           <button
             type="button"
             onClick={handleResetPosition}

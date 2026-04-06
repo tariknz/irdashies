@@ -93,7 +93,6 @@ const DisplaySettingsList = ({
     <SortableList
       items={items}
       onReorder={(newItems) => onReorder(newItems.map((i) => i.id))}
-      className="space-y-3"
       renderItem={(setting, sortableProps) => {
         const configValue = settings.config[setting.configKey];
         const isEnabled = (configValue as { enabled: boolean }).enabled;
@@ -394,7 +393,6 @@ const BarItemsList = ({
     <SortableList
       items={wrappedItems}
       onReorder={(newItems) => onReorder(newItems.map((i) => i.id))}
-      className="space-y-3"
       renderItem={(item, sortableProps) => {
         const itemConfig = (
           settings.config[
@@ -728,7 +726,7 @@ export const RelativeSettings = () => {
               </TabButton>
             </div>
 
-            <div className="pt-4 space-y-4">
+            <div>
               {/* DISPLAY TAB */}
               {activeTab === 'display' && (
                 <SettingsSection title="Display Order">

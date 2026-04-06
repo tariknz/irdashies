@@ -87,7 +87,7 @@ export const TrackMapSettings = () => {
             </TabButton>
           </div>
 
-          <div className="pt-4">
+          <div>
             {/* TRACK TAB */}
             {activeTab === 'track' && (
               <SettingsSection title="Track Settings">

@@ -78,7 +78,7 @@ export const LapTimeLogSettings = () => {
             </TabButton>
           </div>
 
-          <div className="pt-4">
+          <div>
             {/* DISPLAY TAB */}
             {activeTab === 'display' && (
               <>
