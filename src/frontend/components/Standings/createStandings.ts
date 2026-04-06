@@ -209,8 +209,6 @@ export const createDriverStandings = (
       }));
   }
 
-  const fastestDriverIdx = currentSession.resultsFastestLap?.[0]?.CarIdx;
-
   // Build a per-class fastest time map for qualifying/practice delta calculations.
   // resultsFastestLap is session-wide only (no class info), so we derive class
   // leaders from results + driver class info instead.
@@ -282,7 +280,7 @@ export const createDriverStandings = (
           teamName: driver.TeamName,
         },
         fastestTime: result.FastestTime,
-        hasFastestTime: result.CarIdx === fastestDriverIdx,
+        hasFastestTime: isClassFastest,
         lastTime: result.LastTime,
         lastTimeState: getLastTimeState(
           result.LastTime,
