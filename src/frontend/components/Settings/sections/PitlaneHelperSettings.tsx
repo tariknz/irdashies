@@ -72,7 +72,7 @@ export const PitlaneHelperSettings = () => {
             </TabButton>
           </div>
 
-          <div className="pt-4 space-y-4">
+          <div>
             {/* OPTIONS TAB */}
             {activeTab === 'options' && (
               <>

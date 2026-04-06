@@ -33,6 +33,12 @@ const generalItems: MenuItem[] = [
     icon: UsersIcon,
   },
   {
+    to: '/settings/keybindings',
+    path: '/keybindings',
+    label: 'Key Bindings',
+    icon: KeyboardIcon,
+  },
+  {
     to: '/settings/driver-tags',
     path: '/driver-tags',
     label: 'Driver Tags',
@@ -43,12 +49,6 @@ const generalItems: MenuItem[] = [
     path: '/car-setup',
     label: 'Setup Comparison',
     icon: ScalesIcon,
-  },
-  {
-    to: '/settings/keybindings',
-    path: '/keybindings',
-    label: 'Key Bindings',
-    icon: KeyboardIcon,
   },
 ];
 
