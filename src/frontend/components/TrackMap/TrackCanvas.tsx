@@ -12,9 +12,8 @@ import {
   drawTurnNames,
   drawDrivers,
 } from './trackDrawingUtils';
-import { useDriverOffTrack } from './hooks/useDriverOffTrack';
 import { useDriverLivePositions } from '../Standings/hooks/useDriverLivePositions';
-import { useTelemetryValues } from '@irdashies/context';
+import { useTelemetryValues, useCarIdxOffTrack } from '@irdashies/context';
 
 export interface DriverIdentity {
   driver: Driver;
@@ -75,9 +74,9 @@ export interface TrackDrawing {
 
 export interface TurnLabels {
   enabled: boolean;
-  labelType: 'names' | 'numbers' | 'both',
-  highContrast: boolean,
-  labelFontSize: number;   
+  labelType: 'names' | 'numbers' | 'both';
+  highContrast: boolean;
+  labelFontSize: number;
 }
 
 const TRACK_DRAWING_WIDTH = 1920;
@@ -116,7 +115,7 @@ export const TrackCanvas = ({
   const trackDrawing = (tracks as unknown as TrackDrawing[])[trackId];
   const shouldShow = shouldShowTrack(trackId, trackDrawing);
 
-  const driversOffTrack = useDriverOffTrack();
+  const driversOffTrack = useCarIdxOffTrack();
   const driverLivePositions = useDriverLivePositions({
     enabled: displayMode === 'livePosition',
   });
@@ -350,11 +349,7 @@ export const TrackCanvas = ({
       isMinimalTrack
     );
     drawStartFinishLine(cacheCtx, startFinishLine);
-    drawTurnNames(
-      cacheCtx,
-      trackDrawing.turns,
-      turnLabels,
-    );
+    drawTurnNames(cacheCtx, trackDrawing.turns, turnLabels);
     cacheCtx.restore();
 
     // Blit to main canvas so static-only changes are visible immediately

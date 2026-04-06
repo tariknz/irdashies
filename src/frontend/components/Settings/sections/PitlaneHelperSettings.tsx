@@ -72,7 +72,7 @@ export const PitlaneHelperSettings = () => {
             </TabButton>
           </div>
 
-          <div className="pt-4 space-y-4">
+          <div>
             {/* OPTIONS TAB */}
             {activeTab === 'options' && (
               <>
@@ -125,11 +125,11 @@ export const PitlaneHelperSettings = () => {
                         }
                       />
 
-                      <SettingButtonGroupRow<'none' | 'text' | 'european' | 'american'>
+                      <SettingButtonGroupRow<
+                        'none' | 'text' | 'european' | 'american'
+                      >
                         title="Speed Limit Style"
-                        value={
-                          settings.config.speedLimitStyle ?? 'text'
-                        }
+                        value={settings.config.speedLimitStyle ?? 'text'}
                         options={[
                           { label: 'None', value: 'none' },
                           { label: 'Text', value: 'text' },

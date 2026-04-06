@@ -9,3 +9,4 @@ export * from './useSessionVisibility';
 export * from './useThrottledWeather';
 export * from './useTotalRaceLaps';
 export * from './useTotalRaceTime';
+export * from './useCarIdxOffTrack';

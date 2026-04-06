@@ -1,9 +1,10 @@
+import { useEffect, useState } from 'react';
 import {
   GearIcon,
   LockIcon,
   PresentationChartIcon,
 } from '@phosphor-icons/react';
-import { Route, Routes, Navigate } from 'react-router-dom';
+import { Route, Routes, Navigate, useLocation } from 'react-router-dom';
 import { useDashboard } from '@irdashies/context';
 import { SettingsLoader } from './SettingsLoader';
 import { SettingsMenu } from './SettingsMenu';
@@ -16,6 +17,14 @@ export const SettingsLayout = () => {
     currentDashboard,
     currentProfile,
   } = useDashboard();
+  const { pathname } = useLocation();
+  const [editModeAccelerator, setEditModeAccelerator] = useState('F6');
+
+  useEffect(() => {
+    window.keybindingsBridge?.getKeybindings().then((bindings) => {
+      setEditModeAccelerator(bindings['toggle-edit-mode'].accelerator);
+    });
+  }, [pathname]);
 
   const handleToggleLock = async () => {
     await bridge.toggleLockOverlays();
@@ -62,7 +71,9 @@ export const SettingsLayout = () => {
           >
             <LockIcon size={20} weight="bold" />
             <span>Edit Layout</span>
-            <kbd className="ml-1 text-xs bg-black/20 px-1 rounded">F6</kbd>
+            <kbd className="ml-1 text-xs bg-black/20 px-1 rounded">
+              {editModeAccelerator}
+            </kbd>
           </button>
         </div>
       </div>

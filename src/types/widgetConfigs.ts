@@ -492,6 +492,15 @@ export interface LapTimeLogConfig {
   sessionVisibility: SessionVisibilitySettings;
 }
 
+export interface SlowCarAheadConfig {
+  maxDistance: number;
+  slowSpeedThreshold: number;
+  stoppedSpeedThreshold: number;
+  barThickness: number;
+  showOnlyWhenOnTrack?: boolean;
+  sessionVisibility: SessionVisibilitySettings;
+}
+
 // ===========================
 // Widget config map + typed widget
 // ===========================
@@ -521,6 +530,7 @@ export interface WidgetConfigMap {
   twitchchat: TwitchChatConfig;
   laptimelog: LapTimeLogConfig;
   infobar: InformationBarConfig;
+  slowcarahead: SlowCarAheadConfig;
 }
 
 export type TypedDashboardWidget<
@@ -615,3 +625,4 @@ export type TwitchChatWidgetSettings = BaseWidgetSettings<TwitchChatConfig>;
 export type LapTimeLogWidgetSettings = BaseWidgetSettings<LapTimeLogConfig>;
 export type InformationBarWidgetSettings =
   BaseWidgetSettings<InformationBarConfig>;
+export type SlowCarAheadWidgetSettings = BaseWidgetSettings<SlowCarAheadConfig>;

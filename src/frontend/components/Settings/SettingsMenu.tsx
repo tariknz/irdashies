@@ -4,6 +4,7 @@ import {
   UsersIcon,
   TagIcon,
   ScalesIcon,
+  KeyboardIcon,
   WrenchIcon,
   InfoIcon,
 } from '@phosphor-icons/react';
@@ -30,6 +31,12 @@ const generalItems: MenuItem[] = [
     path: '/profiles',
     label: 'Profiles',
     icon: UsersIcon,
+  },
+  {
+    to: '/settings/keybindings',
+    path: '/keybindings',
+    label: 'Key Bindings',
+    icon: KeyboardIcon,
   },
   {
     to: '/settings/driver-tags',
@@ -112,6 +119,12 @@ const widgetItems: MenuItem[] = [
     path: '/relative',
     label: 'Relative',
     widgetType: 'relative',
+  },
+  {
+    to: '/settings/slowcarahead',
+    path: '/slowcarahead',
+    label: 'Slow Car Ahead',
+    widgetType: 'slowcarahead',
   },
   {
     to: '/settings/standings',

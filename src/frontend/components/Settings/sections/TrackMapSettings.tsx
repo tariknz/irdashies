@@ -87,7 +87,7 @@ export const TrackMapSettings = () => {
             </TabButton>
           </div>
 
-          <div className="pt-4">
+          <div>
             {/* TRACK TAB */}
             {activeTab === 'track' && (
               <SettingsSection title="Track Settings">
@@ -138,9 +138,7 @@ export const TrackMapSettings = () => {
 
                 {settings.config.turnLabels?.enabled && (
                   <SettingsSection>
-                    <SettingButtonGroupRow<
-                      'numbers' | 'names' | 'both'
-                    >
+                    <SettingButtonGroupRow<'numbers' | 'names' | 'both'>
                       title="Display Mode"
                       value={settings.config.turnLabels.labelType ?? 'both'}
                       options={[
@@ -150,7 +148,10 @@ export const TrackMapSettings = () => {
                       ]}
                       onChange={(v) =>
                         handleConfigChange({
-                          turnLabels: { ...settings.config.turnLabels, labelType: v },
+                          turnLabels: {
+                            ...settings.config.turnLabels,
+                            labelType: v,
+                          },
                         })
                       }
                     />
@@ -177,7 +178,8 @@ export const TrackMapSettings = () => {
                       min={50}
                       max={150}
                       step={1}
-                      onChange={(v) => handleConfigChange({
+                      onChange={(v) =>
+                        handleConfigChange({
                           turnLabels: {
                             ...settings.config.turnLabels,
                             labelFontSize: v,
