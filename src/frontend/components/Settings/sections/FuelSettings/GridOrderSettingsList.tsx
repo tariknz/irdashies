@@ -1,8 +1,7 @@
-import { DotsSixVerticalIcon } from '@phosphor-icons/react';
-import { ToggleSwitch } from '../../components/ToggleSwitch';
-import { useSortableList } from '../../../SortableList';
+import { SortableList } from '../../../SortableList';
 import { FuelWidgetSettings } from '@irdashies/types';
 import { SettingNumberRow } from '../../components/SettingNumberRow';
+import { DraggableSettingItem } from '../../components/DraggableSettingItem';
 
 interface SortableRow {
   id: string;
@@ -48,57 +47,39 @@ export const GridOrderSettingsList = ({
     if (!items.find((i) => i.id === def.id)) items.push(def);
   });
 
-  const { getItemProps, displayItems } = useSortableList({
-    items,
-    onReorder: (newItems) => onReorder(newItems.map((i) => i.id)),
-    getItemId: (item) => item.id,
-  });
-
   return (
-    <div className="space-y-2 mt-2">
-      {displayItems.map((row) => {
-        const { dragHandleProps, itemProps } = getItemProps(row);
+    <SortableList
+      items={items}
+      onReorder={(newItems) => onReorder(newItems.map((i) => i.id))}
+      className="space-y-2 mt-2"
+      renderItem={(row, sortableProps) => {
         const isEnabled = settings.config[row.configKey] as boolean;
 
         return (
-          <div key={row.id} {...itemProps}>
-            <div className="flex flex-col bg-slate-800/50 p-1.5 rounded border border-transparent hover:border-slate-600 transition-colors">
-              <div className="flex items-center justify-between group">
-                <div className="flex items-center gap-2 flex-1">
-                  <div
-                    {...dragHandleProps}
-                    className="cursor-grab opacity-60 hover:opacity-100 transition-opacity p-1 hover:bg-slate-600 rounded text-slate-400"
-                  >
-                    <DotsSixVerticalIcon size={14} />
-                  </div>
-                  <span className="text-sm text-slate-300 font-medium">
-                    {row.label}
-                  </span>
-                </div>
-                <ToggleSwitch
-                  enabled={isEnabled}
-                  onToggle={(val) => {
-                    handleConfigChange({ [row.configKey]: val });
-                  }}
+          <DraggableSettingItem
+            key={row.id}
+            label={row.label}
+            enabled={isEnabled}
+            onToggle={(val) => {
+              handleConfigChange({ [row.configKey]: val });
+            }}
+            sortableProps={sortableProps}
+          >
+            {row.id === 'avg' && isEnabled && (
+              <div className="pl-12 pt-4">
+                <SettingNumberRow
+                  title="Average Laps"
+                  value={settings.config.avgLapsCount ?? 3}
+                  min={1}
+                  max={50}
+                  step={1}
+                  onChange={(v) => handleConfigChange({ avgLapsCount: v })}
                 />
               </div>
-
-              {row.id === 'avg' && isEnabled && (
-                <div className="pl-12 pt-4">
-                  <SettingNumberRow
-                    title="Average Laps"
-                    value={settings.config.avgLapsCount ?? 3}
-                    min={1}
-                    max={50}
-                    step={1}
-                    onChange={(v) => handleConfigChange({ avgLapsCount: v })}
-                  />
-                </div>
-              )}
-            </div>
-          </div>
+            )}
+          </DraggableSettingItem>
         );
-      })}
-    </div>
+      }}
+    />
   );
 };

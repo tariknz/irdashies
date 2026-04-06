@@ -8,8 +8,8 @@ import {
 } from '@irdashies/types';
 import { ToggleSwitch } from '../components/ToggleSwitch';
 import { TabButton } from '../components/TabButton';
-import { useSortableList } from '../../SortableList';
-import { DotsSixVerticalIcon } from '@phosphor-icons/react';
+import { SortableList } from '../../SortableList';
+import { DraggableSettingItem } from '../components/DraggableSettingItem';
 import { BadgeFormatPreview } from '../components/BadgeFormatPreview';
 import {
   SESSION_BAR_ITEM_LABELS,
@@ -89,44 +89,31 @@ const DisplaySettingsList = ({
     })
     .filter((s): s is SortableSetting => s !== null);
 
-  const { getItemProps, displayItems } = useSortableList({
-    items,
-    onReorder: (newItems) => onReorder(newItems.map((i) => i.id)),
-    getItemId: (item) => item.id,
-  });
-
   return (
-    <div className="space-y-3">
-      {displayItems.map((setting) => {
-        const { dragHandleProps, itemProps } = getItemProps(setting);
+    <SortableList
+      items={items}
+      onReorder={(newItems) => onReorder(newItems.map((i) => i.id))}
+      className="space-y-3"
+      renderItem={(setting, sortableProps) => {
         const configValue = settings.config[setting.configKey];
         const isEnabled = (configValue as { enabled: boolean }).enabled;
 
         return (
-          <div key={setting.id} {...itemProps}>
-            <div className="flex items-center justify-between group">
-              <div className="flex items-center gap-2 flex-1">
-                <div
-                  {...dragHandleProps}
-                  className="cursor-grab opacity-60 hover:opacity-100 transition-opacity p-1 hover:bg-slate-600 rounded"
-                >
-                  <DotsSixVerticalIcon size={16} className="text-slate-400" />
-                </div>
-                <span className="text-sm text-slate-300">{setting.label}</span>
-              </div>
-              <ToggleSwitch
-                enabled={isEnabled}
-                onToggle={(enabled) => {
-                  const cv = settings.config[setting.configKey] as {
-                    enabled: boolean;
-                    [key: string]: unknown;
-                  };
-                  handleConfigChange({
-                    [setting.configKey]: { ...cv, enabled },
-                  });
-                }}
-              />
-            </div>
+          <DraggableSettingItem
+            key={setting.id}
+            label={setting.label}
+            enabled={isEnabled}
+            onToggle={(enabled) => {
+              const cv = settings.config[setting.configKey] as {
+                enabled: boolean;
+                [key: string]: unknown;
+              };
+              handleConfigChange({
+                [setting.configKey]: { ...cv, enabled },
+              });
+            }}
+            sortableProps={sortableProps}
+          >
             {setting.configKey === 'badge' &&
               (configValue as { enabled: boolean }).enabled && (
                 <div className="mt-3">
@@ -216,7 +203,7 @@ const DisplaySettingsList = ({
             {(setting.configKey === 'fastestTime' ||
               setting.configKey === 'lastTime') &&
               (configValue as { enabled: boolean }).enabled && (
-                <div className="flex items-center justify-between pl-4 mt-2">
+                <div className="flex items-center justify-between mt-2">
                   <span className="text-sm text-slate-300"></span>
                   <select
                     value={
@@ -377,10 +364,10 @@ const DisplaySettingsList = ({
                   />
                 </div>
               )}
-          </div>
+          </DraggableSettingItem>
         );
-      })}
-    </div>
+      }}
+    />
   );
 };
 
@@ -403,16 +390,12 @@ const BarItemsList = ({
 }: BarItemsListProps) => {
   const wrappedItems = items.map((id) => ({ id }));
 
-  const { getItemProps, displayItems } = useSortableList({
-    items: wrappedItems,
-    onReorder: (newItems) => onReorder(newItems.map((i) => i.id)),
-    getItemId: (item) => item.id,
-  });
-
   return (
-    <div className="space-y-3 pl-4">
-      {displayItems.map((item) => {
-        const { dragHandleProps, itemProps } = getItemProps(item);
+    <SortableList
+      items={wrappedItems}
+      onReorder={(newItems) => onReorder(newItems.map((i) => i.id))}
+      className="space-y-3"
+      renderItem={(item, sortableProps) => {
         const itemConfig = (
           settings.config[
             barType
@@ -433,55 +416,41 @@ const BarItemsList = ({
         }
 
         return (
-          <div key={item.id} {...itemProps}>
-            <div className="flex items-center justify-between group">
-              <div className="flex items-center gap-2 flex-1">
-                <div
-                  {...dragHandleProps}
-                  className="cursor-grab opacity-60 hover:opacity-100 transition-opacity p-1 hover:bg-slate-600 rounded"
-                >
-                  <DotsSixVerticalIcon size={16} className="text-slate-400" />
-                </div>
-                <span className="text-sm text-slate-300">
-                  {SESSION_BAR_ITEM_LABELS[item.id]}
-                </span>
-              </div>
-              <ToggleSwitch
-                enabled={itemConfig?.enabled ?? true}
-                onToggle={(enabled) => {
-                  const currentUnit =
-                    itemConfig && 'unit' in itemConfig
-                      ? itemConfig.unit
-                      : 'Metric';
-                  const currentSpeedPosition =
-                    (itemConfig as { speedPosition?: 'left' | 'right' })
-                      ?.speedPosition ?? 'right';
-                  handleConfigChange({
-                    [barType]: {
-                      ...settings.config[barType],
-                      [item.id]:
-                        item.id === 'airTemperature' ||
-                        item.id === 'trackTemperature'
-                          ? { enabled, unit: currentUnit }
-                          : item.id === 'wind'
-                            ? {
-                                enabled,
-                                speedPosition: currentSpeedPosition,
-                              }
-                            : item.id === 'sessionTime' ||
-                                item.id === 'sessionLaps'
-                              ? { ...(itemConfig as object), enabled }
-                              : { enabled },
-                    },
-                  });
-                }}
-              />
-            </div>
+          <DraggableSettingItem
+            key={item.id}
+            label={SESSION_BAR_ITEM_LABELS[item.id]}
+            enabled={itemConfig?.enabled ?? true}
+            onToggle={(enabled) => {
+              const currentUnit =
+                itemConfig && 'unit' in itemConfig ? itemConfig.unit : 'Metric';
+              const currentSpeedPosition =
+                (itemConfig as { speedPosition?: 'left' | 'right' })
+                  ?.speedPosition ?? 'right';
+              handleConfigChange({
+                [barType]: {
+                  ...settings.config[barType],
+                  [item.id]:
+                    item.id === 'airTemperature' ||
+                    item.id === 'trackTemperature'
+                      ? { enabled, unit: currentUnit }
+                      : item.id === 'wind'
+                        ? {
+                            enabled,
+                            speedPosition: currentSpeedPosition,
+                          }
+                        : item.id === 'sessionTime' || item.id === 'sessionLaps'
+                          ? { ...(itemConfig as object), enabled }
+                          : { enabled },
+                },
+              });
+            }}
+            sortableProps={sortableProps}
+          >
             {(item.id === 'airTemperature' || item.id === 'trackTemperature') &&
               itemConfig &&
               'enabled' in itemConfig &&
               itemConfig.enabled && (
-                <div className="flex items-center justify-between pl-4 mt-2">
+                <div className="flex items-center justify-between mt-2">
                   <span></span>
                   <select
                     value={
@@ -514,7 +483,7 @@ const BarItemsList = ({
               itemConfig &&
               'enabled' in itemConfig &&
               itemConfig.enabled && (
-                <div className="flex items-center justify-end gap-2 pl-4 mt-2">
+                <div className="flex items-center justify-end gap-2 mt-2">
                   {(['left', 'right'] as const).map((pos) => {
                     const currentPos =
                       (itemConfig as { speedPosition?: 'left' | 'right' })
@@ -594,7 +563,7 @@ const BarItemsList = ({
               itemConfig &&
               'enabled' in itemConfig &&
               itemConfig.enabled && (
-                <div className="flex items-center justify-end gap-3 pl-4 mt-2">
+                <div className="flex items-center justify-end gap-3 mt-2">
                   <span></span>
                   <select
                     value={'mode' in itemConfig ? itemConfig.mode : 'Remaining'}
@@ -664,10 +633,10 @@ const BarItemsList = ({
                   </select>
                 </div>
               )}
-          </div>
+          </DraggableSettingItem>
         );
-      })}
-    </div>
+      }}
+    />
   );
 };
 
@@ -894,7 +863,7 @@ export const RelativeSettings = () => {
                   />
 
                   {settings.config.headerBar.enabled && (
-                    <SettingsSection>
+                    <div className="space-y-4">
                       <BarItemsList
                         items={settings.config.headerBar.displayOrder}
                         onReorder={(newOrder) => {
@@ -923,7 +892,7 @@ export const RelativeSettings = () => {
                           });
                         }}
                       />
-                    </SettingsSection>
+                    </div>
                   )}
                 </SettingsSection>
               )}
@@ -945,7 +914,7 @@ export const RelativeSettings = () => {
                   />
 
                   {settings.config.footerBar.enabled && (
-                    <SettingsSection>
+                    <div className="space-y-4">
                       <BarItemsList
                         items={settings.config.footerBar.displayOrder}
                         onReorder={(newOrder) => {
@@ -974,7 +943,7 @@ export const RelativeSettings = () => {
                           });
                         }}
                       />
-                    </SettingsSection>
+                    </div>
                   )}
                 </SettingsSection>
               )}

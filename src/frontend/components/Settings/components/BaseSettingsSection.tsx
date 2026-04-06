@@ -160,7 +160,7 @@ export const BaseSettingsSection = <T,>({
         className={`${disableInternalScroll ? '' : 'flex-1 overflow-y-auto min-h-0'} mt-4`}
       >
         {children && (
-          <div className="space-y-4 p-4">
+          <div className="space-y-4">
             {typeof children === 'function'
               ? children(handleConfigChange)
               : children}
