@@ -18,7 +18,7 @@ export const ChatMessageList = ({
   background,
 }: ChatMessageListProps) => (
   <div
-    className="w-full h-full flex flex-col justify-end bg-slate-800/[var(--bg-opacity)] rounded-sm px-3 py-2 text-white align-bottom border-0 transition-all duration-300"
+    className="w-full h-full flex flex-col justify-end overflow-hidden bg-slate-800/[var(--bg-opacity)] rounded-sm px-3 py-2 text-white align-bottom border-0 transition-all duration-300"
     style={
       {
         '--bg-opacity': `${background.opacity}%`,
