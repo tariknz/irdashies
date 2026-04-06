@@ -9,7 +9,6 @@ export const useFlagSettings = () => {
 
   return {
     enabled: saved?.enabled ?? true,
-    showOnlyWhenOnTrack: saved?.config?.showOnlyWhenOnTrack ?? true,
     showLabel: saved?.config?.showLabel ?? true,
     showNoFlagState: saved?.config?.showNoFlagState ?? true,
     matrixMode:
@@ -18,12 +17,5 @@ export const useFlagSettings = () => {
     blinkPeriod: saved?.config?.blinkPeriod ?? 0.5,
     enableGlow: saved?.config?.enableGlow ?? true,
     doubleFlag: saved?.config?.doubleFlag ?? false,
-    sessionVisibility: saved?.config?.sessionVisibility ?? {
-      race: true,
-      loneQualify: true,
-      openQualify: true,
-      practice: true,
-      offlineTesting: true,
-    },
   };
 };

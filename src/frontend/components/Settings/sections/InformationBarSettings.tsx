@@ -1,51 +1,19 @@
-import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
-import {
-  InformationBarWidgetSettings,
-  SettingsTabType,
-  getWidgetDefaultConfig,
-} from '@irdashies/types';
-import { useDashboard } from '@irdashies/context';
 import { TabButton } from '../components/TabButton';
 import { SettingsSection } from '../components/SettingSection';
-import { SettingToggleRow } from '../components/SettingToggleRow';
 import { SettingSliderRow } from '../components/SettingSliderRow';
 import { SettingActionButton } from '../components/SettingActionButton';
 import {
   SessionBarItemsList,
   SessionBarItemConfig,
 } from '../components/SessionBarItemsList';
-import { SessionVisibility } from '../components/SessionVisibility';
 import { DEFAULT_SESSION_BAR_DISPLAY_ORDER } from '../sessionBarConstants';
-import { SettingDivider } from '../components/SettingDivider';
-
-const SETTING_ID = 'infobar';
-const defaultConfig = getWidgetDefaultConfig('infobar');
+import { SettingVisibilitySection } from '../components/SettingVisibilitySection';
+import { useWidgetSettingsSection } from '../hooks/useWidgetSettingsSection';
 
 export const InformationBarSettings = () => {
-  const { currentDashboard } = useDashboard();
-  const savedSettings = currentDashboard?.widgets.find(
-    (w) => w.id === SETTING_ID
-  ) as InformationBarWidgetSettings | undefined;
-
-  const [settings, setSettings] = useState<InformationBarWidgetSettings>({
-    enabled: savedSettings?.enabled ?? true,
-    config:
-      (savedSettings?.config as InformationBarWidgetSettings['config']) ??
-      defaultConfig,
-  });
-
-  const [activeTab, setActiveTab] = useState<SettingsTabType>(
-    () => (localStorage.getItem('infobarTab') as SettingsTabType) || 'display'
-  );
-
-  useEffect(() => {
-    localStorage.setItem('infobarTab', activeTab);
-  }, [activeTab]);
-
-  if (!currentDashboard) {
-    return <>Loading...</>;
-  }
+  const { settings, setSettings, activeTab, setActiveTab } =
+    useWidgetSettingsSection('infobar');
 
   return (
     <BaseSettingsSection
@@ -53,9 +21,9 @@ export const InformationBarSettings = () => {
       description="A standalone bar displaying session and timing information."
       settings={settings}
       onSettingsChange={setSettings}
-      widgetId="infobar"
+      widgetType="infobar"
     >
-      {(handleConfigChange) => (
+      {(handleConfigChange, handleVisibilityConfigChange) => (
         <div className="space-y-4">
           <div className="flex border-b border-slate-700/50">
             <TabButton
@@ -151,23 +119,10 @@ export const InformationBarSettings = () => {
             )}
 
             {activeTab === 'visibility' && (
-              <SettingsSection title="Session Visibility">
-                <SessionVisibility
-                  sessionVisibility={settings.config.sessionVisibility}
-                  handleConfigChange={handleConfigChange}
-                />
-
-                <SettingDivider />
-
-                <SettingToggleRow
-                  title="Show only when on track"
-                  description="Hide the widget when you are not in the car"
-                  enabled={settings.config.showOnlyWhenOnTrack}
-                  onToggle={(v) =>
-                    handleConfigChange({ showOnlyWhenOnTrack: v })
-                  }
-                />
-              </SettingsSection>
+              <SettingVisibilitySection
+                config={settings.visibilityConfig}
+                handleConfigChange={handleVisibilityConfigChange}
+              />
             )}
           </div>
         </div>

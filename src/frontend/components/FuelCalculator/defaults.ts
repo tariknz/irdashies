@@ -18,7 +18,6 @@ export const DEFAULT_FUEL_LAYOUT_TREE: LayoutNode = {
 
 // Default Configuration Object
 export const defaultFuelCalculatorSettings: FuelCalculatorSettings = {
-  showOnlyWhenOnTrack: true,
   fuelUnits: 'L',
   layout: 'vertical',
   showConsumption: true,
@@ -44,13 +43,6 @@ export const defaultFuelCalculatorSettings: FuelCalculatorSettings = {
   targetPitLap: 15,
   targetPitLapBasis: 'avg',
 
-  sessionVisibility: {
-    race: true,
-    loneQualify: true,
-    openQualify: true,
-    practice: true,
-    offlineTesting: true,
-  },
   layoutConfig: [], // Default empty
   layoutTree: undefined, // Will be migrated on load
   consumptionGridOrder: ['curr', 'avg', 'max', 'last', 'min', 'qual'],

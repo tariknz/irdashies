@@ -2,7 +2,6 @@ import { useDashboard } from '@irdashies/context';
 import { FasterCarsFromBehindWidgetSettings } from '@irdashies/types';
 
 const DEFAULT_CONFIG: FasterCarsFromBehindWidgetSettings['config'] = {
-  showOnlyWhenOnTrack: true,
   distanceThreshold: -1.5,
   numberDriversBehind: 1,
   alignDriverBoxes: 'Top',
@@ -13,13 +12,6 @@ const DEFAULT_CONFIG: FasterCarsFromBehindWidgetSettings['config'] = {
   showBadge: true,
   badgeFormat: 'license-color-rating-bw',
   onlyShowFasterClasses: true,
-  sessionVisibility: {
-    race: true,
-    loneQualify: false,
-    openQualify: true,
-    practice: true,
-    offlineTesting: true,
-  },
 };
 
 export const useFasterCarsSettings = () => {
@@ -30,9 +22,6 @@ export const useFasterCarsSettings = () => {
   )?.config;
 
   return {
-    showOnlyWhenOnTrack:
-      (settings?.showOnlyWhenOnTrack as boolean) ??
-      DEFAULT_CONFIG.showOnlyWhenOnTrack,
     distanceThreshold:
       settings?.distanceThreshold ?? DEFAULT_CONFIG.distanceThreshold,
     numberDriversBehind:
@@ -49,7 +38,5 @@ export const useFasterCarsSettings = () => {
     badgeFormat: settings?.badgeFormat ?? DEFAULT_CONFIG.badgeFormat,
     onlyShowFasterClasses:
       settings?.onlyShowFasterClasses ?? DEFAULT_CONFIG.onlyShowFasterClasses,
-    sessionVisibility:
-      settings?.sessionVisibility ?? DEFAULT_CONFIG.sessionVisibility,
   } as FasterCarsFromBehindWidgetSettings['config'];
 };

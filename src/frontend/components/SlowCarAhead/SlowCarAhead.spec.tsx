@@ -11,13 +11,6 @@ const mockSettings = (
     stoppedSpeedThreshold: 5,
     maxDistance: 250,
     barThickness: 10,
-    sessionVisibility: {
-      race: true,
-      loneQualify: true,
-      openQualify: true,
-      practice: true,
-      offlineTesting: true,
-    },
   };
 
   return {

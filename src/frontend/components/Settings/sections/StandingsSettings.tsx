@@ -1,11 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
-import {
-  StandingsWidgetSettings,
-  SettingsTabType,
-  getWidgetDefaultConfig,
-} from '@irdashies/types';
-import { useDashboard } from '@irdashies/context';
+import { StandingsWidgetSettings } from '@irdashies/types';
 import { ToggleSwitch } from '../components/ToggleSwitch';
 import { TabButton } from '../components/TabButton';
 import { SortableList } from '../../SortableList';
@@ -13,19 +8,18 @@ import { DraggableSettingItem } from '../components/DraggableSettingItem';
 import { BadgeFormatPreview } from '../components/BadgeFormatPreview';
 import { DriverNamePreview } from '../components/DriverNamePreview';
 import { DEFAULT_SESSION_BAR_DISPLAY_ORDER } from '../sessionBarConstants';
-import { SessionVisibility } from '../components/SessionVisibility';
 import { SettingDivider } from '../components/SettingDivider';
 import { SettingsSection } from '../components/SettingSection';
 import { SettingToggleRow } from '../components/SettingToggleRow';
 import { SettingActionButton } from '../components/SettingActionButton';
 import { SettingSliderRow } from '../components/SettingSliderRow';
 import { SettingSelectRow } from '../components/SettingSelectRow';
+import { useWidgetSettingsSection } from '../hooks/useWidgetSettingsSection';
 import {
-  SessionBarItemsList,
   SessionBarItemConfig,
+  SessionBarItemsList,
 } from '../components/SessionBarItemsList';
-
-const SETTING_ID = 'standings';
+import { SettingVisibilitySection } from '../components/SettingVisibilitySection';
 
 interface SortableSetting {
   id: string;
@@ -88,8 +82,6 @@ const sortableSettings: SortableSetting[] = [
     hasSubSetting: true,
   },
 ];
-
-const defaultConfig = getWidgetDefaultConfig('standings');
 
 interface DisplaySettingsListProps {
   itemsOrder: string[];
@@ -515,40 +507,20 @@ const DisplaySettingsList = ({
 };
 
 export const StandingsSettings = () => {
-  const { currentDashboard } = useDashboard();
-  const savedSettings = currentDashboard?.widgets.find(
-    (w) => w.id === SETTING_ID
-  ) as StandingsWidgetSettings | undefined;
-  const [settings, setSettings] = useState<StandingsWidgetSettings>({
-    enabled: savedSettings?.enabled ?? false,
-    config:
-      (savedSettings?.config as StandingsWidgetSettings['config']) ??
-      defaultConfig,
-  });
+  const { settings, setSettings, activeTab, setActiveTab } =
+    useWidgetSettingsSection('standings');
+
   const [itemsOrder, setItemsOrder] = useState(settings.config.displayOrder);
-
-  // Tab state with persistence
-  const [activeTab, setActiveTab] = useState<SettingsTabType>(
-    () => (localStorage.getItem('standingsTab') as SettingsTabType) || 'display'
-  );
-
-  useEffect(() => {
-    localStorage.setItem('standingsTab', activeTab);
-  }, [activeTab]);
-
-  if (!currentDashboard) {
-    return <>Loading...</>;
-  }
 
   return (
     <BaseSettingsSection
       title="Standings"
       description="Configure how the standings widget appears and behaves."
+      widgetType={'standings'}
       settings={settings}
       onSettingsChange={setSettings}
-      widgetId={SETTING_ID}
     >
-      {(handleConfigChange) => {
+      {(handleConfigChange, handleVisibilityConfigChange) => {
         const handleDisplayOrderChange = (newOrder: string[]) => {
           setItemsOrder(newOrder);
           handleConfigChange({ displayOrder: newOrder });
@@ -617,7 +589,6 @@ export const StandingsSettings = () => {
                     label="Reset to Default Order"
                     onClick={() => {
                       const defaultOrder = sortableSettings.map((s) => s.id);
-                      setItemsOrder(defaultOrder);
                       handleConfigChange({ displayOrder: defaultOrder });
                     }}
                   />
@@ -720,8 +691,8 @@ export const StandingsSettings = () => {
                     <SettingToggleRow
                       title="Use Live Position Standings"
                       description="If enabled, live telemetry will be used to compute driver
-                          positions. This may be less stable but will update live and
-                          not only on start/finish line."
+                            positions. This may be less stable but will update live and
+                            not only on start/finish line."
                       enabled={settings.config.useLivePosition ?? false}
                       onToggle={(newValue) =>
                         handleConfigChange({ useLivePosition: newValue })
@@ -1098,23 +1069,10 @@ export const StandingsSettings = () => {
 
               {/* VISIBILITY TAB */}
               {activeTab === 'visibility' && (
-                <SettingsSection title="Session Visibility">
-                  <SessionVisibility
-                    sessionVisibility={settings.config.sessionVisibility}
-                    handleConfigChange={handleConfigChange}
-                  />
-
-                  <SettingDivider />
-
-                  <SettingToggleRow
-                    title="Show only when on track"
-                    description="If enabled, standings will only be shown when driving"
-                    enabled={settings.config.showOnlyWhenOnTrack ?? false}
-                    onToggle={(newValue) =>
-                      handleConfigChange({ showOnlyWhenOnTrack: newValue })
-                    }
-                  />
-                </SettingsSection>
+                <SettingVisibilitySection
+                  config={settings.visibilityConfig}
+                  handleConfigChange={handleVisibilityConfigChange}
+                />
               )}
             </div>
           </div>

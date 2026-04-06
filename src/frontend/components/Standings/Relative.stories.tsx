@@ -9,7 +9,6 @@ import {
   DashboardProvider,
   SessionProvider,
   TelemetryProvider,
-  useDrivingState,
   usePitLapStoreUpdater,
   useWeekendInfoNumCarClasses,
 } from '@irdashies/context';
@@ -99,7 +98,6 @@ function TelemetryDecoratorWithConfigAndGeneralSettings(
 const RelativeWithoutHeaderFooter = () => {
   const settings = useRelativeSettings();
   const buffer = settings?.buffer ?? 3;
-  const { isDriving } = useDrivingState();
   const standings = useDriverRelatives({ buffer });
   const highlightColor = useHighlightColor();
   const numCarClasses = useWeekendInfoNumCarClasses();
@@ -277,11 +275,6 @@ const RelativeWithoutHeaderFooter = () => {
     isMultiClass,
     highlightColor,
   ]);
-
-  // Show only when on track setting
-  if (settings?.showOnlyWhenOnTrack && !isDriving) {
-    return <></>;
-  }
 
   // If no player found, render empty table with consistent height
   if (playerIndex === -1) {
@@ -525,7 +518,6 @@ export const TeamSession: Story = {
 const RelativeWithoutHeader = () => {
   const settings = useRelativeSettings();
   const buffer = settings?.buffer ?? 3;
-  const { isDriving } = useDrivingState();
   const standings = useDriverRelatives({ buffer });
   const highlightColor = useHighlightColor();
   const numCarClasses = useWeekendInfoNumCarClasses();
@@ -703,11 +695,6 @@ const RelativeWithoutHeader = () => {
     isMultiClass,
     highlightColor,
   ]);
-
-  // Show only when on track setting
-  if (settings?.showOnlyWhenOnTrack && !isDriving) {
-    return <></>;
-  }
 
   // If no player found, render empty table with consistent height
   if (playerIndex === -1) {
@@ -760,7 +747,6 @@ export const NoHeader: Story = {
 const RelativeWithoutFooter = () => {
   const settings = useRelativeSettings();
   const buffer = settings?.buffer ?? 3;
-  const { isDriving } = useDrivingState();
   const standings = useDriverRelatives({ buffer });
   const highlightColor = useHighlightColor();
   const numCarClasses = useWeekendInfoNumCarClasses();
@@ -938,11 +924,6 @@ const RelativeWithoutFooter = () => {
     isMultiClass,
     highlightColor,
   ]);
-
-  // Show only when on track setting
-  if (settings?.showOnlyWhenOnTrack && !isDriving) {
-    return <></>;
-  }
 
   // If no player found, render empty table with consistent height
   if (playerIndex === -1) {

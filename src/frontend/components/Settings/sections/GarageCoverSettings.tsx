@@ -3,32 +3,25 @@ import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import { useDashboard } from '@irdashies/context';
 import {
   GarageCoverWidgetSettings,
-  getWidgetDefaultConfig,
+  getWidgetDefaultSettings,
 } from '@irdashies/types';
 import { DashboardBridge } from '@irdashies/types';
+import { useWidgetSettingsSection } from '../hooks/useWidgetSettingsSection';
 
-const SETTING_ID = 'garagecover';
 const LOCALSTORAGE_KEY = 'garagecover-image';
 
-const defaultConfig = getWidgetDefaultConfig('garagecover');
+const defaultSettings = getWidgetDefaultSettings('garagecover');
 
 export const GarageCoverSettings = () => {
   const { currentDashboard, bridge } = useDashboard();
-  const [settings, setSettings] = useState<GarageCoverWidgetSettings>({
-    enabled:
-      currentDashboard?.widgets.find((w) => w.id === SETTING_ID)?.enabled ??
-      false,
-    config:
-      (currentDashboard?.widgets.find((w) => w.id === SETTING_ID)?.config as
-        | GarageCoverWidgetSettings['config']
-        | undefined) ?? defaultConfig,
-  });
   const [serverPort, setServerPort] = useState<number>(3000);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const configChangeHandlerRef = useRef<
     ((newConfig: Partial<GarageCoverWidgetSettings['config']>) => void) | null
   >(null);
   const hasInitializedRef = useRef(false);
+
+  const { settings, setSettings } = useWidgetSettingsSection('garagecover');
 
   useEffect(() => {
     if (bridge?.getComponentServerPort) {
@@ -70,18 +63,19 @@ export const GarageCoverSettings = () => {
     if (!currentDashboard || hasInitializedRef.current) return;
 
     hasInitializedRef.current = true;
-    const widget = currentDashboard.widgets.find((w) => w.id === SETTING_ID);
+    const widget = currentDashboard.widgets.find((w) => w.id === 'garagecover');
     if (!widget) return;
 
     const newSettings = {
+      ...settings,
       enabled: widget.enabled ?? false,
       config:
         (widget.config as unknown as GarageCoverWidgetSettings['config']) ||
-        defaultConfig,
+        defaultSettings['config'],
     };
     setTimeout(() => setSettings(newSettings), 0);
     // Preview will be loaded by the next effect when settings change
-  }, [currentDashboard]);
+  }, [currentDashboard, setSettings, settings]);
 
   // Load preview when imageFilename changes
   useEffect(() => {
@@ -157,17 +151,13 @@ export const GarageCoverSettings = () => {
     }
   };
 
-  if (!currentDashboard) {
-    return <>Loading...</>;
-  }
-
   return (
     <BaseSettingsSection
       title="Garage Cover"
       description="Configure settings for the garage cover widget that displays when in the garage."
+      widgetType={'garagecover'}
       settings={settings}
       onSettingsChange={setSettings}
-      widgetId={SETTING_ID}
     >
       {(handleConfigChange) => {
         // Store the handleConfigChange from BaseSettingsSection for use in async callbacks

@@ -1,16 +1,9 @@
 import type { DashboardWidget } from './dashboardLayout';
+import { nameof } from '@irdashies/utils/nameof';
 
 // ===========================
 // Shared primitive types
 // ===========================
-
-export interface SessionVisibilitySettings {
-  race: boolean;
-  loneQualify: boolean;
-  openQualify: boolean;
-  practice: boolean;
-  offlineTesting: boolean;
-}
 
 export type TimeFormat =
   | 'full'
@@ -29,6 +22,40 @@ export type NameFormat =
   | 'surname';
 
 export type TemperatureUnit = 'Metric' | 'Imperial';
+
+// ===========================
+// Shared visibility config types
+// ===========================
+
+export type NoVisibilityConfig = object;
+
+export interface SessionVisibilityConfig {
+  sessionVisibility: {
+    race: boolean;
+    loneQualify: boolean;
+    openQualify: boolean;
+    practice: boolean;
+    offlineTesting: boolean;
+  };
+}
+
+export interface OnTrackVisibilityConfig {
+  showOnlyWhenOnTrack: boolean;
+}
+
+export const isSessionVisibilityConfig = (
+  object: unknown
+): object is SessionVisibilityConfig =>
+  typeof object === 'object' &&
+  object !== null &&
+  nameof<SessionVisibilityConfig>('sessionVisibility') in object;
+
+export const isOnTrackVisibilityConfig = (
+  object: unknown
+): object is OnTrackVisibilityConfig =>
+  typeof object === 'object' &&
+  object !== null &&
+  nameof<OnTrackVisibilityConfig>('showOnlyWhenOnTrack') in object;
 
 // ===========================
 // Shared widget config sub-types
@@ -148,7 +175,6 @@ export interface StandingsConfig {
   titleBar: { enabled: boolean; progressBar: { enabled: boolean } };
   headerBar: SessionBarConfig;
   footerBar: SessionBarConfig;
-  showOnlyWhenOnTrack: boolean;
   useLivePosition?: boolean;
   position: { enabled: boolean };
   driverName: DriverNameConfig;
@@ -156,7 +182,6 @@ export interface StandingsConfig {
   pitStatus: PitStatusConfig;
   driverTag: { enabled: boolean; widthPx?: number };
   displayOrder: string[];
-  sessionVisibility: SessionVisibilitySettings;
   stylingOptions?: StylingOptions;
   classHeaderStyle?: ClassHeaderStyle;
 }
@@ -173,7 +198,6 @@ export interface RelativeConfig {
   titleBar: { enabled: boolean; progressBar: { enabled: boolean } };
   headerBar: SessionBarConfig;
   footerBar: SessionBarConfig;
-  showOnlyWhenOnTrack: boolean;
   badge: { enabled: boolean; badgeFormat: RelativeBadgeFormat };
   iratingChange: { enabled: boolean };
   positionChange?: { enabled: boolean };
@@ -185,14 +209,12 @@ export interface RelativeConfig {
   driverTag: { enabled: boolean; widthPx?: number };
   displayOrder: string[];
   useLivePosition?: boolean;
-  sessionVisibility: SessionVisibilitySettings;
   stylingOptions?: StylingOptions;
 }
 
 export interface WeatherConfig {
   background: { opacity: number };
   displayOrder: string[];
-  showOnlyWhenOnTrack?: boolean;
   airTemp: { enabled: boolean };
   trackTemp: { enabled: boolean };
   wetness: { enabled: boolean };
@@ -200,7 +222,6 @@ export interface WeatherConfig {
   precipitation: { enabled: boolean };
   wind: { enabled: boolean };
   units: 'auto' | 'Metric' | 'Imperial';
-  sessionVisibility: SessionVisibilitySettings;
 }
 
 export interface TrackMapConfig {
@@ -219,8 +240,6 @@ export interface TrackMapConfig {
   trackLineWidth: number;
   trackOutlineWidth: number;
   useHighlightColor: boolean;
-  showOnlyWhenOnTrack: boolean;
-  sessionVisibility: SessionVisibilitySettings;
   styling?: { isMinimalTrack?: boolean; isMinimalCar?: boolean };
 }
 
@@ -234,8 +253,6 @@ export interface FlatTrackMapConfig {
   trackOutlineWidth: number;
   invertTrackColors: boolean;
   useHighlightColor: boolean;
-  showOnlyWhenOnTrack: boolean;
-  sessionVisibility: SessionVisibilitySettings;
 }
 
 export interface SteerConfig {
@@ -276,8 +293,6 @@ export interface InputConfig {
   };
   background: { opacity: number };
   displayOrder: string[];
-  showOnlyWhenOnTrack: boolean;
-  sessionVisibility: SessionVisibilitySettings;
 }
 
 export interface TachometerConfig {
@@ -301,8 +316,6 @@ export interface TachometerConfig {
     >;
   };
   background: { opacity: number };
-  showOnlyWhenOnTrack: boolean;
-  sessionVisibility: SessionVisibilitySettings;
 }
 
 export type LayoutDirection = 'row' | 'col';
@@ -331,7 +344,6 @@ export interface BoxConfig {
 }
 
 export interface FuelConfig {
-  showOnlyWhenOnTrack: boolean;
   fuelUnits: 'L' | 'gal';
   layout: 'vertical' | 'horizontal';
   showConsumption: boolean;
@@ -360,7 +372,6 @@ export interface FuelConfig {
   economyPredictMode?: 'live' | 'endOfLap';
   useGeneralFontSize?: boolean;
   useGeneralCompactMode?: boolean;
-  sessionVisibility: SessionVisibilitySettings;
   layoutConfig?: BoxConfig[];
   layoutTree?: LayoutNode;
   widgetStyles?: Record<
@@ -384,14 +395,12 @@ export interface FuelConfig {
 }
 
 export interface BlindSpotMonitorConfig {
-  showOnlyWhenOnTrack?: boolean;
   background?: { opacity: number };
   distAhead: number;
   distBehind: number;
   width?: number;
   borderSize?: number;
   indicatorColor?: number;
-  sessionVisibility: SessionVisibilitySettings;
 }
 
 export interface RejoinIndicatorConfig {
@@ -400,12 +409,10 @@ export interface RejoinIndicatorConfig {
   stopGap: number;
   clearGap?: number;
   width?: number;
-  sessionVisibility: SessionVisibilitySettings;
 }
 
 export interface FlagConfig {
   enabled?: boolean;
-  showOnlyWhenOnTrack: boolean;
   showLabel: boolean;
   matrixMode: '8x8' | '16x16' | 'uniform';
   animate: boolean;
@@ -413,24 +420,24 @@ export interface FlagConfig {
   showNoFlagState: boolean;
   enableGlow: boolean;
   doubleFlag?: boolean;
-  sessionVisibility: SessionVisibilitySettings;
 }
 
 export interface GarageCoverConfig {
   imageFilename: string;
 }
 
+export interface TelemetryInspectorPropertyConfig {
+  source: 'telemetry' | 'session';
+  path: string;
+  label?: string;
+}
+
 export interface TelemetryInspectorConfig {
   background?: { opacity: number };
-  properties?: {
-    source: 'telemetry' | 'session';
-    path: string;
-    label?: string;
-  }[];
+  properties?: TelemetryInspectorPropertyConfig[];
 }
 
 export interface FasterCarsFromBehindConfig {
-  showOnlyWhenOnTrack?: boolean;
   distanceThreshold: number;
   numberDriversBehind?: number;
   alignDriverBoxes?: 'Top' | 'Bottom';
@@ -441,7 +448,6 @@ export interface FasterCarsFromBehindConfig {
   showBadge?: boolean;
   badgeFormat?: string;
   onlyShowFasterClasses: boolean;
-  sessionVisibility: SessionVisibilitySettings;
 }
 
 export interface PitlaneHelperConfig {
@@ -464,7 +470,6 @@ export interface PitlaneHelperConfig {
   showPitExitInputs?: boolean;
   pitExitInputs?: { throttle: boolean; clutch: boolean };
   showInputsPhase?: 'atPitbox' | 'afterPitbox' | 'always';
-  sessionVisibility: SessionVisibilitySettings;
 }
 
 export interface TwitchChatConfig {
@@ -491,8 +496,6 @@ export interface LapTimeLogConfig {
   reverse: boolean;
   background: { opacity: number };
   foreground: { opacity: number };
-  sessionVisibility: SessionVisibilitySettings;
-  showOnlyWhenOnTrack: boolean;
 }
 
 export interface SlowCarAheadConfig {
@@ -500,48 +503,55 @@ export interface SlowCarAheadConfig {
   slowSpeedThreshold: number;
   stoppedSpeedThreshold: number;
   barThickness: number;
-  showOnlyWhenOnTrack?: boolean;
-  sessionVisibility: SessionVisibilitySettings;
 }
-
-// ===========================
-// Widget config map + typed widget
-// ===========================
 
 export interface InformationBarConfig extends SessionBarConfig {
   background: { opacity: number };
-  showOnlyWhenOnTrack: boolean;
-  sessionVisibility: SessionVisibilitySettings;
 }
 
-export interface WidgetConfigMap {
-  standings: StandingsConfig;
-  relative: RelativeConfig;
-  weather: WeatherConfig;
-  map: TrackMapConfig;
-  flatmap: FlatTrackMapConfig;
-  input: InputConfig;
-  tachometer: TachometerConfig;
-  fuel: FuelConfig;
-  blindspotmonitor: BlindSpotMonitorConfig;
-  garagecover: GarageCoverConfig;
-  rejoin: RejoinIndicatorConfig;
-  flag: FlagConfig;
-  telemetryinspector: TelemetryInspectorConfig;
-  fastercarsfrombehind: FasterCarsFromBehindConfig;
-  pitlanehelper: PitlaneHelperConfig;
-  twitchchat: TwitchChatConfig;
-  laptimelog: LapTimeLogConfig;
-  infobar: InformationBarConfig;
-  slowcarahead: SlowCarAheadConfig;
+// ===========================
+// Widget settings map + typed widget
+// ===========================
+
+export interface WidgetSettingsMap {
+  standings: StandingsWidgetSettings;
+  relative: RelativeWidgetSettings;
+  weather: WeatherWidgetSettings;
+  map: TrackMapWidgetSettings;
+  flatmap: FlatTrackMapWidgetSettings;
+  input: InputWidgetSettings;
+  tachometer: TachometerWidgetSettings;
+  fuel: FuelWidgetSettings;
+  blindspotmonitor: BlindSpotMonitorWidgetSettings;
+  garagecover: GarageCoverWidgetSettings;
+  rejoin: RejoinIndicatorWidgetSettings;
+  flag: FlagWidgetSettings;
+  telemetryinspector: TelemetryInspectorWidgetSettings;
+  fastercarsfrombehind: FasterCarsFromBehindWidgetSettings;
+  pitlanehelper: PitlaneHelperWidgetSettings;
+  twitchchat: TwitchChatWidgetSettings;
+  laptimelog: LapTimeLogWidgetSettings;
+  infobar: InformationBarWidgetSettings;
+  slowcarahead: SlowCarAheadWidgetSettings;
 }
+
+/**
+ * Use the WidgetSettingsMap to generate a WidgetConfigMap, mapping the widget type to the widget config.
+ */
+export type WidgetConfigMap<
+  K extends keyof WidgetSettingsMap = keyof WidgetSettingsMap,
+> = {
+  [Id in K]: WidgetSettingsMap[Id]['config'];
+};
 
 export type TypedDashboardWidget<
   K extends keyof WidgetConfigMap = keyof WidgetConfigMap,
 > = {
-  [Id in K]: Omit<DashboardWidget, 'id' | 'config'> & {
+  [Id in K]: Omit<DashboardWidget, 'id' | 'config' | 'visibilityConfig'> & {
     id: Id;
-    config: WidgetConfigMap[Id] & Record<string, unknown>;
+    config: WidgetSettingsMap[Id]['config'] & Record<string, unknown>;
+    visibilityConfig: WidgetSettingsMap[Id]['visibilityConfig'] &
+      Record<string, unknown>;
   };
 }[K];
 
@@ -549,11 +559,15 @@ export type TypedDashboardWidget<
 // Widget settings wrappers
 // ===========================
 
-export interface BaseWidgetSettings<T = Record<string, unknown>> {
+export interface BaseWidgetSettings<
+  TConfig = Record<string, unknown>,
+  TVisibilityConfig = NoVisibilityConfig,
+> {
   id?: string;
   type?: string;
   enabled: boolean;
-  config: T;
+  config: TConfig;
+  visibilityConfig: TVisibilityConfig;
 }
 
 /** Available settings tabs */
@@ -601,31 +615,75 @@ export interface ShiftPointSettings {
   >;
 }
 
-export type StandingsWidgetSettings = BaseWidgetSettings<StandingsConfig>;
-export type RelativeWidgetSettings = BaseWidgetSettings<RelativeConfig>;
-export type WeatherWidgetSettings = BaseWidgetSettings<WeatherConfig>;
-export type TrackMapWidgetSettings = BaseWidgetSettings<TrackMapConfig>;
-export type FlatTrackMapWidgetSettings = BaseWidgetSettings<FlatTrackMapConfig>;
+/** Settings without visibility config */
 export type SteerWidgetSettings = BaseWidgetSettings<SteerConfig>;
-export type InputWidgetSettings = BaseWidgetSettings<InputConfig>;
-export type TachometerWidgetSettings = BaseWidgetSettings<TachometerConfig>;
-export type FuelWidgetSettings = BaseWidgetSettings<FuelConfig>;
-export type BlindSpotMonitorWidgetSettings =
-  BaseWidgetSettings<BlindSpotMonitorConfig>;
-export type RejoinIndicatorWidgetSettings =
-  BaseWidgetSettings<RejoinIndicatorConfig>;
-export type FlagWidgetSettings = BaseWidgetSettings<FlagConfig> & {
-  id: 'flag';
-};
 export type GarageCoverWidgetSettings = BaseWidgetSettings<GarageCoverConfig>;
 export type TelemetryInspectorWidgetSettings =
   BaseWidgetSettings<TelemetryInspectorConfig>;
-export type FasterCarsFromBehindWidgetSettings =
-  BaseWidgetSettings<FasterCarsFromBehindConfig>;
-export type PitlaneHelperWidgetSettings =
-  BaseWidgetSettings<PitlaneHelperConfig>;
 export type TwitchChatWidgetSettings = BaseWidgetSettings<TwitchChatConfig>;
-export type LapTimeLogWidgetSettings = BaseWidgetSettings<LapTimeLogConfig>;
-export type InformationBarWidgetSettings =
-  BaseWidgetSettings<InformationBarConfig>;
-export type SlowCarAheadWidgetSettings = BaseWidgetSettings<SlowCarAheadConfig>;
+
+/** Settings with visibility config */
+export type StandingsWidgetSettings = BaseWidgetSettings<
+  StandingsConfig,
+  SessionVisibilityConfig & OnTrackVisibilityConfig
+>;
+export type RelativeWidgetSettings = BaseWidgetSettings<
+  RelativeConfig,
+  SessionVisibilityConfig & OnTrackVisibilityConfig
+>;
+export type WeatherWidgetSettings = BaseWidgetSettings<
+  WeatherConfig,
+  SessionVisibilityConfig & OnTrackVisibilityConfig
+>;
+export type TrackMapWidgetSettings = BaseWidgetSettings<
+  TrackMapConfig,
+  SessionVisibilityConfig & OnTrackVisibilityConfig
+>;
+export type FlatTrackMapWidgetSettings = BaseWidgetSettings<
+  FlatTrackMapConfig,
+  SessionVisibilityConfig & OnTrackVisibilityConfig
+>;
+export type InputWidgetSettings = BaseWidgetSettings<
+  InputConfig,
+  SessionVisibilityConfig & OnTrackVisibilityConfig
+>;
+export type TachometerWidgetSettings = BaseWidgetSettings<
+  TachometerConfig,
+  SessionVisibilityConfig & OnTrackVisibilityConfig
+>;
+export type FuelWidgetSettings = BaseWidgetSettings<
+  FuelConfig,
+  SessionVisibilityConfig & OnTrackVisibilityConfig
+>;
+export type BlindSpotMonitorWidgetSettings = BaseWidgetSettings<
+  BlindSpotMonitorConfig,
+  SessionVisibilityConfig & OnTrackVisibilityConfig
+>;
+export type RejoinIndicatorWidgetSettings = BaseWidgetSettings<
+  RejoinIndicatorConfig,
+  SessionVisibilityConfig
+>;
+export type FlagWidgetSettings = BaseWidgetSettings<
+  FlagConfig,
+  SessionVisibilityConfig & OnTrackVisibilityConfig
+>;
+export type FasterCarsFromBehindWidgetSettings = BaseWidgetSettings<
+  FasterCarsFromBehindConfig,
+  SessionVisibilityConfig & OnTrackVisibilityConfig
+>;
+export type PitlaneHelperWidgetSettings = BaseWidgetSettings<
+  PitlaneHelperConfig,
+  SessionVisibilityConfig
+>;
+export type LapTimeLogWidgetSettings = BaseWidgetSettings<
+  LapTimeLogConfig,
+  SessionVisibilityConfig & OnTrackVisibilityConfig
+>;
+export type InformationBarWidgetSettings = BaseWidgetSettings<
+  InformationBarConfig,
+  SessionVisibilityConfig & OnTrackVisibilityConfig
+>;
+export type SlowCarAheadWidgetSettings = BaseWidgetSettings<
+  SlowCarAheadConfig,
+  SessionVisibilityConfig & OnTrackVisibilityConfig
+>;

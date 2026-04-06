@@ -1,56 +1,26 @@
-import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
-import {
-  FasterCarsFromBehindWidgetSettings,
-  SettingsTabType,
-} from '@irdashies/types';
-import { SessionVisibility } from '../components/SessionVisibility';
 import { BadgeFormatPreview } from '../components/BadgeFormatPreview';
-import { useDashboard } from '@irdashies/context';
-import { useFasterCarsSettings } from '../../FasterCarsFromBehind/hooks/useFasterCarsSettings';
 import { TabButton } from '../components/TabButton';
 import { SettingsSection } from '../components/SettingSection';
-import { SettingDivider } from '../components/SettingDivider';
 import { SettingToggleRow } from '../components/SettingToggleRow';
 import { SettingSliderRow } from '../components/SettingSliderRow';
 import { SettingSelectRow } from '../components/SettingSelectRow';
-
-const SETTING_ID = 'fastercarsfrombehind';
+import { SettingVisibilitySection } from '../components/SettingVisibilitySection';
+import { useWidgetSettingsSection } from '../hooks/useWidgetSettingsSection';
 
 export const FasterCarsFromBehindSettings = () => {
-  const { currentDashboard } = useDashboard();
-  const fasterCarsSettings = useFasterCarsSettings();
-  const [settings, setSettings] = useState<FasterCarsFromBehindWidgetSettings>({
-    enabled:
-      currentDashboard?.widgets.find((w) => w.id === SETTING_ID)?.enabled ??
-      false,
-    config: fasterCarsSettings as FasterCarsFromBehindWidgetSettings['config'],
-  });
-
-  // Tab state with persistence
-  const [activeTab, setActiveTab] = useState<SettingsTabType>(
-    () =>
-      (localStorage.getItem('fasterCarsFromBehindTab') as SettingsTabType) ||
-      'display'
-  );
-
-  useEffect(() => {
-    localStorage.setItem('fasterCarsFromBehindTab', activeTab);
-  }, [activeTab]);
-
-  if (!currentDashboard) {
-    return <>Loading...</>;
-  }
+  const { settings, setSettings, activeTab, setActiveTab } =
+    useWidgetSettingsSection('fastercarsfrombehind');
 
   return (
     <BaseSettingsSection
       title="Faster Cars From Behind"
       description="Configure settings for the faster cars detection widget."
+      widgetType={'fastercarsfrombehind'}
       settings={settings}
       onSettingsChange={setSettings}
-      widgetId="fastercarsfrombehind"
     >
-      {(handleConfigChange) => (
+      {(handleConfigChange, handleVisibilityConfigChange) => (
         <div className="space-y-4">
           {/* Tabs */}
           <div className="flex border-b border-slate-700/50">
@@ -212,23 +182,10 @@ export const FasterCarsFromBehindSettings = () => {
 
             {/* VISIBILITY TAB */}
             {activeTab === 'visibility' && (
-              <SettingsSection title="Session Visibility">
-                <SessionVisibility
-                  sessionVisibility={settings.config.sessionVisibility}
-                  handleConfigChange={handleConfigChange}
-                />
-
-                <SettingDivider />
-
-                <SettingToggleRow
-                  title="Show only when on track"
-                  description="If enabled, faster cars will only be shown when driving"
-                  enabled={settings.config.showOnlyWhenOnTrack ?? false}
-                  onToggle={(newValue) =>
-                    handleConfigChange({ showOnlyWhenOnTrack: newValue })
-                  }
-                />
-              </SettingsSection>
+              <SettingVisibilitySection
+                config={settings.visibilityConfig}
+                handleConfigChange={handleVisibilityConfigChange}
+              />
             )}
           </div>
         </div>

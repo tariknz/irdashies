@@ -1,34 +1,53 @@
 import { ReactNode, useState } from 'react';
 import { ToggleSwitch } from './ToggleSwitch';
-import { BaseWidgetSettings } from '@irdashies/types';
+import { WidgetSettingsMap } from '@irdashies/types';
 import { useDashboard } from '@irdashies/context';
 
-interface BaseSettingsSectionProps<T> {
+interface BaseSettingsSectionProps<
+  WidgetType extends keyof WidgetSettingsMap,
+  TSettings extends WidgetSettingsMap[WidgetType],
+  TConfig extends TSettings['config'],
+  TVisibilityConfig extends TSettings['visibilityConfig'],
+> {
   title: string;
   description: string;
-  settings: BaseWidgetSettings<T>;
-  onSettingsChange: (settings: BaseWidgetSettings<T>) => void;
-  widgetId: string;
+  settings: TSettings;
+  onSettingsChange: (settings: TSettings) => void;
+  widgetType: WidgetType;
+  widgetId?: string;
   children?:
-    | ((handleConfigChange: (config: Partial<T>) => void) => ReactNode)
+    | ((
+        handleConfigChange: (config: Partial<TConfig>) => void,
+        handleVisibilityConfigChange: (
+          config: Partial<TVisibilityConfig>
+        ) => void
+      ) => ReactNode)
     | ReactNode;
-  onConfigChange?: (config: Partial<T>) => void;
   disableInternalScroll?: boolean;
 }
 
-export const BaseSettingsSection = <T,>({
+export const BaseSettingsSection = <
+  WidgetType extends keyof WidgetSettingsMap,
+  TSettings extends WidgetSettingsMap[WidgetType],
+  TConfig extends TSettings['config'],
+  TVisibilityConfig extends TSettings['visibilityConfig'],
+>({
   title,
   description,
+  widgetType,
+  children,
   settings,
   onSettingsChange,
-  widgetId,
-  children,
-  onConfigChange,
+  widgetId = widgetType, // default to type if no specific ID given
   disableInternalScroll = false,
-}: BaseSettingsSectionProps<T>) => {
+}: BaseSettingsSectionProps<
+  WidgetType,
+  TSettings,
+  TConfig,
+  TVisibilityConfig
+>) => {
   const { currentDashboard, onDashboardUpdated } = useDashboard();
-  const [localSettings, setLocalSettings] =
-    useState<BaseWidgetSettings<T>>(settings);
+  const [localSettings, setLocalSettings] = useState<TSettings>(settings);
 
   // Clean synchronization pattern: track what we last synced to detect external changes
   const updatedWidget = currentDashboard?.widgets.find(
@@ -42,31 +61,49 @@ export const BaseSettingsSection = <T,>({
       // This setState during render is safe and efficient in React when guarded by a condition
       // like this. It avoids the extra render pass that an effect would cause.
       setLocalSettings({
+        ...settings,
         enabled: updatedWidget.enabled,
-        config: updatedWidget.config as unknown as T,
+        config: updatedWidget.config as unknown as TConfig,
+        visibilityConfig:
+          updatedWidget.visibilityConfig as unknown as TVisibilityConfig,
       });
     }
   }
 
-  const handleSettingsChange = (newSettings: BaseWidgetSettings<T>) => {
+  const handleSettingsChange = (newSettings: TSettings) => {
     setLocalSettings(newSettings);
     onSettingsChange(newSettings);
     updateDashboard(newSettings);
   };
 
-  const handleConfigChange = (newConfig: Partial<T>) => {
-    const updatedSettings: BaseWidgetSettings<T> = {
+  const handleConfigChange = (newConfig: Partial<TConfig>) => {
+    const updatedSettings: TSettings = {
       ...localSettings,
       config: {
         ...localSettings.config,
         ...newConfig,
-      } as T,
+      } as TConfig,
     };
 
     setLocalSettings(updatedSettings);
     onSettingsChange(updatedSettings);
     updateDashboard(updatedSettings);
-    onConfigChange?.(newConfig);
+  };
+
+  const handleVisibilityConfigChange = (
+    newConfig: Partial<TVisibilityConfig>
+  ) => {
+    const updatedSettings: TSettings = {
+      ...localSettings,
+      visibilityConfig: {
+        ...localSettings.visibilityConfig,
+        ...newConfig,
+      } as TVisibilityConfig,
+    };
+
+    setLocalSettings(updatedSettings);
+    onSettingsChange(updatedSettings);
+    updateDashboard(updatedSettings);
   };
 
   const [showResetConfirm, setShowResetConfirm] = useState(false);
@@ -103,7 +140,7 @@ export const BaseSettingsSection = <T,>({
     }
   };
 
-  const updateDashboard = (newSettings: BaseWidgetSettings<T>) => {
+  const updateDashboard = (newSettings: TSettings) => {
     if (currentDashboard && onDashboardUpdated) {
       const widgetExists = currentDashboard.widgets.some(
         (w) => w.id === widgetId
@@ -138,6 +175,10 @@ export const BaseSettingsSection = <T,>({
     }
   };
 
+  if (!currentDashboard) {
+    return <>Loading...</>;
+  }
+
   return (
     <div className={`flex flex-col ${disableInternalScroll ? '' : 'h-full'}`}>
       <div className="flex-none space-y-6 p-4 bg-slate-700 rounded">
@@ -161,7 +202,7 @@ export const BaseSettingsSection = <T,>({
         {children && (
           <div className="space-y-4">
             {typeof children === 'function'
-              ? children(handleConfigChange)
+              ? children(handleConfigChange, handleVisibilityConfigChange)
               : children}
           </div>
         )}

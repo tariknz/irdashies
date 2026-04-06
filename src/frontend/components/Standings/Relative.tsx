@@ -1,10 +1,8 @@
 import { useMemo } from 'react';
 import { DriverInfoRow } from './components/DriverInfoRow/DriverInfoRow';
 import {
-  useDrivingState,
   useWeekendInfoNumCarClasses,
   useWeekendInfoTeamRacing,
-  useSessionVisibility,
   useGeneralSettings,
   usePitLapStoreUpdater,
 } from '@irdashies/context';
@@ -23,13 +21,11 @@ export const Relative = () => {
   const settings = useRelativeSettings();
   const generalSettings = useGeneralSettings();
   const buffer = settings?.buffer ?? 3;
-  const { isDriving } = useDrivingState();
   const standings = useDriverRelatives({ buffer });
   const highlightColor = useHighlightColor();
   const { tagMap, hasAnyTag } = useDriverTagMap(settings?.driverTag?.enabled);
   const numCarClasses = useWeekendInfoNumCarClasses();
   const isMultiClass = (numCarClasses ?? 0) > 1;
-  const isSessionVisible = useSessionVisibility(settings?.sessionVisibility);
 
   usePitLapStoreUpdater();
 
@@ -239,13 +235,6 @@ export const Relative = () => {
     hasAnyTag,
     generalSettings?.compactMode,
   ]);
-
-  if (!isSessionVisible) return <></>;
-
-  // Show only when on track setting
-  if (settings?.showOnlyWhenOnTrack && !isDriving) {
-    return <></>;
-  }
 
   // If no player found, render empty table with consistent height
   if (playerIndex === -1) {

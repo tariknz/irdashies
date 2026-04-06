@@ -1,57 +1,24 @@
-import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
-import { useDashboard } from '@irdashies/context';
-import {
-  BlindSpotMonitorWidgetSettings,
-  SettingsTabType,
-  getWidgetDefaultConfig,
-} from '@irdashies/types';
-import { SessionVisibility } from '../components/SessionVisibility';
 import { TabButton } from '../components/TabButton';
 import { SettingSliderRow } from '../components/SettingSliderRow';
 import { SettingsSection } from '../components/SettingSection';
-import { SettingDivider } from '../components/SettingDivider';
-import { SettingToggleRow } from '../components/SettingToggleRow';
 import { HIGHLIGHT_COLOR_PRESETS } from './GeneralSettings';
-
-const SETTING_ID = 'blindspotmonitor';
-
-const defaultConfig = getWidgetDefaultConfig('blindspotmonitor');
+import { SettingVisibilitySection } from '../components/SettingVisibilitySection';
+import { useWidgetSettingsSection } from '../hooks/useWidgetSettingsSection';
 
 export const BlindSpotMonitorSettings = () => {
-  const { currentDashboard } = useDashboard();
-  const savedSettings = currentDashboard?.widgets.find(
-    (w) => w.id === SETTING_ID
-  ) as BlindSpotMonitorWidgetSettings | undefined;
-  const [settings, setSettings] = useState<BlindSpotMonitorWidgetSettings>({
-    enabled: savedSettings?.enabled ?? false,
-    config:
-      (savedSettings?.config as BlindSpotMonitorWidgetSettings['config']) ??
-      defaultConfig,
-  });
-
-  // Tab state with persistence
-  const [activeTab, setActiveTab] = useState<SettingsTabType>(
-    () => (localStorage.getItem('bsmTab') as SettingsTabType) || 'display'
-  );
-
-  useEffect(() => {
-    localStorage.setItem('bsmTab', activeTab);
-  }, [activeTab]);
-
-  if (!currentDashboard) {
-    return <>Loading...</>;
-  }
+  const { settings, setSettings, activeTab, setActiveTab } =
+    useWidgetSettingsSection('blindspotmonitor');
 
   return (
     <BaseSettingsSection
       title="Blind Spot Monitor"
       description="Configure settings for the blind spot monitor widget that displays visual indicators when cars are detected on your left or right side."
+      widgetType={'blindspotmonitor'}
       settings={settings}
       onSettingsChange={setSettings}
-      widgetId={SETTING_ID}
     >
-      {(handleConfigChange) => (
+      {(handleConfigChange, handleVisibilityConfigChange) => (
         <div className="space-y-4">
           {/* Tabs */}
           <div className="flex border-b border-slate-700/50">
@@ -189,23 +156,10 @@ export const BlindSpotMonitorSettings = () => {
 
             {/* VISIBILITY TAB */}
             {activeTab === 'visibility' && (
-              <SettingsSection title="Session Visibility">
-                <SessionVisibility
-                  sessionVisibility={settings.config.sessionVisibility}
-                  handleConfigChange={handleConfigChange}
-                />
-
-                <SettingDivider />
-
-                <SettingToggleRow
-                  title="Show only when on track"
-                  description="If enabled, blind spotter will only be shown when driving"
-                  enabled={settings.config.showOnlyWhenOnTrack ?? false}
-                  onToggle={(newValue) =>
-                    handleConfigChange({ showOnlyWhenOnTrack: newValue })
-                  }
-                />
-              </SettingsSection>
+              <SettingVisibilitySection
+                config={settings.visibilityConfig}
+                handleConfigChange={handleVisibilityConfigChange}
+              />
             )}
           </div>
         </div>

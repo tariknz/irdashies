@@ -1,59 +1,24 @@
-import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
-import {
-  SlowCarAheadWidgetSettings,
-  SettingsTabType,
-  getWidgetDefaultConfig,
-} from '@irdashies/types';
-import { useDashboard } from '@irdashies/context';
 import { TabButton } from '../components/TabButton';
-import { SessionVisibility } from '../components/SessionVisibility';
-import { SettingToggleRow } from '../components/SettingToggleRow';
 import { SettingsSection } from '../components/SettingSection';
-import { SettingDivider } from '../components/SettingDivider';
 import { SettingNumberRow } from '../components/SettingNumberRow';
 import { SettingSliderRow } from '../components/SettingSliderRow';
-
-const SETTING_ID = 'slowcarahead';
-
-const defaultConfig = getWidgetDefaultConfig('slowcarahead');
+import { useWidgetSettingsSection } from '../hooks/useWidgetSettingsSection';
+import { SettingVisibilitySection } from '../components/SettingVisibilitySection';
 
 export const SlowCarAheadSettings = () => {
-  const { currentDashboard } = useDashboard();
-
-  const savedSettings = currentDashboard?.widgets.find(
-    (w) => w.id === SETTING_ID
-  ) as SlowCarAheadWidgetSettings | undefined;
-
-  const [settings, setSettings] = useState<SlowCarAheadWidgetSettings>({
-    id: SETTING_ID,
-    enabled: savedSettings?.enabled ?? true,
-    config:
-      (savedSettings?.config as SlowCarAheadWidgetSettings['config']) ??
-      defaultConfig,
-  });
-
-  // Tab state with persistence
-  const [activeTab, setActiveTab] = useState<SettingsTabType>(
-    () =>
-      (localStorage.getItem('slowCarAheadTab') as SettingsTabType) || 'options'
-  );
-
-  useEffect(() => {
-    localStorage.setItem('slowCarAheadTab', activeTab);
-  }, [activeTab]);
-
-  if (!currentDashboard) return <>Loading...</>;
+  const { settings, setSettings, activeTab, setActiveTab } =
+    useWidgetSettingsSection('slowcarahead');
 
   return (
     <BaseSettingsSection
       title="Slow Car Ahead"
       description="Display indicator for slow cars ahead"
-      settings={settings as SlowCarAheadWidgetSettings}
-      onSettingsChange={(s) => setSettings(s as SlowCarAheadWidgetSettings)}
-      widgetId={SETTING_ID}
+      widgetType={'slowcarahead'}
+      settings={settings}
+      onSettingsChange={setSettings}
     >
-      {(handleConfigChange) => (
+      {(handleConfigChange, handleVisibilityConfigChange) => (
         <div className="space-y-4">
           {/* Tabs */}
           <div className="flex border-b border-slate-700/50">
@@ -126,23 +91,10 @@ export const SlowCarAheadSettings = () => {
 
             {/* VISIBILITY TAB */}
             {activeTab === 'visibility' && (
-              <SettingsSection title="Session Visibility">
-                <SessionVisibility
-                  sessionVisibility={settings.config.sessionVisibility}
-                  handleConfigChange={handleConfigChange}
-                />
-
-                <SettingDivider />
-
-                <SettingToggleRow
-                  title="Show only when on track"
-                  description="If enabled, widget will only be shown when driving"
-                  enabled={settings.config.showOnlyWhenOnTrack ?? false}
-                  onToggle={(newValue) =>
-                    handleConfigChange({ showOnlyWhenOnTrack: newValue })
-                  }
-                />
-              </SettingsSection>
+              <SettingVisibilitySection
+                config={settings.visibilityConfig}
+                handleConfigChange={handleVisibilityConfigChange}
+              />
             )}
           </div>
         </div>

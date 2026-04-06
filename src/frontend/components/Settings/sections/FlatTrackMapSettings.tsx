@@ -1,60 +1,25 @@
-import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
-import { useDashboard } from '@irdashies/context';
 import { TabButton } from '../components/TabButton';
-import {
-  FlatTrackMapWidgetSettings,
-  SettingsTabType,
-  getWidgetDefaultConfig,
-} from '@irdashies/types';
-import { SessionVisibility } from '../components/SessionVisibility';
 import { SettingsSection } from '../components/SettingSection';
 import { SettingSliderRow } from '../components/SettingSliderRow';
 import { SettingToggleRow } from '../components/SettingToggleRow';
 import { SettingButtonGroupRow } from '../components/SettingButtonGroupRow';
-import { SettingDivider } from '../components/SettingDivider';
-
-const SETTING_ID = 'flatmap';
-
-const defaultConfig = getWidgetDefaultConfig('flatmap');
+import { SettingVisibilitySection } from '../components/SettingVisibilitySection';
+import { useWidgetSettingsSection } from '../hooks/useWidgetSettingsSection';
 
 export const FlatTrackMapSettings = () => {
-  const { currentDashboard } = useDashboard();
-  const savedSettings = currentDashboard?.widgets.find(
-    (w) => w.id === SETTING_ID
-  ) as FlatTrackMapWidgetSettings | undefined;
-  const [settings, setSettings] = useState<FlatTrackMapWidgetSettings>({
-    enabled:
-      currentDashboard?.widgets.find((w) => w.id === SETTING_ID)?.enabled ??
-      false,
-    config:
-      (savedSettings?.config as FlatTrackMapWidgetSettings['config']) ??
-      defaultConfig,
-  });
-
-  // Tab state with persistence
-  const [activeTab, setActiveTab] = useState<SettingsTabType>(
-    () =>
-      (localStorage.getItem('flatTrackMapTab') as SettingsTabType) || 'track'
-  );
-
-  useEffect(() => {
-    localStorage.setItem('flatTrackMapTab', activeTab);
-  }, [activeTab]);
-
-  if (!currentDashboard) {
-    return <>Loading...</>;
-  }
+  const { settings, setSettings, activeTab, setActiveTab } =
+    useWidgetSettingsSection('flatmap');
 
   return (
     <BaseSettingsSection
       title="Flat Track Map"
       description="Configure flat track map visualization settings."
+      widgetType={'flatmap'}
       settings={settings}
       onSettingsChange={setSettings}
-      widgetId="flatmap"
     >
-      {(handleConfigChange) => (
+      {(handleConfigChange, handleVisibilityConfigChange) => (
         <div className="space-y-4">
           {/* Tabs */}
           <div className="flex border-b border-slate-700/50">
@@ -194,23 +159,10 @@ export const FlatTrackMapSettings = () => {
 
             {/* VISIBILITY TAB */}
             {activeTab === 'visibility' && (
-              <SettingsSection title="Session Visibility">
-                <SessionVisibility
-                  sessionVisibility={settings.config.sessionVisibility}
-                  handleConfigChange={handleConfigChange}
-                />
-
-                <SettingDivider />
-
-                <SettingToggleRow
-                  title="Show only when on track"
-                  description="If enabled, track map will only be shown when driving"
-                  enabled={settings.config.showOnlyWhenOnTrack ?? false}
-                  onToggle={(newValue) =>
-                    handleConfigChange({ showOnlyWhenOnTrack: newValue })
-                  }
-                />
-              </SettingsSection>
+              <SettingVisibilitySection
+                config={settings.visibilityConfig}
+                handleConfigChange={handleVisibilityConfigChange}
+              />
             )}
           </div>
         </div>

@@ -1,7 +1,6 @@
 import { useBlindSpotMonitor } from './hooks/useBlindSpotMonitor';
 import { useBlindSpotMonitorSettings } from './hooks/useBlindSpotMonitorSettings';
 import { BlindSpotMonitorIndicator } from './components/BlindSpotMonitorIndicator';
-import { useSessionVisibility, useTelemetryValue } from '@irdashies/context';
 import { CarLeftRight } from '@irdashies/types';
 
 export interface BlindSpotMonitorDisplayProps {
@@ -69,10 +68,6 @@ export const BlindSpotMonitorDisplay = ({
 export const BlindSpotMonitor = () => {
   const state = useBlindSpotMonitor();
   const settings = useBlindSpotMonitorSettings();
-  const isOnTrack = useTelemetryValue<boolean>('IsOnTrack') ?? false;
-
-  if (!useSessionVisibility(settings?.sessionVisibility)) return <></>;
-  if (settings?.showOnlyWhenOnTrack && !isOnTrack) return <></>;
 
   return (
     <BlindSpotMonitorDisplay

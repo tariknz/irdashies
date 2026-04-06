@@ -1,8 +1,4 @@
-import {
-  useTelemetryValue,
-  useSessionVisibility,
-  useThrottledWeather,
-} from '@irdashies/context';
+import { useTelemetryValue, useThrottledWeather } from '@irdashies/context';
 import { useTrackTemperature } from '../Standings/hooks/useTrackTemperature';
 import { WeatherTemp } from './WeatherTemp/WeatherTemp';
 import { WeatherTrackWetness } from './WeatherTrackWetness/WeatherTrackWetness';
@@ -27,8 +23,6 @@ type WeatherColumnId =
 export const Weather = () => {
   const settings = useWeatherSettings();
   const displayUnits = useTelemetryValue('DisplayUnits'); // 0 = imperial, 1 = metric
-  const isOnTrack = useTelemetryValue('IsOnTrack');
-  const isSessionVisible = useSessionVisibility(settings?.sessionVisibility);
 
   // Determine actual unit to use: auto uses iRacing's DisplayUnits setting
   const unitSetting = settings?.units ?? 'auto';
@@ -141,13 +135,6 @@ export const Weather = () => {
         return <WeatherTrackRubbered key={id} trackRubbered={trackRubbered} />;
     }
   };
-
-  // Hide if showOnlyWhenOnTrack is enabled and player is not on track
-  if (settings?.showOnlyWhenOnTrack && !isOnTrack) {
-    return null;
-  }
-
-  if (!isSessionVisible) return <></>;
 
   return (
     <div

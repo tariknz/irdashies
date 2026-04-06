@@ -1,28 +1,8 @@
 import { useState } from 'react';
-import { getWidgetDefaultConfig } from '@irdashies/types';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
-import { useDashboard } from '@irdashies/context';
 import { TrashIcon, PlusIcon } from '@phosphor-icons/react';
-
-const SETTING_ID = 'telemetryinspector';
-
-interface PropertyConfig {
-  source: 'telemetry' | 'session';
-  path: string;
-  label?: string;
-}
-
-interface TelemetryInspectorConfig {
-  background?: { opacity: number };
-  properties?: PropertyConfig[];
-}
-
-interface TelemetryInspectorWidgetSettings {
-  enabled: boolean;
-  config: TelemetryInspectorConfig;
-}
-
-const defaultConfig = getWidgetDefaultConfig('telemetryinspector');
+import { useWidgetSettingsSection } from '../hooks/useWidgetSettingsSection';
+import { TelemetryInspectorPropertyConfig } from '@irdashies/types';
 
 // Common telemetry properties for quick add
 const commonTelemetryProperties = [
@@ -64,38 +44,28 @@ const commonSessionProperties = [
 ];
 
 export const TelemetryInspectorSettings = () => {
-  const { currentDashboard } = useDashboard();
-  const savedSettings = currentDashboard?.widgets.find(
-    (w) => w.id === SETTING_ID
-  ) as TelemetryInspectorWidgetSettings | undefined;
-  const [settings, setSettings] = useState<TelemetryInspectorWidgetSettings>({
-    enabled: savedSettings?.enabled ?? false,
-    config:
-      (savedSettings?.config as TelemetryInspectorConfig) ?? defaultConfig,
-  });
+  const { settings, setSettings } =
+    useWidgetSettingsSection('telemetryinspector');
 
-  const [newProperty, setNewProperty] = useState<PropertyConfig>({
-    source: 'telemetry',
-    path: '',
-    label: '',
-  });
-
-  if (!currentDashboard) {
-    return <>Loading...</>;
-  }
+  const [newProperty, setNewProperty] =
+    useState<TelemetryInspectorPropertyConfig>({
+      source: 'telemetry',
+      path: '',
+      label: '',
+    });
 
   return (
     <BaseSettingsSection
       title="Telemetry Inspector"
       description="Debug widget to display raw telemetry and session values. Add properties to watch."
+      widgetType={'telemetryinspector'}
       settings={settings}
-      onSettingsChange={(s) => setSettings(s)}
-      widgetId={SETTING_ID}
+      onSettingsChange={setSettings}
     >
       {(handleConfigChange) => {
         const properties = settings.config.properties ?? [];
 
-        const addProperty = (prop: PropertyConfig) => {
+        const addProperty = (prop: TelemetryInspectorPropertyConfig) => {
           const newProperties = [...properties, prop];
           handleConfigChange({ properties: newProperties });
           setNewProperty({ source: 'telemetry', path: '', label: '' });

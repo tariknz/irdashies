@@ -9,10 +9,9 @@ import {
   useTelemetryValue,
   useFocusCarIdx,
   useDrivingState,
-  useSessionVisibility,
   useDashboard,
 } from '@irdashies/context';
-import { useDriverRelatives } from '../Standings/hooks/useDriverRelatives';
+import { useDriverRelatives } from '../Standings/hooks';
 import { useRejoinSettings } from './hooks/useRejoinSettings';
 import { getDemoRejoinData } from './demoData';
 import type { Standings } from '../Standings/createStandings';
@@ -22,9 +21,6 @@ export const RejoinIndicator = () => {
   const settings = useRejoinSettings();
 
   // Must call all hooks in same order every render
-  const isSessionVisible = useSessionVisibility(
-    settings?.config?.sessionVisibility
-  );
   const playerIndex = useFocusCarIdx();
   const playerInPitStall =
     useTelemetryValue<number>('PlayerCarInPitStall') === 1;
@@ -38,15 +34,18 @@ export const RejoinIndicator = () => {
   // Generate demo data when in demo mode
   if (isDemoMode) {
     const demoData = getDemoRejoinData(settings);
-    return <RejoinIndicatorDisplay gap={demoData.gap} status={demoData.status as 'Clear' | 'Caution' | 'Do Not Rejoin'} />;
+    return (
+      <RejoinIndicatorDisplay
+        gap={demoData.gap}
+        status={demoData.status as 'Clear' | 'Caution' | 'Do Not Rejoin'}
+      />
+    );
   }
 
   // If we don't have dashboard settings or no focused player, hide
   if (!settings) return null;
   if (!settings.enabled) return null;
   if (playerIndex === undefined) return null;
-
-  if (!isSessionVisible) return null;
 
   if (!isDriving) return null;
   // Choose the first car behind the player that is not in the pit lane or off-track
@@ -128,8 +127,6 @@ export const RejoinIndicator = () => {
     </div>
   );
 };
-
-
 
 export const RejoinIndicatorDisplay = ({
   gap,

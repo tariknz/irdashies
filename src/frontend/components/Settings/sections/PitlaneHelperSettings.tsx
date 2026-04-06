@@ -1,58 +1,26 @@
-import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import { TabButton } from '../components/TabButton';
-import type {
-  PitlaneHelperWidgetSettings,
-  SettingsTabType,
-} from '@irdashies/types';
-import { getWidgetDefaultConfig } from '@irdashies/types';
-import { useDashboard } from '@irdashies/context';
 import { SettingsSection } from '../components/SettingSection';
 import { SettingToggleRow } from '../components/SettingToggleRow';
 import { SettingSliderRow } from '../components/SettingSliderRow';
 import { SettingButtonGroupRow } from '../components/SettingButtonGroupRow';
 import { SettingSelectRow } from '../components/SettingSelectRow';
-import { SessionVisibility } from '../components/SessionVisibility';
-
-const SETTING_ID = 'pitlanehelper';
-
-const defaultConfig = getWidgetDefaultConfig('pitlanehelper');
+import { useWidgetSettingsSection } from '../hooks/useWidgetSettingsSection';
+import { SettingVisibilitySection } from '../components/SettingVisibilitySection';
 
 export const PitlaneHelperSettings = () => {
-  const { currentDashboard } = useDashboard();
-  const savedSettings = currentDashboard?.widgets.find(
-    (w) => w.id === SETTING_ID
-  ) as PitlaneHelperWidgetSettings | undefined;
-
-  const [settings, setSettings] = useState<PitlaneHelperWidgetSettings>({
-    enabled: savedSettings?.enabled ?? false,
-    config:
-      (savedSettings?.config as PitlaneHelperWidgetSettings['config']) ??
-      defaultConfig,
-  });
-
-  // Tab state with persistence
-  const [activeTab, setActiveTab] = useState<SettingsTabType>(
-    () => (localStorage.getItem('pitLaneTab') as SettingsTabType) || 'options'
-  );
-
-  useEffect(() => {
-    localStorage.setItem('pitLaneTab', activeTab);
-  }, [activeTab]);
-
-  if (!currentDashboard) {
-    return <>Loading...</>;
-  }
+  const { settings, setSettings, activeTab, setActiveTab } =
+    useWidgetSettingsSection('pitlanehelper');
 
   return (
     <BaseSettingsSection
       title="Pitlane Helper"
       description="Assists with pit entry by showing speed delta, pitbox position, and warnings."
+      widgetType={'pitlanehelper'}
       settings={settings}
       onSettingsChange={setSettings}
-      widgetId={SETTING_ID}
     >
-      {(handleConfigChange) => (
+      {(handleConfigChange, handleVisibilityConfigChange) => (
         <div className="space-y-4">
           {/* Tabs */}
           <div className="flex border-b border-slate-700/50">
@@ -338,12 +306,10 @@ export const PitlaneHelperSettings = () => {
 
             {/* VISIBILITY TAB */}
             {activeTab === 'visibility' && (
-              <SettingsSection title="Session Visibility">
-                <SessionVisibility
-                  sessionVisibility={settings.config.sessionVisibility}
-                  handleConfigChange={handleConfigChange}
-                />
-              </SettingsSection>
+              <SettingVisibilitySection
+                config={settings.visibilityConfig}
+                handleConfigChange={handleVisibilityConfigChange}
+              />
             )}
           </div>
         </div>

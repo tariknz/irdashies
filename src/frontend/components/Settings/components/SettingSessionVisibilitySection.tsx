@@ -1,16 +1,17 @@
-import {
-  BaseWidgetSettings,
-  SessionVisibilitySettings,
-} from '@irdashies/types';
-import { SettingToggleRow } from '../components/SettingToggleRow';
+import { BaseWidgetSettings, SessionVisibilityConfig } from '@irdashies/types';
+import { SettingToggleRow } from './SettingToggleRow';
 
 interface SessionVisibilityProps {
-  sessionVisibility: SessionVisibilitySettings;
+  config: SessionVisibilityConfig;
   handleConfigChange: (newConfig: BaseWidgetSettings['config']) => void;
 }
 
-export const SessionVisibility = ({
-  sessionVisibility,
+/**
+ * Section in widget settings for session visibility related settings.
+ * This should only be used within the overall {@link SettingVisibilitySection} widget
+ */
+export const SettingSessionVisibilitySection = ({
+  config,
   handleConfigChange,
 }: SessionVisibilityProps) => {
   return (
@@ -18,10 +19,10 @@ export const SessionVisibility = ({
       {/* Show In Race Session */}
       <SettingToggleRow
         title="Race"
-        enabled={sessionVisibility.race ?? false}
+        enabled={config.sessionVisibility.race ?? false}
         onToggle={(enabled) =>
           handleConfigChange({
-            sessionVisibility: { ...sessionVisibility, race: enabled },
+            sessionVisibility: { ...config, race: enabled },
           })
         }
       />
@@ -29,10 +30,10 @@ export const SessionVisibility = ({
       {/* Show In Lone Qualify Session */}
       <SettingToggleRow
         title="Lone Qualify"
-        enabled={sessionVisibility.loneQualify ?? false}
+        enabled={config.sessionVisibility.loneQualify ?? false}
         onToggle={(enabled) =>
           handleConfigChange({
-            sessionVisibility: { ...sessionVisibility, loneQualify: enabled },
+            sessionVisibility: { ...config, loneQualify: enabled },
           })
         }
       />
@@ -40,10 +41,10 @@ export const SessionVisibility = ({
       {/* Show In Open Qualify Session */}
       <SettingToggleRow
         title="Open Qualify"
-        enabled={sessionVisibility.openQualify ?? false}
+        enabled={config.sessionVisibility.openQualify ?? false}
         onToggle={(enabled) =>
           handleConfigChange({
-            sessionVisibility: { ...sessionVisibility, openQualify: enabled },
+            sessionVisibility: { ...config, openQualify: enabled },
           })
         }
       />
@@ -51,10 +52,10 @@ export const SessionVisibility = ({
       {/* Show In Practice Session */}
       <SettingToggleRow
         title="Practice"
-        enabled={sessionVisibility.practice ?? false}
+        enabled={config.sessionVisibility.practice ?? false}
         onToggle={(enabled) =>
           handleConfigChange({
-            sessionVisibility: { ...sessionVisibility, practice: enabled },
+            sessionVisibility: { ...config, practice: enabled },
           })
         }
       />
@@ -62,11 +63,11 @@ export const SessionVisibility = ({
       {/* Show In Offline Testing Session */}
       <SettingToggleRow
         title="Offline Testing"
-        enabled={sessionVisibility.offlineTesting ?? false}
+        enabled={config.sessionVisibility.offlineTesting ?? false}
         onToggle={(enabled) =>
           handleConfigChange({
             sessionVisibility: {
-              ...sessionVisibility,
+              ...config,
               offlineTesting: enabled,
             },
           })

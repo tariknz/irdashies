@@ -1,5 +1,5 @@
-import { useCurrentSessionType } from './useCurrentSessionType';
-import type { SessionVisibilitySettings } from '@irdashies/types';
+import { useCurrentSessionType } from '@irdashies/context';
+import { SessionVisibilityConfig } from '@irdashies/types';
 
 type SessionType =
   | 'Race'
@@ -8,7 +8,10 @@ type SessionType =
   | 'Practice'
   | 'Offline Testing';
 
-const SESSION_TYPE_MAP: Record<SessionType, keyof SessionVisibilitySettings> = {
+const SESSION_TYPE_MAP: Record<
+  SessionType,
+  keyof SessionVisibilityConfig['sessionVisibility']
+> = {
   Race: 'race',
   'Lone Qualify': 'loneQualify',
   'Open Qualify': 'openQualify',
@@ -18,14 +21,14 @@ const SESSION_TYPE_MAP: Record<SessionType, keyof SessionVisibilitySettings> = {
 
 /**
  * Hook to check if the current session should be visible based on session visibility settings.
- * @param sessionVisibility - The session visibility settings from widget config
+ * @param config - The session visibility settings from widget config
  * @returns true if the current session should be visible, false otherwise
  */
 export function useSessionVisibility(
-  sessionVisibility: SessionVisibilitySettings | undefined
+  config: SessionVisibilityConfig | undefined
 ): boolean {
   const sessionType = useCurrentSessionType();
-  if (!sessionType || !sessionVisibility) {
+  if (!sessionType || !config) {
     return true;
   }
 
@@ -34,5 +37,5 @@ export function useSessionVisibility(
     return true;
   }
 
-  return sessionVisibility[visibilityKey] ?? true;
+  return config.sessionVisibility[visibilityKey] ?? true;
 }

@@ -7,7 +7,6 @@ import * as context from '@irdashies/context';
 vi.mock('@irdashies/context', () => ({
   useTelemetryValue: vi.fn(),
   useDashboard: vi.fn(),
-  useSessionVisibility: vi.fn(),
 }));
 
 // Mock the custom hooks
@@ -131,7 +130,6 @@ describe('PitlaneHelper', () => {
       refreshProfiles: vi.fn(),
     });
 
-    vi.mocked(context.useSessionVisibility).mockReturnValue(true);
     vi.mocked(usePitlaneHelperSettings).mockReturnValue(defaultConfig);
     vi.mocked(usePitSpeed).mockReturnValue(defaultSpeedResult);
     vi.mocked(usePitboxPosition).mockReturnValue(defaultPositionResult);

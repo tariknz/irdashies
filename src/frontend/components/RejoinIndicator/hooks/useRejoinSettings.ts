@@ -1,5 +1,8 @@
 import { useDashboard } from '@irdashies/context';
-import type { RejoinIndicatorWidgetSettings } from '@irdashies/types';
+import type {
+  RejoinIndicatorWidgetSettings,
+  SessionVisibilityConfig,
+} from '@irdashies/types';
 
 const DEFAULT_CONFIG: RejoinIndicatorWidgetSettings = {
   enabled: false,
@@ -7,6 +10,8 @@ const DEFAULT_CONFIG: RejoinIndicatorWidgetSettings = {
     showAtSpeed: 30,
     careGap: 2,
     stopGap: 1,
+  },
+  visibilityConfig: {
     sessionVisibility: {
       race: true,
       loneQualify: false,
@@ -38,10 +43,10 @@ export const useRejoinSettings = () => {
         stopGap:
           (saved.config as RejoinIndicatorWidgetSettings['config'])?.stopGap ??
           DEFAULT_CONFIG.config.stopGap,
-        sessionVisibility:
-          (saved.config as RejoinIndicatorWidgetSettings['config'])
-            ?.sessionVisibility ?? DEFAULT_CONFIG.config.sessionVisibility,
       },
+      visibilityConfig:
+        (saved.visibilityConfig as SessionVisibilityConfig) ??
+        DEFAULT_CONFIG.visibilityConfig,
     } as RejoinIndicatorWidgetSettings;
   }
 

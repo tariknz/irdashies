@@ -1,4 +1,4 @@
-import { useSessionVisibility, useDashboard } from '@irdashies/context';
+import { useDashboard } from '@irdashies/context';
 import { useCarBehind } from './hooks/useCarBehind';
 import { useFasterCarsSettings } from './hooks/useFasterCarsSettings';
 import { getTailwindStyle } from '@irdashies/utils/colors';
@@ -21,8 +21,6 @@ export const FasterCarsFromBehind = () => {
   const carsBehind = useCarBehind({
     distanceThreshold: settings?.distanceThreshold,
   });
-
-  if (!useSessionVisibility(settings?.sessionVisibility)) return <></>;
 
   // Generate demo data when in demo mode
   const demoCarsBehind = isDemoMode
