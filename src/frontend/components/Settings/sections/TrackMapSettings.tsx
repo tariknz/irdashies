@@ -176,7 +176,7 @@ export const TrackMapSettings = () => {
                       value={settings.config.turnLabels.labelFontSize ?? 100}
                       units="%"
                       min={50}
-                      max={150}
+                      max={300}
                       step={1}
                       onChange={(v) =>
                         handleConfigChange({
