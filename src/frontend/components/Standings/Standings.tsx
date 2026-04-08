@@ -233,6 +233,7 @@ export const Standings = () => {
                         slowdown={result.slowdown}
                         hideCarManufacturer={hideCarManufacturer}
                         compactMode={generalSettings?.compactMode}
+                        animationCycleTime={generalSettings?.animationCycleTime}
                       />
                     </Fragment>
                   );

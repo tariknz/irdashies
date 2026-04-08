@@ -1,4 +1,4 @@
-import { memo, useRef, useLayoutEffect } from 'react';
+import { memo, useRef } from 'react';
 import { SpeakerHighIcon } from '@phosphor-icons/react';
 import { DriverStatusBadges } from './DriverStatusBadges';
 import {
@@ -6,73 +6,7 @@ import {
   extractDriverName,
   type DriverNameFormat,
 } from '../../DriverName/DriverName';
-
-// Shared timestamp per animation frame — all components in the same ~16ms
-// window get the exact same Date.now(), eliminating per-component phase spread.
-let _syncFrame = -1;
-let _syncNow = 0;
-function syncedNow(): number {
-  if (typeof performance === 'undefined') return Date.now();
-  const f = Math.floor(performance.now() / 16);
-  if (f !== _syncFrame) {
-    _syncFrame = f;
-    _syncNow = Date.now();
-  }
-  return _syncNow;
-}
-
-// WAAPI keyframes — replicate CSS name-slide-primary/secondary.
-// Per-keyframe easing matches CSS `animation-timing-function: ease-in-out`.
-const primaryKeyframes: Keyframe[] = [
-  { transform: 'translateY(0)', opacity: 1, offset: 0, easing: 'ease-in-out' },
-  {
-    transform: 'translateY(0)',
-    opacity: 1,
-    offset: 0.4,
-    easing: 'ease-in-out',
-  },
-  {
-    transform: 'translateY(-110%)',
-    opacity: 0,
-    offset: 0.5,
-    easing: 'ease-in-out',
-  },
-  {
-    transform: 'translateY(-110%)',
-    opacity: 0,
-    offset: 0.9,
-    easing: 'ease-in-out',
-  },
-  { transform: 'translateY(0)', opacity: 1, offset: 1.0 },
-];
-
-const secondaryKeyframes: Keyframe[] = [
-  {
-    transform: 'translateY(110%)',
-    opacity: 0,
-    offset: 0,
-    easing: 'ease-in-out',
-  },
-  {
-    transform: 'translateY(110%)',
-    opacity: 0,
-    offset: 0.4,
-    easing: 'ease-in-out',
-  },
-  {
-    transform: 'translateY(0)',
-    opacity: 1,
-    offset: 0.5,
-    easing: 'ease-in-out',
-  },
-  {
-    transform: 'translateY(0)',
-    opacity: 1,
-    offset: 0.9,
-    easing: 'ease-in-out',
-  },
-  { transform: 'translateY(110%)', opacity: 0, offset: 1.0 },
-];
+import { useCyclingAnimation } from './useCyclingAnimation';
 
 interface DriverNameCellProps {
   name?: string;
@@ -87,7 +21,7 @@ interface DriverNameCellProps {
   removeNumbersFromName?: boolean;
   label?: string;
   nameDisplay?: 'both' | 'label' | 'name';
-  alternateFrequency?: number;
+  animationCycleTime?: number;
   compactMode?: string;
 }
 
@@ -105,7 +39,7 @@ export const DriverNameCell = memo(
     removeNumbersFromName = false,
     label,
     nameDisplay,
-    alternateFrequency,
+    animationCycleTime,
     compactMode,
   }: DriverNameCellProps) => {
     const displayName = fullName
@@ -117,39 +51,16 @@ export const DriverNameCell = memo(
 
     const shouldAnimate = !!label && (!nameDisplay || nameDisplay === 'both');
     const staticText = nameDisplay === 'label' && label ? label : displayName;
-    const freq = alternateFrequency ?? 5;
+    const freq = animationCycleTime ?? 5;
     const spanPrimaryRef = useRef<HTMLSpanElement>(null);
     const spanSecondaryRef = useRef<HTMLSpanElement>(null);
 
-    // Create WAAPI animations directly and sync to global clock.
-    // useLayoutEffect ensures animations are created and seeked BEFORE the
-    // first paint — no flash of unstyled/overlapping text.
-    // syncedNow() guarantees all components in the same frame get identical phase.
-    useLayoutEffect(() => {
-      if (!shouldAnimate) return;
-      const el1 = spanPrimaryRef.current;
-      const el2 = spanSecondaryRef.current;
-      if (!el1 || !el2) return;
-      if (typeof el1.animate !== 'function') return;
-
-      const freqMs = freq * 1000;
-      const opts: KeyframeAnimationOptions = {
-        duration: freqMs,
-        iterations: Infinity,
-      };
-
-      const anim1 = el1.animate(primaryKeyframes, opts);
-      const anim2 = el2.animate(secondaryKeyframes, opts);
-
-      const phase = syncedNow() % freqMs;
-      anim1.currentTime = phase;
-      anim2.currentTime = phase;
-
-      return () => {
-        anim1.cancel();
-        anim2.cancel();
-      };
-    }, [shouldAnimate, freq, displayName]);
+    // Use shared cycling animation hook
+    useCyclingAnimation(
+      [spanPrimaryRef, spanSecondaryRef],
+      freq * 2 * 1000,
+      shouldAnimate
+    );
 
     return (
       <td
@@ -171,12 +82,14 @@ export const DriverNameCell = memo(
                 <span
                   ref={spanPrimaryRef}
                   className="absolute inset-0 flex items-center whitespace-nowrap"
+                  style={{ opacity: 1 }}
                 >
                   {displayName}
                 </span>
                 <span
                   ref={spanSecondaryRef}
                   className="absolute inset-0 flex items-center whitespace-nowrap"
+                  style={{ opacity: 0 }}
                 >
                   {label}
                 </span>

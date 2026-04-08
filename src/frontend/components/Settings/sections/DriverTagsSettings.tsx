@@ -1108,35 +1108,6 @@ export const DriverTagsSettings = () => {
                 <option value="name">Name only</option>
               </select>
             </div>
-
-            {(settings.display?.nameDisplay ?? 'both') === 'both' && (
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-300">
-                  Alternate Frequency
-                </span>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="range"
-                    min="2"
-                    max="60"
-                    value={settings.display?.alternateFrequency ?? 5}
-                    onChange={(e) =>
-                      updateDashboard({
-                        ...settings,
-                        display: {
-                          ...(settings.display ?? { enabled: false }),
-                          alternateFrequency: parseInt(e.target.value),
-                        },
-                      })
-                    }
-                    className="h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer"
-                  />
-                  <span className="text-xs text-slate-400 w-8">
-                    {settings.display?.alternateFrequency ?? 5}s
-                  </span>
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </div>

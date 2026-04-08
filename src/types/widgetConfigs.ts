@@ -30,6 +30,8 @@ export type NameFormat =
 
 export type TemperatureUnit = 'Metric' | 'Imperial';
 
+export type ColumnDisplayMode = 'always' | 'rotate';
+
 // ===========================
 // Shared widget config sub-types
 // ===========================
@@ -79,6 +81,7 @@ export interface StylingOptions {
   statusBadges?: boolean;
   driverPosition?: { background?: boolean };
   driverNumber?: { background?: boolean; border?: boolean };
+  compactMode?: boolean;
 }
 
 export interface ClassHeaderStyle {
@@ -123,16 +126,20 @@ export type RelativeBadgeFormat =
 // ===========================
 
 export interface StandingsConfig {
-  iratingChange: { enabled: boolean };
-  positionChange: { enabled: boolean };
-  badge: { enabled: boolean; badgeFormat: StandingsBadgeFormat };
+  iratingChange: { enabled: boolean; displayMode?: ColumnDisplayMode };
+  positionChange: { enabled: boolean; displayMode?: ColumnDisplayMode };
+  badge: {
+    enabled: boolean;
+    badgeFormat: StandingsBadgeFormat;
+    displayMode?: ColumnDisplayMode;
+  };
   delta: { enabled: boolean };
   gap: { enabled: boolean; decimalPlaces?: number };
   interval: { enabled: boolean; decimalPlaces?: number };
   lastTime: { enabled: boolean; timeFormat: TimeFormat };
   fastestTime: { enabled: boolean; timeFormat: TimeFormat };
   background: { opacity: number };
-  countryFlags: { enabled: boolean };
+  countryFlags: { enabled: boolean; displayMode?: ColumnDisplayMode };
   carNumber: { enabled: boolean };
   driverStandings: {
     buffer: number;
@@ -141,8 +148,12 @@ export interface StandingsConfig {
     numTopDrivers: number;
     topDriverDivider?: 'none' | 'theme' | 'highlight';
   };
-  compound: { enabled: boolean };
-  carManufacturer: { enabled: boolean; hideIfSingleMake?: boolean };
+  compound: { enabled: boolean; displayMode?: ColumnDisplayMode };
+  carManufacturer: {
+    enabled: boolean;
+    hideIfSingleMake?: boolean;
+    displayMode?: ColumnDisplayMode;
+  };
   lapTimeDeltas: { enabled: boolean; numLaps: number };
   titleBar: { enabled: boolean; progressBar: { enabled: boolean } };
   headerBar: SessionBarConfig;
@@ -153,8 +164,13 @@ export interface StandingsConfig {
   driverName: DriverNameConfig;
   teamName: { enabled: boolean };
   pitStatus: PitStatusConfig;
-  driverTag: { enabled: boolean; widthPx?: number };
+  driverTag: {
+    enabled: boolean;
+    widthPx?: number;
+    displayMode?: ColumnDisplayMode;
+  };
   displayOrder: string[];
+  rotationGroups?: { columns: string[] }[];
   sessionVisibility: SessionVisibilitySettings;
   stylingOptions?: StylingOptions;
   classHeaderStyle?: ClassHeaderStyle;
@@ -163,26 +179,39 @@ export interface StandingsConfig {
 export interface RelativeConfig {
   buffer: number;
   background: { opacity: number };
-  countryFlags: { enabled: boolean };
+  countryFlags: { enabled: boolean; displayMode?: ColumnDisplayMode };
   carNumber: { enabled: boolean };
   lastTime: { enabled: boolean; timeFormat: TimeFormat };
   fastestTime: { enabled: boolean; timeFormat: TimeFormat };
-  compound: { enabled: boolean };
-  carManufacturer: { enabled: boolean; hideIfSingleMake?: boolean };
+  compound: { enabled: boolean; displayMode?: ColumnDisplayMode };
+  carManufacturer: {
+    enabled: boolean;
+    hideIfSingleMake?: boolean;
+    displayMode?: ColumnDisplayMode;
+  };
   titleBar: { enabled: boolean; progressBar: { enabled: boolean } };
   headerBar: SessionBarConfig;
   footerBar: SessionBarConfig;
   showOnlyWhenOnTrack: boolean;
-  badge: { enabled: boolean; badgeFormat: RelativeBadgeFormat };
-  iratingChange: { enabled: boolean };
-  positionChange?: { enabled: boolean };
+  badge: {
+    enabled: boolean;
+    badgeFormat: RelativeBadgeFormat;
+    displayMode?: ColumnDisplayMode;
+  };
+  iratingChange: { enabled: boolean; displayMode?: ColumnDisplayMode };
+  positionChange?: { enabled: boolean; displayMode?: ColumnDisplayMode };
   delta: { enabled: boolean; precision: number };
   position: { enabled: boolean };
   driverName: DriverNameConfig;
   teamName: { enabled: boolean };
   pitStatus: PitStatusConfig;
-  driverTag: { enabled: boolean; widthPx?: number };
+  driverTag: {
+    enabled: boolean;
+    widthPx?: number;
+    displayMode?: ColumnDisplayMode;
+  };
   displayOrder: string[];
+  rotationGroups?: { columns: string[] }[];
   useLivePosition?: boolean;
   sessionVisibility: SessionVisibilitySettings;
   stylingOptions?: StylingOptions;

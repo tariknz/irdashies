@@ -24,10 +24,15 @@ import { KeybindingsSettings } from './sections/KeybindingsSettings';
 import { LapTimeLogSettings } from './sections/LapTimeLogSettings';
 import { useDashboard } from '@irdashies/context';
 import { SlowCarAheadSettings } from './sections/SlowCarAheadSettings';
+import type {
+  StandingsWidgetSettings,
+  RelativeWidgetSettings,
+  DashboardWidget,
+} from '@irdashies/types';
 
 export const SettingsLoader = () => {
   const { widgetId } = useParams<{ widgetId: string }>();
-  const { currentDashboard } = useDashboard();
+  const { currentDashboard, onDashboardUpdated } = useDashboard();
 
   // 1. Handle non-widget pages
   if (widgetId === 'general') return <GeneralSettings />;
@@ -44,9 +49,35 @@ export const SettingsLoader = () => {
 
   switch (type) {
     case 'standings':
-      return <StandingsSettings />;
+      if (!widget || !currentDashboard || !onDashboardUpdated) return null;
+      return (
+        <StandingsSettings
+          settings={widget as unknown as StandingsWidgetSettings}
+          onUpdate={(changes) => {
+            const nextDashboard = JSON.parse(JSON.stringify(currentDashboard));
+            nextDashboard.widgets = nextDashboard.widgets.map(
+              (w: DashboardWidget) =>
+                w.id === widget.id ? { ...w, ...changes } : w
+            );
+            onDashboardUpdated(nextDashboard);
+          }}
+        />
+      );
     case 'relative':
-      return <RelativeSettings />;
+      if (!widget || !currentDashboard || !onDashboardUpdated) return null;
+      return (
+        <RelativeSettings
+          settings={widget as unknown as RelativeWidgetSettings}
+          onUpdate={(changes) => {
+            const nextDashboard = JSON.parse(JSON.stringify(currentDashboard));
+            nextDashboard.widgets = nextDashboard.widgets.map(
+              (w: DashboardWidget) =>
+                w.id === widget.id ? { ...w, ...changes } : w
+            );
+            onDashboardUpdated(nextDashboard);
+          }}
+        />
+      );
     case 'weather':
       return <WeatherSettings />;
     case 'fuel':

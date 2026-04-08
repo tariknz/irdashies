@@ -10,6 +10,7 @@ interface BadgeCellProps {
   badgeFormat?: DriverRatingBadgeProps['format'];
   isMinimal?: boolean;
   compactMode?: string;
+  inRotationGroup?: boolean;
 }
 
 export const BadgeCell = memo(
@@ -19,6 +20,7 @@ export const BadgeCell = memo(
     badgeFormat,
     isMinimal,
     compactMode,
+    inRotationGroup = false,
   }: BadgeCellProps) => {
     const pxClass =
       compactMode === 'ultra'
@@ -26,17 +28,24 @@ export const BadgeCell = memo(
         : compactMode === 'compact'
           ? 'px-1'
           : 'px-2';
+
+    const content = (
+      <DriverRatingBadge
+        license={license}
+        rating={rating}
+        format={badgeFormat}
+        isMinimal={isMinimal}
+      />
+    );
+
+    if (inRotationGroup) return content;
+
     return (
       <td
         data-column="badge"
         className={`w-auto whitespace-nowrap text-center ${pxClass}`}
       >
-        <DriverRatingBadge
-          license={license}
-          rating={rating}
-          format={badgeFormat}
-          isMinimal={isMinimal}
-        />
+        {content}
       </td>
     );
   }

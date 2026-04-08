@@ -9,6 +9,8 @@ interface DriverTagCellProps {
   widthPx?: number;
   displayStyle?: 'badge' | 'tag';
   iconWeight?: string;
+  inRotationGroup?: boolean;
+  hidden?: boolean;
 }
 
 export const DriverTagCell = memo(function DriverTagCell({
@@ -16,6 +18,8 @@ export const DriverTagCell = memo(function DriverTagCell({
   widthPx,
   displayStyle = 'badge',
   iconWeight,
+  inRotationGroup = false,
+  hidden = false,
 }: DriverTagCellProps) {
   const name = tag?.name ?? '';
   const tagThicknessDefault = 6;
@@ -36,8 +40,6 @@ export const DriverTagCell = memo(function DriverTagCell({
     };
   }, [displayStyle, size, colorHex]);
 
-  // In badge mode, widthPx ≤ 8 is a legacy tag-bar default — ignore it and
-  // use em-based sizing so the icon fills the cell regardless of stale config.
   const badgeWidthPx =
     displayStyle !== 'badge' || (widthPx && widthPx > 8) ? widthPx : undefined;
 
@@ -73,38 +75,68 @@ export const DriverTagCell = memo(function DriverTagCell({
     []
   );
 
-  if (!tag) return null;
+  const content = useMemo(() => {
+    if (!tag || hidden) return null;
 
-  if (displayStyle === 'tag') {
-    if (!tagStyle) return null;
+    if (displayStyle === 'tag') {
+      if (!tagStyle) return null;
+      return (
+        <span
+          role="img"
+          aria-label={`Driver tagged as ${name}`}
+          style={tagStyle}
+        />
+      );
+    }
+
+    const icon = tag.icon ?? '';
+    if (!icon) return null;
+
     return (
       <span
         role="img"
         aria-label={`Driver tagged as ${name}`}
-        style={tagStyle}
-      />
+        style={containerStyle}
+      >
+        {renderDriverIcon(
+          icon,
+          badgeWidthPx ?? 24,
+          undefined,
+          tag?.color,
+          imgStyle,
+          emojiStyle,
+          iconWeight
+        )}
+      </span>
     );
-  }
+  }, [
+    tag,
+    hidden,
+    displayStyle,
+    tagStyle,
+    name,
+    containerStyle,
+    badgeWidthPx,
+    imgStyle,
+    emojiStyle,
+    iconWeight,
+  ]);
 
-  const icon = tag.icon ?? '';
-  if (!icon) return null;
+  if (inRotationGroup) return content;
 
   return (
-    <span
-      role="img"
-      aria-label={`Driver tagged as ${name}`}
-      style={containerStyle}
+    <td
+      data-column="driverTag"
+      style={displayStyle === 'tag' ? undefined : { minWidth: '1.5em' }}
+      className="whitespace-nowrap align-middle"
     >
-      {renderDriverIcon(
-        icon,
-        badgeWidthPx ?? 24,
-        undefined,
-        tag?.color,
-        imgStyle,
-        emojiStyle,
-        iconWeight
-      )}
-    </span>
+      <div
+        style={{ padding: '0 0.1em' }}
+        className="flex items-center justify-center font-normal"
+      >
+        {content}
+      </div>
+    </td>
   );
 });
 
