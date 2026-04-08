@@ -78,7 +78,7 @@ export const drawStartFinishLine = (
 export const drawTurnNames = (
   ctx: CanvasRenderingContext2D,
   turns: TrackDrawing['turns'],
-  turnLabels: TurnLabels,
+  turnLabels: TurnLabels
 ) => {
   if (!turnLabels.enabled || !turns) return;
 
@@ -94,39 +94,42 @@ export const drawTurnNames = (
     if (turnLabels.labelType === 'names' && isNumeric) return;
 
     // proximity check to prevent overlap
+    const scaleFactor = turnLabels.labelFontSize / 100;
+    const proximityThreshold = 30 * scaleFactor;
+
     let yOffset = 0;
-    if (!isNumeric) {   
-      const neighbour = drawnPositions.find(pos => {
+    if (!isNumeric) {
+      const neighbour = drawnPositions.find((pos) => {
         const dx = pos.x - x;
         const dy = pos.y - y;
-        return Math.sqrt(dx * dx + dy * dy) < 30;
+        return Math.sqrt(dx * dx + dy * dy) < proximityThreshold;
       });
-      if (neighbour) {       
-        yOffset = (neighbour.y <= y ? 15 : -15) * (turnLabels.labelFontSize / 100);
+      if (neighbour) {
+        yOffset = (neighbour.y <= y ? 15 : -15) * scaleFactor;
       }
     }
-    
+
     // update current coordinates with the offset
     const renderX = x;
-    const renderY = y + yOffset;       
+    const renderY = y + yOffset;
     drawnPositions.push({ x: renderX, y: renderY });
 
     // add the label
-    const fontSize = 2 * (turnLabels.labelFontSize / 100);
+    const fontSize = 2 * scaleFactor;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.font = `${fontSize}rem sans-serif`;
     const m = ctx.measureText(content);
 
     if (turnLabels.highContrast) {
-      const padding = 20;
+      const padding = 20 * scaleFactor;
       const textWidth = m.width;
-      const textHeight = m.actualBoundingBoxAscent + m.actualBoundingBoxDescent;      
+      const textHeight = m.actualBoundingBoxAscent + m.actualBoundingBoxDescent;
       const rectW = textWidth + padding;
       const rectH = textHeight + padding;
       const rectX = renderX - rectW / 2;
       const rectY = renderY - rectH / 2;
-      const radius = Math.min(20, rectW / 2, rectH / 2);
+      const radius = Math.min(20 * scaleFactor, rectW / 2, rectH / 2);
       ctx.beginPath();
       ctx.roundRect(rectX, rectY, rectW, rectH, radius);
       ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
@@ -135,7 +138,8 @@ export const drawTurnNames = (
 
     ctx.fillStyle = 'white';
     // visual offset
-    const visualOffset = (m.actualBoundingBoxAscent - m.actualBoundingBoxDescent) / 2;
+    const visualOffset =
+      (m.actualBoundingBoxAscent - m.actualBoundingBoxDescent) / 2;
     ctx.fillText(content, renderX, renderY + visualOffset);
   });
 };
