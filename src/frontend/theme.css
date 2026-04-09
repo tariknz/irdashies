@@ -148,6 +148,12 @@ html {
   --text-xl: calc(var(--theme-offset) + 4px);
   --text-2xl: calc(var(--theme-offset) + 5px);
   --text-3xl: calc(var(--theme-offset) + 6px);
+  --text-4xl: calc(var(--theme-offset) + 7px);
+  --text-5xl: calc(var(--theme-offset) + 8px);
+  --text-6xl: calc(var(--theme-offset) + 9px);
+  --text-7xl: calc(var(--theme-offset) + 10px);
+  --text-8xl: calc(var(--theme-offset) + 11px);
+  --text-9xl: calc(var(--theme-offset) + 12px);
 }
 
 /* 2. Assign the starting value (the 'xs' value) for each theme */

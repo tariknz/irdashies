@@ -251,7 +251,7 @@ export const Relative = () => {
       <div className="w-full h-full">
         <TitleBar titleBarSettings={settings?.titleBar} />
         {(settings?.headerBar?.enabled ?? false) && (
-          <SessionBar position="header" variant="relative" />
+          <SessionBar settings={settings.headerBar} position="header" />
         )}
         <table
           className={`w-full table-auto text-sm border-separate ${tableBorderSpacing}`}
@@ -259,7 +259,7 @@ export const Relative = () => {
           <tbody>{rows}</tbody>
         </table>
         {(settings?.footerBar?.enabled ?? true) && (
-          <SessionBar position="footer" variant="relative" />
+          <SessionBar settings={settings.footerBar} position="footer" />
         )}
       </div>
     );
@@ -274,7 +274,7 @@ export const Relative = () => {
     >
       <TitleBar titleBarSettings={settings?.titleBar} />
       {(settings?.headerBar?.enabled ?? false) && (
-        <SessionBar position="header" variant="relative" />
+        <SessionBar settings={settings.headerBar} position="header" />
       )}
       <table
         className={`w-full table-auto text-sm border-separate ${tableBorderSpacing}`}
@@ -282,7 +282,7 @@ export const Relative = () => {
         <tbody>{rows}</tbody>
       </table>
       {(settings?.footerBar?.enabled ?? true) && (
-        <SessionBar position="footer" variant="relative" />
+        <SessionBar settings={settings.footerBar} position="footer" />
       )}
     </div>
   );
