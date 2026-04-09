@@ -82,6 +82,11 @@ export const defaultDashboard: {
           enabled: false,
           numLaps: 3,
         },
+        avgLapTime: {
+          enabled: false,
+          numLaps: 5,
+          timeFormat: 'mixed',
+        },
         driverStandings: {
           buffer: 3,
           numNonClassDrivers: 3,
@@ -234,6 +239,7 @@ export const defaultDashboard: {
           'lastTime',
           'compound',
           'lapTimeDeltas',
+          'avgLapTime',
         ],
         driverTag: { enabled: false },
         sessionVisibility: {

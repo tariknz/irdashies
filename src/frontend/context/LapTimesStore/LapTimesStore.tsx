@@ -18,7 +18,7 @@ interface LapTimesState {
   reset: () => void;
 }
 
-const LAP_TIME_AVG_WINDOW = 5; // Average over last 5 laps
+const LAP_TIME_AVG_WINDOW = 10; // Average over last 10 laps
 const OUTLIER_THRESHOLD = 1.0; // Outlier detection threshold
 
 // Helper function to calculate median
