@@ -1,5 +1,6 @@
 import { useTwitchChatSettings } from './hooks/useTwitchChatSettings';
 import { useTwitchChat } from './hooks/useTwitchChat';
+import { MessageWithEmotes } from './components/MessageWithEmotes';
 import type { ChatMessage } from './types';
 
 export interface TwitchChatDisplayProps {
@@ -33,7 +34,12 @@ export const ChatMessageList = ({
           fontSize: `${fontSize}px`,
         }}
       >
-        <strong style={{ color: '#a970ff' }}>{m.user}</strong>: {m.text}
+        <strong style={{ color: '#a970ff' }}>{m.user}</strong>:{' '}
+        <MessageWithEmotes
+          text={m.text}
+          emotes={m.emotes}
+          fontSize={fontSize}
+        />
       </div>
     ))}
   </div>
