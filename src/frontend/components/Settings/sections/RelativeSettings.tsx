@@ -471,34 +471,6 @@ export const RelativeSettings = () => {
     config: (savedSettings?.config as RelativeWidgetSettings['config']) || defaultConfig,
   });
 
-  const [itemsOrder, setItemsOrder] = useState<string[]>(
-    settings.config.displayOrder || sortableSettings.map((s) => s.id)
-  );
-
-  const [activeTab, setActiveTab] = useState<SettingsTabType>(
-    () => (localStorage.getItem('relativeTab') as SettingsTabType) || 'display'
-  );
-
-  useEffect(() => {
-    localStorage.setItem('relativeTab', activeTab);
-  }, [activeTab]);
-
-  if (!currentDashboard) return null;
-
-  return (
-    <BaseSettingsSection
-      title="Relative"
-      description="Configure the relative timing display settings."
-      settings={settings}
-      onSettingsChange={setSettings}
-      widgetId="relative"
-    >
-      {(handleConfigChange) => {
-        const handleDisplayOrderChange = (newOrder: string[]) => {
-          setItemsOrder(newOrder);
-          handleConfigChange({ displayOrder: newOrder });
-        };
-
         return (
           <div className="space-y-4">
             {/* Tabs */}
@@ -517,7 +489,7 @@ export const RelativeSettings = () => {
               {activeTab === 'display' && (
                 <SettingsSection title="Display Order">
                   <DisplaySettingsList
-                    itemsOrder={itemsOrder}
+                    itemsOrder={settings.config.displayOrder}
                     settings={settings}
                     handleConfigChange={handleConfigChange}
                   />
@@ -526,7 +498,6 @@ export const RelativeSettings = () => {
                     label="Reset to Default Order"
                     onClick={() => {
                       const defaultOrder = sortableSettings.map((s) => s.id);
-                      setItemsOrder(defaultOrder);
                       handleConfigChange({
                         displayOrder: defaultOrder,
                         rotationGroups: [],

@@ -503,34 +503,6 @@ export const StandingsSettings = () => {
     config: (savedSettings?.config as StandingsWidgetSettings['config']) || defaultConfig,
   });
 
-  const [itemsOrder, setItemsOrder] = useState<string[]>(
-    settings.config.displayOrder || sortableSettings.map((s) => s.id)
-  );
-
-  const [activeTab, setActiveTab] = useState<SettingsTabType>(
-    () => (localStorage.getItem('standingsTab') as SettingsTabType) || 'display'
-  );
-
-  useEffect(() => {
-    localStorage.setItem('standingsTab', activeTab);
-  }, [activeTab]);
-
-  if (!currentDashboard) return null;
-
-  return (
-    <BaseSettingsSection
-      title="Standings"
-      description="Configure the standings and leaderboard display settings."
-      settings={settings}
-      onSettingsChange={setSettings}
-      widgetId="standings"
-    >
-      {(handleConfigChange) => {
-        const handleDisplayOrderChange = (newOrder: string[]) => {
-          setItemsOrder(newOrder);
-          handleConfigChange({ displayOrder: newOrder });
-        };
-
         return (
           <div className="space-y-4">
             {/* Tabs */}
@@ -549,7 +521,7 @@ export const StandingsSettings = () => {
               {activeTab === 'display' && (
                 <SettingsSection title="Display Order">
                   <DisplaySettingsList
-                    itemsOrder={itemsOrder}
+                    itemsOrder={settings.config.displayOrder}
                     settings={settings}
                     handleConfigChange={handleConfigChange}
                   />
@@ -558,7 +530,6 @@ export const StandingsSettings = () => {
                     label="Reset to Default Order"
                     onClick={() => {
                       const defaultOrder = sortableSettings.map((s) => s.id);
-                      setItemsOrder(defaultOrder);
                       handleConfigChange({
                         displayOrder: defaultOrder,
                         rotationGroups: [],
