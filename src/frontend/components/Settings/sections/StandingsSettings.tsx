@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import { useDashboard } from '@irdashies/context';
 import {
@@ -9,8 +9,6 @@ import {
 } from '@irdashies/types';
 import { ToggleSwitch } from '../components/ToggleSwitch';
 import { TabButton } from '../components/TabButton';
-import { useSortableList } from '../../SortableList';
-import { DraggableSettingItem } from '../components/DraggableSettingItem';
 import { BadgeFormatPreview } from '../components/BadgeFormatPreview';
 import { DEFAULT_SESSION_BAR_DISPLAY_ORDER } from '../sessionBarConstants';
 import { SessionVisibility } from '../components/SessionVisibility';
@@ -25,18 +23,12 @@ import {
   SessionBarItemsList,
   SessionBarItemConfig,
 } from '../components/SessionBarItemsList';
+import { DisplaySettingsList } from './shared/DisplaySettingsList';
+import type { SharedSortableSetting } from './shared/DisplaySettingsList';
 
 const SETTING_ID = 'standings';
 
-interface SortableSetting {
-  id: string;
-  label: string;
-  configKey: keyof StandingsWidgetSettings['config'];
-  hasSubSetting?: boolean;
-  canRotate?: boolean;
-}
-
-const sortableSettings: SortableSetting[] = [
+const sortableSettings: SharedSortableSetting[] = [
   { id: 'position', label: 'Position', configKey: 'position', canRotate: true },
   {
     id: 'carNumber',
@@ -134,460 +126,7 @@ const sortableSettings: SortableSetting[] = [
   },
 ];
 
-const ROTATE_COLORS = [
-  '#fbbf24', // amber-400
-  '#60a5fa', // blue-400
-  '#4ade80', // green-400
-  '#f87171', // red-400
-  '#c084fc', // purple-400
-  '#22d3ee', // cyan-400
-  '#f472b6', // pink-400
-  '#fb923c', // orange-400
-  '#818cf8', // indigo-400
-  '#fb7185', // rose-400
-];
-
 const defaultConfig = getWidgetDefaultConfig('standings');
-
-interface DisplaySettingsListProps {
-  itemsOrder: string[];
-  settings: StandingsWidgetSettings;
-  handleConfigChange: (
-    changes: Partial<StandingsWidgetSettings['config']>
-  ) => void;
-}
-
-const DisplaySettingsList = ({
-  itemsOrder,
-  settings,
-  handleConfigChange,
-}: DisplaySettingsListProps) => {
-  const items = useMemo(() => {
-    return itemsOrder
-      .map((id) => {
-        const setting = sortableSettings.find((s) => s.id === id);
-        return setting ? { ...setting } : null;
-      })
-      .filter((s): s is SortableSetting => s !== null);
-  }, [itemsOrder]);
-
-  const { getItemProps, displayItems } = useSortableList({
-    items,
-    onReorder: (newItems: SortableSetting[]) => {
-      const newOrder = newItems.map((i) => i.id);
-      const cleanGroups = getCleanGroups(
-        newOrder,
-        settings.config.rotationGroups || []
-      );
-      handleConfigChange({
-        displayOrder: newOrder,
-        rotationGroups: cleanGroups,
-      });
-    },
-    getItemId: (item: SortableSetting) => item.id,
-  });
-
-  // Helper to get group metadata
-  const groupMetadata = useMemo(() => {
-    const metadata: Record<string, { isInGroup: boolean; groupIdx: number }> =
-      {};
-    (settings.config.rotationGroups || []).forEach((group, idx) => {
-      (group.columns || []).forEach((colId) => {
-        metadata[colId] = { isInGroup: true, groupIdx: idx };
-      });
-    });
-    return metadata;
-  }, [settings.config.rotationGroups]);
-
-  // Cleanup helper to enforce adjacency and min size of 2
-  const getCleanGroups = useCallback(
-    (order: string[], currentGroups: { columns: string[] }[]) => {
-      const newGroups: { columns: string[] }[] = [];
-      currentGroups.forEach((group) => {
-        const indices = group.columns
-          .map((id) => order.indexOf(id))
-          .filter((idx) => idx !== -1)
-          .sort((a, b) => a - b);
-
-        if (indices.length < 2) return;
-
-        let currentBlock: string[] = [order[indices[0]]];
-        for (let i = 1; i < indices.length; i++) {
-          if (indices[i] === indices[i - 1] + 1) {
-            currentBlock.push(order[indices[i]]);
-          } else {
-            if (currentBlock.length >= 2)
-              newGroups.push({ columns: currentBlock });
-            currentBlock = [order[indices[i]]];
-          }
-        }
-        if (currentBlock.length >= 2) newGroups.push({ columns: currentBlock });
-      });
-      return newGroups;
-    },
-    []
-  );
-
-  const handleGroupAction = (itemId: string, direction: 'up' | 'down') => {
-    const currentIndex = displayItems.findIndex((i) => i.id === itemId);
-    const targetIndex =
-      direction === 'up' ? currentIndex - 1 : currentIndex + 1;
-    if (targetIndex < 0 || targetIndex >= displayItems.length) return;
-
-    const targetId = displayItems[targetIndex].id;
-    const currentGroups = settings.config.rotationGroups || [];
-
-    // First remove the current item from any group it's already in
-    const workingGroups = currentGroups.map((g) => ({
-      ...g,
-      columns: g.columns.filter((id) => id !== itemId),
-    }));
-
-    // Find if the target item is already in a group
-    const groupOfTarget = workingGroups.find((g) =>
-      g.columns.includes(targetId)
-    );
-
-    if (groupOfTarget) {
-      // Target is in a group, just add the item to it
-      const updatedColumns = Array.from(
-        new Set([...groupOfTarget.columns, itemId])
-      );
-      const idx = workingGroups.indexOf(groupOfTarget);
-      workingGroups[idx] = { ...groupOfTarget, columns: updatedColumns };
-    } else {
-      // Neither item in a group (or item was removed from one), start a new one with target
-      workingGroups.push({ columns: [itemId, targetId] });
-    }
-
-    const finalGroups = getCleanGroups(
-      displayItems.map((i) => i.id),
-      workingGroups
-    );
-    handleConfigChange({ rotationGroups: finalGroups });
-  };
-
-  const handleUngroup = (itemId: string) => {
-    const workingGroups = (settings.config.rotationGroups || []).map((g) => ({
-      ...g,
-      columns: g.columns.filter((id) => id !== itemId),
-    }));
-
-    const finalGroups = getCleanGroups(
-      displayItems.map((i) => i.id),
-      workingGroups
-    );
-    handleConfigChange({ rotationGroups: finalGroups });
-  };
-
-  return (
-    <div className="space-y-3">
-      {displayItems.map((item, index) => {
-        const configValue = settings.config[item.configKey];
-        const isEnabled = (configValue as { enabled: boolean }).enabled;
-        const meta = groupMetadata[item.id];
-        const sortableProps = getItemProps(item);
-
-        const prevItem = index > 0 ? displayItems[index - 1] : null;
-        const nextItem =
-          index < displayItems.length - 1 ? displayItems[index + 1] : null;
-
-        const isSameGroupAsPrev =
-          meta?.isInGroup &&
-          groupMetadata[prevItem?.id || '']?.isInGroup &&
-          meta.groupIdx === groupMetadata[prevItem?.id || '']?.groupIdx;
-        const isSameGroupAsNext =
-          meta?.isInGroup &&
-          groupMetadata[nextItem?.id || '']?.isInGroup &&
-          meta.groupIdx === groupMetadata[nextItem?.id || '']?.groupIdx;
-
-        const canGroupUp =
-          !!item.canRotate && !!prevItem?.canRotate && !isSameGroupAsPrev;
-        const canGroupDown =
-          !!item.canRotate && !!nextItem?.canRotate && !isSameGroupAsNext;
-
-        return (
-          <DraggableSettingItem
-            key={item.id}
-            label={item.label}
-            enabled={isEnabled}
-            canRotate={item.canRotate}
-            isInGroup={!!meta?.isInGroup}
-            groupColor={
-              meta?.isInGroup
-                ? ROTATE_COLORS[meta.groupIdx % ROTATE_COLORS.length]
-                : undefined
-            }
-            canGroupUp={canGroupUp}
-            canGroupDown={canGroupDown}
-            onGroupUp={() => handleGroupAction(item.id, 'up')}
-            onGroupDown={() => handleGroupAction(item.id, 'down')}
-            onUngroup={() => handleUngroup(item.id)}
-            sortableProps={sortableProps}
-            onToggle={(enabled) => {
-              const cv = settings.config[item.configKey] as {
-                enabled: boolean;
-                [key: string]: unknown;
-              };
-              handleConfigChange({
-                [item.configKey]: { ...cv, enabled },
-              });
-            }}
-          >
-            {item.hasSubSetting &&
-              item.configKey === 'pitStatus' &&
-              settings.config.pitStatus.enabled && (
-                <div className="flex flex-col gap-2 pl-3 mt-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-slate-300">Pit Time</span>
-                    <ToggleSwitch
-                      enabled={settings.config.pitStatus.showPitTime ?? false}
-                      onToggle={(enabled) => {
-                        handleConfigChange({
-                          pitStatus: {
-                            ...settings.config.pitStatus,
-                            showPitTime: enabled,
-                          },
-                        });
-                      }}
-                    />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-slate-300">
-                      Pitlap display mode
-                    </span>
-                    <select
-                      value={settings.config.pitStatus.pitLapDisplayMode}
-                      onChange={(e) => {
-                        handleConfigChange({
-                          pitStatus: {
-                            ...settings.config.pitStatus,
-                            pitLapDisplayMode: e.target.value as
-                              | 'lastPitLap'
-                              | 'lapsSinceLastPit',
-                          },
-                        });
-                      }}
-                      className="bg-slate-700 text-white rounded-md px-2 py-1 text-xs"
-                    >
-                      <option value="lastPitLap">Last pit lap</option>
-                      <option value="lapsSinceLastPit">
-                        Laps since last pit
-                      </option>
-                    </select>
-                  </div>
-                </div>
-              )}
-            {item.hasSubSetting &&
-              item.configKey === 'carManufacturer' &&
-              settings.config.carManufacturer.enabled && (
-                <div className="flex items-center justify-between pl-3 mt-2">
-                  <span className="text-sm text-slate-300">
-                    Hide If Single Make
-                  </span>
-                  <ToggleSwitch
-                    enabled={
-                      settings.config.carManufacturer.hideIfSingleMake ?? false
-                    }
-                    onToggle={(enabled) => {
-                      handleConfigChange({
-                        carManufacturer: {
-                          ...settings.config.carManufacturer,
-                          hideIfSingleMake: enabled,
-                        },
-                      });
-                    }}
-                  />
-                </div>
-              )}
-            {item.hasSubSetting &&
-              (item.configKey === 'gap' || item.configKey === 'interval') &&
-              (configValue as { enabled: boolean }).enabled && (
-                <div className="flex items-center justify-between pl-3 mt-2">
-                  <span className="text-sm text-slate-300">Decimal Places</span>
-                  <select
-                    value={
-                      (configValue as { decimalPlaces: number }).decimalPlaces
-                    }
-                    onChange={(e) => {
-                      handleConfigChange({
-                        [item.configKey]: {
-                          ...(configValue as object),
-                          decimalPlaces: parseInt(e.target.value),
-                        },
-                      });
-                    }}
-                    className="bg-slate-700 text-white rounded-md px-2 py-1 text-xs"
-                  >
-                    <option value={1}>1</option>
-                    <option value={2}>2</option>
-                    <option value={3}>3</option>
-                  </select>
-                </div>
-              )}
-            {item.hasSubSetting &&
-              item.configKey === 'lapTimeDeltas' &&
-              settings.config.lapTimeDeltas.enabled && (
-                <div className="flex items-center justify-between pl-3 mt-2">
-                  <span className="text-sm text-slate-300">Number of Laps</span>
-                  <select
-                    value={settings.config.lapTimeDeltas.numLaps}
-                    onChange={(e) => {
-                      handleConfigChange({
-                        lapTimeDeltas: {
-                          ...settings.config.lapTimeDeltas,
-                          numLaps: parseInt(e.target.value),
-                        },
-                      });
-                    }}
-                    className="bg-slate-700 text-white rounded-md px-2 py-1 text-xs"
-                  >
-                    {[1, 2, 3, 4, 5, 10].map((n) => (
-                      <option key={n} value={n}>
-                        {n}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-            {item.configKey === 'badge' &&
-              (configValue as { enabled: boolean }).enabled && (
-                <div className="mt-3">
-                  <div className="flex flex-wrap gap-3 justify-end">
-                    {(
-                      [
-                        'license-color-fullrating-combo',
-                        'fullrating-color-no-license',
-                        'rating-color-no-license',
-                        'license-color-fullrating-bw',
-                        'license-color-rating-bw',
-                        'rating-only-color-rating-bw',
-                        'license-color-rating-bw-no-license',
-                        'license-bw-rating-bw',
-                        'rating-only-bw-rating-bw',
-                        'license-bw-rating-bw-no-license',
-                        'rating-bw-no-license',
-                        'fullrating-bw-no-license',
-                      ] as const
-                    ).map((format) => (
-                      <BadgeFormatPreview
-                        key={format}
-                        format={format}
-                        selected={
-                          (configValue as { badgeFormat: string })
-                            .badgeFormat === format
-                        }
-                        onClick={() => {
-                          handleConfigChange({
-                            badge: {
-                              ...settings.config.badge,
-                              badgeFormat: format as StandingsBadgeFormat,
-                            },
-                          });
-                        }}
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
-            {item.configKey === 'driverName' &&
-              (configValue as { enabled: boolean }).enabled && (
-                <div className="mt-3 flex flex-col gap-3">
-                  <div className="flex flex-wrap gap-3 justify-end">
-                    {(
-                      [
-                        'name-middlename-surname',
-                        'name-m.-surname',
-                        'name-surname',
-                        'n.-surname',
-                        'surname-n.',
-                        'surname',
-                      ] as const
-                    ).map((format) => (
-                      <DriverNamePreview
-                        key={format}
-                        format={format}
-                        selected={
-                          (configValue as { nameFormat: string }).nameFormat ===
-                          format
-                        }
-                        onClick={() => {
-                          handleConfigChange({
-                            driverName: {
-                              ...settings.config.driverName,
-                              nameFormat: format,
-                            },
-                          });
-                        }}
-                      />
-                    ))}
-                  </div>
-                  <div className="flex items-center justify-between pl-3">
-                    <span className="text-sm text-slate-300">
-                      Remove Numbers From Names
-                    </span>
-                    <ToggleSwitch
-                      enabled={settings.config.driverName.removeNumbersFromName}
-                      onToggle={(enabled) => {
-                        handleConfigChange({
-                          driverName: {
-                            ...settings.config.driverName,
-                            removeNumbersFromName: enabled,
-                          },
-                        });
-                      }}
-                    />
-                  </div>
-                  <div className="flex items-center justify-between pl-3">
-                    <span className="text-sm text-slate-300">
-                      Status Badges
-                    </span>
-                    <ToggleSwitch
-                      enabled={settings.config.driverName.showStatusBadges}
-                      onToggle={(enabled) => {
-                        handleConfigChange({
-                          driverName: {
-                            ...settings.config.driverName,
-                            showStatusBadges: enabled,
-                          },
-                        });
-                      }}
-                    />
-                  </div>
-                </div>
-              )}
-            {(item.configKey === 'fastestTime' ||
-              item.configKey === 'lastTime') &&
-              (configValue as { enabled: boolean }).enabled && (
-                <div className="flex items-center justify-between pl-3 mt-2">
-                  <span className="text-sm text-slate-300">Time Format</span>
-                  <select
-                    value={(configValue as { timeFormat: string }).timeFormat}
-                    onChange={(e) => {
-                      handleConfigChange({
-                        [item.configKey]: {
-                          ...(configValue as object),
-                          timeFormat: e.target.value,
-                        },
-                      });
-                    }}
-                    className="bg-slate-700 text-white rounded-md px-2 py-1 text-xs"
-                  >
-                    <option value="full">1:42.123</option>
-                    <option value="mixed">1:42.1</option>
-                    <option value="minutes">1:42</option>
-                    <option value="seconds-full">42.123</option>
-                    <option value="seconds-mixed">42.1</option>
-                    <option value="seconds">42</option>
-                  </select>
-                </div>
-              )}
-          </DraggableSettingItem>
-        );
-      })}
-    </div>
-  );
-};
 
 export const StandingsSettings = () => {
   const { currentDashboard } = useDashboard();
@@ -620,6 +159,10 @@ export const StandingsSettings = () => {
       widgetId="standings"
     >
       {(handleConfigChange) => {
+        const onConfigChange = handleConfigChange as unknown as (
+          changes: Record<string, unknown>
+        ) => void;
+
         return (
           <div className="space-y-4">
             {/* Tabs */}
@@ -651,8 +194,305 @@ export const StandingsSettings = () => {
                 <SettingsSection title="Display Order">
                   <DisplaySettingsList
                     itemsOrder={settings.config.displayOrder}
-                    settings={settings}
-                    handleConfigChange={handleConfigChange}
+                    sortableSettings={sortableSettings}
+                    rotationGroups={settings.config.rotationGroups || []}
+                    getConfigValue={(key) =>
+                      settings.config[key as keyof typeof settings.config] as {
+                        enabled: boolean;
+                        [key: string]: unknown;
+                      }
+                    }
+                    onConfigChange={onConfigChange}
+                    renderItemChildren={(item, configValue) => (
+                      <>
+                        {item.hasSubSetting &&
+                          item.configKey === 'pitStatus' &&
+                          settings.config.pitStatus.enabled && (
+                            <div className="flex flex-col gap-2 pl-3 mt-2">
+                              <div className="flex items-center justify-between">
+                                <span className="text-sm text-slate-300">
+                                  Pit Time
+                                </span>
+                                <ToggleSwitch
+                                  enabled={
+                                    settings.config.pitStatus.showPitTime ??
+                                    false
+                                  }
+                                  onToggle={(enabled) => {
+                                    handleConfigChange({
+                                      pitStatus: {
+                                        ...settings.config.pitStatus,
+                                        showPitTime: enabled,
+                                      },
+                                    });
+                                  }}
+                                />
+                              </div>
+                              <div className="flex items-center justify-between">
+                                <span className="text-sm text-slate-300">
+                                  Pitlap display mode
+                                </span>
+                                <select
+                                  value={
+                                    settings.config.pitStatus.pitLapDisplayMode
+                                  }
+                                  onChange={(e) => {
+                                    handleConfigChange({
+                                      pitStatus: {
+                                        ...settings.config.pitStatus,
+                                        pitLapDisplayMode: e.target.value as
+                                          | 'lastPitLap'
+                                          | 'lapsSinceLastPit',
+                                      },
+                                    });
+                                  }}
+                                  className="bg-slate-700 text-white rounded-md px-2 py-1 text-xs"
+                                >
+                                  <option value="lastPitLap">
+                                    Last pit lap
+                                  </option>
+                                  <option value="lapsSinceLastPit">
+                                    Laps since last pit
+                                  </option>
+                                </select>
+                              </div>
+                            </div>
+                          )}
+                        {item.hasSubSetting &&
+                          item.configKey === 'carManufacturer' &&
+                          settings.config.carManufacturer.enabled && (
+                            <div className="flex items-center justify-between pl-3 mt-2">
+                              <span className="text-sm text-slate-300">
+                                Hide If Single Make
+                              </span>
+                              <ToggleSwitch
+                                enabled={
+                                  settings.config.carManufacturer
+                                    .hideIfSingleMake ?? false
+                                }
+                                onToggle={(enabled) => {
+                                  handleConfigChange({
+                                    carManufacturer: {
+                                      ...settings.config.carManufacturer,
+                                      hideIfSingleMake: enabled,
+                                    },
+                                  });
+                                }}
+                              />
+                            </div>
+                          )}
+                        {item.hasSubSetting &&
+                          (item.configKey === 'gap' ||
+                            item.configKey === 'interval') &&
+                          configValue.enabled && (
+                            <div className="flex items-center justify-between pl-3 mt-2">
+                              <span className="text-sm text-slate-300">
+                                Decimal Places
+                              </span>
+                              <select
+                                value={
+                                  (
+                                    configValue as unknown as {
+                                      decimalPlaces: number;
+                                    }
+                                  ).decimalPlaces
+                                }
+                                onChange={(e) => {
+                                  onConfigChange({
+                                    [item.configKey]: {
+                                      ...configValue,
+                                      decimalPlaces: parseInt(e.target.value),
+                                    },
+                                  });
+                                }}
+                                className="bg-slate-700 text-white rounded-md px-2 py-1 text-xs"
+                              >
+                                <option value={1}>1</option>
+                                <option value={2}>2</option>
+                                <option value={3}>3</option>
+                              </select>
+                            </div>
+                          )}
+                        {item.hasSubSetting &&
+                          item.configKey === 'lapTimeDeltas' &&
+                          settings.config.lapTimeDeltas.enabled && (
+                            <div className="flex items-center justify-between pl-3 mt-2">
+                              <span className="text-sm text-slate-300">
+                                Number of Laps
+                              </span>
+                              <select
+                                value={settings.config.lapTimeDeltas.numLaps}
+                                onChange={(e) => {
+                                  handleConfigChange({
+                                    lapTimeDeltas: {
+                                      ...settings.config.lapTimeDeltas,
+                                      numLaps: parseInt(e.target.value),
+                                    },
+                                  });
+                                }}
+                                className="bg-slate-700 text-white rounded-md px-2 py-1 text-xs"
+                              >
+                                {[1, 2, 3, 4, 5, 10].map((n) => (
+                                  <option key={n} value={n}>
+                                    {n}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                          )}
+                        {item.configKey === 'badge' && configValue.enabled && (
+                          <div className="mt-3">
+                            <div className="flex flex-wrap gap-3 justify-end">
+                              {(
+                                [
+                                  'license-color-fullrating-combo',
+                                  'fullrating-color-no-license',
+                                  'rating-color-no-license',
+                                  'license-color-fullrating-bw',
+                                  'license-color-rating-bw',
+                                  'rating-only-color-rating-bw',
+                                  'license-color-rating-bw-no-license',
+                                  'license-bw-rating-bw',
+                                  'rating-only-bw-rating-bw',
+                                  'license-bw-rating-bw-no-license',
+                                  'rating-bw-no-license',
+                                  'fullrating-bw-no-license',
+                                ] as const
+                              ).map((format) => (
+                                <BadgeFormatPreview
+                                  key={format}
+                                  format={format}
+                                  selected={
+                                    (
+                                      configValue as unknown as {
+                                        badgeFormat: string;
+                                      }
+                                    ).badgeFormat === format
+                                  }
+                                  onClick={() => {
+                                    handleConfigChange({
+                                      badge: {
+                                        ...settings.config.badge,
+                                        badgeFormat:
+                                          format as StandingsBadgeFormat,
+                                      },
+                                    });
+                                  }}
+                                />
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        {item.configKey === 'driverName' &&
+                          configValue.enabled && (
+                            <div className="mt-3 flex flex-col gap-3">
+                              <div className="flex flex-wrap gap-3 justify-end">
+                                {(
+                                  [
+                                    'name-middlename-surname',
+                                    'name-m.-surname',
+                                    'name-surname',
+                                    'n.-surname',
+                                    'surname-n.',
+                                    'surname',
+                                  ] as const
+                                ).map((format) => (
+                                  <DriverNamePreview
+                                    key={format}
+                                    format={format}
+                                    selected={
+                                      (
+                                        configValue as unknown as {
+                                          nameFormat: string;
+                                        }
+                                      ).nameFormat === format
+                                    }
+                                    onClick={() => {
+                                      handleConfigChange({
+                                        driverName: {
+                                          ...settings.config.driverName,
+                                          nameFormat: format,
+                                        },
+                                      });
+                                    }}
+                                  />
+                                ))}
+                              </div>
+                              <div className="flex items-center justify-between pl-3">
+                                <span className="text-sm text-slate-300">
+                                  Remove Numbers From Names
+                                </span>
+                                <ToggleSwitch
+                                  enabled={
+                                    settings.config.driverName
+                                      .removeNumbersFromName
+                                  }
+                                  onToggle={(enabled) => {
+                                    handleConfigChange({
+                                      driverName: {
+                                        ...settings.config.driverName,
+                                        removeNumbersFromName: enabled,
+                                      },
+                                    });
+                                  }}
+                                />
+                              </div>
+                              <div className="flex items-center justify-between pl-3">
+                                <span className="text-sm text-slate-300">
+                                  Status Badges
+                                </span>
+                                <ToggleSwitch
+                                  enabled={
+                                    settings.config.driverName.showStatusBadges
+                                  }
+                                  onToggle={(enabled) => {
+                                    handleConfigChange({
+                                      driverName: {
+                                        ...settings.config.driverName,
+                                        showStatusBadges: enabled,
+                                      },
+                                    });
+                                  }}
+                                />
+                              </div>
+                            </div>
+                          )}
+                        {(item.configKey === 'fastestTime' ||
+                          item.configKey === 'lastTime') &&
+                          configValue.enabled && (
+                            <div className="flex items-center justify-between pl-3 mt-2">
+                              <span className="text-sm text-slate-300">
+                                Time Format
+                              </span>
+                              <select
+                                value={
+                                  (
+                                    configValue as unknown as {
+                                      timeFormat: string;
+                                    }
+                                  ).timeFormat
+                                }
+                                onChange={(e) => {
+                                  onConfigChange({
+                                    [item.configKey]: {
+                                      ...configValue,
+                                      timeFormat: e.target.value,
+                                    },
+                                  });
+                                }}
+                                className="bg-slate-700 text-white rounded-md px-2 py-1 text-xs"
+                              >
+                                <option value="full">1:42.123</option>
+                                <option value="mixed">1:42.1</option>
+                                <option value="minutes">1:42</option>
+                                <option value="seconds-full">42.123</option>
+                                <option value="seconds-mixed">42.1</option>
+                                <option value="seconds">42</option>
+                              </select>
+                            </div>
+                          )}
+                      </>
+                    )}
                   />
 
                   <SettingActionButton

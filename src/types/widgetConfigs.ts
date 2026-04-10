@@ -125,22 +125,55 @@ export type RelativeBadgeFormat =
 // Widget config types
 // ===========================
 
-export interface StandingsConfig {
+export interface BaseDisplayConfig {
+  position: { enabled: boolean };
+  carNumber: { enabled: boolean };
+  driverName: DriverNameConfig;
+  teamName: { enabled: boolean };
+  pitStatus: PitStatusConfig;
+  carManufacturer: {
+    enabled: boolean;
+    hideIfSingleMake?: boolean;
+    displayMode?: ColumnDisplayMode;
+  };
+  badge: {
+    enabled: boolean;
+    badgeFormat: string;
+    displayMode?: ColumnDisplayMode;
+  };
+  countryFlags: { enabled: boolean; displayMode?: ColumnDisplayMode };
+  compound: { enabled: boolean; displayMode?: ColumnDisplayMode };
+  driverTag: {
+    enabled: boolean;
+    widthPx?: number;
+    displayMode?: ColumnDisplayMode;
+  };
   iratingChange: { enabled: boolean; displayMode?: ColumnDisplayMode };
-  positionChange: { enabled: boolean; displayMode?: ColumnDisplayMode };
+  lastTime: { enabled: boolean; timeFormat: TimeFormat };
+  fastestTime: { enabled: boolean; timeFormat: TimeFormat };
+  titleBar: { enabled: boolean; progressBar: { enabled: boolean } };
+  headerBar: SessionBarConfig;
+  footerBar: SessionBarConfig;
+  background: { opacity: number };
+  showOnlyWhenOnTrack: boolean;
+  useLivePosition?: boolean;
+  displayOrder: string[];
+  rotationGroups?: { columns: string[] }[];
+  sessionVisibility: SessionVisibilitySettings;
+  stylingOptions?: StylingOptions;
+}
+
+export interface StandingsConfig extends BaseDisplayConfig {
   badge: {
     enabled: boolean;
     badgeFormat: StandingsBadgeFormat;
     displayMode?: ColumnDisplayMode;
   };
+  positionChange: { enabled: boolean; displayMode?: ColumnDisplayMode };
   delta: { enabled: boolean };
   gap: { enabled: boolean; decimalPlaces?: number };
   interval: { enabled: boolean; decimalPlaces?: number };
-  lastTime: { enabled: boolean; timeFormat: TimeFormat };
-  fastestTime: { enabled: boolean; timeFormat: TimeFormat };
-  background: { opacity: number };
-  countryFlags: { enabled: boolean; displayMode?: ColumnDisplayMode };
-  carNumber: { enabled: boolean };
+  lapTimeDeltas: { enabled: boolean; numLaps: number };
   driverStandings: {
     buffer: number;
     numNonClassDrivers: number;
@@ -148,73 +181,18 @@ export interface StandingsConfig {
     numTopDrivers: number;
     topDriverDivider?: 'none' | 'theme' | 'highlight';
   };
-  compound: { enabled: boolean; displayMode?: ColumnDisplayMode };
-  carManufacturer: {
-    enabled: boolean;
-    hideIfSingleMake?: boolean;
-    displayMode?: ColumnDisplayMode;
-  };
-  lapTimeDeltas: { enabled: boolean; numLaps: number };
-  titleBar: { enabled: boolean; progressBar: { enabled: boolean } };
-  headerBar: SessionBarConfig;
-  footerBar: SessionBarConfig;
-  showOnlyWhenOnTrack: boolean;
-  useLivePosition?: boolean;
-  position: { enabled: boolean };
-  driverName: DriverNameConfig;
-  teamName: { enabled: boolean };
-  pitStatus: PitStatusConfig;
-  driverTag: {
-    enabled: boolean;
-    widthPx?: number;
-    displayMode?: ColumnDisplayMode;
-  };
-  displayOrder: string[];
-  rotationGroups?: { columns: string[] }[];
-  sessionVisibility: SessionVisibilitySettings;
-  stylingOptions?: StylingOptions;
   classHeaderStyle?: ClassHeaderStyle;
 }
 
-export interface RelativeConfig {
-  buffer: number;
-  background: { opacity: number };
-  countryFlags: { enabled: boolean; displayMode?: ColumnDisplayMode };
-  carNumber: { enabled: boolean };
-  lastTime: { enabled: boolean; timeFormat: TimeFormat };
-  fastestTime: { enabled: boolean; timeFormat: TimeFormat };
-  compound: { enabled: boolean; displayMode?: ColumnDisplayMode };
-  carManufacturer: {
-    enabled: boolean;
-    hideIfSingleMake?: boolean;
-    displayMode?: ColumnDisplayMode;
-  };
-  titleBar: { enabled: boolean; progressBar: { enabled: boolean } };
-  headerBar: SessionBarConfig;
-  footerBar: SessionBarConfig;
-  showOnlyWhenOnTrack: boolean;
+export interface RelativeConfig extends BaseDisplayConfig {
   badge: {
     enabled: boolean;
     badgeFormat: RelativeBadgeFormat;
     displayMode?: ColumnDisplayMode;
   };
-  iratingChange: { enabled: boolean; displayMode?: ColumnDisplayMode };
   positionChange?: { enabled: boolean; displayMode?: ColumnDisplayMode };
   delta: { enabled: boolean; precision: number };
-  position: { enabled: boolean };
-  driverName: DriverNameConfig;
-  teamName: { enabled: boolean };
-  pitStatus: PitStatusConfig;
-  driverTag: {
-    enabled: boolean;
-    widthPx?: number;
-    displayMode?: ColumnDisplayMode;
-  };
-  displayOrder: string[];
-  rotationGroups?: { columns: string[] }[];
-  useLivePosition?: boolean;
-  sessionVisibility: SessionVisibilitySettings;
-  stylingOptions?: StylingOptions;
+  buffer: number;
 }
 
 export interface WeatherConfig {
