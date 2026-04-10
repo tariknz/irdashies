@@ -77,6 +77,12 @@ const sortableSettings: SharedSortableSetting[] = [
     canRotate: true,
   },
   {
+    id: 'positionChange',
+    label: 'Position Change',
+    configKey: 'positionChange',
+    canRotate: true,
+  },
+  {
     id: 'delta',
     label: 'Relative',
     configKey: 'delta',
