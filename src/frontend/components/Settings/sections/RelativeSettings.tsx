@@ -9,7 +9,7 @@ import {
 } from '@irdashies/types';
 import { ToggleSwitch } from '../components/ToggleSwitch';
 import { TabButton } from '../components/TabButton';
-import { SortableList, useSortableList } from '../../SortableList';
+import { useSortableList } from '../../SortableList';
 import { DraggableSettingItem } from '../components/DraggableSettingItem';
 import { BadgeFormatPreview } from '../components/BadgeFormatPreview';
 import { DEFAULT_SESSION_BAR_DISPLAY_ORDER } from '../sessionBarConstants';
@@ -355,7 +355,7 @@ const DisplaySettingsList = ({
                   ).map((format) => (
                     <BadgeFormatPreview
                       key={format}
-                      format={format as any}
+                      format={format}
                       selected={(configValue as { badgeFormat: string }).badgeFormat === format}
                       onClick={() => {
                         handleConfigChange({
@@ -461,7 +461,7 @@ const DisplaySettingsList = ({
 };
 
 export const RelativeSettings = () => {
-  const { currentDashboard, onDashboardUpdated } = useDashboard();
+  const { currentDashboard } = useDashboard();
   const savedSettings = currentDashboard?.widgets.find(
     (w) => w.id === SETTING_ID
   ) as RelativeWidgetSettings | undefined;

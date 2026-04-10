@@ -25,15 +25,10 @@ import { LapTimeLogSettings } from './sections/LapTimeLogSettings';
 import { InformationBarSettings } from './sections/InformationBarSettings';
 import { useDashboard } from '@irdashies/context';
 import { SlowCarAheadSettings } from './sections/SlowCarAheadSettings';
-import type {
-  StandingsWidgetSettings,
-  RelativeWidgetSettings,
-  DashboardWidget,
-} from '@irdashies/types';
 
 export const SettingsLoader = () => {
   const { widgetId } = useParams<{ widgetId: string }>();
-  const { currentDashboard, onDashboardUpdated } = useDashboard();
+  const { currentDashboard } = useDashboard();
 
   // 1. Handle non-widget pages
   if (widgetId === 'general') return <GeneralSettings />;
