@@ -502,7 +502,25 @@ export const StandingsSettings = () => {
     enabled: savedSettings?.enabled ?? true,
     config: (savedSettings?.config as StandingsWidgetSettings['config']) || defaultConfig,
   });
+  const [activeTab, setActiveTab] = useState<SettingsTabType>(
+    () => (localStorage.getItem('standingsTab') as SettingsTabType) || 'display'
+  );
 
+  useEffect(() => {
+    localStorage.setItem('standingsTab', activeTab);
+  }, [activeTab]);
+
+  if (!currentDashboard) return null;
+
+  return (
+    <BaseSettingsSection
+      title="Standings"
+      description="Configure the standings and leaderboard display settings."
+      settings={settings}
+      onSettingsChange={setSettings}
+      widgetId="standings"
+    >
+      {(handleConfigChange) => {
         return (
           <div className="space-y-4">
             {/* Tabs */}

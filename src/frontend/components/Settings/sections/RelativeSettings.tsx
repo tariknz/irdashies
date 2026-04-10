@@ -471,6 +471,25 @@ export const RelativeSettings = () => {
     config: (savedSettings?.config as RelativeWidgetSettings['config']) || defaultConfig,
   });
 
+  const [activeTab, setActiveTab] = useState<SettingsTabType>(
+    () => (localStorage.getItem('relativeTab') as SettingsTabType) || 'display'
+  );
+
+  useEffect(() => {
+    localStorage.setItem('relativeTab', activeTab);
+  }, [activeTab]);
+
+  if (!currentDashboard) return null;
+
+  return (
+    <BaseSettingsSection
+      title="Relative"
+      description="Configure the relative timing display settings."
+      settings={settings}
+      onSettingsChange={setSettings}
+      widgetId="relative"
+    >
+      {(handleConfigChange) => {
         return (
           <div className="space-y-4">
             {/* Tabs */}
