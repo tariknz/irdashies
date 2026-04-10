@@ -5,6 +5,7 @@ interface LastTimeCellProps {
   lastTimeString: string;
   lastTimeState?: LastTimeState;
   compactMode?: string;
+  inRotationGroup?: boolean;
 }
 
 const getLastTimeColorClass = (state?: LastTimeState): string => {
@@ -14,13 +15,29 @@ const getLastTimeColorClass = (state?: LastTimeState): string => {
 };
 
 export const LastTimeCell = memo(
-  ({ lastTimeString, lastTimeState, compactMode }: LastTimeCellProps) => {
+  ({
+    lastTimeString,
+    lastTimeState,
+    compactMode,
+    inRotationGroup = false,
+  }: LastTimeCellProps) => {
     const pxClass =
       compactMode === 'ultra'
         ? ''
         : compactMode === 'compact'
           ? 'px-1'
           : 'px-2';
+
+    const content = (
+      <div
+        className={`whitespace-nowrap ${getLastTimeColorClass(lastTimeState)} ${inRotationGroup ? 'w-full h-full flex items-center justify-center' : ''}`}
+      >
+        {lastTimeString}
+      </div>
+    );
+
+    if (inRotationGroup) return content;
+
     return (
       <td
         data-column="lastTime"

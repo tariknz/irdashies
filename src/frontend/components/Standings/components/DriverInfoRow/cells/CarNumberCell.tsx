@@ -7,6 +7,7 @@ interface CarNumberCellProps {
   showBackground?: boolean;
   showBorder?: boolean;
   compactMode?: string;
+  inRotationGroup?: boolean;
 }
 
 export const CarNumberCell = memo(
@@ -16,6 +17,7 @@ export const CarNumberCell = memo(
     showBackground = true,
     showBorder = true,
     compactMode,
+    inRotationGroup = false,
   }: CarNumberCellProps) => {
     const colorClass = showBackground
       ? tailwindStyles.driverIcon
@@ -24,6 +26,16 @@ export const CarNumberCell = memo(
         : '';
     const borderClass = showBorder ? 'border-l-4' : '';
     const pxClass = compactMode === 'ultra' ? '' : 'px-1';
+
+    const content = (
+      <div
+        className={`w-full h-full flex items-center justify-center ${colorClass} ${borderClass} text-white whitespace-nowrap`}
+      >
+        {`#${carNumber}`}
+      </div>
+    );
+
+    if (inRotationGroup) return content;
 
     return (
       <td

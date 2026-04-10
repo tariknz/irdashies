@@ -21,6 +21,7 @@ interface PitStatusCellProps {
   pitExitAfterSF?: boolean;
   isMinimal?: boolean;
   compactMode?: string;
+  inRotationGroup?: boolean;
 }
 
 export const PitStatusCell = memo(
@@ -39,6 +40,7 @@ export const PitStatusCell = memo(
     pitExitAfterSF,
     isMinimal,
     compactMode,
+    inRotationGroup = false,
   }: PitStatusCellProps) => {
     const widthClass = showPitTime ? 'w-[7rem]' : 'w-[4.5rem]';
     const pxClass = compactMode === 'ultra' ? '' : 'px-1';
@@ -62,6 +64,29 @@ export const PitStatusCell = memo(
       (lastPitLap == lastLap ||
         (!!pitExitAfterSF && lastPitLap + 1 == lastLap)) &&
       carTrackSurface != -1;
+
+    const content = (
+      <div
+        className={`${inRotationGroup ? 'w-full h-full flex items-center justify-center' : ''}`}
+      >
+        <DriverStatusBadges
+          dnf={dnf}
+          tow={tow}
+          pit={pit}
+          out={out}
+          lap={lap}
+          lastPit={lastPit}
+          lastPitLap={lastPitLap}
+          pitStopDuration={pitStopDuration}
+          showPitTime={showPitTime}
+          pitLapDisplayMode={pitLapDisplayMode}
+          pitExitAfterSF={pitExitAfterSF}
+          isMinimal={isMinimal}
+        />
+      </div>
+    );
+
+    if (inRotationGroup) return content;
 
     return (
       <td

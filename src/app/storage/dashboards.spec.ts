@@ -17,6 +17,12 @@ vi.mock('./storage', () => ({
   writeData: mockWriteData,
 }));
 
+vi.mock('electron', () => ({
+  app: {
+    getPath: vi.fn().mockReturnValue('/mock/user/data'),
+  },
+}));
+
 describe('dashboards', () => {
   beforeEach(() => {
     mockReadData.mockReset();

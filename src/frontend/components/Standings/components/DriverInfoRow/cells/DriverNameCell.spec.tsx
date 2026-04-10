@@ -62,8 +62,16 @@ describe('DriverNameCell', () => {
 
     // Verify keyframe structure
     const calls = vi.mocked(HTMLElement.prototype.animate).mock.calls;
-    expect(calls[0][1]).toEqual({ duration: 10000, iterations: Infinity });
-    expect(calls[1][1]).toEqual({ duration: 10000, iterations: Infinity });
+    expect(calls[0][1]).toEqual({
+      duration: 10000,
+      iterations: Infinity,
+      fill: 'both',
+    });
+    expect(calls[1][1]).toEqual({
+      duration: 10000,
+      iterations: Infinity,
+      fill: 'both',
+    });
   });
 
   it('seeks animations to Date.now() phase on mount', () => {

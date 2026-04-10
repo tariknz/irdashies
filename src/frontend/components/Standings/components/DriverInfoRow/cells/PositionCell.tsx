@@ -8,6 +8,7 @@ interface PositionCellProps {
   offTrack: boolean;
   showBackground?: boolean;
   compactMode?: string;
+  inRotationGroup?: boolean;
 }
 
 export const PositionCell = memo(
@@ -18,6 +19,7 @@ export const PositionCell = memo(
     tailwindStyles,
     showBackground = true,
     compactMode,
+    inRotationGroup = false,
   }: PositionCellProps) => {
     const positionColor = offTrack
       ? 'bg-yellow-400'
@@ -31,6 +33,16 @@ export const PositionCell = memo(
         : compactMode === 'compact'
           ? 'px-1'
           : 'px-2';
+
+    const content = (
+      <div
+        className={`w-full h-full flex items-center justify-center whitespace-nowrap ${positionColor} ${textColor}`}
+      >
+        {position}
+      </div>
+    );
+
+    if (inRotationGroup) return content;
 
     return (
       <td
