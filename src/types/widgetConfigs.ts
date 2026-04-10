@@ -504,6 +504,19 @@ export interface SlowCarAheadConfig {
   sessionVisibility: SessionVisibilitySettings;
 }
 
+export interface BattleConfig {
+  background: { opacity: number };
+  showOnlyWhenOnTrack: boolean;
+  position: { enabled: boolean };
+  carNumber: { enabled: boolean };
+  driverName: { enabled: boolean };
+  stint: { enabled: boolean };
+  lastTime: { enabled: boolean; timeFormat: TimeFormat };
+  gap: { enabled: boolean; decimalPlaces: number };
+  displayOrder: string[];
+  sessionVisibility: SessionVisibilitySettings;
+}
+
 // ===========================
 // Widget config map + typed widget
 // ===========================
@@ -534,6 +547,7 @@ export interface WidgetConfigMap {
   laptimelog: LapTimeLogConfig;
   infobar: InformationBarConfig;
   slowcarahead: SlowCarAheadConfig;
+  battle: BattleConfig;
 }
 
 export type TypedDashboardWidget<
@@ -629,3 +643,4 @@ export type LapTimeLogWidgetSettings = BaseWidgetSettings<LapTimeLogConfig>;
 export type InformationBarWidgetSettings =
   BaseWidgetSettings<InformationBarConfig>;
 export type SlowCarAheadWidgetSettings = BaseWidgetSettings<SlowCarAheadConfig>;
+export type BattleWidgetSettings = BaseWidgetSettings<BattleConfig>;
