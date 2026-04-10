@@ -15,6 +15,7 @@ import { Tachometer } from './components/Tachometer/Tachometer';
 import { Flag } from './components/Flag';
 import { TwitchChat } from './components/TwitchChat/TwitchChat';
 import { LapTimeLog } from './components/LapTimeLog/LapTimeLog';
+import { InformationBar } from './components/InformationBar/InformationBar';
 import { SlowCarAhead } from './components/SlowCarAhead/SlowCarAhead';
 
 // TODO: type this better, right now the config comes from settings
@@ -41,6 +42,7 @@ export const WIDGET_MAP: Record<
   flag: Flag,
   twitchchat: TwitchChat,
   laptimelog: LapTimeLog,
+  infobar: InformationBar,
   slowcarahead: SlowCarAhead,
 };
 

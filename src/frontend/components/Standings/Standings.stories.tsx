@@ -478,7 +478,7 @@ const StandingsWithoutHeader = () => {
         </tbody>
       </table>
       {/* Keep SessionBar here */}
-      <SessionBar position="footer" />
+      <SessionBar settings={settings.footerBar} position="footer" />
     </div>
   );
 };
@@ -524,7 +524,7 @@ const StandingsWithoutFooter = () => {
     >
       <TitleBar titleBarSettings={settings?.titleBar} />
       {/* Keep SessionBar here */}
-      <SessionBar />
+      <SessionBar settings={settings.headerBar} position="header" />
       <table className="w-full table-auto text-sm border-separate border-spacing-y-0.5">
         <tbody>
           {standings.map(([classId, classStandings]) =>

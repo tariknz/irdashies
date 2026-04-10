@@ -22,6 +22,7 @@ import { TwitchChatSettings } from './sections/TwitchChatSettings';
 import { DriverTagsSettings } from './sections/DriverTagsSettings';
 import { KeybindingsSettings } from './sections/KeybindingsSettings';
 import { LapTimeLogSettings } from './sections/LapTimeLogSettings';
+import { InformationBarSettings } from './sections/InformationBarSettings';
 import { useDashboard } from '@irdashies/context';
 import { SlowCarAheadSettings } from './sections/SlowCarAheadSettings';
 import type {
@@ -49,35 +50,9 @@ export const SettingsLoader = () => {
 
   switch (type) {
     case 'standings':
-      if (!widget || !currentDashboard || !onDashboardUpdated) return null;
-      return (
-        <StandingsSettings
-          settings={widget as unknown as StandingsWidgetSettings}
-          onUpdate={(changes) => {
-            const nextDashboard = JSON.parse(JSON.stringify(currentDashboard));
-            nextDashboard.widgets = nextDashboard.widgets.map(
-              (w: DashboardWidget) =>
-                w.id === widget.id ? { ...w, ...changes } : w
-            );
-            onDashboardUpdated(nextDashboard);
-          }}
-        />
-      );
+      return <StandingsSettings />;
     case 'relative':
-      if (!widget || !currentDashboard || !onDashboardUpdated) return null;
-      return (
-        <RelativeSettings
-          settings={widget as unknown as RelativeWidgetSettings}
-          onUpdate={(changes) => {
-            const nextDashboard = JSON.parse(JSON.stringify(currentDashboard));
-            nextDashboard.widgets = nextDashboard.widgets.map(
-              (w: DashboardWidget) =>
-                w.id === widget.id ? { ...w, ...changes } : w
-            );
-            onDashboardUpdated(nextDashboard);
-          }}
-        />
-      );
+      return <RelativeSettings />;
     case 'weather':
       return <WeatherSettings />;
     case 'fuel':
@@ -106,6 +81,8 @@ export const SettingsLoader = () => {
       return <TwitchChatSettings />;
     case 'laptimelog':
       return <LapTimeLogSettings />;
+    case 'infobar':
+      return <InformationBarSettings />;
     case 'slowcarahead':
       return <SlowCarAheadSettings />;
     default:

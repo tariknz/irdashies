@@ -534,6 +534,12 @@ export interface SlowCarAheadConfig {
 // Widget config map + typed widget
 // ===========================
 
+export interface InformationBarConfig extends SessionBarConfig {
+  background: { opacity: number };
+  showOnlyWhenOnTrack: boolean;
+  sessionVisibility: SessionVisibilitySettings;
+}
+
 export interface WidgetConfigMap {
   standings: StandingsConfig;
   relative: RelativeConfig;
@@ -552,6 +558,7 @@ export interface WidgetConfigMap {
   pitlanehelper: PitlaneHelperConfig;
   twitchchat: TwitchChatConfig;
   laptimelog: LapTimeLogConfig;
+  infobar: InformationBarConfig;
   slowcarahead: SlowCarAheadConfig;
 }
 
@@ -645,4 +652,6 @@ export type PitlaneHelperWidgetSettings =
   BaseWidgetSettings<PitlaneHelperConfig>;
 export type TwitchChatWidgetSettings = BaseWidgetSettings<TwitchChatConfig>;
 export type LapTimeLogWidgetSettings = BaseWidgetSettings<LapTimeLogConfig>;
+export type InformationBarWidgetSettings =
+  BaseWidgetSettings<InformationBarConfig>;
 export type SlowCarAheadWidgetSettings = BaseWidgetSettings<SlowCarAheadConfig>;

@@ -78,7 +78,7 @@ export const Standings = () => {
     >
       <TitleBar titleBarSettings={settings?.titleBar} />
       {(settings?.headerBar?.enabled ?? true) && (
-        <SessionBar position="header" variant="standings" />
+        <SessionBar settings={settings.headerBar} position="header" />
       )}
       <table
         className={`w-full table-auto text-sm border-separate ${tableBorderSpacing}`}
@@ -249,7 +249,7 @@ export const Standings = () => {
         </tbody>
       </table>
       {(settings?.footerBar?.enabled ?? true) && (
-        <SessionBar position="footer" variant="standings" />
+        <SessionBar settings={settings.footerBar} position="footer" />
       )}
     </div>
   );
