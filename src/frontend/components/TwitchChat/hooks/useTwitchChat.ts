@@ -19,11 +19,17 @@ export function useTwitchChat(channel: string | undefined) {
       const event = msg as any as TwitchMessageEvent;
       const username = event.user.display || event.user.login || 'Unknown';
       const messageText = event.message.text || '';
+      const emotes = event.message.emotes ?? [];
 
       if (messageText && username !== 'Unknown') {
         setMessages((prev) => [
           ...prev,
-          { user: username, text: messageText, id: crypto.randomUUID() },
+          {
+            user: username,
+            text: messageText,
+            id: crypto.randomUUID(),
+            emotes,
+          },
         ]);
       }
     });

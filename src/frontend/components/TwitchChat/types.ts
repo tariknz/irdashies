@@ -1,7 +1,13 @@
+export interface TwitchEmote {
+  id: string;
+  indices: [number, number][];
+}
+
 export interface ChatMessage {
   user: string;
   text: string;
   id: string;
+  emotes: TwitchEmote[];
 }
 
 export interface TwitchUser {
@@ -33,7 +39,7 @@ export interface TwitchMessageBody {
   id: string;
   text: string;
   flags: unknown[];
-  emotes: unknown[];
+  emotes: TwitchEmote[];
   isAction: boolean;
   isFirst: boolean;
 }
