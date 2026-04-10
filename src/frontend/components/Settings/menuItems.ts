@@ -52,6 +52,12 @@ export const generalItems: MenuItem[] = [
 
 export const widgetItems: MenuItem[] = [
   {
+    to: '/settings/battle',
+    path: '/battle',
+    label: 'Battle',
+    widgetType: 'battle',
+  },
+  {
     to: '/settings/blindspotmonitor',
     path: '/blindspotmonitor',
     label: 'Blind Spot Monitor',

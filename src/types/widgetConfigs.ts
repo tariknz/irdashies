@@ -617,6 +617,19 @@ export interface SectorDeltaConfig {
   alwaysScroll?: boolean;
 }
 
+export interface BattleConfig {
+  background: { opacity: number };
+  showOnlyWhenOnTrack: boolean;
+  position: { enabled: boolean };
+  carNumber: { enabled: boolean };
+  driverName: { enabled: boolean };
+  stint: { enabled: boolean };
+  lastTime: { enabled: boolean; timeFormat: TimeFormat };
+  gap: { enabled: boolean; decimalPlaces: number };
+  displayOrder: string[];
+  sessionVisibility: SessionVisibilitySettings;
+}
+
 // ===========================
 // Widget config map + typed widget
 // ===========================
@@ -652,6 +665,7 @@ export interface WidgetConfigMap {
   sectordelta: SectorDeltaConfig;
   heartrate: HeartRateConfig;
   cornername: CornerNameOverlayConfig;
+  battle: BattleConfig;
 }
 
 export type TypedDashboardWidget<
@@ -753,3 +767,4 @@ export type SectorDeltaWidgetSettings = BaseWidgetSettings<SectorDeltaConfig>;
 export type HeartRateWidgetSettings = BaseWidgetSettings<HeartRateConfig>;
 export type CornerNameWidgetSettings =
   BaseWidgetSettings<CornerNameOverlayConfig>;
+export type BattleWidgetSettings = BaseWidgetSettings<BattleConfig>;
