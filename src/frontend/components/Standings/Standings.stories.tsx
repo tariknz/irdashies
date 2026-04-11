@@ -270,17 +270,23 @@ export const MultiClassPCCWithClio: Story = {
 export const MultiClassPlayground: Story = {
   argTypes: {
     numNonClassDrivers: {
-      control: { type: 'number', min: 0, max: 20 },
+      control: { type: 'number', min: 0, max: 10 },
       name: 'Drivers from other classes',
+    },
+    numTopDrivers: {
+      control: { type: 'number', min: 0, max: 10 },
+      name: "Top drivers to always show in player's class",
     },
   },
   args: {
     numNonClassDrivers: 3,
+    numTopDrivers: 3,
   },
   decorators: [
     (Story, context) => {
-      const { numNonClassDrivers } = context.args as {
+      const { numNonClassDrivers, numTopDrivers } = context.args as {
         numNonClassDrivers: number;
+        numTopDrivers: number;
       };
       const standingsConfig = defaultDashboard.widgets.find(
         (w) => w.id === 'standings'
@@ -292,6 +298,7 @@ export const MultiClassPlayground: Story = {
           driverStandings: {
             ...standingsConfig?.driverStandings,
             numNonClassDrivers,
+            numTopDrivers,
           },
         },
       })(Story, context);
