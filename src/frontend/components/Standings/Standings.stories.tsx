@@ -279,7 +279,9 @@ export const MultiClassPlayground: Story = {
   },
   decorators: [
     (Story, context) => {
-      const { numNonClassDrivers } = context.args;
+      const { numNonClassDrivers } = context.args as {
+        numNonClassDrivers: number;
+      };
       const standingsConfig = defaultDashboard.widgets.find(
         (w) => w.id === 'standings'
       )?.config as any;
