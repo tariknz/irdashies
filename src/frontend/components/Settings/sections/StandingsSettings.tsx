@@ -648,9 +648,8 @@ export const StandingsSettings = () => {
                     <SettingSelectRow
                       title="Drivers to show in other classes"
                       value={settings.config.driverStandings.numNonClassDrivers.toString()}
-                      options={Array.from({ length: 10 }, (_, i) => {
-                        const num = i + 1;
-                        return { label: num.toString(), value: num.toString() };
+                      options={Array.from({ length: 11 }, (_, i) => {
+                        return { label: i.toString(), value: i.toString() };
                       })}
                       onChange={(v) =>
                         handleConfigChange({

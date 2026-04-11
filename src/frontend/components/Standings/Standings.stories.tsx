@@ -267,6 +267,36 @@ export const MultiClassPCCWithClio: Story = {
   decorators: [TelemetryDecorator('/test-data/1731637331038')],
 };
 
+export const MultiClassPlayground: Story = {
+  argTypes: {
+    numNonClassDrivers: {
+      control: { type: 'number', min: 0, max: 20 },
+      name: 'Drivers from other classes',
+    },
+  },
+  args: {
+    numNonClassDrivers: 3,
+  },
+  decorators: [
+    (Story, context) => {
+      const { numNonClassDrivers } = context.args;
+      const standingsConfig = defaultDashboard.widgets.find(
+        (w) => w.id === 'standings'
+      )?.config as any;
+
+      return TelemetryDecoratorWithConfig('/test-data/1731637331038', {
+        standings: {
+          ...standingsConfig,
+          driverStandings: {
+            ...standingsConfig?.driverStandings,
+            numNonClassDrivers,
+          },
+        },
+      })(Story, context);
+    },
+  ],
+};
+
 export const SupercarsRace: Story = {
   decorators: [TelemetryDecorator('/test-data/1732274253573')],
 };
