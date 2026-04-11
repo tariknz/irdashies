@@ -132,32 +132,44 @@ function SettingsContent({
 interface PreviewSettingsButtonProps {
   activeWidgets: Set<string>;
   onToggleWidget: (id: string) => void;
+  openToWidget?: string | null;
+  onClose?: () => void;
 }
 
 export function PreviewSettingsButton({
   activeWidgets,
   onToggleWidget,
+  openToWidget,
+  onClose,
 }: PreviewSettingsButtonProps) {
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+
+  const isOpen = internalOpen || !!openToWidget;
+  const initialRoute = `/settings/${openToWidget || 'standings'}`;
+
+  const handleClose = () => {
+    setInternalOpen(false);
+    onClose?.();
+  };
 
   return (
     <>
       <button
-        onClick={() => setOpen(true)}
+        onClick={() => setInternalOpen(true)}
         className="flex items-center gap-1.5 px-2.5 py-1 rounded-sm text-[10px] font-bold uppercase tracking-wide text-red-600 border border-red-600/40 bg-red-600/5 hover:bg-red-600/15 hover:border-red-600/60 transition-colors"
       >
         <GearSix size={12} weight="bold" />
         Configure
       </button>
 
-      {open && (
-        <MemoryRouter initialEntries={['/settings/standings']}>
+      {isOpen && (
+        <MemoryRouter initialEntries={[initialRoute]} key={initialRoute}>
           <Routes>
             <Route
               path="/settings/:widgetId"
               element={
                 <SettingsContent
-                  onClose={() => setOpen(false)}
+                  onClose={handleClose}
                   activeWidgets={activeWidgets}
                   onToggleWidget={onToggleWidget}
                 />

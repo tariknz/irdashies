@@ -60,13 +60,13 @@ const AVAILABLE_WIDGETS = [
     component: Standings,
     defaultOn: true,
   },
-  { id: 'relative', label: 'Relative', component: Relative, defaultOn: false },
+  { id: 'relative', label: 'Relative', component: Relative, defaultOn: true },
   { id: 'input', label: 'Input Trace', component: Input, defaultOn: true },
   {
     id: 'tachometer',
     label: 'Tachometer',
     component: Tachometer,
-    defaultOn: true,
+    defaultOn: false,
   },
   { id: 'weather', label: 'Weather', component: Weather, defaultOn: true },
   { id: 'flag', label: 'Flag', component: Flag, defaultOn: false },
@@ -76,7 +76,7 @@ const AVAILABLE_WIDGETS = [
     component: InformationBar,
     defaultOn: false,
   },
-  { id: 'map', label: 'Track Map', component: TrackMap, defaultOn: false },
+  { id: 'map', label: 'Track Map', component: TrackMap, defaultOn: true },
   {
     id: 'flatmap',
     label: 'Flat Track Map',
@@ -127,16 +127,8 @@ const AVAILABLE_WIDGETS = [
   },
 ] as const;
 
-// Build default positions using real widget dimensions from defaultDashboard,
-// arranged so default-enabled widgets never overlap on first load.
-//
-// Layout (default-on widgets):
-//   Col 1 (left):    standings, then relative below
-//   Col 2 (middle):  map, input below, fastercarsfrombehind below that
-//   Col 3 (right):   weather
-//
-// Non-default widgets get staggered positions in cols 2/3 so toggling
-// them on doesn't stack everything at (20, 20).
+// Default-on widgets are laid out in three columns so they don't overlap.
+// Any widget toggled on later just appears at PAD,PAD with its default size.
 
 const PAD = 20;
 const GAP = 10;
@@ -145,70 +137,34 @@ const standingsSize = getDefaultSize('standings');
 const relativeSize = getDefaultSize('relative');
 const mapSize = getDefaultSize('map');
 const inputSize = getDefaultSize('input');
-const fasterCarsSize = getDefaultSize('fastercarsfrombehind');
 const weatherSize = getDefaultSize('weather');
-const tachSize = getDefaultSize('tachometer');
-const flagSize = getDefaultSize('flag');
-const infobarSize = getDefaultSize('infobar');
-const flatmapSize = getDefaultSize('flatmap');
-const fuelSize = getDefaultSize('fuel');
-const blindspotSize = getDefaultSize('blindspotmonitor');
-const rejoinSize = getDefaultSize('rejoin');
-const pitlaneSize = getDefaultSize('pitlanehelper');
-const laptimelogSize = getDefaultSize('laptimelog');
-const slowcarSize = getDefaultSize('slowcarahead');
 
 // Column x positions
 const COL1_X = PAD;
 const COL2_X = COL1_X + standingsSize.width + PAD;
-const COL3_X = COL2_X + mapSize.width + PAD;
+const COL3_X = COL2_X + Math.max(relativeSize.width, mapSize.width) + PAD;
 
-// Col 2 running y for default-on widgets
-const col2MapBottom = PAD + mapSize.height + GAP;
-const col2InputBottom = col2MapBottom + inputSize.height + GAP;
-const col2FasterBottom = col2InputBottom + fasterCarsSize.height + GAP;
+// Col 2 running y
+const col2RelativeBottom = PAD + relativeSize.height + GAP;
+const col2MapBottom = col2RelativeBottom + mapSize.height + GAP;
 
-const DEFAULT_POSITIONS: Record<string, WidgetPosition> = {
-  // --- Default-on widgets (non-overlapping) ---
+// Build positions: default-on widgets get careful placement,
+// everything else falls back to top-left with its default size.
+const DEFAULT_POSITIONS: Record<string, WidgetPosition> = Object.fromEntries(
+  AVAILABLE_WIDGETS.map((w) => {
+    const size = getDefaultSize(w.id);
+    return [w.id, { x: PAD, y: PAD, ...size }];
+  })
+);
+
+// Override positions for default-on widgets so they don't overlap
+Object.assign(DEFAULT_POSITIONS, {
   standings: { x: COL1_X, y: PAD, ...standingsSize },
-  relative: { x: COL1_X, y: PAD + standingsSize.height + GAP, ...relativeSize },
-  map: { x: COL2_X, y: PAD, ...mapSize },
+  relative: { x: COL2_X, y: PAD, ...relativeSize },
+  map: { x: COL2_X, y: col2RelativeBottom, ...mapSize },
   input: { x: COL2_X, y: col2MapBottom, ...inputSize },
-  fastercarsfrombehind: { x: COL2_X, y: col2InputBottom, ...fasterCarsSize },
   weather: { x: COL3_X, y: PAD, ...weatherSize },
-
-  // --- Non-default widgets (staggered so they don't pile up) ---
-  tachometer: { x: COL2_X, y: col2FasterBottom, ...tachSize },
-  flag: { x: COL3_X, y: PAD + weatherSize.height + GAP, ...flagSize },
-  infobar: {
-    x: COL2_X,
-    y: col2FasterBottom + tachSize.height + GAP,
-    ...infobarSize,
-  },
-  flatmap: {
-    x: COL2_X,
-    y: col2FasterBottom,
-    ...flatmapSize,
-  },
-  fuel: { x: COL3_X + weatherSize.width + PAD, y: PAD, ...fuelSize },
-  blindspotmonitor: { x: COL1_X, y: PAD, ...blindspotSize },
-  rejoin: { x: COL1_X, y: PAD, ...rejoinSize },
-  pitlanehelper: {
-    x: COL3_X,
-    y: PAD + weatherSize.height + GAP + flagSize.height + GAP,
-    ...pitlaneSize,
-  },
-  laptimelog: {
-    x: COL3_X + weatherSize.width + PAD,
-    y: PAD + fuelSize.height + GAP,
-    ...laptimelogSize,
-  },
-  slowcarahead: {
-    x: COL2_X,
-    y: col2FasterBottom + tachSize.height + GAP + infobarSize.height + GAP,
-    ...slowcarSize,
-  },
-};
+});
 
 /**
  * Wraps a widget in the overlay-window theme container.
@@ -250,6 +206,7 @@ const PreviewWidgetItem = memo(function PreviewWidgetItem({
   onPositionChange,
   onSelect,
   onDeselect,
+  onDoubleClick,
 }: {
   widgetId: string;
   label: string;
@@ -259,6 +216,7 @@ const PreviewWidgetItem = memo(function PreviewWidgetItem({
   onPositionChange: (id: string, pos: WidgetPosition) => void;
   onSelect: (id: string) => void;
   onDeselect: () => void;
+  onDoubleClick: (id: string) => void;
 }) {
   const [localLayout, setLocalLayout] = useState(position);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(
@@ -331,6 +289,10 @@ const PreviewWidgetItem = memo(function PreviewWidgetItem({
         {...dragHandleProps}
         className="w-full h-full overflow-hidden text-white relative"
         onClick={() => onSelect(widgetId)}
+        onDoubleClick={(e) => {
+          e.stopPropagation();
+          onDoubleClick(widgetId);
+        }}
       >
         {/* Selection border */}
         {isSelected && (
@@ -399,18 +361,16 @@ function ActiveWidgetSync({ activeWidgets }: { activeWidgets: Set<string> }) {
 }
 
 export function LivePreview() {
-  const [activeWidgets, setActiveWidgets] = useState<Set<string>>(() => {
-    const availableIds = new Set(AVAILABLE_WIDGETS.map((w) => w.id));
-    return new Set(
-      defaultDashboard.widgets
-        .filter((w) => w.enabled && availableIds.has(w.type ?? w.id))
-        .map((w) => w.type ?? w.id)
-    );
-  });
+  const [activeWidgets, setActiveWidgets] = useState<Set<string>>(
+    () => new Set(AVAILABLE_WIDGETS.filter((w) => w.defaultOn).map((w) => w.id))
+  );
   const [positions, setPositions] = useState<Record<string, WidgetPosition>>(
     () => ({ ...DEFAULT_POSITIONS })
   );
   const [selectedWidget, setSelectedWidget] = useState<string | null>(null);
+  const [settingsOpenWidget, setSettingsOpenWidget] = useState<string | null>(
+    null
+  );
 
   const toggleWidget = (id: string) => {
     setActiveWidgets((prev) => {
@@ -438,6 +398,10 @@ export function LivePreview() {
 
   const handleDeselect = useCallback(() => {
     setSelectedWidget(null);
+  }, []);
+
+  const handleDoubleClick = useCallback((widgetId: string) => {
+    setSettingsOpenWidget(widgetId);
   }, []);
 
   return (
@@ -516,6 +480,8 @@ export function LivePreview() {
                 <PreviewSettingsButton
                   activeWidgets={activeWidgets}
                   onToggleWidget={toggleWidget}
+                  openToWidget={settingsOpenWidget}
+                  onClose={() => setSettingsOpenWidget(null)}
                 />
               </div>
             </div>
@@ -551,6 +517,7 @@ export function LivePreview() {
                         onPositionChange={handlePositionChange}
                         onSelect={handleSelect}
                         onDeselect={handleDeselect}
+                        onDoubleClick={handleDoubleClick}
                       />
                     );
                   }

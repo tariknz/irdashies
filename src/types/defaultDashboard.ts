@@ -697,7 +697,7 @@ export const defaultDashboard: {
     },
     {
       id: 'fastercarsfrombehind',
-      enabled: true,
+      enabled: false,
       layout: {
         x: 588,
         y: 44,
@@ -784,17 +784,7 @@ export const defaultDashboard: {
               id: 'box-1',
               type: 'box',
               direction: 'col',
-              widgets: [
-                'fuelHeader',
-                'fuelConfidence',
-                'fuelTargetMessage',
-                'fuelGauge',
-                'fuelGrid',
-                'fuelScenarios',
-                'fuelEconomyPredict',
-                'fuelGraph',
-                'fuelTimeEmpty',
-              ],
+              widgets: ['fuelHeader', 'fuelGauge', 'fuelGrid'],
             },
           ],
         },
