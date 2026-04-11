@@ -82,7 +82,7 @@ export const Standings = () => {
       }}
     >
       <TitleBar titleBarSettings={settings?.titleBar} />
-      {(settings?.headerBar?.enabled ?? true) && (
+      {settings?.headerBar && (settings.headerBar.enabled ?? true) && (
         <SessionBar settings={settings.headerBar} position="header" />
       )}
       <table
@@ -257,7 +257,7 @@ export const Standings = () => {
           })}
         </tbody>
       </table>
-      {(settings?.footerBar?.enabled ?? true) && (
+      {settings?.footerBar && (settings.footerBar.enabled ?? true) && (
         <SessionBar settings={settings.footerBar} position="footer" />
       )}
     </div>
