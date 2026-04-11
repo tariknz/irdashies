@@ -16,6 +16,7 @@ import { SettingsSection } from '../components/SettingSection';
 import { SettingToggleRow } from '../components/SettingToggleRow';
 import { SettingSliderRow } from '../components/SettingSliderRow';
 import { SettingSelectRow } from '../components/SettingSelectRow';
+import { SettingButtonGroupRow } from '../components/SettingButtonGroupRow';
 
 const SETTING_ID = 'battle';
 
@@ -35,6 +36,12 @@ const sortableSettings: SortableSetting[] = [
     id: 'lastTime',
     label: 'Last Time',
     configKey: 'lastTime',
+    hasSubSetting: true,
+  },
+  {
+    id: 'speed',
+    label: 'Speed',
+    configKey: 'speed',
     hasSubSetting: true,
   },
   {
@@ -113,6 +120,26 @@ const DisplaySettingsList = ({
                           ...settings.config.lastTime,
                           timeFormat: v,
                         },
+                      })
+                    }
+                  />
+                </div>
+              )}
+            {setting.hasSubSetting &&
+              setting.configKey === 'speed' &&
+              settings.config.speed.enabled && (
+                <div className="pl-8 mt-2">
+                  <SettingButtonGroupRow<'auto' | 'mph' | 'km/h'>
+                    title="Unit"
+                    value={settings.config.speed.unit}
+                    options={[
+                      { label: 'Auto', value: 'auto' },
+                      { label: 'MPH', value: 'mph' },
+                      { label: 'KM/H', value: 'km/h' },
+                    ]}
+                    onChange={(v) =>
+                      handleConfigChange({
+                        speed: { ...settings.config.speed, unit: v },
                       })
                     }
                   />
