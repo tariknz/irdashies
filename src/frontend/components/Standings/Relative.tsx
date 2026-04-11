@@ -99,6 +99,7 @@ export const Relative = () => {
           penalty={false}
           slowdown={false}
           hideCarManufacturer={hideCarManufacturer}
+          hasAnyDriverTag={hasAnyTag}
           compactMode={generalSettings?.compactMode}
         />
       ));
@@ -153,6 +154,7 @@ export const Relative = () => {
             slowdown={false}
             deltaDecimalPlaces={settings?.delta?.precision}
             hideCarManufacturer={hideCarManufacturer}
+            hasAnyDriverTag={hasAnyTag}
             compactMode={generalSettings?.compactMode}
           />
         );
