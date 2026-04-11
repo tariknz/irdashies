@@ -116,3 +116,7 @@ PITLANE_DETECTION_FIXES.md
 
 # storybook
 storybook-static/
+
+# landing site
+site/dist/
+site/node_modules/
