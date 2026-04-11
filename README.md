@@ -52,7 +52,7 @@ Displays the throttle, clutch, and brake input traces, as well as the current ge
 - Input bar display (clutch, brake, throttle, ABS indicator)
   - Toggle individual inputs (clutch, brake, throttle, ABS)
   - Optional raw input values showing actual pedal/wheel inputs without sim processing (e.g. ABS, traction control)
-- Current gear display with speed (auto/mph/km/h units)
+- Current gear display with speed (auto/mph/km/h units) and dynamic sizing to fit container
 - Steering wheel visualization with multiple styles (default, formula, LMP, NASCAR, U-shape) and color themes (light/dark)
 - Customizable display order for all components
 - Adjustable background opacity
@@ -72,6 +72,8 @@ Displays a real-time tachometer with optional RPM text display.
   - Custom shift points configuration per car and gear
   - Multiple indicator styles (glow, pulse, border) with customizable colors
   - Horizontal or vertical orientation
+  - Consistent sizing across different cars
+  - Option to show RPM text above the tachometer
 - Resizable and adjustable background opacity
 - Option to show only when on track
 - Session visibility settings (Race, Lone Qualify, Open Qualify, Practice, Offline Testing)
@@ -90,12 +92,19 @@ Displays standings information for the current session.
   - Pit status indicators: DNF (red), TOW (orange, animated), OUT (green), PIT (yellow, animated), last pit lap number, repair/meatball flag (orange dot), penalty/black flag (orange), slowdown (orange, animated)
   - Optional pit time display
   - Pit lap display mode: Show pit lap number or laps since last pit
-  - Compact Mode: A streamlined UI option for a cleaner look
+  - Compact Mode: Three levels (Off, Compact, Ultra) for maximum information density
   - Incidents & Off-tracks: Driver rows highlight in yellow when they go off-track
   - Spectator Support: Automatically follows the driver you are watching in iRacing
+- Driver Tags: Assign color-coded visual indicators to specific drivers
+  - Preset groups: Dangerous, Friend, Twitch, YouTube — each with a unique icon and color
+  - Custom groups with custom names, colors, and icons (600+ icons or uploaded images)
+  - Display styles: icon badges or compact colored pills
+  - Driver labels: custom display names that alternate with the real driver name on a configurable timer
+  - Toggle the driver tag column on or off per widget
 - Car details: manufacturer (with option to hide if single-make series), tire compound
 - Driver badges with multiple format options (license/rating combinations)
   - Full iRating: Option to display the full iRating value instead of just the badge
+- Styling customizations: toggle minimal license badges, minimal status badges, position background color, and car number background/border independently
 - Timing information: gap, interval, best lap time, last lap time (multiple time format options)
   - Configurable decimal precision (1, 2, or 3) for gap and interval
   - Gap and interval display in practice and qualifying sessions
@@ -138,11 +147,18 @@ Displays drive relative delta information for the current session.
   - Pit status indicators: DNF (red), TOW (orange, animated), OUT (green), PIT (yellow, animated), last pit lap number, repair/meatball flag (orange dot), penalty/black flag (orange), slowdown (orange, animated)
   - Optional pit time display
   - Pit lap display mode: Show pit lap number or laps since last pit
-  - Compact Mode: A streamlined UI option for a cleaner look
+  - Compact Mode: Three levels (Off, Compact, Ultra) for maximum information density
   - Incidents & Off-tracks: Driver rows highlight in yellow when they go off-track
   - Spectator Support: Automatically follows the driver you are watching in iRacing
+- Driver Tags: Assign color-coded visual indicators to specific drivers
+  - Preset groups: Dangerous, Friend, Twitch, YouTube — each with a unique icon and color
+  - Custom groups with custom names, colors, and icons (600+ icons or uploaded images)
+  - Display styles: icon badges or compact colored pills
+  - Driver labels: custom display names that alternate with the real driver name on a configurable timer
+  - Toggle the driver tag column on or off per widget
 - Car details: manufacturer (with option to hide if single-make series), tire compound
 - Driver badges with multiple format options (license/rating combinations)
+- Styling customizations: toggle minimal license badges, minimal status badges, position background color, and car number background/border independently
 - Relative delta timing display with configurable precision
 - Timing information: best lap time, last lap time (multiple time format options: full, mixed, minutes, seconds-full, seconds-mixed, seconds)
 - iRating change display (optional)
@@ -188,6 +204,7 @@ Displays a track map with the current position of the cars on track and the trac
 - Session visibility settings (Race, Lone Qualify, Open Qualify, Practice, Offline Testing)
 - Race positions: Driver circles can display their current race position
 - Off-track highlighting: Car markers highlight when a driver goes off the track (yellow outline)
+- Styling customizations: toggle minimal track outline and minimal car marker shadows
 
 ![Track Map](./docs/assets/trackmap.png)
 
@@ -235,6 +252,7 @@ Displays information about faster cars approaching from behind, including driver
 - Configurable distance threshold for alerts
 - Real-time detection of faster approaching cars
 - Pit status filtering: Option to exclude cars in the pits
+- Automatically hidden when on pit road
 - Multiple driver display settings for more control over what's shown
 
 ![Faster Cars From Behind](./docs/assets/fastercarsfrombehind.png)
@@ -246,6 +264,7 @@ Displays comprehensive fuel management information including current fuel level,
 **Features:**
 
 - Fuel units: Liters (L) or Gallons (gal)
+- Compact mode: Three levels (Off, Compact, Ultra) for information density
 - Visual layout editing: Drag and drop widgets to customize your fuel display
 - Layout options: Vertical or horizontal
 - Real-time consumption calculations with pit strategy recommendations
@@ -304,6 +323,7 @@ Displays a warning indicator when a slower car is detected ahead on the track. T
 - Adjustable slow speed threshold
 - Adjustable stopped speed threshold
 - Adjustable bar thickness
+- Automatically hidden when on pit road
 
 ![Slow Car Ahead](docs/assets/slow-car-ahead.png)
 
@@ -406,8 +426,20 @@ Displays live Twitch chat directly in your overlay, useful for streamers who wan
 **Features:**
 
 - Live chat display with configurable channel name (no OAuth required)
+- Emoji support
 - Configurable font size and background opacity
 - Visible even when iRacing is not running
+
+### Information Bar
+
+A standalone widget that displays session and timing information independently from the Standings and Relative widgets.
+
+**Features:**
+
+- Displays flag status, lap counter, session time, and other session info
+- Fully configurable: reorder items and toggle each one on or off
+- Adjustable background opacity
+- Session visibility settings (Race, Lone Qualify, Open Qualify, Practice, Offline Testing)
 
 ### Telemetry Inspector
 
@@ -420,6 +452,7 @@ A powerful tool for viewing live data coming from iRacing. While mostly used for
 - Profile Management
   - Save and switch between different dashboard configurations
   - Multiple profiles for different racing scenarios or streaming setups
+  - Clone existing profiles with one click to create variations without starting from scratch
   - Each profile can be accessed as its own browser source URL for OBS streaming
   - Dashboard import/export to share layouts between users or back up your setup
 - Streamer & OBS Ready
@@ -427,17 +460,22 @@ A powerful tool for viewing live data coming from iRacing. While mostly used for
   - Network Access: Enable network access in settings to allow other devices on your local network to access the dashboard (useful for dual-PC streaming setups).
   - Garage Cover: Automatically hide your screen with a custom image when you enter the garage to keep your car setup private.
   - Transparent backgrounds: All overlays are designed to look great on top of your game or stream.
+  - Reduced GPU usage: Overlay windows are sized to fit only the widgets on each display, rather than covering the full screen.
 - Customization & Themes
   - Color themes: Choose from built-in themes or create your own custom look.
   - Highlight color: Pick a custom color that is used across all widgets to match your branding or preference.
-  - Font sizes: Multiple font size options to ensure readability on any screen.
+  - Font sizes: Multiple font size options (including 2x Small, 3x Small, and Tiny for large or ultra-wide monitors) to ensure readability on any screen.
   - Font weight: Choose between Normal, Bold, or Extra Bold text for improved readability.
 - Ease of Use
   - Configurable key bindings: Rebind all keyboard shortcuts (hide/show UI, edit layout, save telemetry) from the Key Bindings settings page. Supports any keyboard chord combination.
   - Global toggle (Alt+H by default): Quickly hide or show all your overlays with a single keyboard shortcut.
+  - Reset widget position: Reset any widget's position to the top-left corner if it gets lost off-screen.
+  - Close to tray: Closing the window minimizes to the system tray instead of quitting (configurable).
   - Always on top: Keep your overlays visible even when clicking on other windows.
   - System autostart: Optionally have the app start automatically when your computer boots up.
   - Start minimized: Launch the settings window in minimized state for a cleaner desktop
+  - Auto port fallback: If port 3000 is in use, the app automatically tries the next available port and updates all URLs in settings.
+  - Log file access: Open the log folder or export the log file directly from Advanced Settings.
   - Automatic updates: The app keeps itself up to date with the latest features and bug fixes.
 
 ## Prerequisites (for development)

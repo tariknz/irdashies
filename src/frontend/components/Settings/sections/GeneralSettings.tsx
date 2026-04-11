@@ -75,7 +75,11 @@ const COLOR_THEME_PRESETS: Record<string, string> = {
   ),
 };
 
-export const GeneralSettings = () => {
+interface GeneralSettingsProps {
+  previewMode?: boolean;
+}
+
+export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
   const { bridge, currentDashboard, onDashboardUpdated } = useDashboard();
   const [settings, setSettings] = useState<GeneralSettingsType>({
     fontType: currentDashboard?.generalSettings?.fontType ?? 'lato',
@@ -457,181 +461,196 @@ export const GeneralSettings = () => {
           </div>
         </div>
 
-        {/* Hide from Taskbar Setting */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <h3 className="text-lg font-medium text-slate-200">
-                Hide Overlays from Taskbar
-              </h3>
-              <p className="text-sm text-slate-400">
-                When enabled, overlay windows won&apos;t appear in the taskbar.
-                The app is still accessible via the system tray. (requires
-                restart)
-              </p>
-            </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                checked={settings.skipTaskbar ?? true}
-                onChange={(e) => handleSkipTaskbarChange(e.target.checked)}
-                className="sr-only peer"
-              />
-              <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-            </label>
+        {previewMode && (
+          <div className="p-3 bg-slate-700/50 rounded text-sm text-slate-400">
+            More settings are available in the desktop app, including taskbar
+            visibility, startup options, and hardware acceleration.
           </div>
-        </div>
+        )}
 
-        {/* Overlay Always On Top Setting */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <h3 className="text-lg font-medium text-slate-200">
-                Keep Overlays Always On Top
-              </h3>
-              <p className="text-sm text-slate-400">
-                When enabled, overlay windows will always stay on top of other
-                applications. (requires restart)
-              </p>
+        {!previewMode && (
+          <>
+            {/* Hide from Taskbar Setting */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <h3 className="text-lg font-medium text-slate-200">
+                    Hide Overlays from Taskbar
+                  </h3>
+                  <p className="text-sm text-slate-400">
+                    When enabled, overlay windows won&apos;t appear in the
+                    taskbar. The app is still accessible via the system tray.
+                    (requires restart)
+                  </p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={settings.skipTaskbar ?? true}
+                    onChange={(e) => handleSkipTaskbarChange(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                </label>
+              </div>
             </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                checked={settings.overlayAlwaysOnTop ?? true}
-                onChange={(e) =>
-                  handleOverlayAlwaysOnTopChange(e.target.checked)
-                }
-                className="sr-only peer"
-              />
-              <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-            </label>
-          </div>
-        </div>
 
-        {/* Network Access Setting */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <h3 className="text-lg font-medium text-slate-200">
-                Enable Network Access
-              </h3>
-              <p className="text-sm text-slate-400">
-                When enabled, the component server binds to all network
-                interfaces (0.0.0.0), allowing other devices on your network to
-                access the dashboard. When disabled, only localhost connections
-                are allowed. (requires restart)
-              </p>
+            {/* Overlay Always On Top Setting */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <h3 className="text-lg font-medium text-slate-200">
+                    Keep Overlays Always On Top
+                  </h3>
+                  <p className="text-sm text-slate-400">
+                    When enabled, overlay windows will always stay on top of
+                    other applications. (requires restart)
+                  </p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={settings.overlayAlwaysOnTop ?? true}
+                    onChange={(e) =>
+                      handleOverlayAlwaysOnTopChange(e.target.checked)
+                    }
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                </label>
+              </div>
             </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                checked={settings.enableNetworkAccess ?? false}
-                onChange={(e) => handleNetworkAccessChange(e.target.checked)}
-                className="sr-only peer"
-              />
-              <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-            </label>
-          </div>
-        </div>
 
-        {/* Hardware Acceleration Setting */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <h3 className="text-lg font-medium text-slate-200">
-                Hardware Acceleration
-              </h3>
-              <p className="text-sm text-slate-400">
-                Uses GPU hardware acceleration for rendering. Only disable this
-                if you are experiencing compatibility issues, as it will
-                significantly impact performance. (requires restart)
-              </p>
+            {/* Network Access Setting */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <h3 className="text-lg font-medium text-slate-200">
+                    Enable Network Access
+                  </h3>
+                  <p className="text-sm text-slate-400">
+                    When enabled, the component server binds to all network
+                    interfaces (0.0.0.0), allowing other devices on your network
+                    to access the dashboard. When disabled, only localhost
+                    connections are allowed. (requires restart)
+                  </p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={settings.enableNetworkAccess ?? false}
+                    onChange={(e) =>
+                      handleNetworkAccessChange(e.target.checked)
+                    }
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                </label>
+              </div>
             </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                checked={!(settings.disableHardwareAcceleration ?? false)}
-                onChange={(e) =>
-                  handleDisableHardwareAccelerationChange(!e.target.checked)
-                }
-                className="sr-only peer"
-              />
-              <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-            </label>
-          </div>
-        </div>
 
-        {/* Autostart Setting */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <h3 className="text-lg font-medium text-slate-200">
-                Start on system startup
-              </h3>
-              <p className="text-sm text-slate-400">
-                If enabled, irDashies will start automatically on system start
-                up.
-              </p>
+            {/* Hardware Acceleration Setting */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <h3 className="text-lg font-medium text-slate-200">
+                    Hardware Acceleration
+                  </h3>
+                  <p className="text-sm text-slate-400">
+                    Uses GPU hardware acceleration for rendering. Only disable
+                    this if you are experiencing compatibility issues, as it
+                    will significantly impact performance. (requires restart)
+                  </p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={!(settings.disableHardwareAcceleration ?? false)}
+                    onChange={(e) =>
+                      handleDisableHardwareAccelerationChange(!e.target.checked)
+                    }
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                </label>
+              </div>
             </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                checked={settings.enableAutoStart ?? true}
-                onChange={(e) => handleAutoStartChange(e.target.checked)}
-                className="sr-only peer"
-              />
-              <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-            </label>
-          </div>
-        </div>
 
-        {/* Start Minimized Setting */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <h3 className="text-lg font-medium text-slate-200">
-                Start minimized
-              </h3>
-              <p className="text-sm text-slate-400">
-                If enabled, the main settings window will start minimized to the
-                system tray.
-              </p>
+            {/* Autostart Setting */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <h3 className="text-lg font-medium text-slate-200">
+                    Start on system startup
+                  </h3>
+                  <p className="text-sm text-slate-400">
+                    If enabled, irDashies will start automatically on system
+                    start up.
+                  </p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={settings.enableAutoStart ?? true}
+                    onChange={(e) => handleAutoStartChange(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                </label>
+              </div>
             </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                checked={settings.startMinimized ?? false}
-                onChange={(e) => handleStartMinimizedChange(e.target.checked)}
-                className="sr-only peer"
-              />
-              <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-            </label>
-          </div>
-        </div>
 
-        {/* Close To Tray Setting */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <h3 className="text-lg font-medium text-slate-200">
-                Close to tray
-              </h3>
-              <p className="text-sm text-slate-400">
-                If enabled, closing the app will minimise to the system tray
-                rather than quitting.
-              </p>
+            {/* Start Minimized Setting */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <h3 className="text-lg font-medium text-slate-200">
+                    Start minimized
+                  </h3>
+                  <p className="text-sm text-slate-400">
+                    If enabled, the main settings window will start minimized to
+                    the system tray.
+                  </p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={settings.startMinimized ?? false}
+                    onChange={(e) =>
+                      handleStartMinimizedChange(e.target.checked)
+                    }
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                </label>
+              </div>
             </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                checked={settings.closeToTray ?? true}
-                onChange={(e) => handleCloseToTrayChange(e.target.checked)}
-                className="sr-only peer"
-              />
-              <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-            </label>
-          </div>
-        </div>
+
+            {/* Close To Tray Setting */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <h3 className="text-lg font-medium text-slate-200">
+                    Close to tray
+                  </h3>
+                  <p className="text-sm text-slate-400">
+                    If enabled, closing the app will minimise to the system tray
+                    rather than quitting.
+                  </p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={settings.closeToTray ?? true}
+                    onChange={(e) => handleCloseToTrayChange(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                </label>
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

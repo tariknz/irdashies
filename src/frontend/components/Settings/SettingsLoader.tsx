@@ -26,12 +26,17 @@ import { InformationBarSettings } from './sections/InformationBarSettings';
 import { useDashboard } from '@irdashies/context';
 import { SlowCarAheadSettings } from './sections/SlowCarAheadSettings';
 
-export const SettingsLoader = () => {
+interface SettingsLoaderProps {
+  previewMode?: boolean;
+}
+
+export const SettingsLoader = ({ previewMode }: SettingsLoaderProps = {}) => {
   const { widgetId } = useParams<{ widgetId: string }>();
   const { currentDashboard } = useDashboard();
 
   // 1. Handle non-widget pages
-  if (widgetId === 'general') return <GeneralSettings />;
+  if (widgetId === 'general')
+    return <GeneralSettings previewMode={previewMode} />;
   if (widgetId === 'profiles') return <ProfileSettings />;
   if (widgetId === 'advanced') return <AdvancedSettings />;
   if (widgetId === 'car-setup') return <CarSetupSettings />;
