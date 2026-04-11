@@ -648,9 +648,8 @@ export const StandingsSettings = () => {
                     <SettingSelectRow
                       title="Drivers to show in other classes"
                       value={settings.config.driverStandings.numNonClassDrivers.toString()}
-                      options={Array.from({ length: 10 }, (_, i) => {
-                        const num = i + 1;
-                        return { label: num.toString(), value: num.toString() };
+                      options={Array.from({ length: 11 }, (_, i) => {
+                        return { label: i.toString(), value: i.toString() };
                       })}
                       onChange={(v) =>
                         handleConfigChange({
@@ -682,9 +681,8 @@ export const StandingsSettings = () => {
                     <SettingSelectRow
                       title="Top drivers to always show in player's class"
                       value={settings.config.driverStandings.numTopDrivers.toString()}
-                      options={Array.from({ length: 10 }, (_, i) => {
-                        const num = i + 1;
-                        return { label: num.toString(), value: num.toString() };
+                      options={Array.from({ length: 11 }, (_, i) => {
+                        return { label: i.toString(), value: i.toString() };
                       })}
                       onChange={(v) =>
                         handleConfigChange({
@@ -810,7 +808,7 @@ export const StandingsSettings = () => {
                         getItemConfig={(id) => {
                           const item =
                             settings.config.headerBar[
-                              id as keyof typeof settings.config.headerBar
+                            id as keyof typeof settings.config.headerBar
                             ];
                           if (
                             typeof item === 'object' &&
@@ -824,7 +822,7 @@ export const StandingsSettings = () => {
                         updateItemConfig={(id, config) => {
                           const item =
                             settings.config.headerBar[
-                              id as keyof typeof settings.config.headerBar
+                            id as keyof typeof settings.config.headerBar
                             ];
                           if (
                             typeof item === 'object' &&
@@ -893,7 +891,7 @@ export const StandingsSettings = () => {
                         getItemConfig={(id) => {
                           const item =
                             settings.config.footerBar[
-                              id as keyof typeof settings.config.footerBar
+                            id as keyof typeof settings.config.footerBar
                             ];
                           if (
                             typeof item === 'object' &&
@@ -907,7 +905,7 @@ export const StandingsSettings = () => {
                         updateItemConfig={(id, config) => {
                           const item =
                             settings.config.footerBar[
-                              id as keyof typeof settings.config.footerBar
+                            id as keyof typeof settings.config.footerBar
                             ];
                           if (
                             typeof item === 'object' &&

@@ -82,7 +82,7 @@ export const Standings = () => {
       }}
     >
       <TitleBar titleBarSettings={settings?.titleBar} />
-      {(settings?.headerBar?.enabled ?? true) && (
+      {settings?.headerBar && (settings.headerBar.enabled ?? true) && (
         <SessionBar settings={settings.headerBar} position="header" />
       )}
       <table
@@ -247,17 +247,18 @@ export const Standings = () => {
                     </Fragment>
                   );
                 })}
-                {index < standings.length - 1 && !isCompact && (
-                  <tr>
-                    <td colSpan={100} className="h-2"></td>
-                  </tr>
-                )}
+                {standings.slice(index + 1).some(([, content]) => content.length > 0) &&
+                  !isCompact && (
+                    <tr>
+                      <td colSpan={100} className="h-2"></td>
+                    </tr>
+                  )}
               </Fragment>
             ) : null;
           })}
         </tbody>
       </table>
-      {(settings?.footerBar?.enabled ?? true) && (
+      {settings?.footerBar && (settings.footerBar.enabled ?? true) && (
         <SessionBar settings={settings.footerBar} position="footer" />
       )}
     </div>

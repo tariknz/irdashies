@@ -719,7 +719,9 @@ const RelativeWithoutHeader = () => {
           <tbody>{rows}</tbody>
         </table>
         {/* Keep SessionBar here */}
-        <SessionBar settings={settings.footerBar} position="footer" />
+        {settings?.footerBar && (
+          <SessionBar settings={settings.footerBar} position="footer" />
+        )}
       </div>
     );
   }
@@ -737,7 +739,9 @@ const RelativeWithoutHeader = () => {
         <tbody>{rows}</tbody>
       </table>
       {/* Keep SessionBar here */}
-      <SessionBar settings={settings.footerBar} position="footer" />
+      {settings?.footerBar && (
+        <SessionBar settings={settings.footerBar} position="footer" />
+      )}
     </div>
   );
 };
@@ -946,7 +950,9 @@ const RelativeWithoutFooter = () => {
       <div className="w-full h-full">
         <TitleBar titleBarSettings={settings?.titleBar} />
         {/* Keep SessionBar here */}
-        <SessionBar settings={settings.headerBar} position="header" />
+        {settings?.headerBar && (
+          <SessionBar settings={settings.headerBar} position="header" />
+        )}
         <table className="w-full table-auto text-sm border-separate border-spacing-y-0.5">
           <tbody>{rows}</tbody>
         </table>
@@ -964,7 +970,9 @@ const RelativeWithoutFooter = () => {
     >
       <TitleBar titleBarSettings={settings?.titleBar} />
       {/* Keep SessionBar here */}
-      <SessionBar settings={settings.headerBar} position="header" />
+      {settings?.headerBar && (
+        <SessionBar settings={settings.headerBar} position="header" />
+      )}
       <table className="w-full table-auto text-sm border-separate border-spacing-y-0.5">
         <tbody>{rows}</tbody>
       </table>
