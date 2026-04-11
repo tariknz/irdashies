@@ -625,6 +625,7 @@ export interface BattleConfig {
   driverName: { enabled: boolean };
   stint: { enabled: boolean };
   lastTime: { enabled: boolean; timeFormat: TimeFormat };
+  speed: { enabled: boolean; unit: 'mph' | 'km/h' | 'auto' };
   gap: { enabled: boolean; decimalPlaces: number };
   displayOrder: string[];
   sessionVisibility: SessionVisibilitySettings;
