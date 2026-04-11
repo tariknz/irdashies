@@ -1119,3 +1119,105 @@ export const SingleDriverWithTag: Story = {
     layout: 'padded',
   },
 };
+
+// Regression: when driverTag is reordered BEFORE driverName, the driver name
+// must still render. Previously this caused the name cell to collapse in the
+// Relative widget (but not in Standings) due to fragile table-auto column
+// width allocation interacting with `w-full max-w-0` on the name <td>.
+const reorderedDisplayOrder = [
+  'position',
+  'carNumber',
+  'countryFlags',
+  'driverTag',
+  'driverName',
+  'pitStatus',
+  'carManufacturer',
+  'badge',
+  'delta',
+];
+
+const reorderedRelativeConfig = {
+  ...relativeConfig,
+  displayOrder: reorderedDisplayOrder,
+} as import('@irdashies/types').RelativeWidgetSettings['config'];
+
+const reorderedHiddenRowBaseProps = {
+  ...hiddenRowBaseProps,
+  config: reorderedRelativeConfig,
+};
+
+const SingleRelativeDriverWithTagReorderedComponent = () => (
+  <div className="w-full bg-slate-800/70 rounded-sm p-2 text-white">
+    <table className="w-full table-auto text-sm border-separate border-spacing-y-0.5">
+      <tbody>
+        <DriverInfoRow
+          carIdx={10}
+          {...reorderedHiddenRowBaseProps}
+          displayOrder={reorderedDisplayOrder}
+        />
+        <DriverInfoRow
+          carIdx={11}
+          {...reorderedHiddenRowBaseProps}
+          displayOrder={reorderedDisplayOrder}
+        />
+        <DriverInfoRow
+          carIdx={12}
+          {...reorderedHiddenRowBaseProps}
+          displayOrder={reorderedDisplayOrder}
+        />
+        <DriverInfoRow
+          carIdx={1}
+          carNumber="99"
+          classColor={0xff5888}
+          name="Jane Smith"
+          isPlayer={true}
+          hasFastestTime={false}
+          delta={0}
+          position={3}
+          lap={5}
+          license="A 4.99"
+          rating={4999}
+          onPitRoad={false}
+          onTrack={true}
+          radioActive={false}
+          isMultiClass={false}
+          flairId={223}
+          tireCompound={1}
+          carId={122}
+          currentSessionType="Race"
+          dnf={false}
+          repair={false}
+          penalty={false}
+          slowdown={false}
+          resolvedTag={singleDriverTagRelative}
+          hasAnyDriverTag={true}
+          config={reorderedRelativeConfig}
+          displayOrder={reorderedDisplayOrder}
+        />
+        <DriverInfoRow
+          carIdx={13}
+          {...reorderedHiddenRowBaseProps}
+          displayOrder={reorderedDisplayOrder}
+        />
+        <DriverInfoRow
+          carIdx={14}
+          {...reorderedHiddenRowBaseProps}
+          displayOrder={reorderedDisplayOrder}
+        />
+        <DriverInfoRow
+          carIdx={15}
+          {...reorderedHiddenRowBaseProps}
+          displayOrder={reorderedDisplayOrder}
+        />
+      </tbody>
+    </table>
+  </div>
+);
+
+export const SingleDriverWithTagReordered: Story = {
+  decorators: [TelemetryDecorator()],
+  render: () => <SingleRelativeDriverWithTagReorderedComponent />,
+  parameters: {
+    layout: 'padded',
+  },
+};
