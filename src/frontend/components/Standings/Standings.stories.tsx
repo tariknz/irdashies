@@ -20,7 +20,7 @@ import {
   useSessionLaps,
 } from '@irdashies/context';
 import { generateMockDataFromPath } from '../../../app/bridge/iracingSdk/mock-data/generateMockData';
-import type { DashboardBridge } from '@irdashies/types';
+import type { DashboardBridge, StandingsConfig } from '@irdashies/types';
 import { defaultDashboard } from '@irdashies/types';
 import { useState, useEffect, Fragment } from 'react';
 import { DriverClassHeader } from './components/DriverClassHeader/DriverClassHeader';
@@ -284,7 +284,7 @@ export const MultiClassPlayground: Story = {
       };
       const standingsConfig = defaultDashboard.widgets.find(
         (w) => w.id === 'standings'
-      )?.config as any;
+      )?.config as StandingsConfig;
 
       return TelemetryDecoratorWithConfig('/test-data/1731637331038', {
         standings: {
