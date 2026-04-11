@@ -144,6 +144,7 @@ export interface StandingsConfig {
   compound: { enabled: boolean };
   carManufacturer: { enabled: boolean; hideIfSingleMake?: boolean };
   lapTimeDeltas: { enabled: boolean; numLaps: number };
+  avgLapTime: { enabled: boolean; numLaps: number; timeFormat: TimeFormat };
   titleBar: { enabled: boolean; progressBar: { enabled: boolean } };
   headerBar: SessionBarConfig;
   footerBar: SessionBarConfig;

@@ -81,6 +81,12 @@ const sortableSettings: SortableSetting[] = [
     configKey: 'lapTimeDeltas',
     hasSubSetting: true,
   },
+  {
+    id: 'avgLapTime',
+    label: 'Avg Lap Time',
+    configKey: 'avgLapTime',
+    hasSubSetting: true,
+  },
 ];
 
 const defaultConfig = getWidgetDefaultConfig('standings');
@@ -157,6 +163,64 @@ const DisplaySettingsList = ({
                     <option value={5}>5</option>
                   </select>
                 </div>
+              )}
+            {setting.hasSubSetting &&
+              setting.configKey === 'avgLapTime' &&
+              settings.config.avgLapTime.enabled && (
+                <>
+                  <div className="flex items-center justify-between pl-8 mt-2 indent-8">
+                    <span className="text-sm text-slate-300">Rolling Laps</span>
+                    <select
+                      value={settings.config.avgLapTime.numLaps}
+                      onChange={(e) =>
+                        handleConfigChange({
+                          avgLapTime: {
+                            ...settings.config.avgLapTime,
+                            numLaps: parseInt(e.target.value),
+                          },
+                        })
+                      }
+                      className="bg-slate-700 text-white rounded-md px-2 py-1"
+                    >
+                      <option value={3}>3</option>
+                      <option value={4}>4</option>
+                      <option value={5}>5</option>
+                      <option value={6}>6</option>
+                      <option value={7}>7</option>
+                      <option value={8}>8</option>
+                      <option value={9}>9</option>
+                      <option value={10}>10</option>
+                    </select>
+                  </div>
+                  <div className="flex items-center justify-between pl-8 mt-2 indent-8">
+                    <span className="text-sm text-slate-300">Time Format</span>
+                    <select
+                      value={settings.config.avgLapTime.timeFormat}
+                      onChange={(e) =>
+                        handleConfigChange({
+                          avgLapTime: {
+                            ...settings.config.avgLapTime,
+                            timeFormat: e.target.value as
+                              | 'full'
+                              | 'mixed'
+                              | 'minutes'
+                              | 'seconds-full'
+                              | 'seconds-mixed'
+                              | 'seconds',
+                          },
+                        })
+                      }
+                      className="bg-slate-700 text-white rounded-md px-2 py-1"
+                    >
+                      <option value="full">1:42.123</option>
+                      <option value="mixed">1:42.1</option>
+                      <option value="minutes">1:42</option>
+                      <option value="seconds-full">42.123</option>
+                      <option value="seconds-mixed">42.1</option>
+                      <option value="seconds">42</option>
+                    </select>
+                  </div>
+                </>
               )}
             {setting.hasSubSetting &&
               setting.configKey === 'pitStatus' &&

@@ -19,6 +19,7 @@ import {
   useWeekendInfoNumCarClasses,
   useWeekendInfoTeamRacing,
   useSessionVisibility,
+  useCarIdxRollingAvgLapTime,
 } from '@irdashies/context';
 import { useIsSingleMake } from './hooks/useIsSingleMake';
 
@@ -40,6 +41,10 @@ export const Standings = () => {
   const numCarClasses = useWeekendInfoNumCarClasses();
   const isMultiClass = (numCarClasses ?? 0) > 1;
   const highlightColor = useHighlightColor();
+
+  const avgLapTimes = useCarIdxRollingAvgLapTime(
+    settings?.avgLapTime?.numLaps ?? 5
+  );
 
   // Determine whether we should hide the car manufacturer column
   const isSingleMake = useIsSingleMake();
@@ -221,6 +226,11 @@ export const Standings = () => {
                         numLapDeltasToShow={
                           settings?.lapTimeDeltas?.enabled
                             ? settings.lapTimeDeltas.numLaps
+                            : undefined
+                        }
+                        avgLapTime={
+                          settings?.avgLapTime?.enabled
+                            ? avgLapTimes[result.carIdx]
                             : undefined
                         }
                         displayOrder={settings?.displayOrder}
