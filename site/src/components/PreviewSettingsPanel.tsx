@@ -116,7 +116,7 @@ function SettingsContent({
       </div>
 
       {/* Menu + Content */}
-      <div className="flex flex-1 min-h-0 p-3 gap-3">
+      <div className="flex flex-1 min-h-0 p-3 gap-3 text-sm">
         <PreviewSettingsMenu
           activeWidgets={activeWidgets}
           onToggleWidget={onToggleWidget}
@@ -144,7 +144,7 @@ export function PreviewSettingsButton({
     <>
       <button
         onClick={() => setOpen(true)}
-        className="flex items-center gap-1.5 px-2.5 py-1 rounded-sm text-[10px] font-bold uppercase tracking-wide text-[#f89806] border border-[#f89806]/40 bg-[#f89806]/5 hover:bg-[#f89806]/15 hover:border-[#f89806]/60 transition-colors"
+        className="flex items-center gap-1.5 px-2.5 py-1 rounded-sm text-[10px] font-bold uppercase tracking-wide text-red-600 border border-red-600/40 bg-red-600/5 hover:bg-red-600/15 hover:border-red-600/60 transition-colors"
       >
         <GearSix size={12} weight="bold" />
         Configure

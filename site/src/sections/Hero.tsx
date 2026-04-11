@@ -52,7 +52,7 @@ export function Hero() {
             className="w-32 h-32 mx-auto mb-6"
           />
           <h1 className="text-5xl md:text-7xl font-black tracking-tight leading-none mb-2">
-            ir<span className="text-[#fa2713]">Dashies</span>
+            ir<span className="text-red-600">Dashies</span>
           </h1>
         </div>
 
@@ -69,7 +69,7 @@ export function Hero() {
               href="https://github.com/tariknz/irdashies/releases/download/latest/irdashies-0.2.0.Setup.exe"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-8 py-3 bg-[#fa2713] hover:bg-[#d92010] text-white font-bold uppercase tracking-wide text-sm rounded-sm transition-colors"
+              className="inline-flex items-center gap-2 px-8 py-3 bg-red-600 hover:bg-red-700 text-white font-bold uppercase tracking-wide text-sm rounded-sm transition-colors"
             >
               <DownloadSimple size={20} weight="bold" />
               Download

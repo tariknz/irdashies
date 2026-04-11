@@ -15,10 +15,10 @@ function Step({ number, icon, title, description, isLast }: StepProps) {
       <div className="flex flex-col items-center text-center">
         {/* Step number + icon */}
         <div className="relative mb-4">
-          <div className="w-16 h-16 bg-slate-900 border border-slate-700/50 rounded-sm flex items-center justify-center text-[#f89806]">
+          <div className="w-16 h-16 bg-slate-900 border border-slate-700/50 rounded-sm flex items-center justify-center text-red-600">
             {icon}
           </div>
-          <div className="absolute -top-2 -right-2 w-6 h-6 bg-[#fa2713] rounded-sm flex items-center justify-center">
+          <div className="absolute -top-2 -right-2 w-6 h-6 bg-red-600 rounded-sm flex items-center justify-center">
             <span className="text-[10px] font-black text-white">{number}</span>
           </div>
         </div>
@@ -44,7 +44,7 @@ export function HowItWorks() {
     <section className="relative py-24 px-6">
       <div className="max-w-4xl mx-auto">
         <h2 className="text-3xl md:text-4xl font-black uppercase tracking-tight mb-3 text-center">
-          Up and <span className="text-[#f89806]">Running</span> in Minutes
+          Up and <span className="text-red-600">Running</span> in Minutes
         </h2>
         <p className="text-slate-400 mb-16 text-center max-w-md mx-auto">
           No configuration files, no dependencies. Install and race.

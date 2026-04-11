@@ -35,6 +35,7 @@ import {
 import { ArrowsOutCardinal, X } from '@phosphor-icons/react';
 import { PreviewSettingsButton } from '../components/PreviewSettingsPanel';
 import { defaultDashboard } from '../../../src/types/defaultDashboard';
+import { useDashboard } from '../../../src/frontend/context/DashboardContext/DashboardContext';
 
 interface WidgetPosition {
   x: number;
@@ -185,8 +186,8 @@ const DEFAULT_POSITIONS: Record<string, WidgetPosition> = {
     ...infobarSize,
   },
   flatmap: {
-    x: COL1_X,
-    y: PAD + standingsSize.height + GAP + relativeSize.height + GAP,
+    x: COL2_X,
+    y: col2FasterBottom,
     ...flatmapSize,
   },
   fuel: { x: COL3_X + weatherSize.width + PAD, y: PAD, ...fuelSize },
@@ -363,6 +364,40 @@ const PreviewWidgetItem = memo(function PreviewWidgetItem({
   );
 });
 
+/**
+ * Syncs the toolbar's activeWidgets set into the dashboard context so the
+ * settings panel's enabled toggle stays in sync with the Frame toolbar.
+ */
+function ActiveWidgetSync({ activeWidgets }: { activeWidgets: Set<string> }) {
+  const { currentDashboard, onDashboardUpdated } = useDashboard();
+  const prevActiveRef = useRef<Set<string>>(activeWidgets);
+
+  useEffect(() => {
+    if (!currentDashboard || !onDashboardUpdated) return;
+    // Only sync when activeWidgets actually changed (skip initial render)
+    if (prevActiveRef.current === activeWidgets) return;
+    prevActiveRef.current = activeWidgets;
+
+    const needsUpdate = currentDashboard.widgets.some((w) => {
+      const id = w.type ?? w.id;
+      return w.enabled !== activeWidgets.has(id);
+    });
+
+    if (!needsUpdate) return;
+
+    const updatedWidgets = currentDashboard.widgets.map((w) => {
+      const id = w.type ?? w.id;
+      const shouldBeEnabled = activeWidgets.has(id);
+      if (w.enabled === shouldBeEnabled) return w;
+      return { ...w, enabled: shouldBeEnabled };
+    });
+
+    onDashboardUpdated({ ...currentDashboard, widgets: updatedWidgets });
+  }, [activeWidgets, currentDashboard, onDashboardUpdated]);
+
+  return null;
+}
+
 export function LivePreview() {
   const [activeWidgets, setActiveWidgets] = useState<Set<string>>(() => {
     const availableIds = new Set(AVAILABLE_WIDGETS.map((w) => w.id));
@@ -413,7 +448,7 @@ export function LivePreview() {
       {/* Compact section header */}
       <div className="mx-auto w-full max-w-[1800px] mb-4">
         <h2 className="text-2xl md:text-3xl font-black uppercase tracking-tight">
-          See It In <span className="text-[#f89806]">Action</span>
+          See It In <span className="text-red-600">Action</span>
           <span className="text-sm font-normal normal-case tracking-normal text-slate-500 ml-4">
             Drag to reposition, resize from edges, toggle widgets below
           </span>
@@ -439,6 +474,7 @@ export function LivePreview() {
           });
         }}
       >
+        <ActiveWidgetSync activeWidgets={activeWidgets} />
         {/* Preview frame */}
         <div className="mx-auto w-full max-w-[1800px] flex-1 flex flex-col min-h-0">
           <div className="relative rounded-sm border border-slate-700/50 overflow-hidden carbon-fiber flex-1 flex flex-col">
@@ -463,7 +499,7 @@ export function LivePreview() {
                     className={[
                       'px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide rounded-sm transition-all border whitespace-nowrap flex-none',
                       activeWidgets.has(widget.id)
-                        ? 'border-[#fa2713]/50 bg-[#fa2713]/10 text-slate-200'
+                        ? 'border-red-600/50 bg-red-600/10 text-slate-200'
                         : 'border-transparent text-slate-600 hover:text-slate-400 hover:bg-slate-800/50',
                     ].join(' ')}
                   >
