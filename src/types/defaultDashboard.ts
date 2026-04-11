@@ -737,7 +737,7 @@ export const defaultDashboard: {
         x: 1102,
         y: 240,
         width: 300,
-        height: 420,
+        height: 520,
       },
       config: {
         showOnlyWhenOnTrack: true,
