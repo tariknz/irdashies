@@ -34,10 +34,12 @@ jobs:
         run: npm ci
 
       - name: Install site dependencies
-        run: npm ci --prefix site
+        working-directory: site
+        run: npm ci
 
       - name: Build site
-        run: npm run build --prefix site
+        working-directory: site
+        run: npm run build
 
       - uses: actions/upload-pages-artifact@v3
         with:
