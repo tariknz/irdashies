@@ -75,6 +75,7 @@ const trendClass = (trend: Trend) => {
 
 interface BattleRowProps {
   entry?: Standings;
+  liveClassPosition?: number;
   gap?: string;
   prevGap?: string;
   delta?: { text: string; trend: Trend };
@@ -94,6 +95,7 @@ interface BattleRowProps {
 const BattleRow = memo(
   ({
     entry,
+    liveClassPosition,
     gap,
     prevGap,
     delta,
@@ -170,7 +172,7 @@ const BattleRow = memo(
             className={`w-auto text-center px-2 whitespace-nowrap ${positionBg} ${positionText}`}
             style={highlightStyle}
           >
-            {entry?.classPosition != null ? entry.classPosition : '—'}
+            {liveClassPosition ?? entry?.classPosition ?? '—'}
           </td>
         );
       } else if (key === 'carNumber' && settings?.carNumber?.enabled) {
@@ -329,7 +331,7 @@ export const Battle = () => {
   //   4. Pick the entries immediately above and below the player.
   // Falls back to standings classPosition (CarIdxClassPosition) when live positions
   // are unavailable (non-race sessions, replay, etc).
-  const { playerEntry, aheadEntry, behindEntry } = useMemo(() => {
+  const { playerEntry, aheadEntry, behindEntry, positionFor } = useMemo(() => {
     const player = allStandings.find((s) => s.isPlayer);
     if (!player)
       return {
@@ -370,6 +372,7 @@ export const Battle = () => {
       aheadEntry: playerIdx > 0 ? sameClass[playerIdx - 1] : undefined,
       behindEntry:
         playerIdx < sameClass.length - 1 ? sameClass[playerIdx + 1] : undefined,
+      positionFor,
     };
   }, [allStandings, liveClassPositions, paceCarIdx]);
 
@@ -432,6 +435,9 @@ export const Battle = () => {
         <tbody>
           <BattleRow
             entry={aheadEntry}
+            liveClassPosition={
+              aheadEntry ? positionFor?.(aheadEntry.carIdx) : undefined
+            }
             gap={gapEnabled ? formatGap(liveGapAhead, dp) : undefined}
             prevGap={
               gapEnabled ? formatGap(gapSnapshot.gapAhead, dp) : undefined
@@ -457,6 +463,9 @@ export const Battle = () => {
           />
           <BattleRow
             entry={playerEntry}
+            liveClassPosition={
+              playerEntry ? positionFor?.(playerEntry.carIdx) : undefined
+            }
             isPlayer
             highlightColor={highlightColor}
             isMultiClass={isMultiClass}
@@ -473,6 +482,9 @@ export const Battle = () => {
           />
           <BattleRow
             entry={behindEntry}
+            liveClassPosition={
+              behindEntry ? positionFor?.(behindEntry.carIdx) : undefined
+            }
             gap={gapEnabled ? formatGap(liveGapBehind, dp) : undefined}
             prevGap={
               gapEnabled ? formatGap(gapSnapshot.gapBehind, dp) : undefined
