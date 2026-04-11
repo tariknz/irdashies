@@ -46,7 +46,6 @@ interface PreviewSettingsMenuProps {
 
 export const PreviewSettingsMenu = ({
   activeWidgets,
-  onToggleWidget,
 }: PreviewSettingsMenuProps) => {
   const { pathname } = useLocation();
 
@@ -90,16 +89,12 @@ export const PreviewSettingsMenu = ({
                 {item.label}
               </Link>
               <button
-                onClick={() => onToggleWidget(item.id)}
                 className={[
-                  'w-4 h-4 rounded-full shrink-0 border-2 transition-colors cursor-pointer',
+                  'w-2 h-2 rounded-full shrink-0 transition-colors',
                   isEnabled
-                    ? 'bg-emerald-400 border-emerald-400'
+                    ? 'bg-emerald-400'
                     : 'bg-transparent border-slate-600 hover:border-slate-400',
                 ].join(' ')}
-                title={
-                  isEnabled ? `Disable ${item.label}` : `Enable ${item.label}`
-                }
               />
             </li>
           );

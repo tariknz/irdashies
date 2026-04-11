@@ -116,7 +116,7 @@ function SettingsContent({
       </div>
 
       {/* Menu + Content */}
-      <div className="flex flex-1 min-h-0 p-3 gap-3">
+      <div className="flex flex-1 min-h-0 p-3 gap-3 text-sm">
         <PreviewSettingsMenu
           activeWidgets={activeWidgets}
           onToggleWidget={onToggleWidget}

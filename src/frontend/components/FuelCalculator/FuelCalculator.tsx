@@ -18,7 +18,10 @@ import {
 } from './widgets/FuelCalculatorWidgets';
 import type { FuelCalculatorSettings, FuelCalculation } from './types';
 import type { LayoutNode } from '@irdashies/types';
-import { DEFAULT_FUEL_LAYOUT_TREE } from './defaults';
+import {
+  DEFAULT_FUEL_LAYOUT_TREE,
+  defaultFuelCalculatorSettings,
+} from './defaults';
 
 type FuelCalculatorProps = Partial<FuelCalculatorSettings>;
 
@@ -49,15 +52,24 @@ const EMPTY_DATA: FuelCalculation = {
 };
 
 export const FuelCalculator = (props: FuelCalculatorProps) => {
-  const settings = props as FuelCalculatorSettings;
+  // Visual Edit Mode & Demo Mode
+  const { editMode, currentDashboard } = useDashboard();
+  const generalSettings = currentDashboard?.generalSettings;
+
+  // Read config from dashboard context (handles site preview where no props are passed)
+  const dashboardConfig = currentDashboard?.widgets?.find(
+    (w) => w.id === 'fuel' || w.type === 'fuel'
+  )?.config as Partial<FuelCalculatorSettings> | undefined;
+
+  const settings = {
+    ...defaultFuelCalculatorSettings,
+    ...dashboardConfig,
+    ...props,
+  } as FuelCalculatorSettings;
 
   const { fuelUnits, safetyMargin } = settings;
 
   const isSessionVisible = useSessionVisibility(settings.sessionVisibility);
-
-  // Visual Edit Mode & Demo Mode
-  const { editMode, currentDashboard } = useDashboard();
-  const generalSettings = currentDashboard?.generalSettings;
 
   // Derived Settings based on General linkage
   // Use the full string so compact vs ultra can be distinguished downstream

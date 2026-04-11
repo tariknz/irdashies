@@ -35,6 +35,7 @@ import {
 import { ArrowsOutCardinal, X } from '@phosphor-icons/react';
 import { PreviewSettingsButton } from '../components/PreviewSettingsPanel';
 import { defaultDashboard } from '../../../src/types/defaultDashboard';
+import { useDashboard } from '../../../src/frontend/context/DashboardContext/DashboardContext';
 
 interface WidgetPosition {
   x: number;
@@ -185,8 +186,8 @@ const DEFAULT_POSITIONS: Record<string, WidgetPosition> = {
     ...infobarSize,
   },
   flatmap: {
-    x: COL1_X,
-    y: PAD + standingsSize.height + GAP + relativeSize.height + GAP,
+    x: COL2_X,
+    y: col2FasterBottom,
     ...flatmapSize,
   },
   fuel: { x: COL3_X + weatherSize.width + PAD, y: PAD, ...fuelSize },
@@ -363,6 +364,40 @@ const PreviewWidgetItem = memo(function PreviewWidgetItem({
   );
 });
 
+/**
+ * Syncs the toolbar's activeWidgets set into the dashboard context so the
+ * settings panel's enabled toggle stays in sync with the Frame toolbar.
+ */
+function ActiveWidgetSync({ activeWidgets }: { activeWidgets: Set<string> }) {
+  const { currentDashboard, onDashboardUpdated } = useDashboard();
+  const prevActiveRef = useRef<Set<string>>(activeWidgets);
+
+  useEffect(() => {
+    if (!currentDashboard || !onDashboardUpdated) return;
+    // Only sync when activeWidgets actually changed (skip initial render)
+    if (prevActiveRef.current === activeWidgets) return;
+    prevActiveRef.current = activeWidgets;
+
+    const needsUpdate = currentDashboard.widgets.some((w) => {
+      const id = w.type ?? w.id;
+      return w.enabled !== activeWidgets.has(id);
+    });
+
+    if (!needsUpdate) return;
+
+    const updatedWidgets = currentDashboard.widgets.map((w) => {
+      const id = w.type ?? w.id;
+      const shouldBeEnabled = activeWidgets.has(id);
+      if (w.enabled === shouldBeEnabled) return w;
+      return { ...w, enabled: shouldBeEnabled };
+    });
+
+    onDashboardUpdated({ ...currentDashboard, widgets: updatedWidgets });
+  }, [activeWidgets, currentDashboard, onDashboardUpdated]);
+
+  return null;
+}
+
 export function LivePreview() {
   const [activeWidgets, setActiveWidgets] = useState<Set<string>>(() => {
     const availableIds = new Set(AVAILABLE_WIDGETS.map((w) => w.id));
@@ -439,6 +474,7 @@ export function LivePreview() {
           });
         }}
       >
+        <ActiveWidgetSync activeWidgets={activeWidgets} />
         {/* Preview frame */}
         <div className="mx-auto w-full max-w-[1800px] flex-1 flex flex-col min-h-0">
           <div className="relative rounded-sm border border-slate-700/50 overflow-hidden carbon-fiber flex-1 flex flex-col">

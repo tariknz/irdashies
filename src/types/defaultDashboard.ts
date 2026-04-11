@@ -338,8 +338,8 @@ export const defaultDashboard: {
       layout: {
         x: 622,
         y: 864,
-        width: 396,
-        height: 113,
+        width: 496,
+        height: 50,
       },
       config: {
         showRpmText: false,
@@ -960,8 +960,8 @@ export const defaultDashboard: {
       layout: {
         x: 300,
         y: 100,
-        width: 250,
-        height: 250,
+        width: 450,
+        height: 50,
       },
       config: {
         maxDistance: 250,
