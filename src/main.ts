@@ -1,25 +1,29 @@
-import { app } from 'electron';
+import { app, ipcMain } from 'electron';
+import log from './app/logger';
 import {
   iRacingSDKSetup,
   getCurrentBridge,
 } from './app/bridge/iracingSdk/setup';
 import { getOrCreateDefaultDashboard } from './app/storage/dashboards';
-import { setupTaskbar } from './app';
+import { setupTaskbar, KeybindingManager } from './app';
 import {
   publishDashboardUpdates,
   dashboardBridge,
 } from './app/bridge/dashboard/dashboardBridge';
 import { setupPitLaneBridge } from './app/bridge/pitLaneBridge';
 import { setupFuelCalculatorBridge } from './app/bridge/fuelCalculatorBridge';
-import { TelemetrySink } from './app/bridge/iracingSdk/telemetrySink';
 import { OverlayManager } from './app/overlayManager';
-import { startComponentServer } from './app/webserver/componentServer';
+import {
+  startComponentServer,
+  getComponentServerPort,
+} from './app/webserver/componentServer';
 import { updateElectronApp } from 'update-electron-app';
 // @ts-expect-error no types for squirrel
 import started from 'electron-squirrel-startup';
 import { Analytics } from './app/analytics';
-import { registerHideUiShortcut } from './app/globalShortcuts';
 import { setupReferenceLapsBridge } from './app/bridge/referenceLapsBridge';
+import { setupKeybindingsBridge } from './app/bridge/keybindingsBridge';
+import { setupLogBridge } from './app/bridge/logBridge';
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) app.quit();
@@ -27,8 +31,8 @@ if (started) app.quit();
 updateElectronApp();
 
 const overlayManager = new OverlayManager();
-const telemetrySink = new TelemetrySink();
 const analytics = new Analytics();
+analytics.setupLogTransport();
 
 overlayManager.setupHardwareAcceleration();
 overlayManager.setupSingleInstanceLock();
@@ -41,12 +45,13 @@ app.on('ready', async () => {
     return;
   }
 
-  await iRacingSDKSetup(telemetrySink, overlayManager);
+  await iRacingSDKSetup(overlayManager);
 
   const dashboard = getOrCreateDefaultDashboard();
   const bridge = getCurrentBridge();
 
   // Setup IPC bridges
+  setupLogBridge();
   setupFuelCalculatorBridge();
   setupPitLaneBridge();
   setupReferenceLapsBridge();
@@ -54,14 +59,18 @@ app.on('ready', async () => {
   // Start component server for browser components
   await startComponentServer(bridge, dashboardBridge);
 
+  ipcMain.handle('getComponentServerPort', () => getComponentServerPort());
+
   overlayManager.createOverlays(dashboard);
-  setupTaskbar(telemetrySink, overlayManager);
+
+  const keybindingManager = new KeybindingManager(overlayManager);
+  keybindingManager.registerAll();
+
+  setupTaskbar(overlayManager, keybindingManager);
   publishDashboardUpdates(overlayManager, analytics);
+  setupKeybindingsBridge(keybindingManager);
 
   await analytics.init(overlayManager.getVersion(), dashboard);
-
-  // 🔽 Register the global hide UI shortcut once everything is set up
-  registerHideUiShortcut(overlayManager);
 
   // Check if settings window should start minimized
   const shouldStartMinimized =
@@ -80,6 +89,10 @@ app.on('window-all-closed', () => {
   }
 });
 app.on('quit', () => {
-  console.log('App quit');
+  log.info('App quit');
   analytics.shutdown();
+});
+
+app.on('before-quit', () => {
+  overlayManager.markQuitting();
 });

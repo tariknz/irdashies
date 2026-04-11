@@ -25,6 +25,7 @@ import {
   useDriverRelatives,
   useHighlightColor,
 } from './hooks';
+import type { ResolvedDriverTag } from './hooks/useDriverTagMap';
 
 // Create a custom decorator that combines TelemetryDecoratorWithConfig with generalSettings override
 function TelemetryDecoratorWithConfigAndGeneralSettings(
@@ -718,7 +719,9 @@ const RelativeWithoutHeader = () => {
           <tbody>{rows}</tbody>
         </table>
         {/* Keep SessionBar here */}
-        <SessionBar position="footer" />
+        {settings?.footerBar && (
+          <SessionBar settings={settings.footerBar} position="footer" />
+        )}
       </div>
     );
   }
@@ -736,7 +739,9 @@ const RelativeWithoutHeader = () => {
         <tbody>{rows}</tbody>
       </table>
       {/* Keep SessionBar here */}
-      <SessionBar position="footer" />
+      {settings?.footerBar && (
+        <SessionBar settings={settings.footerBar} position="footer" />
+      )}
     </div>
   );
 };
@@ -945,7 +950,9 @@ const RelativeWithoutFooter = () => {
       <div className="w-full h-full">
         <TitleBar titleBarSettings={settings?.titleBar} />
         {/* Keep SessionBar here */}
-        <SessionBar />
+        {settings?.headerBar && (
+          <SessionBar settings={settings.headerBar} position="header" />
+        )}
         <table className="w-full table-auto text-sm border-separate border-spacing-y-0.5">
           <tbody>{rows}</tbody>
         </table>
@@ -963,7 +970,9 @@ const RelativeWithoutFooter = () => {
     >
       <TitleBar titleBarSettings={settings?.titleBar} />
       {/* Keep SessionBar here */}
-      <SessionBar />
+      {settings?.headerBar && (
+        <SessionBar settings={settings.headerBar} position="header" />
+      )}
       <table className="w-full table-auto text-sm border-separate border-spacing-y-0.5">
         <tbody>{rows}</tbody>
       </table>
@@ -995,8 +1004,228 @@ export const CompactMode: Story = {
         },
       },
       {
-        compactMode: true,
+        compactMode: 'compact',
       }
     ),
   ],
+};
+
+export const CompactUltraMode: Story = {
+  decorators: [
+    TelemetryDecoratorWithConfigAndGeneralSettings(
+      undefined,
+      {
+        relative: {
+          headerBar: { enabled: true },
+          footerBar: { enabled: true },
+          sessionVisibility: {
+            race: true,
+            loneQualify: true,
+            openQualify: true,
+            practice: true,
+            offlineTesting: true,
+          },
+        },
+      },
+      {
+        compactMode: 'ultra',
+      }
+    ),
+  ],
+};
+
+export const MinimalStyling: Story = {
+  decorators: [
+    TelemetryDecoratorWithConfig(undefined, {
+      relative: {
+        badge: { enabled: true, badgeFormat: 'license-color-rating-bw' },
+        stylingOptions: {
+          badge: true,
+          statusBadges: true,
+          driverPosition: { background: false },
+          driverNumber: { background: false, border: true },
+        },
+      },
+    }),
+  ],
+};
+
+const singleDriverTagRelative: ResolvedDriverTag = {
+  id: 'friend',
+  name: 'Friend',
+  icon: 'Star',
+  color: 0xffff00,
+};
+
+const relativeConfig = {
+  badge: { enabled: true, badgeFormat: 'license-color-rating-bw' },
+  delta: { enabled: true },
+} as import('@irdashies/types').RelativeWidgetSettings['config'];
+
+const hiddenRowBaseProps = {
+  classColor: 0xffffff,
+  name: '',
+  isPlayer: false,
+  hasFastestTime: false,
+  isMultiClass: false,
+  dnf: false,
+  repair: false,
+  penalty: false,
+  slowdown: false,
+  hidden: true,
+  hasAnyDriverTag: true,
+  config: relativeConfig,
+};
+
+const SingleRelativeDriverWithTagComponent = () => (
+  <div className="w-full bg-slate-800/70 rounded-sm p-2 text-white">
+    <table className="w-full table-auto text-sm border-separate border-spacing-y-0.5">
+      <tbody>
+        <DriverInfoRow carIdx={10} {...hiddenRowBaseProps} />
+        <DriverInfoRow carIdx={11} {...hiddenRowBaseProps} />
+        <DriverInfoRow carIdx={12} {...hiddenRowBaseProps} />
+        <DriverInfoRow
+          carIdx={1}
+          carNumber="99"
+          classColor={0xff5888}
+          name="Jane Smith"
+          isPlayer={true}
+          hasFastestTime={false}
+          delta={0}
+          position={3}
+          lap={5}
+          license="A 4.99"
+          rating={4999}
+          onPitRoad={false}
+          onTrack={true}
+          radioActive={false}
+          isMultiClass={false}
+          flairId={223}
+          tireCompound={1}
+          carId={122}
+          currentSessionType="Race"
+          dnf={false}
+          repair={false}
+          penalty={false}
+          slowdown={false}
+          resolvedTag={singleDriverTagRelative}
+          hasAnyDriverTag={true}
+          config={relativeConfig}
+        />
+        <DriverInfoRow carIdx={13} {...hiddenRowBaseProps} />
+        <DriverInfoRow carIdx={14} {...hiddenRowBaseProps} />
+        <DriverInfoRow carIdx={15} {...hiddenRowBaseProps} />
+      </tbody>
+    </table>
+  </div>
+);
+
+export const SingleDriverWithTag: Story = {
+  decorators: [TelemetryDecorator()],
+  render: () => <SingleRelativeDriverWithTagComponent />,
+  parameters: {
+    layout: 'padded',
+  },
+};
+
+// Regression: when driverTag is reordered BEFORE driverName, the driver name
+// must still render. Previously this caused the name cell to collapse in the
+// Relative widget (but not in Standings) due to fragile table-auto column
+// width allocation interacting with `w-full max-w-0` on the name <td>.
+const reorderedDisplayOrder = [
+  'position',
+  'carNumber',
+  'countryFlags',
+  'driverTag',
+  'driverName',
+  'pitStatus',
+  'carManufacturer',
+  'badge',
+  'delta',
+];
+
+const reorderedRelativeConfig = {
+  ...relativeConfig,
+  displayOrder: reorderedDisplayOrder,
+} as import('@irdashies/types').RelativeWidgetSettings['config'];
+
+const reorderedHiddenRowBaseProps = {
+  ...hiddenRowBaseProps,
+  config: reorderedRelativeConfig,
+};
+
+const SingleRelativeDriverWithTagReorderedComponent = () => (
+  <div className="w-full bg-slate-800/70 rounded-sm p-2 text-white">
+    <table className="w-full table-auto text-sm border-separate border-spacing-y-0.5">
+      <tbody>
+        <DriverInfoRow
+          carIdx={10}
+          {...reorderedHiddenRowBaseProps}
+          displayOrder={reorderedDisplayOrder}
+        />
+        <DriverInfoRow
+          carIdx={11}
+          {...reorderedHiddenRowBaseProps}
+          displayOrder={reorderedDisplayOrder}
+        />
+        <DriverInfoRow
+          carIdx={12}
+          {...reorderedHiddenRowBaseProps}
+          displayOrder={reorderedDisplayOrder}
+        />
+        <DriverInfoRow
+          carIdx={1}
+          carNumber="99"
+          classColor={0xff5888}
+          name="Jane Smith"
+          isPlayer={true}
+          hasFastestTime={false}
+          delta={0}
+          position={3}
+          lap={5}
+          license="A 4.99"
+          rating={4999}
+          onPitRoad={false}
+          onTrack={true}
+          radioActive={false}
+          isMultiClass={false}
+          flairId={223}
+          tireCompound={1}
+          carId={122}
+          currentSessionType="Race"
+          dnf={false}
+          repair={false}
+          penalty={false}
+          slowdown={false}
+          resolvedTag={singleDriverTagRelative}
+          hasAnyDriverTag={true}
+          config={reorderedRelativeConfig}
+          displayOrder={reorderedDisplayOrder}
+        />
+        <DriverInfoRow
+          carIdx={13}
+          {...reorderedHiddenRowBaseProps}
+          displayOrder={reorderedDisplayOrder}
+        />
+        <DriverInfoRow
+          carIdx={14}
+          {...reorderedHiddenRowBaseProps}
+          displayOrder={reorderedDisplayOrder}
+        />
+        <DriverInfoRow
+          carIdx={15}
+          {...reorderedHiddenRowBaseProps}
+          displayOrder={reorderedDisplayOrder}
+        />
+      </tbody>
+    </table>
+  </div>
+);
+
+export const SingleDriverWithTagReordered: Story = {
+  decorators: [TelemetryDecorator()],
+  render: () => <SingleRelativeDriverWithTagReorderedComponent />,
+  parameters: {
+    layout: 'padded',
+  },
 };

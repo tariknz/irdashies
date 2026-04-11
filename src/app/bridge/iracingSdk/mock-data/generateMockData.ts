@@ -279,7 +279,6 @@ export function generateMockData(sessionData?: {
       };
     },
     stop: () => {
-      console.log('🛑 Mock bridge: Stopping all intervals');
       if (telemetryInterval) clearInterval(telemetryInterval);
       if (sessionInfoInterval) clearInterval(sessionInfoInterval);
       if (runningStateInterval) clearInterval(runningStateInterval);

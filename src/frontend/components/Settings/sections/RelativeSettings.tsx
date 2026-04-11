@@ -8,13 +8,10 @@ import {
 } from '@irdashies/types';
 import { ToggleSwitch } from '../components/ToggleSwitch';
 import { TabButton } from '../components/TabButton';
-import { useSortableList } from '../../SortableList';
-import { DotsSixVerticalIcon } from '@phosphor-icons/react';
+import { SortableList } from '../../SortableList';
+import { DraggableSettingItem } from '../components/DraggableSettingItem';
 import { BadgeFormatPreview } from '../components/BadgeFormatPreview';
-import {
-  SESSION_BAR_ITEM_LABELS,
-  DEFAULT_SESSION_BAR_DISPLAY_ORDER,
-} from '../sessionBarConstants';
+import { DEFAULT_SESSION_BAR_DISPLAY_ORDER } from '../sessionBarConstants';
 import { SessionVisibility } from '../components/SessionVisibility';
 import { DriverNamePreview } from '../components/DriverNamePreview';
 import { SettingDivider } from '../components/SettingDivider';
@@ -23,6 +20,10 @@ import { SettingToggleRow } from '../components/SettingToggleRow';
 import { SettingActionButton } from '../components/SettingActionButton';
 import { SettingSelectRow } from '../components/SettingSelectRow';
 import { SettingSliderRow } from '../components/SettingSliderRow';
+import {
+  SessionBarItemsList,
+  SessionBarItemConfig,
+} from '../components/SessionBarItemsList';
 
 const SETTING_ID = 'relative';
 
@@ -56,6 +57,7 @@ const sortableSettings: SortableSetting[] = [
     configKey: 'carManufacturer',
     hasSubSetting: true,
   },
+  { id: 'driverTag', label: 'Driver Tag', configKey: 'driverTag' },
   { id: 'badge', label: 'Driver Badge', configKey: 'badge' },
   { id: 'iratingChange', label: 'iRating Change', configKey: 'iratingChange' },
   { id: 'delta', label: 'Relative', configKey: 'delta' },
@@ -88,44 +90,30 @@ const DisplaySettingsList = ({
     })
     .filter((s): s is SortableSetting => s !== null);
 
-  const { getItemProps, displayItems } = useSortableList({
-    items,
-    onReorder: (newItems) => onReorder(newItems.map((i) => i.id)),
-    getItemId: (item) => item.id,
-  });
-
   return (
-    <div className="space-y-3">
-      {displayItems.map((setting) => {
-        const { dragHandleProps, itemProps } = getItemProps(setting);
+    <SortableList
+      items={items}
+      onReorder={(newItems) => onReorder(newItems.map((i) => i.id))}
+      renderItem={(setting, sortableProps) => {
         const configValue = settings.config[setting.configKey];
         const isEnabled = (configValue as { enabled: boolean }).enabled;
 
         return (
-          <div key={setting.id} {...itemProps}>
-            <div className="flex items-center justify-between group">
-              <div className="flex items-center gap-2 flex-1">
-                <div
-                  {...dragHandleProps}
-                  className="cursor-grab opacity-60 hover:opacity-100 transition-opacity p-1 hover:bg-slate-600 rounded"
-                >
-                  <DotsSixVerticalIcon size={16} className="text-slate-400" />
-                </div>
-                <span className="text-sm text-slate-300">{setting.label}</span>
-              </div>
-              <ToggleSwitch
-                enabled={isEnabled}
-                onToggle={(enabled) => {
-                  const cv = settings.config[setting.configKey] as {
-                    enabled: boolean;
-                    [key: string]: unknown;
-                  };
-                  handleConfigChange({
-                    [setting.configKey]: { ...cv, enabled },
-                  });
-                }}
-              />
-            </div>
+          <DraggableSettingItem
+            key={setting.id}
+            label={setting.label}
+            enabled={isEnabled}
+            onToggle={(enabled) => {
+              const cv = settings.config[setting.configKey] as {
+                enabled: boolean;
+                [key: string]: unknown;
+              };
+              handleConfigChange({
+                [setting.configKey]: { ...cv, enabled },
+              });
+            }}
+            sortableProps={sortableProps}
+          >
             {setting.configKey === 'badge' &&
               (configValue as { enabled: boolean }).enabled && (
                 <div className="mt-3">
@@ -215,7 +203,7 @@ const DisplaySettingsList = ({
             {(setting.configKey === 'fastestTime' ||
               setting.configKey === 'lastTime') &&
               (configValue as { enabled: boolean }).enabled && (
-                <div className="flex items-center justify-between pl-4 mt-2">
+                <div className="flex items-center justify-between mt-2">
                   <span className="text-sm text-slate-300"></span>
                   <select
                     value={
@@ -376,297 +364,10 @@ const DisplaySettingsList = ({
                   />
                 </div>
               )}
-          </div>
+          </DraggableSettingItem>
         );
-      })}
-    </div>
-  );
-};
-
-interface BarItemsListProps {
-  items: string[];
-  onReorder: (newOrder: string[]) => void;
-  barType: 'headerBar' | 'footerBar';
-  settings: RelativeWidgetSettings;
-  handleConfigChange: (
-    changes: Partial<RelativeWidgetSettings['config']>
-  ) => void;
-}
-
-const BarItemsList = ({
-  items,
-  onReorder,
-  barType,
-  settings,
-  handleConfigChange,
-}: BarItemsListProps) => {
-  const wrappedItems = items.map((id) => ({ id }));
-
-  const { getItemProps, displayItems } = useSortableList({
-    items: wrappedItems,
-    onReorder: (newItems) => onReorder(newItems.map((i) => i.id)),
-    getItemId: (item) => item.id,
-  });
-
-  return (
-    <div className="space-y-3 pl-4">
-      {displayItems.map((item) => {
-        const { dragHandleProps, itemProps } = getItemProps(item);
-        const itemConfig = (
-          settings.config[
-            barType
-          ] as RelativeWidgetSettings['config']['headerBar']
-        )?.[item.id as keyof RelativeWidgetSettings['config']['headerBar']] as
-          | { enabled: boolean; unit?: 'Metric' | 'Imperial' }
-          | {
-              enabled: boolean;
-              mode?: 'Remaining' | 'Elapsed';
-              totalFormat?: 'hh:mm' | 'minimal';
-              labelStyle?: 'none' | 'short' | 'minimal';
-            }
-          | undefined;
-
-        // Safety check: skip rendering if itemConfig is undefined
-        if (!itemConfig) {
-          return null;
-        }
-
-        return (
-          <div key={item.id} {...itemProps}>
-            <div className="flex items-center justify-between group">
-              <div className="flex items-center gap-2 flex-1">
-                <div
-                  {...dragHandleProps}
-                  className="cursor-grab opacity-60 hover:opacity-100 transition-opacity p-1 hover:bg-slate-600 rounded"
-                >
-                  <DotsSixVerticalIcon size={16} className="text-slate-400" />
-                </div>
-                <span className="text-sm text-slate-300">
-                  {SESSION_BAR_ITEM_LABELS[item.id]}
-                </span>
-              </div>
-              <ToggleSwitch
-                enabled={itemConfig?.enabled ?? true}
-                onToggle={(enabled) => {
-                  const currentUnit =
-                    itemConfig && 'unit' in itemConfig
-                      ? itemConfig.unit
-                      : 'Metric';
-                  const currentSpeedPosition =
-                    (itemConfig as { speedPosition?: 'left' | 'right' })
-                      ?.speedPosition ?? 'right';
-                  handleConfigChange({
-                    [barType]: {
-                      ...settings.config[barType],
-                      [item.id]:
-                        item.id === 'airTemperature' ||
-                        item.id === 'trackTemperature'
-                          ? { enabled, unit: currentUnit }
-                          : item.id === 'wind'
-                            ? {
-                                enabled,
-                                speedPosition: currentSpeedPosition,
-                              }
-                            : item.id === 'sessionTime' ||
-                                item.id === 'sessionLaps'
-                              ? { ...(itemConfig as object), enabled }
-                              : { enabled },
-                    },
-                  });
-                }}
-              />
-            </div>
-            {(item.id === 'airTemperature' || item.id === 'trackTemperature') &&
-              itemConfig &&
-              'enabled' in itemConfig &&
-              itemConfig.enabled && (
-                <div className="flex items-center justify-between pl-4 mt-2">
-                  <span></span>
-                  <select
-                    value={
-                      itemConfig && 'unit' in itemConfig
-                        ? itemConfig.unit
-                        : 'Metric'
-                    }
-                    onChange={(e) => {
-                      handleConfigChange({
-                        [barType]: {
-                          ...settings.config[barType],
-                          [item.id]: {
-                            enabled:
-                              itemConfig && 'enabled' in itemConfig
-                                ? itemConfig.enabled
-                                : true,
-                            unit: e.target.value as 'Metric' | 'Imperial',
-                          },
-                        },
-                      });
-                    }}
-                    className="bg-slate-700 text-white rounded-md px-2 py-1"
-                  >
-                    <option value="Metric">°C</option>
-                    <option value="Imperial">°F</option>
-                  </select>
-                </div>
-              )}
-            {item.id === 'wind' &&
-              itemConfig &&
-              'enabled' in itemConfig &&
-              itemConfig.enabled && (
-                <div className="flex items-center justify-end gap-2 pl-4 mt-2">
-                  {(['left', 'right'] as const).map((pos) => {
-                    const currentPos =
-                      (itemConfig as { speedPosition?: 'left' | 'right' })
-                        .speedPosition ?? 'right';
-                    const arrow = (
-                      <svg
-                        viewBox="50 80 650 720"
-                        className="w-3 h-3.5 fill-current shrink-0"
-                        style={{ rotate: '-14deg' }}
-                      >
-                        <path
-                          fillRule="nonzero"
-                          d="m373.75 91.496c-0.95-1.132-74.87 153.23-164.19 343.02-160.8 341.68-162.27 345.16-156.49 350.27 3.203 2.83 6.954 4.79 8.319 4.34 1.365-0.46 71.171-73.88 155.14-163.1 83.97-89.22 153.66-162.83 154.87-163.56 1.2-0.72 71.42 72.34 156.04 162.29s155.21 163.82 156.95 164.19 5.57-1.19 8.5-3.44c5.04-3.86-3.75-23.46-156.04-348-88.77-189.18-162.15-344.88-163.1-346.01z"
-                        />
-                      </svg>
-                    );
-                    return (
-                      <button
-                        key={pos}
-                        type="button"
-                        onClick={() =>
-                          handleConfigChange({
-                            [barType]: {
-                              ...settings.config[barType],
-                              wind: {
-                                enabled: itemConfig.enabled,
-                                speedPosition: pos,
-                              },
-                            },
-                          })
-                        }
-                        className={`flex items-center gap-1 px-2 py-1 rounded-md text-white ${currentPos === pos ? 'bg-blue-500' : 'bg-slate-700 hover:bg-slate-600'}`}
-                      >
-                        {pos === 'left' ? (
-                          <>
-                            <span>7</span>
-                            {arrow}
-                          </>
-                        ) : (
-                          <>
-                            {arrow}
-                            <span>7</span>
-                          </>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            {item.id === 'sessionLaps' &&
-              itemConfig &&
-              'enabled' in itemConfig &&
-              itemConfig.enabled && (
-                <div className="flex items-center justify-end gap-3pl-4 mt-2">
-                  <span></span>
-                  <select
-                    value={'mode' in itemConfig ? itemConfig.mode : 'Elapsed'}
-                    onChange={(e) => {
-                      handleConfigChange({
-                        [barType]: {
-                          ...settings.config[barType],
-                          [item.id]: {
-                            ...(itemConfig as object),
-                            mode: e.target.value as 'Elapsed' | 'Remaining',
-                          },
-                        },
-                      });
-                    }}
-                    className="bg-slate-700 text-white rounded-md px-2 py-1"
-                  >
-                    <option value="Elapsed">Elapsed</option>
-                    <option value="Remaining">Remaining</option>
-                  </select>
-                </div>
-              )}
-            {item.id === 'sessionTime' &&
-              itemConfig &&
-              'enabled' in itemConfig &&
-              itemConfig.enabled && (
-                <div className="flex items-center justify-end gap-3 pl-4 mt-2">
-                  <span></span>
-                  <select
-                    value={'mode' in itemConfig ? itemConfig.mode : 'Remaining'}
-                    onChange={(e) => {
-                      handleConfigChange({
-                        [barType]: {
-                          ...settings.config[barType],
-                          [item.id]: {
-                            ...(itemConfig as object),
-                            mode: e.target.value as 'Remaining' | 'Elapsed',
-                          },
-                        },
-                      });
-                    }}
-                    className="bg-slate-700 text-white rounded-md px-2 py-1"
-                  >
-                    <option value="Remaining">Remaining</option>
-                    <option value="Elapsed">Elapsed</option>
-                  </select>
-                  <select
-                    value={
-                      'totalFormat' in itemConfig
-                        ? itemConfig.totalFormat
-                        : 'minimal'
-                    }
-                    onChange={(e) => {
-                      handleConfigChange({
-                        [barType]: {
-                          ...settings.config[barType],
-                          [item.id]: {
-                            ...(itemConfig as object),
-                            totalFormat: e.target.value as 'hh:mm' | 'minimal',
-                          },
-                        },
-                      });
-                    }}
-                    className="bg-slate-700 text-white rounded-md px-2 py-1"
-                  >
-                    <option value="minimal">2:34</option>
-                    <option value="hh:mm">00:12:34</option>
-                  </select>
-                  <select
-                    value={
-                      'labelStyle' in itemConfig
-                        ? itemConfig.labelStyle
-                        : 'minimal'
-                    }
-                    onChange={(e) => {
-                      handleConfigChange({
-                        [barType]: {
-                          ...settings.config[barType],
-                          [item.id]: {
-                            ...(itemConfig as object),
-                            labelStyle: e.target.value as
-                              | 'none'
-                              | 'short'
-                              | 'minimal',
-                          },
-                        },
-                      });
-                    }}
-                    className="bg-slate-700 text-white rounded-md px-2 py-1"
-                  >
-                    <option value="minimal">Minimal Labels</option>
-                    <option value="short">Short Labels</option>
-                    <option value="none">Hide Labels</option>
-                  </select>
-                </div>
-              )}
-          </div>
-        );
-      })}
-    </div>
+      }}
+    />
   );
 };
 
@@ -743,6 +444,13 @@ export const RelativeSettings = () => {
                 Footer
               </TabButton>
               <TabButton
+                id="styling"
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+              >
+                Styling
+              </TabButton>
+              <TabButton
                 id="visibility"
                 activeTab={activeTab}
                 setActiveTab={setActiveTab}
@@ -751,7 +459,7 @@ export const RelativeSettings = () => {
               </TabButton>
             </div>
 
-            <div className="pt-4 space-y-4">
+            <div>
               {/* DISPLAY TAB */}
               {activeTab === 'display' && (
                 <SettingsSection title="Display Order">
@@ -887,7 +595,7 @@ export const RelativeSettings = () => {
 
                   {settings.config.headerBar.enabled && (
                     <SettingsSection>
-                      <BarItemsList
+                      <SessionBarItemsList
                         items={settings.config.headerBar.displayOrder}
                         onReorder={(newOrder) => {
                           handleConfigChange({
@@ -897,9 +605,41 @@ export const RelativeSettings = () => {
                             },
                           });
                         }}
-                        barType="headerBar"
-                        settings={settings}
-                        handleConfigChange={handleConfigChange}
+                        getItemConfig={(id) => {
+                          const item =
+                            settings.config.headerBar[
+                              id as keyof typeof settings.config.headerBar
+                            ];
+                          if (
+                            typeof item === 'object' &&
+                            item !== null &&
+                            'enabled' in item
+                          ) {
+                            return item as SessionBarItemConfig;
+                          }
+                          return undefined;
+                        }}
+                        updateItemConfig={(id, config) => {
+                          const item =
+                            settings.config.headerBar[
+                              id as keyof typeof settings.config.headerBar
+                            ];
+                          if (
+                            typeof item === 'object' &&
+                            item !== null &&
+                            'enabled' in item
+                          ) {
+                            handleConfigChange({
+                              headerBar: {
+                                ...settings.config.headerBar,
+                                [id]: {
+                                  ...(item as SessionBarItemConfig),
+                                  ...config,
+                                },
+                              },
+                            });
+                          }
+                        }}
                       />
 
                       <SettingActionButton
@@ -938,7 +678,7 @@ export const RelativeSettings = () => {
 
                   {settings.config.footerBar.enabled && (
                     <SettingsSection>
-                      <BarItemsList
+                      <SessionBarItemsList
                         items={settings.config.footerBar.displayOrder}
                         onReorder={(newOrder) => {
                           handleConfigChange({
@@ -948,9 +688,41 @@ export const RelativeSettings = () => {
                             },
                           });
                         }}
-                        barType="footerBar"
-                        settings={settings}
-                        handleConfigChange={handleConfigChange}
+                        getItemConfig={(id) => {
+                          const item =
+                            settings.config.footerBar[
+                              id as keyof typeof settings.config.footerBar
+                            ];
+                          if (
+                            typeof item === 'object' &&
+                            item !== null &&
+                            'enabled' in item
+                          ) {
+                            return item as SessionBarItemConfig;
+                          }
+                          return undefined;
+                        }}
+                        updateItemConfig={(id, config) => {
+                          const item =
+                            settings.config.footerBar[
+                              id as keyof typeof settings.config.footerBar
+                            ];
+                          if (
+                            typeof item === 'object' &&
+                            item !== null &&
+                            'enabled' in item
+                          ) {
+                            handleConfigChange({
+                              footerBar: {
+                                ...settings.config.footerBar,
+                                [id]: {
+                                  ...(item as SessionBarItemConfig),
+                                  ...config,
+                                },
+                              },
+                            });
+                          }
+                        }}
                       />
 
                       <SettingActionButton
@@ -969,6 +741,106 @@ export const RelativeSettings = () => {
                     </SettingsSection>
                   )}
                 </SettingsSection>
+              )}
+
+              {/* STYLING TAB */}
+              {activeTab === 'styling' && (
+                <>
+                  <SettingsSection title="Driver Position">
+                    <SettingToggleRow
+                      title="Position Background"
+                      description="Highlight the player's position cell with a colored background"
+                      enabled={
+                        settings.config.stylingOptions?.driverPosition
+                          ?.background ?? true
+                      }
+                      onToggle={(newValue) =>
+                        handleConfigChange({
+                          stylingOptions: {
+                            ...settings.config.stylingOptions,
+                            driverPosition: { background: newValue },
+                          },
+                        })
+                      }
+                    />
+                  </SettingsSection>
+
+                  <SettingDivider />
+
+                  <SettingsSection title="Car Number">
+                    <SettingToggleRow
+                      title="Number Background"
+                      description="Show a colored background on the car number cell"
+                      enabled={
+                        settings.config.stylingOptions?.driverNumber
+                          ?.background ?? true
+                      }
+                      onToggle={(newValue) =>
+                        handleConfigChange({
+                          stylingOptions: {
+                            ...settings.config.stylingOptions,
+                            driverNumber: {
+                              ...settings.config.stylingOptions?.driverNumber,
+                              background: newValue,
+                            },
+                          },
+                        })
+                      }
+                    />
+                    <SettingToggleRow
+                      title="Number Left Border"
+                      description="Show a colored left border on the car number cell"
+                      enabled={
+                        settings.config.stylingOptions?.driverNumber?.border ??
+                        true
+                      }
+                      onToggle={(newValue) =>
+                        handleConfigChange({
+                          stylingOptions: {
+                            ...settings.config.stylingOptions,
+                            driverNumber: {
+                              ...settings.config.stylingOptions?.driverNumber,
+                              border: newValue,
+                            },
+                          },
+                        })
+                      }
+                    />
+                  </SettingsSection>
+
+                  <SettingDivider />
+
+                  <SettingsSection title="Badges">
+                    <SettingToggleRow
+                      title="Minimal License Badge"
+                      description="Use desaturated colors for the iRating/license badge"
+                      enabled={settings.config.stylingOptions?.badge ?? false}
+                      onToggle={(newValue) =>
+                        handleConfigChange({
+                          stylingOptions: {
+                            ...settings.config.stylingOptions,
+                            badge: newValue,
+                          },
+                        })
+                      }
+                    />
+                    <SettingToggleRow
+                      title="Minimal Status Badges"
+                      description="Use muted borders for PIT, OUT, DNF and other status badges"
+                      enabled={
+                        settings.config.stylingOptions?.statusBadges ?? false
+                      }
+                      onToggle={(newValue) =>
+                        handleConfigChange({
+                          stylingOptions: {
+                            ...settings.config.stylingOptions,
+                            statusBadges: newValue,
+                          },
+                        })
+                      }
+                    />
+                  </SettingsSection>
+                </>
               )}
 
               {/* VISIBILITY TAB */}

@@ -4,55 +4,9 @@ import type { PitlaneHelperWidgetSettings } from '@irdashies/types';
 export const usePitlaneHelperSettings = () => {
   const { currentDashboard } = useDashboard();
 
-  const widget = currentDashboard?.widgets?.find(
-    (w) => w.id === 'pitlanehelper'
-  ) as PitlaneHelperWidgetSettings | undefined;
+  const pitlaneSettings = currentDashboard?.widgets.find(
+    (widget) => widget.id === 'pitlanehelper'
+  )?.config;
 
-  const config = widget?.config ?? {
-    showMode: 'approaching' as const,
-    approachDistance: 200,
-    enablePitLimiterWarning: true,
-    enableEarlyPitboxWarning: true,
-    earlyPitboxThreshold: 75,
-    showPitlaneTraffic: true,
-    background: { opacity: 80 },
-    progressBarOrientation: 'horizontal' as const,
-    speedBarOrientation: 'horizontal' as const,
-    showPastPitBox: false,
-    showProgressBar: true,
-    showSpeedBar: true,
-    showSpeedSummary: true,
-    speedLimitStyle: 'text' as const,
-    showPitExitInputs: false,
-    pitExitInputs: {
-      throttle: true,
-      clutch: true,
-    },
-    showInputsPhase: 'afterPitbox' as const,
-    sessionVisibility: {
-      race: true,
-      loneQualify: false,
-      openQualify: false,
-      practice: true,
-      offlineTesting: true,
-    },
-  };
-
-  // Migrate old configs to include new fields
-  const migratedConfig = {
-    ...config,
-    progressBarOrientation:
-      config.progressBarOrientation ?? ('horizontal' as const),
-    speedBarOrientation: config.speedBarOrientation ?? ('horizontal' as const),
-    showProgressBar: config.showProgressBar ?? true,
-    showSpeedBar: config.showSpeedBar ?? true,
-    showSpeedSummary: config.showSpeedSummary ?? true,
-    speedLimitStyle: config.speedLimitStyle ?? ('text' as const),
-    showPastPitBox: config.showPastPitBox ?? false,
-    showPitExitInputs: config.showPitExitInputs ?? false,
-    pitExitInputs: config.pitExitInputs ?? { throttle: true, clutch: true },
-    showInputsPhase: config.showInputsPhase ?? ('afterPitbox' as const),
-  };
-
-  return migratedConfig;
+  return pitlaneSettings as unknown as PitlaneHelperWidgetSettings['config'];
 };

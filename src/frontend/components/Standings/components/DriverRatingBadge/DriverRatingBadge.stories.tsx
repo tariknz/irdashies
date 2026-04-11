@@ -42,6 +42,24 @@ export const AllRatings: Story = {
   ),
 };
 
+export const AllRatingsMinimal: Story = {
+  args: {
+    format: 'license-color-rating-bw',
+    isMinimal: true,
+  },
+  render: (args) => (
+    <div className="flex flex-col gap-1">
+      <DriverRatingBadge {...args} license="W 4.99" rating={12999} />
+      <DriverRatingBadge {...args} license="P 4.99" rating={11999} />
+      <DriverRatingBadge {...args} license="A 4.99" rating={4999} />
+      <DriverRatingBadge {...args} license="B 3.99" rating={3999} />
+      <DriverRatingBadge {...args} license="C 2.99" rating={2999} />
+      <DriverRatingBadge {...args} license="D 1.99" rating={1999} />
+      <DriverRatingBadge {...args} license="R 0.99" rating={999} />
+    </div>
+  ),
+};
+
 export const FormatLicenseColorRatingCombined: Story = {
   args: {
     license: 'A 4.99',

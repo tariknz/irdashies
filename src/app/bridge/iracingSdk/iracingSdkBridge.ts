@@ -1,8 +1,8 @@
 import { IRacingSDK } from '../../irsdk';
-import { TelemetrySink } from './telemetrySink';
 import { OverlayManager } from '../../overlayManager';
 import { TelemetryPerfMetrics } from '../../perfMetrics';
 import type { IrSdkBridge, Session, Telemetry } from '@irdashies/types';
+import logger from '../../logger';
 
 // Short timeout for waitForData to avoid blocking the main thread.
 // The native SDK's WaitForSingleObject blocks synchronously, so keep this
@@ -12,10 +12,9 @@ const WAIT_TIMEOUT = 16;
 const RETRY_INTERVAL = 1000;
 
 export async function publishIRacingSDKEvents(
-  telemetrySink: TelemetrySink,
   overlayManager: OverlayManager
 ): Promise<IrSdkBridge> {
-  console.log('[iracingSdkBridge] Loading iRacing SDK bridge...');
+  logger.info('[iracingSdkBridge] Loading iRacing SDK bridge...');
 
   const perfMetrics = new TelemetryPerfMetrics();
   perfMetrics.startReporting();
@@ -30,7 +29,7 @@ export async function publishIRacingSDKEvents(
   const runningStateCallbacks = new Set<(value: boolean) => void>();
 
   overlayManager.onOverlayReady((id) => {
-    console.log(
+    logger.info(
       '[iracingSdkBridge] New window ready, sending initial data: ',
       id
     );
@@ -56,7 +55,7 @@ export async function publishIRacingSDKEvents(
       return;
     }
     lastRunningState = isSimRunning;
-    console.log(
+    logger.info(
       '[iracingSdkBridge] Sending running state to window',
       isSimRunning
     );
@@ -73,20 +72,18 @@ export async function publishIRacingSDKEvents(
 
       while (!shouldStop && sdk.waitForData(WAIT_TIMEOUT)) {
         if (!wasRunning) {
-          console.log('[iracingSdkBridge] iRacing is running');
+          logger.info('[iracingSdkBridge] iRacing is running');
           wasRunning = true;
         }
         perfMetrics.markStart('processTelemetry');
         const telemetry = sdk.getTelemetry();
         const session = sdk.getSessionData();
-        await new Promise((resolve) => setTimeout(resolve, 1000 / 25)); // 25Hz update rate
 
         if (telemetry) {
           latestTelemetry = telemetry;
           perfMetrics.markStart('broadcast');
           overlayManager.publishMessage('telemetry', telemetry);
           perfMetrics.markEnd('broadcast');
-          telemetrySink.addTelemetry(telemetry);
           telemetryCallbacks.forEach((callback) => callback(telemetry));
         }
 
@@ -102,16 +99,19 @@ export async function publishIRacingSDKEvents(
             lastSessionPublishTime = now;
             latestSession = session;
             overlayManager.publishMessage('sessionData', session);
-            telemetrySink.addSession(session);
             sessionCallbacks.forEach((callback) => callback(session));
           }
         }
         perfMetrics.markEnd('processTelemetry');
         perfMetrics.tick();
+
+        // Throttling to ~25Hz to save system resources as requested.
+        // We sleep AFTER publishing to ensure each frame is sent with minimal latency.
+        await new Promise((resolve) => setTimeout(resolve, 1000 / 25));
       }
 
       if (wasRunning) {
-        console.log(
+        logger.info(
           '[iracingSdkBridge] iRacing is no longer publishing telemetry'
         );
       }

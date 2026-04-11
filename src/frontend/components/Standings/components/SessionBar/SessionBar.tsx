@@ -15,7 +15,6 @@ import {
 import { useTrackWetness } from '../../hooks/useTrackWetness';
 import { useTrackTemperature } from '../../hooks/useTrackTemperature';
 import { useCurrentTime } from '../../hooks/useCurrentTime';
-import { useStandingsSettings, useRelativeSettings } from '../../hooks';
 import {
   ClockIcon,
   ClockUserIcon,
@@ -25,6 +24,7 @@ import {
   ThermometerIcon,
   TireIcon,
 } from '@phosphor-icons/react';
+import { SessionBarConfig } from '@irdashies/types';
 import { useSessionCurrentTime } from '../../hooks/useSessionCurrentTime';
 import { usePrecipitation } from '../../hooks/usePrecipitation';
 import { SessionState } from '@irdashies/types';
@@ -89,22 +89,35 @@ const formatTotalTime = (
 };
 
 interface SessionBarProps {
+  settings: SessionBarConfig;
   position?: 'header' | 'footer';
-  variant?: 'standings' | 'relative';
+  standalone?: boolean;
 }
 
 export const SessionBar = ({
+  settings: effectiveBarSettings,
   position = 'header',
-  variant = 'standings',
+  standalone = false,
 }: SessionBarProps) => {
-  // Use settings hook directly for reactivity
-  const standingsSettings = useStandingsSettings();
-  const relativeSettings = useRelativeSettings();
   const generalSettings = useGeneralSettings();
-  const settings =
-    variant === 'relative' ? relativeSettings : standingsSettings;
-  const effectiveBarSettings =
-    position === 'footer' ? settings?.footerBar : settings?.headerBar;
+
+  const isUltra = generalSettings?.compactMode === 'ultra';
+  const isCompact = generalSettings?.compactMode === 'compact';
+
+  const pyClass = isUltra ? 'py-0' : isCompact ? 'py-1' : 'py-2';
+  const gapClass = isUltra ? 'gap-x-2' : isCompact ? 'gap-x-4' : 'gap-x-6';
+  const pxClass = standalone
+    ? isUltra
+      ? 'px-2'
+      : isCompact
+        ? 'px-3'
+        : 'px-4'
+    : isUltra
+      ? 'px-1'
+      : isCompact
+        ? 'px-2'
+        : 'px-3';
+
   const session = useCurrentSessionType();
   const displayUnits = useTelemetryValue('DisplayUnits'); // 0 = imperial, 1 = metric
   const { incidentLimit, incidents } = useDriverIncidents();
@@ -420,21 +433,53 @@ export const SessionBar = ({
 
   // Filter and order items based on settings
   const itemsToRender = displayOrder
-    .map((key) => ({
+    .map((key: string) => ({
       key,
-      definition: itemDefinitions[key as keyof typeof itemDefinitions],
+      definition: (
+        itemDefinitions as Record<
+          string,
+          { enabled: boolean; render: () => React.ReactNode }
+        >
+      )[key],
     }))
     .filter(({ definition }) => definition?.enabled)
-    .map(({ key, definition }) => {
-      const element = definition.render();
-      if (!element) return null;
-      return <div key={key}>{element}</div>;
-    })
+    .map(
+      (
+        { key, definition },
+        index: number,
+        array: {
+          key: string;
+          definition: { enabled: boolean; render: () => React.ReactNode };
+        }[]
+      ) => {
+        const element = definition.render();
+        if (!element) return null;
+
+        if (standalone) {
+          const isFirst = index === 0;
+          const isLast = index === array.length - 1;
+          return (
+            <div
+              key={key}
+              className={`whitespace-nowrap shrink-0 ${isFirst ? 'text-left' : isLast ? 'text-right' : 'text-center'}`}
+            >
+              {element}
+            </div>
+          );
+        }
+
+        return (
+          <div key={key} className="whitespace-nowrap">
+            {element}
+          </div>
+        );
+      }
+    )
     .filter(Boolean);
 
   return (
     <div
-      className={`bg-slate-900/70 text-sm px-3 py-1 flex justify-between ${!generalSettings?.compactMode ? (position === 'header' ? 'mb-3' : 'mt-3') : ''}`}
+      className={`bg-slate-900/70 ${pxClass} ${pyClass} flex items-center text-sm ${standalone ? `w-full justify-between ${gapClass}` : 'justify-between'} ${!isCompact && !isUltra && !standalone ? (position === 'header' ? 'mb-3' : 'mt-3') : ''}`}
     >
       {itemsToRender}
     </div>

@@ -71,6 +71,13 @@ const mockBridge: (editMode: boolean) => DashboardBridge = (editMode) => ({
       createdAt: new Date().toISOString(),
       lastModified: new Date().toISOString(),
     }),
+  cloneProfile: (profileId: string) =>
+    Promise.resolve({
+      id: 'mock-clone-id',
+      name: `${profileId} - cloned`,
+      createdAt: new Date().toISOString(),
+      lastModified: new Date().toISOString(),
+    }),
   deleteProfile: () => Promise.resolve(),
   renameProfile: () => Promise.resolve(),
   switchProfile: () => Promise.resolve(),
@@ -86,6 +93,8 @@ const mockBridge: (editMode: boolean) => DashboardBridge = (editMode) => ({
   exportDashboardToFile: async () => false,
   importDashboardFromFile: async () => null,
   setAutoStart: () => Promise.resolve(),
+  openLogFolder: async () => undefined,
+  exportLogFile: async () => false,
 });
 
 export const Primary = {

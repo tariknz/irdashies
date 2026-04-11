@@ -10,8 +10,9 @@ export function SettingActionButton({
   return (
     <div className="flex justify-end mb-2">
       <button
+        type="button"
         onClick={onClick}
-        className={`px-3 py-1 text-sm bg-slate-600 hover:bg-slate-500 text-slate-300 rounded-md transition-colors`}
+        className="px-3 py-1 text-sm bg-slate-600 hover:bg-slate-500 text-slate-300 rounded-md transition-colors"
       >
         {label}
       </button>

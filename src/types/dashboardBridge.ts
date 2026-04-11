@@ -1,4 +1,8 @@
-import type { DashboardLayout, DashboardProfile } from './dashboardLayout';
+import type {
+  DashboardLayout,
+  DashboardProfile,
+  DriverTagSettings,
+} from './dashboardLayout';
 
 export interface SaveDashboardOptions {
   forceReload?: boolean;
@@ -12,7 +16,7 @@ export interface SaveDashboardOptions {
  * Used to compensate for OS constraints on window positioning
  */
 export interface ContainerBoundsInfo {
-  /** The bounds we requested */
+  /** The bounds we requested for the window (may be shrink-wrapped to widgets) */
   expected: { x: number; y: number; width: number; height: number };
   /** The bounds the OS actually gave us (may differ due to constraints) */
   actual: { x: number; y: number; width: number; height: number };
@@ -22,6 +26,8 @@ export interface ContainerBoundsInfo {
   displayId?: number;
   /** True for the primary display window */
   isPrimary?: boolean;
+  /** Full display bounds — used for widget-to-display assignment filtering */
+  displayBounds?: { x: number; y: number; width: number; height: number };
 }
 
 export interface DashboardBridge {
@@ -50,6 +56,7 @@ export interface DashboardBridge {
   setAnalyticsOptOut: (optOut: boolean) => Promise<void>;
   listProfiles: () => Promise<DashboardProfile[]>;
   createProfile: (name: string) => Promise<DashboardProfile>;
+  cloneProfile: (profileId: string) => Promise<DashboardProfile>;
   deleteProfile: (profileId: string) => Promise<void>;
   renameProfile: (profileId: string, newName: string) => Promise<void>;
   switchProfile: (profileId: string) => Promise<void>;
@@ -63,9 +70,14 @@ export interface DashboardBridge {
   ) => Promise<DashboardLayout | null>;
   exportDashboardToFile: (dashboard: DashboardLayout) => Promise<boolean>;
   importDashboardFromFile: () => Promise<DashboardLayout | null>;
+  openLogFolder: () => Promise<void>;
+  exportLogFile: () => Promise<boolean>;
   stop: () => void;
   setAutoStart: (autoStart: boolean) => Promise<void>;
   onContainerBoundsInfo?: (
     callback: (value: ContainerBoundsInfo) => void
   ) => (() => void) | undefined;
+  getDriverTagSettings?: () => Promise<DriverTagSettings | undefined>;
+  saveDriverTagSettings?: (settings: DriverTagSettings) => Promise<void>;
+  getComponentServerPort?: () => Promise<number>;
 }

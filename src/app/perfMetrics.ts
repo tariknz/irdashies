@@ -10,6 +10,7 @@
 
 import { performance } from 'perf_hooks';
 import { app, BrowserWindow } from 'electron';
+import logger from './logger';
 
 export interface SectionStats {
   count: number;
@@ -66,10 +67,7 @@ class SectionBuffer {
       samples.set(this.buffer.subarray(0, this.count));
     } else {
       const tailLen = RING_BUFFER_SIZE - this.writeIndex;
-      samples.set(
-        this.buffer.subarray(this.writeIndex, RING_BUFFER_SIZE),
-        0
-      );
+      samples.set(this.buffer.subarray(this.writeIndex, RING_BUFFER_SIZE), 0);
       samples.set(this.buffer.subarray(0, this.writeIndex), tailLen);
     }
 
@@ -153,8 +151,7 @@ export class TelemetryPerfMetrics {
 
     const cpuUsage = process.cpuUsage(this.lastCpuUsage);
     const intervalSeconds = (now - this.lastReportTime) / 1000;
-    const cpuUserPercent =
-      (cpuUsage.user / 1_000_000 / intervalSeconds) * 100;
+    const cpuUserPercent = (cpuUsage.user / 1_000_000 / intervalSeconds) * 100;
     const cpuSystemPercent =
       (cpuUsage.system / 1_000_000 / intervalSeconds) * 100;
     const cpuPercent = cpuUserPercent + cpuSystemPercent;
@@ -164,8 +161,7 @@ export class TelemetryPerfMetrics {
       sections[label] = buf.getStats();
     }
 
-    const { processes, totalCpu, totalMemory } =
-      this.getProcessMetrics();
+    const { processes, totalCpu, totalMemory } = this.getProcessMetrics();
 
     const report: PerfReport = {
       intervalMs: now - this.lastReportTime,
@@ -288,6 +284,6 @@ export class TelemetryPerfMetrics {
       }
     }
 
-    console.log(lines.join('\n'));
+    logger.info(lines.join('\n'));
   }
 }

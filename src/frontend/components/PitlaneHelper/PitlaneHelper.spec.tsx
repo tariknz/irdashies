@@ -1,4 +1,4 @@
-import { render } from '@testing-library/react';
+﻿import { render } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { PitlaneHelper } from './PitlaneHelper';
 import * as context from '@irdashies/context';
@@ -52,6 +52,7 @@ describe('PitlaneHelper', () => {
     showProgressBar: true,
     showSpeedBar: true,
     showSpeedSummary: true,
+    showSpeedDelta: true,
     speedLimitStyle: 'european' as const,
     showPastPitBox: false,
     background: { opacity: 80 },
@@ -123,6 +124,7 @@ describe('PitlaneHelper', () => {
       currentProfile: null,
       profiles: [],
       createProfile: vi.fn(),
+      cloneProfile: vi.fn(),
       deleteProfile: vi.fn(),
       renameProfile: vi.fn(),
       switchProfile: vi.fn(),

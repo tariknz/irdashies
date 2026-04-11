@@ -12,9 +12,8 @@ import {
   drawTurnNames,
   drawDrivers,
 } from './trackDrawingUtils';
-import { useDriverOffTrack } from './hooks/useDriverOffTrack';
 import { useDriverLivePositions } from '../Standings/hooks/useDriverLivePositions';
-import { useTelemetryValues } from '@irdashies/context';
+import { useTelemetryValues, useCarIdxOffTrack } from '@irdashies/context';
 
 export interface DriverIdentity {
   driver: Driver;
@@ -26,11 +25,15 @@ export interface TrackProps {
   trackId: number;
   drivers: TrackDriver[];
   driverIdentities?: DriverIdentity[];
-  enableTurnNames?: boolean;
+  turnLabels?: {
+    enabled: boolean;
+    labelType: 'names' | 'numbers' | 'both';
+    highContrast: boolean;
+    labelFontSize: number;
+  };
   showCarNumbers?: boolean;
   displayMode?: 'carNumber' | 'sessionPosition' | 'livePosition';
   invertTrackColors?: boolean;
-  highContrastTurns?: boolean;
   driverCircleSize?: number;
   playerCircleSize?: number;
   trackmapFontSize?: number;
@@ -38,6 +41,8 @@ export interface TrackProps {
   trackOutlineWidth?: number;
   highlightColor?: number;
   debug?: boolean;
+  isMinimalTrack?: boolean;
+  isMinimalCar?: boolean;
 }
 
 export interface TrackDriver {
@@ -67,6 +72,13 @@ export interface TrackDrawing {
   }[];
 }
 
+export interface TurnLabels {
+  enabled: boolean;
+  labelType: 'names' | 'numbers' | 'both';
+  highContrast: boolean;
+  labelFontSize: number;
+}
+
 const TRACK_DRAWING_WIDTH = 1920;
 const TRACK_DRAWING_HEIGHT = 1080;
 
@@ -74,11 +86,15 @@ export const TrackCanvas = ({
   trackId,
   drivers,
   driverIdentities,
-  enableTurnNames,
+  turnLabels = {
+    enabled: false,
+    labelType: 'both',
+    highContrast: true,
+    labelFontSize: 100,
+  },
   showCarNumbers = true,
   displayMode = 'carNumber',
   invertTrackColors = false,
-  highContrastTurns = false,
   driverCircleSize = 40,
   playerCircleSize = 40,
   trackmapFontSize = 100,
@@ -86,6 +102,8 @@ export const TrackCanvas = ({
   trackOutlineWidth = 40,
   highlightColor,
   debug,
+  isMinimalTrack = false,
+  isMinimalCar = false,
 }: TrackProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const cacheCanvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -97,7 +115,7 @@ export const TrackCanvas = ({
   const trackDrawing = (tracks as unknown as TrackDrawing[])[trackId];
   const shouldShow = shouldShowTrack(trackId, trackDrawing);
 
-  const driversOffTrack = useDriverOffTrack();
+  const driversOffTrack = useCarIdxOffTrack();
   const driverLivePositions = useDriverLivePositions({
     enabled: displayMode === 'livePosition',
   });
@@ -321,22 +339,17 @@ export const TrackCanvas = ({
     cacheCtx.setTransform(1, 0, 0, 1, 0, 0);
     cacheCtx.scale(dpr, dpr);
 
-    setupCanvasContext(cacheCtx, scale, offsetX, offsetY);
+    setupCanvasContext(cacheCtx, scale, offsetX, offsetY, isMinimalTrack);
     drawTrack(
       cacheCtx,
       path2DObjects,
       invertTrackColors,
       trackLineWidth,
-      trackOutlineWidth
+      trackOutlineWidth,
+      isMinimalTrack
     );
     drawStartFinishLine(cacheCtx, startFinishLine);
-    drawTurnNames(
-      cacheCtx,
-      trackDrawing.turns,
-      enableTurnNames,
-      highContrastTurns,
-      trackmapFontSize
-    );
+    drawTurnNames(cacheCtx, trackDrawing.turns, turnLabels);
     cacheCtx.restore();
 
     // Blit to main canvas so static-only changes are visible immediately
@@ -351,16 +364,16 @@ export const TrackCanvas = ({
   }, [
     path2DObjects,
     trackDrawing?.turns,
+    turnLabels,
     canvasSize,
-    enableTurnNames,
     invertTrackColors,
-    highContrastTurns,
     trackLineWidth,
     trackOutlineWidth,
     trackmapFontSize,
     startFinishLine,
     driverCircleSize,
     playerCircleSize,
+    isMinimalTrack,
   ]);
 
   // Dynamic layer — runs on every position tick, blits static cache then draws drivers
@@ -386,7 +399,7 @@ export const TrackCanvas = ({
     const offsetX = (canvasSize.width - TRACK_DRAWING_WIDTH * scale) / 2;
     const offsetY = (canvasSize.height - TRACK_DRAWING_HEIGHT * scale) / 2;
 
-    setupCanvasContext(ctx, scale, offsetX, offsetY);
+    setupCanvasContext(ctx, scale, offsetX, offsetY, isMinimalCar);
     drawDrivers(
       ctx,
       calculatePositions,
@@ -412,7 +425,10 @@ export const TrackCanvas = ({
     driverCircleSize,
     playerCircleSize,
     trackmapFontSize,
+    turnLabels,
     driverColors,
+    isMinimalCar,
+    isMinimalTrack,
   ]);
 
   // Development/Storybook mode - show debug info and canvas

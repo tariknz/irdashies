@@ -10,6 +10,7 @@ import {
   usePrevCarTrackSurface,
   useFocusCarIdx,
   useSessionPositions,
+  useSessionFastestLaps,
   useTelemetryValues,
   useTelemetryValuesRounded,
 } from '@irdashies/context';
@@ -159,20 +160,10 @@ export const useDriverStandings = () => {
   const sessionState = useTelemetryValue('SessionState') ?? 0;
   const sessionNum = useTelemetryValue('SessionNum');
   const sessionPositions = useSessionPositions(sessionNum);
+  const sessionFastestLaps = useSessionFastestLaps(sessionNum);
+  const fastestLapCarIdx = sessionFastestLaps?.[0]?.CarIdx;
 
   const driverStandings: Standings[] = useMemo(() => {
-    const fastestTime = driverPositions.reduce(
-      (fastest, pos) => {
-        if (pos.bestLap !== undefined && pos.bestLap > 0) {
-          return fastest === undefined || pos.bestLap < fastest
-            ? pos.bestLap
-            : fastest;
-        }
-        return fastest;
-      },
-      undefined as number | undefined
-    );
-
     // Create Map lookups for O(1) access instead of O(n) find() calls
     const driverPositionsByCarIdx = new Map(
       driverPositions.map((pos) => [pos.carIdx, pos])
@@ -246,9 +237,7 @@ export const useDriverStandings = () => {
       }
 
       const hasFastestTime =
-        driverPos.bestLap !== undefined &&
-        fastestTime !== undefined &&
-        driverPos.bestLap === fastestTime;
+        fastestLapCarIdx !== undefined && driver.carIdx === fastestLapCarIdx;
 
       return {
         carIdx: driver.carIdx,
@@ -306,6 +295,7 @@ export const useDriverStandings = () => {
     useLivePositionStandings,
     radioTransmitCarIdx,
     driverLivePositions,
+    fastestLapCarIdx,
   ]);
 
   return driverStandings;

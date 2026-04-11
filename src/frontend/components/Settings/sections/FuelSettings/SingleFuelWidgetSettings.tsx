@@ -184,7 +184,7 @@ export const SingleFuelWidgetSettings = ({
               </TabButton>
             </div>
 
-            <div className="pt-4 space-y-4">
+            <div>
               {/* LAYOUT TAB */}
               {activeTab === 'layout' && (
                 <>

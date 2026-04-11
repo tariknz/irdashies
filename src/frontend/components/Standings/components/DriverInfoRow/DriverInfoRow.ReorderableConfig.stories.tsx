@@ -8,11 +8,13 @@ import { DotsSixVerticalIcon } from '@phosphor-icons/react';
 import type { Meta } from '@storybook/react-vite';
 import type { DriverInfoRow as DriverInfoRowType } from './DriverInfoRow';
 import type { ComponentType } from 'react';
+import { TelemetryDecorator } from '@irdashies/storybook';
 
 const meta = {
   component: DriverInfoRow,
   title: 'widgets/Standings/components/DriverInfoRow',
   decorators: [
+    TelemetryDecorator(),
     (Story: ComponentType) => (
       <table className="w-full">
         <tbody>
@@ -363,6 +365,7 @@ const RelativeWithReorderableConfig = () => {
       lastTime: { enabled: true, timeFormat: 'full' },
       compound: { enabled: true },
       brakeBias: { enabled: false },
+      driverTag: { enabled: false },
       displayOrder: displayOrder,
       titleBar: { enabled: true, progressBar: { enabled: true } },
       headerBar: {

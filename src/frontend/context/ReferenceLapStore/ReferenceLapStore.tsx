@@ -5,6 +5,7 @@ import {
 } from '@irdashies/types';
 import { precomputePCHIPTangents } from './pchipTangents';
 import { create } from 'zustand';
+import logger from '@irdashies/utils/logger';
 
 export const REFERENCE_INTERVAL = 0.0025;
 const DECIMAL_PLACES = REFERENCE_INTERVAL.toString().split('.')[1]?.length || 0;
@@ -72,7 +73,7 @@ export const useReferenceLapStore = create<ReferenceRegistryState>(
             )) as ReferenceLap;
             return { classId, lap };
           } catch (error) {
-            console.error(
+            logger.error(
               `[RefLapStore] Failed to load reference lap for class ${classId}:`,
               error
             );
@@ -163,7 +164,7 @@ export const useReferenceLapStore = create<ReferenceRegistryState>(
                 bridge
                   .saveReferenceLap(seriesId, trackId, classId, refLap)
                   .catch((err: Error) => {
-                    console.error(
+                    logger.error(
                       `[RefLapStore] Failed to save class ${classId}`,
                       err
                     );

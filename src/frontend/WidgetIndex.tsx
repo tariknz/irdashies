@@ -14,6 +14,9 @@ import { PitlaneHelper } from './components/PitlaneHelper/PitlaneHelper';
 import { Tachometer } from './components/Tachometer/Tachometer';
 import { Flag } from './components/Flag';
 import { TwitchChat } from './components/TwitchChat/TwitchChat';
+import { LapTimeLog } from './components/LapTimeLog/LapTimeLog';
+import { InformationBar } from './components/InformationBar/InformationBar';
+import { SlowCarAhead } from './components/SlowCarAhead/SlowCarAhead';
 
 // TODO: type this better, right now the config comes from settings
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -38,6 +41,9 @@ export const WIDGET_MAP: Record<
   tachometer: Tachometer,
   flag: Flag,
   twitchchat: TwitchChat,
+  laptimelog: LapTimeLog,
+  infobar: InformationBar,
+  slowcarahead: SlowCarAhead,
 };
 
 export type WidgetId = keyof typeof WIDGET_MAP;
