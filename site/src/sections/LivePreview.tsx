@@ -58,7 +58,7 @@ const AVAILABLE_WIDGETS = [
     id: 'standings',
     label: 'Standings',
     component: Standings,
-    defaultOn: true,
+    defaultOn: false,
   },
   { id: 'relative', label: 'Relative', component: Relative, defaultOn: true },
   { id: 'input', label: 'Input Trace', component: Input, defaultOn: true },
@@ -68,7 +68,7 @@ const AVAILABLE_WIDGETS = [
     component: Tachometer,
     defaultOn: false,
   },
-  { id: 'weather', label: 'Weather', component: Weather, defaultOn: true },
+  { id: 'weather', label: 'Weather', component: Weather, defaultOn: false },
   { id: 'flag', label: 'Flag', component: Flag, defaultOn: false },
   {
     id: 'infobar',
@@ -127,44 +127,40 @@ const AVAILABLE_WIDGETS = [
   },
 ] as const;
 
-// Default-on widgets are laid out in three columns so they don't overlap.
-// Any widget toggled on later just appears at PAD,PAD with its default size.
+// Default-on widgets: relative (top-left), track map (top-right),
+// input (bottom-center). Positions are computed once the canvas is measured.
 
 const PAD = 20;
-const GAP = 10;
 
-const standingsSize = getDefaultSize('standings');
-const relativeSize = getDefaultSize('relative');
-const mapSize = getDefaultSize('map');
-const inputSize = getDefaultSize('input');
-const weatherSize = getDefaultSize('weather');
+function buildDefaultPositions(
+  canvasW: number,
+  canvasH: number
+): Record<string, WidgetPosition> {
+  const positions: Record<string, WidgetPosition> = Object.fromEntries(
+    AVAILABLE_WIDGETS.map((w) => {
+      const size = getDefaultSize(w.id);
+      return [w.id, { x: PAD, y: PAD, ...size }];
+    })
+  );
 
-// Column x positions
-const COL1_X = PAD;
-const COL2_X = COL1_X + standingsSize.width + PAD;
-const COL3_X = COL2_X + Math.max(relativeSize.width, mapSize.width) + PAD;
+  const relativeSize = getDefaultSize('relative');
+  const mapSize = getDefaultSize('map');
+  const inputSize = getDefaultSize('input');
 
-// Col 2 running y
-const col2RelativeBottom = PAD + relativeSize.height + GAP;
-const col2MapBottom = col2RelativeBottom + mapSize.height + GAP;
+  positions['relative'] = { x: PAD, y: PAD, ...relativeSize };
+  positions['map'] = {
+    x: canvasW - mapSize.width - PAD,
+    y: PAD,
+    ...mapSize,
+  };
+  positions['input'] = {
+    x: Math.round((canvasW - inputSize.width) / 2),
+    y: canvasH - inputSize.height - PAD,
+    ...inputSize,
+  };
 
-// Build positions: default-on widgets get careful placement,
-// everything else falls back to top-left with its default size.
-const DEFAULT_POSITIONS: Record<string, WidgetPosition> = Object.fromEntries(
-  AVAILABLE_WIDGETS.map((w) => {
-    const size = getDefaultSize(w.id);
-    return [w.id, { x: PAD, y: PAD, ...size }];
-  })
-);
-
-// Override positions for default-on widgets so they don't overlap
-Object.assign(DEFAULT_POSITIONS, {
-  standings: { x: COL1_X, y: PAD, ...standingsSize },
-  relative: { x: COL2_X, y: PAD, ...relativeSize },
-  map: { x: COL2_X, y: col2RelativeBottom, ...mapSize },
-  input: { x: COL2_X, y: col2MapBottom, ...inputSize },
-  weather: { x: COL3_X, y: PAD, ...weatherSize },
-});
+  return positions;
+}
 
 /**
  * Wraps a widget in the overlay-window theme container.
@@ -365,12 +361,32 @@ export function LivePreview() {
     () => new Set(AVAILABLE_WIDGETS.filter((w) => w.defaultOn).map((w) => w.id))
   );
   const [positions, setPositions] = useState<Record<string, WidgetPosition>>(
-    () => ({ ...DEFAULT_POSITIONS })
+    () => buildDefaultPositions(1200, 700)
   );
   const [selectedWidget, setSelectedWidget] = useState<string | null>(null);
   const [settingsOpenWidget, setSettingsOpenWidget] = useState<string | null>(
     null
   );
+  const canvasRef = useRef<HTMLDivElement>(null);
+  const hasLaidOut = useRef(false);
+
+  // Measure the canvas once it's rendered and recompute default positions
+  useEffect(() => {
+    const el = canvasRef.current;
+    if (!el) return;
+
+    const observer = new ResizeObserver((entries) => {
+      if (hasLaidOut.current) return;
+      const { width, height } = entries[0].contentRect;
+      if (width > 0 && height > 0) {
+        hasLaidOut.current = true;
+        setPositions(buildDefaultPositions(width, height));
+        observer.disconnect();
+      }
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   const toggleWidget = (id: string) => {
     setActiveWidgets((prev) => {
@@ -410,20 +426,24 @@ export function LivePreview() {
       className="relative min-h-screen flex flex-col py-8 px-6"
     >
       {/* Compact section header */}
-      <div className="mx-auto w-full max-w-[1800px] mb-4">
+      <div className="mx-auto w-full max-w-450 mb-4">
         <h2 className="text-2xl md:text-3xl font-black uppercase tracking-tight">
           See It In <span className="text-red-600">Action</span>
-          <span className="text-sm font-normal normal-case tracking-normal text-slate-500 ml-4">
-            Drag to reposition, resize from edges, toggle widgets below
-          </span>
         </h2>
+        <p className="text-sm text-slate-400 mt-1">
+          Toggle widgets in the toolbar to enable them. Click a widget to select
+          it, drag to reposition, resize from edges, or double-click for
+          settings.
+        </p>
       </div>
 
       <LivePreviewProvider
         onDashboardSaved={(dashboard) => {
           setActiveWidgets((prev) => {
             const next = new Set(prev);
-            const widgetIds = new Set(AVAILABLE_WIDGETS.map((w) => w.id));
+            const widgetIds = new Set<string>(
+              AVAILABLE_WIDGETS.map((w) => w.id)
+            );
             for (const widget of dashboard.widgets) {
               const id = widget.type ?? widget.id;
               if (!widgetIds.has(id)) continue;
@@ -440,7 +460,7 @@ export function LivePreview() {
       >
         <ActiveWidgetSync activeWidgets={activeWidgets} />
         {/* Preview frame */}
-        <div className="mx-auto w-full max-w-[1800px] flex-1 flex flex-col min-h-0">
+        <div className="mx-auto w-full max-w-450 flex-1 flex flex-col min-h-0">
           <div className="relative rounded-sm border border-slate-700/50 overflow-hidden carbon-fiber flex-1 flex flex-col">
             {/* Frame toolbar — traffic lights + controls integrated */}
             <div className="flex-none flex items-center gap-3 px-4 py-2 bg-slate-900/80 border-b border-slate-700/50">
@@ -464,7 +484,7 @@ export function LivePreview() {
                       'px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide rounded-sm transition-all border whitespace-nowrap flex-none',
                       activeWidgets.has(widget.id)
                         ? 'border-red-600/50 bg-red-600/10 text-slate-200'
-                        : 'border-transparent text-slate-600 hover:text-slate-400 hover:bg-slate-800/50',
+                        : 'border-slate-700/50 text-slate-400 hover:text-slate-200 hover:bg-slate-700/50 hover:border-slate-600/50',
                     ].join(' ')}
                   >
                     {widget.label}
@@ -488,6 +508,7 @@ export function LivePreview() {
 
             {/* Widget canvas — absolute positioned like the real DashboardView */}
             <div
+              ref={canvasRef}
               className="relative flex-1 overflow-hidden"
               onClick={() => setSelectedWidget(null)}
             >
