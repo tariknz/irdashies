@@ -34,7 +34,7 @@ export function Features() {
     <section className="relative py-24 px-6">
       <div className="max-w-5xl mx-auto">
         <h2 className="text-3xl md:text-4xl font-black uppercase tracking-tight mb-3">
-          Beyond the <span className="text-[#0097dc]">Overlays</span>
+          Beyond the <span className="text-red-600">Overlays</span>
         </h2>
         <p className="text-slate-400 mb-12 max-w-xl">
           Customization, streaming tools, and quality-of-life features built

@@ -448,7 +448,7 @@ export function LivePreview() {
       {/* Compact section header */}
       <div className="mx-auto w-full max-w-[1800px] mb-4">
         <h2 className="text-2xl md:text-3xl font-black uppercase tracking-tight">
-          See It In <span className="text-[#f89806]">Action</span>
+          See It In <span className="text-red-600">Action</span>
           <span className="text-sm font-normal normal-case tracking-normal text-slate-500 ml-4">
             Drag to reposition, resize from edges, toggle widgets below
           </span>
@@ -499,7 +499,7 @@ export function LivePreview() {
                     className={[
                       'px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide rounded-sm transition-all border whitespace-nowrap flex-none',
                       activeWidgets.has(widget.id)
-                        ? 'border-[#fa2713]/50 bg-[#fa2713]/10 text-slate-200'
+                        ? 'border-red-600/50 bg-red-600/10 text-slate-200'
                         : 'border-transparent text-slate-600 hover:text-slate-400 hover:bg-slate-800/50',
                     ].join(' ')}
                   >
