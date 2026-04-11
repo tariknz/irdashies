@@ -26,7 +26,11 @@ export const useLapTimesStoreUpdater = () => {
   }, [sessionNum, reset]);
 
   useEffect(() => {
-    if (carIdxLastLapTime && standingsSettings?.lapTimeDeltas?.enabled) {
+    if (
+      carIdxLastLapTime &&
+      (standingsSettings?.lapTimeDeltas?.enabled ||
+        standingsSettings?.avgLapTime?.enabled)
+    ) {
       updateLapTimes(carIdxLastLapTime, sessionNum ?? null);
     }
   }, [
@@ -34,5 +38,6 @@ export const useLapTimesStoreUpdater = () => {
     sessionNum,
     updateLapTimes,
     standingsSettings?.lapTimeDeltas?.enabled,
+    standingsSettings?.avgLapTime?.enabled,
   ]);
 };

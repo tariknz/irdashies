@@ -7,7 +7,7 @@ import reactHooks from "eslint-plugin-react-hooks";
 import storybook from "eslint-plugin-storybook";
 
 export default defineConfig([
-  { ignores: ['**/.vite/**', '**/out/**', '**/coverage/**', 'storybook-static/**'] },
+  { ignores: ['**/.vite/**', '**/out/**', '**/coverage/**', 'storybook-static/**', '**/dist/**'] },
   { files: ["**/*.{js,mjs,cjs,ts,jsx,tsx}"] },
   { files: ["**/*.{js,mjs,cjs,ts,jsx,tsx}"], languageOptions: { globals: { ...globals.browser, ...globals.node } } },
   js.configs.recommended,

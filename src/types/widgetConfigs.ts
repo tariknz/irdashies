@@ -181,6 +181,8 @@ export interface StandingsConfig extends BaseDisplayConfig {
     numTopDrivers: number;
     topDriverDivider?: 'none' | 'theme' | 'highlight';
   };
+  avgLapTime: { enabled: boolean; numLaps: number; timeFormat: TimeFormat };
+
   classHeaderStyle?: ClassHeaderStyle;
 }
 

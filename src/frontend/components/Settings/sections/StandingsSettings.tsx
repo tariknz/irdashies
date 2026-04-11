@@ -124,6 +124,12 @@ const sortableSettings: SharedSortableSetting[] = [
     configKey: 'compound',
     canRotate: true,
   },
+  {
+    id: 'avgLapTime',
+    label: 'Avg Lap Time',
+    configKey: 'avgLapTime',
+    hasSubSetting: true,
+  },
 ];
 
 const defaultConfig = getWidgetDefaultConfig('standings');
@@ -458,7 +464,8 @@ export const StandingsSettings = () => {
                             </div>
                           )}
                         {(item.configKey === 'fastestTime' ||
-                          item.configKey === 'lastTime') &&
+                          item.configKey === 'lastTime' ||
+                          item.configKey === 'avgLapTime') &&
                           configValue.enabled && (
                             <div className="flex items-center justify-between pl-3 mt-2">
                               <span className="text-sm text-slate-300">
@@ -488,6 +495,33 @@ export const StandingsSettings = () => {
                                 <option value="seconds-full">42.123</option>
                                 <option value="seconds-mixed">42.1</option>
                                 <option value="seconds">42</option>
+                              </select>
+                            </div>
+                          )}
+                        {item.hasSubSetting &&
+                          item.configKey === 'avgLapTime' &&
+                          settings.config.avgLapTime.enabled && (
+                            <div className="flex items-center justify-between pl-3 mt-2">
+                              <span className="text-sm text-slate-300">
+                                Rolling Laps
+                              </span>
+                              <select
+                                value={settings.config.avgLapTime.numLaps}
+                                onChange={(e) => {
+                                  handleConfigChange({
+                                    avgLapTime: {
+                                      ...settings.config.avgLapTime,
+                                      numLaps: parseInt(e.target.value),
+                                    },
+                                  });
+                                }}
+                                className="bg-slate-700 text-white rounded-md px-2 py-1 text-xs"
+                              >
+                                {[3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
+                                  <option key={n} value={n}>
+                                    {n}
+                                  </option>
+                                ))}
                               </select>
                             </div>
                           )}

@@ -12,6 +12,7 @@ import type {
   RelativeWidgetSettings,
   StandingsWidgetSettings,
 } from '@irdashies/types';
+import { AvgLapTimeCell } from './cells/AvgLapTimeCell';
 import { BadgeCell } from './cells/BadgeCell';
 import { CarManufacturerCell } from './cells/CarManufacturerCell';
 import { CarNumberCell } from './cells/CarNumberCell';
@@ -62,6 +63,7 @@ interface DriverRowInfoProps {
   carId?: number;
   lapTimeDeltas?: number[];
   numLapDeltasToShow?: number;
+  avgLapTime?: number;
   isMultiClass: boolean;
   displayOrder?: string[];
   config?: RelativeWidgetSettings['config'] | StandingsWidgetSettings['config'];
@@ -178,6 +180,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
     carId,
     lapTimeDeltas,
     numLapDeltasToShow,
+    avgLapTime,
     isMultiClass,
     displayOrder,
     config,
@@ -540,6 +543,26 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
           />
         ),
       },
+      {
+        id: 'avgLapTime',
+        shouldRender:
+          (displayOrder ? displayOrder.includes('avgLapTime') : false) &&
+          (config && 'avgLapTime' in config
+            ? config.avgLapTime.enabled
+            : false),
+        component: (
+          <AvgLapTimeCell
+            key="avgLapTime"
+            avgLapTime={avgLapTime}
+            timeFormat={
+              config && 'avgLapTime' in config
+                ? config.avgLapTime.timeFormat
+                : undefined
+            }
+            compactMode={compactMode}
+          />
+        ),
+      },
     ];
 
     const filteredColumns = columns.filter((col) => col.shouldRender);
@@ -654,6 +677,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
     tireCompound,
     lapTimeDeltas,
     emptyLapDeltaPlaceholders,
+    avgLapTime,
     hideCarManufacturer,
     pitExitAfterSF,
     tagSettings,

@@ -82,6 +82,11 @@ export const defaultDashboard: {
           enabled: false,
           numLaps: 3,
         },
+        avgLapTime: {
+          enabled: false,
+          numLaps: 5,
+          timeFormat: 'mixed',
+        },
         driverStandings: {
           buffer: 3,
           numNonClassDrivers: 3,
@@ -234,6 +239,7 @@ export const defaultDashboard: {
           'lastTime',
           'compound',
           'lapTimeDeltas',
+          'avgLapTime',
         ],
         rotationGroups: [],
         driverTag: { enabled: false },
@@ -339,8 +345,8 @@ export const defaultDashboard: {
       layout: {
         x: 622,
         y: 864,
-        width: 396,
-        height: 113,
+        width: 496,
+        height: 50,
       },
       config: {
         showRpmText: false,
@@ -699,7 +705,7 @@ export const defaultDashboard: {
     },
     {
       id: 'fastercarsfrombehind',
-      enabled: true,
+      enabled: false,
       layout: {
         x: 588,
         y: 44,
@@ -786,17 +792,7 @@ export const defaultDashboard: {
               id: 'box-1',
               type: 'box',
               direction: 'col',
-              widgets: [
-                'fuelHeader',
-                'fuelConfidence',
-                'fuelTargetMessage',
-                'fuelGauge',
-                'fuelGrid',
-                'fuelScenarios',
-                'fuelEconomyPredict',
-                'fuelGraph',
-                'fuelTimeEmpty',
-              ],
+              widgets: ['fuelHeader', 'fuelGauge', 'fuelGrid'],
             },
           ],
         },
@@ -962,8 +958,8 @@ export const defaultDashboard: {
       layout: {
         x: 300,
         y: 100,
-        width: 250,
-        height: 250,
+        width: 450,
+        height: 50,
       },
       config: {
         maxDistance: 250,

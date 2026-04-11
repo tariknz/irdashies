@@ -19,6 +19,7 @@ import {
   useWeekendInfoNumCarClasses,
   useWeekendInfoTeamRacing,
   useSessionVisibility,
+  useCarIdxRollingAvgLapTime,
 } from '@irdashies/context';
 import { useIsSingleMake } from './hooks/useIsSingleMake';
 
@@ -40,6 +41,10 @@ export const Standings = () => {
   const numCarClasses = useWeekendInfoNumCarClasses();
   const isMultiClass = (numCarClasses ?? 0) > 1;
   const highlightColor = useHighlightColor();
+
+  const avgLapTimes = useCarIdxRollingAvgLapTime(
+    settings?.avgLapTime?.numLaps ?? 5
+  );
 
   // Determine whether we should hide the car manufacturer column
   const isSingleMake = useIsSingleMake();
@@ -77,7 +82,7 @@ export const Standings = () => {
       }}
     >
       <TitleBar titleBarSettings={settings?.titleBar} />
-      {(settings?.headerBar?.enabled ?? true) && (
+      {settings?.headerBar && (settings.headerBar.enabled ?? true) && (
         <SessionBar settings={settings.headerBar} position="header" />
       )}
       <table
@@ -223,6 +228,11 @@ export const Standings = () => {
                             ? settings.lapTimeDeltas.numLaps
                             : undefined
                         }
+                        avgLapTime={
+                          settings?.avgLapTime?.enabled
+                            ? avgLapTimes[result.carIdx]
+                            : undefined
+                        }
                         displayOrder={settings?.displayOrder}
                         currentSessionType={result.currentSessionType}
                         config={settings}
@@ -248,7 +258,7 @@ export const Standings = () => {
           })}
         </tbody>
       </table>
-      {(settings?.footerBar?.enabled ?? true) && (
+      {settings?.footerBar && (settings.footerBar.enabled ?? true) && (
         <SessionBar settings={settings.footerBar} position="footer" />
       )}
     </div>

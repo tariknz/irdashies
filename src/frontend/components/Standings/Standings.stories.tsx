@@ -11,6 +11,7 @@ import {
   SessionProvider,
   TelemetryProvider,
   useLapTimesStoreUpdater,
+  useLapTimesStore,
   usePitLapStoreUpdater,
   useDrivingState,
   useWeekendInfoNumCarClasses,
@@ -21,7 +22,7 @@ import {
 import { generateMockDataFromPath } from '../../../app/bridge/iracingSdk/mock-data/generateMockData';
 import type { DashboardBridge } from '@irdashies/types';
 import { defaultDashboard } from '@irdashies/types';
-import { useState, Fragment } from 'react';
+import { useState, useEffect, Fragment } from 'react';
 import { DriverClassHeader } from './components/DriverClassHeader/DriverClassHeader';
 import { DriverInfoRow } from './components/DriverInfoRow/DriverInfoRow';
 import type { ResolvedDriverTag } from './hooks/useDriverTagMap';
@@ -478,7 +479,9 @@ const StandingsWithoutHeader = () => {
         </tbody>
       </table>
       {/* Keep SessionBar here */}
-      <SessionBar settings={settings.footerBar} position="footer" />
+      {settings?.footerBar && (
+        <SessionBar settings={settings.footerBar} position="footer" />
+      )}
     </div>
   );
 };
@@ -524,7 +527,9 @@ const StandingsWithoutFooter = () => {
     >
       <TitleBar titleBarSettings={settings?.titleBar} />
       {/* Keep SessionBar here */}
-      <SessionBar settings={settings.headerBar} position="header" />
+      {settings?.headerBar && (
+        <SessionBar settings={settings.headerBar} position="header" />
+      )}
       <table className="w-full table-auto text-sm border-separate border-spacing-y-0.5">
         <tbody>
           {standings.map(([classId, classStandings]) =>
@@ -1066,4 +1071,77 @@ export const SingleDriverWithTag: Story = {
   parameters: {
     layout: 'padded',
   },
+};
+
+// Demo lap times per carIdx: [baseLapTime, variance] in seconds
+// Matches carIdx slots used in default mock data (cars at indices 0–5)
+const DEMO_LAP_TIMES: Record<number, number> = {
+  0: 92.4,
+  1: 93.1,
+  2: 91.8,
+  3: 94.2,
+  4: 92.9,
+  5: 93.7,
+};
+
+const NUM_CARS = 64;
+
+/**
+ * Seeds the LapTimesStore with realistic rolling lap history for demo purposes.
+ * Calls updateLapTimes 5 times with slightly varied lap times per car to simulate
+ * 5 laps of history.
+ */
+const LapHistorySeeder = () => {
+  const updateLapTimes = useLapTimesStore((s) => s.updateLapTimes);
+
+  useEffect(() => {
+    const baseTimes = Array.from({ length: NUM_CARS }, (_, idx) =>
+      DEMO_LAP_TIMES[idx] !== undefined ? DEMO_LAP_TIMES[idx] : 0
+    );
+
+    // Simulate 5 completed laps by calling updateLapTimes with slightly varied
+    // times. Each call must differ from the previous to be recorded as a new lap.
+    const variations = [0, 0.3, -0.2, 0.5, -0.4, 0.1];
+    let prev = baseTimes.map(() => -1);
+
+    for (const variation of variations) {
+      const lapTimes = baseTimes.map((base) =>
+        base > 0 ? base + variation : 0
+      );
+      // Ensure values differ from previous call so the store records the lap
+      if (lapTimes.some((t, i) => t !== prev[i] && t > 0)) {
+        updateLapTimes(lapTimes, 0);
+      }
+      prev = lapTimes;
+    }
+  }, [updateLapTimes]);
+
+  return null;
+};
+
+export const AvgLapTime: Story = {
+  name: 'Avg Lap Time Column',
+  render: () => (
+    <>
+      <LapHistorySeeder />
+      <Standings />
+    </>
+  ),
+  decorators: [
+    TelemetryDecoratorWithConfig(undefined, {
+      standings: {
+        avgLapTime: { enabled: true, numLaps: 5, timeFormat: 'mixed' },
+        lapTimeDeltas: { enabled: false, numLaps: 3 },
+        displayOrder: [
+          'position',
+          'carNumber',
+          'driverName',
+          'gap',
+          'interval',
+          'lastTime',
+          'avgLapTime',
+        ],
+      },
+    }),
+  ],
 };

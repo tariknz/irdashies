@@ -254,7 +254,7 @@ export const Relative = () => {
     return (
       <div className="w-full h-full">
         <TitleBar titleBarSettings={settings?.titleBar} />
-        {(settings?.headerBar?.enabled ?? false) && (
+        {settings?.headerBar && (settings.headerBar.enabled ?? false) && (
           <SessionBar settings={settings.headerBar} position="header" />
         )}
         <table
@@ -262,7 +262,7 @@ export const Relative = () => {
         >
           <tbody>{rows}</tbody>
         </table>
-        {(settings?.footerBar?.enabled ?? true) && (
+        {settings?.footerBar && (settings.footerBar.enabled ?? true) && (
           <SessionBar settings={settings.footerBar} position="footer" />
         )}
       </div>
@@ -277,7 +277,7 @@ export const Relative = () => {
       }}
     >
       <TitleBar titleBarSettings={settings?.titleBar} />
-      {(settings?.headerBar?.enabled ?? false) && (
+      {settings?.headerBar && (settings.headerBar.enabled ?? false) && (
         <SessionBar settings={settings.headerBar} position="header" />
       )}
       <table
@@ -285,7 +285,7 @@ export const Relative = () => {
       >
         <tbody>{rows}</tbody>
       </table>
-      {(settings?.footerBar?.enabled ?? true) && (
+      {settings?.footerBar && (settings.footerBar.enabled ?? true) && (
         <SessionBar settings={settings.footerBar} position="footer" />
       )}
     </div>
