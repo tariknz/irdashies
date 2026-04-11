@@ -30,6 +30,13 @@ export default defineConfig({
         __dirname,
         'node_modules/react/jsx-dev-runtime'
       ),
+      // Ensure single copy of react-router-dom — parent project components
+      // (e.g. SettingsLoader) use useParams from the same instance as the
+      // site's MemoryRouter
+      'react-router-dom': path.resolve(
+        __dirname,
+        'node_modules/react-router-dom'
+      ),
     },
   },
   css: {
