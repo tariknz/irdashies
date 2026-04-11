@@ -103,7 +103,6 @@ export const useReferenceLapStore = create<ReferenceRegistryState>(
 
       if (!refLap) {
         activeLaps.set(carIdx, {
-          classId,
           startTime: sessionTime,
           finishTime: -1,
           refPoints: new Map([
@@ -126,10 +125,26 @@ export const useReferenceLapStore = create<ReferenceRegistryState>(
           refLap.refPoints.size >= MIN_POINTS_FOR_VALID_LAP &&
           currentLapTime > 0
         ) {
+          const persistedLap = persistedLaps.get(classId);
+          const persistedLapTime = persistedLap
+            ? persistedLap.finishTime - persistedLap.startTime
+            : null;
+
+          const VALID_THRESHOLD = 0.85;
+
+          // Validates the pace: passes if no persisted lap exists, OR if the new lap meets the threshold
+          const isPaceValid =
+            !persistedLapTime ||
+            persistedLapTime / currentLapTime >= VALID_THRESHOLD;
+
+          // Updates if there is NO session best, OR if the new lap is faster AND the pace is valid
           const bestLap = bestLaps.get(carIdx);
-          const isNewBestLap = bestLap
-            ? currentLapTime < bestLap.finishTime - bestLap.startTime
-            : true;
+          const bestLapTime = bestLap
+            ? bestLap.finishTime - bestLap.startTime
+            : null;
+
+          const isNewBestLap =
+            !bestLapTime || (currentLapTime < bestLapTime && isPaceValid);
 
           if (isNewBestLap && refLap.isCleanLap) {
             precomputePCHIPTangents(refLap);
@@ -137,21 +152,19 @@ export const useReferenceLapStore = create<ReferenceRegistryState>(
             // Mutate in place
             bestLaps.set(carIdx, refLap);
 
-            const savedLap = persistedLaps.get(refLap.classId);
-            const savedLapTime = savedLap
-              ? savedLap.finishTime - savedLap.startTime
-              : Infinity;
+            const isCurrentFasterThanPersisted =
+              currentLapTime < (persistedLapTime || Infinity);
 
-            if (currentLapTime < savedLapTime) {
+            if (isCurrentFasterThanPersisted) {
               // Mutate in place
-              persistedLaps.set(refLap.classId, refLap);
+              persistedLaps.set(classId, refLap);
 
               if (seriesId !== null && trackId !== null) {
                 bridge
-                  .saveReferenceLap(seriesId, trackId, refLap.classId, refLap)
+                  .saveReferenceLap(seriesId, trackId, classId, refLap)
                   .catch((err: Error) => {
                     console.error(
-                      `[RefLapStore] Failed to save class ${refLap.classId}`,
+                      `[RefLapStore] Failed to save class ${classId}`,
                       err
                     );
                   });
@@ -161,7 +174,6 @@ export const useReferenceLapStore = create<ReferenceRegistryState>(
         }
 
         activeLaps.set(carIdx, {
-          classId,
           startTime: sessionTime,
           finishTime: -1,
           refPoints: new Map([
