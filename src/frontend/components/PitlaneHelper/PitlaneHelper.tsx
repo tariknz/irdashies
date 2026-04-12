@@ -37,6 +37,7 @@ export const PitlaneHelper = () => {
 
   const surface = (useTelemetryValue('PlayerTrackSurface') ?? 3) as number;
   const onPitRoadTelemetry = useTelemetryValue<boolean>('OnPitRoad') ?? false;
+  const displayUnits = useTelemetryValue('DisplayUnits') as number | undefined;
 
   // Core data hooks - must be called in same order every render
   const speed = usePitSpeed();
@@ -59,8 +60,10 @@ export const PitlaneHelper = () => {
     return null;
   }
 
-  // Determine which speed unit to display (prefer user's unit from limit)
-  const displayKph = speed.limitKph > speed.limitMph;
+  // Determine which speed unit to display based on user setting
+  const speedUnit = config?.speedUnit ?? 'auto';
+  const displayKph =
+    speedUnit === 'km/h' || (speedUnit === 'auto' && (displayUnits ?? 0) === 1);
 
   // Determine if we're on pit road
   // Surface=2 means in pit blend zone (before pit entry line)
@@ -126,8 +129,10 @@ const PitlaneHelperDisplay = ({
     return null;
   }
 
-  // Determine which speed unit to display (prefer user's unit from limit)
-  const displayKph = speed.limitKph > speed.limitMph;
+  // Determine which speed unit to display based on user setting
+  // Demo mode doesn't have telemetry, so 'auto' falls back to km/h (iRacing default)
+  const speedUnit = config?.speedUnit ?? 'auto';
+  const displayKph = speedUnit !== 'mph';
 
   // Early pitbox warning: show when on pit road AND pitbox is within threshold of pit entry
   const onPitRoad = surface === 2;

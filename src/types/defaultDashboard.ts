@@ -1016,6 +1016,7 @@ export const defaultDashboard: {
         showPastPitBox: false,
         showSpeedSummary: true,
         showSpeedDelta: true,
+        speedUnit: 'auto',
         speedLimitStyle: 'text',
         progressBarOrientation: 'horizontal',
         speedBarOrientation: 'horizontal',
