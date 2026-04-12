@@ -45,6 +45,17 @@ export function generateMockData(sessionData?: {
     sessionLapsRemain: 12,
   };
 
+  // Animate all cars around the track — seed initial positions from mock telemetry
+  const PLAYER_CAR_IDX = 4; // DriverInfo.DriverCarIdx from mock session
+  const carLapDistPcts = [
+    ...(prevTelemetry.CarIdxLapDistPct.value as number[]),
+  ];
+  // Per-car speed multipliers: 1-3% variation so gaps are realistic
+  const carSpeedMultipliers = carLapDistPcts.map((pct, idx) => {
+    if (pct < 0) return 0; // not on track
+    return 1 + (((idx * 7) % 7) - 3) / 100; // -3% to +3% variation
+  });
+
   // Demo mode: Simulate RPM and gear changes for Mazda MX-5
   let demoRpm = 2000;
   let demoGear = 1;
@@ -103,8 +114,9 @@ export function generateMockData(sessionData?: {
             const LAP_DISTANCE_INC = 0.0007; // Increment per tick for ~24s lap at 60Hz (fast mock lap)
             const SESSION_TIME_INC = 1 / 60; // Seconds per tick
 
-            // Update Lap Distance
-            mockState.lapDistPct += LAP_DISTANCE_INC;
+            // Update Lap Distance — ±2% per-tick variance so sector times differ
+            const playerVariance = 0.98 + Math.random() * 0.04;
+            mockState.lapDistPct += LAP_DISTANCE_INC * playerVariance;
 
             // Handle Lap Completion
             if (mockState.lapDistPct >= 1.0) {
@@ -129,6 +141,19 @@ export function generateMockData(sessionData?: {
             mockState.sessionTime += SESSION_TIME_INC;
 
             // --- Fuel Calculator Mock Logic End ---
+
+            // Animate all on-track cars forward; sync player car with mockState
+            for (let i = 0; i < carLapDistPcts.length; i++) {
+              if (carLapDistPcts[i] < 0) continue; // not on track
+              if (i === PLAYER_CAR_IDX) {
+                carLapDistPcts[i] = mockState.lapDistPct;
+              } else {
+                carLapDistPcts[i] =
+                  (carLapDistPcts[i] +
+                    LAP_DISTANCE_INC * carSpeedMultipliers[i]) %
+                  1;
+              }
+            }
 
             const state = mockState;
 
@@ -175,6 +200,10 @@ export function generateMockData(sessionData?: {
               LapDistPct: {
                 ...prevTelemetry.LapDistPct,
                 value: [state.lapDistPct],
+              },
+              CarIdxLapDistPct: {
+                ...prevTelemetry.CarIdxLapDistPct,
+                value: [...carLapDistPcts],
               },
               SessionTime: {
                 ...prevTelemetry.SessionTime,

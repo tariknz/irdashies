@@ -620,6 +620,7 @@ export const defaultDashboard: {
           offlineTesting: true,
         },
         styling: { isMinimalTrack: false, isMinimalCar: false },
+        sectorColoring: { enabled: false, comparison: 'sessionBest' },
       },
     },
     {
@@ -1101,6 +1102,28 @@ export const defaultDashboard: {
           'wind',
           'trackName',
         ],
+      },
+    },
+    {
+      id: 'sectordelta',
+      enabled: false,
+      layout: {
+        x: 6,
+        y: 800,
+        width: 300,
+        height: 60,
+      },
+      config: {
+        background: { opacity: 80 },
+        decimalPlaces: 3,
+        showOnlyWhenOnTrack: true,
+        sessionVisibility: {
+          race: true,
+          loneQualify: true,
+          openQualify: true,
+          practice: true,
+          offlineTesting: true,
+        },
       },
     },
   ],

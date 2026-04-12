@@ -222,6 +222,11 @@ export interface TrackMapConfig {
   showOnlyWhenOnTrack: boolean;
   sessionVisibility: SessionVisibilitySettings;
   styling?: { isMinimalTrack?: boolean; isMinimalCar?: boolean };
+  sectorColoring?: {
+    enabled: boolean;
+    /** What the green threshold compares against */
+    comparison: 'sessionBest' | 'allTimeBest';
+  };
 }
 
 export interface FlatTrackMapConfig {
@@ -502,6 +507,13 @@ export interface SlowCarAheadConfig {
   sessionVisibility: SessionVisibilitySettings;
 }
 
+export interface SectorDeltaConfig {
+  background: { opacity: number };
+  decimalPlaces: number;
+  showOnlyWhenOnTrack: boolean;
+  sessionVisibility: SessionVisibilitySettings;
+}
+
 // ===========================
 // Widget config map + typed widget
 // ===========================
@@ -532,6 +544,7 @@ export interface WidgetConfigMap {
   laptimelog: LapTimeLogConfig;
   infobar: InformationBarConfig;
   slowcarahead: SlowCarAheadConfig;
+  sectordelta: SectorDeltaConfig;
 }
 
 export type TypedDashboardWidget<
@@ -627,3 +640,4 @@ export type LapTimeLogWidgetSettings = BaseWidgetSettings<LapTimeLogConfig>;
 export type InformationBarWidgetSettings =
   BaseWidgetSettings<InformationBarConfig>;
 export type SlowCarAheadWidgetSettings = BaseWidgetSettings<SlowCarAheadConfig>;
+export type SectorDeltaWidgetSettings = BaseWidgetSettings<SectorDeltaConfig>;

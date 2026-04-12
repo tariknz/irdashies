@@ -6,10 +6,14 @@ vi.mock('./hooks/useTrackId');
 vi.mock('./hooks/useDriverProgress');
 vi.mock('./hooks/useTrackMapSettings');
 vi.mock('./hooks/useHighlightColor');
+vi.mock('./hooks/useSectorTiming', () => ({
+  useSectorTiming: vi.fn(() => []),
+}));
 vi.mock('@irdashies/context', () => ({
   useDashboard: vi.fn(),
   useSessionVisibility: vi.fn(),
   useTelemetryValue: vi.fn(),
+  useSessionStore: vi.fn(() => []),
 }));
 vi.mock('./TrackCanvas', () => ({
   TrackCanvas: () => <div>Track Canvas</div>,
