@@ -64,6 +64,12 @@ const sortableSettings: SortableSetting[] = [
   { id: 'fastestTime', label: 'Best Time', configKey: 'fastestTime' },
   { id: 'lastTime', label: 'Last Time', configKey: 'lastTime' },
   { id: 'compound', label: 'Tire Compound', configKey: 'compound' },
+  {
+    id: 'lapTimeDeltas',
+    label: 'Lap Delta',
+    configKey: 'lapTimeDeltas',
+    hasSubSetting: true,
+  },
 ];
 
 const defaultConfig = getWidgetDefaultConfig('relative');
@@ -361,6 +367,27 @@ const DisplaySettingsList = ({
                         },
                       });
                     }}
+                  />
+                </div>
+              )}
+            {setting.hasSubSetting &&
+              setting.configKey === 'lapTimeDeltas' &&
+              settings.config.lapTimeDeltas.enabled && (
+                <div className="pl-8 mt-2">
+                  <SettingSliderRow
+                    title="Laps to show"
+                    value={settings.config.lapTimeDeltas.numLaps}
+                    min={1}
+                    max={10}
+                    step={1}
+                    onChange={(v) =>
+                      handleConfigChange({
+                        lapTimeDeltas: {
+                          ...settings.config.lapTimeDeltas,
+                          numLaps: v,
+                        },
+                      })
+                    }
                   />
                 </div>
               )}
