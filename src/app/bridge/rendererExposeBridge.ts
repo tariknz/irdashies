@@ -15,6 +15,8 @@ import type {
   RaceControlBridge,
   Incident,
   IncidentThresholds,
+  KeybindingsBridge,
+  KeybindingActionId,
 } from '@irdashies/types';
 
 export function exposeBridge() {
@@ -116,6 +118,9 @@ export function exposeBridge() {
     createProfile: (name: string) => {
       return ipcRenderer.invoke('createProfile', name);
     },
+    cloneProfile: (profileId: string) => {
+      return ipcRenderer.invoke('cloneProfile', profileId);
+    },
     deleteProfile: (profileId: string) => {
       return ipcRenderer.invoke('deleteProfile', profileId);
     },
@@ -146,11 +151,26 @@ export function exposeBridge() {
     setAutoStart: (enabled: boolean) => {
       return ipcRenderer.invoke('autostart:set', enabled);
     },
+    getDriverTagSettings: () => {
+      return ipcRenderer.invoke('getDriverTagSettings');
+    },
+    saveDriverTagSettings: (settings: unknown) => {
+      return ipcRenderer.invoke('saveDriverTagSettings', settings);
+    },
+    getComponentServerPort: () => {
+      return ipcRenderer.invoke('getComponentServerPort');
+    },
     exportDashboardToFile: (dashboard: DashboardLayout) => {
       return ipcRenderer.invoke('exportDashboardToFile', dashboard);
     },
     importDashboardFromFile: () => {
       return ipcRenderer.invoke('importDashboardFromFile');
+    },
+    openLogFolder: () => {
+      return ipcRenderer.invoke('openLogFolder');
+    },
+    exportLogFile: () => {
+      return ipcRenderer.invoke('exportLogFile');
     },
     getCurrentDashboard: () => {
       // This is a synchronous getter used in overlay container mode
@@ -231,4 +251,15 @@ export function exposeBridge() {
     updateRetention: (retention: 'all' | 5 | 10 | 20) =>
       ipcRenderer.invoke('raceControl:updateRetention', retention),
   } as RaceControlBridge);
+
+  contextBridge.exposeInMainWorld('keybindingsBridge', {
+    getKeybindings: () => ipcRenderer.invoke('keybindings:get'),
+    updateKeybinding: (actionId: KeybindingActionId, accelerator: string) =>
+      ipcRenderer.invoke('keybindings:update', actionId, accelerator),
+    resetKeybinding: (actionId: KeybindingActionId) =>
+      ipcRenderer.invoke('keybindings:reset', actionId),
+    resetAllKeybindings: () => ipcRenderer.invoke('keybindings:resetAll'),
+    startRecording: () => ipcRenderer.invoke('keybindings:startRecording'),
+    stopRecording: () => ipcRenderer.invoke('keybindings:stopRecording'),
+  } as KeybindingsBridge);
 }

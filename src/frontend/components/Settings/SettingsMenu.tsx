@@ -2,7 +2,9 @@ import { Link, useLocation } from 'react-router-dom';
 import {
   SlidersHorizontalIcon,
   UsersIcon,
+  TagIcon,
   ScalesIcon,
+  KeyboardIcon,
   WrenchIcon,
   InfoIcon,
 } from '@phosphor-icons/react';
@@ -29,6 +31,18 @@ const generalItems: MenuItem[] = [
     path: '/profiles',
     label: 'Profiles',
     icon: UsersIcon,
+  },
+  {
+    to: '/settings/keybindings',
+    path: '/keybindings',
+    label: 'Key Bindings',
+    icon: KeyboardIcon,
+  },
+  {
+    to: '/settings/driver-tags',
+    path: '/driver-tags',
+    label: 'Driver Tags',
+    icon: TagIcon,
   },
   {
     to: '/settings/car-setup',
@@ -77,10 +91,22 @@ const widgetItems: MenuItem[] = [
     widgetType: 'garagecover',
   },
   {
+    to: '/settings/infobar',
+    path: '/infobar',
+    label: 'Information Bar',
+    widgetType: 'infobar',
+  },
+  {
     to: '/settings/input',
     path: '/input',
     label: 'Input',
     widgetType: 'input',
+  },
+  {
+    to: '/settings/laptimelog',
+    path: '/laptimelog',
+    label: 'Lap Timer',
+    widgetType: 'laptimelog',
   },
   {
     to: '/settings/pitlanehelper',
@@ -99,6 +125,12 @@ const widgetItems: MenuItem[] = [
     path: '/relative',
     label: 'Relative',
     widgetType: 'relative',
+  },
+  {
+    to: '/settings/slowcarahead',
+    path: '/slowcarahead',
+    label: 'Slow Car Ahead',
+    widgetType: 'slowcarahead',
   },
   {
     to: '/settings/standings',

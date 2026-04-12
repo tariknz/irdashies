@@ -13,12 +13,12 @@ export const useCustomShiftPoints = (settings?: ShiftPointSettings) => {
   // Get current car's shift config (only if enabled)
   const carConfig = carData && settings?.carConfigs[carData.carId];
   const isCarConfigEnabled = carConfig?.enabled ?? false;
-  
+
   // Get shift point for current gear (only if car config is enabled)
-  const currentShiftPoint = isCarConfigEnabled 
+  const currentShiftPoint = isCarConfigEnabled
     ? carConfig?.gearShiftPoints[gear.toString()]?.shiftRpm
     : undefined;
-  
+
   // Check if we should show shift indicator
   const shouldShowShiftIndicator = !!(
     settings?.enabled &&

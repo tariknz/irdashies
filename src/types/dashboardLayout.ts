@@ -27,8 +27,58 @@ export interface DashboardWidget {
   config?: Record<string, unknown>;
 }
 
+export interface TagGroup {
+  /** Unique id for the group */
+  id: string;
+  /** Display name for the group */
+  name: string;
+  /** Color represented as a 24-bit integer (e.g., 0xff0000) */
+  color: number;
+  /** Optional custom icon (data URL or Phosphor icon name string) */
+  icon?: string;
+}
+
+export interface DriverTagEntry {
+  /** iRacing customer ID (numeric string) — primary lookup key */
+  id?: string;
+  /** iRacing display name — fallback lookup key */
+  name?: string;
+  /** Custom display label shown on the badge/tag */
+  label?: string;
+  /** The tag group id this driver belongs to */
+  groupId: string;
+}
+
+export interface DriverTagSettings {
+  /** Array of user-created tag groups */
+  groups: TagGroup[];
+  /** Driver tag entries (preferred over legacy mapping) */
+  entries?: DriverTagEntry[];
+  /** @deprecated Use entries instead */
+  mapping: Record<string, string>;
+  /** Display config for the tag */
+  display: {
+    enabled: boolean;
+    /** Width in pixels for the tag bar, or explicit icon size override for badge mode */
+    widthPx?: number;
+    /** 'badge' shows an icon, 'tag' shows a colored pill */
+    displayStyle?: 'badge' | 'tag';
+    /** Phosphor icon weight: 'regular' (outline) or 'fill' */
+    iconWeight?: 'regular' | 'fill';
+    /** What to show in driver name cell when a label is set */
+    nameDisplay?: 'both' | 'label' | 'name';
+    /** Seconds between name/label alternation (2–60, default 5) */
+    alternateFrequency?: number;
+  };
+  /** Optional per-preset overrides (preset id → partial TagGroup) */
+  presetOverrides?: Record<string, Partial<TagGroup>>;
+}
+
 export type FontType = 'lato' | 'notosans' | 'figtree' | 'inter' | 'roboto';
 export type FontSize =
+  | '4xs'
+  | '3xs'
+  | '2xs'
   | 'xs'
   | 'sm'
   | 'md'
@@ -81,9 +131,12 @@ export interface GeneralSettingsType {
   disableHardwareAcceleration?: boolean;
   enableAutoStart?: boolean;
   startMinimized?: boolean;
-  compactMode?: boolean;
+  closeToTray?: boolean;
+  compactMode?: 'off' | 'compact' | 'ultra';
   overlayAlwaysOnTop?: boolean;
   enableNetworkAccess?: boolean;
+  /** Driver tag groups and mappings for overlays */
+  driverTagSettings?: DriverTagSettings;
 }
 
 /**

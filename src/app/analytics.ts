@@ -6,6 +6,9 @@ import crypto from 'node:crypto';
 import type { DashboardLayout } from '@irdashies/types';
 import { readData, writeData } from './storage/storage';
 import { getAnalyticsOptOut } from './storage/analytics';
+import logger from './logger';
+import type ElectronLog from 'electron-log';
+import type { LogMessage } from 'electron-log';
 
 declare const POSTHOG_KEY: string;
 
@@ -16,7 +19,7 @@ export interface AnalyticsProvider {
 }
 
 class PostHogProvider implements AnalyticsProvider {
-  constructor(private posthog: PostHog) { }
+  constructor(private posthog: PostHog) {}
 
   capture(event: EventMessage): void {
     this.posthog.capture(event);
@@ -45,13 +48,17 @@ export class Analytics {
   private initialize(): void {
     const optOut = getAnalyticsOptOut();
     if (optOut === true) {
-      console.warn('[Analytics] Analytics opt-out is enabled, skipping initialization');
+      logger.warn(
+        '[Analytics] Analytics opt-out is enabled, skipping initialization'
+      );
       return;
     }
     // POSTHOG_KEY is defined at build time via Vite's define option
     const key: string = POSTHOG_KEY || '';
 
-    if (!key) { return; }
+    if (!key) {
+      return;
+    }
 
     const posthog = new PostHog(key, {
       host: 'https://eu.i.posthog.com',
@@ -89,6 +96,29 @@ export class Analytics {
     return userId;
   }
 
+  setupLogTransport(): void {
+    if (!this.provider) return;
+
+    const transport = ((message: LogMessage) => {
+      const text = message.data
+        .map((d: unknown) => (typeof d === 'string' ? d : JSON.stringify(d)))
+        .join(' ');
+
+      // Not the nicest way to do this, but avoids having to implement OTEL to get logging in posthog
+      this.capture({
+        event: 'log_message',
+        properties: {
+          level: message.level,
+          message: text,
+        },
+      });
+    }) as ElectronLog.Transport;
+    transport.level = 'warn';
+    transport.transforms = [];
+
+    logger.transports.posthog = transport;
+  }
+
   async init(version: string, dashboard: DashboardLayout): Promise<void> {
     const displays = screen.getAllDisplays();
     const primaryDisplay = screen.getPrimaryDisplay();
@@ -97,13 +127,12 @@ export class Analytics {
     const userId = this.getOrCreateUserId();
 
     this.identify({
-      distinctId: userId, 
+      distinctId: userId,
       disableGeoip: false,
       properties: {
         $os: os.platform(),
         $os_version: os.release(),
         os_arch: os.arch(),
-        $host: os.hostname(),
         cpu_count: os.cpus().length,
         total_memory: os.totalmem(),
         $screen_width: primaryDisplay.size.width,
@@ -112,11 +141,11 @@ export class Analytics {
         cpu: cpuName,
         version,
         dashboard,
-      }
+      },
     });
 
     this.capture({
-      event: 'app_started'
+      event: 'app_started',
     });
   }
 }

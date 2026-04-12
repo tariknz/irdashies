@@ -6,7 +6,7 @@ export interface PitSpeedBarProps {
   /** Pit speed limit in km/h */
   limitKph: number;
   /** orientation */
-  orientation: 'horizontal' | 'vertical';
+  orientation: 'horizontal' | 'vertical' | undefined;
 }
 
 /**
@@ -36,8 +36,8 @@ export const PitSpeedBar = memo(
 
     if (orientation === 'vertical') {
       return (
-        <div className="flex flex-col flex-1 relative items-center gap-1">
-          <span className="absolute top-2 z-10 text-sm text-white font-medium tabular-nums leading-none">
+        <div className="h-full flex flex-col flex-1 relative items-center gap-1">
+          <span className="text-sm text-white font-medium tabular-nums leading-none">
             {speedKph.toFixed(1)}
           </span>
 
@@ -63,22 +63,21 @@ export const PitSpeedBar = memo(
 
     // Horizontal orientation
     return (
-      <div className="flex flex-col flex-1 gap-1">
+      <div className="flex flex-col h-full flex-1 gap-1">
+        <div className="flex justify-between items-center text-xs">
+          <span className="text-slate-400">Speed</span>
+          <span className="text-white font-medium tabular-nums">
+            {speedKph.toFixed(1)}
+          </span>
+        </div>
         {/* Horizontal bar */}
-        <div className="relative min-h-5 h-full bg-slate-70  0/50 rounded overflow-hidden flex-1">
+        <div className="relative min-h-5 h-full bg-slate-700/50 rounded overflow-hidden flex-1">
           <div
             className="absolute left-0 top-0 h-full transition-all duration-150 ease-out"
             style={{ width: `${fillPercent}%`, backgroundColor: fillColor }}
           />
           {/* Midpoint marker */}
           <div className="absolute left-1/2 top-0 h-full border-l-2 border-white/70" />
-        </div>
-
-        <div className="flex justify-between items-center text-xs">
-          <span className="text-slate-400">Speed</span>
-          <span className="text-white font-medium tabular-nums">
-            {speedKph.toFixed(1)}
-          </span>
         </div>
       </div>
     );

@@ -209,8 +209,35 @@ export const createDriverStandings = (
       }));
   }
 
-  const fastestDriverIdx = currentSession.resultsFastestLap?.[0]?.CarIdx;
-  const fastestDriver = results?.find((r) => r.CarIdx === fastestDriverIdx);
+  // Build a per-class fastest time map for qualifying/practice delta calculations.
+  // resultsFastestLap is session-wide only (no class info), so we derive class
+  // leaders from results + driver class info instead.
+  const classFastestTimeMap = new Map<number, number>();
+  results.forEach((result) => {
+    if (result.FastestTime <= 0) return;
+    const driver = session.drivers?.find((d) => d.CarIdx === result.CarIdx);
+    if (!driver) return;
+    const classId = driver.CarClassID;
+    const current = classFastestTimeMap.get(classId);
+    if (current === undefined || result.FastestTime < current) {
+      classFastestTimeMap.set(classId, result.FastestTime);
+    }
+  });
+
+  // Per-class fastest car index map for hasFastestTime
+  const classFastestCarIdxMap = new Map<number, number>();
+  results.forEach((result) => {
+    if (result.FastestTime <= 0) return;
+    const driver = session.drivers?.find((d) => d.CarIdx === result.CarIdx);
+    if (!driver) return;
+    const classId = driver.CarClassID;
+    const classBest = classFastestTimeMap.get(classId);
+    if (result.FastestTime === classBest) {
+      if (!classFastestCarIdxMap.has(classId)) {
+        classFastestCarIdxMap.set(classId, result.CarIdx);
+      }
+    }
+  });
 
   const sortByCarNumber = (a: Driver, b: Driver) => {
     const numA = parseInt(a.CarNumber, 10);
@@ -229,6 +256,9 @@ export const createDriverStandings = (
       );
 
       if (!driver) return null;
+      const classLeaderFastestTime = classFastestTimeMap.get(driver.CarClassID);
+      const classFastestCarIdx = classFastestCarIdxMap.get(driver.CarClassID);
+      const isClassFastest = result.CarIdx === classFastestCarIdx;
       return {
         carIdx: result.CarIdx,
         position: result.Position,
@@ -238,7 +268,7 @@ export const createDriverStandings = (
           result.FastestTime,
           telemetry.carIdxF2TimeValue ?? [],
           currentSession?.sessionType,
-          fastestDriver?.FastestTime
+          classLeaderFastestTime
         ),
         isPlayer: result.CarIdx === session.playerIdx,
         driver: {
@@ -250,12 +280,12 @@ export const createDriverStandings = (
           teamName: driver.TeamName,
         },
         fastestTime: result.FastestTime,
-        hasFastestTime: result.CarIdx === fastestDriverIdx,
+        hasFastestTime: isClassFastest,
         lastTime: result.LastTime,
         lastTimeState: getLastTimeState(
           result.LastTime,
           result.FastestTime,
-          result.CarIdx === fastestDriverIdx
+          isClassFastest
         ),
         onPitRoad: telemetry?.carIdxOnPitRoadValue?.[result.CarIdx] ?? false,
         onTrack:
@@ -450,7 +480,13 @@ export const augmentStandingsWithGap = (
   return groupedStandings.map(([classId, classStandings]) => {
     // Find class leader (lowest class position)
     const classLeader = classStandings[0];
-    if (!classLeader || classLeader.delta === undefined) {
+    if (!classLeader) {
+      return [classId, classStandings];
+    }
+    // In race sessions, bail early if the class leader has no delta (no data yet).
+    // In qualifying/practice, the class leader always has undefined delta (they're
+    // the fastest), so we must not bail — gap for other cars uses their own delta.
+    if (isRace && classLeader.delta === undefined) {
       return [classId, classStandings];
     }
 

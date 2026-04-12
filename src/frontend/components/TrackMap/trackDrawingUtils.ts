@@ -1,21 +1,23 @@
 import { getColor } from '@irdashies/utils/colors';
-import { TrackDrawing, TrackDriver } from './TrackCanvas';
+import { TrackDrawing, TrackDriver, TurnLabels } from './TrackCanvas';
 
 export const setupCanvasContext = (
   ctx: CanvasRenderingContext2D,
   scale: number,
   offsetX: number,
-  offsetY: number
+  offsetY: number,
+  isMinimal = false
 ) => {
   ctx.save();
   ctx.translate(offsetX, offsetY);
   ctx.scale(scale, scale);
 
-  // Apply shadow (now efficient thanks to canvas caching)
-  ctx.shadowColor = 'black';
-  ctx.shadowBlur = 2;
-  ctx.shadowOffsetX = 1;
-  ctx.shadowOffsetY = 1;
+  if (!isMinimal) {
+    ctx.shadowColor = 'black';
+    ctx.shadowBlur = 2;
+    ctx.shadowOffsetX = 1;
+    ctx.shadowOffsetY = 1;
+  }
 };
 
 export const drawTrack = (
@@ -23,17 +25,20 @@ export const drawTrack = (
   path2DObjects: { inside: Path2D | null },
   invertTrackColors: boolean,
   trackLineWidth: number,
-  trackOutlineWidth: number
+  trackOutlineWidth: number,
+  isMinimal = false
 ) => {
   if (!path2DObjects.inside) return;
 
   const outlineColor = invertTrackColors ? 'white' : 'black';
   const trackColor = invertTrackColors ? 'black' : 'white';
 
-  // Draw outline first
-  ctx.strokeStyle = outlineColor;
-  ctx.lineWidth = trackOutlineWidth;
-  ctx.stroke(path2DObjects.inside);
+  if (!isMinimal) {
+    // Draw outline first
+    ctx.strokeStyle = outlineColor;
+    ctx.lineWidth = trackOutlineWidth;
+    ctx.stroke(path2DObjects.inside);
+  }
 
   // Draw track on top
   ctx.strokeStyle = trackColor;
@@ -73,46 +78,69 @@ export const drawStartFinishLine = (
 export const drawTurnNames = (
   ctx: CanvasRenderingContext2D,
   turns: TrackDrawing['turns'],
-  enableTurnNames: boolean | undefined,
-  highContrastTurns: boolean,
-  trackmapFontSize: number
+  turnLabels: TurnLabels
 ) => {
-  if (!enableTurnNames || !turns) return;
+  if (!turnLabels.enabled || !turns) return;
+
+  const drawnPositions: { x: number; y: number }[] = [];
 
   turns.forEach((turn) => {
-    if (!turn.content || !turn.x || !turn.y) return;
-    const fontSize = 2 * (trackmapFontSize / 100);
+    const { x, y, content } = turn;
+    if (!content || x === undefined || y === undefined) return;
+
+    // type of display
+    const isNumeric = /^\d+/.test(content.trim());
+    if (turnLabels.labelType === 'numbers' && !isNumeric) return;
+    if (turnLabels.labelType === 'names' && isNumeric) return;
+
+    // proximity check to prevent overlap
+    const scaleFactor = turnLabels.labelFontSize / 100;
+    const proximityThreshold = 30 * scaleFactor;
+
+    let yOffset = 0;
+    if (!isNumeric) {
+      const neighbour = drawnPositions.find((pos) => {
+        const dx = pos.x - x;
+        const dy = pos.y - y;
+        return Math.sqrt(dx * dx + dy * dy) < proximityThreshold;
+      });
+      if (neighbour) {
+        yOffset = (neighbour.y <= y ? 15 : -15) * scaleFactor;
+      }
+    }
+
+    // update current coordinates with the offset
+    const renderX = x;
+    const renderY = y + yOffset;
+    drawnPositions.push({ x: renderX, y: renderY });
+
+    // add the label
+    const fontSize = 2 * scaleFactor;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.font = `${fontSize}rem sans-serif`;
-    // measure text
-    const m = ctx.measureText(turn.content);
-    if (highContrastTurns) {
-      const padding = 20;
+    const m = ctx.measureText(content);
+
+    if (turnLabels.highContrast) {
+      const padding = 20 * scaleFactor;
       const textWidth = m.width;
       const textHeight = m.actualBoundingBoxAscent + m.actualBoundingBoxDescent;
-      const rectX = turn.x - textWidth / 2 - padding / 2;
-      const rectY = turn.y - textHeight / 2 - padding / 2;
       const rectW = textWidth + padding;
       const rectH = textHeight + padding;
-      const radius = Math.min(20, rectW / 2, rectH / 2);
-      // rounded rect
+      const rectX = renderX - rectW / 2;
+      const rectY = renderY - rectH / 2;
+      const radius = Math.min(20 * scaleFactor, rectW / 2, rectH / 2);
       ctx.beginPath();
-      ctx.moveTo(rectX + radius, rectY);
-      ctx.arcTo(rectX + rectW, rectY, rectX + rectW, rectY + rectH, radius);
-      ctx.arcTo(rectX + rectW, rectY + rectH, rectX, rectY + rectH, radius);
-      ctx.arcTo(rectX, rectY + rectH, rectX, rectY, radius);
-      ctx.arcTo(rectX, rectY, rectX + rectW, rectY, radius);
-      ctx.closePath();
-      // fill rect
+      ctx.roundRect(rectX, rectY, rectW, rectH, radius);
       ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
       ctx.fill();
     }
+
     ctx.fillStyle = 'white';
     // visual offset
     const visualOffset =
       (m.actualBoundingBoxAscent - m.actualBoundingBoxDescent) / 2;
-    ctx.fillText(turn.content, turn.x, turn.y + visualOffset);
+    ctx.fillText(content, renderX, renderY + visualOffset);
   });
 };
 

@@ -2,6 +2,7 @@ import { FuelWidgetSettings } from '@irdashies/types';
 import { useFuelStore } from '../../../FuelCalculator/FuelStore';
 import { SettingToggleRow } from '../../components/SettingToggleRow';
 import { SettingsSection } from '../../components/SettingSection';
+import logger from '@irdashies/utils/logger';
 
 interface HistoricalStorageSectionProps {
   settings: FuelWidgetSettings;
@@ -55,7 +56,7 @@ export const HistoricalStorageSection = ({
                     alert('Fuel history cleared successfully.');
                   })
                   .catch((err) => {
-                    console.error('Failed to clear fuel history:', err);
+                    logger.error('Failed to clear fuel history:', err);
                     alert('Failed to clear fuel history.');
                   });
               }

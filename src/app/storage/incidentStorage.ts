@@ -2,6 +2,7 @@ import * as fs from 'node:fs';
 import * as fsp from 'node:fs/promises';
 import * as path from 'node:path';
 import type { Incident } from '../../types/raceControl';
+import logger from '../logger';
 
 function getStorageDir(): string {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -38,7 +39,7 @@ export async function appendIncident(
   try {
     await fsp.writeFile(filePath, JSON.stringify(existing));
   } catch (err) {
-    console.error('Failed to write incident file:', err);
+    logger.error('Failed to write incident file:', err);
   }
 }
 
@@ -51,7 +52,7 @@ export function clearIncidents(
     try {
       fs.unlinkSync(filePath);
     } catch (err) {
-      console.error('Failed to delete incident file:', err);
+      logger.error('Failed to delete incident file:', err);
     }
   }
 }

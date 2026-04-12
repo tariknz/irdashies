@@ -14,6 +14,7 @@ import { ResizeIcon, XIcon } from '@phosphor-icons/react';
 import type { DashboardWidget } from '@irdashies/types';
 import { useDragWidget, useResizeWidget } from '../WidgetContainer';
 import { ResizeHandles } from '../WidgetContainer/ResizeHandle';
+import logger from '@irdashies/utils/logger';
 
 interface WidgetPosition {
   x: number;
@@ -163,7 +164,7 @@ const DashboardWidgetItem = memo(
               }
             `}</style>
             <div className="widget-content w-full h-full">
-              <WidgetComponent />
+              <WidgetComponent {...widget.config} />
             </div>
           </div>
         </div>
@@ -278,7 +279,7 @@ export const DashboardView = () => {
           profileId: currentProfile.id,
         });
       } catch (error) {
-        console.error('Failed to save widget positions:', error);
+        logger.error('Failed to save widget positions:', error);
       }
     },
     [currentDashboard, currentProfile, bridge]
@@ -356,9 +357,7 @@ export const DashboardView = () => {
     >
       {enabledWidgets.map((widget) => {
         const position =
-          Object.keys(widgetPositions).length > 0
-            ? widgetPositions[widget.id]
-            : initialPositions[widget.id];
+          widgetPositions[widget.id] ?? initialPositions[widget.id];
         if (!position) return null;
 
         return (

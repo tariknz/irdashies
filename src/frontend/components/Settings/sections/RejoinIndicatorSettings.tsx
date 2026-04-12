@@ -68,7 +68,7 @@ export const RejoinIndicatorSettings = () => {
             </TabButton>
           </div>
 
-          <div className="pt-4">
+          <div>
             {/* DISPLAY TAB */}
             {activeTab === 'options' && (
               <SettingsSection title="Options">

@@ -1,11 +1,25 @@
-export type TimeFormat = 'full' | 'mixed' | 'minutes' | 'seconds-full' | 'seconds-mixed' | 'seconds' | 'duration' | 'duration-wlabels' | 'duration-hh:mm:ss' | 'duration-hh:mm-wlabel';
+export type TimeFormat =
+  | 'full'
+  | 'mixed'
+  | 'minutes'
+  | 'seconds-full'
+  | 'seconds-mixed'
+  | 'seconds'
+  | 'duration'
+  | 'duration-wlabels'
+  | 'duration-hh:mm:ss'
+  | 'duration-hh:mm-wlabel';
 
-export const formatTime = (seconds?: number, format: TimeFormat = 'full'): string => {
+export const formatTime = (
+  seconds?: number,
+  format: TimeFormat = 'full'
+): string => {
   if (seconds === undefined) return '';
   if (seconds < 0) return '';
 
-  const ms = Math.round((seconds % 1) * 1000); // Get milliseconds
-  const totalSeconds = Math.floor(seconds); // Get total whole seconds
+  const totalMs = Math.round(seconds * 1000); // Round once to avoid ms overflow
+  const ms = totalMs % 1000; // Get milliseconds (always 0-999)
+  const totalSeconds = Math.floor(totalMs / 1000); // Get total whole seconds
   const hours = Math.floor(totalSeconds / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
   const remainingSeconds = totalSeconds % 60;
@@ -84,8 +98,18 @@ export const formatTime = (seconds?: number, format: TimeFormat = 'full'): strin
         formattedTime += `${remainingSeconds} sec${remainingSeconds > 1 ? 's' : ''}`;
       }
       break;
-
   }
 
   return formattedTime;
+};
+
+// Format delta with forced sign
+export const formatDelta = (delta: number | undefined) => {
+  if (delta === undefined || delta === 0) return '---';
+  const formatter = new Intl.NumberFormat('en-US', {
+    signDisplay: 'always',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+  return formatter.format(delta);
 };

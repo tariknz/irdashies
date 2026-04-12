@@ -3,14 +3,26 @@ import { RatingChange } from '../../RatingChange/RatingChange';
 
 interface PositionChangeCellProps {
   positionChange?: number;
+  compactMode?: string;
 }
 
 export const PositionChangeCell = memo(
-  ({ positionChange }: PositionChangeCellProps) => (
-    <td data-column="positionChange" className="w-auto px-2 whitespace-nowrap">
-      <RatingChange value={positionChange} justify="start" />
-    </td>
-  )
+  ({ positionChange, compactMode }: PositionChangeCellProps) => {
+    const pxClass =
+      compactMode === 'ultra'
+        ? ''
+        : compactMode === 'compact'
+          ? 'px-1'
+          : 'px-2';
+    return (
+      <td
+        data-column="positionChange"
+        className={`w-auto ${pxClass} whitespace-nowrap`}
+      >
+        <RatingChange value={positionChange} justify="start" />
+      </td>
+    );
+  }
 );
 
 PositionChangeCell.displayName = 'PositionChangeCell';

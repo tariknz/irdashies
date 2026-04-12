@@ -71,6 +71,23 @@ export interface SessionBarConfig {
 }
 
 // ===========================
+// Styling option types
+// ===========================
+
+export interface StylingOptions {
+  badge?: boolean;
+  statusBadges?: boolean;
+  driverPosition?: { background?: boolean };
+  driverNumber?: { background?: boolean; border?: boolean };
+}
+
+export interface ClassHeaderStyle {
+  className?: { colorBackground?: boolean };
+  classInfo?: { colorBackground?: boolean };
+  classDivider?: { bottomBorder?: boolean };
+}
+
+// ===========================
 // Badge format types
 // ===========================
 
@@ -127,6 +144,7 @@ export interface StandingsConfig {
   compound: { enabled: boolean };
   carManufacturer: { enabled: boolean; hideIfSingleMake?: boolean };
   lapTimeDeltas: { enabled: boolean; numLaps: number };
+  avgLapTime: { enabled: boolean; numLaps: number; timeFormat: TimeFormat };
   titleBar: { enabled: boolean; progressBar: { enabled: boolean } };
   headerBar: SessionBarConfig;
   footerBar: SessionBarConfig;
@@ -136,8 +154,11 @@ export interface StandingsConfig {
   driverName: DriverNameConfig;
   teamName: { enabled: boolean };
   pitStatus: PitStatusConfig;
+  driverTag: { enabled: boolean; widthPx?: number };
   displayOrder: string[];
   sessionVisibility: SessionVisibilitySettings;
+  stylingOptions?: StylingOptions;
+  classHeaderStyle?: ClassHeaderStyle;
 }
 
 export interface RelativeConfig {
@@ -161,9 +182,11 @@ export interface RelativeConfig {
   driverName: DriverNameConfig;
   teamName: { enabled: boolean };
   pitStatus: PitStatusConfig;
+  driverTag: { enabled: boolean; widthPx?: number };
   displayOrder: string[];
   useLivePosition?: boolean;
   sessionVisibility: SessionVisibilitySettings;
+  stylingOptions?: StylingOptions;
 }
 
 export interface WeatherConfig {
@@ -181,11 +204,15 @@ export interface WeatherConfig {
 }
 
 export interface TrackMapConfig {
-  enableTurnNames: boolean;
+  turnLabels: {
+    enabled: boolean;
+    labelType: 'names' | 'numbers' | 'both';
+    highContrast: boolean;
+    labelFontSize: number;
+  };
   showCarNumbers: boolean;
   displayMode?: 'carNumber' | 'sessionPosition' | 'livePosition';
   invertTrackColors: boolean;
-  highContrastTurns: boolean;
   driverCircleSize: number;
   playerCircleSize: number;
   trackmapFontSize: number;
@@ -194,6 +221,7 @@ export interface TrackMapConfig {
   useHighlightColor: boolean;
   showOnlyWhenOnTrack: boolean;
   sessionVisibility: SessionVisibilitySettings;
+  styling?: { isMinimalTrack?: boolean; isMinimalCar?: boolean };
 }
 
 export interface FlatTrackMapConfig {
@@ -236,10 +264,12 @@ export interface InputConfig {
   };
   gear: {
     enabled: boolean;
-    unit: 'mph' | 'km/h' | 'auto' | 'none';
+    size: number;
+    unit: 'mph' | 'km/h' | 'auto';
     showspeed: boolean;
+    showspeedunit: boolean;
   };
-  abs?: { enabled: boolean };
+  abs: { enabled: boolean };
   steer: {
     enabled: boolean;
     config: SteerConfig;
@@ -252,7 +282,7 @@ export interface InputConfig {
 
 export interface TachometerConfig {
   showRpmText: boolean;
-  rpmOrientation?: 'horizontal' | 'vertical';
+  rpmOrientation?: 'horizontal' | 'vertical' | 'bottom' | 'top';
   shiftPointStyle?: 'glow' | 'pulse' | 'border';
   shiftPointSettings: {
     enabled: boolean;
@@ -428,6 +458,7 @@ export interface PitlaneHelperConfig {
   showProgressBar?: boolean;
   showSpeedBar?: boolean;
   showSpeedSummary: boolean;
+  showSpeedDelta: boolean;
   speedLimitStyle?: 'none' | 'text' | 'european' | 'american';
   showPitExitInputs?: boolean;
   pitExitInputs?: { throttle: boolean; clutch: boolean };
@@ -458,9 +489,45 @@ export interface GantryConfig {
 
 export type GantryWidgetSettings = BaseWidgetSettings<GantryConfig>;
 
+export interface LapTimeLogConfig {
+  showCurrentLap: boolean;
+  showPredictedLap: boolean;
+  showLastLap: boolean;
+  showBestLap: boolean;
+  delta: {
+    enabled: boolean;
+    method: 'lastlap' | 'bestlap';
+  };
+  history: {
+    enabled: boolean;
+    count: number;
+  };
+  scale: number;
+  alignment: 'top' | 'bottom';
+  reverse: boolean;
+  background: { opacity: number };
+  foreground: { opacity: number };
+  sessionVisibility: SessionVisibilitySettings;
+}
+
+export interface SlowCarAheadConfig {
+  maxDistance: number;
+  slowSpeedThreshold: number;
+  stoppedSpeedThreshold: number;
+  barThickness: number;
+  showOnlyWhenOnTrack?: boolean;
+  sessionVisibility: SessionVisibilitySettings;
+}
+
 // ===========================
 // Widget config map + typed widget
 // ===========================
+
+export interface InformationBarConfig extends SessionBarConfig {
+  background: { opacity: number };
+  showOnlyWhenOnTrack: boolean;
+  sessionVisibility: SessionVisibilitySettings;
+}
 
 export interface WidgetConfigMap {
   standings: StandingsConfig;
@@ -480,6 +547,9 @@ export interface WidgetConfigMap {
   pitlanehelper: PitlaneHelperConfig;
   twitchchat: TwitchChatConfig;
   gantry: GantryConfig;
+  laptimelog: LapTimeLogConfig;
+  infobar: InformationBarConfig;
+  slowcarahead: SlowCarAheadConfig;
 }
 
 export type TypedDashboardWidget<
@@ -507,6 +577,7 @@ export type SettingsTabType =
   | 'display'
   | 'options'
   | 'visibility'
+  | 'styling'
   | 'track'
   | 'drivers'
   | 'layout'
@@ -570,3 +641,7 @@ export type FasterCarsFromBehindWidgetSettings =
 export type PitlaneHelperWidgetSettings =
   BaseWidgetSettings<PitlaneHelperConfig>;
 export type TwitchChatWidgetSettings = BaseWidgetSettings<TwitchChatConfig>;
+export type LapTimeLogWidgetSettings = BaseWidgetSettings<LapTimeLogConfig>;
+export type InformationBarWidgetSettings =
+  BaseWidgetSettings<InformationBarConfig>;
+export type SlowCarAheadWidgetSettings = BaseWidgetSettings<SlowCarAheadConfig>;

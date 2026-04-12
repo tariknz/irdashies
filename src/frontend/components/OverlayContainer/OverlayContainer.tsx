@@ -61,7 +61,8 @@ export const OverlayContainer = memo(() => {
   // Unmatched widgets (e.g. default positions that fall in no display) render on the primary.
   const widgetsForThisDisplay = containerBoundsInfo?.displayId
     ? enabledWidgets.filter((widget) => {
-        const displayBounds = containerBoundsInfo.expected;
+        const displayBounds =
+          containerBoundsInfo.displayBounds ?? containerBoundsInfo.expected;
         const centerX = widget.layout.x + widget.layout.width / 2;
         const centerY = widget.layout.y + widget.layout.height / 2;
         const inThisDisplay =

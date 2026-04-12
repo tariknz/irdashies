@@ -17,7 +17,7 @@ type Story = StoryObj<typeof Input>;
 export const Primary: Story = {
   render: () => (
     <>
-      <div className="h-[140px] w-[420px]">
+      <div className="h-23 w-105">
         <Input />
       </div>
     </>

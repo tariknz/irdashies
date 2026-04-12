@@ -1,3 +1,4 @@
+import logger from '../logger';
 import type {
   Incident,
   IncidentThresholds,
@@ -388,7 +389,7 @@ export class IncidentDetector {
 
     const ptMs = performance.now() - ptStart;
     if (ptMs > 10) {
-      console.log(
+      logger.info(
         `[processTelemetry] ${ptMs.toFixed(1)}ms total | ${emitCount} emits (${emitMs.toFixed(1)}ms in listeners) | loop=${(ptMs - emitMs).toFixed(1)}ms`
       );
     }

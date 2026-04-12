@@ -14,13 +14,18 @@ export const useCarBehind = ({
   // Use total driver count as buffer to get all cars behind
   const allDrivers = useDriverRelatives({ buffer: driversStandings.length });
 
+  // Find the player car (delta should be 0 for player)
+  const myCar = allDrivers.find((driver) => driver.delta === 0);
+
   // Filter out drivers who are in the pits
   const drivers = allDrivers.filter((driver) => !driver.onPitRoad);
-  // Find the player car (delta should be 0 for player)
-  const myCar = drivers.find((driver) => driver.delta === 0);
   const threshold = distanceThreshold ?? -3;
 
   const fasterCarsFromBehind = useMemo(() => {
+    if (!myCar || myCar.onPitRoad) {
+      return [];
+    }
+
     // Get all cars behind the player (negative delta means behind: other - player < 0)
     const carsBehind = drivers.filter((driver) => driver.delta < 0);
 

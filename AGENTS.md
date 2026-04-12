@@ -298,10 +298,12 @@ npm run storybook  # Port 6006
 
 1. Create `src/frontend/components/MyWidget/MyWidget.tsx`
 2. Create `Settings/sections/MyWidgetSettings.tsx`
-3. Add type to `src/types/widgetConfigs.ts`
-4. Create `.stories.tsx`
-5. Register in `WidgetIndex.tsx`
-6. Add default config in `src/types/defaultDashboard.ts`
+3. Add settings to `src/frontend/components/Settings/SettingsLoader.tsx`
+4. Add settings menu item to `src/frontend/components/Settings/SettingsMenu.tsx`
+5. Add type to `src/types/widgetConfigs.ts`
+6. Create `.stories.tsx`
+7. Register in `WidgetIndex.tsx`
+8. Add default config in `src/types/defaultDashboard.ts`
 
 ### Adding a Hook
 
@@ -350,6 +352,35 @@ npm run package        # Create installer
 3. **Type Safety**: Strict TS, no `any`, guards at boundaries
 4. **Tailwind-First**: Minimal custom CSS
 5. **Feature Isolation**: Scoped stores, co-located code
+
+---
+
+## Logging
+
+**Never use `console.log` / `console.warn` / `console.error` directly** — ESLint enforces `no-console`.
+
+Use the project's logger utilities instead:
+
+| Context                       | Import                                         |
+| ----------------------------- | ---------------------------------------------- |
+| **Main process** (`src/app`)  | `import logger from './logger'` (electron-log) |
+| **Frontend** (`src/frontend`) | `import logger from '@irdashies/utils/logger'` |
+
+The frontend logger forwards messages to the main process via IPC for file persistence and also logs to the browser console for DevTools visibility.
+
+```typescript
+// Main process
+import logger from './logger';
+logger.info('SDK connected');
+logger.error('Bridge failed', err);
+
+// Frontend
+import logger from '@irdashies/utils/logger';
+logger.info('Dashboard loaded');
+logger.warn('Missing widget config', widgetId);
+```
+
+Available levels: `debug`, `info`, `warn`, `error`
 
 ---
 

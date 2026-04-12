@@ -1,4 +1,5 @@
 import { ipcMain, BrowserWindow, app } from 'electron';
+import logger from '../logger';
 import { getCurrentBridge, onBridgeChanged } from './iracingSdk/setup';
 import { IncidentDetector } from '../services/incidentDetector';
 import {
@@ -43,7 +44,7 @@ export const setupRaceControlBridge = () => {
   detector.onIncident((incident) => {
     broadcast(incident);
     appendIncident(currentSessionId, incident).catch((err) =>
-      console.error('Failed to persist incident:', err)
+      logger.error('Failed to persist incident:', err)
     );
   });
 
@@ -67,7 +68,7 @@ export const setupRaceControlBridge = () => {
           if (Number.isFinite(parsed) && parsed > 0) {
             cachedTrackLengthM = parsed;
           } else {
-            console.warn(
+            logger.warn(
               '[RaceControl] Could not parse track length:',
               trackLen
             );

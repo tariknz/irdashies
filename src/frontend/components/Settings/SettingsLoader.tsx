@@ -20,18 +20,30 @@ import { FlagSettings } from './sections/FlagSettings';
 import { CarSetupSettings } from './sections/CarSetupSettings';
 import { TwitchChatSettings } from './sections/TwitchChatSettings';
 import { GantrySettings } from './sections/GantrySettings';
+import { DriverTagsSettings } from './sections/DriverTagsSettings';
+import { KeybindingsSettings } from './sections/KeybindingsSettings';
+import { LapTimeLogSettings } from './sections/LapTimeLogSettings';
+import { InformationBarSettings } from './sections/InformationBarSettings';
 import { useDashboard } from '@irdashies/context';
+import { SlowCarAheadSettings } from './sections/SlowCarAheadSettings';
 
-export const SettingsLoader = () => {
+interface SettingsLoaderProps {
+  previewMode?: boolean;
+}
+
+export const SettingsLoader = ({ previewMode }: SettingsLoaderProps = {}) => {
   const { widgetId } = useParams<{ widgetId: string }>();
   const { currentDashboard } = useDashboard();
 
   // 1. Handle non-widget pages
-  if (widgetId === 'general') return <GeneralSettings />;
+  if (widgetId === 'general')
+    return <GeneralSettings previewMode={previewMode} />;
   if (widgetId === 'profiles') return <ProfileSettings />;
   if (widgetId === 'advanced') return <AdvancedSettings />;
   if (widgetId === 'car-setup') return <CarSetupSettings />;
   if (widgetId === 'about') return <AboutSettings />;
+  if (widgetId === 'driver-tags') return <DriverTagsSettings />;
+  if (widgetId === 'keybindings') return <KeybindingsSettings />;
 
   // 2. Find specific widget instance (may be undefined if widgetId is a type name)
   const widget = currentDashboard?.widgets.find((w) => w.id === widgetId);
@@ -70,6 +82,12 @@ export const SettingsLoader = () => {
       return <TwitchChatSettings />;
     case 'gantry':
       return <GantrySettings />;
+    case 'laptimelog':
+      return <LapTimeLogSettings />;
+    case 'infobar':
+      return <InformationBarSettings />;
+    case 'slowcarahead':
+      return <SlowCarAheadSettings />;
     default:
       return widget ? (
         <div className="text-red-400">No settings available for {type}</div>

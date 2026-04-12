@@ -13,6 +13,7 @@ import type {
   SaveDashboardOptions,
   ContainerBoundsInfo,
 } from '@irdashies/types';
+import logger from '@irdashies/utils/logger';
 
 interface DashboardContextProps {
   editMode: boolean;
@@ -25,6 +26,7 @@ interface DashboardContextProps {
   ) => void;
   resetDashboard: (resetEverything: boolean) => Promise<DashboardLayout>;
   createProfile: (name: string) => Promise<DashboardProfile>;
+  cloneProfile: (profileId: string) => Promise<DashboardProfile>;
   deleteProfile: (profileId: string) => Promise<void>;
   renameProfile: (profileId: string, newName: string) => Promise<void>;
   switchProfile: (profileId: string) => Promise<void>;
@@ -70,7 +72,8 @@ export const DashboardProvider: React.FC<{
       // If a specific profile ID is provided, use that; otherwise get current profile
       let profileToLoad: DashboardProfile | null;
       if (profileIdToUse) {
-        profileToLoad = allProfiles.find((p) => p.id === profileIdToUse) || null;
+        profileToLoad =
+          allProfiles.find((p) => p.id === profileIdToUse) || null;
         if (!profileToLoad) {
           // For browser views with a specific profileId, create a minimal profile object
           // The profile exists, but might not be in the active list
@@ -116,10 +119,7 @@ export const DashboardProvider: React.FC<{
 
         // Refresh profiles to pick up on theme changes etc.
         loadProfiles().catch((err) =>
-          console.error(
-            'Failed to refresh profiles on dashboard update:',
-            err
-          )
+          logger.error('Failed to refresh profiles on dashboard update:', err)
         );
       }
     );
@@ -137,7 +137,11 @@ export const DashboardProvider: React.FC<{
           }
         })
         .catch((error) => {
-          console.error('Error loading dashboard for profile:', profileId, error);
+          logger.error(
+            'Error loading dashboard for profile:',
+            profileId,
+            error
+          );
           bridge.reloadDashboard();
         });
     } else {
@@ -183,13 +187,13 @@ export const DashboardProvider: React.FC<{
   ) => {
     // Immediately update local state for responsive UI
     setDashboard(dashboard);
-    
+
     // Ensure we save to the current profile by adding profileId to options
     const saveOptions = {
       ...options,
-      profileId: options?.profileId || currentProfile?.id
+      profileId: options?.profileId || currentProfile?.id,
     };
-    
+
     // Then save to bridge
     bridge.saveDashboard(dashboard, saveOptions);
   };
@@ -202,6 +206,12 @@ export const DashboardProvider: React.FC<{
 
   const createProfile = async (name: string) => {
     const profile = await bridge.createProfile(name);
+    await loadProfiles();
+    return profile;
+  };
+
+  const cloneProfile = async (profileId: string) => {
+    const profile = await bridge.cloneProfile(profileId);
     await loadProfiles();
     return profile;
   };
@@ -219,7 +229,7 @@ export const DashboardProvider: React.FC<{
   const switchProfile = async (profileId: string) => {
     await bridge.switchProfile(profileId);
     await loadProfiles();
-    
+
     // Force reload dashboard for the new profile
     if (bridge.getDashboardForProfile) {
       try {
@@ -228,10 +238,10 @@ export const DashboardProvider: React.FC<{
           setDashboard(newDashboard);
         }
       } catch (error) {
-        console.error('Failed to load dashboard for profile:', profileId, error);
+        logger.error('Failed to load dashboard for profile:', profileId, error);
       }
     }
-    
+
     bridge.reloadDashboard();
   };
 
@@ -256,6 +266,7 @@ export const DashboardProvider: React.FC<{
         onDashboardUpdated: saveDashboard,
         resetDashboard,
         createProfile,
+        cloneProfile,
         deleteProfile,
         renameProfile,
         switchProfile,

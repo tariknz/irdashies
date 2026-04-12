@@ -11,6 +11,7 @@ import {
   useSessionStore,
 } from '../SessionStore/SessionStore';
 import { Driver } from '@irdashies/types';
+import logger from '@irdashies/utils/logger';
 
 const EMPTY_DRIVER_ARRAY = [] as Driver[];
 
@@ -43,7 +44,7 @@ export const useReferenceLapStoreUpdater = (bridge: ReferenceLapBridge) => {
   }, [classIdsString]);
 
   useEffect(() => {
-    console.log('Resetting Session!');
+    logger.info('Resetting Session!');
     completeSession();
     initialize(bridge, seriesId, trackId, classList);
     // INFO: reset session only if the below change, i.e we moved from practice -> quali or we switched series

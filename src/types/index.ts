@@ -11,3 +11,5 @@ export * from './referenceLaps';
 export * from './raceControl';
 export * from './widgetConfigs';
 export * from './defaultDashboard';
+export * from './logBridge';
+export * from './keybindings';

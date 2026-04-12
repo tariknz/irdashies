@@ -1,17 +1,18 @@
 /**
  * Car tachometer data utilities
- * 
+ *
  * Data sourced from lovely-car-data repository:
  * https://github.com/Lovely-Sim-Racing/lovely-car-data
- * 
+ *
  * This project provides comprehensive car telemetry data for various racing games,
  * including RPM thresholds, LED configurations, and shift point information.
- * 
+ *
  * Car data sourced from lovely-car-data repository and bundled in src/frontend/assets/data/cars-bundle.json
  * Update with: npm run fetch-lovely-data
  */
 
 import carDataBundle from '../assets/data/cars-bundle.json';
+import logger from '@irdashies/utils/logger';
 
 export interface CarData {
   carName: string;
@@ -41,17 +42,17 @@ let carIdNormalizations: Record<string, string> | null = null;
  */
 function initializeNormalizations(): void {
   if (carIdNormalizations !== null) return;
-  
+
   carIdNormalizations = {};
   const bundle = carDataBundle as CarDataBundleType;
-  
+
   for (const carId of Object.keys(bundle.cars)) {
     // Store original
     carIdNormalizations[carId] = carId;
-    
+
     // Store lowercase
     carIdNormalizations[carId.toLowerCase()] = carId;
-    
+
     // Store normalized (lowercase, no special chars)
     const normalized = carId.toLowerCase().replace(/[^a-z0-9]/g, '');
     carIdNormalizations[normalized] = carId;
@@ -65,22 +66,22 @@ function initializeNormalizations(): void {
  */
 function normalizeCarId(carPath: string): string | null {
   initializeNormalizations();
-  
+
   if (!carIdNormalizations) return null;
-  
+
   // Try the variations in order of likelihood
   const variations = [
     carPath,
     carPath.toLowerCase(),
-    carPath.toLowerCase().replace(/[^a-z0-9]/g, '')
+    carPath.toLowerCase().replace(/[^a-z0-9]/g, ''),
   ];
-  
+
   for (const variation of variations) {
     if (variation in carIdNormalizations) {
       return carIdNormalizations[variation];
     }
   }
-  
+
   return null;
 }
 
@@ -91,19 +92,22 @@ function normalizeCarId(carPath: string): string | null {
  * @param _gameId The current game identifier (ignored, only iRacing data is bundled currently)
  * @returns The car data or null if not found
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export const loadCarData = (carPath: string, _gameId?: string): CarData | null => {
+export const loadCarData = (
+  carPath: string,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _gameId?: string
+): CarData | null => {
   try {
     const bundle = carDataBundle as CarDataBundleType;
     const normalizedId = normalizeCarId(carPath);
-    
+
     if (normalizedId && normalizedId in bundle.cars) {
       return bundle.cars[normalizedId];
     }
-    
+
     return null;
   } catch (error) {
-    console.warn('Failed to load car data:', error);
+    logger.warn('Failed to load car data:', error);
     return null;
   }
 };
@@ -123,12 +127,17 @@ export const getGearKey = (gear: number): string => {
  * Gets the list of all available cars from the bundled data
  * @returns Array of car IDs and names
  */
-export const getAvailableCars = (): { carId: string; carName: string; ledNumber: number; ledRpm: object[] }[] => {
+export const getAvailableCars = (): {
+  carId: string;
+  carName: string;
+  ledNumber: number;
+  ledRpm: object[];
+}[] => {
   const bundle = carDataBundle as CarDataBundleType;
   return Object.values(bundle.cars).map((car) => ({
     carId: car.carId,
     carName: car.carName,
     ledNumber: car.ledNumber,
-    ledRpm: car.ledRpm
+    ledRpm: car.ledRpm,
   }));
 };

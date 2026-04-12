@@ -70,7 +70,7 @@ export const FasterCarsFromBehindSettings = () => {
             </TabButton>
           </div>
 
-          <div className="pt-4">
+          <div>
             {/* DISPLAY TAB */}
             {activeTab === 'display' && (
               <SettingsSection title="Display">

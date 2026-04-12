@@ -1,11 +1,10 @@
 import { useDashboard } from '@irdashies/context';
-import { DotsSixVerticalIcon } from '@phosphor-icons/react';
 import { useEffect, useState } from 'react';
-import { useSortableList } from '../../SortableList';
+import { SortableList } from '../../SortableList';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import { SessionVisibility } from '../components/SessionVisibility';
-import { ToggleSwitch } from '../components/ToggleSwitch';
 import { TabButton } from '../components/TabButton';
+import { DraggableSettingItem } from '../components/DraggableSettingItem';
 import {
   InputWidgetSettings,
   SettingsTabType,
@@ -57,48 +56,33 @@ const DisplaySettingsList = ({
     })
     .filter((s): s is SortableSetting => s !== null);
 
-  const { getItemProps, displayItems } = useSortableList({
-    items,
-    onReorder: (newItems) => onReorder(newItems.map((i) => i.id)),
-    getItemId: (item) => item.id,
-  });
-
   return (
-    <div className="space-y-3">
-      {displayItems.map((setting) => {
-        const { dragHandleProps, itemProps } = getItemProps(setting);
+    <SortableList
+      items={items}
+      onReorder={(newItems) => onReorder(newItems.map((i) => i.id))}
+      renderItem={(setting, sortableProps) => {
         const configValue = settings.config[setting.configKey];
         const isEnabled = (configValue as { enabled: boolean }).enabled;
 
         return (
-          <div key={setting.id} {...itemProps}>
-            <div className="flex items-center justify-between group">
-              <div className="flex items-center gap-2 flex-1">
-                <div
-                  {...dragHandleProps}
-                  className="cursor-grab opacity-60 hover:opacity-100 transition-opacity p-1 hover:bg-slate-600 rounded"
-                >
-                  <DotsSixVerticalIcon size={16} className="text-slate-400" />
-                </div>
-                <span className="text-sm text-slate-300">{setting.label}</span>
-              </div>
-              <ToggleSwitch
-                enabled={isEnabled}
-                onToggle={(enabled) => {
-                  const cv = settings.config[setting.configKey] as {
-                    enabled: boolean;
-                    [key: string]: unknown;
-                  };
-                  handleConfigChange({
-                    [setting.configKey]: { ...cv, enabled },
-                  });
-                }}
-              />
-            </div>
-          </div>
+          <DraggableSettingItem
+            key={setting.id}
+            label={setting.label}
+            enabled={isEnabled}
+            onToggle={(enabled) => {
+              const cv = settings.config[setting.configKey] as {
+                enabled: boolean;
+                [key: string]: unknown;
+              };
+              handleConfigChange({
+                [setting.configKey]: { ...cv, enabled },
+              });
+            }}
+            sortableProps={sortableProps}
+          />
         );
-      })}
-    </div>
+      }}
+    />
   );
 };
 
@@ -170,7 +154,7 @@ export const InputSettings = () => {
               </TabButton>
             </div>
 
-            <div className="pt-4 space-y-4">
+            <div>
               {/* DISPLAY TAB */}
               {activeTab === 'display' && (
                 <SettingsSection title="Display Order">
@@ -485,39 +469,66 @@ export const InputSettings = () => {
 
                     {config.gear.enabled && (
                       <SettingsSection>
+                        <SettingSliderRow
+                          title="Gear Display Scale"
+                          description="Relative size of the gear number display"
+                          value={settings.config.gear.size ?? 100}
+                          units="%"
+                          min={50}
+                          max={150}
+                          step={1}
+                          onChange={(v) =>
+                            handleConfigChange({
+                              gear: { ...config.gear, size: v },
+                            })
+                          }
+                        />
+
                         <SettingToggleRow
                           title="Show Speed"
+                          description="Show the current speed beneath the gear number"
                           enabled={config.gear.showspeed}
                           onToggle={(newValue) =>
                             handleConfigChange({
                               gear: { ...config.gear, showspeed: newValue },
                             })
                           }
-                        />     
+                        />
 
                         {config.gear.showspeed && (
-                        <SettingsSection>
-                          <SettingButtonGroupRow<'auto' | 'mph' | 'km/h' | 'none'>
-                            title="Speed Unit"
-                            value={config.gear.unit ?? 'auto'}
-                            options={[
-                              { label: 'Auto', value: 'auto' },
-                              { label: 'MPH', value: 'mph' },
-                              { label: 'KM/H', value: 'km/h' },
-                              { label: 'None', value: 'none' },
-                            ]}
-                            onChange={(v) =>
-                              handleConfigChange({
-                                gear: { ...config.gear, unit: v },
-                              })
-                            }
-                          />
-                        </SettingsSection>
+                          <SettingsSection>
+                            <SettingButtonGroupRow<'auto' | 'mph' | 'km/h'>
+                              title="Speed Unit"
+                              value={config.gear.unit ?? 'auto'}
+                              options={[
+                                { label: 'Auto', value: 'auto' },
+                                { label: 'MPH', value: 'mph' },
+                                { label: 'KM/H', value: 'km/h' },
+                              ]}
+                              onChange={(v) =>
+                                handleConfigChange({
+                                  gear: { ...config.gear, unit: v },
+                                })
+                              }
+                            />
+
+                            <SettingToggleRow
+                              title="Show Speed Unit Label"
+                              enabled={config.gear.showspeedunit}
+                              onToggle={(newValue) =>
+                                handleConfigChange({
+                                  gear: {
+                                    ...config.gear,
+                                    showspeedunit: newValue,
+                                  },
+                                })
+                              }
+                            />
+                          </SettingsSection>
                         )}
-                        
                       </SettingsSection>
                     )}
-                  </SettingsSection>                  
+                  </SettingsSection>
                 </>
               )}
 

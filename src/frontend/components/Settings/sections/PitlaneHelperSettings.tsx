@@ -72,7 +72,7 @@ export const PitlaneHelperSettings = () => {
             </TabButton>
           </div>
 
-          <div className="pt-4 space-y-4">
+          <div>
             {/* OPTIONS TAB */}
             {activeTab === 'options' && (
               <>
@@ -106,15 +106,6 @@ export const PitlaneHelperSettings = () => {
                   )}
 
                   <SettingToggleRow
-                    title="Show Pitlane Traffic"
-                    description="Display count of cars ahead/behind in pitlane"
-                    enabled={settings.config.showPitlaneTraffic}
-                    onToggle={(newValue) =>
-                      handleConfigChange({ showPitlaneTraffic: newValue })
-                    }
-                  />
-
-                  <SettingToggleRow
                     title="Show Speed Summary"
                     description="Show summary of speed delta, speed unit and speed limit"
                     enabled={settings.config.showSpeedSummary}
@@ -125,11 +116,20 @@ export const PitlaneHelperSettings = () => {
 
                   {settings.config.showSpeedSummary && (
                     <SettingsSection>
-                      <SettingButtonGroupRow<'none' | 'text' | 'european' | 'american'>
-                        title="Speed Limit Style"
-                        value={
-                          settings.config.speedLimitStyle ?? 'text'
+                      <SettingToggleRow
+                        title="Show Speed Delta"
+                        description="Show speed delta plus/minus the speed limit"
+                        enabled={settings.config.showSpeedDelta}
+                        onToggle={(newValue) =>
+                          handleConfigChange({ showSpeedDelta: newValue })
                         }
+                      />
+
+                      <SettingButtonGroupRow<
+                        'none' | 'text' | 'european' | 'american'
+                      >
+                        title="Speed Limit Style"
+                        value={settings.config.speedLimitStyle ?? 'text'}
                         options={[
                           { label: 'None', value: 'none' },
                           { label: 'Text', value: 'text' },
@@ -227,6 +227,15 @@ export const PitlaneHelperSettings = () => {
                     enabled={settings.config.enablePitLimiterWarning}
                     onToggle={(enabled) =>
                       handleConfigChange({ enablePitLimiterWarning: enabled })
+                    }
+                  />
+
+                  <SettingToggleRow
+                    title="Show Pitlane Traffic"
+                    description="Display count of cars ahead/behind in pitlane"
+                    enabled={settings.config.showPitlaneTraffic}
+                    onToggle={(newValue) =>
+                      handleConfigChange({ showPitlaneTraffic: newValue })
                     }
                   />
 

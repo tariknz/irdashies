@@ -1,9 +1,15 @@
 import { useState } from 'react';
 import { useDashboard } from '@irdashies/context';
-import { UploadSimpleIcon, DownloadSimpleIcon } from '@phosphor-icons/react';
+import {
+  UploadSimpleIcon,
+  DownloadSimpleIcon,
+  FolderOpenIcon,
+  FileTextIcon,
+} from '@phosphor-icons/react';
 import { TelemetryInspectorSettings } from './TelemetryInspectorSettings';
 import { TabButton } from '../components/TabButton';
 import { SettingsTabType } from '@irdashies/types';
+import logger from '@irdashies/utils/logger';
 
 export const AdvancedSettings = () => {
   const { currentDashboard, onDashboardUpdated, resetDashboard, bridge } =
@@ -30,7 +36,7 @@ export const AdvancedSettings = () => {
       const dashboard = JSON.parse(dashboardInput);
       onDashboardUpdated(dashboard, { forceReload: true });
     } catch (e) {
-      console.error(e);
+      logger.error(e);
       alert('Invalid JSON format');
     }
   };
@@ -41,7 +47,7 @@ export const AdvancedSettings = () => {
       const dashboard = JSON.parse(dashboardInput);
       await bridge.exportDashboardToFile(dashboard);
     } catch (e) {
-      console.error('Export failed:', e);
+      logger.error('Export failed:', e);
       alert('Invalid JSON — fix errors before exporting');
     }
   };
@@ -67,7 +73,7 @@ export const AdvancedSettings = () => {
       const result = await resetDashboard(false);
       setDashboardInput(JSON.stringify(result, undefined, 2));
     } catch (e) {
-      console.error('Failed to reset configurations:', e);
+      logger.error('Failed to reset configurations:', e);
       alert('Failed to reset configurations');
     }
   };
@@ -85,7 +91,7 @@ export const AdvancedSettings = () => {
       const result = await resetDashboard(true);
       setDashboardInput(JSON.stringify(result, undefined, 2));
     } catch (e) {
-      console.error('Failed to reset dashboard:', e);
+      logger.error('Failed to reset dashboard:', e);
       alert('Failed to reset dashboard');
     }
   };
@@ -162,6 +168,28 @@ export const AdvancedSettings = () => {
               onChange={onInputUpdated}
               placeholder="Dashboard configuration JSON..."
             />
+          </div>
+
+          <div className="flex-none flex items-center gap-4 border-t border-slate-700/50 pt-3">
+            <span className="text-xs text-slate-500 uppercase tracking-wide">
+              Logs
+            </span>
+            <button
+              type="button"
+              onClick={() => bridge.openLogFolder()}
+              className="flex items-center gap-1.5 text-xs text-slate-300 hover:text-white transition-colors cursor-pointer"
+            >
+              <FolderOpenIcon size={13} />
+              Open log folder
+            </button>
+            <button
+              type="button"
+              onClick={() => bridge.exportLogFile()}
+              className="flex items-center gap-1.5 text-xs text-slate-300 hover:text-white transition-colors cursor-pointer"
+            >
+              <FileTextIcon size={13} />
+              Export log file
+            </button>
           </div>
 
           <div className="flex-none flex items-center gap-4 border-t border-slate-700/50 pt-3">

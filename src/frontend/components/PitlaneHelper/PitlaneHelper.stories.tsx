@@ -8,73 +8,86 @@ const meta: Meta<typeof PitlaneHelperBody> = {
   decorators: [TelemetryDecorator()],
   parameters: {
     layout: 'centered',
-  }
+  },
 };
 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
 // Mock data factories
-const mockSpeed = (overrides = {}) => ({
-  speedKph: 100,
-  speedMph: 62,
-  deltaKph: 0,
-  deltaMph: 0,
-  limitKph: 80,
-  limitMph: 50,
-  isSpeeding: false,
-  isSeverelyOver: false,
-  isPulsing: false,
-  colorClass: 'text-green-500',
-  ...overrides,
-} as const);
+const mockSpeed = (overrides = {}) =>
+  ({
+    speedKph: 100,
+    speedMph: 62,
+    deltaKph: 0,
+    deltaMph: 0,
+    limitKph: 80,
+    limitMph: 50,
+    isSpeeding: false,
+    isSeverelyOver: false,
+    isPulsing: false,
+    colorClass: 'text-green-500',
+    ...overrides,
+  }) as const;
 
-const mockPosition = (overrides = {}) => ({
-  distanceToPitEntry: 500,
-  distanceToPit: 100,
-  distanceToPitExit: 200,
-  isEarlyPitbox: false,
-  progressPercent: 0,
-  isApproaching: false,
-  pitboxPct: 0,
-  playerPct: 0,
-  ...overrides,
-} as const);
+const mockPosition = (overrides = {}) =>
+  ({
+    distanceToPitEntry: 500,
+    distanceToPit: 100,
+    distanceToPitExit: 200,
+    isEarlyPitbox: false,
+    progressPercent: 0,
+    isApproaching: false,
+    pitboxPct: 0,
+    playerPct: 0,
+    ...overrides,
+  }) as const;
 
-const mockConfig = (overrides = {}) => ({
-  background: { opacity: 80 },
-  showSpeedBar: true,
-  showSpeedSummary: true,
-  speedLimitStyle: 'european' as const,
-  speedBarOrientation: 'vertical' as const,
-  showProgressBar: true,
-  progressBarOrientation: 'horizontal' as const,
-  showPastPitBox: true,
-  approachDistance: 500,
-  showMode: 'approaching' as const,
-  earlyPitboxThreshold: 75,
-  showPitExitInputs: false,
-  pitExitInputs: { throttle: true, clutch: true },
-  showInputsPhase: 'always' as const,
-  enablePitLimiterWarning: true,
-  enableEarlyPitboxWarning: true,
-  showPitlaneTraffic: true,
-  ...overrides,
-} as const);
+const mockConfig = (overrides = {}) =>
+  ({
+    background: { opacity: 80 },
+    showSpeedBar: true,
+    showSpeedSummary: true,
+    showSpeedDelta: true,
+    speedLimitStyle: 'european' as const,
+    speedBarOrientation: 'vertical' as const,
+    showProgressBar: true,
+    progressBarOrientation: 'horizontal' as const,
+    showPastPitBox: true,
+    approachDistance: 500,
+    showMode: 'approaching' as const,
+    earlyPitboxThreshold: 75,
+    showPitExitInputs: false,
+    pitExitInputs: { throttle: true, clutch: true },
+    showInputsPhase: 'always' as const,
+    enablePitLimiterWarning: true,
+    enableEarlyPitboxWarning: true,
+    showPitlaneTraffic: true,
+    sessionVisibility: {
+      race: true,
+      loneQualify: false,
+      openQualify: false,
+      practice: true,
+      offlineTesting: true,
+    },
+    ...overrides,
+  }) as const;
 
-const mockLimiterWarning = (overrides = {}) => ({
-  showWarning: false,
-  warningText: '',
-  isTeamRaceWarning: false,
-  ...overrides,
-} as const);
+const mockLimiterWarning = (overrides = {}) =>
+  ({
+    showWarning: false,
+    warningText: '',
+    isTeamRaceWarning: false,
+    ...overrides,
+  }) as const;
 
-const mockTraffic = (overrides = {}) => ({
-  totalCars: 0,
-  carsAhead: 0,
-  carsBehind: 0,
-  ...overrides,
-} as const);
+const mockTraffic = (overrides = {}) =>
+  ({
+    totalCars: 0,
+    carsAhead: 0,
+    carsBehind: 0,
+    ...overrides,
+  }) as const;
 
 // Documentation component showing the actual widget states
 export const Documentation = () => {
@@ -244,7 +257,7 @@ export const Documentation = () => {
 // Approaching pit lane
 export const ApproachingPitEntry: Story = {
   render: (args) => (
-    <div style={{ height: '300px', width: '200px' }}>
+    <div style={{ height: '400px', width: '200px' }}>
       <PitlaneHelperBody {...args} />
     </div>
   ),
@@ -265,7 +278,7 @@ export const ApproachingPitEntry: Story = {
 // Blend zone - entering pit lane
 export const BlendZoneEntry: Story = {
   render: (args) => (
-    <div style={{ height: '300px', width: '200px' }}>
+    <div style={{ height: '400px', width: '150px' }}>
       <PitlaneHelperBody {...args} />
     </div>
   ),
@@ -286,12 +299,17 @@ export const BlendZoneEntry: Story = {
 // On pit road approaching pitbox
 export const OnPitRoad: Story = {
   render: (args) => (
-    <div style={{ height: '300px', width: '400px' }}>
+    <div style={{ height: '500px', width: '300px' }}>
       <PitlaneHelperBody {...args} />
     </div>
   ),
   args: {
-    speed: mockSpeed({ speedKph: 70, speedMph: 43, deltaKph: -10, deltaMph: -6 }),
+    speed: mockSpeed({
+      speedKph: 70,
+      speedMph: 43,
+      deltaKph: -10,
+      deltaMph: -6,
+    }),
     position: mockPosition({ distanceToPit: 80 }),
     config: mockConfig(),
     displayKph: true,
@@ -307,14 +325,22 @@ export const OnPitRoad: Story = {
 // At the pitbox
 export const AtPitboxAmerican: Story = {
   render: (args) => (
-    <div style={{ height: '200px', width: '250px' }}>
+    <div style={{ height: '300px', width: '250px' }}>
       <PitlaneHelperBody {...args} />
     </div>
   ),
   args: {
-    speed: mockSpeed({ speedKph: 35, speedMph: 22, deltaKph: -45, deltaMph: -28 }),
+    speed: mockSpeed({
+      speedKph: 35,
+      speedMph: 22,
+      deltaKph: -45,
+      deltaMph: -28,
+    }),
     position: mockPosition({ distanceToPit: 0 }),
-    config: mockConfig({ speedLimitStyle: 'american' }),
+    config: mockConfig({
+      speedLimitStyle: 'american',
+      speedBarOrientation: 'horizontal',
+    }),
     displayKph: true,
     onPitRoad: true,
     inBlendZone: false,
@@ -342,7 +368,10 @@ export const SpeedingInactiveInputs: Story = {
       colorClass: 'text-red-600',
     }),
     position: mockPosition({ distanceToPit: 80 }),
-    config: mockConfig({ showPitExitInputs: true }),
+    config: mockConfig({
+      showPitExitInputs: true,
+      progressBarOrientation: 'vertical',
+    }),
     displayKph: true,
     onPitRoad: true,
     inBlendZone: false,
@@ -373,7 +402,11 @@ export const SeverelyOver: Story = {
       colorClass: 'text-white',
     }),
     position: mockPosition({ distanceToPit: 30 }),
-    config: mockConfig(),
+    config: mockConfig({
+      speedLimitStyle: 'none',
+      speedBarOrientation: 'horizontal',
+      progressBarOrientation: 'vertical',
+    }),
     displayKph: true,
     onPitRoad: true,
     inBlendZone: false,
@@ -391,14 +424,19 @@ export const SeverelyOver: Story = {
 // Early pitbox warning
 export const EarlyPitbox: Story = {
   render: (args) => (
-    <div style={{ height: '200px', width: '300px' }}>
+    <div style={{ height: '500px', width: '150px' }}>
       <PitlaneHelperBody {...args} />
     </div>
   ),
   args: {
-    speed: mockSpeed({ speedKph: 50, speedMph: 31, deltaKph: -30, deltaMph: -19 }),
+    speed: mockSpeed({
+      speedKph: 50,
+      speedMph: 31,
+      deltaKph: -30,
+      deltaMph: -19,
+    }),
     position: mockPosition({ distanceToPit: 20, isEarlyPitbox: true }),
-    config: mockConfig(),
+    config: mockConfig({ showSpeedDelta: false }),
     displayKph: true,
     onPitRoad: true,
     inBlendZone: false,
@@ -475,7 +513,10 @@ export const VerticalProgress: Story = {
       limitMph: 50,
     }),
     position: mockPosition({ distanceToPitEntry: 160 }),
-    config: mockConfig({ progressBarOrientation: 'vertical' }),
+    config: mockConfig({
+      progressBarOrientation: 'vertical',
+      showSpeedSummary: false,
+    }),
     displayKph: false,
     onPitRoad: false,
     inBlendZone: false,
@@ -486,18 +527,22 @@ export const VerticalProgress: Story = {
   },
 };
 
-
 // Exiting pit lane
 export const ExitingPitLane: Story = {
   render: (args) => (
-    <div style={{ height: '400px', width: '400px' }}>
+    <div style={{ height: '400px', width: '250px' }}>
       <PitlaneHelperBody {...args} />
     </div>
   ),
   args: {
-    speed: mockSpeed({ speedKph: 120, speedMph: 75, deltaKph: 40, deltaMph: 25 }),
+    speed: mockSpeed({
+      speedKph: 120,
+      speedMph: 75,
+      deltaKph: 40,
+      deltaMph: 25,
+    }),
     position: mockPosition({ distanceToPit: -50, distanceToPitExit: 100 }),
-    config: mockConfig(),
+    config: mockConfig({ progressBarOrientation: 'vertical' }),
     displayKph: true,
     onPitRoad: true,
     inBlendZone: false,
@@ -511,12 +556,17 @@ export const ExitingPitLane: Story = {
 // Exiting pit lane (with inputs)
 export const ExitingWithInputs: Story = {
   render: (args) => (
-    <div style={{ height: '400px', width: '400px' }}>
+    <div style={{ height: '500px', width: '150px' }}>
       <PitlaneHelperBody {...args} />
     </div>
   ),
   args: {
-    speed: mockSpeed({ speedKph: 120, speedMph: 75, deltaKph: 40, deltaMph: 25 }),
+    speed: mockSpeed({
+      speedKph: 120,
+      speedMph: 75,
+      deltaKph: 40,
+      deltaMph: 25,
+    }),
     position: mockPosition({ distanceToPit: -50, distanceToPitExit: 100 }),
     config: mockConfig({ showPitExitInputs: true }),
     displayKph: true,

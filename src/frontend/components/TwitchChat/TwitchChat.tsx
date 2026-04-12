@@ -1,5 +1,6 @@
 import { useTwitchChatSettings } from './hooks/useTwitchChatSettings';
 import { useTwitchChat } from './hooks/useTwitchChat';
+import { MessageWithEmotes } from './components/MessageWithEmotes';
 import type { ChatMessage } from './types';
 
 export interface TwitchChatDisplayProps {
@@ -18,7 +19,7 @@ export const ChatMessageList = ({
   background,
 }: ChatMessageListProps) => (
   <div
-    className="w-full h-full flex flex-col justify-end bg-slate-800/[var(--bg-opacity)] rounded-sm px-3 py-2 text-white align-bottom border-0 transition-all duration-300"
+    className="w-full h-full flex flex-col justify-end overflow-hidden bg-slate-800/[var(--bg-opacity)] rounded-sm px-3 py-2 text-white align-bottom border-0 transition-all duration-300"
     style={
       {
         '--bg-opacity': `${background.opacity}%`,
@@ -33,7 +34,12 @@ export const ChatMessageList = ({
           fontSize: `${fontSize}px`,
         }}
       >
-        <strong style={{ color: '#a970ff' }}>{m.user}</strong>: {m.text}
+        <strong style={{ color: '#a970ff' }}>{m.user}</strong>:{' '}
+        <MessageWithEmotes
+          text={m.text}
+          emotes={m.emotes}
+          fontSize={fontSize}
+        />
       </div>
     ))}
   </div>

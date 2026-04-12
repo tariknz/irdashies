@@ -10,6 +10,7 @@ import { Notification } from 'electron';
 import { readData, writeData } from './storage/storage';
 import { getDashboard } from './storage/dashboards';
 import { trackSettingsWindowMovement } from './trackWindowMovement';
+import logger from './logger';
 
 // used for Hot Module Replacement
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string;
@@ -28,14 +29,20 @@ function getIconPath(): string {
 export class OverlayManager {
   private displayWindows = new Map<number, BrowserWindow>();
   private displayBoundsInfo = new Map<number, ContainerBoundsInfo>();
+  private displayFullBounds = new Map<number, Electron.Rectangle>();
   private currentSettingsWindow: BrowserWindow | undefined;
   private gantryWindow: BrowserWindow | undefined;
+  private currentDashboard: DashboardLayout | undefined;
   private isLocked = true;
+  private isQuitting = false;
   private hasInteractiveWidgets = false;
   private skipTaskbar = true;
   private overlayAlwaysOnTop = true;
   private hasSingleInstanceLock = false;
   private onWindowReadyCallbacks = new Set<(windowId: string) => void>();
+
+  /** Padding around the widget bounding box when shrink-wrapping */
+  private static readonly SHRINK_WRAP_PADDING = 20;
 
   public getVersion(): string {
     const version = app.getVersion();
@@ -60,6 +67,7 @@ export class OverlayManager {
    * Create one overlay window per display
    */
   public createOverlays(dashboardLayout: DashboardLayout): void {
+    this.currentDashboard = dashboardLayout;
     const { generalSettings } = dashboardLayout;
     this.skipTaskbar = generalSettings?.skipTaskbar ?? true;
     this.overlayAlwaysOnTop = generalSettings?.overlayAlwaysOnTop ?? true;
@@ -67,10 +75,10 @@ export class OverlayManager {
     const allDisplays = screen.getAllDisplays();
     const primaryDisplay = screen.getPrimaryDisplay();
 
-    console.log(`[OverlayManager] Found ${allDisplays.length} display(s):`);
+    logger.info(`[OverlayManager] Found ${allDisplays.length} display(s):`);
     for (const display of allDisplays) {
       const isPrimary = display.id === primaryDisplay.id;
-      console.log(
+      logger.info(
         `  Display ${display.id}${isPrimary ? ' (PRIMARY)' : ''}: bounds=${JSON.stringify(display.bounds)}`
       );
     }
@@ -104,7 +112,7 @@ export class OverlayManager {
 
     for (const display of allDisplays) {
       if (!displaysWithWidgets.has(display.id)) {
-        console.log(
+        logger.info(
           `[OverlayManager] Skipping display ${display.id} — no widgets assigned`
         );
         continue;
@@ -141,7 +149,10 @@ export class OverlayManager {
       height: display.bounds.height,
     };
 
-    console.log(
+    // Store full display bounds for shrink-wrap / expand toggling
+    this.displayFullBounds.set(display.id, { ...expectedBounds });
+
+    logger.info(
       `[OverlayManager] Creating window for display ${display.id}${isPrimary ? ' (PRIMARY)' : ''}: x=${expectedBounds.x}, y=${expectedBounds.y}, ${expectedBounds.width}x${expectedBounds.height}`
     );
 
@@ -199,7 +210,7 @@ export class OverlayManager {
     this.displayWindows.set(display.id, browserWindow);
 
     browserWindow.on('closed', () => {
-      console.log(`Display ${display.id} overlay window closed`);
+      logger.info(`Display ${display.id} overlay window closed`);
       this.displayWindows.delete(display.id);
       this.displayBoundsInfo.delete(display.id);
     });
@@ -215,6 +226,11 @@ export class OverlayManager {
       const boundsInfo = this.displayBoundsInfo.get(display.id);
       browserWindow.webContents.send('containerBoundsInfo', boundsInfo);
       this.onWindowReadyCallbacks.forEach((cb) => cb(`display-${display.id}`));
+
+      // Apply shrink-wrap after initial setup when not in edit mode
+      if (this.isLocked) {
+        this.updateOverlayBounds();
+      }
     };
 
     browserWindow.once('ready-to-show', () => {
@@ -236,16 +252,17 @@ export class OverlayManager {
         offset,
         displayId: display.id,
         isPrimary,
+        displayBounds: { ...expectedBounds },
       };
 
       this.displayBoundsInfo.set(display.id, boundsInfo);
 
-      console.log(
+      logger.info(
         `[OverlayManager] Display ${display.id} final bounds: x=${actualBounds.x}, y=${actualBounds.y}, ${actualBounds.width}x${actualBounds.height}`
       );
 
       if (offset.x !== 0 || offset.y !== 0) {
-        console.warn(
+        logger.warn(
           `[OverlayManager] Display ${display.id} OS constrained position! Offset: (${offset.x}, ${offset.y})`
         );
       }
@@ -287,10 +304,126 @@ export class OverlayManager {
   }
 
   /**
+   * Compute the bounding box of all enabled widgets assigned to a given display.
+   * Returns null if there are no widgets for the display.
+   */
+  private computeWidgetBounds(
+    displayId: number,
+    dashboard: DashboardLayout,
+    displayBounds: Electron.Rectangle
+  ): Electron.Rectangle | null {
+    const primaryDisplay = screen.getPrimaryDisplay();
+    const isPrimary = displayId === primaryDisplay.id;
+
+    const enabledWidgets = dashboard.widgets.filter((w) => w.enabled);
+    const widgetsForDisplay = enabledWidgets.filter((widget) => {
+      const centerX = widget.layout.x + widget.layout.width / 2;
+      const centerY = widget.layout.y + widget.layout.height / 2;
+      const inThisDisplay =
+        centerX >= displayBounds.x &&
+        centerX < displayBounds.x + displayBounds.width &&
+        centerY >= displayBounds.y &&
+        centerY < displayBounds.y + displayBounds.height;
+      return inThisDisplay || (!inThisDisplay && isPrimary);
+    });
+
+    if (widgetsForDisplay.length === 0) return null;
+
+    const pad = OverlayManager.SHRINK_WRAP_PADDING;
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+
+    for (const widget of widgetsForDisplay) {
+      minX = Math.min(minX, widget.layout.x);
+      minY = Math.min(minY, widget.layout.y);
+      maxX = Math.max(maxX, widget.layout.x + widget.layout.width);
+      maxY = Math.max(maxY, widget.layout.y + widget.layout.height);
+    }
+
+    // Clamp to display bounds
+    const x = Math.max(displayBounds.x, Math.floor(minX - pad));
+    const y = Math.max(displayBounds.y, Math.floor(minY - pad));
+    const right = Math.min(
+      displayBounds.x + displayBounds.width,
+      Math.ceil(maxX + pad)
+    );
+    const bottom = Math.min(
+      displayBounds.y + displayBounds.height,
+      Math.ceil(maxY + pad)
+    );
+
+    return { x, y, width: right - x, height: bottom - y };
+  }
+
+  /**
+   * Shrink-wrap or expand overlay windows based on edit mode.
+   * When locked (not editing), windows shrink to the bounding box of their widgets.
+   * When unlocked (editing), windows expand to full display bounds.
+   */
+  public updateOverlayBounds(dashboard?: DashboardLayout): void {
+    if (dashboard) {
+      this.currentDashboard = dashboard;
+    }
+    if (!this.currentDashboard) return;
+
+    for (const [displayId, win] of this.displayWindows.entries()) {
+      if (win.isDestroyed()) continue;
+
+      const fullBounds = this.displayFullBounds.get(displayId);
+      if (!fullBounds) continue;
+
+      let targetBounds: Electron.Rectangle;
+
+      if (!this.isLocked) {
+        // Edit mode: expand to full display
+        targetBounds = fullBounds;
+      } else {
+        // Locked: shrink-wrap to widget bounding box
+        const widgetBounds = this.computeWidgetBounds(
+          displayId,
+          this.currentDashboard,
+          fullBounds
+        );
+        targetBounds = widgetBounds ?? fullBounds;
+      }
+
+      const currentBounds = win.getBounds();
+      if (
+        currentBounds.x === targetBounds.x &&
+        currentBounds.y === targetBounds.y &&
+        currentBounds.width === targetBounds.width &&
+        currentBounds.height === targetBounds.height
+      ) {
+        continue;
+      }
+
+      win.setBounds(targetBounds);
+
+      const actualBounds = win.getBounds();
+      const boundsInfo = this.displayBoundsInfo.get(displayId);
+      if (boundsInfo) {
+        boundsInfo.expected = targetBounds;
+        boundsInfo.actual = actualBounds;
+        boundsInfo.offset = {
+          x: actualBounds.x - targetBounds.x,
+          y: actualBounds.y - targetBounds.y,
+        };
+        win.webContents.send('containerBoundsInfo', boundsInfo);
+      }
+    }
+  }
+
+  /**
    * Toggle edit mode - enables/disables mouse interaction with overlays
    */
   public toggleLockOverlays(): boolean {
     this.isLocked = !this.isLocked;
+
+    if (!this.isLocked) {
+      this.updateOverlayBounds();
+    }
 
     for (const win of this.displayWindows.values()) {
       if (win.isDestroyed()) continue;
@@ -307,6 +440,10 @@ export class OverlayManager {
         win.focus();
       }
       win.webContents.send('editModeToggled', !this.isLocked);
+    }
+
+    if (this.isLocked) {
+      this.updateOverlayBounds();
     }
 
     return this.isLocked;
@@ -347,7 +484,7 @@ export class OverlayManager {
         win.webContents.send(key, value);
         this.trackIpcTime(`overlay:${key}`, performance.now() - t0);
       } catch (e) {
-        console.error(`Failed to send message ${key} to overlay window`, e);
+        logger.error(`Failed to send message ${key} to overlay window`, e);
       }
     }
 
@@ -358,7 +495,7 @@ export class OverlayManager {
         this.gantryWindow.webContents.send(key, value);
         this.trackIpcTime(`gantry:${key}`, performance.now() - t0);
       } catch (e) {
-        console.error(`Failed to send message ${key} to gantry window`, e);
+        logger.error(`Failed to send message ${key} to gantry window`, e);
       }
     }
 
@@ -375,7 +512,7 @@ export class OverlayManager {
       try {
         this.currentSettingsWindow.webContents.send(key, value);
       } catch (e) {
-        console.error(`Failed to send message ${key} to settings window`, e);
+        logger.error(`Failed to send message ${key} to settings window`, e);
       }
     }
   }
@@ -408,6 +545,28 @@ export class OverlayManager {
     }
     this.displayWindows.clear();
     this.displayBoundsInfo.clear();
+    this.displayFullBounds.clear();
+  }
+
+  public markQuitting(): void {
+    this.isQuitting = true;
+  }
+
+  public quitApp(): void {
+    if (this.isQuitting) return;
+
+    this.isQuitting = true;
+    this.closeAllOverlays();
+
+    if (
+      this.currentSettingsWindow &&
+      !this.currentSettingsWindow.isDestroyed()
+    ) {
+      this.currentSettingsWindow.destroy();
+      this.currentSettingsWindow = undefined;
+    }
+
+    app.quit();
   }
 
   /**
@@ -417,6 +576,7 @@ export class OverlayManager {
    * since it never destroys existing windows.
    */
   public ensureDisplayWindows(dashboardLayout: DashboardLayout): void {
+    this.currentDashboard = dashboardLayout;
     const allDisplays = screen.getAllDisplays();
     const primaryDisplay = screen.getPrimaryDisplay();
 
@@ -450,6 +610,11 @@ export class OverlayManager {
         isPrimary,
         this.hasInteractiveWidgets
       );
+    }
+
+    // Shrink-wrap windows when not in edit mode
+    if (this.isLocked) {
+      this.updateOverlayBounds();
     }
   }
 
@@ -499,14 +664,17 @@ export class OverlayManager {
 
   public focusSettingsWindow(): void {
     if (
-      this.currentSettingsWindow &&
-      !this.currentSettingsWindow.isDestroyed()
+      !this.currentSettingsWindow ||
+      this.currentSettingsWindow.isDestroyed()
     ) {
-      if (this.currentSettingsWindow.isMinimized()) {
-        this.currentSettingsWindow.restore();
+      this.currentSettingsWindow = this.createSettingsWindow();
+    } else {
+      const win = this.currentSettingsWindow;
+      if (win.isMinimized()) {
+        win.restore();
       }
-      this.currentSettingsWindow.show();
-      this.currentSettingsWindow.focus();
+      win.show();
+      win.focus();
     }
   }
 
@@ -528,6 +696,22 @@ export class OverlayManager {
     });
   }
 
+  private shouldCloseToTray(): boolean {
+    const dashboard = getDashboard('default');
+    return dashboard?.generalSettings?.closeToTray ?? true;
+  }
+
+  private notifyTrayAccessOnce(): void {
+    const trayNotificationShown = readData<boolean>('trayNotificationShown');
+    if (trayNotificationShown) return;
+
+    new Notification({
+      title: 'irDashies',
+      body: 'Settings window is still accessible via the system tray icon',
+    }).show();
+    writeData('trayNotificationShown', true);
+  }
+
   /**
    * Setup a single instance lock for the application. If the application is already running, it will quit the new instance.
    * @returns true if the lock was obtained, false otherwise
@@ -536,7 +720,7 @@ export class OverlayManager {
     const gotTheLock = app.requestSingleInstanceLock();
 
     if (!gotTheLock) {
-      console.warn('[OverlayManager] Failed to get single instance lock.');
+      logger.warn('[OverlayManager] Failed to get single instance lock.');
       const isDev = !!MAIN_WINDOW_VITE_DEV_SERVER_URL;
       if (!isDev) {
         app.quit();
@@ -545,7 +729,7 @@ export class OverlayManager {
       }
       // In dev mode, we allow it to continue because Forge might not have
       // fully killed the previous process's lock yet.
-      console.warn('[OverlayManager] Dev mode detected, continuing anyway...');
+      logger.warn('[OverlayManager] Dev mode detected, continuing anyway...');
       this.hasSingleInstanceLock = true;
       return true;
     }
@@ -607,7 +791,11 @@ export class OverlayManager {
 
   public createSettingsWindow(): BrowserWindow {
     if (this.currentSettingsWindow) {
+      if (this.currentSettingsWindow.isMinimized()) {
+        this.currentSettingsWindow.restore();
+      }
       this.currentSettingsWindow.show();
+      this.currentSettingsWindow.focus();
       return this.currentSettingsWindow;
     }
 
@@ -647,16 +835,20 @@ export class OverlayManager {
       );
     }
 
-    browserWindow.on('closed', () => {
-      // Show notification about tray access only once ever
-      const trayNotificationShown = readData<boolean>('trayNotificationShown');
-      if (!trayNotificationShown) {
-        new Notification({
-          title: 'irDashies',
-          body: 'Settings window is still accessible via the system tray icon',
-        }).show();
-        writeData('trayNotificationShown', true);
+    browserWindow.on('close', (event) => {
+      if (this.isQuitting) return;
+
+      if (this.shouldCloseToTray()) {
+        event.preventDefault();
+        browserWindow.hide();
+        this.notifyTrayAccessOnce();
+        return;
       }
+
+      this.quitApp();
+    });
+
+    browserWindow.on('closed', () => {
       this.currentSettingsWindow = undefined;
     });
 
