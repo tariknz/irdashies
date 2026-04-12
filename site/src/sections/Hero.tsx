@@ -66,7 +66,7 @@ export function Hero() {
         <div className="flex flex-col items-center gap-2">
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <a
-              href="https://github.com/tariknz/irdashies/releases/download/v0.2.0/irdashies-0.2.0.Setup.exe"
+              href="https://github.com/tariknz/irdashies/releases/download/v0.2.1/irdashies-0.2.1.Setup.exe"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 px-8 py-3 bg-red-600 hover:bg-red-700 text-white font-bold uppercase tracking-wide text-sm rounded-sm transition-colors"
