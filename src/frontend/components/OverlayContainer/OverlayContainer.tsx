@@ -30,6 +30,27 @@ export const OverlayContainer = memo(() => {
     onDashboardUpdatedRef.current = onDashboardUpdated;
   }, [onDashboardUpdated]);
 
+  const handleDisableWidget = useCallback((widgetId: string) => {
+    const dashboard = dashboardRef.current;
+    const updateFn = onDashboardUpdatedRef.current;
+    if (!dashboard || !updateFn) return;
+
+    const updatedWidgets = dashboard.widgets.map((w) =>
+      w.id === widgetId ? { ...w, enabled: false } : w
+    );
+    updateFn({ ...dashboard, widgets: updatedWidgets });
+  }, []);
+
+  const handleOpenWidgetSettings = useCallback(
+    (widgetId: string) => {
+      const dashboard = dashboardRef.current;
+      const widget = dashboard?.widgets.find((w) => w.id === widgetId);
+      const widgetType = widget?.type || widgetId;
+      bridge.openWidgetSettings?.(widgetType);
+    },
+    [bridge]
+  );
+
   const handleLayoutChange = useCallback(
     (widgetId: string, layout: WidgetLayout) => {
       const dashboard = dashboardRef.current;
@@ -96,6 +117,8 @@ export const OverlayContainer = memo(() => {
             editMode={editMode}
             zIndex={index + 1}
             onLayoutChange={handleLayoutChange}
+            onDisable={handleDisableWidget}
+            onOpenSettings={handleOpenWidgetSettings}
           >
             {running || widget.alwaysEnabled ? (
               <WidgetComponent {...widget.config} />
