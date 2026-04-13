@@ -373,22 +373,28 @@ const DisplaySettingsList = ({
             {setting.hasSubSetting &&
               setting.configKey === 'lapTimeDeltas' &&
               settings.config.lapTimeDeltas.enabled && (
-                <div className="pl-8 mt-2">
-                  <SettingSliderRow
-                    title="Laps to show"
+                <div className="flex items-center justify-between pl-8 mt-2 indent-8">
+                  <span className="text-sm text-slate-300">
+                    Number of Laps to Show
+                  </span>
+                  <select
                     value={settings.config.lapTimeDeltas.numLaps}
-                    min={1}
-                    max={10}
-                    step={1}
-                    onChange={(v) =>
+                    onChange={(e) =>
                       handleConfigChange({
                         lapTimeDeltas: {
                           ...settings.config.lapTimeDeltas,
-                          numLaps: v,
+                          numLaps: parseInt(e.target.value),
                         },
                       })
                     }
-                  />
+                    className="bg-slate-700 text-white rounded-md px-2 py-1"
+                  >
+                    <option value={1}>1</option>
+                    <option value={2}>2</option>
+                    <option value={3}>3</option>
+                    <option value={4}>4</option>
+                    <option value={5}>5</option>
+                  </select>
                 </div>
               )}
           </DraggableSettingItem>
