@@ -16,10 +16,21 @@ export const useLapTimesStoreUpdater = () => {
   const sessionNum = useTelemetryValue('SessionNum');
   const carIdxLastLapTime = useTelemetryValues('CarIdxLastLapTime');
   const updateLapTimes = useLapTimesStore((state) => state.updateLapTimes);
+  const reset = useLapTimesStore((state) => state.reset);
   const standingsSettings = useStandingsSettings();
 
+  // Reset immediately when session changes so stale data is cleared
+  // before any new telemetry arrives
   useEffect(() => {
-    if (carIdxLastLapTime && standingsSettings?.lapTimeDeltas?.enabled) {
+    reset();
+  }, [sessionNum, reset]);
+
+  useEffect(() => {
+    if (
+      carIdxLastLapTime &&
+      (standingsSettings?.lapTimeDeltas?.enabled ||
+        standingsSettings?.avgLapTime?.enabled)
+    ) {
       updateLapTimes(carIdxLastLapTime, sessionNum ?? null);
     }
   }, [
@@ -27,5 +38,6 @@ export const useLapTimesStoreUpdater = () => {
     sessionNum,
     updateLapTimes,
     standingsSettings?.lapTimeDeltas?.enabled,
+    standingsSettings?.avgLapTime?.enabled,
   ]);
 };

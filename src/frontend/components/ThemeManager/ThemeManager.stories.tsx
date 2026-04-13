@@ -12,7 +12,7 @@ import type {
 } from '@irdashies/types';
 import { useState } from 'react';
 import { WIDGET_MAP } from '../../WidgetIndex';
-import { defaultDashboard } from '../../../app/storage/defaultDashboard';
+import { defaultDashboard } from '@irdashies/types';
 
 const meta: Meta<typeof ThemeManager> = {
   component: ThemeManager,
@@ -103,6 +103,13 @@ const createMockBridge = (
       createdAt: new Date().toISOString(),
       lastModified: new Date().toISOString(),
     }),
+  cloneProfile: (profileId: string) =>
+    Promise.resolve({
+      id: 'mock-clone-id',
+      name: `${profileId} - cloned`,
+      createdAt: new Date().toISOString(),
+      lastModified: new Date().toISOString(),
+    }),
   deleteProfile: () => Promise.resolve(),
   renameProfile: () => Promise.resolve(),
   switchProfile: () => Promise.resolve(),
@@ -118,6 +125,8 @@ const createMockBridge = (
   exportDashboardToFile: async () => false,
   importDashboardFromFile: async () => null,
   setAutoStart: () => Promise.resolve(),
+  openLogFolder: async () => undefined,
+  exportLogFile: async () => false,
 });
 
 const FONT_TYPES: FontType[] = [
@@ -128,6 +137,9 @@ const FONT_TYPES: FontType[] = [
   'roboto',
 ];
 const FONT_SIZES: FontSize[] = [
+  '4xs',
+  '3xs',
+  '2xs',
   'xs',
   'sm',
   'md',
@@ -143,6 +155,9 @@ const FONT_SIZES: FontSize[] = [
   '9xl',
 ];
 const FONT_SIZE_LABELS: Record<FontSize, string> = {
+  '4xs': 'Tiny',
+  '3xs': '3x Small',
+  '2xs': '2x Small',
   xs: 'Extra Small',
   sm: 'Small',
   md: 'Medium',
@@ -486,7 +501,7 @@ export const WithAllAvailableWidgets = {
       setFontWeight,
       colorPalette,
       setColorPalette,
-      defaultDashboard.widgets
+      defaultDashboard.widgets as DashboardLayout['widgets']
     );
 
     return (

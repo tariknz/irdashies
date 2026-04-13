@@ -75,6 +75,43 @@ layer(base);
       opacity: 0;
     }
   }
+
+  --animate-name-slide-primary: name-slide-primary 5s ease-in-out infinite;
+  --animate-name-slide-secondary: name-slide-secondary 5s ease-in-out infinite;
+
+  @keyframes name-slide-primary {
+    0%,
+    40% {
+      transform: translateY(0);
+      opacity: 1;
+    }
+    50%,
+    90% {
+      transform: translateY(-110%);
+      opacity: 0;
+    }
+    100% {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  @keyframes name-slide-secondary {
+    0%,
+    40% {
+      transform: translateY(110%);
+      opacity: 0;
+    }
+    50%,
+    90% {
+      transform: translateY(0);
+      opacity: 1;
+    }
+    100% {
+      transform: translateY(110%);
+      opacity: 0;
+    }
+  }
 }
 
 html {
@@ -102,134 +139,71 @@ html {
 }
 
 /* Theme classes for different font sizes */
-.overlay-window.overlay-theme-xs {
-  --text-xs: 10px;
-  --text-sm: 11px;
-  --text-base: 12px;
-  --text-lg: 13px;
-  --text-xl: 14px;
-  --text-2xl: 15px;
-  --text-3xl: 16px;
+/* 1. Define the base scale logic once */
+.overlay-window {
+  --text-xs: calc(var(--theme-offset) + 0px);
+  --text-sm: calc(var(--theme-offset) + 1px);
+  --text-base: calc(var(--theme-offset) + 2px);
+  --text-lg: calc(var(--theme-offset) + 3px);
+  --text-xl: calc(var(--theme-offset) + 4px);
+  --text-2xl: calc(var(--theme-offset) + 5px);
+  --text-3xl: calc(var(--theme-offset) + 6px);
+  --text-4xl: calc(var(--theme-offset) + 7px);
+  --text-5xl: calc(var(--theme-offset) + 8px);
+  --text-6xl: calc(var(--theme-offset) + 9px);
+  --text-7xl: calc(var(--theme-offset) + 10px);
+  --text-8xl: calc(var(--theme-offset) + 11px);
+  --text-9xl: calc(var(--theme-offset) + 12px);
 }
 
-.overlay-window.overlay-theme-sm {
-  --text-xs: 11px;
-  --text-sm: 12px;
-  --text-base: 13px;
-  --text-lg: 14px;
-  --text-xl: 15px;
-  --text-2xl: 16px;
-  --text-3xl: 17px;
+/* 2. Assign the starting value (the 'xs' value) for each theme */
+.overlay-theme-4xs {
+  --theme-offset: 7px;
 }
-
-.overlay-window.overlay-theme-md {
-  --text-xs: 12px;
-  --text-sm: 13px;
-  --text-base: 14px;
-  --text-lg: 15px;
-  --text-xl: 16px;
-  --text-2xl: 17px;
-  --text-3xl: 18px;
+.overlay-theme-3xs {
+  --theme-offset: 8px;
 }
-
-.overlay-window.overlay-theme-lg {
-  --text-xs: 13px;
-  --text-sm: 14px;
-  --text-base: 15px;
-  --text-lg: 16px;
-  --text-xl: 17px;
-  --text-2xl: 18px;
-  --text-3xl: 19px;
+.overlay-theme-2xs {
+  --theme-offset: 9px;
 }
-
-.overlay-window.overlay-theme-xl {
-  --text-xs: 14px;
-  --text-sm: 15px;
-  --text-base: 16px;
-  --text-lg: 17px;
-  --text-xl: 18px;
-  --text-2xl: 19px;
-  --text-3xl: 20px;
+.overlay-theme-xs {
+  --theme-offset: 10px;
 }
-
-.overlay-window.overlay-theme-2xl {
-  --text-xs: 15px;
-  --text-sm: 16px;
-  --text-base: 17px;
-  --text-lg: 18px;
-  --text-xl: 19px;
-  --text-2xl: 20px;
-  --text-3xl: 21px;
+.overlay-theme-sm {
+  --theme-offset: 11px;
 }
-
-.overlay-window.overlay-theme-3xl {
-  --text-xs: 16px;
-  --text-sm: 17px;
-  --text-base: 18px;
-  --text-lg: 19px;
-  --text-xl: 20px;
-  --text-2xl: 21px;
-  --text-3xl: 22px;
+.overlay-theme-md {
+  --theme-offset: 12px;
 }
-
-.overlay-window.overlay-theme-4xl {
-  --text-xs: 17px;
-  --text-sm: 18px;
-  --text-base: 19px;
-  --text-lg: 20px;
-  --text-xl: 21px;
-  --text-2xl: 22px;
-  --text-3xl: 23px;
+.overlay-theme-lg {
+  --theme-offset: 13px;
 }
-
-.overlay-window.overlay-theme-5xl {
-  --text-xs: 18px;
-  --text-sm: 19px;
-  --text-base: 20px;
-  --text-lg: 21px;
-  --text-xl: 22px;
-  --text-2xl: 23px;
-  --text-3xl: 24px;
+.overlay-theme-xl {
+  --theme-offset: 14px;
 }
-
-.overlay-window.overlay-theme-6xl {
-  --text-xs: 19px;
-  --text-sm: 20px;
-  --text-base: 21px;
-  --text-lg: 22px;
-  --text-xl: 23px;
-  --text-2xl: 24px;
-  --text-3xl: 25px;
+.overlay-theme-2xl {
+  --theme-offset: 15px;
 }
-
-.overlay-window.overlay-theme-7xl {
-  --text-xs: 20px;
-  --text-sm: 21px;
-  --text-base: 22px;
-  --text-lg: 23px;
-  --text-xl: 24px;
-  --text-2xl: 25px;
-  --text-3xl: 26px;
+.overlay-theme-3xl {
+  --theme-offset: 16px;
 }
-
-.overlay-window.overlay-theme-8xl {
-  --text-xs: 21px;
-  --text-sm: 22px;
-  --text-base: 23px;
-  --text-lg: 24px;
-  --text-xl: 25px;
-  --text-2xl: 26px;
-  --text-3xl: 27px;
+.overlay-theme-4xl {
+  --theme-offset: 17px;
 }
-
-.overlay-window.overlay-theme-9xl {
-  --text-xs: 22px;
-  --text-sm: 23px;
-  --text-base: 24px;
-  --text-lg: 25px;
-  --text-xl: 26px;
-  --text-2xl: 27px;
-  --text-3xl: 28px;
+.overlay-theme-5xl {
+  --theme-offset: 18px;
+}
+.overlay-theme-6xl {
+  --theme-offset: 19px;
+}
+.overlay-theme-7xl {
+  --theme-offset: 20px;
+}
+.overlay-theme-8xl {
+  --theme-offset: 21px;
+}
+.overlay-theme-9xl {
+  --theme-offset: 22px;
 }
 
 .overlay-window.overlay-theme-color-black {

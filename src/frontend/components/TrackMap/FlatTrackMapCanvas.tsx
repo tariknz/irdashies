@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { TrackDriver, TrackDrawing } from './TrackCanvas';
 import { getColor, getTailwindStyle } from '@irdashies/utils/colors';
-import { useDriverOffTrack } from './hooks/useDriverOffTrack';
+import { useCarIdxOffTrack } from '@irdashies/context';
 
 export interface FlatTrackMapCanvasProps {
   trackDrawing: TrackDrawing;
@@ -37,7 +37,7 @@ export const FlatTrackMapCanvas = ({
 }: FlatTrackMapCanvasProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
-  const driversOffTrack = useDriverOffTrack();
+  const driversOffTrack = useCarIdxOffTrack();
   const debounceResizeRef = useRef<ReturnType<typeof setTimeout> | undefined>(
     undefined
   );

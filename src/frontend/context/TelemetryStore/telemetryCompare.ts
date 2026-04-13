@@ -29,3 +29,26 @@ export const arrayCompare = (a?: unknown[], b?: unknown[]) => {
 
   return true;
 };
+
+/**
+ * Compares numeric arrays for equality within a given decimal precision.
+ * Values that round to the same number at the given precision are considered equal.
+ * Use this for high-frequency telemetry arrays (e.g. CarIdxLapDistPct) where
+ * sub-threshold changes don't produce meaningful UI updates.
+ */
+export const arrayCompareRounded = (
+  precision: number,
+  a?: number[],
+  b?: number[]
+) => {
+  if (!a && !b) return true;
+  if (!a || !b) return false;
+  if (a.length !== b.length) return false;
+  const factor = Math.pow(10, precision);
+  for (let i = 0; i < a.length; i++) {
+    if (Math.round(a[i] * factor) !== Math.round(b[i] * factor)) {
+      return false;
+    }
+  }
+  return true;
+};

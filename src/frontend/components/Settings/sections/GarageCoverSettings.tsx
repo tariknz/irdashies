@@ -1,15 +1,16 @@
 import { useState, useEffect, useRef } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import { useDashboard } from '@irdashies/context';
-import { GarageCoverWidgetSettings } from '../types';
+import {
+  GarageCoverWidgetSettings,
+  getWidgetDefaultConfig,
+} from '@irdashies/types';
 import { DashboardBridge } from '@irdashies/types';
 
 const SETTING_ID = 'garagecover';
 const LOCALSTORAGE_KEY = 'garagecover-image';
 
-const defaultConfig: GarageCoverWidgetSettings['config'] = {
-  imageFilename: '',
-};
+const defaultConfig = getWidgetDefaultConfig('garagecover');
 
 export const GarageCoverSettings = () => {
   const { currentDashboard, bridge } = useDashboard();
@@ -22,11 +23,18 @@ export const GarageCoverSettings = () => {
         | GarageCoverWidgetSettings['config']
         | undefined) ?? defaultConfig,
   });
+  const [serverPort, setServerPort] = useState<number>(3000);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const configChangeHandlerRef = useRef<
     ((newConfig: Partial<GarageCoverWidgetSettings['config']>) => void) | null
   >(null);
   const hasInitializedRef = useRef(false);
+
+  useEffect(() => {
+    if (bridge?.getComponentServerPort) {
+      bridge.getComponentServerPort().then(setServerPort);
+    }
+  }, [bridge]);
 
   const loadPreview = (imageFilename: string) => {
     if (!imageFilename) {
@@ -68,7 +76,8 @@ export const GarageCoverSettings = () => {
     const newSettings = {
       enabled: widget.enabled ?? false,
       config:
-        (widget.config as GarageCoverWidgetSettings['config']) || defaultConfig,
+        (widget.config as unknown as GarageCoverWidgetSettings['config']) ||
+        defaultConfig,
     };
     setTimeout(() => setSettings(newSettings), 0);
     // Preview will be loaded by the next effect when settings change
@@ -176,7 +185,7 @@ export const GarageCoverSettings = () => {
               <p className="text-sm text-slate-300">
                 <strong>Browser Source URL:</strong>{' '}
                 <code className="bg-slate-800 px-2 py-1 rounded">
-                  http://localhost:3000/dashboard
+                  {`http://localhost:${serverPort}/dashboard`}
                 </code>
               </p>
             </div>

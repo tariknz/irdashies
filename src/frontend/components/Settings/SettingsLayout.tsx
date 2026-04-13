@@ -1,29 +1,33 @@
+import { useEffect, useState } from 'react';
 import {
   GearIcon,
   LockIcon,
-  LockOpenIcon,
   PresentationChartIcon,
 } from '@phosphor-icons/react';
-import { Route, Routes, Navigate } from 'react-router-dom';
+import { Route, Routes, Navigate, useLocation } from 'react-router-dom';
 import { useDashboard } from '@irdashies/context';
 import { SettingsLoader } from './SettingsLoader';
 import { SettingsMenu } from './SettingsMenu';
-import { useState } from 'react';
 
 export const SettingsLayout = () => {
   const {
     bridge,
-    editMode,
     isDemoMode,
     toggleDemoMode,
     currentDashboard,
     currentProfile,
   } = useDashboard();
-  const [isLocked, setIsLocked] = useState(!editMode);
+  const { pathname } = useLocation();
+  const [editModeAccelerator, setEditModeAccelerator] = useState('F6');
+
+  useEffect(() => {
+    window.keybindingsBridge?.getKeybindings().then((bindings) => {
+      setEditModeAccelerator(bindings['toggle-edit-mode'].accelerator);
+    });
+  }, [pathname]);
 
   const handleToggleLock = async () => {
-    const locked = await bridge.toggleLockOverlays();
-    setIsLocked(locked);
+    await bridge.toggleLockOverlays();
   };
 
   if (!currentDashboard) {
@@ -38,8 +42,8 @@ export const SettingsLayout = () => {
           <div>
             <h1 className="text-2xl font-bold">Overlay Settings</h1>
             {currentProfile && (
-              <p className="text-sm text-gray-400">
-                {currentProfile.name} Active
+              <p className="text-sm text-slate-300">
+                {currentProfile.name} Profile
               </p>
             )}
           </div>
@@ -47,7 +51,7 @@ export const SettingsLayout = () => {
         <div className="flex flex-row gap-2">
           <button
             onClick={toggleDemoMode}
-            className="flex flex-row gap-2 items-center px-3 py-2 rounded bg-slate-800 hover:bg-slate-600 transition-colors"
+            className="flex flex-row gap-1.5 items-center px-3 py-2 rounded bg-slate-800 hover:bg-slate-600 transition-colors"
           >
             {isDemoMode ? (
               <>
@@ -63,19 +67,13 @@ export const SettingsLayout = () => {
           </button>
           <button
             onClick={handleToggleLock}
-            className="flex flex-row gap-2 items-center px-3 py-2 rounded bg-slate-800 hover:bg-slate-600 transition-colors"
+            className="flex flex-row gap-1.5 items-center px-3 py-2 rounded bg-slate-800 hover:bg-slate-600 transition-colors"
           >
-            {isLocked ? (
-              <>
-                <LockIcon size={20} weight="bold" />
-                <span>Edit Layout (F6)</span>
-              </>
-            ) : (
-              <>
-                <LockOpenIcon size={20} weight="bold" />
-                <span>Editing Layout (F6)</span>
-              </>
-            )}
+            <LockIcon size={20} weight="bold" />
+            <span>Edit Layout</span>
+            <kbd className="ml-1 text-xs bg-black/20 px-1 rounded">
+              {editModeAccelerator}
+            </kbd>
           </button>
         </div>
       </div>

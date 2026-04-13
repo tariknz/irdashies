@@ -2,6 +2,7 @@ import { useCallback, useMemo } from 'react';
 import {
   useSessionStore,
   useTelemetryValues,
+  useTelemetryValuesRounded,
   useFocusCarIdx,
   useReferenceLapStore,
 } from '@irdashies/context';
@@ -15,9 +16,9 @@ import { Standings } from '../createStandings';
 
 export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
   const drivers = useDriverStandings();
-  const carIdxLapDistPct = useTelemetryValues('CarIdxLapDistPct');
+  const carIdxLapDistPct = useTelemetryValuesRounded('CarIdxLapDistPct', 4);
   const carIdxIsOnPitRoad = useTelemetryValues('CarIdxOnPitRoad');
-  const carIdxEstTime = useTelemetryValues('CarIdxEstTime');
+  const carIdxEstTime = useTelemetryValuesRounded('CarIdxEstTime', 2);
   // Use focus car index which handles spectator mode (uses CamCarIdx when spectating)
   const focusCarIdx = useFocusCarIdx();
   const paceCarIdx =

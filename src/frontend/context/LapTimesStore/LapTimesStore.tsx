@@ -1,4 +1,5 @@
 import { create, useStore } from 'zustand';
+import logger from '@irdashies/utils/logger';
 
 export interface LapTimeBuffer {
   lastLapTimes: number[];
@@ -17,7 +18,7 @@ interface LapTimesState {
   reset: () => void;
 }
 
-const LAP_TIME_AVG_WINDOW = 5; // Average over last 5 laps
+const LAP_TIME_AVG_WINDOW = 10; // Average over last 10 laps
 const OUTLIER_THRESHOLD = 1.0; // Outlier detection threshold
 
 // Helper function to calculate median
@@ -71,7 +72,7 @@ export const useLapTimesStore = create<LapTimesState>((set, get) => ({
       sessionNum !== null &&
       sessionNum !== prevSessionNum
     ) {
-      console.log(`[LapTimesStore] Session changed, resetting`);
+      logger.info(`[LapTimesStore] Session changed, resetting`);
       set({
         lapTimeBuffer: null,
         lapTimes: [],
@@ -106,13 +107,9 @@ export const useLapTimesStore = create<LapTimesState>((set, get) => ({
         }
       });
     } else if (!lapTimeBuffer) {
-      // First run: initialize history with current lap times
-      carIdxLastLapTime.forEach((lapTime, idx) => {
-        if (lapTime > 0) {
-          newHistory[idx] = [lapTime];
-          historyChanged = true;
-        }
-      });
+      // First run: just record the current values as a baseline.
+      // Don't add them to history — they may be stale from a previous
+      // session. History only grows when we see a value *change*.
     }
 
     // Only recalculate averages when history actually changed
@@ -138,7 +135,7 @@ export const useLapTimesStore = create<LapTimesState>((set, get) => ({
     });
   },
   reset: () => {
-    console.log('[LapTimesStore] Resetting lap time history');
+    logger.info('[LapTimesStore] Resetting lap time history');
     set({
       lapTimeBuffer: null,
       lapTimes: [],

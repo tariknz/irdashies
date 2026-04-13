@@ -1,139 +1,246 @@
 import { Link, useLocation } from 'react-router-dom';
+import {
+  SlidersHorizontalIcon,
+  UsersIcon,
+  TagIcon,
+  ScalesIcon,
+  KeyboardIcon,
+  WrenchIcon,
+  InfoIcon,
+} from '@phosphor-icons/react';
+import type { Icon } from '@phosphor-icons/react';
+import { useDashboard } from '@irdashies/context';
+
+interface MenuItem {
+  to: string;
+  path: string;
+  label: string;
+  widgetType?: string;
+  icon?: Icon;
+}
+
+const generalItems: MenuItem[] = [
+  {
+    to: '/settings/general',
+    path: '/general',
+    label: 'General',
+    icon: SlidersHorizontalIcon,
+  },
+  {
+    to: '/settings/profiles',
+    path: '/profiles',
+    label: 'Profiles',
+    icon: UsersIcon,
+  },
+  {
+    to: '/settings/keybindings',
+    path: '/keybindings',
+    label: 'Key Bindings',
+    icon: KeyboardIcon,
+  },
+  {
+    to: '/settings/driver-tags',
+    path: '/driver-tags',
+    label: 'Driver Tags',
+    icon: TagIcon,
+  },
+  {
+    to: '/settings/car-setup',
+    path: '/car-setup',
+    label: 'Setup Comparison',
+    icon: ScalesIcon,
+  },
+];
+
+const widgetItems: MenuItem[] = [
+  {
+    to: '/settings/blindspotmonitor',
+    path: '/blindspotmonitor',
+    label: 'Blind Spot Monitor',
+    widgetType: 'blindspotmonitor',
+  },
+  {
+    to: '/settings/fastercarsfrombehind',
+    path: '/fastercarsfrombehind',
+    label: 'Faster Cars Behind',
+    widgetType: 'fastercarsfrombehind',
+  },
+  { to: '/settings/flag', path: '/flag', label: 'Flag', widgetType: 'flag' },
+  {
+    to: '/settings/flatmap',
+    path: '/flatmap',
+    label: 'Flat Track Map',
+    widgetType: 'flatmap',
+  },
+  {
+    to: '/settings/fuel',
+    path: '/fuel',
+    label: 'Fuel Calculator',
+    widgetType: 'fuel',
+  },
+  {
+    to: '/settings/garagecover',
+    path: '/garagecover',
+    label: 'Garage Cover',
+    widgetType: 'garagecover',
+  },
+  {
+    to: '/settings/infobar',
+    path: '/infobar',
+    label: 'Information Bar',
+    widgetType: 'infobar',
+  },
+  {
+    to: '/settings/input',
+    path: '/input',
+    label: 'Input',
+    widgetType: 'input',
+  },
+  {
+    to: '/settings/laptimelog',
+    path: '/laptimelog',
+    label: 'Lap Timer',
+    widgetType: 'laptimelog',
+  },
+  {
+    to: '/settings/pitlanehelper',
+    path: '/pitlanehelper',
+    label: 'Pitlane Helper',
+    widgetType: 'pitlanehelper',
+  },
+  {
+    to: '/settings/rejoin',
+    path: '/rejoin',
+    label: 'Rejoin Indicator',
+    widgetType: 'rejoin',
+  },
+  {
+    to: '/settings/relative',
+    path: '/relative',
+    label: 'Relative',
+    widgetType: 'relative',
+  },
+  {
+    to: '/settings/slowcarahead',
+    path: '/slowcarahead',
+    label: 'Slow Car Ahead',
+    widgetType: 'slowcarahead',
+  },
+  {
+    to: '/settings/standings',
+    path: '/standings',
+    label: 'Standings',
+    widgetType: 'standings',
+  },
+  {
+    to: '/settings/tachometer',
+    path: '/tachometer',
+    label: 'Tachometer',
+    widgetType: 'tachometer',
+  },
+  { to: '/settings/map', path: '/map', label: 'Track Map', widgetType: 'map' },
+  {
+    to: '/settings/twitchchat',
+    path: '/twitchchat',
+    label: 'Twitch Chat',
+    widgetType: 'twitchchat',
+  },
+  {
+    to: '/settings/weather',
+    path: '/weather',
+    label: 'Weather',
+    widgetType: 'weather',
+  },
+];
+
+const bottomItems: MenuItem[] = [
+  {
+    to: '/settings/advanced',
+    path: '/advanced',
+    label: 'Advanced',
+    icon: WrenchIcon,
+  },
+  { to: '/settings/about', path: '/about', label: 'About', icon: InfoIcon },
+];
+
+const MenuLink = ({
+  item,
+  pathname,
+  showIcon = false,
+  isEnabled,
+}: {
+  item: MenuItem;
+  pathname: string;
+  showIcon?: boolean;
+  isEnabled?: boolean;
+}) => {
+  const isActive = pathname.startsWith(`/settings${item.path}`);
+  return (
+    <li>
+      <Link
+        to={item.to}
+        className={[
+          'flex items-center gap-2 w-full px-2 py-1 rounded cursor-pointer border-l-2 transition-colors',
+          isActive
+            ? 'border-blue-400 bg-slate-700 text-white'
+            : 'border-transparent text-slate-400 hover:bg-slate-700/50 hover:text-white',
+        ].join(' ')}
+      >
+        {showIcon && item.icon && (
+          <item.icon
+            size={14}
+            weight={isActive ? 'bold' : 'regular'}
+            className="shrink-0"
+          />
+        )}
+        <span className="flex-1">{item.label}</span>
+        {isEnabled && (
+          <span className="w-1.5 h-1.5 rounded-full shrink-0 bg-emerald-400" />
+        )}
+      </Link>
+    </li>
+  );
+};
 
 export const SettingsMenu = () => {
-  const location = useLocation();
+  const { pathname } = useLocation();
+  const { currentDashboard } = useDashboard();
 
-  const menuItemClass = (path: string) =>
-    `block w-full p-2 rounded cursor-pointer ${
-      location.pathname.startsWith(`/settings${path}`)
-        ? 'bg-slate-700'
-        : 'hover:bg-slate-700'
-    }`;
+  const isWidgetEnabled = (widgetType: string) => {
+    const widget = currentDashboard?.widgets.find(
+      (w) => (w.type ?? w.id) === widgetType
+    );
+    return widget?.enabled ?? false;
+  };
 
   return (
-    <div className="w-1/4 bg-slate-800 p-4 rounded-md flex flex-col overflow-y-auto">
-      <ul className="flex flex-col gap-2 mb-2 border-b border-slate-700 pb-2">
-        <li>
-          <Link to="/settings/general" className={menuItemClass('/general')}>
-            General
-          </Link>
-        </li>
-        <li>
-          <Link to="/settings/profiles" className={menuItemClass('/profiles')}>
-            Profiles
-          </Link>
-        </li>
-        <li>
-          <Link
-            to="/settings/car-setup"
-            className={menuItemClass('/car-setup')}
-          >
-            Setup Comparison Tool
-          </Link>
-        </li>
+    <div className="w-1/4 bg-slate-800 p-3 rounded-md flex flex-col gap-0 overflow-y-auto">
+      <ul className="flex flex-col pb-2 border-b border-slate-700">
+        {generalItems.map((item) => (
+          <MenuLink key={item.path} item={item} pathname={pathname} showIcon />
+        ))}
       </ul>
-      <ul className="flex flex-col gap-2 flex-1 mb-2">
-        <li>
-          <Link
-            to="/settings/blindspotmonitor"
-            className={menuItemClass('/blindspotmonitor')}
-          >
-            Blind Spot Monitor
-          </Link>
-        </li>
-        <li>
-          <Link
-            to="/settings/fastercarsfrombehind"
-            className={menuItemClass('/fastercarsfrombehind')}
-          >
-            Faster Cars From Behind
-          </Link>
-        </li>
-        <li>
-          <Link to="/settings/flag" className={menuItemClass('/flag')}>
-            Flag
-          </Link>
-        </li>
-        <li>
-          <Link to="/settings/flatmap" className={menuItemClass('/flatmap')}>
-            Flat Track Map
-          </Link>
-        </li>
-        <li>
-          <Link to="/settings/fuel" className={menuItemClass('/fuel')}>
-            Fuel Calculator
-          </Link>
-        </li>
-        <li>
-          <Link
-            to="/settings/garagecover"
-            className={menuItemClass('/garagecover')}
-          >
-            Garage Cover
-          </Link>
-        </li>
-        <li>
-          <Link to="/settings/input" className={menuItemClass('/input')}>
-            Input
-          </Link>
-        </li>
-        <li>
-          <Link
-            to="/settings/pitlanehelper"
-            className={menuItemClass('/pitlanehelper')}
-          >
-            Pitlane Helper
-          </Link>
-        </li>
-        <li>
-          <Link to="/settings/rejoin" className={menuItemClass('/rejoin')}>
-            Rejoin Indicator
-          </Link>
-        </li>
-        <li>
-          <Link to="/settings/relative" className={menuItemClass('/relative')}>
-            Relative
-          </Link>
-        </li>
-        <li>
-          <Link
-            to="/settings/standings"
-            className={menuItemClass('/standings')}
-          >
-            Standings
-          </Link>
-        </li>
-        <li>
-          <Link to="/settings/map" className={menuItemClass('/map')}>
-            Track Map
-          </Link>
-        </li>
-        <li>
-          <Link
-            to="/settings/twitchchat"
-            className={menuItemClass('/twitchchat')}
-          >
-            Twitch Chat
-          </Link>
-        </li>
-        <li>
-          <Link to="/settings/weather" className={menuItemClass('/weather')}>
-            Weather
-          </Link>
-        </li>
+
+      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider px-2 pt-2 pb-1">
+        Widgets
+      </p>
+      <ul className="flex flex-col">
+        {widgetItems.map((item) => (
+          <MenuLink
+            key={item.path}
+            item={item}
+            pathname={pathname}
+            isEnabled={
+              item.widgetType ? isWidgetEnabled(item.widgetType) : undefined
+            }
+          />
+        ))}
       </ul>
-      {/* Advanced settings pushed to bottom */}
-      <ul className="mt-auto pt-2 border-t border-slate-700 flex flex-col gap-2">
-        <li>
-          <Link to="/settings/advanced" className={menuItemClass('/advanced')}>
-            Advanced
-          </Link>
-        </li>
-        <li>
-          <Link to="/settings/about" className={menuItemClass('/about')}>
-            About
-          </Link>
-        </li>
+
+      <ul className="mt-auto pt-2 border-t border-slate-700 flex flex-col">
+        {bottomItems.map((item) => (
+          <MenuLink key={item.path} item={item} pathname={pathname} showIcon />
+        ))}
       </ul>
     </div>
   );

@@ -1,18 +1,20 @@
 import { StoryObj } from '@storybook/react-vite';
 import { DriverInfoRow } from './DriverInfoRow';
 import { useCurrentSessionType } from '@irdashies/context';
-import type { RelativeWidgetSettings } from '../../../Settings/types';
+import type { RelativeWidgetSettings } from '@irdashies/types';
 import { useState, useMemo } from 'react';
 import { useSortableList } from '../../../SortableList';
 import { DotsSixVerticalIcon } from '@phosphor-icons/react';
 import type { Meta } from '@storybook/react-vite';
 import type { DriverInfoRow as DriverInfoRowType } from './DriverInfoRow';
 import type { ComponentType } from 'react';
+import { TelemetryDecorator } from '@irdashies/storybook';
 
 const meta = {
   component: DriverInfoRow,
   title: 'widgets/Standings/components/DriverInfoRow',
   decorators: [
+    TelemetryDecorator(),
     (Story: ComponentType) => (
       <table className="w-full">
         <tbody>
@@ -363,6 +365,7 @@ const RelativeWithReorderableConfig = () => {
       lastTime: { enabled: true, timeFormat: 'full' },
       compound: { enabled: true },
       brakeBias: { enabled: false },
+      driverTag: { enabled: false },
       displayOrder: displayOrder,
       titleBar: { enabled: true, progressBar: { enabled: true } },
       headerBar: {
@@ -384,6 +387,7 @@ const RelativeWithReorderableConfig = () => {
         airTemperature: { enabled: false, unit: 'Metric' },
         trackTemperature: { enabled: false, unit: 'Metric' },
         wind: { enabled: false, speedPosition: 'right' },
+        trackName: { enabled: false },
         displayOrder: [
           'sessionName',
           'sessionTime',
@@ -411,6 +415,7 @@ const RelativeWithReorderableConfig = () => {
         airTemperature: { enabled: true, unit: 'Metric' },
         trackTemperature: { enabled: true, unit: 'Metric' },
         wind: { enabled: false, speedPosition: 'right' },
+        trackName: { enabled: false },
         displayOrder: [
           'localTime',
           'trackWetness',

@@ -10,12 +10,22 @@ import {
   DashboardProvider,
   SessionProvider,
   TelemetryProvider,
+  useLapTimesStoreUpdater,
+  useLapTimesStore,
+  usePitLapStoreUpdater,
+  useDrivingState,
+  useWeekendInfoNumCarClasses,
+  useTelemetryValue,
+  useSessionName,
+  useSessionLaps,
 } from '@irdashies/context';
 import { generateMockDataFromPath } from '../../../app/bridge/iracingSdk/mock-data/generateMockData';
-import type { DashboardBridge } from '@irdashies/types';
-import { useState, Fragment } from 'react';
+import type { DashboardBridge, StandingsConfig } from '@irdashies/types';
+import { defaultDashboard } from '@irdashies/types';
+import { useState, useEffect, Fragment } from 'react';
 import { DriverClassHeader } from './components/DriverClassHeader/DriverClassHeader';
 import { DriverInfoRow } from './components/DriverInfoRow/DriverInfoRow';
+import type { ResolvedDriverTag } from './hooks/useDriverTagMap';
 import { SessionBar } from './components/SessionBar/SessionBar';
 
 import { TitleBar } from './components/TitleBar/TitleBar';
@@ -25,15 +35,6 @@ import {
   useStandingsSettings,
   useHighlightColor,
 } from './hooks';
-import { useLapTimesStoreUpdater } from '../../context/LapTimesStore/LapTimesStoreUpdater';
-import { usePitLapStoreUpdater } from '../../context/PitLapStore/PitLapStoreUpdater';
-import {
-  useDrivingState,
-  useWeekendInfoNumCarClasses,
-  useTelemetryValue,
-  useSessionName,
-  useSessionLaps,
-} from '@irdashies/context';
 import { useDriverIncidents, useSessionLapCount, useBrakeBias } from './hooks';
 import { useCurrentTime } from './hooks/useCurrentTime';
 import { useTrackWetness } from './hooks/useTrackWetness';
@@ -54,9 +55,26 @@ const createMockBridgeWithCompactMode = (): DashboardBridge => ({
   ...mockDashboardBridge,
   dashboardUpdated: (callback) => {
     callback({
-      widgets: [],
+      ...defaultDashboard,
       generalSettings: {
-        compactMode: true,
+        ...defaultDashboard.generalSettings,
+        compactMode: 'compact',
+      },
+    });
+    return () => {
+      // No-op cleanup function
+    };
+  },
+});
+
+const createMockBridgeWithCompactUltraMode = (): DashboardBridge => ({
+  ...mockDashboardBridge,
+  dashboardUpdated: (callback) => {
+    callback({
+      ...defaultDashboard,
+      generalSettings: {
+        ...defaultDashboard.generalSettings,
+        compactMode: 'ultra',
       },
     });
     return () => {
@@ -247,6 +265,45 @@ export const MultiClassPCC: Story = {
 
 export const MultiClassPCCWithClio: Story = {
   decorators: [TelemetryDecorator('/test-data/1731637331038')],
+};
+
+export const MultiClassPlayground: Story = {
+  argTypes: {
+    numNonClassDrivers: {
+      control: { type: 'number', min: 0, max: 10 },
+      name: 'Drivers from other classes',
+    },
+    numTopDrivers: {
+      control: { type: 'number', min: 0, max: 10 },
+      name: "Top drivers to always show in player's class",
+    },
+  },
+  args: {
+    numNonClassDrivers: 3,
+    numTopDrivers: 3,
+  },
+  decorators: [
+    (Story, context) => {
+      const { numNonClassDrivers, numTopDrivers } = context.args as {
+        numNonClassDrivers: number;
+        numTopDrivers: number;
+      };
+      const standingsConfig = defaultDashboard.widgets.find(
+        (w) => w.id === 'standings'
+      )?.config as StandingsConfig;
+
+      return TelemetryDecoratorWithConfig('/test-data/1731637331038', {
+        standings: {
+          ...standingsConfig,
+          driverStandings: {
+            ...standingsConfig?.driverStandings,
+            numNonClassDrivers,
+            numTopDrivers,
+          },
+        },
+      })(Story, context);
+    },
+  ],
 };
 
 export const SupercarsRace: Story = {
@@ -461,7 +518,9 @@ const StandingsWithoutHeader = () => {
         </tbody>
       </table>
       {/* Keep SessionBar here */}
-      <SessionBar position="footer" />
+      {settings?.footerBar && (
+        <SessionBar settings={settings.footerBar} position="footer" />
+      )}
     </div>
   );
 };
@@ -507,7 +566,9 @@ const StandingsWithoutFooter = () => {
     >
       <TitleBar titleBarSettings={settings?.titleBar} />
       {/* Keep SessionBar here */}
-      <SessionBar />
+      {settings?.headerBar && (
+        <SessionBar settings={settings.headerBar} position="header" />
+      )}
       <table className="w-full table-auto text-sm border-separate border-spacing-y-0.5">
         <tbody>
           {standings.map(([classId, classStandings]) =>
@@ -896,6 +957,20 @@ export const CompactMode: Story = {
   ],
 };
 
+export const CompactUltraMode: Story = {
+  decorators: [
+    (Story) => (
+      <>
+        <SessionProvider bridge={generateMockDataFromPath()} />
+        <TelemetryProvider bridge={generateMockDataFromPath()} />
+        <DashboardProvider bridge={createMockBridgeWithCompactUltraMode()}>
+          <Story />
+        </DashboardProvider>
+      </>
+    ),
+  ],
+};
+
 export const PositionDividerHighlight: Story = {
   name: 'Position Divider (Highlight)',
   decorators: [
@@ -955,6 +1030,156 @@ export const PositionDividerNumerousCells: Story = {
         lapTimeDeltas: { enabled: true, numLaps: 3 },
         badge: { enabled: true },
         iratingChange: { enabled: true },
+      },
+    }),
+  ],
+};
+
+export const MinimalStyling: Story = {
+  decorators: [
+    TelemetryDecoratorWithConfig('/test-data/1731637331038', {
+      standings: {
+        badge: { enabled: true, badgeFormat: 'license-color-rating-bw' },
+        stylingOptions: {
+          badge: true,
+          statusBadges: true,
+          driverPosition: { background: false },
+          driverNumber: { background: false, border: true },
+        },
+        classHeaderStyle: {
+          className: { colorBackground: false },
+          classInfo: { colorBackground: false },
+          classDivider: { bottomBorder: true },
+        },
+      },
+    }),
+  ],
+};
+
+const singleDriverTag: ResolvedDriverTag = {
+  id: 'friend',
+  name: 'Friend',
+  icon: 'Star',
+  color: 0xffff00,
+};
+
+const SingleDriverWithTagComponent = () => (
+  <div className="w-full bg-slate-800/70 rounded-sm p-2 text-white">
+    <table className="w-full table-auto text-sm border-separate border-spacing-y-0.5">
+      <tbody>
+        <DriverInfoRow
+          carIdx={1}
+          carNumber="99"
+          classColor={0xff5888}
+          name="Jane Smith"
+          isPlayer={false}
+          hasFastestTime={false}
+          delta={0.5}
+          position={1}
+          lap={5}
+          license="A 4.99"
+          rating={4999}
+          onPitRoad={false}
+          onTrack={true}
+          radioActive={false}
+          isMultiClass={false}
+          flairId={223}
+          tireCompound={1}
+          carId={122}
+          currentSessionType="Race"
+          dnf={false}
+          repair={false}
+          penalty={false}
+          slowdown={false}
+          resolvedTag={singleDriverTag}
+          hasAnyDriverTag={true}
+          config={
+            {
+              badge: { enabled: true, badgeFormat: 'license-color-rating-bw' },
+            } as import('@irdashies/types').StandingsWidgetSettings['config']
+          }
+        />
+      </tbody>
+    </table>
+  </div>
+);
+
+export const SingleDriverWithTag: Story = {
+  decorators: [TelemetryDecorator()],
+  render: () => <SingleDriverWithTagComponent />,
+  parameters: {
+    layout: 'padded',
+  },
+};
+
+// Demo lap times per carIdx: [baseLapTime, variance] in seconds
+// Matches carIdx slots used in default mock data (cars at indices 0–5)
+const DEMO_LAP_TIMES: Record<number, number> = {
+  0: 92.4,
+  1: 93.1,
+  2: 91.8,
+  3: 94.2,
+  4: 92.9,
+  5: 93.7,
+};
+
+const NUM_CARS = 64;
+
+/**
+ * Seeds the LapTimesStore with realistic rolling lap history for demo purposes.
+ * Calls updateLapTimes 5 times with slightly varied lap times per car to simulate
+ * 5 laps of history.
+ */
+const LapHistorySeeder = () => {
+  const updateLapTimes = useLapTimesStore((s) => s.updateLapTimes);
+
+  useEffect(() => {
+    const baseTimes = Array.from({ length: NUM_CARS }, (_, idx) =>
+      DEMO_LAP_TIMES[idx] !== undefined ? DEMO_LAP_TIMES[idx] : 0
+    );
+
+    // Simulate 5 completed laps by calling updateLapTimes with slightly varied
+    // times. Each call must differ from the previous to be recorded as a new lap.
+    const variations = [0, 0.3, -0.2, 0.5, -0.4, 0.1];
+    let prev = baseTimes.map(() => -1);
+
+    for (const variation of variations) {
+      const lapTimes = baseTimes.map((base) =>
+        base > 0 ? base + variation : 0
+      );
+      // Ensure values differ from previous call so the store records the lap
+      if (lapTimes.some((t, i) => t !== prev[i] && t > 0)) {
+        updateLapTimes(lapTimes, 0);
+      }
+      prev = lapTimes;
+    }
+  }, [updateLapTimes]);
+
+  return null;
+};
+
+export const AvgLapTime: Story = {
+  name: 'Avg Lap Time Column',
+  render: () => (
+    <>
+      <LapHistorySeeder />
+      <Standings />
+    </>
+  ),
+  decorators: [
+    TelemetryDecoratorWithConfig(undefined, {
+      standings: {
+        avgLapTime: { enabled: true, numLaps: 5, timeFormat: 'mixed' },
+        lapTimeDeltas: { enabled: false, numLaps: 3 },
+        displayOrder: [
+          'position',
+          'carNumber',
+          'driverName',
+          'gap',
+          'interval',
+          'lastTime',
+          'avgLapTime',
+        ],
       },
     }),
   ],

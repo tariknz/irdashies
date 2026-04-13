@@ -49,7 +49,7 @@ export function generateMockData(sessionData?: {
   let demoRpm = 2000;
   let demoGear = 1;
   let holdAtRedlineCounter = 0; // Counter to hold at redline
-  const shiftRpm = 7400; // MX-5 shift point
+  const shiftRpm = 7400; // BMW M4 GT4 shift point
   const minRpm = 2000;
   const rpmStep = 15; // RPM change per update
   const holdAtRedlineTicks = 15; // Hold for 1.5 seconds (15 ticks * 100ms)
@@ -279,7 +279,6 @@ export function generateMockData(sessionData?: {
       };
     },
     stop: () => {
-      console.log('🛑 Mock bridge: Stopping all intervals');
       if (telemetryInterval) clearInterval(telemetryInterval);
       if (sessionInfoInterval) clearInterval(sessionInfoInterval);
       if (runningStateInterval) clearInterval(runningStateInterval);

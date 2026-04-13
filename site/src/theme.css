@@ -1,0 +1,76 @@
+@import '../../src/frontend/theme.css';
+
+/* Tell Tailwind v4 to scan the parent project's component files for classes */
+@source "../../src/frontend/components";
+@source "../../src/frontend/context";
+@source "../../src/frontend/utils";
+@source "../../src/types";
+
+/* Landing page specific styles */
+
+/* Speed line animation for hero */
+@keyframes speed-line {
+  0% {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(200vw);
+    opacity: 0;
+  }
+}
+
+/* Carbon fiber texture pattern */
+.carbon-fiber {
+  background-image:
+    radial-gradient(
+      circle at 1px 1px,
+      rgba(255, 255, 255, 0.03) 1px,
+      transparent 0
+    ),
+    radial-gradient(
+      circle at 3px 3px,
+      rgba(255, 255, 255, 0.03) 1px,
+      transparent 0
+    );
+  background-size: 4px 4px;
+}
+
+/* Grid overlay for preview section */
+.grid-overlay {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+/* Diagonal racing stripe accent */
+.racing-stripe {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    transparent,
+    transparent 10px,
+    rgba(255, 255, 255, 0.02) 10px,
+    rgba(255, 255, 255, 0.02) 12px
+  );
+}
+
+/* Hide scrollbar for widget toggle strip */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Smooth scroll */
+html {
+  scroll-behavior: smooth;
+}

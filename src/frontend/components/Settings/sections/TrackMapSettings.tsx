@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import {
   TrackMapWidgetSettings,
-  SessionVisibilitySettings,
   SettingsTabType,
-} from '../types';
+  getWidgetDefaultConfig,
+} from '@irdashies/types';
 import { useDashboard } from '@irdashies/context';
 import { TabButton } from '../components/TabButton';
 import { SessionVisibility } from '../components/SessionVisibility';
@@ -16,68 +16,7 @@ import { SettingDivider } from '../components/SettingDivider';
 
 const SETTING_ID = 'map';
 
-const defaultConfig: TrackMapWidgetSettings['config'] = {
-  enableTurnNames: false,
-  showCarNumbers: true,
-  displayMode: 'carNumber',
-  invertTrackColors: false,
-  highContrastTurns: false,
-  driverCircleSize: 40,
-  playerCircleSize: 40,
-  trackmapFontSize: 100,
-  trackLineWidth: 20,
-  trackOutlineWidth: 40,
-  useHighlightColor: false,
-  showOnlyWhenOnTrack: false,
-  sessionVisibility: {
-    race: true,
-    loneQualify: true,
-    openQualify: true,
-    practice: true,
-    offlineTesting: true,
-  },
-};
-
-const migrateConfig = (
-  savedConfig: unknown
-): TrackMapWidgetSettings['config'] => {
-  if (!savedConfig || typeof savedConfig !== 'object') return defaultConfig;
-
-  const config = savedConfig as Record<string, unknown>;
-  return {
-    enableTurnNames:
-      (config.enableTurnNames as boolean) ?? defaultConfig.enableTurnNames,
-    showCarNumbers:
-      (config.showCarNumbers as boolean) ?? defaultConfig.showCarNumbers,
-    displayMode:
-      (config.displayMode as
-        | 'carNumber'
-        | 'sessionPosition'
-        | 'livePosition') ?? defaultConfig.displayMode,
-    invertTrackColors:
-      (config.invertTrackColors as boolean) ?? defaultConfig.invertTrackColors,
-    highContrastTurns:
-      (config.highContrastTurns as boolean) ?? defaultConfig.highContrastTurns,
-    driverCircleSize:
-      (config.driverCircleSize as number) ?? defaultConfig.driverCircleSize,
-    playerCircleSize:
-      (config.playerCircleSize as number) ?? defaultConfig.playerCircleSize,
-    trackmapFontSize:
-      (config.trackmapFontSize as number) ?? defaultConfig.trackmapFontSize,
-    trackLineWidth:
-      (config.trackLineWidth as number) ?? defaultConfig.trackLineWidth,
-    trackOutlineWidth:
-      (config.trackOutlineWidth as number) ?? defaultConfig.trackOutlineWidth,
-    useHighlightColor:
-      (config.useHighlightColor as boolean) ?? defaultConfig.useHighlightColor,
-    showOnlyWhenOnTrack:
-      (config.showOnlyWhenOnTrack as boolean) ??
-      defaultConfig.showOnlyWhenOnTrack,
-    sessionVisibility:
-      (config.sessionVisibility as SessionVisibilitySettings) ??
-      defaultConfig.sessionVisibility,
-  };
-};
+const defaultConfig = getWidgetDefaultConfig('map');
 
 export const TrackMapSettings = () => {
   const { currentDashboard } = useDashboard();
@@ -88,7 +27,9 @@ export const TrackMapSettings = () => {
     enabled:
       currentDashboard?.widgets.find((w) => w.id === SETTING_ID)?.enabled ??
       false,
-    config: migrateConfig(savedSettings?.config),
+    config:
+      (savedSettings?.config as TrackMapWidgetSettings['config']) ??
+      defaultConfig,
   });
 
   // Tab state with persistence
@@ -131,6 +72,13 @@ export const TrackMapSettings = () => {
               Drivers
             </TabButton>
             <TabButton
+              id="styling"
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+            >
+              Styling
+            </TabButton>
+            <TabButton
               id="visibility"
               activeTab={activeTab}
               setActiveTab={setActiveTab}
@@ -139,7 +87,7 @@ export const TrackMapSettings = () => {
             </TabButton>
           </div>
 
-          <div className="pt-4">
+          <div>
             {/* TRACK TAB */}
             {activeTab === 'track' && (
               <SettingsSection title="Track Settings">
@@ -175,23 +123,71 @@ export const TrackMapSettings = () => {
                 />
 
                 <SettingToggleRow
-                  title="Enable Turn Names"
+                  title="Enable Turn Labels"
                   description="Show turn numbers and names on the track map"
-                  enabled={settings.config.enableTurnNames ?? false}
+                  enabled={settings.config.turnLabels?.enabled ?? false}
                   onToggle={(newValue) =>
-                    handleConfigChange({ enableTurnNames: newValue })
+                    handleConfigChange({
+                      turnLabels: {
+                        ...(settings.config.turnLabels ?? {}),
+                        enabled: newValue,
+                      },
+                    })
                   }
                 />
 
-                {settings.config.enableTurnNames && (
-                  <SettingToggleRow
-                    title="High Contrast Turn Names"
-                    description="Use black background for turn numbers and turn names for better legibility"
-                    enabled={settings.config.highContrastTurns ?? false}
-                    onToggle={(newValue) =>
-                      handleConfigChange({ highContrastTurns: newValue })
-                    }
-                  />
+                {settings.config.turnLabels?.enabled && (
+                  <SettingsSection>
+                    <SettingButtonGroupRow<'numbers' | 'names' | 'both'>
+                      title="Display Mode"
+                      value={settings.config.turnLabels.labelType ?? 'both'}
+                      options={[
+                        { label: 'Numbers', value: 'numbers' },
+                        { label: 'Names', value: 'names' },
+                        { label: 'Both', value: 'both' },
+                      ]}
+                      onChange={(v) =>
+                        handleConfigChange({
+                          turnLabels: {
+                            ...settings.config.turnLabels,
+                            labelType: v,
+                          },
+                        })
+                      }
+                    />
+
+                    <SettingToggleRow
+                      title="High Contrast Labels"
+                      description="Use black background for turn numbers and turn names for better legibility"
+                      enabled={settings.config.turnLabels.highContrast ?? true}
+                      onToggle={(newValue) =>
+                        handleConfigChange({
+                          turnLabels: {
+                            ...settings.config.turnLabels,
+                            highContrast: newValue,
+                          },
+                        })
+                      }
+                    />
+
+                    <SettingSliderRow
+                      title="Relative Label Size"
+                      description="Relative font size of the turn labels"
+                      value={settings.config.turnLabels.labelFontSize ?? 100}
+                      units="%"
+                      min={50}
+                      max={300}
+                      step={1}
+                      onChange={(v) =>
+                        handleConfigChange({
+                          turnLabels: {
+                            ...settings.config.turnLabels,
+                            labelFontSize: v,
+                          },
+                        })
+                      }
+                    />
+                  </SettingsSection>
                 )}
               </SettingsSection>
             )}
@@ -214,7 +210,7 @@ export const TrackMapSettings = () => {
                       'carNumber' | 'sessionPosition' | 'livePosition'
                     >
                       title="Display Mode"
-                      value={settings.config.displayMode}
+                      value={settings.config.displayMode ?? 'carNumber'}
                       options={[
                         { label: 'Car Number', value: 'carNumber' },
                         { label: 'Session Position', value: 'sessionPosition' },
@@ -265,6 +261,38 @@ export const TrackMapSettings = () => {
                   enabled={settings.config.useHighlightColor ?? false}
                   onToggle={(newValue) =>
                     handleConfigChange({ useHighlightColor: newValue })
+                  }
+                />
+              </SettingsSection>
+            )}
+
+            {/* STYLING TAB */}
+            {activeTab === 'styling' && (
+              <SettingsSection title="Minimal Styling">
+                <SettingToggleRow
+                  title="Minimal Track"
+                  description="Remove the drop shadow from the track"
+                  enabled={settings.config.styling?.isMinimalTrack ?? true}
+                  onToggle={(newValue) =>
+                    handleConfigChange({
+                      styling: {
+                        ...settings.config.styling,
+                        isMinimalTrack: newValue,
+                      },
+                    })
+                  }
+                />
+                <SettingToggleRow
+                  title="Minimal Car Markers"
+                  description="Remove the drop shadow from the car markers"
+                  enabled={settings.config.styling?.isMinimalCar ?? true}
+                  onToggle={(newValue) =>
+                    handleConfigChange({
+                      styling: {
+                        ...settings.config.styling,
+                        isMinimalCar: newValue,
+                      },
+                    })
                   }
                 />
               </SettingsSection>

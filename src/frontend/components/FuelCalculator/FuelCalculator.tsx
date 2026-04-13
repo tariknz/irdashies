@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import {
   useSessionVisibility,
   useTelemetryValue,
@@ -17,8 +17,11 @@ import {
   FuelCalculatorEconomyPredict,
 } from './widgets/FuelCalculatorWidgets';
 import type { FuelCalculatorSettings, FuelCalculation } from './types';
-import type { LayoutNode } from '../Settings/types';
-import { DEFAULT_FUEL_LAYOUT_TREE } from './defaults';
+import type { LayoutNode } from '@irdashies/types';
+import {
+  DEFAULT_FUEL_LAYOUT_TREE,
+  defaultFuelCalculatorSettings,
+} from './defaults';
 
 type FuelCalculatorProps = Partial<FuelCalculatorSettings>;
 
@@ -49,20 +52,31 @@ const EMPTY_DATA: FuelCalculation = {
 };
 
 export const FuelCalculator = (props: FuelCalculatorProps) => {
-  const settings = props as FuelCalculatorSettings;
+  // Visual Edit Mode & Demo Mode
+  const { editMode, currentDashboard } = useDashboard();
+  const generalSettings = currentDashboard?.generalSettings;
+
+  // Read config from dashboard context (handles site preview where no props are passed)
+  const dashboardConfig = currentDashboard?.widgets?.find(
+    (w) => w.id === 'fuel' || w.type === 'fuel'
+  )?.config as Partial<FuelCalculatorSettings> | undefined;
+
+  const settings = {
+    ...defaultFuelCalculatorSettings,
+    ...dashboardConfig,
+    ...props,
+  } as FuelCalculatorSettings;
 
   const { fuelUnits, safetyMargin } = settings;
 
   const isSessionVisible = useSessionVisibility(settings.sessionVisibility);
 
-  // Visual Edit Mode & Demo Mode
-  const { editMode, currentDashboard } = useDashboard();
-  const generalSettings = currentDashboard?.generalSettings;
-
   // Derived Settings based on General linkage
-  const derivedCompactMode = settings.useGeneralCompactMode
-    ? (generalSettings?.compactMode ?? false)
-    : false;
+  // Use the full string so compact vs ultra can be distinguished downstream
+  const derivedCompactMode: 'off' | 'compact' | 'ultra' =
+    settings.useGeneralCompactMode
+      ? (generalSettings?.compactMode ?? 'off')
+      : 'off';
 
   const derivedFontStyles = useMemo(() => {
     if (!settings.useGeneralFontSize || !generalSettings?.fontSize) {
@@ -74,16 +88,22 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
       string,
       { label: number; value: number; bar: number }
     > = {
-      xs: { label: 8, value: 12, bar: 6 },
-      sm: { label: 10, value: 14, bar: 8 },
-      md: { label: 12, value: 18, bar: 10 },
-      lg: { label: 14, value: 22, bar: 12 },
-      xl: { label: 16, value: 26, bar: 14 },
-      '2xl': { label: 18, value: 30, bar: 16 },
-      '3xl': { label: 20, value: 34, bar: 18 },
+      xs: { label: 10, value: 11, bar: 9 },
+      sm: { label: 11, value: 12, bar: 10 },
+      md: { label: 12, value: 13, bar: 11 },
+      lg: { label: 13, value: 14, bar: 12 },
+      xl: { label: 14, value: 15, bar: 13 },
+      '2xl': { label: 15, value: 16, bar: 14 },
+      '3xl': { label: 16, value: 17, bar: 15 },
+      '4xl': { label: 17, value: 18, bar: 16 },
+      '5xl': { label: 18, value: 19, bar: 17 },
+      '6xl': { label: 19, value: 20, bar: 18 },
+      '7xl': { label: 20, value: 21, bar: 19 },
+      '8xl': { label: 21, value: 22, bar: 20 },
+      '9xl': { label: 22, value: 23, bar: 21 },
     };
 
-    const preset = sizeMap[generalSettings.fontSize] || sizeMap['sm'];
+    const preset = sizeMap[generalSettings.fontSize] ?? sizeMap['sm'];
 
     // Return a virtual style object that all widgets will use
     // We simulate that every widget requested via widgetId gets these same sizes
@@ -202,7 +222,7 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
       fuelUnits: fuelUnits,
       settings: settings,
       customStyles: widgetStyles,
-      isCompact: derivedCompactMode,
+      compactMode: derivedCompactMode,
     };
 
     switch (widgetId) {
@@ -264,7 +284,7 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
       const isHorizontalBox = node.direction === 'row';
       return (
         <div
-          className="flex-1 flex flex-col min-h-[50px] justify-center w-full"
+          className="flex-1 flex flex-col w-full"
           style={{ flexGrow: node.weight || 1 }}
         >
           <div
@@ -274,7 +294,7 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
               <div
                 key={widgetId}
                 data-widget-id={widgetId}
-                className="flex-1 min-w-0 flex flex-col justify-center w-full"
+                className="flex-1 min-w-0 flex flex-col w-full"
               >
                 {renderWidget(widgetId)}
               </div>
@@ -297,9 +317,6 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
     return null;
   };
 
-  // Background opacity configuration
-  const bgAlpha = (settings?.background?.opacity ?? 95) / 100;
-
   const currentFuelStatus = displayData.fuelStatus || 'safe';
   const showFuelStatusBorder = settings.showFuelStatusBorder ?? true;
 
@@ -310,42 +327,37 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
       : currentFuelStatus === 'danger'
         ? '#ef4444'
         : '#22c55e'
-    : 'rgba(71, 85, 105, 0.4)'; // Neutral inactive border
+    : 'transparent'; // Neutral inactive border
 
-  const shadowColorValue = showFuelStatusBorder
-    ? currentFuelStatus === 'caution'
+  const shadowColorValue =
+    currentFuelStatus === 'caution'
       ? 'rgba(249, 115, 22, 0.3)'
       : currentFuelStatus === 'danger'
         ? 'rgba(239, 68, 68, 0.3)'
-        : 'rgba(34, 197, 94, 0.3)'
-    : 'none';
+        : 'rgba(34, 197, 94, 0.3)';
 
-  const backgroundStyle: React.CSSProperties = {
-    fontFamily:
-      "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-  };
+  const borderWidth =
+    derivedCompactMode !== 'off' ? 'border border-transparent' : 'border-2';
+  const paddingClass = derivedCompactMode !== 'off' ? '' : 'p-2';
 
   return (
     <div
-      className="relative w-full h-full overflow-hidden"
+      className={`relative w-full flex flex-col ${borderWidth} box-border transition-colors duration-500 rounded-sm bg-slate-800/(--bg-opacity) overflow-hidden ${paddingClass}`}
       style={{
-        ...backgroundStyle,
+        fontFamily:
+          "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+        ['--bg-opacity' as string]: `${settings?.background?.opacity ?? 0}%`,
+        borderColor: borderColorValue,
+        boxShadow: showFuelStatusBorder
+          ? `0 0 15px ${shadowColorValue} inset`
+          : 'none',
       }}
     >
-      <div
-        className={`border-2 w-full h-full flex flex-col box-border px-3 transition-colors duration-500`}
-        style={{
-          backgroundColor: `rgba(30, 30, 50, ${bgAlpha})`,
-          borderColor: borderColorValue,
-          boxShadow: `0 0 15px ${shadowColorValue} inset`,
-        }}
-      >
-        {layoutTree ? (
-          <RecursiveWidgetRenderer node={layoutTree} />
-        ) : (
-          <div className="text-red-500">Layout Error</div>
-        )}
-      </div>
+      {layoutTree ? (
+        <RecursiveWidgetRenderer node={layoutTree} />
+      ) : (
+        <div className="text-red-500">Layout Error</div>
+      )}
     </div>
   );
 };

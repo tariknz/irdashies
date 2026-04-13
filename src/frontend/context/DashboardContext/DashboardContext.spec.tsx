@@ -22,6 +22,7 @@ const mockBridge: DashboardBridge = {
   setAnalyticsOptOut: vi.fn(),
   listProfiles: vi.fn().mockResolvedValue([]),
   createProfile: vi.fn(),
+  cloneProfile: vi.fn(),
   deleteProfile: vi.fn(),
   renameProfile: vi.fn(),
   switchProfile: vi.fn(),
@@ -31,6 +32,8 @@ const mockBridge: DashboardBridge = {
   exportDashboardToFile: vi.fn().mockResolvedValue(false),
   importDashboardFromFile: vi.fn().mockResolvedValue(null),
   setAutoStart: vi.fn(),
+  openLogFolder: vi.fn(),
+  exportLogFile: vi.fn().mockResolvedValue(false),
 };
 
 const TestComponent: React.FC = () => {

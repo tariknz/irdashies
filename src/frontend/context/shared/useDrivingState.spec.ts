@@ -15,17 +15,24 @@ describe('useDrivingState', () => {
 
   describe('actively driving scenarios', () => {
     it('should return true when on track and not in replay', () => {
-      vi.mocked(useTelemetryValue)
-        .mockImplementation((key: string) => {
-          switch (key) {
-            case 'IsOnTrack': return true;
-            case 'PlayerCarInPitStall': return false;
-            case 'CarIdxOnPitRoad': return false;
-            case 'IsInGarage': return false;
-            case 'IsReplayPlaying': return false;
-            default: return undefined;
-          }
-        });
+      vi.mocked(useTelemetryValue).mockImplementation((key: string) => {
+        switch (key) {
+          case 'IsOnTrack':
+            return true;
+          case 'PlayerCarInPitStall':
+            return false;
+          case 'CarIdxOnPitRoad':
+            return false;
+          case 'IsInGarage':
+            return false;
+          case 'IsGarageVisible':
+            return false;
+          case 'IsReplayPlaying':
+            return false;
+          default:
+            return undefined;
+        }
+      });
 
       const { result } = renderHook(() => useDrivingState());
 
@@ -34,21 +41,29 @@ describe('useDrivingState', () => {
       expect(useTelemetryValue).toHaveBeenCalledWith('PlayerCarInPitStall');
       expect(useTelemetryValue).toHaveBeenCalledWith('CarIdxOnPitRoad');
       expect(useTelemetryValue).toHaveBeenCalledWith('IsInGarage');
+      expect(useTelemetryValue).toHaveBeenCalledWith('IsGarageVisible');
       expect(useTelemetryValue).toHaveBeenCalledWith('IsReplayPlaying');
     });
 
     it('should return true when in pit stall and not in garage/replay', () => {
-      vi.mocked(useTelemetryValue)
-        .mockImplementation((key: string) => {
-          switch (key) {
-            case 'IsOnTrack': return false;
-            case 'PlayerCarInPitStall': return true;
-            case 'CarIdxOnPitRoad': return false;
-            case 'IsInGarage': return false;
-            case 'IsReplayPlaying': return false;
-            default: return undefined;
-          }
-        });
+      vi.mocked(useTelemetryValue).mockImplementation((key: string) => {
+        switch (key) {
+          case 'IsOnTrack':
+            return false;
+          case 'PlayerCarInPitStall':
+            return true;
+          case 'CarIdxOnPitRoad':
+            return false;
+          case 'IsInGarage':
+            return false;
+          case 'IsGarageVisible':
+            return false;
+          case 'IsReplayPlaying':
+            return false;
+          default:
+            return undefined;
+        }
+      });
 
       const { result } = renderHook(() => useDrivingState());
 
@@ -56,17 +71,24 @@ describe('useDrivingState', () => {
     });
 
     it('should return true when on pit road and not in garage/replay', () => {
-      vi.mocked(useTelemetryValue)
-        .mockImplementation((key: string) => {
-          switch (key) {
-            case 'IsOnTrack': return false;
-            case 'PlayerCarInPitStall': return false;
-            case 'CarIdxOnPitRoad': return true;
-            case 'IsInGarage': return false;
-            case 'IsReplayPlaying': return false;
-            default: return undefined;
-          }
-        });
+      vi.mocked(useTelemetryValue).mockImplementation((key: string) => {
+        switch (key) {
+          case 'IsOnTrack':
+            return false;
+          case 'PlayerCarInPitStall':
+            return false;
+          case 'CarIdxOnPitRoad':
+            return true;
+          case 'IsInGarage':
+            return false;
+          case 'IsGarageVisible':
+            return false;
+          case 'IsReplayPlaying':
+            return false;
+          default:
+            return undefined;
+        }
+      });
 
       const { result } = renderHook(() => useDrivingState());
 
@@ -74,17 +96,24 @@ describe('useDrivingState', () => {
     });
 
     it('should return true when on track and in pit stall simultaneously', () => {
-      vi.mocked(useTelemetryValue)
-        .mockImplementation((key: string) => {
-          switch (key) {
-            case 'IsOnTrack': return true;
-            case 'PlayerCarInPitStall': return true;
-            case 'CarIdxOnPitRoad': return false;
-            case 'IsInGarage': return false;
-            case 'IsReplayPlaying': return false;
-            default: return undefined;
-          }
-        });
+      vi.mocked(useTelemetryValue).mockImplementation((key: string) => {
+        switch (key) {
+          case 'IsOnTrack':
+            return true;
+          case 'PlayerCarInPitStall':
+            return true;
+          case 'CarIdxOnPitRoad':
+            return false;
+          case 'IsInGarage':
+            return false;
+          case 'IsGarageVisible':
+            return false;
+          case 'IsReplayPlaying':
+            return false;
+          default:
+            return undefined;
+        }
+      });
 
       const { result } = renderHook(() => useDrivingState());
 
@@ -94,17 +123,24 @@ describe('useDrivingState', () => {
 
   describe('non-driving scenarios', () => {
     it('should return false when in garage', () => {
-      vi.mocked(useTelemetryValue)
-        .mockImplementation((key: string) => {
-          switch (key) {
-            case 'IsOnTrack': return true;
-            case 'PlayerCarInPitStall': return false;
-            case 'CarIdxOnPitRoad': return false;
-            case 'IsInGarage': return true; // In garage
-            case 'IsReplayPlaying': return false;
-            default: return undefined;
-          }
-        });
+      vi.mocked(useTelemetryValue).mockImplementation((key: string) => {
+        switch (key) {
+          case 'IsOnTrack':
+            return true;
+          case 'PlayerCarInPitStall':
+            return false;
+          case 'CarIdxOnPitRoad':
+            return false;
+          case 'IsInGarage':
+            return true;
+          case 'IsGarageVisible':
+            return false;
+          case 'IsReplayPlaying':
+            return false;
+          default:
+            return undefined;
+        }
+      });
 
       const { result } = renderHook(() => useDrivingState());
 
@@ -112,17 +148,24 @@ describe('useDrivingState', () => {
     });
 
     it('should return false when watching replay', () => {
-      vi.mocked(useTelemetryValue)
-        .mockImplementation((key: string) => {
-          switch (key) {
-            case 'IsOnTrack': return true;
-            case 'PlayerCarInPitStall': return false;
-            case 'CarIdxOnPitRoad': return false;
-            case 'IsInGarage': return false;
-            case 'IsReplayPlaying': return true; // Watching replay
-            default: return undefined;
-          }
-        });
+      vi.mocked(useTelemetryValue).mockImplementation((key: string) => {
+        switch (key) {
+          case 'IsOnTrack':
+            return true;
+          case 'PlayerCarInPitStall':
+            return false;
+          case 'CarIdxOnPitRoad':
+            return false;
+          case 'IsInGarage':
+            return false;
+          case 'IsGarageVisible':
+            return false;
+          case 'IsReplayPlaying':
+            return true; // Watching replay
+          default:
+            return undefined;
+        }
+      });
 
       const { result } = renderHook(() => useDrivingState());
 
@@ -130,17 +173,24 @@ describe('useDrivingState', () => {
     });
 
     it('should return false when not on track, not in pit, not on pit road', () => {
-      vi.mocked(useTelemetryValue)
-        .mockImplementation((key: string) => {
-          switch (key) {
-            case 'IsOnTrack': return false;
-            case 'PlayerCarInPitStall': return false;
-            case 'CarIdxOnPitRoad': return false;
-            case 'IsInGarage': return false;
-            case 'IsReplayPlaying': return false;
-            default: return undefined;
-          }
-        });
+      vi.mocked(useTelemetryValue).mockImplementation((key: string) => {
+        switch (key) {
+          case 'IsOnTrack':
+            return false;
+          case 'PlayerCarInPitStall':
+            return false;
+          case 'CarIdxOnPitRoad':
+            return false;
+          case 'IsInGarage':
+            return false;
+          case 'IsGarageVisible':
+            return false;
+          case 'IsReplayPlaying':
+            return false;
+          default:
+            return undefined;
+        }
+      });
 
       const { result } = renderHook(() => useDrivingState());
 
@@ -158,17 +208,24 @@ describe('useDrivingState', () => {
 
   describe('edge cases', () => {
     it('should return false when in garage even if also in pit stall', () => {
-      vi.mocked(useTelemetryValue)
-        .mockImplementation((key: string) => {
-          switch (key) {
-            case 'IsOnTrack': return false;
-            case 'PlayerCarInPitStall': return true;
-            case 'CarIdxOnPitRoad': return false;
-            case 'IsInGarage': return true; // In garage overrides pit stall
-            case 'IsReplayPlaying': return false;
-            default: return undefined;
-          }
-        });
+      vi.mocked(useTelemetryValue).mockImplementation((key: string) => {
+        switch (key) {
+          case 'IsOnTrack':
+            return false;
+          case 'PlayerCarInPitStall':
+            return true;
+          case 'CarIdxOnPitRoad':
+            return false;
+          case 'IsInGarage':
+            return true; // In garage overrides pit stall
+          case 'IsGarageVisible':
+            return false;
+          case 'IsReplayPlaying':
+            return false;
+          default:
+            return undefined;
+        }
+      });
 
       const { result } = renderHook(() => useDrivingState());
 
@@ -176,17 +233,24 @@ describe('useDrivingState', () => {
     });
 
     it('should return false when watching replay even if on track', () => {
-      vi.mocked(useTelemetryValue)
-        .mockImplementation((key: string) => {
-          switch (key) {
-            case 'IsOnTrack': return true;
-            case 'PlayerCarInPitStall': return false;
-            case 'CarIdxOnPitRoad': return false;
-            case 'IsInGarage': return false;
-            case 'IsReplayPlaying': return true; // Replay overrides on track
-            default: return undefined;
-          }
-        });
+      vi.mocked(useTelemetryValue).mockImplementation((key: string) => {
+        switch (key) {
+          case 'IsOnTrack':
+            return true;
+          case 'PlayerCarInPitStall':
+            return false;
+          case 'CarIdxOnPitRoad':
+            return false;
+          case 'IsInGarage':
+            return false;
+          case 'IsGarageVisible':
+            return false;
+          case 'IsReplayPlaying':
+            return true; // Replay overrides on track
+          default:
+            return undefined;
+        }
+      });
 
       const { result } = renderHook(() => useDrivingState());
 
@@ -194,17 +258,24 @@ describe('useDrivingState', () => {
     });
 
     it('should handle mixed boolean and undefined values correctly', () => {
-      vi.mocked(useTelemetryValue)
-        .mockImplementation((key: string) => {
-          switch (key) {
-            case 'IsOnTrack': return undefined;
-            case 'PlayerCarInPitStall': return true;
-            case 'CarIdxOnPitRoad': return undefined;
-            case 'IsInGarage': return false;
-            case 'IsReplayPlaying': return false;
-            default: return undefined;
-          }
-        });
+      vi.mocked(useTelemetryValue).mockImplementation((key: string) => {
+        switch (key) {
+          case 'IsOnTrack':
+            return undefined;
+          case 'PlayerCarInPitStall':
+            return true;
+          case 'CarIdxOnPitRoad':
+            return undefined;
+          case 'IsInGarage':
+            return false;
+          case 'IsGarageVisible':
+            return false;
+          case 'IsReplayPlaying':
+            return false;
+          default:
+            return undefined;
+        }
+      });
 
       const { result } = renderHook(() => useDrivingState());
 
@@ -222,8 +293,9 @@ describe('useDrivingState', () => {
       expect(useTelemetryValue).toHaveBeenCalledWith('PlayerCarInPitStall');
       expect(useTelemetryValue).toHaveBeenCalledWith('CarIdxOnPitRoad');
       expect(useTelemetryValue).toHaveBeenCalledWith('IsInGarage');
+      expect(useTelemetryValue).toHaveBeenCalledWith('IsGarageVisible');
       expect(useTelemetryValue).toHaveBeenCalledWith('IsReplayPlaying');
-      expect(useTelemetryValue).toHaveBeenCalledTimes(5);
+      expect(useTelemetryValue).toHaveBeenCalledTimes(6);
     });
   });
 });
