@@ -98,6 +98,12 @@ export const SectorDeltaSettings = () => {
                     handleConfigChange({ decimalPlaces: parseInt(v) })
                   }
                 />
+                <SettingToggleRow
+                  title="Show ghost lap"
+                  description="Show ghost lap delta row when a ghost lap is loaded."
+                  enabled={settings.config.showGhostLap ?? true}
+                  onToggle={(v) => handleConfigChange({ showGhostLap: v })}
+                />
               </SettingsSection>
             )}
 

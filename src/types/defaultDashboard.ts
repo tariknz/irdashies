@@ -1116,6 +1116,7 @@ export const defaultDashboard: {
       config: {
         background: { opacity: 80 },
         decimalPlaces: 3,
+        showGhostLap: true,
         showOnlyWhenOnTrack: true,
         sessionVisibility: {
           race: true,

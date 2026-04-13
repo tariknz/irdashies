@@ -375,6 +375,81 @@ describe('SectorTimingStore.tick', () => {
     // currentSectorIdx unchanged from first tick
     expect(state.currentSectorIdx).toBe(3);
   });
+
+  it('does NOT reset lapStarted on slow forward movement (25 Hz real-session fix)', () => {
+    // At ~25 Hz on a typical road course, per-tick LapDistPct delta is ~0.0003,
+    // which is below the old MIN_PROGRESS (0.0005). The fix ensures slow forward
+    // movement never invalidates an in-progress lap.
+    useSectorTimingStore.getState().resetLap(); // lapStarted = true
+    useSectorTimingStore.getState().tick(0.01, 100, true); // first tick, sector 0
+    // Simulate several 25 Hz ticks with very small (but positive) deltas
+    useSectorTimingStore.getState().tick(0.0103, 100.04, true); // +0.0003
+    useSectorTimingStore.getState().tick(0.0106, 100.08, true); // +0.0003
+    useSectorTimingStore.getState().tick(0.0109, 100.12, true); // +0.0003
+    expect(useSectorTimingStore.getState().lapStarted).toBe(true);
+  });
+
+  it('records sector times at 25 Hz update rate after S/F crossing', () => {
+    // Simulate a real session: wrap-around sets lapStarted=true, then small-delta
+    // ticks should still allow sector crossings to be detected and recorded.
+    const store = useSectorTimingStore.getState();
+    // Start in last sector (sector 5, pct >= 0.829332)
+    store.tick(0.9, 50, true);
+    // Cross S/F line (wrap-around) → lapStarted = true
+    store.tick(0.01, 60, true);
+    expect(useSectorTimingStore.getState().lapStarted).toBe(true);
+
+    // Simulate 25 Hz ticks with small deltas (real-world road course speed)
+    // Advance slowly through sector 0 until sector 1 boundary (0.184456)
+    const state0 = useSectorTimingStore.getState();
+    let t = 60;
+    let pct = 0.01;
+    while (pct < 0.19) {
+      pct += 0.0003; // ~25 Hz at typical road course speed
+      t += 0.04;
+      useSectorTimingStore.getState().tick(pct, t, true);
+    }
+
+    const state = useSectorTimingStore.getState();
+    // lapStarted must still be true — slow movement should not invalidate it
+    expect(state.lapStarted).toBe(true);
+    // Sector 0 must have been recorded when crossing into sector 1
+    expect(state.sessionBestSectorTimes[0]).not.toBeNull();
+    expect(state.currentSectorIdx).toBe(1);
+    void state0; // suppress unused variable warning
+  });
+
+  it('preserves previous lap sector times at S/F crossing so sectors not yet reached show last-lap values', () => {
+    // Complete a lap with known sector times, then cross S/F and verify
+    // that previousLapSectorTimes holds the completed-lap values while
+    // currentLapSectorTimes is reset to null.
+    useSectorTimingStore.getState().setSectors([
+      { SectorNum: 0, SectorStartPct: 0 },
+      { SectorNum: 1, SectorStartPct: 0.4 },
+      { SectorNum: 2, SectorStartPct: 0.7 },
+    ]);
+    useSectorTimingStore.getState().resetLap();
+
+    // Sector 0: 0.01 → 0.45 at t=100→110 (10s)
+    useSectorTimingStore.getState().tick(0.01, 100, true);
+    useSectorTimingStore.getState().tick(0.45, 110, true); // completes sector 0
+
+    // Sector 1: 0.45 → 0.75 at t=110→125 (15s)
+    useSectorTimingStore.getState().tick(0.75, 125, true); // completes sector 1
+
+    // Sector 2 (last): cross S/F at t=145 (20s for sector 2)
+    useSectorTimingStore.getState().tick(0.05, 145, true); // wrap-around
+
+    const state = useSectorTimingStore.getState();
+    // Current lap starts fresh
+    expect(state.currentLapSectorTimes[0]).toBeNull();
+    expect(state.currentLapSectorTimes[1]).toBeNull();
+    expect(state.currentLapSectorTimes[2]).toBeNull();
+    // Previous lap times are preserved
+    expect(state.previousLapSectorTimes[0]).toBeCloseTo(10);
+    expect(state.previousLapSectorTimes[1]).toBeCloseTo(15);
+    expect(state.previousLapSectorTimes[2]).toBeCloseTo(20);
+  });
 });
 
 // ---------------------------------------------------------------------------

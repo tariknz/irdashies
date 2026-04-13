@@ -27,6 +27,8 @@ interface ReferenceRegistryState {
   persistedLaps: Map<number, ReferenceLap>;
   seriesId: number | null;
   trackId: number | null;
+  /** Incremented each time persisted laps finish loading so subscribers re-run. */
+  persistedLapsVersion: number;
 
   initialize: (
     bridge: ReferenceLapBridge,
@@ -58,6 +60,7 @@ export const useReferenceLapStore = create<ReferenceRegistryState>(
     persistedLaps: new Map(),
     seriesId: null,
     trackId: null,
+    persistedLapsVersion: 0,
 
     initialize: async (bridge, seriesId, trackId, classList) => {
       set({ seriesId, trackId });
@@ -82,10 +85,12 @@ export const useReferenceLapStore = create<ReferenceRegistryState>(
         })
       );
 
-      // Mutate in place to avoid triggering Zustand subscriptions
+      // Mutate in place to avoid triggering Zustand subscriptions on each lap,
+      // then fire a single notification so hooks re-run once all laps are ready.
       results.forEach(({ classId, lap }) => {
         if (lap) persistedLaps.set(classId, lap);
       });
+      set((s) => ({ persistedLapsVersion: s.persistedLapsVersion + 1 }));
     },
 
     collectLapData: (

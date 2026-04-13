@@ -510,6 +510,7 @@ export interface SlowCarAheadConfig {
 export interface SectorDeltaConfig {
   background: { opacity: number };
   decimalPlaces: number;
+  showGhostLap: boolean;
   showOnlyWhenOnTrack: boolean;
   sessionVisibility: SessionVisibilitySettings;
 }
