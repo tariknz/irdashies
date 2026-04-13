@@ -79,6 +79,7 @@ export const Standings = () => {
       className={`w-full bg-slate-800/(--bg-opacity) rounded-sm ${!isCompact ? 'p-2' : ''} text-white overflow-hidden`}
       style={{
         ['--bg-opacity' as string]: `${settings?.background?.opacity ?? 0}%`,
+        zoom: `${settings?.stylingOptions?.size ?? 100}%`,
       }}
     >
       <TitleBar titleBarSettings={settings?.titleBar} />
@@ -247,7 +248,9 @@ export const Standings = () => {
                     </Fragment>
                   );
                 })}
-                {standings.slice(index + 1).some(([, content]) => content.length > 0) &&
+                {standings
+                  .slice(index + 1)
+                  .some(([, content]) => content.length > 0) &&
                   !isCompact && (
                     <tr>
                       <td colSpan={100} className="h-2"></td>
