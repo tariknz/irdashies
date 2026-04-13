@@ -224,8 +224,6 @@ export interface TrackMapConfig {
   styling?: { isMinimalTrack?: boolean; isMinimalCar?: boolean };
   sectorColoring?: {
     enabled: boolean;
-    /** What the green threshold compares against */
-    comparison: 'sessionBest' | 'allTimeBest';
   };
 }
 
@@ -509,10 +507,18 @@ export interface SlowCarAheadConfig {
 
 export interface SectorDeltaConfig {
   background: { opacity: number };
-  decimalPlaces: number;
+  timeFormat: TimeFormat;
   showGhostLap: boolean;
   showOnlyWhenOnTrack: boolean;
   sessionVisibility: SessionVisibilitySettings;
+  /**
+   * Custom color thresholds as percentages of session best.
+   * Omit to use defaults (green: 0.5%, yellow: 1.0%).
+   */
+  thresholds?: {
+    green: number; // e.g. 0.5 means within 0.5% → green
+    yellow: number; // e.g. 1.0 means within 1.0% → yellow; above = red
+  };
 }
 
 // ===========================

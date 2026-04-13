@@ -10,8 +10,8 @@
  * Crossing detection:
  *   Compares current LapDistPct against sorted sector boundaries. When the
  *   player moves from one sector's range into the next (including the wrap at
- *   S/F line), the time delta is recorded and compared against session/all-time
- *   bests to produce a color.
+ *   S/F line), the time delta is recorded and compared against the session best
+ *   to produce a color.
  *
  * Lap start protection:
  *   Sector times are only recorded after the player crosses the S/F line
@@ -20,10 +20,10 @@
  *   S/F crossing before timing resumes.
  *
  * Color scheme (standard racing timing colours):
- *   purple  — all-time personal best for this sector
- *   green   — session best (not all-time)
- *   yellow  — within YELLOW_THRESHOLD seconds of session best
- *   red     — more than YELLOW_THRESHOLD slower than session best
+ *   purple  — session best for this sector
+ *   green   — within 0.5% of session best
+ *   yellow  — 0.5–1% slower than session best
+ *   red     — more than 1% slower than session best
  *   default — no comparison data yet
  */
 
@@ -66,35 +66,37 @@ interface SectorTimingState {
 
   // Per-sector timing results (null = not yet completed)
   sessionBestSectorTimes: (number | null)[];
-  allTimeBestSectorTimes: (number | null)[];
 
   // Colors to display for each sector (index = sector number)
   sectorColors: SectorColor[];
 
+  // Active color thresholds (fractions of session best, e.g. 0.005 = 0.5%)
+  greenThreshold: number;
+  yellowThreshold: number;
+
   // Called each telemetry tick with the player's current position and time
   tick: (lapDistPct: number, sessionTime: number, isOnTrack: boolean) => void;
 
+  // Update color thresholds and recompute existing sector colors immediately.
+  setThresholds: (green: number, yellow: number) => void;
+
   // Reset all timing data (e.g. on new session or track change)
   reset: () => void;
-  // Reset current-lap state, keep session/all-time bests. Sets lapStarted=true
+  // Reset current-lap state, keep session bests. Sets lapStarted=true
   // so the next sector crossing will be recorded (use for clean lap resets).
   resetLap: () => void;
   // Mark lap as invalid — requires S/F crossing before timing resumes.
   // Call when the player goes off-track or rejoins mid-track.
   invalidateLap: () => void;
-  // Clear all-time best sector times and reset sector colors to default.
-  clearAllTimeBests: () => void;
 }
 
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
 
-/**
- * Sector time comparison — "yellow" if within this many seconds of session best.
- * Beyond this threshold the sector is "red".
- */
-const YELLOW_THRESHOLD_SECONDS = 0.5;
+/** Default sector color thresholds (as fractions of session best). */
+export const DEFAULT_GREEN_THRESHOLD = 0.005; // 0.5%
+export const DEFAULT_YELLOW_THRESHOLD = 0.01; // 1.0%
 
 /**
  * Minimum LapDistPct movement required per tick to trigger a sector-crossing
@@ -137,19 +139,24 @@ export function getSectorIdx(lapDistPct: number, sectors: Sector[]): number {
 }
 
 /**
- * Assign a performance color based on sector time vs. session/all-time bests.
+ * Assign a performance color based on sector time vs. session best.
+ *   purple — equals or beats session best
+ *   green  — within greenThreshold (default 0.5%) of session best
+ *   yellow — within yellowThreshold (default 1%) of session best
+ *   red    — more than yellowThreshold slower than session best
  */
 export function computeSectorColor(
   time: number,
   sessionBest: number | null,
-  allTimeBest: number | null
+  greenThreshold = DEFAULT_GREEN_THRESHOLD,
+  yellowThreshold = DEFAULT_YELLOW_THRESHOLD
 ): SectorColor {
-  if (allTimeBest !== null && time <= allTimeBest) return 'purple';
-  if (sessionBest !== null && time <= sessionBest) return 'green';
-  if (sessionBest !== null && time - sessionBest <= YELLOW_THRESHOLD_SECONDS)
-    return 'yellow';
-  if (sessionBest !== null) return 'red';
-  return 'default';
+  if (sessionBest === null) return 'default';
+  if (time <= sessionBest) return 'purple';
+  const ratio = (time - sessionBest) / sessionBest;
+  if (ratio <= greenThreshold) return 'green';
+  if (ratio <= yellowThreshold) return 'yellow';
+  return 'red';
 }
 
 // ---------------------------------------------------------------------------
@@ -163,10 +170,11 @@ export const useSectorTimingStore = create<SectorTimingState>((set, get) => ({
   lastLapDistPct: -1,
   lapStarted: false,
   sessionBestSectorTimes: [],
-  allTimeBestSectorTimes: [],
   sectorColors: [],
   currentLapSectorTimes: [],
   previousLapSectorTimes: [],
+  greenThreshold: DEFAULT_GREEN_THRESHOLD,
+  yellowThreshold: DEFAULT_YELLOW_THRESHOLD,
 
   setSectors: (sectors: Sector[]) => {
     const sorted = [...sectors].sort(
@@ -185,7 +193,6 @@ export const useSectorTimingStore = create<SectorTimingState>((set, get) => ({
       sectors: sorted,
       sectorColors: sorted.map(() => 'default' as SectorColor),
       sessionBestSectorTimes: sorted.map(() => null),
-      allTimeBestSectorTimes: sorted.map(() => null),
       currentLapSectorTimes: sorted.map(() => null),
       previousLapSectorTimes: sorted.map(() => null),
       currentSectorIdx: 0,
@@ -203,6 +210,8 @@ export const useSectorTimingStore = create<SectorTimingState>((set, get) => ({
       sectorEntryTime,
       lastLapDistPct,
       lapStarted,
+      greenThreshold,
+      yellowThreshold,
     } = state;
 
     if (sectors.length === 0 || !isOnTrack) return;
@@ -231,7 +240,6 @@ export const useSectorTimingStore = create<SectorTimingState>((set, get) => ({
 
     if (isWrapAround) {
       const newSessionBests = [...state.sessionBestSectorTimes];
-      const newAllTimeBests = [...state.allTimeBestSectorTimes];
       // Keep previous lap's colors — they update sector-by-sector as each
       // sector is completed on the new lap. This means: sectors already crossed
       // on the new lap show current performance; sectors not yet reached show
@@ -248,16 +256,12 @@ export const useSectorTimingStore = create<SectorTimingState>((set, get) => ({
           sectorTime < (newSessionBests[completedIdx] as number)
         )
           newSessionBests[completedIdx] = sectorTime;
-        if (
-          newAllTimeBests[completedIdx] === null ||
-          sectorTime < (newAllTimeBests[completedIdx] as number)
-        )
-          newAllTimeBests[completedIdx] = sectorTime;
 
         newColors[completedIdx] = computeSectorColor(
           sectorTime,
           newSessionBests[completedIdx],
-          newAllTimeBests[completedIdx]
+          greenThreshold,
+          yellowThreshold
         );
       }
 
@@ -274,7 +278,6 @@ export const useSectorTimingStore = create<SectorTimingState>((set, get) => ({
         sectorEntryTime: sessionTime,
         lastLapDistPct: lapDistPct,
         sessionBestSectorTimes: newSessionBests,
-        allTimeBestSectorTimes: newAllTimeBests,
         sectorColors: newColors,
         previousLapSectorTimes: completedLapTimes,
         currentLapSectorTimes: sectors.map(() => null),
@@ -312,27 +315,21 @@ export const useSectorTimingStore = create<SectorTimingState>((set, get) => ({
     const completedIdx = currentSectorIdx;
 
     const newSessionBests = [...state.sessionBestSectorTimes];
-    const newAllTimeBests = [...state.allTimeBestSectorTimes];
 
-    // Update bests before computing color so the first completion
-    // is correctly identified as a new personal best (purple).
+    // Update session best before computing color so the first completion
+    // is correctly identified as a new session best (purple).
     if (
       newSessionBests[completedIdx] === null ||
       sectorTime < (newSessionBests[completedIdx] as number)
     ) {
       newSessionBests[completedIdx] = sectorTime;
     }
-    if (
-      newAllTimeBests[completedIdx] === null ||
-      sectorTime < (newAllTimeBests[completedIdx] as number)
-    ) {
-      newAllTimeBests[completedIdx] = sectorTime;
-    }
 
     const color = computeSectorColor(
       sectorTime,
       newSessionBests[completedIdx],
-      newAllTimeBests[completedIdx]
+      greenThreshold,
+      yellowThreshold
     );
 
     // Update colors — completed sector gets its color, others keep theirs
@@ -347,9 +344,28 @@ export const useSectorTimingStore = create<SectorTimingState>((set, get) => ({
       currentSectorIdx: newSectorIdx,
       sectorEntryTime: sessionTime,
       sessionBestSectorTimes: newSessionBests,
-      allTimeBestSectorTimes: newAllTimeBests,
       sectorColors: newColors,
       currentLapSectorTimes: newCurrentLapTimes,
+    });
+  },
+
+  setThresholds: (green: number, yellow: number) => {
+    const state = get();
+    if (state.greenThreshold === green && state.yellowThreshold === yellow)
+      return;
+    // Recompute existing sector colors with the new thresholds so the display
+    // updates immediately without waiting for the next sector crossing.
+    const newColors = state.sectorColors.map((existing, i) => {
+      const time =
+        state.currentLapSectorTimes[i] ?? state.previousLapSectorTimes[i];
+      const sessionBest = state.sessionBestSectorTimes[i];
+      if (time == null) return existing;
+      return computeSectorColor(time, sessionBest, green, yellow);
+    });
+    set({
+      greenThreshold: green,
+      yellowThreshold: yellow,
+      sectorColors: newColors,
     });
   },
 
@@ -360,7 +376,6 @@ export const useSectorTimingStore = create<SectorTimingState>((set, get) => ({
       lastLapDistPct: -1,
       lapStarted: false,
       sessionBestSectorTimes: state.sectors.map(() => null),
-      allTimeBestSectorTimes: state.sectors.map(() => null),
       sectorColors: state.sectors.map(() => 'default' as SectorColor),
       currentLapSectorTimes: state.sectors.map(() => null),
       previousLapSectorTimes: state.sectors.map(() => null),
@@ -382,12 +397,6 @@ export const useSectorTimingStore = create<SectorTimingState>((set, get) => ({
       lapStarted: false,
       lastLapDistPct: -1,
     }),
-
-  clearAllTimeBests: () =>
-    set((state) => ({
-      allTimeBestSectorTimes: state.sectors.map(() => null),
-      sectorColors: state.sectors.map(() => 'default' as SectorColor),
-    })),
 }));
 
 // ---------------------------------------------------------------------------

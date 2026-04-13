@@ -1,9 +1,11 @@
-import React from 'react';
-import { useSectorDeltas } from '@irdashies/context';
+import React, { useEffect } from 'react';
+import { useSectorDeltas, useSectorTimingStore } from '@irdashies/context';
 import { useSessionVisibility, useTelemetryValue } from '@irdashies/context';
 import type { SectorDeltaConfig } from '@irdashies/types';
+import type { TimeFormat } from '@irdashies/types';
 import type { SectorColor } from '@irdashies/context';
 import { useReferenceLapSectorTimes } from './hooks/useReferenceLapSectorTimes';
+import { formatTime } from '@irdashies/utils/time';
 
 type SectorDeltaProps = SectorDeltaConfig;
 
@@ -27,16 +29,23 @@ const SECTOR_TEXT: Record<SectorColor | 'current', string> = {
 
 const GHOST_THRESHOLD = 0.5;
 
+function timeFormatToDecimalPlaces(timeFormat: TimeFormat): number {
+  if (timeFormat === 'full' || timeFormat === 'seconds-full') return 3;
+  if (timeFormat === 'mixed' || timeFormat === 'seconds-mixed') return 1;
+  return 0;
+}
+
 function formatDelta(
   lapTime: number | null,
   bestTime: number | null,
-  decimalPlaces: number
+  timeFormat: TimeFormat
 ): string {
   if (lapTime === null) return '--';
-  if (bestTime === null) return lapTime.toFixed(decimalPlaces);
+  if (bestTime === null) return formatTime(lapTime, timeFormat);
   const delta = lapTime - bestTime;
   const sign = delta >= 0 ? '+' : '';
-  return `${sign}${delta.toFixed(decimalPlaces)}`;
+  const dp = timeFormatToDecimalPlaces(timeFormat);
+  return `${sign}${delta.toFixed(dp)}`;
 }
 
 function ghostColor(
@@ -54,8 +63,9 @@ export const SectorDelta = ({
   background,
   showOnlyWhenOnTrack,
   sessionVisibility,
-  decimalPlaces = 3,
+  timeFormat = 'full',
   showGhostLap = true,
+  thresholds,
 }: SectorDeltaProps): React.JSX.Element | null => {
   const {
     sectors,
@@ -67,6 +77,13 @@ export const SectorDelta = ({
   } = useSectorDeltas();
   const isOnTrack = useTelemetryValue('IsOnTrack');
   const { refSectorTimes, hasGhostLap } = useReferenceLapSectorTimes();
+
+  const setThresholds = useSectorTimingStore((s) => s.setThresholds);
+  useEffect(() => {
+    const green = (thresholds?.green ?? 0.5) / 100;
+    const yellow = (thresholds?.yellow ?? 1.0) / 100;
+    setThresholds(green, yellow);
+  }, [thresholds, setThresholds]);
 
   if (!useSessionVisibility(sessionVisibility)) return null;
   if (showOnlyWhenOnTrack && !isOnTrack) return null;
@@ -92,7 +109,7 @@ export const SectorDelta = ({
           const delta = formatDelta(
             displayTime,
             sessionBestSectorTimes[i] ?? null,
-            decimalPlaces
+            timeFormat
           );
           return (
             <div
@@ -132,7 +149,7 @@ export const SectorDelta = ({
             const delta = formatDelta(
               displayTime,
               refSectorTimes[i] ?? null,
-              decimalPlaces
+              timeFormat
             );
             return (
               <div

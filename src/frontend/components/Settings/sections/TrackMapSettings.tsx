@@ -5,7 +5,7 @@ import {
   SettingsTabType,
   getWidgetDefaultConfig,
 } from '@irdashies/types';
-import { useDashboard, useSectorTimingStore } from '@irdashies/context';
+import { useDashboard } from '@irdashies/context';
 import { TabButton } from '../components/TabButton';
 import { SessionVisibility } from '../components/SessionVisibility';
 import { SettingsSection } from '../components/SettingSection';
@@ -13,8 +13,6 @@ import { SettingToggleRow } from '../components/SettingToggleRow';
 import { SettingSliderRow } from '../components/SettingSliderRow';
 import { SettingButtonGroupRow } from '../components/SettingButtonGroupRow';
 import { SettingDivider } from '../components/SettingDivider';
-import { SettingActionButton } from '../components/SettingActionButton';
-import { ConfirmDialog } from '../components/ConfirmDialog';
 
 const SETTING_ID = 'map';
 
@@ -33,11 +31,6 @@ export const TrackMapSettings = () => {
       (savedSettings?.config as TrackMapWidgetSettings['config']) ??
       defaultConfig,
   });
-
-  const clearAllTimeBests = useSectorTimingStore((s) => s.clearAllTimeBests);
-  const resetSectorTiming = useSectorTimingStore((s) => s.reset);
-  const [showClearConfirm, setShowClearConfirm] = useState(false);
-  const [showClearCurrentConfirm, setShowClearCurrentConfirm] = useState(false);
 
   // Tab state with persistence
   const [activeTab, setActiveTab] = useState<SettingsTabType>(
@@ -133,79 +126,15 @@ export const TrackMapSettings = () => {
 
                 <SettingToggleRow
                   title="Sector Colors"
-                  description="Color each sector based on your lap time performance (purple: PB, green: session best, yellow: near best, red: slower)"
+                  description="Color each sector based on your session performance (purple: session best, green: within 0.5%, yellow: within 1%, red: 1%+ off pace)"
                   enabled={settings.config.sectorColoring?.enabled ?? false}
                   onToggle={(newValue) =>
                     handleConfigChange({
                       sectorColoring: {
-                        ...(settings.config.sectorColoring ?? {
-                          comparison: 'sessionBest',
-                        }),
                         enabled: newValue,
                       },
                     })
                   }
-                />
-
-                {settings.config.sectorColoring?.enabled && (
-                  <SettingsSection>
-                    <SettingButtonGroupRow<'sessionBest' | 'allTimeBest'>
-                      title="Best Comparison"
-                      value={
-                        settings.config.sectorColoring.comparison ??
-                        'sessionBest'
-                      }
-                      options={[
-                        { label: 'Session Best', value: 'sessionBest' },
-                        { label: 'All-Time Best', value: 'allTimeBest' },
-                      ]}
-                      onChange={(v) =>
-                        handleConfigChange({
-                          sectorColoring: {
-                            enabled: true,
-                            ...settings.config.sectorColoring,
-                            comparison: v,
-                          },
-                        })
-                      }
-                    />
-                    <SettingActionButton
-                      label="Clear All"
-                      onClick={() => setShowClearConfirm(true)}
-                    />
-                    <SettingActionButton
-                      label="Clear Current Car/Track"
-                      onClick={() => setShowClearCurrentConfirm(true)}
-                    />
-                  </SettingsSection>
-                )}
-
-                <ConfirmDialog
-                  isOpen={showClearConfirm}
-                  title="Clear All Sector Data"
-                  message="This will clear all all-time best sector times for the current track. Session bests for this session will be kept. Are you sure?"
-                  confirmText="Clear"
-                  cancelText="Cancel"
-                  variant="warning"
-                  onConfirm={() => {
-                    clearAllTimeBests();
-                    setShowClearConfirm(false);
-                  }}
-                  onCancel={() => setShowClearConfirm(false)}
-                />
-
-                <ConfirmDialog
-                  isOpen={showClearCurrentConfirm}
-                  title="Clear Current Car/Track"
-                  message="This will reset all sector timing data for the current car and track, including session bests and all-time bests. Are you sure?"
-                  confirmText="Clear"
-                  cancelText="Cancel"
-                  variant="warning"
-                  onConfirm={() => {
-                    resetSectorTiming();
-                    setShowClearCurrentConfirm(false);
-                  }}
-                  onCancel={() => setShowClearCurrentConfirm(false)}
                 />
 
                 <SettingDivider />

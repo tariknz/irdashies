@@ -55,7 +55,6 @@ function SectorStoreSeeder({
       sectorColors,
       currentLapSectorTimes,
       sessionBestSectorTimes,
-      allTimeBestSectorTimes: MOCK_SECTORS.map(() => null),
       lapStarted: true,
       currentSectorIdx: 2,
       sectorEntryTime: 0,

@@ -52,7 +52,7 @@ export const SectorColoring: Story = {
   decorators: [
     TelemetryDecoratorWithConfig(undefined, {
       map: {
-        sectorColoring: { enabled: true, comparison: 'sessionBest' },
+        sectorColoring: { enabled: true },
       },
     }),
   ],
@@ -62,7 +62,7 @@ export const SectorColoringGT3: Story = {
   decorators: [
     TelemetryDecoratorWithConfig('/test-data/1732355190142', {
       map: {
-        sectorColoring: { enabled: true, comparison: 'sessionBest' },
+        sectorColoring: { enabled: true },
       },
     }),
   ],

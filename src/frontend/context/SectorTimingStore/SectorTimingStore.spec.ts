@@ -58,30 +58,32 @@ describe('getSectorIdx', () => {
 // ---------------------------------------------------------------------------
 
 describe('computeSectorColor', () => {
-  it('returns default when no bests exist', () => {
-    expect(computeSectorColor(25, null, null)).toBe('default');
+  it('returns default when no session best exists', () => {
+    expect(computeSectorColor(25, null)).toBe('default');
   });
 
-  it('returns purple when time equals all-time best', () => {
-    expect(computeSectorColor(25, 25, 25)).toBe('purple');
+  it('returns purple when time equals session best', () => {
+    expect(computeSectorColor(25, 25)).toBe('purple');
   });
 
-  it('returns purple when time is better than all-time best', () => {
-    expect(computeSectorColor(24.9, 25, 25)).toBe('purple');
+  it('returns purple when time beats session best', () => {
+    expect(computeSectorColor(24.9, 25)).toBe('purple');
   });
 
-  it('returns green when time beats session best but not all-time', () => {
-    expect(computeSectorColor(24.9, 25, 24)).toBe('green');
+  it('returns green when within 0.5% of session best', () => {
+    // 0.5% of 25s = 0.125s → 25.124 is within range
+    expect(computeSectorColor(25.124, 25)).toBe('green');
   });
 
-  it('returns yellow when within 0.5s of session best', () => {
-    expect(computeSectorColor(25.4, 25, null)).toBe('yellow');
-    expect(computeSectorColor(25.49, 25, null)).toBe('yellow');
+  it('returns yellow when between 0.5% and 1% of session best', () => {
+    // 0.5% of 25s = 0.125s, 1% of 25s = 0.25s
+    expect(computeSectorColor(25.2, 25)).toBe('yellow');
   });
 
-  it('returns red when more than 0.5s slower than session best', () => {
-    expect(computeSectorColor(25.51, 25, null)).toBe('red');
-    expect(computeSectorColor(30, 25, null)).toBe('red');
+  it('returns red when more than 1% slower than session best', () => {
+    // 1% of 25s = 0.25s → 25.26 is over threshold
+    expect(computeSectorColor(25.26, 25)).toBe('red');
+    expect(computeSectorColor(30, 25)).toBe('red');
   });
 });
 
@@ -273,31 +275,31 @@ describe('SectorTimingStore.tick', () => {
 
     const updated = useSectorTimingStore.getState();
     expect(updated.currentSectorIdx).toBe(1);
-    // First completion — it IS the all-time best, so color should be 'purple'
+    // First completion — it IS the session best, so color should be 'purple'
     expect(updated.sectorColors[0]).toBe('purple');
     // Session best should now be set for sector 0
     expect(updated.sessionBestSectorTimes[0]).toBeCloseTo(10);
   });
 
-  it('turns purple when beating the previous all-time best', () => {
+  it('turns purple when beating the previous session best', () => {
     const store = useSectorTimingStore.getState();
-    // Lap 1: complete sector 0 in 10s — sets all-time best to 10s
+    // Lap 1: complete sector 0 in 10s — sets session best to 10s
     useSectorTimingStore.getState().resetLap();
     store.tick(0.01, 100, true);
-    store.tick(0.19, 110, true); // purple (first completion = new all-time best)
+    store.tick(0.19, 110, true); // purple (first completion = new session best)
 
-    // Reset lap (keeps session/all-time bests)
+    // Reset lap (keeps session bests)
     useSectorTimingStore.getState().resetLap();
     useSectorTimingStore.getState().tick(0.01, 200, true);
-    // Lap 2: sector 0 in 9s — beats all-time best → purple
+    // Lap 2: sector 0 in 9s — beats session best → purple
     useSectorTimingStore.getState().tick(0.19, 209, true);
 
     const updated = useSectorTimingStore.getState();
     expect(updated.sectorColors[0]).toBe('purple');
-    expect(updated.allTimeBestSectorTimes[0]).toBeCloseTo(9);
+    expect(updated.sessionBestSectorTimes[0]).toBeCloseTo(9);
   });
 
-  it('turns red when significantly slower than session best', () => {
+  it('turns red when more than 1% slower than session best', () => {
     const store = useSectorTimingStore.getState();
     // Lap 1: sector 0 in 10s
     useSectorTimingStore.getState().resetLap();
@@ -306,14 +308,14 @@ describe('SectorTimingStore.tick', () => {
 
     useSectorTimingStore.getState().resetLap();
     useSectorTimingStore.getState().tick(0.01, 200, true);
-    // Lap 2: sector 0 in 11s (1s slower — above 0.5s threshold)
-    useSectorTimingStore.getState().tick(0.19, 211, true);
+    // Lap 2: sector 0 in 10.15s (1.5% slower — above 1% threshold)
+    useSectorTimingStore.getState().tick(0.19, 210.15, true);
 
     const updated = useSectorTimingStore.getState();
     expect(updated.sectorColors[0]).toBe('red');
   });
 
-  it('turns yellow when within threshold of session best', () => {
+  it('turns yellow when between 0.5% and 1% slower than session best', () => {
     const store = useSectorTimingStore.getState();
     // Lap 1: sector 0 in 10s
     useSectorTimingStore.getState().resetLap();
@@ -322,8 +324,8 @@ describe('SectorTimingStore.tick', () => {
 
     useSectorTimingStore.getState().resetLap();
     useSectorTimingStore.getState().tick(0.01, 200, true);
-    // Lap 2: sector 0 in 10.3s (0.3s slower — within 0.5s threshold)
-    useSectorTimingStore.getState().tick(0.19, 210.3, true);
+    // Lap 2: sector 0 in 10.08s (0.8% slower — between 0.5% and 1%)
+    useSectorTimingStore.getState().tick(0.19, 210.08, true);
 
     const updated = useSectorTimingStore.getState();
     expect(updated.sectorColors[0]).toBe('yellow');
@@ -516,35 +518,27 @@ describe('SectorTimingStore.invalidateLap', () => {
 });
 
 // ---------------------------------------------------------------------------
-// SectorTimingStore — clearAllTimeBests
+// SectorTimingStore — reset clears session bests
 // ---------------------------------------------------------------------------
 
-describe('SectorTimingStore.clearAllTimeBests', () => {
-  it('clears all-time bests and resets sector colors to default', () => {
+describe('SectorTimingStore.reset clears session bests', () => {
+  it('clears session bests and sector colors on full reset', () => {
     useSectorTimingStore.getState().setSectors(MOCK_SECTORS);
 
-    // Lap 1: sector 0 in 10s → sets all-time best
+    // Complete a sector to set a session best
     useSectorTimingStore.getState().resetLap();
     useSectorTimingStore.getState().tick(0.01, 100, true);
     useSectorTimingStore.getState().tick(0.19, 110, true);
 
-    // Lap 2: sector 0 in 9s → purple
-    useSectorTimingStore.getState().resetLap();
-    useSectorTimingStore.getState().tick(0.01, 200, true);
-    useSectorTimingStore.getState().tick(0.19, 209, true);
-
     expect(useSectorTimingStore.getState().sectorColors[0]).toBe('purple');
     expect(
-      useSectorTimingStore.getState().allTimeBestSectorTimes[0]
-    ).toBeCloseTo(9);
+      useSectorTimingStore.getState().sessionBestSectorTimes[0]
+    ).toBeCloseTo(10);
 
-    // Clear all-time bests
-    useSectorTimingStore.getState().clearAllTimeBests();
+    useSectorTimingStore.getState().reset();
 
     const state = useSectorTimingStore.getState();
-    expect(state.allTimeBestSectorTimes.every((t) => t === null)).toBe(true);
+    expect(state.sessionBestSectorTimes.every((t) => t === null)).toBe(true);
     expect(state.sectorColors.every((c) => c === 'default')).toBe(true);
-    // Session bests are preserved
-    expect(state.sessionBestSectorTimes[0]).toBeCloseTo(9);
   });
 });

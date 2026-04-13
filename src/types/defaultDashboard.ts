@@ -620,7 +620,7 @@ export const defaultDashboard: {
           offlineTesting: true,
         },
         styling: { isMinimalTrack: false, isMinimalCar: false },
-        sectorColoring: { enabled: false, comparison: 'sessionBest' },
+        sectorColoring: { enabled: false },
       },
     },
     {
@@ -1115,7 +1115,7 @@ export const defaultDashboard: {
       },
       config: {
         background: { opacity: 80 },
-        decimalPlaces: 3,
+        timeFormat: 'full',
         showGhostLap: true,
         showOnlyWhenOnTrack: true,
         sessionVisibility: {

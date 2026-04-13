@@ -14,6 +14,9 @@ import { SettingDivider } from '../components/SettingDivider';
 import { SettingSliderRow } from '../components/SettingSliderRow';
 import { SettingSelectRow } from '../components/SettingSelectRow';
 
+const DEFAULT_GREEN = 0.5;
+const DEFAULT_YELLOW = 1.0;
+
 const SETTING_ID = 'sectordelta';
 
 const defaultConfig = getWidgetDefaultConfig('sectordelta');
@@ -73,38 +76,124 @@ export const SectorDeltaSettings = () => {
 
           <div>
             {activeTab === 'options' && (
-              <SettingsSection title="Display">
-                <SettingSliderRow
-                  title="Background Opacity"
-                  description="Opacity of the widget background."
-                  value={settings.config.background.opacity}
-                  units="%"
-                  min={0}
-                  max={100}
-                  step={5}
-                  onChange={(v) =>
-                    handleConfigChange({ background: { opacity: v } })
-                  }
-                />
-                <SettingSelectRow
-                  title="Decimal places"
-                  description="Number of decimal places for sector delta times."
-                  value={(settings.config.decimalPlaces ?? 3).toString()}
-                  options={Array.from({ length: 4 }, (_, i) => ({
-                    label: i.toString(),
-                    value: i.toString(),
-                  }))}
-                  onChange={(v) =>
-                    handleConfigChange({ decimalPlaces: parseInt(v) })
-                  }
-                />
-                <SettingToggleRow
-                  title="Show ghost lap"
-                  description="Show ghost lap delta row when a ghost lap is loaded."
-                  enabled={settings.config.showGhostLap ?? true}
-                  onToggle={(v) => handleConfigChange({ showGhostLap: v })}
-                />
-              </SettingsSection>
+              <>
+                <SettingsSection title="Display">
+                  <SettingSliderRow
+                    title="Background Opacity"
+                    description="Opacity of the widget background."
+                    value={settings.config.background.opacity}
+                    units="%"
+                    min={0}
+                    max={100}
+                    step={5}
+                    onChange={(v) =>
+                      handleConfigChange({ background: { opacity: v } })
+                    }
+                  />
+                  <SettingSelectRow
+                    title="Time Format"
+                    description="Format for displaying sector times and deltas."
+                    value={settings.config.timeFormat ?? 'full'}
+                    options={[
+                      { label: '1:42.123', value: 'full' },
+                      { label: '1:42.1', value: 'mixed' },
+                      { label: '1:42', value: 'minutes' },
+                      { label: '42.123', value: 'seconds-full' },
+                      { label: '42.1', value: 'seconds-mixed' },
+                      { label: '42', value: 'seconds' },
+                    ]}
+                    onChange={(v) => handleConfigChange({ timeFormat: v })}
+                  />
+                  <SettingToggleRow
+                    title="Show ghost lap"
+                    description="Show ghost lap delta row when a ghost lap is loaded."
+                    enabled={settings.config.showGhostLap ?? true}
+                    onToggle={(v) => handleConfigChange({ showGhostLap: v })}
+                  />
+                </SettingsSection>
+
+                <SettingDivider />
+
+                <SettingsSection title="Color Thresholds">
+                  <SettingToggleRow
+                    title="Customize thresholds"
+                    description="Override the default color thresholds (green: 0.5%, yellow: 1.0%)."
+                    enabled={settings.config.thresholds != null}
+                    onToggle={(v) =>
+                      handleConfigChange({
+                        thresholds: v
+                          ? {
+                              green:
+                                settings.config.thresholds?.green ??
+                                DEFAULT_GREEN,
+                              yellow:
+                                settings.config.thresholds?.yellow ??
+                                DEFAULT_YELLOW,
+                            }
+                          : undefined,
+                      })
+                    }
+                  />
+
+                  {settings.config.thresholds != null && (
+                    <>
+                      <SettingSliderRow
+                        title="Green limit"
+                        description="Sectors within this % of session best show green."
+                        value={
+                          settings.config.thresholds.green ?? DEFAULT_GREEN
+                        }
+                        units="%"
+                        min={0.1}
+                        max={5}
+                        step={0.1}
+                        onChange={(v) => {
+                          const currentYellow =
+                            settings.config.thresholds?.yellow ??
+                            DEFAULT_YELLOW;
+                          const newYellow =
+                            v >= currentYellow
+                              ? Math.min(5, Math.round((v + 0.1) * 10) / 10)
+                              : currentYellow;
+                          handleConfigChange({
+                            thresholds: {
+                              ...settings.config.thresholds,
+                              green: v,
+                              yellow: newYellow,
+                            },
+                          });
+                        }}
+                      />
+                      <SettingSliderRow
+                        title="Yellow limit"
+                        description="Sectors within this % of session best show yellow. Above = red."
+                        value={
+                          settings.config.thresholds.yellow ?? DEFAULT_YELLOW
+                        }
+                        units="%"
+                        min={0.1}
+                        max={5}
+                        step={0.1}
+                        onChange={(v) => {
+                          const currentGreen =
+                            settings.config.thresholds?.green ?? DEFAULT_GREEN;
+                          const newGreen =
+                            v <= currentGreen
+                              ? Math.max(0.1, Math.round((v - 0.1) * 10) / 10)
+                              : currentGreen;
+                          handleConfigChange({
+                            thresholds: {
+                              ...settings.config.thresholds,
+                              green: newGreen,
+                              yellow: v,
+                            },
+                          });
+                        }}
+                      />
+                    </>
+                  )}
+                </SettingsSection>
+              </>
             )}
 
             {activeTab === 'visibility' && (
