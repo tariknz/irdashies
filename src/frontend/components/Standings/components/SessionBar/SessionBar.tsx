@@ -6,6 +6,8 @@ import {
   useTotalRaceLaps,
   useTotalRaceTime,
   useTrackDisplayName,
+  useSessionDrivers,
+  useFocusCarIdx,
 } from '@irdashies/context';
 import {
   useDriverIncidents,
@@ -30,6 +32,7 @@ import { useSessionCurrentTime } from '../../hooks/useSessionCurrentTime';
 import { usePrecipitation } from '../../hooks/usePrecipitation';
 import { SessionState } from '@irdashies/types';
 import { WindArrow } from '../../../shared/WindArrow';
+import { DriverRatingBadge } from '../DriverRatingBadge/DriverRatingBadge';
 
 // compact=true (total time): trims trailing zero components, never shows seconds
 // compact=false (elapsed/remaining): always shows full HH:MM:SS
@@ -137,6 +140,9 @@ export const SessionBar = ({
   const { windDirection, windVelocity, windYaw, humidity } =
     useThrottledWeather();
   const relativeWindDirection = (windDirection ?? 0) - (windYaw ?? 0);
+  const drivers = useSessionDrivers();
+  const focusedCarIdx = useFocusCarIdx();
+  const focusedDriver = drivers?.find((d) => d.CarIdx === focusedCarIdx);
   const { trackTemp, airTemp } = useTrackTemperature({
     airTempUnit: effectiveBarSettings?.airTemperature?.unit ?? 'Metric',
     trackTempUnit: effectiveBarSettings?.trackTemperature?.unit ?? 'Metric',
@@ -422,6 +428,19 @@ export const SessionBar = ({
           </div>
         );
       },
+    },
+    driverBadge: {
+      enabled: effectiveBarSettings?.driverBadge?.enabled ?? false,
+      render: () => (
+        <DriverRatingBadge
+          license={focusedDriver?.LicString}
+          rating={focusedDriver?.IRating}
+          format={
+            effectiveBarSettings?.driverBadge?.badgeFormat ??
+            'license-color-rating-bw'
+          }
+        />
+      ),
     },
   };
 

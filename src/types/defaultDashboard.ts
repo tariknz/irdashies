@@ -141,6 +141,12 @@ export const defaultDashboard: {
           wind: {
             enabled: false,
           },
+          humidity: {
+            enabled: false,
+          },
+          driverBadge: {
+            enabled: false,
+          },
           trackName: {
             enabled: false,
           },
@@ -157,6 +163,8 @@ export const defaultDashboard: {
             'airTemperature',
             'trackTemperature',
             'wind',
+            'humidity',
+            'driverBadge',
             'trackName',
           ],
         },

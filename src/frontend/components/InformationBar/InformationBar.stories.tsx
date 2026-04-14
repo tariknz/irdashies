@@ -37,6 +37,7 @@ const ALL_ITEMS = [
   'airTemperature',
   'trackTemperature',
   'wind',
+  'driverBadge',
   'trackName',
 ];
 
@@ -93,6 +94,7 @@ type PlaygroundArgs = ComponentProps<typeof SessionBar> & {
   showAirTemp: boolean;
   showTrackTemp: boolean;
   showWind: boolean;
+  showDriverBadge: boolean;
   showTrackName: boolean;
 };
 
@@ -116,6 +118,7 @@ export const Playground: StoryObj<PlaygroundArgs> = {
     showAirTemp: { control: 'boolean', name: 'Air Temp' },
     showTrackTemp: { control: 'boolean', name: 'Track Temp' },
     showWind: { control: 'boolean', name: 'Wind' },
+    showDriverBadge: { control: 'boolean', name: 'Driver Badge' },
     showTrackName: { control: 'boolean', name: 'Track Name' },
   },
   args: {
@@ -134,6 +137,7 @@ export const Playground: StoryObj<PlaygroundArgs> = {
     showAirTemp: true,
     showTrackTemp: true,
     showWind: false,
+    showDriverBadge: true,
     showTrackName: false,
   },
   render: (args) => {
@@ -168,6 +172,7 @@ export const Playground: StoryObj<PlaygroundArgs> = {
       wind: DEFAULT_CONFIG.wind
         ? { ...DEFAULT_CONFIG.wind, enabled: args.showWind }
         : undefined,
+      driverBadge: { enabled: args.showDriverBadge },
       trackName: { enabled: args.showTrackName },
     };
 

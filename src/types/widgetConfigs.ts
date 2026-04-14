@@ -67,6 +67,7 @@ export interface SessionBarConfig {
   trackTemperature: { enabled: boolean; unit: TemperatureUnit };
   wind?: { enabled: boolean; speedPosition?: 'left' | 'right' };
   humidity?: { enabled: boolean };
+  driverBadge?: { enabled: boolean; badgeFormat?: StandingsBadgeFormat };
   trackName: { enabled: boolean };
   displayOrder: string[];
 }
