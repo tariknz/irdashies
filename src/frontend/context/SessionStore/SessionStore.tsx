@@ -2,6 +2,7 @@ import type {
   Session,
   SessionQualifyPosition,
   SessionResults,
+  CarClassStats,
 } from '@irdashies/types';
 import { create, useStore } from 'zustand';
 import { useStoreWithEqualityFn } from 'zustand/traditional';
@@ -189,3 +190,72 @@ export const useSetCheckeredLap = () =>
 
 export const useCarSetup = () =>
   useStore(useSessionStore, (state) => state.session?.CarSetup);
+
+/**
+ * @returns The stats for each car class in the session (ShortName, Color, Total Drivers, SOF)
+ */
+let cachedClassStats: Record<string, CarClassStats> | undefined;
+let cachedClassStatsDrivers: unknown;
+
+export const useCarClassStats = () =>
+  useStoreWithEqualityFn(
+    useSessionStore,
+    (state) => {
+      const drivers = state.session?.DriverInfo?.Drivers;
+      if (drivers === cachedClassStatsDrivers) return cachedClassStats;
+      cachedClassStatsDrivers = drivers;
+
+      const raceDrivers = drivers?.filter(
+        (driver) =>
+          !driver.IsSpectator && !driver.CarIsPaceCar && driver.IRating > 0
+      );
+
+      const intermediate = raceDrivers?.reduce(
+        (acc, driver) => {
+          const expValue = Math.pow(2, -driver.IRating / 1600);
+
+          if (acc[driver.CarClassID]) {
+            acc[driver.CarClassID].total += 1;
+            acc[driver.CarClassID].sumExp += expValue;
+            return acc;
+          }
+
+          acc[driver.CarClassID] = {
+            total: 1,
+            sumExp: expValue,
+            color: driver.CarClassColor,
+            shortName: driver.CarClassShortName,
+          };
+
+          return acc;
+        },
+        {} as Record<
+          string,
+          { shortName: string; color: number; total: number; sumExp: number }
+        >
+      );
+
+      cachedClassStats = intermediate
+        ? Object.fromEntries(
+            Object.entries(intermediate).map(([classId, stats]) => {
+              const sof = Math.round(
+                (1600 / Math.log(2)) * Math.log(stats.total / stats.sumExp)
+              );
+
+              return [
+                classId,
+                {
+                  shortName: stats.shortName,
+                  color: stats.color,
+                  total: stats.total,
+                  sof,
+                } as CarClassStats,
+              ];
+            })
+          )
+        : undefined;
+
+      return cachedClassStats;
+    },
+    shallow
+  );
