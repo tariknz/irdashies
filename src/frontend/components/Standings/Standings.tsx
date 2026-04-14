@@ -5,7 +5,6 @@ import { SessionBar } from './components/SessionBar/SessionBar';
 
 import { TitleBar } from './components/TitleBar/TitleBar';
 import {
-  useCarClassStats,
   useDriverStandings,
   useStandingsSettings,
   useHighlightColor,
@@ -20,6 +19,7 @@ import {
   useWeekendInfoTeamRacing,
   useSessionVisibility,
   useCarIdxRollingAvgLapTime,
+  useCarClassStats,
 } from '@irdashies/context';
 import { useIsSingleMake } from './hooks/useIsSingleMake';
 
@@ -247,7 +247,9 @@ export const Standings = () => {
                     </Fragment>
                   );
                 })}
-                {standings.slice(index + 1).some(([, content]) => content.length > 0) &&
+                {standings
+                  .slice(index + 1)
+                  .some(([, content]) => content.length > 0) &&
                   !isCompact && (
                     <tr>
                       <td colSpan={100} className="h-2"></td>
