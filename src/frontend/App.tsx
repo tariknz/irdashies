@@ -8,6 +8,7 @@ import {
   SessionProvider,
   PitLaneProvider,
   ReferenceStoreProvider,
+  DriverStatsStoreUpdater,
 } from '@irdashies/context';
 import { Settings } from './components/Settings/Settings';
 import { ThemeManager } from './components/ThemeManager/ThemeManager';
@@ -65,6 +66,7 @@ const App = () => {
         <TelemetryProvider bridge={window.irsdkBridge} />
         <PitLaneProvider bridge={window.pitLaneBridge} />
         <ReferenceStoreProvider bridge={window.referenceLapsBridge} />
+        <DriverStatsStoreUpdater />
         <OverlayApp />
       </RunningStateProvider>
     </DashboardProvider>

@@ -18,6 +18,7 @@ import {
   useTelemetryValue,
   useSessionName,
   useSessionLaps,
+  useCarClassStats,
 } from '@irdashies/context';
 import { generateMockDataFromPath } from '../../../app/bridge/iracingSdk/mock-data/generateMockData';
 import type { DashboardBridge, StandingsConfig } from '@irdashies/types';
@@ -30,7 +31,6 @@ import { SessionBar } from './components/SessionBar/SessionBar';
 
 import { TitleBar } from './components/TitleBar/TitleBar';
 import {
-  useCarClassStats,
   useDriverStandings,
   useStandingsSettings,
   useHighlightColor,
@@ -151,11 +151,8 @@ const StandingsWithoutHeaderFooter = () => {
                     }
                     position={result.classPosition}
                     lap={result.lap}
-                    iratingChangeValue={
-                      settings?.iratingChange?.enabled
-                        ? result.iratingChange
-                        : undefined
-                    }
+                    iratingChangeValue={result.iratingChange}
+                    positionChange={result.positionChange}
                     lastTime={
                       settings?.lastTime?.enabled ? result.lastTime : undefined
                     }
@@ -445,11 +442,8 @@ const StandingsWithoutHeader = () => {
                     }
                     position={result.classPosition}
                     lap={result.lap}
-                    iratingChangeValue={
-                      settings?.iratingChange?.enabled
-                        ? result.iratingChange
-                        : undefined
-                    }
+                    iratingChangeValue={result.iratingChange}
+                    positionChange={result.positionChange}
                     lastTime={
                       settings?.lastTime?.enabled ? result.lastTime : undefined
                     }
@@ -606,11 +600,8 @@ const StandingsWithoutFooter = () => {
                     }
                     position={result.classPosition}
                     lap={result.lap}
-                    iratingChangeValue={
-                      settings?.iratingChange?.enabled
-                        ? result.iratingChange
-                        : undefined
-                    }
+                    iratingChangeValue={result.iratingChange}
+                    positionChange={result.positionChange}
                     lastTime={
                       settings?.lastTime?.enabled ? result.lastTime : undefined
                     }

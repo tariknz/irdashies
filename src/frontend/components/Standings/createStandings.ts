@@ -1,9 +1,5 @@
 import { SessionResults, Driver, TrackLocation } from '@irdashies/types';
-import {
-  calculateIRatingGain,
-  RaceResult,
-  CalculationResult,
-} from '@irdashies/utils/iratingGain';
+import {} from '@irdashies/utils/iratingGain';
 import { GlobalFlags } from '@irdashies/types';
 import { useReferenceLapStore } from '@irdashies/context';
 import {
@@ -423,46 +419,6 @@ export const groupStandingsByClass = (standings: Standings[]) => {
 };
 
 /**
- * This method will augment the standings with iRating changes
- */
-export const augmentStandingsWithIRating = (
-  groupedStandings: [string, Standings[]][]
-): [string, Standings[]][] => {
-  return groupedStandings.map(([classId, classStandings]) => {
-    const raceResultsInput: RaceResult<number>[] = classStandings
-      .filter((s) => !!s.classPosition) // Only include drivers with a class position, should not happen in races
-      .map((driverStanding) => ({
-        driver: driverStanding.carIdx,
-        finishRank: driverStanding.classPosition ?? 0,
-        startIRating: driverStanding.driver.rating,
-        started: true, // This is a critical assumption.
-      }));
-
-    if (raceResultsInput.length === 0) {
-      return [classId, classStandings];
-    }
-
-    const iratingCalculationResults = calculateIRatingGain(raceResultsInput);
-
-    const iratingChangeMap = new Map<number, number>();
-    iratingCalculationResults.forEach(
-      (calcResult: CalculationResult<number>) => {
-        iratingChangeMap.set(
-          calcResult.raceResult.driver,
-          calcResult.iratingChange
-        );
-      }
-    );
-
-    const augmentedClassStandings = classStandings.map((driverStanding) => ({
-      ...driverStanding,
-      iratingChange: iratingChangeMap.get(driverStanding.carIdx),
-    }));
-    return [classId, augmentedClassStandings];
-  });
-};
-
-/**
  * This method will augment the standings with gap calculations to class leader
  * Gap = driver_delta - class_leader_delta (both relative to session leader)
  */
@@ -728,46 +684,5 @@ export const sliceRelevantDrivers = <T extends { isPlayer?: boolean }>(
     );
 
     return [classIdx, sortedDrivers];
-  });
-};
-
-/**
- * Augments standings with the number of positions gained or lost compared to
- * the driver's qualifying grid position. Positive = gained positions,
- * negative = lost positions. Only meaningful for race sessions.
- */
-export const augmentStandingsWithPositionChange = (
-  groupedStandings: [string, Standings[]][],
-  qualifyingResults: SessionResults[] | undefined
-): [string, Standings[]][] => {
-  if (!qualifyingResults || qualifyingResults.length === 0) {
-    return groupedStandings;
-  }
-
-  // Build a map of carIdx -> qualifying class position (1-based)
-  const qualifyingClassPositionByCarIdx = new Map<number, number>();
-  qualifyingResults.forEach((result) => {
-    qualifyingClassPositionByCarIdx.set(
-      result.CarIdx,
-      result.ClassPosition + 1
-    );
-  });
-
-  return groupedStandings.map(([classId, classStandings]) => {
-    const augmented = classStandings.map((standing) => {
-      const qualifyingClassPos = qualifyingClassPositionByCarIdx.get(
-        standing.carIdx
-      );
-      if (
-        qualifyingClassPos === undefined ||
-        standing.classPosition === undefined
-      ) {
-        return standing;
-      }
-      // Positive = moved up (e.g. started P5, now P3 → +2)
-      const positionChange = qualifyingClassPos - standing.classPosition;
-      return { ...standing, positionChange };
-    });
-    return [classId, augmented];
   });
 };

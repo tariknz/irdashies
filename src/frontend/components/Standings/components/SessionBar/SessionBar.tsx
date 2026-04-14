@@ -6,6 +6,10 @@ import {
   useTotalRaceLaps,
   useTotalRaceTime,
   useTrackDisplayName,
+  useSessionDrivers,
+  useFocusCarIdx,
+  useCarClassStats,
+  useDriverStatsStore,
 } from '@irdashies/context';
 import {
   useDriverIncidents,
@@ -20,15 +24,19 @@ import {
   ClockUserIcon,
   CloudRainIcon,
   DropIcon,
+  DropHalfIcon,
   RoadHorizonIcon,
   ThermometerIcon,
   TireIcon,
+  Barbell as BarbellIcon,
+  Users as UsersIcon,
 } from '@phosphor-icons/react';
 import { SessionBarConfig } from '@irdashies/types';
 import { useSessionCurrentTime } from '../../hooks/useSessionCurrentTime';
 import { usePrecipitation } from '../../hooks/usePrecipitation';
 import { SessionState } from '@irdashies/types';
 import { WindArrow } from '../../../shared/WindArrow';
+import { DriverRatingBadge } from '../DriverRatingBadge/DriverRatingBadge';
 
 // compact=true (total time): trims trailing zero components, never shows seconds
 // compact=false (elapsed/remaining): always shows full HH:MM:SS
@@ -133,8 +141,12 @@ export const SessionBar = ({
   const brakeBias = useBrakeBias();
   const { trackWetness } = useTrackWetness();
   const { precipitation } = usePrecipitation();
-  const { windDirection, windVelocity, windYaw } = useThrottledWeather();
+  const { windDirection, windVelocity, windYaw, humidity } =
+    useThrottledWeather();
   const relativeWindDirection = (windDirection ?? 0) - (windYaw ?? 0);
+  const drivers = useSessionDrivers();
+  const focusedCarIdx = useFocusCarIdx();
+  const focusedDriver = drivers?.find((d) => d.CarIdx === focusedCarIdx);
   const { trackTemp, airTemp } = useTrackTemperature({
     airTempUnit: effectiveBarSettings?.airTemperature?.unit ?? 'Metric',
     trackTempUnit: effectiveBarSettings?.trackTemperature?.unit ?? 'Metric',
@@ -144,6 +156,8 @@ export const SessionBar = ({
   const { totalRaceLaps, isFixedLapRace } = useTotalRaceLaps();
   const { totalRaceTime, adjustedRaceTime } = useTotalRaceTime();
   const trackDisplayName = useTrackDisplayName();
+  const classStats = useCarClassStats();
+  const iratingChanges = useDriverStatsStore((s) => s.iratingChanges);
 
   // Define all possible items with their render functions
   const itemDefinitions = {
@@ -405,6 +419,69 @@ export const SessionBar = ({
             {speedPosition === 'left' && speedEl}
             {arrowEl}
             {speedPosition === 'right' && speedEl}
+          </div>
+        );
+      },
+    },
+    humidity: {
+      enabled: effectiveBarSettings?.humidity?.enabled ?? false,
+      render: () => {
+        if (humidity === undefined || humidity === null) return null;
+        return (
+          <div className="flex justify-center gap-1 items-center">
+            <DropHalfIcon />
+            <span>{Math.round(humidity * 100)}%</span>
+          </div>
+        );
+      },
+    },
+    driverBadge: {
+      enabled: effectiveBarSettings?.driverBadge?.enabled ?? false,
+      render: () => {
+        const showIRatingChange =
+          effectiveBarSettings?.driverBadge?.showIRatingChange ?? false;
+        return (
+          <DriverRatingBadge
+            license={focusedDriver?.LicString}
+            rating={focusedDriver?.IRating}
+            iratingChange={
+              showIRatingChange && focusedCarIdx !== undefined
+                ? iratingChanges[focusedCarIdx]
+                : undefined
+            }
+            format={
+              effectiveBarSettings?.driverBadge?.badgeFormat ??
+              'license-color-rating-bw'
+            }
+            noMargin={true}
+          />
+        );
+      },
+    },
+    sof: {
+      enabled: effectiveBarSettings?.sof?.enabled ?? false,
+      render: () => {
+        const classId = focusedDriver?.CarClassID;
+        const stats = classId !== undefined ? classStats?.[classId] : undefined;
+        if (!stats?.sof) return null;
+        return (
+          <div className="flex justify-center gap-1 items-center">
+            <BarbellIcon className="text-white/60" />
+            <span>{stats.sof}</span>
+          </div>
+        );
+      },
+    },
+    classDrivers: {
+      enabled: effectiveBarSettings?.classDrivers?.enabled ?? false,
+      render: () => {
+        const classId = focusedDriver?.CarClassID;
+        const stats = classId !== undefined ? classStats?.[classId] : undefined;
+        if (!stats?.total) return null;
+        return (
+          <div className="flex justify-center gap-1 items-center">
+            <UsersIcon className="text-white/60" />
+            <span>{stats.total}</span>
           </div>
         );
       },

@@ -1,6 +1,12 @@
 import { render } from '@testing-library/react';
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { DriverRatingBadge } from './DriverRatingBadge';
+
+vi.mock('@phosphor-icons/react', () => ({
+  CaretUpIcon: () => <span>up-arrow</span>,
+  CaretDownIcon: () => <span>down-arrow</span>,
+  MinusIcon: () => <span>line-through</span>,
+}));
 
 describe('DriverRatingBadge', () => {
   it('renders with default props', () => {
@@ -132,5 +138,85 @@ describe('DriverRatingBadge', () => {
       <DriverRatingBadge license="C" rating={15999} />
     );
     expect(container.textContent).toBe('C 15.9k');
+  });
+
+  describe('iratingChange prop', () => {
+    it('does not render delta when iratingChange is not provided', () => {
+      const { container } = render(
+        <DriverRatingBadge license="A" rating={5000} />
+      );
+      expect(container.textContent).not.toContain('up-arrow');
+      expect(container.textContent).not.toContain('down-arrow');
+      expect(container.textContent).not.toContain('line-through');
+    });
+
+    it('renders positive iratingChange with up-arrow', () => {
+      const { container } = render(
+        <DriverRatingBadge license="A" rating={5000} iratingChange={42} />
+      );
+      expect(container.textContent).toContain('42');
+      expect(container.textContent).toContain('up-arrow');
+    });
+
+    it('renders negative iratingChange with down-arrow', () => {
+      const { container } = render(
+        <DriverRatingBadge license="A" rating={5000} iratingChange={-15} />
+      );
+      expect(container.textContent).toContain('15');
+      expect(container.textContent).toContain('down-arrow');
+    });
+
+    it('renders zero iratingChange with line-through (dash)', () => {
+      const { container } = render(
+        <DriverRatingBadge license="A" rating={5000} iratingChange={0} />
+      );
+      // RatingChange renders a dash (line-through) for zero with showZero={false}
+      expect(container.textContent).toContain('line-through');
+      // Verify the RatingChange div was rendered (not the outer flex container)
+      const ratingChangeDiv = container.querySelector('div[class*="ml-1"]');
+      expect(ratingChangeDiv).toBeTruthy();
+    });
+
+    it('does not render delta when iratingChange is undefined explicitly', () => {
+      const { container } = render(
+        <DriverRatingBadge
+          license="A"
+          rating={5000}
+          iratingChange={undefined}
+        />
+      );
+      expect(container.textContent).not.toContain('up-arrow');
+      expect(container.textContent).not.toContain('down-arrow');
+      expect(container.textContent).not.toContain('line-through');
+    });
+  });
+
+  describe('noMargin prop', () => {
+    it('includes mx-2 margin class by default (noMargin={false})', () => {
+      const { container } = render(
+        <DriverRatingBadge
+          license="A"
+          rating={5000}
+          format="license-color-rating-bw"
+        />
+      );
+      // Query the badge div (first child with gap class)
+      const badgeDiv = container.querySelector('div[class*="gap-1"]');
+      expect(badgeDiv?.className).toContain('mx-2');
+    });
+
+    it('excludes mx-2 margin class when noMargin={true}', () => {
+      const { container } = render(
+        <DriverRatingBadge
+          license="A"
+          rating={5000}
+          format="license-color-rating-bw"
+          noMargin={true}
+        />
+      );
+      // Query the badge div (first child with gap class)
+      const badgeDiv = container.querySelector('div[class*="gap-1"]');
+      expect(badgeDiv?.className).not.toContain('mx-2');
+    });
   });
 });

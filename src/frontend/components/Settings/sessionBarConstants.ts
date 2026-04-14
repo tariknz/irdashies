@@ -12,7 +12,13 @@ export const VALID_SESSION_BAR_ITEM_KEYS = [
   'airTemperature',
   'trackTemperature',
   'wind',
+  'humidity',
+  'driverBadge',
+  'sof',
+  'classDrivers',
   'trackName',
+  'sof',
+  'classDrivers',
 ] as const;
 
 // Labels for session bar items
@@ -29,6 +35,10 @@ export const SESSION_BAR_ITEM_LABELS: Record<string, string> = {
   airTemperature: 'Air Temperature',
   trackTemperature: 'Track Temperature',
   wind: 'Wind',
+  humidity: 'Humidity',
+  driverBadge: 'Driver Badge',
+  sof: 'SOF',
+  classDrivers: 'Class Drivers',
   trackName: 'Track Name',
 };
 

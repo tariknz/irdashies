@@ -1,7 +1,9 @@
 import { DotsSixVerticalIcon } from '@phosphor-icons/react';
+import type { StandingsBadgeFormat } from '@irdashies/types';
 import { ToggleSwitch } from './ToggleSwitch';
 import { useSortableList } from '../../SortableList';
 import { SESSION_BAR_ITEM_LABELS } from '../sessionBarConstants';
+import { BadgeFormatPreview } from './BadgeFormatPreview';
 
 export interface SessionBarItemConfig {
   enabled: boolean;
@@ -10,6 +12,8 @@ export interface SessionBarItemConfig {
   totalFormat?: 'hh:mm' | 'minimal';
   labelStyle?: 'none' | 'short' | 'minimal';
   speedPosition?: 'left' | 'right';
+  badgeFormat?: StandingsBadgeFormat;
+  showIRatingChange?: boolean;
 }
 
 interface SessionBarItemsListProps {
@@ -121,6 +125,55 @@ export const SessionBarItemsList = ({
                     </button>
                   );
                 })}
+              </div>
+            )}
+
+            {item.id === 'driverBadge' && itemConfig.enabled && (
+              <div className="space-y-3 pl-4 mt-2">
+                <div className="flex items-center justify-end gap-3">
+                  <span className="text-sm text-slate-300">
+                    Show iRating Change
+                  </span>
+                  <ToggleSwitch
+                    enabled={itemConfig.showIRatingChange ?? false}
+                    onToggle={(enabled) =>
+                      updateItemConfig(item.id, { showIRatingChange: enabled })
+                    }
+                  />
+                </div>
+                <div className="flex flex-wrap gap-3 justify-end">
+                  {(
+                    [
+                      'license-color-fullrating-combo',
+                      'fullrating-color-no-license',
+                      'rating-color-no-license',
+                      'license-color-fullrating-bw',
+                      'license-color-rating-bw',
+                      'rating-only-color-rating-bw',
+                      'license-color-rating-bw-no-license',
+                      'license-bw-rating-bw',
+                      'rating-only-bw-rating-bw',
+                      'license-bw-rating-bw-no-license',
+                      'rating-bw-no-license',
+                      'fullrating-bw-no-license',
+                    ] as const
+                  ).map((format) => (
+                    <BadgeFormatPreview
+                      key={format}
+                      format={format}
+                      iratingChange={
+                        itemConfig.showIRatingChange ? 18 : undefined
+                      }
+                      selected={
+                        (itemConfig.badgeFormat ??
+                          'license-color-rating-bw') === format
+                      }
+                      onClick={() =>
+                        updateItemConfig(item.id, { badgeFormat: format })
+                      }
+                    />
+                  ))}
+                </div>
               </div>
             )}
 

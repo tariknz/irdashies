@@ -13,6 +13,7 @@ import {
   useSessionFastestLaps,
   useTelemetryValues,
   useTelemetryValuesRounded,
+  useDriverStatsStore,
 } from '@irdashies/context';
 
 import { Standings, type LastTimeState } from '../createStandings';
@@ -161,6 +162,8 @@ export const useDriverStandings = () => {
   const sessionNum = useTelemetryValue('SessionNum');
   const sessionPositions = useSessionPositions(sessionNum);
   const sessionFastestLaps = useSessionFastestLaps(sessionNum);
+  const iratingChanges = useDriverStatsStore((s) => s.iratingChanges);
+  const positionChanges = useDriverStatsStore((s) => s.positionChanges);
   const fastestLapCarIdx = sessionFastestLaps?.[0]?.CarIdx;
 
   const driverStandings: Standings[] = useMemo(() => {
@@ -279,6 +282,8 @@ export const useDriverStandings = () => {
         penalty: carState?.penalty ?? false,
         slowdown: carState?.slowdown ?? false,
         relativePct: 0,
+        iratingChange: iratingChanges[driver.carIdx],
+        positionChange: positionChanges[driver.carIdx],
       };
     });
 
@@ -296,6 +301,8 @@ export const useDriverStandings = () => {
     radioTransmitCarIdx,
     driverLivePositions,
     fastestLapCarIdx,
+    iratingChanges,
+    positionChanges,
   ]);
 
   return driverStandings;

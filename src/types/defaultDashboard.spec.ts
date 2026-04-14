@@ -129,12 +129,13 @@ describe('deepMergeConfig', () => {
       });
     });
 
-    it('appends new item at end when no anchor found', () => {
-      // Default adds 'd' after c, but user has no items after c
+    it('inserts new items after their closest predecessor', () => {
+      // Default adds 'c' and 'd', but user has no items after 'b' and 'a'
+      // New items are inserted after their closest predecessor in defaultOrder
       const def = { displayOrder: ['a', 'b', 'c', 'd'] };
       const saved = { displayOrder: ['b', 'a'] };
       expect(deepMergeConfig(def, saved)).toEqual({
-        displayOrder: ['b', 'a', 'c', 'd'],
+        displayOrder: ['b', 'c', 'd', 'a'],
       });
     });
 
@@ -155,6 +156,30 @@ describe('deepMergeConfig', () => {
       };
       expect(deepMergeConfig(def, saved)).toEqual({
         headerBar: { displayOrder: ['sessionName', 'sessionTime', 'newItem'] },
+      });
+    });
+
+    it('inserts new item after preceding neighbor in backward-first search', () => {
+      // When new items are added, backward search finds the closest predecessor
+      // and inserts after it, maintaining relative order from defaults
+      const def = { displayOrder: ['wind', 'humidity'] };
+      const saved = { displayOrder: ['wind'] };
+      expect(deepMergeConfig(def, saved)).toEqual({
+        displayOrder: ['wind', 'humidity'],
+      });
+    });
+
+    it('correctly appends new item when predecessor is the last item in merged array', () => {
+      // Regression test for "sentinel collision" bug
+      const def = { displayOrder: ['a', 'b', 'c'] };
+      const saved = { displayOrder: ['a', 'b'] }; // 'b' is the last item
+      // Under the bug, 'c' is missing.
+      // backward scan finds 'b' at index 1 -> insertAt = 2 (which is merged.length)
+      // fallback if (insertAt === merged.length) triggers
+      // forward scan finds 'a' at index 0 -> insertAt = 0
+      // result becomes ['c', 'a', 'b'] instead of ['a', 'b', 'c']
+      expect(deepMergeConfig(def, saved)).toEqual({
+        displayOrder: ['a', 'b', 'c'],
       });
     });
   });

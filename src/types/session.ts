@@ -13,3 +13,10 @@ export type SessionResults = SessionResultsPosition;
 export type { SessionQualifyPosition };
 export type Driver = SdkDriver;
 export type { CarSetupInfo };
+
+export interface CarClassStats {
+  shortName: string;
+  color: number;
+  total: number;
+  sof: number;
+}
