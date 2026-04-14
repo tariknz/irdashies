@@ -146,6 +146,7 @@ export const defaultDashboard: {
           },
           driverBadge: {
             enabled: false,
+            showIRatingChange: false,
           },
           sof: { enabled: false },
           classDrivers: { enabled: false },
@@ -215,6 +216,7 @@ export const defaultDashboard: {
           },
           driverBadge: {
             enabled: false,
+            showIRatingChange: false,
           },
           sof: { enabled: false },
           classDrivers: { enabled: false },
@@ -521,6 +523,7 @@ export const defaultDashboard: {
           },
           driverBadge: {
             enabled: false,
+            showIRatingChange: false,
           },
           sof: { enabled: false },
           classDrivers: { enabled: false },
@@ -590,6 +593,7 @@ export const defaultDashboard: {
           },
           driverBadge: {
             enabled: false,
+            showIRatingChange: false,
           },
           sof: { enabled: false },
           classDrivers: { enabled: false },
@@ -1117,6 +1121,7 @@ export const defaultDashboard: {
         wind: { enabled: false, speedPosition: 'right' },
         driverBadge: {
           enabled: false,
+          showIRatingChange: false,
         },
         sof: { enabled: false },
         classDrivers: { enabled: false },

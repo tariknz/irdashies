@@ -101,23 +101,24 @@ export const InformationBarSettings = () => {
                     ) {
                       return item as SessionBarItemConfig;
                     }
+                    // Fallback for new items that might be in displayOrder but missing from config
+                    if (id === 'sof' || id === 'classDrivers') {
+                      return { enabled: false };
+                    }
+                    if (id === 'driverBadge') {
+                      return { enabled: false, showIRatingChange: false };
+                    }
                     return undefined;
                   }}
                   updateItemConfig={(id, config) => {
                     const item =
-                      settings.config[id as keyof typeof settings.config];
-                    if (
-                      typeof item === 'object' &&
-                      item !== null &&
-                      'enabled' in item
-                    ) {
-                      handleConfigChange({
-                        [id]: {
-                          ...(item as SessionBarItemConfig),
-                          ...config,
-                        },
-                      });
-                    }
+                      settings.config[id as keyof typeof settings.config] ?? {};
+                    handleConfigChange({
+                      [id]: {
+                        ...(item as SessionBarItemConfig),
+                        ...config,
+                      },
+                    });
                   }}
                 />
                 <div className="mt-4">
