@@ -141,6 +141,9 @@ export const defaultDashboard: {
           wind: {
             enabled: false,
           },
+          humidity: {
+            enabled: false,
+          },
           trackName: {
             enabled: false,
           },
@@ -157,6 +160,7 @@ export const defaultDashboard: {
             'airTemperature',
             'trackTemperature',
             'wind',
+            'humidity',
             'trackName',
           ],
         },
@@ -201,6 +205,9 @@ export const defaultDashboard: {
           wind: {
             enabled: false,
           },
+          humidity: {
+            enabled: false,
+          },
           trackName: {
             enabled: false,
           },
@@ -217,6 +224,7 @@ export const defaultDashboard: {
             'airTemperature',
             'trackTemperature',
             'wind',
+            'humidity',
             'trackName',
           ],
         },
@@ -498,6 +506,9 @@ export const defaultDashboard: {
           wind: {
             enabled: false,
           },
+          humidity: {
+            enabled: false,
+          },
           trackName: {
             enabled: false,
           },
@@ -514,6 +525,7 @@ export const defaultDashboard: {
             'airTemperature',
             'trackTemperature',
             'wind',
+            'humidity',
             'trackName',
           ],
         },
@@ -558,6 +570,9 @@ export const defaultDashboard: {
           wind: {
             enabled: false,
           },
+          humidity: {
+            enabled: false,
+          },
           trackName: {
             enabled: false,
           },
@@ -574,6 +589,7 @@ export const defaultDashboard: {
             'airTemperature',
             'trackTemperature',
             'wind',
+            'humidity',
             'trackName',
           ],
         },
@@ -1076,6 +1092,7 @@ export const defaultDashboard: {
         airTemperature: { enabled: false, unit: 'Metric' },
         trackTemperature: { enabled: true, unit: 'Metric' },
         wind: { enabled: false, speedPosition: 'right' },
+        humidity: { enabled: false },
         trackName: { enabled: false },
         background: { opacity: 80 },
         showOnlyWhenOnTrack: false,
@@ -1099,6 +1116,7 @@ export const defaultDashboard: {
           'airTemperature',
           'trackTemperature',
           'wind',
+          'humidity',
           'trackName',
         ],
       },

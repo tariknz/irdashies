@@ -12,6 +12,7 @@ export const VALID_SESSION_BAR_ITEM_KEYS = [
   'airTemperature',
   'trackTemperature',
   'wind',
+  'humidity',
   'trackName',
 ] as const;
 
@@ -29,6 +30,7 @@ export const SESSION_BAR_ITEM_LABELS: Record<string, string> = {
   airTemperature: 'Air Temperature',
   trackTemperature: 'Track Temperature',
   wind: 'Wind',
+  humidity: 'Humidity',
   trackName: 'Track Name',
 };
 

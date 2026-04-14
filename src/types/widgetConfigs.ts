@@ -66,6 +66,7 @@ export interface SessionBarConfig {
   airTemperature: { enabled: boolean; unit: TemperatureUnit };
   trackTemperature: { enabled: boolean; unit: TemperatureUnit };
   wind?: { enabled: boolean; speedPosition?: 'left' | 'right' };
+  humidity?: { enabled: boolean };
   trackName: { enabled: boolean };
   displayOrder: string[];
 }

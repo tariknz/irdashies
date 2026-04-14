@@ -20,6 +20,7 @@ import {
   ClockUserIcon,
   CloudRainIcon,
   DropIcon,
+  DropHalfIcon,
   RoadHorizonIcon,
   ThermometerIcon,
   TireIcon,
@@ -133,7 +134,8 @@ export const SessionBar = ({
   const brakeBias = useBrakeBias();
   const { trackWetness } = useTrackWetness();
   const { precipitation } = usePrecipitation();
-  const { windDirection, windVelocity, windYaw } = useThrottledWeather();
+  const { windDirection, windVelocity, windYaw, humidity } =
+    useThrottledWeather();
   const relativeWindDirection = (windDirection ?? 0) - (windYaw ?? 0);
   const { trackTemp, airTemp } = useTrackTemperature({
     airTempUnit: effectiveBarSettings?.airTemperature?.unit ?? 'Metric',
@@ -405,6 +407,18 @@ export const SessionBar = ({
             {speedPosition === 'left' && speedEl}
             {arrowEl}
             {speedPosition === 'right' && speedEl}
+          </div>
+        );
+      },
+    },
+    humidity: {
+      enabled: effectiveBarSettings?.humidity?.enabled ?? false,
+      render: () => {
+        if (humidity === undefined || humidity === null) return null;
+        return (
+          <div className="flex justify-center gap-1 items-center">
+            <DropHalfIcon />
+            <span>{Math.round(humidity * 100)}%</span>
           </div>
         );
       },
