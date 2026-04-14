@@ -1107,6 +1107,7 @@ export const defaultDashboard: {
           'airTemperature',
           'trackTemperature',
           'wind',
+          'classDrivers',
           'trackName',
         ],
       },

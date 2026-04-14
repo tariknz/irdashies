@@ -69,6 +69,7 @@ export interface SessionBarConfig {
   humidity?: { enabled: boolean };
   driverBadge?: { enabled: boolean; badgeFormat?: StandingsBadgeFormat };
   trackName: { enabled: boolean };
+  classDrivers?: { enabled: boolean };
   displayOrder: string[];
 }
 
