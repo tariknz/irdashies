@@ -1215,11 +1215,23 @@ function mergeDisplayOrder(
     const defaultIdx = defaultOrder.indexOf(missingId);
     let insertAt = merged.length;
 
-    for (let i = defaultIdx + 1; i < defaultOrder.length; i++) {
-      const afterIdx = merged.indexOf(defaultOrder[i]);
-      if (afterIdx !== -1) {
-        insertAt = afterIdx;
+    // Look BACKWARD first: insert after the closest preceding neighbor
+    for (let i = defaultIdx - 1; i >= 0; i--) {
+      const beforeIdx = merged.indexOf(defaultOrder[i]);
+      if (beforeIdx !== -1) {
+        insertAt = beforeIdx + 1; // Insert right after that neighbor
         break;
+      }
+    }
+
+    // Fall back to forward-looking: insert before the next item in default order
+    if (insertAt === merged.length) {
+      for (let i = defaultIdx + 1; i < defaultOrder.length; i++) {
+        const afterIdx = merged.indexOf(defaultOrder[i]);
+        if (afterIdx !== -1) {
+          insertAt = afterIdx;
+          break;
+        }
       }
     }
 
