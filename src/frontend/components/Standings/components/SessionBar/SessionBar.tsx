@@ -9,6 +9,7 @@ import {
   useSessionDrivers,
   useFocusCarIdx,
   useCarClassStats,
+  useDriverStatsStore,
 } from '@irdashies/context';
 import {
   useDriverIncidents,
@@ -156,6 +157,7 @@ export const SessionBar = ({
   const { totalRaceTime, adjustedRaceTime } = useTotalRaceTime();
   const trackDisplayName = useTrackDisplayName();
   const classStats = useCarClassStats();
+  const iratingChanges = useDriverStatsStore((s) => s.iratingChanges);
 
   // Define all possible items with their render functions
   const itemDefinitions = {
@@ -435,16 +437,26 @@ export const SessionBar = ({
     },
     driverBadge: {
       enabled: effectiveBarSettings?.driverBadge?.enabled ?? false,
-      render: () => (
-        <DriverRatingBadge
-          license={focusedDriver?.LicString}
-          rating={focusedDriver?.IRating}
-          format={
-            effectiveBarSettings?.driverBadge?.badgeFormat ??
-            'license-color-rating-bw'
-          }
-        />
-      ),
+      render: () => {
+        const showIRatingChange =
+          effectiveBarSettings?.driverBadge?.showIRatingChange ?? false;
+        return (
+          <DriverRatingBadge
+            license={focusedDriver?.LicString}
+            rating={focusedDriver?.IRating}
+            iratingChange={
+              showIRatingChange && focusedCarIdx !== undefined
+                ? iratingChanges[focusedCarIdx]
+                : undefined
+            }
+            format={
+              effectiveBarSettings?.driverBadge?.badgeFormat ??
+              'license-color-rating-bw'
+            }
+            noMargin={true}
+          />
+        );
+      },
     },
     sof: {
       enabled: effectiveBarSettings?.sof?.enabled ?? false,
