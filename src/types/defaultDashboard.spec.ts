@@ -168,6 +168,20 @@ describe('deepMergeConfig', () => {
         displayOrder: ['wind', 'humidity'],
       });
     });
+
+    it('correctly appends new item when predecessor is the last item in merged array', () => {
+      // Regression test for "sentinel collision" bug
+      const def = { displayOrder: ['a', 'b', 'c'] };
+      const saved = { displayOrder: ['a', 'b'] }; // 'b' is the last item
+      // Under the bug, 'c' is missing.
+      // backward scan finds 'b' at index 1 -> insertAt = 2 (which is merged.length)
+      // fallback if (insertAt === merged.length) triggers
+      // forward scan finds 'a' at index 0 -> insertAt = 0
+      // result becomes ['c', 'a', 'b'] instead of ['a', 'b', 'c']
+      expect(deepMergeConfig(def, saved)).toEqual({
+        displayOrder: ['a', 'b', 'c'],
+      });
+    });
   });
 
   describe('does not mutate inputs', () => {
