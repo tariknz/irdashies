@@ -8,6 +8,7 @@ import {
   useTrackDisplayName,
   useSessionDrivers,
   useFocusCarIdx,
+  useCarClassStats,
 } from '@irdashies/context';
 import {
   useDriverIncidents,
@@ -26,6 +27,8 @@ import {
   RoadHorizonIcon,
   ThermometerIcon,
   TireIcon,
+  Barbell as BarbellIcon,
+  Users as UsersIcon,
 } from '@phosphor-icons/react';
 import { SessionBarConfig } from '@irdashies/types';
 import { useSessionCurrentTime } from '../../hooks/useSessionCurrentTime';
@@ -152,6 +155,7 @@ export const SessionBar = ({
   const { totalRaceLaps, isFixedLapRace } = useTotalRaceLaps();
   const { totalRaceTime, adjustedRaceTime } = useTotalRaceTime();
   const trackDisplayName = useTrackDisplayName();
+  const classStats = useCarClassStats();
 
   // Define all possible items with their render functions
   const itemDefinitions = {
@@ -441,6 +445,34 @@ export const SessionBar = ({
           }
         />
       ),
+    },
+    sof: {
+      enabled: effectiveBarSettings?.sof?.enabled ?? false,
+      render: () => {
+        const classId = focusedDriver?.CarClassID;
+        const stats = classId !== undefined ? classStats?.[classId] : undefined;
+        if (!stats?.sof) return null;
+        return (
+          <div className="flex justify-center gap-1 items-center">
+            <BarbellIcon className="text-white/60" />
+            <span>{stats.sof}</span>
+          </div>
+        );
+      },
+    },
+    classDrivers: {
+      enabled: effectiveBarSettings?.classDrivers?.enabled ?? false,
+      render: () => {
+        const classId = focusedDriver?.CarClassID;
+        const stats = classId !== undefined ? classStats?.[classId] : undefined;
+        if (!stats?.total) return null;
+        return (
+          <div className="flex justify-center gap-1 items-center">
+            <UsersIcon className="text-white/60" />
+            <span>{stats.total}</span>
+          </div>
+        );
+      },
     },
   };
 

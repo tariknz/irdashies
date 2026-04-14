@@ -68,8 +68,9 @@ export interface SessionBarConfig {
   wind?: { enabled: boolean; speedPosition?: 'left' | 'right' };
   humidity?: { enabled: boolean };
   driverBadge?: { enabled: boolean; badgeFormat?: StandingsBadgeFormat };
-  trackName: { enabled: boolean };
+  sof?: { enabled: boolean };
   classDrivers?: { enabled: boolean };
+  trackName: { enabled: boolean };
   displayOrder: string[];
 }
 

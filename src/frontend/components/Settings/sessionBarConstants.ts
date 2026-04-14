@@ -14,6 +14,7 @@ export const VALID_SESSION_BAR_ITEM_KEYS = [
   'wind',
   'humidity',
   'driverBadge',
+  'sof',
   'classDrivers',
   'trackName',
 ] as const;
@@ -34,6 +35,7 @@ export const SESSION_BAR_ITEM_LABELS: Record<string, string> = {
   wind: 'Wind',
   humidity: 'Humidity',
   driverBadge: 'Driver Badge',
+  sof: 'SOF',
   classDrivers: 'Class Drivers',
   trackName: 'Track Name',
 };
