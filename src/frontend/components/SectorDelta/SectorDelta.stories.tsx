@@ -17,6 +17,7 @@ export default {
   args: {
     background: { opacity: 80 },
     showOnlyWhenOnTrack: false,
+    ghostComparison: 'prefer-ghost',
     sessionVisibility: {
       race: true,
       loneQualify: true,

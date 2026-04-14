@@ -508,7 +508,14 @@ export interface SlowCarAheadConfig {
 export interface SectorDeltaConfig {
   background: { opacity: number };
   timeFormat: TimeFormat;
-  showGhostLap: boolean;
+  /**
+   * Whether to compare against the ghost lap (when loaded) or always use
+   * session best.
+   *
+   * 'prefer-ghost'      – use ghost lap when available, fall back to session best
+   * 'session-best-only' – always compare against session best
+   */
+  ghostComparison: 'prefer-ghost' | 'session-best-only';
   showOnlyWhenOnTrack: boolean;
   sessionVisibility: SessionVisibilitySettings;
   /**

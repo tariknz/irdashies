@@ -9,11 +9,15 @@ vi.mock('./hooks/useHighlightColor');
 vi.mock('./hooks/useSectorTiming', () => ({
   useSectorTiming: vi.fn(() => []),
 }));
+vi.mock('./hooks/useGhostSectorColors', () => ({
+  useGhostSectorColors: vi.fn(() => null),
+}));
 vi.mock('@irdashies/context', () => ({
   useDashboard: vi.fn(),
   useSessionVisibility: vi.fn(),
   useTelemetryValue: vi.fn(),
   useSessionStore: vi.fn(() => []),
+  useSectorTimingStore: vi.fn(() => 0),
 }));
 vi.mock('./TrackCanvas', () => ({
   TrackCanvas: () => <div>Track Canvas</div>,

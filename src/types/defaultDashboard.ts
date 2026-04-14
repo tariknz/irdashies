@@ -1116,7 +1116,7 @@ export const defaultDashboard: {
       config: {
         background: { opacity: 80 },
         timeFormat: 'full',
-        showGhostLap: true,
+        ghostComparison: 'prefer-ghost',
         showOnlyWhenOnTrack: true,
         sessionVisibility: {
           race: true,

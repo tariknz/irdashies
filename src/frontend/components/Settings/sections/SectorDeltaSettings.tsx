@@ -104,11 +104,18 @@ export const SectorDeltaSettings = () => {
                     ]}
                     onChange={(v) => handleConfigChange({ timeFormat: v })}
                   />
-                  <SettingToggleRow
-                    title="Show ghost lap"
-                    description="Show ghost lap delta row when a ghost lap is loaded."
-                    enabled={settings.config.showGhostLap ?? true}
-                    onToggle={(v) => handleConfigChange({ showGhostLap: v })}
+                  <SettingSelectRow
+                    title="Comparison Source"
+                    description="Choose what to compare sector times against."
+                    value={settings.config.ghostComparison ?? 'prefer-ghost'}
+                    options={[
+                      { label: 'Ghost When Available', value: 'prefer-ghost' },
+                      {
+                        label: 'Session Best Only',
+                        value: 'session-best-only',
+                      },
+                    ]}
+                    onChange={(v) => handleConfigChange({ ghostComparison: v })}
                   />
                 </SettingsSection>
 

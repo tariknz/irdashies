@@ -3,6 +3,7 @@ import { useDriverProgress } from './hooks/useDriverProgress';
 import { useTrackMapSettings } from './hooks/useTrackMapSettings';
 import { useHighlightColor } from './hooks/useHighlightColor';
 import { useSectorTiming } from './hooks/useSectorTiming';
+import { useGhostSectorColors } from './hooks/useGhostSectorColors';
 import { TrackCanvas } from './TrackCanvas';
 import {
   useSessionVisibility,
@@ -19,7 +20,9 @@ export const TrackMap = () => {
   const settings = useTrackMapSettings();
   const highlightColor = useHighlightColor();
   const isOnTrack = useTelemetryValue('IsOnTrack');
-  const sectorColors = useSectorTiming();
+  const sessionSectorColors = useSectorTiming();
+  const ghostColors = useGhostSectorColors();
+  const sectorColors = ghostColors ?? sessionSectorColors;
   const sectors =
     useSessionStore((s) => s.session?.SplitTimeInfo?.Sectors) ?? [];
   const currentSectorIdx = useSectorTimingStore((s) => s.currentSectorIdx);

@@ -1,30 +1,49 @@
 import React, { useEffect } from 'react';
+import { GhostIcon } from '@phosphor-icons/react';
 import { useSectorDeltas, useSectorTimingStore } from '@irdashies/context';
 import { useSessionVisibility, useTelemetryValue } from '@irdashies/context';
+import { useReferenceLapSectorTimes } from '@irdashies/context';
 import type { SectorDeltaConfig } from '@irdashies/types';
 import type { TimeFormat } from '@irdashies/types';
 import type { SectorColor } from '@irdashies/context';
-import { useReferenceLapSectorTimes } from './hooks/useReferenceLapSectorTimes';
 import { formatTime } from '@irdashies/utils/time';
 
 type SectorDeltaProps = SectorDeltaConfig;
 
-const SECTOR_BG: Record<SectorColor | 'current', string> = {
-  purple: 'bg-purple-600',
-  green: 'bg-green-600',
-  yellow: 'bg-yellow-500',
-  red: 'bg-red-600',
-  default: 'bg-slate-700/80',
-  current: 'bg-slate-300/80',
-};
-
-const SECTOR_TEXT: Record<SectorColor | 'current', string> = {
-  purple: 'text-white',
-  green: 'text-white',
-  yellow: 'text-black',
-  red: 'text-white',
-  default: 'text-slate-400',
-  current: 'text-slate-800',
+const SECTOR_CARD: Record<
+  SectorColor | 'current',
+  { bg: string; accent: string; text: string }
+> = {
+  purple: {
+    bg: 'bg-slate-800/80',
+    accent: 'border-b-[5px] border-purple-400',
+    text: 'text-white',
+  },
+  green: {
+    bg: 'bg-slate-800/80',
+    accent: 'border-b-[5px] border-green-400',
+    text: 'text-white',
+  },
+  yellow: {
+    bg: 'bg-slate-800/80',
+    accent: 'border-b-[5px] border-yellow-400',
+    text: 'text-white',
+  },
+  red: {
+    bg: 'bg-slate-800/80',
+    accent: 'border-b-[5px] border-red-500',
+    text: 'text-white',
+  },
+  default: {
+    bg: 'bg-slate-800/40',
+    accent: 'border-b-[5px] border-slate-700',
+    text: 'text-slate-400',
+  },
+  current: {
+    bg: 'bg-slate-700/80',
+    accent: '',
+    text: 'text-white',
+  },
 };
 
 const GHOST_THRESHOLD = 0.5;
@@ -64,7 +83,7 @@ export const SectorDelta = ({
   showOnlyWhenOnTrack,
   sessionVisibility,
   timeFormat = 'full',
-  showGhostLap = true,
+  ghostComparison = 'prefer-ghost',
   thresholds,
 }: SectorDeltaProps): React.JSX.Element | null => {
   const {
@@ -76,7 +95,21 @@ export const SectorDelta = ({
     currentSectorIdx,
   } = useSectorDeltas();
   const isOnTrack = useTelemetryValue('IsOnTrack');
+  const lapDistPct = useTelemetryValue('LapDistPct') ?? 0;
   const { refSectorTimes, hasGhostLap } = useReferenceLapSectorTimes();
+
+  const useGhost = ghostComparison === 'prefer-ghost' && hasGhostLap;
+
+  // How far (0–1) through the current sector the player is
+  const sectorStart = sectors[currentSectorIdx]?.SectorStartPct ?? 0;
+  const sectorEnd = sectors[currentSectorIdx + 1]?.SectorStartPct ?? 1;
+  const sectorProgress =
+    sectorEnd > sectorStart
+      ? Math.max(
+          0,
+          Math.min(1, (lapDistPct - sectorStart) / (sectorEnd - sectorStart))
+        )
+      : 0;
 
   const setThresholds = useSectorTimingStore((s) => s.setThresholds);
   useEffect(() => {
@@ -93,88 +126,65 @@ export const SectorDelta = ({
 
   return (
     <div
-      className="flex flex-col gap-1 p-1 rounded-sm"
+      className="flex flex-row items-center gap-1 p-1 rounded-sm"
       style={{ backgroundColor: `rgba(15, 23, 42, ${opacity})` }}
     >
-      {/* Session-best delta row */}
-      <div className="flex flex-row gap-1">
-        {sectors.map((sector, i) => {
-          const isCurrent = i === currentSectorIdx;
-          const displayTime = isCurrent
-            ? null
-            : (currentLapSectorTimes[i] ?? previousLapSectorTimes[i] ?? null);
-          const colorKey: SectorColor | 'current' = isCurrent
-            ? 'current'
-            : (sectorColors[i] ?? 'default');
-          const delta = formatDelta(
-            displayTime,
-            sessionBestSectorTimes[i] ?? null,
-            timeFormat
-          );
-          return (
-            <div
-              key={sector.SectorNum}
-              className={[
-                'flex flex-col items-center justify-center rounded-sm px-2 py-1 flex-1 min-w-0',
-                SECTOR_BG[colorKey],
-              ].join(' ')}
-            >
-              <span className="text-xs font-semibold text-white/70 leading-none mb-0.5">
-                S{sector.SectorNum + 1}
-              </span>
-              <span
-                className={[
-                  'text-sm font-mono font-bold leading-none tabular-nums',
-                  SECTOR_TEXT[colorKey],
-                ].join(' ')}
-              >
-                {delta}
-              </span>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Ghost lap delta row — only shown when a ghost file is loaded and enabled */}
-      {showGhostLap && hasGhostLap && (
-        <div className="flex flex-row gap-1">
-          {sectors.map((sector, i) => {
-            const isCurrent = i === currentSectorIdx;
-            const displayTime = isCurrent
-              ? null
-              : (currentLapSectorTimes[i] ?? previousLapSectorTimes[i] ?? null);
-            const colorKey: SectorColor | 'current' = isCurrent
-              ? 'current'
-              : ghostColor(displayTime, refSectorTimes[i] ?? null);
-            const delta = formatDelta(
-              displayTime,
-              refSectorTimes[i] ?? null,
-              timeFormat
-            );
-            return (
-              <div
-                key={sector.SectorNum}
-                className={[
-                  'flex flex-col items-center justify-center rounded-sm px-2 py-1 flex-1 min-w-0',
-                  SECTOR_BG[colorKey],
-                ].join(' ')}
-              >
-                <span className="text-xs font-semibold text-white/70 leading-none mb-0.5">
-                  G{sector.SectorNum + 1}
-                </span>
-                <span
-                  className={[
-                    'text-sm font-mono font-bold leading-none tabular-nums',
-                    SECTOR_TEXT[colorKey],
-                  ].join(' ')}
-                >
-                  {delta}
-                </span>
-              </div>
-            );
-          })}
+      {useGhost && (
+        <div className="flex items-center justify-center px-1 text-slate-400 flex-shrink-0">
+          <GhostIcon size={14} weight="fill" />
         </div>
       )}
+      {sectors.map((sector, i) => {
+        const isCurrent = i === currentSectorIdx;
+        const displayTime = isCurrent
+          ? null
+          : (currentLapSectorTimes[i] ?? previousLapSectorTimes[i] ?? null);
+
+        const colorKey: SectorColor | 'current' = isCurrent
+          ? 'current'
+          : useGhost
+            ? ghostColor(displayTime, refSectorTimes[i] ?? null)
+            : (sectorColors[i] ?? 'default');
+
+        const refTime = useGhost
+          ? (refSectorTimes[i] ?? null)
+          : (sessionBestSectorTimes[i] ?? null);
+
+        const delta = formatDelta(displayTime, refTime, timeFormat);
+        const card = SECTOR_CARD[colorKey];
+
+        return (
+          <div
+            key={sector.SectorNum}
+            className={[
+              'relative flex flex-col items-center justify-center rounded-sm px-2 py-1 flex-1 min-w-0 overflow-hidden',
+              card.bg,
+              card.accent,
+            ].join(' ')}
+          >
+            <span className="text-xs font-semibold text-slate-400 leading-none mb-0.5">
+              S{sector.SectorNum + 1}
+            </span>
+            <span
+              className={[
+                'text-sm font-bold leading-none tabular-nums',
+                card.text,
+              ].join(' ')}
+            >
+              {delta}
+            </span>
+            {isCurrent && (
+              <>
+                <div className="absolute bottom-0 left-0 right-0 h-[5px] bg-slate-700" />
+                <div
+                  className="absolute bottom-0 left-0 h-[5px] bg-sky-400 transition-[width] duration-200 ease-linear"
+                  style={{ width: `${sectorProgress * 100}%` }}
+                />
+              </>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 };
