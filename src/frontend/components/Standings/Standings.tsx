@@ -248,11 +248,12 @@ export const Standings = () => {
                     </Fragment>
                   );
                 })}
-                {index < standings.length - 1 && !isCompact && (
-                  <tr>
-                    <td colSpan={100} className="h-2"></td>
-                  </tr>
-                )}
+                {standings.slice(index + 1).some(([, content]) => content.length > 0) &&
+                  !isCompact && (
+                    <tr>
+                      <td colSpan={100} className="h-2"></td>
+                    </tr>
+                  )}
               </Fragment>
             ) : null;
           })}

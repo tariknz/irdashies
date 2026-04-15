@@ -564,12 +564,11 @@ export const StandingsSettings = () => {
                     />
 
                     <SettingSelectRow
-                      title="Drivers to show around player"
-                      value={settings.config.driverStandings.buffer.toString()}
-                      options={Array.from({ length: 15 }, (_, i) => ({
-                        label: i.toString(),
-                        value: i.toString(),
-                      }))}
+                      title="Drivers to show in other classes"
+                      value={settings.config.driverStandings.numNonClassDrivers.toString()}
+                      options={Array.from({ length: 11 }, (_, i) => {
+                        return { label: i.toString(), value: i.toString() };
+                      })}
                       onChange={(v) =>
                         handleConfigChange({
                           driverStandings: {
@@ -579,6 +578,62 @@ export const StandingsSettings = () => {
                         })
                       }
                     />
+
+                    <SettingSelectRow
+                      title="Minimum drivers in player's class"
+                      value={settings.config.driverStandings.minPlayerClassDrivers.toString()}
+                      options={Array.from({ length: 10 }, (_, i) => {
+                        const num = i + 1;
+                        return { label: num.toString(), value: num.toString() };
+                      })}
+                      onChange={(v) =>
+                        handleConfigChange({
+                          driverStandings: {
+                            ...settings.config.driverStandings,
+                            minPlayerClassDrivers: parseInt(v),
+                          },
+                        })
+                      }
+                    />
+
+                    <SettingSelectRow
+                      title="Top drivers to always show in player's class"
+                      value={settings.config.driverStandings.numTopDrivers.toString()}
+                      options={Array.from({ length: 11 }, (_, i) => {
+                        return { label: i.toString(), value: i.toString() };
+                      })}
+                      onChange={(v) =>
+                        handleConfigChange({
+                          driverStandings: {
+                            ...settings.config.driverStandings,
+                            numTopDrivers: parseInt(v),
+                          },
+                        })
+                      }
+                    />
+
+                    {settings.config.driverStandings.numTopDrivers > 0 && (
+                      <SettingSelectRow<'none' | 'theme' | 'highlight'>
+                        title="Top driver divider"
+                        value={
+                          settings.config.driverStandings.topDriverDivider ??
+                          'highlight'
+                        }
+                        options={[
+                          { label: 'None', value: 'none' },
+                          { label: 'Theme Color', value: 'theme' },
+                          { label: 'Highlight Color', value: 'highlight' },
+                        ]}
+                        onChange={(value) =>
+                          handleConfigChange({
+                            driverStandings: {
+                              ...settings.config.driverStandings,
+                              topDriverDivider: value,
+                            },
+                          })
+                        }
+                      />
+                    )}
 
                     <SettingToggleRow
                       title="Use Live Position Standings"
@@ -663,7 +718,7 @@ export const StandingsSettings = () => {
                         getItemConfig={(id) => {
                           const item =
                             settings.config.headerBar[
-                              id as keyof typeof settings.config.headerBar
+                            id as keyof typeof settings.config.headerBar
                             ];
                           return typeof item === 'object'
                             ? (item as SessionBarItemConfig)
@@ -672,7 +727,7 @@ export const StandingsSettings = () => {
                         updateItemConfig={(id, config) => {
                           const item =
                             settings.config.headerBar[
-                              id as keyof typeof settings.config.headerBar
+                            id as keyof typeof settings.config.headerBar
                             ];
                           if (typeof item === 'object') {
                             handleConfigChange({
@@ -734,7 +789,7 @@ export const StandingsSettings = () => {
                         getItemConfig={(id) => {
                           const item =
                             settings.config.footerBar[
-                              id as keyof typeof settings.config.footerBar
+                            id as keyof typeof settings.config.footerBar
                             ];
                           return typeof item === 'object'
                             ? (item as SessionBarItemConfig)
@@ -743,7 +798,7 @@ export const StandingsSettings = () => {
                         updateItemConfig={(id, config) => {
                           const item =
                             settings.config.footerBar[
-                              id as keyof typeof settings.config.footerBar
+                            id as keyof typeof settings.config.footerBar
                             ];
                           if (typeof item === 'object') {
                             handleConfigChange({

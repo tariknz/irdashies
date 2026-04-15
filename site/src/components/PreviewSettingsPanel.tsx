@@ -156,7 +156,7 @@ export function PreviewSettingsButton({
     <>
       <button
         onClick={() => setInternalOpen(true)}
-        className="flex items-center gap-1.5 px-2.5 py-1 rounded-sm text-[10px] font-bold uppercase tracking-wide text-red-600 border border-red-600/40 bg-red-600/5 hover:bg-red-600/15 hover:border-red-600/60 transition-colors"
+        className="flex items-center gap-1.5 px-2.5 py-1 rounded-sm text-[10px] font-bold uppercase tracking-wide text-white border border-red-600 bg-red-600/20 hover:bg-red-600/40 hover:border-red-500 transition-colors"
       >
         <GearSix size={12} weight="bold" />
         Configure

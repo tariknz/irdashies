@@ -1,16 +1,15 @@
-# iRacing Dashies
+# irDashies - Real-time iRacing Overlays
 
 <div align="center" style="padding-bottom: 20px;">
   <img src="./docs/assets/icons/logo.svg" alt="Logo" width="200" height="200">
+
+**[www.irdashies.com](https://www.irdashies.com)**
+
 </div>
 
-Welcome to the iRacing Dashies project! This repository contains the code and documentation for building iRacing overlays.
+An open-source platform for building real-time iRacing overlays and utilities using React and Electron. Designed to be approachable for web developers — no iRacing SDK, C++, or even iRacing installation required to get started.
 
-This is an open-source project that aims to provide a platform to build overlays and utilities for iRacing using React and Electron.
-
-This is built with the intention of being easily approachable by developers who are familiar with web development as well as not needing to have a deep understanding of the iRacing SDK, C++, or even needing to run iRacing at all.
-
-This project is still in the early stages of development, so there may be bugs and many missing features. If you are interested in contributing please reach out and we can discuss how we can collaborate.
+For bug reports, feature requests, or to get involved, join our [Discord](https://discord.gg/YMAqduF2Ft).
 
 ## Try it out
 

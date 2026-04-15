@@ -20,7 +20,7 @@ import {
   useSessionLaps,
 } from '@irdashies/context';
 import { generateMockDataFromPath } from '../../../app/bridge/iracingSdk/mock-data/generateMockData';
-import type { DashboardBridge } from '@irdashies/types';
+import type { DashboardBridge, StandingsConfig } from '@irdashies/types';
 import { defaultDashboard } from '@irdashies/types';
 import { useState, useEffect, Fragment } from 'react';
 import { DriverClassHeader } from './components/DriverClassHeader/DriverClassHeader';
@@ -265,6 +265,45 @@ export const MultiClassPCC: Story = {
 
 export const MultiClassPCCWithClio: Story = {
   decorators: [TelemetryDecorator('/test-data/1731637331038')],
+};
+
+export const MultiClassPlayground: Story = {
+  argTypes: {
+    numNonClassDrivers: {
+      control: { type: 'number', min: 0, max: 10 },
+      name: 'Drivers from other classes',
+    },
+    numTopDrivers: {
+      control: { type: 'number', min: 0, max: 10 },
+      name: "Top drivers to always show in player's class",
+    },
+  },
+  args: {
+    numNonClassDrivers: 3,
+    numTopDrivers: 3,
+  },
+  decorators: [
+    (Story, context) => {
+      const { numNonClassDrivers, numTopDrivers } = context.args as {
+        numNonClassDrivers: number;
+        numTopDrivers: number;
+      };
+      const standingsConfig = defaultDashboard.widgets.find(
+        (w) => w.id === 'standings'
+      )?.config as StandingsConfig;
+
+      return TelemetryDecoratorWithConfig('/test-data/1731637331038', {
+        standings: {
+          ...standingsConfig,
+          driverStandings: {
+            ...standingsConfig?.driverStandings,
+            numNonClassDrivers,
+            numTopDrivers,
+          },
+        },
+      })(Story, context);
+    },
+  ],
 };
 
 export const SupercarsRace: Story = {
