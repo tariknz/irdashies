@@ -204,9 +204,11 @@ export const FlatTrackMapCanvas = ({
           (isPlayer ? playerCircleSize : driverCircleSize) * circleScale;
         const fontSize = radius * (trackmapFontSize / 100);
         const originalColor = color.fill;
+        const livePosition =
+          driverLivePositions[driver.CarIdx] ?? classPosition;
 
         // highlight leader?
-        if (invertLeaderColor && classPosition === 1) {
+        if (!isPlayer && invertLeaderColor && livePosition === 1) {
           color = { fill: 'white', text: originalColor };
         }
 
@@ -226,7 +228,7 @@ export const FlatTrackMapCanvas = ({
           ctx.strokeStyle = getColor('yellow', 400);
           ctx.lineWidth = 4;
           ctx.stroke();
-        } else if (invertLeaderColor && classPosition === 1) {
+        } else if (!isPlayer && invertLeaderColor && livePosition === 1) {
           ctx.strokeStyle = originalColor;
           ctx.lineWidth = 2;
           ctx.stroke();
@@ -241,8 +243,6 @@ export const FlatTrackMapCanvas = ({
           if (onPitRoad) {
             displayText = 'P';
           } else if (displayMode === 'livePosition') {
-            const livePosition =
-              driverLivePositions[driver.CarIdx] ?? classPosition;
             displayText =
               livePosition !== undefined && livePosition > 0
                 ? livePosition.toString()
