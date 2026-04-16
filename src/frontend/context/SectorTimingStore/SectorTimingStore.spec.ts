@@ -486,6 +486,13 @@ describe('SectorTimingStore.reset', () => {
 // SectorTimingStore — invalidateLap
 // ---------------------------------------------------------------------------
 
+// 3-sector track used for active-reset tests
+const THREE_SECTORS = [
+  { SectorNum: 0, SectorStartPct: 0 },
+  { SectorNum: 1, SectorStartPct: 0.33 },
+  { SectorNum: 2, SectorStartPct: 0.67 },
+];
+
 describe('SectorTimingStore.invalidateLap', () => {
   it('sets lapStarted to false and resets position tracking', () => {
     useSectorTimingStore.getState().setSectors(MOCK_SECTORS);
@@ -514,6 +521,74 @@ describe('SectorTimingStore.invalidateLap', () => {
     const state = useSectorTimingStore.getState();
     // sector 2 should not have been recorded
     expect(state.sessionBestSectorTimes[2]).toBeNull();
+  });
+
+  it('preserves valid partial sector times in previousLapSectorTimes after active reset', () => {
+    // Scenario: great sector 0 and sector 1, crash in sector 2, active reset.
+    // The good times should survive into previousLapSectorTimes so the
+    // display fallback shows them on the next real lap.
+    const store = useSectorTimingStore.getState();
+    store.setSectors(THREE_SECTORS);
+    store.resetLap(); // lapStarted = true
+
+    // Drive sector 0 (30s) and sector 1 (25s)
+    store.tick(0.01, 100, true); // first tick → sectorEntryTime = 100
+    store.tick(0.34, 130, true); // cross S1: sector 0 = 30s
+    store.tick(0.68, 155, true); // cross S2: sector 1 = 25s
+
+    // Crash in sector 2 — active reset (IsOnTrack → false)
+    store.invalidateLap();
+    // currentLapSectorTimes still holds [30, 25, null] — those are valid
+
+    // Dummy lap: player rejoins and drives without timing (lapStarted=false)
+    store.tick(0.01, 160, true); // first tick after rejoin
+    store.tick(0.34, 190, true); // sector 0→1, lapStarted=false, no recording
+    store.tick(0.68, 215, true); // sector 1→2, lapStarted=false, no recording
+    // S/F wrap-around: promotes [30, 25, null] into previousLapSectorTimes
+    store.tick(0.01, 235, true);
+
+    const state = useSectorTimingStore.getState();
+    expect(state.lapStarted).toBe(true);
+    expect(state.previousLapSectorTimes[0]).toBeCloseTo(30);
+    expect(state.previousLapSectorTimes[1]).toBeCloseTo(25);
+    expect(state.previousLapSectorTimes[2]).toBeNull();
+  });
+
+  it('does not wipe previousLapSectorTimes when a second reset produces no valid sectors', () => {
+    // Scenario: player had good partial sectors from a first reset, then does
+    // another reset before completing any sectors. The second dummy lap is
+    // all-null and must NOT overwrite the reference data from the first reset.
+    const store = useSectorTimingStore.getState();
+    store.setSectors(THREE_SECTORS);
+    store.resetLap();
+
+    // Drive sectors 0 and 1, crash in sector 2 — first reset
+    store.tick(0.01, 100, true);
+    store.tick(0.34, 130, true); // sector 0 = 30s
+    store.tick(0.68, 155, true); // sector 1 = 25s
+    store.invalidateLap();
+
+    // First dummy lap → wrap-around: previousLapSectorTimes = [30, 25, null]
+    store.tick(0.01, 160, true);
+    store.tick(0.34, 190, true);
+    store.tick(0.68, 215, true);
+    store.tick(0.01, 235, true); // lap starts (lapStarted = true)
+
+    // Second reset immediately (no sectors driven yet, currentLapSectorTimes all null)
+    store.invalidateLap();
+
+    // Second dummy lap → wrap-around with all-null currentLapSectorTimes
+    store.tick(0.01, 240, true);
+    store.tick(0.34, 270, true);
+    store.tick(0.68, 295, true);
+    store.tick(0.01, 315, true); // wrap-around: should NOT wipe previousLapSectorTimes
+
+    const state = useSectorTimingStore.getState();
+    expect(state.lapStarted).toBe(true);
+    // Good partial data from the first reset must be preserved
+    expect(state.previousLapSectorTimes[0]).toBeCloseTo(30);
+    expect(state.previousLapSectorTimes[1]).toBeCloseTo(25);
+    expect(state.previousLapSectorTimes[2]).toBeNull();
   });
 });
 

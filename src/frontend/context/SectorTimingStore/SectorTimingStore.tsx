@@ -272,6 +272,19 @@ export const useSectorTimingStore = create<SectorTimingState>((set, get) => ({
         completedLapTimes[currentSectorIdx] = sessionTime - sectorEntryTime;
       }
 
+      // Only promote completedLapTimes to previousLapSectorTimes when there is
+      // at least one valid sector time to show. If the lap was entirely a dummy
+      // (lapStarted was false the whole time and currentLapSectorTimes is all
+      // null — e.g. a second active reset before completing any sectors), keep
+      // the existing previousLapSectorTimes so the last good reference data is
+      // not wiped. Valid partial sectors from an invalidated lap (e.g. great
+      // sector 1 before crashing) are still promoted because those entries
+      // will be non-null in completedLapTimes.
+      const hasValidTimes = completedLapTimes.some((t) => t !== null);
+      const newPreviousLapTimes = hasValidTimes
+        ? completedLapTimes
+        : state.previousLapSectorTimes;
+
       set({
         lapStarted: true,
         currentSectorIdx: 0,
@@ -279,7 +292,7 @@ export const useSectorTimingStore = create<SectorTimingState>((set, get) => ({
         lastLapDistPct: lapDistPct,
         sessionBestSectorTimes: newSessionBests,
         sectorColors: newColors,
-        previousLapSectorTimes: completedLapTimes,
+        previousLapSectorTimes: newPreviousLapTimes,
         currentLapSectorTimes: sectors.map(() => null),
       });
       return;
