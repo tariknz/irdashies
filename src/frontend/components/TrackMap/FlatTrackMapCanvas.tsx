@@ -7,6 +7,7 @@ export interface FlatTrackMapCanvasProps {
   trackDrawing: TrackDrawing;
   drivers: TrackDriver[];
   highlightColor?: number;
+  invertLeaderColor?: boolean;
   showCarNumbers?: boolean;
   displayMode?: 'carNumber' | 'sessionPosition' | 'livePosition';
   driverCircleSize?: number;
@@ -24,6 +25,7 @@ const HORIZONTAL_PADDING = 40; // Fixed padding on each side
 export const FlatTrackMapCanvas = ({
   drivers,
   highlightColor,
+  invertLeaderColor = false,
   showCarNumbers = true,
   displayMode = 'carNumber',
   driverCircleSize = 40,
@@ -201,7 +203,14 @@ export const FlatTrackMapCanvas = ({
         const radius =
           (isPlayer ? playerCircleSize : driverCircleSize) * circleScale;
         const fontSize = radius * (trackmapFontSize / 100);
+        const originalColor = color.fill;
 
+        // highlight leader?
+        if (invertLeaderColor && classPosition === 1) {
+          color = { fill: 'white', text: originalColor };
+        }
+
+        // on pit road?
         const onPitRoad = !!carIdxIsOnPitRoad?.[driver.CarIdx];
         if (onPitRoad) {
           color = { fill: '#999999', text: 'white' };
@@ -212,9 +221,14 @@ export const FlatTrackMapCanvas = ({
         ctx.arc(x, centerY, radius, 0, 2 * Math.PI);
         ctx.fill();
 
+        // draw a border?
         if (driversOffTrack[driver.CarIdx]) {
           ctx.strokeStyle = getColor('yellow', 400);
-          ctx.lineWidth = 3;
+          ctx.lineWidth = 4;
+          ctx.stroke();
+        } else if (invertLeaderColor && classPosition === 1) {
+          ctx.strokeStyle = originalColor;
+          ctx.lineWidth = 2;
           ctx.stroke();
         }
 
@@ -253,6 +267,7 @@ export const FlatTrackMapCanvas = ({
     canvasSize,
     drivers,
     driverColors,
+    invertLeaderColor,
     driversOffTrack,
     showCarNumbers,
     displayMode,

@@ -154,6 +154,7 @@ export const drawDrivers = (
     }
   >,
   driverColors: Record<number, { fill: string; text: string }>,
+  invertLeaderColor: boolean,
   driversOffTrack: boolean[],
   driverCircleSize: number,
   playerCircleSize: number,
@@ -171,7 +172,14 @@ export const drawDrivers = (
 
       const circleRadius = isPlayer ? playerCircleSize : driverCircleSize;
       const fontSize = circleRadius * (trackmapFontSize / 100);
+      const originalColor = color.fill;
 
+      // highlight leader?
+      if (invertLeaderColor && sessionPosition === 1) {
+        color = { fill: 'white', text: originalColor };
+      }
+
+      // on pit road?
       const onPitRoad = !!carIdxIsOnPitRoad?.[driver.CarIdx];
       if (onPitRoad) {
         color = { fill: '#999999', text: 'white' };
@@ -182,9 +190,14 @@ export const drawDrivers = (
       ctx.arc(position.x, position.y, circleRadius, 0, 2 * Math.PI);
       ctx.fill();
 
+      // draw a border?
       if (driversOffTrack[driver.CarIdx]) {
         ctx.strokeStyle = getColor('yellow', 400);
-        ctx.lineWidth = 10;
+        ctx.lineWidth = 12;
+        ctx.stroke();
+      } else if (invertLeaderColor && sessionPosition === 1) {
+        ctx.strokeStyle = originalColor;
+        ctx.lineWidth = 4;
         ctx.stroke();
       }
 
