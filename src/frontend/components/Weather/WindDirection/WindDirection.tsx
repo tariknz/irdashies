@@ -37,10 +37,12 @@ export const WindDirection = memo(
     }, [direction]);
 
     return (
-      <div className="bg-slate-800/70 p-2 rounded-sm">
+      <div className="bg-slate-800/70 p-2 rounded-sm w-full min-w-0">
         <div className="flex flex-row gap-x-2 items-center text-sm mb-3">
-          <WindIcon />
-          <span className="grow">Wind</span>
+          <WindIcon className="flex-none" />
+          <span className="truncate min-w-0 flex-1 @max-[120px]:hidden">
+            Wind
+          </span>
         </div>
         <div className="flex justify-center">
           <div

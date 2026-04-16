@@ -670,6 +670,7 @@ export const defaultDashboard: {
           'airTemp',
           'wind',
           'humidity',
+          'precipitation',
           'wetness',
           'trackState',
         ],
@@ -686,6 +687,9 @@ export const defaultDashboard: {
           enabled: true,
         },
         humidity: {
+          enabled: true,
+        },
+        precipitation: {
           enabled: true,
         },
         wind: {

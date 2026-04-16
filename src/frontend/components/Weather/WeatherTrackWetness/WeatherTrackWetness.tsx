@@ -34,10 +34,10 @@ export const WeatherTrackWetness = memo(
     const trackState = WETNESS_LEVELS[safeTrackMoisture] ?? 'Unknown';
 
     return (
-      <div className="bg-slate-800/70 p-2 rounded-sm">
+      <div className="bg-slate-800/70 p-2 rounded-sm w-full min-w-0">
         <div className="flex items-center flex-row gap-x-1 mt-1">
-          <SunIcon />
-          <div className="w-full bg-gray-700 rounded-full h-2.5">
+          <SunIcon className="flex-none" />
+          <div className="grow bg-gray-700 rounded-full h-2.5">
             <div
               role="progressbar"
               aria-valuenow={trackWetnessPct}
@@ -47,9 +47,11 @@ export const WeatherTrackWetness = memo(
               className="bg-blue-600 h-2.5 rounded-full transition-all duration-1000 ease-in-out"
             ></div>
           </div>
-          <DropIcon />
+          <DropIcon className="flex-none" />
         </div>
-        <div className="text-center text-sm mt-1">{trackState}</div>
+        <div className="text-center text-sm mt-1 truncate w-full px-1">
+          {trackState}
+        </div>
       </div>
     );
   }
