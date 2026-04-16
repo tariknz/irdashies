@@ -100,16 +100,63 @@ const IncidentDisplay = ({
   );
 };
 
-export const Incidents: StoryObj<IncidentDisplayProps> = {
-  args: {
-    incidents: 4,
-    incidentLimit: 17,
-    incidentWarningInitialLimit: null,
-    incidentWarningSubsequentLimit: null,
+interface IncidentsArgs {
+  incidents: string;
+  incidentLimit: string;
+  incidentWarningInitialLimit: string;
+  incidentWarningSubsequentLimit: string;
+}
+
+const incidentsMeta: Meta<IncidentsArgs> = {
+  title: 'widgets/Standings/components/SessionBar/Incidents',
+  argTypes: {
+    incidents: {
+      control: { type: 'text' },
+      description: 'Current incident count (empty = null)',
+    },
+    incidentLimit: {
+      control: { type: 'text' },
+      description: 'Total DQ limit (empty = null)',
+    },
+    incidentWarningInitialLimit: {
+      control: { type: 'text' },
+      description: 'Initial penalty threshold (empty = null)',
+    },
+    incidentWarningSubsequentLimit: {
+      control: { type: 'text' },
+      description: 'Subsequent penalty interval (empty = null)',
+    },
   },
-  render: (args) => (
-    <div className="bg-slate-900/70 px-3 py-2 flex items-center text-sm justify-start">
-      <IncidentDisplay {...args} />
-    </div>
-  ),
+};
+
+export const Incidents: StoryObj<IncidentsArgs> = {
+  ...incidentsMeta,
+  args: {
+    incidents: '4',
+    incidentLimit: '17',
+    incidentWarningInitialLimit: '',
+    incidentWarningSubsequentLimit: '',
+  },
+  render: (args: IncidentsArgs) => {
+    const parseValue = (val: string | number | null): number | null => {
+      if (val === '' || val === null || val === undefined) return null;
+      const num = Number(val);
+      return isNaN(num) ? null : num;
+    };
+
+    return (
+      <div className="bg-slate-900/70 px-3 py-2 flex items-center text-sm justify-start">
+        <IncidentDisplay
+          incidents={parseValue(args.incidents) ?? 0}
+          incidentLimit={parseValue(args.incidentLimit)}
+          incidentWarningInitialLimit={parseValue(
+            args.incidentWarningInitialLimit
+          )}
+          incidentWarningSubsequentLimit={parseValue(
+            args.incidentWarningSubsequentLimit
+          )}
+        />
+      </div>
+    );
+  },
 };
