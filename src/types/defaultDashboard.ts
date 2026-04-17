@@ -241,6 +241,7 @@ export const defaultDashboard: {
           'lapTimeDeltas',
           'avgLapTime',
         ],
+        rotationGroups: [],
         driverTag: { enabled: false },
         sessionVisibility: {
           race: true,
@@ -578,6 +579,7 @@ export const defaultDashboard: {
           ],
         },
         showOnlyWhenOnTrack: false,
+        rotationGroups: [],
         sessionVisibility: {
           race: true,
           loneQualify: true,
@@ -1119,6 +1121,7 @@ export const defaultDashboard: {
     compactMode: 'off' as const,
     overlayAlwaysOnTop: true,
     enableNetworkAccess: false,
+    animationCycleTime: 5,
   },
 };
 

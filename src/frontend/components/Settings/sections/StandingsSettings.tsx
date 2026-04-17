@@ -1,43 +1,47 @@
 import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
+import { useDashboard } from '@irdashies/context';
 import {
   StandingsWidgetSettings,
   SettingsTabType,
   getWidgetDefaultConfig,
+  StandingsBadgeFormat,
 } from '@irdashies/types';
-import { useDashboard } from '@irdashies/context';
 import { ToggleSwitch } from '../components/ToggleSwitch';
 import { TabButton } from '../components/TabButton';
-import { SortableList } from '../../SortableList';
-import { DraggableSettingItem } from '../components/DraggableSettingItem';
 import { BadgeFormatPreview } from '../components/BadgeFormatPreview';
-import { DriverNamePreview } from '../components/DriverNamePreview';
 import { DEFAULT_SESSION_BAR_DISPLAY_ORDER } from '../sessionBarConstants';
 import { SessionVisibility } from '../components/SessionVisibility';
+import { DriverNamePreview } from '../components/DriverNamePreview';
 import { SettingDivider } from '../components/SettingDivider';
 import { SettingsSection } from '../components/SettingSection';
 import { SettingToggleRow } from '../components/SettingToggleRow';
 import { SettingActionButton } from '../components/SettingActionButton';
-import { SettingSliderRow } from '../components/SettingSliderRow';
 import { SettingSelectRow } from '../components/SettingSelectRow';
+import { SettingSliderRow } from '../components/SettingSliderRow';
 import {
   SessionBarItemsList,
   SessionBarItemConfig,
 } from '../components/SessionBarItemsList';
+import { DisplaySettingsList } from './shared/DisplaySettingsList';
+import type { SharedSortableSetting } from './shared/DisplaySettingsList';
 
 const SETTING_ID = 'standings';
 
-interface SortableSetting {
-  id: string;
-  label: string;
-  configKey: keyof StandingsWidgetSettings['config'];
-  hasSubSetting?: boolean;
-}
-
-const sortableSettings: SortableSetting[] = [
-  { id: 'position', label: 'Position', configKey: 'position' },
-  { id: 'carNumber', label: 'Car Number', configKey: 'carNumber' },
-  { id: 'countryFlags', label: 'Country Flags', configKey: 'countryFlags' },
+const sortableSettings: SharedSortableSetting[] = [
+  { id: 'position', label: 'Position', configKey: 'position', canRotate: true },
+  {
+    id: 'carNumber',
+    label: 'Car Number',
+    configKey: 'carNumber',
+    canRotate: true,
+  },
+  {
+    id: 'countryFlags',
+    label: 'Country Flags',
+    configKey: 'countryFlags',
+    canRotate: true,
+  },
   {
     id: 'driverName',
     label: 'Driver Name',
@@ -50,36 +54,75 @@ const sortableSettings: SortableSetting[] = [
     label: 'Pit Status',
     configKey: 'pitStatus',
     hasSubSetting: true,
+    canRotate: true,
   },
   {
     id: 'carManufacturer',
     label: 'Car Manufacturer',
     configKey: 'carManufacturer',
     hasSubSetting: true,
+    canRotate: true,
   },
-  { id: 'driverTag', label: 'Driver Tag', configKey: 'driverTag' },
-  { id: 'badge', label: 'Driver Badge', configKey: 'badge' },
-  { id: 'iratingChange', label: 'iRating Change', configKey: 'iratingChange' },
+  {
+    id: 'driverTag',
+    label: 'Driver Tag',
+    configKey: 'driverTag',
+    canRotate: true,
+  },
+  { id: 'badge', label: 'Driver Badge', configKey: 'badge', canRotate: true },
+  {
+    id: 'iratingChange',
+    label: 'iRating Change',
+    configKey: 'iratingChange',
+    canRotate: true,
+  },
   {
     id: 'positionChange',
     label: 'Position Change',
     configKey: 'positionChange',
+    canRotate: true,
   },
-  { id: 'gap', label: 'Gap', configKey: 'gap', hasSubSetting: true },
+  { id: 'delta', label: 'Delta', configKey: 'delta', canRotate: true },
+  {
+    id: 'gap',
+    label: 'Gap',
+    configKey: 'gap',
+    hasSubSetting: true,
+    canRotate: true,
+  },
   {
     id: 'interval',
     label: 'Interval',
     configKey: 'interval',
     hasSubSetting: true,
+    canRotate: true,
   },
-  { id: 'fastestTime', label: 'Best Time', configKey: 'fastestTime' },
-  { id: 'lastTime', label: 'Last Time', configKey: 'lastTime' },
-  { id: 'compound', label: 'Tire Compound', configKey: 'compound' },
+  {
+    id: 'fastestTime',
+    label: 'Best Time',
+    configKey: 'fastestTime',
+    hasSubSetting: true,
+    canRotate: true,
+  },
+  {
+    id: 'lastTime',
+    label: 'Last Time',
+    configKey: 'lastTime',
+    hasSubSetting: true,
+    canRotate: true,
+  },
   {
     id: 'lapTimeDeltas',
-    label: 'Lap Time Deltas',
+    label: 'Live Delta',
     configKey: 'lapTimeDeltas',
     hasSubSetting: true,
+    canRotate: true,
+  },
+  {
+    id: 'compound',
+    label: 'Tire Compound',
+    configKey: 'compound',
+    canRotate: true,
   },
   {
     id: 'avgLapTime',
@@ -91,443 +134,18 @@ const sortableSettings: SortableSetting[] = [
 
 const defaultConfig = getWidgetDefaultConfig('standings');
 
-interface DisplaySettingsListProps {
-  itemsOrder: string[];
-  onReorder: (newOrder: string[]) => void;
-  settings: StandingsWidgetSettings;
-  handleConfigChange: (
-    changes: Partial<StandingsWidgetSettings['config']>
-  ) => void;
-}
-
-const DisplaySettingsList = ({
-  itemsOrder,
-  onReorder,
-  settings,
-  handleConfigChange,
-}: DisplaySettingsListProps) => {
-  const items = itemsOrder
-    .map((id) => {
-      const setting = sortableSettings.find((s) => s.id === id);
-      return setting ? { ...setting } : null;
-    })
-    .filter((s): s is SortableSetting => s !== null);
-
-  return (
-    <SortableList
-      items={items}
-      onReorder={(newItems) => onReorder(newItems.map((i) => i.id))}
-      renderItem={(setting, sortableProps) => {
-        const configValue = settings.config[setting.configKey];
-        const isEnabled = (configValue as { enabled: boolean }).enabled;
-
-        return (
-          <DraggableSettingItem
-            key={setting.id}
-            label={setting.label}
-            enabled={isEnabled}
-            onToggle={(enabled) => {
-              const cv = settings.config[setting.configKey] as {
-                enabled: boolean;
-                [key: string]: unknown;
-              };
-              handleConfigChange({
-                [setting.configKey]: { ...cv, enabled },
-              });
-            }}
-            sortableProps={sortableProps}
-          >
-            {setting.hasSubSetting &&
-              setting.configKey === 'lapTimeDeltas' &&
-              settings.config.lapTimeDeltas.enabled && (
-                <div className="flex items-center justify-between pl-8 mt-2 indent-8">
-                  <span className="text-sm text-slate-300">
-                    Number of Laps to Show
-                  </span>
-                  <select
-                    value={settings.config.lapTimeDeltas.numLaps}
-                    onChange={(e) =>
-                      handleConfigChange({
-                        lapTimeDeltas: {
-                          ...settings.config.lapTimeDeltas,
-                          numLaps: parseInt(e.target.value),
-                        },
-                      })
-                    }
-                    className="bg-slate-700 text-white rounded-md px-2 py-1"
-                  >
-                    <option value={1}>1</option>
-                    <option value={2}>2</option>
-                    <option value={3}>3</option>
-                    <option value={4}>4</option>
-                    <option value={5}>5</option>
-                  </select>
-                </div>
-              )}
-            {setting.hasSubSetting &&
-              setting.configKey === 'avgLapTime' &&
-              settings.config.avgLapTime.enabled && (
-                <>
-                  <div className="flex items-center justify-between pl-8 mt-2 indent-8">
-                    <span className="text-sm text-slate-300">Rolling Laps</span>
-                    <select
-                      value={settings.config.avgLapTime.numLaps}
-                      onChange={(e) =>
-                        handleConfigChange({
-                          avgLapTime: {
-                            ...settings.config.avgLapTime,
-                            numLaps: parseInt(e.target.value),
-                          },
-                        })
-                      }
-                      className="bg-slate-700 text-white rounded-md px-2 py-1"
-                    >
-                      <option value={3}>3</option>
-                      <option value={4}>4</option>
-                      <option value={5}>5</option>
-                      <option value={6}>6</option>
-                      <option value={7}>7</option>
-                      <option value={8}>8</option>
-                      <option value={9}>9</option>
-                      <option value={10}>10</option>
-                    </select>
-                  </div>
-                  <div className="flex items-center justify-between pl-8 mt-2 indent-8">
-                    <span className="text-sm text-slate-300">Time Format</span>
-                    <select
-                      value={settings.config.avgLapTime.timeFormat}
-                      onChange={(e) =>
-                        handleConfigChange({
-                          avgLapTime: {
-                            ...settings.config.avgLapTime,
-                            timeFormat: e.target.value as
-                              | 'full'
-                              | 'mixed'
-                              | 'minutes'
-                              | 'seconds-full'
-                              | 'seconds-mixed'
-                              | 'seconds',
-                          },
-                        })
-                      }
-                      className="bg-slate-700 text-white rounded-md px-2 py-1"
-                    >
-                      <option value="full">1:42.123</option>
-                      <option value="mixed">1:42.1</option>
-                      <option value="minutes">1:42</option>
-                      <option value="seconds-full">42.123</option>
-                      <option value="seconds-mixed">42.1</option>
-                      <option value="seconds">42</option>
-                    </select>
-                  </div>
-                </>
-              )}
-            {setting.hasSubSetting &&
-              setting.configKey === 'pitStatus' &&
-              settings.config.pitStatus.enabled && (
-                <div className="flex items-center justify-between pl-8 mt-2 indent-8">
-                  <span className="text-sm text-slate-300">Pit Time</span>
-                  <ToggleSwitch
-                    enabled={settings.config.pitStatus.showPitTime ?? false}
-                    onToggle={(enabled) => {
-                      const cv = settings.config[setting.configKey] as {
-                        enabled: boolean;
-                        showPitTime?: boolean;
-                        pitLapDisplayMode?: 'lastPitLap' | 'lapsSinceLastPit';
-                        [key: string]: unknown;
-                      };
-                      handleConfigChange({
-                        [setting.configKey]: { ...cv, showPitTime: enabled },
-                      });
-                    }}
-                  />
-                  <span className="textP-sm text-slate-300">
-                    Pitlap display mode
-                  </span>
-                  <select
-                    value={settings.config.pitStatus.pitLapDisplayMode}
-                    onChange={(e) => {
-                      const cv = settings.config[setting.configKey] as {
-                        enabled: boolean;
-                        showPitTime?: boolean;
-                        pitLapDisplayMode?: 'lastPitLap' | 'lapsSinceLastPit';
-                        [key: string]: unknown;
-                      };
-                      handleConfigChange({
-                        [setting.configKey]: {
-                          ...cv,
-                          pitLapDisplayMode: e.target.value as
-                            | 'lastPitLap'
-                            | 'lapsSinceLastPit',
-                        },
-                      });
-                    }}
-                    className="bg-slate-700 text-white rounded-md px-2 py-1"
-                  >
-                    <option value="lastPitLap">Last pit lap</option>
-                    <option value="lapsSinceLastPit">
-                      Laps since last pit
-                    </option>
-                  </select>
-                </div>
-              )}
-            {setting.hasSubSetting &&
-              setting.configKey === 'carManufacturer' &&
-              settings.config.carManufacturer.enabled && (
-                <div className="flex items-center justify-between pl-8 mt-2 indent-8">
-                  <span className="text-sm text-slate-300">
-                    Hide If Single Make
-                  </span>
-                  <ToggleSwitch
-                    enabled={
-                      settings.config.carManufacturer.hideIfSingleMake ?? false
-                    }
-                    onToggle={(enabled) => {
-                      const cv = settings.config[setting.configKey] as {
-                        enabled: boolean;
-                        hideIfSingleMake?: boolean;
-                        [key: string]: unknown;
-                      };
-                      handleConfigChange({
-                        [setting.configKey]: {
-                          ...cv,
-                          hideIfSingleMake: enabled,
-                        },
-                      });
-                    }}
-                  />
-                </div>
-              )}
-            {setting.hasSubSetting &&
-              (setting.configKey === 'gap' ||
-                setting.configKey === 'interval') &&
-              (configValue as { enabled: boolean }).enabled && (
-                <div className="flex items-center justify-between pl-8 mt-2 indent-8">
-                  <span className="text-sm text-slate-300">Decimal Places</span>
-                  <select
-                    value={
-                      (
-                        settings.config[setting.configKey] as {
-                          decimalPlaces: number;
-                        }
-                      ).decimalPlaces
-                    }
-                    onChange={(e) => {
-                      const cv = settings.config[setting.configKey] as {
-                        enabled: boolean;
-                        decimalPlaces: number;
-                        [key: string]: unknown;
-                      };
-                      handleConfigChange({
-                        [setting.configKey]: {
-                          ...cv,
-                          decimalPlaces: parseInt(e.target.value),
-                        },
-                      });
-                    }}
-                    className="bg-slate-700 text-white rounded-md px-2 py-1"
-                  >
-                    <option value={1}>1</option>
-                    <option value={2}>2</option>
-                    <option value={3}>3</option>
-                  </select>
-                </div>
-              )}
-            {setting.configKey === 'badge' &&
-              (configValue as { enabled: boolean }).enabled && (
-                <div className="mt-3">
-                  <div className="flex flex-wrap gap-3 justify-end">
-                    {(
-                      [
-                        'license-color-fullrating-combo',
-                        'fullrating-color-no-license',
-                        'rating-color-no-license',
-                        'license-color-fullrating-bw',
-                        'license-color-rating-bw',
-                        'rating-only-color-rating-bw',
-                        'license-color-rating-bw-no-license',
-                        'license-bw-rating-bw',
-                        'rating-only-bw-rating-bw',
-                        'license-bw-rating-bw-no-license',
-                        'rating-bw-no-license',
-                        'fullrating-bw-no-license',
-                      ] as const
-                    ).map((format) => (
-                      <BadgeFormatPreview
-                        key={format}
-                        format={format}
-                        selected={
-                          (
-                            configValue as {
-                              enabled: boolean;
-                              badgeFormat: string;
-                            }
-                          ).badgeFormat === format
-                        }
-                        onClick={() => {
-                          const cv = settings.config[setting.configKey] as {
-                            enabled: boolean;
-                            badgeFormat: string;
-                            [key: string]: unknown;
-                          };
-                          handleConfigChange({
-                            [setting.configKey]: { ...cv, badgeFormat: format },
-                          });
-                        }}
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
-            {setting.configKey === 'driverName' &&
-              (configValue as { enabled: boolean }).enabled && (
-                <div className="mt-3">
-                  <div className="flex flex-wrap gap-3 justify-end">
-                    {(
-                      [
-                        'name-middlename-surname',
-                        'name-m.-surname',
-                        'name-surname',
-                        'n.-surname',
-                        'surname-n.',
-                        'surname',
-                      ] as const
-                    ).map((format) => (
-                      <DriverNamePreview
-                        key={format}
-                        format={format}
-                        selected={
-                          (
-                            configValue as {
-                              enabled: boolean;
-                              nameFormat: string;
-                            }
-                          ).nameFormat === format
-                        }
-                        onClick={() => {
-                          const cv = settings.config[setting.configKey] as {
-                            enabled: boolean;
-                            nameFormat: string;
-                            [key: string]: unknown;
-                          };
-                          handleConfigChange({
-                            [setting.configKey]: { ...cv, nameFormat: format },
-                          });
-                        }}
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
-            {setting.hasSubSetting &&
-              setting.configKey === 'driverName' &&
-              settings.config.driverName.enabled && (
-                <div className="flex items-center justify-between pl-8 mt-2 indent-8">
-                  <span className="text-sm text-slate-300">
-                    Remove Numbers From Names
-                  </span>
-                  <ToggleSwitch
-                    enabled={settings.config.driverName.removeNumbersFromName}
-                    onToggle={(enabled) => {
-                      const cv = settings.config[setting.configKey] as {
-                        enabled: boolean;
-                        removeNumbersFromName: boolean;
-                        [key: string]: unknown;
-                      };
-                      handleConfigChange({
-                        [setting.configKey]: {
-                          ...cv,
-                          removeNumbersFromName: enabled,
-                        },
-                      });
-                    }}
-                  />
-                </div>
-              )}
-            {setting.hasSubSetting &&
-              setting.configKey === 'driverName' &&
-              settings.config.driverName.enabled && (
-                <div className="flex items-center justify-between pl-8 mt-2 indent-8">
-                  <span className="text-sm text-slate-300">Status Badges</span>
-                  <ToggleSwitch
-                    enabled={settings.config.driverName.showStatusBadges}
-                    onToggle={(enabled) => {
-                      const cv = settings.config[setting.configKey] as {
-                        enabled: boolean;
-                        showStatusBadges: boolean;
-                        [key: string]: unknown;
-                      };
-                      handleConfigChange({
-                        [setting.configKey]: {
-                          ...cv,
-                          showStatusBadges: enabled,
-                        },
-                      });
-                    }}
-                  />
-                </div>
-              )}
-            {(setting.configKey === 'fastestTime' ||
-              setting.configKey === 'lastTime') &&
-              (configValue as { enabled: boolean }).enabled && (
-                <div className="flex items-center justify-between mt-2">
-                  <span className="text-sm text-slate-300"></span>
-                  <select
-                    value={
-                      (configValue as { enabled: boolean; timeFormat: string })
-                        .timeFormat
-                    }
-                    onChange={(e) => {
-                      const cv = settings.config[setting.configKey] as {
-                        enabled: boolean;
-                        timeFormat: string;
-                        [key: string]: unknown;
-                      };
-                      handleConfigChange({
-                        [setting.configKey]: {
-                          ...cv,
-                          timeFormat: e.target.value as
-                            | 'full'
-                            | 'mixed'
-                            | 'minutes'
-                            | 'seconds-full'
-                            | 'seconds-mixed'
-                            | 'seconds',
-                        },
-                      });
-                    }}
-                    className="bg-slate-700 text-white rounded-md px-2 py-1"
-                  >
-                    <option value="full">1:42.123</option>
-                    <option value="mixed">1:42.1</option>
-                    <option value="minutes">1:42</option>
-                    <option value="seconds-full">42.123</option>
-                    <option value="seconds-mixed">42.1</option>
-                    <option value="seconds">42</option>
-                  </select>
-                </div>
-              )}
-          </DraggableSettingItem>
-        );
-      }}
-    />
-  );
-};
-
 export const StandingsSettings = () => {
   const { currentDashboard } = useDashboard();
   const savedSettings = currentDashboard?.widgets.find(
     (w) => w.id === SETTING_ID
   ) as StandingsWidgetSettings | undefined;
+
   const [settings, setSettings] = useState<StandingsWidgetSettings>({
-    enabled: savedSettings?.enabled ?? false,
+    enabled: savedSettings?.enabled ?? true,
     config:
-      (savedSettings?.config as StandingsWidgetSettings['config']) ??
+      (savedSettings?.config as StandingsWidgetSettings['config']) ||
       defaultConfig,
   });
-  const [itemsOrder, setItemsOrder] = useState(settings.config.displayOrder);
-
-  // Tab state with persistence
   const [activeTab, setActiveTab] = useState<SettingsTabType>(
     () => (localStorage.getItem('standingsTab') as SettingsTabType) || 'display'
   );
@@ -536,89 +154,392 @@ export const StandingsSettings = () => {
     localStorage.setItem('standingsTab', activeTab);
   }, [activeTab]);
 
-  if (!currentDashboard) {
-    return <>Loading...</>;
-  }
+  if (!currentDashboard) return null;
 
   return (
     <BaseSettingsSection
       title="Standings"
-      description="Configure how the standings widget appears and behaves."
+      description="Configure the standings and leaderboard display settings."
       settings={settings}
       onSettingsChange={setSettings}
-      widgetId={SETTING_ID}
+      widgetId="standings"
     >
       {(handleConfigChange) => {
-        const handleDisplayOrderChange = (newOrder: string[]) => {
-          setItemsOrder(newOrder);
-          handleConfigChange({ displayOrder: newOrder });
-        };
+        const onConfigChange = handleConfigChange as unknown as (
+          changes: Record<string, unknown>
+        ) => void;
 
         return (
           <div className="space-y-4">
             {/* Tabs */}
             <div className="flex border-b border-slate-700/50">
-              <TabButton
-                id="display"
-                activeTab={activeTab}
-                setActiveTab={setActiveTab}
-              >
-                Display
-              </TabButton>
-              <TabButton
-                id="options"
-                activeTab={activeTab}
-                setActiveTab={setActiveTab}
-              >
-                Options
-              </TabButton>
-              <TabButton
-                id="header"
-                activeTab={activeTab}
-                setActiveTab={setActiveTab}
-              >
-                Header
-              </TabButton>
-              <TabButton
-                id="footer"
-                activeTab={activeTab}
-                setActiveTab={setActiveTab}
-              >
-                Footer
-              </TabButton>
-              <TabButton
-                id="styling"
-                activeTab={activeTab}
-                setActiveTab={setActiveTab}
-              >
-                Styling
-              </TabButton>
-              <TabButton
-                id="visibility"
-                activeTab={activeTab}
-                setActiveTab={setActiveTab}
-              >
-                Visibility
-              </TabButton>
+              {(
+                [
+                  'display',
+                  'options',
+                  'header',
+                  'footer',
+                  'styling',
+                  'visibility',
+                ] as const
+              ).map((tab) => (
+                <TabButton
+                  key={tab}
+                  id={tab}
+                  activeTab={activeTab}
+                  setActiveTab={setActiveTab}
+                >
+                  {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                </TabButton>
+              ))}
             </div>
 
-            <div>
+            <div className="flex-1 overflow-y-auto min-h-0 pr-2 custom-scrollbar">
               {/* DISPLAY TAB */}
               {activeTab === 'display' && (
                 <SettingsSection title="Display Order">
                   <DisplaySettingsList
-                    itemsOrder={itemsOrder}
-                    onReorder={handleDisplayOrderChange}
-                    settings={settings}
-                    handleConfigChange={handleConfigChange}
+                    itemsOrder={settings.config.displayOrder}
+                    sortableSettings={sortableSettings}
+                    rotationGroups={settings.config.rotationGroups || []}
+                    getConfigValue={(key) =>
+                      settings.config[key as keyof typeof settings.config] as {
+                        enabled: boolean;
+                        [key: string]: unknown;
+                      }
+                    }
+                    onConfigChange={onConfigChange}
+                    renderItemChildren={(
+                      item: SharedSortableSetting,
+                      configValue
+                    ) => (
+                      <>
+                        {item.hasSubSetting &&
+                          item.configKey === 'pitStatus' &&
+                          settings.config.pitStatus.enabled && (
+                            <div className="flex flex-col gap-2 pl-3 mt-2">
+                              <div className="flex items-center justify-between">
+                                <span className="text-sm text-slate-300">
+                                  Pit Time
+                                </span>
+                                <ToggleSwitch
+                                  enabled={
+                                    settings.config.pitStatus.showPitTime ??
+                                    false
+                                  }
+                                  onToggle={(enabled) => {
+                                    handleConfigChange({
+                                      pitStatus: {
+                                        ...settings.config.pitStatus,
+                                        showPitTime: enabled,
+                                      },
+                                    });
+                                  }}
+                                />
+                              </div>
+                              <div className="flex items-center justify-between">
+                                <span className="text-sm text-slate-300">
+                                  Pitlap display mode
+                                </span>
+                                <select
+                                  value={
+                                    settings.config.pitStatus.pitLapDisplayMode
+                                  }
+                                  onChange={(e) => {
+                                    handleConfigChange({
+                                      pitStatus: {
+                                        ...settings.config.pitStatus,
+                                        pitLapDisplayMode: e.target.value as
+                                          | 'lastPitLap'
+                                          | 'lapsSinceLastPit',
+                                      },
+                                    });
+                                  }}
+                                  className="bg-slate-700 text-white rounded-md px-2 py-1 text-xs"
+                                >
+                                  <option value="lastPitLap">
+                                    Last pit lap
+                                  </option>
+                                  <option value="lapsSinceLastPit">
+                                    Laps since last pit
+                                  </option>
+                                </select>
+                              </div>
+                            </div>
+                          )}
+                        {item.hasSubSetting &&
+                          item.configKey === 'carManufacturer' &&
+                          settings.config.carManufacturer.enabled && (
+                            <div className="flex items-center justify-between pl-3 mt-2">
+                              <span className="text-sm text-slate-300">
+                                Hide If Single Make
+                              </span>
+                              <ToggleSwitch
+                                enabled={
+                                  settings.config.carManufacturer
+                                    .hideIfSingleMake ?? false
+                                }
+                                onToggle={(enabled) => {
+                                  handleConfigChange({
+                                    carManufacturer: {
+                                      ...settings.config.carManufacturer,
+                                      hideIfSingleMake: enabled,
+                                    },
+                                  });
+                                }}
+                              />
+                            </div>
+                          )}
+                        {item.hasSubSetting &&
+                          (item.configKey === 'gap' ||
+                            item.configKey === 'interval') &&
+                          configValue.enabled && (
+                            <div className="flex items-center justify-between pl-3 mt-2">
+                              <span className="text-sm text-slate-300">
+                                Decimal Places
+                              </span>
+                              <select
+                                value={
+                                  (
+                                    configValue as unknown as {
+                                      decimalPlaces: number;
+                                    }
+                                  ).decimalPlaces
+                                }
+                                onChange={(e) => {
+                                  onConfigChange({
+                                    [item.configKey]: {
+                                      ...configValue,
+                                      decimalPlaces: parseInt(e.target.value),
+                                    },
+                                  });
+                                }}
+                                className="bg-slate-700 text-white rounded-md px-2 py-1 text-xs"
+                              >
+                                <option value={1}>1</option>
+                                <option value={2}>2</option>
+                                <option value={3}>3</option>
+                              </select>
+                            </div>
+                          )}
+                        {item.hasSubSetting &&
+                          item.configKey === 'lapTimeDeltas' &&
+                          settings.config.lapTimeDeltas.enabled && (
+                            <div className="flex items-center justify-between pl-3 mt-2">
+                              <span className="text-sm text-slate-300">
+                                Number of Laps
+                              </span>
+                              <select
+                                value={settings.config.lapTimeDeltas.numLaps}
+                                onChange={(e) => {
+                                  handleConfigChange({
+                                    lapTimeDeltas: {
+                                      ...settings.config.lapTimeDeltas,
+                                      numLaps: parseInt(e.target.value),
+                                    },
+                                  });
+                                }}
+                                className="bg-slate-700 text-white rounded-md px-2 py-1 text-xs"
+                              >
+                                {[1, 2, 3, 4, 5, 10].map((n) => (
+                                  <option key={n} value={n}>
+                                    {n}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                          )}
+                        {item.configKey === 'badge' && configValue.enabled && (
+                          <div className="mt-3">
+                            <div className="flex flex-wrap gap-3 justify-end">
+                              {(
+                                [
+                                  'license-color-fullrating-combo',
+                                  'fullrating-color-no-license',
+                                  'rating-color-no-license',
+                                  'license-color-fullrating-bw',
+                                  'license-color-rating-bw',
+                                  'rating-only-color-rating-bw',
+                                  'license-color-rating-bw-no-license',
+                                  'license-bw-rating-bw',
+                                  'rating-only-bw-rating-bw',
+                                  'license-bw-rating-bw-no-license',
+                                  'rating-bw-no-license',
+                                  'fullrating-bw-no-license',
+                                ] as const
+                              ).map((format) => (
+                                <BadgeFormatPreview
+                                  key={format}
+                                  format={format}
+                                  selected={
+                                    (
+                                      configValue as unknown as {
+                                        badgeFormat: string;
+                                      }
+                                    ).badgeFormat === format
+                                  }
+                                  onClick={() => {
+                                    handleConfigChange({
+                                      badge: {
+                                        ...settings.config.badge,
+                                        badgeFormat:
+                                          format as StandingsBadgeFormat,
+                                      },
+                                    });
+                                  }}
+                                />
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        {item.configKey === 'driverName' &&
+                          configValue.enabled && (
+                            <div className="mt-3 flex flex-col gap-3">
+                              <div className="flex flex-wrap gap-3 justify-end">
+                                {(
+                                  [
+                                    'name-middlename-surname',
+                                    'name-m.-surname',
+                                    'name-surname',
+                                    'n.-surname',
+                                    'surname-n.',
+                                    'surname',
+                                  ] as const
+                                ).map((format) => (
+                                  <DriverNamePreview
+                                    key={format}
+                                    format={format}
+                                    selected={
+                                      (
+                                        configValue as unknown as {
+                                          nameFormat: string;
+                                        }
+                                      ).nameFormat === format
+                                    }
+                                    onClick={() => {
+                                      handleConfigChange({
+                                        driverName: {
+                                          ...settings.config.driverName,
+                                          nameFormat: format,
+                                        },
+                                      });
+                                    }}
+                                  />
+                                ))}
+                              </div>
+                              <div className="flex items-center justify-between pl-3">
+                                <span className="text-sm text-slate-300">
+                                  Remove Numbers From Names
+                                </span>
+                                <ToggleSwitch
+                                  enabled={
+                                    settings.config.driverName
+                                      .removeNumbersFromName
+                                  }
+                                  onToggle={(enabled) => {
+                                    handleConfigChange({
+                                      driverName: {
+                                        ...settings.config.driverName,
+                                        removeNumbersFromName: enabled,
+                                      },
+                                    });
+                                  }}
+                                />
+                              </div>
+                              <div className="flex items-center justify-between pl-3">
+                                <span className="text-sm text-slate-300">
+                                  Status Badges
+                                </span>
+                                <ToggleSwitch
+                                  enabled={
+                                    settings.config.driverName.showStatusBadges
+                                  }
+                                  onToggle={(enabled) => {
+                                    handleConfigChange({
+                                      driverName: {
+                                        ...settings.config.driverName,
+                                        showStatusBadges: enabled,
+                                      },
+                                    });
+                                  }}
+                                />
+                              </div>
+                            </div>
+                          )}
+                        {(item.configKey === 'fastestTime' ||
+                          item.configKey === 'lastTime' ||
+                          item.configKey === 'avgLapTime') &&
+                          configValue.enabled && (
+                            <div className="flex items-center justify-between pl-3 mt-2">
+                              <span className="text-sm text-slate-300">
+                                Time Format
+                              </span>
+                              <select
+                                value={
+                                  (
+                                    configValue as unknown as {
+                                      timeFormat: string;
+                                    }
+                                  ).timeFormat
+                                }
+                                onChange={(e) => {
+                                  onConfigChange({
+                                    [item.configKey]: {
+                                      ...configValue,
+                                      timeFormat: e.target.value,
+                                    },
+                                  });
+                                }}
+                                className="bg-slate-700 text-white rounded-md px-2 py-1 text-xs"
+                              >
+                                <option value="full">1:42.123</option>
+                                <option value="mixed">1:42.1</option>
+                                <option value="minutes">1:42</option>
+                                <option value="seconds-full">42.123</option>
+                                <option value="seconds-mixed">42.1</option>
+                                <option value="seconds">42</option>
+                              </select>
+                            </div>
+                          )}
+                        {item.hasSubSetting &&
+                          item.configKey === 'avgLapTime' &&
+                          settings.config.avgLapTime.enabled && (
+                            <div className="flex items-center justify-between pl-3 mt-2">
+                              <span className="text-sm text-slate-300">
+                                Rolling Laps
+                              </span>
+                              <select
+                                value={settings.config.avgLapTime.numLaps}
+                                onChange={(e) => {
+                                  handleConfigChange({
+                                    avgLapTime: {
+                                      ...settings.config.avgLapTime,
+                                      numLaps: parseInt(e.target.value),
+                                    },
+                                  });
+                                }}
+                                className="bg-slate-700 text-white rounded-md px-2 py-1 text-xs"
+                              >
+                                {[3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
+                                  <option key={n} value={n}>
+                                    {n}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                          )}
+                      </>
+                    )}
                   />
 
                   <SettingActionButton
                     label="Reset to Default Order"
                     onClick={() => {
                       const defaultOrder = sortableSettings.map((s) => s.id);
-                      setItemsOrder(defaultOrder);
-                      handleConfigChange({ displayOrder: defaultOrder });
+                      handleConfigChange({
+                        displayOrder: defaultOrder,
+                        rotationGroups: [],
+                      });
                     }}
                   />
                 </SettingsSection>
@@ -628,23 +549,6 @@ export const StandingsSettings = () => {
               {activeTab === 'options' && (
                 <>
                   <SettingsSection title="Driver Standings">
-                    <SettingSelectRow
-                      title="Drivers to show around player"
-                      value={settings.config.driverStandings.buffer.toString()}
-                      options={Array.from({ length: 10 }, (_, i) => {
-                        const num = i + 1;
-                        return { label: num.toString(), value: num.toString() };
-                      })}
-                      onChange={(v) =>
-                        handleConfigChange({
-                          driverStandings: {
-                            ...settings.config.driverStandings,
-                            buffer: parseInt(v),
-                          },
-                        })
-                      }
-                    />
-
                     <SettingSelectRow
                       title="Drivers to show in other classes"
                       value={settings.config.driverStandings.numNonClassDrivers.toString()}
@@ -719,9 +623,7 @@ export const StandingsSettings = () => {
 
                     <SettingToggleRow
                       title="Use Live Position Standings"
-                      description="If enabled, live telemetry will be used to compute driver
-                          positions. This may be less stable but will update live and
-                          not only on start/finish line."
+                      description="If enabled, live telemetry will be used to compute driver positions."
                       enabled={settings.config.useLivePosition ?? false}
                       onToggle={(newValue) =>
                         handleConfigChange({ useLivePosition: newValue })
@@ -735,10 +637,7 @@ export const StandingsSettings = () => {
                       enabled={settings.config.titleBar.enabled}
                       onToggle={(enabled) =>
                         handleConfigChange({
-                          titleBar: {
-                            ...settings.config.titleBar,
-                            enabled,
-                          },
+                          titleBar: { ...settings.config.titleBar, enabled },
                         })
                       }
                     />
@@ -785,10 +684,7 @@ export const StandingsSettings = () => {
                     enabled={settings.config.headerBar.enabled}
                     onToggle={(enabled) =>
                       handleConfigChange({
-                        headerBar: {
-                          ...settings.config.headerBar,
-                          enabled,
-                        },
+                        headerBar: { ...settings.config.headerBar, enabled },
                       })
                     }
                   />
@@ -808,37 +704,26 @@ export const StandingsSettings = () => {
                         getItemConfig={(id) => {
                           const item =
                             settings.config.headerBar[
-                            id as keyof typeof settings.config.headerBar
+                              id as keyof typeof settings.config.headerBar
                             ];
-                          if (
-                            typeof item === 'object' &&
-                            item !== null &&
-                            'enabled' in item
-                          ) {
-                            return item as SessionBarItemConfig;
-                          }
-                          return undefined;
+                          return typeof item === 'object'
+                            ? (item as SessionBarItemConfig)
+                            : undefined;
                         }}
                         updateItemConfig={(id, config) => {
                           const item =
                             settings.config.headerBar[
-                            id as keyof typeof settings.config.headerBar
-                            ];
-                          if (
-                            typeof item === 'object' &&
-                            item !== null &&
-                            'enabled' in item
-                          ) {
-                            handleConfigChange({
-                              headerBar: {
-                                ...settings.config.headerBar,
-                                [id]: {
-                                  ...(item as SessionBarItemConfig),
-                                  ...config,
-                                },
+                              id as keyof typeof settings.config.headerBar
+                            ] ?? {};
+                          handleConfigChange({
+                            headerBar: {
+                              ...settings.config.headerBar,
+                              [id]: {
+                                ...(item as SessionBarItemConfig),
+                                ...config,
                               },
-                            });
-                          }
+                            },
+                          });
                         }}
                       />
 
@@ -868,10 +753,7 @@ export const StandingsSettings = () => {
                     enabled={settings.config.footerBar.enabled}
                     onToggle={(enabled) =>
                       handleConfigChange({
-                        footerBar: {
-                          ...settings.config.footerBar,
-                          enabled,
-                        },
+                        footerBar: { ...settings.config.footerBar, enabled },
                       })
                     }
                   />
@@ -891,37 +773,26 @@ export const StandingsSettings = () => {
                         getItemConfig={(id) => {
                           const item =
                             settings.config.footerBar[
-                            id as keyof typeof settings.config.footerBar
+                              id as keyof typeof settings.config.footerBar
                             ];
-                          if (
-                            typeof item === 'object' &&
-                            item !== null &&
-                            'enabled' in item
-                          ) {
-                            return item as SessionBarItemConfig;
-                          }
-                          return undefined;
+                          return typeof item === 'object'
+                            ? (item as SessionBarItemConfig)
+                            : undefined;
                         }}
                         updateItemConfig={(id, config) => {
                           const item =
                             settings.config.footerBar[
-                            id as keyof typeof settings.config.footerBar
-                            ];
-                          if (
-                            typeof item === 'object' &&
-                            item !== null &&
-                            'enabled' in item
-                          ) {
-                            handleConfigChange({
-                              footerBar: {
-                                ...settings.config.footerBar,
-                                [id]: {
-                                  ...(item as SessionBarItemConfig),
-                                  ...config,
-                                },
+                              id as keyof typeof settings.config.footerBar
+                            ] ?? {};
+                          handleConfigChange({
+                            footerBar: {
+                              ...settings.config.footerBar,
+                              [id]: {
+                                ...(item as SessionBarItemConfig),
+                                ...config,
                               },
-                            });
-                          }
+                            },
+                          });
                         }}
                       />
 
@@ -949,7 +820,6 @@ export const StandingsSettings = () => {
                   <SettingsSection title="Class Header">
                     <SettingToggleRow
                       title="Class Name Background"
-                      description="Show a colored background on the class name badge"
                       enabled={
                         settings.config.classHeaderStyle?.className
                           ?.colorBackground ?? true
@@ -963,38 +833,6 @@ export const StandingsSettings = () => {
                         })
                       }
                     />
-                    <SettingToggleRow
-                      title="Class Info Background"
-                      description="Show a colored background on the SOF and driver count badges"
-                      enabled={
-                        settings.config.classHeaderStyle?.classInfo
-                          ?.colorBackground ?? true
-                      }
-                      onToggle={(newValue) =>
-                        handleConfigChange({
-                          classHeaderStyle: {
-                            ...settings.config.classHeaderStyle,
-                            classInfo: { colorBackground: newValue },
-                          },
-                        })
-                      }
-                    />
-                    <SettingToggleRow
-                      title="Bottom Border"
-                      description="Show a colored bottom border beneath the class header row"
-                      enabled={
-                        settings.config.classHeaderStyle?.classDivider
-                          ?.bottomBorder ?? false
-                      }
-                      onToggle={(newValue) =>
-                        handleConfigChange({
-                          classHeaderStyle: {
-                            ...settings.config.classHeaderStyle,
-                            classDivider: { bottomBorder: newValue },
-                          },
-                        })
-                      }
-                    />
                   </SettingsSection>
 
                   <SettingDivider />
@@ -1002,7 +840,6 @@ export const StandingsSettings = () => {
                   <SettingsSection title="Driver Position">
                     <SettingToggleRow
                       title="Position Background"
-                      description="Highlight the player's position cell with a colored background"
                       enabled={
                         settings.config.stylingOptions?.driverPosition
                           ?.background ?? true
@@ -1023,7 +860,6 @@ export const StandingsSettings = () => {
                   <SettingsSection title="Car Number">
                     <SettingToggleRow
                       title="Number Background"
-                      description="Show a colored background on the car number cell"
                       enabled={
                         settings.config.stylingOptions?.driverNumber
                           ?.background ?? true
@@ -1036,58 +872,6 @@ export const StandingsSettings = () => {
                               ...settings.config.stylingOptions?.driverNumber,
                               background: newValue,
                             },
-                          },
-                        })
-                      }
-                    />
-                    <SettingToggleRow
-                      title="Number Left Border"
-                      description="Show a colored left border on the car number cell"
-                      enabled={
-                        settings.config.stylingOptions?.driverNumber?.border ??
-                        true
-                      }
-                      onToggle={(newValue) =>
-                        handleConfigChange({
-                          stylingOptions: {
-                            ...settings.config.stylingOptions,
-                            driverNumber: {
-                              ...settings.config.stylingOptions?.driverNumber,
-                              border: newValue,
-                            },
-                          },
-                        })
-                      }
-                    />
-                  </SettingsSection>
-
-                  <SettingDivider />
-
-                  <SettingsSection title="Badges">
-                    <SettingToggleRow
-                      title="Minimal License Badge"
-                      description="Use desaturated colors for the iRating/license badge"
-                      enabled={settings.config.stylingOptions?.badge ?? false}
-                      onToggle={(newValue) =>
-                        handleConfigChange({
-                          stylingOptions: {
-                            ...settings.config.stylingOptions,
-                            badge: newValue,
-                          },
-                        })
-                      }
-                    />
-                    <SettingToggleRow
-                      title="Minimal Status Badges"
-                      description="Use muted borders for PIT, OUT, DNF and other status badges"
-                      enabled={
-                        settings.config.stylingOptions?.statusBadges ?? false
-                      }
-                      onToggle={(newValue) =>
-                        handleConfigChange({
-                          stylingOptions: {
-                            ...settings.config.stylingOptions,
-                            statusBadges: newValue,
                           },
                         })
                       }
@@ -1108,7 +892,6 @@ export const StandingsSettings = () => {
 
                   <SettingToggleRow
                     title="Show only when on track"
-                    description="If enabled, standings will only be shown when driving"
                     enabled={settings.config.showOnlyWhenOnTrack ?? false}
                     onToggle={(newValue) =>
                       handleConfigChange({ showOnlyWhenOnTrack: newValue })

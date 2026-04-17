@@ -53,7 +53,7 @@ describe('DriverNameCell', () => {
         name="Driver A"
         label="Tag Label"
         nameDisplay="both"
-        alternateFrequency={5}
+        animationCycleTime={5}
       />
     );
 
@@ -62,12 +62,20 @@ describe('DriverNameCell', () => {
 
     // Verify keyframe structure
     const calls = vi.mocked(HTMLElement.prototype.animate).mock.calls;
-    expect(calls[0][1]).toEqual({ duration: 5000, iterations: Infinity });
-    expect(calls[1][1]).toEqual({ duration: 5000, iterations: Infinity });
+    expect(calls[0][1]).toEqual({
+      duration: 10000,
+      iterations: Infinity,
+      fill: 'both',
+    });
+    expect(calls[1][1]).toEqual({
+      duration: 10000,
+      iterations: Infinity,
+      fill: 'both',
+    });
   });
 
   it('seeks animations to Date.now() phase on mount', () => {
-    // 2500ms % 5000ms = 2500ms
+    // 2500ms % 10000ms = 2500ms
     vi.spyOn(Date, 'now').mockReturnValue(2500);
 
     renderInTable(
@@ -75,7 +83,7 @@ describe('DriverNameCell', () => {
         name="Driver A"
         label="Tag Label"
         nameDisplay="both"
-        alternateFrequency={5}
+        animationCycleTime={5}
       />
     );
 
@@ -84,7 +92,7 @@ describe('DriverNameCell', () => {
     expect(mockAnimations[1].currentTime).toBe(2500);
   });
 
-  it('re-creates animations when alternateFrequency changes', () => {
+  it('re-creates animations when animationCycleTime changes', () => {
     vi.spyOn(Date, 'now').mockReturnValue(1500);
 
     const { rerender } = renderInTable(
@@ -92,14 +100,14 @@ describe('DriverNameCell', () => {
         name="Driver A"
         label="Tag Label"
         nameDisplay="both"
-        alternateFrequency={5}
+        animationCycleTime={5}
       />
     );
 
     expect(mockAnimations).toHaveLength(2);
     const oldAnims = [...mockAnimations];
 
-    // Change freq: 3500ms % 10000ms = 3500ms
+    // Change freq: 3500ms % 20000ms = 3500ms (10s * 2)
     // Advance performance.now() to bust the syncedNow() frame cache
     vi.spyOn(performance, 'now').mockReturnValue(1000);
     vi.spyOn(Date, 'now').mockReturnValue(3500);
@@ -112,7 +120,7 @@ describe('DriverNameCell', () => {
               name="Driver A"
               label="Tag Label"
               nameDisplay="both"
-              alternateFrequency={10}
+              animationCycleTime={10}
             />
           </tr>
         </tbody>

@@ -254,6 +254,12 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
     updateDashboard(newSettings);
   };
 
+  const handleAnimationCycleTimeChange = (val: number) => {
+    const newSettings = { ...settings, animationCycleTime: val };
+    setSettings(newSettings);
+    updateDashboard(newSettings);
+  };
+
   const handleCompactModeChange = (
     selectedCompactMode: NonNullable<GeneralSettingsType['compactMode']>
   ) => {
@@ -459,6 +465,32 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
               )}
             </select>
           </div>
+        </div>
+
+        {/* Animation Cycle Time Settings */}
+        <div className="space-y-0">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-medium text-slate-200">
+              Animation Cycle Time
+            </h3>
+            <select
+              value={settings.animationCycleTime ?? 5}
+              onChange={(e) =>
+                handleAnimationCycleTimeChange(parseInt(e.target.value))
+              }
+              className="bg-slate-700 text-slate-200 rounded-md px-2 py-1 text-sm outline-none border border-slate-600 focus:border-blue-500"
+            >
+              {Array.from({ length: 30 }, (_, i) => i + 1).map((val) => (
+                <option key={val} value={val}>
+                  {val}
+                </option>
+              ))}
+            </select>
+          </div>
+          <p className="text-sm text-slate-400">
+            Controls the frequency (in seconds) of rotating column groups and
+            driver tag-to-label alternations.
+          </p>
         </div>
 
         {previewMode && (

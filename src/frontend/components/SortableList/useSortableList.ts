@@ -31,6 +31,10 @@ export interface SortableItemProps {
   };
 }
 
+const GHOST_IMAGE = new Image();
+GHOST_IMAGE.src =
+  'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+
 export function useSortableList<T>({
   items,
   onReorder,
@@ -57,30 +61,8 @@ export function useSortableList<T>({
             e.dataTransfer.effectAllowed = 'move';
             e.dataTransfer.setData('text/plain', id);
 
-            const rowElement = itemRefs.current.get(id);
-            if (rowElement) {
-              const rect = rowElement.getBoundingClientRect();
-              const clone = rowElement.cloneNode(true) as HTMLElement;
-              clone.style.position = 'absolute';
-              clone.style.top = '-9999px';
-              clone.style.left = '-9999px';
-              clone.style.width = `${rect.width}px`;
-              clone.style.opacity = '1';
-              clone.style.boxShadow = '0 4px 12px rgba(0,0,0,0.4)';
-              clone.style.borderRadius = '6px';
-              clone.style.backgroundColor = '#334155';
-              clone.style.padding = '8px';
-              document.body.appendChild(clone);
-
-              const handleRect = e.currentTarget.getBoundingClientRect();
-              const offsetX = handleRect.left - rect.left + handleRect.width / 2;
-              const offsetY = handleRect.top - rect.top + handleRect.height / 2;
-              e.dataTransfer.setDragImage(clone, offsetX, offsetY);
-
-              requestAnimationFrame(() => {
-                document.body.removeChild(clone);
-              });
-            }
+            // Use the pre-loaded invisible drag image to hide the browser popup
+            e.dataTransfer.setDragImage(GHOST_IMAGE, 0, 0);
 
             setDraggedId(id);
             draggedIdRef.current = id;
@@ -148,5 +130,5 @@ export function useSortableList<T>({
   // Return preview items during drag, otherwise the actual items
   const displayItems = previewItems ?? items;
 
-  return { getItemProps, displayItems };
+  return { getItemProps, displayItems, draggedId };
 }

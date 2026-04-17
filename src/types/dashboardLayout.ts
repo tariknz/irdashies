@@ -67,8 +67,6 @@ export interface DriverTagSettings {
     iconWeight?: 'regular' | 'fill';
     /** What to show in driver name cell when a label is set */
     nameDisplay?: 'both' | 'label' | 'name';
-    /** Seconds between name/label alternation (2–60, default 5) */
-    alternateFrequency?: number;
   };
   /** Optional per-preset overrides (preset id → partial TagGroup) */
   presetOverrides?: Record<string, Partial<TagGroup>>;
@@ -135,6 +133,8 @@ export interface GeneralSettingsType {
   compactMode?: 'off' | 'compact' | 'ultra';
   overlayAlwaysOnTop?: boolean;
   enableNetworkAccess?: boolean;
+  /** Seconds between name/label alternation or column rotation (1–30, default 5) */
+  animationCycleTime?: number;
   /** Driver tag groups and mappings for overlays */
   driverTagSettings?: DriverTagSettings;
 }

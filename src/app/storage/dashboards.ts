@@ -4,6 +4,10 @@ import type {
   DashboardProfile,
 } from '@irdashies/types';
 import { emitDashboardUpdated } from './dashboardEvents';
+import {
+  getDriverTagSettings,
+  saveDriverTagSettings,
+} from './driverTagSettings';
 import { defaultDashboard, deepMergeConfig } from '@irdashies/types';
 import { readData, writeData } from './storage';
 import { writeFile, mkdir, readFile } from 'node:fs/promises';
@@ -55,12 +59,34 @@ export const getOrCreateDefaultDashboardForProfile = (profileId: string) => {
         !dashboard.widgets.find((widget) => widget.id === defaultWidget.id)
     );
 
+    // Migration: animationCycleTime from driverTagSettings
+    let animationCycleTime = dashboard.generalSettings?.animationCycleTime;
+    if (animationCycleTime === undefined) {
+      const tagSettings = getDriverTagSettings();
+      const display = tagSettings?.display as { alternateFrequency?: number };
+      if (display?.alternateFrequency !== undefined) {
+        animationCycleTime = display.alternateFrequency;
+        logger.info(
+          `[dashboards] Migrated animationCycleTime (${animationCycleTime}s) from driver tags`
+        );
+        // Clean up legacy setting
+        delete display.alternateFrequency;
+        if (tagSettings) {
+          saveDriverTagSettings(tagSettings);
+        }
+      } else {
+        animationCycleTime =
+          defaultDashboard.generalSettings?.animationCycleTime ?? 5;
+      }
+    }
+
     // add missing widgets and save
     const updatedDashboard = {
       ...dashboard,
       generalSettings: {
         ...defaultDashboard.generalSettings,
         ...dashboard.generalSettings,
+        animationCycleTime,
       },
       widgets: [...dashboard.widgets, ...missingWidgets].map((widget) => {
         const defaultWidget = defaultDashboard.widgets.find(

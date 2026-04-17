@@ -6,6 +6,7 @@ interface DeltaCellProps {
   showForUndefined?: string;
   decimalPlaces?: number;
   compactMode?: string;
+  inRotationGroup?: boolean;
 }
 
 export const DeltaCell = memo(
@@ -14,6 +15,7 @@ export const DeltaCell = memo(
     showForUndefined = '-',
     decimalPlaces = 2,
     compactMode,
+    inRotationGroup = false,
   }: DeltaCellProps) => {
     const pxClass =
       compactMode === 'ultra'
@@ -44,6 +46,16 @@ export const DeltaCell = memo(
         displayValue = delta.toFixed(decimalPlaces);
       }
     }
+
+    const content = (
+      <div
+        className={`${inRotationGroup ? 'w-full h-full flex items-center justify-center' : ''} whitespace-nowrap tabular-nums`}
+      >
+        {displayValue}
+      </div>
+    );
+
+    if (inRotationGroup) return content;
 
     return (
       <td

@@ -29,6 +29,8 @@ import { LastTimeCell } from './cells/LastTimeCell';
 import { PitStatusCell } from './cells/PitStatusCell';
 import { PositionCell } from './cells/PositionCell';
 import { TeamNameCell } from './cells/TeamNameCell';
+import { RotatingSlotCell } from './cells/RotatingSlotCell';
+import { ReactElement, cloneElement } from 'react';
 
 interface DriverRowInfoProps {
   carIdx: number;
@@ -81,6 +83,7 @@ interface DriverRowInfoProps {
   resolvedTag?: ResolvedDriverTag;
   hasAnyDriverTag?: boolean;
   compactMode?: string;
+  animationCycleTime?: number;
 }
 
 // Helper function to provide dummy data for hidden rows
@@ -197,6 +200,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
     resolvedTag,
     hasAnyDriverTag,
     compactMode,
+    animationCycleTime,
   } = displayProps;
   const pitStopDurations = usePitStopDuration();
   const pitStopDuration =
@@ -280,32 +284,16 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
           (displayOrder ? displayOrder.includes('driverTag') : true) &&
           (hasAnyDriverTag ?? false),
         component: (
-          <td
+          <DriverTagCell
             key="driverTag"
-            data-column="driverTag"
-            style={
-              tagSettings?.display?.displayStyle === 'tag'
-                ? undefined
-                : { minWidth: '1.5em' }
+            tag={resolvedTag}
+            widthPx={
+              tagSettings?.display?.widthPx ?? config?.driverTag?.widthPx
             }
-            className="whitespace-nowrap align-middle"
-          >
-            <div
-              style={{ padding: '0 0.1em' }}
-              className="flex items-center justify-center"
-            >
-              {hidden ? null : (
-                <DriverTagCell
-                  tag={resolvedTag}
-                  widthPx={
-                    tagSettings?.display?.widthPx ?? config?.driverTag?.widthPx
-                  }
-                  displayStyle={tagSettings?.display?.displayStyle ?? 'badge'}
-                  iconWeight={tagSettings?.display?.iconWeight}
-                />
-              )}
-            </div>
-          </td>
+            displayStyle={tagSettings?.display?.displayStyle ?? 'badge'}
+            iconWeight={tagSettings?.display?.iconWeight}
+            hidden={!!hidden}
+          />
         ),
       },
       {
@@ -342,7 +330,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
             nameFormat={config?.driverName?.nameFormat}
             label={resolvedTag?.label}
             nameDisplay={tagSettings?.display?.nameDisplay}
-            alternateFrequency={tagSettings?.display?.alternateFrequency}
+            animationCycleTime={animationCycleTime}
             compactMode={compactMode}
           />
         ),
@@ -577,22 +565,78 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
       },
     ];
 
+    const filteredColumns = columns.filter((col) => col.shouldRender);
+    let activeColumns = filteredColumns;
+
     if (displayOrder) {
       const orderedColumns = displayOrder
-        .map((orderId) => columns.find((col) => col.id === orderId))
-        .filter(
-          (col): col is NonNullable<typeof col> =>
-            col !== undefined && col.shouldRender
-        );
+        .map((orderId) => filteredColumns.find((col) => col.id === orderId))
+        .filter((col): col is NonNullable<typeof col> => col !== undefined);
 
-      const remainingColumns = columns.filter(
-        (col) => col.shouldRender && !displayOrder.includes(col.id)
+      const remainingColumns = filteredColumns.filter(
+        (col) => !displayOrder.includes(col.id)
       );
 
-      return [...orderedColumns, ...remainingColumns];
+      activeColumns = [...orderedColumns, ...remainingColumns];
     }
 
-    return columns.filter((col) => col.shouldRender);
+    // Group rotating columns using explicit rotationGroups config
+    const result: ReactElement[] = [];
+    const handledColumnIds = new Set<string>();
+    const rotationGroups = config?.rotationGroups || [];
+
+    let i = 0;
+    while (i < activeColumns.length) {
+      const col = activeColumns[i];
+
+      // Check if this column belongs to a rotation group
+      const group = (rotationGroups || []).find((g) =>
+        g?.columns?.includes(col.id)
+      );
+
+      if (group && !handledColumnIds.has(col.id)) {
+        // This column is the start of a rotation group we haven't processed yet
+        // Map column IDs to their component definitions
+        const groupColumns = group.columns
+          .map((id) => activeColumns.find((c) => c.id === id))
+          .filter((c): c is NonNullable<typeof c> => c !== undefined);
+
+        if (groupColumns.length > 1) {
+          result.push(
+            <RotatingSlotCell
+              key={`rotation-group-${group.columns.join('-')}`}
+              animationCycleTime={animationCycleTime}
+              compactMode={compactMode}
+            >
+              {groupColumns.map((g) =>
+                cloneElement(
+                  g.component as ReactElement<{ inRotationGroup?: boolean }>,
+                  { inRotationGroup: true }
+                )
+              )}
+            </RotatingSlotCell>
+          );
+
+          // Mark all columns in this group as handled
+          group.columns.forEach((id) => handledColumnIds.add(id));
+
+          // If the current column was part of this group, we're done with it
+          i++;
+          continue;
+        }
+      }
+
+      // If not part of a group or already handled as part of a group,
+      // and not already handled, add it as a normal column
+      if (!handledColumnIds.has(col.id)) {
+        result.push(col.component as ReactElement);
+        handledColumnIds.add(col.id);
+      }
+
+      i++;
+    }
+
+    return result;
   }, [
     displayOrder,
     config,
@@ -646,6 +690,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
     numberBackground,
     numberBorder,
     compactMode,
+    animationCycleTime,
   ]);
 
   return (
@@ -662,7 +707,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
         hidden ? 'invisible' : '',
       ].join(' ')}
     >
-      {columnDefinitions.map((column) => column.component)}
+      {columnDefinitions}
     </tr>
   );
 });

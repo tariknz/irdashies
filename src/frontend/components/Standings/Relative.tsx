@@ -101,6 +101,7 @@ export const Relative = () => {
           hideCarManufacturer={hideCarManufacturer}
           hasAnyDriverTag={hasAnyTag}
           compactMode={generalSettings?.compactMode}
+          animationCycleTime={generalSettings?.animationCycleTime}
         />
       ));
     }
@@ -156,6 +157,7 @@ export const Relative = () => {
             hideCarManufacturer={hideCarManufacturer}
             hasAnyDriverTag={hasAnyTag}
             compactMode={generalSettings?.compactMode}
+            animationCycleTime={generalSettings?.animationCycleTime}
           />
         );
       }
@@ -223,6 +225,7 @@ export const Relative = () => {
           deltaDecimalPlaces={settings?.delta?.precision}
           hideCarManufacturer={hideCarManufacturer}
           compactMode={generalSettings?.compactMode}
+          animationCycleTime={generalSettings?.animationCycleTime}
         />
       );
     });
@@ -238,6 +241,7 @@ export const Relative = () => {
     tagMap,
     hasAnyTag,
     generalSettings?.compactMode,
+    generalSettings?.animationCycleTime,
   ]);
 
   if (!isSessionVisible) return <></>;
