@@ -113,9 +113,9 @@ describe('SectorTimingStore.setSectors', () => {
     expect(sectors[2].SectorStartPct).toBe(0.5);
   });
 
-  it('sets lapStarted to false', () => {
+  it('sets sectorEntryValid to false', () => {
     useSectorTimingStore.getState().setSectors(MOCK_SECTORS);
-    expect(useSectorTimingStore.getState().lapStarted).toBe(false);
+    expect(useSectorTimingStore.getState().sectorEntryValid).toBe(false);
   });
 
   it('does not reset timing when called again with identical sector data', () => {
@@ -186,32 +186,46 @@ describe('SectorTimingStore.tick', () => {
     expect(currentSectorIdx).toBe(0);
   });
 
-  it('does not record sector times before crossing the S/F line', () => {
+  it('does not record the first sector entered (unknown entry point)', () => {
     const store = useSectorTimingStore.getState();
-    // Start mid-track without a prior S/F crossing — lapStarted is false
+    // First tick: position recorded, sectorEntryValid = false
     store.tick(0.01, 100, true);
-    store.tick(0.19, 110, true); // sector 0→1 crossing, but lapStarted=false
+    store.tick(0.19, 110, true); // sector 0→1 crossing, sectorEntryValid=false → not recorded
 
     const state = useSectorTimingStore.getState();
-    expect(state.lapStarted).toBe(false);
     expect(state.sessionBestSectorTimes[0]).toBeNull();
     expect(state.sectorColors[0]).toBe('default');
-    // Position is still tracked even without lapStarted
+    // Position tracking still updates: now in sector 1 with valid entry
     expect(state.currentSectorIdx).toBe(1);
+    expect(state.sectorEntryValid).toBe(true);
+  });
+
+  it('records the second sector after joining mid-track', () => {
+    const store = useSectorTimingStore.getState();
+    // Join at start of sector 0, cross sector 1 (not recorded — unknown entry),
+    // then cross sector 2 (recorded — entered sector 1 via normal crossing)
+    store.tick(0.01, 100, true); // first tick
+    store.tick(0.19, 110, true); // sector 0→1: not recorded, sectorEntryValid=true for sector 1
+    store.tick(0.35, 125, true); // sector 1→2: recorded (15s)
+
+    const state = useSectorTimingStore.getState();
+    expect(state.sessionBestSectorTimes[1]).toBeCloseTo(15);
+    expect(state.sectorColors[1]).toBe('purple');
+    expect(state.currentSectorIdx).toBe(2);
   });
 
   it('starts tracking after crossing the S/F line', () => {
     const store = useSectorTimingStore.getState();
     // Start in last sector (sector 5, pct >= 0.829332)
     store.tick(0.9, 50, true);
-    // Cross S/F line: lastLapDistPct=0.9 (in sector 5), lapDistPct=0.01 (in sector 0)
-    store.tick(0.01, 60, true); // wrap-around → lapStarted = true
+    // Cross S/F line: wrap-around → sectorEntryValid = true
+    store.tick(0.01, 60, true);
 
     const afterSF = useSectorTimingStore.getState();
-    expect(afterSF.lapStarted).toBe(true);
+    expect(afterSF.sectorEntryValid).toBe(true);
     expect(afterSF.currentSectorIdx).toBe(0);
 
-    // Cross into sector 1 — now lapStarted, so timing is recorded
+    // Cross into sector 1 — sectorEntryValid, so timing is recorded
     useSectorTimingStore.getState().tick(0.19, 70, true);
 
     const state = useSectorTimingStore.getState();
@@ -221,7 +235,6 @@ describe('SectorTimingStore.tick', () => {
 
   it('records the last sector time when crossing S/F', () => {
     const store = useSectorTimingStore.getState();
-    // Start a valid lap via resetLap so lapStarted = true
     useSectorTimingStore.getState().resetLap();
     store.tick(0.85, 50, true); // first tick: in sector 5
     // Drive through sector 5 and cross S/F
@@ -229,12 +242,11 @@ describe('SectorTimingStore.tick', () => {
 
     const state = useSectorTimingStore.getState();
     expect(state.sessionBestSectorTimes[5]).toBeCloseTo(15);
-    expect(state.lapStarted).toBe(true);
+    expect(state.sectorEntryValid).toBe(true);
     expect(state.currentSectorIdx).toBe(0);
   });
 
   it('keeps previous lap colors at S/F crossing — sectors update as completed on new lap (RaceLab-style)', () => {
-    // Complete sectors 0 and 1, then drive to the last sector and cross S/F.
     useSectorTimingStore.getState().resetLap();
     useSectorTimingStore.getState().tick(0.01, 100, true);
     useSectorTimingStore.getState().tick(0.19, 110, true); // sector 0 → purple
@@ -243,22 +255,16 @@ describe('SectorTimingStore.tick', () => {
     expect(useSectorTimingStore.getState().sectorColors[0]).toBe('purple');
     expect(useSectorTimingStore.getState().sectorColors[1]).toBe('purple');
 
-    // Drive incrementally through remaining sectors (each step < MAX_FORWARD_JUMP=0.5)
-    // so lapStarted stays true, then cross S/F.
-    useSectorTimingStore.getState().tick(0.55, 150, true); // crosses into sector 3
-    useSectorTimingStore.getState().tick(0.75, 170, true); // crosses into sector 4
-    useSectorTimingStore.getState().tick(0.85, 190, true); // crosses into sector 5
-    useSectorTimingStore.getState().tick(0.01, 210, true); // wrap-around → sector 5 gets its color
+    // Drive incrementally through remaining sectors then cross S/F.
+    useSectorTimingStore.getState().tick(0.55, 150, true);
+    useSectorTimingStore.getState().tick(0.75, 170, true);
+    useSectorTimingStore.getState().tick(0.85, 190, true);
+    useSectorTimingStore.getState().tick(0.01, 210, true); // wrap-around
 
-    // Sectors completed last lap (0, 1) should still show their colors from
-    // last lap rather than going blank — they'll update as the player crosses
-    // them on the new lap.
     const colors = useSectorTimingStore.getState().sectorColors;
     expect(colors[0]).toBe('purple'); // carried over from last lap
     expect(colors[1]).toBe('purple'); // carried over from last lap
-    // The last sector (5) just got colored at S/F
-    expect(colors[5]).toBe('purple');
-    // Timing bests are preserved for comparison
+    expect(colors[5]).toBe('purple'); // just completed at S/F
     expect(
       useSectorTimingStore.getState().sessionBestSectorTimes[0]
     ).not.toBeNull();
@@ -266,29 +272,23 @@ describe('SectorTimingStore.tick', () => {
 
   it('records a sector crossing and assigns a color', () => {
     const store = useSectorTimingStore.getState();
-    // Establish lapStarted via resetLap before any crossing
     useSectorTimingStore.getState().resetLap();
-    // Start in sector 0
     store.tick(0.01, 100, true);
-    // Cross into sector 1 (starts at 0.184456)
     store.tick(0.19, 110, true);
 
     const updated = useSectorTimingStore.getState();
     expect(updated.currentSectorIdx).toBe(1);
-    // First completion — it IS the session best, so color should be 'purple'
     expect(updated.sectorColors[0]).toBe('purple');
-    // Session best should now be set for sector 0
     expect(updated.sessionBestSectorTimes[0]).toBeCloseTo(10);
   });
 
   it('turns purple when beating the previous session best', () => {
     const store = useSectorTimingStore.getState();
-    // Lap 1: complete sector 0 in 10s — sets session best to 10s
+    // Lap 1: complete sector 0 in 10s
     useSectorTimingStore.getState().resetLap();
     store.tick(0.01, 100, true);
-    store.tick(0.19, 110, true); // purple (first completion = new session best)
+    store.tick(0.19, 110, true);
 
-    // Reset lap (keeps session bests)
     useSectorTimingStore.getState().resetLap();
     useSectorTimingStore.getState().tick(0.01, 200, true);
     // Lap 2: sector 0 in 9s — beats session best → purple
@@ -301,7 +301,6 @@ describe('SectorTimingStore.tick', () => {
 
   it('turns red when more than 1% slower than session best', () => {
     const store = useSectorTimingStore.getState();
-    // Lap 1: sector 0 in 10s
     useSectorTimingStore.getState().resetLap();
     store.tick(0.01, 100, true);
     store.tick(0.19, 110, true);
@@ -317,114 +316,107 @@ describe('SectorTimingStore.tick', () => {
 
   it('turns yellow when between 0.5% and 1% slower than session best', () => {
     const store = useSectorTimingStore.getState();
-    // Lap 1: sector 0 in 10s
     useSectorTimingStore.getState().resetLap();
     store.tick(0.01, 100, true);
     store.tick(0.19, 110, true);
 
     useSectorTimingStore.getState().resetLap();
     useSectorTimingStore.getState().tick(0.01, 200, true);
-    // Lap 2: sector 0 in 10.08s (0.8% slower — between 0.5% and 1%)
+    // Lap 2: sector 0 in 10.08s (0.8% slower)
     useSectorTimingStore.getState().tick(0.19, 210.08, true);
 
     const updated = useSectorTimingStore.getState();
     expect(updated.sectorColors[0]).toBe('yellow');
   });
 
-  it('ignores backward movement (teleport/reset guard)', () => {
+  it('detects backward movement as a teleport and updates position', () => {
     const store = useSectorTimingStore.getState();
-    // 0.5 is in sector 2 (0.337214) — sector 3 starts at 0.504637
-    store.tick(0.5, 100, true);
-    // Move backwards — should be ignored (not a S/F wrap-around)
-    store.tick(0.1, 101, true);
-    const { currentSectorIdx } = useSectorTimingStore.getState();
-    expect(currentSectorIdx).toBe(2); // still in sector 2
+    store.tick(0.5, 100, true); // first tick: sector 2
+    store.tick(0.1, 101, true); // backward → teleport detected
+    const state = useSectorTimingStore.getState();
+    // Position updated to where the player actually is
+    expect(state.currentSectorIdx).toBe(0); // getSectorIdx(0.1) = 0
+    expect(state.sectorEntryValid).toBe(false);
   });
 
-  it('sets lapStarted to false on backward movement', () => {
+  it('sets sectorEntryValid to false on backward movement', () => {
     useSectorTimingStore.getState().resetLap();
     useSectorTimingStore.getState().tick(0.5, 100, true);
     useSectorTimingStore.getState().tick(0.1, 101, true); // backward jump
-    expect(useSectorTimingStore.getState().lapStarted).toBe(false);
+    expect(useSectorTimingStore.getState().sectorEntryValid).toBe(false);
   });
 
-  it('ignores suspiciously large forward jumps', () => {
+  it('does not record sector time on backward movement', () => {
+    useSectorTimingStore.getState().resetLap();
+    useSectorTimingStore.getState().tick(0.01, 100, true); // sector 0
+    useSectorTimingStore.getState().tick(0.19, 110, true); // complete sector 0 → purple
+    useSectorTimingStore.getState().tick(0.1, 111, true); // backward into sector 0
+    // sector 1 entry was valid — reset doesn't corrupt that
+    expect(
+      useSectorTimingStore.getState().sessionBestSectorTimes[0]
+    ).toBeCloseTo(10);
+  });
+
+  it('detects large forward jumps as teleports and updates position', () => {
     const store = useSectorTimingStore.getState();
     store.tick(0.01, 100, true);
-    // Jump of 0.8 — above MAX_FORWARD_JUMP
+    // Jump of 0.8 — above MAX_FORWARD_JUMP (0.1)
     store.tick(0.81, 101, true);
-    // Should not cross sectors based on a teleport
-    const { currentSectorIdx } = useSectorTimingStore.getState();
-    expect(currentSectorIdx).toBe(0);
+    const { currentSectorIdx, sectorEntryValid } =
+      useSectorTimingStore.getState();
+    // Position updated to where the player actually is
+    // getSectorIdx(0.81) = 4 (sector 5 starts at 0.829332, so 0.81 is still in sector 4)
+    expect(currentSectorIdx).toBe(4);
+    expect(sectorEntryValid).toBe(false);
   });
 
-  it('sets lapStarted to false on large forward jump', () => {
+  it('sets sectorEntryValid to false on large forward jump', () => {
     useSectorTimingStore.getState().resetLap();
     useSectorTimingStore.getState().tick(0.01, 100, true);
     useSectorTimingStore.getState().tick(0.81, 101, true); // large jump
-    expect(useSectorTimingStore.getState().lapStarted).toBe(false);
+    expect(useSectorTimingStore.getState().sectorEntryValid).toBe(false);
   });
 
   it('does not treat a mid-track backward jump as a S/F crossing', () => {
     const store = useSectorTimingStore.getState();
-    // Start in sector 3 (not last sector) — not a S/F wrap-around
     store.tick(0.6, 100, true);
-    // Jump backwards past sector 0 boundary
     store.tick(0.05, 101, true);
     const state = useSectorTimingStore.getState();
-    // Should be treated as backwards movement, not a wrap-around
-    expect(state.lapStarted).toBe(false);
-    // currentSectorIdx unchanged from first tick
-    expect(state.currentSectorIdx).toBe(3);
+    // Treated as teleport, not a wrap-around
+    expect(state.sectorEntryValid).toBe(false);
+    expect(state.currentSectorIdx).toBe(0); // updated to sector of 0.05
   });
 
-  it('does NOT reset lapStarted on slow forward movement (25 Hz real-session fix)', () => {
-    // At ~25 Hz on a typical road course, per-tick LapDistPct delta is ~0.0003,
-    // which is below the old MIN_PROGRESS (0.0005). The fix ensures slow forward
-    // movement never invalidates an in-progress lap.
-    useSectorTimingStore.getState().resetLap(); // lapStarted = true
-    useSectorTimingStore.getState().tick(0.01, 100, true); // first tick, sector 0
-    // Simulate several 25 Hz ticks with very small (but positive) deltas
+  it('does NOT reset sectorEntryValid on slow forward movement (25 Hz real-session fix)', () => {
+    useSectorTimingStore.getState().resetLap(); // sectorEntryValid = true
+    useSectorTimingStore.getState().tick(0.01, 100, true);
     useSectorTimingStore.getState().tick(0.0103, 100.04, true); // +0.0003
     useSectorTimingStore.getState().tick(0.0106, 100.08, true); // +0.0003
     useSectorTimingStore.getState().tick(0.0109, 100.12, true); // +0.0003
-    expect(useSectorTimingStore.getState().lapStarted).toBe(true);
+    expect(useSectorTimingStore.getState().sectorEntryValid).toBe(true);
   });
 
   it('records sector times at 25 Hz update rate after S/F crossing', () => {
-    // Simulate a real session: wrap-around sets lapStarted=true, then small-delta
-    // ticks should still allow sector crossings to be detected and recorded.
     const store = useSectorTimingStore.getState();
-    // Start in last sector (sector 5, pct >= 0.829332)
     store.tick(0.9, 50, true);
-    // Cross S/F line (wrap-around) → lapStarted = true
-    store.tick(0.01, 60, true);
-    expect(useSectorTimingStore.getState().lapStarted).toBe(true);
+    store.tick(0.01, 60, true); // wrap-around → sectorEntryValid = true
+    expect(useSectorTimingStore.getState().sectorEntryValid).toBe(true);
 
-    // Simulate 25 Hz ticks with small deltas (real-world road course speed)
-    // Advance slowly through sector 0 until sector 1 boundary (0.184456)
-    const state0 = useSectorTimingStore.getState();
     let t = 60;
     let pct = 0.01;
     while (pct < 0.19) {
-      pct += 0.0003; // ~25 Hz at typical road course speed
+      pct += 0.0003;
       t += 0.04;
       useSectorTimingStore.getState().tick(pct, t, true);
     }
 
     const state = useSectorTimingStore.getState();
-    // lapStarted must still be true — slow movement should not invalidate it
-    expect(state.lapStarted).toBe(true);
-    // Sector 0 must have been recorded when crossing into sector 1
+    expect(state.sectorEntryValid).toBe(true);
     expect(state.sessionBestSectorTimes[0]).not.toBeNull();
     expect(state.currentSectorIdx).toBe(1);
-    void state0; // suppress unused variable warning
   });
 
-  it('preserves previous lap sector times at S/F crossing so sectors not yet reached show last-lap values', () => {
-    // Complete a lap with known sector times, then cross S/F and verify
-    // that previousLapSectorTimes holds the completed-lap values while
-    // currentLapSectorTimes is reset to null.
+  it('updates previousLapSectorTimes immediately when each sector is completed', () => {
     useSectorTimingStore.getState().setSectors([
       { SectorNum: 0, SectorStartPct: 0 },
       { SectorNum: 1, SectorStartPct: 0.4 },
@@ -432,22 +424,43 @@ describe('SectorTimingStore.tick', () => {
     ]);
     useSectorTimingStore.getState().resetLap();
 
-    // Sector 0: 0.01 → 0.45 at t=100→110 (10s)
     useSectorTimingStore.getState().tick(0.01, 100, true);
-    useSectorTimingStore.getState().tick(0.45, 110, true); // completes sector 0
+    useSectorTimingStore.getState().tick(0.45, 110, true); // completes sector 0 (10s)
 
-    // Sector 1: 0.45 → 0.75 at t=110→125 (15s)
-    useSectorTimingStore.getState().tick(0.75, 125, true); // completes sector 1
+    // previousLapSectorTimes updated immediately — no need to wait for S/F
+    expect(
+      useSectorTimingStore.getState().previousLapSectorTimes[0]
+    ).toBeCloseTo(10);
+    expect(
+      useSectorTimingStore.getState().previousLapSectorTimes[1]
+    ).toBeNull();
 
-    // Sector 2 (last): cross S/F at t=145 (20s for sector 2)
-    useSectorTimingStore.getState().tick(0.05, 145, true); // wrap-around
+    useSectorTimingStore.getState().tick(0.75, 125, true); // completes sector 1 (15s)
+
+    expect(
+      useSectorTimingStore.getState().previousLapSectorTimes[1]
+    ).toBeCloseTo(15);
+  });
+
+  it('preserves previousLapSectorTimes across S/F crossing', () => {
+    useSectorTimingStore.getState().setSectors([
+      { SectorNum: 0, SectorStartPct: 0 },
+      { SectorNum: 1, SectorStartPct: 0.4 },
+      { SectorNum: 2, SectorStartPct: 0.7 },
+    ]);
+    useSectorTimingStore.getState().resetLap();
+
+    useSectorTimingStore.getState().tick(0.01, 100, true);
+    useSectorTimingStore.getState().tick(0.45, 110, true); // sector 0 = 10s
+    useSectorTimingStore.getState().tick(0.75, 125, true); // sector 1 = 15s
+    useSectorTimingStore.getState().tick(0.05, 145, true); // S/F: sector 2 = 20s
 
     const state = useSectorTimingStore.getState();
-    // Current lap starts fresh
+    // currentLapSectorTimes reset for new lap
     expect(state.currentLapSectorTimes[0]).toBeNull();
     expect(state.currentLapSectorTimes[1]).toBeNull();
     expect(state.currentLapSectorTimes[2]).toBeNull();
-    // Previous lap times are preserved
+    // previousLapSectorTimes holds most recent valid times
     expect(state.previousLapSectorTimes[0]).toBeCloseTo(10);
     expect(state.previousLapSectorTimes[1]).toBeCloseTo(15);
     expect(state.previousLapSectorTimes[2]).toBeCloseTo(20);
@@ -471,19 +484,19 @@ describe('SectorTimingStore.reset', () => {
       sectorColors,
       sessionBestSectorTimes,
       lastLapDistPct,
-      lapStarted,
+      sectorEntryValid,
     } = useSectorTimingStore.getState();
 
     expect(sectors).toHaveLength(6);
     expect(sectorColors.every((c) => c === 'default')).toBe(true);
     expect(sessionBestSectorTimes.every((t) => t === null)).toBe(true);
     expect(lastLapDistPct).toBe(-1);
-    expect(lapStarted).toBe(false);
+    expect(sectorEntryValid).toBe(false);
   });
 });
 
 // ---------------------------------------------------------------------------
-// SectorTimingStore — invalidateLap
+// SectorTimingStore — invalidateLap (off-track / active reset)
 // ---------------------------------------------------------------------------
 
 // 3-sector track used for active-reset tests
@@ -494,101 +507,169 @@ const THREE_SECTORS = [
 ];
 
 describe('SectorTimingStore.invalidateLap', () => {
-  it('sets lapStarted to false and resets position tracking', () => {
+  it('sets sectorEntryValid to false and resets position tracking', () => {
     useSectorTimingStore.getState().setSectors(MOCK_SECTORS);
-    useSectorTimingStore.getState().resetLap(); // lapStarted = true
+    useSectorTimingStore.getState().resetLap();
     useSectorTimingStore.getState().tick(0.01, 100, true);
 
     useSectorTimingStore.getState().invalidateLap();
     const state = useSectorTimingStore.getState();
-    expect(state.lapStarted).toBe(false);
+    expect(state.sectorEntryValid).toBe(false);
     expect(state.lastLapDistPct).toBe(-1);
   });
 
-  it('requires S/F crossing to resume recording after invalidation', () => {
+  it('does not touch currentLapSectorTimes or previousLapSectorTimes', () => {
+    useSectorTimingStore.getState().setSectors(MOCK_SECTORS);
+    useSectorTimingStore.getState().resetLap();
+    useSectorTimingStore.getState().tick(0.01, 100, true);
+    useSectorTimingStore.getState().tick(0.19, 110, true); // records 10s for sector 0
+
+    useSectorTimingStore.getState().invalidateLap();
+
+    const state = useSectorTimingStore.getState();
+    // Good sector 0 time is preserved
+    expect(state.currentLapSectorTimes[0]).toBeCloseTo(10);
+    expect(state.previousLapSectorTimes[0]).toBeCloseTo(10);
+  });
+
+  it('requires normal crossing to resume recording after invalidation', () => {
     useSectorTimingStore.getState().setSectors(MOCK_SECTORS);
     useSectorTimingStore.getState().resetLap();
     useSectorTimingStore.getState().tick(0.01, 100, true);
     useSectorTimingStore.getState().tick(0.19, 110, true); // records 10s
 
-    // Player goes off-track
     useSectorTimingStore.getState().invalidateLap();
 
-    // Rejoin mid-track and cross sectors — should NOT record
-    useSectorTimingStore.getState().tick(0.4, 200, true); // first tick after invalidate
-    useSectorTimingStore.getState().tick(0.6, 210, true); // sector crossing, lapStarted=false
+    // Rejoin mid-track: first crossing after invalidate is not recorded
+    useSectorTimingStore.getState().tick(0.4, 200, true); // first tick
+    useSectorTimingStore.getState().tick(0.6, 210, true); // crossing — NOT recorded
 
     const state = useSectorTimingStore.getState();
-    // sector 2 should not have been recorded
+    // sector 2 should not have been recorded (sectorEntryValid was false)
     expect(state.sessionBestSectorTimes[2]).toBeNull();
+    // sectorEntryValid is now true (crossing sets it true)
+    expect(state.sectorEntryValid).toBe(true);
   });
+});
 
-  it('preserves valid partial sector times in previousLapSectorTimes after active reset', () => {
-    // Scenario: great sector 0 and sector 1, crash in sector 2, active reset.
-    // The good times should survive into previousLapSectorTimes so the
-    // display fallback shows them on the next real lap.
-    const store = useSectorTimingStore.getState();
-    store.setSectors(THREE_SECTORS);
-    store.resetLap(); // lapStarted = true
+// ---------------------------------------------------------------------------
+// SectorTimingStore — active reset (tick-based teleport detection)
+// ---------------------------------------------------------------------------
 
-    // Drive sector 0 (30s) and sector 1 (25s)
-    store.tick(0.01, 100, true); // first tick → sectorEntryTime = 100
-    store.tick(0.34, 130, true); // cross S1: sector 0 = 30s
-    store.tick(0.68, 155, true); // cross S2: sector 1 = 25s
-
-    // Crash in sector 2 — active reset (IsOnTrack → false)
-    store.invalidateLap();
-    // currentLapSectorTimes still holds [30, 25, null] — those are valid
-
-    // Dummy lap: player rejoins and drives without timing (lapStarted=false)
-    store.tick(0.01, 160, true); // first tick after rejoin
-    store.tick(0.34, 190, true); // sector 0→1, lapStarted=false, no recording
-    store.tick(0.68, 215, true); // sector 1→2, lapStarted=false, no recording
-    // S/F wrap-around: promotes [30, 25, null] into previousLapSectorTimes
-    store.tick(0.01, 235, true);
-
-    const state = useSectorTimingStore.getState();
-    expect(state.lapStarted).toBe(true);
-    expect(state.previousLapSectorTimes[0]).toBeCloseTo(30);
-    expect(state.previousLapSectorTimes[1]).toBeCloseTo(25);
-    expect(state.previousLapSectorTimes[2]).toBeNull();
-  });
-
-  it('does not wipe previousLapSectorTimes when a second reset produces no valid sectors', () => {
-    // Scenario: player had good partial sectors from a first reset, then does
-    // another reset before completing any sectors. The second dummy lap is
-    // all-null and must NOT overwrite the reference data from the first reset.
+// Active reset ticks must have a small timeDelta so the speed check triggers.
+// Normal driving ticks use large timeDelta (30s for 0.33 of lap = 0.011/s << 0.08).
+// Teleport ticks use timeDelta=1s (e.g. 0.46 lap in 1s = 0.46/s >> 0.08).
+describe('SectorTimingStore — active reset via tick', () => {
+  it('only clears the teleported-into sector, preserves sector 0', () => {
     const store = useSectorTimingStore.getState();
     store.setSectors(THREE_SECTORS);
     store.resetLap();
 
-    // Drive sectors 0 and 1, crash in sector 2 — first reset
+    // Drive sector 0 (large timeDelta → speed 0.33/30 = 0.011/s < 0.08 → not teleport)
     store.tick(0.01, 100, true);
-    store.tick(0.34, 130, true); // sector 0 = 30s
-    store.tick(0.68, 155, true); // sector 1 = 25s
-    store.invalidateLap();
+    store.tick(0.34, 130, true); // sector 0 → 1: records 30s. Player at 0.34.
 
-    // First dummy lap → wrap-around: previousLapSectorTimes = [30, 25, null]
-    store.tick(0.01, 160, true);
-    store.tick(0.34, 190, true);
-    store.tick(0.68, 215, true);
-    store.tick(0.01, 235, true); // lap starts (lapStarted = true)
-
-    // Second reset immediately (no sectors driven yet, currentLapSectorTimes all null)
-    store.invalidateLap();
-
-    // Second dummy lap → wrap-around with all-null currentLapSectorTimes
-    store.tick(0.01, 240, true);
-    store.tick(0.34, 270, true);
-    store.tick(0.68, 295, true);
-    store.tick(0.01, 315, true); // wrap-around: should NOT wipe previousLapSectorTimes
+    // Active reset from sector 1 (0.34) to sector 2 final (0.80).
+    // delta=0.46, timeDelta=1s → speed=0.46 >> 0.08 → teleport detected.
+    store.tick(0.8, 131, true);
 
     const state = useSectorTimingStore.getState();
-    expect(state.lapStarted).toBe(true);
-    // Good partial data from the first reset must be preserved
+    // Sector 0 was completed before the reset — preserved
+    expect(state.currentLapSectorTimes[0]).toBeCloseTo(30);
+    expect(state.previousLapSectorTimes[0]).toBeCloseTo(30);
+    // Sector 1 never completed (teleported before leaving it) — null
+    expect(state.currentLapSectorTimes[1]).toBeNull();
+    // Sector 2 cleared by teleport
+    expect(state.currentLapSectorTimes[2]).toBeNull();
+    expect(state.sectorEntryValid).toBe(false);
+    expect(state.currentSectorIdx).toBe(2);
+  });
+
+  it('does not record the teleported-into sector when crossing out of it', () => {
+    const store = useSectorTimingStore.getState();
+    store.setSectors(THREE_SECTORS);
+    store.resetLap();
+
+    // Drive sector 0 (30s)
+    store.tick(0.01, 100, true);
+    store.tick(0.34, 130, true); // sector 0 complete. Player at 0.34.
+
+    // Teleport from sector 1 (0.34) to sector 2 (0.80): speed=0.46/s >> 0.08
+    store.tick(0.8, 131, true); // sectorEntryValid = false
+
+    // Drive through rest of sector 2 — should NOT record sector 2
+    store.tick(0.05, 145, true); // S/F: sectorEntryValid=false → no record
+
+    const state = useSectorTimingStore.getState();
+    expect(state.sessionBestSectorTimes[2]).toBeNull(); // never recorded
+    expect(state.sectorEntryValid).toBe(true); // S/F sets valid for sector 0
+    expect(state.currentSectorIdx).toBe(0);
+  });
+
+  it('preserves previousLapSectorTimes across two consecutive active resets', () => {
+    const store = useSectorTimingStore.getState();
+    store.setSectors(THREE_SECTORS);
+    store.resetLap();
+
+    // Drive sector 0 and 1 (large timeDelta → not teleport)
+    store.tick(0.01, 100, true);
+    store.tick(0.34, 130, true); // sector 0 = 30s → previousLapSectorTimes[0] = 30
+    store.tick(0.68, 155, true); // sector 1 = 25s → previousLapSectorTimes[1] = 25
+
+    // First active reset: from sector 2 entry (0.68) forward is too small.
+    // Simulate being in sector 1 before the S/F and then reset to sector 2:
+    // Actually, at this point player just crossed into sector 2. Drive a small
+    // amount then teleport to simulate reset from within sector 2 to final area.
+    // Use a fresh lap crossing to set up: cross S/F normally from a good lap,
+    // then simulate the sector 1→final teleport on the next lap.
+    store.tick(0.05, 200, true); // S/F wrap-around (sector 2 recorded if valid)
+
+    // Now on new lap. previousLapSectorTimes[2] should be set.
+    // Simulate active reset: player at 0.05 (sector 0) jumps to 0.80 (sector 2).
+    // delta=0.75, timeDelta=1s → speed=0.75 >> 0.08 → teleport.
+    store.tick(0.8, 201, true);
+
+    expect(
+      useSectorTimingStore.getState().previousLapSectorTimes[0]
+    ).toBeCloseTo(30);
+    expect(
+      useSectorTimingStore.getState().previousLapSectorTimes[1]
+    ).toBeCloseTo(25);
+    expect(useSectorTimingStore.getState().sectorEntryValid).toBe(false);
+
+    // Second active reset: still at 0.80, drive to S/F, then reset again.
+    store.tick(0.05, 215, true); // S/F: sector 2 not recorded (sectorEntryValid=false)
+    store.tick(0.8, 216, true); // second teleport: delta=0.75, timeDelta=1s → teleport
+
+    store.tick(0.05, 230, true); // S/F: not recorded
+
+    const state = useSectorTimingStore.getState();
+    // previousLapSectorTimes preserved across both resets
     expect(state.previousLapSectorTimes[0]).toBeCloseTo(30);
     expect(state.previousLapSectorTimes[1]).toBeCloseTo(25);
-    expect(state.previousLapSectorTimes[2]).toBeNull();
+  });
+
+  it('correctly times sectors driven normally after an active reset', () => {
+    const store = useSectorTimingStore.getState();
+    store.setSectors(THREE_SECTORS);
+    store.resetLap();
+
+    // Drive sector 0 (30s), then teleport to sector 2
+    store.tick(0.01, 100, true);
+    store.tick(0.34, 130, true); // sector 0 = 30s. Player at 0.34.
+    store.tick(0.8, 131, true); // teleport: speed=0.46/s >> 0.08
+
+    // Drive through sector 2 and cross S/F (sector 2 not recorded)
+    store.tick(0.05, 145, true); // S/F: sectorEntryValid=true for sector 0
+
+    // Drive sector 0 on the new lap (25s)
+    store.tick(0.34, 170, true); // sector 0 = 25s (145→170)
+    store.tick(0.68, 190, true); // sector 1 = 20s
+
+    const state = useSectorTimingStore.getState();
+    expect(state.currentLapSectorTimes[0]).toBeCloseTo(25);
+    expect(state.sessionBestSectorTimes[0]).toBeCloseTo(25); // 25 < 30
+    expect(state.currentLapSectorTimes[1]).toBeCloseTo(20);
   });
 });
 
@@ -600,7 +681,6 @@ describe('SectorTimingStore.reset clears session bests', () => {
   it('clears session bests and sector colors on full reset', () => {
     useSectorTimingStore.getState().setSectors(MOCK_SECTORS);
 
-    // Complete a sector to set a session best
     useSectorTimingStore.getState().resetLap();
     useSectorTimingStore.getState().tick(0.01, 100, true);
     useSectorTimingStore.getState().tick(0.19, 110, true);

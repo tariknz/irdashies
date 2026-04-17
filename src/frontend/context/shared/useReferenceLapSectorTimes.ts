@@ -7,7 +7,11 @@ import { interpolateAtPoint } from '../../components/Standings/interpolation';
 /**
  * Derives per-sector times from the persisted (ghost) reference lap for the
  * player's car class.  Returns the sector times and a flag indicating whether a
- * ghost file is actually loaded.
+ * ghost file is actually loaded from disk.
+ *
+ * hasGhostLap is only true when initialize() found and loaded a saved ghost
+ * file for the player's class. In-session laps promoted to persistedLaps are
+ * NOT counted — use the ghost icon only for file-backed reference laps.
  *
  * Sector times are computed by interpolating the reference lap's
  * timeElapsedSinceStart at each sector-boundary trackPct, then diffing
@@ -34,13 +38,19 @@ export const useReferenceLapSectorTimes = (): {
     (s) => s.persistedLapsVersion
   );
 
+  // Only classes that had a ghost file loaded from disk — not in-session laps.
+  const fileLoadedClassIds = useReferenceLapStore((s) => s.fileLoadedClassIds);
+
   return useMemo(() => {
     if (playerCarIdx == null || playerClassId == null || sectors.length === 0) {
       return { refSectorTimes: [], hasGhostLap: false };
     }
 
-    // usePersistence=true → only consider the saved ghost file, not an
-    // in-session best that has not been persisted yet.
+    // Only show ghost comparison when a file was explicitly loaded from disk.
+    if (!fileLoadedClassIds.has(playerClassId)) {
+      return { refSectorTimes: [], hasGhostLap: false };
+    }
+
     const refLap = useReferenceLapStore
       .getState()
       .getReferenceLap(playerCarIdx, playerClassId, true);
@@ -70,6 +80,14 @@ export const useReferenceLapSectorTimes = (): {
     // seriesId clears the ghost row when the session resets.
     // persistedLapsVersion increments after the async load in initialize()
     // completes, ensuring the memo re-runs once laps are actually available.
+    // fileLoadedClassIds changes when initialize() finds a file lap.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [playerCarIdx, playerClassId, sectors, seriesId, persistedLapsVersion]);
+  }, [
+    playerCarIdx,
+    playerClassId,
+    sectors,
+    seriesId,
+    persistedLapsVersion,
+    fileLoadedClassIds,
+  ]);
 };

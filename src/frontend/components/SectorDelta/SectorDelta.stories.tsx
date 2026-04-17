@@ -56,7 +56,7 @@ function SectorStoreSeeder({
       sectorColors,
       currentLapSectorTimes,
       sessionBestSectorTimes,
-      lapStarted: true,
+      sectorEntryValid: true,
       currentSectorIdx: 2,
       sectorEntryTime: 0,
       lastLapDistPct: 0.8,

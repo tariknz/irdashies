@@ -13,11 +13,20 @@
  *   S/F line), the time delta is recorded and compared against the session best
  *   to produce a color.
  *
- * Lap start protection:
- *   Sector times are only recorded after the player crosses the S/F line
- *   legitimately (lapStarted = true). A teleport, active reset, or off-track
- *   event sets lapStarted = false, requiring the player to complete a full
- *   S/F crossing before timing resumes.
+ * Per-sector validity:
+ *   Each sector crossing is individually validated. A sector's time is only
+ *   recorded if the player entered it via normal forward progression
+ *   (sectorEntryValid = true). A teleport, active reset, or off-track event
+ *   sets sectorEntryValid = false — only the sector the player lands in is
+ *   affected. Sectors already completed on the current lap keep their times.
+ *
+ *   The S/F crossing always starts sector 0 with a valid entry, so timing
+ *   resumes naturally from there without requiring a full lap to complete first.
+ *
+ * previousLapSectorTimes:
+ *   Updated immediately when each sector is validly completed (not just at
+ *   S/F). This preserves the best available reference time for each sector
+ *   independently of resets or incomplete laps.
  *
  * Color scheme (standard racing timing colours):
  *   purple  — session best for this sector
@@ -47,22 +56,23 @@ interface SectorTimingState {
   currentSectorIdx: number;
   sectorEntryTime: number;
   lastLapDistPct: number;
+  lastSessionTime: number;
 
   // Actual sector times for the current lap (null = not yet completed this lap)
   currentLapSectorTimes: (number | null)[];
 
-  // Sector times from the previous completed lap — used as fallback display
-  // values for sectors not yet reached on the current lap (avoids showing '--'
-  // for all sectors immediately after crossing the S/F line).
+  // Most recent valid time for each sector. Updated immediately whenever a
+  // sector is validly completed (not just at S/F). Used as a display fallback
+  // for sectors not yet reached on the current lap.
   previousLapSectorTimes: (number | null)[];
 
   /**
-   * True only after the player crosses the S/F line from the last sector into
-   * sector 0. When false, tick() updates position tracking but does not record
-   * sector times. This prevents partial-lap data from an active reset or
-   * rejoining mid-track from polluting the timing results.
+   * True when the current sector was entered via a normal forward crossing
+   * (sector boundary or S/F line). False after a teleport, active reset, or
+   * off-track event. Only the sector the player lands in is affected — sectors
+   * already completed on the current lap retain their recorded times.
    */
-  lapStarted: boolean;
+  sectorEntryValid: boolean;
 
   // Per-sector timing results (null = not yet completed)
   sessionBestSectorTimes: (number | null)[];
@@ -82,10 +92,10 @@ interface SectorTimingState {
 
   // Reset all timing data (e.g. on new session or track change)
   reset: () => void;
-  // Reset current-lap state, keep session bests. Sets lapStarted=true
-  // so the next sector crossing will be recorded (use for clean lap resets).
+  // Reset current-lap state, keep session bests. Sets sectorEntryValid=true
+  // so the next sector crossing will be recorded (use for clean test setup).
   resetLap: () => void;
-  // Mark lap as invalid — requires S/F crossing before timing resumes.
+  // Mark current sector as invalid — next crossing must be entered normally.
   // Call when the player goes off-track or rejoins mid-track.
   invalidateLap: () => void;
 }
@@ -112,10 +122,23 @@ export const DEFAULT_YELLOW_THRESHOLD = 0.01; // 1.0%
 const MIN_PROGRESS = 0.00005;
 
 /**
- * Maximum forward jump in LapDistPct in a single tick. Jumps larger than
- * this are treated as a teleport/reset (e.g. rejoining track).
+ * Absolute maximum forward LapDistPct jump in a single tick. Jumps above
+ * this are unconditionally treated as teleports (half-lap-or-more jumps).
  */
 const MAX_FORWARD_JUMP = 0.5;
+
+/**
+ * Maximum plausible LapDistPct change per second for any real racing scenario.
+ * 0.08 pct/s covers ~400 km/h on a 3 km track with generous margin.
+ *
+ * Used alongside per-tick time delta to catch active resets that produce a
+ * smaller positional jump (e.g. sector 1 → sector 3 on a 3-sector track gives
+ * delta ~0.45 in ~1 second = 0.45 pct/s >> 0.08). Only applied when
+ * consecutive ticks are within MAX_SPEED_CHECK_WINDOW seconds of each other;
+ * larger gaps (pause, reconnect) fall back to position-only detection.
+ */
+const MAX_LAP_PCT_PER_SECOND = 0.08;
+const MAX_SPEED_CHECK_WINDOW = 5; // seconds
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -168,7 +191,8 @@ export const useSectorTimingStore = create<SectorTimingState>((set, get) => ({
   currentSectorIdx: 0,
   sectorEntryTime: 0,
   lastLapDistPct: -1,
-  lapStarted: false,
+  lastSessionTime: -1,
+  sectorEntryValid: false,
   sessionBestSectorTimes: [],
   sectorColors: [],
   currentLapSectorTimes: [],
@@ -198,7 +222,8 @@ export const useSectorTimingStore = create<SectorTimingState>((set, get) => ({
       currentSectorIdx: 0,
       sectorEntryTime: 0,
       lastLapDistPct: -1,
-      lapStarted: false,
+      lastSessionTime: -1,
+      sectorEntryValid: false,
     });
   },
 
@@ -209,20 +234,23 @@ export const useSectorTimingStore = create<SectorTimingState>((set, get) => ({
       currentSectorIdx,
       sectorEntryTime,
       lastLapDistPct,
-      lapStarted,
+      lastSessionTime,
+      sectorEntryValid,
       greenThreshold,
       yellowThreshold,
     } = state;
 
     if (sectors.length === 0 || !isOnTrack) return;
 
-    // First tick — just record position
+    // First tick — just record position, leave sectorEntryValid = false since
+    // we don't know if the player just joined mid-sector or started cleanly.
     if (lastLapDistPct < 0) {
       const idx = getSectorIdx(lapDistPct, sectors);
       set({
         currentSectorIdx: idx,
         sectorEntryTime: sessionTime,
         lastLapDistPct: lapDistPct,
+        lastSessionTime: sessionTime,
       });
       return;
     }
@@ -240,13 +268,10 @@ export const useSectorTimingStore = create<SectorTimingState>((set, get) => ({
 
     if (isWrapAround) {
       const newSessionBests = [...state.sessionBestSectorTimes];
-      // Keep previous lap's colors — they update sector-by-sector as each
-      // sector is completed on the new lap. This means: sectors already crossed
-      // on the new lap show current performance; sectors not yet reached show
-      // the last lap's color as a reference (matching RaceLab behavior).
       const newColors = [...state.sectorColors];
+      const newPreviousTimes = [...state.previousLapSectorTimes];
 
-      if (lapStarted) {
+      if (sectorEntryValid) {
         // Record and color the last sector at the S/F crossing.
         const sectorTime = sessionTime - sectorEntryTime;
         const completedIdx = currentSectorIdx;
@@ -263,102 +288,106 @@ export const useSectorTimingStore = create<SectorTimingState>((set, get) => ({
           greenThreshold,
           yellowThreshold
         );
+        // Update previousLapSectorTimes immediately for the completed sector.
+        newPreviousTimes[completedIdx] = sectorTime;
       }
-
-      // Capture the completed lap's sector times before resetting, so sectors
-      // not yet reached on the new lap can still display the previous values.
-      const completedLapTimes = [...state.currentLapSectorTimes];
-      if (lapStarted) {
-        completedLapTimes[currentSectorIdx] = sessionTime - sectorEntryTime;
-      }
-
-      // Only promote completedLapTimes to previousLapSectorTimes when there is
-      // at least one valid sector time to show. If the lap was entirely a dummy
-      // (lapStarted was false the whole time and currentLapSectorTimes is all
-      // null — e.g. a second active reset before completing any sectors), keep
-      // the existing previousLapSectorTimes so the last good reference data is
-      // not wiped. Valid partial sectors from an invalidated lap (e.g. great
-      // sector 1 before crashing) are still promoted because those entries
-      // will be non-null in completedLapTimes.
-      const hasValidTimes = completedLapTimes.some((t) => t !== null);
-      const newPreviousLapTimes = hasValidTimes
-        ? completedLapTimes
-        : state.previousLapSectorTimes;
 
       set({
-        lapStarted: true,
+        sectorEntryValid: true, // S/F crossing is always a valid entry to sector 0
         currentSectorIdx: 0,
         sectorEntryTime: sessionTime,
         lastLapDistPct: lapDistPct,
+        lastSessionTime: sessionTime,
         sessionBestSectorTimes: newSessionBests,
         sectorColors: newColors,
-        previousLapSectorTimes: newPreviousLapTimes,
+        previousLapSectorTimes: newPreviousTimes,
         currentLapSectorTimes: sectors.map(() => null),
       });
       return;
     }
 
-    // Backwards movement (pit road, game resets, replay scrubbing) or a
-    // suspiciously large forward jump (teleport) — invalidate the current lap.
-    // S/F wrap-around was already handled above, so any remaining negative
-    // delta is a genuine backwards move, not a lap crossing.
-    if (delta < 0 || delta > MAX_FORWARD_JUMP) {
-      set({ lapStarted: false, lastLapDistPct: lapDistPct });
+    // Detect teleport/active reset for forward movement:
+    //   1. Absolute: position delta > MAX_FORWARD_JUMP (half a lap or more)
+    //   2. Speed-based: delta / timeDelta > MAX_LAP_PCT_PER_SECOND
+    //      Catches smaller active resets (e.g. sector 1 → sector 3 final, ~0.45
+    //      lap in 1 second). Skipped when ticks are far apart (pause/reconnect)
+    //      to avoid false positives on legitimate large time gaps.
+    const tickDuration =
+      lastSessionTime >= 0 ? sessionTime - lastSessionTime : Infinity;
+    const isTeleport =
+      delta < 0 ||
+      delta > MAX_FORWARD_JUMP ||
+      (delta > 0 &&
+        tickDuration > 0 &&
+        tickDuration < MAX_SPEED_CHECK_WINDOW &&
+        delta / tickDuration > MAX_LAP_PCT_PER_SECOND);
+
+    if (isTeleport) {
+      const newSectorIdx = getSectorIdx(lapDistPct, sectors);
+      const newCurrentLapTimes = [...state.currentLapSectorTimes];
+      // Clear only the sector we teleported into so stale data isn't shown
+      // for a sector the player is about to re-drive from an unknown entry.
+      newCurrentLapTimes[newSectorIdx] = null;
+      set({
+        sectorEntryValid: false,
+        lastLapDistPct: lapDistPct,
+        lastSessionTime: sessionTime,
+        currentSectorIdx: newSectorIdx,
+        sectorEntryTime: sessionTime,
+        currentLapSectorTimes: newCurrentLapTimes,
+      });
       return;
     }
 
-    set({ lastLapDistPct: lapDistPct });
+    set({ lastLapDistPct: lapDistPct, lastSessionTime: sessionTime });
 
     // Skip sector-crossing detection when the car is effectively stationary.
-    // This is a noise guard only — it must NOT invalidate lapStarted, otherwise
-    // every tick at the real SDK rate (~25 Hz, where normal road-course deltas
-    // are ~0.0002-0.0004) would reset lap tracking and make timing impossible.
+    // This is a noise guard only — it must NOT invalidate sectorEntryValid.
     if (delta < MIN_PROGRESS) return;
 
     const newSectorIdx = getSectorIdx(lapDistPct, sectors);
     if (newSectorIdx === currentSectorIdx) return;
 
-    // Crossed into a new sector — only record timing if lap is started
-    if (!lapStarted) {
-      set({ currentSectorIdx: newSectorIdx, sectorEntryTime: sessionTime });
-      return;
-    }
-
-    const sectorTime = sessionTime - sectorEntryTime;
-    const completedIdx = currentSectorIdx;
-
-    const newSessionBests = [...state.sessionBestSectorTimes];
-
-    // Update session best before computing color so the first completion
-    // is correctly identified as a new session best (purple).
-    if (
-      newSessionBests[completedIdx] === null ||
-      sectorTime < (newSessionBests[completedIdx] as number)
-    ) {
-      newSessionBests[completedIdx] = sectorTime;
-    }
-
-    const color = computeSectorColor(
-      sectorTime,
-      newSessionBests[completedIdx],
-      greenThreshold,
-      yellowThreshold
-    );
-
-    // Update colors — completed sector gets its color, others keep theirs
-    const newColors = [...state.sectorColors];
-    newColors[completedIdx] = color;
-
-    // Record actual sector time for the current lap
+    // Crossed into a new sector via normal forward progression.
     const newCurrentLapTimes = [...state.currentLapSectorTimes];
-    newCurrentLapTimes[completedIdx] = sectorTime;
+    const newPreviousTimes = [...state.previousLapSectorTimes];
+    const newSessionBests = [...state.sessionBestSectorTimes];
+    const newColors = [...state.sectorColors];
+
+    if (sectorEntryValid) {
+      const sectorTime = sessionTime - sectorEntryTime;
+      const completedIdx = currentSectorIdx;
+
+      if (
+        newSessionBests[completedIdx] === null ||
+        sectorTime < (newSessionBests[completedIdx] as number)
+      ) {
+        newSessionBests[completedIdx] = sectorTime;
+      }
+
+      const color = computeSectorColor(
+        sectorTime,
+        newSessionBests[completedIdx],
+        greenThreshold,
+        yellowThreshold
+      );
+
+      newColors[completedIdx] = color;
+      newCurrentLapTimes[completedIdx] = sectorTime;
+      // Update previousLapSectorTimes immediately so the reference is always
+      // current regardless of resets or incomplete laps.
+      newPreviousTimes[completedIdx] = sectorTime;
+    }
 
     set({
+      sectorEntryValid: true, // entered new sector via normal crossing
       currentSectorIdx: newSectorIdx,
       sectorEntryTime: sessionTime,
+      lastSessionTime: sessionTime,
       sessionBestSectorTimes: newSessionBests,
       sectorColors: newColors,
       currentLapSectorTimes: newCurrentLapTimes,
+      previousLapSectorTimes: newPreviousTimes,
     });
   },
 
@@ -387,7 +416,8 @@ export const useSectorTimingStore = create<SectorTimingState>((set, get) => ({
       currentSectorIdx: 0,
       sectorEntryTime: 0,
       lastLapDistPct: -1,
-      lapStarted: false,
+      lastSessionTime: -1,
+      sectorEntryValid: false,
       sessionBestSectorTimes: state.sectors.map(() => null),
       sectorColors: state.sectors.map(() => 'default' as SectorColor),
       currentLapSectorTimes: state.sectors.map(() => null),
@@ -399,7 +429,8 @@ export const useSectorTimingStore = create<SectorTimingState>((set, get) => ({
       currentSectorIdx: 0,
       sectorEntryTime: 0,
       lastLapDistPct: -1,
-      lapStarted: true,
+      lastSessionTime: -1,
+      sectorEntryValid: true,
       sectorColors: state.sectors.map(() => 'default' as SectorColor),
       currentLapSectorTimes: state.sectors.map(() => null),
       previousLapSectorTimes: state.sectors.map(() => null),
@@ -407,8 +438,9 @@ export const useSectorTimingStore = create<SectorTimingState>((set, get) => ({
 
   invalidateLap: () =>
     set({
-      lapStarted: false,
+      sectorEntryValid: false,
       lastLapDistPct: -1,
+      lastSessionTime: -1,
     }),
 }));
 

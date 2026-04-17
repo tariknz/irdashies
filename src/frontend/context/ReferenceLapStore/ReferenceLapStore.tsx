@@ -29,6 +29,13 @@ interface ReferenceRegistryState {
   trackId: number | null;
   /** Incremented each time persisted laps finish loading so subscribers re-run. */
   persistedLapsVersion: number;
+  /**
+   * Class IDs for which a ghost lap was loaded from disk during initialize().
+   * In-session laps promoted to persistedLaps are NOT included here. Used by
+   * useReferenceLapSectorTimes to show the ghost icon only when a saved file
+   * is present, not for newly-completed in-session laps.
+   */
+  fileLoadedClassIds: Set<number>;
 
   initialize: (
     bridge: ReferenceLapBridge,
@@ -61,6 +68,7 @@ export const useReferenceLapStore = create<ReferenceRegistryState>(
     seriesId: null,
     trackId: null,
     persistedLapsVersion: 0,
+    fileLoadedClassIds: new Set<number>(),
 
     initialize: async (bridge, seriesId, trackId, classList) => {
       set({ seriesId, trackId });
@@ -85,12 +93,21 @@ export const useReferenceLapStore = create<ReferenceRegistryState>(
         })
       );
 
-      // Mutate in place to avoid triggering Zustand subscriptions on each lap,
-      // then fire a single notification so hooks re-run once all laps are ready.
+      // Mutate persistedLaps in place to avoid triggering Zustand subscriptions
+      // on each lap, then fire a single notification so hooks re-run once all
+      // laps are ready. Build a new Set for fileLoadedClassIds so selectors
+      // that depend on it re-run after initialization completes.
+      const newFileLoadedClassIds = new Set<number>();
       results.forEach(({ classId, lap }) => {
-        if (lap) persistedLaps.set(classId, lap);
+        if (lap) {
+          persistedLaps.set(classId, lap);
+          newFileLoadedClassIds.add(classId);
+        }
       });
-      set((s) => ({ persistedLapsVersion: s.persistedLapsVersion + 1 }));
+      set((s) => ({
+        persistedLapsVersion: s.persistedLapsVersion + 1,
+        fileLoadedClassIds: newFileLoadedClassIds,
+      }));
     },
 
     collectLapData: (
@@ -223,6 +240,7 @@ export const useReferenceLapStore = create<ReferenceRegistryState>(
         persistedLaps: new Map(),
         seriesId: null,
         trackId: null,
+        fileLoadedClassIds: new Set<number>(),
       });
     },
   })

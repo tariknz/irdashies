@@ -73,7 +73,7 @@ function ghostColor(
 ): SectorColor {
   if (lapTime === null || refTime === null) return 'default';
   const delta = lapTime - refTime;
-  if (delta <= 0) return 'green';
+  if (delta <= 0) return 'purple';
   if (delta <= GHOST_THRESHOLD) return 'yellow';
   return 'red';
 }
