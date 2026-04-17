@@ -187,7 +187,10 @@ export const RelativeSettings = () => {
                       }
                     }
                     onConfigChange={onConfigChange}
-                    renderItemChildren={(item, configValue) => (
+                    renderItemChildren={(
+                      item: SharedSortableSetting,
+                      configValue
+                    ) => (
                       <>
                         {item.hasSubSetting &&
                           item.configKey === 'pitStatus' &&

@@ -209,7 +209,10 @@ export const StandingsSettings = () => {
                       }
                     }
                     onConfigChange={onConfigChange}
-                    renderItemChildren={(item, configValue) => (
+                    renderItemChildren={(
+                      item: SharedSortableSetting,
+                      configValue
+                    ) => (
                       <>
                         {item.hasSubSetting &&
                           item.configKey === 'pitStatus' &&
