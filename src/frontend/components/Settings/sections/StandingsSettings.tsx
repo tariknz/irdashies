@@ -714,18 +714,16 @@ export const StandingsSettings = () => {
                           const item =
                             settings.config.headerBar[
                               id as keyof typeof settings.config.headerBar
-                            ];
-                          if (typeof item === 'object') {
-                            handleConfigChange({
-                              headerBar: {
-                                ...settings.config.headerBar,
-                                [id]: {
-                                  ...(item as SessionBarItemConfig),
-                                  ...config,
-                                },
+                            ] ?? {};
+                          handleConfigChange({
+                            headerBar: {
+                              ...settings.config.headerBar,
+                              [id]: {
+                                ...(item as SessionBarItemConfig),
+                                ...config,
                               },
-                            });
-                          }
+                            },
+                          });
                         }}
                       />
 
@@ -785,18 +783,16 @@ export const StandingsSettings = () => {
                           const item =
                             settings.config.footerBar[
                               id as keyof typeof settings.config.footerBar
-                            ];
-                          if (typeof item === 'object') {
-                            handleConfigChange({
-                              footerBar: {
-                                ...settings.config.footerBar,
-                                [id]: {
-                                  ...(item as SessionBarItemConfig),
-                                  ...config,
-                                },
+                            ] ?? {};
+                          handleConfigChange({
+                            footerBar: {
+                              ...settings.config.footerBar,
+                              [id]: {
+                                ...(item as SessionBarItemConfig),
+                                ...config,
                               },
-                            });
-                          }
+                            },
+                          });
                         }}
                       />
 
