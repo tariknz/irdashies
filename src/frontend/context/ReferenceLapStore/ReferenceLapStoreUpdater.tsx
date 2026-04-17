@@ -9,6 +9,7 @@ import { TrackLocation } from '@irdashies/types';
 import {
   useSessionDrivers,
   useSessionStore,
+  useTrackLength,
 } from '../SessionStore/SessionStore';
 import { Driver } from '@irdashies/types';
 import logger from '@irdashies/utils/logger';
@@ -21,6 +22,7 @@ export const useReferenceLapStoreUpdater = (bridge: ReferenceLapBridge) => {
   const seriesId =
     useSessionStore((s) => s.session?.WeekendInfo.SeriesID) ?? -1;
   const trackId = useSessionStore((s) => s.session?.WeekendInfo.TrackID) ?? -1;
+  const trackLength = useTrackLength();
   const drivers = useSessionDrivers() ?? EMPTY_DRIVER_ARRAY;
   const subSessionId =
     useSessionStore((s) => s.session?.WeekendInfo.SubSessionID) ?? -1;
@@ -46,7 +48,7 @@ export const useReferenceLapStoreUpdater = (bridge: ReferenceLapBridge) => {
   useEffect(() => {
     logger.info('Resetting Session!');
     completeSession();
-    initialize(bridge, seriesId, trackId, classList);
+    initialize(bridge, seriesId, trackId, trackLength, classList);
     // INFO: reset session only if the below change, i.e we moved from practice -> quali or we switched series
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [seriesId, trackId, sessionNum, subSessionId]);

@@ -1,4 +1,4 @@
-import { normalizeKey, REFERENCE_INTERVAL } from '@irdashies/context';
+import { getBucketIndex } from '@irdashies/context';
 import { ReferenceLap } from '@irdashies/types';
 import logger from '@irdashies/utils/logger';
 
@@ -10,15 +10,32 @@ export function interpolateAtPoint(
   targetPct: number
 ): number | null {
   // 1. Normalize the target to find the exact grid key (p0)
-  const key0 = normalizeKey(targetPct);
+  const key0 = getBucketIndex(targetPct, lap.pointsCount);
 
   // 2. Calculate the next key (p1)
   // We manually add the interval and re-normalize to handle floating point math
-  const key1 = normalizeKey(targetPct + REFERENCE_INTERVAL);
+  const key1 = getBucketIndex(targetPct + lap.interval, lap.pointsCount);
 
   // 3. Fast Lookup
-  const p0 = lap.refPoints.get(key0);
-  const p1 = lap.refPoints.get(key1);
+  const p0time = lap.times[key0];
+  const p0tangent = lap.tangents[key0];
+  const p0pos = lap.pointPos[key0];
+
+  const p0 = {
+    timeElapsedSinceStart: p0time,
+    tangent: p0tangent,
+    trackPct: p0pos,
+  };
+
+  const p1time = lap.times[key1];
+  const p1tangent = lap.tangents[key1];
+  const p1pos = lap.pointPos[key1];
+
+  const p1 = {
+    timeElapsedSinceStart: p1time,
+    tangent: p1tangent,
+    trackPct: p1pos,
+  };
 
   // Handle Edge Case: Wrapping or End of Lap
   // If we are at the very end (e.g., 0.9975 -> 0.0000), p1 might be the start point.

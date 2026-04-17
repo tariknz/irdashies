@@ -1,4 +1,4 @@
-import { ReferenceLap, ReferencePoint } from '@irdashies/types';
+import { ReferenceLap } from '@irdashies/types';
 import { app } from 'electron';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -19,22 +19,24 @@ const generateKey = (
 };
 
 /**
- * JSON Reviver: Converts arrays back to Maps for 'refPoints'
+ * JSON Reviver: Converts arrays back to Float32Arrays for specific keys
  */
 const reviver = (key: string, value: unknown): unknown => {
-  if (key === 'refPoints' && Array.isArray(value)) {
-    // We cast to the specific tuple array expected by the Map constructor
-    return new Map(value as [number, ReferencePoint][]);
+  if (
+    (key === 'pointPos' || key === 'times' || key === 'tangents') &&
+    Array.isArray(value)
+  ) {
+    return new Float32Array(value);
   }
   return value;
 };
 
 /**
- * JSON Replacer: Converts Maps to arrays for storage
+ * JSON Replacer: Converts Float32Arrays to standard arrays for storage
  */
 const replacer = (key: string, value: unknown): unknown => {
-  if (value instanceof Map) {
-    return Array.from(value.entries());
+  if (value instanceof Float32Array) {
+    return Array.from(value);
   }
   return value;
 };

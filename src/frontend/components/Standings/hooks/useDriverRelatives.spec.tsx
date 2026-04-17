@@ -8,8 +8,7 @@ import {
   getStats,
   getTimeAtPosition,
 } from '../relativeGapHelpers';
-import { normalizeKey, REFERENCE_INTERVAL } from '@irdashies/context';
-import { ReferenceLap, ReferencePoint } from '@irdashies/types';
+import { ReferenceLap } from '@irdashies/types';
 import { TelemetryVarList } from 'src/app/irsdk/types';
 
 // Mock the context hooks
@@ -21,6 +20,7 @@ vi.mock('@irdashies/context', async (importOriginal) => {
     useTelemetryValues: vi.fn(),
     useTelemetryValuesRounded: vi.fn(),
     useSessionStore: vi.fn(),
+    REFERENCE_INTERVAL: 0.0025,
   };
 });
 
@@ -32,25 +32,21 @@ vi.mock('./useDriverPositions', () => ({
 // HELPER: Generate a full Reference Lap with Tangents
 // =============================================================================
 const generateReferenceLap = (lapTime: number): ReferenceLap => {
-  const refPoints = new Map<number, ReferencePoint>();
+  // 4000 meters / 10 m spacing = 400 points
+  const trackLenght = 4000;
+  const intervalSpacing = 10; // meters
+  const pointsCount = Math.round(trackLenght / intervalSpacing);
+  const interval = 1 / pointsCount; // 0.0025%;
 
-  // 400 points = 100% / 0.25%
-  const totalPoints = Math.round(1 / REFERENCE_INTERVAL);
+  const times = new Float32Array(pointsCount);
+  const pointPos = new Float32Array(pointsCount);
+  const tangents = new Float32Array(pointsCount);
 
-  for (let i = 0; i <= totalPoints; i++) {
-    // Clean float generation: 0, 0.0025, 0.0050 ... 1.0
-    const pct = i * REFERENCE_INTERVAL + 0.00001;
-
-    const key = normalizeKey(pct);
-
-    refPoints.set(key, {
-      trackPct: pct,
-      timeElapsedSinceStart: pct * lapTime, // Linear speed
-      // CRITICAL FOR FRITSCH-CARLSON:
-      // For a perfectly linear lap (y = mx), the tangent (slope) is constant.
-      // Slope = Rise / Run = LapTime / 1.0 = LapTime.
-      tangent: lapTime,
-    } as ReferencePoint);
+  for (let i = 0; i < pointsCount; i++) {
+    const pct = i * interval;
+    times[i] = pct * lapTime;
+    pointPos[i] = pct;
+    tangents[i] = lapTime;
   }
 
   const startTime = 1000;
@@ -58,8 +54,13 @@ const generateReferenceLap = (lapTime: number): ReferenceLap => {
   return {
     startTime: startTime,
     finishTime: startTime + lapTime,
-    refPoints,
+    times,
+    pointPos,
+    tangents,
+    interval,
+    pointsCount,
     lastTrackedPct: 1,
+    isCleanLap: true,
   } as ReferenceLap;
 };
 
