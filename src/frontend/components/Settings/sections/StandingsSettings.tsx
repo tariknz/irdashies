@@ -550,23 +550,6 @@ export const StandingsSettings = () => {
                 <>
                   <SettingsSection title="Driver Standings">
                     <SettingSelectRow
-                      title="Number of top drivers"
-                      value={settings.config.driverStandings.numTopDrivers.toString()}
-                      options={Array.from({ length: 15 }, (_, i) => ({
-                        label: i.toString(),
-                        value: i.toString(),
-                      }))}
-                      onChange={(v) =>
-                        handleConfigChange({
-                          driverStandings: {
-                            ...settings.config.driverStandings,
-                            numTopDrivers: parseInt(v),
-                          },
-                        })
-                      }
-                    />
-
-                    <SettingSelectRow
                       title="Drivers to show in other classes"
                       value={settings.config.driverStandings.numNonClassDrivers.toString()}
                       options={Array.from({ length: 11 }, (_, i) => {
