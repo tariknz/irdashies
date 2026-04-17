@@ -576,7 +576,7 @@ export const StandingsSettings = () => {
                         handleConfigChange({
                           driverStandings: {
                             ...settings.config.driverStandings,
-                            buffer: parseInt(v),
+                            numNonClassDrivers: parseInt(v),
                           },
                         })
                       }
@@ -721,7 +721,7 @@ export const StandingsSettings = () => {
                         getItemConfig={(id) => {
                           const item =
                             settings.config.headerBar[
-                            id as keyof typeof settings.config.headerBar
+                              id as keyof typeof settings.config.headerBar
                             ];
                           return typeof item === 'object'
                             ? (item as SessionBarItemConfig)
@@ -730,7 +730,7 @@ export const StandingsSettings = () => {
                         updateItemConfig={(id, config) => {
                           const item =
                             settings.config.headerBar[
-                            id as keyof typeof settings.config.headerBar
+                              id as keyof typeof settings.config.headerBar
                             ];
                           if (typeof item === 'object') {
                             handleConfigChange({
@@ -792,7 +792,7 @@ export const StandingsSettings = () => {
                         getItemConfig={(id) => {
                           const item =
                             settings.config.footerBar[
-                            id as keyof typeof settings.config.footerBar
+                              id as keyof typeof settings.config.footerBar
                             ];
                           return typeof item === 'object'
                             ? (item as SessionBarItemConfig)
@@ -801,7 +801,7 @@ export const StandingsSettings = () => {
                         updateItemConfig={(id, config) => {
                           const item =
                             settings.config.footerBar[
-                            id as keyof typeof settings.config.footerBar
+                              id as keyof typeof settings.config.footerBar
                             ];
                           if (typeof item === 'object') {
                             handleConfigChange({
