@@ -197,7 +197,12 @@ export const drawDrivers = (
         ctx.strokeStyle = getColor('yellow', 400);
         ctx.lineWidth = 12;
         ctx.stroke();
-      } else if (!isPlayer && invertLeaderColor && livePosition === 1) {
+      } else if (
+        !isPlayer &&
+        !onPitRoad &&
+        invertLeaderColor &&
+        livePosition === 1
+      ) {
         ctx.strokeStyle = originalColor;
         ctx.lineWidth = 4;
         ctx.stroke();
