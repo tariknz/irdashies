@@ -491,6 +491,7 @@ export interface LapTimeLogConfig {
   background: { opacity: number };
   foreground: { opacity: number };
   sessionVisibility: SessionVisibilitySettings;
+  showOnlyWhenOnTrack: boolean;
 }
 
 export interface SlowCarAheadConfig {
