@@ -159,8 +159,9 @@ export const useSessionLapCount = () => {
       (sessionState ?? 0) === SessionState.GetInCar
     ) {
       const remaining = timeRemaining ?? 0;
-      if (remaining > 1800) {
-        result.timeRemaining = Math.max(0, (timeTotal ?? 0) - (time ?? 0));
+      const total = timeTotal ?? 0;
+      if (remaining === 604800 && total === 604800) {
+        result.timeRemaining = -1;
       } else {
         result.timeRemaining = remaining;
       }
