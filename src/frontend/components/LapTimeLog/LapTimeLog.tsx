@@ -60,7 +60,7 @@ export const LapTimeLog = () => {
   return (
     <LapTimeLogDisplay
       settings={data.settings}
-      current={data.current}
+      current={isDriving ? data.current : undefined}
       lastlap={data.lastlap}
       bestlap={data.bestlap}
       reference={data.reference}
