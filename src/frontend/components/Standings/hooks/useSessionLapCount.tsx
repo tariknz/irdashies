@@ -160,7 +160,7 @@ export const useSessionLapCount = () => {
     ) {
       const remaining = timeRemaining ?? 0;
       const total = timeTotal ?? 0;
-      if (remaining === 604800 && total === 604800) {
+      if (remaining >= 604800 && total >= 604800) {
         result.timeRemaining = -1;
       } else {
         result.timeRemaining = remaining;
