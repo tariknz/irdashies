@@ -154,7 +154,19 @@ export const useSessionLapCount = () => {
     result.currentLap = isPostCheckered
       ? (checkeredLap ?? currentLap ?? 0)
       : (currentLap ?? 0);
-    result.timeRemaining = timeRemaining ?? 0;
+    if (
+      sessionType === 'Race' &&
+      (sessionState ?? 0) === SessionState.GetInCar
+    ) {
+      const remaining = timeRemaining ?? 0;
+      if (remaining > 1800) {
+        result.timeRemaining = Math.max(0, (timeTotal ?? 0) - (time ?? 0));
+      } else {
+        result.timeRemaining = remaining;
+      }
+    } else {
+      result.timeRemaining = timeRemaining ?? 0;
+    }
     result.greenFlagTimestamp = greenFlagTimestamp ?? 0;
 
     return result;
@@ -162,6 +174,7 @@ export const useSessionLapCount = () => {
     sessionLaps,
     currentLap,
     sessionState,
+    sessionType,
     time,
     timeTotal,
     timeRemaining,
