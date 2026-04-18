@@ -17,6 +17,7 @@ import {
 } from '../components/SessionBarItemsList';
 import { SessionVisibility } from '../components/SessionVisibility';
 import { DEFAULT_SESSION_BAR_DISPLAY_ORDER } from '../sessionBarConstants';
+import { SettingDivider } from '../components/SettingDivider';
 
 const SETTING_ID = 'infobar';
 const defaultConfig = getWidgetDefaultConfig('infobar');
@@ -150,23 +151,23 @@ export const InformationBarSettings = () => {
             )}
 
             {activeTab === 'visibility' && (
-              <>
-                <SettingsSection title="General Visibility">
-                  <SettingToggleRow
-                    title="Show only when on track"
-                    description="Hide the widget when you are not in the car"
-                    enabled={settings.config.showOnlyWhenOnTrack}
-                    onToggle={(v) =>
-                      handleConfigChange({ showOnlyWhenOnTrack: v })
-                    }
-                  />
-                </SettingsSection>
-
+              <SettingsSection title="Session Visibility">
                 <SessionVisibility
                   sessionVisibility={settings.config.sessionVisibility}
                   handleConfigChange={handleConfigChange}
                 />
-              </>
+
+                <SettingDivider />
+
+                <SettingToggleRow
+                  title="Show only when on track"
+                  description="Hide the widget when you are not in the car"
+                  enabled={settings.config.showOnlyWhenOnTrack}
+                  onToggle={(v) =>
+                    handleConfigChange({ showOnlyWhenOnTrack: v })
+                  }
+                />
+              </SettingsSection>
             )}
           </div>
         </div>
