@@ -206,7 +206,7 @@ export const LapTimeLogDisplay = ({
               </div>
               {settings.delta.enabled && (
                 <div
-                  className={`absolute right-2 text-center tabular-nums ${
+                  className={`absolute right-2 text-[0.9em] text-center tabular-nums ${
                     !dirty && delta && deltaIsGreen
                       ? 'text-green-400'
                       : !dirty && delta && deltaIsRed
