@@ -1,6 +1,9 @@
+import { useEffect, useRef, useState } from 'react';
+import { useDashboard } from '@irdashies/context';
 import { useTwitchChatSettings } from './hooks/useTwitchChatSettings';
 import { useTwitchChat } from './hooks/useTwitchChat';
 import { MessageWithEmotes } from './components/MessageWithEmotes';
+import { DEMO_MESSAGES, DEMO_MESSAGE_INTERVAL_MS } from './demoData';
 import type { ChatMessage } from './types';
 
 export interface TwitchChatDisplayProps {
@@ -45,11 +48,48 @@ export const ChatMessageList = ({
   </div>
 );
 
+const DemoChatMessages = ({
+  background,
+}: {
+  background: { opacity: number };
+}) => {
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const indexRef = useRef(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const template = DEMO_MESSAGES[indexRef.current % DEMO_MESSAGES.length];
+      setMessages((prev) => [
+        ...prev.slice(-19),
+        { ...template, id: crypto.randomUUID() },
+      ]);
+      indexRef.current++;
+    }, DEMO_MESSAGE_INTERVAL_MS);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <ChatMessageList
+      messages={messages}
+      fontSize={16}
+      background={background}
+    />
+  );
+};
+
 export const TwitchChat = ({
   background = { opacity: 85 },
 }: TwitchChatDisplayProps) => {
+  const { isDemoMode } = useDashboard();
   const settings = useTwitchChatSettings();
-  const messages = useTwitchChat(settings?.config.channel);
+  const messages = useTwitchChat(
+    isDemoMode ? undefined : settings?.config.channel
+  );
+
+  if (isDemoMode) {
+    return <DemoChatMessages background={background} />;
+  }
 
   if (!settings) return null;
   if (!settings.enabled) return null;
