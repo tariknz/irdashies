@@ -20,7 +20,7 @@ export const WeatherPrecipitation = memo(({ precipitation }: Props) => {
         <span className="truncate min-w-0 flex-1 @max-[120px]:hidden">
           Precipitation
         </span>
-        <div className="flex-none whitespace-nowrap text-right font-mono">
+        <div className="flex-none whitespace-nowrap text-right">
           {hasPrecipitation ? `${precipitationPercent}%` : '- %'}
         </div>
       </div>
