@@ -690,7 +690,7 @@ export const defaultDashboard: {
           enabled: true,
         },
         precipitation: {
-          enabled: true,
+          enabled: false,
         },
         wind: {
           enabled: true,
