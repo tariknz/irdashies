@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import type { TwitchEmote } from '../types';
-import { getTwitchEmoteUrl } from '../hooks/useTwitchEmotes';
+
+function getTwitchEmoteUrl(emoteId: string): string {
+  return `https://static-cdn.jtvnw.net/emoticons/v2/${emoteId}/default/dark/1.0`;
+}
 
 interface MessagePart {
   type: 'text' | 'emote';
