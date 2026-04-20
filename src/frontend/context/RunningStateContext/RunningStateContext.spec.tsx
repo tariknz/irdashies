@@ -10,6 +10,8 @@ describe('RunningStateContext', () => {
     onSessionData: vi.fn(),
     onTelemetry: vi.fn(),
     stop: vi.fn(),
+    changeCameraNumber: vi.fn(),
+    changeReplayPosition: vi.fn(),
   };
 
   const TestComponent: React.FC = () => {

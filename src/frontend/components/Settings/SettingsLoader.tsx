@@ -19,6 +19,7 @@ import { ProfileSettings } from './sections/ProfileSettings';
 import { FlagSettings } from './sections/FlagSettings';
 import { CarSetupSettings } from './sections/CarSetupSettings';
 import { TwitchChatSettings } from './sections/TwitchChatSettings';
+import { GantrySettings } from './sections/GantrySettings';
 import { DriverTagsSettings } from './sections/DriverTagsSettings';
 import { KeybindingsSettings } from './sections/KeybindingsSettings';
 import { LapTimeLogSettings } from './sections/LapTimeLogSettings';
@@ -79,6 +80,8 @@ export const SettingsLoader = ({ previewMode }: SettingsLoaderProps = {}) => {
       return <FlagSettings />;
     case 'twitchchat':
       return <TwitchChatSettings />;
+    case 'gantry':
+      return <GantrySettings />;
     case 'laptimelog':
       return <LapTimeLogSettings />;
     case 'infobar':

@@ -11,7 +11,6 @@ const TRACK_SURFACE_OFF_TRACK = 4;
 const MAX_HISTORY_ENTRIES = 10;
 
 export const useLapTimeLog = () => {
-
   // reset functions
   const resetSessionState = () => {
     setHistory([]);
@@ -42,8 +41,10 @@ export const useLapTimeLog = () => {
   const carIdxBestLapTime = useTelemetryValues<number[]>('CarIdxBestLapTime');
   const sessionNum = useTelemetryValue<number>('SessionNum') ?? 0;
   const sessionTime = useTelemetryValuesRounded('SessionTime', 0)[0] ?? 0;
-  const playerTrackSurface = useTelemetryValue<number>('PlayerTrackSurface') ?? 0;
-  const incidentCount = useTelemetryValue<number>('PlayerCarMyIncidentCount') ?? 0;
+  const playerTrackSurface =
+    useTelemetryValue<number>('PlayerTrackSurface') ?? 0;
+  const incidentCount =
+    useTelemetryValue<number>('PlayerCarMyIncidentCount') ?? 0;
 
   // Refs
   const lastLoggedLap = useRef<number>(lapCompleted);
@@ -84,7 +85,7 @@ export const useLapTimeLog = () => {
     const sessionRestarted = sessionTime < prevSessionTime.current - 5;
     if (sessionChanged || sessionRestarted) {
       lastLoggedLap.current = lapCompleted;
-      lastLoggedTime.current = lastLapTime;      
+      lastLoggedTime.current = lastLapTime;
       incidentsAtLapStart.current = incidentCount;
       referenceAtStartOfLap.current = 0;
       lastDeltaUpdate.current = 0;
@@ -97,7 +98,8 @@ export const useLapTimeLog = () => {
 
   // 2. check for new lap
   useEffect(() => {
-    lapTransition.current = lapCompleted > 0 && lapCompleted != lastLoggedLap.current;
+    lapTransition.current =
+      lapCompleted > 0 && lapCompleted != lastLoggedLap.current;
     // auto reset to prevent stuck timer
     const timeout = setTimeout(() => {
       lapTransition.current = false;
@@ -156,7 +158,8 @@ export const useLapTimeLog = () => {
   // 4. log lap history and reset
   useEffect(() => {
     // wait for new last lap time
-    const isValidTime = lastLapTime > 0 && lastLapTime !== lastLoggedTime.current;
+    const isValidTime =
+      lastLapTime > 0 && lastLapTime !== lastLoggedTime.current;
     if (!lapTransition.current || !isValidTime) return;
     // prevent duplicates
     if (history.some((entry) => entry.lap === lapCompleted)) return;
@@ -170,9 +173,7 @@ export const useLapTimeLog = () => {
           : 0,
       dirty: isDirty,
     };
-    setHistory((prev) =>
-      [newEntry, ...prev].slice(0, MAX_HISTORY_ENTRIES)
-    );
+    setHistory((prev) => [newEntry, ...prev].slice(0, MAX_HISTORY_ENTRIES));
     // reset for new lap
     lastLoggedLap.current = lapCompleted;
     lastLoggedTime.current = lastLapTime;
@@ -180,7 +181,14 @@ export const useLapTimeLog = () => {
     incidentsAtLapStart.current = incidentCount;
     lapTransition.current = false;
     resetLapState();
-  }, [lapCompleted, lastLapTime, isDirty, incidentCount, referenceTime, history]);
+  }, [
+    lapCompleted,
+    lastLapTime,
+    isDirty,
+    incidentCount,
+    referenceTime,
+    history,
+  ]);
 
   return {
     current: displayTime,

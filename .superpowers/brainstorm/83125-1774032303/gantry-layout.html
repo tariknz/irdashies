@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #0f172a; color: #e2e8f0; font-family: 'Lato', system-ui, sans-serif; padding: 16px; }
+  h2 { color: #f59e0b; font-size: 14px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 4px; }
+  .subtitle { color: #64748b; font-size: 12px; margin-bottom: 14px; }
+
+  /* Screen wrapper */
+  .screen {
+    background: #020617;
+    border-radius: 6px;
+    border: 1px solid #1e293b;
+    width: 100%;
+    aspect-ratio: 16/9;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    font-size: 11px;
+  }
+
+  /* Tab bar */
+  .tabbar {
+    background: #0f172a;
+    border-bottom: 1px solid #1e293b;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 4px 8px;
+    flex-shrink: 0;
+  }
+  .tab {
+    padding: 3px 10px;
+    border-radius: 3px;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+  .tab-active { background: #f59e0b; color: #020617; }
+  .tab-inactive { background: #1e293b; color: #64748b; }
+  .tab-spacer { flex: 1; }
+  .driver-filter {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 3px;
+    padding: 2px 6px;
+    color: #94a3b8;
+    font-size: 9px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .driver-filter span { color: #64748b; font-size: 8px; text-transform: uppercase; letter-spacing: 0.05em; }
+
+  /* Body */
+  .body { display: flex; flex: 1; overflow: hidden; }
+
+  /* === STANDINGS PANEL === */
+  .standings-panel {
+    width: 50%;
+    border-right: 1px solid #1e293b;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .panel-header {
+    background: #0f172a;
+    padding: 3px 6px;
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #64748b;
+    border-bottom: 1px solid #1e293b;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-shrink: 0;
+  }
+  .class-badge {
+    padding: 1px 4px;
+    border-radius: 2px;
+    font-size: 7px;
+    font-weight: 700;
+  }
+
+  /* Column headers */
+  .col-headers {
+    background: #0f172a;
+    display: flex;
+    align-items: center;
+    padding: 2px 4px;
+    border-bottom: 1px solid #1e293b;
+    font-size: 7px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #475569;
+    flex-shrink: 0;
+    gap: 2px;
+  }
+  .c-pos { width: 16px; text-align: center; flex-shrink: 0; }
+  .c-num { width: 20px; text-align: center; flex-shrink: 0; }
+  .c-driver { flex: 1.8; }
+  .c-tire { width: 20px; text-align: center; flex-shrink: 0; }
+  .c-ir { width: 28px; text-align: right; flex-shrink: 0; }
+  .c-pit { width: 22px; text-align: center; flex-shrink: 0; }
+  .c-gap { width: 32px; text-align: right; flex-shrink: 0; }
+  .c-int { width: 32px; text-align: right; flex-shrink: 0; }
+  .c-best { width: 38px; text-align: right; flex-shrink: 0; }
+  .c-last { width: 38px; text-align: right; flex-shrink: 0; }
+  .c-d1 { width: 22px; text-align: right; flex-shrink: 0; }
+  .c-d2 { width: 22px; text-align: right; flex-shrink: 0; }
+  .c-d3 { width: 22px; text-align: right; flex-shrink: 0; }
+
+  .standings-rows { flex: 1; overflow-y: auto; }
+
+  /* Driver row */
+  .drow {
+    display: flex;
+    align-items: center;
+    padding: 2px 4px;
+    gap: 2px;
+    font-size: 8.5px;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+  }
+  .drow-odd { background: rgba(30,58,95,0.45); }
+  .drow-even { background: rgba(15,23,42,0.6); }
+  .drow-player { background: rgba(234,179,8,0.12) !important; color: #fbbf24; }
+  .drow-followed { background: rgba(99,102,241,0.15) !important; outline: 1px solid rgba(99,102,241,0.4); }
+  .drow-dim { opacity: 0.45; }
+
+  .car-num { font-weight: 800; color: #fff; font-size: 8px; }
+  .driver-name { color: #e2e8f0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pos-num { color: #94a3b8; text-align: center; font-size: 8px; }
+  .tire-s { color: #ef4444; font-weight: 700; }
+  .tire-m { color: #f59e0b; font-weight: 700; }
+  .tire-h { color: #64748b; font-weight: 700; }
+  .ir-val { color: #94a3b8; font-size: 7.5px; }
+  .pit-icon { color: #60a5fa; font-size: 8px; text-align: center; }
+  .gap-val { color: #94a3b8; font-variant-numeric: tabular-nums; }
+  .int-val { color: #64748b; font-variant-numeric: tabular-nums; }
+  .best-val { color: #a3e635; font-variant-numeric: tabular-nums; }
+  .last-val { color: #e2e8f0; font-variant-numeric: tabular-nums; }
+  .delta-pos { color: #4ade80; font-size: 7.5px; font-variant-numeric: tabular-nums; }
+  .delta-neg { color: #f87171; font-size: 7.5px; font-variant-numeric: tabular-nums; }
+  .delta-neu { color: #64748b; font-size: 7.5px; font-variant-numeric: tabular-nums; }
+
+  .class-header-row {
+    background: #0f172a;
+    padding: 2px 4px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    border-bottom: 1px solid #1e293b;
+    border-top: 1px solid #1e293b;
+  }
+  .class-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .class-name { font-size: 7px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; }
+
+  /* === INCIDENTS PANEL === */
+  .incidents-panel {
+    width: 50%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .incident-filters {
+    background: #0f172a;
+    padding: 3px 6px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    border-bottom: 1px solid #1e293b;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+  }
+  .filter-label { font-size: 7px; color: #475569; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; margin-right: 2px; }
+  .filter-chip {
+    padding: 1px 5px;
+    border-radius: 10px;
+    font-size: 7px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    border: 1px solid transparent;
+    cursor: pointer;
+  }
+  .fc-pit    { background: rgba(96,165,250,0.15); color: #60a5fa; border-color: rgba(96,165,250,0.3); }
+  .fc-off    { background: rgba(250,204,21,0.15); color: #fbbf24; border-color: rgba(250,204,21,0.3); }
+  .fc-slow   { background: rgba(251,146,60,0.15); color: #fb923c; border-color: rgba(251,146,60,0.3); }
+  .fc-crash  { background: rgba(248,113,113,0.15); color: #f87171; border-color: rgba(248,113,113,0.3); }
+  .fc-flag   { background: rgba(255,255,255,0.08); color: #cbd5e1; border-color: rgba(255,255,255,0.15); }
+  .fc-off-state { opacity: 0.35; }
+
+  .incident-list { flex: 1; overflow-y: auto; }
+
+  .incident-row {
+    padding: 5px 6px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+  .inc-odd  { background: rgba(15,23,42,0.8); }
+  .inc-even { background: rgba(30,41,59,0.5); }
+
+  .inc-top {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .inc-type-badge {
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 7px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    flex-shrink: 0;
+  }
+  .itype-pit   { background: rgba(96,165,250,0.2); color: #60a5fa; }
+  .itype-off   { background: rgba(250,204,21,0.2); color: #fbbf24; }
+  .itype-slow  { background: rgba(251,146,60,0.2); color: #fb923c; }
+  .itype-crash { background: rgba(248,113,113,0.2); color: #f87171; }
+  .itype-flag  { background: rgba(255,255,255,0.1); color: #e2e8f0; }
+
+  .inc-car { font-weight: 800; color: #fff; font-size: 9px; }
+  .inc-driver { color: #e2e8f0; font-size: 9px; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .inc-lap { color: #64748b; font-size: 8px; flex-shrink: 0; }
+  .inc-time { color: #475569; font-size: 7.5px; flex-shrink: 0; margin-left: auto; }
+
+  .inc-bottom {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    justify-content: flex-end;
+  }
+  .replay-btn {
+    padding: 1px 6px;
+    border-radius: 2px;
+    font-size: 7px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+  }
+  .rb-active   { background: rgba(99,102,241,0.25); color: #818cf8; border: 1px solid rgba(99,102,241,0.4); }
+  .rb-disabled { background: rgba(255,255,255,0.04); color: #334155; border: 1px solid #1e293b; cursor: not-allowed; }
+  .replay-label { color: #334155; font-size: 7px; flex: 1; }
+</style>
+</head>
+<body>
+<h2>The Gantry — Layout Mockup</h2>
+<p class="subtitle">Default view: Standings (left) + Incidents (right). Tab bar switches to Lap Graph.</p>
+
+<div class="screen">
+
+  <!-- TAB BAR -->
+  <div class="tabbar">
+    <div class="tab tab-active">Standings &amp; Incidents</div>
+    <div class="tab tab-inactive">Lap Graph</div>
+    <div class="tab-spacer"></div>
+    <div class="driver-filter">
+      <span>Follow</span>
+      #4 C. Blaney ▾
+    </div>
+  </div>
+
+  <!-- BODY -->
+  <div class="body">
+
+    <!-- STANDINGS -->
+    <div class="standings-panel">
+      <div class="panel-header">
+        Standings
+        <span style="margin-left:auto; color:#475569; font-size:7px;">Lap 12 / 30 &nbsp;·&nbsp; 4 classes</span>
+      </div>
+      <div class="col-headers">
+        <div class="c-pos">P</div>
+        <div class="c-num">#</div>
+        <div class="c-driver">Driver</div>
+        <div class="c-tire">Tire</div>
+        <div class="c-ir">iR</div>
+        <div class="c-pit">Pit</div>
+        <div class="c-gap">Gap</div>
+        <div class="c-int">Int</div>
+        <div class="c-best">Best</div>
+        <div class="c-last">Last</div>
+        <div class="c-d1">L-1</div>
+        <div class="c-d2">L-2</div>
+        <div class="c-d3">L-3</div>
+      </div>
+      <div class="standings-rows">
+        <!-- GTP class -->
+        <div class="class-header-row"><div class="class-dot" style="background:#3b82f6"></div><div class="class-name" style="color:#3b82f6">GTP</div></div>
+        <div class="drow drow-odd">
+          <div class="c-pos pos-num">1</div><div class="c-num car-num" style="color:#fbbf24">10</div>
+          <div class="c-driver driver-name">A. Palou</div>
+          <div class="c-tire tire-s">S</div><div class="c-ir ir-val">4821</div>
+          <div class="c-pit pit-icon">—</div>
+          <div class="c-gap gap-val">—</div><div class="c-int int-val">—</div>
+          <div class="c-best best-val">1:43.221</div><div class="c-last last-val">1:43.509</div>
+          <div class="c-d1 delta-neg">+0.28</div><div class="c-d2 delta-pos">-0.12</div><div class="c-d3 delta-neu">+0.00</div>
+        </div>
+        <div class="drow drow-even drow-player">
+          <div class="c-pos pos-num">2</div><div class="c-num car-num">4</div>
+          <div class="c-driver driver-name">C. Blaney ★</div>
+          <div class="c-tire tire-s">S</div><div class="c-ir ir-val">3940</div>
+          <div class="c-pit pit-icon">—</div>
+          <div class="c-gap gap-val">+2.4</div><div class="c-int int-val">+2.4</div>
+          <div class="c-best best-val">1:43.688</div><div class="c-last last-val">1:43.701</div>
+          <div class="c-d1 delta-neg">+0.01</div><div class="c-d2 delta-pos">-0.08</div><div class="c-d3 delta-pos">-0.20</div>
+        </div>
+        <div class="drow drow-odd drow-followed" style="outline: 1px solid rgba(99,102,241,0.5);">
+          <div class="c-pos pos-num">3</div><div class="c-num car-num">77</div>
+          <div class="c-driver driver-name">R. Grosjean ●</div>
+          <div class="c-tire tire-m">M</div><div class="c-ir ir-val">4102</div>
+          <div class="c-pit pit-icon">—</div>
+          <div class="c-gap gap-val">+5.1</div><div class="c-int int-val">+2.7</div>
+          <div class="c-best best-val">1:43.990</div><div class="c-last last-val">1:44.210</div>
+          <div class="c-d1 delta-neg">+0.22</div><div class="c-d2 delta-neg">+0.18</div><div class="c-d3 delta-pos">-0.05</div>
+        </div>
+        <div class="drow drow-even">
+          <div class="c-pos pos-num">4</div><div class="c-num car-num">60</div>
+          <div class="c-driver driver-name">O. Jarvis</div>
+          <div class="c-tire tire-h">H</div><div class="c-ir ir-val">3788</div>
+          <div class="c-pit pit-icon">P</div>
+          <div class="c-gap gap-val">+8.9</div><div class="c-int int-val">+3.8</div>
+          <div class="c-best best-val">1:44.312</div><div class="c-last last-val">1:45.800</div>
+          <div class="c-d1 delta-neg">+1.49</div><div class="c-d2 delta-neg">+0.55</div><div class="c-d3 delta-pos">-0.11</div>
+        </div>
+        <div class="drow drow-odd drow-dim">
+          <div class="c-pos pos-num">5</div><div class="c-num car-num">7</div>
+          <div class="c-driver driver-name">P. O'Ward</div>
+          <div class="c-tire tire-m">M</div><div class="c-ir ir-val">4455</div>
+          <div class="c-pit pit-icon">—</div>
+          <div class="c-gap gap-val">+1L</div><div class="c-int int-val">+1L</div>
+          <div class="c-best best-val">1:44.100</div><div class="c-last last-val">1:44.388</div>
+          <div class="c-d1 delta-neg">+0.29</div><div class="c-d2 delta-pos">-0.10</div><div class="c-d3 delta-neu">+0.00</div>
+        </div>
+        <!-- LMP2 class -->
+        <div class="class-header-row"><div class="class-dot" style="background:#a855f7"></div><div class="class-name" style="color:#a855f7">LMP2</div></div>
+        <div class="drow drow-odd">
+          <div class="c-pos pos-num">1</div><div class="c-num car-num">22</div>
+          <div class="c-driver driver-name">F. Albuquerque</div>
+          <div class="c-tire tire-s">S</div><div class="c-ir ir-val">5100</div>
+          <div class="c-pit pit-icon">—</div>
+          <div class="c-gap gap-val">—</div><div class="c-int int-val">—</div>
+          <div class="c-best best-val">1:51.440</div><div class="c-last last-val">1:51.802</div>
+          <div class="c-d1 delta-pos">-0.09</div><div class="c-d2 delta-neu">+0.00</div><div class="c-d3 delta-pos">-0.15</div>
+        </div>
+        <div class="drow drow-even">
+          <div class="c-pos pos-num">2</div><div class="c-num car-num">31</div>
+          <div class="c-driver driver-name">P. Hanson</div>
+          <div class="c-tire tire-m">M</div><div class="c-ir ir-val">4380</div>
+          <div class="c-pit pit-icon">—</div>
+          <div class="c-gap gap-val">+4.2</div><div class="c-int int-val">+4.2</div>
+          <div class="c-best best-val">1:51.900</div><div class="c-last last-val">1:52.100</div>
+          <div class="c-d1 delta-neg">+0.20</div><div class="c-d2 delta-pos">-0.04</div><div class="c-d3 delta-neg">+0.11</div>
+        </div>
+        <!-- GT3 class -->
+        <div class="class-header-row"><div class="class-dot" style="background:#22c55e"></div><div class="class-name" style="color:#22c55e">GT3</div></div>
+        <div class="drow drow-odd">
+          <div class="c-pos pos-num">1</div><div class="c-num car-num">911</div>
+          <div class="c-driver driver-name">N. Tandy</div>
+          <div class="c-tire tire-s">S</div><div class="c-ir ir-val">4610</div>
+          <div class="c-pit pit-icon">—</div>
+          <div class="c-gap gap-val">—</div><div class="c-int int-val">—</div>
+          <div class="c-best best-val">1:58.200</div><div class="c-last last-val">1:58.500</div>
+          <div class="c-d1 delta-pos">-0.30</div><div class="c-d2 delta-neu">+0.00</div><div class="c-d3 delta-neg">+0.10</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- INCIDENTS -->
+    <div class="incidents-panel">
+      <div class="panel-header">
+        Incidents
+        <span style="margin-left:auto;color:#475569;font-size:7px;">14 events</span>
+      </div>
+      <div class="incident-filters">
+        <span class="filter-label">Show:</span>
+        <div class="filter-chip fc-pit">Pit Entry</div>
+        <div class="filter-chip fc-off">Off Track</div>
+        <div class="filter-chip fc-slow">Slowdown</div>
+        <div class="filter-chip fc-crash">Crash</div>
+        <div class="filter-chip fc-flag">Black Flag</div>
+        <span class="filter-label" style="margin-left:6px;">Driver:</span>
+        <div class="driver-filter" style="background:#1e293b;border:1px solid #334155;border-radius:3px;padding:2px 6px;color:#94a3b8;font-size:8px;">All ▾</div>
+      </div>
+      <div class="incident-list">
+
+        <div class="incident-row inc-odd">
+          <div class="inc-top">
+            <div class="inc-type-badge itype-crash">Crash</div>
+            <div class="inc-car">#77</div>
+            <div class="inc-driver">R. Grosjean</div>
+            <div class="inc-lap">L12</div>
+            <div class="inc-time">14:32:01</div>
+          </div>
+          <div class="inc-bottom">
+            <span class="replay-label">Replay:</span>
+            <div class="replay-btn rb-active">-5s</div>
+            <div class="replay-btn rb-active">-10s</div>
+            <div class="replay-btn rb-active">-30s</div>
+          </div>
+        </div>
+
+        <div class="incident-row inc-even">
+          <div class="inc-top">
+            <div class="inc-type-badge itype-pit">Pit Entry</div>
+            <div class="inc-car">#60</div>
+            <div class="inc-driver">O. Jarvis</div>
+            <div class="inc-lap">L12</div>
+            <div class="inc-time">14:31:44</div>
+          </div>
+          <div class="inc-bottom">
+            <span class="replay-label">Replay:</span>
+            <div class="replay-btn rb-active">-5s</div>
+            <div class="replay-btn rb-active">-10s</div>
+            <div class="replay-btn rb-active">-30s</div>
+          </div>
+        </div>
+
+        <div class="incident-row inc-odd">
+          <div class="inc-top">
+            <div class="inc-type-badge itype-off">Off Track</div>
+            <div class="inc-car">#22</div>
+            <div class="inc-driver">F. Albuquerque</div>
+            <div class="inc-lap">L11</div>
+            <div class="inc-time">14:30:12</div>
+          </div>
+          <div class="inc-bottom">
+            <span class="replay-label">Replay:</span>
+            <div class="replay-btn rb-active">-5s</div>
+            <div class="replay-btn rb-active">-10s</div>
+            <div class="replay-btn rb-active">-30s</div>
+          </div>
+        </div>
+
+        <div class="incident-row inc-even">
+          <div class="inc-top">
+            <div class="inc-type-badge itype-flag">Black Flag</div>
+            <div class="inc-car">#7</div>
+            <div class="inc-driver">P. O'Ward</div>
+            <div class="inc-lap">L10</div>
+            <div class="inc-time">14:28:55</div>
+          </div>
+          <div class="inc-bottom">
+            <span class="replay-label">Live mode — replay unavailable</span>
+            <div class="replay-btn rb-disabled">-5s</div>
+            <div class="replay-btn rb-disabled">-10s</div>
+            <div class="replay-btn rb-disabled">-30s</div>
+          </div>
+        </div>
+
+        <div class="incident-row inc-odd">
+          <div class="inc-top">
+            <div class="inc-type-badge itype-slow">Slowdown</div>
+            <div class="inc-car">#31</div>
+            <div class="inc-driver">P. Hanson</div>
+            <div class="inc-lap">L10</div>
+            <div class="inc-time">14:27:30</div>
+          </div>
+          <div class="inc-bottom">
+            <span class="replay-label">Live mode — replay unavailable</span>
+            <div class="replay-btn rb-disabled">-5s</div>
+            <div class="replay-btn rb-disabled">-10s</div>
+            <div class="replay-btn rb-disabled">-30s</div>
+          </div>
+        </div>
+
+        <div class="incident-row inc-even">
+          <div class="inc-top">
+            <div class="inc-type-badge itype-pit">Pit Entry</div>
+            <div class="inc-car">#911</div>
+            <div class="inc-driver">N. Tandy</div>
+            <div class="inc-lap">L9</div>
+            <div class="inc-time">14:25:10</div>
+          </div>
+          <div class="inc-bottom">
+            <span class="replay-label">Live mode — replay unavailable</span>
+            <div class="replay-btn rb-disabled">-5s</div>
+            <div class="replay-btn rb-disabled">-10s</div>
+            <div class="replay-btn rb-disabled">-30s</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<div style="margin-top:12px; display:flex; gap:16px; flex-wrap:wrap;">
+  <div style="font-size:10px; color:#64748b;">
+    <span style="display:inline-block;width:8px;height:8px;background:rgba(234,179,8,0.15);border-radius:1px;margin-right:4px;vertical-align:middle;"></span> Player row (amber)
+  </div>
+  <div style="font-size:10px; color:#64748b;">
+    <span style="display:inline-block;width:8px;height:8px;background:rgba(99,102,241,0.15);border:1px solid rgba(99,102,241,0.4);border-radius:1px;margin-right:4px;vertical-align:middle;"></span> Followed driver (indigo outline)
+  </div>
+  <div style="font-size:10px; color:#64748b;">
+    <span style="display:inline-block;width:8px;height:8px;background:rgba(255,255,255,0.1);border-radius:1px;margin-right:4px;vertical-align:middle;opacity:0.45;"></span> Lapped driver (dimmed)
+  </div>
+  <div style="font-size:10px; color:#64748b;">
+    Replay buttons active in replay mode only
+  </div>
+</div>
+</body>
+</html>

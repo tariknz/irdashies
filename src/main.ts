@@ -22,6 +22,7 @@ import { updateElectronApp } from 'update-electron-app';
 import started from 'electron-squirrel-startup';
 import { Analytics } from './app/analytics';
 import { setupReferenceLapsBridge } from './app/bridge/referenceLapsBridge';
+import { setupRaceControlBridge } from './app/bridge/raceControlBridge';
 import { setupKeybindingsBridge } from './app/bridge/keybindingsBridge';
 import { setupLogBridge } from './app/bridge/logBridge';
 
@@ -55,6 +56,7 @@ app.on('ready', async () => {
   setupFuelCalculatorBridge();
   setupPitLaneBridge();
   setupReferenceLapsBridge();
+  setupRaceControlBridge();
 
   // Start component server for browser components
   await startComponentServer(bridge, dashboardBridge);

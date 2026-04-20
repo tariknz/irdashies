@@ -15,7 +15,7 @@ export interface TachometerProps {
   numLights?: number;
   /** Whether to show RPM text display (default: true) */
   showRpmText?: boolean;
-  rpmOrientation?: 'horizontal' | 'bottom' | 'top';
+  rpmOrientation?: 'horizontal' | 'bottom' | 'top' | 'vertical';
   /** Car-specific RPM thresholds for each LED */
   gearRpmThresholds?: number[] | null;
   /** Car-specific LED colors */

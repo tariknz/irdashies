@@ -79,6 +79,12 @@ const widgetItems: MenuItem[] = [
     widgetType: 'fuel',
   },
   {
+    to: '/settings/gantry',
+    path: '/gantry',
+    label: 'Gantry',
+    widgetType: 'gantry',
+  },
+  {
     to: '/settings/garagecover',
     path: '/garagecover',
     label: 'Garage Cover',

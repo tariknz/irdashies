@@ -8,6 +8,7 @@ export * from './pitLane';
 export * from './fuelCalculatorBridge';
 export * from './widgetId';
 export * from './referenceLaps';
+export * from './raceControl';
 export * from './widgetConfigs';
 export * from './defaultDashboard';
 export * from './logBridge';

@@ -53,7 +53,7 @@ export const OverlayContainer = memo(() => {
   }
 
   const enabledWidgets = currentDashboard.widgets.filter(
-    (widget) => widget.enabled
+    (widget) => widget.enabled && widget.id !== 'gantry'
   );
 
   // When running per-display windows, each window only renders its own widgets.

@@ -459,7 +459,7 @@ export const TurnNumbersOnly: Story = {
       labelType: 'numbers',
       highContrast: true,
       labelFontSize: 100,
-    },   
+    },
   },
 };
 

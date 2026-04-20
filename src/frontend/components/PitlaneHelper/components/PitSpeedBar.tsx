@@ -79,7 +79,6 @@ export const PitSpeedBar = memo(
           {/* Midpoint marker */}
           <div className="absolute left-1/2 top-0 h-full border-l-2 border-white/70" />
         </div>
-        
       </div>
     );
   }

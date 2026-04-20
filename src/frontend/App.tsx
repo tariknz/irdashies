@@ -13,12 +13,20 @@ import { Settings } from './components/Settings/Settings';
 import { ThemeManager } from './components/ThemeManager/ThemeManager';
 import { HideUIWrapper } from './components/HideUIWrapper/HideUIWrapper';
 import { OverlayContainer } from './components/OverlayContainer';
+import { Gantry } from './components/Gantry/Gantry';
 
 /**
  * Check if this window is the settings window based on URL hash
  */
 const isSettingsWindow = () => {
   return window.location.hash.startsWith('#/settings');
+};
+
+/**
+ * Check if this window is the gantry window based on URL hash
+ */
+const isGantryWindow = () => {
+  return window.location.hash.startsWith('#/gantry');
 };
 
 /**
@@ -35,6 +43,17 @@ const SettingsApp = () => {
 };
 
 /**
+ * Gantry window content - renders Gantry in a dedicated framed window
+ */
+const GantryApp = () => (
+  <ThemeManager>
+    <div className="w-full h-full bg-slate-900 text-white">
+      <Gantry />
+    </div>
+  </ThemeManager>
+);
+
+/**
  * Overlay container content - renders all widgets in a single window
  */
 const OverlayApp = () => {
@@ -48,6 +67,18 @@ const OverlayApp = () => {
 };
 
 const App = () => {
+  if (isGantryWindow()) {
+    return (
+      <DashboardProvider bridge={window.dashboardBridge}>
+        <RunningStateProvider bridge={window.irsdkBridge}>
+          <SessionProvider bridge={window.irsdkBridge} />
+          <TelemetryProvider bridge={window.irsdkBridge} />
+          <GantryApp />
+        </RunningStateProvider>
+      </DashboardProvider>
+    );
+  }
+
   const isSettings = isSettingsWindow();
 
   if (isSettings) {

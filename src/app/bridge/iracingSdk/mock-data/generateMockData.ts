@@ -1,4 +1,5 @@
 import type { IrSdkBridge, Session, Telemetry } from '@irdashies/types';
+import logger from '../../../logger';
 import mockSessionInfo from '../../../irsdk/node/utils/mock-data/session.json';
 import mockTelemetry from '../../../irsdk/node/utils/mock-data/telemetry.json';
 
@@ -137,6 +138,7 @@ export function generateMockData(sessionData?: {
             const prevAbs =
               prevTelemetry.BrakeABSactive ?? ({ value: [false] } as const);
 
+            const spreadStart = performance.now();
             t = {
               ...prevTelemetry,
               Brake: {
@@ -202,13 +204,20 @@ export function generateMockData(sessionData?: {
               },
             } as unknown as Telemetry;
             prevTelemetry = t;
+            const spreadMs = performance.now() - spreadStart;
+            if (spreadMs > 1)
+              logger.info(`[MockData] spread took ${spreadMs.toFixed(2)}ms`);
           }
 
           telemetryIdx = telemetryIdx + 1;
           const data = t;
 
           // Call all registered callbacks
+          const cbStart = performance.now();
           telemetryCallbacks.forEach((cb) => cb(data));
+          const cbMs = performance.now() - cbStart;
+          if (cbMs > 5)
+            logger.info(`[MockData] callbacks took ${cbMs.toFixed(2)}ms`);
         }, 1000 / 60); // Update at 60Hz for smooth telemetry simulation
       }
 
@@ -286,6 +295,10 @@ export function generateMockData(sessionData?: {
       sessionCallbacks.clear();
       runningStateCallbacks.clear();
     },
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
+    changeCameraNumber: () => {},
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
+    changeReplayPosition: () => {},
   };
 }
 

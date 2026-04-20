@@ -480,7 +480,9 @@ export const TachometerSettings = () => {
 
                 {config.showRpmText && (
                   <SettingsSection>
-                    <SettingButtonGroupRow<'horizontal' | 'bottom' | 'top'>
+                    <SettingButtonGroupRow<
+                      'horizontal' | 'bottom' | 'top' | 'vertical'
+                    >
                       title="RPM Text Orientaion"
                       value={config.rpmOrientation ?? 'horizontal'}
                       options={[

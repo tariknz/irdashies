@@ -282,7 +282,7 @@ export interface InputConfig {
 
 export interface TachometerConfig {
   showRpmText: boolean;
-  rpmOrientation?: 'horizontal' | 'bottom' | 'top';
+  rpmOrientation?: 'horizontal' | 'vertical' | 'bottom' | 'top';
   shiftPointStyle?: 'glow' | 'pulse' | 'border';
   shiftPointSettings: {
     enabled: boolean;
@@ -472,6 +472,23 @@ export interface TwitchChatConfig {
   background: { opacity: number };
 }
 
+export type SessionRetention = 'all' | 5 | 10 | 20;
+
+export interface GantryConfig {
+  // Incident detection thresholds
+  slowSpeedThreshold: number;
+  slowFrameThreshold: number;
+  suddenStopFromSpeed: number;
+  suddenStopToSpeed: number;
+  suddenStopFrames: number;
+  offTrackDebounce: number;
+  cooldownSeconds: number;
+  // Persistence
+  sessionRetention: SessionRetention;
+}
+
+export type GantryWidgetSettings = BaseWidgetSettings<GantryConfig>;
+
 export interface LapTimeLogConfig {
   showCurrentLap: boolean;
   showPredictedLap: boolean;
@@ -529,6 +546,7 @@ export interface WidgetConfigMap {
   fastercarsfrombehind: FasterCarsFromBehindConfig;
   pitlanehelper: PitlaneHelperConfig;
   twitchchat: TwitchChatConfig;
+  gantry: GantryConfig;
   laptimelog: LapTimeLogConfig;
   infobar: InformationBarConfig;
   slowcarahead: SlowCarAheadConfig;

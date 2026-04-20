@@ -247,7 +247,9 @@ export const Standings = () => {
                     </Fragment>
                   );
                 })}
-                {standings.slice(index + 1).some(([, content]) => content.length > 0) &&
+                {standings
+                  .slice(index + 1)
+                  .some(([, content]) => content.length > 0) &&
                   !isCompact && (
                     <tr>
                       <td colSpan={100} className="h-2"></td>

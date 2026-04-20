@@ -11,4 +11,5 @@ export * from './ProfileSettings';
 export * from './PitlaneHelperSettings';
 export * from './TachometerSettings';
 export * from './TwitchChatSettings';
+export * from './GantrySettings';
 export * from './LapTimeLogSettings';

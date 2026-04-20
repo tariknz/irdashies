@@ -14,6 +14,7 @@ import { PitlaneHelper } from './components/PitlaneHelper/PitlaneHelper';
 import { Tachometer } from './components/Tachometer/Tachometer';
 import { Flag } from './components/Flag';
 import { TwitchChat } from './components/TwitchChat/TwitchChat';
+import { Gantry } from './components/Gantry/Gantry';
 import { LapTimeLog } from './components/LapTimeLog/LapTimeLog';
 import { InformationBar } from './components/InformationBar/InformationBar';
 import { SlowCarAhead } from './components/SlowCarAhead/SlowCarAhead';
@@ -41,6 +42,7 @@ export const WIDGET_MAP: Record<
   tachometer: Tachometer,
   flag: Flag,
   twitchchat: TwitchChat,
+  gantry: Gantry,
   laptimelog: LapTimeLog,
   infobar: InformationBar,
   slowcarahead: SlowCarAhead,

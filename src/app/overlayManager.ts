@@ -31,9 +31,11 @@ export class OverlayManager {
   private displayBoundsInfo = new Map<number, ContainerBoundsInfo>();
   private displayFullBounds = new Map<number, Electron.Rectangle>();
   private currentSettingsWindow: BrowserWindow | undefined;
+  private gantryWindow: BrowserWindow | undefined;
   private currentDashboard: DashboardLayout | undefined;
   private isLocked = true;
   private isQuitting = false;
+  private hasInteractiveWidgets = false;
   private skipTaskbar = true;
   private overlayAlwaysOnTop = true;
   private hasSingleInstanceLock = false;
@@ -104,6 +106,10 @@ export class OverlayManager {
     // Always create a window for the primary display (fallback for unmatched widgets)
     displaysWithWidgets.add(primaryDisplay.id);
 
+    this.hasInteractiveWidgets = dashboardLayout.widgets.some(
+      (w) => w.id !== 'gantry' && w.enabled && w.config?.interactive === true
+    );
+
     for (const display of allDisplays) {
       if (!displaysWithWidgets.has(display.id)) {
         logger.info(
@@ -112,10 +118,15 @@ export class OverlayManager {
         continue;
       }
       const isPrimary = display.id === primaryDisplay.id;
-      this.createWindowForDisplay(display, isPrimary);
+      this.createWindowForDisplay(
+        display,
+        isPrimary,
+        this.hasInteractiveWidgets
+      );
     }
 
     this.createSettingsWindow();
+    this.createGantryWindow(dashboardLayout);
   }
 
   /**
@@ -123,7 +134,8 @@ export class OverlayManager {
    */
   private createWindowForDisplay(
     display: Electron.Display,
-    isPrimary: boolean
+    isPrimary: boolean,
+    hasInteractiveWidgets = false
   ): BrowserWindow {
     const existing = this.displayWindows.get(display.id);
     if (existing && !existing.isDestroyed()) {
@@ -174,7 +186,11 @@ export class OverlayManager {
       evt.preventDefault();
     });
 
-    browserWindow.setIgnoreMouseEvents(this.isLocked);
+    if (hasInteractiveWidgets) {
+      browserWindow.setIgnoreMouseEvents(false);
+    } else {
+      browserWindow.setIgnoreMouseEvents(true, { forward: true });
+    }
     browserWindow.setVisibleOnAllWorkspaces(true, {
       visibleOnFullScreen: true,
     });
@@ -411,11 +427,19 @@ export class OverlayManager {
 
     for (const win of this.displayWindows.values()) {
       if (win.isDestroyed()) continue;
-      win.setIgnoreMouseEvents(this.isLocked);
-      win.webContents.send('editModeToggled', !this.isLocked);
-      if (!this.isLocked) {
+      if (this.isLocked) {
+        // Restore correct mouse state after exiting edit mode
+        if (this.hasInteractiveWidgets) {
+          win.setIgnoreMouseEvents(false);
+        } else {
+          win.setIgnoreMouseEvents(true, { forward: true });
+        }
+      } else {
+        // Entering edit mode: allow mouse events for drag-to-position
+        win.setIgnoreMouseEvents(false);
         win.focus();
       }
+      win.webContents.send('editModeToggled', !this.isLocked);
     }
 
     if (this.isLocked) {
@@ -435,14 +459,43 @@ export class OverlayManager {
     'runningState',
   ]);
 
+  // Debug: IPC timing stats (dev only)
+  private ipcTimings: Record<string, { total: number; count: number }> = {};
+  private ipcLogTimer: NodeJS.Timeout | null = null;
+
+  private trackIpcTime(key: string, ms: number) {
+    if (!MAIN_WINDOW_VITE_DEV_SERVER_URL) return;
+    if (!this.ipcTimings[key]) this.ipcTimings[key] = { total: 0, count: 0 };
+    this.ipcTimings[key].total += ms;
+    this.ipcTimings[key].count++;
+    if (!this.ipcLogTimer) {
+      this.ipcLogTimer = setInterval(() => {
+        this.ipcTimings = {};
+      }, 5000);
+    }
+  }
+
   public publishMessage(key: string, value: unknown): void {
     // Send to all display overlay windows
     for (const win of this.displayWindows.values()) {
       if (win.isDestroyed()) continue;
       try {
+        const t0 = performance.now();
         win.webContents.send(key, value);
+        this.trackIpcTime(`overlay:${key}`, performance.now() - t0);
       } catch (e) {
         logger.error(`Failed to send message ${key} to overlay window`, e);
+      }
+    }
+
+    // Send to gantry window (needs telemetry/session, so send before the guard)
+    if (this.gantryWindow && !this.gantryWindow.isDestroyed()) {
+      try {
+        const t0 = performance.now();
+        this.gantryWindow.webContents.send(key, value);
+        this.trackIpcTime(`gantry:${key}`, performance.now() - t0);
+      } catch (e) {
+        logger.error(`Failed to send message ${key} to gantry window`, e);
       }
     }
 
@@ -552,7 +605,11 @@ export class OverlayManager {
       const existing = this.displayWindows.get(display.id);
       if (existing && !existing.isDestroyed()) continue;
       const isPrimary = display.id === primaryDisplay.id;
-      this.createWindowForDisplay(display, isPrimary);
+      this.createWindowForDisplay(
+        display,
+        isPrimary,
+        this.hasInteractiveWidgets
+      );
     }
 
     // Shrink-wrap windows when not in edit mode
@@ -575,7 +632,11 @@ export class OverlayManager {
       const primaryDisplay = screen.getPrimaryDisplay();
       for (const display of allDisplays) {
         const isPrimary = display.id === primaryDisplay.id;
-        this.createWindowForDisplay(display, isPrimary);
+        this.createWindowForDisplay(
+          display,
+          isPrimary,
+          this.hasInteractiveWidgets
+        );
       }
     }
   }
@@ -592,7 +653,11 @@ export class OverlayManager {
       const primaryDisplay = screen.getPrimaryDisplay();
       for (const display of allDisplays) {
         const isPrimary = display.id === primaryDisplay.id;
-        this.createWindowForDisplay(display, isPrimary);
+        this.createWindowForDisplay(
+          display,
+          isPrimary,
+          this.hasInteractiveWidgets
+        );
       }
     }
   }
@@ -682,6 +747,46 @@ export class OverlayManager {
    */
   public hasLock(): boolean {
     return this.hasSingleInstanceLock;
+  }
+
+  public createGantryWindow(dashboardLayout?: DashboardLayout): void {
+    const gantryWidget = dashboardLayout?.widgets.find(
+      (w) => w.id === 'gantry'
+    );
+    if (!gantryWidget?.enabled) return;
+
+    if (this.gantryWindow && !this.gantryWindow.isDestroyed()) {
+      this.gantryWindow.show();
+      return;
+    }
+
+    const browserWindow = new BrowserWindow({
+      title: 'irDashies - Gantry',
+      frame: true,
+      width: 1400,
+      height: 800,
+      autoHideMenuBar: true,
+      icon: getIconPath(),
+      webPreferences: {
+        preload: path.join(__dirname, 'preload.js'),
+        backgroundThrottling: false,
+      },
+    });
+
+    this.gantryWindow = browserWindow;
+
+    if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
+      browserWindow.loadURL(`${MAIN_WINDOW_VITE_DEV_SERVER_URL}#/gantry`);
+    } else {
+      browserWindow.loadFile(
+        path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`),
+        { hash: '/gantry' }
+      );
+    }
+
+    browserWindow.on('closed', () => {
+      this.gantryWindow = undefined;
+    });
   }
 
   public createSettingsWindow(): BrowserWindow {
