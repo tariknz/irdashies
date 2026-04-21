@@ -620,6 +620,8 @@ export const defaultDashboard: {
           offlineTesting: true,
         },
         styling: { isMinimalTrack: false, isMinimalCar: false },
+        playerIconEnabled: false,
+        playerIconDataUrl: '',
       },
     },
     {

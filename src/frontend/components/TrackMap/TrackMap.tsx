@@ -48,6 +48,8 @@ export const TrackMap = () => {
         }
         isMinimalTrack={settings?.styling?.isMinimalTrack ?? true}
         isMinimalCar={settings?.styling?.isMinimalCar ?? true}
+        playerIconEnabled={settings?.playerIconEnabled ?? false}
+        playerIconDataUrl={settings?.playerIconDataUrl ?? ''}
         debug={debug}
       />
     </div>
