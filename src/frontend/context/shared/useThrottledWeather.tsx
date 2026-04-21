@@ -10,6 +10,7 @@ interface ThrottledWeatherState {
   windDirection: number | undefined;
   windVelocity: number | undefined;
   humidity: number | undefined;
+  precipitation: number | undefined;
 }
 
 export interface WeatherData {
@@ -18,6 +19,7 @@ export interface WeatherData {
   windDirection: number | undefined;
   windVelocity: number | undefined;
   humidity: number | undefined;
+  precipitation: number | undefined;
 }
 
 const selectWeatherData = (
@@ -28,6 +30,7 @@ const selectWeatherData = (
   windDirection: telemetry?.WindDir?.value?.[0],
   windVelocity: telemetry?.WindVel?.value?.[0],
   humidity: telemetry?.RelativeHumidity?.value?.[0],
+  precipitation: telemetry?.Precipitation?.value?.[0],
 });
 
 /**
@@ -64,5 +67,6 @@ export const useThrottledWeather = (): WeatherData => {
     windDirection: data.windDirection,
     windVelocity: data.windVelocity,
     humidity: data.humidity,
+    precipitation: data.precipitation,
   };
 };

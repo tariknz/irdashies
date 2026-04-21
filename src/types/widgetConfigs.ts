@@ -197,7 +197,7 @@ export interface WeatherConfig {
   trackTemp: { enabled: boolean };
   wetness: { enabled: boolean };
   trackState: { enabled: boolean };
-  humidity: { enabled: boolean };
+  precipitation: { enabled: boolean };
   wind: { enabled: boolean };
   units: 'auto' | 'Metric' | 'Imperial';
   sessionVisibility: SessionVisibilitySettings;
