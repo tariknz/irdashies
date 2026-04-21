@@ -7,11 +7,12 @@ import type { SectorDeltaConfig } from '@irdashies/types';
 import type { TimeFormat } from '@irdashies/types';
 import type { SectorColor } from '@irdashies/context';
 import { formatTime } from '@irdashies/utils/time';
+import { useLiveSectorDelta } from './hooks/useLiveSectorDelta';
 
 type SectorDeltaProps = SectorDeltaConfig;
 
 const SECTOR_CARD: Record<
-  SectorColor | 'current',
+  SectorColor,
   { bg: string; accent: string; text: string }
 > = {
   purple: {
@@ -38,11 +39,6 @@ const SECTOR_CARD: Record<
     bg: 'bg-slate-800/40',
     accent: 'border-b-[5px] border-slate-700',
     text: 'text-slate-400',
-  },
-  current: {
-    bg: 'bg-slate-700/80',
-    accent: '',
-    text: 'text-white',
   },
 };
 
@@ -99,6 +95,7 @@ export const SectorDelta = ({
   const { refSectorTimes, hasGhostLap } = useReferenceLapSectorTimes();
 
   const useGhost = ghostComparison === 'prefer-ghost' && hasGhostLap;
+  const liveSectorDelta = useLiveSectorDelta(useGhost);
 
   // How far (0–1) through the current sector the player is
   const sectorStart = sectors[currentSectorIdx]?.SectorStartPct ?? 0;
@@ -137,20 +134,22 @@ export const SectorDelta = ({
       {sectors.map((sector, i) => {
         const isCurrent = i === currentSectorIdx;
         const displayTime = isCurrent
-          ? null
+          ? (previousLapSectorTimes[i] ?? null)
           : (currentLapSectorTimes[i] ?? previousLapSectorTimes[i] ?? null);
 
-        const colorKey: SectorColor | 'current' = isCurrent
-          ? 'current'
-          : useGhost
-            ? ghostColor(displayTime, refSectorTimes[i] ?? null)
-            : (sectorColors[i] ?? 'default');
+        const colorKey: SectorColor = useGhost
+          ? ghostColor(displayTime, refSectorTimes[i] ?? null)
+          : (sectorColors[i] ?? 'default');
 
         const refTime = useGhost
           ? (refSectorTimes[i] ?? null)
           : (sessionBestSectorTimes[i] ?? null);
 
-        const delta = formatDelta(displayTime, refTime, timeFormat);
+        const dp = timeFormatToDecimalPlaces(timeFormat);
+        const delta =
+          isCurrent && liveSectorDelta !== null
+            ? `${liveSectorDelta >= 0 ? '+' : ''}${liveSectorDelta.toFixed(dp)}`
+            : formatDelta(displayTime, refTime, timeFormat);
         const card = SECTOR_CARD[colorKey];
 
         return (
@@ -169,15 +168,27 @@ export const SectorDelta = ({
               className={[
                 'text-sm font-bold leading-none tabular-nums',
                 card.text,
+                isCurrent ? 'opacity-70' : '',
               ].join(' ')}
             >
               {delta}
             </span>
             {isCurrent && (
               <>
-                <div className="absolute bottom-0 left-0 right-0 h-[5px] bg-slate-700" />
                 <div
-                  className="absolute bottom-0 left-0 h-[5px] bg-sky-400 transition-[width] duration-200 ease-linear"
+                  className="absolute top-0 left-0 bottom-0 transition-[width] duration-200 ease-linear"
+                  style={{
+                    width: `${sectorProgress * 100}%`,
+                    backgroundColor: 'rgba(56, 189, 248, 0.4)',
+                  }}
+                />
+                <div className="absolute top-0 left-0 bottom-0 w-[2px] bg-sky-400" />
+                <div
+                  className="absolute top-0 left-0 h-[2px] bg-sky-400 transition-[width] duration-200 ease-linear"
+                  style={{ width: `${sectorProgress * 100}%` }}
+                />
+                <div
+                  className="absolute bottom-0 left-0 h-[2px] bg-sky-400 transition-[width] duration-200 ease-linear"
                   style={{ width: `${sectorProgress * 100}%` }}
                 />
               </>
