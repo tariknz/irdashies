@@ -38,7 +38,6 @@ const sortableSettings: SortableSetting[] = [
   { id: 'trackTemp', label: 'Track Temperature', configKey: 'trackTemp' },
   { id: 'airTemp', label: 'Air Temperature', configKey: 'airTemp' },
   { id: 'wind', label: 'Wind', configKey: 'wind' },
-  { id: 'humidity', label: 'Humidity', configKey: 'humidity' },
   { id: 'precipitation', label: 'Precipitation', configKey: 'precipitation' },
   { id: 'wetness', label: 'Wetness', configKey: 'wetness' },
   { id: 'trackState', label: 'Track State', configKey: 'trackState' },

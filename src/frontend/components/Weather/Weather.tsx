@@ -13,6 +13,7 @@ import { useWeatherSettings } from './hooks/useWeatherSettings';
 import { WeatherHumidity } from './WeatherHumidity/WeatherHumidity';
 import { WeatherPrecipitation } from './WeatherPrecipitation/WeatherPrecipitation';
 import { useMemo } from 'react';
+import { RoadHorizonIcon, ThermometerIcon } from '@phosphor-icons/react';
 
 type WeatherColumnId =
   | 'trackTemp'
@@ -58,7 +59,6 @@ export const Weather = () => {
       { id: 'trackTemp', enabled: settings?.trackTemp?.enabled ?? true },
       { id: 'airTemp', enabled: settings?.airTemp?.enabled ?? true },
       { id: 'wind', enabled: settings?.wind?.enabled ?? true },
-      { id: 'humidity', enabled: settings?.humidity?.enabled ?? true },
       {
         id: 'precipitation',
         enabled: settings?.precipitation?.enabled ?? true,
@@ -86,7 +86,6 @@ export const Weather = () => {
     settings?.trackTemp?.enabled,
     settings?.airTemp?.enabled,
     settings?.wind?.enabled,
-    settings?.humidity?.enabled,
     settings?.precipitation?.enabled,
     settings?.wetness?.enabled,
     settings?.trackState?.enabled,
@@ -99,9 +98,23 @@ export const Weather = () => {
   const renderColumn = (id: WeatherColumnId) => {
     switch (id) {
       case 'trackTemp':
-        return <WeatherTemp key={id} title="Track" value={trackTemp} />;
+        return (
+          <WeatherTemp
+            key={id}
+            title="Track"
+            value={trackTemp}
+            icon={RoadHorizonIcon}
+          />
+        );
       case 'airTemp':
-        return <WeatherTemp key={id} title="Air" value={airTemp} />;
+        return (
+          <WeatherTemp
+            key={id}
+            title="Air"
+            value={airTemp}
+            icon={ThermometerIcon}
+          />
+        );
       case 'wind':
         return (
           <WindDirection
