@@ -411,16 +411,18 @@ export const TrackMapSettings = () => {
                     }
                   />
 
-                <SettingSliderRow
-                  title="Player Circle Size"
-                  description="Size of the circle for your car (matches curved track map scale)"
-                  value={settings.config.playerCircleSize ?? 40}
-                  units="px"
-                  min={10}
-                  max={80}
-                  step={1}
-                  onChange={(v) => handleConfigChange({ playerCircleSize: v })}
-                />
+                  <SettingSliderRow
+                    title="Player Circle Size"
+                    description="Size of the circle or custom icon for your car"
+                    value={settings.config.playerCircleSize ?? 40}
+                    units="px"
+                    min={10}
+                    max={100}
+                    step={1}
+                    onChange={(v) =>
+                      handleConfigChange({ playerCircleSize: v })
+                    }
+                  />
 
                   <SettingSliderRow
                     title="Relative Font Size"
