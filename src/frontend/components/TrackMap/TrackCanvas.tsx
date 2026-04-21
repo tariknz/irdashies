@@ -573,13 +573,18 @@ export const TrackCanvas = ({
         className="will-change-transform w-full h-full"
         ref={canvasRef}
       ></canvas>
-      {playerOverlayStyle && (
-        <img
-          src={playerIconDataUrl}
-          alt=""
+      {playerOverlay && (
+        <div
           className="absolute pointer-events-none"
-          style={playerOverlayStyle}
-        />
+          style={playerOverlay.style}
+        >
+          <img src={playerIconDataUrl} alt="" className="w-full h-full" />
+          {playerOverlay.onPitRoad && (
+            <span className="absolute inset-0 flex items-center justify-center font-bold text-white">
+              PIT
+            </span>
+          )}
+        </div>
       )}
     </div>
   );
