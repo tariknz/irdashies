@@ -1,4 +1,4 @@
-import { DropIcon, SunIcon } from '@phosphor-icons/react';
+import { DropIcon, SunIcon, WavesIcon } from '@phosphor-icons/react';
 import { memo } from 'react';
 
 // Track wetness constants
@@ -30,13 +30,16 @@ export const WeatherTrackWetness = memo(
 
     // Get the descriptive state of track wetness
     const safeTrackMoisture = trackMoisture ?? DEFAULT_WETNESS;
-    const trackState = WETNESS_LEVELS[safeTrackMoisture] || 'Dry';
+    const trackState =
+      safeTrackMoisture in WETNESS_LEVELS
+        ? WETNESS_LEVELS[safeTrackMoisture]
+        : 'Unknown';
 
     return (
       <div className="bg-slate-800/70 p-2 rounded-sm w-full min-w-0">
         {/* Header row with consistency label styling */}
         <div className="flex flex-row gap-x-2 items-center text-sm mb-2">
-          <DropIcon className="flex-none" />
+          <WavesIcon className="flex-none" />
           <span className="truncate min-w-0 flex-1 @max-[120px]:hidden">
             Wetness
           </span>
