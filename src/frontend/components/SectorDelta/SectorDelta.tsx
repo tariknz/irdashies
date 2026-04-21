@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { GhostIcon } from '@phosphor-icons/react';
 import { useSectorDeltas, useSectorTimingStore } from '@irdashies/context';
 import { useSessionVisibility, useTelemetryValue } from '@irdashies/context';
@@ -81,7 +81,7 @@ export const SectorDelta = ({
   timeFormat = 'full',
   ghostComparison = 'prefer-ghost',
   thresholds,
-}: SectorDeltaProps): React.JSX.Element | null => {
+}: SectorDeltaProps) => {
   const {
     sectors,
     sectorColors,
