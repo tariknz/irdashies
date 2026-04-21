@@ -596,7 +596,7 @@ export const defaultDashboard: {
           labelFontSize: 100,
         },
         showCarNumbers: true,
-        invertTrackColors: false,        
+        invertTrackColors: false,
         driverCircleSize: 40,
         playerCircleSize: 40,
         trackmapFontSize: 100,
@@ -612,6 +612,8 @@ export const defaultDashboard: {
           offlineTesting: true,
         },
         styling: { isMinimalTrack: false, isMinimalCar: false },
+        playerIconEnabled: false,
+        playerIconDataUrl: '',
       },
     },
     {
