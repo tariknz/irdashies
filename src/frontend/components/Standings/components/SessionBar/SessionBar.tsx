@@ -19,14 +19,13 @@ import {
   ClockIcon,
   ClockUserIcon,
   CloudRainIcon,
-  DropIcon,
   RoadHorizonIcon,
   ThermometerIcon,
   TireIcon,
+  WavesIcon,
 } from '@phosphor-icons/react';
 import { SessionBarConfig } from '@irdashies/types';
 import { useSessionCurrentTime } from '../../hooks/useSessionCurrentTime';
-import { usePrecipitation } from '../../hooks/usePrecipitation';
 import { SessionState } from '@irdashies/types';
 import { WindArrow } from '../../../shared/WindArrow';
 
@@ -132,8 +131,8 @@ export const SessionBar = ({
   } = useSessionLapCount();
   const brakeBias = useBrakeBias();
   const { trackWetness } = useTrackWetness();
-  const { precipitation } = usePrecipitation();
-  const { windDirection, windVelocity, windYaw } = useThrottledWeather();
+  const { windDirection, windVelocity, windYaw, precipitation } =
+    useThrottledWeather();
   const relativeWindDirection = (windDirection ?? 0) - (windYaw ?? 0);
   const { trackTemp, airTemp } = useTrackTemperature({
     airTempUnit: effectiveBarSettings?.airTemperature?.unit ?? 'Metric',
@@ -256,9 +255,9 @@ export const SessionBar = ({
         const lapValue =
           lapsMode === 'Remaining'
             ? Math.min(
-                Math.max(Math.ceil(effectiveTotal) - lapDisplay + 1, 0),
-                Math.ceil(effectiveTotal)
-              )
+              Math.max(Math.ceil(effectiveTotal) - lapDisplay + 1, 0),
+              Math.ceil(effectiveTotal)
+            )
             : lapDisplay;
         if (state >= SessionState.Checkered)
           return (
@@ -341,7 +340,7 @@ export const SessionBar = ({
         (position === 'header' ? false : true),
       render: () => (
         <div className="flex justify-center gap-1 items-center text-nowrap">
-          <DropIcon />
+          <WavesIcon />
           <span>{trackWetness}</span>
         </div>
       ),
@@ -350,12 +349,19 @@ export const SessionBar = ({
       enabled:
         effectiveBarSettings?.precipitation?.enabled ??
         (position === 'header' ? false : false),
-      render: () => (
-        <div className="flex justify-center gap-1 items-center text-nowrap">
-          <CloudRainIcon />
-          <span>{precipitation}</span>
-        </div>
-      ),
+      render: () => {
+        const hasPrecipitation =
+          precipitation !== undefined && precipitation !== null;
+        const precipitationPercent = hasPrecipitation
+          ? Math.round(precipitation * 100)
+          : 0;
+        return (
+          <div className="flex justify-center gap-1 items-center text-nowrap">
+            <CloudRainIcon />
+            <span>{hasPrecipitation ? `${precipitationPercent}%` : '- %'}</span>
+          </div>
+        );
+      },
     },
     airTemperature: {
       enabled:
@@ -416,20 +422,20 @@ export const SessionBar = ({
     effectiveBarSettings?.displayOrder ||
     (position === 'header'
       ? [
-          'sessionName',
-          'sessionTime',
-          'sessionLaps',
-          'localTime',
-          'brakeBias',
-          'incidentCount',
-        ]
+        'sessionName',
+        'sessionTime',
+        'sessionLaps',
+        'localTime',
+        'brakeBias',
+        'incidentCount',
+      ]
       : [
-          'localTime',
-          'trackWetness',
-          'sessionLaps',
-          'airTemperature',
-          'trackTemperature',
-        ]);
+        'localTime',
+        'trackWetness',
+        'sessionLaps',
+        'airTemperature',
+        'trackTemperature',
+      ]);
 
   // Filter and order items based on settings
   const itemsToRender = displayOrder
@@ -479,7 +485,7 @@ export const SessionBar = ({
 
   return (
     <div
-      className={`bg-slate-900/70 ${pxClass} ${pyClass} flex items-center text-sm ${standalone ? `w-full justify-between ${gapClass}` : 'justify-between'} ${!isCompact && !isUltra && !standalone ? (position === 'header' ? 'mb-3' : 'mt-3') : ''}`}
+      className={`${pxClass} ${pyClass} flex items-center text-sm ${standalone ? `w-full justify-between ${gapClass}` : 'justify-between'} ${!isCompact && !isUltra && !standalone ? (position === 'header' ? 'mb-3' : 'mt-3') : ''}`}
     >
       {itemsToRender}
     </div>
