@@ -408,6 +408,10 @@ export const defaultDashboard: {
           enabled: true,
           hideIfSingleMake: false,
         },
+        lapTimeDeltas: {
+          enabled: false,
+          numLaps: 3,
+        },
         badge: {
           enabled: true,
           badgeFormat: 'license-color-rating-bw',
@@ -449,6 +453,7 @@ export const defaultDashboard: {
           'fastestTime',
           'lastTime',
           'compound',
+          'lapTimeDeltas',
         ],
         driverTag: { enabled: false },
         titleBar: {

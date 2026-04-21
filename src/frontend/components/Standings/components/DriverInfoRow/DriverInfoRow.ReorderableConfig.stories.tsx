@@ -368,6 +368,10 @@ const RelativeWithReorderableConfig = () => {
       driverTag: { enabled: false },
       displayOrder: displayOrder,
       titleBar: { enabled: true, progressBar: { enabled: true } },
+      lapTimeDeltas: {
+        enabled: false,
+        numLaps: 3,
+      },
       headerBar: {
         enabled: true,
         sessionName: { enabled: true },

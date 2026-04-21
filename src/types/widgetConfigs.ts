@@ -187,6 +187,7 @@ export interface RelativeConfig {
   useLivePosition?: boolean;
   sessionVisibility: SessionVisibilitySettings;
   stylingOptions?: StylingOptions;
+  lapTimeDeltas: { enabled: boolean; numLaps: number };
 }
 
 export interface WeatherConfig {

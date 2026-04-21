@@ -64,6 +64,12 @@ const sortableSettings: SortableSetting[] = [
   { id: 'fastestTime', label: 'Best Time', configKey: 'fastestTime' },
   { id: 'lastTime', label: 'Last Time', configKey: 'lastTime' },
   { id: 'compound', label: 'Tire Compound', configKey: 'compound' },
+  {
+    id: 'lapTimeDeltas',
+    label: 'Lap Time Deltas',
+    configKey: 'lapTimeDeltas',
+    hasSubSetting: true,
+  },
 ];
 
 const defaultConfig = getWidgetDefaultConfig('relative');
@@ -114,6 +120,33 @@ const DisplaySettingsList = ({
             }}
             sortableProps={sortableProps}
           >
+            {setting.hasSubSetting &&
+              setting.configKey === 'lapTimeDeltas' &&
+              settings.config.lapTimeDeltas.enabled && (
+                <div className="flex items-center justify-between pl-8 mt-2 indent-8">
+                  <span className="text-sm text-slate-300">
+                    Number of Laps to Show
+                  </span>
+                  <select
+                    value={settings.config.lapTimeDeltas.numLaps}
+                    onChange={(e) =>
+                      handleConfigChange({
+                        lapTimeDeltas: {
+                          ...settings.config.lapTimeDeltas,
+                          numLaps: parseInt(e.target.value),
+                        },
+                      })
+                    }
+                    className="bg-slate-700 text-white rounded-md px-2 py-1"
+                  >
+                    <option value={1}>1</option>
+                    <option value={2}>2</option>
+                    <option value={3}>3</option>
+                    <option value={4}>4</option>
+                    <option value={5}>5</option>
+                  </select>
+                </div>
+              )}
             {setting.configKey === 'badge' &&
               (configValue as { enabled: boolean }).enabled && (
                 <div className="mt-3">

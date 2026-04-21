@@ -172,6 +172,7 @@ const RelativeWithoutHeaderFooter = () => {
         // If no result, render a dummy row with visibility hidden
         return (
           <DriverInfoRow
+            lapTimeDeltas={[0.0]}
             key={`placeholder-${index}`}
             carIdx={0}
             classColor={0}
@@ -228,6 +229,14 @@ const RelativeWithoutHeaderFooter = () => {
           onTrack={result.onTrack}
           radioActive={result.radioActive}
           isLapped={result.lappedState === 'behind'}
+          lapTimeDeltas={
+            settings?.lapTimeDeltas?.enabled ? result.lapTimeDeltas : undefined
+          }
+          numLapDeltasToShow={
+            settings?.lapTimeDeltas?.enabled
+              ? settings.lapTimeDeltas.numLaps
+              : undefined
+          }
           isLappingAhead={result.lappedState === 'ahead'}
           flairId={
             (settings?.countryFlags?.enabled ?? true)
@@ -515,6 +524,7 @@ export const TeamSession: Story = {
           'delta',
           'fastestTime',
           'lastTime',
+          'lapTimeDeltas',
         ],
       },
     }),
@@ -548,6 +558,8 @@ const RelativeWithoutHeader = () => {
     if (playerIndex === -1) {
       return Array.from({ length: totalRows }, (_, index) => (
         <DriverInfoRow
+          lapTimeDeltas={[0.0]}
+          numLapDeltasToShow={1}
           key={`empty-${index}`}
           carIdx={0}
           classColor={0}
@@ -598,6 +610,8 @@ const RelativeWithoutHeader = () => {
         // If no result, render a dummy row with visibility hidden
         return (
           <DriverInfoRow
+            lapTimeDeltas={[0.0]}
+            numLapDeltasToShow={1}
             key={`placeholder-${index}`}
             carIdx={0}
             classColor={0}
@@ -637,6 +651,14 @@ const RelativeWithoutHeader = () => {
 
       return (
         <DriverInfoRow
+          lapTimeDeltas={
+            settings?.lapTimeDeltas?.enabled ? result.lapTimeDeltas : undefined
+          }
+          numLapDeltasToShow={
+            settings?.lapTimeDeltas?.enabled
+              ? settings.lapTimeDeltas.numLaps
+              : undefined
+          }
           key={result.carIdx}
           carIdx={result.carIdx}
           classColor={result.carClass.color}
@@ -783,6 +805,8 @@ const RelativeWithoutFooter = () => {
     if (playerIndex === -1) {
       return Array.from({ length: totalRows }, (_, index) => (
         <DriverInfoRow
+          lapTimeDeltas={[0.0]}
+          numLapDeltasToShow={1}
           key={`empty-${index}`}
           carIdx={0}
           classColor={0}
@@ -833,6 +857,8 @@ const RelativeWithoutFooter = () => {
         // If no result, render a dummy row with visibility hidden
         return (
           <DriverInfoRow
+            lapTimeDeltas={[0.0]}
+            numLapDeltasToShow={1}
             key={`placeholder-${index}`}
             carIdx={0}
             classColor={0}
@@ -872,6 +898,14 @@ const RelativeWithoutFooter = () => {
 
       return (
         <DriverInfoRow
+          lapTimeDeltas={
+            settings?.lapTimeDeltas?.enabled ? result.lapTimeDeltas : undefined
+          }
+          numLapDeltasToShow={
+            settings?.lapTimeDeltas?.enabled
+              ? settings.lapTimeDeltas.numLaps
+              : undefined
+          }
           key={result.carIdx}
           carIdx={result.carIdx}
           classColor={result.carClass.color}

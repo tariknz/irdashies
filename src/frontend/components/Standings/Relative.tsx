@@ -223,6 +223,14 @@ export const Relative = () => {
           deltaDecimalPlaces={settings?.delta?.precision}
           hideCarManufacturer={hideCarManufacturer}
           compactMode={generalSettings?.compactMode}
+          lapTimeDeltas={
+            settings?.lapTimeDeltas?.enabled ? result.lapTimeDeltas : undefined
+          }
+          numLapDeltasToShow={
+            settings?.lapTimeDeltas?.enabled
+              ? settings.lapTimeDeltas.numLaps
+              : undefined
+          }
         />
       );
     });
