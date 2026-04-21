@@ -7,6 +7,7 @@ import {
   useSessionVisibility,
   useGeneralSettings,
   usePitLapStoreUpdater,
+  useLapTimesStoreUpdater,
 } from '@irdashies/context';
 import {
   useRelativeSettings,
@@ -31,6 +32,7 @@ export const Relative = () => {
   const isMultiClass = (numCarClasses ?? 0) > 1;
   const isSessionVisible = useSessionVisibility(settings?.sessionVisibility);
 
+  useLapTimesStoreUpdater();
   usePitLapStoreUpdater();
 
   const isSingleMake = useIsSingleMake();
@@ -101,6 +103,8 @@ export const Relative = () => {
           hideCarManufacturer={hideCarManufacturer}
           hasAnyDriverTag={hasAnyTag}
           compactMode={generalSettings?.compactMode}
+          lapTimeDeltas={[0.0]}
+          numLapDeltasToShow={1}
         />
       ));
     }
@@ -117,6 +121,8 @@ export const Relative = () => {
         // If no result, render a dummy row with visibility hidden
         return (
           <DriverInfoRow
+            lapTimeDeltas={[0.0]}
+            numLapDeltasToShow={1}
             key={`placeholder-${index}`}
             carIdx={0}
             classColor={0}
