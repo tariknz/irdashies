@@ -230,6 +230,8 @@ export interface TrackMapConfig {
   sectorColoring?: {
     enabled: boolean;
   };
+  playerIconEnabled?: boolean;
+  playerIconDataUrl?: string;
 }
 
 export interface FlatTrackMapConfig {
