@@ -1,6 +1,13 @@
 import { create } from 'zustand';
 import { getCarP2PConfig } from './carP2PConfigs';
 
+// CarIdxP2P_Count bytes are IEEE 754 float32 despite varType=2 (int) in the SDK header.
+const p2pCountToInt = (bits: number): number => {
+  const view = new DataView(new ArrayBuffer(4));
+  view.setInt32(0, bits, true);
+  return Math.round(view.getFloat32(0, true));
+};
+
 export type P2PStatus = 'inactive' | 'active' | 'cooldown' | 'exhausted';
 
 export interface P2PDisplayState {
@@ -53,7 +60,7 @@ export const usePushToPassStore = create<PushToPassState>((set, get) => ({
 
     p2pStatus.forEach((isActive, carIdx) => {
       const wasActive = prevP2PStatus[carIdx] ?? false;
-      const count = p2pCount[carIdx] ?? 0;
+      const count = p2pCountToInt(p2pCount[carIdx] ?? 0);
       const carId = carIdxToCarId[carIdx];
       const config = carId !== undefined ? getCarP2PConfig(carId) : undefined;
 

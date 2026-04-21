@@ -9,6 +9,13 @@ import { useSessionStore } from '../SessionStore/SessionStore';
 import { usePushToPassStore, type P2PDisplayState } from './PushToPassStore';
 import { getCarP2PConfig } from './carP2PConfigs';
 
+// CarIdxP2P_Count bytes are IEEE 754 float32 despite varType=2 (int) in the SDK header.
+const p2pCountToInt = (bits: number): number => {
+  const view = new DataView(new ArrayBuffer(4));
+  view.setInt32(0, bits, true);
+  return Math.round(view.getFloat32(0, true));
+};
+
 /**
  * Hook that drives the PushToPassStore from telemetry each frame.
  * Call this once in Standings and Relative components.
@@ -74,7 +81,7 @@ export const useP2PDisplayStates = (): (P2PDisplayState | undefined)[] => {
         continue;
       }
 
-      const count = p2pCount?.[carIdx] ?? 0;
+      const count = p2pCountToInt(p2pCount?.[carIdx] ?? 0);
       const isActive = p2pStatus?.[carIdx] ?? false;
       const cooldownEnd = cooldownEndTimes[carIdx] ?? null;
 
