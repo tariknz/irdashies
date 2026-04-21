@@ -720,6 +720,9 @@ export class OverlayManager {
 
     this.currentSettingsWindow = browserWindow;
 
+    // Keep settings window above overlay windows (overlays are at screen-saver level 1)
+    browserWindow.setAlwaysOnTop(true, 'screen-saver', 2);
+
     // Track window movement and resizing to save bounds
     trackSettingsWindowMovement(browserWindow);
 
