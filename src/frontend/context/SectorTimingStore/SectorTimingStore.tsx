@@ -162,6 +162,27 @@ export function getSectorIdx(lapDistPct: number, sectors: Sector[]): number {
 }
 
 /**
+ * Linearly interpolates the session time at which lapDistPct crossed boundary.
+ * Uses the two surrounding ticks (prevPct/prevTime → currPct/currTime).
+ * Falls back to currTime if the position delta is zero (shouldn't happen in practice).
+ *
+ * For S/F wrap-around crossings, pass currPct = lapDistPct + 1.0 so the
+ * interpolation direction is correct across the 0/1 boundary.
+ */
+export function interpolateCrossingTime(
+  boundary: number,
+  prevPct: number,
+  prevTime: number,
+  currPct: number,
+  currTime: number
+): number {
+  const dPct = currPct - prevPct;
+  if (dPct === 0) return currTime;
+  const fraction = (boundary - prevPct) / dPct;
+  return prevTime + fraction * (currTime - prevTime);
+}
+
+/**
  * Assign a performance color based on sector time vs. session best.
  *   purple — equals or beats session best
  *   green  — within greenThreshold (default 0.5%) of session best
@@ -271,9 +292,19 @@ export const useSectorTimingStore = create<SectorTimingState>((set, get) => ({
       const newColors = [...state.sectorColors];
       const newPreviousTimes = [...state.previousLapSectorTimes];
 
+      // Interpolate the exact moment the S/F line was crossed.
+      // currPct + 1.0 normalises the wrap-around so the direction is correct.
+      const crossingTime = interpolateCrossingTime(
+        1.0,
+        lastLapDistPct,
+        lastSessionTime,
+        lapDistPct + 1.0,
+        sessionTime
+      );
+
       if (sectorEntryValid) {
         // Record and color the last sector at the S/F crossing.
-        const sectorTime = sessionTime - sectorEntryTime;
+        const sectorTime = crossingTime - sectorEntryTime;
         const completedIdx = currentSectorIdx;
 
         if (
@@ -295,7 +326,7 @@ export const useSectorTimingStore = create<SectorTimingState>((set, get) => ({
       set({
         sectorEntryValid: true, // S/F crossing is always a valid entry to sector 0
         currentSectorIdx: 0,
-        sectorEntryTime: sessionTime,
+        sectorEntryTime: crossingTime,
         lastLapDistPct: lapDistPct,
         lastSessionTime: sessionTime,
         sessionBestSectorTimes: newSessionBests,
@@ -354,8 +385,18 @@ export const useSectorTimingStore = create<SectorTimingState>((set, get) => ({
     const newSessionBests = [...state.sessionBestSectorTimes];
     const newColors = [...state.sectorColors];
 
+    // Interpolate the exact moment the sector boundary was crossed.
+    const boundary = sectors[newSectorIdx].SectorStartPct;
+    const crossingTime = interpolateCrossingTime(
+      boundary,
+      lastLapDistPct,
+      lastSessionTime,
+      lapDistPct,
+      sessionTime
+    );
+
     if (sectorEntryValid) {
-      const sectorTime = sessionTime - sectorEntryTime;
+      const sectorTime = crossingTime - sectorEntryTime;
       const completedIdx = currentSectorIdx;
 
       if (
@@ -382,7 +423,7 @@ export const useSectorTimingStore = create<SectorTimingState>((set, get) => ({
     set({
       sectorEntryValid: true, // entered new sector via normal crossing
       currentSectorIdx: newSectorIdx,
-      sectorEntryTime: sessionTime,
+      sectorEntryTime: crossingTime,
       lastSessionTime: sessionTime,
       sessionBestSectorTimes: newSessionBests,
       sectorColors: newColors,
