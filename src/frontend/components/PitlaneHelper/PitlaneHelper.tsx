@@ -305,8 +305,8 @@ export const PitlaneHelperBody = ({
                 }`}
               >
                 <PitSpeedBar
-                  speedKph={displayKph ? speed.speedKph : speed.speedMph}
-                  limitKph={displayKph ? speed.limitKph : speed.limitMph}
+                  speed={displayKph ? speed.speedKph : speed.speedMph}
+                  limit={displayKph ? speed.limitKph : speed.limitMph}
                   orientation={config.speedBarOrientation}
                 />
               </div>
