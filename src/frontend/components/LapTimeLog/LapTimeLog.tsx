@@ -28,14 +28,13 @@ export const LapTimeLog = () => {
     data.settings?.sessionVisibility
   );
 
-  if (!isSessionVisible) return <></>;
-
-  // Show only when on track setting
-  if (data.settings?.showOnlyWhenOnTrack && !isDriving) {
+  // session visible?
+  if (!data.settings || playerIndex === undefined || !isSessionVisible) {
     return null;
   }
 
-  if (!data.settings || playerIndex === undefined || !isSessionVisible) {
+  // Show only when on track setting
+  if (data.settings?.showOnlyWhenOnTrack && !isDriving) {
     return null;
   }
 
