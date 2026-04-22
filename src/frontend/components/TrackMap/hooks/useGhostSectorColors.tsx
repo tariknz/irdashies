@@ -6,19 +6,7 @@ import {
   type SectorColor,
 } from '@irdashies/context';
 import type { SectorDeltaConfig } from '@irdashies/types';
-
-const GHOST_THRESHOLD = 0.5;
-
-function ghostColor(
-  lapTime: number | null,
-  refTime: number | null
-): SectorColor {
-  if (lapTime === null || refTime === null) return 'default';
-  const delta = lapTime - refTime;
-  if (delta <= 0) return 'green';
-  if (delta <= GHOST_THRESHOLD) return 'yellow';
-  return 'red';
-}
+import { computeGhostSectorColor } from '../../SectorDelta/sectorColorUtils';
 
 /**
  * Returns ghost-comparison sector colors when the SectorDelta widget is set to
@@ -54,10 +42,15 @@ export const useGhostSectorColors = (): SectorColor[] | null => {
       if (i === currentSectorIdx) return 'default';
       const lapTime =
         currentLapSectorTimes[i] ?? previousLapSectorTimes[i] ?? null;
-      return ghostColor(lapTime, refSectorTimes[i] ?? null);
+      return computeGhostSectorColor(
+        lapTime,
+        refSectorTimes[i] ?? null,
+        sectorDeltaConfig?.thresholds
+      );
     });
   }, [
     sectorDeltaConfig?.ghostComparison,
+    sectorDeltaConfig?.thresholds,
     hasGhostLap,
     sectors,
     currentSectorIdx,

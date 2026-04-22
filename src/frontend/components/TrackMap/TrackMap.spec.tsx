@@ -6,9 +6,6 @@ vi.mock('./hooks/useTrackId');
 vi.mock('./hooks/useDriverProgress');
 vi.mock('./hooks/useTrackMapSettings');
 vi.mock('./hooks/useHighlightColor');
-vi.mock('./hooks/useSectorTiming', () => ({
-  useSectorTiming: vi.fn(() => []),
-}));
 vi.mock('./hooks/useGhostSectorColors', () => ({
   useGhostSectorColors: vi.fn(() => null),
 }));
@@ -17,6 +14,7 @@ vi.mock('@irdashies/context', () => ({
   useSessionVisibility: vi.fn(),
   useTelemetryValue: vi.fn(),
   useSessionStore: vi.fn(() => []),
+  useSectorColors: vi.fn(() => []),
   useSectorTimingStore: vi.fn(() => 0),
 }));
 vi.mock('./TrackCanvas', () => ({

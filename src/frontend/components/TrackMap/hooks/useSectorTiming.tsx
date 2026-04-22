@@ -10,7 +10,8 @@ import { useTelemetryValue, useSessionStore } from '@irdashies/context';
  * Feeds player telemetry into the SectorTimingStore each tick and returns
  * the current per-sector performance colors.
  *
- * Call this hook once in TrackMap — it is the single updater for the store.
+ * Call this hook once at the overlay-container level so any widget can consume
+ * sector timing state, even when the track map is not mounted.
  */
 export const useSectorTiming = (): SectorColor[] => {
   const sectors = useSessionStore((s) => s.session?.SplitTimeInfo?.Sectors);

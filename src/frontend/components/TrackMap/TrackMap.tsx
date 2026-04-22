@@ -2,13 +2,13 @@ import { useTrackId } from './hooks/useTrackId';
 import { useDriverProgress } from './hooks/useDriverProgress';
 import { useTrackMapSettings } from './hooks/useTrackMapSettings';
 import { useHighlightColor } from './hooks/useHighlightColor';
-import { useSectorTiming } from './hooks/useSectorTiming';
 import { useGhostSectorColors } from './hooks/useGhostSectorColors';
 import { TrackCanvas } from './TrackCanvas';
 import {
   useSessionVisibility,
   useTelemetryValue,
   useSessionStore,
+  useSectorColors,
   useSectorTimingStore,
 } from '@irdashies/context';
 
@@ -20,7 +20,7 @@ export const TrackMap = () => {
   const settings = useTrackMapSettings();
   const highlightColor = useHighlightColor();
   const isOnTrack = useTelemetryValue('IsOnTrack');
-  const sessionSectorColors = useSectorTiming();
+  const sessionSectorColors = useSectorColors();
   const ghostColors = useGhostSectorColors();
   const sectorColors = ghostColors ?? sessionSectorColors;
   const sectors =

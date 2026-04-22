@@ -8,6 +8,10 @@ import type { TimeFormat } from '@irdashies/types';
 import type { SectorColor } from '@irdashies/context';
 import { formatTime } from '@irdashies/utils/time';
 import { useLiveSectorDelta } from './hooks/useLiveSectorDelta';
+import {
+  computeGhostSectorColor,
+  getSectorDeltaThresholdFractions,
+} from './sectorColorUtils';
 
 type SectorDeltaProps = SectorDeltaConfig;
 
@@ -42,8 +46,6 @@ const SECTOR_CARD: Record<
   },
 };
 
-const GHOST_THRESHOLD = 0.5;
-
 function timeFormatToDecimalPlaces(timeFormat: TimeFormat): number {
   if (timeFormat === 'full' || timeFormat === 'seconds-full') return 3;
   if (timeFormat === 'mixed' || timeFormat === 'seconds-mixed') return 1;
@@ -61,17 +63,6 @@ function formatDelta(
   const sign = delta >= 0 ? '+' : '';
   const dp = timeFormatToDecimalPlaces(timeFormat);
   return `${sign}${delta.toFixed(dp)}`;
-}
-
-function ghostColor(
-  lapTime: number | null,
-  refTime: number | null
-): SectorColor {
-  if (lapTime === null || refTime === null) return 'default';
-  const delta = lapTime - refTime;
-  if (delta <= 0) return 'purple';
-  if (delta <= GHOST_THRESHOLD) return 'yellow';
-  return 'red';
 }
 
 export const SectorDelta = ({
@@ -110,8 +101,7 @@ export const SectorDelta = ({
 
   const setThresholds = useSectorTimingStore((s) => s.setThresholds);
   useEffect(() => {
-    const green = (thresholds?.green ?? 0.5) / 100;
-    const yellow = (thresholds?.yellow ?? 1.0) / 100;
+    const { green, yellow } = getSectorDeltaThresholdFractions(thresholds);
     setThresholds(green, yellow);
   }, [thresholds, setThresholds]);
 
@@ -138,7 +128,11 @@ export const SectorDelta = ({
           : (currentLapSectorTimes[i] ?? previousLapSectorTimes[i] ?? null);
 
         const colorKey: SectorColor = useGhost
-          ? ghostColor(displayTime, refSectorTimes[i] ?? null)
+          ? computeGhostSectorColor(
+              displayTime,
+              refSectorTimes[i] ?? null,
+              thresholds
+            )
           : (sectorColors[i] ?? 'default');
 
         const refTime = useGhost
