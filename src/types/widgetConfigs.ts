@@ -459,6 +459,7 @@ export interface PitlaneHelperConfig {
   showSpeedBar?: boolean;
   showSpeedSummary: boolean;
   showSpeedDelta: boolean;
+  speedUnit?: 'mph' | 'km/h' | 'auto';
   speedLimitStyle?: 'none' | 'text' | 'european' | 'american';
   showPitExitInputs?: boolean;
   pitExitInputs?: { throttle: boolean; clutch: boolean };
