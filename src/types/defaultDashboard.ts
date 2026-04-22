@@ -947,11 +947,12 @@ export const defaultDashboard: {
         },
         sessionVisibility: {
           race: true,
-          loneQualify: false,
+          loneQualify: true,
           openQualify: true,
           practice: true,
           offlineTesting: true,
         },
+        showOnlyWhenOnTrack: true,
       },
     },
     {
