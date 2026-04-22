@@ -840,6 +840,26 @@ export const RelativeSettings = () => {
                       }
                     />
                   </SettingsSection>
+
+                  <SettingDivider />
+
+                  <SettingsSection title="Flag Contour">
+                    <SettingToggleRow
+                      title="Show Flag Contour"
+                      description="Draw a colored border around the widget when a session flag is active"
+                      enabled={
+                        settings.config.stylingOptions?.flagContour ?? false
+                      }
+                      onToggle={(newValue) =>
+                        handleConfigChange({
+                          stylingOptions: {
+                            ...settings.config.stylingOptions,
+                            flagContour: newValue,
+                          },
+                        })
+                      }
+                    />
+                  </SettingsSection>
                 </>
               )}
 

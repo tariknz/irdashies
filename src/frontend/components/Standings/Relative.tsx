@@ -7,6 +7,7 @@ import {
   useSessionVisibility,
   useGeneralSettings,
   usePitLapStoreUpdater,
+  useTelemetryValue,
 } from '@irdashies/context';
 import {
   useRelativeSettings,
@@ -18,6 +19,9 @@ import { SessionBar } from './components/SessionBar/SessionBar';
 
 import { TitleBar } from './components/TitleBar/TitleBar';
 import { useIsSingleMake } from './hooks/useIsSingleMake';
+import { FlagContour } from '@irdashies/utils/FlagContour';
+import { getFlag } from '@irdashies/utils/getFlag';
+import { getColor } from '@irdashies/utils/colors';
 
 export const Relative = () => {
   const settings = useRelativeSettings();
@@ -30,6 +34,39 @@ export const Relative = () => {
   const numCarClasses = useWeekendInfoNumCarClasses();
   const isMultiClass = (numCarClasses ?? 0) > 1;
   const isSessionVisible = useSessionVisibility(settings?.sessionVisibility);
+
+  const sessionFlags = useTelemetryValue<number>('SessionFlags') ?? 0;
+  const flagInfo = getFlag(sessionFlags);
+  const flagContourEnabled =
+    (settings?.stylingOptions?.flagContour ?? false) &&
+    flagInfo.label !== 'NO FLAG';
+
+  const flagColor = flagContourEnabled
+    ? (() => {
+        const flagType = flagInfo.label.split(' ')[0];
+        const GREEN = getColor('green', 500);
+        const YELLOW = getColor('yellow', 400);
+        const BLUE = getColor('blue', 500);
+        const RED = getColor('red', 500);
+        const WHITE = '#ffffff';
+        const BLACK = '#000000';
+        const ORANGE = getColor('orange', 500);
+        const GREY = getColor('gray', 400);
+
+        if (flagType === 'NO') return GREY;
+        if (flagType === 'CHECKERED') return WHITE;
+        if (flagType === 'WHITE') return WHITE;
+        if (flagType === 'BLACK') return BLACK;
+        if (flagType === 'DISQUALIFIED') return BLACK;
+        if (flagType === 'MEATBALL') return ORANGE;
+        if (flagType === 'GREEN') return GREEN;
+        if (flagType === 'YELLOW') return YELLOW;
+        if (flagType === 'BLUE') return BLUE;
+        if (flagType === 'RED') return RED;
+        if (flagType === 'DEBRIS') return YELLOW;
+        return WHITE;
+      })()
+    : undefined;
 
   usePitLapStoreUpdater();
 
@@ -250,7 +287,12 @@ export const Relative = () => {
   // If no player found, render empty table with consistent height
   if (playerIndex === -1) {
     return (
-      <div className="w-full h-full">
+      <FlagContour
+        compactMode={isCompact}
+        flags={{ enabled: flagContourEnabled }}
+        flagColor={flagColor}
+        backgroundOpacity={settings?.background?.opacity ?? 0}
+      >
         <TitleBar titleBarSettings={settings?.titleBar} />
         {settings?.headerBar && (settings.headerBar.enabled ?? false) && (
           <SessionBar settings={settings.headerBar} position="header" />
@@ -263,16 +305,16 @@ export const Relative = () => {
         {settings?.footerBar && (settings.footerBar.enabled ?? true) && (
           <SessionBar settings={settings.footerBar} position="footer" />
         )}
-      </div>
+      </FlagContour>
     );
   }
 
   return (
-    <div
-      className={`w-full bg-slate-800/(--bg-opacity) rounded-sm ${!isCompact ? 'p-2' : ''} overflow-hidden`}
-      style={{
-        ['--bg-opacity' as string]: `${settings?.background?.opacity ?? 0}%`,
-      }}
+    <FlagContour
+      compactMode={isCompact}
+      flags={{ enabled: flagContourEnabled }}
+      flagColor={flagColor}
+      backgroundOpacity={settings?.background?.opacity ?? 0}
     >
       <TitleBar titleBarSettings={settings?.titleBar} />
       {settings?.headerBar && (settings.headerBar.enabled ?? false) && (
@@ -286,6 +328,6 @@ export const Relative = () => {
       {settings?.footerBar && (settings.footerBar.enabled ?? true) && (
         <SessionBar settings={settings.footerBar} position="footer" />
       )}
-    </div>
+    </FlagContour>
   );
 };
