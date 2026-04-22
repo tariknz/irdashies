@@ -3,7 +3,7 @@ import { OnTrackVisibilityConfig } from '@irdashies/types';
 
 interface OnTrackVisibilityProps {
   config: OnTrackVisibilityConfig;
-  handleConfigChange: (config: Record<string, unknown>) => void;
+  handleConfigChange: (config: OnTrackVisibilityConfig) => void;
 }
 
 export const SettingOnTrackVisibilityToggleRow = ({

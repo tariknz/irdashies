@@ -28,7 +28,9 @@ export const SettingVisibilitySection = ({
       {isSessionConfig && (
         <SettingSessionVisibilitySection
           config={config}
-          handleConfigChange={handleConfigChange}
+          handleConfigChange={(c) =>
+            handleConfigChange(c as unknown as Record<string, unknown>)
+          }
         />
       )}
 
@@ -37,7 +39,9 @@ export const SettingVisibilitySection = ({
           <SettingDivider />
           <SettingOnTrackVisibilityToggleRow
             config={config}
-            handleConfigChange={handleConfigChange}
+            handleConfigChange={(c) =>
+              handleConfigChange(c as unknown as Record<string, unknown>)
+            }
           />
         </>
       )}

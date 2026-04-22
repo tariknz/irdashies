@@ -154,6 +154,11 @@ export const BaseSettingsSection = <
               ...widget,
               enabled: newSettings.enabled,
               config: newSettings.config as unknown as Record<string, unknown>,
+              visibilityConfig:
+                newSettings.visibilityConfig as unknown as Record<
+                  string,
+                  unknown
+                >,
             };
           })
         : [
@@ -162,6 +167,11 @@ export const BaseSettingsSection = <
               id: widgetId,
               enabled: newSettings.enabled,
               config: newSettings.config as unknown as Record<string, unknown>,
+              visibilityConfig:
+                newSettings.visibilityConfig as unknown as Record<
+                  string,
+                  unknown
+                >,
               // Default layout for new widgets if they don't exist
               layout: { x: 50, y: 50, width: 400, height: 300 },
             },

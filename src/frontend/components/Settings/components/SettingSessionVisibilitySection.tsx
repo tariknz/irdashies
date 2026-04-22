@@ -1,9 +1,9 @@
-import { BaseWidgetSettings, SessionVisibilityConfig } from '@irdashies/types';
+import { SessionVisibilityConfig } from '@irdashies/types';
 import { SettingToggleRow } from './SettingToggleRow';
 
 interface SessionVisibilityProps {
   config: SessionVisibilityConfig;
-  handleConfigChange: (newConfig: BaseWidgetSettings['config']) => void;
+  handleConfigChange: (newConfig: SessionVisibilityConfig) => void;
 }
 
 /**
@@ -22,7 +22,7 @@ export const SettingSessionVisibilitySection = ({
         enabled={config.sessionVisibility.race ?? false}
         onToggle={(enabled) =>
           handleConfigChange({
-            sessionVisibility: { ...config, race: enabled },
+            sessionVisibility: { ...config.sessionVisibility, race: enabled },
           })
         }
       />
@@ -33,7 +33,10 @@ export const SettingSessionVisibilitySection = ({
         enabled={config.sessionVisibility.loneQualify ?? false}
         onToggle={(enabled) =>
           handleConfigChange({
-            sessionVisibility: { ...config, loneQualify: enabled },
+            sessionVisibility: {
+              ...config.sessionVisibility,
+              loneQualify: enabled,
+            },
           })
         }
       />
@@ -44,7 +47,10 @@ export const SettingSessionVisibilitySection = ({
         enabled={config.sessionVisibility.openQualify ?? false}
         onToggle={(enabled) =>
           handleConfigChange({
-            sessionVisibility: { ...config, openQualify: enabled },
+            sessionVisibility: {
+              ...config.sessionVisibility,
+              openQualify: enabled,
+            },
           })
         }
       />
@@ -55,7 +61,10 @@ export const SettingSessionVisibilitySection = ({
         enabled={config.sessionVisibility.practice ?? false}
         onToggle={(enabled) =>
           handleConfigChange({
-            sessionVisibility: { ...config, practice: enabled },
+            sessionVisibility: {
+              ...config.sessionVisibility,
+              practice: enabled,
+            },
           })
         }
       />
@@ -67,7 +76,7 @@ export const SettingSessionVisibilitySection = ({
         onToggle={(enabled) =>
           handleConfigChange({
             sessionVisibility: {
-              ...config,
+              ...config.sessionVisibility,
               offlineTesting: enabled,
             },
           })

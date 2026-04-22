@@ -101,12 +101,14 @@ export const applyVisibilityConfigMigration = (dashboard: DashboardLayout) => {
       w.visibilityConfig = {};
     }
 
-    if (w.config?.sessionVisibility) {
+    if (w.config?.sessionVisibility !== undefined) {
       w.visibilityConfig['sessionVisibility'] = w.config.sessionVisibility;
+      delete w.config.sessionVisibility;
     }
 
-    if (w.config?.showOnlyWhenOnTrack) {
+    if (w.config?.showOnlyWhenOnTrack !== undefined) {
       w.visibilityConfig['showOnlyWhenOnTrack'] = w.config.showOnlyWhenOnTrack;
+      delete w.config.showOnlyWhenOnTrack;
     }
   });
 };
@@ -211,6 +213,8 @@ export const resetDashboard = (
         return {
           ...widget,
           config: defaultWidget?.config || widget.config,
+          visibilityConfig:
+            defaultWidget?.visibilityConfig || widget.visibilityConfig,
         };
       }),
       generalSettings: {
