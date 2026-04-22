@@ -5,6 +5,7 @@ import {
 } from '../TelemetryStore/TelemetryStore';
 import { useLapTimesStore } from './LapTimesStore';
 import { useStandingsSettings } from '../../components/Standings/hooks/useStandingsSettings';
+import { useRelativeSettings } from '../../components/Standings/hooks';
 
 /**
  * Hook that automatically updates the LapTimesStore with telemetry data.
@@ -18,6 +19,7 @@ export const useLapTimesStoreUpdater = () => {
   const updateLapTimes = useLapTimesStore((state) => state.updateLapTimes);
   const reset = useLapTimesStore((state) => state.reset);
   const standingsSettings = useStandingsSettings();
+  const relativeSettings = useRelativeSettings();
 
   // Reset immediately when session changes so stale data is cleared
   // before any new telemetry arrives
@@ -29,7 +31,8 @@ export const useLapTimesStoreUpdater = () => {
     if (
       carIdxLastLapTime &&
       (standingsSettings?.lapTimeDeltas?.enabled ||
-        standingsSettings?.avgLapTime?.enabled)
+        standingsSettings?.avgLapTime?.enabled ||
+        relativeSettings?.lapTimeDeltas?.enabled)
     ) {
       updateLapTimes(carIdxLastLapTime, sessionNum ?? null);
     }
@@ -39,5 +42,6 @@ export const useLapTimesStoreUpdater = () => {
     updateLapTimes,
     standingsSettings?.lapTimeDeltas?.enabled,
     standingsSettings?.avgLapTime?.enabled,
+    relativeSettings?.lapTimeDeltas?.enabled,
   ]);
 };

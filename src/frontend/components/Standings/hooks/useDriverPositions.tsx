@@ -13,12 +13,16 @@ import {
   useSessionFastestLaps,
   useTelemetryValues,
   useTelemetryValuesRounded,
+  useLapTimeHistory,
 } from '@irdashies/context';
+
+import { calculateLapDeltas } from './useDriverStandings';
 
 import { Standings, type LastTimeState } from '../createStandings';
 import { GlobalFlags, SessionState } from '@irdashies/types';
 import { useDriverLivePositions } from './useDriverLivePositions';
 import { useRelativeSettings } from './useRelativeSettings';
+// import { useLapTimeHistory } from '../LapTimesStore/LapTimesStore';
 
 const getLastTimeState = (
   lastTime: number | undefined,
@@ -163,6 +167,19 @@ export const useDriverStandings = () => {
   const sessionFastestLaps = useSessionFastestLaps(sessionNum);
   const fastestLapCarIdx = sessionFastestLaps?.[0]?.CarIdx;
 
+  const lapTimeHistory = useLapTimeHistory();
+  const lapTimeDeltasEnabled =
+    relativeSettings?.lapTimeDeltas?.enabled ?? false;
+  const numLapDeltas = relativeSettings?.lapTimeDeltas?.numLaps ?? 1;
+
+  const lapDeltasForCalc = useMemo(
+    () =>
+      calculateLapDeltas(lapTimeHistory, playerCarIdx, lapTimeDeltasEnabled),
+    [lapTimeHistory, playerCarIdx, lapTimeDeltasEnabled]
+  );
+
+  // inside mapped standing object
+
   const driverStandings: Standings[] = useMemo(() => {
     // Create Map lookups for O(1) access instead of O(n) find() calls
     const driverPositionsByCarIdx = new Map(
@@ -279,6 +296,12 @@ export const useDriverStandings = () => {
         penalty: carState?.penalty ?? false,
         slowdown: carState?.slowdown ?? false,
         relativePct: 0,
+        lapTimeDeltas:
+          lapTimeDeltasEnabled && playerCarIdx !== undefined
+            ? driver.carIdx === playerCarIdx
+              ? undefined
+              : lapDeltasForCalc?.[driver.carIdx]?.slice(-numLapDeltas)
+            : undefined,
       };
     });
 
@@ -296,6 +319,9 @@ export const useDriverStandings = () => {
     radioTransmitCarIdx,
     driverLivePositions,
     fastestLapCarIdx,
+    lapTimeDeltasEnabled,
+    numLapDeltas,
+    lapDeltasForCalc,
   ]);
 
   return driverStandings;
