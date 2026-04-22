@@ -6,6 +6,7 @@ export interface FlagContourProps {
   flags?: { enabled: boolean };
   flagColor?: string;
   backgroundOpacity?: number;
+  borderWidth?: number;
 }
 
 export const FlagContour = ({
@@ -14,14 +15,16 @@ export const FlagContour = ({
   flags = { enabled: false },
   flagColor,
   backgroundOpacity = 0,
+  borderWidth = 5,
 }: FlagContourProps) => {
   const containerClassName = `w-full bg-slate-800/(--bg-opacity) rounded-sm ${
     !compactMode ? 'p-2' : ''
-  } overflow-hidden ${flags.enabled ? 'border-4 border-solid' : ''}`;
+  } overflow-hidden ${flags.enabled ? 'border-solid' : ''}`;
 
   const containerStyle = {
     ['--bg-opacity' as string]: `${backgroundOpacity}%`,
-    ...(flags.enabled && flagColor && { borderColor: flagColor }),
+    ...(flags.enabled &&
+      flagColor && { borderColor: flagColor, borderWidth: `${borderWidth}px` }),
   };
 
   return (

@@ -79,7 +79,12 @@ export interface StylingOptions {
   statusBadges?: boolean;
   driverPosition?: { background?: boolean };
   driverNumber?: { background?: boolean; border?: boolean };
-  flagContour?: boolean;
+  flagContour?:
+    | boolean
+    | {
+        enabled?: boolean;
+        borderWidth?: number;
+      };
 }
 
 export interface ClassHeaderStyle {

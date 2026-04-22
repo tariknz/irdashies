@@ -1057,7 +1057,7 @@ export const WithFlagContour: Story = {
         headerBar: { enabled: true },
         footerBar: { enabled: true },
         stylingOptions: {
-          flagContour: true,
+          flagContour: { enabled: true, borderWidth: 5 },
         },
       },
     }),

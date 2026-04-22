@@ -21,7 +21,7 @@ import { TitleBar } from './components/TitleBar/TitleBar';
 import { useIsSingleMake } from './hooks/useIsSingleMake';
 import { FlagContour } from '@irdashies/utils/FlagContour';
 import { getFlag } from '@irdashies/utils/getFlag';
-import { getColor } from '@irdashies/utils/colors';
+import { getFlagColor } from '@irdashies/utils/getFlagColor';
 
 export const Relative = () => {
   const settings = useRelativeSettings();
@@ -37,36 +37,17 @@ export const Relative = () => {
 
   const sessionFlags = useTelemetryValue<number>('SessionFlags') ?? 0;
   const flagInfo = getFlag(sessionFlags);
+  const flagContourSetting = settings?.stylingOptions?.flagContour;
   const flagContourEnabled =
-    (settings?.stylingOptions?.flagContour ?? false) &&
-    flagInfo.label !== 'NO FLAG';
+    (typeof flagContourSetting === 'boolean'
+      ? flagContourSetting
+      : (flagContourSetting?.enabled ?? false)) && flagInfo.label !== 'NO FLAG';
+  const borderWidth =
+    typeof flagContourSetting === 'object'
+      ? (flagContourSetting.borderWidth ?? 5)
+      : 5;
 
-  const flagColor = flagContourEnabled
-    ? (() => {
-        const flagType = flagInfo.label.split(' ')[0];
-        const GREEN = getColor('green', 500);
-        const YELLOW = getColor('yellow', 400);
-        const BLUE = getColor('blue', 500);
-        const RED = getColor('red', 500);
-        const WHITE = '#ffffff';
-        const BLACK = '#000000';
-        const ORANGE = getColor('orange', 500);
-        const GREY = getColor('gray', 400);
-
-        if (flagType === 'NO') return GREY;
-        if (flagType === 'CHECKERED') return WHITE;
-        if (flagType === 'WHITE') return WHITE;
-        if (flagType === 'BLACK') return BLACK;
-        if (flagType === 'DISQUALIFIED') return BLACK;
-        if (flagType === 'MEATBALL') return ORANGE;
-        if (flagType === 'GREEN') return GREEN;
-        if (flagType === 'YELLOW') return YELLOW;
-        if (flagType === 'BLUE') return BLUE;
-        if (flagType === 'RED') return RED;
-        if (flagType === 'DEBRIS') return YELLOW;
-        return WHITE;
-      })()
-    : undefined;
+  const flagColor = getFlagColor(getFlag(sessionFlags).label);
 
   usePitLapStoreUpdater();
 
@@ -292,6 +273,7 @@ export const Relative = () => {
         flags={{ enabled: flagContourEnabled }}
         flagColor={flagColor}
         backgroundOpacity={settings?.background?.opacity ?? 0}
+        borderWidth={borderWidth}
       >
         <TitleBar titleBarSettings={settings?.titleBar} />
         {settings?.headerBar && (settings.headerBar.enabled ?? false) && (
@@ -315,6 +297,7 @@ export const Relative = () => {
       flags={{ enabled: flagContourEnabled }}
       flagColor={flagColor}
       backgroundOpacity={settings?.background?.opacity ?? 0}
+      borderWidth={borderWidth}
     >
       <TitleBar titleBarSettings={settings?.titleBar} />
       {settings?.headerBar && (settings.headerBar.enabled ?? false) && (
