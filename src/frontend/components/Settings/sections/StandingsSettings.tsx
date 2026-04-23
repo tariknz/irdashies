@@ -946,6 +946,24 @@ export const StandingsSettings = () => {
               {/* STYLING TAB */}
               {activeTab === 'styling' && (
                 <>
+                  <SettingsSection title="Size">
+                    <SettingSliderRow
+                      title="Adjust size"
+                      value={settings.config.stylingOptions?.size ?? 100}
+                      units="%"
+                      min={100}
+                      max={300}
+                      step={1}
+                      onChange={(v) =>
+                        handleConfigChange({
+                          stylingOptions: {
+                            ...settings.config.stylingOptions,
+                            size: v,
+                          },
+                        })
+                      }
+                    />
+                  </SettingsSection>
                   <SettingsSection title="Class Header">
                     <SettingToggleRow
                       title="Class Name Background"
