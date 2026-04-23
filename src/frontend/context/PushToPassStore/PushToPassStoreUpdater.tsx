@@ -5,12 +5,14 @@ import {
   useTelemetryValue,
   useTelemetryStore,
 } from '../TelemetryStore/TelemetryStore';
-import { useSessionStore } from '../SessionStore/SessionStore';
+import { useDriverCarIdx, useSessionStore } from '../SessionStore/SessionStore';
 import { usePushToPassStore, type P2PDisplayState } from './PushToPassStore';
 import { getCarP2PConfig } from './carP2PConfigs';
 
-// CarIdxP2P_Count bytes are IEEE 754 float32 despite varType=2 (int) in the SDK header.
-const p2pCountToInt = (bits: number): number => {
+// Other cars report CarIdxP2P_Count as IEEE-754 float32 bits despite varType=2 (int).
+// The player's own car reports it as a plain integer — no conversion needed.
+const parseP2PCount = (bits: number, isPlayer: boolean): number => {
+  if (isPlayer) return bits;
   const view = new DataView(new ArrayBuffer(4));
   view.setInt32(0, bits, true);
   return Math.round(view.getFloat32(0, true));
@@ -25,6 +27,7 @@ export const usePushToPassStoreUpdater = () => {
   const p2pCount = useTelemetryValues<number[]>('CarIdxP2P_Count');
   const sessionUniqId = useTelemetryValue('SessionUniqueID');
   const sessionDrivers = useSessionStore((s) => s.session?.DriverInfo?.Drivers);
+  const playerCarIdx = useDriverCarIdx();
   const update = usePushToPassStore((s) => s.update);
 
   const sessionTime = useStore(useTelemetryStore, (state) => {
@@ -47,9 +50,18 @@ export const usePushToPassStoreUpdater = () => {
       p2pCount ?? [],
       carIdxToCarId,
       sessionTime ?? 0,
-      sessionUniqId ?? 0
+      sessionUniqId ?? 0,
+      playerCarIdx
     );
-  }, [p2pStatus, p2pCount, carIdxToCarId, sessionTime, sessionUniqId, update]);
+  }, [
+    p2pStatus,
+    p2pCount,
+    carIdxToCarId,
+    sessionTime,
+    sessionUniqId,
+    playerCarIdx,
+    update,
+  ]);
 };
 
 /**
@@ -60,6 +72,7 @@ export const useP2PDisplayStates = (): (P2PDisplayState | undefined)[] => {
   const p2pStatus = useTelemetryValues<boolean[]>('CarIdxP2P_Status');
   const p2pCount = useTelemetryValues<number[]>('CarIdxP2P_Count');
   const sessionDrivers = useSessionStore((s) => s.session?.DriverInfo?.Drivers);
+  const playerCarIdx = useDriverCarIdx();
   const cooldownEndTimes = usePushToPassStore((s) => s.cooldownEndTimes);
   const sessionTime = usePushToPassStore((s) => s.sessionTime);
 
@@ -81,7 +94,10 @@ export const useP2PDisplayStates = (): (P2PDisplayState | undefined)[] => {
         continue;
       }
 
-      const count = p2pCountToInt(p2pCount?.[carIdx] ?? 0);
+      const count = parseP2PCount(
+        p2pCount?.[carIdx] ?? 0,
+        carIdx === playerCarIdx
+      );
       const isActive = p2pStatus?.[carIdx] ?? false;
       const cooldownEnd = cooldownEndTimes[carIdx] ?? null;
 
@@ -100,5 +116,12 @@ export const useP2PDisplayStates = (): (P2PDisplayState | undefined)[] => {
     }
 
     return result;
-  }, [p2pStatus, p2pCount, sessionDrivers, cooldownEndTimes, sessionTime]);
+  }, [
+    p2pStatus,
+    p2pCount,
+    sessionDrivers,
+    playerCarIdx,
+    cooldownEndTimes,
+    sessionTime,
+  ]);
 };

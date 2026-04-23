@@ -1,8 +1,10 @@
 import { create } from 'zustand';
 import { getCarP2PConfig } from './carP2PConfigs';
 
-// CarIdxP2P_Count bytes are IEEE 754 float32 despite varType=2 (int) in the SDK header.
-const p2pCountToInt = (bits: number): number => {
+// Other cars report CarIdxP2P_Count as IEEE-754 float32 bits despite varType=2 (int).
+// The player's own car reports it as a plain integer — no conversion needed.
+const parseP2PCount = (bits: number, isPlayer: boolean): number => {
+  if (isPlayer) return bits;
   const view = new DataView(new ArrayBuffer(4));
   view.setInt32(0, bits, true);
   return Math.round(view.getFloat32(0, true));
@@ -27,7 +29,8 @@ interface PushToPassState {
     p2pCount: number[],
     carIdxToCarId: Record<number, number>,
     sessionTime: number,
-    sessionUniqId: number
+    sessionUniqId: number,
+    playerCarIdx: number | undefined
   ) => void;
   reset: () => void;
 }
@@ -38,7 +41,14 @@ export const usePushToPassStore = create<PushToPassState>((set, get) => ({
   cooldownEndTimes: [],
   prevP2PStatus: [],
 
-  update(p2pStatus, p2pCount, carIdxToCarId, sessionTime, sessionUniqId) {
+  update(
+    p2pStatus,
+    p2pCount,
+    carIdxToCarId,
+    sessionTime,
+    sessionUniqId,
+    playerCarIdx
+  ) {
     const {
       sessionUniqId: prevUniqId,
       cooldownEndTimes,
@@ -60,7 +70,10 @@ export const usePushToPassStore = create<PushToPassState>((set, get) => ({
 
     p2pStatus.forEach((isActive, carIdx) => {
       const wasActive = prevP2PStatus[carIdx] ?? false;
-      const count = p2pCountToInt(p2pCount[carIdx] ?? 0);
+      const count = parseP2PCount(
+        p2pCount[carIdx] ?? 0,
+        carIdx === playerCarIdx
+      );
       const carId = carIdxToCarId[carIdx];
       const config = carId !== undefined ? getCarP2PConfig(carId) : undefined;
 
