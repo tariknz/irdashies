@@ -103,7 +103,7 @@ export const SessionBar = ({
   const isUltra = generalSettings?.compactMode === 'ultra';
   const isCompact = generalSettings?.compactMode === 'compact';
 
-  const pyClass = isUltra ? 'py-0' : 'py-1';
+  const pyClass = isUltra ? 'py-0' : isCompact ? 'py-1' : 'py-2';
   const gapClass = isUltra ? 'gap-x-2' : isCompact ? 'gap-x-4' : 'gap-x-6';
   const pxClass = standalone
     ? isUltra
@@ -485,7 +485,7 @@ export const SessionBar = ({
 
   return (
     <div
-      className={`${pxClass} ${pyClass} flex items-center text-sm ${standalone ? `w-full justify-between ${gapClass}` : 'justify-between'}`}
+      className={`bg-slate-900/70 ${pxClass} ${pyClass} flex items-center text-sm ${standalone ? `w-full justify-between ${gapClass}` : 'justify-between'} ${!isCompact && !isUltra && !standalone ? (position === 'header' ? 'mb-3' : 'mt-3') : ''}`}
     >
       {itemsToRender}
     </div>
