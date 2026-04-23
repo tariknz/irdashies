@@ -172,7 +172,6 @@ const RelativeWithoutHeaderFooter = () => {
         // If no result, render a dummy row with visibility hidden
         return (
           <DriverInfoRow
-            lapTimeDeltas={[0.0]}
             key={`placeholder-${index}`}
             carIdx={0}
             classColor={0}
@@ -206,6 +205,8 @@ const RelativeWithoutHeaderFooter = () => {
             repair={false}
             penalty={false}
             slowdown={false}
+            lapTimeDeltas={[0.0]}
+            numLapDeltasToShow={1}
           />
         );
       }
@@ -229,14 +230,6 @@ const RelativeWithoutHeaderFooter = () => {
           onTrack={result.onTrack}
           radioActive={result.radioActive}
           isLapped={result.lappedState === 'behind'}
-          lapTimeDeltas={
-            settings?.lapTimeDeltas?.enabled ? result.lapTimeDeltas : undefined
-          }
-          numLapDeltasToShow={
-            settings?.lapTimeDeltas?.enabled
-              ? settings.lapTimeDeltas.numLaps
-              : undefined
-          }
           isLappingAhead={result.lappedState === 'ahead'}
           flairId={
             (settings?.countryFlags?.enabled ?? true)
@@ -275,6 +268,14 @@ const RelativeWithoutHeaderFooter = () => {
           repair={result.repair}
           penalty={result.penalty}
           slowdown={result.slowdown}
+          lapTimeDeltas={
+            settings?.lapTimeDeltas?.enabled ? result.lapTimeDeltas : undefined
+          }
+          numLapDeltasToShow={
+            settings?.lapTimeDeltas?.enabled
+              ? settings.lapTimeDeltas.numLaps
+              : undefined
+          }
         />
       );
     });
@@ -558,8 +559,6 @@ const RelativeWithoutHeader = () => {
     if (playerIndex === -1) {
       return Array.from({ length: totalRows }, (_, index) => (
         <DriverInfoRow
-          lapTimeDeltas={[0.0]}
-          numLapDeltasToShow={1}
           key={`empty-${index}`}
           carIdx={0}
           classColor={0}
@@ -594,6 +593,8 @@ const RelativeWithoutHeader = () => {
           repair={false}
           penalty={false}
           slowdown={false}
+          lapTimeDeltas={[0.0]}
+          numLapDeltasToShow={1}
         />
       ));
     }
@@ -610,8 +611,6 @@ const RelativeWithoutHeader = () => {
         // If no result, render a dummy row with visibility hidden
         return (
           <DriverInfoRow
-            lapTimeDeltas={[0.0]}
-            numLapDeltasToShow={1}
             key={`placeholder-${index}`}
             carIdx={0}
             classColor={0}
@@ -645,20 +644,14 @@ const RelativeWithoutHeader = () => {
             repair={false}
             penalty={false}
             slowdown={false}
+            lapTimeDeltas={[0.0]}
+            numLapDeltasToShow={1}
           />
         );
       }
 
       return (
         <DriverInfoRow
-          lapTimeDeltas={
-            settings?.lapTimeDeltas?.enabled ? result.lapTimeDeltas : undefined
-          }
-          numLapDeltasToShow={
-            settings?.lapTimeDeltas?.enabled
-              ? settings.lapTimeDeltas.numLaps
-              : undefined
-          }
           key={result.carIdx}
           carIdx={result.carIdx}
           classColor={result.carClass.color}
@@ -714,6 +707,14 @@ const RelativeWithoutHeader = () => {
           repair={result.repair}
           penalty={result.penalty}
           slowdown={result.slowdown}
+          lapTimeDeltas={
+            settings?.lapTimeDeltas?.enabled ? result.lapTimeDeltas : undefined
+          }
+          numLapDeltasToShow={
+            settings?.lapTimeDeltas?.enabled
+              ? settings.lapTimeDeltas.numLaps
+              : undefined
+          }
         />
       );
     });
@@ -805,8 +806,6 @@ const RelativeWithoutFooter = () => {
     if (playerIndex === -1) {
       return Array.from({ length: totalRows }, (_, index) => (
         <DriverInfoRow
-          lapTimeDeltas={[0.0]}
-          numLapDeltasToShow={1}
           key={`empty-${index}`}
           carIdx={0}
           classColor={0}
@@ -841,6 +840,8 @@ const RelativeWithoutFooter = () => {
           repair={false}
           penalty={false}
           slowdown={false}
+          lapTimeDeltas={[0.0]}
+          numLapDeltasToShow={1}
         />
       ));
     }
@@ -857,8 +858,6 @@ const RelativeWithoutFooter = () => {
         // If no result, render a dummy row with visibility hidden
         return (
           <DriverInfoRow
-            lapTimeDeltas={[0.0]}
-            numLapDeltasToShow={1}
             key={`placeholder-${index}`}
             carIdx={0}
             classColor={0}
@@ -892,20 +891,14 @@ const RelativeWithoutFooter = () => {
             repair={false}
             penalty={false}
             slowdown={false}
+            lapTimeDeltas={[0.0]}
+            numLapDeltasToShow={1}
           />
         );
       }
 
       return (
         <DriverInfoRow
-          lapTimeDeltas={
-            settings?.lapTimeDeltas?.enabled ? result.lapTimeDeltas : undefined
-          }
-          numLapDeltasToShow={
-            settings?.lapTimeDeltas?.enabled
-              ? settings.lapTimeDeltas.numLaps
-              : undefined
-          }
           key={result.carIdx}
           carIdx={result.carIdx}
           classColor={result.carClass.color}
@@ -961,6 +954,14 @@ const RelativeWithoutFooter = () => {
           repair={result.repair}
           penalty={result.penalty}
           slowdown={result.slowdown}
+          lapTimeDeltas={
+            settings?.lapTimeDeltas?.enabled ? result.lapTimeDeltas : undefined
+          }
+          numLapDeltasToShow={
+            settings?.lapTimeDeltas?.enabled
+              ? settings.lapTimeDeltas.numLaps
+              : undefined
+          }
         />
       );
     });

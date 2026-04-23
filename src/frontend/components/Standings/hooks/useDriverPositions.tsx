@@ -22,7 +22,6 @@ import { Standings, type LastTimeState } from '../createStandings';
 import { GlobalFlags, SessionState } from '@irdashies/types';
 import { useDriverLivePositions } from './useDriverLivePositions';
 import { useRelativeSettings } from './useRelativeSettings';
-// import { useLapTimeHistory } from '../LapTimesStore/LapTimesStore';
 
 const getLastTimeState = (
   lastTime: number | undefined,
@@ -177,8 +176,6 @@ export const useDriverStandings = () => {
       calculateLapDeltas(lapTimeHistory, playerCarIdx, lapTimeDeltasEnabled),
     [lapTimeHistory, playerCarIdx, lapTimeDeltasEnabled]
   );
-
-  // inside mapped standing object
 
   const driverStandings: Standings[] = useMemo(() => {
     // Create Map lookups for O(1) access instead of O(n) find() calls

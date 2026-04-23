@@ -4,8 +4,8 @@ import {
   useTelemetryValues,
 } from '../TelemetryStore/TelemetryStore';
 import { useLapTimesStore } from './LapTimesStore';
-import { useStandingsSettings } from '../../components/Standings/hooks/useStandingsSettings';
 import { useRelativeSettings } from '../../components/Standings/hooks';
+import { useStandingsSettings } from '../../components/Standings/hooks/useStandingsSettings';
 
 /**
  * Hook that automatically updates the LapTimesStore with telemetry data.

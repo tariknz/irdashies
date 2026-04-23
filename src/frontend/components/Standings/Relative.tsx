@@ -121,8 +121,6 @@ export const Relative = () => {
         // If no result, render a dummy row with visibility hidden
         return (
           <DriverInfoRow
-            lapTimeDeltas={[0.0]}
-            numLapDeltasToShow={1}
             key={`placeholder-${index}`}
             carIdx={0}
             classColor={0}
@@ -162,6 +160,8 @@ export const Relative = () => {
             hideCarManufacturer={hideCarManufacturer}
             hasAnyDriverTag={hasAnyTag}
             compactMode={generalSettings?.compactMode}
+            lapTimeDeltas={[0.0]}
+            numLapDeltasToShow={1}
           />
         );
       }
